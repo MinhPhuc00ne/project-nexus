@@ -5,16 +5,23 @@
   "type": "module",
   "description": "Project Nexus - Monolithic Architecture",
   "workspaces": [
+    "packages/*",
     "backend",
     "frontend/*"
   ],
   "scripts": {
+    "build:types": "npm run build --workspace=@nexus/types --if-present",
     "dev:backend": "npm run start:dev --workspace=backend",
     "dev:web": "npm run dev --workspace=frontend/web",
     "dev:admin": "npm run dev --workspace=frontend/admin",
     "build:backend": "npm run build --workspace=backend",
     "build:web": "npm run build --workspace=frontend/web",
     "build:admin": "npm run build --workspace=frontend/admin",
+    "build:all": "npm run build:types && npm run build:backend && npm run build:web && npm run build:admin",
+    "prisma:generate": "npm run prisma:generate --workspace=backend --if-present",
+    "prisma:migrate": "npm run prisma:migrate --workspace=backend --if-present",
+    "prisma:seed": "npm run prisma:seed --workspace=backend --if-present",
+    "prisma:studio": "npm run prisma:studio --workspace=backend --if-present",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
