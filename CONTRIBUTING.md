@@ -4,24 +4,51 @@ This is a guide for contributing to **Project Nexus**! This document outlines ou
 
 ---
 
-## 1. Git Branching Strategy
+## Git Workflow
 
-We use a standard branching strategy to keep our codebase clean, stable, and production-ready.
+- Branching:
+  - `main`: Protected production branch.
+  - `dev`: Active integration branch.
+  - Feature branches: `feature/<module>-<short-description>` (e.g., `feature/auction-live-board`).
+- Commit Standards: Strictly conforms to Conventional Commits v1.0.0 (`feat`, `fix`, `docs`, `refactor`, etc.).
+- Pre-MR Quality Gate:
 
-```text
-feature/<module>-<task>  ──(MR)──>  dev  ──(MR)──>  main (Production)
-bugfix/<module>-<task>   ────────────┘
-```
-
-- `main`: Protected branch containing production-ready code. Direct commits and direct merges without peer review are prohibited.
-- `dev`: The integration branch for current sprint development. All feature branches branch off from `dev` and merge back into `dev`.
-- `feature/<module>-<task>`: Dedicated branches for active development (e.g., `feature/auction-live-board`, `feature/identity-oauth`).
-- `bugfix/<module>-<task>`: Dedicated branches for resolving defects during development.
-- `hotfix/<issue>`: Urgent production fixes branching directly off `main` and merged back into both `main` and `dev`.
+  ```bash
+  npm run lint
+  npm run format:check
+  ```
 
 ---
 
-## 2. Commit Message Standards
+## Contributing Workflow
+
+```mermaid
+gitGraph
+   commit id: "Initial Monolith Setup"
+   branch dev
+   checkout dev
+   commit id: "Sprint Base"
+   branch feature/auction-anti-sniping
+   checkout feature/auction-anti-sniping
+   commit id: "feat: redis locks"
+   commit id: "test: unit tests"
+   checkout dev
+   merge feature/auction-anti-sniping id: "Merge MR into dev"
+   checkout main
+   merge dev id: "Release v1.0.0"
+```
+
+### Branch Roles
+
+- `main`: Protected production branch. Direct commits are forbidden.
+- `dev`: The active integration branch. All feature branches originate from `dev` and merge back into `dev`.
+- Feature Branches: `feature/<module>-<short-description>` (e.g., `feature/auction-anti-sniping`, `feature/commerce-checkout`, `feature/auction-live-board`).
+- Bugfix Branches: `bugfix/<module>-<task>`: Dedicated branches for resolving defects during development.
+- Hotfix Branches: `hotfix/<issue>`: Urgent production fixes branching directly off `main` and merged back into both `main` and `dev`.
+
+---
+
+## Commit Message Standards
 
 All commit messages must strictly comply with the [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) specification.\
 Commits must be atomic—each commit encapsulates a single logical change.
@@ -48,7 +75,7 @@ Commits must be atomic—each commit encapsulates a single logical change.
 
 ---
 
-## 3. Coding Standards
+## Coding Standards
 
 All contributors must adhere to our formal engineering specifications:
 
@@ -57,7 +84,7 @@ All contributors must adhere to our formal engineering specifications:
 - Read [DESIGN_PATTERNS.md](./docs/architecture/DESIGN_PATTERNS.md) for Repository, Strategy (PayOS/Stripe/GHN), In-Process Observer/Events, PostgreSQL ACID transactions, and Three.js lifecycle management.
 - Read [ARCHITECTURE.md](./docs/architecture/ARCHITECTURE.md) for modular boundaries, in-process event communication (`@nestjs/event-emitter`), and presentation layers.
 
-Quick Quality Checklist Before Committing
+### Quick Quality Checklist Before Committing
 
 - [ ] No `any` type used (`@typescript-eslint/no-explicit-any`).
 - [ ] Public methods have explicit return types.
@@ -69,29 +96,34 @@ Quick Quality Checklist Before Committing
 
 ---
 
-## 4. Merge Request Process
+## Step-by-Step Merge Request Workflow
 
-1. Local Verification: Ensure your code passes all linting, formatting, and test suites locally (`npm run lint` and `npm run format:check`).
-2. Rebase: Always sync and rebase the latest changes from `origin/dev` before pushing:
+1. Pre-MR Local Verification:
+
+   ```bash
+   npm run lint
+   npm run format:check
+   ```
+
+2. Rebase on Latest `dev`: Always sync and rebase the latest changes from `origin/dev` before pushing:
 
    ```bash
    git checkout dev && git pull origin dev
-   git checkout feature/your-feature
+   git checkout feature/your-branch-name
    git rebase dev
    ```
 
 3. Push to GitLab:
 
    ```bash
-   git push -u origin feature/your-feature
+   git push -u origin feature/your-branch-name
    ```
 
-4. Create Merge Request (MR):
-   - Target Branch: Must always target `dev` (never `main`).
-   - Title: Must follow Conventional Commits format matching the primary change (e.g., `feat(auction): add live bidding broadcast`).
-   - Description: Fill out the official MR template (automatically loaded from `.gitlab/merge_request_templates/default.md`).
-   - Options: Check `Delete source branch when merge request is accepted`.
-   - Assignee: Assign yourself.
-   - Reviewer: Assign your Tech Lead, Mentor, or at least 1 peer reviewer.
-5. Code Review: Address all reviewer comments. Make required fixes directly on your local branch, commit, and push. Mark discussions as resolved once completed.
-6. Merge: Once approved (minimum 1 approval required) and CI passes, the MR will be merged into `dev`.
+4. Open a Merge Request on GitLab:
+   - Target branch: **`dev`** ⚠️ _(Never target `main`)_.
+   - Title: Follow Conventional Commits format (e.g., `feat(auction): add live bidding broadcast`).
+   - Description: Complete the template loaded from `.gitlab/merge_request_templates/default.md`.
+   - Check: `Delete source branch when merge request is accepted`.
+   - Assignee: Yourself | Reviewer: Tech Lead / Peer reviewer.
+
+5. Code Review & Merge: Address comments, resolve threads, receive approval (minimum 1 approval required), ensure CI passes, and merge into `dev`.
