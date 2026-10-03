@@ -142,6 +142,43 @@ This document formalizes the software design patterns mandated across Project Ne
 
 ---
 
+### 1.6. Audit Event Logging & Asynchronous Notification Pattern
+
+- Purpose: Satisfies SRS 3.2 requirements by automatically capturing every published system domain event into an immutable audit table (`event_logs`) and triggering user notifications (Email/Push) without blocking core workflows.
+- Implementation:
+  - The `NotificationModule` registers wildcard or domain-specific listeners (`@OnEvent('')` or specific events like `auction.bid.placed`):
+
+  ```typescript
+  @Injectable()
+  export class EventAuditListener {
+    constructor(
+      private readonly prisma: PrismaService,
+      private readonly notificationService: NotificationService,
+    ) {}
+
+    @OnEvent('order.created')
+    async handleOrderCreated(payload: OrderCreatedEventPayload): Promise<void> {
+      // 1. Immutable Audit Logging
+      await this.prisma.eventLog.create({
+        data: {
+          eventName: 'OrderCreated',
+          payload: JSON.stringify(payload),
+          operatorId: payload.buyerId,
+        },
+      });
+
+      // 2. Multi-channel Notification Dispatch
+      await this.notificationService.sendTransactionalNotification({
+        userId: payload.sellerId,
+        title: 'New Order Received',
+        content: `Order #${payload.orderId} was placed with amount ${payload.totalAmount}`,
+      });
+    }
+  }
+  ```
+
+---
+
 ## 2. Frontend Patterns (React + Three.js)
 
 ### 2.1. Container-Presenter & Custom Hooks Pattern

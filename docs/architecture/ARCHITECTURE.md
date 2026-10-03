@@ -2,25 +2,30 @@
 
 ## 1. Executive Summary
 
-Project Nexus is an e-commerce platform that seamlessly integrates traditional online retail with real-time 3D live auctions (WebGL / Three.js). The platform is architected as a Modular Monolith, employing a Feature-Driven / Modular Architecture on the client side and a Decoupled Domain-Driven Module Structure within a single NestJS backend runtime.
+Project Nexus is an e-commerce platform that seamlessly integrates traditional online retail with real-time 3D live auctions (WebGL / Three.js). The platform is architected as an Enterprise Modular Monolith within a Type-Safe Monorepo, employing a Feature-Driven / Modular Architecture on the client side and Decoupled Domain Modules within a unified NestJS backend runtime.
 
-By adopting a Modular Monolith, Project Nexus achieves:
+By adopting this architecture, Project Nexus achieves:
 
-- High Operational Simplicity: Single deployment artifact, eliminating distributed network latency, cross-service serialization overhead, and multi-service orchestration complexity.
-- Strong Transactional Consistency: Complex multi-step operations (e.g., checkout and escrow fund locking) are executed within native PostgreSQL ACID transactions, removing the need for distributed Saga orchestration or Two-Phase Commit (2PC).
-- Domain Independence: Clear logical module boundaries maintained via explicit module interfaces and in-process event emission (`@nestjs/event-emitter`).
+- High Operational Simplicity: Single unified deployment artifact, eliminating distributed network latency, cross-service serialization overhead, and multi-service orchestration complexity.
+- Strong Transactional Consistency: Complex multi-step operations (e.g., checkout and escrow fund locking) execute within native PostgreSQL ACID transactions, eliminating distributed Saga orchestration or Two-Phase Commit (2PC).
+- Domain Independence & Bounded Contexts: Clear logical module boundaries maintained via explicit module interfaces, logical schema separation, and in-process event emission (`@nestjs/event-emitter`).
+- Zero Schema Drift: A dedicated shared library (`packages/types`) serves as the single source of truth for DTOs, Enums, and WebSocket contracts across Backend and Client applications.
 
 ---
 
 ## 2. System Context & High-Level Architecture
 
-The platform consists of three primary tiers: Client Applications, Unified Modular Monolith Backend, and Persistence/Caching Infrastructure.
+The platform consists of four primary tiers: Shared Contracts, Client Applications, Unified Modular Monolith Backend, and Persistence/Caching Infrastructure.
 
 ```mermaid
 flowchart TB
+    subgraph Shared["Shared Contracts Tier (packages/types)"]
+        Contracts["@nexus/types<br/>Enums, DTO Interfaces, WebSocket Contracts"]
+    end
+
     subgraph Clients["Client Tier (frontend/)"]
-        WebClient["Web Client (Buyer / Seller Toggle)<br/>React + Vite + Three.js"]
-        AdminClient["Admin & Backoffice Portal<br/>React + Vite"]
+        WebClient["Web Client (Buyer / Seller Toggle)<br/>React 18 + Vite + Three.js + Zustand"]
+        AdminClient["Admin & Backoffice Portal<br/>React 18 + Vite + TanStack Query"]
     end
 
     subgraph Backend["Unified Backend Application (backend/ - NestJS Monolith)"]
@@ -31,12 +36,14 @@ flowchart TB
             WSGateway["WebSocket Gateway (/ws/auctions)<br/>Real-Time Bidding & 3D Sync"]
         end
 
-        subgraph CoreModules["Modular Domain Modules"]
-            AuthMod["Auth & Users Module<br/>Identity, RBAC, Wallet, Reputation"]
-            CatalogMod["Catalog Module<br/>Products, Categories, 3D Asset Metadata"]
+        subgraph CoreModules["Decoupled Domain Modules"]
+            AuthMod["Auth Module<br/>Identity, JWT, RBAC"]
+            UsersMod["Users Module<br/>Profile, Wallet, Reputation"]
+            CatalogMod["Catalog Module<br/>Products, Categories, 3D Models"]
             CommerceMod["Commerce Module<br/>Cart, Checkout, PayOS & Stripe"]
-            FulfillMod["Fulfillment Module<br/>Inventory, Escrow Lifecycle, Refunds"]
+            FulfillMod["Fulfillment Module<br/>SKU Inventory, Escrow, GHN Logistics"]
             AuctionMod["Auction Module<br/>Live Bidding Engine, Anti-Sniping"]
+            NotifyMod["Notification Module<br/>Event Logs, Multi-Channel Alerts"]
             BackofficeMod["Backoffice Module<br/>Dispute Arbitration, Platform Audit"]
         end
 
@@ -49,20 +56,23 @@ flowchart TB
     end
 
     subgraph Infrastructure["Data & In-Memory Tier"]
-        Postgres[(PostgreSQL 16 Database<br/>ACID Transactions & Unified Schema)]
-        RedisCache[(Redis 7<br/>Atomic Bidding Queue, Redlock, Cache)]
+        Postgres[(PostgreSQL 17 Database<br/>ACID Transactions & Logical Schema Separation)]
+        RedisCache[(Redis 7<br/>Atomic Bidding Queue, Redlock, Cache, Pub/Sub)]
     end
 
     subgraph ExternalServices["Third-Party Integrations"]
-        PayOS["PayOS (Domestic Banking)"]
+        PayOS["PayOS (Domestic Banking QR)"]
         Stripe["Stripe (International Cards)"]
-        GHN["GHN (Giao Hang Nhanh Logistics)"]
+        GHN["GHN (Giao Hàng Nhanh Logistics)"]
     end
 
+    Contracts -.->|Type-Safe Bindings| Clients
+    Contracts -.->|Type-Safe Bindings| Backend
     Clients -->|HTTPS / WSS| WebLayer
     CoreModules --> Postgres
     AuctionMod <--> RedisCache
     CommerceMod --> ExternalServices
+    FulfillMod --> ExternalServices
 ```
 
 ---
@@ -73,72 +83,79 @@ Project Nexus strictly defines communication boundaries:
 
 ### 3.1. Client-to-Backend Communication
 
-- RESTful HTTP APIs: Standard request-response operations (browsing catalogs, submitting orders, managing wallet balances) communicate over HTTPS with standard JSON payloads.
-- WebSocket (Socket.IO): Bi-directional, low-latency communication for live auction rooms:
+- RESTful HTTP APIs: Standard request-response operations (browsing catalogs, submitting orders, managing wallet balances) communicate over HTTPS with standard JSON payloads prefixed with `/api/v1/...`.
+- WebSocket (Socket.IO): Bi-directional, low-latency communication for live auction rooms via `/ws/auctions`:
   - Broadcasts new highest bids (`auction:bid:placed`).
-  - Broadcasts clock updates and anti-sniping extension events (`auction:timer:sync`).
-  - Synchronizes 3D WebGL rotation and lighting parameters across connected participants.
+  - Broadcasts clock updates and anti-sniping extension events (`auction:timer:sync`, `auction:time_extended`).
+  - Synchronizes 3D WebGL rotation and lighting parameters across connected room participants (`auction:3d:sync`).
 
 ### 3.2. Inter-Module In-Process Communication
 
 Within the monolithic backend, modules communicate without network serialization:
 
-- Direct Service Injection (Synchronous): When immediate strongly-typed query data is needed across module boundaries (e.g., `CommerceModule` checking product availability via `CatalogService`).
-- Domain Event Bus (Asynchronous / Decoupled): To keep modules loosely coupled, state changes trigger domain events via `@nestjs/event-emitter`:
+- Direct Service Injection (Synchronous Reads): When immediate strongly-typed query data is needed across module boundaries (e.g., `CommerceModule` checking product availability via `CatalogService`).
+- Domain Event Bus (Asynchronous / Decoupled Writes): To keep modules loosely coupled, state changes trigger domain events via `@nestjs/event-emitter`:
   - `OrderCreatedEvent`: Published by `CommerceModule` $\rightarrow$ Handled by `FulfillmentModule` (to lock funds into Escrow) and `UsersModule` (to deduct balance).
-  - `AuctionEndedEvent`: Published by `AuctionModule` $\rightarrow$ Handled by `CommerceModule` (to create winner's order) and `FulfillmentModule` (to lock winning escrow).
+  - `AuctionEndedEvent`: Published by `AuctionModule` $\rightarrow$ Handled by `CommerceModule` (to create winner's order) and `FulfillmentModule` (to commit winning inventory).
   - `DisputeResolvedEvent`: Published by `BackofficeModule` $\rightarrow$ Handled by `FulfillmentModule` (to release or refund escrow).
+  - `*All Domain Events*`: Captured automatically by `NotificationModule` to persist immutable audit records into `event_logs` and dispatch user alerts.
 
 ---
 
-## 4. Internal Module Architecture
+## 4. Internal Module Architecture & Boundary Rules
 
-Every domain module in `backend/src/modules/` follows a clean, layered structure:
+Every domain module in `backend/src/modules/<module-name>/` follows a clean, layered structure:
 
 ```text
 backend/src/modules/<module-name>/
-├── controllers/
-├── dtos/
-├── entities/
-├── events/
-├── listeners/
-├── services/
-└── <module-name>.module.ts
+├── controllers/                 # HTTP REST endpoints & route handlers
+├── dtos/                        # Request validation & response schemas
+├── entities/                    # Business entities & Prisma data mappers
+├── events/                      # Domain event definitions (e.g., OrderCreatedEvent.ts)
+├── listeners/                   # Event listeners handling domain events from other modules
+├── services/                    # Business logic & transaction orchestration
+└── <module-name>.module.ts      # NestJS Module definition with explicit exports
 ```
 
-### Module Boundary Rules
+### 4.1. Logical Schema Separation (Addressing SRS 4.1 in Monolith)
 
-1. Encapsulation: Modules must only expose public methods via their declared `@Injectable()` service providers in `exports`. Internal helpers and repository implementations remain private to the module.
-2. ACID Transaction Boundaries: Cross-module database writes that must succeed or fail together are wrapped in native PostgreSQL transactions using `prisma.$transaction()`, guaranteeing data integrity without distributed rollbacks.
-3. No Circular Dependencies: Forward references (`forwardRef()`) are strictly discouraged. Cross-module notifications must flow through in-process domain events.
+To fulfill the requirement that services must not share database tables or access foreign data stores, Project Nexus implements Logical Schema Separation:
+
+1. Module Ownership: Each domain module exclusively owns its respective tables (e.g., `Commerce` owns `orders`, `order_items`; `Fulfillment` owns `inventories`, `escrow_records`).
+2. Encapsulation: Direct cross-module database queries via Prisma are strictly forbidden. A module needing foreign data must inject the owning module's public service or subscribe to its domain events.
+3. Transactional Integrity: When an operation spans multiple modules and requires ACID atomicity (e.g., placing an order and locking escrow), it is coordinated via `prisma.$transaction()` within a unified Unit of Work while keeping repository methods isolated.
+
+### 4.2. Circular Dependency Prevention
+
+- Forward references (`forwardRef()`) are strictly disallowed. Cross-module notifications must flow through in-process domain events.
 
 ---
 
 ## 5. Persistence & In-Memory Architecture
 
-### 5.1. PostgreSQL (Prisma ORM)
+### 5.1. PostgreSQL 17 (Prisma ORM)
 
-A single PostgreSQL 16 database serves as the unified persistence store.
+A single PostgreSQL 17 database serves as the unified persistence store.
 
-- Relational Integrity: Foreign key constraints ensure strict relational integrity between Users, Orders, Products, Escrow Records, and Auction Items.
-- Transaction Safety: Financial transactions (wallet deposits, withdrawals, escrow holds, and platform fee deductions) run with serializable or read-committed isolation levels to eliminate phantom reads.
+- Relational Integrity: Foreign key constraints guarantee strict integrity between Users, Orders, Products, Escrow Records, and Auction Items.
+- Transaction Safety: Financial transactions (wallet deposits, withdrawals, escrow holds, and platform fee deductions) run with serializable or read-committed isolation levels to eliminate phantom reads and race conditions.
 
 ### 5.2. Redis 7
 
-Redis is utilized for high-throughput, low-latency operations:
+Redis is utilized for high-throughput, sub-10ms latency operations:
 
-- Atomic Bidding Queue & Distributed Locks: During high-concurrency auctions, Redis locks (`Redlock`) serialize bids down to the millisecond, preventing double-spend and race conditions.
-- Real-Time Cache: Caches hot catalog items, user reputation scores, and session data.
-- Socket.IO Adapter: Enables horizontal scaling of the WebSocket gateway across multiple instances if needed in the future.
+- Atomic Bidding Queue & Distributed Locks: During high-concurrency auctions, Redis locks (`Redlock`) serialize bids down to the millisecond, preventing double-spend and race conditions before writing to PostgreSQL.
+- Real-Time Cache: Caches hot catalog items, active auction countdown states, and user session data.
+- Socket.IO Redis Adapter: Enables horizontal scaling of WebSocket gateways across multiple instances if traffic scales up.
 
 ---
 
 ## 6. Frontend Architecture (`frontend/web` & `frontend/admin`)
 
-Both frontend applications are built with React 18 + Vite + TypeScript + Tailwind CSS:
+Both frontend applications are built with React 18 + Vite + TypeScript + Tailwind CSS, organized using a Feature-Driven Architecture:
 
 ### Three.js WebGL Lifecycle Rules in React
 
-1. Lifecycle Isolation: Three.js canvas instances are isolated within dedicated components (`useEffect` or `@react-three/fiber`).
-2. Memory Cleanup: On component unmount, all geometries, textures, and renderers are systematically disposed (`geometry.dispose()`, `material.dispose()`) to eliminate browser memory leaks.
+1. Lifecycle Isolation: Three.js canvas instances are isolated within dedicated manager classes (`AuctionSceneManager.ts`) outside React's render loop to avoid performance degradation.
+2. Memory Cleanup: On component unmount, all geometries, textures, and renderers are systematically disposed (`geometry.dispose()`, `material.dispose()`, `renderer.dispose()`) to eliminate browser memory leaks.
 3. Fallback Display: If client hardware lacks WebGL acceleration or an auction item does not match any of the 15 hardcoded 3D models, the system seamlessly falls back to a 3D generic pedestal featuring the seller's uploaded 2D product images as textures.
