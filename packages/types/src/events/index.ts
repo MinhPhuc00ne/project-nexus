@@ -1,4 +1,4 @@
-import { AuctionStatus, OrderStatus, PenaltyType } from '../enums/index.js';
+import { AuctionStatus, PenaltyType } from '../enums/index.js';
 
 // --- WebSocket Contracts (/ws/auctions) ---
 export const WS_AUCTION_EVENTS = {
