@@ -1,4 +1,6 @@
-export default [
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
   {
     ignores: [
       '**/node_modules/**',
@@ -10,14 +12,17 @@ export default [
       '**/.agents/**',
       '**/*.min.js',
       '**/*.d.ts',
+      '**/prisma/migrations/**',
     ],
   },
+  ...tseslint.configs.recommended,
   {
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     rules: {
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
       'no-debugger': 'error',
-      'no-unused-vars': [
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': [
         'warn',
         {
           argsIgnorePattern: '^_',
@@ -29,4 +34,4 @@ export default [
       eqeqeq: ['error', 'always'],
     },
   },
-];
+);
