@@ -29,6 +29,7 @@
     "prepare": "husky",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
+    "docker:clean": "docker compose down -v",
     "docker:logs": "docker compose logs -f"
   },
   "devDependencies": {
