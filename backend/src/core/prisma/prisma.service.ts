@@ -9,7 +9,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     const connectionString =
       configService.get<string>('DATABASE_URL') ||
       process.env.DATABASE_URL ||
-      'postgresql://postgres:nexus_secret_2026@localhost:5433/nexus_main?schema=public';
+      'postgresql://postgres:nexus_secret_2026@localhost:5432/nexus_main?schema=public';
     const adapter = new PrismaPg({ connectionString });
     super({ adapter });
   }

@@ -17,11 +17,11 @@ flowchart LR
     end
 
     subgraph DockerContainers["Docker Compose Containers"]
-        PG[("nexus-postgres<br/>PostgreSQL 17-alpine<br/>Host: 5433 ➔ Container: 5432")]
+        PG[("nexus-postgres<br/>PostgreSQL 17-alpine<br/>Host: 5432 ➔ Container: 5432")]
         RD[("nexus-redis<br/>Redis 7-alpine<br/>Host: 6379 ➔ Container: 6379")]
     end
 
-    BE -->|DATABASE_URL: localhost:5433| PG
+    BE -->|DATABASE_URL: localhost:5432| PG
     BE -->|REDIS_URL: localhost:6379| RD
     FE_Web -->|REST / WebSocket| BE
     FE_Admin -->|REST API| BE
@@ -29,14 +29,10 @@ flowchart LR
 
 ### Container Port & Resource Mapping
 
-| Container Name | Service | Image | Host Port | Container Port | Purpose |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `nexus-postgres` | PostgreSQL 17 | `postgres:17-alpine` | **`5433`** | `5432` | System ACID persistence, relational schema, logical separation |
-| `nexus-redis` | Redis 7 | `redis:7-alpine` | **`6379`** | `6379` | Cache, Redlock distributed locking, atomic bidding queue, Pub/Sub |
-
-> [!NOTE]
-> **Why is PostgreSQL mapped to Host Port `5433`?**
-> To prevent port collisions with any existing local PostgreSQL service running natively on the developer's host machine (which defaults to `5432`). Inside the container, PostgreSQL continues to listen on standard port `5432`.
+| Container Name   | Service       | Image                | Host Port  | Container Port | Purpose                                                           |
+| :--------------- | :------------ | :------------------- | :--------- | :------------- | :---------------------------------------------------------------- |
+| `nexus-postgres` | PostgreSQL 17 | `postgres:17-alpine` | **`5432`** | `5432`         | System ACID persistence, relational schema, logical separation    |
+| `nexus-redis`    | Redis 7       | `redis:7-alpine`     | **`6379`** | `6379`         | Cache, Redlock distributed locking, atomic bidding queue, Pub/Sub |
 
 ---
 
@@ -79,8 +75,8 @@ docker logs -f nexus-redis
 npm run dev:backend
 ```
 
-* REST API: `http://localhost:3000/api/v1`
-* Interactive Swagger UI: `http://localhost:3000/api/docs`
+- REST API: `http://localhost:3000/api/v1`
+- Interactive Swagger UI: `http://localhost:3000/api/docs`
 
 ---
 
@@ -101,14 +97,14 @@ npm run dev:backend
 npm run dev:web
 ```
 
-* Web Client: `http://localhost:5173`
-* Admin Client: `http://localhost:5174` (via `npm run dev:admin`)
+- Web Client: `http://localhost:5173`
+- Admin Client: `http://localhost:5174` (via `npm run dev:admin`)
 
 ### Core API Endpoints for Frontend
 
-* **REST API Base URL:** `http://localhost:3000/api/v1`
-* **WebSocket Auction Room:** `ws://localhost:3000/ws/auctions`
-* **Swagger API Documentation:** `http://localhost:3000/api/docs`
+- **REST API Base URL:** `http://localhost:3000/api/v1`
+- **WebSocket Auction Room:** `ws://localhost:3000/ws/auctions`
+- **Swagger API Documentation:** `http://localhost:3000/api/docs`
 
 ---
 
@@ -170,9 +166,9 @@ docker exec -it nexus-postgres psql -U postgres -d nexus_main
 
 Useful commands:
 
-* `\dt`: List all tables.
-* `SELECT * FROM users;`: View user accounts.
-* `\q`: Exit psql.
+- `\dt`: List all tables.
+- `SELECT * FROM users;`: View user accounts.
+- `\q`: Exit psql.
 
 ### Access Redis (`redis-cli`)
 
@@ -182,23 +178,23 @@ docker exec -it nexus-redis redis-cli
 
 Useful commands:
 
-* `PING`: Test connectivity (responds `PONG`).
-* `KEYS *`: Inspect cached keys.
-* `FLUSHALL`: Flush all Redis data.
-* `exit`: Exit redis-cli.
+- `PING`: Test connectivity (responds `PONG`).
+- `KEYS *`: Inspect cached keys.
+- `FLUSHALL`: Flush all Redis data.
+- `exit`: Exit redis-cli.
 
 ---
 
 ## 6. Command Quick Reference Cheat Sheet
 
-| Task | NPM Script (Recommended) | Equivalent Docker Command |
-| :--- | :--- | :--- |
-| **Start Services Detached** | `npm run docker:up` | `docker compose up -d` |
-| **Stop Services (Keep Data)** | `npm run docker:down` | `docker compose down` |
-| **Reset Services (Wipe Volumes)** | `npm run docker:clean` | `docker compose down -v` |
-| **View Service Logs** | `npm run docker:logs` | `docker compose logs -f` |
-| **Inspect Running Containers** | - | `docker ps` |
-| **Inspect Resource Usage** | - | `docker stats` |
+| Task                              | NPM Script (Recommended) | Equivalent Docker Command |
+| :-------------------------------- | :----------------------- | :------------------------ |
+| **Start Services Detached**       | `npm run docker:up`      | `docker compose up -d`    |
+| **Stop Services (Keep Data)**     | `npm run docker:down`    | `docker compose down`     |
+| **Reset Services (Wipe Volumes)** | `npm run docker:clean`   | `docker compose down -v`  |
+| **View Service Logs**             | `npm run docker:logs`    | `docker compose logs -f`  |
+| **Inspect Running Containers**    | -                        | `docker ps`               |
+| **Inspect Resource Usage**        | -                        | `docker stats`            |
 
 ---
 
@@ -206,21 +202,21 @@ Useful commands:
 
 ### 1. `failed to connect to the docker API at npipe://...`
 
-* **Root Cause:** Docker Desktop is not running or the Linux engine has not finished starting.
-* **Resolution:** Launch **Docker Desktop** on Windows and wait until the engine indicator is green before running commands.
+- **Root Cause:** Docker Desktop is not running or the Linux engine has not finished starting.
+- **Resolution:** Launch **Docker Desktop** on Windows and wait until the engine indicator is green before running commands.
 
 ### 2. `port is already allocated` or Port Conflict
 
-* **Root Cause:** Another process is binding host port `5433` or `6379`.
-* **Resolution:** Inspect port bindings via PowerShell:
+- **Root Cause:** Another process is binding host port `5432` or `6379`.
+- **Resolution:** Inspect port bindings via PowerShell:
 
   ```powershell
-  Get-NetTCPConnection -LocalPort 5433
+  Get-NetTCPConnection -LocalPort 5432
   ```
 
   Terminate conflicting background processes or run `docker compose down`.
 
 ### 3. `Authentication failed against database server`
 
-* **Root Cause:** Password mismatch between `.env` and an existing persistent PostgreSQL volume.
-* **Resolution:** Run `npm run docker:clean` to purge the mismatched volume, then restart via `npm run docker:up`.
+- **Root Cause:** Password mismatch between `.env` and an existing persistent PostgreSQL volume.
+- **Resolution:** Run `npm run docker:clean` to purge the mismatched volume, then restart via `npm run docker:up`.
