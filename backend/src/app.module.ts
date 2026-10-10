@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+// Đã xóa dòng "import * as path from 'path';" vì không còn dùng tới
 import { PrismaModule } from './core/prisma/prisma.module';
 import { RedisModule } from './core/redis/redis.module';
 
@@ -8,7 +9,8 @@ import { RedisModule } from './core/redis/redis.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', 'backend/.env'],
+      // NestJS sẽ tìm .env ở thư mục hiện tại trước, nếu không thấy sẽ tự lùi ra ngoài 1 cấp để tìm.
+      envFilePath: ['.env', '../.env'],
     }),
     EventEmitterModule.forRoot({
       wildcard: true,
