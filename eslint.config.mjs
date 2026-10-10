@@ -13,8 +13,6 @@ export default tseslint.config(
       '**/*.min.js',
       '**/*.d.ts',
       '**/prisma/migrations/**',
-      '**/generated/**',
-      '**/src/generated/**',
     ],
   },
   ...tseslint.configs.recommended,
