@@ -35,7 +35,7 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const { email, password, fullName } = dto;
 
-    const existingUser= await this.prisma.user.findUnique({ where: { email } });
+    const existingUser = await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       if (existingUser.isVerified) {
         throw new BadRequestException('Email này đã được đăng ký và xác thực.');
