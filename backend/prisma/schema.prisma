@@ -1,9 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -152,6 +154,9 @@ model User {
   isSellerActive  Boolean              @default(false) @map("is_seller_active")
   reputationScore Int                  @default(100) @map("reputation_score")
   trustLevel      ReputationTrustLevel @default(EXCELLENT) @map("trust_level")
+  isVerified       Boolean              @default(false) @map("is_verified")
+  verificationCode String?              @map("verification_code")
+  codeExpiresAt    DateTime?            @map("code_expires_at")
   createdAt       DateTime             @default(now()) @map("created_at")
   updatedAt       DateTime             @updatedAt @map("updated_at")
 
