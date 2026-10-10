@@ -39,7 +39,6 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
-    "prisma": "^8.0.0-rc.22",
     "typescript-eslint": "^8.71.1"
   },
   "lint-staged": {
@@ -50,8 +49,5 @@
     "*.{json,md,yml,yaml,css}": [
       "prettier --write"
     ]
-  },
-  "dependencies": {
-    "@prisma/client": "^7.10.0"
   }
 }
