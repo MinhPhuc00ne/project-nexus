@@ -7,27 +7,17 @@ interface HeaderProps {
   backText?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({
-  backUrl = "#",
-  backText = "Quay lại Trang Chủ"
-}) => {
+const Header: React.FC<HeaderProps> = ({ backUrl = '#', backText = 'Quay lại Trang Chủ' }) => {
   return (
     <header className="auth-header">
       <div className="auth-header-left">
         <a href="/" className="auth-brand-logo">
-          <img
-            src= "/images/NEXUS.png"
-            alt= "NEXUS"
-            className= "auth-brand-image"
-          />
+          <img src="/images/NEXUS.png" alt="NEXUS" className="auth-brand-image" />
 
           {/*<span className="auth-brand-name">NEXUS</span>*/}
-
         </a>
         <div className="auth-header-divider"></div>
-        <p className="auth-brand-tagline">
-          Sàn Thương Mại Điện Tử & Đấu Giá Trực Tuyến 3D
-        </p>
+        <p className="auth-brand-tagline">Sàn Thương Mại Điện Tử & Đấu Giá Trực Tuyến 3D</p>
       </div>
 
       <div className="auth-header-right">
@@ -53,4 +43,3 @@ const Header: React.FC<HeaderProps> = ({
 };
 
 export default Header;
-
