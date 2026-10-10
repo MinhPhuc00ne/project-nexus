@@ -24,10 +24,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
-    "esModuleInterop": true,
-    "paths": {
-      "@prisma/client/*": ["src/generated/client/*"]
-    }
+    "esModuleInterop": true
   },
   "include": ["src/**/*"]
 }
