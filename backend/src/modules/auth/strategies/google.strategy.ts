@@ -27,25 +27,25 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   }
 
   async validate(
-  accessToken: string,
-  _refreshToken: string,
-  profile: Record<string, unknown>,
-  done: (err: Error | null, user?: unknown) => void,
-): Promise<void> {
-  const { name, emails, photos } = profile as {
-    name?: { givenName?: string; familyName?: string };
-    emails?: { value: string }[];
-    photos?: { value: string }[];
-  };
+    accessToken: string,
+    _refreshToken: string,
+    profile: Record<string, unknown>,
+    done: (err: Error | null, user?: unknown) => void,
+  ): Promise<void> {
+    const { name, emails, photos } = profile as {
+      name?: { givenName?: string; familyName?: string };
+      emails?: { value: string }[];
+      photos?: { value: string }[];
+    };
 
-  const user = {
-    email: emails?.[0]?.value,
-    firstName: name?.givenName,
-    lastName: name?.familyName,
-    picture: photos?.[0]?.value,
-    accessToken,
-  };
+    const user = {
+      email: emails?.[0]?.value,
+      firstName: name?.givenName,
+      lastName: name?.familyName,
+      picture: photos?.[0]?.value,
+      accessToken,
+    };
 
-  done(null, user);
-}
+    done(null, user);
+  }
 }

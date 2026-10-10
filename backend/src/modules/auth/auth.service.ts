@@ -7,6 +7,12 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
+export interface GoogleUser {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  picture?: string;
+}
 @Injectable()
 export class AuthService {
   private transporter: nodemailer.Transporter;
@@ -29,7 +35,7 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const { email, password, fullName } = dto;
 
-    const existingUser: any = await this.prisma.user.findUnique({ where: { email } });
+    const existingUser= await this.prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       if (existingUser.isVerified) {
         throw new BadRequestException('Email này đã được đăng ký và xác thực.');
@@ -154,36 +160,35 @@ export class AuthService {
   }
 
   // ================= 4. ĐĂNG NHẬP BẰNG GOOGLE =================
-  async googleLogin(req: { user?: { email: string; firstName?: string; lastName?: string; picture?: string } }) {
-    if (!req.user) {
+  async googleLogin(user?: GoogleUser) {
+    if (!user) {
       throw new BadRequestException('Không nhận được thông tin từ Google.');
     }
 
-    const { email, firstName, lastName, picture } = req.user;
-    const fullName = `${lastName || ''} ${firstName || ''}`.trim() || 'Người dùng Google';
+    const { email, firstName, lastName, picture } = user;
+    const fullName: string = `${lastName || ''} ${firstName || ''}`.trim() || 'Người dùng Google';
 
-    // Đăng nhập bằng Google thì tự động upsert và đánh dấu isVerified = true
-    const user = await this.prisma.user.upsert({
+    const userRecord = await this.prisma.user.upsert({
       where: { email },
       update: {
-        avatarUrl: picture, // Cập nhật lại avatar mới nhất từ Google
+        avatarUrl: picture,
       },
       create: {
         email,
         fullName,
         avatarUrl: picture,
         passwordHash: '',
-        isVerified: true, // Google đã xác thực email rồi nên không cần OTP nữa
+        isVerified: true,
       },
     });
 
     return {
       message: 'Đăng nhập bằng Google thành công!',
       user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        avatarUrl: user.avatarUrl,
+        id: userRecord.id,
+        email: userRecord.email,
+        fullName: userRecord.fullName,
+        avatarUrl: userRecord.avatarUrl,
       },
     };
   }

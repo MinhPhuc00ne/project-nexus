@@ -14,11 +14,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET || 'nexus-secret-key',
     });
-    
   }
-  
+
   async validate(payload: JwtPayload) {
     return { userId: payload.sub, email: payload.email, role: payload.role };
   }
-  
 }

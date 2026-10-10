@@ -105,7 +105,9 @@ function $(e, t, r = rs + 1) {
 }
 function B(e, t) {
   if (typeof e !== 'number') {
-    const r = new TypeError(`The "${t}" argument must be of type number. Received type ${typeof e}.`);
+    const r = new TypeError(
+      `The "${t}" argument must be of type number. Received type ${typeof e}.`,
+    );
     throw ((r.code = 'ERR_INVALID_ARG_TYPE'), r);
   }
 }
@@ -127,7 +129,9 @@ function Yo(e, t, r, n) {
 }
 function ln(e, t) {
   if (typeof e !== 'string') {
-    const r = new TypeError(`The "${t}" argument must be of type string. Received type ${typeof e}`);
+    const r = new TypeError(
+      `The "${t}" argument must be of type string. Received type ${typeof e}`,
+    );
     throw ((r.code = 'ERR_INVALID_ARG_TYPE'), r);
   }
 }
@@ -6421,7 +6425,8 @@ Expected string or undefined.`);
             r.push({ kind: 'RelationInOmit', modelKey: n, fieldName: s });
             continue;
           }
-          typeof a !== 'boolean' && r.push({ kind: 'InvalidFieldValue', modelKey: n, fieldName: s });
+          typeof a !== 'boolean' &&
+            r.push({ kind: 'InvalidFieldValue', modelKey: n, fieldName: s });
         }
       }
       if (r.length > 0) throw new _(gl(e, r));

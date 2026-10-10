@@ -1030,7 +1030,8 @@ function Vu(e, t = 2) {
 }
 function Lo(e = 7500) {
   const t = Wt.map(
-    ([r, ...n]) => `${r} ${n.map((i) => (typeof i === 'string' ? i : JSON.stringify(i))).join(' ')}`,
+    ([r, ...n]) =>
+      `${r} ${n.map((i) => (typeof i === 'string' ? i : JSON.stringify(i))).join(' ')}`,
   ).join(`
 `);
   return t.length < e ? t : t.slice(-e);
@@ -8947,7 +8948,8 @@ Expected string or undefined.`);
             r.push({ kind: 'RelationInOmit', modelKey: n, fieldName: s });
             continue;
           }
-          typeof a !== 'boolean' && r.push({ kind: 'InvalidFieldValue', modelKey: n, fieldName: s });
+          typeof a !== 'boolean' &&
+            r.push({ kind: 'InvalidFieldValue', modelKey: n, fieldName: s });
         }
       }
       if (r.length > 0) throw new N(Km(e, r));

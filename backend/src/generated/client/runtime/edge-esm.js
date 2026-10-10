@@ -8553,7 +8553,8 @@ Expected string or undefined.`);
             r.push({ kind: 'RelationInOmit', modelKey: n, fieldName: s });
             continue;
           }
-          typeof a !== 'boolean' && r.push({ kind: 'InvalidFieldValue', modelKey: n, fieldName: s });
+          typeof a !== 'boolean' &&
+            r.push({ kind: 'InvalidFieldValue', modelKey: n, fieldName: s });
         }
       }
       if (r.length > 0) throw new q(Kc(e, r));
