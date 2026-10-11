@@ -1,13 +1,4 @@
-import {
-  Box,
-  Globe2,
-  Network,
-  QrCode,
-  Share2,
-  ShieldCheck,
-  ShieldHalf,
-  Truck,
-} from 'lucide-react';
+import { Box, Globe2, Network, QrCode, Share2, ShieldCheck, ShieldHalf, Truck } from 'lucide-react';
 import './footer.css';
 
 const commitments = [
