@@ -15,6 +15,7 @@ import {
   Star,
   Gift,
 } from 'lucide-react';
+import Footer from '../../components/footer/footer';
 
 interface Product {
   id: number;
@@ -356,6 +357,7 @@ function HomePage() {
           )}
         </div>
       </section>
+      <Footer />
     </main>
   );
 }

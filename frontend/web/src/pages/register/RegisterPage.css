@@ -1,0 +1,163 @@
+@import 'tailwindcss';
+
+@layer components {
+  .register-shell {
+    @apply flex min-h-screen flex-col;
+  }
+
+  .register-header {
+    @apply flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-5;
+    padding-inline: clamp(24px, 5vw, 64px);
+  }
+
+  .register-header-brand {
+    @apply text-xl font-extrabold text-blue-600 no-underline;
+  }
+
+  .register-header > span {
+    @apply text-[13px] text-slate-500;
+  }
+
+  .register-page {
+    @apply flex flex-1 items-center justify-center px-5 py-8 text-slate-900 sm:px-9;
+    background: linear-gradient(135deg, #eaf0fb 0%, #f3f7fb 60%, #f0f2fc 100%);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .register-layout {
+    @apply grid w-full max-w-[1100px] items-center gap-8 min-[900px]:grid-cols-[0.82fr_1.18fr] min-[900px]:gap-12;
+  }
+
+  .register-intro {
+    @apply mx-auto w-full max-w-[440px] min-[900px]:mx-0;
+  }
+
+  .register-eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold tracking-wide text-blue-600;
+  }
+
+  .register-eyebrow-dot {
+    @apply h-1.5 w-1.5 rounded-full bg-blue-600;
+  }
+
+  .register-title {
+    @apply mt-3 mb-2 text-[30px] leading-tight font-bold tracking-[-0.045em] sm:text-[36px];
+  }
+
+  .register-title span {
+    @apply text-blue-600;
+  }
+
+  .register-intro-description {
+    @apply max-w-[380px] text-[14px] leading-[1.65] text-slate-600;
+  }
+
+  .register-benefits {
+    @apply mt-8 flex flex-col gap-4;
+  }
+
+  .register-benefit {
+    @apply flex items-start gap-4;
+  }
+
+  .register-benefit-icon {
+    @apply flex h-8 w-7 shrink-0 items-center justify-center text-blue-600;
+  }
+
+  .register-benefit h2 {
+    @apply mb-0.5 text-[14px] leading-5 font-semibold;
+  }
+
+  .register-benefit p {
+    @apply max-w-[325px] text-[12px] leading-[1.65] text-slate-500;
+  }
+
+  .register-security {
+    @apply mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-slate-200 pt-4 text-[11px] text-slate-500;
+  }
+
+  .register-security span {
+    @apply inline-flex items-center gap-1.5;
+  }
+
+  .register-card {
+    @apply mx-auto w-full max-w-[526px] rounded-2xl border border-slate-200/80 bg-white px-6 py-8 sm:px-[30px];
+    box-shadow:
+      0 18px 24px -14px rgb(15 23 42 / 25%),
+      0 4px 6px -4px rgb(15 23 42 / 12%);
+  }
+
+  .register-card-title {
+    @apply text-[20px] leading-7 font-bold tracking-[-0.035em];
+  }
+
+  .register-card-description {
+    @apply mt-1 text-[12px] leading-5 text-slate-500;
+  }
+
+  .register-form {
+    @apply mt-4 flex flex-col gap-3.5;
+  }
+
+  .register-field label {
+    @apply mb-1 block text-[12px] leading-5 font-medium text-slate-700;
+  }
+
+  .register-required {
+    @apply text-red-500;
+  }
+
+  .register-input-wrapper {
+    @apply flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100;
+  }
+
+  .register-input-icon {
+    @apply shrink-0 text-slate-400;
+  }
+
+  .register-input-wrapper input {
+    @apply min-w-0 flex-1 bg-transparent py-2 text-[12px] text-slate-900 outline-none placeholder:text-slate-500;
+  }
+
+  .register-otp-button {
+    @apply shrink-0 cursor-pointer rounded-md bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-600 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .register-field-row {
+    @apply grid grid-cols-1 gap-3.5 sm:grid-cols-2;
+  }
+
+  .register-agreement {
+    @apply mt-1 flex items-start gap-2 text-[11px] leading-[1.7] text-slate-500;
+  }
+
+  .register-agreement input {
+    @apply mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-blue-600;
+  }
+
+  .register-page a {
+    @apply text-blue-600 hover:underline;
+  }
+
+  .register-submit {
+    @apply mt-2 flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-blue-700;
+  }
+
+  .register-page button:focus-visible,
+  .register-page a:focus-visible,
+  .register-agreement input:focus-visible {
+    @apply outline-2 outline-offset-4 outline-blue-600;
+  }
+
+  .register-login {
+    @apply mt-[18px] border-t border-slate-100 pt-4 text-center text-[12px] leading-5 text-slate-500;
+  }
+
+  .register-login a {
+    @apply ml-1 font-medium;
+  }
+
+  .register-feedback {
+    @apply rounded-lg bg-blue-50 px-3 py-2 text-[12px] leading-5 text-blue-700;
+  }
+}
