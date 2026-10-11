@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import Header from '../../components/Header/Header';
 import './Login.css';
+import Footer from '../../components/footer/footer';
 
 // Google "G" brand icon
 const GoogleIcon = ({ className }: { className?: string }) => (
@@ -421,6 +422,7 @@ const Login: React.FC = () => {
           </div>
         </div>
       </footer> */}
+      <Footer/>
     </div>
   );
 };

@@ -75,12 +75,11 @@ export function Footer({
 
       <div className="nexus-footer__container nexus-footer__main">
         <div className="nexus-footer__brand-column">
-          <a className="nexus-footer__brand" href="/" aria-label="NEXUS 3D OS — Trang chủ">
-            <span className="nexus-footer__brand-mark">
-              <Scan size={17} aria-hidden="true" />
-            </span>
-            <span>NEXUS 3D OS</span>
-          </a>
+          <img
+            src="images/logo.png"
+            alt="NEXUS"
+            className="h-15 w-auto"
+          />
           <p className="nexus-footer__description">
             Sàn giao dịch thương mại điện tử và đấu giá tương tác 3D thời gian thực tiên phong tại
             Đông Nam Á. Kết nối các nhà sưu tập tinh hoa với vật phẩm nghệ thuật và hàng xa xỉ bảo

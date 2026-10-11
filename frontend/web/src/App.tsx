@@ -5,16 +5,23 @@ import './index.css';
 import RegisterPage from './pages/register/RegisterPage';
 
 function App() {
+  //Temp
   if (window.location.pathname === '/login') {
     return <Login />;
   }
 
+  if (window.location.pathname === '/register') {
+    return <RegisterPage />;
+  }
+
+  //temp
+
   return (
-    // <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-    //   <HomeHeader onLoginClick={() => window.location.assign('/login')} />
-    //   <HomePage />
-    // </div>
-    <RegisterPage/>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+      <HomeHeader onLoginClick={() => window.location.assign('/login')} onRegisterClick={() => window.location.assign('/register')}/>
+      <HomePage />
+    </div>
+    // <RegisterPage />
   );
 }
 
