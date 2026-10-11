@@ -3,7 +3,6 @@ import {
   Globe2,
   Network,
   QrCode,
-  Scan,
   Share2,
   ShieldCheck,
   ShieldHalf,
@@ -75,11 +74,7 @@ export function Footer({
 
       <div className="nexus-footer__container nexus-footer__main">
         <div className="nexus-footer__brand-column">
-          <img
-            src="images/logo.png"
-            alt="NEXUS"
-            className="h-15 w-auto"
-          />
+          <img src="images/logo.png" alt="NEXUS" className="h-15 w-auto" />
           <p className="nexus-footer__description">
             Sàn giao dịch thương mại điện tử và đấu giá tương tác 3D thời gian thực tiên phong tại
             Đông Nam Á. Kết nối các nhà sưu tập tinh hoa với vật phẩm nghệ thuật và hàng xa xỉ bảo

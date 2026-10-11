@@ -18,7 +18,10 @@ function App() {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
-      <HomeHeader onLoginClick={() => window.location.assign('/login')} onRegisterClick={() => window.location.assign('/register')}/>
+      <HomeHeader
+        onLoginClick={() => window.location.assign('/login')}
+        onRegisterClick={() => window.location.assign('/register')}
+      />
       <HomePage />
     </div>
     // <RegisterPage />

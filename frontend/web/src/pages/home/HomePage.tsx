@@ -357,7 +357,7 @@ function HomePage() {
           )}
         </div>
       </section>
-      <Footer/>
+      <Footer />
     </main>
   );
 }
