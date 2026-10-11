@@ -1,3 +1,4 @@
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
@@ -6,7 +7,11 @@ import * as path from 'path';
 // Nạp file .env ở thư mục gốc (lùi ra 2 cấp từ backend/prisma/)
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const prisma = new PrismaClient();
+const connectionString =
+  process.env.DATABASE_URL ||
+  'postgresql://postgres:nexus_secret_2026@localhost:5432/nexus_main?schema=public';
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // 1. Tạo mật khẩu mã hóa cho Admin (Admin@123456)
