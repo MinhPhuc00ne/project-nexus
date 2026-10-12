@@ -478,7 +478,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
       <div className="bg-white py-3.5 pb-2.5">
         <div className="mx-auto flex w-full max-w-[1280px] items-center gap-6 px-4">
           {/* LOGO */}
-          <div
+          <a
+            href="/"
             className="flex shrink-0 cursor-pointer items-center transition-transform hover:scale-[1.02]"
             title="NEXUS Platform"
           >
@@ -487,10 +488,12 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               alt="NEXUS Logo"
               className="block h-[54px] w-auto object-contain"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/images/nexus-logo.svg';
+                const image = e.currentTarget;
+                image.onerror = null;
+                image.src = '/images/NEXUS.png';
               }}
             />
-          </div>
+          </a>
 
           {/* SEARCH */}
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
