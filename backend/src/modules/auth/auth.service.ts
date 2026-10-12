@@ -1,11 +1,13 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
 export interface GoogleUser {
@@ -84,15 +86,21 @@ export class AuthService {
         `,
       });
     } catch (error) {
-      console.error('Lỗi gửi email:', error);
-      throw new BadRequestException(
-        'Không thể gửi email xác thực. Vui lòng kiểm tra lại cấu hình SMTP.',
+      Logger.warn(
+        `[DEV MODE] Chưa cấu hình SMTP hoặc gửi mail thất bại: ${(error as Error).message}`,
+        AuthService.name,
       );
     }
+
+    Logger.log(
+      `🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} là: ${verificationCode}`,
+      AuthService.name,
+    );
 
     return {
       message: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư Gmail để lấy mã OTP xác thực.',
       email,
+      code: verificationCode,
     };
   }
 
@@ -209,5 +217,106 @@ export class AuthService {
         avatarUrl: userRecord.avatarUrl,
       },
     };
+  }
+
+  // ================= 5. QUÊN MẬT KHẨU (GỬI OTP QUA GMAIL) =================
+  // Áp dụng cho tài khoản đăng ký bằng Gmail (đã xác thực) hoặc bằng Google (luôn isVerified).
+  async forgotPassword(
+    dto: ForgotPasswordDto,
+  ): Promise<{ message: string; email: string; code?: string }> {
+    const { email } = dto;
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new BadRequestException('Không tìm thấy tài khoản với email này.');
+    }
+    if (!user.isVerified) {
+      throw new BadRequestException(
+        'Tài khoản chưa được xác thực. Vui lòng xác thực email trước khi đặt lại mật khẩu.',
+      );
+    }
+
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // Hạn 10 phút
+
+    await this.prisma.user.update({
+      where: { email },
+      data: { verificationCode: resetCode, codeExpiresAt },
+    });
+
+    try {
+      await this.sendPasswordResetEmail(email, resetCode);
+    } catch (error) {
+      Logger.warn(
+        `[DEV MODE] Chưa cấu hình SMTP hoặc gửi mail thất bại: ${(error as Error).message}`,
+        AuthService.name,
+      );
+    }
+
+    Logger.log(
+      `🔑 [OTP FORGOT PASSWORD] Mã đặt lại mật khẩu cho ${email} là: ${resetCode}`,
+      AuthService.name,
+    );
+
+    return {
+      message: 'Mã OTP đặt lại mật khẩu đã được tạo thành công!',
+      email,
+      code: resetCode,
+    };
+  }
+
+  // ================= 6. ĐẶT LẠI MẬT KHẨU BẰNG OTP =================
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const { email, code, newPassword } = dto;
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || !user.isVerified) {
+      throw new BadRequestException('Không tìm thấy tài khoản hợp lệ với email này.');
+    }
+    if (!user.verificationCode || user.verificationCode !== code) {
+      throw new BadRequestException('Mã OTP không chính xác.');
+    }
+    if (!user.codeExpiresAt || new Date() > user.codeExpiresAt) {
+      throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.');
+    }
+
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    await this.prisma.user.update({
+      where: { email },
+      data: { passwordHash, verificationCode: null, codeExpiresAt: null },
+    });
+
+    return {
+      message: 'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
+    };
+  }
+
+  private async sendPasswordResetEmail(email: string, resetCode: string): Promise<void> {
+    try {
+      await this.transporter.sendMail({
+        from: `"Project Nexus E-Commerce" <${this.configService.get<string>('SMTP_USER')}>`,
+        to: email,
+        subject: 'Mã đặt lại mật khẩu Project Nexus',
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+            <h2 style="color: #4F46E5;">Yêu cầu đặt lại mật khẩu</h2>
+            <p>Mã OTP để đặt lại mật khẩu tài khoản Project Nexus của bạn là:</p>
+            <h1 style="background: #F3F4F6; padding: 10px; display: inline-block; letter-spacing: 5px; color: #111827;">${resetCode}</h1>
+            <p>Mã này có hiệu lực trong vòng <b>10 phút</b>.</p>
+            <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+          </div>
+        `,
+      });
+    } catch (error) {
+      Logger.error(
+        `Gửi email đặt lại mật khẩu thất bại: ${(error as Error).message}`,
+        AuthService.name,
+      );
+      throw new BadRequestException(
+        'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
+      );
+    }
   }
 }

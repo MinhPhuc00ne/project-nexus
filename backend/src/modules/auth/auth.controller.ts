@@ -4,8 +4,10 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { AuthService, GoogleUser } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
 interface RequestWithUser extends Request {
@@ -71,5 +73,26 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Xác thực thành công' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
+  }
+
+  // ================= 4. QUÊN MẬT KHẨU =================
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Quên mật khẩu - gửi mã OTP đặt lại mật khẩu về Gmail' })
+  @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về email' })
+  @ApiResponse({ status: 400, description: 'Email không tồn tại hoặc tài khoản chưa xác thực' })
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<{ message: string; email: string; code?: string }> {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đặt lại mật khẩu bằng mã OTP nhận từ email' })
+  @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công' })
+  @ApiResponse({ status: 400, description: 'Mã OTP không chính xác hoặc đã hết hạn' })
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+    return this.authService.resetPassword(dto);
   }
 }
