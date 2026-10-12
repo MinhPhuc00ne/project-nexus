@@ -66,7 +66,7 @@ export class AuthController {
   @Post('register')
   @ApiOperation({ summary: 'Đăng ký tài khoản mới & gửi mã OTP về email' })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công, vui lòng check mail' })
-  async register(@Body() dto: RegisterDto) {
+  async register(@Body() dto: RegisterDto): Promise<{ message: string; email: string }> {
     return this.authService.register(dto);
   }
 
@@ -85,7 +85,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Email không tồn tại hoặc tài khoản chưa xác thực' })
   async forgotPassword(
     @Body() dto: ForgotPasswordDto,
-  ): Promise<{ message: string; email: string; code?: string }> {
+  ): Promise<{ message: string; email: string }> {
     return this.authService.forgotPassword(dto);
   }
 

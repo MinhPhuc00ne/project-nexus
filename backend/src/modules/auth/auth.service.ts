@@ -53,6 +53,18 @@ export class AuthService {
       if (existingUser.isVerified) {
         throw new BadRequestException('Email này đã được đăng ký và xác thực.');
       }
+      // Kiểm tra thời gian chờ (cooldown 60 giây) nếu gửi lại OTP
+      if (existingUser.codeExpiresAt) {
+        const remainingMs = existingUser.codeExpiresAt.getTime() - Date.now();
+        const cooldownMs = 60 * 1000;
+        const expiryDurationMs = 10 * 60 * 1000;
+        if (remainingMs > expiryDurationMs - cooldownMs) {
+          const waitSeconds = Math.ceil((remainingMs - (expiryDurationMs - cooldownMs)) / 1000);
+          throw new BadRequestException(
+            `Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu gửi lại mã OTP mới.`,
+          );
+        }
+      }
     }
 
     const saltRounds = 10;
@@ -102,14 +114,13 @@ export class AuthService {
     }
 
     Logger.log(
-      `🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} là: ${verificationCode}`,
+      `🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} đã được gửi thành công.`,
       AuthService.name,
     );
 
     return {
       message: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư Gmail để lấy mã OTP xác thực.',
       email,
-      code: verificationCode,
     };
   }
 
@@ -234,7 +245,7 @@ export class AuthService {
   // Áp dụng cho tài khoản đăng ký bằng Gmail (đã xác thực) hoặc bằng Google (luôn isVerified).
   async forgotPassword(
     dto: ForgotPasswordDto,
-  ): Promise<{ message: string; email: string; code?: string }> {
+  ): Promise<{ message: string; email: string }> {
     const { email } = dto;
 
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -247,32 +258,38 @@ export class AuthService {
       );
     }
 
+    // Kiểm tra thời gian chờ (cooldown 60 giây) giữa các lần yêu cầu gửi OTP
+    if (user.codeExpiresAt) {
+      const remainingMs = user.codeExpiresAt.getTime() - Date.now();
+      const cooldownMs = 60 * 1000;
+      const expiryDurationMs = 10 * 60 * 1000;
+      if (remainingMs > expiryDurationMs - cooldownMs) {
+        const waitSeconds = Math.ceil((remainingMs - (expiryDurationMs - cooldownMs)) / 1000);
+        throw new BadRequestException(
+          `Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu gửi lại mã OTP mới.`,
+        );
+      }
+    }
+
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
     const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // Hạn 10 phút
+
+    // Gửi email đặt lại mật khẩu - ném lỗi nếu SMTP thất bại (không nuốt lỗi)
+    await this.sendPasswordResetEmail(email, resetCode);
 
     await this.prisma.user.update({
       where: { email },
       data: { verificationCode: resetCode, codeExpiresAt },
     });
 
-    try {
-      await this.sendPasswordResetEmail(email, resetCode);
-    } catch (error) {
-      Logger.warn(
-        `[DEV MODE] Chưa cấu hình SMTP hoặc gửi mail thất bại: ${(error as Error).message}`,
-        AuthService.name,
-      );
-    }
-
     Logger.log(
-      `🔑 [OTP FORGOT PASSWORD] Mã đặt lại mật khẩu cho ${email} là: ${resetCode}`,
+      `🔑 [OTP FORGOT PASSWORD] Mã đặt lại mật khẩu cho ${email} đã được gửi thành công.`,
       AuthService.name,
     );
 
     return {
-      message: 'Mã OTP đặt lại mật khẩu đã được tạo thành công!',
+      message: 'Mã OTP đặt lại mật khẩu đã được gửi đến hộp thư Gmail của bạn!',
       email,
-      code: resetCode,
     };
   }
 
@@ -289,6 +306,14 @@ export class AuthService {
     }
     if (!user.codeExpiresAt || new Date() > user.codeExpiresAt) {
       throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.');
+    }
+
+    // Kiểm tra mật khẩu mới không được trùng với mật khẩu hiện tại
+    if (user.passwordHash) {
+      const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
+      if (isSamePassword) {
+        throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+      }
     }
 
     const saltRounds = 10;
