@@ -39,7 +39,6 @@ const GoogleIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-
 const Login: React.FC = () => {
   const [email, setEmail] = useState(() => {
     try {
