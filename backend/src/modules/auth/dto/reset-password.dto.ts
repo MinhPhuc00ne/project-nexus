@@ -2,7 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, Length, Matches, MinLength } from 'class-validator';
 
 export class ResetPasswordDto {
-  @ApiProperty({ example: 'user@gmail.com', description: 'Email cần đặt lại mật khẩu (@gmail.com)' })
+  @ApiProperty({
+    example: 'user@gmail.com',
+    description: 'Email cần đặt lại mật khẩu (@gmail.com)',
+  })
   @IsEmail({}, { message: 'Định dạng email không hợp lệ' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   @Matches(/^[a-zA-Z0-9._%+-]+@gmail\.com$/i, {

@@ -343,10 +343,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
     }
 
-    const isTokenMatch = await bcrypt.compare(
-      this.sha256(dto.refreshToken),
-      tokenRecord.tokenHash,
-    );
+    const isTokenMatch = await bcrypt.compare(this.sha256(dto.refreshToken), tokenRecord.tokenHash);
     if (!isTokenMatch) {
       throw new UnauthorizedException('Refresh token không hợp lệ.');
     }

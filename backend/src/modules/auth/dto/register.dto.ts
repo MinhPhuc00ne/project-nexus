@@ -2,7 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsString, Matches, MinLength } from 'class-validator';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'user@gmail.com', description: 'Email đăng ký (chỉ chấp nhận @gmail.com)' })
+  @ApiProperty({
+    example: 'user@gmail.com',
+    description: 'Email đăng ký (chỉ chấp nhận @gmail.com)',
+  })
   @IsEmail({}, { message: 'Định dạng email không hợp lệ' })
   @IsNotEmpty({ message: 'Email không được để trống' })
   @Matches(/^[a-zA-Z0-9._%+-]+@gmail\.com$/i, {

@@ -29,11 +29,7 @@ const AUTH_USER_KEY = 'nexus:auth-user';
 const AUTH_TOKEN_KEY = 'nexus:auth-token';
 const AUTH_REFRESH_TOKEN_KEY = 'nexus:auth-refresh-token';
 
-export function saveAuthSession(
-  user: AuthUser,
-  accessToken?: string,
-  refreshToken?: string,
-): void {
+export function saveAuthSession(user: AuthUser, accessToken?: string, refreshToken?: string): void {
   try {
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
     if (accessToken) {
