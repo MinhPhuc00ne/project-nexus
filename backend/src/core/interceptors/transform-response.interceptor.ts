@@ -21,6 +21,9 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Stand
 
     return next.handle().pipe(
       map((data: unknown) => {
+        if (response.headersSent) {
+          return data as StandardApiResponse<T>;
+        }
         // If data is already in StandardApiResponse format, return as is
         if (typeof data === 'object' && data !== null && 'statusCode' in data && 'data' in data) {
           return data as StandardApiResponse<T>;

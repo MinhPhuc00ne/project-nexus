@@ -11,8 +11,125 @@ export interface AuthMessage {
   email?: string;
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  fullName: string;
+  role?: string;
+  avatarUrl?: string | null;
+}
+
 export interface LoginResponse extends AuthMessage {
-  user: { id: string; email: string; fullName: string; role: string };
+  accessToken?: string;
+  refreshToken?: string;
+  user: AuthUser;
+}
+
+const AUTH_USER_KEY = 'nexus:auth-user';
+const AUTH_TOKEN_KEY = 'nexus:auth-token';
+const AUTH_REFRESH_TOKEN_KEY = 'nexus:auth-refresh-token';
+
+export function saveAuthSession(user: AuthUser, accessToken?: string, refreshToken?: string): void {
+  try {
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
+    if (accessToken) {
+      localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, refreshToken);
+    }
+    window.dispatchEvent(new Event('nexus:auth-change'));
+  } catch {
+    /* Storage may be disabled */
+  }
+}
+
+export function getStoredUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(AUTH_USER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<AuthUser>;
+    if (parsed && typeof parsed.id === 'string' && typeof parsed.email === 'string') {
+      return {
+        id: parsed.id,
+        email: parsed.email,
+        fullName: parsed.fullName || parsed.email,
+        role: parsed.role,
+        avatarUrl: parsed.avatarUrl ?? null,
+      };
+    }
+  } catch {
+    /* Ignore invalid storage data */
+  }
+  return null;
+}
+
+export function getStoredToken(): string | null {
+  try {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredRefreshToken(): string | null {
+  try {
+    return localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function clearAuthSession(): void {
+  try {
+    const storedRefreshToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
+    window.dispatchEvent(new Event('nexus:auth-change'));
+    if (storedRefreshToken) {
+      void fetch(`${apiUrl}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: storedRefreshToken }),
+      }).catch(() => {});
+    }
+  } catch {
+    /* Storage may be disabled */
+  }
+}
+
+export function consumeOAuthCallbackFromUrl(): AuthUser | null {
+  const params = new URLSearchParams(window.location.search);
+  const rawUser = params.get('user');
+  const token = params.get('token');
+  const refreshToken = params.get('refreshToken');
+  if (!rawUser) return null;
+
+  try {
+    const parsed = JSON.parse(rawUser) as Partial<AuthUser>;
+    if (parsed && typeof parsed.id === 'string' && typeof parsed.email === 'string') {
+      const user: AuthUser = {
+        id: parsed.id,
+        email: parsed.email,
+        fullName: parsed.fullName || parsed.email,
+        role: parsed.role,
+        avatarUrl: parsed.avatarUrl ?? null,
+      };
+      saveAuthSession(user, token || undefined, refreshToken || undefined);
+
+      params.delete('user');
+      params.delete('token');
+      params.delete('refreshToken');
+      const remainingQuery = params.toString();
+      const nextUrl = `${window.location.pathname}${remainingQuery ? `?${remainingQuery}` : ''}${window.location.hash}`;
+      window.history.replaceState(null, '', nextUrl);
+      return user;
+    }
+  } catch {
+    /* Ignore malformed query parameter */
+  }
+  return null;
 }
 
 async function post<T>(path: string, body: object): Promise<T> {
