@@ -92,7 +92,9 @@ export const AuctionPage: React.FC = () => {
     setLeadingBidder('Bạn (Tài khoản hiện tại)');
     setShowBidModal(false);
     setCustomBidAmount(customBidAmount + 1000000);
-    setBidSuccessToast(`Đặt giá thành công: ${formatVND(customBidAmount)}! Escrow đã tạm giữ 10% cọc.`);
+    setBidSuccessToast(
+      `Đặt giá thành công: ${formatVND(customBidAmount)}! Escrow đã tạm giữ 10% cọc.`,
+    );
 
     setTimeout(() => {
       setBidSuccessToast(null);
@@ -199,7 +201,9 @@ export const AuctionPage: React.FC = () => {
             <span className="auction-breadcrumb-separator">/</span>
             <span className="auction-breadcrumb-link">Đồng Hồ Cơ Xa Xỉ</span>
             <span className="auction-breadcrumb-separator">/</span>
-            <span className="auction-breadcrumb-current">Audemars Piguet Royal Oak Chronograph</span>
+            <span className="auction-breadcrumb-current">
+              Audemars Piguet Royal Oak Chronograph
+            </span>
           </nav>
 
           <div className="auction-top-actions">
@@ -329,7 +333,8 @@ export const AuctionPage: React.FC = () => {
                 <div>
                   <h4 className="auction-vault-name">Geneva Vault Horology Store</h4>
                   <p className="auction-vault-badge">
-                    <span className="auction-vault-rating">★ 4.99/5</span> • 184 phiên đấu giá hoàn tất
+                    <span className="auction-vault-rating">★ 4.99/5</span> • 184 phiên đấu giá hoàn
+                    tất
                   </p>
                 </div>
               </div>
@@ -383,7 +388,8 @@ export const AuctionPage: React.FC = () => {
               </div>
 
               <div className="auction-starting-price">
-                Khởi điểm: <strong>95.000.000 đ</strong> (≈ $3,958 USD) • Bước giá tối thiểu: <strong>+1.000.000 đ</strong>
+                Khởi điểm: <strong>95.000.000 đ</strong> (≈ $3,958 USD) • Bước giá tối thiểu:{' '}
+                <strong>+1.000.000 đ</strong>
               </div>
 
               {/* Leading Bidder */}
@@ -459,7 +465,9 @@ export const AuctionPage: React.FC = () => {
                 </div>
 
                 <p className="auction-escrow-note">
-                  🛡️ Tiền cọc yêu cầu: <strong>12.850.000 ₫</strong> (10%). Ký quỹ an toàn qua cổng PayOS / Stripe Escrow. Tự động hoàn tiền 100% trong 30 giây nếu bị trả giá cao hơn.
+                  🛡️ Tiền cọc yêu cầu: <strong>12.850.000 ₫</strong> (10%). Ký quỹ an toàn qua cổng
+                  PayOS / Stripe Escrow. Tự động hoàn tiền 100% trong 30 giây nếu bị trả giá cao
+                  hơn.
                 </p>
               </div>
             </div>
@@ -473,7 +481,8 @@ export const AuctionPage: React.FC = () => {
                 <div className="policy-text">
                   <h4 className="policy-title">Vận chuyển Hỏa Tốc GHN Express Bảo Hiểm 100%</h4>
                   <p className="policy-desc">
-                    Giao 2H tại TP.HCM & Hà Nội bằng thùng bảo mật chống sốc kèm camera ghi hình niêm phong mở hộp.
+                    Giao 2H tại TP.HCM & Hà Nội bằng thùng bảo mật chống sốc kèm camera ghi hình
+                    niêm phong mở hộp.
                   </p>
                 </div>
               </div>
@@ -485,7 +494,8 @@ export const AuctionPage: React.FC = () => {
                 <div className="policy-text">
                   <h4 className="policy-title">Chính Sách Hoàn Tiền 200% & Đổi Trả 7 Ngày</h4>
                   <p className="policy-desc">
-                    Khách hàng được quyền đồng kiểm cùng chuyên gia; hoàn tiền gấp đôi ngay lập tức nếu sai lệch mô hình 3D.
+                    Khách hàng được quyền đồng kiểm cùng chuyên gia; hoàn tiền gấp đôi ngay lập tức
+                    nếu sai lệch mô hình 3D.
                   </p>
                 </div>
               </div>
@@ -548,7 +558,8 @@ export const AuctionPage: React.FC = () => {
                       <h4 className="cert-card-title">Quét 3D LiDAR Hologram</h4>
                     </div>
                     <p className="cert-card-body">
-                      Tỷ lệ sai số dưới 0.002mm so với bản vẽ gốc của Audemars Piguet Le Brassus. Không phát hiện dấu hiệu can thiệp đánh bóng quá mức (Unpolished bevels).
+                      Tỷ lệ sai số dưới 0.002mm so với bản vẽ gốc của Audemars Piguet Le Brassus.
+                      Không phát hiện dấu hiệu can thiệp đánh bóng quá mức (Unpolished bevels).
                     </p>
                     <div className="cert-card-footer">
                       Mã kiểm định: <strong>LDR-CHRONO-2025-X09</strong>
@@ -562,7 +573,8 @@ export const AuctionPage: React.FC = () => {
                       <h4 className="cert-card-title">Tem Niêm Phong Chống Mở Nắp Lưng</h4>
                     </div>
                     <p className="cert-card-body">
-                      Tem RFID mã hóa micro-mesh được kiểm định bởi Viện Đồng Hồ Cao Cấp Geneva. Bộ máy được bảo hiểm toàn vẹn 100% nguyên bản từ xưởng.
+                      Tem RFID mã hóa micro-mesh được kiểm định bởi Viện Đồng Hồ Cao Cấp Geneva. Bộ
+                      máy được bảo hiểm toàn vẹn 100% nguyên bản từ xưởng.
                     </p>
                     <div className="cert-card-footer">
                       Trạng thái: <strong>Nguyên tem 100% (Intact)</strong>
@@ -576,7 +588,8 @@ export const AuctionPage: React.FC = () => {
                       <h4 className="cert-card-title">Chứng Chỉ NFT On-Chain Provenance</h4>
                     </div>
                     <p className="cert-card-body">
-                      Hợp đồng thông minh ghi nhận lịch sử sở hữu, hóa đơn mua ban đầu tại Boutique Hong Kong 2022 và các mốc bảo dưỡng định kỳ 24 tháng.
+                      Hợp đồng thông minh ghi nhận lịch sử sở hữu, hóa đơn mua ban đầu tại Boutique
+                      Hong Kong 2022 và các mốc bảo dưỡng định kỳ 24 tháng.
                     </p>
                     <div className="cert-card-footer">
                       <a href="#blockchain" className="cert-card-link">
@@ -660,19 +673,27 @@ export const AuctionPage: React.FC = () => {
                   </tr>
                   <tr>
                     <td className="label-col">Mặt số (Dial)</td>
-                    <td className="val-col">Họa tiết vân Grande Tapisserie xanh Bleu Nuit, cọc số vàng trắng</td>
+                    <td className="val-col">
+                      Họa tiết vân Grande Tapisserie xanh Bleu Nuit, cọc số vàng trắng
+                    </td>
                   </tr>
                   <tr>
                     <td className="label-col">Mặt kính & nắp lưng</td>
-                    <td className="val-col">Sapphire nguyên khối chống lóa hai mặt, tem RFID nắp lưng</td>
+                    <td className="val-col">
+                      Sapphire nguyên khối chống lóa hai mặt, tem RFID nắp lưng
+                    </td>
                   </tr>
                   <tr>
                     <td className="label-col">Kháng nước</td>
-                    <td className="val-col">50m / 5 BAR (Đã thử nghiệm áp suất đạt tiêu chuẩn PASS)</td>
+                    <td className="val-col">
+                      50m / 5 BAR (Đã thử nghiệm áp suất đạt tiêu chuẩn PASS)
+                    </td>
                   </tr>
                   <tr>
                     <td className="label-col">Phụ kiện đi kèm</td>
-                    <td className="val-col">Full Box hộp gỗ AP, thẻ bảo hành điện tử NFC, chứng thư NFT</td>
+                    <td className="val-col">
+                      Full Box hộp gỗ AP, thẻ bảo hành điện tử NFC, chứng thư NFT
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -695,36 +716,56 @@ export const AuctionPage: React.FC = () => {
                     <td className="font-bold text-slate-900">Nguyen_Horology</td>
                     <td className="font-bold text-red-600">128.500.000 đ</td>
                     <td className="text-slate-500">14:41:20</td>
-                    <td><span className="text-emerald-600 font-semibold">Đã khóa cọc 10%</span></td>
-                    <td><span className="text-emerald-600 font-bold">Dẫn đầu 👑</span></td>
+                    <td>
+                      <span className="text-emerald-600 font-semibold">Đã khóa cọc 10%</span>
+                    </td>
+                    <td>
+                      <span className="text-emerald-600 font-bold">Dẫn đầu 👑</span>
+                    </td>
                   </tr>
                   <tr>
                     <td>Collector_SG_01</td>
                     <td className="font-semibold text-slate-800">127.500.000 đ</td>
                     <td className="text-slate-500">14:38:05</td>
-                    <td><span className="text-slate-600">Đã khóa cọc 10%</span></td>
-                    <td><span className="text-slate-400">Bị vượt giá</span></td>
+                    <td>
+                      <span className="text-slate-600">Đã khóa cọc 10%</span>
+                    </td>
+                    <td>
+                      <span className="text-slate-400">Bị vượt giá</span>
+                    </td>
                   </tr>
                   <tr>
                     <td>Pham_Gia_Bao</td>
                     <td className="font-semibold text-slate-800">125.000.000 đ</td>
                     <td className="text-slate-500">14:30:12</td>
-                    <td><span className="text-slate-600">Đã khóa cọc 10%</span></td>
-                    <td><span className="text-slate-400">Bị vượt giá</span></td>
+                    <td>
+                      <span className="text-slate-600">Đã khóa cọc 10%</span>
+                    </td>
+                    <td>
+                      <span className="text-slate-400">Bị vượt giá</span>
+                    </td>
                   </tr>
                   <tr>
                     <td>WatchLover99</td>
                     <td className="font-semibold text-slate-800">120.000.000 đ</td>
                     <td className="text-slate-500">14:15:44</td>
-                    <td><span className="text-slate-600">Đã khóa cọc 10%</span></td>
-                    <td><span className="text-slate-400">Bị vượt giá</span></td>
+                    <td>
+                      <span className="text-slate-600">Đã khóa cọc 10%</span>
+                    </td>
+                    <td>
+                      <span className="text-slate-400">Bị vượt giá</span>
+                    </td>
                   </tr>
                   <tr>
                     <td>Luxury_Bidder_HN</td>
                     <td className="font-semibold text-slate-800">110.000.000 đ</td>
                     <td className="text-slate-500">13:58:02</td>
-                    <td><span className="text-slate-600">Đã khóa cọc 10%</span></td>
-                    <td><span className="text-slate-400">Bị vượt giá</span></td>
+                    <td>
+                      <span className="text-slate-600">Đã khóa cọc 10%</span>
+                    </td>
+                    <td>
+                      <span className="text-slate-400">Bị vượt giá</span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -737,17 +778,26 @@ export const AuctionPage: React.FC = () => {
                   <div className="text-2xl font-black text-amber-500">4.98 / 5</div>
                   <div>
                     <div className="flex text-amber-500">★★★★★</div>
-                    <p className="text-xs text-slate-500 m-0">Dựa trên 48 đánh giá của các nhà sưu tập đã hoàn tất nhận hàng và đối chiếu 3D</p>
+                    <p className="text-xs text-slate-500 m-0">
+                      Dựa trên 48 đánh giá của các nhà sưu tập đã hoàn tất nhận hàng và đối chiếu 3D
+                    </p>
                   </div>
                 </div>
 
                 <div className="border-b border-slate-100 pb-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-bold text-slate-900">Dr. Hoàng Vũ (Collector Hà Nội)</span>
+                    <span className="text-sm font-bold text-slate-900">
+                      Dr. Hoàng Vũ (Collector Hà Nội)
+                    </span>
                     <span className="text-xs text-slate-400">2 ngày trước</span>
                   </div>
-                  <div className="text-xs text-amber-500 mb-1">★★★★★ (Đã đồng kiểm GHN Express)</div>
-                  <p className="text-xs text-slate-600 m-0">Hiện vật đúng từng vết vát bevels như ảnh quét LiDAR 3D. Đồng hồ chạy chuẩn 0.1ms Beat Error, dịch vụ vận chuyển thùng chống sốc rất chuyên nghiệp.</p>
+                  <div className="text-xs text-amber-500 mb-1">
+                    ★★★★★ (Đã đồng kiểm GHN Express)
+                  </div>
+                  <p className="text-xs text-slate-600 m-0">
+                    Hiện vật đúng từng vết vát bevels như ảnh quét LiDAR 3D. Đồng hồ chạy chuẩn
+                    0.1ms Beat Error, dịch vụ vận chuyển thùng chống sốc rất chuyên nghiệp.
+                  </p>
                 </div>
               </div>
             )}
@@ -786,9 +836,7 @@ export const AuctionPage: React.FC = () => {
                   <button
                     type="button"
                     className={`watch-card-fav-btn ${liked ? 'liked' : ''}`}
-                    onClick={() =>
-                      setLikedSimilar((prev) => ({ ...prev, [item.id]: !liked }))
-                    }
+                    onClick={() => setLikedSimilar((prev) => ({ ...prev, [item.id]: !liked }))}
                     aria-label="Thêm vào yêu thích"
                   >
                     <Heart className="w-3.5 h-3.5" />
@@ -813,7 +861,9 @@ export const AuctionPage: React.FC = () => {
                     <div className="watch-card-price-row">
                       <div className="watch-price-col">
                         <span className="watch-price-label">{item.priceLabel}</span>
-                        <p className={`watch-main-price ${item.badge.type === 'upcoming' ? 'black' : ''}`}>
+                        <p
+                          className={`watch-main-price ${item.badge.type === 'upcoming' ? 'black' : ''}`}
+                        >
                           {item.price}
                         </p>
                         <span className="watch-usd-sub">{item.usdPrice}</span>
@@ -850,7 +900,9 @@ export const AuctionPage: React.FC = () => {
             </div>
 
             <div className="p-3 bg-slate-50 rounded-lg mb-4 text-xs text-slate-700">
-              <p className="font-bold text-slate-900 mb-1">Audemars Piguet Royal Oak Chronograph 41mm</p>
+              <p className="font-bold text-slate-900 mb-1">
+                Audemars Piguet Royal Oak Chronograph 41mm
+              </p>
               <p className="m-0 text-slate-500">Mã Lot: AP-2025-X09 • Kho bảo mật TP.HCM</p>
             </div>
 
@@ -861,7 +913,9 @@ export const AuctionPage: React.FC = () => {
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100">
                 <span className="text-slate-600">Tiền cọc Escrow (10%):</span>
-                <span className="font-bold text-blue-600">{formatVND(Math.round(customBidAmount * 0.1))}</span>
+                <span className="font-bold text-blue-600">
+                  {formatVND(Math.round(customBidAmount * 0.1))}
+                </span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100">
                 <span className="text-slate-600">Cổng ký quỹ Escrow:</span>
@@ -870,7 +924,8 @@ export const AuctionPage: React.FC = () => {
             </div>
 
             <p className="text-[11px] text-slate-500 mb-5 leading-relaxed">
-              * Khoản cọc sẽ được đóng băng tạm thời trong tài khoản Escrow. Trong trường hợp có người đặt giá cao hơn, khoản cọc sẽ được tự động hoàn lại 100% trong vòng 30 giây.
+              * Khoản cọc sẽ được đóng băng tạm thời trong tài khoản Escrow. Trong trường hợp có
+              người đặt giá cao hơn, khoản cọc sẽ được tự động hoàn lại 100% trong vòng 30 giây.
             </p>
 
             <div className="flex gap-2.5">

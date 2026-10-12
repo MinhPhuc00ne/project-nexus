@@ -23,7 +23,6 @@ function App() {
     return <AuctionPage />;
   }
 
-
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <HomeHeader

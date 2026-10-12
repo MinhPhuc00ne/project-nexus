@@ -38,7 +38,8 @@ interface ProductItem {
   brand: string;
   title: string;
   image: string;
-  type: 'live_auction' | 'mall' | 'upcoming_auction' | 'flash_sale' | 'free_deposit' | 'verified_mall';
+  type:
+    'live_auction' | 'mall' | 'upcoming_auction' | 'flash_sale' | 'free_deposit' | 'verified_mall';
   primaryBadge: {
     text: string;
     type: 'live' | 'mall' | 'upcoming' | 'flash' | 'free_deposit' | 'verified';
@@ -83,11 +84,51 @@ const NexusLogo = () => (
       <circle cx="7" cy="22" r="2.5" fill="#ffffff" />
       <circle cx="25" cy="22" r="2.5" fill="#ffffff" />
       <circle cx="16" cy="6" r="2.5" fill="#ffffff" />
-      <line x1="16" y1="16" x2="7" y2="10" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="16" y1="16" x2="25" y2="10" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="16" y1="16" x2="7" y2="22" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="16" y1="16" x2="25" y2="22" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
-      <line x1="16" y1="16" x2="16" y2="6" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
+      <line
+        x1="16"
+        y1="16"
+        x2="7"
+        y2="10"
+        stroke="#ffffff"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <line
+        x1="16"
+        y1="16"
+        x2="25"
+        y2="10"
+        stroke="#ffffff"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <line
+        x1="16"
+        y1="16"
+        x2="7"
+        y2="22"
+        stroke="#ffffff"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <line
+        x1="16"
+        y1="16"
+        x2="25"
+        y2="22"
+        stroke="#ffffff"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <line
+        x1="16"
+        y1="16"
+        x2="16"
+        y2="6"
+        stroke="#ffffff"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
     </svg>
   </div>
 );
@@ -95,7 +136,14 @@ const NexusLogo = () => (
 // Footer 3D OS Logo
 const Nexus3dLogo = () => (
   <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm flex-shrink-0">
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
       <path d="M4 8V6a2 2 0 0 1 2-2h2" />
       <path d="M4 16v2a2 2 0 0 0 2 2h2" />
       <path d="M16 4h2a2 2 0 0 1 2 2v2" />
@@ -201,7 +249,15 @@ export const SearchPage: React.FC = () => {
   const clearAllFilters = () => {
     setTransactionTypes({ live3d: false, mall: false, upcoming: false, escrow: false });
     setConditionFilters({ brandNew: false, likeNew: false, gradeA: false });
-    setBrandFilters({ ap: false, patek: false, rolex: false, hublot: false, rm: false, tissot: false, seiko: false });
+    setBrandFilters({
+      ap: false,
+      patek: false,
+      rolex: false,
+      hublot: false,
+      rm: false,
+      tissot: false,
+      seiko: false,
+    });
     setShippingFilters({ ghn: false, pci: false, express2h: false });
     setPriceFrom('');
     setPriceTo('');
@@ -424,12 +480,11 @@ export const SearchPage: React.FC = () => {
             </span>
             <span className="search-topbar-divider"></span>
             <span className="search-topbar-link">
-              <Globe className="w-3.5 h-3.5" /> Tiếng Việt <ChevronDown className="w-3 h-3 ml-0.5" />
+              <Globe className="w-3.5 h-3.5" /> Tiếng Việt{' '}
+              <ChevronDown className="w-3 h-3 ml-0.5" />
             </span>
             <span className="search-topbar-divider"></span>
-            <span className="search-topbar-link account-name">
-              Name Account
-            </span>
+            <span className="search-topbar-link account-name">Name Account</span>
           </div>
         </div>
       </section>
@@ -485,7 +540,9 @@ export const SearchPage: React.FC = () => {
                 className="search-input-field"
                 placeholder="Tìm kiếm đồng hồ, thương hiệu, phiên đấu giá..."
                 value={searchQuery}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setSearchQuery(e.target.value)
+                }
               />
 
               <button type="button" className="search-submit-btn" aria-label="Tìm kiếm">
@@ -497,11 +554,7 @@ export const SearchPage: React.FC = () => {
             <div className="search-trending-row">
               <span className="trending-label">Xu hướng:</span>
               {trendingSearches.map((item) => (
-                <span
-                  key={item}
-                  className="trending-keyword"
-                  onClick={() => setSearchQuery(item)}
-                >
+                <span key={item} className="trending-keyword" onClick={() => setSearchQuery(item)}>
                   {item}
                 </span>
               ))}
@@ -522,7 +575,10 @@ export const SearchPage: React.FC = () => {
         <div className="results-banner-container">
           <div className="results-heading-col">
             <h1 className="results-title">
-              Kết quả tìm kiếm cho: <span className="results-query-highlight">"{searchQuery || 'đồng hồ cơ skeleton'}"</span>
+              Kết quả tìm kiếm cho:{' '}
+              <span className="results-query-highlight">
+                "{searchQuery || 'đồng hồ cơ skeleton'}"
+              </span>
             </h1>
             <div className="results-stats-row">
               <span>
@@ -620,9 +676,14 @@ export const SearchPage: React.FC = () => {
 
               {/* 1. LOẠI HÌNH GIAO DỊCH */}
               <div className="filter-section">
-                <div className="filter-section-header" onClick={() => toggleSection('transactionType')}>
+                <div
+                  className="filter-section-header"
+                  onClick={() => toggleSection('transactionType')}
+                >
                   <span className="filter-section-title">LOẠI HÌNH GIAO DỊCH</span>
-                  <ChevronUp className={`filter-chevron-icon ${collapsedSections['transactionType'] ? 'collapsed' : ''}`} />
+                  <ChevronUp
+                    className={`filter-chevron-icon ${collapsedSections['transactionType'] ? 'collapsed' : ''}`}
+                  />
                 </div>
                 {!collapsedSections['transactionType'] && (
                   <div className="filter-section-body">
@@ -630,9 +691,16 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${transactionTypes.live3d ? 'checked' : ''}`}
-                          onClick={() => setTransactionTypes({ ...transactionTypes, live3d: !transactionTypes.live3d })}
+                          onClick={() =>
+                            setTransactionTypes({
+                              ...transactionTypes,
+                              live3d: !transactionTypes.live3d,
+                            })
+                          }
                         >
-                          {transactionTypes.live3d && <span className="text-[10px] font-bold">✓</span>}
+                          {transactionTypes.live3d && (
+                            <span className="text-[10px] font-bold">✓</span>
+                          )}
                         </div>
                         <span>Đấu Giá Trực Tiếp 3D (360°)</span>
                       </div>
@@ -643,9 +711,16 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${transactionTypes.mall ? 'checked' : ''}`}
-                          onClick={() => setTransactionTypes({ ...transactionTypes, mall: !transactionTypes.mall })}
+                          onClick={() =>
+                            setTransactionTypes({
+                              ...transactionTypes,
+                              mall: !transactionTypes.mall,
+                            })
+                          }
                         >
-                          {transactionTypes.mall && <span className="text-[10px] font-bold">✓</span>}
+                          {transactionTypes.mall && (
+                            <span className="text-[10px] font-bold">✓</span>
+                          )}
                         </div>
                         <span>Mua Ngay (NEXUS Mall)</span>
                       </div>
@@ -656,9 +731,16 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${transactionTypes.upcoming ? 'checked' : ''}`}
-                          onClick={() => setTransactionTypes({ ...transactionTypes, upcoming: !transactionTypes.upcoming })}
+                          onClick={() =>
+                            setTransactionTypes({
+                              ...transactionTypes,
+                              upcoming: !transactionTypes.upcoming,
+                            })
+                          }
                         >
-                          {transactionTypes.upcoming && <span className="text-[10px] font-bold">✓</span>}
+                          {transactionTypes.upcoming && (
+                            <span className="text-[10px] font-bold">✓</span>
+                          )}
                         </div>
                         <span>Đấu Giá Sắp Diễn Ra</span>
                       </div>
@@ -669,9 +751,16 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${transactionTypes.escrow ? 'checked' : ''}`}
-                          onClick={() => setTransactionTypes({ ...transactionTypes, escrow: !transactionTypes.escrow })}
+                          onClick={() =>
+                            setTransactionTypes({
+                              ...transactionTypes,
+                              escrow: !transactionTypes.escrow,
+                            })
+                          }
                         >
-                          {transactionTypes.escrow && <span className="text-[10px] font-bold">✓</span>}
+                          {transactionTypes.escrow && (
+                            <span className="text-[10px] font-bold">✓</span>
+                          )}
                         </div>
                         <span>Hàng Ký Gửi Escrow</span>
                       </div>
@@ -685,7 +774,9 @@ export const SearchPage: React.FC = () => {
               <div className="filter-section">
                 <div className="filter-section-header" onClick={() => toggleSection('priceRange')}>
                   <span className="filter-section-title">KHOẢNG GIÁ (VNĐ)</span>
-                  <ChevronUp className={`filter-chevron-icon ${collapsedSections['priceRange'] ? 'collapsed' : ''}`} />
+                  <ChevronUp
+                    className={`filter-chevron-icon ${collapsedSections['priceRange'] ? 'collapsed' : ''}`}
+                  />
                 </div>
                 {!collapsedSections['priceRange'] && (
                   <div className="filter-section-body">
@@ -696,7 +787,9 @@ export const SearchPage: React.FC = () => {
                           type="text"
                           className="price-input"
                           value={priceFrom}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPriceFrom(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setPriceFrom(e.target.value)
+                          }
                         />
                       </div>
                       <div className="price-input-box">
@@ -705,7 +798,9 @@ export const SearchPage: React.FC = () => {
                           type="text"
                           className="price-input"
                           value={priceTo}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPriceTo(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setPriceTo(e.target.value)
+                          }
                         />
                       </div>
                     </div>
@@ -731,9 +826,14 @@ export const SearchPage: React.FC = () => {
 
               {/* 3. TÌNH TRẠNG VẬT PHẨM */}
               <div className="filter-section">
-                <div className="filter-section-header" onClick={() => toggleSection('itemCondition')}>
+                <div
+                  className="filter-section-header"
+                  onClick={() => toggleSection('itemCondition')}
+                >
                   <span className="filter-section-title">TÌNH TRẠNG VẬT PHẨM</span>
-                  <ChevronUp className={`filter-chevron-icon ${collapsedSections['itemCondition'] ? 'collapsed' : ''}`} />
+                  <ChevronUp
+                    className={`filter-chevron-icon ${collapsedSections['itemCondition'] ? 'collapsed' : ''}`}
+                  />
                 </div>
                 {!collapsedSections['itemCondition'] && (
                   <div className="filter-section-body">
@@ -741,9 +841,16 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${conditionFilters.brandNew ? 'checked' : ''}`}
-                          onClick={() => setConditionFilters({ ...conditionFilters, brandNew: !conditionFilters.brandNew })}
+                          onClick={() =>
+                            setConditionFilters({
+                              ...conditionFilters,
+                              brandNew: !conditionFilters.brandNew,
+                            })
+                          }
                         >
-                          {conditionFilters.brandNew && <span className="text-[10px] font-bold">✓</span>}
+                          {conditionFilters.brandNew && (
+                            <span className="text-[10px] font-bold">✓</span>
+                          )}
                         </div>
                         <span>Mới 100% Nguyên Hộp (Brand New)</span>
                       </div>
@@ -753,9 +860,16 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${conditionFilters.likeNew ? 'checked' : ''}`}
-                          onClick={() => setConditionFilters({ ...conditionFilters, likeNew: !conditionFilters.likeNew })}
+                          onClick={() =>
+                            setConditionFilters({
+                              ...conditionFilters,
+                              likeNew: !conditionFilters.likeNew,
+                            })
+                          }
                         >
-                          {conditionFilters.likeNew && <span className="text-[10px] font-bold">✓</span>}
+                          {conditionFilters.likeNew && (
+                            <span className="text-[10px] font-bold">✓</span>
+                          )}
                         </div>
                         <span>Like New 99% (Cấp Độ S)</span>
                       </div>
@@ -765,9 +879,16 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${conditionFilters.gradeA ? 'checked' : ''}`}
-                          onClick={() => setConditionFilters({ ...conditionFilters, gradeA: !conditionFilters.gradeA })}
+                          onClick={() =>
+                            setConditionFilters({
+                              ...conditionFilters,
+                              gradeA: !conditionFilters.gradeA,
+                            })
+                          }
                         >
-                          {conditionFilters.gradeA && <span className="text-[10px] font-bold">✓</span>}
+                          {conditionFilters.gradeA && (
+                            <span className="text-[10px] font-bold">✓</span>
+                          )}
                         </div>
                         <span>Cấp Độ A (95% - Đã kiểm định)</span>
                       </div>
@@ -785,9 +906,14 @@ export const SearchPage: React.FC = () => {
 
               {/* 4. THƯƠNG HIỆU XA XỈ */}
               <div className="filter-section">
-                <div className="filter-section-header" onClick={() => toggleSection('luxuryBrands')}>
+                <div
+                  className="filter-section-header"
+                  onClick={() => toggleSection('luxuryBrands')}
+                >
                   <span className="filter-section-title">THƯƠNG HIỆU XA XỈ</span>
-                  <ChevronUp className={`filter-chevron-icon ${collapsedSections['luxuryBrands'] ? 'collapsed' : ''}`} />
+                  <ChevronUp
+                    className={`filter-chevron-icon ${collapsedSections['luxuryBrands'] ? 'collapsed' : ''}`}
+                  />
                 </div>
                 {!collapsedSections['luxuryBrands'] && (
                   <div className="filter-section-body">
@@ -827,9 +953,14 @@ export const SearchPage: React.FC = () => {
 
               {/* 5. VẬN CHUYỂN & DỊCH VỤ */}
               <div className="filter-section">
-                <div className="filter-section-header" onClick={() => toggleSection('shippingService')}>
+                <div
+                  className="filter-section-header"
+                  onClick={() => toggleSection('shippingService')}
+                >
                   <span className="filter-section-title">VẬN CHUYỂN & DỊCH VỤ</span>
-                  <ChevronUp className={`filter-chevron-icon ${collapsedSections['shippingService'] ? 'collapsed' : ''}`} />
+                  <ChevronUp
+                    className={`filter-chevron-icon ${collapsedSections['shippingService'] ? 'collapsed' : ''}`}
+                  />
                 </div>
                 {!collapsedSections['shippingService'] && (
                   <div className="filter-section-body">
@@ -837,7 +968,9 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${shippingFilters.ghn ? 'checked' : ''}`}
-                          onClick={() => setShippingFilters({ ...shippingFilters, ghn: !shippingFilters.ghn })}
+                          onClick={() =>
+                            setShippingFilters({ ...shippingFilters, ghn: !shippingFilters.ghn })
+                          }
                         >
                           {shippingFilters.ghn && <span className="text-[10px] font-bold">✓</span>}
                         </div>
@@ -849,7 +982,9 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${shippingFilters.pci ? 'checked' : ''}`}
-                          onClick={() => setShippingFilters({ ...shippingFilters, pci: !shippingFilters.pci })}
+                          onClick={() =>
+                            setShippingFilters({ ...shippingFilters, pci: !shippingFilters.pci })
+                          }
                         >
                           {shippingFilters.pci && <span className="text-[10px] font-bold">✓</span>}
                         </div>
@@ -861,9 +996,16 @@ export const SearchPage: React.FC = () => {
                       <div className="filter-checkbox-label">
                         <div
                           className={`custom-checkbox ${shippingFilters.express2h ? 'checked' : ''}`}
-                          onClick={() => setShippingFilters({ ...shippingFilters, express2h: !shippingFilters.express2h })}
+                          onClick={() =>
+                            setShippingFilters({
+                              ...shippingFilters,
+                              express2h: !shippingFilters.express2h,
+                            })
+                          }
                         >
-                          {shippingFilters.express2h && <span className="text-[10px] font-bold">✓</span>}
+                          {shippingFilters.express2h && (
+                            <span className="text-[10px] font-bold">✓</span>
+                          )}
                         </div>
                         <span>Hỏa tốc 2H nội thành (TP.HCM / HN)</span>
                       </div>
@@ -874,9 +1016,14 @@ export const SearchPage: React.FC = () => {
 
               {/* 6. ĐÁNH GIÁ COLLECTOR */}
               <div className="filter-section">
-                <div className="filter-section-header" onClick={() => toggleSection('collectorRating')}>
+                <div
+                  className="filter-section-header"
+                  onClick={() => toggleSection('collectorRating')}
+                >
                   <span className="filter-section-title">ĐÁNH GIÁ COLLECTOR</span>
-                  <ChevronUp className={`filter-chevron-icon ${collapsedSections['collectorRating'] ? 'collapsed' : ''}`} />
+                  <ChevronUp
+                    className={`filter-chevron-icon ${collapsedSections['collectorRating'] ? 'collapsed' : ''}`}
+                  />
                 </div>
                 {!collapsedSections['collectorRating'] && (
                   <div className="filter-section-body">
@@ -934,11 +1081,7 @@ export const SearchPage: React.FC = () => {
               <div className="applied-tags-left">
                 <span className="applied-label">ĐANG ÁP DỤNG:</span>
                 {appliedChips.map((chip) => (
-                  <span
-                    key={chip}
-                    className="applied-pill"
-                    onClick={() => removeChip(chip)}
-                  >
+                  <span key={chip} className="applied-pill" onClick={() => removeChip(chip)}>
                     {chip} <span className="applied-pill-close">✕</span>
                   </span>
                 ))}
@@ -1000,8 +1143,12 @@ export const SearchPage: React.FC = () => {
 
                       {/* Sub glass badge */}
                       {item.subBadge && (
-                        <span className={`badge-glass-sub ${item.subBadge.isYellow ? 'yellow-tag' : ''}`}>
-                          {item.subBadge.icon === '3d' && <Box className="w-2.5 h-2.5 text-blue-600" />}
+                        <span
+                          className={`badge-glass-sub ${item.subBadge.isYellow ? 'yellow-tag' : ''}`}
+                        >
+                          {item.subBadge.icon === '3d' && (
+                            <Box className="w-2.5 h-2.5 text-blue-600" />
+                          )}
                           {item.subBadge.text}
                         </span>
                       )}
@@ -1027,8 +1174,12 @@ export const SearchPage: React.FC = () => {
                         title="Bấm để xoay 3D trực tiếp"
                       >
                         <div className="overlay-left-item">
-                          {item.imageOverlay.leftIcon === 'rotate' && <RotateCcw className="w-3 h-3" />}
-                          {item.imageOverlay.leftIcon === 'hourglass' && <Clock className="w-3 h-3 text-blue-600" />}
+                          {item.imageOverlay.leftIcon === 'rotate' && (
+                            <RotateCcw className="w-3 h-3" />
+                          )}
+                          {item.imageOverlay.leftIcon === 'hourglass' && (
+                            <Clock className="w-3 h-3 text-blue-600" />
+                          )}
                           <span>{item.imageOverlay.leftText}</span>
                         </div>
                         <div className="overlay-right-item">
@@ -1039,9 +1190,7 @@ export const SearchPage: React.FC = () => {
 
                     {/* Discount badge */}
                     {item.imageOverlay?.isDiscount && (
-                      <span className="overlay-discount-tag">
-                        {item.imageOverlay.discountText}
-                      </span>
+                      <span className="overlay-discount-tag">{item.imageOverlay.discountText}</span>
                     )}
                   </div>
 
@@ -1077,9 +1226,7 @@ export const SearchPage: React.FC = () => {
                         </div>
                       )}
 
-                      {item.oldPrice && (
-                        <div className="card-old-price">{item.oldPrice}</div>
-                      )}
+                      {item.oldPrice && <div className="card-old-price">{item.oldPrice}</div>}
 
                       <div className={`card-main-price ${item.priceColor}`}>
                         {item.currentPrice}
@@ -1094,8 +1241,8 @@ export const SearchPage: React.FC = () => {
                               item.subMetaRightType === 'link'
                                 ? 'meta-link-blue'
                                 : item.subMetaRightType === 'waiting'
-                                ? 'meta-people-waiting'
-                                : ''
+                                  ? 'meta-people-waiting'
+                                  : ''
                             }
                           >
                             {item.subMetaRight}
@@ -1260,8 +1407,9 @@ export const SearchPage: React.FC = () => {
                 <span className="footer-brand-title">NEXUS 3D OS</span>
               </div>
               <p className="footer-brand-desc">
-                Sàn giao dịch thương mại điện tử và đấu giá tương tác 3D thời gian thực tiên phong tại
-                Đông Nam Á. Kết nối các nhà sưu tập tinh hoa với vật phẩm nghệ thuật và hàng xa xỉ bảo chứng.
+                Sàn giao dịch thương mại điện tử và đấu giá tương tác 3D thời gian thực tiên phong
+                tại Đông Nam Á. Kết nối các nhà sưu tập tinh hoa với vật phẩm nghệ thuật và hàng xa
+                xỉ bảo chứng.
               </p>
               <div className="footer-cert-badges-row">
                 <span className="footer-cert-badge blue">PCI-DSS COMPLIANT</span>
@@ -1273,11 +1421,31 @@ export const SearchPage: React.FC = () => {
             <div className="footer-links-col">
               <h4 className="footer-col-heading">Chăm Sóc Khách Hàng</h4>
               <ul className="footer-links-list">
-                <li><a href="#help" className="footer-link-item">Trung tâm trợ giúp 24/7</a></li>
-                <li><a href="#rules" className="footer-link-item">Quy chuẩn đấu giá thực</a></li>
-                <li><a href="#returns" className="footer-link-item">Chính sách đồng kiểm & hoàn tiền</a></li>
-                <li><a href="#appraisal" className="footer-link-item">Biểu phí ký gửi giám định</a></li>
-                <li><a href="#hotline" className="footer-link-item">Hotline: 1900 8822</a></li>
+                <li>
+                  <a href="#help" className="footer-link-item">
+                    Trung tâm trợ giúp 24/7
+                  </a>
+                </li>
+                <li>
+                  <a href="#rules" className="footer-link-item">
+                    Quy chuẩn đấu giá thực
+                  </a>
+                </li>
+                <li>
+                  <a href="#returns" className="footer-link-item">
+                    Chính sách đồng kiểm & hoàn tiền
+                  </a>
+                </li>
+                <li>
+                  <a href="#appraisal" className="footer-link-item">
+                    Biểu phí ký gửi giám định
+                  </a>
+                </li>
+                <li>
+                  <a href="#hotline" className="footer-link-item">
+                    Hotline: 1900 8822
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -1285,11 +1453,31 @@ export const SearchPage: React.FC = () => {
             <div className="footer-links-col">
               <h4 className="footer-col-heading">Về NEXUS Platform</h4>
               <ul className="footer-links-list">
-                <li><a href="#about" className="footer-link-item">Giới thiệu hệ điều hành 3D</a></li>
-                <li><a href="#inspection" className="footer-link-item">Quy trình thẩm định hiện vật</a></li>
-                <li><a href="#partners" className="footer-link-item">Hệ thống đối tác GHN / Stripe</a></li>
-                <li><a href="#terms" className="footer-link-item">Điều khoản giao dịch</a></li>
-                <li><a href="#privacy" className="footer-link-item">Chính sách bảo mật dữ liệu</a></li>
+                <li>
+                  <a href="#about" className="footer-link-item">
+                    Giới thiệu hệ điều hành 3D
+                  </a>
+                </li>
+                <li>
+                  <a href="#inspection" className="footer-link-item">
+                    Quy trình thẩm định hiện vật
+                  </a>
+                </li>
+                <li>
+                  <a href="#partners" className="footer-link-item">
+                    Hệ thống đối tác GHN / Stripe
+                  </a>
+                </li>
+                <li>
+                  <a href="#terms" className="footer-link-item">
+                    Điều khoản giao dịch
+                  </a>
+                </li>
+                <li>
+                  <a href="#privacy" className="footer-link-item">
+                    Chính sách bảo mật dữ liệu
+                  </a>
+                </li>
               </ul>
             </div>
 
@@ -1382,8 +1570,8 @@ export const SearchPage: React.FC = () => {
                   <strong className="block mb-1 text-blue-950 font-bold">
                     Bảo chứng kiểm định vật lý số 100%
                   </strong>
-                  Vật phẩm đã được chuyên gia đồng kiểm thông qua Micro-Mesh scan bề mặt 3D,
-                  kèm theo NFT Provenance Token lưu trữ bất biến trên chuỗi khối.
+                  Vật phẩm đã được chuyên gia đồng kiểm thông qua Micro-Mesh scan bề mặt 3D, kèm
+                  theo NFT Provenance Token lưu trữ bất biến trên chuỗi khối.
                 </div>
               </div>
 

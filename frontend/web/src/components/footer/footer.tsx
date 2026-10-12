@@ -1,10 +1,4 @@
-import {
-  Box,
-  CheckCircle2,
-  ShieldCheck,
-  ShieldHalf,
-  Truck,
-} from 'lucide-react';
+import { Box, CheckCircle2, ShieldCheck, ShieldHalf, Truck } from 'lucide-react';
 import './footer.css';
 
 const commitments = [
@@ -44,11 +38,7 @@ export interface FooterProps {
   year?: number;
 }
 
-export function Footer({
-  className = '',
-  showAssurances = true,
-  year = 2025,
-}: FooterProps) {
+export function Footer({ className = '', showAssurances = true, year = 2025 }: FooterProps) {
   return (
     <footer className={`nexus-footer ${className}`}>
       {showAssurances && (
@@ -90,7 +80,9 @@ export function Footer({
           </div>
 
           <p className="nexus-footer__description">
-            Hệ sinh thái sàn giao dịch thương mại điện tử kết hợp công nghệ đấu giá thực tế ảo 3D thời gian thực. Đảm bảo bảo chứng ký gửi, minh bạch kiểm định và giao nhận an toàn toàn quốc.
+            Hệ sinh thái sàn giao dịch thương mại điện tử kết hợp công nghệ đấu giá thực tế ảo 3D
+            thời gian thực. Đảm bảo bảo chứng ký gửi, minh bạch kiểm định và giao nhận an toàn toàn
+            quốc.
           </p>
 
           <div className="nexus-footer__cert-line">
@@ -160,7 +152,9 @@ export function Footer({
             <span>Mã số doanh nghiệp: 0109988234 do Sở KH&ĐT cấp</span>
           </div>
           <div className="nexus-footer__bottom-right">
-            <span>© {year} NEXUS Ecommerce & 3D Auction Inc. Bản quyền được bảo lưu toàn diện.</span>
+            <span>
+              © {year} NEXUS Ecommerce & 3D Auction Inc. Bản quyền được bảo lưu toàn diện.
+            </span>
           </div>
         </div>
       </div>
