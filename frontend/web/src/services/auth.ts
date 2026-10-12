@@ -29,7 +29,7 @@ async function post<T>(path: string, body: object): Promise<T> {
   }
   let payload: ApiResponse<T>;
   try {
-    payload = await response.json() as ApiResponse<T>;
+    payload = (await response.json()) as ApiResponse<T>;
   } catch {
     throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');
   }
@@ -40,7 +40,9 @@ async function post<T>(path: string, body: object): Promise<T> {
     const errors = Array.isArray(payload.errors)
       ? payload.errors.filter((error): error is string => typeof error === 'string').join(' · ')
       : '';
-    throw new Error(errors || (typeof payload.message === 'string' && payload.message) || 'Yêu cầu thất bại.');
+    throw new Error(
+      errors || (typeof payload.message === 'string' && payload.message) || 'Yêu cầu thất bại.',
+    );
   }
   if (!('data' in payload) || !payload.data || typeof payload.data !== 'object') {
     throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');

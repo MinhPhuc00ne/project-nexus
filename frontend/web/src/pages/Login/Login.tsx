@@ -51,19 +51,26 @@ const Login: React.FC = () => {
     try {
       const verifiedEmail = sessionStorage.getItem('nexus:verified-email') || '';
       return verifiedEmail;
-    } catch { return ''; }
+    } catch {
+      return '';
+    }
   });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState(() =>
     new URLSearchParams(window.location.search).get('verified') === '1'
-      ? 'Email đã được xác thực. Vui lòng đăng nhập.' : '',
+      ? 'Email đã được xác thực. Vui lòng đăng nhập.'
+      : '',
   );
   const [failed, setFailed] = useState(false);
   const requestInFlight = useRef(false);
   useEffect(() => {
-    try { sessionStorage.removeItem('nexus:verified-email'); } catch { /* Storage may be disabled. */ }
+    try {
+      sessionStorage.removeItem('nexus:verified-email');
+    } catch {
+      /* Storage may be disabled. */
+    }
     if (new URLSearchParams(window.location.search).has('verified')) {
       window.history.replaceState(null, '', '/login');
     }
@@ -72,14 +79,19 @@ const Login: React.FC = () => {
     event.preventDefault();
     if (requestInFlight.current) return;
     requestInFlight.current = true;
-    setPending(true); setFeedback(''); setFailed(false);
+    setPending(true);
+    setFeedback('');
+    setFailed(false);
     try {
       const result = await login(email.trim(), password);
       setFeedback(result.message + ' Xin chào ' + result.user.fullName + '.');
     } catch (error: unknown) {
       setFailed(true);
       setFeedback(error instanceof Error ? error.message : 'Đăng nhập thất bại.');
-    } finally { requestInFlight.current = false; setPending(false); }
+    } finally {
+      requestInFlight.current = false;
+      setPending(false);
+    }
   }
 
   return (
@@ -232,7 +244,11 @@ const Login: React.FC = () => {
                       className="form-input"
                       placeholder="user@nexus.vn"
                       value={email}
-                      onChange={(e) => { setEmail(e.target.value); setFeedback(''); setFailed(false); }}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setFeedback('');
+                        setFailed(false);
+                      }}
                     />
                   </div>
                 </div>
@@ -257,7 +273,11 @@ const Login: React.FC = () => {
                       autoComplete="current-password"
                       disabled={pending}
                       value={password}
-                      onChange={(e) => { setPassword(e.target.value); setFeedback(''); setFailed(false); }}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setFeedback('');
+                        setFailed(false);
+                      }}
                     />
                     <button
                       type="button"
@@ -276,9 +296,18 @@ const Login: React.FC = () => {
                   </div>
                 </div>
 
-                {feedback && <p className={`login-feedback ${failed ? 'login-feedback--error' : ''}`} role={failed ? 'alert' : 'status'} aria-live="polite">{feedback}</p>}
+                {feedback && (
+                  <p
+                    className={`login-feedback ${failed ? 'login-feedback--error' : ''}`}
+                    role={failed ? 'alert' : 'status'}
+                    aria-live="polite"
+                  >
+                    {feedback}
+                  </p>
+                )}
                 <button type="submit" className="submit-btn" disabled={pending}>
-                  {pending ? 'ĐANG ĐĂNG NHẬP…' : 'ĐĂNG NHẬP'} <ArrowLeft className="submit-btn-icon" />
+                  {pending ? 'ĐANG ĐĂNG NHẬP…' : 'ĐĂNG NHẬP'}{' '}
+                  <ArrowLeft className="submit-btn-icon" />
                 </button>
               </form>
 
@@ -292,11 +321,21 @@ const Login: React.FC = () => {
               </div>
 
               <div className="social-login-grid">
-                <button type="button" className="social-login-btn" onClick={startGoogleLogin} disabled={pending}>
+                <button
+                  type="button"
+                  className="social-login-btn"
+                  onClick={startGoogleLogin}
+                  disabled={pending}
+                >
                   <GoogleIcon className="social-icon" />
                   Google
                 </button>
-                <button type="button" className="social-login-btn" disabled title="Chức năng chưa khả dụng">
+                <button
+                  type="button"
+                  className="social-login-btn"
+                  disabled
+                  title="Chức năng chưa khả dụng"
+                >
                   <FacebookIcon className="social-icon" />
                   Facebook
                 </button>

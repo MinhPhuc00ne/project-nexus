@@ -69,13 +69,22 @@ export default function RegisterPage() {
   async function handleSendOtp(): Promise<void> {
     if (requestInFlight.current || verified || Date.now() < resendAt) return;
     const email = contact.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !fullName.trim() || password.length < 6 || !agreement) {
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      !fullName.trim() ||
+      password.length < 6 ||
+      !agreement
+    ) {
       setFailed(true);
-      setFeedback('Vui lòng nhập họ tên, email hợp lệ, mật khẩu tối thiểu 6 ký tự và đồng ý điều khoản.');
+      setFeedback(
+        'Vui lòng nhập họ tên, email hợp lệ, mật khẩu tối thiểu 6 ký tự và đồng ý điều khoản.',
+      );
       return;
     }
     requestInFlight.current = true;
-    setPending(true); setFailed(false); setFeedback('');
+    setPending(true);
+    setFailed(false);
+    setFeedback('');
     // A resend replaces the previous OTP; require the latest code even if the response is lost.
     setSentEmail('');
     setCode('');
@@ -83,17 +92,25 @@ export default function RegisterPage() {
     setResendSeconds(60);
     try {
       const result = await register(email, password, fullName.trim());
-      setSentEmail(email); setCode(''); setFeedback(result.message);
+      setSentEmail(email);
+      setCode('');
+      setFeedback(result.message);
       window.requestAnimationFrame(() => document.getElementById('register-otp')?.focus());
     } catch (error: unknown) {
-      setFailed(true); setFeedback(error instanceof Error ? error.message : 'Không thể gửi mã OTP.');
-    } finally { requestInFlight.current = false; setPending(false); }
+      setFailed(true);
+      setFeedback(error instanceof Error ? error.message : 'Không thể gửi mã OTP.');
+    } finally {
+      requestInFlight.current = false;
+      setPending(false);
+    }
   }
   async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (requestInFlight.current || verified) return;
     if (!sentEmail || sentEmail !== contact.trim()) {
-      setFailed(true); setFeedback('Vui lòng gửi mã OTP cho email này trước khi xác thực.'); return;
+      setFailed(true);
+      setFeedback('Vui lòng gửi mã OTP cho email này trước khi xác thực.');
+      return;
     }
     if (!/^[0-9]{6}$/.test(code) || !agreement) {
       setFailed(true);
@@ -101,15 +118,27 @@ export default function RegisterPage() {
       return;
     }
     requestInFlight.current = true;
-    setPending(true); setFailed(false); setFeedback('');
+    setPending(true);
+    setFailed(false);
+    setFeedback('');
     try {
       const result = await verifyEmail(sentEmail, code);
-      setVerified(true); setPassword(''); setFeedback(result.message);
-      try { sessionStorage.setItem('nexus:verified-email', sentEmail); } catch { /* Storage may be disabled. */ }
+      setVerified(true);
+      setPassword('');
+      setFeedback(result.message);
+      try {
+        sessionStorage.setItem('nexus:verified-email', sentEmail);
+      } catch {
+        /* Storage may be disabled. */
+      }
       window.location.assign('/login?verified=1');
     } catch (error: unknown) {
-      setFailed(true); setFeedback(error instanceof Error ? error.message : 'Xác thực thất bại.');
-    } finally { requestInFlight.current = false; setPending(false); }
+      setFailed(true);
+      setFeedback(error instanceof Error ? error.message : 'Xác thực thất bại.');
+    } finally {
+      requestInFlight.current = false;
+      setPending(false);
+    }
   }
 
   return (
@@ -210,16 +239,34 @@ export default function RegisterPage() {
                       setFeedback('');
                     }}
                   />
-                  <button className="register-otp-button" type="button" onClick={handleSendOtp} disabled={pending || verified || resendSeconds > 0}>
-                    {pending ? 'Đang xử lý…' : resendSeconds > 0 ? `Gửi lại sau ${resendSeconds}s` : sentEmail ? 'Gửi lại OTP' : 'Gửi mã OTP'}
+                  <button
+                    className="register-otp-button"
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={pending || verified || resendSeconds > 0}
+                  >
+                    {pending
+                      ? 'Đang xử lý…'
+                      : resendSeconds > 0
+                        ? `Gửi lại sau ${resendSeconds}s`
+                        : sentEmail
+                          ? 'Gửi lại OTP'
+                          : 'Gửi mã OTP'}
                   </button>
                 </div>
               </div>
 
               {sentEmail && !verified && (
                 <div className="register-feedback">
-                  <p>Mã OTP đã gửi đến {sentEmail}. Mã có hiệu lực 10 phút. Kiểm tra cả thư mục spam.</p>
-                  <button type="button" className="register-otp-button" disabled={pending} onClick={editDetails}>
+                  <p>
+                    Mã OTP đã gửi đến {sentEmail}. Mã có hiệu lực 10 phút. Kiểm tra cả thư mục spam.
+                  </p>
+                  <button
+                    type="button"
+                    className="register-otp-button"
+                    disabled={pending}
+                    onClick={editDetails}
+                  >
                     Sửa email hoặc thông tin đăng ký
                   </button>
                 </div>
@@ -280,7 +327,15 @@ export default function RegisterPage() {
               </div>
 
               <div className="register-agreement">
-                <input id="register-agreement" name="agreement" checked={agreement} disabled={pending || verified} onChange={(event) => setAgreement(event.target.checked)} type="checkbox" required />
+                <input
+                  id="register-agreement"
+                  name="agreement"
+                  checked={agreement}
+                  disabled={pending || verified}
+                  onChange={(event) => setAgreement(event.target.checked)}
+                  type="checkbox"
+                  required
+                />
                 <label htmlFor="register-agreement">
                   Tôi đồng ý với <a href="/terms">Điều khoản dịch vụ</a> và{' '}
                   <a href="/privacy">Chính sách bảo mật</a> của NEXUS.
@@ -288,13 +343,22 @@ export default function RegisterPage() {
               </div>
 
               {feedback && (
-                <p className={`register-feedback ${failed ? 'register-feedback--error' : ''}`} role={failed ? 'alert' : 'status'} aria-live="polite">
+                <p
+                  className={`register-feedback ${failed ? 'register-feedback--error' : ''}`}
+                  role={failed ? 'alert' : 'status'}
+                  aria-live="polite"
+                >
                   {feedback}
                 </p>
               )}
 
-              <button className="register-submit" type="submit" disabled={pending || !sentEmail || verified}>
-                {pending ? 'Đang xử lý…' : verified ? 'Đã xác thực' : 'Xác Thực Tài Khoản'} <ArrowRight size={16} aria-hidden="true" />
+              <button
+                className="register-submit"
+                type="submit"
+                disabled={pending || !sentEmail || verified}
+              >
+                {pending ? 'Đang xử lý…' : verified ? 'Đã xác thực' : 'Xác Thực Tài Khoản'}{' '}
+                <ArrowRight size={16} aria-hidden="true" />
               </button>
             </form>
 
