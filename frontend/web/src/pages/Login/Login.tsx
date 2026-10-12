@@ -330,7 +330,6 @@ const Login: React.FC = () => {
                   <GoogleIcon className="social-icon" />
                   Đăng nhập với Google
                 </button>
-
               </div>
 
               <div className="signup-prompt">
