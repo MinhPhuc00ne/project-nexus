@@ -42,103 +42,100 @@
   }
 
   .nexus-footer__main {
-    @apply grid grid-cols-1 gap-8 py-8 sm:grid-cols-2 lg:grid-cols-[2.1fr_1fr_1fr_1fr] lg:gap-7;
+    @apply grid grid-cols-1 gap-8 py-8 sm:grid-cols-2 lg:grid-cols-[1.8fr_1fr_1fr_1.2fr] lg:gap-8;
   }
 
   .nexus-footer__brand-column {
     @apply max-w-sm;
   }
 
-  .nexus-footer__brand {
-    @apply inline-flex items-center gap-2 text-base font-semibold tracking-tight text-slate-900 no-underline;
+  .nexus-footer__brand-row {
+    @apply flex items-center gap-2 mb-2;
   }
 
-  .nexus-footer__brand-mark {
-    @apply flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white;
+  .nexus-footer__logo-wrap {
+    @apply inline-flex items-center text-slate-900 no-underline;
+  }
+
+  .nexus-footer__logo-img {
+    @apply h-11 w-auto object-contain;
+  }
+
+  .nexus-footer__brand-tags {
+    @apply flex items-center gap-1.5 ml-1;
+  }
+
+  .nexus-footer__tag-mall {
+    @apply rounded bg-[#ee4d2d] px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider;
+  }
+
+  .nexus-footer__tag-3d {
+    @apply rounded bg-[#2563eb] px-1.5 py-0.5 text-[9px] font-bold text-white tracking-wider;
   }
 
   .nexus-footer__description {
-    @apply mb-0 mt-3 max-w-xs text-xs leading-[1.65] text-slate-600;
+    @apply mb-0 mt-2.5 max-w-xs text-xs leading-[1.65] text-slate-600;
   }
 
-  .nexus-footer__badges {
-    @apply mt-4 flex flex-wrap gap-2;
-  }
-
-  .nexus-footer__badge {
-    @apply rounded-md border border-slate-200 bg-slate-100 px-2 py-1 font-mono text-[8px] font-medium tracking-wide;
-  }
-
-  .nexus-footer__badge--blue {
-    @apply text-blue-600;
-  }
-
-  .nexus-footer__badge--orange {
-    @apply text-orange-700;
+  .nexus-footer__cert-line {
+    @apply mt-3.5 flex items-center gap-2 text-[11px] text-slate-600 font-medium;
   }
 
   .nexus-footer__heading {
-    @apply mb-2 mt-0 text-xs font-semibold leading-5;
+    @apply mb-3 mt-0 text-xs font-bold leading-5 tracking-wider text-slate-800;
   }
 
   .nexus-footer__links ul {
-    @apply m-0 flex list-none flex-col gap-1.5 p-0;
+    @apply m-0 flex list-none flex-col gap-2 p-0;
   }
 
   .nexus-footer__links a {
-    @apply text-[10px] leading-4 text-slate-600 no-underline transition-colors hover:text-blue-600;
+    @apply text-xs leading-4 text-slate-600 no-underline transition-colors hover:text-[#ee4d2d];
   }
 
-  .nexus-footer__app {
-    @apply flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-slate-900 no-underline transition-colors hover:border-blue-300 hover:bg-blue-50;
+  /* Partners & Payment */
+  .nexus-footer__partners-column {
+    @apply flex flex-col;
   }
 
-  .nexus-footer__qr {
-    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-blue-600 shadow-sm;
+  .nexus-footer__partner-pills {
+    @apply flex flex-col gap-1.5 mb-3;
   }
 
-  .nexus-footer__app-title {
-    @apply block text-[10px] font-semibold leading-4;
+  .nexus-footer__pill-row {
+    @apply flex items-center gap-1.5;
   }
 
-  .nexus-footer__app-description {
-    @apply block text-[10px] leading-[1.3] text-slate-600;
+  .nexus-footer__pill {
+    @apply inline-flex items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-100;
   }
 
-  .nexus-footer__socials {
-    @apply mt-3 flex gap-2;
+  .nexus-footer__shipping-label {
+    @apply mb-1.5 text-[11px] text-slate-500 font-medium;
   }
 
-  .nexus-footer__socials a {
-    @apply flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 bg-slate-100 text-slate-600 transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600;
+  .nexus-footer__shipping-cards {
+    @apply flex items-center gap-2 flex-wrap;
+  }
+
+  .nexus-footer__shipping-box {
+    @apply inline-flex items-center gap-1.5 rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm;
   }
 
   .nexus-footer__bottom {
-    @apply border-t border-slate-200 bg-slate-50;
+    @apply border-t border-slate-200 bg-white;
   }
 
   .nexus-footer__bottom-content {
-    @apply flex flex-col gap-3 py-3.5 lg:flex-row lg:items-center lg:justify-between;
+    @apply flex flex-col gap-3 py-3 lg:flex-row lg:items-center lg:justify-between text-xs text-slate-500;
   }
 
-  .nexus-footer__bottom-content p {
-    @apply m-0 text-[10px] leading-4 text-slate-500;
+  .nexus-footer__bottom-left {
+    @apply flex items-center gap-2 flex-wrap text-slate-600 text-xs;
   }
 
-  .nexus-footer__utilities {
-    @apply flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[9px] leading-4;
-  }
-
-  .nexus-footer__languages {
-    @apply flex flex-wrap gap-4;
-  }
-
-  .nexus-footer__languages a {
-    @apply text-slate-500 no-underline transition-colors hover:text-blue-600;
-  }
-
-  .nexus-footer__status {
-    @apply text-emerald-600 no-underline transition-colors hover:text-emerald-700;
+  .nexus-footer__bottom-right {
+    @apply text-slate-500 text-xs;
   }
 
   .nexus-footer a:focus-visible {
