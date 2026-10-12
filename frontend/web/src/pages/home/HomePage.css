@@ -1,0 +1,42 @@
+@layer components {
+  .home-page {
+    --home-brand-blue: #1c3973;
+    --home-accent-orange: #f24e1e;
+  }
+
+  .home-page-hero {
+    box-shadow: 0 16px 40px rgb(28 57 115 / 8%);
+  }
+
+  .home-category-card,
+  .home-product-card {
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .home-category-card:hover,
+  .home-product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgb(28 57 115 / 10%);
+  }
+
+  .home-countdown-value {
+    min-width: 2.25em;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .home-category-card,
+    .home-product-card {
+      transition: none;
+    }
+
+    .home-category-card:hover,
+    .home-product-card:hover {
+      transform: none;
+    }
+  }
+}

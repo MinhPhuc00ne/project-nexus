@@ -18,7 +18,7 @@ import {
   Heart,
   LogOut,
 } from 'lucide-react';
-import { clearAuthSession, getStoredUser, type AuthUser } from '../../services/auth';
+import './HomeHeader.css';
 
 export interface NotificationItem {
   id: string | number;
@@ -99,7 +99,6 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   const [selectedFloor, setSelectedFloor] = useState('Tất Cả Sàn');
   const [showFloorMenu, setShowFloorMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Cart
   const [showCartPanel, setShowCartPanel] = useState(false);
@@ -169,7 +168,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 z-[1000] w-full bg-white font-sans shadow-sm">
+    <header className="home-header sticky top-0 z-[1000] w-full bg-white font-sans shadow-sm">
       {/* =========================================================
           1. TOP UTILITY BAR
       ========================================================= */}
@@ -208,7 +207,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
               {showAppQrModal && (
                 <div className="absolute left-0 top-full z-[1010] mt-2">
-                  <div className="w-[200px] rounded-[10px] border border-slate-200 bg-white p-3.5 text-center shadow-xl">
+                  <div className="home-header-popover w-[200px] rounded-[10px] border border-slate-200 bg-white p-3.5 text-center shadow-xl">
                     <div className="mx-auto flex h-[130px] w-[130px] items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-100">
                       <div className="grid grid-cols-2 gap-2.5">
                         <div className="h-10 w-10 rounded bg-[#1c3973]" />
@@ -280,7 +279,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </button>
 
               {showNotifMenu && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-[1100] w-[360px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl">
+                <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[360px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl">
                   <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
                     <h4 className="m-0 text-sm font-bold text-slate-800">Thông báo</h4>
                   </div>
@@ -356,7 +355,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </button>
 
               {showLangMenu && (
-                <div className="absolute right-0 top-[calc(100%+6px)] z-[1100] w-[155px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl">
+                <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[155px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
@@ -414,7 +413,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 </button>
 
                 {showUserMenu && (
-                  <div className="absolute right-0 top-[calc(100%+6px)] z-[1100] w-[240px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-2 shadow-xl">
+                  <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[240px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-2 shadow-xl">
                     <div className="mb-1.5 flex items-center gap-3 rounded-md bg-slate-50 p-2.5">
                       {displayUserAvatar ? (
                         <img
@@ -544,9 +543,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           {/* SEARCH */}
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <form
-              className={`flex items-center rounded-full border-2 border-[#f24e1e] bg-white py-0.5 pl-3.5 pr-0.5 shadow-[0_2px_6px_rgba(242,78,30,0.08)] transition-shadow ${
-                isSearchFocused ? 'shadow-[0_4px_16px_rgba(242,78,30,0.22)]' : ''
-              }`}
+              className="home-header-search flex items-center rounded-full border-2 border-[#f24e1e] bg-white py-0.5 pl-3.5 pr-0.5 shadow-[0_2px_6px_rgba(242,78,30,0.08)] transition-shadow"
               onSubmit={handleSearchSubmit}
             >
               {/* FLOOR */}
@@ -565,7 +562,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 </button>
 
                 {showFloorMenu && (
-                  <div className="absolute left-[-12px] top-[calc(100%+12px)] z-[1200] w-[200px] rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl">
+                  <div className="home-header-popover absolute left-[-12px] top-[calc(100%+12px)] z-[1200] w-[200px] rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl">
                     {floors.map((floor, idx) => (
                       <button
                         key={idx}
@@ -597,8 +594,6 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   placeholder="Tìm kiếm hơn 50.000+ sản phẩm công nghệ, gear, nghệ thuật hoặc phiên đấu..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
                 />
 
                 {searchQuery && (
@@ -674,7 +669,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
             {/* CART PANEL */}
             {showCartPanel && (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-[1100] w-[380px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl">
+              <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[380px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl">
                 <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
                   <h4 className="m-0 text-sm font-bold text-slate-800">Giỏ Hàng</h4>
 
