@@ -18,6 +18,7 @@ import {
   Heart,
   LogOut,
 } from 'lucide-react';
+import { clearAuthSession, getStoredUser, type AuthUser } from '../../services/auth';
 import './HomeHeader.css';
 
 export interface NotificationItem {
