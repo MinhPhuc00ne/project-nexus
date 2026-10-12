@@ -4,6 +4,7 @@ import HomePage from '../pages/home/HomePage';
 import RegisterPage from '../pages/register/RegisterPage';
 import StaffDashboard from '../pages/staff/StaffDashboard';
 import GuestLayout from '../layouts/GuestLayout';
+import AuthLayout from '../layouts/AuthLayout';
 
 function AppRouter() {
   return (
@@ -13,7 +14,9 @@ function AppRouter() {
           <Route index element={<HomePage />} />
         </Route>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={<AuthLayout />}>
+          <Route index element={<RegisterPage />} />
+        </Route>
         <Route path="/staff" element={<StaffDashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

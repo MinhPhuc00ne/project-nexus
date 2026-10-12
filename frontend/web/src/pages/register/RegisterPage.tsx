@@ -143,7 +143,7 @@ export default function RegisterPage() {
 
   return (
     <div className="register-shell">
-      <Header />
+      {/* <Header /> */}
 
       <main className="register-page">
         <div className="register-layout">
@@ -372,7 +372,7 @@ export default function RegisterPage() {
           </section>
         </div>
       </main>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }
