@@ -243,9 +243,7 @@ export class AuthService {
 
   // ================= 5. QUÊN MẬT KHẨU (GỬI OTP QUA GMAIL) =================
   // Áp dụng cho tài khoản đăng ký bằng Gmail (đã xác thực) hoặc bằng Google (luôn isVerified).
-  async forgotPassword(
-    dto: ForgotPasswordDto,
-  ): Promise<{ message: string; email: string }> {
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; email: string }> {
     const { email } = dto;
 
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -368,10 +366,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
     }
 
-    const isTokenMatch = await bcrypt.compare(
-      this.sha256(dto.refreshToken),
-      tokenRecord.tokenHash,
-    );
+    const isTokenMatch = await bcrypt.compare(this.sha256(dto.refreshToken), tokenRecord.tokenHash);
     if (!isTokenMatch) {
       throw new UnauthorizedException('Refresh token không hợp lệ.');
     }
