@@ -6,6 +6,7 @@ import { Request, Response } from 'express';
 import { AuthService, GoogleUser } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -54,6 +55,7 @@ export class AuthController {
 
     const params = new URLSearchParams({
       token: result.accessToken,
+      refreshToken: result.refreshToken,
       user: JSON.stringify(result.user),
     });
 
@@ -94,5 +96,23 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Mã OTP không chính xác hoặc đã hết hạn' })
   async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
     return this.authService.resetPassword(dto);
+  }
+
+  // ================= 5. REFRESH TOKEN & ĐĂNG XUẤT =================
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Làm mới Access Token bằng Refresh Token' })
+  @ApiResponse({ status: 200, description: 'Làm mới token thành công' })
+  @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ hoặc đã hết hạn' })
+  async refreshToken(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đăng xuất và thu hồi Refresh Token' })
+  @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
+  async logout(@Body() dto: RefreshTokenDto): Promise<{ message: string }> {
+    return this.authService.logout(dto);
   }
 }

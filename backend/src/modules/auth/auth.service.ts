@@ -2,13 +2,22 @@ import { BadRequestException, Injectable, Logger, UnauthorizedException } from '
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+
+interface RefreshJwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+  jti: string;
+}
 
 export interface GoogleUser {
   email: string;
@@ -157,8 +166,8 @@ export class AuthService {
       );
     }
 
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
+    const { accessToken, refreshToken } = await this.generateTokens({
+      id: user.id,
       email: user.email,
       role: user.role,
     });
@@ -166,6 +175,7 @@ export class AuthService {
     return {
       message: 'Đăng nhập thành công!',
       accessToken,
+      refreshToken,
       user: {
         id: user.id,
         email: user.email,
@@ -200,8 +210,8 @@ export class AuthService {
       },
     });
 
-    const accessToken = this.jwtService.sign({
-      sub: userRecord.id,
+    const { accessToken, refreshToken } = await this.generateTokens({
+      id: userRecord.id,
       email: userRecord.email,
       role: userRecord.role,
     });
@@ -209,6 +219,7 @@ export class AuthService {
     return {
       message: 'Đăng nhập bằng Google thành công!',
       accessToken,
+      refreshToken,
       user: {
         id: userRecord.id,
         email: userRecord.email,
@@ -288,9 +299,175 @@ export class AuthService {
       data: { passwordHash, verificationCode: null, codeExpiresAt: null },
     });
 
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: user.id, isRevoked: false },
+      data: { isRevoked: true },
+    });
+
     return {
       message: 'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
     };
+  }
+
+  // ================= 7. LÀM MỚI ACCESS TOKEN (REFRESH TOKEN) =================
+  async refreshToken(dto: RefreshTokenDto) {
+    const refreshSecret =
+      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
+      process.env.REFRESH_TOKEN_SECRET ||
+      'nexus-refresh-secret-key';
+
+    let payload: RefreshJwtPayload;
+    try {
+      payload = await this.jwtService.verifyAsync<RefreshJwtPayload>(dto.refreshToken, {
+        secret: refreshSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('Refresh token không hợp lệ hoặc đã hết hạn.');
+    }
+
+    if (!payload.jti || !payload.sub) {
+      throw new UnauthorizedException('Refresh token không hợp lệ.');
+    }
+
+    const tokenRecord = await this.prisma.refreshToken.findUnique({
+      where: { id: payload.jti },
+      include: { user: true },
+    });
+
+    if (
+      !tokenRecord ||
+      tokenRecord.userId !== payload.sub ||
+      tokenRecord.isRevoked ||
+      new Date() > tokenRecord.expiresAt
+    ) {
+      throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
+    }
+
+    const isTokenMatch = await bcrypt.compare(
+      this.sha256(dto.refreshToken),
+      tokenRecord.tokenHash,
+    );
+    if (!isTokenMatch) {
+      throw new UnauthorizedException('Refresh token không hợp lệ.');
+    }
+
+    // Thu hồi refresh token cũ (Refresh Token Rotation)
+    await this.prisma.refreshToken.update({
+      where: { id: tokenRecord.id },
+      data: { isRevoked: true },
+    });
+
+    const { accessToken, refreshToken } = await this.generateTokens({
+      id: tokenRecord.user.id,
+      email: tokenRecord.user.email,
+      role: tokenRecord.user.role,
+    });
+
+    return {
+      message: 'Làm mới token thành công!',
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  // ================= 8. ĐĂNG XUẤT (THU HỒI REFRESH TOKEN) =================
+  async logout(dto: RefreshTokenDto): Promise<{ message: string }> {
+    const refreshSecret =
+      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
+      process.env.REFRESH_TOKEN_SECRET ||
+      'nexus-refresh-secret-key';
+
+    try {
+      const payload = await this.jwtService.verifyAsync<RefreshJwtPayload>(dto.refreshToken, {
+        secret: refreshSecret,
+        ignoreExpiration: true,
+      });
+
+      if (payload?.jti) {
+        await this.prisma.refreshToken.updateMany({
+          where: { id: payload.jti, userId: payload.sub, isRevoked: false },
+          data: { isRevoked: true },
+        });
+      }
+    } catch {
+      // Bỏ qua nếu token sai định dạng để đảm bảo idempotent khi đăng xuất
+    }
+
+    return { message: 'Đăng xuất thành công!' };
+  }
+
+  private async generateTokens(user: {
+    id: string;
+    email: string;
+    role: string;
+  }): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const tokenId = crypto.randomUUID();
+    const refreshSecret =
+      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
+      process.env.REFRESH_TOKEN_SECRET ||
+      'nexus-refresh-secret-key';
+    const refreshExpiresIn =
+      this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') ||
+      process.env.REFRESH_TOKEN_EXPIRES_IN ||
+      '30d';
+
+    const refreshToken = this.jwtService.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        jti: tokenId,
+      },
+      {
+        secret: refreshSecret,
+        expiresIn: refreshExpiresIn as `${number}${'s' | 'm' | 'h' | 'd'}`,
+      },
+    );
+
+    const tokenHash = await bcrypt.hash(this.sha256(refreshToken), 10);
+    const expiresAt = new Date(Date.now() + this.parseDurationToMs(refreshExpiresIn));
+
+    await this.prisma.refreshToken.create({
+      data: {
+        id: tokenId,
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+        isRevoked: false,
+      },
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  private sha256(value: string): string {
+    return crypto.createHash('sha256').update(value).digest('hex');
+  }
+
+  private parseDurationToMs(duration: string): number {
+    const match = /^(\d+)\s*([smhd])$/i.exec(duration.trim());
+    if (!match) {
+      return 30 * 24 * 60 * 60 * 1000; // Mặc định 30 ngày
+    }
+    const amount = parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+    switch (unit) {
+      case 's':
+        return amount * 1000;
+      case 'm':
+        return amount * 60 * 1000;
+      case 'h':
+        return amount * 60 * 60 * 1000;
+      case 'd':
+      default:
+        return amount * 24 * 60 * 60 * 1000;
+    }
   }
 
   private async sendPasswordResetEmail(email: string, resetCode: string): Promise<void> {

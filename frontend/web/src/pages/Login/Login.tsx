@@ -84,7 +84,7 @@ const Login: React.FC = () => {
     setFailed(false);
     try {
       const result = await login(email.trim(), password);
-      saveAuthSession(result.user, result.accessToken);
+      saveAuthSession(result.user, result.accessToken, result.refreshToken);
       setFeedback(result.message + ' Xin chào ' + result.user.fullName + '.');
       window.location.assign('/');
     } catch (error: unknown) {

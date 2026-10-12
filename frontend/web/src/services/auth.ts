@@ -21,17 +21,26 @@ export interface AuthUser {
 
 export interface LoginResponse extends AuthMessage {
   accessToken?: string;
+  refreshToken?: string;
   user: AuthUser;
 }
 
 const AUTH_USER_KEY = 'nexus:auth-user';
 const AUTH_TOKEN_KEY = 'nexus:auth-token';
+const AUTH_REFRESH_TOKEN_KEY = 'nexus:auth-refresh-token';
 
-export function saveAuthSession(user: AuthUser, accessToken?: string): void {
+export function saveAuthSession(
+  user: AuthUser,
+  accessToken?: string,
+  refreshToken?: string,
+): void {
   try {
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
     if (accessToken) {
       localStorage.setItem(AUTH_TOKEN_KEY, accessToken);
+    }
+    if (refreshToken) {
+      localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, refreshToken);
     }
     window.dispatchEvent(new Event('nexus:auth-change'));
   } catch {
@@ -67,11 +76,28 @@ export function getStoredToken(): string | null {
   }
 }
 
+export function getStoredRefreshToken(): string | null {
+  try {
+    return localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export function clearAuthSession(): void {
   try {
+    const storedRefreshToken = localStorage.getItem(AUTH_REFRESH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
     localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
     window.dispatchEvent(new Event('nexus:auth-change'));
+    if (storedRefreshToken) {
+      void fetch(`${apiUrl}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: storedRefreshToken }),
+      }).catch(() => {});
+    }
   } catch {
     /* Storage may be disabled */
   }
@@ -81,6 +107,7 @@ export function consumeOAuthCallbackFromUrl(): AuthUser | null {
   const params = new URLSearchParams(window.location.search);
   const rawUser = params.get('user');
   const token = params.get('token');
+  const refreshToken = params.get('refreshToken');
   if (!rawUser) return null;
 
   try {
@@ -93,10 +120,11 @@ export function consumeOAuthCallbackFromUrl(): AuthUser | null {
         role: parsed.role,
         avatarUrl: parsed.avatarUrl ?? null,
       };
-      saveAuthSession(user, token || undefined);
+      saveAuthSession(user, token || undefined, refreshToken || undefined);
 
       params.delete('user');
       params.delete('token');
+      params.delete('refreshToken');
       const remainingQuery = params.toString();
       const nextUrl = `${window.location.pathname}${remainingQuery ? `?${remainingQuery}` : ''}${window.location.hash}`;
       window.history.replaceState(null, '', nextUrl);
