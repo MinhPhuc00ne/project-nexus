@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState, type FormEvent } from 'react';
+import { login, startGoogleLogin } from '../../services/auth';
 import {
   ArrowLeft,
   Lock,
@@ -46,10 +47,52 @@ const FacebookIcon = ({ className }: { className?: string }) => (
 );
 
 const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => {
+    try {
+      const verifiedEmail = sessionStorage.getItem('nexus:verified-email') || '';
+      return verifiedEmail;
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [pending, setPending] = useState(false);
+  const [feedback, setFeedback] = useState(() =>
+    new URLSearchParams(window.location.search).get('verified') === '1'
+      ? 'Email đã được xác thực. Vui lòng đăng nhập.'
+      : '',
+  );
+  const [failed, setFailed] = useState(false);
+  const requestInFlight = useRef(false);
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('nexus:verified-email');
+    } catch {
+      /* Storage may be disabled. */
+    }
+    if (new URLSearchParams(window.location.search).has('verified')) {
+      window.history.replaceState(null, '', '/login');
+    }
+  }, []);
+  async function handleLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    setPending(true);
+    setFeedback('');
+    setFailed(false);
+    try {
+      const result = await login(email.trim(), password);
+      setFeedback(result.message + ' Xin chào ' + result.user.fullName + '.');
+    } catch (error: unknown) {
+      setFailed(true);
+      setFeedback(error instanceof Error ? error.message : 'Đăng nhập thất bại.');
+    } finally {
+      requestInFlight.current = false;
+      setPending(false);
+    }
+  }
 
   return (
     <div className="nexus-login-page">
@@ -186,19 +229,26 @@ const Login: React.FC = () => {
                 <h2 className="login-card-title">Đăng nhập NEXUS</h2>
               </div>
 
-              <form onSubmit={(e) => e.preventDefault()} className="login-form">
+              <form onSubmit={handleLogin} className="login-form" aria-busy={pending}>
                 <div className="form-group">
-                  <label className="form-label">Email hoặc Số điện thoại</label>
+                  <label className="form-label">Email</label>
                   <div className="input-box">
                     <div className="input-left-icon">
                       <User />
                     </div>
                     <input
-                      type="text"
+                      type="email"
+                      required
+                      autoComplete="username"
+                      disabled={pending}
                       className="form-input"
-                      placeholder="user@nexus.vn hoặc 0912 345 678"
+                      placeholder="user@nexus.vn"
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setFeedback('');
+                        setFailed(false);
+                      }}
                     />
                   </div>
                 </div>
@@ -206,9 +256,9 @@ const Login: React.FC = () => {
                 <div className="form-group">
                   <div className="form-label-row">
                     <label className="form-label">Mật khẩu</label>
-                    <a href="#" className="forgot-password-link">
+                    <span className="forgot-password-link" title="Chức năng chưa khả dụng">
                       Quên mật khẩu?
-                    </a>
+                    </span>
                   </div>
                   <div className="input-box">
                     <div className="input-left-icon">
@@ -218,8 +268,16 @@ const Login: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       className="form-input"
                       placeholder="Nhập mật khẩu an toàn của bạn"
+                      required
+                      minLength={6}
+                      autoComplete="current-password"
+                      disabled={pending}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setFeedback('');
+                        setFailed(false);
+                      }}
                     />
                     <button
                       type="button"
@@ -232,24 +290,24 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className="form-options-row">
-                  <label className="remember-me-checkbox">
-                    <input
-                      type="checkbox"
-                      className="checkbox-control"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
-                    <span className="remember-me-text">Duy trì đăng nhập</span>
-                  </label>
-
                   <div className="ssl-encryption-badge">
                     <Shield className="ssl-icon" />
                     <span>Mã hóa SSL 256-bit</span>
                   </div>
                 </div>
 
-                <button type="submit" className="submit-btn">
-                  ĐĂNG NHẬP <ArrowLeft className="submit-btn-icon" />
+                {feedback && (
+                  <p
+                    className={`login-feedback ${failed ? 'login-feedback--error' : ''}`}
+                    role={failed ? 'alert' : 'status'}
+                    aria-live="polite"
+                  >
+                    {feedback}
+                  </p>
+                )}
+                <button type="submit" className="submit-btn" disabled={pending}>
+                  {pending ? 'ĐANG ĐĂNG NHẬP…' : 'ĐĂNG NHẬP'}{' '}
+                  <ArrowLeft className="submit-btn-icon" />
                 </button>
               </form>
 
@@ -263,11 +321,21 @@ const Login: React.FC = () => {
               </div>
 
               <div className="social-login-grid">
-                <button className="social-login-btn">
+                <button
+                  type="button"
+                  className="social-login-btn"
+                  onClick={startGoogleLogin}
+                  disabled={pending}
+                >
                   <GoogleIcon className="social-icon" />
                   Google
                 </button>
-                <button className="social-login-btn">
+                <button
+                  type="button"
+                  className="social-login-btn"
+                  disabled
+                  title="Chức năng chưa khả dụng"
+                >
                   <FacebookIcon className="social-icon" />
                   Facebook
                 </button>
@@ -275,7 +343,7 @@ const Login: React.FC = () => {
 
               <div className="signup-prompt">
                 <span className="signup-prompt-text">Bạn mới tham gia NEXUS?</span>
-                <a href="#" className="signup-link">
+                <a href="/register" className="signup-link">
                   Tạo tài khoản ngay
                 </a>
               </div>

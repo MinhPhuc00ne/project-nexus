@@ -140,7 +140,7 @@
   }
 
   .register-submit {
-    @apply mt-2 flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-blue-700;
+    @apply mt-2 flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .register-page button:focus-visible,
@@ -159,5 +159,8 @@
 
   .register-feedback {
     @apply rounded-lg bg-blue-50 px-3 py-2 text-[12px] leading-5 text-blue-700;
+  }
+  .register-feedback--error {
+    @apply bg-red-50 text-red-700;
   }
 }
