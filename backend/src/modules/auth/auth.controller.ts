@@ -1,7 +1,8 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService, GoogleUser } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -14,7 +15,10 @@ interface RequestWithUser extends Request {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   // ================= 1. ĐĂNG NHẬP =================
   @Post('login')
@@ -37,8 +41,21 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google Callback URL' })
-  googleAuthRedirect(@Req() req: RequestWithUser) {
-    return this.authService.googleLogin(req.user);
+  async googleAuthRedirect(@Req() req: RequestWithUser, @Res() res: Response): Promise<void> {
+    const result = await this.authService.googleLogin(req.user);
+    const portWeb = this.configService.get<string>('PORT_WEB') || process.env.PORT_WEB || '5173';
+    const frontendUrl = (
+      this.configService.get<string>('FRONTEND_URL') ||
+      process.env.FRONTEND_URL ||
+      `http://localhost:${portWeb}`
+    ).replace(/\/$/, '');
+
+    const params = new URLSearchParams({
+      token: result.accessToken,
+      user: JSON.stringify(result.user),
+    });
+
+    res.redirect(`${frontendUrl}/?${params.toString()}`);
   }
 
   // ================= 3. ĐĂNG KÝ & XÁC THỰC =================

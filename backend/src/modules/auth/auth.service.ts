@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../core/prisma/prisma.service';
@@ -20,6 +21,7 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
+    private jwtService: JwtService,
   ) {
     // Cấu hình Nodemailer gửi mail qua Gmail
     this.transporter = nodemailer.createTransport({
@@ -147,14 +149,21 @@ export class AuthService {
       );
     }
 
-    // Tạm thời trả về thông báo (Sau này có thể tích hợp cấp phát JWT Token ở đây)
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
     return {
       message: 'Đăng nhập thành công!',
+      accessToken,
       user: {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
         role: user.role,
+        avatarUrl: user.avatarUrl,
       },
     };
   }
@@ -172,6 +181,7 @@ export class AuthService {
       where: { email },
       update: {
         avatarUrl: picture,
+        isVerified: true,
       },
       create: {
         email,
@@ -182,12 +192,20 @@ export class AuthService {
       },
     });
 
+    const accessToken = this.jwtService.sign({
+      sub: userRecord.id,
+      email: userRecord.email,
+      role: userRecord.role,
+    });
+
     return {
       message: 'Đăng nhập bằng Google thành công!',
+      accessToken,
       user: {
         id: userRecord.id,
         email: userRecord.email,
         fullName: userRecord.fullName,
+        role: userRecord.role,
         avatarUrl: userRecord.avatarUrl,
       },
     };

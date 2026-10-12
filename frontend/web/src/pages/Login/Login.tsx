@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, type FormEvent } from 'react';
-import { login, startGoogleLogin } from '../../services/auth';
+import { login, saveAuthSession, startGoogleLogin } from '../../services/auth';
 import {
   ArrowLeft,
   Lock,
@@ -84,7 +84,9 @@ const Login: React.FC = () => {
     setFailed(false);
     try {
       const result = await login(email.trim(), password);
+      saveAuthSession(result.user, result.accessToken);
       setFeedback(result.message + ' Xin chào ' + result.user.fullName + '.');
+      window.location.assign('/');
     } catch (error: unknown) {
       setFailed(true);
       setFeedback(error instanceof Error ? error.message : 'Đăng nhập thất bại.');

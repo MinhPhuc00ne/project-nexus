@@ -18,6 +18,7 @@ import {
   Heart,
   LogOut,
 } from 'lucide-react';
+import { clearAuthSession, getStoredUser, type AuthUser } from '../../services/auth';
 
 export interface NotificationItem {
   id: string | number;
@@ -37,6 +38,8 @@ export interface CartItem {
 
 export interface HomeHeaderProps {
   userName?: string;
+  userEmail?: string;
+  userAvatar?: string | null;
   isLoggedIn?: boolean;
   cartCount?: number;
   logoPath?: string;
@@ -51,8 +54,10 @@ export interface HomeHeaderProps {
 }
 
 export const HomeHeader: React.FC<HomeHeaderProps> = ({
-  userName = 'Tài khoản',
-  isLoggedIn = false,
+  userName,
+  userEmail,
+  userAvatar,
+  isLoggedIn,
   cartCount = 0,
   logoPath = '/images/logo.png',
   trendingKeywords = [],
@@ -64,6 +69,23 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   onRegisterClick,
   onLogoutClick,
 }) => {
+  const [storedUser, setStoredUser] = useState<AuthUser | null>(() => getStoredUser());
+
+  useEffect(() => {
+    const syncAuth = () => setStoredUser(getStoredUser());
+    window.addEventListener('nexus:auth-change', syncAuth);
+    window.addEventListener('storage', syncAuth);
+    return () => {
+      window.removeEventListener('nexus:auth-change', syncAuth);
+      window.removeEventListener('storage', syncAuth);
+    };
+  }, []);
+
+  const effectiveLoggedIn = isLoggedIn ?? Boolean(storedUser);
+  const displayUserName = userName || storedUser?.fullName || storedUser?.email || 'Tài khoản';
+  const displayUserEmail = userEmail ?? storedUser?.email;
+  const displayUserAvatar = userAvatar !== undefined ? userAvatar : storedUser?.avatarUrl;
+
   // Language
   const [currentLang, setCurrentLang] = useState<'vi' | 'en' | 'jp'>('vi');
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -363,18 +385,27 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <span className="text-xs text-slate-200">|</span>
 
             {/* Account */}
-            {isLoggedIn ? (
+            {effectiveLoggedIn ? (
               <div className="relative" ref={userRef}>
                 <button
                   type="button"
                   className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                 >
-                  <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#1c3973] text-white">
-                    <User size={13} />
-                  </div>
+                  {displayUserAvatar ? (
+                    <img
+                      src={displayUserAvatar}
+                      alt={displayUserName}
+                      referrerPolicy="no-referrer"
+                      className="h-[22px] w-[22px] rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#1c3973] text-white">
+                      <User size={13} />
+                    </div>
+                  )}
 
-                  <span className="font-semibold text-slate-800">{userName}</span>
+                  <span className="font-semibold text-slate-800">{displayUserName}</span>
 
                   <ChevronDown
                     size={13}
@@ -385,12 +416,26 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 {showUserMenu && (
                   <div className="absolute right-0 top-[calc(100%+6px)] z-[1100] w-[240px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-2 shadow-xl">
                     <div className="mb-1.5 flex items-center gap-3 rounded-md bg-slate-50 p-2.5">
-                      <div className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-[#1c3973] text-white">
-                        <User size={20} />
-                      </div>
+                      {displayUserAvatar ? (
+                        <img
+                          src={displayUserAvatar}
+                          alt={displayUserName}
+                          referrerPolicy="no-referrer"
+                          className="h-[38px] w-[38px] shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[#1c3973] text-white">
+                          <User size={20} />
+                        </div>
+                      )}
 
-                      <div>
-                        <p className="m-0 text-sm font-bold text-slate-800">{userName}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="m-0 truncate text-sm font-bold text-slate-800">
+                          {displayUserName}
+                        </p>
+                        {displayUserEmail && (
+                          <p className="m-0 truncate text-xs text-slate-500">{displayUserEmail}</p>
+                        )}
                       </div>
                     </div>
 
@@ -435,6 +480,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] text-red-500 transition-colors hover:bg-red-50"
                       onClick={() => {
                         setShowUserMenu(false);
+                        clearAuthSession();
 
                         if (onLogoutClick) {
                           onLogoutClick();

@@ -6,14 +6,30 @@ import SearchPage from './pages/search/SearchPage';
 import './index.css';
 import RegisterPage from './pages/register/RegisterPage';
 import AuctionPage from './pages/auction/AuctionPage';
+import {
+  clearAuthSession,
+  consumeOAuthCallbackFromUrl,
+  getStoredUser,
+  type AuthUser,
+} from './services/auth';
 
 function App() {
   const [pathname, setPathname] = useState(() => window.location.pathname);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    return consumeOAuthCallbackFromUrl() ?? getStoredUser();
+  });
 
   useEffect(() => {
     const handlePopState = () => setPathname(window.location.pathname);
+    const syncAuth = () => setCurrentUser(getStoredUser());
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('nexus:auth-change', syncAuth);
+    window.addEventListener('storage', syncAuth);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('nexus:auth-change', syncAuth);
+      window.removeEventListener('storage', syncAuth);
+    };
   }, []);
 
   if (pathname === '/login') return <Login />;
@@ -26,6 +42,14 @@ function App() {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <HomeHeader
+        isLoggedIn={Boolean(currentUser)}
+        userName={currentUser?.fullName || currentUser?.email}
+        userEmail={currentUser?.email}
+        userAvatar={currentUser?.avatarUrl}
+        onLogoutClick={() => {
+          clearAuthSession();
+          setCurrentUser(null);
+        }}
         onLoginClick={() => window.location.assign('/login')}
         onRegisterClick={() => window.location.assign('/register')}
         onSearch={(query, floor) => {

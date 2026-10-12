@@ -30,6 +30,7 @@ import {
   Clock,
   X,
 } from 'lucide-react';
+import { getStoredUser } from '../../services/auth';
 import './SearchPage.css';
 
 // TypeScript interfaces
@@ -154,6 +155,7 @@ const Nexus3dLogo = () => (
 );
 
 export const SearchPage: React.FC = () => {
+  const [currentUser] = useState(() => getStoredUser());
   // Search Bar State
   const [searchQuery, setSearchQuery] = useState(
     () => new URLSearchParams(window.location.search).get('q') ?? 'đồng hồ cơ skeleton 3d',
@@ -484,7 +486,15 @@ export const SearchPage: React.FC = () => {
               <ChevronDown className="w-3 h-3 ml-0.5" />
             </span>
             <span className="search-topbar-divider"></span>
-            <span className="search-topbar-link account-name">Name Account</span>
+            {currentUser ? (
+              <span className="search-topbar-link account-name">
+                {currentUser.fullName || currentUser.email}
+              </span>
+            ) : (
+              <a href="/login" className="search-topbar-link account-name">
+                Đăng Nhập
+              </a>
+            )}
           </div>
         </div>
       </section>
