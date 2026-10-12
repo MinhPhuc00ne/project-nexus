@@ -294,7 +294,7 @@ export default function RegisterPage() {
                     />
                   </div>
                   <p id="register-password-hint" className="register-field-hint">
-                    Bao gồm số, chữ hoa, chữ thường và kí tự đặc biệt.
+                    Bao gồm kí tự, chữ hoa, chữ thường và kí tự đặc biệt.
                   </p>
                 </div>
                 <div className="register-field">
