@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { register, verifyEmail } from '../../services/auth';
 import Header from '../../components/Header/Header';
 import {
   ArrowRight,
@@ -32,33 +33,83 @@ const benefits = [
   },
 ];
 
-function isValidContact(contact: string) {
-  const value = contact.trim();
-  return (
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
-    /^(?:0|\+84)[0-9]{9}$/.test(value.replace(/\s/g, ''))
-  );
-}
-
 export default function RegisterPage() {
   const [contact, setContact] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [feedback, setFeedback] = useState('');
+  const [pending, setPending] = useState(false);
+  const [sentEmail, setSentEmail] = useState('');
+  const [verified, setVerified] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [agreement, setAgreement] = useState(false);
+  const [resendAt, setResendAt] = useState(0);
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const requestInFlight = useRef(false);
 
-  function handleSendOtp() {
-    if (!isValidContact(contact)) {
-      setFeedback('Vui lòng nhập số điện thoại Việt Nam hoặc địa chỉ email hợp lệ.');
-      return;
-    }
-    setFeedback('Giao diện đang ở chế độ demo. Gửi OTP sẽ hoạt động khi kết nối API.');
+  useEffect(() => {
+    if (!resendAt) return;
+    const update = (): void => {
+      setResendSeconds(Math.max(0, Math.ceil((resendAt - Date.now()) / 1000)));
+    };
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendAt]);
+
+  function editDetails(): void {
+    setSentEmail('');
+    setCode('');
+    setFeedback('');
+    setFailed(false);
+    window.requestAnimationFrame(() => document.getElementById('register-contact')?.focus());
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!isValidContact(contact)) {
-      setFeedback('Vui lòng nhập số điện thoại Việt Nam hoặc địa chỉ email hợp lệ.');
+  async function handleSendOtp(): Promise<void> {
+    if (requestInFlight.current || verified || Date.now() < resendAt) return;
+    const email = contact.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !fullName.trim() || password.length < 6 || !agreement) {
+      setFailed(true);
+      setFeedback('Vui lòng nhập họ tên, email hợp lệ, mật khẩu tối thiểu 6 ký tự và đồng ý điều khoản.');
       return;
     }
-    setFeedback('Thông tin đã đúng định dạng. Trang demo chưa gửi dữ liệu hoặc tạo tài khoản.');
+    requestInFlight.current = true;
+    setPending(true); setFailed(false); setFeedback('');
+    // A resend replaces the previous OTP; require the latest code even if the response is lost.
+    setSentEmail('');
+    setCode('');
+    setResendAt(Date.now() + 60000);
+    setResendSeconds(60);
+    try {
+      const result = await register(email, password, fullName.trim());
+      setSentEmail(email); setCode(''); setFeedback(result.message);
+      window.requestAnimationFrame(() => document.getElementById('register-otp')?.focus());
+    } catch (error: unknown) {
+      setFailed(true); setFeedback(error instanceof Error ? error.message : 'Không thể gửi mã OTP.');
+    } finally { requestInFlight.current = false; setPending(false); }
+  }
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    if (requestInFlight.current || verified) return;
+    if (!sentEmail || sentEmail !== contact.trim()) {
+      setFailed(true); setFeedback('Vui lòng gửi mã OTP cho email này trước khi xác thực.'); return;
+    }
+    if (!/^[0-9]{6}$/.test(code) || !agreement) {
+      setFailed(true);
+      setFeedback('Vui lòng nhập mã OTP gồm 6 chữ số và đồng ý điều khoản.');
+      return;
+    }
+    requestInFlight.current = true;
+    setPending(true); setFailed(false); setFeedback('');
+    try {
+      const result = await verifyEmail(sentEmail, code);
+      setVerified(true); setPassword(''); setFeedback(result.message);
+      try { sessionStorage.setItem('nexus:verified-email', sentEmail); } catch { /* Storage may be disabled. */ }
+      window.location.assign('/login?verified=1');
+    } catch (error: unknown) {
+      setFailed(true); setFeedback(error instanceof Error ? error.message : 'Xác thực thất bại.');
+    } finally { requestInFlight.current = false; setPending(false); }
   }
 
   return (
@@ -117,7 +168,7 @@ export default function RegisterPage() {
               Đăng ký nhanh chóng để khám phá các phiên đấu giá độc quyền
             </p>
 
-            <form className="register-form" onSubmit={handleSubmit}>
+            <form className="register-form" onSubmit={handleSubmit} aria-busy={pending}>
               <div className="register-field">
                 <label htmlFor="register-name">
                   Họ và tên <span className="register-required">*</span>
@@ -127,6 +178,9 @@ export default function RegisterPage() {
                   <input
                     id="register-name"
                     name="name"
+                    value={fullName}
+                    disabled={pending || Boolean(sentEmail)}
+                    onChange={(event) => setFullName(event.target.value)}
                     autoComplete="name"
                     placeholder="VD: Nguyễn Văn An"
                     required
@@ -138,15 +192,17 @@ export default function RegisterPage() {
 
               <div className="register-field">
                 <label htmlFor="register-contact">
-                  Số điện thoại hoặc Email <span className="register-required">*</span>
+                  Email <span className="register-required">*</span>
                 </label>
                 <div className="register-input-wrapper">
                   <Mail size={14} className="register-input-icon" aria-hidden="true" />
                   <input
                     id="register-contact"
                     name="contact"
+                    type="email"
+                    disabled={pending || Boolean(sentEmail)}
                     autoComplete="username"
-                    placeholder="0912 345 678 hoặc email@domain.com"
+                    placeholder="email@domain.com"
                     required
                     value={contact}
                     onChange={(event) => {
@@ -154,11 +210,20 @@ export default function RegisterPage() {
                       setFeedback('');
                     }}
                   />
-                  <button className="register-otp-button" type="button" onClick={handleSendOtp}>
-                    Gửi mã OTP
+                  <button className="register-otp-button" type="button" onClick={handleSendOtp} disabled={pending || verified || resendSeconds > 0}>
+                    {pending ? 'Đang xử lý…' : resendSeconds > 0 ? `Gửi lại sau ${resendSeconds}s` : sentEmail ? 'Gửi lại OTP' : 'Gửi mã OTP'}
                   </button>
                 </div>
               </div>
+
+              {sentEmail && !verified && (
+                <div className="register-feedback">
+                  <p>Mã OTP đã gửi đến {sentEmail}. Mã có hiệu lực 10 phút. Kiểm tra cả thư mục spam.</p>
+                  <button type="button" className="register-otp-button" disabled={pending} onClick={editDetails}>
+                    Sửa email hoặc thông tin đăng ký
+                  </button>
+                </div>
+              )}
 
               <div className="register-field-row">
                 <div className="register-field">
@@ -170,10 +235,13 @@ export default function RegisterPage() {
                     <input
                       id="register-password"
                       name="password"
+                      value={password}
+                      disabled={pending || Boolean(sentEmail)}
+                      onChange={(event) => setPassword(event.target.value)}
                       type="password"
                       autoComplete="new-password"
-                      placeholder="Tối thiểu 8 ký tự"
-                      minLength={8}
+                      placeholder="Tối thiểu 6 ký tự"
+                      minLength={6}
                       required
                     />
                   </div>
@@ -191,6 +259,13 @@ export default function RegisterPage() {
                     <input
                       id="register-otp"
                       name="otp"
+                      value={code}
+                      disabled={pending || !sentEmail || verified}
+                      onChange={(event) => {
+                        setCode(event.target.value.replace(/\D/g, '').slice(0, 6));
+                        setFeedback('');
+                        setFailed(false);
+                      }}
                       className="font-mono tracking-wider"
                       autoComplete="one-time-code"
                       inputMode="numeric"
@@ -205,7 +280,7 @@ export default function RegisterPage() {
               </div>
 
               <div className="register-agreement">
-                <input id="register-agreement" name="agreement" type="checkbox" required />
+                <input id="register-agreement" name="agreement" checked={agreement} disabled={pending || verified} onChange={(event) => setAgreement(event.target.checked)} type="checkbox" required />
                 <label htmlFor="register-agreement">
                   Tôi đồng ý với <a href="/terms">Điều khoản dịch vụ</a> và{' '}
                   <a href="/privacy">Chính sách bảo mật</a> của NEXUS.
@@ -213,13 +288,13 @@ export default function RegisterPage() {
               </div>
 
               {feedback && (
-                <p className="register-feedback" role="status">
+                <p className={`register-feedback ${failed ? 'register-feedback--error' : ''}`} role={failed ? 'alert' : 'status'} aria-live="polite">
                   {feedback}
                 </p>
               )}
 
-              <button className="register-submit" type="submit">
-                Đăng Ký Tài Khoản <ArrowRight size={16} aria-hidden="true" />
+              <button className="register-submit" type="submit" disabled={pending || !sentEmail || verified}>
+                {pending ? 'Đang xử lý…' : verified ? 'Đã xác thực' : 'Xác Thực Tài Khoản'} <ArrowRight size={16} aria-hidden="true" />
               </button>
             </form>
 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Login from './pages/Login/Login';
 import HomeHeader from './components/headers/HomeHeader';
 import HomePage from './pages/home/HomePage';
-import SearchPage from './pages/SearchPage';
+import SearchPage from './pages/search/SearchPage';
 import './index.css';
 import RegisterPage from './pages/register/RegisterPage';
 import AuctionPage from './pages/auction/AuctionPage';

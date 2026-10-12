@@ -1110,3 +1110,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.login-feedback { padding: 10px 12px; border-radius: 8px; background: #eff6ff; color: #1d4ed8; font-size: 13px; }
+.login-feedback--error { background: #fef2f2; color: #b91c1c; }
+.submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
