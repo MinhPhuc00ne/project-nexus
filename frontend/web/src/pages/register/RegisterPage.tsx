@@ -231,7 +231,7 @@ export default function RegisterPage() {
                     type="email"
                     disabled={pending || Boolean(sentEmail)}
                     autoComplete="username"
-                    placeholder="email@domain.com"
+                    placeholder="example@gmail.com"
                     required
                     value={contact}
                     onChange={(event) => {
@@ -287,11 +287,15 @@ export default function RegisterPage() {
                       onChange={(event) => setPassword(event.target.value)}
                       type="password"
                       autoComplete="new-password"
+                      aria-describedby="register-password-hint"
                       placeholder="Tối thiểu 6 ký tự"
                       minLength={6}
                       required
                     />
                   </div>
+                  <p id="register-password-hint" className="register-field-hint">
+                    Bao gồm chữ hoa, chữ thường và kí tự đặc biệt.
+                  </p>
                 </div>
                 <div className="register-field">
                   <label htmlFor="register-otp">
