@@ -289,8 +289,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       notifications.map((item) => (
                         <div
                           key={item.id}
-                          className={`flex gap-3 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 ${item.unread ? 'bg-orange-50/60' : ''
-                            }`}
+                          className={`flex gap-3 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 ${
+                            item.unread ? 'bg-orange-50/60' : ''
+                          }`}
                         >
                           <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[#1c3973]">
                             <Bell size={16} />
@@ -359,10 +360,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                     <button
                       key={lang.code}
                       type="button"
-                      className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 text-[13px] transition-colors hover:bg-slate-100 ${currentLang === lang.code
+                      className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 text-[13px] transition-colors hover:bg-slate-100 ${
+                        currentLang === lang.code
                           ? 'font-semibold text-[#1c3973]'
                           : 'text-slate-800'
-                        }`}
+                      }`}
                       onClick={() => {
                         setCurrentLang(lang.code as 'vi' | 'en' | 'jp');
                         setShowLangMenu(false);
@@ -565,10 +567,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       <button
                         key={idx}
                         type="button"
-                        className={`w-full rounded-md border-0 bg-transparent px-3 py-2.5 text-left text-[13px] transition-colors hover:bg-slate-100 ${selectedFloor === floor
+                        className={`w-full rounded-md border-0 bg-transparent px-3 py-2.5 text-left text-[13px] transition-colors hover:bg-slate-100 ${
+                          selectedFloor === floor
                             ? 'bg-orange-50 font-bold text-[#f24e1e]'
                             : 'text-slate-800'
-                          }`}
+                        }`}
                         onClick={() => {
                           setSelectedFloor(floor);
                           setShowFloorMenu(false);
