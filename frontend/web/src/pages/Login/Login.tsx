@@ -328,17 +328,9 @@ const Login: React.FC = () => {
                   disabled={pending}
                 >
                   <GoogleIcon className="social-icon" />
-                  Google
+                  Đăng nhập với Google
                 </button>
-                <button
-                  type="button"
-                  className="social-login-btn"
-                  disabled
-                  title="Chức năng chưa khả dụng"
-                >
-                  <FacebookIcon className="social-icon" />
-                  Facebook
-                </button>
+
               </div>
 
               <div className="signup-prompt">
