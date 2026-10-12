@@ -14,7 +14,7 @@ import {
   ChevronDown,
   Heart,
 } from 'lucide-react';
-import Footer from '../../components/footer/footer';
+import './HomePage.css';
 
 interface Product {
   id: number;
@@ -298,9 +298,9 @@ function HomePage() {
     setActiveSlide((current) => (current === heroSlides.length - 1 ? 0 : current + 1));
 
   return (
-    <main className="mx-auto max-w-[1280px] px-4 py-4">
+    <main className="home-page mx-auto max-w-[1280px] px-4 py-4">
       <section className="rounded-[18px] border border-slate-200 bg-slate-100/60 p-5">
-        <div className="relative flex h-[520px] flex-col overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-sky-50 via-sky-100 to-sky-50 p-5 sm:h-[440px] sm:p-6 lg:h-[360px] lg:p-8">
+        <div className="home-page-hero relative flex h-[520px] flex-col overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-sky-50 via-sky-100 to-sky-50 p-5 sm:h-[440px] sm:p-6 lg:h-[360px] lg:p-8">
           <div className="pointer-events-none absolute inset-y-0 right-0 w-[42%] opacity-20 sm:opacity-30 lg:w-[48%] lg:opacity-100">
             <img
               src={activeHeroSlide.image}
@@ -442,7 +442,7 @@ function HomePage() {
           {categories.map((category) => (
             <div
               key={category.id}
-              className="rounded-[14px] border border-slate-100 bg-slate-50 p-3 text-center transition hover:border-sky-200 hover:bg-sky-50"
+              className="home-category-card rounded-[14px] border border-slate-100 bg-slate-50 p-3 text-center transition hover:border-sky-200 hover:bg-sky-50"
             >
               <img
                 src={category.image}
@@ -625,7 +625,6 @@ function HomePage() {
           </button>
         </div>
       </section>
-      <Footer />
     </main>
   );
 }
@@ -666,7 +665,7 @@ function Countdown({ values = ['02', '45', '17'] }: { values?: [string, string, 
 
 function TimerBox({ value }: { value: string }) {
   return (
-    <span className="rounded bg-slate-800 px-2 py-1 font-mono text-xs font-bold text-white">
+    <span className="home-countdown-value rounded bg-slate-800 px-2 py-1 font-mono text-xs font-bold text-white">
       {value}
     </span>
   );
@@ -678,7 +677,7 @@ function TimerBox({ value }: { value: string }) {
 
 function FlashSaleCard({ product }: { product: Product }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
+    <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
       <div className="relative aspect-square overflow-hidden rounded-lg border border-slate-300 bg-slate-900 p-1">
         {product.image ? (
           <img
@@ -726,7 +725,7 @@ function FlashSaleCard({ product }: { product: Product }) {
 
 function AuctionCard({ product }: { product: Product }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
+    <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
       <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-slate-100">
         {product.image ? (
           <img
@@ -768,7 +767,7 @@ function AuctionCard({ product }: { product: Product }) {
 
 function RecommendationCard({ product }: { product: Product }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-sky-200 hover:shadow-sm">
+    <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-sky-200 hover:shadow-sm">
       <div className="relative flex aspect-square items-center justify-center bg-slate-100">
         {product.image ? (
           <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
