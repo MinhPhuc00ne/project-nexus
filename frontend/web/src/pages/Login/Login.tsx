@@ -242,7 +242,7 @@ const Login: React.FC = () => {
                       autoComplete="username"
                       disabled={pending}
                       className="form-input"
-                      placeholder="user@nexus.vn"
+                      placeholder="user@gmail.com"
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
