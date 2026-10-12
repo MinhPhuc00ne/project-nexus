@@ -1,10 +1,24 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService, GoogleUser } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
 interface RequestWithUser extends Request {
@@ -14,7 +28,10 @@ interface RequestWithUser extends Request {
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   // ================= 1. ĐĂNG NHẬP =================
   @Post('login')
@@ -37,15 +54,29 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google Callback URL' })
-  googleAuthRedirect(@Req() req: RequestWithUser) {
-    return this.authService.googleLogin(req.user);
+  async googleAuthRedirect(@Req() req: RequestWithUser, @Res() res: Response): Promise<void> {
+    const result = await this.authService.googleLogin(req.user);
+    const portWeb = this.configService.get<string>('PORT_WEB') || process.env.PORT_WEB || '5173';
+    const frontendUrl = (
+      this.configService.get<string>('FRONTEND_URL') ||
+      process.env.FRONTEND_URL ||
+      `http://localhost:${portWeb}`
+    ).replace(/\/$/, '');
+
+    const params = new URLSearchParams({
+      token: result.accessToken,
+      refreshToken: result.refreshToken,
+      user: JSON.stringify(result.user),
+    });
+
+    res.redirect(`${frontendUrl}/?${params.toString()}`);
   }
 
   // ================= 3. ĐĂNG KÝ & XÁC THỰC =================
   @Post('register')
   @ApiOperation({ summary: 'Đăng ký tài khoản mới & gửi mã OTP về email' })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công, vui lòng check mail' })
-  async register(@Body() dto: RegisterDto) {
+  async register(@Body() dto: RegisterDto): Promise<{ message: string; email: string }> {
     return this.authService.register(dto);
   }
 
@@ -54,5 +85,44 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Xác thực thành công' })
   async verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);
+  }
+
+  // ================= 4. QUÊN MẬT KHẨU =================
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Quên mật khẩu - gửi mã OTP đặt lại mật khẩu về Gmail' })
+  @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về email' })
+  @ApiResponse({ status: 400, description: 'Email không tồn tại hoặc tài khoản chưa xác thực' })
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<{ message: string; email: string }> {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đặt lại mật khẩu bằng mã OTP nhận từ email' })
+  @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công' })
+  @ApiResponse({ status: 400, description: 'Mã OTP không chính xác hoặc đã hết hạn' })
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+    return this.authService.resetPassword(dto);
+  }
+
+  // ================= 5. REFRESH TOKEN & ĐĂNG XUẤT =================
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Làm mới Access Token bằng Refresh Token' })
+  @ApiResponse({ status: 200, description: 'Làm mới token thành công' })
+  @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ hoặc đã hết hạn' })
+  async refreshToken(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đăng xuất và thu hồi Refresh Token' })
+  @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
+  async logout(@Body() dto: RefreshTokenDto): Promise<{ message: string }> {
+    return this.authService.logout(dto);
   }
 }
