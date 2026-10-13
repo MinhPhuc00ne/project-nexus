@@ -1,6 +1,9 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as express from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AppModule } from './app.module';
 import { GlobalHttpExceptionFilter } from './core/filters/global-http-exception.filter';
 import { TransformResponseInterceptor } from './core/interceptors/transform-response.interceptor';
@@ -26,6 +29,13 @@ async function bootstrap(): Promise<void> {
     origin: '*',
     credentials: true,
   });
+
+  // Phục vụ tệp tĩnh tải lên (ví dụ: tài liệu / ảnh giấy tờ xác minh người bán)
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  app.use('/uploads', express.static(uploadsDir));
 
   const config = new DocumentBuilder()
     .setTitle('Project Nexus API')

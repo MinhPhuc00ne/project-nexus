@@ -3,14 +3,11 @@ import { IsEmail, IsNotEmpty, IsString, Length, Matches, MinLength } from 'class
 
 export class ResetPasswordDto {
   @ApiProperty({
-    example: 'user@gmail.com',
-    description: 'Email cần đặt lại mật khẩu (@gmail.com)',
+    example: 'admin@nexus.com',
+    description: 'Email cần đặt lại mật khẩu (Admin, Staff, Buyer, Seller)',
   })
-  @IsEmail({}, { message: 'Định dạng email không hợp lệ' })
   @IsNotEmpty({ message: 'Email không được để trống' })
-  @Matches(/^[a-zA-Z0-9._%+-]+@gmail\.com$/i, {
-    message: 'Chỉ chấp nhận địa chỉ email @gmail.com',
-  })
+  @IsEmail({}, { message: 'Định dạng email không hợp lệ' })
   email!: string;
 
   @ApiProperty({ example: '123456', description: 'Mã OTP 6 chữ số gửi qua email' })

@@ -114,13 +114,16 @@ export class AuthService {
     }
 
     Logger.log(
-      `🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} đã được gửi thành công.`,
+      `🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} là: ${verificationCode}`,
       AuthService.name,
     );
+
+    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
 
     return {
       message: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư Gmail để lấy mã OTP xác thực.',
       email,
+      ...(isDev ? { devOtpCode: verificationCode } : {}),
     };
   }
 
@@ -281,13 +284,16 @@ export class AuthService {
     });
 
     Logger.log(
-      `🔑 [OTP FORGOT PASSWORD] Mã đặt lại mật khẩu cho ${email} đã được gửi thành công.`,
+      `🔑 [OTP FORGOT PASSWORD] Mã đặt lại mật khẩu cho ${email} là: ${resetCode}`,
       AuthService.name,
     );
+
+    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
 
     return {
       message: 'Mã OTP đặt lại mật khẩu đã được gửi đến hộp thư Gmail của bạn!',
       email,
+      ...(isDev ? { devOtpCode: resetCode } : {}),
     };
   }
 
@@ -507,13 +513,15 @@ export class AuthService {
         `,
       });
     } catch (error) {
-      Logger.error(
-        `Gửi email đặt lại mật khẩu thất bại: ${(error as Error).message}`,
+      Logger.warn(
+        `[DEV MODE] Gửi email đặt lại mật khẩu thất bại (chưa cấu hình SMTP): ${(error as Error).message}`,
         AuthService.name,
       );
-      throw new BadRequestException(
-        'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
-      );
+      if (process.env.NODE_ENV === 'production') {
+        throw new BadRequestException(
+          'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
+        );
+      }
     }
   }
 }
