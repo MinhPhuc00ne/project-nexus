@@ -59,6 +59,8 @@ postgres_data/
 redis_data/
 rabbitmq_data/
 data/
+uploads/
+backend/uploads/
 
 *.blend1
 *.blend@

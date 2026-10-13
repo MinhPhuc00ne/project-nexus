@@ -141,6 +141,12 @@ enum BidStatus {
   REJECTED
 }
 
+enum SellerRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id              String               @id @default(uuid())
   email           String               @unique
@@ -174,6 +180,8 @@ model User {
   reviewsReceived         Review[]                 @relation("Reviewee")
   disputesOpened          Dispute[]                @relation("DisputeOpener")
   disputesResolved        Dispute[]                @relation("DisputeResolver")
+  sellerUpgradeRequests   SellerUpgradeRequest[]   @relation("UserSellerRequests")
+  reviewedSellerRequests  SellerUpgradeRequest[]   @relation("AdminReviewedSellerRequests")
 
   @@map("users")
 }
@@ -611,4 +619,28 @@ model NotificationPreference {
 
   @@unique([userId, channel])
   @@map("notification_preferences")
+}
+
+model SellerUpgradeRequest {
+  id                 String              @id @default(uuid())
+  userId             String              @map("user_id")
+  storeName          String              @map("store_name")
+  storeDescription   String?             @map("store_description") @db.Text
+  phone              String
+  businessEmail      String?             @map("business_email")
+  identityCardNumber String?             @map("identity_card_number")
+  attachmentUrl      String?             @map("attachment_url")
+  status             SellerRequestStatus @default(PENDING)
+  rejectionReason    String?             @map("rejection_reason") @db.Text
+  reviewedByAdminId  String?             @map("reviewed_by_admin_id")
+  reviewedAt         DateTime?           @map("reviewed_at")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  user       User  @relation("UserSellerRequests", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("AdminReviewedSellerRequests", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@map("seller_upgrade_requests")
 }
