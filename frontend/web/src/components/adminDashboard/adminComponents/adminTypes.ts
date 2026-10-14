@@ -1,0 +1,85 @@
+// Union type: chỉ chấp nhận các tên tab này, giúp TypeScript phát hiện tên tab viết sai.
+export type AdminTab =
+  | 'overview'
+  | 'auctions'
+  | 'studio'
+  | 'users'
+  | 'sellers'
+  | 'refunds'
+  | 'finance'
+  | 'system'
+  | 'settings';
+
+// Mẫu một hồ sơ Seller. pending = chờ duyệt, approved = đã duyệt, rejected = từ chối.
+export interface SellerApplication {
+  id: string;
+  name: string;
+  owner: string;
+  initials: string;
+  registration: string;
+  rating: string;
+  orders: number;
+  category: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+// Báo cáo và đề xuất của Staff được hiển thị để Admin ra quyết định hoàn tiền.
+export interface RefundRequest {
+  id: string;
+  product: string;
+  amount: number;
+  gateway: string;
+  report: string;
+  recommendation: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+// pending = chờ duyệt lịch, scheduled = đã lên lịch, live = đang diễn ra.
+export interface AuctionItem {
+  id: string;
+  name: string;
+  seller: string;
+  price: number; // Giá khởi điểm, đơn vị VND; giữ kiểu number để tính tiền cọc/phí.
+  preset: string; // Tên mẫu hiển thị 3D; bản demo chưa chứa file mô hình GLB.
+  time: string;
+  duration: number; // Thời lượng phiên, đơn vị phút.
+  image: string;
+  status: 'pending' | 'scheduled' | 'live';
+}
+
+// role là vai trò tài khoản; banned là trạng thái khóa, độc lập với vai trò.
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Buyer' | 'Seller' | 'Staff';
+  banned: boolean;
+  note: string;
+}
+
+// Gói dữ liệu chung do AdminPage sở hữu và truyền xuống các tab qua props.
+export interface AdminData {
+  sellers: SellerApplication[];
+  refunds: RefundRequest[];
+  auctions: AuctionItem[];
+  users: AdminUser[];
+}
+
+// Hợp đồng callback giữa trang cha và tab: tab yêu cầu thao tác, trang cha cập nhật data.
+// Các hàm hiện trả void vì thao tác đồng bộ trong demo; API thực tế có thể cần Promise.
+export interface AdminActions {
+  navigate: (tab: AdminTab) => void;
+  reviewSeller: (id: string, status: 'approved' | 'rejected') => void;
+  reviewRefund: (id: string, status: 'approved' | 'rejected') => void;
+  approveAuction: (id: string) => void;
+  toggleBan: (id: string) => void;
+  addStaff: (name: string, email: string, department: string) => void;
+  showDetail: (title: string, content: string) => void;
+  notify: (message: string) => void;
+}
+
+// Props chung: data dùng để đọc/hiển thị, actions dùng để báo thao tác về trang cha.
+export interface AdminTabProps {
+  data: AdminData;
+  actions: AdminActions;
+}

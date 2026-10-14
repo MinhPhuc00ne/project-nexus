@@ -1,0 +1,134 @@
+import { Activity, Download, ScrollText, Server, Truck } from 'lucide-react';
+import { Badge, Button, Panel } from './AdminUI';
+import type { AdminTabProps } from './adminTypes';
+
+// Nhật ký cố định để dựng UI. Muốn cập nhật thời gian thực cần nguồn API/WebSocket riêng.
+const events = [
+  {
+    time: '14:32:01',
+    message: 'Admin Alex Tran bật Stream Broadcast 3D #AUCT-109.',
+    tone: 'text-primary',
+  },
+  {
+    time: '14:31:45',
+    message: 'Atomic Bid #9802 khớp lệnh thành công 128.5M (Queue: 0ms).',
+    tone: 'text-blue-500',
+  },
+  { time: '14:30:12', message: 'Vận đơn GHN #VN88231 đã giao thành công.', tone: 'text-slate-500' },
+  {
+    time: '14:28:36',
+    message: 'Support Staff đã gửi hồ sơ hoàn tiền #NX-ORD-991204.',
+    tone: 'text-slate-500',
+  },
+  {
+    time: '14:25:08',
+    message: 'WebGL node #06 hoàn tất kiểm tra trạng thái.',
+    tone: 'text-emerald-600',
+  },
+];
+
+// Pick chỉ lấy kiểu của prop actions; card này không cần nhận toàn bộ AdminData.
+// Endpoint và trạng thái GHN dưới đây chỉ là nội dung hiển thị, chưa gửi request thật.
+export function LogisticsCard({ actions }: Pick<AdminTabProps, 'actions'>) {
+  return (
+    <Panel
+      title="Kết nối GHN Logistics API"
+      subtitle="Tự động kích hoạt webhook khi đấu giá gõ chốt phiên thành công"
+      icon={<Truck size={19} />}
+    >
+      <div className="space-y-3 rounded-lg bg-blue-50 p-3 text-[11px]">
+        <div className="flex justify-between gap-2">
+          <span className="text-slate-500">Webhook endpoint</span>
+          <code className="break-all text-primary">/api/v1/ghn/webhook</code>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate-500">Tạo vận đơn tự động</span>
+          <Badge tone="green">Hoạt động</Badge>
+        </div>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[10px]">
+        <span className="text-slate-500">
+          Độ trễ phản hồi: <b>45ms</b>
+        </span>
+        <button
+          onClick={() => actions.notify('Chưa kết nối API GHN. Đây là trạng thái minh họa.')}
+          className="font-semibold text-primary hover:underline"
+        >
+          Tạo lại vận đơn lỗi
+        </button>
+      </div>
+    </Panel>
+  );
+}
+
+// compact=true dùng trong Tổng quan để hiển thị 3 sự kiện; tab Hệ thống hiển thị đầy đủ.
+export function EventLog({ compact = false }: { compact?: boolean }) {
+  const download = () => {
+    // Chỉ xuất thời gian/nội dung; tone là class màu UI nên không đưa vào JSON tải xuống.
+    // JSON.stringify(..., null, 2) thụt dòng 2 dấu cách cho dễ đọc.
+    const url = URL.createObjectURL(
+      new Blob(
+        [
+          JSON.stringify(
+            events.map(({ time, message }) => ({ time, message })),
+            null,
+            2,
+          ),
+        ],
+        { type: 'application/json' },
+      ),
+    );
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'nexus-demo-event-log.json';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+  return (
+    <Panel
+      title="Nhật ký sự kiện thời gian thực"
+      subtitle="Theo dõi hoạt động hệ thống (dữ liệu demo)"
+      icon={<ScrollText size={19} />}
+      action={<span className="mt-3 size-2 shrink-0 rounded-full bg-blue-500" />}
+    >
+      <div className="space-y-2">
+        {events.slice(0, compact ? 3 : events.length).map((event) => (
+          <p
+            key={event.time}
+            className="rounded-lg bg-slate-50 p-3 font-mono text-[10px] leading-5 text-slate-600"
+          >
+            <span className={`font-bold ${event.tone}`}>[{event.time}]</span> {event.message}
+          </p>
+        ))}
+      </div>
+      <Button variant="secondary" onClick={download} className="mt-4 w-full">
+        <Download size={13} />
+        Xuất event log (JSON)
+      </Button>
+    </Panel>
+  );
+}
+
+// Tab Hệ thống ghép KPI kỹ thuật, kết nối vận chuyển và nhật ký; các KPI vẫn là fixture.
+export default function SystemTab({ actions }: AdminTabProps) {
+  return (
+    <div className="space-y-5">
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[
+          { label: 'WebSocket engine', value: '12ms', icon: Activity },
+          { label: 'WebGL cluster', value: '6 nodes online', icon: Server },
+          { label: 'Uptime hệ thống', value: '99.98%', icon: Activity },
+        ].map(({ label, value, icon: Icon }) => (
+          <Panel key={label} title={label} icon={<Icon size={18} />}>
+            <p className="text-2xl font-bold text-primary">{value}</p>
+            <p className="mt-2 text-xs text-slate-400">Trạng thái minh họa • chưa kết nối API</p>
+          </Panel>
+        ))}
+      </div>
+      <div className="grid items-start gap-5 xl:grid-cols-[1fr_1.5fr]">
+        <LogisticsCard actions={actions} />
+        <EventLog />
+      </div>
+    </div>
+  );
+}

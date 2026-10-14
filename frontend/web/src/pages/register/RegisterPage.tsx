@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { register, verifyEmail } from '../../services/auth';
-import Header from '../../components/Header/Header';
 import {
   ArrowRight,
   BadgeCheck,
@@ -13,7 +12,6 @@ import {
   UserRound,
 } from 'lucide-react';
 import './RegisterPage.css';
-import Footer from '../../components/footer/footer';
 
 const benefits = [
   {

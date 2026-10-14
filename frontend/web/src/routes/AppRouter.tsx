@@ -3,6 +3,7 @@ import Login from '../pages/Login/Login';
 import HomePage from '../pages/home/HomePage';
 import RegisterPage from '../pages/register/RegisterPage';
 import StaffDashboard from '../pages/staff/StaffDashboard';
+import AdminPage from '../pages/adminDasboard/adminPage';
 import GuestLayout from '../layouts/GuestLayout';
 import AuthLayout from '../layouts/AuthLayout';
 
@@ -18,6 +19,8 @@ function AppRouter() {
           <Route index element={<RegisterPage />} />
         </Route>
         <Route path="/staff" element={<StaffDashboard />} />
+        <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
+        <Route path="/admin/:tab" element={<AdminPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
