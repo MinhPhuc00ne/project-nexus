@@ -4,7 +4,9 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 // Đã xóa dòng "import * as path from 'path';" vì không còn dùng tới
 import { PrismaModule } from './core/prisma/prisma.module';
 import { RedisModule } from './core/redis/redis.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { AuthModule } from './modules/auth/auth.module';
     PrismaModule,
     RedisModule,
     AuthModule,
+    UsersModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
