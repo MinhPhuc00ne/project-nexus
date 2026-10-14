@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { register, verifyEmail } from '../../services/auth';
+import { verifyEmail } from '../../services/auth';
+import { register } from '../../services/auth.service';
 import {
   ArrowRight,
   BadgeCheck,
@@ -65,17 +66,20 @@ export default function RegisterPage() {
   }
 
   async function handleSendOtp(): Promise<void> {
+    // Chặn gửi trùng, gửi sau khi xác thực hoặc gửi lại trước 60 giây.
     if (requestInFlight.current || verified || Date.now() < resendAt) return;
     const email = contact.trim();
     if (
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+      !/^[a-zA-Z0-9._%+-]+@gmail\.com$/i.test(email) ||
       !fullName.trim() ||
-      password.length < 6 ||
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[^a-zA-Z0-9\s]/.test(password) ||
       !agreement
     ) {
       setFailed(true);
       setFeedback(
-        'Vui lòng nhập họ tên, email hợp lệ, mật khẩu tối thiểu 6 ký tự và đồng ý điều khoản.',
+        'Vui lòng nhập họ tên, Gmail, mật khẩu tối thiểu 8 ký tự có chữ hoa và ký tự đặc biệt, rồi đồng ý điều khoản.',
       );
       return;
     }
@@ -83,13 +87,15 @@ export default function RegisterPage() {
     setPending(true);
     setFailed(false);
     setFeedback('');
-    // A resend replaces the previous OTP; require the latest code even if the response is lost.
+    // Gửi lại sẽ thay OTP cũ: xóa mã đã nhập và chờ mã mới, kể cả khi request timeout.
     setSentEmail('');
     setCode('');
     setResendAt(Date.now() + 60000);
     setResendSeconds(60);
     try {
+      // Gọi service Axios: backend tạo tài khoản chưa xác thực và gửi OTP.
       const result = await register(email, password, fullName.trim());
+      // Chỉ mở bước nhập OTP sau khi API trả về thành công.
       setSentEmail(email);
       setCode('');
       setFeedback(result.message);
@@ -286,13 +292,13 @@ export default function RegisterPage() {
                       type="password"
                       autoComplete="new-password"
                       aria-describedby="register-password-hint"
-                      placeholder="Tối thiểu 6 ký tự"
-                      minLength={6}
+                      placeholder="Tối thiểu 8 ký tự"
+                      minLength={8}
                       required
                     />
                   </div>
                   <p id="register-password-hint" className="register-field-hint">
-                    Bao gồm kí tự, chữ hoa, chữ thường và kí tự đặc biệt.
+                    Ít nhất 8 ký tự, có một chữ hoa và một ký tự đặc biệt.
                   </p>
                 </div>
                 <div className="register-field">
