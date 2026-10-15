@@ -205,4 +205,3 @@ export function refreshToken(): Promise<{ accessToken: string; refreshToken: str
 export function startGoogleLogin(): void {
   window.location.assign(`${apiUrl}/auth/google`);
 }
-

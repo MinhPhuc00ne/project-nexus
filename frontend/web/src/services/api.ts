@@ -1,13 +1,12 @@
 import { getStoredToken } from './auth';
 
-export const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1').replace(
-  /\/$/,
-  '',
-);
+export const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
+).replace(/\/$/, '');
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
-  body?: any;
+  body?: unknown;
   isFormData?: boolean;
   requireAuth?: boolean;
 }
@@ -34,16 +33,25 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     response = await fetch(endpoint, {
       method,
       headers,
-      body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+      body: isFormData ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(30000),
     });
   } catch {
-    throw new Error('Không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ backend.');
+    throw new Error(
+      'Không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ backend.',
+    );
   }
 
-  let payload: any;
+  interface ApiResponsePayload {
+    data?: unknown;
+    errors?: unknown[];
+    message?: string;
+    [key: string]: unknown;
+  }
+
+  let payload: ApiResponsePayload | null = null;
   try {
-    payload = await response.json();
+    payload = (await response.json()) as ApiResponsePayload;
   } catch {
     throw new Error('Máy chủ phản hồi định dạng dữ liệu không hợp lệ.');
   }
@@ -61,5 +69,5 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     return payload.data as T;
   }
 
-  return payload as T;
+  return payload as unknown as T;
 }

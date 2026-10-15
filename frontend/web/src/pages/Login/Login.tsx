@@ -128,7 +128,9 @@ const Login: React.FC = () => {
       setShowForgotModal(false);
       setEmail(forgotEmail.trim());
       setPassword('');
-      setFeedback(res.message || 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.');
+      setFeedback(
+        res.message || 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập bằng mật khẩu mới.',
+      );
       setFailed(false);
       setForgotStep(1);
       setForgotCode('');
@@ -601,7 +603,8 @@ const Login: React.FC = () => {
         {forgotStep === 1 ? (
           <form onSubmit={handleSendForgotOtp} className="space-y-4">
             <p className="text-sm text-slate-600">
-              Nhập địa chỉ email đăng ký tài khoản của bạn. Hệ thống sẽ gửi mã xác thực (OTP) về hộp thư để khôi phục mật khẩu.
+              Nhập địa chỉ email đăng ký tài khoản của bạn. Hệ thống sẽ gửi mã xác thực (OTP) về hộp
+              thư để khôi phục mật khẩu.
             </p>
 
             {forgotError && (
@@ -649,7 +652,8 @@ const Login: React.FC = () => {
         ) : (
           <form onSubmit={handleResetPassword} className="space-y-4">
             <p className="text-sm text-slate-600">
-              Mã xác thực đã được gửi đến <strong>{forgotEmail}</strong>. Vui lòng kiểm tra hộp thư và nhập mã cùng mật khẩu mới.
+              Mã xác thực đã được gửi đến <strong>{forgotEmail}</strong>. Vui lòng kiểm tra hộp thư
+              và nhập mã cùng mật khẩu mới.
             </p>
 
             {forgotSuccess && (

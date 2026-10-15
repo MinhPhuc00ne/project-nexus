@@ -93,7 +93,9 @@ function StaffDashboard() {
 
   // Seller Requests State
   const [sellerRequests, setSellerRequests] = useState<SellerUpgradeRequest[]>([]);
-  const [sellerReqFilter, setSellerReqFilter] = useState<'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'>('PENDING');
+  const [sellerReqFilter, setSellerReqFilter] = useState<
+    'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED'
+  >('PENDING');
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [requestError, setRequestError] = useState('');
   const [rejectingReqId, setRejectingReqId] = useState<string | null>(null);
@@ -369,7 +371,8 @@ function StaffDashboard() {
                     Duyệt Hồ Sơ Nâng Cấp Người Bán (Seller Upgrade Requests)
                   </h2>
                   <p className="text-sm text-slate-500 mt-1">
-                    Kiểm tra thông tin gian hàng và tài liệu chứng minh danh tính để phê duyệt quyền bán hàng.
+                    Kiểm tra thông tin gian hàng và tài liệu chứng minh danh tính để phê duyệt quyền
+                    bán hàng.
                   </p>
                 </div>
 
@@ -417,7 +420,9 @@ function StaffDashboard() {
                     <h4 className="font-bold">Lỗi tải dữ liệu</h4>
                     <p>{requestError}</p>
                     <p className="text-xs text-red-600 mt-1">
-                      (Lưu ý: Chức năng này yêu cầu đăng nhập bằng tài khoản Quản trị viên ADMIN. Bạn có thể đăng nhập bằng tài khoản <strong>admin@nexus.com</strong> / mật khẩu <strong>Admin@123456</strong>).
+                      (Lưu ý: Chức năng này yêu cầu đăng nhập bằng tài khoản Quản trị viên ADMIN.
+                      Bạn có thể đăng nhập bằng tài khoản <strong>admin@nexus.com</strong> / mật
+                      khẩu <strong>Admin@123456</strong>).
                     </p>
                   </div>
                 </div>
@@ -461,8 +466,9 @@ function StaffDashboard() {
                             </span>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
-                            Người nộp: <strong>{req.reviewedBy ? req.reviewedBy.fullName : req.userId}</strong> • Ngày gửi:{' '}
-                            {new Date(req.createdAt).toLocaleString('vi-VN')}
+                            Người nộp:{' '}
+                            <strong>{req.reviewedBy ? req.reviewedBy.fullName : req.userId}</strong>{' '}
+                            • Ngày gửi: {new Date(req.createdAt).toLocaleString('vi-VN')}
                           </p>
                         </div>
 
@@ -639,279 +645,282 @@ function StaffDashboard() {
             </div>
           ) : (
             <>
-          <section className="staff-kpi-grid grid grid-cols-4 gap-3" aria-label="Chỉ số hỗ trợ">
-            <MetricCard
-              icon={<MessageSquareText size={18} />}
-              tone="coral"
-              label="HỘI THOẠI ĐANG XỬ LÝ"
-              value={tickets === null ? '' : String(chattingCount)}
-              suffix=""
-              footerLabel="SLA phản hồi TB"
-              footerValue=""
-            />
-            <MetricCard
-              icon={<Clock3 size={18} />}
-              tone="amber"
-              label="HÀNG ĐỢI CHỜ HỖ TRỢ"
-              value={tickets === null ? '' : String(waitingCount)}
-              suffix=""
-              footerLabel="Thời gian chờ TB"
-              footerValue=""
-            />
-            <MetricCard
-              icon={<Star size={18} />}
-              tone="blue"
-              label="TỶ LỆ HÀI LÒNG CSAT"
-              value=""
-              suffix=""
-              footerLabel="Tổng lượt đánh giá"
-              footerValue=""
-            />
-            <MetricCard
-              icon={<Gavel size={18} />}
-              tone="red"
-              label="TRANH CHẤP CẦN CAN THIỆP"
-              value=""
-              suffix=""
-              footerLabel="Tạm giữ cọc"
-              footerValue=""
-            />
-          </section>
-
-          <section className="staff-workspace grid gap-4">
-            <div className="staff-ticket-panel staff-panel">
-              <div className="staff-panel-heading">
-                <h2>
-                  <Inbox size={17} /> Hàng Đợi Hỗ Trợ
-                </h2>
-                <span className="staff-ticket-total">
-                  {tickets === null ? '' : `${tickets.length} TICKET`}
-                </span>
-              </div>
-              <div className="staff-filter-tabs" role="tablist" aria-label="Lọc ticket">
-                <button
-                  className={activeFilter === 'all' ? 'is-selected' : ''}
-                  onClick={() => setActiveFilter('all')}
-                >
-                  Tất cả{tickets !== null && ` (${tickets.length})`}
-                </button>
-                <button
-                  className={activeFilter === 'chatting' ? 'is-selected' : ''}
-                  onClick={() => setActiveFilter('chatting')}
-                >
-                  Đang chat{tickets !== null && ` (${chattingCount})`}
-                </button>
-                <button
-                  className={activeFilter === 'waiting' ? 'is-selected' : ''}
-                  onClick={() => setActiveFilter('waiting')}
-                >
-                  Chờ phản hồi{tickets !== null && ` (${waitingCount})`}
-                </button>
-              </div>
-              <label className="staff-ticket-search">
-                <Search size={15} />
-                <input
-                  value={searchText}
-                  onChange={(event) => setSearchText(event.target.value)}
-                  placeholder="Tìm theo tên khách, SĐT, mã đơn..."
+              <section className="staff-kpi-grid grid grid-cols-4 gap-3" aria-label="Chỉ số hỗ trợ">
+                <MetricCard
+                  icon={<MessageSquareText size={18} />}
+                  tone="coral"
+                  label="HỘI THOẠI ĐANG XỬ LÝ"
+                  value={tickets === null ? '' : String(chattingCount)}
+                  suffix=""
+                  footerLabel="SLA phản hồi TB"
+                  footerValue=""
                 />
-              </label>
-              <div className="staff-ticket-list">
-                {visibleTickets.length
-                  ? visibleTickets.map((ticket) => (
-                      <button
-                        key={ticket.id}
-                        className={`staff-ticket ${activeTicketId === ticket.id ? 'is-current' : ''}`}
-                        onClick={() => setActiveTicketId(ticket.id)}
-                      >
-                        <div className="staff-ticket-top">
-                          <span
-                            className={`staff-avatar staff-avatar--${ticket.initials.toLowerCase()}`}
-                          >
-                            {ticket.initials}
-                          </span>
-                          <span className="staff-ticket-customer">
-                            <b>{ticket.customer}</b>
-                            <small>{ticket.id}</small>
-                          </span>
-                          <span
-                            className={`staff-role-badge ${ticket.role === 'VIP GOLD' ? 'is-vip' : ticket.role === 'SELLER VERIFIED' ? 'is-seller' : ''}`}
-                          >
-                            {ticket.role}
-                          </span>
-                          <small className="staff-ticket-time">{ticket.time}</small>
-                        </div>
-                        <p>{ticket.preview}</p>
-                        <div className="staff-ticket-bottom">
-                          <span
-                            className={`staff-topic staff-topic--${ticket.category.toLowerCase().replace(' ', '-')}`}
-                          >
-                            {ticket.category === 'Auction 3D' ? (
-                              <>
-                                <Gavel size={12} /> Đấu giá 3D
-                              </>
-                            ) : ticket.category === 'Shipping' ? (
-                              <>
-                                <Truck size={12} /> Vận chuyển GHN
-                              </>
-                            ) : (
-                              <>
-                                <ShieldCheck size={12} /> Thanh toán Escrow
-                              </>
-                            )}
-                          </span>
-                          <span
-                            className={`staff-ticket-state ${ticket.status === 'chatting' ? 'is-chatting' : ''}`}
-                          >
-                            {ticket.status === 'chatting'
-                              ? '● Đang hỗ trợ'
-                              : ticket.status === 'resolved'
-                                ? 'Đã xử lý'
-                                : 'Chờ phản hồi'}
-                          </span>
-                        </div>
-                      </button>
-                    ))
-                  : null}
-              </div>
-            </div>
+                <MetricCard
+                  icon={<Clock3 size={18} />}
+                  tone="amber"
+                  label="HÀNG ĐỢI CHỜ HỖ TRỢ"
+                  value={tickets === null ? '' : String(waitingCount)}
+                  suffix=""
+                  footerLabel="Thời gian chờ TB"
+                  footerValue=""
+                />
+                <MetricCard
+                  icon={<Star size={18} />}
+                  tone="blue"
+                  label="TỶ LỆ HÀI LÒNG CSAT"
+                  value=""
+                  suffix=""
+                  footerLabel="Tổng lượt đánh giá"
+                  footerValue=""
+                />
+                <MetricCard
+                  icon={<Gavel size={18} />}
+                  tone="red"
+                  label="TRANH CHẤP CẦN CAN THIỆP"
+                  value=""
+                  suffix=""
+                  footerLabel="Tạm giữ cọc"
+                  footerValue=""
+                />
+              </section>
 
-            <div className="staff-chat-panel staff-panel">
-              {activeTicket ? (
-                <>
-                  <div className="staff-chat-heading">
-                    <div className="staff-chat-person">
-                      <span
-                        className={`staff-avatar staff-avatar--${activeTicket.initials.toLowerCase()}`}
-                      >
-                        {activeTicket.initials}
-                      </span>
-                      <span>
-                        <b>{activeTicket.customer}</b>
-                        <small>{activeTicket.category}</small>
-                      </span>
-                    </div>
-                    <div className="staff-chat-actions">
-                      <button
-                        className="staff-icon-button"
-                        aria-label="Gửi email"
-                        onClick={() => notify(`Mở email của ${activeTicket.customer}`)}
-                      >
-                        <AtSign size={16} />
-                      </button>
-                      <button
-                        className="staff-icon-button"
-                        aria-label="Gắn nhãn"
-                        onClick={() => notify(`Ticket ${activeTicket.id} đã gắn nhãn ưu tiên.`)}
-                      >
-                        <Tag size={16} />
-                      </button>
-                      <button
-                        className="staff-icon-button"
-                        aria-label="Thêm tùy chọn"
-                        onClick={() => notify('Tùy chọn hội thoại')}
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
-                    </div>
+              <section className="staff-workspace grid gap-4">
+                <div className="staff-ticket-panel staff-panel">
+                  <div className="staff-panel-heading">
+                    <h2>
+                      <Inbox size={17} /> Hàng Đợi Hỗ Trợ
+                    </h2>
+                    <span className="staff-ticket-total">
+                      {tickets === null ? '' : `${tickets.length} TICKET`}
+                    </span>
                   </div>
-                  <div className="staff-session-banner">MÃ TICKET: {activeTicket.id}</div>
-                  <div className="staff-message-list">
-                    {activeTicket.messages.map((message) => (
-                      <article
-                        key={message.id}
-                        className={`staff-message ${message.isAgent ? 'is-agent' : ''}`}
-                      >
-                        <div className="staff-message-meta">
-                          {!message.isAgent && (
-                            <span
-                              className={`staff-avatar staff-avatar--small staff-avatar--${activeTicket.initials.toLowerCase()}`}
-                            >
-                              {activeTicket.initials}
-                            </span>
-                          )}
-                          <b>{message.author}</b>
-                          <time>{message.time}</time>
-                          {message.isAgent && (
-                            <span className="staff-message-shield">
-                              <ShieldCheck size={14} />
-                            </span>
-                          )}
-                        </div>
-                        <p>{message.body}</p>
-                      </article>
-                    ))}
+                  <div className="staff-filter-tabs" role="tablist" aria-label="Lọc ticket">
+                    <button
+                      className={activeFilter === 'all' ? 'is-selected' : ''}
+                      onClick={() => setActiveFilter('all')}
+                    >
+                      Tất cả{tickets !== null && ` (${tickets.length})`}
+                    </button>
+                    <button
+                      className={activeFilter === 'chatting' ? 'is-selected' : ''}
+                      onClick={() => setActiveFilter('chatting')}
+                    >
+                      Đang chat{tickets !== null && ` (${chattingCount})`}
+                    </button>
+                    <button
+                      className={activeFilter === 'waiting' ? 'is-selected' : ''}
+                      onClick={() => setActiveFilter('waiting')}
+                    >
+                      Chờ phản hồi{tickets !== null && ` (${waitingCount})`}
+                    </button>
                   </div>
-                  <div className="staff-reply-area">
-                    <div className="staff-composer-toolbar">
-                      <button aria-label="In đậm">
-                        <b>B</b>
-                      </button>
-                      <button aria-label="Danh sách">
-                        <List size={15} />
-                      </button>
-                      <button aria-label="Đính kèm tệp" onClick={() => notify('Chọn tệp đính kèm')}>
-                        <Paperclip size={15} />
-                      </button>
-                      <button aria-label="Chèn biểu tượng cảm xúc">
-                        <Smile size={15} />
-                      </button>
-                      <span>
-                        SLA: <b></b>
-                      </span>
-                    </div>
-                    <textarea
-                      value={reply}
-                      onChange={(event) => setReply(event.target.value)}
-                      onKeyDown={handleComposerKeyDown}
-                      placeholder="Nhập nội dung phản hồi... (Enter để gửi, Shift + Enter để xuống dòng)"
-                      rows={3}
+                  <label className="staff-ticket-search">
+                    <Search size={15} />
+                    <input
+                      value={searchText}
+                      onChange={(event) => setSearchText(event.target.value)}
+                      placeholder="Tìm theo tên khách, SĐT, mã đơn..."
                     />
-                    <div className="staff-composer-footer">
-                      <span>
-                        <BadgeCheck size={14} /> Nhân viên hỗ trợ
-                      </span>
-                      <button
-                        className="staff-send-button"
-                        onClick={sendReply}
-                        disabled={!reply.trim()}
-                      >
-                        Gửi phản hồi <Send size={15} />
-                      </button>
-                    </div>
+                  </label>
+                  <div className="staff-ticket-list">
+                    {visibleTickets.length
+                      ? visibleTickets.map((ticket) => (
+                          <button
+                            key={ticket.id}
+                            className={`staff-ticket ${activeTicketId === ticket.id ? 'is-current' : ''}`}
+                            onClick={() => setActiveTicketId(ticket.id)}
+                          >
+                            <div className="staff-ticket-top">
+                              <span
+                                className={`staff-avatar staff-avatar--${ticket.initials.toLowerCase()}`}
+                              >
+                                {ticket.initials}
+                              </span>
+                              <span className="staff-ticket-customer">
+                                <b>{ticket.customer}</b>
+                                <small>{ticket.id}</small>
+                              </span>
+                              <span
+                                className={`staff-role-badge ${ticket.role === 'VIP GOLD' ? 'is-vip' : ticket.role === 'SELLER VERIFIED' ? 'is-seller' : ''}`}
+                              >
+                                {ticket.role}
+                              </span>
+                              <small className="staff-ticket-time">{ticket.time}</small>
+                            </div>
+                            <p>{ticket.preview}</p>
+                            <div className="staff-ticket-bottom">
+                              <span
+                                className={`staff-topic staff-topic--${ticket.category.toLowerCase().replace(' ', '-')}`}
+                              >
+                                {ticket.category === 'Auction 3D' ? (
+                                  <>
+                                    <Gavel size={12} /> Đấu giá 3D
+                                  </>
+                                ) : ticket.category === 'Shipping' ? (
+                                  <>
+                                    <Truck size={12} /> Vận chuyển GHN
+                                  </>
+                                ) : (
+                                  <>
+                                    <ShieldCheck size={12} /> Thanh toán Escrow
+                                  </>
+                                )}
+                              </span>
+                              <span
+                                className={`staff-ticket-state ${ticket.status === 'chatting' ? 'is-chatting' : ''}`}
+                              >
+                                {ticket.status === 'chatting'
+                                  ? '● Đang hỗ trợ'
+                                  : ticket.status === 'resolved'
+                                    ? 'Đã xử lý'
+                                    : 'Chờ phản hồi'}
+                              </span>
+                            </div>
+                          </button>
+                        ))
+                      : null}
                   </div>
-                </>
-              ) : null}
-            </div>
+                </div>
 
-            <aside className="staff-context-column">
-              {activeTicket ? (
-                <>
-                  <section className="staff-context-card staff-customer-card">
-                    <div className="staff-context-title">HỒ SƠ KHÁCH HÀNG</div>
-                    <div className="staff-customer-profile">
-                      <span className="staff-avatar staff-avatar--large">
-                        {activeTicket.initials}
-                      </span>
-                      <div>
-                        <b>{activeTicket.customer}</b>
-                        <small>{activeTicket.id}</small>
-                        <small>{activeTicket.role}</small>
+                <div className="staff-chat-panel staff-panel">
+                  {activeTicket ? (
+                    <>
+                      <div className="staff-chat-heading">
+                        <div className="staff-chat-person">
+                          <span
+                            className={`staff-avatar staff-avatar--${activeTicket.initials.toLowerCase()}`}
+                          >
+                            {activeTicket.initials}
+                          </span>
+                          <span>
+                            <b>{activeTicket.customer}</b>
+                            <small>{activeTicket.category}</small>
+                          </span>
+                        </div>
+                        <div className="staff-chat-actions">
+                          <button
+                            className="staff-icon-button"
+                            aria-label="Gửi email"
+                            onClick={() => notify(`Mở email của ${activeTicket.customer}`)}
+                          >
+                            <AtSign size={16} />
+                          </button>
+                          <button
+                            className="staff-icon-button"
+                            aria-label="Gắn nhãn"
+                            onClick={() => notify(`Ticket ${activeTicket.id} đã gắn nhãn ưu tiên.`)}
+                          >
+                            <Tag size={16} />
+                          </button>
+                          <button
+                            className="staff-icon-button"
+                            aria-label="Thêm tùy chọn"
+                            onClick={() => notify('Tùy chọn hội thoại')}
+                          >
+                            <MoreHorizontal size={18} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </section>
-                  <section className="staff-context-card">
-                    <div className="staff-context-title">DỮ LIỆU LIÊN QUAN</div>
-                  </section>
-                </>
-              ) : (
-                <section className="staff-context-card">
-                  <div className="staff-context-title">HỒ SƠ KHÁCH HÀNG</div>
-                </section>
-              )}
-            </aside>
-          </section>
-          </>
+                      <div className="staff-session-banner">MÃ TICKET: {activeTicket.id}</div>
+                      <div className="staff-message-list">
+                        {activeTicket.messages.map((message) => (
+                          <article
+                            key={message.id}
+                            className={`staff-message ${message.isAgent ? 'is-agent' : ''}`}
+                          >
+                            <div className="staff-message-meta">
+                              {!message.isAgent && (
+                                <span
+                                  className={`staff-avatar staff-avatar--small staff-avatar--${activeTicket.initials.toLowerCase()}`}
+                                >
+                                  {activeTicket.initials}
+                                </span>
+                              )}
+                              <b>{message.author}</b>
+                              <time>{message.time}</time>
+                              {message.isAgent && (
+                                <span className="staff-message-shield">
+                                  <ShieldCheck size={14} />
+                                </span>
+                              )}
+                            </div>
+                            <p>{message.body}</p>
+                          </article>
+                        ))}
+                      </div>
+                      <div className="staff-reply-area">
+                        <div className="staff-composer-toolbar">
+                          <button aria-label="In đậm">
+                            <b>B</b>
+                          </button>
+                          <button aria-label="Danh sách">
+                            <List size={15} />
+                          </button>
+                          <button
+                            aria-label="Đính kèm tệp"
+                            onClick={() => notify('Chọn tệp đính kèm')}
+                          >
+                            <Paperclip size={15} />
+                          </button>
+                          <button aria-label="Chèn biểu tượng cảm xúc">
+                            <Smile size={15} />
+                          </button>
+                          <span>
+                            SLA: <b></b>
+                          </span>
+                        </div>
+                        <textarea
+                          value={reply}
+                          onChange={(event) => setReply(event.target.value)}
+                          onKeyDown={handleComposerKeyDown}
+                          placeholder="Nhập nội dung phản hồi... (Enter để gửi, Shift + Enter để xuống dòng)"
+                          rows={3}
+                        />
+                        <div className="staff-composer-footer">
+                          <span>
+                            <BadgeCheck size={14} /> Nhân viên hỗ trợ
+                          </span>
+                          <button
+                            className="staff-send-button"
+                            onClick={sendReply}
+                            disabled={!reply.trim()}
+                          >
+                            Gửi phản hồi <Send size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+
+                <aside className="staff-context-column">
+                  {activeTicket ? (
+                    <>
+                      <section className="staff-context-card staff-customer-card">
+                        <div className="staff-context-title">HỒ SƠ KHÁCH HÀNG</div>
+                        <div className="staff-customer-profile">
+                          <span className="staff-avatar staff-avatar--large">
+                            {activeTicket.initials}
+                          </span>
+                          <div>
+                            <b>{activeTicket.customer}</b>
+                            <small>{activeTicket.id}</small>
+                            <small>{activeTicket.role}</small>
+                          </div>
+                        </div>
+                      </section>
+                      <section className="staff-context-card">
+                        <div className="staff-context-title">DỮ LIỆU LIÊN QUAN</div>
+                      </section>
+                    </>
+                  ) : (
+                    <section className="staff-context-card">
+                      <div className="staff-context-title">HỒ SƠ KHÁCH HÀNG</div>
+                    </section>
+                  )}
+                </aside>
+              </section>
+            </>
           )}
 
           {/* POPUP TỪ CHỐI DUYỆT HỒ SƠ */}
@@ -925,7 +934,8 @@ function StaffDashboard() {
           >
             <form onSubmit={handleReject} className="space-y-4">
               <p className="text-sm text-slate-600">
-                Vui lòng nhập lý do từ chối hồ sơ này. Lý do sẽ được lưu vào hệ thống và hiển thị cho người dùng biết để họ bổ sung giấy tờ.
+                Vui lòng nhập lý do từ chối hồ sơ này. Lý do sẽ được lưu vào hệ thống và hiển thị
+                cho người dùng biết để họ bổ sung giấy tờ.
               </p>
 
               <div>
@@ -974,7 +984,8 @@ function StaffDashboard() {
           >
             <form onSubmit={handleCreateStaff} className="space-y-3.5">
               <p className="text-sm text-slate-600">
-                Tài khoản nhân viên được cấp quyền <code>SUPPORT_STAFF</code> và tự động xác thực để truy cập hệ thống chăm sóc khách hàng.
+                Tài khoản nhân viên được cấp quyền <code>SUPPORT_STAFF</code> và tự động xác thực để
+                truy cập hệ thống chăm sóc khách hàng.
               </p>
 
               {staffFormError && (

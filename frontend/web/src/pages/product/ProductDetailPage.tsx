@@ -28,7 +28,9 @@ export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [product, setProduct] = useState<ProductDetail>(() => getProductById(id || 'ap-tourbillon'));
+  const [product, setProduct] = useState<ProductDetail>(() =>
+    getProductById(id || 'ap-tourbillon'),
+  );
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState('Bản Tiêu Chuẩn');
@@ -96,9 +98,13 @@ export default function ProductDetailPage() {
         {/* Navigation Bar & Back Button */}
         <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
           <nav className="flex items-center gap-2 text-xs text-slate-500">
-            <Link to="/" className="hover:text-indigo-600 transition">Trang Chủ</Link>
+            <Link to="/" className="hover:text-indigo-600 transition">
+              Trang Chủ
+            </Link>
             <ChevronRight size={13} />
-            <Link to="/search" className="hover:text-indigo-600 transition">Đồng Hồ & Trang Sức</Link>
+            <Link to="/search" className="hover:text-indigo-600 transition">
+              Đồng Hồ & Trang Sức
+            </Link>
             <ChevronRight size={13} />
             <span className="font-semibold text-slate-800 line-clamp-1">{product.name}</span>
           </nav>
@@ -144,10 +150,16 @@ export default function ProductDetailPage() {
                 type="button"
                 onClick={() => {
                   setIsFavorite(!isFavorite);
-                  showToast(isFavorite ? 'Đã bỏ yêu thích sản phẩm' : 'Đã lưu sản phẩm vào danh sách yêu thích!');
+                  showToast(
+                    isFavorite
+                      ? 'Đã bỏ yêu thích sản phẩm'
+                      : 'Đã lưu sản phẩm vào danh sách yêu thích!',
+                  );
                 }}
                 className={`absolute top-3 right-3 p-2.5 rounded-full transition shadow ${
-                  isFavorite ? 'bg-red-50 text-red-500' : 'bg-white/90 text-slate-600 hover:text-red-500 hover:bg-white'
+                  isFavorite
+                    ? 'bg-red-50 text-red-500'
+                    : 'bg-white/90 text-slate-600 hover:text-red-500 hover:bg-white'
                 }`}
                 title="Lưu vào yêu thích"
               >
@@ -176,10 +188,16 @@ export default function ProductDetailPage() {
                   type="button"
                   onClick={() => setSelectedImgIdx(idx)}
                   className={`w-20 h-20 rounded-xl border-2 overflow-hidden bg-slate-50 transition cursor-pointer shrink-0 ${
-                    selectedImgIdx === idx ? 'border-[#f24e1e] shadow-md' : 'border-slate-200 hover:border-slate-300'
+                    selectedImgIdx === idx
+                      ? 'border-[#f24e1e] shadow-md'
+                      : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
-                  <img src={img} alt={`Thumbnail ${idx}`} className="w-full h-full object-contain p-1" />
+                  <img
+                    src={img}
+                    alt={`Thumbnail ${idx}`}
+                    className="w-full h-full object-contain p-1"
+                  />
                 </button>
               ))}
             </div>
@@ -230,9 +248,13 @@ export default function ProductDetailPage() {
                   <span>{product.rating}</span>
                 </div>
                 <span className="text-slate-300">|</span>
-                <span className="text-slate-700"><strong>{product.reviewsCount}</strong> đánh giá</span>
+                <span className="text-slate-700">
+                  <strong>{product.reviewsCount}</strong> đánh giá
+                </span>
                 <span className="text-slate-300">|</span>
-                <span className="text-slate-700"><strong>{product.soldCount}</strong> đã giao dịch</span>
+                <span className="text-slate-700">
+                  <strong>{product.soldCount}</strong> đã giao dịch
+                </span>
               </div>
 
               {/* Price Banner */}
@@ -258,7 +280,9 @@ export default function ProductDetailPage() {
                   <span className="px-2 py-0.5 rounded bg-orange-500 text-white font-bold text-[11px]">
                     VOUCHER SÀN
                   </span>
-                  <span>Nhập mã <strong>NEXUS500K</strong> giảm ngay 500.000đ khi thanh toán</span>
+                  <span>
+                    Nhập mã <strong>NEXUS500K</strong> giảm ngay 500.000đ khi thanh toán
+                  </span>
                 </div>
               </div>
 
@@ -351,7 +375,10 @@ export default function ProductDetailPage() {
                     {product.shop.name}
                     {product.shop.verified && <CheckCircle2 size={14} className="text-blue-500" />}
                   </h4>
-                  <p className="text-xs text-slate-500">Điểm uy tín: <strong>{product.shop.trustScore}/100</strong> • Phản hồi: {product.shop.responseRate}</p>
+                  <p className="text-xs text-slate-500">
+                    Điểm uy tín: <strong>{product.shop.trustScore}/100</strong> • Phản hồi:{' '}
+                    {product.shop.responseRate}
+                  </p>
                 </div>
               </div>
 
@@ -424,9 +451,14 @@ export default function ProductDetailPage() {
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 my-4">
                   <h4 className="font-bold text-slate-900 mb-2">Đặc Điểm Nổi Bật:</h4>
                   <ul className="list-disc pl-5 space-y-1.5 text-slate-600">
-                    <li>Mô hình quét 3D thực tế độ phân giải cao, hỗ trợ kiểm định tương tác trực quan.</li>
+                    <li>
+                      Mô hình quét 3D thực tế độ phân giải cao, hỗ trợ kiểm định tương tác trực
+                      quan.
+                    </li>
                     <li>Sử dụng các vật liệu cao cấp chuẩn đồng hồ xa xỉ Thụy Sỹ.</li>
-                    <li>Đi kèm hộp đựng cao cấp, thẻ bảo hành quốc tế tích hợp chip NFC chống giả mạo.</li>
+                    <li>
+                      Đi kèm hộp đựng cao cấp, thẻ bảo hành quốc tế tích hợp chip NFC chống giả mạo.
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -460,7 +492,10 @@ export default function ProductDetailPage() {
                       Cơ Chế Bảo Chứng Ký Quỹ Escrow PayOS
                     </h4>
                     <p className="text-slate-600 leading-relaxed text-xs">
-                      Khi quý khách đặt mua hoặc tham gia đấu giá, số tiền thanh toán hoặc tiền đặt cọc (50%) sẽ được giữ an toàn tại tài khoản ủy thác Escrow của hệ thống NEXUS. Người bán sẽ KHÔNG được nhận tiền ngay lập tức mà chỉ nhận được khi đơn hàng đã được giao đến tay quý khách và được đồng kiểm xác nhận đạt tiêu chuẩn.
+                      Khi quý khách đặt mua hoặc tham gia đấu giá, số tiền thanh toán hoặc tiền đặt
+                      cọc (50%) sẽ được giữ an toàn tại tài khoản ủy thác Escrow của hệ thống NEXUS.
+                      Người bán sẽ KHÔNG được nhận tiền ngay lập tức mà chỉ nhận được khi đơn hàng
+                      đã được giao đến tay quý khách và được đồng kiểm xác nhận đạt tiêu chuẩn.
                     </p>
                   </div>
                 </div>
@@ -472,7 +507,10 @@ export default function ProductDetailPage() {
                       Vận Chuyển Hỏa Tốc & Đồng Kiểm GHN Express
                     </h4>
                     <p className="text-slate-600 leading-relaxed text-xs">
-                      Tất cả đơn hàng giá trị cao đều được niêm phong bằng seal an ninh chuyên dụng của NEXUS và vận chuyển có bảo hiểm 100% qua Giao Hàng Nhanh (GHN). Quý khách có quyền mở bưu kiện kiểm tra hàng trước mặt nhân viên giao nhận trước khi xác nhận.
+                      Tất cả đơn hàng giá trị cao đều được niêm phong bằng seal an ninh chuyên dụng
+                      của NEXUS và vận chuyển có bảo hiểm 100% qua Giao Hàng Nhanh (GHN). Quý khách
+                      có quyền mở bưu kiện kiểm tra hàng trước mặt nhân viên giao nhận trước khi xác
+                      nhận.
                     </p>
                   </div>
                 </div>
@@ -492,16 +530,32 @@ export default function ProductDetailPage() {
                     <div className="text-xs text-slate-500">{product.reviewsCount} nhận xét</div>
                   </div>
                   <div className="text-xs text-slate-600 space-y-1">
-                    <p className="font-bold text-slate-800">100% Khách hàng hài lòng về độ hoàn thiện và bảo chứng Escrow</p>
-                    <p>Sản phẩm đã được chuyên viên giám định vật lý trước khi kích hoạt giao dịch.</p>
+                    <p className="font-bold text-slate-800">
+                      100% Khách hàng hài lòng về độ hoàn thiện và bảo chứng Escrow
+                    </p>
+                    <p>
+                      Sản phẩm đã được chuyên viên giám định vật lý trước khi kích hoạt giao dịch.
+                    </p>
                   </div>
                 </div>
 
                 {/* Sample Review Comments */}
                 <div className="space-y-4">
                   {[
-                    { name: 'Trần Hoàng Long', time: '2 ngày trước', comment: 'Hàng nhận chuẩn chỉ từng con ốc, check mã NFC chính hãng trùng khớp. Ký quỹ PayOS rất yên tâm!', rating: 5 },
-                    { name: 'Vũ Minh Tuấn', time: '1 tuần trước', comment: 'Mô hình 3D trên web xoay y chang lúc nhận hàng ngoài đời. Đóng gói hộp rất sang trọng.', rating: 5 },
+                    {
+                      name: 'Trần Hoàng Long',
+                      time: '2 ngày trước',
+                      comment:
+                        'Hàng nhận chuẩn chỉ từng con ốc, check mã NFC chính hãng trùng khớp. Ký quỹ PayOS rất yên tâm!',
+                      rating: 5,
+                    },
+                    {
+                      name: 'Vũ Minh Tuấn',
+                      time: '1 tuần trước',
+                      comment:
+                        'Mô hình 3D trên web xoay y chang lúc nhận hàng ngoài đời. Đóng gói hộp rất sang trọng.',
+                      rating: 5,
+                    },
                   ].map((rev, idx) => (
                     <div key={idx} className="p-4 rounded-xl border border-slate-100 bg-white">
                       <div className="flex items-center justify-between mb-1">
@@ -535,32 +589,34 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {PRODUCTS_CATALOG.filter((p) => p.id !== product.id).slice(0, 4).map((rel) => (
-              <Link
-                key={rel.id}
-                to={`/product/${rel.id}`}
-                className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition flex flex-col justify-between"
-              >
-                <div className="aspect-square bg-slate-50 p-4 overflow-hidden flex items-center justify-center">
-                  <img
-                    src={rel.images[0]}
-                    alt={rel.name}
-                    className="w-full h-full object-contain group-hover:scale-105 transition duration-300"
-                  />
-                </div>
-                <div className="p-3.5">
-                  <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">
-                    {rel.brand.split('•')[0]}
-                  </span>
-                  <h4 className="text-xs font-bold text-slate-800 line-clamp-2 mb-2 group-hover:text-[#f24e1e] transition">
-                    {rel.name}
-                  </h4>
-                  <div className="text-sm font-extrabold text-[#f24e1e]">
-                    {rel.formattedPrice}
+            {PRODUCTS_CATALOG.filter((p) => p.id !== product.id)
+              .slice(0, 4)
+              .map((rel) => (
+                <Link
+                  key={rel.id}
+                  to={`/product/${rel.id}`}
+                  className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition flex flex-col justify-between"
+                >
+                  <div className="aspect-square bg-slate-50 p-4 overflow-hidden flex items-center justify-center">
+                    <img
+                      src={rel.images[0]}
+                      alt={rel.name}
+                      className="w-full h-full object-contain group-hover:scale-105 transition duration-300"
+                    />
                   </div>
-                </div>
-              </Link>
-            ))}
+                  <div className="p-3.5">
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">
+                      {rel.brand.split('•')[0]}
+                    </span>
+                    <h4 className="text-xs font-bold text-slate-800 line-clamp-2 mb-2 group-hover:text-[#f24e1e] transition">
+                      {rel.name}
+                    </h4>
+                    <div className="text-sm font-extrabold text-[#f24e1e]">
+                      {rel.formattedPrice}
+                    </div>
+                  </div>
+                </Link>
+              ))}
           </div>
         </div>
       </div>

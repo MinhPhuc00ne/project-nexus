@@ -95,9 +95,7 @@ export default function RegisterPage() {
       setSentEmail(email);
       if (result.devOtpCode) {
         setCode(result.devOtpCode);
-        setFeedback(
-          `${result.message} [Đã tự động điền mã OTP: ${result.devOtpCode}]`,
-        );
+        setFeedback(`${result.message} [Đã tự động điền mã OTP: ${result.devOtpCode}]`);
       } else {
         setCode('');
         setFeedback(result.message);

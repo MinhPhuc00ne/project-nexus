@@ -677,9 +677,19 @@ function TimerBox({ value }: { value: string }) {
 ========================================================= */
 
 function FlashSaleCard({ product }: { product: Product }) {
-  const prodId = product.id === 1 ? 'ap-tourbillon' : product.id === 2 ? 'patek-celestial' : product.id === 3 ? 'hublot-unico' : 'rolex-daytona';
+  const prodId =
+    product.id === 1
+      ? 'ap-tourbillon'
+      : product.id === 2
+        ? 'patek-celestial'
+        : product.id === 3
+          ? 'hublot-unico'
+          : 'rolex-daytona';
   return (
-    <a href={`/product/${prodId}`} className="home-product-card block overflow-hidden rounded-xl border border-slate-200 bg-white p-2 hover:shadow-md transition">
+    <a
+      href={`/product/${prodId}`}
+      className="home-product-card block overflow-hidden rounded-xl border border-slate-200 bg-white p-2 hover:shadow-md transition"
+    >
       <div className="relative aspect-square overflow-hidden rounded-lg border border-slate-300 bg-slate-900 p-1">
         {product.image ? (
           <img
@@ -698,7 +708,9 @@ function FlashSaleCard({ product }: { product: Product }) {
       </div>
 
       <div className="px-1 pb-1 pt-2">
-        <h3 className="truncate text-xs font-semibold text-slate-700 hover:text-[#f24e1e] transition">{product.name}</h3>
+        <h3 className="truncate text-xs font-semibold text-slate-700 hover:text-[#f24e1e] transition">
+          {product.name}
+        </h3>
 
         <div className="mt-1 flex items-baseline gap-2">
           <p className="text-sm font-extrabold text-[#f24e1e]">
@@ -726,10 +738,20 @@ function FlashSaleCard({ product }: { product: Product }) {
 }
 
 function AuctionCard({ product }: { product: Product }) {
-  const prodId = product.id === 1 ? 'ap-tourbillon' : product.id === 2 ? 'rolex-daytona' : product.id === 3 ? 'hublot-unico' : 'patek-celestial';
+  const prodId =
+    product.id === 1
+      ? 'ap-tourbillon'
+      : product.id === 2
+        ? 'rolex-daytona'
+        : product.id === 3
+          ? 'hublot-unico'
+          : 'patek-celestial';
   return (
     <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white p-2 hover:shadow-md transition">
-      <a href={`/product/${prodId}`} className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-slate-100 block">
+      <a
+        href={`/product/${prodId}`}
+        className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-slate-100 block"
+      >
         {product.image ? (
           <img
             src={product.image}
@@ -754,7 +776,9 @@ function AuctionCard({ product }: { product: Product }) {
 
       <div className="p-2">
         <a href={`/product/${prodId}`}>
-          <h3 className="text-xs font-bold text-slate-700 hover:text-[#f24e1e] transition">{product.name || 'Chưa có dữ liệu'}</h3>
+          <h3 className="text-xs font-bold text-slate-700 hover:text-[#f24e1e] transition">
+            {product.name || 'Chưa có dữ liệu'}
+          </h3>
         </a>
 
         <div className="mt-2 flex items-center justify-between">
@@ -772,7 +796,14 @@ function AuctionCard({ product }: { product: Product }) {
 }
 
 function RecommendationCard({ product }: { product: Product }) {
-  const prodId = product.id === 1 ? 'ap-tourbillon' : product.id === 2 ? 'patek-celestial' : product.id === 3 ? 'hublot-unico' : 'rolex-daytona';
+  const prodId =
+    product.id === 1
+      ? 'ap-tourbillon'
+      : product.id === 2
+        ? 'patek-celestial'
+        : product.id === 3
+          ? 'hublot-unico'
+          : 'rolex-daytona';
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -781,7 +812,9 @@ function RecommendationCard({ product }: { product: Product }) {
         id: prodId,
         name: product.name,
         price: product.price || 18500000,
-        formattedPrice: product.price ? `${product.price.toLocaleString('vi-VN')} ₫` : '18.500.000 ₫',
+        formattedPrice: product.price
+          ? `${product.price.toLocaleString('vi-VN')} ₫`
+          : '18.500.000 ₫',
         img: product.image || '/images/watches/watch-1.png',
         shopName: 'NEXUS Official Store',
       },
@@ -791,9 +824,16 @@ function RecommendationCard({ product }: { product: Product }) {
 
   return (
     <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-sky-200 hover:shadow-sm">
-      <a href={`/product/${prodId}`} className="relative flex aspect-square items-center justify-center bg-slate-100 block">
+      <a
+        href={`/product/${prodId}`}
+        className="relative flex aspect-square items-center justify-center bg-slate-100 block"
+      >
         {product.image ? (
-          <img src={product.image} alt={product.name} className="h-full w-full object-cover hover:scale-105 transition duration-300" />
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-full w-full object-cover hover:scale-105 transition duration-300"
+          />
         ) : (
           <span className="text-xs text-slate-400">Chưa có hình ảnh</span>
         )}

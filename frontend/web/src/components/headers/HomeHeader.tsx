@@ -105,7 +105,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     };
   }, []);
 
-  const effectiveCartCount = cartCount > 0 ? cartCount : storedCart.reduce((acc, c) => acc + c.qty, 0);
+  const effectiveCartCount =
+    cartCount > 0 ? cartCount : storedCart.reduce((acc, c) => acc + c.qty, 0);
   const effectiveCartItems =
     cartItems.length > 0
       ? cartItems
@@ -240,7 +241,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
       formData.append('phone', phone.trim());
       if (storeDescription.trim()) formData.append('storeDescription', storeDescription.trim());
       if (businessEmail.trim()) formData.append('businessEmail', businessEmail.trim());
-      if (identityCardNumber.trim()) formData.append('identityCardNumber', identityCardNumber.trim());
+      if (identityCardNumber.trim())
+        formData.append('identityCardNumber', identityCardNumber.trim());
       formData.append('file', proofFile);
 
       const res = await createSellerRequest(formData);
@@ -382,9 +384,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer"
             >
               <ShoppingBag size={14} />
-              <span>
-                {profile?.role === 'SELLER' ? 'Hồ sơ Người Bán' : 'Trở thành Seller'}
-              </span>
+              <span>{profile?.role === 'SELLER' ? 'Hồ sơ Người Bán' : 'Trở thành Seller'}</span>
             </button>
 
             <span className="text-xs text-slate-200">|</span>
@@ -649,7 +649,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                             <Wallet size={12} className="text-amber-600" /> Số dư ví:
                           </span>
                           <strong className="text-emerald-700 font-semibold">
-                            {profile.wallet ? `${Number(profile.wallet.balance).toLocaleString('vi-VN')} ₫` : '0 ₫'}
+                            {profile.wallet
+                              ? `${Number(profile.wallet.balance).toLocaleString('vi-VN')} ₫`
+                              : '0 ₫'}
                           </strong>
                         </div>
                         <div className="flex justify-between items-center">
@@ -943,8 +945,14 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                           </h5>
 
                           <div className="flex items-center justify-between">
-                            <span className="text-[13px] font-bold text-[#f24e1e]">{item.price}</span>
-                            {item.qty && <span className="text-xs text-slate-400 font-medium">x{item.qty}</span>}
+                            <span className="text-[13px] font-bold text-[#f24e1e]">
+                              {item.price}
+                            </span>
+                            {item.qty && (
+                              <span className="text-xs text-slate-400 font-medium">
+                                x{item.qty}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </a>
@@ -1016,7 +1024,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       Hồ sơ của bạn đang được Ban Quản Trị xét duyệt!
                     </h4>
                     <p className="text-amber-800">
-                      Bạn đã gửi yêu cầu nâng cấp tài khoản lên Seller. Quản trị viên đang tiến hành kiểm tra thông tin và tài liệu chứng minh.
+                      Bạn đã gửi yêu cầu nâng cấp tài khoản lên Seller. Quản trị viên đang tiến hành
+                      kiểm tra thông tin và tài liệu chứng minh.
                     </p>
                   </div>
                 </div>
@@ -1039,7 +1048,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   {pendingReq.identityCardNumber && (
                     <div className="flex justify-between border-b border-slate-200 pb-2">
                       <span className="text-slate-500">Số CCCD/CMND:</span>
-                      <span className="text-slate-800 font-medium">{pendingReq.identityCardNumber}</span>
+                      <span className="text-slate-800 font-medium">
+                        {pendingReq.identityCardNumber}
+                      </span>
                     </div>
                   )}
                   <div className="flex justify-between border-b border-slate-200 pb-2">
@@ -1175,12 +1186,15 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tài Liệu Đính Kèm Chứng Minh (Ảnh CCCD / GPKD) <span className="text-red-500">*</span>
+                  Tài Liệu Đính Kèm Chứng Minh (Ảnh CCCD / GPKD){' '}
+                  <span className="text-red-500">*</span>
                 </label>
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-300 hover:border-orange-500 hover:bg-orange-50/50 rounded-lg cursor-pointer transition text-sm text-slate-600">
                     <Upload className="w-4 h-4 text-orange-500" />
-                    <span>{proofFile ? proofFile.name : 'Chọn tệp đính kèm (Ảnh/PDF tối đa 15MB)'}</span>
+                    <span>
+                      {proofFile ? proofFile.name : 'Chọn tệp đính kèm (Ảnh/PDF tối đa 15MB)'}
+                    </span>
                     <input
                       type="file"
                       required
@@ -1202,7 +1216,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   )}
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Hệ thống yêu cầu tài liệu để đảm bảo tính pháp lý và bảo vệ quyền lợi người mua trên sàn.
+                  Hệ thống yêu cầu tài liệu để đảm bảo tính pháp lý và bảo vệ quyền lợi người mua
+                  trên sàn.
                 </p>
               </div>
 

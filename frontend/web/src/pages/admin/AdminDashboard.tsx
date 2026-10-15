@@ -21,13 +21,17 @@ import {
   User,
   Wallet,
   ExternalLink,
+  type LucideIcon,
 } from 'lucide-react';
 import './AdminDashboard.css';
 
 const images = {
-  watch1: 'https://images.unsplash.com/photo-1670177257750-9b47927f68eb?auto=format&fit=crop&w=900&q=85',
-  watch2: 'https://images.unsplash.com/photo-1633869699811-cd4f63049b36?auto=format&fit=crop&w=900&q=85',
-  decor: 'https://images.unsplash.com/photo-1723902499495-e31fda518516?auto=format&fit=crop&w=900&q=85',
+  watch1:
+    'https://images.unsplash.com/photo-1670177257750-9b47927f68eb?auto=format&fit=crop&w=900&q=85',
+  watch2:
+    'https://images.unsplash.com/photo-1633869699811-cd4f63049b36?auto=format&fit=crop&w=900&q=85',
+  decor:
+    'https://images.unsplash.com/photo-1723902499495-e31fda518516?auto=format&fit=crop&w=900&q=85',
 };
 
 function Button({
@@ -151,7 +155,13 @@ export default function AdminDashboard() {
   const initialUsers = [
     ['Trần Danh', 'tran.danh.88@gmail.com', 'Buyer', 'Đã khóa', 'Giao dịch dấu hiệu bất thường'],
     ['Hoàng Anh', 'hoanganh.watches@gmail.com', 'Seller', 'Đang hoạt động', 'Gian hàng 4,9 sao'],
-    ['Khoa Nguyễn', 'khoa.nguyen.bidder@outlook.com', 'Buyer', 'Cảnh báo', 'Từ chối thanh toán 2 phiên'],
+    [
+      'Khoa Nguyễn',
+      'khoa.nguyen.bidder@outlook.com',
+      'Buyer',
+      'Cảnh báo',
+      'Từ chối thanh toán 2 phiên',
+    ],
     ['Minh Trang', 'trang.minh@nexus.vn', 'Staff', 'Đang hoạt động', 'Support Staff'],
     ['Nguyễn Văn An', 'admin@nexus.com', 'Admin', 'Đang hoạt động', 'Quản trị viên tối cao'],
   ];
@@ -161,7 +171,7 @@ export default function AdminDashboard() {
     (u) =>
       u[0].toLowerCase().includes(userSearch.toLowerCase()) ||
       u[1].toLowerCase().includes(userSearch.toLowerCase()) ||
-      u[2].toLowerCase().includes(userSearch.toLowerCase())
+      u[2].toLowerCase().includes(userSearch.toLowerCase()),
   );
 
   const toggleUserStatus = (email: string) => {
@@ -172,20 +182,44 @@ export default function AdminDashboard() {
           return [u[0], u[1], u[2], newStatus, u[4]];
         }
         return u;
-      })
+      }),
     );
   };
 
   const sellerApprovals = [
     ['Artisan Dragon Gems', 'Doanh nghiệp', '42 đơn thành công', 'Hủy 0%', 'Tin nhiệm 4,95'],
-    ['Vintage Saigon Horology', 'Cá nhân kinh doanh', '19 đơn giá trị cao', 'Hủy 0%', 'Tin nhiệm 4,8'],
+    [
+      'Vintage Saigon Horology',
+      'Cá nhân kinh doanh',
+      '19 đơn giá trị cao',
+      'Hủy 0%',
+      'Tin nhiệm 4,8',
+    ],
     ['Nếp Home Atelier', 'Doanh nghiệp', '128 đơn thành công', 'Hủy 1,2%', 'Tin nhiệm 4,9'],
   ];
 
   const refunds = [
-    ['#NX-ORD-991204', '48.500.000 ₫', 'Lư Hương Đồng triều Nguyễn', 'Buyer đã quay video mở niêm phong', 'Hoàn tiền toàn phần'],
-    ['#NX-ORD-887410', '112.000.000 ₫', 'Đồng hồ Omega Seamaster 300M', 'Sai số dây đeo, Seller phản hồi thiếu bằng chứng', 'Yêu cầu giám định'],
-    ['#NX-ORD-772305', '6.500.000 ₫', 'Ví lạnh VaultKey Titanium', 'Sản phẩm không kích hoạt được', 'Hoàn tiền toàn phần'],
+    [
+      '#NX-ORD-991204',
+      '48.500.000 ₫',
+      'Lư Hương Đồng triều Nguyễn',
+      'Buyer đã quay video mở niêm phong',
+      'Hoàn tiền toàn phần',
+    ],
+    [
+      '#NX-ORD-887410',
+      '112.000.000 ₫',
+      'Đồng hồ Omega Seamaster 300M',
+      'Sai số dây đeo, Seller phản hồi thiếu bằng chứng',
+      'Yêu cầu giám định',
+    ],
+    [
+      '#NX-ORD-772305',
+      '6.500.000 ₫',
+      'Ví lạnh VaultKey Titanium',
+      'Sản phẩm không kích hoạt được',
+      'Hoàn tiền toàn phần',
+    ],
   ];
 
   return (
@@ -305,11 +339,26 @@ export default function AdminDashboard() {
               <section className="admin-kpis">
                 {[
                   ['Doanh thu phí sàn', '1.842.500.000 ₫', '+76.770 USD · tháng này', Wallet],
-                  ['Phiên đấu giá đang diễn ra', '8 phiên Live', '142 người trả giá theo giây', Gavel],
-                  ['Yêu cầu chờ quyết định', '14 yêu cầu', '5 Seller · 6 hoàn tiền · 3 vật phẩm', Clock3],
-                  ['Người dùng & phân quyền', `${usersList.length * 7680} users`, '+280 tài khoản trong 24 giờ', User],
+                  [
+                    'Phiên đấu giá đang diễn ra',
+                    '8 phiên Live',
+                    '142 người trả giá theo giây',
+                    Gavel,
+                  ],
+                  [
+                    'Yêu cầu chờ quyết định',
+                    '14 yêu cầu',
+                    '5 Seller · 6 hoàn tiền · 3 vật phẩm',
+                    Clock3,
+                  ],
+                  [
+                    'Người dùng & phân quyền',
+                    `${usersList.length * 7680} users`,
+                    '+280 tài khoản trong 24 giờ',
+                    User,
+                  ],
                 ].map(([label, value, meta, Icon]) => {
-                  const LucideIcon = Icon as any;
+                  const LucideIcon = Icon as LucideIcon;
                   return (
                     <article key={String(label)}>
                       <div>
@@ -362,9 +411,8 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="admin-selected-range">
-                    <Clock3 /> Dữ liệu từ{' '}
-                    <strong>{dateFrom.split('-').reverse().join('/')}</strong> đến{' '}
-                    <strong>{dateTo.split('-').reverse().join('/')}</strong>
+                    <Clock3 /> Dữ liệu từ <strong>{dateFrom.split('-').reverse().join('/')}</strong>{' '}
+                    đến <strong>{dateTo.split('-').reverse().join('/')}</strong>
                   </div>
 
                   <div className="admin-revenue-totals">
@@ -522,9 +570,7 @@ export default function AdminDashboard() {
                       <div className="admin-section-heading">
                         <div>
                           <h2>Tạo lời mời nhân sự mới</h2>
-                          <p>
-                            Staff sẽ nhận email để xác thực thông tin và tự thiết lập mật khẩu.
-                          </p>
+                          <p>Staff sẽ nhận email để xác thực thông tin và tự thiết lập mật khẩu.</p>
                         </div>
                         <span className="safe-badge">Quyền Super Admin</span>
                       </div>
@@ -533,8 +579,8 @@ export default function AdminDashboard() {
                         <p>
                           <strong>Quy trình cấp tài khoản an toàn</strong>
                           <span>
-                            Không gửi mật khẩu qua email. Liên kết xác nhận chỉ dùng một lần và
-                            hết hạn sau 24 giờ.
+                            Không gửi mật khẩu qua email. Liên kết xác nhận chỉ dùng một lần và hết
+                            hạn sau 24 giờ.
                           </span>
                         </p>
                       </div>
@@ -596,8 +642,8 @@ export default function AdminDashboard() {
                       </span>
                       <h2>Đã gửi lời mời làm việc</h2>
                       <p>
-                        Email mời đã được gửi đến <strong>staff.personal@gmail.com</strong>.
-                        Staff cần xác nhận danh tính và tạo mật khẩu trong vòng 24 giờ.
+                        Email mời đã được gửi đến <strong>staff.personal@gmail.com</strong>. Staff
+                        cần xác nhận danh tính và tạo mật khẩu trong vòng 24 giờ.
                       </p>
                       <div>
                         <span>Email nền tảng dự kiến</span>
@@ -709,9 +755,7 @@ export default function AdminDashboard() {
                       </div>
                       <h2>{item.name}</h2>
                       <p>
-                        {index === 0
-                          ? '1.420 người xem · 42 lượt đặt giá'
-                          : `Bắt đầu ${item.time}`}
+                        {index === 0 ? '1.420 người xem · 42 lượt đặt giá' : `Bắt đầu ${item.time}`}
                       </p>
                       <div>
                         <span>
@@ -799,7 +843,8 @@ export default function AdminDashboard() {
                         Kết nối cơ sở dữ liệu thời gian thực
                       </h3>
                       <p className="text-xs text-indigo-700">
-                        Bạn có thể duyệt hồ sơ seller thực tế từ Neon PostgreSQL qua bàn làm việc Staff.
+                        Bạn có thể duyệt hồ sơ seller thực tế từ Neon PostgreSQL qua bàn làm việc
+                        Staff.
                       </p>
                     </div>
                     <Button onClick={() => navigate('/staff')}>
@@ -996,15 +1041,13 @@ export default function AdminDashboard() {
                         'Bộ lọc từ khóa cấm',
                         '18 từ vi phạm đang hoạt động',
                         settingFilter.keywordFilter,
-                        () =>
-                          setSettingFilter((p) => ({ ...p, keywordFilter: !p.keywordFilter })),
+                        () => setSettingFilter((p) => ({ ...p, keywordFilter: !p.keywordFilter })),
                       ],
                       [
                         'Tự động khóa sản phẩm giả mạo',
                         'Dựa trên báo cáo và điểm rủi ro',
                         settingFilter.autoBlockFake,
-                        () =>
-                          setSettingFilter((p) => ({ ...p, autoBlockFake: !p.autoBlockFake })),
+                        () => setSettingFilter((p) => ({ ...p, autoBlockFake: !p.autoBlockFake })),
                       ],
                       [
                         'Yêu cầu duyệt mô hình 3D',

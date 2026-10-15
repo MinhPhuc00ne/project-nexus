@@ -59,10 +59,13 @@ export function listStaff(params?: QueryStaffParams): Promise<PaginatedResult<St
   if (params?.limit) query.set('limit', String(params.limit));
   const queryString = query.toString();
 
-  return apiRequest<PaginatedResult<StaffUser>>(`/admin/staff${queryString ? `?${queryString}` : ''}`, {
-    method: 'GET',
-    requireAuth: true,
-  });
+  return apiRequest<PaginatedResult<StaffUser>>(
+    `/admin/staff${queryString ? `?${queryString}` : ''}`,
+    {
+      method: 'GET',
+      requireAuth: true,
+    },
+  );
 }
 
 /**

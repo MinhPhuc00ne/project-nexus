@@ -13,7 +13,13 @@
   grid-template-columns: 260px 1fr;
   background: var(--admin-bg);
   color: #12213a;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
 }
 
 .admin-sidebar {
@@ -622,9 +628,15 @@
   border-top: 1px solid #edf1f5;
 }
 
-.admin-chart > span:nth-child(1) { top: 25%; }
-.admin-chart > span:nth-child(2) { top: 50%; }
-.admin-chart > span:nth-child(3) { top: 75%; }
+.admin-chart > span:nth-child(1) {
+  top: 25%;
+}
+.admin-chart > span:nth-child(2) {
+  top: 50%;
+}
+.admin-chart > span:nth-child(3) {
+  top: 75%;
+}
 
 .admin-chart svg {
   position: absolute;
@@ -705,7 +717,7 @@
 }
 
 .admin-fee-donut:after {
-  content: "";
+  content: '';
   position: absolute;
   width: 100px;
   height: 100px;

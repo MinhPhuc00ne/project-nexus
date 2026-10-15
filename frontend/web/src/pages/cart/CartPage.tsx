@@ -68,7 +68,9 @@ export default function CartPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState<CartItem[]>(() => getCartItems());
   const [voucherCode, setVoucherCode] = useState('');
-  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discount: number } | null>(null);
+  const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discount: number } | null>(
+    null,
+  );
   const [voucherError, setVoucherError] = useState('');
   const [toast, setToast] = useState<string | null>(null);
 
@@ -164,7 +166,9 @@ export default function CartPage() {
         {/* Navigation Bar & Back Button */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <nav className="flex items-center gap-2 text-xs text-slate-500">
-            <Link to="/" className="hover:text-indigo-600 transition">Trang Chủ</Link>
+            <Link to="/" className="hover:text-indigo-600 transition">
+              Trang Chủ
+            </Link>
             <ChevronRight size={13} />
             <span className="font-semibold text-slate-800">Giỏ Hàng Của Bạn</span>
           </nav>
@@ -190,7 +194,8 @@ export default function CartPage() {
             </div>
             <h2 className="text-xl font-bold text-slate-800 mb-2">Giỏ hàng của bạn đang trống</h2>
             <p className="text-sm text-slate-500 mb-6">
-              Khám phá các sản phẩm thương mại cao cấp và phiên đấu giá 3D độc quyền trên NEXUS ngay hôm nay!
+              Khám phá các sản phẩm thương mại cao cấp và phiên đấu giá 3D độc quyền trên NEXUS ngay
+              hôm nay!
             </p>
             <Link
               to="/search"
@@ -226,7 +231,10 @@ export default function CartPage() {
               {/* Items List */}
               <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 shadow-sm overflow-hidden">
                 {items.map((item) => (
-                  <div key={item.id} className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition">
+                  <div
+                    key={item.id}
+                    className="p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition"
+                  >
                     {/* Checkbox & Product Info */}
                     <div className="flex items-center gap-3.5 flex-1 min-w-0">
                       <input
@@ -235,8 +243,15 @@ export default function CartPage() {
                         onChange={() => toggleSelectItem(item.id)}
                         className="w-4 h-4 rounded text-[#f24e1e] focus:ring-orange-400 cursor-pointer shrink-0"
                       />
-                      <Link to={`/product/${item.id}`} className="shrink-0 w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 p-1 overflow-hidden flex items-center justify-center">
-                        <img src={item.img} alt={item.name} className="w-full h-full object-contain" />
+                      <Link
+                        to={`/product/${item.id}`}
+                        className="shrink-0 w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 p-1 overflow-hidden flex items-center justify-center"
+                      >
+                        <img
+                          src={item.img}
+                          alt={item.name}
+                          className="w-full h-full object-contain"
+                        />
                       </Link>
                       <div className="min-w-0 flex-1">
                         {item.shopName && (
@@ -312,7 +327,9 @@ export default function CartPage() {
                 <div>
                   <h4 className="font-bold mb-0.5">Thanh toán Ký quỹ Bảo chứng Escrow an toàn</h4>
                   <p className="text-indigo-700 leading-relaxed text-[11px]">
-                    Toàn bộ đơn hàng được giữ tiền ký quỹ tại cổng PayOS / Stripe. Người bán chỉ nhận được khoản thanh toán sau khi quý khách đồng kiểm bưu kiện và xác nhận hoàn tất.
+                    Toàn bộ đơn hàng được giữ tiền ký quỹ tại cổng PayOS / Stripe. Người bán chỉ
+                    nhận được khoản thanh toán sau khi quý khách đồng kiểm bưu kiện và xác nhận hoàn
+                    tất.
                   </p>
                 </div>
               </div>
@@ -347,7 +364,8 @@ export default function CartPage() {
                 {appliedVoucher && (
                   <div className="flex items-center justify-between text-xs text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200 mt-2">
                     <span className="font-bold flex items-center gap-1">
-                      <Check size={13} /> {appliedVoucher.code} (-{Number(appliedVoucher.discount).toLocaleString('vi-VN')}₫)
+                      <Check size={13} /> {appliedVoucher.code} (-
+                      {Number(appliedVoucher.discount).toLocaleString('vi-VN')}₫)
                     </span>
                     <button
                       type="button"
@@ -395,7 +413,9 @@ export default function CartPage() {
                     <div className="text-2xl font-extrabold text-[#f24e1e]">
                       {Number(grandTotal).toLocaleString('vi-VN')} ₫
                     </div>
-                    <span className="text-[10px] text-slate-400 block">(Đã bao gồm VAT & Ký quỹ Escrow)</span>
+                    <span className="text-[10px] text-slate-400 block">
+                      (Đã bao gồm VAT & Ký quỹ Escrow)
+                    </span>
                   </div>
                 </div>
 
@@ -443,12 +463,17 @@ export default function CartPage() {
             </div>
             <h3 className="text-xl font-bold text-slate-900">Đặt Hàng & Ký Quỹ Thành Công!</h3>
             <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-              Mã giao dịch ký quỹ PayOS đã được tạo. Số tiền <strong>{Number(grandTotal).toLocaleString('vi-VN')} ₫</strong> được giữ bảo chứng an toàn.
+              Mã giao dịch ký quỹ PayOS đã được tạo. Số tiền{' '}
+              <strong>{Number(grandTotal).toLocaleString('vi-VN')} ₫</strong> được giữ bảo chứng an
+              toàn.
             </p>
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-left max-w-md mx-auto">
-              <span className="font-bold text-slate-800 text-xs block mb-1">Địa chỉ nhận hàng (GHN Express):</span>
+              <span className="font-bold text-slate-800 text-xs block mb-1">
+                Địa chỉ nhận hàng (GHN Express):
+              </span>
               <p className="text-slate-600 text-xs leading-relaxed">
-                <strong>{address.recipientName}</strong> • {address.phone} • {address.street}, {address.ward}, {address.district}, {address.city}
+                <strong>{address.recipientName}</strong> • {address.phone} • {address.street},{' '}
+                {address.ward}, {address.district}, {address.city}
               </p>
             </div>
             <div className="pt-4 flex justify-center gap-3">
@@ -491,7 +516,10 @@ export default function CartPage() {
               </div>
 
               {isEditingAddress ? (
-                <form onSubmit={handleSaveAddress} className="space-y-3 pt-2.5 border-t border-slate-200 mt-2">
+                <form
+                  onSubmit={handleSaveAddress}
+                  className="space-y-3 pt-2.5 border-t border-slate-200 mt-2"
+                >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
@@ -500,7 +528,9 @@ export default function CartPage() {
                       <input
                         type="text"
                         value={editForm.recipientName}
-                        onChange={(e) => setEditForm({ ...editForm, recipientName: e.target.value })}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, recipientName: e.target.value })
+                        }
                         placeholder="Nguyễn Văn A"
                         className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#f24e1e]"
                         required
@@ -605,7 +635,8 @@ export default function CartPage() {
               ) : (
                 <div className="text-slate-700 space-y-0.5">
                   <p className="font-bold text-slate-900 text-xs">
-                    {address.recipientName} • <span className="font-semibold text-slate-700">{address.phone}</span>
+                    {address.recipientName} •{' '}
+                    <span className="font-semibold text-slate-700">{address.phone}</span>
                   </p>
                   <p className="text-slate-600 text-xs leading-relaxed">
                     {address.street}, {address.ward}, {address.district}, {address.city}
@@ -616,19 +647,36 @@ export default function CartPage() {
 
             {/* Payment Method Selector */}
             <div>
-              <span className="font-bold text-slate-800 block mb-2">Phương thức thanh toán bảo chứng:</span>
+              <span className="font-bold text-slate-800 block mb-2">
+                Phương thức thanh toán bảo chứng:
+              </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {[
-                  { id: 'PAYOS', name: 'PayOS VietQR', icon: QrCode, desc: 'Quét mã ngân hàng 24/7' },
-                  { id: 'WALLET', name: 'Ví NEXUS Pay', icon: Wallet, desc: 'Trừ trực tiếp số dư ví' },
-                  { id: 'STRIPE', name: 'Thẻ Quốc Tế', icon: CreditCard, desc: 'Visa / Mastercard' },
+                  {
+                    id: 'PAYOS' as const,
+                    name: 'PayOS VietQR',
+                    icon: QrCode,
+                    desc: 'Quét mã ngân hàng 24/7',
+                  },
+                  {
+                    id: 'WALLET' as const,
+                    name: 'Ví NEXUS Pay',
+                    icon: Wallet,
+                    desc: 'Trừ trực tiếp số dư ví',
+                  },
+                  {
+                    id: 'STRIPE' as const,
+                    name: 'Thẻ Quốc Tế',
+                    icon: CreditCard,
+                    desc: 'Visa / Mastercard',
+                  },
                 ].map((pm) => {
                   const Icon = pm.icon;
                   return (
                     <button
                       key={pm.id}
                       type="button"
-                      onClick={() => setPaymentMethod(pm.id as any)}
+                      onClick={() => setPaymentMethod(pm.id)}
                       className={`p-3 rounded-xl border text-left transition cursor-pointer ${
                         paymentMethod === pm.id
                           ? 'border-[#f24e1e] bg-orange-50 text-slate-900 shadow-sm'
@@ -636,7 +684,10 @@ export default function CartPage() {
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <Icon size={16} className={paymentMethod === pm.id ? 'text-[#f24e1e]' : 'text-slate-500'} />
+                        <Icon
+                          size={16}
+                          className={paymentMethod === pm.id ? 'text-[#f24e1e]' : 'text-slate-500'}
+                        />
                         <span className="font-bold text-xs">{pm.name}</span>
                       </div>
                       <span className="text-[10px] text-slate-500 block">{pm.desc}</span>
@@ -651,7 +702,11 @@ export default function CartPage() {
               {selectedItems.map((item) => (
                 <div key={item.id} className="py-2 flex items-center justify-between">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <img src={item.img} alt={item.name} className="w-8 h-8 rounded object-contain border border-slate-100" />
+                    <img
+                      src={item.img}
+                      alt={item.name}
+                      className="w-8 h-8 rounded object-contain border border-slate-100"
+                    />
                     <span className="font-semibold text-slate-800 truncate">{item.name}</span>
                     <span className="text-slate-400 shrink-0">x{item.qty}</span>
                   </div>

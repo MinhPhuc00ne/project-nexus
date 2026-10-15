@@ -108,9 +108,15 @@ export function createSellerRequest(
 /**
  * 4. Xem lịch sử và trạng thái yêu cầu nâng cấp Seller của tài khoản hiện tại
  */
-export function getMySellerRequests(): Promise<{ total: number; requests: SellerUpgradeRequest[] }> {
-  return apiRequest<{ total: number; requests: SellerUpgradeRequest[] }>('/users/seller-request/me', {
-    method: 'GET',
-    requireAuth: true,
-  });
+export function getMySellerRequests(): Promise<{
+  total: number;
+  requests: SellerUpgradeRequest[];
+}> {
+  return apiRequest<{ total: number; requests: SellerUpgradeRequest[] }>(
+    '/users/seller-request/me',
+    {
+      method: 'GET',
+      requireAuth: true,
+    },
+  );
 }
