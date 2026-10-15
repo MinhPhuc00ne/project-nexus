@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from 'react-router-dom';
-import Footer from '../components/footer/footer';
+import Footer from '../components/footer';
 import HomeHeader from '../components/headers/HomeHeader';
 
 function GuestLayout() {

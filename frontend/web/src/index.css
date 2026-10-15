@@ -5,6 +5,32 @@
   --color-primary-dark: #304bc2;
   --color-navy: #0f172a;
   --color-navy-dark: #0a0f1c;
+  --animate-fade-in: fadeIn 250ms ease-out forwards;
+  --animate-home-popover-enter: homePopoverEnter 140ms ease-out both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes homePopoverEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 :root {
@@ -35,4 +61,57 @@ body {
   min-height: 100vh;
   background-color: #f8fafc;
   color: #0f172a;
+}
+
+@keyframes lidarScanAnim {
+  0% {
+    top: 5%;
+  }
+  100% {
+    top: 95%;
+  }
+}
+
+@keyframes pulseAnim {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(1.4);
+  }
+}
+
+@keyframes modalPopAnim {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes rotate-360 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
