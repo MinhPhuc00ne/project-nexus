@@ -11,25 +11,38 @@ import AdminPage from '../pages/adminDasboard/adminPage';
 import GuestLayout from '../layouts/GuestLayout';
 import AuthLayout from '../layouts/AuthLayout';
 
+export const ROUTES = {
+  HOME: '/',
+  SEARCH: '/search',
+  AUCTION: '/auction',
+  PRODUCT: '/product/:id',
+  CART: '/cart',
+  LOGIN: '/login',
+  REGISTER: '/register',
+  STAFF: '/staff',
+  ADMIN: '/admin',
+  ADMIN_TAB: '/admin/:tab',
+} as const;
+
 function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<GuestLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="/search" element={<SearchPage />} />
-          <Route path="/auction" element={<AuctionPage />} />
-          <Route path="/product/:id" element={<ProductDetailPage />} />
-          <Route path="/cart" element={<CartPage />} />
+          <Route path={ROUTES.SEARCH} element={<SearchPage />} />
+          <Route path={ROUTES.AUCTION} element={<AuctionPage />} />
+          <Route path={ROUTES.PRODUCT} element={<ProductDetailPage />} />
+          <Route path={ROUTES.CART} element={<CartPage />} />
         </Route>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<AuthLayout />}>
+        <Route path={ROUTES.LOGIN} element={<Login />} />
+        <Route path={ROUTES.REGISTER} element={<AuthLayout />}>
           <Route index element={<RegisterPage />} />
         </Route>
-        <Route path="/staff" element={<StaffDashboard />} />
-        <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
-        <Route path="/admin/:tab" element={<AdminPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path={ROUTES.STAFF} element={<StaffDashboard />} />
+        <Route path={ROUTES.ADMIN} element={<Navigate to="/admin/overview" replace />} />
+        <Route path={ROUTES.ADMIN_TAB} element={<AdminPage />} />
+        <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
       </Routes>
     </BrowserRouter>
   );
