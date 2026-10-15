@@ -1,8 +1,17 @@
+import axios from 'axios';
 import { getStoredToken } from './auth';
 
 export const API_BASE_URL = (
   import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
 ).replace(/\/$/, '');
+
+const api = axios.create({
+  // URL gốc trong frontend/web/.env, ví dụ http://localhost:3000/api/v1.
+  // Các service sẽ nối thêm đường dẫn như /auth/register vào URL này.
+  baseURL: API_BASE_URL,
+  // Chờ tối đa 20 giây; đây không phải thời hạn của mã OTP.
+  timeout: 20000,
+});
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -71,3 +80,6 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   return payload as unknown as T;
 }
+
+// Export để các service dùng chung cấu hình Axios.
+export default api;
