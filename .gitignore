@@ -59,7 +59,7 @@ Desktop.ini
 postgres_data/
 redis_data/
 rabbitmq_data/
-data/
+/data/
 uploads/
 backend/uploads/
 
