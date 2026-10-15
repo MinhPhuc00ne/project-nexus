@@ -1,26 +1,123 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import Login from '../pages/Login/Login';
-import HomePage from '../pages/home/HomePage';
-import RegisterPage from '../pages/register/RegisterPage';
-import StaffDashboard from '../pages/staff/StaffDashboard';
-import SearchPage from '../pages/search/SearchPage';
-import AuctionPage from '../pages/auction/AuctionPage';
-import ProductDetailPage from '../pages/product/ProductDetailPage';
-import CartPage from '../pages/cart/CartPage';
-import AdminPage from '../pages/adminDasboard/adminPage';
-import GuestLayout from '../layouts/GuestLayout';
 import AuthLayout from '../layouts/AuthLayout';
+import GuestLayout from '../layouts/GuestLayout';
+import {
+  // Auth
+  Login,
+  RegisterPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+  VerifyOtpPage,
+  // Guest
+  HomePage,
+  SearchPage,
+  AuctionPage,
+  AuctionDetailPage,
+  ProductDetailPage,
+  CategoryPage,
+  AboutPage,
+  ContactPage,
+  TermsPage,
+  PrivacyPage,
+  NotFoundPage,
+  // Buyer
+  CartPage,
+  CheckoutPage,
+  BuyerDashboardPage,
+  BuyerOrdersPage,
+  BuyerOrderDetailPage,
+  BuyerProfilePage,
+  BuyerWishlistPage,
+  BuyerWalletPage,
+  BuyerBidsPage,
+  BuyerDisputesPage,
+  BuyerAddressesPage,
+  // Seller
+  SellerDashboardPage,
+  SellerProductsPage,
+  SellerCreateProductPage,
+  SellerOrdersPage,
+  SellerOrderDetailPage,
+  SellerAuctionsPage,
+  SellerCreateAuctionPage,
+  SellerFinancePage,
+  SellerInventoryPage,
+  SellerDisputesPage,
+  SellerSettingsPage,
+  // Staff
+  StaffSellerApprovalPage,
+  StaffManagementPage,
+  StaffInboxPage,
+  StaffDisputesPage,
+  StaffAuctionSupportPage,
+  StaffFaqPage,
+  StaffHistoryPage,
+  StaffPerformancePage,
+  // Admin
+  AdminPage,
+  AdminCategoriesPage,
+} from '../pages';
 
 export const ROUTES = {
+  // Guest
   HOME: '/',
   SEARCH: '/search',
+  CATEGORY: '/categories',
   AUCTION: '/auction',
+  AUCTION_DETAIL: '/auction/:id',
   PRODUCT: '/product/:id',
-  CART: '/cart',
+  ABOUT: '/about',
+  CONTACT: '/contact',
+  TERMS: '/terms',
+  PRIVACY: '/privacy',
+
+  // Auth
   LOGIN: '/login',
   REGISTER: '/register',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
+  VERIFY_OTP: '/verify-otp',
+
+  // Buyer
+  CART: '/cart',
+  CHECKOUT: '/checkout',
+  BUYER: '/buyer',
+  BUYER_ORDERS: '/buyer/orders',
+  BUYER_ORDER_DETAIL: '/buyer/orders/:id',
+  BUYER_PROFILE: '/buyer/profile',
+  BUYER_WISHLIST: '/buyer/wishlist',
+  BUYER_WALLET: '/buyer/wallet',
+  BUYER_BIDS: '/buyer/bids',
+  BUYER_DISPUTES: '/buyer/disputes',
+  BUYER_ADDRESSES: '/buyer/addresses',
+
+  // Seller
+  SELLER: '/seller',
+  SELLER_PRODUCTS: '/seller/products',
+  SELLER_CREATE_PRODUCT: '/seller/products/new',
+  SELLER_ORDERS: '/seller/orders',
+  SELLER_ORDER_DETAIL: '/seller/orders/:id',
+  SELLER_AUCTIONS: '/seller/auctions',
+  SELLER_CREATE_AUCTION: '/seller/auctions/new',
+  SELLER_FINANCE: '/seller/finance',
+  SELLER_INVENTORY: '/seller/inventory',
+  SELLER_DISPUTES: '/seller/disputes',
+  SELLER_SETTINGS: '/seller/settings',
+
+  // Staff
   STAFF: '/staff',
+  STAFF_SELLER_APPROVALS: '/staff/seller-approvals',
+  STAFF_TEAM: '/staff/team',
+  STAFF_INBOX: '/staff/inbox',
+  STAFF_DISPUTES: '/staff/disputes',
+  STAFF_AUCTION_SUPPORT: '/staff/auction-support',
+  STAFF_FAQ: '/staff/faq',
+  STAFF_HISTORY: '/staff/history',
+  STAFF_PERFORMANCE: '/staff/performance',
+
+  // Admin
   ADMIN: '/admin',
+  ADMIN_CATEGORIES: '/admin/categories',
   ADMIN_TAB: '/admin/:tab',
 } as const;
 
@@ -28,21 +125,77 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Guest & Buyer routes with header & footer layout */}
         <Route element={<GuestLayout />}>
+          {/* Guest */}
           <Route index element={<HomePage />} />
           <Route path={ROUTES.SEARCH} element={<SearchPage />} />
+          <Route path={ROUTES.CATEGORY} element={<CategoryPage />} />
           <Route path={ROUTES.AUCTION} element={<AuctionPage />} />
+          <Route path={ROUTES.AUCTION_DETAIL} element={<AuctionDetailPage />} />
           <Route path={ROUTES.PRODUCT} element={<ProductDetailPage />} />
+          <Route path={ROUTES.ABOUT} element={<AboutPage />} />
+          <Route path={ROUTES.CONTACT} element={<ContactPage />} />
+          <Route path={ROUTES.TERMS} element={<TermsPage />} />
+          <Route path={ROUTES.PRIVACY} element={<PrivacyPage />} />
+
+          {/* Buyer */}
           <Route path={ROUTES.CART} element={<CartPage />} />
+          <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
+          <Route path={ROUTES.BUYER} element={<BuyerDashboardPage />} />
+          <Route path={ROUTES.BUYER_ORDERS} element={<BuyerOrdersPage />} />
+          <Route path={ROUTES.BUYER_ORDER_DETAIL} element={<BuyerOrderDetailPage />} />
+          <Route path={ROUTES.BUYER_PROFILE} element={<BuyerProfilePage />} />
+          <Route path={ROUTES.BUYER_WISHLIST} element={<BuyerWishlistPage />} />
+          <Route path={ROUTES.BUYER_WALLET} element={<BuyerWalletPage />} />
+          <Route path={ROUTES.BUYER_BIDS} element={<BuyerBidsPage />} />
+          <Route path={ROUTES.BUYER_DISPUTES} element={<BuyerDisputesPage />} />
+          <Route path={ROUTES.BUYER_ADDRESSES} element={<BuyerAddressesPage />} />
         </Route>
+
+        {/* Auth routes */}
         <Route path={ROUTES.LOGIN} element={<Login />} />
-        <Route path={ROUTES.REGISTER} element={<AuthLayout />}>
-          <Route index element={<RegisterPage />} />
+        <Route element={<AuthLayout />}>
+          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+          <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+          <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+          <Route path={ROUTES.VERIFY_OTP} element={<VerifyOtpPage />} />
         </Route>
-        <Route path={ROUTES.STAFF} element={<StaffDashboard />} />
+
+        {/* Seller routes */}
+        <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
+        <Route path={ROUTES.SELLER_PRODUCTS} element={<SellerProductsPage />} />
+        <Route path={ROUTES.SELLER_CREATE_PRODUCT} element={<SellerCreateProductPage />} />
+        <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
+        <Route path={ROUTES.SELLER_ORDER_DETAIL} element={<SellerOrderDetailPage />} />
+        <Route path={ROUTES.SELLER_AUCTIONS} element={<SellerAuctionsPage />} />
+        <Route path={ROUTES.SELLER_CREATE_AUCTION} element={<SellerCreateAuctionPage />} />
+        <Route path={ROUTES.SELLER_FINANCE} element={<SellerFinancePage />} />
+        <Route path={ROUTES.SELLER_INVENTORY} element={<SellerInventoryPage />} />
+        <Route path={ROUTES.SELLER_DISPUTES} element={<SellerDisputesPage />} />
+        <Route path={ROUTES.SELLER_SETTINGS} element={<SellerSettingsPage />} />
+
+        {/* Staff routes */}
+        <Route
+          path={ROUTES.STAFF}
+          element={<Navigate to={ROUTES.STAFF_SELLER_APPROVALS} replace />}
+        />
+        <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
+        <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
+        <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
+        <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
+        <Route path={ROUTES.STAFF_AUCTION_SUPPORT} element={<StaffAuctionSupportPage />} />
+        <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
+        <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
+        <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
+
+        {/* Admin routes */}
         <Route path={ROUTES.ADMIN} element={<Navigate to="/admin/overview" replace />} />
+        <Route path={ROUTES.ADMIN_CATEGORIES} element={<AdminCategoriesPage />} />
         <Route path={ROUTES.ADMIN_TAB} element={<AdminPage />} />
-        <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
+
+        {/* 404 Fallback */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

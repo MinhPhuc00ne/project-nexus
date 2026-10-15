@@ -34,9 +34,8 @@ import {
   type UserProfile,
   type SellerUpgradeRequest,
 } from '../../services/users';
-import Popup from '../popup/Popup';
+import Popup from '../Popup';
 import { getCartItems, type CartItem as StoredCartItem } from '../../services/cart';
-import './HomeHeader.css';
 
 export interface NotificationItem {
   id: string | number;
@@ -400,7 +399,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
               {showAppQrModal && (
                 <div className="absolute left-0 top-full z-[1010] mt-2">
-                  <div className="home-header-popover w-[200px] rounded-[10px] border border-slate-200 bg-white p-3.5 text-center shadow-xl">
+                  <div className="animate-home-popover-enter motion-reduce:animate-none w-[200px] rounded-[10px] border border-slate-200 bg-white p-3.5 text-center shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
                     <div className="mx-auto flex h-[130px] w-[130px] items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-100">
                       <div className="grid grid-cols-2 gap-2.5">
                         <div className="h-10 w-10 rounded bg-[#1c3973]" />
@@ -472,7 +471,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </button>
 
               {showNotifMenu && (
-                <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[360px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl">
+                <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+6px)] z-[1100] w-[360px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
                   <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
                     <h4 className="m-0 text-sm font-bold text-slate-800">Thông báo</h4>
                   </div>
@@ -548,7 +547,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </button>
 
               {showLangMenu && (
-                <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[155px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl">
+                <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+6px)] z-[1100] w-[155px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
@@ -606,7 +605,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 </button>
 
                 {showUserMenu && (
-                  <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[240px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-2 shadow-xl">
+                  <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+6px)] z-[1100] w-[240px] overflow-hidden rounded-[10px] border border-slate-200 bg-white p-2 shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
                     <div className="mb-1.5 flex items-center gap-3 rounded-md bg-slate-50 p-2.5">
                       {displayUserAvatar ? (
                         <img
@@ -790,7 +789,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           {/* SEARCH */}
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <form
-              className="home-header-search flex items-center rounded-full border-2 border-[#f24e1e] bg-white py-0.5 pl-3.5 pr-0.5 shadow-[0_2px_6px_rgba(242,78,30,0.08)] transition-shadow"
+              className="flex items-center rounded-full border-2 border-[#f24e1e] bg-white py-0.5 pl-3.5 pr-0.5 shadow-[0_2px_6px_rgba(242,78,30,0.08)] transition-[border-color,box-shadow] duration-[160ms] ease-linear focus-within:border-[#1c3973] focus-within:shadow-[0_4px_16px_rgb(28_57_115_/_18%)] motion-reduce:transition-none"
               onSubmit={handleSearchSubmit}
             >
               {/* FLOOR */}
@@ -809,7 +808,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 </button>
 
                 {showFloorMenu && (
-                  <div className="home-header-popover absolute left-[-12px] top-[calc(100%+12px)] z-[1200] w-[200px] rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-xl">
+                  <div className="animate-home-popover-enter motion-reduce:animate-none absolute left-[-12px] top-[calc(100%+12px)] z-[1200] w-[200px] rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
                     {floors.map((floor, idx) => (
                       <button
                         key={idx}
@@ -916,7 +915,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
             {/* CART PANEL */}
             {showCartPanel && (
-              <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[380px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl">
+              <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+6px)] z-[1100] w-[380px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
                 <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
                   <h4 className="m-0 text-sm font-bold text-slate-800">Giỏ Hàng Của Bạn</h4>
 

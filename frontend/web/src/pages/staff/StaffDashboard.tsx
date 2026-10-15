@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Activity,
   ArrowLeft,
@@ -46,9 +47,7 @@ import {
 } from '../../services/admin';
 import type { SellerUpgradeRequest } from '../../services/users';
 import { API_BASE_URL } from '../../services/api';
-import Popup from '../../components/popup/Popup';
-import './StaffDashboard.css';
-
+import Popup from '../../components/Popup';
 type TicketStatus = 'chatting' | 'waiting' | 'resolved';
 type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
 interface ChatMessage {
@@ -79,13 +78,31 @@ const navigation = [
   { label: 'Hướng Dẫn & FAQ Sàn', icon: BookOpen },
   { label: 'Lịch Sử & CSAT', icon: History },
   { label: 'Hiệu Suất Cá Nhân', icon: Activity },
-];
+] as const;
 
-function StaffDashboard() {
+export type StaffSection = (typeof navigation)[number]['label'];
+
+const staffSectionPaths: Record<StaffSection, string> = {
+  'Duyệt Hồ Sơ Seller': '/staff/seller-approvals',
+  'Quản Lý Nhân Viên': '/staff/team',
+  'Hộp Thư Trực Tuyến': '/staff/inbox',
+  'Khiếu Nại & Tranh Chấp': '/staff/disputes',
+  'Hỗ Trợ Đấu Giá 3D': '/staff/auction-support',
+  'Hướng Dẫn & FAQ Sàn': '/staff/faq',
+  'Lịch Sử & CSAT': '/staff/history',
+  'Hiệu Suất Cá Nhân': '/staff/performance',
+};
+
+function StaffDashboard({
+  initialSection = navigation[0].label,
+}: {
+  initialSection?: StaffSection;
+}) {
+  const navigate = useNavigate();
   const [tickets] = useState<SupportTicket[] | null>(null);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | TicketStatus>('all');
-  const [activeNavigation, setActiveNavigation] = useState('Duyệt Hồ Sơ Seller');
+  const [activeNavigation, setActiveNavigation] = useState<StaffSection>(initialSection);
   const [searchText, setSearchText] = useState('');
   const [reply, setReply] = useState('');
   const [toast, setToast] = useState('');
@@ -247,34 +264,43 @@ function StaffDashboard() {
     }
   };
   return (
-    <div className="staff-dashboard min-h-screen bg-[#f8f7fc] text-slate-800">
+    <div className="[--staff-ink:#17233d] [--staff-line:#e7eaf3] [--staff-primary:#1f5fe3] [--staff-primary-soft:#eaf1ff] [--staff-primary-strong:#1849b7] [--staff-accent:#1f5fe3] [--staff-accent-strong:#1849b7] grid [grid-template-columns:280px_minmax(0,_1fr)] min-h-screen [background:#f8f7fc] [color:var(--staff-ink)] [font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_sans-serif] text-[13px] max-[1100px]:[grid-template-columns:240px_minmax(0,_1fr)] max-[760px]:block min-h-screen bg-[#f8f7fc] text-slate-800">
       <aside
-        className={`staff-sidebar sticky top-0 z-30 flex h-screen min-h-[650px] flex-col border-r border-slate-200 bg-white ${isSidebarOpen ? 'staff-sidebar--open' : ''}`}
+        className={`[border-right:1px_solid_var(--staff-line)] max-[760px]:fixed max-[760px]:[inset:0_auto_0_0] max-[760px]:[width:min(290px,_84vw)] max-[760px]:h-dvh max-[760px]:[transform:translateX(-105%)] max-[760px]:[transition:transform_0.2s_ease] max-[760px]:[box-shadow:14px_0_40px_rgb(25_35_55_/_12%)] max-[760px]:[&.staff-sidebar--open]:[transform:translateX(0)] sticky top-0 z-30 flex h-screen min-h-[650px] flex-col border-r border-slate-200 bg-white ${isSidebarOpen ? 'staff-sidebar--open' : ''}`}
       >
-        <div className="staff-brand">
-          <img src="/images/logo.png" alt="NEXUS" className="staff-brand-logo" />
-          <div className="staff-brand-copy">
-            <div className="staff-brand-name">
-              <span className="staff-brand-badge">STAFF</span>
+        <div className="flex items-center gap-2.5 [min-height:70px] [padding:12px_18px] [border-bottom:1px_solid_#f0f1f6]">
+          <img
+            src="/images/logo.png"
+            alt="NEXUS"
+            className="[width:148px] max-w-full [height:auto] object-contain [filter:drop-shadow(0_6px_10px_rgb(31_95_227_/_10%))]"
+          />
+          <div className="min-w-0">
+            <div className="flex items-center whitespace-nowrap">
+              <span className="inline-flex items-center [padding:3px_7px] [border-radius:999px] [color:var(--staff-primary)] [background:var(--staff-primary-soft)] [font-size:9px] font-extrabold [letter-spacing:0.08em]">
+                STAFF
+              </span>
             </div>
-            <div className="staff-brand-version">Support Desk v2.4</div>
+            <div className="mt-[2px] [color:#818ba0] text-[10px]">Support Desk v2.4</div>
           </div>
           <button
-            className="staff-icon-button staff-sidebar-close"
+            className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] hidden [margin-left:auto] max-[760px]:[display:inline-grid]"
             aria-label="Đóng menu"
             onClick={() => setIsSidebarOpen(false)}
           >
             <X size={18} />
           </button>
         </div>
-        <div className="staff-nav-label">NGHIỆP VỤ HỖ TRỢ</div>
-        <nav className="staff-navigation" aria-label="Điều hướng nhân viên">
+        <div className="[padding:22px_18px_10px] [color:#9aa2b4] text-[10px] font-extrabold [letter-spacing:0.11em]">
+          NGHIỆP VỤ HỖ TRỢ
+        </div>
+        <nav className="grid [gap:5px] [padding:0_10px]" aria-label="Điều hướng nhân viên">
           {navigation.map(({ label, icon: Icon }) => (
             <button
-              className={`staff-nav-item ${activeNavigation === label ? 'is-active' : ''}`}
+              className={`flex [min-height:42px] items-center gap-2.5 [padding:0_11px] [border:0] [border-radius:8px] [color:#665f68] [background:transparent] cursor-pointer text-left [transition:0.15s_ease] [&_>_span:nth-child(2)]:[flex:1] [&_>_span:nth-child(2)]:text-xs [&_>_span:nth-child(2)]:[font-weight:650] [&_>_span:nth-child(2)]:whitespace-nowrap hover:[background:#fff2ef] hover:[color:var(--staff-accent)] [&.is-active]:[color:white] [&.is-active]:[background:var(--staff-accent)] [&.is-active]:[box-shadow:0_7px_16px_rgb(217_52_27_/_18%)] ${activeNavigation === label ? 'is-active' : ''}`}
               key={label}
               onClick={() => {
                 setActiveNavigation(label);
+                navigate(staffSectionPaths[label]);
                 setIsSidebarOpen(false);
                 if (label !== 'Hộp Thư Trực Tuyến')
                   notify(`${label} sẽ được mở trong khu vực nghiệp vụ tương ứng.`);
@@ -285,34 +311,34 @@ function StaffDashboard() {
             </button>
           ))}
         </nav>
-        <div className="staff-sidebar-bottom">
-          <div className="staff-gateway">
+        <div className="[margin-top:auto] [padding:12px_10px_14px] [border-top:1px_solid_#f0f1f6]">
+          <div className="flex justify-between [padding:12px_5px_0] [color:#9a8f8d] [font-size:9px] [&_strong]:[color:#c94c35]">
             <span>NEXUS Staff Gateway</span>
           </div>
         </div>
       </aside>
       {isSidebarOpen && (
         <button
-          className="staff-sidebar-backdrop"
+          className="hidden max-[760px]:fixed max-[760px]:[inset:0] max-[760px]:[z-index:25] max-[760px]:block max-[760px]:[border:0] max-[760px]:[background:rgb(19_27_43_/_35%)]"
           aria-label="Đóng menu"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      <div className="staff-main min-w-0">
-        <header className="staff-topbar sticky top-0 z-20 flex min-h-[70px] items-center gap-3 border-b border-slate-200 bg-white/95 px-5 backdrop-blur-sm">
+      <div className="[grid-column:2] min-w-0 max-[760px]:[grid-column:auto] min-w-0">
+        <header className="[min-height:64px] [gap:9px] px-4 max-[760px]:[min-height:58px] max-[760px]:px-2.5 sticky top-0 z-20 flex min-h-[70px] items-center gap-3 border-b border-slate-200 bg-white/95 px-5 backdrop-blur-sm">
           <button
-            className="staff-icon-button staff-menu-button"
+            className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] hidden max-[760px]:[display:inline-grid]"
             aria-label="Mở menu"
             onClick={() => setIsSidebarOpen(true)}
           >
             <Menu size={20} />
           </button>
-          <label className="staff-global-search flex h-[38px] w-[48px] items-center justify-center rounded-lg bg-slate-100 text-slate-500">
+          <label className="relative [flex:0_0_48px] cursor-text [&_input]:absolute [&_input]:[inset:0] [&_input]:w-full [&_input]:[border:0] [&_input]:[outline:0] [&_input]:[opacity:0] [&_input]:cursor-text focus-within:[flex-basis:190px] focus-within:justify-start focus-within:px-2.5 focus-within:[background:white] focus-within:[box-shadow:0_0_0_1px_var(--staff-line)] focus-within:[&_input]:static focus-within:[&_input]:min-w-0 focus-within:[&_input]:[opacity:1] flex h-[38px] w-[48px] items-center justify-center rounded-lg bg-slate-100 text-slate-500">
             <Search size={17} />
             <input aria-label="Tìm kiếm toàn hệ thống" placeholder="Tìm khách hàng, ticket..." />
           </label>
-          <div className="staff-top-metrics mx-auto flex min-w-[225px] items-center justify-around rounded-xl bg-violet-50 px-2 py-1.5">
+          <div className="max-[1100px]:[min-width:165px] max-[1100px]:[font-size:9px] max-[760px]:hidden mx-auto flex min-w-[225px] items-center justify-around rounded-xl bg-violet-50 px-2 py-1.5">
             <div>
               Đang chat <b>{tickets === null ? '' : chattingCount}</b>
             </div>
@@ -332,13 +358,16 @@ function StaffDashboard() {
               <ArrowLeft size={14} />
               <span>Về Trang Chủ</span>
             </a>
-            <button className="staff-icon-button staff-notification-button" aria-label="Thông báo">
+            <button
+              className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] [&_i]:absolute [&_i]:[top:7px] [&_i]:[right:7px] [&_i]:w-1.5 [&_i]:h-1.5 [&_i]:[border:1px_solid_white] [&_i]:rounded-full [&_i]:[background:var(--staff-accent)]"
+              aria-label="Thông báo"
+            >
               <Bell size={18} />
             </button>
           </div>
         </header>
 
-        <main className="staff-content mx-auto max-w-[1800px] px-5 pb-6 pt-4">
+        <main className="w-full [max-width:none] [padding:12px_18px_22px] max-[420px]:px-3 mx-auto max-w-[1800px] px-5 pb-6 pt-4">
           <div className="staff-breadcrumb flex items-center gap-1.5 text-[10px] text-slate-400">
             <span>Kênh Nhân Viên</span>
             <ChevronRight size={13} />
@@ -346,7 +375,7 @@ function StaffDashboard() {
               Hộp Thư Trực Tuyến &amp; Chăm Sóc Khách Hàng
             </b>
           </div>
-          <div className="staff-page-heading mt-2.5 flex items-start justify-between gap-4">
+          <div className="[&_h1]:[max-width:500px] [&_h1]:[line-height:1.16] [&_p]:mb-0 max-[760px]:flex-col mt-2.5 flex items-start justify-between gap-4">
             <div>
               <h1 className="m-0 text-[clamp(20px,2vw,27px)] font-black tracking-[-0.035em] text-slate-900">
                 Trung Tâm Tiếp Nhận &amp; Giải Đáp Thắc Mắc Khách Hàng
@@ -355,8 +384,8 @@ function StaffDashboard() {
                 Quản lý hội thoại, hỗ trợ khách hàng và theo dõi SLA theo thời gian thực.
               </p>
             </div>
-            <div className="staff-heading-actions flex items-center gap-2">
-              <div className="staff-queue-button">
+            <div className="max-[760px]:w-full max-[760px]:flex-wrap max-[420px]:[&_>_*]:[flex:1_1_auto] flex items-center gap-2">
+              <div className="inline-flex items-center gap-1.5 [padding:7px_9px] [border:1px_solid_#e8eaf3] [border-radius:8px] [color:#33405a] [background:white] [font-size:9px] leading-tight text-left cursor-pointer [&_>_svg]:[color:var(--staff-primary)] [&_b]:[color:var(--staff-primary)]">
                 <Headphones size={16} />
                 <span>Phiên làm việc</span>
               </div>
@@ -645,7 +674,10 @@ function StaffDashboard() {
             </div>
           ) : (
             <>
-              <section className="staff-kpi-grid grid grid-cols-4 gap-3" aria-label="Chỉ số hỗ trợ">
+              <section
+                className="mt-3.5 max-[760px]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] grid grid-cols-4 gap-3"
+                aria-label="Chỉ số hỗ trợ"
+              >
                 <MetricCard
                   icon={<MessageSquareText size={18} />}
                   tone="coral"
@@ -684,17 +716,21 @@ function StaffDashboard() {
                 />
               </section>
 
-              <section className="staff-workspace grid gap-4">
-                <div className="staff-ticket-panel staff-panel">
-                  <div className="staff-panel-heading">
+              <section className="[grid-template-columns:minmax(255px,_0.92fr)_minmax(330px,_1.2fr)_minmax(205px,_0.76fr)] [align-items:start] mt-4 max-[1100px]:[grid-template-columns:minmax(235px,_0.85fr)_minmax(310px,_1.15fr)] max-[760px]:[grid-template-columns:minmax(0,_1fr)] grid gap-4">
+                <div className="flex [min-height:390px] [max-height:calc(100vh_-_350px)] flex-col [padding:14px_12px_8px] max-[760px]:[max-height:none] max-[760px]:[min-height:340px] min-w-0 overflow-hidden [border:1px_solid_#efedf5] [border-radius:12px] [background:white] [box-shadow:0_2px_8px_rgb(29_39_64_/_3%)]">
+                  <div className="flex [min-height:42px] items-center justify-between gap-2 [&_h2]:flex [&_h2]:items-center [&_h2]:[gap:7px] [&_h2]:m-0 [&_h2]:[color:#263248] [&_h2]:[font-size:16px] [&_h2]:[font-weight:850] [&_h2_svg]:[color:var(--staff-accent)]">
                     <h2>
                       <Inbox size={17} /> Hàng Đợi Hỗ Trợ
                     </h2>
-                    <span className="staff-ticket-total">
+                    <span className="[color:#566179] [font-size:9px] font-extrabold">
                       {tickets === null ? '' : `${tickets.length} TICKET`}
                     </span>
                   </div>
-                  <div className="staff-filter-tabs" role="tablist" aria-label="Lọc ticket">
+                  <div
+                    className="flex [margin:8px_0] p-[3px] [border-radius:8px] [background:#f4f3fa] [&_button]:min-w-0 [&_button]:[flex:1] [&_button]:[padding:6px_3px] [&_button]:[border:0] [&_button]:[border-radius:6px] [&_button]:[color:#766f7e] [&_button]:[background:transparent] [&_button]:[font-size:9px] [&_button]:whitespace-nowrap [&_button]:cursor-pointer [&_button.is-selected]:[color:#243149] [&_button.is-selected]:[background:white] [&_button.is-selected]:[box-shadow:0_1px_3px_rgb(20_30_55_/_10%)]"
+                    role="tablist"
+                    aria-label="Lọc ticket"
+                  >
                     <button
                       className={activeFilter === 'all' ? 'is-selected' : ''}
                       onClick={() => setActiveFilter('all')}
@@ -714,7 +750,7 @@ function StaffDashboard() {
                       Chờ phản hồi{tickets !== null && ` (${waitingCount})`}
                     </button>
                   </div>
-                  <label className="staff-ticket-search">
+                  <label className="flex [min-height:34px] items-center [gap:7px] [padding:0_9px] [border-radius:8px] [color:#9a91a0] [background:#f4f3fa] [&_input]:w-full [&_input]:min-w-0 [&_input]:[border:0] [&_input]:[outline:0] [&_input]:[color:#46516a] [&_input]:[background:transparent] [&_input]:[font:inherit] [&_input]:[font-size:9px]">
                     <Search size={15} />
                     <input
                       value={searchText}
@@ -722,17 +758,17 @@ function StaffDashboard() {
                       placeholder="Tìm theo tên khách, SĐT, mã đơn..."
                     />
                   </label>
-                  <div className="staff-ticket-list">
+                  <div className="[min-height:0] overflow-auto">
                     {visibleTickets.length
                       ? visibleTickets.map((ticket) => (
                           <button
                             key={ticket.id}
-                            className={`staff-ticket ${activeTicketId === ticket.id ? 'is-current' : ''}`}
+                            className={`relative block w-full [padding:10px_9px] [border:0] [border-bottom:1px_solid_#f1f1f5] [border-radius:8px] [color:inherit] [background:white] cursor-pointer text-left hover:[background:#fafaff] [&.is-current]:[background:#f1f1ff] [&.is-current::before]:absolute [&.is-current::before]:top-2 [&.is-current::before]:bottom-2 [&.is-current::before]:left-0 [&.is-current::before]:w-1 [&.is-current::before]:[border-radius:0_5px_5px_0] [&.is-current::before]:[background:var(--staff-accent)] [&.is-current::before]:[content:''] ${activeTicketId === ticket.id ? 'is-current' : ''}`}
                             onClick={() => setActiveTicketId(ticket.id)}
                           >
-                            <div className="staff-ticket-top">
+                            <div className="flex items-center gap-1.5">
                               <span
-                                className={`staff-avatar staff-avatar--${ticket.initials.toLowerCase()}`}
+                                className={`[display:inline-grid] [width:35px] [height:35px] [place-items:center] rounded-full [color:#7f5637] [background:#ffdab5] text-xs font-extrabold staff-avatar--${ticket.initials.toLowerCase()}`}
                               >
                                 {ticket.initials}
                               </span>
@@ -741,7 +777,7 @@ function StaffDashboard() {
                                 <small>{ticket.id}</small>
                               </span>
                               <span
-                                className={`staff-role-badge ${ticket.role === 'VIP GOLD' ? 'is-vip' : ticket.role === 'SELLER VERIFIED' ? 'is-seller' : ''}`}
+                                className={`[padding:3px_4px] rounded [color:#53617b] [background:#e8edff] [font-size:7px] [font-weight:850] [&.is-vip]:[color:#7d5730] [&.is-vip]:[background:#ffe2b8] [&.is-seller]:[color:#385690] [&.is-seller]:[background:#dbe6ff] ${ticket.role === 'VIP GOLD' ? 'is-vip' : ticket.role === 'SELLER VERIFIED' ? 'is-seller' : ''}`}
                               >
                                 {ticket.role}
                               </span>
@@ -767,7 +803,7 @@ function StaffDashboard() {
                                 )}
                               </span>
                               <span
-                                className={`staff-ticket-state ${ticket.status === 'chatting' ? 'is-chatting' : ''}`}
+                                className={`[color:#9a8f8d] [font-size:8px] whitespace-nowrap [&.is-chatting]:[color:#3167e5] ${ticket.status === 'chatting' ? 'is-chatting' : ''}`}
                               >
                                 {ticket.status === 'chatting'
                                   ? '● Đang hỗ trợ'
@@ -782,13 +818,13 @@ function StaffDashboard() {
                   </div>
                 </div>
 
-                <div className="staff-chat-panel staff-panel">
+                <div className="flex [min-height:390px] [max-height:calc(100vh_-_350px)] flex-col [padding:0_12px] max-[760px]:[max-height:none] max-[760px]:[min-height:500px] min-w-0 overflow-hidden [border:1px_solid_#efedf5] [border-radius:12px] [background:white] [box-shadow:0_2px_8px_rgb(29_39_64_/_3%)]">
                   {activeTicket ? (
                     <>
-                      <div className="staff-chat-heading">
-                        <div className="staff-chat-person">
+                      <div className="flex [min-height:42px] items-center justify-between gap-2 [flex:0_0_68px] [border-bottom:1px_solid_#f0eef5]">
+                        <div className="flex min-w-0 items-center gap-2 [&_>_span:last-child]:flex [&_>_span:last-child]:min-w-0 [&_>_span:last-child]:items-center [&_>_span:last-child]:gap-2 [&_>_span:last-child]:grid [&_>_span:last-child]:gap-1 [&_b]:overflow-hidden [&_b]:[text-overflow:ellipsis] [&_b]:whitespace-nowrap [&_b]:text-sm [&_small]:[color:#3970d5] [&_small]:[font-size:9px] [&_small]:font-bold [&_small_i]:w-1.5 [&_small_i]:h-1.5 [&_small_i]:rounded-full [&_small_i]:[background:#19b675]">
                           <span
-                            className={`staff-avatar staff-avatar--${activeTicket.initials.toLowerCase()}`}
+                            className={`[display:inline-grid] [width:35px] [height:35px] [place-items:center] rounded-full [color:#7f5637] [background:#ffdab5] text-xs font-extrabold staff-avatar--${activeTicket.initials.toLowerCase()}`}
                           >
                             {activeTicket.initials}
                           </span>
@@ -797,23 +833,23 @@ function StaffDashboard() {
                             <small>{activeTicket.category}</small>
                           </span>
                         </div>
-                        <div className="staff-chat-actions">
+                        <div className="flex [gap:5px] [&_.staff-icon-button]:[width:31px] [&_.staff-icon-button]:[height:31px] max-[420px]:[&_.staff-icon-button:last-child]:hidden">
                           <button
-                            className="staff-icon-button"
+                            className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff]"
                             aria-label="Gửi email"
                             onClick={() => notify(`Mở email của ${activeTicket.customer}`)}
                           >
                             <AtSign size={16} />
                           </button>
                           <button
-                            className="staff-icon-button"
+                            className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff]"
                             aria-label="Gắn nhãn"
                             onClick={() => notify(`Ticket ${activeTicket.id} đã gắn nhãn ưu tiên.`)}
                           >
                             <Tag size={16} />
                           </button>
                           <button
-                            className="staff-icon-button"
+                            className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff]"
                             aria-label="Thêm tùy chọn"
                             onClick={() => notify('Tùy chọn hội thoại')}
                           >
@@ -821,17 +857,19 @@ function StaffDashboard() {
                           </button>
                         </div>
                       </div>
-                      <div className="staff-session-banner">MÃ TICKET: {activeTicket.id}</div>
-                      <div className="staff-message-list">
+                      <div className="[align-self:center] [margin:12px_0_14px] [padding:7px_10px] [border-radius:999px] [color:#897e9c] [background:#f0efff] [font-size:8px] font-extrabold text-center">
+                        MÃ TICKET: {activeTicket.id}
+                      </div>
+                      <div className="flex [min-height:0] [flex:1] flex-col gap-3.5 overflow-auto [padding:4px_8px_12px]">
                         {activeTicket.messages.map((message) => (
                           <article
                             key={message.id}
-                            className={`staff-message ${message.isAgent ? 'is-agent' : ''}`}
+                            className={`[align-self:flex-start] [max-width:88%] [&.is-agent]:[align-self:flex-end] [&_>_p]:m-0 [&_>_p]:[padding:10px_12px] [&_>_p]:[border:1px_solid_#eff0f5] [&_>_p]:[border-radius:4px_12px_12px_12px] [&_>_p]:[color:#5f6170] [&_>_p]:[background:white] [&_>_p]:text-[10px] [&_>_p]:[line-height:1.55] [&.is-agent_>_p]:[border-color:var(--staff-accent)] [&.is-agent_>_p]:[border-radius:12px_4px_12px_12px] [&.is-agent_>_p]:[color:white] [&.is-agent_>_p]:[background:var(--staff-accent)] max-[760px]:[max-width:95%] ${message.isAgent ? 'is-agent' : ''}`}
                           >
-                            <div className="staff-message-meta">
+                            <div className="flex items-center gap-1.5 [margin-bottom:5px] [color:#555f75] [font-size:8px] [&_b]:[font-size:9px] [&_time]:[color:#a0a5b1]">
                               {!message.isAgent && (
                                 <span
-                                  className={`staff-avatar staff-avatar--small staff-avatar--${activeTicket.initials.toLowerCase()}`}
+                                  className={`[display:inline-grid] [width:35px] [height:35px] [place-items:center] rounded-full [color:#7f5637] [background:#ffdab5] text-xs font-extrabold [width:27px] [height:27px] [font-size:9px] staff-avatar--${activeTicket.initials.toLowerCase()}`}
                                 >
                                   {activeTicket.initials}
                                 </span>
@@ -839,7 +877,7 @@ function StaffDashboard() {
                               <b>{message.author}</b>
                               <time>{message.time}</time>
                               {message.isAgent && (
-                                <span className="staff-message-shield">
+                                <span className="grid w-[18px] h-[18px] [place-items:center] rounded-full [color:white] [background:var(--staff-accent)]">
                                   <ShieldCheck size={14} />
                                 </span>
                               )}
@@ -848,8 +886,8 @@ function StaffDashboard() {
                           </article>
                         ))}
                       </div>
-                      <div className="staff-reply-area">
-                        <div className="staff-composer-toolbar">
+                      <div className="[margin-top:auto] [border-top:1px_solid_#eceef4] [background:white] [&_>_textarea]:block [&_>_textarea]:[width:calc(100%_-_20px)] [&_>_textarea]:[min-height:65px] [&_>_textarea]:[resize:vertical] [&_>_textarea]:[margin:0_10px] [&_>_textarea]:[padding:9px_10px] [&_>_textarea]:[border:1px_solid_#e8eaf2] [&_>_textarea]:[border-radius:8px] [&_>_textarea]:[outline:0] [&_>_textarea]:[color:#4d576e] [&_>_textarea]:[background:#fafaff] [&_>_textarea]:[font:inherit] [&_>_textarea]:text-[10px] [&_>_textarea]:leading-normal [&_>_textarea:focus]:[border-color:#9bb5f5] [&_>_textarea:focus]:[box-shadow:0_0_0_3px_rgb(49_99_221_/_9%)]">
+                        <div className="flex items-center [gap:5px] [padding:4px_10px] [&_button]:grid [&_button]:[width:25px] [&_button]:[height:25px] [&_button]:[place-items:center] [&_button]:[border:0] [&_button]:[border-radius:5px] [&_button]:[color:#7c8493] [&_button]:[background:transparent] [&_button]:cursor-pointer [&_button:hover]:[color:#315fce] [&_button:hover]:[background:#f1f4fc] [&_>_span]:[margin-left:auto] [&_>_span]:[color:#9b93a0] [&_>_span]:[font-size:8px] [&_>_span_b]:[color:#bd3b29]">
                           <button aria-label="In đậm">
                             <b>B</b>
                           </button>
@@ -876,12 +914,12 @@ function StaffDashboard() {
                           placeholder="Nhập nội dung phản hồi... (Enter để gửi, Shift + Enter để xuống dòng)"
                           rows={3}
                         />
-                        <div className="staff-composer-footer">
+                        <div className="flex items-center justify-between gap-2 [padding:8px_10px_10px] [&_>_span]:flex [&_>_span]:items-center [&_>_span]:[gap:5px] [&_>_span]:[color:#8e94a1] [&_>_span]:[font-size:8px] [&_>_span_svg]:[color:#4b74df] [&_small]:[color:#9fa4b0]">
                           <span>
                             <BadgeCheck size={14} /> Nhân viên hỗ trợ
                           </span>
                           <button
-                            className="staff-send-button"
+                            className="inline-flex items-center gap-2 [padding:9px_12px] [border:0] [border-radius:8px] [color:white] [background:var(--staff-accent)] text-[10px] font-extrabold cursor-pointer [&:hover:not(:disabled)]:[background:var(--staff-accent-strong)] disabled:cursor-not-allowed disabled:[opacity:0.55]"
                             onClick={sendReply}
                             disabled={!reply.trim()}
                           >
@@ -893,13 +931,15 @@ function StaffDashboard() {
                   ) : null}
                 </div>
 
-                <aside className="staff-context-column">
+                <aside className="grid min-w-0 gap-3 max-[1100px]:[grid-column:1_/_-1] max-[1100px]:[grid-template-columns:repeat(3,_minmax(0,_1fr))] max-[760px]:[grid-column:auto] max-[760px]:[grid-template-columns:minmax(0,_1fr)]">
                   {activeTicket ? (
                     <>
-                      <section className="staff-context-card staff-customer-card">
-                        <div className="staff-context-title">HỒ SƠ KHÁCH HÀNG</div>
-                        <div className="staff-customer-profile">
-                          <span className="staff-avatar staff-avatar--large">
+                      <section className="[padding:11px] [border:1px_solid_#e9eaf2] [border-radius:12px] [background:white] [box-shadow:0_4px_14px_rgb(30_42_72_/_3%)] staff-customer-card">
+                        <div className="flex items-center justify-between [gap:5px] mb-2.5 [color:#92909b] [font-size:8px] [font-weight:850] [letter-spacing:0.04em]">
+                          HỒ SƠ KHÁCH HÀNG
+                        </div>
+                        <div className="flex items-center [gap:9px] [&_>_div]:grid [&_>_div]:min-w-0 [&_>_div]:gap-[3px] [&_b]:text-[10px] [&_small]:overflow-hidden [&_small]:[color:#9b8f96] [&_small]:[font-size:8px] [&_small]:[text-overflow:ellipsis] [&_small]:whitespace-nowrap">
+                          <span className="[display:inline-grid] [width:35px] [height:35px] [place-items:center] rounded-full [color:#7f5637] [background:#ffdab5] text-xs font-extrabold [width:40px] [height:40px] text-[13px]">
                             {activeTicket.initials}
                           </span>
                           <div>
@@ -909,13 +949,17 @@ function StaffDashboard() {
                           </div>
                         </div>
                       </section>
-                      <section className="staff-context-card">
-                        <div className="staff-context-title">DỮ LIỆU LIÊN QUAN</div>
+                      <section className="[padding:11px] [border:1px_solid_#e9eaf2] [border-radius:12px] [background:white] [box-shadow:0_4px_14px_rgb(30_42_72_/_3%)]">
+                        <div className="flex items-center justify-between [gap:5px] mb-2.5 [color:#92909b] [font-size:8px] [font-weight:850] [letter-spacing:0.04em]">
+                          DỮ LIỆU LIÊN QUAN
+                        </div>
                       </section>
                     </>
                   ) : (
-                    <section className="staff-context-card">
-                      <div className="staff-context-title">HỒ SƠ KHÁCH HÀNG</div>
+                    <section className="[padding:11px] [border:1px_solid_#e9eaf2] [border-radius:12px] [background:white] [box-shadow:0_4px_14px_rgb(30_42_72_/_3%)]">
+                      <div className="flex items-center justify-between [gap:5px] mb-2.5 [color:#92909b] [font-size:8px] [font-weight:850] [letter-spacing:0.04em]">
+                        HỒ SƠ KHÁCH HÀNG
+                      </div>
                     </section>
                   )}
                 </aside>
@@ -1076,7 +1120,7 @@ function StaffDashboard() {
         </main>
       </div>
       {toast && (
-        <div className="staff-toast">
+        <div className="fixed [right:22px] [bottom:22px] [z-index:80] flex [max-width:min(420px,_calc(100vw_-_32px))] items-center [gap:9px] [padding:12px_16px] [border:1px_solid_#d8e8df] [border-radius:9px] [color:#256447] [background:white] [box-shadow:0_12px_35px_rgb(27_42_67_/_16%)] text-xs font-bold [&_svg]:[flex:0_0_auto]">
           <Check size={16} />
           {toast}
         </div>
@@ -1103,16 +1147,22 @@ function MetricCard({
   footerValue: string;
 }) {
   return (
-    <article className="staff-kpi-card">
-      <div className="staff-kpi-label">
+    <article className="flex min-w-0 [min-height:150px] flex-col justify-between p-3.5 [border:1px_solid_#efedf5] [border-radius:12px] [background:#fff] [box-shadow:0_2px_8px_rgb(29_39_64_/_3%)] [&:last-child_.staff-kpi-footer]:[color:#a8483d] [&:last-child_.staff-kpi-footer]:[background:#fff0ee] [&:last-child_.staff-kpi-footer_b]:[color:#d9341b] max-[760px]:[min-height:138px] max-[760px]:[padding:11px]">
+      <div className="flex items-center justify-between gap-2 [color:#9b8580] [font-size:9px] font-extrabold max-[420px]:[font-size:8px]">
         <span>{label}</span>
-        <i className={`staff-kpi-icon is-${tone}`}>{icon}</i>
+        <i
+          className={`grid w-8 h-8 [flex:0_0_auto] [place-items:center] [border-radius:8px] [&.is-coral]:[color:var(--staff-primary)] [&.is-coral]:[background:#e5edff] [&.is-amber]:[color:#9e6216] [&.is-amber]:[background:#ffebd0] [&.is-blue]:[color:var(--staff-primary)] [&.is-blue]:[background:#e1eaff] [&.is-red]:[color:#d9341b] [&.is-red]:[background:#ffe1dd] is-${tone}`}
+        >
+          {icon}
+        </i>
       </div>
-      <div className={`staff-kpi-value is-${tone}`}>
+      <div
+        className={`flex items-center justify-between gap-2 justify-start [color:var(--staff-primary)] [&_b]:[color:#18233a] [&_b]:[font-size:30px] [&_b]:leading-none [&_span]:text-[11px] [&_span]:font-extrabold [&.is-coral_span]:[color:var(--staff-accent)] [&.is-amber_span]:[color:#9e6216] [&.is-red]:[color:#d9341b] [&.is-red_b]:[color:#d9341b] [&.is-red_span]:[color:#d9341b] is-${tone}`}
+      >
         <b>{value}</b>
         <span>{suffix}</span>
       </div>
-      <div className="staff-kpi-footer">
+      <div className="flex items-center justify-between gap-2 [min-height:34px] [padding:0_9px] [border-radius:8px] [color:#938a98] [background:#f1f2ff] [font-size:9px] [&_b]:[color:var(--staff-primary)] [&_b]:[font-size:9px] max-[420px]:px-1.5 max-[420px]:[font-size:8px] max-[420px]:[&_b]:[font-size:8px]">
         <span>{footerLabel}</span>
         <b>{footerValue}</b>
       </div>
