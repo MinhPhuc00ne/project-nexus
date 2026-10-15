@@ -9,6 +9,7 @@ interface ApiResponse<T> {
 export interface AuthMessage {
   message: string;
   email?: string;
+  devOtpCode?: string;
 }
 
 export interface AuthUser {
@@ -177,6 +178,28 @@ export function register(email: string, password: string, fullName: string): Pro
 
 export function verifyEmail(email: string, code: string): Promise<AuthMessage> {
   return post('verify-email', { email, code });
+}
+
+export function forgotPassword(
+  email: string,
+): Promise<{ message: string; email: string; devOtpCode?: string }> {
+  return post('forgot-password', { email });
+}
+
+export function resetPassword(
+  email: string,
+  code: string,
+  newPassword: string,
+): Promise<{ message: string }> {
+  return post('reset-password', { email, code, newPassword });
+}
+
+export function refreshToken(): Promise<{ accessToken: string; refreshToken: string }> {
+  const currentRefreshToken = getStoredRefreshToken();
+  if (!currentRefreshToken) {
+    throw new Error('Không tìm thấy refresh token.');
+  }
+  return post('refresh', { refreshToken: currentRefreshToken });
 }
 
 export function startGoogleLogin(): void {

@@ -28,6 +28,7 @@ import {
   CreditCard,
   Flame,
   Clock,
+  ArrowLeft,
   X,
 } from 'lucide-react';
 import { getStoredUser } from '../../services/auth';
@@ -572,10 +573,9 @@ export const SearchPage: React.FC = () => {
           </div>
 
           {/* Cart Button */}
-          <a href="#cart" className="search-cart-btn">
+          <a href="/cart" className="search-cart-btn">
             <ShoppingCart className="w-5 h-5 cart-icon-red" />
             <span className="cart-text">Giỏ Hàng</span>
-            <span className="cart-badge-count">3</span>
           </a>
         </div>
       </header>
@@ -584,6 +584,15 @@ export const SearchPage: React.FC = () => {
       <section className="results-banner-section">
         <div className="results-banner-container">
           <div className="results-heading-col">
+            <div className="mb-2">
+              <a
+                href="/"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 shadow-sm transition"
+              >
+                <ArrowLeft size={13} />
+                Quay lại Trang Chủ
+              </a>
+            </div>
             <h1 className="results-title">
               Kết quả tìm kiếm cho:{' '}
               <span className="results-query-highlight">
@@ -1208,7 +1217,9 @@ export const SearchPage: React.FC = () => {
                   <div className="product-card-body">
                     <span className="card-brand-category">{item.brand}</span>
                     <h3 className="card-product-title" title={item.title}>
-                      {item.title}
+                      <a href={`/product/${item.id}`} className="hover:text-[#f24e1e] transition">
+                        {item.title}
+                      </a>
                     </h3>
 
                     {/* Rating / Sold Row */}

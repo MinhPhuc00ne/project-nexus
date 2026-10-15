@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Heart,
 } from 'lucide-react';
+import { addToCart } from '../../services/cart';
 import './HomePage.css';
 
 interface Product {
@@ -676,14 +677,25 @@ function TimerBox({ value }: { value: string }) {
 ========================================================= */
 
 function FlashSaleCard({ product }: { product: Product }) {
+  const prodId =
+    product.id === 1
+      ? 'ap-tourbillon'
+      : product.id === 2
+        ? 'patek-celestial'
+        : product.id === 3
+          ? 'hublot-unico'
+          : 'rolex-daytona';
   return (
-    <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
+    <a
+      href={`/product/${prodId}`}
+      className="home-product-card block overflow-hidden rounded-xl border border-slate-200 bg-white p-2 hover:shadow-md transition"
+    >
       <div className="relative aspect-square overflow-hidden rounded-lg border border-slate-300 bg-slate-900 p-1">
         {product.image ? (
           <img
             src={product.image}
             alt={product.name}
-            className="h-full w-full rounded-md object-cover"
+            className="h-full w-full rounded-md object-cover hover:scale-105 transition duration-300"
           />
         ) : (
           <span className="text-xs text-slate-400">Chưa có hình ảnh</span>
@@ -696,7 +708,9 @@ function FlashSaleCard({ product }: { product: Product }) {
       </div>
 
       <div className="px-1 pb-1 pt-2">
-        <h3 className="truncate text-xs font-semibold text-slate-700">{product.name}</h3>
+        <h3 className="truncate text-xs font-semibold text-slate-700 hover:text-[#f24e1e] transition">
+          {product.name}
+        </h3>
 
         <div className="mt-1 flex items-baseline gap-2">
           <p className="text-sm font-extrabold text-[#f24e1e]">
@@ -719,19 +733,30 @@ function FlashSaleCard({ product }: { product: Product }) {
           </span>
         </div>
       </div>
-    </div>
+    </a>
   );
 }
 
 function AuctionCard({ product }: { product: Product }) {
+  const prodId =
+    product.id === 1
+      ? 'ap-tourbillon'
+      : product.id === 2
+        ? 'rolex-daytona'
+        : product.id === 3
+          ? 'hublot-unico'
+          : 'patek-celestial';
   return (
-    <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
-      <div className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-slate-100">
+    <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white p-2 hover:shadow-md transition">
+      <a
+        href={`/product/${prodId}`}
+        className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-slate-100 block"
+      >
         {product.image ? (
           <img
             src={product.image}
             alt={product.name}
-            className="h-full w-full rounded-lg object-cover"
+            className="h-full w-full rounded-lg object-cover hover:scale-105 transition duration-300"
           />
         ) : (
           <span className="text-xs text-slate-400">Chưa có hình ảnh</span>
@@ -739,17 +764,22 @@ function AuctionCard({ product }: { product: Product }) {
         <span className="absolute left-2 top-2 rounded bg-sky-500 px-2 py-1 text-[10px] font-bold text-white">
           3D MODEL
         </span>
-        <button
-          type="button"
+        <a
+          href="/auction"
           aria-label={`Xem mô hình ${product.name}`}
           className="absolute bottom-2 right-2 rounded-md border border-white/70 bg-slate-900/70 px-2.5 py-1.5 text-[10px] font-semibold text-white transition hover:bg-slate-900"
+          onClick={(e) => e.stopPropagation()}
         >
           Xem 3D
-        </button>
-      </div>
+        </a>
+      </a>
 
       <div className="p-2">
-        <h3 className="text-xs font-bold text-slate-700">{product.name || 'Chưa có dữ liệu'}</h3>
+        <a href={`/product/${prodId}`}>
+          <h3 className="text-xs font-bold text-slate-700 hover:text-[#f24e1e] transition">
+            {product.name || 'Chưa có dữ liệu'}
+          </h3>
+        </a>
 
         <div className="mt-2 flex items-center justify-between">
           <span className="text-xs font-extrabold text-sky-500">
@@ -766,11 +796,44 @@ function AuctionCard({ product }: { product: Product }) {
 }
 
 function RecommendationCard({ product }: { product: Product }) {
+  const prodId =
+    product.id === 1
+      ? 'ap-tourbillon'
+      : product.id === 2
+        ? 'patek-celestial'
+        : product.id === 3
+          ? 'hublot-unico'
+          : 'rolex-daytona';
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(
+      {
+        id: prodId,
+        name: product.name,
+        price: product.price || 18500000,
+        formattedPrice: product.price
+          ? `${product.price.toLocaleString('vi-VN')} ₫`
+          : '18.500.000 ₫',
+        img: product.image || '/images/watches/watch-1.png',
+        shopName: 'NEXUS Official Store',
+      },
+      1,
+    );
+  };
+
   return (
     <div className="home-product-card overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-sky-200 hover:shadow-sm">
-      <div className="relative flex aspect-square items-center justify-center bg-slate-100">
+      <a
+        href={`/product/${prodId}`}
+        className="relative flex aspect-square items-center justify-center bg-slate-100 block"
+      >
         {product.image ? (
-          <img src={product.image} alt={product.name} className="h-full w-full object-cover" />
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-full w-full object-cover hover:scale-105 transition duration-300"
+          />
         ) : (
           <span className="text-xs text-slate-400">Chưa có hình ảnh</span>
         )}
@@ -780,20 +843,26 @@ function RecommendationCard({ product }: { product: Product }) {
         <button
           type="button"
           aria-label={`Yêu thích ${product.name}`}
-          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm transition hover:text-rose-500"
+          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm transition hover:text-rose-500 cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
         >
           <Heart size={16} />
         </button>
-      </div>
+      </a>
 
       <div className="p-2.5 sm:p-3">
         <p className="truncate text-[10px] text-slate-500">
           Nexus Store · <span className="text-green-600">● Hoạt động</span>
         </p>
 
-        <h3 className="mt-1 line-clamp-2 min-h-[34px] text-xs font-semibold text-slate-700">
-          {product.name || 'Chưa có dữ liệu'}
-        </h3>
+        <a href={`/product/${prodId}`}>
+          <h3 className="mt-1 line-clamp-2 min-h-[34px] text-xs font-semibold text-slate-700 hover:text-[#f24e1e] transition">
+            {product.name || 'Chưa có dữ liệu'}
+          </h3>
+        </a>
 
         <div className="mt-2 flex items-center gap-1 text-[10px]">
           <Star size={12} className="fill-yellow-400 text-yellow-400" />
@@ -811,7 +880,11 @@ function RecommendationCard({ product }: { product: Product }) {
           <Truck size={12} /> Giao hàng nhanh toàn quốc
         </p>
 
-        <button className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-sky-300 hover:bg-sky-50">
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="mt-2 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:border-orange-300 hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer"
+        >
           Thêm Giỏ
         </button>
       </div>

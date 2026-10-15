@@ -7,7 +7,7 @@ interface HeaderProps {
   backText?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ backUrl = '#', backText = 'Quay lại Trang Chủ' }) => {
+const Header: React.FC<HeaderProps> = ({ backUrl = '/', backText = 'Quay lại Trang Chủ' }) => {
   return (
     <header className="auth-header">
       <div className="auth-header-left">
@@ -21,7 +21,16 @@ const Header: React.FC<HeaderProps> = ({ backUrl = '#', backText = 'Quay lại T
       </div>
 
       <div className="auth-header-right">
-        <a href={backUrl} className="auth-back-home-link">
+        <a
+          href={backUrl}
+          className="auth-back-home-link cursor-pointer"
+          onClick={(e) => {
+            if (!backUrl || backUrl === '#') {
+              e.preventDefault();
+              window.location.assign('/');
+            }
+          }}
+        >
           <ArrowLeft className="w-4 h-4" />
           {backText}
         </a>
