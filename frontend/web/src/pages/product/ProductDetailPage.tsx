@@ -20,7 +20,11 @@ import {
   CheckCircle2,
   Eye,
 } from 'lucide-react';
-import { getProductById, PRODUCTS_CATALOG, type ProductDetail } from '../../components/data/products';
+import {
+  getProductById,
+  PRODUCTS_CATALOG,
+  type ProductDetail,
+} from '../../components/data/products';
 import { addToCart } from '../../services/cart';
 import './ProductDetailPage.css';
 
