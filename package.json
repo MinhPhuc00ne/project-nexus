@@ -41,10 +41,6 @@
     "prettier": "^3.9.10",
     "typescript-eslint": "^8.71.1"
   },
-  "overrides": {
-    "deepmerge-ts": "8.0.0",
-    "mysql2": "3.24.6"
-  },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx}": [
       "eslint --fix",
