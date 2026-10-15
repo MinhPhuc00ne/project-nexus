@@ -1,5 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Phone } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '../../routes/AppRouter';
 import './Header.css';
 
 interface HeaderProps {
@@ -7,33 +9,29 @@ interface HeaderProps {
   backText?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ backUrl = '/', backText = 'Quay lại Trang Chủ' }) => {
+const Header: React.FC<HeaderProps> = ({
+  backUrl = ROUTES.HOME,
+  backText = 'Quay lại Trang Chủ',
+}) => {
+  const targetUrl = !backUrl || backUrl === '#' ? ROUTES.HOME : backUrl;
+
   return (
     <header className="auth-header">
       <div className="auth-header-left">
-        <a href="/" className="auth-brand-logo">
+        <Link to={ROUTES.HOME} className="auth-brand-logo">
           <img src="/images/NEXUS.png" alt="NEXUS" className="auth-brand-image" />
 
           {/*<span className="auth-brand-name">NEXUS</span>*/}
-        </a>
+        </Link>
         <div className="auth-header-divider"></div>
         <p className="auth-brand-tagline">Sàn Thương Mại Điện Tử & Đấu Giá Trực Tuyến 3D</p>
       </div>
 
       <div className="auth-header-right">
-        <a
-          href={backUrl}
-          className="auth-back-home-link cursor-pointer"
-          onClick={(e) => {
-            if (!backUrl || backUrl === '#') {
-              e.preventDefault();
-              window.location.assign('/');
-            }
-          }}
-        >
+        <Link to={targetUrl} className="auth-back-home-link cursor-pointer">
           <ArrowLeft className="w-4 h-4" />
           {backText}
-        </a>
+        </Link>
         <div className="auth-hotline-group">
           <div className="auth-hotline-icon-box">
             <Phone className="auth-hotline-icon" />

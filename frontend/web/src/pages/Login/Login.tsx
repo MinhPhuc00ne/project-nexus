@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   forgotPassword,
   login,
@@ -6,6 +7,7 @@ import {
   saveAuthSession,
   startGoogleLogin,
 } from '../../services/auth';
+import { ROUTES } from '../../routes/AppRouter';
 import Popup from '../../components/popup/Popup';
 import {
   ArrowLeft,
@@ -49,6 +51,9 @@ const GoogleIcon = ({ className }: { className?: string }) => (
 );
 
 const Login: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [email, setEmail] = useState(() => {
     try {
       const verifiedEmail = sessionStorage.getItem('nexus:verified-email') || '';
@@ -61,9 +66,7 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState(() =>
-    new URLSearchParams(window.location.search).get('verified') === '1'
-      ? 'Email đã được xác thực. Vui lòng đăng nhập.'
-      : '',
+    searchParams.get('verified') === '1' ? 'Email đã được xác thực. Vui lòng đăng nhập.' : '',
   );
   const [failed, setFailed] = useState(false);
   const requestInFlight = useRef(false);
@@ -149,10 +152,12 @@ const Login: React.FC = () => {
     } catch {
       /* Storage may be disabled. */
     }
-    if (new URLSearchParams(window.location.search).has('verified')) {
-      window.history.replaceState(null, '', '/login');
+    if (searchParams.get('verified') === '1') {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('verified');
+      setSearchParams(nextParams, { replace: true });
     }
-  }, []);
+  }, [searchParams, setSearchParams]);
   async function handleLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (requestInFlight.current) return;
@@ -165,11 +170,11 @@ const Login: React.FC = () => {
       saveAuthSession(result.user, result.accessToken, result.refreshToken);
       setFeedback(result.message + ' Xin chào ' + result.user.fullName + '.');
       if (result.user.role === 'ADMIN') {
-        window.location.assign('/admin');
+        navigate(ROUTES.ADMIN);
       } else if (result.user.role === 'SUPPORT_STAFF') {
-        window.location.assign('/staff');
+        navigate(ROUTES.STAFF);
       } else {
-        window.location.assign('/');
+        navigate(ROUTES.HOME);
       }
     } catch (error: unknown) {
       setFailed(true);
@@ -430,18 +435,9 @@ const Login: React.FC = () => {
 
               <div className="signup-prompt">
                 <span className="signup-prompt-text">Bạn mới tham gia NEXUS?</span>
-                <a href="/register" className="signup-link">
+                <Link to={ROUTES.REGISTER} className="signup-link">
                   Tạo tài khoản ngay
-                </a>
-              </div>
-
-              <div className="flex flex-col gap-1 text-center text-xs text-slate-500 py-1">
-                <span>
-                  Đội ngũ quản trị / vận hành?{' '}
-                  <a href="/admin" className="font-semibold text-blue-600 hover:underline">
-                    Vào NEXUS Admin Panel
-                  </a>
-                </span>
+                </Link>
               </div>
 
               <div className="voucher-banner">

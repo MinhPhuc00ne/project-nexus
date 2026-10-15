@@ -49,5 +49,8 @@
     "*.{json,md,yml,yaml,css}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.3.4"
   }
 }
