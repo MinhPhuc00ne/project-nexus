@@ -1,0 +1,65 @@
+import { getStoredToken } from './auth';
+
+export const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1').replace(
+  /\/$/,
+  '',
+);
+
+export interface RequestOptions {
+  method?: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
+  body?: any;
+  isFormData?: boolean;
+  requireAuth?: boolean;
+}
+
+export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const { method = 'GET', body, isFormData = false, requireAuth = false } = options;
+  const headers: Record<string, string> = {};
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  const token = getStoredToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  } else if (requireAuth) {
+    throw new Error('Vui lòng đăng nhập để thực hiện thao tác này.');
+  }
+
+  const endpoint = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method,
+      headers,
+      body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(30000),
+    });
+  } catch {
+    throw new Error('Không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ backend.');
+  }
+
+  let payload: any;
+  try {
+    payload = await response.json();
+  } catch {
+    throw new Error('Máy chủ phản hồi định dạng dữ liệu không hợp lệ.');
+  }
+
+  if (!response.ok) {
+    const errorMsg = Array.isArray(payload?.errors)
+      ? payload.errors.join(' · ')
+      : typeof payload?.message === 'string'
+        ? payload.message
+        : 'Yêu cầu thất bại.';
+    throw new Error(errorMsg);
+  }
+
+  if (payload && typeof payload === 'object' && 'data' in payload) {
+    return payload.data as T;
+  }
+
+  return payload as T;
+}

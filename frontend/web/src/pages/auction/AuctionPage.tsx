@@ -10,6 +10,7 @@ import {
   Sliders,
   CheckCircle2,
   ArrowRight,
+  ArrowLeft,
   Truck,
   RotateCw,
   Sparkles,
@@ -207,6 +208,14 @@ export const AuctionPage: React.FC = () => {
           </nav>
 
           <div className="auction-top-actions">
+            <a
+              href="/"
+              className="auction-icon-btn hover:text-[#f24e1e] transition"
+              title="Quay lại Trang Chủ"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Về Trang Chủ</span>
+            </a>
             <button
               type="button"
               className={`auction-icon-btn ${isLiked ? 'liked' : ''}`}

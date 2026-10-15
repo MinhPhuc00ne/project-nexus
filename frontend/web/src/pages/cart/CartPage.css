@@ -1,0 +1,8 @@
+/* CartPage Custom CSS */
+.cart-page {
+  font-family: inherit;
+}
+
+.cart-page input[type='checkbox'] {
+  accent-color: #f24e1e;
+}

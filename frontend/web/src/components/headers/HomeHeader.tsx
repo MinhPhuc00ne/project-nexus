@@ -17,8 +17,25 @@ import {
   Gavel,
   Heart,
   LogOut,
+  Wallet,
+  Award,
+  Upload,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  ShieldCheck,
 } from 'lucide-react';
 import { clearAuthSession, getStoredUser, type AuthUser } from '../../services/auth';
+import {
+  getMe,
+  toggleSellerMode,
+  createSellerRequest,
+  getMySellerRequests,
+  type UserProfile,
+  type SellerUpgradeRequest,
+} from '../../services/users';
+import Popup from '../popup/Popup';
+import { getCartItems, type CartItem as StoredCartItem } from '../../services/cart';
 import './HomeHeader.css';
 
 export interface NotificationItem {
@@ -71,21 +88,175 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   onLogoutClick,
 }) => {
   const [storedUser, setStoredUser] = useState<AuthUser | null>(() => getStoredUser());
+  const [storedCart, setStoredCart] = useState<StoredCartItem[]>(() => getCartItems());
 
   useEffect(() => {
     const syncAuth = () => setStoredUser(getStoredUser());
+    const syncCart = () => setStoredCart(getCartItems());
     window.addEventListener('nexus:auth-change', syncAuth);
+    window.addEventListener('nexus:cart-change', syncCart);
     window.addEventListener('storage', syncAuth);
+    window.addEventListener('storage', syncCart);
     return () => {
       window.removeEventListener('nexus:auth-change', syncAuth);
+      window.removeEventListener('nexus:cart-change', syncCart);
       window.removeEventListener('storage', syncAuth);
+      window.removeEventListener('storage', syncCart);
     };
   }, []);
+
+  const effectiveCartCount = cartCount > 0 ? cartCount : storedCart.reduce((acc, c) => acc + c.qty, 0);
+  const effectiveCartItems =
+    cartItems.length > 0
+      ? cartItems
+      : storedCart.map((i) => ({
+          id: i.id,
+          name: i.name,
+          price: i.formattedPrice,
+          img: i.img,
+          qty: i.qty,
+        }));
 
   const effectiveLoggedIn = isLoggedIn ?? Boolean(storedUser);
   const displayUserName = userName || storedUser?.fullName || storedUser?.email || 'Tài khoản';
   const displayUserEmail = userEmail ?? storedUser?.email;
   const displayUserAvatar = userAvatar !== undefined ? userAvatar : storedUser?.avatarUrl;
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isTogglingSeller, setIsTogglingSeller] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Upgrade Seller Modal State
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeRequests, setUpgradeRequests] = useState<SellerUpgradeRequest[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(false);
+  const [isSubmittingUpgrade, setIsSubmittingUpgrade] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
+  const [upgradeSuccess, setUpgradeSuccess] = useState('');
+
+  // Form State
+  const [storeName, setStoreName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [storeDescription, setStoreDescription] = useState('');
+  const [businessEmail, setBusinessEmail] = useState('');
+  const [identityCardNumber, setIdentityCardNumber] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const data = await getMe();
+      setProfile(data);
+    } catch {
+      // Ignored if not authenticated
+    }
+  };
+
+  useEffect(() => {
+    if (effectiveLoggedIn) {
+      void fetchProfile();
+    } else {
+      setProfile(null);
+    }
+  }, [effectiveLoggedIn]);
+
+  const handleToggleSeller = async () => {
+    if (!effectiveLoggedIn) {
+      if (onLoginClick) onLoginClick();
+      else window.location.assign('/login');
+      return;
+    }
+    if (profile?.role !== 'SELLER' && profile?.role !== 'ADMIN') {
+      void handleOpenUpgradeModal();
+      return;
+    }
+    setIsTogglingSeller(true);
+    try {
+      const nextActive = !profile.isSellerActive;
+      const res = await toggleSellerMode(nextActive);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              isSellerActive: res.isSellerActive,
+              currentMode: res.currentMode,
+            }
+          : null,
+      );
+      showToast(res.message);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Chuyển đổi chế độ thất bại.');
+    } finally {
+      setIsTogglingSeller(false);
+    }
+  };
+
+  const handleOpenUpgradeModal = async () => {
+    if (!effectiveLoggedIn) {
+      if (onLoginClick) onLoginClick();
+      else window.location.assign('/login');
+      return;
+    }
+    if (profile?.role === 'SELLER') {
+      showToast('Tài khoản của bạn đã là Người bán (Seller) rồi!');
+      return;
+    }
+    setShowUpgradeModal(true);
+    setIsLoadingRequests(true);
+    setUpgradeError('');
+    setUpgradeSuccess('');
+    try {
+      const res = await getMySellerRequests();
+      setUpgradeRequests(res.requests || []);
+      if (!phone && profile?.phoneNumber) setPhone(profile.phoneNumber);
+      if (!businessEmail && profile?.email) setBusinessEmail(profile.email);
+    } catch (err: unknown) {
+      setUpgradeError(err instanceof Error ? err.message : 'Không thể tải lịch sử yêu cầu.');
+    } finally {
+      setIsLoadingRequests(false);
+    }
+  };
+
+  const handleSubmitUpgrade = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!storeName.trim() || !phone.trim()) {
+      setUpgradeError('Vui lòng nhập Tên gian hàng và Số điện thoại liên hệ.');
+      return;
+    }
+    if (!proofFile) {
+      setUpgradeError('Vui lòng tải lên tài liệu chứng minh (CCCD hoặc Giấy phép kinh doanh).');
+      return;
+    }
+    setIsSubmittingUpgrade(true);
+    setUpgradeError('');
+    setUpgradeSuccess('');
+    try {
+      const formData = new FormData();
+      formData.append('storeName', storeName.trim());
+      formData.append('phone', phone.trim());
+      if (storeDescription.trim()) formData.append('storeDescription', storeDescription.trim());
+      if (businessEmail.trim()) formData.append('businessEmail', businessEmail.trim());
+      if (identityCardNumber.trim()) formData.append('identityCardNumber', identityCardNumber.trim());
+      formData.append('file', proofFile);
+
+      const res = await createSellerRequest(formData);
+      setUpgradeSuccess(res.message || 'Gửi yêu cầu nâng cấp thành công!');
+      const updated = await getMySellerRequests();
+      setUpgradeRequests(updated.requests || []);
+      setStoreName('');
+      setStoreDescription('');
+      setIdentityCardNumber('');
+      setProofFile(null);
+    } catch (err: unknown) {
+      setUpgradeError(err instanceof Error ? err.message : 'Gửi yêu cầu thất bại.');
+    } finally {
+      setIsSubmittingUpgrade(false);
+    }
+  };
 
   // Language
   const [currentLang, setCurrentLang] = useState<'vi' | 'en' | 'jp'>('vi');
@@ -177,23 +348,44 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
         <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-4">
           {/* LEFT */}
           <div className="flex items-center gap-2.5">
-            <a
-              href="#seller-center"
-              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+            <button
+              type="button"
+              onClick={handleToggleSeller}
+              disabled={isTogglingSeller}
+              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer"
+              title={
+                profile?.role === 'SELLER' || profile?.role === 'ADMIN'
+                  ? 'Bấm để Bật/Tắt chế độ Người bán'
+                  : 'Đăng ký trở thành Người bán'
+              }
             >
               <Store size={14} />
               <span>Kênh Người Bán</span>
-            </a>
+              {(profile?.role === 'SELLER' || profile?.role === 'ADMIN') && (
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                    profile.isSellerActive
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {isTogglingSeller ? '...' : profile.isSellerActive ? 'BẬT' : 'TẮT'}
+                </span>
+              )}
+            </button>
 
             <span className="text-xs text-slate-200">|</span>
 
-            <a
-              href="#become-seller"
-              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+            <button
+              type="button"
+              onClick={handleOpenUpgradeModal}
+              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer"
             >
               <ShoppingBag size={14} />
-              <span>Trở thành Seller</span>
-            </a>
+              <span>
+                {profile?.role === 'SELLER' ? 'Hồ sơ Người Bán' : 'Trở thành Seller'}
+              </span>
+            </button>
 
             <span className="text-xs text-slate-200">|</span>
 
@@ -436,8 +628,60 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                         {displayUserEmail && (
                           <p className="m-0 truncate text-xs text-slate-500">{displayUserEmail}</p>
                         )}
+                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                            {profile?.role === 'ADMIN'
+                              ? 'Quản trị viên'
+                              : profile?.role === 'SELLER'
+                                ? 'Người bán (Seller)'
+                                : profile?.role === 'SUPPORT_STAFF'
+                                  ? 'Nhân viên (Staff)'
+                                  : 'Khách hàng (Buyer)'}
+                          </span>
+                        </div>
                       </div>
                     </div>
+
+                    {profile && (
+                      <div className="mb-2 p-2 rounded bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-1 font-medium text-slate-600">
+                            <Wallet size={12} className="text-amber-600" /> Số dư ví:
+                          </span>
+                          <strong className="text-emerald-700 font-semibold">
+                            {profile.wallet ? `${Number(profile.wallet.balance).toLocaleString('vi-VN')} ₫` : '0 ₫'}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-1 font-medium text-slate-600">
+                            <Award size={12} className="text-amber-600" /> Điểm uy tín:
+                          </span>
+                          <span className="font-semibold text-slate-800">
+                            {profile.reputationScore} ({profile.trustLevel})
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {profile?.role === 'ADMIN' && (
+                      <a
+                        href="/admin"
+                        className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-blue-700 bg-blue-50 font-medium hover:bg-blue-100 mb-1"
+                      >
+                        <ShieldCheck size={15} />
+                        <span>Bảng Điều Hành Admin</span>
+                      </a>
+                    )}
+
+                    {(profile?.role === 'ADMIN' || profile?.role === 'SUPPORT_STAFF') && (
+                      <a
+                        href="/staff"
+                        className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-indigo-700 bg-indigo-50 font-medium hover:bg-indigo-100 mb-1"
+                      >
+                        <Store size={15} />
+                        <span>Trang Quản Trị & Duyệt Hồ Sơ</span>
+                      </a>
+                    )}
 
                     <div className="my-1.5 h-px bg-slate-200" />
 
@@ -658,9 +902,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             >
               <div className="relative flex items-center">
                 <ShoppingCart size={20} className="text-[#f24e1e]" />
-                {cartCount > 0 && (
+                {effectiveCartCount > 0 && (
                   <span className="absolute -right-2.5 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f24e1e] px-1 text-[10px] font-bold text-white">
-                    {cartCount > 99 ? '99+' : cartCount}
+                    {effectiveCartCount > 99 ? '99+' : effectiveCartCount}
                   </span>
                 )}
               </div>
@@ -672,31 +916,38 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             {showCartPanel && (
               <div className="home-header-popover absolute right-0 top-[calc(100%+6px)] z-[1100] w-[380px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-xl">
                 <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
-                  <h4 className="m-0 text-sm font-bold text-slate-800">Giỏ Hàng</h4>
+                  <h4 className="m-0 text-sm font-bold text-slate-800">Giỏ Hàng Của Bạn</h4>
 
-                  <span className="text-xs text-slate-500">{cartItems.length} sản phẩm</span>
+                  <span className="text-xs text-slate-500">{effectiveCartItems.length} món</span>
                 </div>
 
-                <div>
-                  {cartItems.length > 0 ? (
-                    cartItems.map((item) => (
-                      <div key={item.id} className="flex gap-3 border-b border-slate-100 px-4 py-3">
+                <div className="max-h-72 overflow-y-auto">
+                  {effectiveCartItems.length > 0 ? (
+                    effectiveCartItems.map((item) => (
+                      <a
+                        key={item.id}
+                        href={`/product/${item.id}`}
+                        className="flex gap-3 border-b border-slate-100 px-4 py-3 hover:bg-slate-50 transition"
+                      >
                         {item.img && (
                           <img
                             src={item.img}
                             alt={item.name}
-                            className="h-[52px] w-[52px] shrink-0 rounded-md border border-slate-200 object-cover"
+                            className="h-[52px] w-[52px] shrink-0 rounded-md border border-slate-200 object-cover p-0.5 bg-white"
                           />
                         )}
 
                         <div className="min-w-0 flex-1">
-                          <h5 className="mb-1 line-clamp-2 text-[13px] font-semibold text-slate-800">
+                          <h5 className="mb-1 line-clamp-2 text-[13px] font-semibold text-slate-800 hover:text-[#f24e1e]">
                             {item.name}
                           </h5>
 
-                          <span className="text-[13px] font-bold text-[#f24e1e]">{item.price}</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[13px] font-bold text-[#f24e1e]">{item.price}</span>
+                            {item.qty && <span className="text-xs text-slate-400 font-medium">x{item.qty}</span>}
+                          </div>
                         </div>
-                      </div>
+                      </a>
                     ))
                   ) : (
                     <div className="p-6 text-center text-[13px] text-slate-400">
@@ -704,11 +955,278 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                     </div>
                   )}
                 </div>
+
+                {effectiveCartItems.length > 0 && (
+                  <div className="p-3 border-t border-slate-100 bg-slate-50">
+                    <a
+                      href="/cart"
+                      className="block w-full py-2.5 px-4 rounded-xl bg-[#f24e1e] hover:bg-[#d63b0e] text-white text-center font-bold text-xs shadow-md transition"
+                      onClick={() => setShowCartPanel(false)}
+                    >
+                      Xem Giỏ Hàng & Thanh Toán
+                    </a>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
       </div>
+
+      {/* TOAST THÔNG BÁO TÁC VỤ */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm text-white shadow-2xl transition-all">
+          <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* MODAL ĐĂNG KÝ TRỞ THÀNH SELLER */}
+      <Popup
+        isOpen={showUpgradeModal}
+        onClose={() => {
+          if (!isSubmittingUpgrade) setShowUpgradeModal(false);
+        }}
+        title={
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-lg">
+            <ShoppingBag className="w-5 h-5 text-orange-500" />
+            <span>
+              {profile?.role === 'SELLER'
+                ? 'Thông Tin Gian Hàng Người Bán'
+                : 'Đăng Ký Nâng Cấp Thành Người Bán (Seller)'}
+            </span>
+          </div>
+        }
+        size="lg"
+      >
+        {isLoadingRequests ? (
+          <div className="py-12 text-center text-slate-500">
+            <Clock className="w-8 h-8 mx-auto mb-2 text-slate-400 animate-spin" />
+            Đang tải dữ liệu hồ sơ từ máy chủ...
+          </div>
+        ) : upgradeRequests.some((r) => r.status === 'PENDING') ? (
+          (() => {
+            const pendingReq = upgradeRequests.find((r) => r.status === 'PENDING')!;
+            return (
+              <div className="space-y-4">
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3 text-amber-900">
+                  <Clock className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="text-sm">
+                    <h4 className="font-bold text-amber-900 mb-1">
+                      Hồ sơ của bạn đang được Ban Quản Trị xét duyệt!
+                    </h4>
+                    <p className="text-amber-800">
+                      Bạn đã gửi yêu cầu nâng cấp tài khoản lên Seller. Quản trị viên đang tiến hành kiểm tra thông tin và tài liệu chứng minh.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm space-y-2">
+                  <div className="flex justify-between border-b border-slate-200 pb-2">
+                    <span className="text-slate-500">Tên gian hàng:</span>
+                    <strong className="text-slate-800">{pendingReq.storeName}</strong>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-200 pb-2">
+                    <span className="text-slate-500">Số điện thoại liên hệ:</span>
+                    <span className="text-slate-800 font-medium">{pendingReq.phone}</span>
+                  </div>
+                  {pendingReq.businessEmail && (
+                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                      <span className="text-slate-500">Email kinh doanh:</span>
+                      <span className="text-slate-800 font-medium">{pendingReq.businessEmail}</span>
+                    </div>
+                  )}
+                  {pendingReq.identityCardNumber && (
+                    <div className="flex justify-between border-b border-slate-200 pb-2">
+                      <span className="text-slate-500">Số CCCD/CMND:</span>
+                      <span className="text-slate-800 font-medium">{pendingReq.identityCardNumber}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-b border-slate-200 pb-2">
+                    <span className="text-slate-500">Thời gian nộp:</span>
+                    <span className="text-slate-800">
+                      {new Date(pendingReq.createdAt).toLocaleString('vi-VN')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-slate-500">Trạng thái:</span>
+                    <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                      ĐANG CHỜ DUYỆT (PENDING)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    className="px-5 py-2 text-sm font-semibold bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition"
+                    onClick={() => setShowUpgradeModal(false)}
+                  >
+                    Đã hiểu
+                  </button>
+                </div>
+              </div>
+            );
+          })()
+        ) : (
+          <div className="space-y-4">
+            {upgradeRequests.length > 0 && upgradeRequests[0].status === 'REJECTED' && (
+              <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200 flex items-start gap-2">
+                <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <strong>Yêu cầu trước đó bị từ chối:</strong>{' '}
+                  {upgradeRequests[0].rejectionReason || 'Hồ sơ chưa đạt tiêu chuẩn sàn.'}
+                  <p className="text-xs text-red-600 mt-1">
+                    Vui lòng bổ sung giấy tờ và thông tin chính xác để gửi lại yêu cầu.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {upgradeSuccess && (
+              <div className="p-3 text-sm text-emerald-800 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{upgradeSuccess}</span>
+              </div>
+            )}
+
+            {upgradeError && (
+              <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200">
+                {upgradeError}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitUpgrade} className="space-y-3.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Tên Gian Hàng / Thương Hiệu <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="VD: Cổ Vật Hoàng Gia Store"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    disabled={isSubmittingUpgrade}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Số Điện Thoại Liên Hệ <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="VD: 0987654321"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    disabled={isSubmittingUpgrade}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Email Kinh Doanh
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="VD: shop@domain.com"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={businessEmail}
+                    onChange={(e) => setBusinessEmail(e.target.value)}
+                    disabled={isSubmittingUpgrade}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Số CCCD / CMND / Mã Doanh Nghiệp
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: 001202008888"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={identityCardNumber}
+                    onChange={(e) => setIdentityCardNumber(e.target.value)}
+                    disabled={isSubmittingUpgrade}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Mô Tả Gian Hàng & Sản Phẩm Kinh Doanh
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Mô tả ngắn gọn về nguồn gốc sản phẩm, lĩnh vực hoạt động..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={storeDescription}
+                  onChange={(e) => setStoreDescription(e.target.value)}
+                  disabled={isSubmittingUpgrade}
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tài Liệu Đính Kèm Chứng Minh (Ảnh CCCD / GPKD) <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-300 hover:border-orange-500 hover:bg-orange-50/50 rounded-lg cursor-pointer transition text-sm text-slate-600">
+                    <Upload className="w-4 h-4 text-orange-500" />
+                    <span>{proofFile ? proofFile.name : 'Chọn tệp đính kèm (Ảnh/PDF tối đa 15MB)'}</span>
+                    <input
+                      type="file"
+                      required
+                      accept="image/*,.pdf,.doc,.docx"
+                      className="hidden"
+                      onChange={(e) => setProofFile(e.target.files?.[0] || null)}
+                      disabled={isSubmittingUpgrade}
+                    />
+                  </label>
+                  {proofFile && (
+                    <button
+                      type="button"
+                      className="text-xs text-red-500 hover:underline"
+                      onClick={() => setProofFile(null)}
+                      disabled={isSubmittingUpgrade}
+                    >
+                      Xóa tệp
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Hệ thống yêu cầu tài liệu để đảm bảo tính pháp lý và bảo vệ quyền lợi người mua trên sàn.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition"
+                  onClick={() => setShowUpgradeModal(false)}
+                  disabled={isSubmittingUpgrade}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingUpgrade}
+                  className="px-5 py-2 text-sm font-semibold text-white bg-[#f24e1e] hover:bg-[#d94217] rounded-lg transition disabled:opacity-50"
+                >
+                  {isSubmittingUpgrade ? 'Đang gửi hồ sơ...' : 'Nộp Hồ Sơ Xét Duyệt'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </Popup>
     </header>
   );
 };

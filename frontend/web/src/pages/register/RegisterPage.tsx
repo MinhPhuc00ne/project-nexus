@@ -93,8 +93,15 @@ export default function RegisterPage() {
     try {
       const result = await register(email, password, fullName.trim());
       setSentEmail(email);
-      setCode('');
-      setFeedback(result.message);
+      if (result.devOtpCode) {
+        setCode(result.devOtpCode);
+        setFeedback(
+          `${result.message} [Đã tự động điền mã OTP: ${result.devOtpCode}]`,
+        );
+      } else {
+        setCode('');
+        setFeedback(result.message);
+      }
       window.requestAnimationFrame(() => document.getElementById('register-otp')?.focus());
     } catch (error: unknown) {
       setFailed(true);
