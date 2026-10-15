@@ -103,6 +103,10 @@
     @apply mb-1 block text-[12px] leading-5 font-medium text-slate-700;
   }
 
+  .register-field-hint {
+    @apply mt-1 text-[10px] leading-4 text-slate-500;
+  }
+
   .register-required {
     @apply text-red-500;
   }
