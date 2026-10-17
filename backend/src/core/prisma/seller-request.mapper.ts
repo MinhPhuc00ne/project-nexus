@@ -37,13 +37,81 @@ export interface SerializedSellerRequest {
   } | null;
 }
 
-export function serializeSellerRequest(request: any): any {
+export interface RawSellerRequestUser {
+  id: string;
+  email: string;
+  fullName?: string;
+  full_name?: string;
+  phoneNumber?: string | null;
+  phone_number?: string | null;
+  avatarUrl?: string | null;
+  avatar_url?: string | null;
+  role?: string;
+  isSellerActive?: boolean;
+  is_seller_active?: boolean;
+  reputationScore?: number;
+  reputation_score?: number;
+  trustLevel?: string;
+  trust_level?: string;
+  createdAt?: Date;
+  created_at?: Date;
+}
+
+export interface RawSellerRequestAdmin {
+  id: string;
+  email: string;
+  fullName?: string;
+  full_name?: string;
+}
+
+export interface RawSellerRequest {
+  id?: string;
+  userId?: string;
+  user_id?: string;
+  storeName?: string;
+  store_name?: string;
+  storeDescription?: string | null;
+  store_description?: string | null;
+  phone?: string;
+  phoneNumber?: string;
+  phone_number?: string;
+  businessEmail?: string | null;
+  business_email?: string | null;
+  identityCardNumber?: string | null;
+  identity_card_number?: string | null;
+  attachmentUrl?: string | null;
+  attachment_url?: string | null;
+  status?: string;
+  rejectionReason?: string | null;
+  rejection_reason?: string | null;
+  reviewedByAdminId?: string | null;
+  reviewed_by_admin_id?: string | null;
+  reviewedAt?: Date | null;
+  reviewed_at?: Date | null;
+  createdAt?: Date;
+  created_at?: Date;
+  updatedAt?: Date;
+  updated_at?: Date;
+  user?: RawSellerRequestUser | null;
+  users_seller_upgrade_requests_user_idTousers?: RawSellerRequestUser | null;
+  users?: RawSellerRequestUser | null;
+  reviewedBy?: RawSellerRequestAdmin | null;
+  users_seller_upgrade_requests_reviewed_by_admin_idTousers?: RawSellerRequestAdmin | null;
+  [key: string]: unknown;
+}
+
+export function serializeSellerRequest(request: null | undefined): null;
+export function serializeSellerRequest(request: RawSellerRequest[]): SerializedSellerRequest[];
+export function serializeSellerRequest(request: RawSellerRequest): SerializedSellerRequest;
+export function serializeSellerRequest(
+  request: RawSellerRequest | RawSellerRequest[] | null | undefined,
+): SerializedSellerRequest | SerializedSellerRequest[] | null {
   if (!request) {
     return null;
   }
 
   if (Array.isArray(request)) {
-    return request.map(serializeSellerRequest);
+    return request.map((item) => serializeSellerRequest(item));
   }
 
   const userObj =
