@@ -22,7 +22,7 @@ import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
 import { QueryStaffDto } from './dto/query-staff.dto';
 import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
 
-@ApiTags('Admin')
+@ApiTags('5. ADMIN')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
@@ -43,6 +43,19 @@ export class AdminController {
   @ApiResponse({ status: 403, description: 'Không có quyền Admin' })
   async createStaff(@Body() dto: CreateStaffDto) {
     return this.adminService.createStaff(dto);
+  }
+
+  // ================= 1b. GỬI LỜI MỜI CHO STAFF =================
+  @Post('staff/invite')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Gửi link lời mời kích hoạt tài khoản Staff qua email cá nhân',
+  })
+  @ApiResponse({ status: 201, description: 'Gửi lời mời thành công' })
+  async inviteStaff(
+    @Body() dto: { fullName: string; email: string; phoneNumber?: string; department?: string },
+  ) {
+    return this.adminService.inviteStaff(dto);
   }
 
   // ================= 2. DANH SÁCH TÀI KHOẢN STAFF =================
