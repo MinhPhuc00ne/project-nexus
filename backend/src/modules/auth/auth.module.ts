@@ -1,11 +1,14 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AuthService as ModularAuthService } from './services/auth.service';
+import { StaffController } from './controllers/staff.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -18,8 +21,10 @@ import { JwtStrategy } from './strategies/jwt.strategy';
         signOptions: { expiresIn: '15m' },
       }),
     }),
+    forwardRef(() => UsersModule),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
+  controllers: [AuthController, StaffController],
+  providers: [AuthService, ModularAuthService, JwtStrategy, GoogleStrategy],
+  exports: [AuthService, ModularAuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}
