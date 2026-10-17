@@ -1,9 +1,9 @@
-import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
-import { Request } from 'express';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { Request } from 'express';
 
-export interface StandardApiResponse<T> {
+export interface ResponseEnvelope<T> {
   statusCode: number;
   message: string;
   data: T;
@@ -12,28 +12,29 @@ export interface StandardApiResponse<T> {
 }
 
 @Injectable()
-export class TransformResponseInterceptor<T> implements NestInterceptor<T, StandardApiResponse<T>> {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<StandardApiResponse<T>> {
-    const ctx = context.switchToHttp();
-    const response = ctx.getResponse();
-    const request = ctx.getRequest<Request>();
-    const traceId = (request?.headers['x-trace-id'] as string) || `req-${Date.now().toString(36)}`;
+export class TransformResponseInterceptor<T> implements NestInterceptor<T, ResponseEnvelope<T>> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<ResponseEnvelope<T>> {
+    const httpContext = context.switchToHttp();
+    const request = httpContext.getRequest<Request>();
+    const response = httpContext.getResponse();
+    const statusCode = response.statusCode || 200;
+    const traceId = (request.headers['x-trace-id'] as string) || `req-${Date.now().toString(36)}`;
 
     return next.handle().pipe(
-      map((data: unknown) => {
-        if (response.headersSent) {
-          return data as StandardApiResponse<T>;
-        }
-        // If data is already in StandardApiResponse format, return as is
-        if (typeof data === 'object' && data !== null && 'statusCode' in data && 'data' in data) {
-          return data as StandardApiResponse<T>;
+      map((data) => {
+        // If data is already structured with message or custom payload
+        let message = 'Operation successful';
+        let payload = data;
+
+        if (data && typeof data === 'object' && 'message' in data && 'data' in data) {
+          message = (data as { message: string }).message;
+          payload = (data as { data: unknown }).data;
         }
 
-        const statusCode = response.statusCode || 200;
         return {
           statusCode,
-          message: 'Operation successful',
-          data: data as T,
+          message,
+          data: payload,
           timestamp: new Date().toISOString(),
           traceId,
         };

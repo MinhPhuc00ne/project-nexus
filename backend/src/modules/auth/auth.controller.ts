@@ -25,7 +25,7 @@ interface RequestWithUser extends Request {
   user?: GoogleUser;
 }
 
-@ApiTags('Auth')
+@ApiTags('1. AUTH')
 @Controller('auth')
 export class AuthController {
   constructor(

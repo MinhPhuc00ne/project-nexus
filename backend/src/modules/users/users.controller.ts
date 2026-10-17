@@ -26,7 +26,7 @@ import { ToggleSellerDto } from './dto/toggle-seller.dto';
 import { UsersService } from './users.service';
 import { sellerProofFileFilter, sellerProofStorage } from './utils/seller-proof-upload.util';
 
-@ApiTags('Users')
+@ApiTags('2. BUYER')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('users')

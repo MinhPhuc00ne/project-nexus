@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationType, Role, SellerRequestStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
@@ -61,6 +62,45 @@ export class AdminService {
         isVerified: staffUser.isVerified,
         createdAt: staffUser.createdAt,
       },
+    };
+  }
+
+  // ================= 1b. GỬI EMAIL MỜI CHO STAFF =================
+  async inviteStaff(dto: {
+    fullName: string;
+    email: string;
+    phoneNumber?: string;
+    department?: string;
+  }) {
+    const existing = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: dto.email }, { personalEmail: dto.email }],
+      },
+    });
+
+    if (existing) {
+      throw new BadRequestException(`Email '${dto.email}' đã tồn tại hoặc đã có lời mời.`);
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const invitation = await this.prisma.staffInvitation.create({
+      data: {
+        fullName: dto.fullName.trim(),
+        personalEmail: dto.email.trim(),
+        phoneNumber: dto.phoneNumber?.trim() || null,
+        department: dto.department?.trim() || null,
+        token,
+        expiresAt,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Tạo lời mời kích hoạt tài khoản Staff thành công!',
+      invitationId: invitation.id,
+      token,
     };
   }
 
