@@ -138,7 +138,6 @@ export default function Sidebar({
               DEMO
             </span>
           </div>
-
         </div>
       </aside>
     </>
