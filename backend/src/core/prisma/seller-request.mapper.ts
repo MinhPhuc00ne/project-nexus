@@ -4,25 +4,25 @@
  */
 
 export interface SerializedSellerRequest {
-  id: string;
-  userId: string;
-  storeName: string;
-  storeDescription: string | null;
-  phone: string;
-  businessEmail: string | null;
-  identityCardNumber: string | null;
-  attachmentUrl: string | null;
-  status: string;
-  rejectionReason: string | null;
-  reviewedByAdminId: string | null;
-  reviewedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  id?: string;
+  userId?: string;
+  storeName?: string;
+  storeDescription?: string | null;
+  phone?: string;
+  businessEmail?: string | null;
+  identityCardNumber?: string | null;
+  attachmentUrl?: string | null;
+  status?: string;
+  rejectionReason?: string | null;
+  reviewedByAdminId?: string | null;
+  reviewedAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
   user?: {
-    id: string;
-    email: string;
-    fullName: string;
-    phoneNumber: string | null;
+    id?: string;
+    email?: string;
+    fullName?: string;
+    phoneNumber?: string | null;
     avatarUrl?: string | null;
     role?: string;
     isSellerActive?: boolean;
@@ -31,9 +31,9 @@ export interface SerializedSellerRequest {
     createdAt?: Date;
   } | null;
   reviewedBy?: {
-    id: string;
-    email: string;
-    fullName: string;
+    id?: string;
+    email?: string;
+    fullName?: string;
   } | null;
 }
 
@@ -139,7 +139,7 @@ export function serializeSellerRequest(
       ? {
           id: userObj.id,
           email: userObj.email,
-          fullName: userObj.fullName ?? userObj.full_name,
+          fullName: userObj.fullName ?? userObj.full_name ?? '',
           phoneNumber: userObj.phoneNumber ?? userObj.phone_number ?? null,
           avatarUrl: userObj.avatarUrl ?? userObj.avatar_url ?? null,
           role: userObj.role,
@@ -153,7 +153,7 @@ export function serializeSellerRequest(
       ? {
           id: adminObj.id,
           email: adminObj.email,
-          fullName: adminObj.fullName ?? adminObj.full_name,
+          fullName: adminObj.fullName ?? adminObj.full_name ?? '',
         }
       : undefined,
   };
