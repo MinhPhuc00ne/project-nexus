@@ -1,4 +1,4 @@
-import { X, Search, Inbox } from 'lucide-react';
+import { Search, Inbox } from 'lucide-react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Button as ShadcnButton } from '../ui/button';
 import { Card } from '../ui/card';
@@ -63,6 +63,7 @@ export function Button({
     secondary: 'bg-blue-50 text-primary hover:bg-blue-100',
     danger: 'bg-rose-50 text-rose-700 hover:bg-rose-100',
   };
+
   return (
     <ShadcnButton
       variant={
@@ -91,6 +92,7 @@ export function Badge({
     amber: 'bg-amber-50 text-amber-700',
     gray: 'bg-slate-100 text-slate-600',
   };
+
   return (
     <span
       className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${colors[tone]}`}
@@ -131,51 +133,6 @@ export function EmptyState({ text = 'Không có yêu cầu nào trong danh sách
     <div className="flex flex-col items-center gap-3 py-12 text-center text-sm text-slate-400">
       <Inbox size={32} strokeWidth={1.5} />
       <p>{text}</p>
-    </div>
-  );
-}
-
-// Hộp thoại xem thông tin: đóng bằng nút, click lớp nền hoặc phím Escape khi focus bên trong.
-// stopPropagation giữ hộp thoại mở khi người dùng bấm vào phần nội dung.
-export function DetailDialog({
-  title,
-  content,
-  onClose,
-}: {
-  title: string;
-  content: string;
-  onClose: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-      onClick={onClose}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
-        onKeyDown={(event) => {
-          if (event.key === 'Escape') onClose();
-        }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="text-lg font-bold text-primary">{title}</h2>
-          <button
-            autoFocus
-            type="button"
-            onClick={onClose}
-            aria-label="Đóng"
-            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
-          >
-            <X size={18} />
-          </button>
-        </div>
-        <p className="my-5 whitespace-pre-line text-sm leading-7 text-slate-600">{content}</p>
-        <Button onClick={onClose}>Đóng</Button>
-      </section>
     </div>
   );
 }

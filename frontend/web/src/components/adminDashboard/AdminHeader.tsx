@@ -1,19 +1,86 @@
-import { Bell, ChevronDown, Languages, Menu, ShieldCheck, Radio } from 'lucide-react';
-import { useState } from 'react';
+import {
+  Bell,
+  ChevronDown,
+  Languages,
+  Menu,
+  ShieldCheck,
+  Radio,
+  LogOut,
+  Settings2,
+  Store,
+  UserRound,
+} from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { clearAuthSession } from '../../services/auth';
+import type { UserProfile } from '../../services/users';
 
-// Thanh đầu trang dùng chung cho mọi tab. Thông tin Admin và máy chủ hiện là dữ liệu mẫu.
+// Header nhận tài khoản đã được AdminLayout xác minh qua /users/me; không tự gọi API lần nữa.
 // onMenu mở sidebar mobile; pendingCount do trang cha tính từ các hồ sơ đang chờ.
 export default function AdminHeader({
   onMenu,
   pendingCount,
+  user,
 }: {
   onMenu: () => void;
   pendingCount: number;
+  user: UserProfile;
 }) {
   // State cục bộ chỉ để mở/đóng danh sách thông báo, không sửa dữ liệu nghiệp vụ.
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userButtonRef = useRef<HTMLButtonElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+  const userMenuId = useId();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+
+  // Bấm ra ngoài đóng dropdown; Escape đóng và trả focus về nút tài khoản để dùng bàn phím.
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => {
+      if (!(event.target instanceof Node)) return;
+      if (!userMenuRef.current?.contains(event.target)) setShowUserMenu(false);
+      if (!notificationRef.current?.contains(event.target)) setShowNotifications(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      if (showUserMenu) userButtonRef.current?.focus();
+      setShowUserMenu(false);
+      setShowNotifications(false);
+    };
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [showUserMenu]);
+
+  // Chuyển trang thì đóng các bảng nổi, header vẫn được giữ trong AdminLayout.
+  useEffect(() => {
+    setShowUserMenu(false);
+    setShowNotifications(false);
+  }, [pathname]);
+
+  const displayName = user.fullName || user.email;
+  const initials = (user?.fullName || user?.email || '')
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+
+  const handleLogout = () => {
+    setShowUserMenu(false);
+    // Dùng cùng hàm với HomeHeader: xóa user/token và gửi yêu cầu thu hồi refresh token.
+    clearAuthSession();
+    navigate('/login', { replace: true });
+  };
+
   return (
-    <header className="sticky top-0 z-20 flex min-h-20 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur-md sm:px-7">
+    <header className="relative z-20 flex min-h-20 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur-md sm:px-7">
       <div className="flex items-center gap-3">
         <button
           onClick={onMenu}
@@ -40,11 +107,14 @@ export default function AdminHeader({
           <Languages size={16} />
           VIE
         </span>
-        <div className="relative">
+        <div ref={notificationRef} className="relative">
           <button
             aria-label="Thông báo"
             aria-expanded={showNotifications}
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              setShowUserMenu(false);
+            }}
             className="relative rounded-lg p-2 text-slate-500 hover:bg-blue-50"
           >
             <Bell size={19} />
@@ -59,14 +129,86 @@ export default function AdminHeader({
             </div>
           )}
         </div>
-        <div className="hidden text-right sm:block">
-          <p className="text-xs font-semibold text-slate-900">Alex Tran</p>
-          <p className="mt-0.5 text-[9px] font-bold tracking-wider text-primary">SUPER ADMIN</p>
+        {/* Tài khoản: bấm tên/avatar mở bảng thông tin, điều hướng và đăng xuất. */}
+        <div
+          ref={userMenuRef}
+          className="relative"
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setShowUserMenu(false);
+          }}
+        >
+          <button
+            ref={userButtonRef}
+            type="button"
+            aria-label="Mở tùy chọn tài khoản"
+            aria-expanded={showUserMenu}
+            aria-controls={userMenuId}
+            onClick={() => {
+              setShowUserMenu(!showUserMenu);
+              setShowNotifications(false);
+            }}
+            className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <span className="hidden max-w-36 text-right sm:block">
+              <span className="block truncate text-xs font-semibold text-slate-900">
+                {displayName}
+              </span>
+              <span className="mt-0.5 block text-[9px] font-bold tracking-wider text-primary">
+                {user.role}
+              </span>
+            </span>
+            <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-bold text-white">
+              {user?.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" className="size-full object-cover" />
+              ) : (
+                initials || <UserRound size={18} />
+              )}
+            </span>
+            <ChevronDown
+              size={13}
+              className={`text-slate-400 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
+            />
+          </button>
+
+          {showUserMenu && (
+            <div
+              id={userMenuId}
+              className="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
+            >
+              {/* Thông tin tài khoản đang đăng nhập; vẫn hiển thị khi tên ở header bị ẩn trên mobile. */}
+              <div className="mb-2 border-b border-slate-100 px-3 py-3">
+                <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+                {user?.email && (
+                  <p className="mt-1 truncate text-xs text-slate-500">{user.email}</p>
+                )}
+              </div>
+              <Link
+                to="/admin/settings"
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs text-slate-700 hover:bg-blue-50 hover:text-primary"
+                onClick={() => setShowUserMenu(false)}
+              >
+                <Settings2 size={16} />
+                Cài đặt quản trị
+              </Link>
+              <Link
+                to="/"
+                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs text-slate-700 hover:bg-blue-50 hover:text-primary"
+              >
+                <Store size={16} />
+                Về trang mua sắm
+              </Link>
+              <div className="my-1.5 border-t border-slate-100" />
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-red-500 hover:bg-red-50"
+              >
+                <LogOut size={16} />
+                Đăng xuất
+              </button>
+            </div>
+          )}
         </div>
-        <div className="flex size-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
-          AT
-        </div>
-        <ChevronDown size={13} className="hidden text-slate-400 sm:block" />
       </div>
     </header>
   );

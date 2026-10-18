@@ -56,7 +56,6 @@ export { default as StaffHistoryPage } from './staff/StaffHistoryPage';
 export { default as StaffPerformancePage } from './staff/StaffPerformancePage';
 
 // Admin Pages
-export { default as AdminPage } from './admin/AdminPage';
 export { default as AdminDashboardPage } from './admin/AdminDashboardPage';
 export { default as AdminAuctionsPage } from './admin/AdminAuctionsPage';
 export { default as AdminStudioPage } from './admin/AdminStudioPage';

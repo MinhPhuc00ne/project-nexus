@@ -1,3 +1,5 @@
+// Bảng phiên đấu giá dùng ở Tổng quan và trang Đấu giá: lọc trạng thái, tìm kiếm, duyệt lịch.
+
 import { Box, Gavel, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
@@ -5,12 +7,12 @@ import { formatMoney } from './adminData';
 import type { AdminTabProps } from './adminTypes';
 
 // Quản lý danh sách phiên. preview chỉ ẩn một số công cụ, vẫn giữ bảng và bộ lọc trạng thái.
-export default function AuctionsTab({
+export default function AuctionsPanel({
   data,
   actions,
   preview = false,
 }: AdminTabProps & { preview?: boolean }) {
-  // Bộ lọc/từ khóa là state riêng của tab, không lưu vào dữ liệu chung ở AdminPage.
+  // Bộ lọc/từ khóa là state riêng của tab, không lưu vào dữ liệu chung ở AdminLayout.
   const [filter, setFilter] = useState('pending');
   const [search, setSearch] = useState('');
   // Kết quả cần đồng thời khớp trạng thái và từ khóa. 'all' bỏ điều kiện trạng thái.
@@ -19,6 +21,7 @@ export default function AuctionsTab({
       (filter === 'all' || item.status === filter) &&
       `${item.name} ${item.seller}`.toLowerCase().includes(search.toLowerCase()),
   );
+
   return (
     <Panel
       title="Điều hành phiên đấu giá 3D & tiếp nhận vật phẩm"

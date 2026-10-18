@@ -1,14 +1,17 @@
-import { Mail, ShieldBan, UserPlus, Users } from 'lucide-react';
+// Hai khối dùng ở Tổng quan và Người dùng: form thêm Staff và danh sách khóa/mở khóa tài khoản.
+
+import { Mail, ShieldBan, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
 import type { AdminTabProps } from './adminTypes';
 
 // Form thêm Staff được tái sử dụng trong Tổng quan và tab Người dùng.
-// Form giữ giá trị đang nhập; danh sách tài khoản thực sự nằm trong data của AdminPage.
+// Form giữ giá trị đang nhập; danh sách tài khoản thực sự nằm trong data của AdminLayout.
 export function StaffInvite({ data, actions }: AdminTabProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [department, setDepartment] = useState('Thẩm định hoàn tiền');
+
   return (
     <Panel
       title="Cấp tài khoản Support Staff"
@@ -96,6 +99,7 @@ export function UserSecurity({
       `${user.name} ${user.email}`.toLowerCase().includes(search.toLowerCase()) &&
       (role === 'all' || user.role === role),
   );
+
   return (
     <Panel
       title="Quản trị an ninh & khóa tài khoản"
@@ -155,21 +159,5 @@ export function UserSecurity({
       </div>
       {visible.length === 0 && <EmptyState text="Không tìm thấy tài khoản phù hợp." />}
     </Panel>
-  );
-}
-
-// props được truyền nguyên xuống hai khối để cùng đọc data và gọi actions của trang cha.
-export default function UsersTab(props: AdminTabProps) {
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center gap-2 text-sm text-slate-500">
-        <Users size={18} />
-        Quản lý thành viên, phân quyền và tài khoản hỗ trợ
-      </div>
-      <div className="grid items-start gap-5 xl:grid-cols-[1fr_1.5fr]">
-        <StaffInvite {...props} />
-        <UserSecurity {...props} />
-      </div>
-    </div>
   );
 }

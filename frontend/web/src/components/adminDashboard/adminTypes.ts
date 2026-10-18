@@ -2,6 +2,7 @@
 export type AdminTab =
   | 'overview'
   | 'auctions'
+  | 'categories'
   | 'studio'
   | 'users'
   | 'sellers'
@@ -57,7 +58,7 @@ export interface AdminUser {
   note: string;
 }
 
-// Gói dữ liệu chung do AdminPage sở hữu và truyền xuống các tab qua props.
+// Gói dữ liệu chung do AdminLayout sở hữu và truyền xuống các tab qua props.
 export interface AdminData {
   sellers: SellerApplication[];
   refunds: RefundRequest[];

@@ -1,11 +1,10 @@
-import PagePlaceholder from '../../components/PagePlaceholder';
+import SellerApplicationsPanel from '../../components/adminDashboard/SellerApplicationsPanel';
+import { useAdminContext } from '../../components/adminDashboard/useAdminContext';
 
+// Hiển thị đầy đủ hồ sơ Seller; Tổng quan dùng cùng component với chế độ preview.
 export default function AdminSellersPage() {
-  return (
-    <PagePlaceholder
-      area="Admin"
-      title="Phê duyệt hồ sơ Seller"
-      description="Thẩm định thông tin KYC, giấy phép kinh doanh và phê duyệt nâng cấp tài khoản bán hàng."
-    />
-  );
+  const { data, actions } = useAdminContext();
+
+  // Danh sách hồ sơ Seller đang chờ duyệt; phê duyệt/từ chối qua action chung của layout.
+  return <SellerApplicationsPanel data={data} actions={actions} />;
 }

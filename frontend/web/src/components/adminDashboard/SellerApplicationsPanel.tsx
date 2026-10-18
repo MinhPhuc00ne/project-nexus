@@ -1,10 +1,12 @@
+// Danh sách hồ sơ Seller dùng ở Tổng quan và trang Seller. preview=true chỉ hiện 2 hồ sơ.
+
 import { Store } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
 import type { AdminTabProps } from './adminTypes';
 
 // Dùng ở cả tab Seller và Tổng quan. preview=true ẩn tìm kiếm và giới hạn 2 hồ sơ.
-export default function SellersTab({
+export default function SellerApplicationsPanel({
   data,
   actions,
   preview = false,
@@ -16,6 +18,7 @@ export default function SellersTab({
   const visible = pending.filter((seller) =>
     `${seller.name} ${seller.owner}`.toLowerCase().includes(search.toLowerCase()),
   );
+
   return (
     <Panel
       title="Phê duyệt nâng cấp Seller"

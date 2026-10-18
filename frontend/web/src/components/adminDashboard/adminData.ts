@@ -1,6 +1,6 @@
 import type { AdminData } from './adminTypes';
 
-// Dữ liệu mẫu cho UI, được AdminPage lấy làm state ban đầu.
+// Dữ liệu mẫu cho UI, được AdminLayout lấy làm state ban đầu.
 // Sửa fixture ở đây để thử các tình huống; các action tạo dữ liệu mới chứ không sửa object này.
 // KPI doanh thu, biểu đồ và nhật ký còn có số liệu mẫu riêng ở component tương ứng.
 // Khi nối API, giữ cấu trúc AdminData hoặc chuyển dữ liệu backend sang cấu trúc này.
