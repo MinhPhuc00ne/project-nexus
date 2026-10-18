@@ -190,13 +190,6 @@ export default function AdminHeader({
                 <Settings2 size={16} />
                 Cài đặt quản trị
               </Link>
-              <Link
-                to="/"
-                className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs text-slate-700 hover:bg-blue-50 hover:text-primary"
-              >
-                <Store size={16} />
-                Về trang mua sắm
-              </Link>
               <div className="my-1.5 border-t border-slate-100" />
               <button
                 type="button"

@@ -138,13 +138,7 @@ export default function Sidebar({
               DEMO
             </span>
           </div>
-          <NavLink
-            to="/"
-            className="mt-3 flex items-center gap-2 px-2 text-xs text-slate-400 hover:text-primary"
-          >
-            <ChevronLeft size={14} />
-            Về trang mua sắm
-          </NavLink>
+
         </div>
       </aside>
     </>
