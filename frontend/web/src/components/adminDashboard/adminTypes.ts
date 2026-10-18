@@ -11,20 +11,7 @@ export type AdminTab =
   | 'system'
   | 'settings';
 
-// Mẫu một hồ sơ Seller. pending = chờ duyệt, approved = đã duyệt, rejected = từ chối.
-export interface SellerApplication {
-  id: string;
-  name: string;
-  owner: string;
-  initials: string;
-  registration: string;
-  rating: string;
-  orders: number;
-  category: string;
-  status: 'pending' | 'approved' | 'rejected';
-}
-
-// Báo cáo và đề xuất của Staff được hiển thị để Admin ra quyết định hoàn tiền.
+// Báo cáo khiếu nại để Admin xem xét hoàn tiền.
 export interface RefundRequest {
   id: string;
   product: string;
@@ -60,7 +47,6 @@ export interface AdminUser {
 
 // Gói dữ liệu chung do AdminLayout sở hữu và truyền xuống các tab qua props.
 export interface AdminData {
-  sellers: SellerApplication[];
   refunds: RefundRequest[];
   auctions: AuctionItem[];
   users: AdminUser[];
@@ -70,7 +56,6 @@ export interface AdminData {
 // Các hàm hiện trả void vì thao tác đồng bộ trong demo; API thực tế có thể cần Promise.
 export interface AdminActions {
   navigate: (tab: AdminTab) => void;
-  reviewSeller: (id: string, status: 'approved' | 'rejected') => void;
   reviewRefund: (id: string, status: 'approved' | 'rejected') => void;
   approveAuction: (id: string) => void;
   toggleBan: (id: string) => void;

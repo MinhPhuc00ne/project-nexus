@@ -103,6 +103,15 @@ This directory contains specifications and endpoint definitions for the entire N
 | `PATCH` | `/api/v1/notifications/:id/read`    | Mark notification as read                 | Authenticated |
 | `GET`   | `/api/v1/notifications/preferences` | Inspect user channel delivery preferences | Authenticated |
 
+### 2.8 Staff Management & Onboarding (`/api/v1/admin/staff`, `/api/v1/staff`)
+
+| Method | Path                            | Description                                                                                              | Access |
+| :----- | :------------------------------ | :------------------------------------------------------------------------------------------------------- | :----- |
+| `POST` | `/api/v1/admin/staff/invite`    | Admin nhập thông tin Staff (Họ tên, mail cá nhân, SĐT) -> Hệ thống cấp `@staff.com`, gửi email xác thực  | Admin  |
+| `GET`  | `/api/v1/staff/invitation-info` | Staff kiểm tra token từ email mời -> Xem thông tin Họ tên, SĐT, tài khoản `@staff.com` được cấp          | Public |
+| `POST` | `/api/v1/staff/activate`        | Staff xác nhận lại Họ tên, SĐT, tạo & xác nhận mật khẩu mới -> Kích hoạt tài khoản công tác `@staff.com` | Public |
+| `POST` | `/api/v1/auth/login`            | Staff đăng nhập bằng tài khoản `@staff.com` và mật khẩu mới tạo với vai trò `SUPPORT_STAFF`              | Public |
+
 ---
 
 ## 3. Real-Time WebSocket Specifications (`/ws/auctions`)

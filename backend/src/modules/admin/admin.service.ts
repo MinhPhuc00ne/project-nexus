@@ -1,8 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { NotificationType, Role, SellerRequestStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { MailService } from '../../core/mail/mail.service';
+import { generateStaffBaseEmail } from '../auth/utils/staff-email.util';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
 import { QueryStaffDto } from './dto/query-staff.dto';
@@ -10,10 +13,18 @@ import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService,
+  ) {}
 
   // ================= 1. TẠO TÀI KHOẢN CHO STAFF =================
   async createStaff(dto: CreateStaffDto) {
+    if (!dto.password) {
+      return this.inviteStaff(dto);
+    }
+
     const { email, password, fullName, phoneNumber } = dto;
 
     const existingUser = await this.prisma.user.findUnique({
@@ -79,11 +90,55 @@ export class AdminService {
     });
 
     if (existing) {
-      throw new BadRequestException(`Email '${dto.email}' đã tồn tại hoặc đã có lời mời.`);
+      throw new BadRequestException(
+        `Email cá nhân '${dto.email}' đã được đăng ký hoặc liên kết với tài khoản khác.`,
+      );
     }
 
+    const baseName = generateStaffBaseEmail(dto.fullName);
+    let assignedEmail = `${baseName}@staff.com`;
+
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: assignedEmail, mode: 'insensitive' } },
+          { platformEmail: { equals: assignedEmail, mode: 'insensitive' } },
+        ],
+      },
+    });
+    const existingInvitation = await this.prisma.staffInvitation.findFirst({
+      where: {
+        assignedEmail: { equals: assignedEmail, mode: 'insensitive' },
+        isAccepted: false,
+      },
+    });
+
+    if (existingUser || existingInvitation) {
+      let index = 2;
+      while (index <= 99) {
+        assignedEmail = `${baseName}${index}@staff.com`;
+        const userCheck = await this.prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: { equals: assignedEmail, mode: 'insensitive' } },
+              { platformEmail: { equals: assignedEmail, mode: 'insensitive' } },
+            ],
+          },
+        });
+        const invCheck = await this.prisma.staffInvitation.findFirst({
+          where: {
+            assignedEmail: { equals: assignedEmail, mode: 'insensitive' },
+            isAccepted: false,
+          },
+        });
+        if (!userCheck && !invCheck) break;
+        index++;
+      }
+    }
+
+    // Sinh mã token kích hoạt bảo mật
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 ngày
 
     const invitation = await this.prisma.staffInvitation.create({
       data: {
@@ -93,14 +148,62 @@ export class AdminService {
         department: dto.department?.trim() || null,
         token,
         expiresAt,
+        assignedEmail,
       },
+    });
+
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      this.configService.get<string>('ADMIN_PORTAL_URL') ||
+      'http://localhost:5173';
+    const activationLink = `${frontendUrl}/staff/activate?token=${token}`;
+
+    await this.mailService.sendEmail({
+      to: dto.email,
+      subject: '[Project Nexus] Thư mời và mã Token kích hoạt tài khoản Staff',
+      text: `Xin chào ${dto.fullName},\n\nBạn được Admin mời gia nhập đội ngũ Quản trị Project Nexus.\n\nTài khoản công tác nền tảng cấp cho bạn: ${assignedEmail}\n\nMÃ TOKEN KÍCH HOẠT:\n${token}\n(Mã Token có hiệu lực trong vòng 7 ngày)\n\nThông tin xác nhận:\n- Họ và tên: ${dto.fullName}\n- Số điện thoại: ${dto.phoneNumber || 'Chưa cung cấp'}\n- Email cá nhân nhận thư: ${dto.email}\n- Tài khoản công ty cấp: ${assignedEmail}\n\nVui lòng truy cập đường dẫn sau để xác nhận lại thông tin và tạo mật khẩu mới:\n${activationLink}\n\nSau khi hoàn tất, bạn sẽ sử dụng tài khoản ${assignedEmail} và mật khẩu mới tạo để đăng nhập vào hệ thống với vai trò Staff.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #2563eb; margin-top: 0;">Chào mừng bạn gia nhập đội ngũ Support Staff - Project Nexus</h2>
+          <p>Xin chào <strong>${dto.fullName}</strong>,</p>
+          <p>Quản trị viên đã khởi tạo lời mời gia nhập đội ngũ Staff cho bạn trên hệ thống Project Nexus.</p>
+          
+          <div style="background-color: #f1f5f9; border-left: 4px solid #2563eb; padding: 15px; border-radius: 4px; margin: 15px 0;">
+            <p style="margin: 4px 0;"><strong>Tài khoản công tác được cấp:</strong> <span style="color: #2563eb; font-weight: bold; font-size: 15px;">${assignedEmail}</span></p>
+            <p style="margin: 4px 0;"><strong>Họ và tên:</strong> ${dto.fullName}</p>
+            <p style="margin: 4px 0;"><strong>Số điện thoại:</strong> ${dto.phoneNumber || 'Chưa cung cấp'}</p>
+            <p style="margin: 4px 0;"><strong>Email cá nhân nhận thư:</strong> ${dto.email}</p>
+          </div>
+
+          <div style="background-color: #eff6ff; border: 1px solid #2563eb; padding: 16px; margin: 20px 0; border-radius: 8px;">
+            <p style="margin: 0 0 8px 0; color: #1e40af; font-weight: bold; font-size: 14px;">Mã Token kích hoạt tài khoản của bạn:</p>
+            <code style="display: block; background: #ffffff; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 13px; color: #2563eb; border: 1px solid #cbd5e1;">${token}</code>
+            <p style="margin: 8px 0 0 0; color: #64748b; font-size: 12px;">Mã Token có hiệu lực trong vòng 7 ngày</p>
+          </div>
+
+          <p>Vui lòng nhấp vào liên kết dưới đây để xác nhận lại thông tin và thiết lập mật khẩu mới cho tài khoản:</p>
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${activationLink}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Kích hoạt tài khoản Staff</a>
+          </div>
+          <p style="font-size: 13px; color: #475569;">Sau khi hoàn tất, bạn sẽ sử dụng tài khoản <strong>${assignedEmail}</strong> và mật khẩu mới tạo để đăng nhập vào hệ thống với vai trò là <strong>Staff</strong>.</p>
+        </div>
+      `,
     });
 
     return {
       success: true,
-      message: 'Tạo lời mời kích hoạt tài khoản Staff thành công!',
+      message: `Đã gửi thư mời và mã Token kích hoạt tài khoản Staff tới email cá nhân ${dto.email}`,
       invitationId: invitation.id,
+      assignedEmail,
       token,
+      staff: {
+        id: invitation.id,
+        email: assignedEmail,
+        personalEmail: dto.email,
+        fullName: dto.fullName,
+        phoneNumber: dto.phoneNumber,
+        department: dto.department,
+      },
     };
   }
 

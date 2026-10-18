@@ -1,3 +1,4 @@
+import { useAdminSellerRequests } from '../../components/adminDashboard/AdminSellerRequests';
 import {
   Activity,
   BadgeDollarSign,
@@ -29,7 +30,7 @@ export default function AdminDashboardPage() {
   const { data, actions } = useAdminContext();
 
   // Số liệu từ dữ liệu chung: duyệt một hồ sơ ở trang riêng thì các số đếm này cũng giảm.
-  const sellers = data.sellers.filter((item) => item.status === 'pending').length;
+  const sellers = useAdminSellerRequests().pendingTotal;
   const refunds = data.refunds.filter((item) => item.status === 'pending').length;
   const auctions = data.auctions.filter((item) => item.status === 'pending').length;
   const live = data.auctions.filter((item) => item.status === 'live').length;

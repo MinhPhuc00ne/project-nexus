@@ -151,6 +151,8 @@ const Login: React.FC = () => {
         navigate(ROUTES.ADMIN);
       } else if (result.user.role === 'SUPPORT_STAFF') {
         navigate(ROUTES.STAFF);
+      } else if (result.user.role === 'SELLER') {
+        navigate(ROUTES.SELLER);
       } else {
         navigate(ROUTES.HOME);
       }

@@ -18,6 +18,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminService } from './admin.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
+import { AdminInviteStaffDto } from './dto/invite-staff.dto';
 import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
 import { QueryStaffDto } from './dto/query-staff.dto';
 import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
@@ -30,16 +31,16 @@ import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  // ================= 1. TẠO TÀI KHOẢN CHO STAFF =================
+  // ================= 1. TẠO / MỜI TÀI KHOẢN CHO STAFF =================
   @Post('staff')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Tạo tài khoản cho nhân viên hỗ trợ (Support Staff)',
+    summary: 'Tạo tài khoản / Mời nhân viên hỗ trợ (Support Staff)',
     description:
-      'Chỉ Admin có quyền tạo tài khoản nhân viên. Tài khoản được cấp quyền SUPPORT_STAFF và kích hoạt ngay lập tức.',
+      'Admin nhập Họ tên, email cá nhân, số điện thoại, phòng ban. Hệ thống sẽ sinh tài khoản công tác @staff.com, trả về ngay khi gửi và gửi email mời kích hoạt về email cá nhân của Staff.',
   })
-  @ApiResponse({ status: 201, description: 'Tạo tài khoản staff thành công' })
-  @ApiResponse({ status: 400, description: 'Email đã tồn tại' })
+  @ApiResponse({ status: 201, description: 'Gửi lời mời và cấp tài khoản @staff.com thành công' })
+  @ApiResponse({ status: 400, description: 'Email đã tồn tại hoặc không hợp lệ' })
   @ApiResponse({ status: 403, description: 'Không có quyền Admin' })
   async createStaff(@Body() dto: CreateStaffDto) {
     return this.adminService.createStaff(dto);
@@ -49,12 +50,16 @@ export class AdminController {
   @Post('staff/invite')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Gửi link lời mời kích hoạt tài khoản Staff qua email cá nhân',
+    summary:
+      'Gửi link lời mời kích hoạt tài khoản Staff qua email cá nhân và cấp tài khoản @staff.com',
+    description:
+      'Admin nhập Họ và tên, email cá nhân, số điện thoại. Hệ thống sẽ sinh tài khoản công tác @staff.com, trả về ngay khi gửi và dispatch email mời kích hoạt về email cá nhân của Staff.',
   })
-  @ApiResponse({ status: 201, description: 'Gửi lời mời thành công' })
-  async inviteStaff(
-    @Body() dto: { fullName: string; email: string; phoneNumber?: string; department?: string },
-  ) {
+  @ApiResponse({
+    status: 201,
+    description: 'Gửi lời mời thành công, trả về tài khoản @staff.com được cấp',
+  })
+  async inviteStaff(@Body() dto: AdminInviteStaffDto) {
     return this.adminService.inviteStaff(dto);
   }
 

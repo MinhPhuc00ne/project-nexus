@@ -160,7 +160,16 @@ export class AuthService {
   // ================= 3. ĐĂNG NHẬP (THƯỜNG) =================
   async login(dto: LoginDto) {
     const { email, password } = dto;
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.trim();
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: normalizedEmail, mode: 'insensitive' } },
+          { platformEmail: { equals: normalizedEmail, mode: 'insensitive' } },
+          { personalEmail: { equals: normalizedEmail, mode: 'insensitive' } },
+        ],
+      },
+    });
 
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác.');
@@ -184,6 +193,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role,
+      isSellerActive: user.isSellerActive,
     });
 
     return {
@@ -193,6 +203,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        platformEmail: user.platformEmail,
         fullName: user.fullName,
         role: user.role,
         avatarUrl: user.avatarUrl,
@@ -228,6 +239,7 @@ export class AuthService {
       id: userRecord.id,
       email: userRecord.email,
       role: userRecord.role,
+      isSellerActive: userRecord.isSellerActive,
     });
 
     return {
@@ -387,6 +399,7 @@ export class AuthService {
       id: tokenRecord.user.id,
       email: tokenRecord.user.email,
       role: tokenRecord.user.role,
+      isSellerActive: tokenRecord.user.isSellerActive,
     });
 
     return {
@@ -426,11 +439,14 @@ export class AuthService {
     id: string;
     email: string;
     role: string;
+    isSellerActive?: boolean;
   }): Promise<{ accessToken: string; refreshToken: string }> {
     const accessToken = this.jwtService.sign({
       sub: user.id,
+      id: user.id,
       email: user.email,
       role: user.role,
+      isSellerActive: user.isSellerActive ?? false,
     });
 
     const tokenId = crypto.randomUUID();

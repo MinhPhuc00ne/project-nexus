@@ -5,63 +5,6 @@ import type { AdminData } from './adminTypes';
 // KPI doanh thu, biểu đồ và nhật ký còn có số liệu mẫu riêng ở component tương ứng.
 // Khi nối API, giữ cấu trúc AdminData hoặc chuyển dữ liệu backend sang cấu trúc này.
 export const initialAdminData: AdminData = {
-  sellers: [
-    {
-      id: 'SL-001',
-      name: 'Artisan Dragon Gems',
-      owner: 'Đặng Hoài Nam',
-      initials: 'AD',
-      registration: '0318992011',
-      rating: '4.95',
-      orders: 42,
-      category: 'Trang sức & đá quý',
-      status: 'pending',
-    },
-    {
-      id: 'SL-002',
-      name: 'Vintage Saigon Horology',
-      owner: 'Phạm Gia Bảo',
-      initials: 'VS',
-      registration: '001095018274',
-      rating: '4.8',
-      orders: 19,
-      category: 'Đồng hồ & cổ vật',
-      status: 'pending',
-    },
-    {
-      id: 'SL-003',
-      name: 'Saigon Collector Hub',
-      owner: 'Trần Minh Anh',
-      initials: 'SC',
-      registration: '0317200486',
-      rating: '4.9',
-      orders: 28,
-      category: 'Mô hình & sưu tầm',
-      status: 'pending',
-    },
-    {
-      id: 'SL-004',
-      name: 'Trầm Tích Heritage',
-      owner: 'Nguyễn Hà',
-      initials: 'TH',
-      registration: '0318900172',
-      rating: '4.85',
-      orders: 35,
-      category: 'Thủ công mỹ nghệ',
-      status: 'pending',
-    },
-    {
-      id: 'SL-005',
-      name: 'Art House Gallery',
-      owner: 'Lê Minh',
-      initials: 'AH',
-      registration: '0317700668',
-      rating: '4.9',
-      orders: 23,
-      category: 'Tranh & tác phẩm',
-      status: 'pending',
-    },
-  ],
   refunds: [
     {
       id: 'NX-ORD-991204',

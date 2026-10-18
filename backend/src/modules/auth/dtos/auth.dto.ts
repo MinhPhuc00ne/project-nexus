@@ -113,32 +113,32 @@ export class InviteStaffDto {
 export class ActivateStaffDto {
   @ApiProperty({
     example: 'a1b2c3d4e5f6...',
-    description: 'Activation token received in invitation email',
+    description: 'Mã token kích hoạt tài khoản nhận qua email cá nhân',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Activation token is required' })
-  token: string;
+  @IsNotEmpty({ message: 'Mã token kích hoạt không được để trống' })
+  token!: string;
 
-  @ApiProperty({ example: 'Nguyen Van Staff', description: 'Confirmed full name' })
+  @ApiProperty({ example: 'Nguyễn Quang Huy', description: 'Xác nhận Họ và tên nhân viên' })
   @IsString()
-  @IsNotEmpty({ message: 'Confirm full name is required' })
-  fullName: string;
+  @IsNotEmpty({ message: 'Họ và tên không được để trống' })
+  fullName!: string;
 
-  @ApiProperty({ example: '0912345678', description: 'Confirmed phone number' })
+  @ApiProperty({ example: '0912345678', description: 'Xác nhận Số điện thoại nhân viên' })
   @IsString()
-  @IsNotEmpty({ message: 'Confirm phone number is required' })
-  phoneNumber: string;
+  @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
+  phoneNumber!: string;
 
-  @ApiProperty({ example: 'StaffPassword123!', description: 'New password' })
+  @ApiProperty({ example: 'Huy@123456', description: 'Mật khẩu mới (tối thiểu 6 ký tự)' })
   @IsString()
-  @MinLength(6, { message: 'New password must be at least 6 characters' })
-  @IsNotEmpty({ message: 'New password is required' })
-  newPassword: string;
+  @MinLength(6, { message: 'Mật khẩu mới phải có tối thiểu 6 ký tự' })
+  @IsNotEmpty({ message: 'Mật khẩu mới không được để trống' })
+  newPassword!: string;
 
-  @ApiProperty({ example: 'StaffPassword123!', description: 'Confirm new password' })
+  @ApiProperty({ example: 'Huy@123456', description: 'Xác nhận lại mật khẩu mới' })
   @IsString()
-  @IsNotEmpty({ message: 'Confirm password is required' })
-  confirmPassword: string;
+  @IsNotEmpty({ message: 'Xác nhận mật khẩu không được để trống' })
+  confirmPassword!: string;
 }
 
 export class StaffForgotPasswordDto {

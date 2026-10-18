@@ -20,7 +20,7 @@ async function main() {
   // 2. Tạo hoặc cập nhật tài khoản Admin cố định
   const admin = await prisma.user.upsert({
     where: { email: 'admin@nexus.com' },
-    update: {}, // Nếu đã tồn tại thì bỏ qua
+    update: { passwordHash: hashedPassword, isVerified: true },
     create: {
       email: 'admin@nexus.com',
       passwordHash: hashedPassword,

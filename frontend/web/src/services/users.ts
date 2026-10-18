@@ -39,6 +39,12 @@ export interface SellerUpgradeRequest {
   reviewedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    fullName: string;
+    reputationScore?: number;
+  } | null;
   reviewedBy?: {
     id: string;
     fullName: string;

@@ -148,14 +148,14 @@ enum SellerRequestStatus {
 }
 
 model User {
-  id              String               @id @default(uuid())
-  email           String               @unique
-  passwordHash    String               @map("password_hash")
-  fullName        String               @map("full_name")
-  phoneNumber     String?              @map("phone_number")
-  avatarUrl       String?              @map("avatar_url")
-  role            Role                 @default(BUYER)
-  isSellerActive  Boolean              @default(false) @map("is_seller_active")
+  id               String               @id @default(uuid())
+  email            String               @unique
+  passwordHash     String               @map("password_hash")
+  fullName         String               @map("full_name")
+  phoneNumber      String?              @map("phone_number")
+  avatarUrl        String?              @map("avatar_url")
+  role             Role                 @default(BUYER)
+  isSellerActive   Boolean              @default(false) @map("is_seller_active")
   reputationScore  Int                  @default(100) @map("reputation_score")
   trustLevel       ReputationTrustLevel @default(EXCELLENT) @map("trust_level")
   isVerified       Boolean              @default(false) @map("is_verified")
@@ -654,10 +654,11 @@ model StaffInvitation {
   phoneNumber   String?  @map("phone_number") @db.VarChar(50)
   department    String?  @map("department") @db.VarChar(100)
   token         String   @unique @db.VarChar(255)
+  otp           String?  @map("otp") @db.VarChar(10)
   expiresAt     DateTime @map("expires_at") @db.Timestamp(6)
   isAccepted    Boolean  @default(false) @map("is_accepted")
+  assignedEmail String?  @map("assigned_email") @db.VarChar(255)
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(6)
 
   @@map("staff_invitations")
 }
-
