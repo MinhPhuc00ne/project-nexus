@@ -17,8 +17,13 @@ import { UsersModule } from '../users/users.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret:
-          configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET || 'nexus-secret-key',
-        signOptions: { expiresIn: '15m' },
+          configService.get<string>('JWT_SECRET') ||
+          process.env.JWT_SECRET ||
+          'super-secret-jwt-key-nexus-change-in-production-2026',
+        signOptions: {
+          expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
+            '7d') as `${number}${'s' | 'm' | 'h' | 'd'}`,
+        },
       }),
     }),
     forwardRef(() => UsersModule),

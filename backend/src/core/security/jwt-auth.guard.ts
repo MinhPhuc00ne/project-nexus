@@ -43,7 +43,18 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException(verifyResult.error || 'Invalid authentication token');
     }
 
-    (request as unknown as { user: AuthenticatedUserPayload }).user = verifyResult.payload;
+    const rawPayload = verifyResult.payload as unknown as Record<string, unknown>;
+    const userId = (rawPayload.id as string) || (rawPayload.sub as string);
+    const userPayload: AuthenticatedUserPayload = {
+      ...rawPayload,
+      id: userId,
+      sub: (rawPayload.sub as string) || userId,
+      email: (rawPayload.email as string) || '',
+      role: rawPayload.role as AuthenticatedUserPayload['role'],
+      isSellerActive: Boolean(rawPayload.isSellerActive),
+    };
+
+    (request as unknown as { user: AuthenticatedUserPayload }).user = userPayload;
     return true;
   }
 }

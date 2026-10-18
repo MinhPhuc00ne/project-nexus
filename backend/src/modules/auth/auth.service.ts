@@ -184,6 +184,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role,
+      isSellerActive: user.isSellerActive,
     });
 
     return {
@@ -228,6 +229,7 @@ export class AuthService {
       id: userRecord.id,
       email: userRecord.email,
       role: userRecord.role,
+      isSellerActive: userRecord.isSellerActive,
     });
 
     return {
@@ -387,6 +389,7 @@ export class AuthService {
       id: tokenRecord.user.id,
       email: tokenRecord.user.email,
       role: tokenRecord.user.role,
+      isSellerActive: tokenRecord.user.isSellerActive,
     });
 
     return {
@@ -426,11 +429,14 @@ export class AuthService {
     id: string;
     email: string;
     role: string;
+    isSellerActive?: boolean;
   }): Promise<{ accessToken: string; refreshToken: string }> {
     const accessToken = this.jwtService.sign({
       sub: user.id,
+      id: user.id,
       email: user.email,
       role: user.role,
+      isSellerActive: user.isSellerActive ?? false,
     });
 
     const tokenId = crypto.randomUUID();

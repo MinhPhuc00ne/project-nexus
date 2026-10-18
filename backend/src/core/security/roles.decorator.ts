@@ -21,9 +21,15 @@ export interface AuthenticatedUserPayload {
 export const CurrentUser = createParamDecorator(
   (data: keyof AuthenticatedUserPayload | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest();
-    const user = request.user as AuthenticatedUserPayload;
+    const user = request.user as AuthenticatedUserPayload | undefined;
     if (!user) {
       return null;
+    }
+    if (data === 'id') {
+      return user.id || user.sub;
+    }
+    if (data === 'sub') {
+      return user.sub || user.id;
     }
     return data ? user[data] : user;
   },
