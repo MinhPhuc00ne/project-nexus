@@ -7,7 +7,6 @@ import {
   Radio,
   LogOut,
   Settings2,
-  Store,
   UserRound,
 } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';

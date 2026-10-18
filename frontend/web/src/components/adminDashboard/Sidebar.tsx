@@ -1,7 +1,6 @@
 import {
   Activity,
   ChartNoAxesCombined,
-  ChevronLeft,
   Gavel,
   Layers,
   LayoutDashboard,

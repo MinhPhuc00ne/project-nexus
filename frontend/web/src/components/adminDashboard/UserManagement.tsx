@@ -11,7 +11,6 @@ import type { AdminTabProps } from './adminTypes';
 export function StaffInvite({ actions }: AdminTabProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [department, setDepartment] = useState('Thẩm định hoàn tiền');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +33,6 @@ export function StaffInvite({ actions }: AdminTabProps) {
         fullName: name.trim(),
         email: email.trim(),
         phoneNumber: phoneNumber.trim() || undefined,
-        department,
       });
       setAssignedEmail(result.assignedEmail);
       actions.notify(result.message);
