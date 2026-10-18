@@ -176,7 +176,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     }
     setIsTogglingSeller(true);
     try {
-      const nextActive = !profile.isSellerActive;
+      const nextActive = profile.role === 'SELLER' ? true : !profile.isSellerActive;
       const res = await toggleSellerMode(nextActive);
       setProfile((prev) =>
         prev
@@ -188,6 +188,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           : null,
       );
       showToast(res.message);
+      if (profile.role === 'SELLER') window.location.assign('/seller');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Chuyển đổi chế độ thất bại.');
     } finally {

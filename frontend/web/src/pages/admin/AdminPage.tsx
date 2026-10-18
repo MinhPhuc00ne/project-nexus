@@ -13,6 +13,10 @@ import FinanceTab from '../../components/adminDashboard/FinanceTab';
 import SystemTab from '../../components/adminDashboard/SystemTab';
 import SettingsTab from '../../components/adminDashboard/SettingsTab';
 import { DetailDialog } from '../../components/adminDashboard/AdminUI';
+import {
+  AdminSellerRequestsProvider,
+  useAdminSellerRequests,
+} from '../../components/adminDashboard/AdminSellerRequests';
 import { initialAdminData } from '../../components/adminDashboard/adminData';
 import type { AdminActions, AdminData, AdminTab } from '../../components/adminDashboard/adminTypes';
 
@@ -36,6 +40,15 @@ const tabs = {
 };
 
 export default function AdminPage() {
+  return (
+    <AdminSellerRequestsProvider>
+      <AdminDashboard />
+    </AdminSellerRequestsProvider>
+  );
+}
+
+function AdminDashboard() {
+  const sellerRequests = useAdminSellerRequests();
   // :tab lấy từ route /admin/:tab; giá trị mặc định dùng khi không có tham số.
   const { tab = 'overview' } = useParams<{ tab: string }>();
   const navigate = useNavigate();
@@ -80,22 +93,6 @@ export default function AdminPage() {
     navigate: (target) => navigate(`/admin/${target}`),
     notify,
     showDetail: (title, content) => setDetail({ title, content }),
-    // Phê duyệt/từ chối Seller mở hộp thoại trước, chưa cập nhật ngay lúc bấm nút.
-    reviewSeller: (id, status) =>
-      setConfirmation({
-        title: status === 'approved' ? 'Phê duyệt gian hàng?' : 'Từ chối hồ sơ Seller?',
-        content: 'Thao tác này cập nhật hồ sơ trong bản demo tại giao diện.',
-        execute: () => {
-          // current là state mới nhất. Spread giữ các danh sách khác; map tạo mảng mới,
-          // chỉ thay hồ sơ có id phù hợp, không sửa trực tiếp dữ liệu cũ của React.
-          setData((current) => ({
-            ...current,
-            sellers: current.sellers.map((item) => (item.id === id ? { ...item, status } : item)),
-          }));
-          notify('Đã cập nhật hồ sơ Seller trong bản demo.');
-        },
-      }),
-    // Quyết định hoàn tiền ở đây chỉ đổi trạng thái demo, chưa gọi cổng thanh toán.
     reviewRefund: (id, status) =>
       setConfirmation({
         title: status === 'approved' ? 'Chấp thuận hoàn tiền?' : 'Bác bỏ khiếu nại?',
@@ -172,7 +169,7 @@ export default function AdminPage() {
     .flatMap((group) => group.items)
     .find((item) => item.id === tab)?.label;
   // Tính số đếm từ dữ liệu hiện tại; duyệt hồ sơ xong badge sẽ tự giảm sau lần render tiếp.
-  const sellerCount = data.sellers.filter((item) => item.status === 'pending').length;
+  const sellerCount = sellerRequests.pendingTotal;
   const refundCount = data.refunds.filter((item) => item.status === 'pending').length;
   return (
     <div className="min-h-screen bg-[#f5f7fb] text-slate-800 selection:bg-blue-100">
@@ -201,7 +198,9 @@ export default function AdminPage() {
               <span className="font-medium text-slate-600">{title}</span>
             </div>
             <span className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] text-primary">
-              Dữ liệu demo • Chưa kết nối API
+              {tab === 'sellers'
+                ? 'Hồ sơ Seller từ hệ thống'
+                : 'Hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
             </span>
           </div>
           {tab !== 'overview' && (
