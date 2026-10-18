@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import AdminLayout from '../layouts/AdminLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import SellerLayout from '../layouts/SellerLayout';
 import SellerSession from '../pages/seller/SellerSession';
+import StaffActivationPage from '../pages/staff/StaffActivationPage';
 import {
   // Auth
   Login,
@@ -56,7 +58,15 @@ import {
   StaffHistoryPage,
   StaffPerformancePage,
   // Admin
-  AdminPage,
+  AdminDashboardPage,
+  AdminUsersPage,
+  AdminSellersPage,
+  AdminAuctionsPage,
+  AdminRefundsPage,
+  AdminStudioPage,
+  AdminFinancePage,
+  AdminSystemPage,
+  AdminSettingsPage,
   AdminCategoriesPage,
 } from '../pages';
 
@@ -120,7 +130,15 @@ export const ROUTES = {
   // Admin
   ADMIN: '/admin',
   ADMIN_CATEGORIES: '/admin/categories',
-  ADMIN_TAB: '/admin/:tab',
+  ADMIN_OVERVIEW: '/admin/overview',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_SELLERS: '/admin/sellers',
+  ADMIN_AUCTIONS: '/admin/auctions',
+  ADMIN_REFUNDS: '/admin/refunds',
+  ADMIN_STUDIO: '/admin/studio',
+  ADMIN_FINANCE: '/admin/finance',
+  ADMIN_SYSTEM: '/admin/system',
+  ADMIN_SETTINGS: '/admin/settings',
 } as const;
 
 function AppRouter() {
@@ -186,6 +204,7 @@ function AppRouter() {
         </Route>
 
         {/* Staff routes */}
+        <Route path="/staff/activate" element={<StaffActivationPage />} />
         <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
         <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
         <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
@@ -196,10 +215,21 @@ function AppRouter() {
         <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
         <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
 
-        {/* Admin routes */}
-        <Route path={ROUTES.ADMIN} element={<Navigate to="/admin/overview" replace />} />
-        <Route path={ROUTES.ADMIN_CATEGORIES} element={<AdminCategoriesPage />} />
-        <Route path={ROUTES.ADMIN_TAB} element={<AdminPage />} />
+        {/* Route cha giữ khung chung; mỗi route con mở một page cụ thể trong Outlet. */}
+        <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
+          <Route index element={<Navigate to="overview" replace />} />
+          <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="overview" element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="sellers" element={<AdminSellersPage />} />
+          <Route path="auctions" element={<AdminAuctionsPage />} />
+          <Route path="refunds" element={<AdminRefundsPage />} />
+          <Route path="studio" element={<AdminStudioPage />} />
+          <Route path="finance" element={<AdminFinancePage />} />
+          <Route path="system" element={<AdminSystemPage />} />
+          <Route path="settings" element={<AdminSettingsPage />} />
+          <Route path="*" element={<Navigate to="/admin/overview" replace />} />
+        </Route>
 
         {/* 404 Fallback */}
         <Route path="*" element={<NotFoundPage />} />

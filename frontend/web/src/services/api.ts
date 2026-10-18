@@ -20,6 +20,17 @@ export interface RequestOptions {
   requireAuth?: boolean;
 }
 
+// Giữ mã HTTP để nơi gọi phân biệt hết phiên (401), cấm truy cập (403) và lỗi máy chủ.
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ApiRequestError';
+  }
+}
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, isFormData = false, requireAuth = false } = options;
   const headers: Record<string, string> = {};
@@ -62,7 +73,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   try {
     payload = (await response.json()) as ApiResponsePayload;
   } catch {
-    throw new Error('Máy chủ phản hồi định dạng dữ liệu không hợp lệ.');
+    throw new ApiRequestError('Máy chủ phản hồi định dạng dữ liệu không hợp lệ.', response.status);
   }
 
   if (!response.ok) {
@@ -71,7 +82,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       : typeof payload?.message === 'string'
         ? payload.message
         : 'Yêu cầu thất bại.';
-    throw new Error(errorMsg);
+    throw new ApiRequestError(errorMsg, response.status);
   }
 
   if (payload && typeof payload === 'object' && 'data' in payload) {

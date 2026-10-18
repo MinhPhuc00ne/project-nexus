@@ -1,3 +1,5 @@
+// Danh sách yêu cầu hoàn tiền dùng ở Tổng quan và trang Hoàn tiền; cùng gọi action của layout.
+
 import { RefreshCcw } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
@@ -5,8 +7,8 @@ import { formatMoney } from './adminData';
 import type { AdminTabProps } from './adminTypes';
 
 // Danh sách hoàn tiền chờ quyết định; preview dùng bản rút gọn trong Tổng quan.
-// Tab gọi actions.reviewRefund, còn hộp thoại xác nhận và cập nhật data nằm ở AdminPage.
-export default function RefundsTab({
+// Tab gọi actions.reviewRefund, còn hộp thoại xác nhận và cập nhật data nằm ở AdminLayout.
+export default function RefundRequestsPanel({
   data,
   actions,
   preview = false,
@@ -18,6 +20,7 @@ export default function RefundsTab({
   const visible = pending.filter((item) =>
     `${item.id} ${item.product}`.toLowerCase().includes(search.toLowerCase()),
   );
+
   return (
     <Panel
       title="Phán quyết hoàn tiền cuối cùng"

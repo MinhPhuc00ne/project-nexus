@@ -1,8 +1,8 @@
 import {
   Activity,
   ChartNoAxesCombined,
-  ChevronLeft,
   Gavel,
+  Layers,
   LayoutDashboard,
   Radio,
   Settings2,
@@ -15,7 +15,7 @@ import {
 import { NavLink } from 'react-router-dom';
 import type { AdminTab } from './adminTypes';
 
-// Cấu hình menu: id phải trùng key trong bảng tabs của AdminPage và union AdminTab.
+// Cấu hình menu: id phải trùng đường dẫn con trong AppRouter và union AdminTab.
 // label là nhãn tiếng Việt, icon là component của thư viện lucide-react.
 // Muốn đổi thứ tự hoặc nhóm mục sidebar thì sửa mảng này, không cần sửa từng nút JSX.
 export const adminNavigation: {
@@ -27,6 +27,8 @@ export const adminNavigation: {
     items: [
       { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
       { id: 'auctions', label: 'Quản lý đấu giá 3D', icon: Gavel },
+      // Mở trang quản lý danh mục tại /admin/categories.
+      { id: 'categories', label: 'Quản lý danh mục', icon: Layers },
       { id: 'studio', label: 'Studio phát trực tiếp', icon: Radio },
     ],
   },
@@ -135,13 +137,6 @@ export default function Sidebar({
               DEMO
             </span>
           </div>
-          <NavLink
-            to="/"
-            className="mt-3 flex items-center gap-2 px-2 text-xs text-slate-400 hover:text-primary"
-          >
-            <ChevronLeft size={14} />
-            Về trang mua sắm
-          </NavLink>
         </div>
       </aside>
     </>

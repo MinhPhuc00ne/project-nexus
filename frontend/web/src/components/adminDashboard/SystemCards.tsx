@@ -1,4 +1,6 @@
-import { Activity, Download, ScrollText, Server, Truck } from 'lucide-react';
+// Hai khối dùng ở Tổng quan và Hệ thống: trạng thái vận chuyển và danh sách nhật ký sự kiện.
+
+import { Download, ScrollText, Truck } from 'lucide-react';
 import { Badge, Button, Panel } from './AdminUI';
 import type { AdminTabProps } from './adminTypes';
 
@@ -84,6 +86,7 @@ export function EventLog({ compact = false }: { compact?: boolean }) {
     anchor.click();
     URL.revokeObjectURL(url);
   };
+
   return (
     <Panel
       title="Nhật ký sự kiện thời gian thực"
@@ -106,29 +109,5 @@ export function EventLog({ compact = false }: { compact?: boolean }) {
         Xuất event log (JSON)
       </Button>
     </Panel>
-  );
-}
-
-// Tab Hệ thống ghép KPI kỹ thuật, kết nối vận chuyển và nhật ký; các KPI vẫn là fixture.
-export default function SystemTab({ actions }: AdminTabProps) {
-  return (
-    <div className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: 'WebSocket engine', value: '12ms', icon: Activity },
-          { label: 'WebGL cluster', value: '6 nodes online', icon: Server },
-          { label: 'Uptime hệ thống', value: '99.98%', icon: Activity },
-        ].map(({ label, value, icon: Icon }) => (
-          <Panel key={label} title={label} icon={<Icon size={18} />}>
-            <p className="text-2xl font-bold text-primary">{value}</p>
-            <p className="mt-2 text-xs text-slate-400">Trạng thái minh họa • chưa kết nối API</p>
-          </Panel>
-        ))}
-      </div>
-      <div className="grid items-start gap-5 xl:grid-cols-[1fr_1.5fr]">
-        <LogisticsCard actions={actions} />
-        <EventLog />
-      </div>
-    </div>
   );
 }

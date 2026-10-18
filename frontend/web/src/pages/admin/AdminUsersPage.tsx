@@ -1,11 +1,24 @@
-import PagePlaceholder from '../../components/PagePlaceholder';
+import { Users } from 'lucide-react';
+import { StaffInvite, UserSecurity } from '../../components/adminDashboard/UserManagement';
+import { useAdminContext } from '../../components/adminDashboard/useAdminContext';
 
+// Ghép form thêm Staff và danh sách tài khoản; hai khối cũng được dùng ở Tổng quan.
 export default function AdminUsersPage() {
+  const { data, actions } = useAdminContext();
+
   return (
-    <PagePlaceholder
-      area="Admin"
-      title="Quản trị người dùng & phân quyền"
-      description="Quản lý tài khoản Buyer, Seller, Staff, điểm uy tín và phân quyền hệ thống RBAC."
-    />
+    <div className="space-y-5">
+      {/* Giới thiệu chức năng quản lý tài khoản. */}
+      <div className="flex items-center gap-2 text-sm text-slate-500">
+        <Users size={18} />
+        Quản lý thành viên, phân quyền và tài khoản hỗ trợ
+      </div>
+      <div className="grid items-start gap-5 xl:grid-cols-[1fr_1.5fr]">
+        {/* Form tạo tài khoản Staff; danh sách thật nằm trong data của layout. */}
+        <StaffInvite data={data} actions={actions} />
+        {/* Danh sách người dùng: tìm kiếm, lọc vai trò và khóa/mở khóa tài khoản. */}
+        <UserSecurity data={data} actions={actions} />
+      </div>
+    </div>
   );
 }

@@ -1,3 +1,5 @@
+// Biểu đồ dùng chung cho Tổng quan và Tài chính: đường doanh thu + vòng tròn cơ cấu nguồn thu.
+
 import { ChartNoAxesCombined, CircleDollarSign, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Panel } from './AdminUI';
@@ -59,6 +61,7 @@ export function RevenueChart() {
   // Hàm hiện thiết kế cho 7 điểm, giá trị 0–200; đổi số điểm/thang đo cần tính lại tọa độ.
   const coords = (values: number[]) =>
     values.map((value, index) => `${48 + index * 76},${236 - value}`).join(' ');
+
   return (
     <Panel
       title="Biểu đồ xu hướng doanh thu phí sàn & tỷ trọng"
@@ -259,42 +262,6 @@ export function RevenueComposition() {
             </div>
           </div>
         ))}
-      </div>
-    </Panel>
-  );
-}
-
-// Biểu đồ cột nhỏ: mỗi cột có chiều cao theo giá trị mẫu, giờ cao điểm dùng màu primary.
-// Badge LIVE là nhãn minh họa, component chưa đăng ký WebSocket hoặc cập nhật theo thời gian.
-export function BidFrequency() {
-  const values = [15, 28, 52, 65, 58, 77, 85, 98, 67, 41];
-  const labels = ['02h', '06h', '09h', '12h', '15h', '18h', '20h', '21h', '22h', '24h'];
-  return (
-    <Panel
-      title="Tần suất khớp lệnh theo giờ"
-      subtitle="Tải WebGL 6 nodes & khung giờ vàng"
-      icon={<TrendingUp size={19} />}
-      action={<Badge>● LIVE</Badge>}
-    >
-      <div className="flex h-28 items-end gap-1.5 rounded-xl bg-blue-50/70 px-3 pt-3">
-        {values.map((value, index) => (
-          <div key={index} className="flex h-full flex-1 flex-col justify-end gap-2">
-            <div
-              className={`min-h-1 rounded-t ${index === 6 || index === 7 ? 'bg-primary' : 'bg-blue-300'}`}
-              style={{ height: `${value * 0.8}%` }}
-              title={`${labels[index]}: ${value * 44} lượt trả giá (demo)`}
-            />
-            <span className="pb-2 text-center text-[8px] text-slate-500">{labels[index]}</span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-3 flex items-start justify-between gap-2 text-[11px]">
-        <p className="text-slate-500">
-          Khung 20h – 22h đạt:
-          <br />
-          <strong className="text-primary">4.280 bids/phút</strong>
-        </p>
-        <Badge>CPU 18% • 6 nodes OK</Badge>
       </div>
     </Panel>
   );

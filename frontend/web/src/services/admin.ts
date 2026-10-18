@@ -1,5 +1,36 @@
-import { apiRequest } from './api';
-import { SellerUpgradeRequest } from './users';
+import axios, { type AxiosRequestConfig } from 'axios';
+import api, { ApiRequestError } from './api';
+import { getStoredToken } from './auth';
+import type { SellerUpgradeRequest } from './users';
+
+// Các API admin dùng chung Axios client, token phiên hiện tại và định dạng lỗi.
+async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
+  const token = getStoredToken();
+  if (!token) throw new Error('Vui lòng đăng nhập để thực hiện thao tác này.');
+
+  try {
+    const response = await api.request<T | { data: T }>({
+      ...config,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const payload = response.data;
+    return payload && typeof payload === 'object' && 'data' in payload
+      ? payload.data
+      : (payload as T);
+  } catch (error) {
+    if (axios.isAxiosError<{ errors?: string[]; message?: string }>(error)) {
+      if (!error.response) {
+        throw new Error('Không thể kết nối tới máy chủ backend. Vui lòng thử lại.');
+      }
+      const payload = error.response.data;
+      throw new ApiRequestError(
+        payload?.errors?.join(' · ') || payload?.message || 'Yêu cầu thất bại.',
+        error.response.status,
+      );
+    }
+    throw error;
+  }
+}
 
 export interface StaffUser {
   id: string;
@@ -16,6 +47,29 @@ export interface CreateStaffDto {
   password: string;
   fullName: string;
   phoneNumber?: string;
+}
+
+export interface InviteStaffDto {
+  email: string;
+  fullName: string;
+  phoneNumber?: string;
+  department?: string;
+}
+
+export interface StaffInvitationResult {
+  success: boolean;
+  message: string;
+  invitationId: string;
+  assignedEmail: string;
+}
+
+// Không gửi mật khẩu: nhân viên tự đặt mật khẩu qua link gửi đến email cá nhân.
+export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult> {
+  return adminRequest<StaffInvitationResult>({
+    url: '/admin/staff/invite',
+    method: 'POST',
+    data: dto,
+  });
 }
 
 export interface PaginatedResult<T> {
@@ -42,10 +96,10 @@ export interface QueryStaffParams {
  * 1. Admin tạo tài khoản cho nhân viên hỗ trợ (Support Staff)
  */
 export function createStaff(dto: CreateStaffDto): Promise<{ message: string; staff: StaffUser }> {
-  return apiRequest<{ message: string; staff: StaffUser }>('/admin/staff', {
+  return adminRequest<{ message: string; staff: StaffUser }>({
+    url: '/admin/staff',
     method: 'POST',
-    body: dto,
-    requireAuth: true,
+    data: dto,
   });
 }
 
@@ -53,19 +107,11 @@ export function createStaff(dto: CreateStaffDto): Promise<{ message: string; sta
  * 2. Lấy danh sách tài khoản Support Staff
  */
 export function listStaff(params?: QueryStaffParams): Promise<PaginatedResult<StaffUser>> {
-  const query = new URLSearchParams();
-  if (params?.search) query.set('search', params.search);
-  if (params?.page) query.set('page', String(params.page));
-  if (params?.limit) query.set('limit', String(params.limit));
-  const queryString = query.toString();
-
-  return apiRequest<PaginatedResult<StaffUser>>(
-    `/admin/staff${queryString ? `?${queryString}` : ''}`,
-    {
-      method: 'GET',
-      requireAuth: true,
-    },
-  );
+  return adminRequest<PaginatedResult<StaffUser>>({
+    url: '/admin/staff',
+    method: 'GET',
+    params,
+  });
 }
 
 /**
@@ -74,28 +120,20 @@ export function listStaff(params?: QueryStaffParams): Promise<PaginatedResult<St
 export function getSellerRequests(
   params?: QuerySellerRequestsParams,
 ): Promise<PaginatedResult<SellerUpgradeRequest>> {
-  const query = new URLSearchParams();
-  if (params?.status) query.set('status', params.status);
-  if (params?.page) query.set('page', String(params.page));
-  if (params?.limit) query.set('limit', String(params.limit));
-  const queryString = query.toString();
-
-  return apiRequest<PaginatedResult<SellerUpgradeRequest>>(
-    `/admin/seller-requests${queryString ? `?${queryString}` : ''}`,
-    {
-      method: 'GET',
-      requireAuth: true,
-    },
-  );
+  return adminRequest<PaginatedResult<SellerUpgradeRequest>>({
+    url: '/admin/seller-requests',
+    method: 'GET',
+    params,
+  });
 }
 
 /**
  * 4. Xem chi tiết một yêu cầu nâng cấp
  */
 export function getSellerRequestById(id: string): Promise<SellerUpgradeRequest> {
-  return apiRequest<SellerUpgradeRequest>(`/admin/seller-requests/${id}`, {
+  return adminRequest<SellerUpgradeRequest>({
+    url: `/admin/seller-requests/${id}`,
     method: 'GET',
-    requireAuth: true,
   });
 }
 
@@ -105,13 +143,10 @@ export function getSellerRequestById(id: string): Promise<SellerUpgradeRequest> 
 export function approveSellerRequest(
   id: string,
 ): Promise<{ message: string; request: SellerUpgradeRequest }> {
-  return apiRequest<{ message: string; request: SellerUpgradeRequest }>(
-    `/admin/seller-requests/${id}/approve`,
-    {
-      method: 'PATCH',
-      requireAuth: true,
-    },
-  );
+  return adminRequest<{ message: string; request: SellerUpgradeRequest }>({
+    url: `/admin/seller-requests/${id}/approve`,
+    method: 'PATCH',
+  });
 }
 
 /**
@@ -121,12 +156,9 @@ export function rejectSellerRequest(
   id: string,
   rejectionReason: string,
 ): Promise<{ message: string; request: SellerUpgradeRequest }> {
-  return apiRequest<{ message: string; request: SellerUpgradeRequest }>(
-    `/admin/seller-requests/${id}/reject`,
-    {
-      method: 'PATCH',
-      body: { rejectionReason },
-      requireAuth: true,
-    },
-  );
+  return adminRequest<{ message: string; request: SellerUpgradeRequest }>({
+    url: `/admin/seller-requests/${id}/reject`,
+    method: 'PATCH',
+    data: { rejectionReason },
+  });
 }

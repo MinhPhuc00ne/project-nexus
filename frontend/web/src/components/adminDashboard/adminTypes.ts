@@ -2,6 +2,7 @@
 export type AdminTab =
   | 'overview'
   | 'auctions'
+  | 'categories'
   | 'studio'
   | 'users'
   | 'sellers'
@@ -44,7 +45,7 @@ export interface AdminUser {
   note: string;
 }
 
-// Gói dữ liệu chung do AdminPage sở hữu và truyền xuống các tab qua props.
+// Gói dữ liệu chung do AdminLayout sở hữu và truyền xuống các tab qua props.
 export interface AdminData {
   refunds: RefundRequest[];
   auctions: AuctionItem[];
@@ -58,7 +59,6 @@ export interface AdminActions {
   reviewRefund: (id: string, status: 'approved' | 'rejected') => void;
   approveAuction: (id: string) => void;
   toggleBan: (id: string) => void;
-  addStaff: (name: string, email: string, department: string) => void;
   showDetail: (title: string, content: string) => void;
   notify: (message: string) => void;
 }

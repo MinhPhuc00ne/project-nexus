@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Activity,
@@ -32,7 +32,8 @@ import {
   CheckCircle,
   RefreshCw,
 } from 'lucide-react';
-import { listStaff, createStaff, type StaffUser } from '../../services/admin';
+import { listStaff, inviteStaff, type StaffUser } from '../../services/admin';
+import { getMe } from '../../services/users';
 import Popup from '../../components/Popup';
 type TicketStatus = 'chatting' | 'waiting' | 'resolved';
 type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
@@ -100,9 +101,27 @@ function StaffDashboard({
   const [staffEmail, setStaffEmail] = useState('');
   const [staffFullName, setStaffFullName] = useState('');
   const [staffPhone, setStaffPhone] = useState('');
-  const [staffPassword, setStaffPassword] = useState('');
+  const staffRequestInFlight = useRef(false);
   const [staffPending, setStaffPending] = useState(false);
   const [staffFormError, setStaffFormError] = useState('');
+  const [managementAccess, setManagementAccess] = useState<'loading' | 'allowed' | 'denied'>(
+    'loading',
+  );
+
+  // API cấp/xem tài khoản Staff chỉ dành cho ADMIN, SUPPORT_STAFF không được cấp thêm quyền.
+  useEffect(() => {
+    let active = true;
+    void getMe()
+      .then((profile) => {
+        if (active) setManagementAccess(profile.role === 'ADMIN' ? 'allowed' : 'denied');
+      })
+      .catch(() => {
+        if (active) setManagementAccess('denied');
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const notify = (message: string): void => {
     setToast(message);
@@ -123,34 +142,37 @@ function StaffDashboard({
   };
 
   useEffect(() => {
-    if (activeNavigation === 'Quản Lý Nhân Viên') void fetchStaffList();
-  }, [activeNavigation]);
+    if (activeNavigation === 'Quản Lý Nhân Viên' && managementAccess === 'allowed')
+      void fetchStaffList();
+  }, [activeNavigation, managementAccess]);
 
   const handleCreateStaff = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!staffEmail.trim() || !staffFullName.trim() || !staffPassword.trim()) {
-      setStaffFormError('Vui lòng điền đầy đủ Email, Họ tên và Mật khẩu.');
+    if (managementAccess !== 'allowed' || staffRequestInFlight.current) return;
+    if (!staffEmail.trim() || !staffFullName.trim()) {
+      setStaffFormError('Vui lòng điền đầy đủ email cá nhân và họ tên.');
       return;
     }
+    staffRequestInFlight.current = true;
     setStaffPending(true);
     setStaffFormError('');
     try {
-      const res = await createStaff({
+      // Endpoint mời gửi email kích hoạt; không truyền password để tạo tài khoản trực tiếp.
+      const res = await inviteStaff({
         email: staffEmail.trim(),
         fullName: staffFullName.trim(),
         phoneNumber: staffPhone.trim() || undefined,
-        password: staffPassword.trim(),
       });
-      notify(res.message || 'Tạo tài khoản nhân viên thành công!');
+      notify(`${res.message} Tài khoản được cấp: ${res.assignedEmail}. Chờ nhân viên kích hoạt.`);
       setShowAddStaffModal(false);
       setStaffEmail('');
       setStaffFullName('');
       setStaffPhone('');
-      setStaffPassword('');
-      void fetchStaffList();
+      // Danh sách hiện tại chỉ chứa tài khoản đã kích hoạt, chưa chứa lời mời đang chờ.
     } catch (err: unknown) {
-      setStaffFormError(err instanceof Error ? err.message : 'Tạo nhân viên thất bại.');
+      setStaffFormError(err instanceof Error ? err.message : 'Không thể gửi lời mời nhân viên.');
     } finally {
+      staffRequestInFlight.current = false;
       setStaffPending(false);
     }
   };
@@ -179,6 +201,23 @@ function StaffDashboard({
       sendReply();
     }
   };
+  if (activeNavigation === 'Quản Lý Nhân Viên' && managementAccess !== 'allowed') {
+    return (
+      <main className="p-8">
+        <p role="status">
+          {managementAccess === 'loading'
+            ? 'Đang kiểm tra quyền…'
+            : 'Chỉ Admin có quyền quản lý và cấp tài khoản Staff.'}
+        </p>
+        {managementAccess === 'denied' && (
+          <button onClick={() => navigate('/staff/inbox')} className="mt-4 text-primary">
+            Về hộp thư hỗ trợ
+          </button>
+        )}
+      </main>
+    );
+  }
+
   return (
     <div className="[--staff-ink:#17233d] [--staff-line:#e7eaf3] [--staff-primary:#1f5fe3] [--staff-primary-soft:#eaf1ff] [--staff-primary-strong:#1849b7] [--staff-accent:#1f5fe3] [--staff-accent-strong:#1849b7] grid [grid-template-columns:280px_minmax(0,_1fr)] min-h-screen [background:#f8f7fc] [color:var(--staff-ink)] [font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_sans-serif] text-[13px] max-[1100px]:[grid-template-columns:240px_minmax(0,_1fr)] max-[760px]:block min-h-screen bg-[#f8f7fc] text-slate-800">
       <aside
@@ -210,22 +249,24 @@ function StaffDashboard({
           NGHIỆP VỤ HỖ TRỢ
         </div>
         <nav className="grid [gap:5px] [padding:0_10px]" aria-label="Điều hướng nhân viên">
-          {navigation.map(({ label, icon: Icon }) => (
-            <button
-              className={`flex [min-height:42px] items-center gap-2.5 [padding:0_11px] [border:0] [border-radius:8px] [color:#665f68] [background:transparent] cursor-pointer text-left [transition:0.15s_ease] [&_>_span:nth-child(2)]:[flex:1] [&_>_span:nth-child(2)]:text-xs [&_>_span:nth-child(2)]:[font-weight:650] [&_>_span:nth-child(2)]:whitespace-nowrap hover:[background:#fff2ef] hover:[color:var(--staff-accent)] [&.is-active]:[color:white] [&.is-active]:[background:var(--staff-accent)] [&.is-active]:[box-shadow:0_7px_16px_rgb(217_52_27_/_18%)] ${activeNavigation === label ? 'is-active' : ''}`}
-              key={label}
-              onClick={() => {
-                setActiveNavigation(label);
-                navigate(staffSectionPaths[label]);
-                setIsSidebarOpen(false);
-                if (label !== 'Hộp Thư Trực Tuyến')
-                  notify(`${label} sẽ được mở trong khu vực nghiệp vụ tương ứng.`);
-              }}
-            >
-              <Icon size={17} />
-              <span>{label}</span>
-            </button>
-          ))}
+          {navigation
+            .filter(({ label }) => label !== 'Quản Lý Nhân Viên' || managementAccess === 'allowed')
+            .map(({ label, icon: Icon }) => (
+              <button
+                className={`flex [min-height:42px] items-center gap-2.5 [padding:0_11px] [border:0] [border-radius:8px] [color:#665f68] [background:transparent] cursor-pointer text-left [transition:0.15s_ease] [&_>_span:nth-child(2)]:[flex:1] [&_>_span:nth-child(2)]:text-xs [&_>_span:nth-child(2)]:[font-weight:650] [&_>_span:nth-child(2)]:whitespace-nowrap hover:[background:#fff2ef] hover:[color:var(--staff-accent)] [&.is-active]:[color:white] [&.is-active]:[background:var(--staff-accent)] [&.is-active]:[box-shadow:0_7px_16px_rgb(217_52_27_/_18%)] ${activeNavigation === label ? 'is-active' : ''}`}
+                key={label}
+                onClick={() => {
+                  setActiveNavigation(label);
+                  navigate(staffSectionPaths[label]);
+                  setIsSidebarOpen(false);
+                  if (label !== 'Hộp Thư Trực Tuyến')
+                    notify(`${label} sẽ được mở trong khu vực nghiệp vụ tương ứng.`);
+                }}
+              >
+                <Icon size={17} />
+                <span>{label}</span>
+              </button>
+            ))}
         </nav>
         <div className="[margin-top:auto] [padding:12px_10px_14px] [border-top:1px_solid_#f0f1f6]">
           <div className="flex justify-between [padding:12px_5px_0] [color:#9a8f8d] [font-size:9px] [&_strong]:[color:#c94c35]">
@@ -691,19 +732,19 @@ function StaffDashboard({
             </>
           )}
 
-          {/* POPUP TẠO TÀI KHOẢN NHÂN VIÊN MỚI */}
+          {/* Admin mời nhân viên bằng email cá nhân; nhân viên tự đặt mật khẩu qua link kích hoạt. */}
           <Popup
             isOpen={showAddStaffModal}
             onClose={() => {
               if (!staffPending) setShowAddStaffModal(false);
             }}
-            title="Tạo Tài Khoản Nhân Viên Hỗ Trợ (Support Staff)"
+            title="Mời Nhân Viên Hỗ Trợ (Support Staff)"
             size="md"
           >
             <form onSubmit={handleCreateStaff} className="space-y-3.5">
               <p className="text-sm text-slate-600">
-                Tài khoản nhân viên được cấp quyền <code>SUPPORT_STAFF</code> và tự động xác thực để
-                truy cập hệ thống chăm sóc khách hàng.
+                Lời mời được gửi tới email cá nhân. Nhân viên mở link để xác nhận thông tin và tự
+                đặt mật khẩu; sau khi kích hoạt mới đăng nhập bằng tài khoản @staff.com được cấp.
               </p>
 
               {staffFormError && (
@@ -714,12 +755,12 @@ function StaffDashboard({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Email đăng nhập <span className="text-red-500">*</span>
+                  Email cá nhân nhận lời mời <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   required
-                  placeholder="staff@nexus.com"
+                  placeholder="nhanvien@gmail.com"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   value={staffEmail}
                   onChange={(e) => setStaffEmail(e.target.value)}
@@ -756,22 +797,6 @@ function StaffDashboard({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Mật khẩu khởi tạo <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  placeholder="Tối thiểu 6 ký tự"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  value={staffPassword}
-                  onChange={(e) => setStaffPassword(e.target.value)}
-                  disabled={staffPending}
-                />
-              </div>
-
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
@@ -786,7 +811,7 @@ function StaffDashboard({
                   disabled={staffPending}
                   className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition disabled:opacity-50 cursor-pointer"
                 >
-                  {staffPending ? 'Đang tạo...' : 'Tạo tài khoản'}
+                  {staffPending ? 'Đang gửi lời mời...' : 'Gửi lời mời'}
                 </button>
               </div>
             </form>

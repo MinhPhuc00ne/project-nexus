@@ -7,12 +7,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Link } from 'react-router-dom';
 import { getSellerRequests, type PaginatedResult } from '../../services/admin';
-import { getMe, type SellerUpgradeRequest } from '../../services/users';
+import type { SellerUpgradeRequest } from '../../services/users';
 
 export type SellerRequestFilter = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL';
 
+// Giữ danh sách/bộ lọc/phân trang dùng chung cho panel, sidebar và trang tổng quan.
 function useSellerRequests() {
   const [status, setStatus] = useState<SellerRequestFilter>('PENDING');
   const [page, setPage] = useState(1);
@@ -26,66 +26,27 @@ function useSellerRequests() {
   const [pendingTotal, setPendingTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [allowed, setAllowed] = useState(false);
-  const [sessionLoading, setSessionLoading] = useState(true);
-  const [sessionError, setSessionError] = useState('');
-  const [sessionRevision, setSessionRevision] = useState(0);
   const [refreshRevision, setRefreshRevision] = useState(0);
   const revision = useRef(0);
 
+  // AdminLayout chỉ tạo provider này sau khi xác minh tài khoản có role ADMIN.
+  // Tải lại khi đổi trạng thái, đổi trang hoặc gọi refresh().
   useEffect(() => {
-    let active = true;
-    setSessionLoading(true);
-    setAllowed(false);
-    setSessionError('');
-    void getMe()
-      .then((profile) => {
-        if (!active) return;
-        if (profile.role === 'ADMIN') setAllowed(true);
-        else
-          setSessionError(
-            'Chỉ quản trị viên ADMIN có quyền truy cập trang quản trị và duyệt hồ sơ Seller.',
-          );
-      })
-      .catch((cause) => {
-        if (active)
-          setSessionError(
-            cause instanceof Error ? cause.message : 'Không thể xác thực quản trị viên.',
-          );
-      })
-      .finally(() => {
-        if (active) setSessionLoading(false);
-      });
-    const sync = () => {
-      revision.current++;
-      setSessionRevision((value) => value + 1);
-    };
-    const syncStorage = (event: StorageEvent) => {
-      if (!event.key || event.key.startsWith('nexus:auth-')) sync();
-    };
-    window.addEventListener('nexus:auth-change', sync);
-    window.addEventListener('storage', syncStorage);
-    return () => {
-      active = false;
-      revision.current++;
-      window.removeEventListener('nexus:auth-change', sync);
-      window.removeEventListener('storage', syncStorage);
-    };
-  }, [sessionRevision]);
-
-  useEffect(() => {
-    if (!allowed) return;
     const current = ++revision.current;
     setLoading(true);
     setError('');
     setResult((previous) => ({ ...previous, items: [] }));
+    // Request 1 lấy trang đang xem. Request 2 chỉ cần total PENDING cho badge/sidebar,
+    // vì trang đang xem có thể lọc APPROVED/REJECTED và không chứa tổng số chờ duyệt.
     void Promise.all([
       getSellerRequests({ status: status === 'ALL' ? undefined : status, page, limit: 10 }),
       getSellerRequests({ status: 'PENDING', page: 1, limit: 1 }),
     ])
       .then(([list, pending]) => {
+        // Nếu bộ lọc/trang đã đổi trong lúc chờ, bỏ phản hồi cũ.
         if (current !== revision.current) return;
         setPendingTotal(pending.total);
+        // Sau khi duyệt hồ sơ cuối trang, quay về trang còn dữ liệu nếu số trang giảm.
         if (page > Math.max(1, list.totalPages)) {
           setPage(Math.max(1, list.totalPages));
           return;
@@ -102,8 +63,9 @@ function useSellerRequests() {
     return () => {
       revision.current++;
     };
-  }, [allowed, status, page, refreshRevision]);
+  }, [status, page, refreshRevision]);
 
+  // Tăng revision để effect chạy lại, kể cả khi bộ lọc và số trang vẫn như cũ.
   const refresh = useCallback(() => setRefreshRevision((value) => value + 1), []);
   return {
     status,
@@ -118,14 +80,12 @@ function useSellerRequests() {
     loading,
     error,
     refresh,
-    sessionLoading,
-    sessionError,
-    retrySession: () => setSessionRevision((value) => value + 1),
   };
 }
 
 const Context = createContext<ReturnType<typeof useSellerRequests> | null>(null);
 
+// Các component gọi hook này để đọc cùng một state của provider, không tạo danh sách riêng.
 export function useAdminSellerRequests() {
   const state = useContext(Context);
   if (!state) throw new Error('AdminSellerRequestsProvider is required');
@@ -134,23 +94,5 @@ export function useAdminSellerRequests() {
 
 export function AdminSellerRequestsProvider({ children }: { children: ReactNode }) {
   const state = useSellerRequests();
-  if (state.sessionLoading)
-    return (
-      <p role="status" className="p-8 text-center">
-        Đang xác thực quản trị viên…
-      </p>
-    );
-  if (state.sessionError)
-    return (
-      <main className="mx-auto max-w-xl space-y-4 p-8">
-        <p role="alert">{state.sessionError}</p>
-        <Link to="/login" className="block text-blue-700 underline">
-          Đăng nhập bằng tài khoản Admin
-        </Link>
-        <button onClick={state.retrySession} className="rounded-lg border px-4 py-2">
-          Thử lại
-        </button>
-      </main>
-    );
   return <Context.Provider value={state}>{children}</Context.Provider>;
 }
