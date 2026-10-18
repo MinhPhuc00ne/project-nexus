@@ -1,3 +1,4 @@
+import { useAdminSellerRequests } from './AdminSellerRequests';
 import {
   Activity,
   BadgeDollarSign,
@@ -25,7 +26,7 @@ import type { AdminTabProps } from './adminTypes';
  */
 export default function OverviewTab({ data, actions }: AdminTabProps) {
   // Giá trị dẫn xuất từ props: không cần useState, dữ liệu cha đổi thì số đếm tính lại.
-  const sellers = data.sellers.filter((item) => item.status === 'pending').length;
+  const sellers = useAdminSellerRequests().pendingTotal;
   const refunds = data.refunds.filter((item) => item.status === 'pending').length;
   const auctions = data.auctions.filter((item) => item.status === 'pending').length;
   const live = data.auctions.filter((item) => item.status === 'live').length;

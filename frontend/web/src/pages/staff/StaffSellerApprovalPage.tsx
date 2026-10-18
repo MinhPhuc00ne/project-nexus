@@ -1,5 +1,5 @@
-import StaffDashboard from './StaffDashboard';
+import { Navigate } from 'react-router-dom';
 
 export default function StaffSellerApprovalPage() {
-  return <StaffDashboard initialSection="Duyệt Hồ Sơ Seller" />;
+  return <Navigate to="/admin/sellers" replace />;
 }

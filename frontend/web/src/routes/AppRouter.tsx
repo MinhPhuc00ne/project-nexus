@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AuthLayout from '../layouts/AuthLayout';
 import GuestLayout from '../layouts/GuestLayout';
+import SellerLayout from '../layouts/SellerLayout';
+import SellerSession from '../pages/seller/SellerSession';
 import {
   // Auth
   Login,
@@ -163,23 +165,28 @@ function AppRouter() {
         </Route>
 
         {/* Seller routes */}
-        <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
-        <Route path={ROUTES.SELLER_PRODUCTS} element={<SellerProductsPage />} />
-        <Route path={ROUTES.SELLER_CREATE_PRODUCT} element={<SellerCreateProductPage />} />
-        <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
-        <Route path={ROUTES.SELLER_ORDER_DETAIL} element={<SellerOrderDetailPage />} />
-        <Route path={ROUTES.SELLER_AUCTIONS} element={<SellerAuctionsPage />} />
-        <Route path={ROUTES.SELLER_CREATE_AUCTION} element={<SellerCreateAuctionPage />} />
-        <Route path={ROUTES.SELLER_FINANCE} element={<SellerFinancePage />} />
-        <Route path={ROUTES.SELLER_INVENTORY} element={<SellerInventoryPage />} />
-        <Route path={ROUTES.SELLER_DISPUTES} element={<SellerDisputesPage />} />
-        <Route path={ROUTES.SELLER_SETTINGS} element={<SellerSettingsPage />} />
+        <Route
+          element={
+            <SellerSession>
+              <SellerLayout />
+            </SellerSession>
+          }
+        >
+          <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
+          <Route path={ROUTES.SELLER_PRODUCTS} element={<SellerProductsPage />} />
+          <Route path={ROUTES.SELLER_CREATE_PRODUCT} element={<SellerCreateProductPage />} />
+          <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
+          <Route path={ROUTES.SELLER_ORDER_DETAIL} element={<SellerOrderDetailPage />} />
+          <Route path={ROUTES.SELLER_AUCTIONS} element={<SellerAuctionsPage />} />
+          <Route path={ROUTES.SELLER_CREATE_AUCTION} element={<SellerCreateAuctionPage />} />
+          <Route path={ROUTES.SELLER_FINANCE} element={<SellerFinancePage />} />
+          <Route path={ROUTES.SELLER_INVENTORY} element={<SellerInventoryPage />} />
+          <Route path={ROUTES.SELLER_DISPUTES} element={<SellerDisputesPage />} />
+          <Route path={ROUTES.SELLER_SETTINGS} element={<SellerSettingsPage />} />
+        </Route>
 
         {/* Staff routes */}
-        <Route
-          path={ROUTES.STAFF}
-          element={<Navigate to={ROUTES.STAFF_SELLER_APPROVALS} replace />}
-        />
+        <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
         <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
         <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
         <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
