@@ -22,6 +22,7 @@ import {
 import { Role } from '@nexus/types';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { generateStaffBaseEmail } from '../utils/staff-email.util';
 import { LightweightJwt } from '../../../core/security/jwt.util';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 
@@ -321,10 +322,38 @@ export class AuthService {
     };
   }
 
+  private async isEmailTaken(email: string): Promise<boolean> {
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: email, mode: 'insensitive' } },
+          { platformEmail: { equals: email, mode: 'insensitive' } },
+        ],
+      },
+    });
+    if (existingUser) return true;
+
+    const existingInvitation = await this.prisma.staffInvitation.findFirst({
+      where: {
+        assignedEmail: { equals: email, mode: 'insensitive' },
+        isAccepted: false,
+      },
+    });
+    return !!existingInvitation;
+  }
+
+  private generateBaseStaffEmail(fullName: string): string {
+    return generateStaffBaseEmail(fullName);
+  }
+
   // 8. Admin tạo tài khoản cho Staff
-  async inviteStaff(
-    dto: InviteStaffDto,
-  ): Promise<{ success: boolean; message: string; invitationId: string }> {
+  async inviteStaff(dto: InviteStaffDto): Promise<{
+    success: boolean;
+    message: string;
+    invitationId: string;
+    assignedEmail: string;
+    token: string;
+  }> {
     const existing = await this.prisma.user.findFirst({
       where: {
         OR: [{ email: dto.email }, { personalEmail: dto.email }],
@@ -333,60 +362,123 @@ export class AuthService {
 
     if (existing) {
       throw new ConflictException(
-        `An account or invitation with email '${dto.email}' already exists`,
+        `Email cá nhân '${dto.email}' đã được đăng ký hoặc liên kết với tài khoản khác.`,
       );
     }
 
+    const baseName = this.generateBaseStaffEmail(dto.fullName);
+    let assignedEmail = `${baseName}@staff.com`;
+    let isTaken = await this.isEmailTaken(assignedEmail);
+    if (isTaken) {
+      let index = 2;
+      while (isTaken && index <= 99) {
+        assignedEmail = `${baseName}${index}@staff.com`;
+        isTaken = await this.isEmailTaken(assignedEmail);
+        index++;
+      }
+    }
+
+    // Sinh mã token kích hoạt bảo mật gửi về email cá nhân của Staff
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 ngày
 
     const invitation = await this.prisma.staffInvitation.create({
       data: {
         id: crypto.randomUUID(),
-        fullName: dto.fullName,
-        personalEmail: dto.email,
-        phoneNumber: dto.phoneNumber,
-        department: dto.department || 'Support',
+        fullName: dto.fullName.trim(),
+        personalEmail: dto.email.trim(),
+        phoneNumber: dto.phoneNumber?.trim() || null,
+        department: dto.department?.trim() || 'Support',
         token,
         expiresAt,
+        assignedEmail,
         isAccepted: false,
       },
     });
 
-    const adminPortalUrl =
-      this.configService.get<string>('ADMIN_PORTAL_URL') || 'http://localhost:5174';
-    const activationLink = `${adminPortalUrl}/staff/activate?token=${token}`;
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') ||
+      this.configService.get<string>('ADMIN_PORTAL_URL') ||
+      'http://localhost:5173';
+    const activationLink = `${frontendUrl}/staff/activate?token=${token}`;
 
     await this.mailService.sendEmail({
       to: dto.email,
-      subject: '[Project Nexus] Thư mời gia nhập đội ngũ Quản trị & Hỗ trợ (Staff)',
-      text: `Xin chào ${dto.fullName},\n\nBạn được Admin mời gia nhập đội ngũ Quản trị Project Nexus.\nThông tin xác nhận:\n- Họ và tên: ${dto.fullName}\n- Số điện thoại: ${dto.phoneNumber}\n- Email: ${dto.email}\n\nVui lòng truy cập đường dẫn sau để xác nhận thông tin và tạo mật khẩu mới:\n${activationLink}\nToken: ${token}`,
+      subject: '[Project Nexus] Thư mời và mã Token kích hoạt tài khoản Quản trị & Hỗ trợ (Staff)',
+      text: `Xin chào ${dto.fullName},\n\nBạn được Admin mời gia nhập đội ngũ Quản trị Project Nexus.\n\nTài khoản công tác nền tảng cấp cho bạn: ${assignedEmail}\n\nMÃ TOKEN KÍCH HOẠT:\n${token}\n(Mã Token có hiệu lực trong vòng 7 ngày)\n\nThông tin xác nhận:\n- Họ và tên: ${dto.fullName}\n- Số điện thoại: ${dto.phoneNumber || 'Chưa cung cấp'}\n- Email cá nhân nhận thư: ${dto.email}\n- Tài khoản công ty cấp: ${assignedEmail}\n\nVui lòng truy cập đường dẫn sau để xác nhận lại thông tin và tạo mật khẩu mới:\n${activationLink}\n\nSau khi hoàn tất, bạn sẽ sử dụng tài khoản ${assignedEmail} và mật khẩu mới tạo để đăng nhập vào hệ thống với vai trò Staff.`,
       html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2 style="color: #2563eb;">Chào mừng bạn gia nhập đội ngũ Support Staff - Project Nexus</h2>
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #2563eb; margin-top: 0;">Chào mừng bạn gia nhập đội ngũ Support Staff - Project Nexus</h2>
           <p>Xin chào <strong>${dto.fullName}</strong>,</p>
-          <p>Quản trị viên đã khởi tạo lời mời kích hoạt tài khoản Staff cho bạn trên hệ thống Project Nexus.</p>
+          <p>Quản trị viên đã khởi tạo lời mời gia nhập đội ngũ Staff cho bạn trên hệ thống Project Nexus.</p>
           
-          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; margin: 15px 0;">
-            <p style="margin: 5px 0;"><strong>Họ và tên:</strong> ${dto.fullName}</p>
-            <p style="margin: 5px 0;"><strong>Số điện thoại:</strong> ${dto.phoneNumber}</p>
-            <p style="margin: 5px 0;"><strong>Email cá nhân:</strong> ${dto.email}</p>
+          <div style="background-color: #f1f5f9; border-left: 4px solid #2563eb; padding: 15px; border-radius: 4px; margin: 15px 0;">
+            <p style="margin: 4px 0;"><strong>Tài khoản công tác được cấp:</strong> <span style="color: #2563eb; font-weight: bold; font-size: 15px;">${assignedEmail}</span></p>
+            <p style="margin: 4px 0;"><strong>Họ và tên:</strong> ${dto.fullName}</p>
+            <p style="margin: 4px 0;"><strong>Số điện thoại:</strong> ${dto.phoneNumber || 'Chưa cung cấp'}</p>
+            <p style="margin: 4px 0;"><strong>Email cá nhân nhận thư:</strong> ${dto.email}</p>
           </div>
 
-          <p>Vui lòng nhấp vào nút dưới đây để xác nhận lại thông tin và khởi tạo mật khẩu mới:</p>
+          <div style="background-color: #eff6ff; border: 1px solid #2563eb; padding: 16px; margin: 20px 0; border-radius: 8px;">
+            <p style="margin: 0 0 8px 0; color: #1e40af; font-weight: bold; font-size: 14px;">Mã Token kích hoạt tài khoản Staff của bạn:</p>
+            <code style="display: block; background: #ffffff; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 13px; color: #2563eb; border: 1px solid #cbd5e1;">${token}</code>
+            <p style="margin: 8px 0 0 0; color: #64748b; font-size: 12px;">Mã Token có hiệu lực trong vòng 7 ngày</p>
+          </div>
+
+          <p>Vui lòng nhấp vào liên kết dưới đây để xác nhận lại thông tin và thiết lập mật khẩu mới cho tài khoản:</p>
           <div style="text-align: center; margin: 25px 0;">
             <a href="${activationLink}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Kích hoạt tài khoản Staff</a>
           </div>
-          <p style="font-size: 13px; color: #64748b;">Mã Token kích hoạt (nếu cần nhập thủ công): <code>${token}</code></p>
+          <p style="font-size: 13px; color: #475569;">Sau khi hoàn tất, bạn sẽ sử dụng tài khoản <strong>${assignedEmail}</strong> và mật khẩu mới tạo để đăng nhập vào hệ thống với vai trò là <strong>Staff</strong>.</p>
         </div>
       `,
     });
 
-    this.logger.log(`Staff invitation sent to ${dto.email} (Token: ${token})`);
+    this.logger.log(
+      `Staff invitation sent to ${dto.email} (Assigned: ${assignedEmail}, Token: ${token})`,
+    );
     return {
       success: true,
-      message: 'Staff invitation created and email dispatched successfully',
+      message: `Đã gửi thư mời và mã Token kích hoạt tài khoản Staff tới email cá nhân ${dto.email}`,
       invitationId: invitation.id,
+      assignedEmail,
+      token,
+    };
+  }
+
+  // 8b. Lấy thông tin lời mời để xác nhận khi Staff mở link
+  async getStaffInvitationInfo(token: string): Promise<{
+    valid: boolean;
+    fullName: string;
+    phoneNumber: string | null;
+    personalEmail: string;
+    assignedEmail: string | null;
+  }> {
+    const cleanToken = token?.trim();
+    if (!cleanToken) {
+      throw new BadRequestException('Mã token kích hoạt không được để trống.');
+    }
+
+    const invitation = await this.prisma.staffInvitation.findFirst({
+      where: {
+        token: cleanToken,
+      },
+    });
+
+    if (!invitation || invitation.isAccepted) {
+      throw new BadRequestException('Mã token kích hoạt không hợp lệ hoặc đã được sử dụng.');
+    }
+
+    if (invitation.expiresAt < new Date()) {
+      throw new BadRequestException('Mã token kích hoạt đã hết hạn.');
+    }
+
+    return {
+      valid: true,
+      fullName: invitation.fullName,
+      phoneNumber: invitation.phoneNumber,
+      personalEmail: invitation.personalEmail,
+      assignedEmail: invitation.assignedEmail,
     };
   }
 
@@ -403,30 +495,43 @@ export class AuthService {
     };
   }> {
     if (dto.newPassword !== dto.confirmPassword) {
-      throw new BadRequestException('Password confirmation does not match');
+      throw new BadRequestException('Mật khẩu xác nhận không khớp');
     }
 
-    const invitation = await this.prisma.staffInvitation.findUnique({
-      where: { token: dto.token },
+    const token = dto.token?.trim();
+    if (!token) {
+      throw new BadRequestException('Mã token kích hoạt không được để trống');
+    }
+
+    const invitation = await this.prisma.staffInvitation.findFirst({
+      where: {
+        token,
+      },
     });
 
     if (!invitation || invitation.isAccepted) {
-      throw new BadRequestException('Invitation token is invalid or has already been used');
+      throw new BadRequestException('Mã token kích hoạt không hợp lệ hoặc đã được sử dụng');
     }
 
     if (invitation.expiresAt < new Date()) {
-      throw new BadRequestException('Invitation token has expired');
+      throw new BadRequestException('Mã token kích hoạt đã hết hạn');
     }
 
-    // Tự sinh email đăng nhập cho staff dạng <ten-khong-dau><random>.nexus@gmail.com
-    const cleanName = invitation.fullName
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '');
-
-    const randomSuffix = Math.floor(100 + Math.random() * 900);
-    const platformEmail = `${cleanName || 'staff'}${randomSuffix}.nexus@gmail.com`;
+    // Lấy email đã cấp dạng @staff.com, nếu chưa có thì sinh mới
+    let platformEmail = invitation.assignedEmail;
+    if (!platformEmail) {
+      const baseName = this.generateBaseStaffEmail(invitation.fullName);
+      platformEmail = `${baseName}@staff.com`;
+      let isTaken = await this.isEmailTaken(platformEmail);
+      if (isTaken) {
+        let index = 2;
+        while (isTaken && index <= 99) {
+          platformEmail = `${baseName}${index}@staff.com`;
+          isTaken = await this.isEmailTaken(platformEmail);
+          index++;
+        }
+      }
+    }
 
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
@@ -468,7 +573,7 @@ export class AuthService {
     return {
       success: true,
       message:
-        'Staff account activated successfully. Please use your assigned platform email and password to log in.',
+        'Kích hoạt tài khoản Staff thành công! Vui lòng sử dụng tài khoản được cấp (@staff.com) và mật khẩu mới để đăng nhập.',
       assignedEmail: platformEmail,
       user: {
         id: newStaffUser.id,

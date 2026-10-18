@@ -40,9 +40,13 @@ export class AdminController {
   @RequirePrivilege('USER.MANAGE')
   @Post('staff/invite')
   @HttpCode(HttpStatus.CREATED)
-  async inviteStaff(
-    @Body() dto: InviteStaffDto,
-  ): Promise<{ success: boolean; message: string; invitationId: string }> {
+  async inviteStaff(@Body() dto: InviteStaffDto): Promise<{
+    success: boolean;
+    message: string;
+    invitationId: string;
+    assignedEmail: string;
+    token: string;
+  }> {
     return this.authService.inviteStaff(dto);
   }
 

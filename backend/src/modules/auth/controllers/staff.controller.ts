@@ -1,5 +1,14 @@
-import { Controller, Post, Get, Body, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
 import { UsersService, UserProfileResponse } from '../../users/services/users.service';
 import { ActivateStaffDto, StaffForgotPasswordDto, StaffResetPasswordDto } from '../dtos/auth.dto';
@@ -23,9 +32,22 @@ export class StaffController {
 
   @ApiOperation({
     summary:
-      '[STAFF] Xác nhận lại họ tên, SĐT, tạo mật khẩu mới -> Nhận tài khoản cấp có đuôi nexus@gmail.com',
+      '[STAFF] Kiểm tra token và lấy thông tin xác nhận (Họ tên, SĐT, Email công ty cấp @staff.com)',
     description:
-      'Staff nhận email mời từ Admin -> truy cập link -> xác nhận lại họ và tên, SĐT, nhập mật khẩu mới và xác nhận mật khẩu -> Bấm Send để nhận tài khoản nền tảng cấp có đuôi nexus@gmail.com. Sau đó dùng email này để đăng nhập.',
+      'Staff mở link từ email mời -> hệ thống trả về thông tin đã được Admin tạo sẵn để Staff kiểm tra và xác nhận lại.',
+  })
+  @ApiQuery({ name: 'token', description: 'Mã token kích hoạt từ email' })
+  @Public()
+  @Get('invitation-info')
+  async getInvitationInfo(@Query('token') token: string) {
+    return this.authService.getStaffInvitationInfo(token);
+  }
+
+  @ApiOperation({
+    summary:
+      '[STAFF] Nhập mã token, xác nhận lại họ tên, SĐT, tạo mật khẩu mới -> Kích hoạt tài khoản @staff.com',
+    description:
+      'Staff nhận mã token qua email cá nhân -> nhập mã token, xác nhận lại Họ và tên, SĐT, nhập mật khẩu mới và xác nhận mật khẩu mới -> Kích hoạt tài khoản nền tảng cấp có đuôi @staff.com. Sau đó dùng email này để đăng nhập với vai trò là Staff.',
   })
   @Public()
   @Post('activate')
