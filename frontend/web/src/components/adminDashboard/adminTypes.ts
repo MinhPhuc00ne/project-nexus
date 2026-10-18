@@ -59,7 +59,6 @@ export interface AdminActions {
   reviewRefund: (id: string, status: 'approved' | 'rejected') => void;
   approveAuction: (id: string) => void;
   toggleBan: (id: string) => void;
-  addStaff: (name: string, email: string, department: string) => void;
   showDetail: (title: string, content: string) => void;
   notify: (message: string) => void;
 }

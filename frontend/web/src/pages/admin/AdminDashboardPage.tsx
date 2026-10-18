@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
       </div>
       {/* 4. Danh sách chờ duyệt: tối đa 2 hồ sơ Seller và 2 yêu cầu hoàn tiền. */}
       <div className="grid items-start gap-5 xl:grid-cols-2">
-        <SellerApplicationsPanel data={data} actions={actions} preview />
+        <SellerApplicationsPanel actions={actions} preview />
         <RefundRequestsPanel data={data} actions={actions} preview />
       </div>
       {/* 5. Bảng phiên đấu giá rút gọn; dùng chung thao tác duyệt lịch với trang Đấu giá. */}

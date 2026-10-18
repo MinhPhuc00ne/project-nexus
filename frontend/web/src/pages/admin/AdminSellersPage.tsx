@@ -3,8 +3,9 @@ import { useAdminContext } from '../../components/adminDashboard/useAdminContext
 
 // Hiển thị đầy đủ hồ sơ Seller; Tổng quan dùng cùng component với chế độ preview.
 export default function AdminSellersPage() {
-  const { data, actions } = useAdminContext();
+  const { actions } = useAdminContext();
 
-  // Danh sách hồ sơ Seller đang chờ duyệt; phê duyệt/từ chối qua action chung của layout.
-  return <SellerApplicationsPanel data={data} actions={actions} />;
+  // Panel tự đọc danh sách từ Seller context và gọi API duyệt/từ chối.
+  // actions dùng để hiện thông báo và điều hướng trong khu vực admin.
+  return <SellerApplicationsPanel actions={actions} />;
 }

@@ -1,16 +1,53 @@
 // Hai khối dùng ở Tổng quan và Người dùng: form thêm Staff và danh sách khóa/mở khóa tài khoản.
 
 import { Mail, ShieldBan, UserPlus } from 'lucide-react';
-import { useState } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
+import { inviteStaff } from '../../services/admin';
 import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
 import type { AdminTabProps } from './adminTypes';
 
 // Form thêm Staff được tái sử dụng trong Tổng quan và tab Người dùng.
-// Form giữ giá trị đang nhập; danh sách tài khoản thực sự nằm trong data của AdminLayout.
-export function StaffInvite({ data, actions }: AdminTabProps) {
+// Chỉ tạo lời mời; tài khoản SUPPORT_STAFF được tạo khi nhân viên kích hoạt thành công.
+export function StaffInvite({ actions }: AdminTabProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [department, setDepartment] = useState('Thẩm định hoàn tiền');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const [assignedEmail, setAssignedEmail] = useState('');
+  const inFlight = useRef(false);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (inFlight.current) return;
+    if (!name.trim()) {
+      setError('Vui lòng nhập họ và tên.');
+      return;
+    }
+    inFlight.current = true;
+    setPending(true);
+    setError('');
+    setAssignedEmail('');
+    try {
+      const result = await inviteStaff({
+        fullName: name.trim(),
+        email: email.trim(),
+        phoneNumber: phoneNumber.trim() || undefined,
+        department,
+      });
+      setAssignedEmail(result.assignedEmail);
+      actions.notify(result.message);
+      setName('');
+      setEmail('');
+      setPhoneNumber('');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không thể gửi lời mời Staff.');
+    } finally {
+      inFlight.current = false;
+      setPending(false);
+    }
+  };
 
   return (
     <Panel
@@ -19,33 +56,22 @@ export function StaffInvite({ data, actions }: AdminTabProps) {
       icon={<UserPlus size={19} />}
     >
       <p className="mb-4 rounded-lg bg-blue-50 p-3 text-[11px] leading-relaxed text-slate-500">
-        Bản demo thêm nhân viên vào danh sách tại giao diện. Email kích hoạt và xác thực hai bước sẽ
-        được kết nối khi có API.
+        Nhập email cá nhân để nhận lời mời. Hệ thống cấp email @staff.com; nhân viên mở link trong
+        email để xác nhận thông tin và tự đặt mật khẩu trước khi đăng nhập.
       </p>
-      <form
-        onSubmit={(event) => {
-          // Chặn submit mặc định tải lại trang; trim bỏ khoảng trắng thừa ở đầu/cuối.
-          // required/type="email" kiểm tra tại trình duyệt; action ở trang cha kiểm tra trùng email.
-          event.preventDefault();
-          actions.addStaff(name.trim(), email.trim(), department);
-          // Hiện form xóa nội dung sau khi gọi action, kể cả khi action báo email trùng.
-          setName('');
-          setEmail('');
-        }}
-        className="space-y-3"
-      >
+      <form onSubmit={submit} className="space-y-3">
         <label className="block text-[11px] font-medium">
-          Email công việc
+          Email cá nhân nhận lời mời
           <input
             required
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="nhanvien.support@nexus.vn"
+            placeholder="nhanvien@gmail.com"
             className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs outline-none focus:border-blue-400"
           />
         </label>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3">
           <label className="text-[11px] font-medium">
             Họ và tên Staff
             <input
@@ -56,7 +82,7 @@ export function StaffInvite({ data, actions }: AdminTabProps) {
               className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs outline-none focus:border-blue-400"
             />
           </label>
-          <label className="text-[11px] font-medium">
+          {/* <label className="text-[11px] font-medium">
             Bộ phận phụ trách
             <select
               value={department}
@@ -67,20 +93,32 @@ export function StaffInvite({ data, actions }: AdminTabProps) {
               <option>Hỗ trợ đấu giá</option>
               <option>Chăm sóc khách hàng</option>
             </select>
-          </label>
+          </label> */}
         </div>
-        <Button type="submit" className="w-full">
+        <label className="block text-[11px] font-medium">
+          Số điện thoại
+          <input
+            type="tel"
+            value={phoneNumber}
+            onChange={(event) => setPhoneNumber(event.target.value)}
+            className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs outline-none focus:border-blue-400"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-xs text-red-700">
+            {error}
+          </p>
+        )}
+        <Button type="submit" disabled={pending} className="w-full">
           <Mail size={16} />
-          Thêm Staff vào bản demo
+          {pending ? 'Đang gửi lời mời…' : 'Gửi lời mời Staff'}
         </Button>
       </form>
-      <div className="mt-4 flex justify-between text-[10px]">
-        <span className="text-slate-500">
-          Hiện có:{' '}
-          <b>{data.users.filter((user) => user.role === 'Staff').length} Staff trong bản demo</b>
-        </span>
-        <span className="text-primary">2FA bắt buộc</span>
-      </div>
+      {assignedEmail && (
+        <p role="status" className="mt-4 break-all text-xs text-primary">
+          Tài khoản được cấp: <b>{assignedEmail}</b>. Đang chờ nhân viên kích hoạt.
+        </p>
+      )}
     </Panel>
   );
 }

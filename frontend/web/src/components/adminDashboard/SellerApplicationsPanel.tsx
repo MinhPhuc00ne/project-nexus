@@ -12,12 +12,15 @@ import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
 import { useAdminSellerRequests, type SellerRequestFilter } from './AdminSellerRequests';
 import type { AdminTabProps } from './adminTypes';
 
+// Đổi trạng thái backend thành nhãn tiếng Việt để dùng trong danh sách và popup.
 const labels: Record<SellerUpgradeRequest['status'], string> = {
   PENDING: 'Chờ duyệt',
   APPROVED: 'Đã duyệt',
   REJECTED: 'Đã từ chối',
 };
 
+// Chuẩn hóa đường dẫn tài liệu: ghép đường dẫn tương đối với host backend.
+// Chỉ cho mở liên kết HTTP/HTTPS; không mở các URL như javascript:.
 function attachmentLink(value: string | null): string | null {
   if (!value) return null;
   try {
@@ -28,25 +31,39 @@ function attachmentLink(value: string | null): string | null {
   }
 }
 
+/*
+ * Component dùng ở hai nơi: AdminSellersPage và AdminDashboardPage.
+ * preview=true: chỉ hiện tối đa 2 hồ sơ, ẩn tìm kiếm/phân trang.
+ * Luồng: đọc danh sách từ context → hiển thị → chọn quyết định → xác nhận → gọi API.
+ * API lấy danh sách nằm ở AdminSellerRequests.tsx; file này gọi API chi tiết và duyệt/từ chối.
+ */
 export default function SellerApplicationsPanel({
   actions,
   preview = false,
-}: AdminTabProps & { preview?: boolean }) {
+}: Pick<AdminTabProps, 'actions'> & { preview?: boolean }) {
+  // Đọc dữ liệu dùng chung với sidebar/tổng quan, không gọi lại API danh sách ở đây.
   const state = useAdminSellerRequests();
   const [search, setSearch] = useState('');
+  // Nhóm state cho popup "Xem hồ sơ": dữ liệu, đang tải, lỗi và trạng thái mở.
   const [detail, setDetail] = useState<SellerUpgradeRequest | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
+  // null: đóng popup xác nhận. Có giá trị: hồ sơ đang xử lý và quyết định của admin.
+  // approve=true là đồng ý, false là từ chối.
   const [decision, setDecision] = useState<{
     request: SellerUpgradeRequest;
     approve: boolean;
   } | null>(null);
+  // Nhóm state của form xác nhận; từ chối bắt buộc nhập reason.
   const [reason, setReason] = useState('');
   const [actionError, setActionError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Ref cập nhật ngay để chặn gửi trùng khi bấm nhanh, trước khi React render lại nút disabled.
   const inFlight = useRef(false);
+  // Số thứ tự lần xem chi tiết: bỏ qua phản hồi cũ nếu đã mở hồ sơ khác hoặc đóng popup.
   const detailRevision = useRef(0);
+  // Tránh cập nhật state cục bộ khi request hoàn tất sau lúc rời component.
   const active = useRef(true);
   useEffect(() => {
     active.current = true;
@@ -55,11 +72,13 @@ export default function SellerApplicationsPanel({
       detailRevision.current++;
     };
   }, []);
+  // Tìm kiếm trên các hồ sơ của trang đã tải; không tìm trên toàn bộ dữ liệu backend.
   const visible = state.result.items.filter((item) =>
     `${item.storeName} ${item.user?.fullName ?? ''} ${item.user?.email ?? ''} ${item.businessEmail ?? ''}`
       .toLocaleLowerCase()
       .includes(search.toLocaleLowerCase()),
   );
+  // Chỉ gọi getSellerRequestById khi bấm "Xem hồ sơ", dùng ID của dòng vừa chọn.
   const openDetail = async (id: string) => {
     const current = ++detailRevision.current;
     setDetailOpen(true);
@@ -76,7 +95,9 @@ export default function SellerApplicationsPanel({
       if (current === detailRevision.current) setDetailLoading(false);
     }
   };
+  // Chỉ nút "Xác nhận" trong form mới gửi API; bấm duyệt/từ chối ngoài danh sách chưa gửi.
   const submit = async (event: FormEvent) => {
+    // Chặn trình duyệt reload trang khi submit form.
     event.preventDefault();
     if (!decision || inFlight.current) return;
     if (!decision.approve && !reason.trim()) {
@@ -87,9 +108,11 @@ export default function SellerApplicationsPanel({
     setSubmitting(true);
     setActionError('');
     try {
+      // Dùng ID hồ sơ đăng ký, không phải ID tài khoản người nộp.
       const result = decision.approve
         ? await approveSellerRequest(decision.request.id)
         : await rejectSellerRequest(decision.request.id, reason.trim());
+      // Provider tải lại danh sách và tổng số chờ duyệt, đồng bộ cả sidebar/tổng quan.
       state.refresh();
       if (!active.current) return;
       actions.notify(result.message);
@@ -103,6 +126,7 @@ export default function SellerApplicationsPanel({
       if (active.current) setSubmitting(false);
     }
   };
+  // Mở form xác nhận và xóa lý do/lỗi của lần trước; chưa gọi API tại bước này.
   const chooseDecision = (request: SellerUpgradeRequest, approve: boolean) => {
     setDecision({ request, approve });
     setReason('');
@@ -116,6 +140,7 @@ export default function SellerApplicationsPanel({
       icon={<Store size={19} />}
       action={<Badge>{state.pendingTotal} hồ sơ chờ</Badge>}
     >
+      {/* Đổi bộ lọc sẽ nhờ provider gọi lại API; ALL nghĩa là không gửi tham số status. */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {(['PENDING', 'ALL', 'APPROVED', 'REJECTED'] as SellerRequestFilter[]).map((value) => (
           <Button
@@ -140,6 +165,7 @@ export default function SellerApplicationsPanel({
           />
         </div>
       )}
+      {/* Ưu tiên hiện trạng thái tải/lỗi, sau đó mới hiện danh sách hồ sơ. */}
       {state.loading ? (
         <p role="status" className="py-8 text-center text-slate-500">
           Đang tải hồ sơ…
@@ -154,6 +180,7 @@ export default function SellerApplicationsPanel({
       ) : (
         <>
           <div className={preview ? 'space-y-3' : 'grid gap-4 xl:grid-cols-2'}>
+            {/* Mỗi request tạo một thẻ; chế độ tổng quan chỉ lấy tối đa 2 thẻ. */}
             {(preview ? visible.slice(0, 2) : visible).map((request) => (
               <article
                 key={request.id}
@@ -196,6 +223,7 @@ export default function SellerApplicationsPanel({
                   <Button variant="secondary" onClick={() => void openDetail(request.id)}>
                     Xem hồ sơ
                   </Button>
+                  {/* Chỉ hồ sơ chờ duyệt mới có nút đồng ý/từ chối. */}
                   {request.status === 'PENDING' && (
                     <>
                       <Button
@@ -215,6 +243,7 @@ export default function SellerApplicationsPanel({
             ))}
           </div>
           {visible.length === 0 && <EmptyState text="Không có hồ sơ phù hợp." />}
+          {/* Đổi page trong context sẽ tải trang kế tiếp từ backend. */}
           {!preview && (
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs">
               <span>
@@ -249,6 +278,7 @@ export default function SellerApplicationsPanel({
           Xem tất cả hồ sơ →
         </button>
       )}
+      {/* Popup 1: hiển thị chi tiết được tải riêng theo ID hồ sơ. */}
       <Popup
         isOpen={detailOpen}
         onClose={() => {
@@ -323,6 +353,7 @@ export default function SellerApplicationsPanel({
           )
         )}
       </Popup>
+      {/* Popup 2: xác nhận đồng ý hoặc nhập lý do từ chối; submit mới gửi quyết định. */}
       <Popup
         isOpen={Boolean(decision)}
         onClose={() => {

@@ -240,30 +240,6 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         },
       });
     },
-    addStaff: (name, email, department) => {
-      if (!name || !email) return;
-      // So sánh email không phân biệt chữ hoa/thường để tránh thêm trùng tài khoản.
-      if (data.users.some((user) => user.email.toLowerCase() === email.toLowerCase())) {
-        notify('Email này đã có trong danh sách.');
-        return;
-      }
-      setData((current) => ({
-        ...current,
-        users: [
-          ...current.users,
-          {
-            // ID tạm cho demo; khi tích hợp backend sử dụng ID do server trả về.
-            id: `STAFF-${Date.now()}`,
-            name,
-            email,
-            role: 'Staff',
-            banned: false,
-            note: department,
-          },
-        ],
-      }));
-      notify('Đã thêm Staff trong bản demo. Chưa gửi email kích hoạt.');
-    },
   };
   const title =
     adminNavigation.flatMap((group) => group.items).find((item) => item.id === tab)?.label ??

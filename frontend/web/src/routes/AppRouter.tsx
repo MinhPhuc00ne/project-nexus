@@ -4,6 +4,7 @@ import AuthLayout from '../layouts/AuthLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import SellerLayout from '../layouts/SellerLayout';
 import SellerSession from '../pages/seller/SellerSession';
+import StaffActivationPage from '../pages/staff/StaffActivationPage';
 import {
   // Auth
   Login,
@@ -203,6 +204,7 @@ function AppRouter() {
         </Route>
 
         {/* Staff routes */}
+        <Route path="/staff/activate" element={<StaffActivationPage />} />
         <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
         <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
         <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
