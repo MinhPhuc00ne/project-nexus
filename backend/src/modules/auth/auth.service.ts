@@ -160,7 +160,16 @@ export class AuthService {
   // ================= 3. ĐĂNG NHẬP (THƯỜNG) =================
   async login(dto: LoginDto) {
     const { email, password } = dto;
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const normalizedEmail = email.trim();
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: normalizedEmail, mode: 'insensitive' } },
+          { platformEmail: { equals: normalizedEmail, mode: 'insensitive' } },
+          { personalEmail: { equals: normalizedEmail, mode: 'insensitive' } },
+        ],
+      },
+    });
 
     if (!user) {
       throw new UnauthorizedException('Email hoặc mật khẩu không chính xác.');
@@ -194,6 +203,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        platformEmail: user.platformEmail,
         fullName: user.fullName,
         role: user.role,
         avatarUrl: user.avatarUrl,
