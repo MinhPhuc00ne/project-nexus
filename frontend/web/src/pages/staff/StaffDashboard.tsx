@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNod
 import { useNavigate } from 'react-router-dom';
 import {
   Activity,
-  ArrowLeft,
+  LogOut,
   AtSign,
   BadgeCheck,
   Bell,
@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { listStaff, inviteStaff, type StaffUser } from '../../services/admin';
 import { getMe } from '../../services/users';
+import { clearAuthSession } from '../../services/auth';
 import Popup from '../../components/Popup';
 type TicketStatus = 'chatting' | 'waiting' | 'resolved';
 type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
@@ -68,6 +69,53 @@ const navigation = [
 
 export type StaffSection = (typeof navigation)[number]['label'];
 
+const sectionContent: Record<
+  StaffSection,
+  { title: string; description: string; topics: string[] }
+> = {
+  'Quản Lý Nhân Viên': {
+    title: 'Quản lý nhân viên hỗ trợ',
+    description: 'Quản lý nhân viên và gửi lời mời kích hoạt tài khoản hỗ trợ.',
+    topics: [],
+  },
+  'Hộp Thư Trực Tuyến': {
+    title: 'Hộp thư hỗ trợ khách hàng',
+    description: 'Tiếp nhận hội thoại, phản hồi khách hàng và theo dõi hàng đợi hỗ trợ.',
+    topics: [],
+  },
+  'Khiếu Nại & Tranh Chấp': {
+    title: 'Xử lý khiếu nại và tranh chấp',
+    description:
+      'Tiếp nhận phản ánh về đơn hàng, kiểm tra bằng chứng và theo dõi tiến độ giải quyết.',
+    topics: ['Tiếp nhận khiếu nại', 'Kiểm tra bằng chứng', 'Theo dõi kết quả xử lý'],
+  },
+  'Hỗ Trợ Đấu Giá 3D': {
+    title: 'Hỗ trợ phiên đấu giá',
+    description: 'Theo dõi yêu cầu về phòng đấu giá, thao tác trả giá và hiển thị sản phẩm 3D.',
+    topics: ['Sự cố phòng đấu giá', 'Yêu cầu về lượt trả giá', 'Hiển thị sản phẩm 3D'],
+  },
+  'Hướng Dẫn & FAQ Sàn': {
+    title: 'Hướng dẫn nghiệp vụ và câu hỏi thường gặp',
+    description: 'Tra cứu quy trình tiếp nhận và xử lý yêu cầu hỗ trợ trên NEXUS.',
+    topics: [
+      'Tiếp nhận: xác định khách hàng, mã đơn hàng hoặc phiên đấu giá và nội dung cần hỗ trợ.',
+      'Xử lý: kiểm tra thông tin, thu thập bằng chứng và chuyển bộ phận có thẩm quyền.',
+      'Hoàn tất: thông báo kết quả, ghi nhận nội dung xử lý và xác nhận với khách hàng.',
+    ],
+  },
+  'Lịch Sử & CSAT': {
+    title: 'Lịch sử hỗ trợ và đánh giá khách hàng',
+    description: 'Tra cứu yêu cầu đã xử lý và phản hồi về chất lượng hỗ trợ.',
+    topics: ['Yêu cầu đã xử lý', 'Đánh giá hài lòng (CSAT)', 'Phản hồi của khách hàng'],
+  },
+  'Hiệu Suất Cá Nhân': {
+    title: 'Hiệu suất hỗ trợ cá nhân',
+    description:
+      'Theo dõi khối lượng công việc, thời gian phản hồi và chất lượng xử lý yêu cầu của bạn.',
+    topics: ['Khối lượng yêu cầu', 'Thời gian phản hồi', 'Chất lượng xử lý'],
+  },
+};
+
 const staffSectionPaths: Record<StaffSection, string> = {
   'Quản Lý Nhân Viên': '/staff/team',
   'Hộp Thư Trực Tuyến': '/staff/inbox',
@@ -88,6 +136,10 @@ function StaffDashboard({
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | TicketStatus>('all');
   const [activeNavigation, setActiveNavigation] = useState<StaffSection>(initialSection);
+  const content = sectionContent[activeNavigation];
+  useEffect(() => {
+    setActiveNavigation(initialSection);
+  }, [initialSection]);
   const [searchText, setSearchText] = useState('');
   const [reply, setReply] = useState('');
   const [toast, setToast] = useState('');
@@ -235,7 +287,7 @@ function StaffDashboard({
                 STAFF
               </span>
             </div>
-            <div className="mt-[2px] [color:#818ba0] text-[10px]">Support Desk v2.4</div>
+            <div className="mt-[2px] [color:#818ba0] text-[10px]">Trung tâm hỗ trợ</div>
           </div>
           <button
             className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] hidden [margin-left:auto] max-[760px]:[display:inline-grid]"
@@ -255,12 +307,11 @@ function StaffDashboard({
               <button
                 className={`flex [min-height:42px] items-center gap-2.5 [padding:0_11px] [border:0] [border-radius:8px] [color:#665f68] [background:transparent] cursor-pointer text-left [transition:0.15s_ease] [&_>_span:nth-child(2)]:[flex:1] [&_>_span:nth-child(2)]:text-xs [&_>_span:nth-child(2)]:[font-weight:650] [&_>_span:nth-child(2)]:whitespace-nowrap hover:[background:#fff2ef] hover:[color:var(--staff-accent)] [&.is-active]:[color:white] [&.is-active]:[background:var(--staff-accent)] [&.is-active]:[box-shadow:0_7px_16px_rgb(217_52_27_/_18%)] ${activeNavigation === label ? 'is-active' : ''}`}
                 key={label}
+                aria-current={activeNavigation === label ? 'page' : undefined}
                 onClick={() => {
                   setActiveNavigation(label);
                   navigate(staffSectionPaths[label]);
                   setIsSidebarOpen(false);
-                  if (label !== 'Hộp Thư Trực Tuyến')
-                    notify(`${label} sẽ được mở trong khu vực nghiệp vụ tương ứng.`);
                 }}
               >
                 <Icon size={17} />
@@ -269,6 +320,18 @@ function StaffDashboard({
             ))}
         </nav>
         <div className="[margin-top:auto] [padding:12px_10px_14px] [border-top:1px_solid_#f0f1f6]">
+          <button
+            type="button"
+            onClick={() => {
+              clearAuthSession();
+              navigate('/login', { replace: true });
+            }}
+            className="flex min-h-[42px] w-full cursor-pointer items-center gap-2.5 rounded-lg px-[11px] text-left text-xs font-semibold text-slate-600 transition hover:bg-red-50 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500"
+            title="Đăng xuất"
+          >
+            <LogOut size={17} />
+            <span>Logout</span>
+          </button>
           <div className="flex justify-between [padding:12px_5px_0] [color:#9a8f8d] [font-size:9px] [&_strong]:[color:#c94c35]">
             <span>NEXUS Staff Gateway</span>
           </div>
@@ -307,14 +370,6 @@ function StaffDashboard({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a
-              href="/"
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition"
-              title="Quay lại Trang Chủ"
-            >
-              <ArrowLeft size={14} />
-              <span>Về Trang Chủ</span>
-            </a>
             <button
               className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] [&_i]:absolute [&_i]:[top:7px] [&_i]:[right:7px] [&_i]:w-1.5 [&_i]:h-1.5 [&_i]:[border:1px_solid_white] [&_i]:rounded-full [&_i]:[background:var(--staff-accent)]"
               aria-label="Thông báo"
@@ -328,18 +383,14 @@ function StaffDashboard({
           <div className="staff-breadcrumb flex items-center gap-1.5 text-[10px] text-slate-400">
             <span>Kênh Nhân Viên</span>
             <ChevronRight size={13} />
-            <b className="font-semibold text-slate-600">
-              Hộp Thư Trực Tuyến &amp; Chăm Sóc Khách Hàng
-            </b>
+            <b className="font-semibold text-slate-600">{content.title}</b>
           </div>
           <div className="[&_h1]:[max-width:500px] [&_h1]:[line-height:1.16] [&_p]:mb-0 max-[760px]:flex-col mt-2.5 flex items-start justify-between gap-4">
             <div>
               <h1 className="m-0 text-[clamp(20px,2vw,27px)] font-black tracking-[-0.035em] text-slate-900">
-                Trung Tâm Tiếp Nhận &amp; Giải Đáp Thắc Mắc Khách Hàng
+                {content.title}
               </h1>
-              <p className="mt-1.5 text-[11px] text-slate-500">
-                Quản lý hội thoại, hỗ trợ khách hàng và theo dõi SLA theo thời gian thực.
-              </p>
+              <p className="mt-1.5 text-[11px] text-slate-500">{content.description}</p>
             </div>
             <div className="max-[760px]:w-full max-[760px]:flex-wrap max-[420px]:[&_>_*]:[flex:1_1_auto] flex items-center gap-2">
               <div className="inline-flex items-center gap-1.5 [padding:7px_9px] [border:1px_solid_#e8eaf3] [border-radius:8px] [color:#33405a] [background:white] [font-size:9px] leading-tight text-left cursor-pointer [&_>_svg]:[color:var(--staff-primary)] [&_b]:[color:var(--staff-primary)]">
@@ -437,6 +488,39 @@ function StaffDashboard({
                 </div>
               )}
             </div>
+          ) : activeNavigation !== 'Hộp Thư Trực Tuyến' ? (
+            <section
+              className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              aria-label={content.title}
+            >
+              <h2 className="text-base font-bold text-slate-800">
+                {activeNavigation === 'Hướng Dẫn & FAQ Sàn'
+                  ? 'Quy trình hỗ trợ'
+                  : 'Phạm vi theo dõi'}
+              </h2>
+              <ul className="mt-4 grid gap-3 md:grid-cols-3">
+                {content.topics.map((topic) => (
+                  <li
+                    key={topic}
+                    className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm leading-6 text-slate-700"
+                  >
+                    {topic}
+                  </li>
+                ))}
+              </ul>
+              {activeNavigation !== 'Hướng Dẫn & FAQ Sàn' && (
+                <div
+                  role="status"
+                  className="mt-6 rounded-xl border border-dashed border-slate-200 px-6 py-12 text-center"
+                >
+                  <Inbox className="mx-auto mb-3 text-slate-400" size={28} />
+                  <h3 className="font-semibold text-slate-700">Chưa có dữ liệu để hiển thị</h3>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Dữ liệu {content.title.toLowerCase()} sẽ hiển thị khi được hệ thống cung cấp.
+                  </p>
+                </div>
+              )}
+            </section>
           ) : (
             <>
               <section

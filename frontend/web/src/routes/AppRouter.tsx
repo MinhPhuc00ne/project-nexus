@@ -4,7 +4,17 @@ import NonAdminLayout from '../layouts/NonAdminLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import SellerLayout from '../layouts/SellerLayout';
-import SellerSession from '../pages/seller/SellerSession';
+import SellerSession from '../components/seller/SellerSession';
+import SellerDashboardPage from '../pages/seller/SellerDashboardPage';
+import SellerOrdersPage from '../pages/seller/SellerOrdersPage';
+import SellerOrderDetailPage from '../pages/seller/SellerOrderDetailPage';
+import SellerAuctionsPage from '../pages/seller/SellerAuctionsPage';
+import SellerProductsPage from '../pages/seller/SellerProductsPage';
+import SellerDraftPage from '../pages/seller/SellerDraftPage';
+import SellerFinancePage from '../pages/seller/SellerFinancePage';
+import SellerReviewsPage from '../pages/seller/SellerReviewsPage';
+import SellerDisputesPage from '../pages/seller/SellerDisputesPage';
+import SellerSettingsPage from '../pages/seller/SellerSettingsPage';
 import StaffActivationPage from '../pages/staff/StaffActivationPage';
 import {
   // Auth
@@ -37,18 +47,6 @@ import {
   BuyerBidsPage,
   BuyerDisputesPage,
   BuyerAddressesPage,
-  // Seller
-  SellerDashboardPage,
-  SellerProductsPage,
-  SellerCreateProductPage,
-  SellerOrdersPage,
-  SellerOrderDetailPage,
-  SellerAuctionsPage,
-  SellerCreateAuctionPage,
-  SellerFinancePage,
-  SellerInventoryPage,
-  SellerDisputesPage,
-  SellerSettingsPage,
   // Staff
   StaffSellerApprovalPage,
   StaffManagementPage,
@@ -106,16 +104,6 @@ export const ROUTES = {
 
   // Seller
   SELLER: '/seller',
-  SELLER_PRODUCTS: '/seller/products',
-  SELLER_CREATE_PRODUCT: '/seller/products/new',
-  SELLER_ORDERS: '/seller/orders',
-  SELLER_ORDER_DETAIL: '/seller/orders/:id',
-  SELLER_AUCTIONS: '/seller/auctions',
-  SELLER_CREATE_AUCTION: '/seller/auctions/new',
-  SELLER_FINANCE: '/seller/finance',
-  SELLER_INVENTORY: '/seller/inventory',
-  SELLER_DISPUTES: '/seller/disputes',
-  SELLER_SETTINGS: '/seller/settings',
 
   // Staff
   STAFF: '/staff',
