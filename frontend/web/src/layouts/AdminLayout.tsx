@@ -28,6 +28,7 @@ export default function AdminLayout() {
   const [access, setAccess] = useState<AdminAccess>({ token: null, status: 'loading' });
   const [retry, setRetry] = useState(0);
 
+  // Kiểm tra quyền khi vào khu vực admin và khi phiên đăng nhập thay đổi.
   useEffect(() => {
     let active = true;
     let requestId = 0;
@@ -88,10 +89,12 @@ export default function AdminLayout() {
     };
   }, [retry]);
 
+  // Chưa đăng nhập hoặc token không hợp lệ: chuyển sang trang login.
   if (!token || (access.token === token && access.status === 'unauthenticated')) {
     return <Navigate to="/login" replace />;
   }
 
+  // Đang xác minh tài khoản: chỉ hiện loading, chưa hiện giao diện admin.
   if (access.token !== token || access.status === 'loading') {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
@@ -104,6 +107,7 @@ export default function AdminLayout() {
 
   if (access.status === 'allowed') {
     // Header dùng cùng profile này; không gọi /users/me thêm lần nữa.
+    // Provider chia sẻ dữ liệu hồ sơ Seller; AdminWorkspace ghép các phần giao diện.
     return (
       <AdminSellerRequestsProvider key={token}>
         <AdminWorkspace user={access.user} />
@@ -111,6 +115,7 @@ export default function AdminLayout() {
     );
   }
 
+  // Sai role thì hiện 403; lỗi kiểm tra quyền thì hiện thông báo và nút thử lại.
   return (
     <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
@@ -154,6 +159,7 @@ export default function AdminLayout() {
 function AdminWorkspace({ user }: { user: UserProfile }) {
   const sellerRequests = useAdminSellerRequests();
   const { pathname } = useLocation();
+  // Lấy tên trang từ URL, ví dụ /admin/users -> users, để chọn tiêu đề tương ứng.
   const tab = pathname.split('/')[2] ?? 'overview';
   const contentRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
@@ -249,7 +255,8 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   const refundCount = data.refunds.filter((item) => item.status === 'pending').length;
   return (
     <div className="h-dvh overflow-hidden bg-[#f5f7fb] text-slate-800 selection:bg-blue-100">
-      {/* Sidebar cố định bên trái; open/onClose chỉ điều khiển đóng mở menu trên mobile. */}
+      {/* Đây là sidebar: menu điều hướng bên trái, dùng chung cho mọi trang admin.
+          open/onClose điều khiển đóng mở menu trên mobile; các count hiển thị badge. */}
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -258,6 +265,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
       />
       {/* lg:ml-64 chừa 256px cho sidebar trên desktop. min-w-0 giúp bảng cuộn trong khung. */}
       <div className="flex h-full min-w-0 flex-col lg:ml-64">
+        {/* Gắn header phía trên: nhận tài khoản admin, nút mở menu mobile và số việc chờ xử lý. */}
         <AdminHeader
           user={user}
           onMenu={() => setSidebarOpen(true)}
@@ -267,8 +275,10 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
             data.auctions.filter((item) => item.status === 'pending').length
           }
         />
+        {/* Đây là vùng nội dung cuộn của trang; sidebar và header vẫn giữ nguyên vị trí. */}
         <main ref={contentRef} className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1720px] px-4 py-5 sm:px-7 sm:py-6">
+            {/* Thanh đường dẫn: Quản trị > tên trang hiện tại, kèm nhãn nguồn dữ liệu. */}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                 <span>Quản trị</span>
@@ -281,19 +291,22 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
                   : 'Hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
               </span>
             </div>
+            {/* Tiêu đề trang con; trang overview có tiêu đề riêng nên không hiển thị ở đây. */}
             {tab !== 'overview' && (
               <h1 className="mb-5 text-2xl font-bold tracking-tight text-primary">{title}</h1>
             )}
-            {/* Router đặt page khớp URL vào đây. Page đọc data/actions qua useAdminContext. */}
+            {/* Gắn trang con tại đây: /admin/users hiện trang Users, /admin/sellers hiện trang Sellers...
+                Router chọn page theo URL; page đọc dữ liệu và thao tác chung qua useAdminContext. */}
             <Outlet context={{ data, actions }} />
           </div>
         </main>
+        {/* Đây là footer dùng chung ở cuối khung admin. */}
         <footer className="flex shrink-0 flex-wrap justify-between gap-2 border-t border-slate-200 bg-white px-4 py-3 text-[10px] text-slate-400 sm:px-7">
           <span>© 2026 NEXUS • Admin Operations</span>
           <span>3D Auction & Commerce Platform</span>
         </footer>
       </div>
-      {/* Render có điều kiện: chuỗi toast rỗng thì không hiển thị thông báo. */}
+      {/* Đây là thông báo nổi (toast) sau thao tác; chuỗi toast rỗng thì ẩn. */}
       {toast && (
         <div
           role="status"
@@ -308,6 +321,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
       )}
       {/* Hộp thoại thông tin chỉ để xem; hộp thoại confirmation bên dưới dành cho thao tác. */}
       {detail && <DetailDialog {...detail} onClose={() => setDetail(null)} />}
+      {/* Đây là hộp xác nhận: chỉ chạy thao tác đã lưu khi bấm "Xác nhận". */}
       {confirmation && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"

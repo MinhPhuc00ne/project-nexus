@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout';
+import NonAdminLayout from '../layouts/NonAdminLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import SellerLayout from '../layouts/SellerLayout';
@@ -133,79 +134,80 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Guest & Buyer routes with header & footer layout */}
-        <Route element={<GuestLayout />}>
-          {/* Guest */}
-          <Route index element={<HomePage />} />
-          <Route path={ROUTES.SEARCH} element={<SearchPage />} />
-          <Route path={ROUTES.CATEGORY} element={<CategoryPage />} />
-          <Route path={ROUTES.AUCTION} element={<AuctionPage />} />
-          <Route path={ROUTES.AUCTION_DETAIL} element={<AuctionDetailPage />} />
-          <Route path={ROUTES.PRODUCT} element={<ProductDetailPage />} />
-          <Route path={ROUTES.ABOUT} element={<AboutPage />} />
-          <Route path={ROUTES.CONTACT} element={<ContactPage />} />
-          <Route path={ROUTES.TERMS} element={<TermsPage />} />
-          <Route path={ROUTES.PRIVACY} element={<PrivacyPage />} />
+        <Route element={<NonAdminLayout />}>
+          {/* Guest & Buyer routes with header & footer layout */}
+          <Route element={<GuestLayout />}>
+            {/* Guest */}
+            <Route index element={<HomePage />} />
+            <Route path={ROUTES.SEARCH} element={<SearchPage />} />
+            <Route path={ROUTES.CATEGORY} element={<CategoryPage />} />
+            <Route path={ROUTES.AUCTION} element={<AuctionPage />} />
+            <Route path={ROUTES.AUCTION_DETAIL} element={<AuctionDetailPage />} />
+            <Route path={ROUTES.PRODUCT} element={<ProductDetailPage />} />
+            <Route path={ROUTES.ABOUT} element={<AboutPage />} />
+            <Route path={ROUTES.CONTACT} element={<ContactPage />} />
+            <Route path={ROUTES.TERMS} element={<TermsPage />} />
+            <Route path={ROUTES.PRIVACY} element={<PrivacyPage />} />
 
-          {/* Buyer */}
-          <Route path={ROUTES.CART} element={<CartPage />} />
-          <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
-          <Route path={ROUTES.BUYER} element={<BuyerDashboardPage />} />
-          <Route path={ROUTES.BUYER_ORDERS} element={<BuyerOrdersPage />} />
-          <Route path={ROUTES.BUYER_ORDER_DETAIL} element={<BuyerOrderDetailPage />} />
-          <Route path={ROUTES.BUYER_PROFILE} element={<BuyerProfilePage />} />
-          <Route path={ROUTES.BUYER_WISHLIST} element={<BuyerWishlistPage />} />
-          <Route path={ROUTES.BUYER_WALLET} element={<BuyerWalletPage />} />
-          <Route path={ROUTES.BUYER_BIDS} element={<BuyerBidsPage />} />
-          <Route path={ROUTES.BUYER_DISPUTES} element={<BuyerDisputesPage />} />
-          <Route path={ROUTES.BUYER_ADDRESSES} element={<BuyerAddressesPage />} />
+            {/* Buyer */}
+            <Route path={ROUTES.CART} element={<CartPage />} />
+            <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
+            <Route path={ROUTES.BUYER} element={<BuyerDashboardPage />} />
+            <Route path={ROUTES.BUYER_ORDERS} element={<BuyerOrdersPage />} />
+            <Route path={ROUTES.BUYER_ORDER_DETAIL} element={<BuyerOrderDetailPage />} />
+            <Route path={ROUTES.BUYER_PROFILE} element={<BuyerProfilePage />} />
+            <Route path={ROUTES.BUYER_WISHLIST} element={<BuyerWishlistPage />} />
+            <Route path={ROUTES.BUYER_WALLET} element={<BuyerWalletPage />} />
+            <Route path={ROUTES.BUYER_BIDS} element={<BuyerBidsPage />} />
+            <Route path={ROUTES.BUYER_DISPUTES} element={<BuyerDisputesPage />} />
+            <Route path={ROUTES.BUYER_ADDRESSES} element={<BuyerAddressesPage />} />
+          </Route>
+
+          {/* Auth routes */}
+          <Route path={ROUTES.LOGIN} element={<Login />} />
+          <Route element={<AuthLayout />}>
+            <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
+            <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+            <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+            <Route path={ROUTES.VERIFY_OTP} element={<VerifyOtpPage />} />
+          </Route>
+
+          {/* Seller routes */}
+          <Route
+            element={
+              <SellerSession>
+                <SellerLayout />
+              </SellerSession>
+            }
+          >
+            <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
+            <Route path={ROUTES.SELLER_PRODUCTS} element={<SellerProductsPage />} />
+            <Route path={ROUTES.SELLER_CREATE_PRODUCT} element={<SellerCreateProductPage />} />
+            <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
+            <Route path={ROUTES.SELLER_ORDER_DETAIL} element={<SellerOrderDetailPage />} />
+            <Route path={ROUTES.SELLER_AUCTIONS} element={<SellerAuctionsPage />} />
+            <Route path={ROUTES.SELLER_CREATE_AUCTION} element={<SellerCreateAuctionPage />} />
+            <Route path={ROUTES.SELLER_FINANCE} element={<SellerFinancePage />} />
+            <Route path={ROUTES.SELLER_INVENTORY} element={<SellerInventoryPage />} />
+            <Route path={ROUTES.SELLER_DISPUTES} element={<SellerDisputesPage />} />
+            <Route path={ROUTES.SELLER_SETTINGS} element={<SellerSettingsPage />} />
+          </Route>
+
+          {/* Staff routes */}
+          <Route path="/staff/activate" element={<StaffActivationPage />} />
+          <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
+          <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
+          <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
+          <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
+          <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
+          <Route path={ROUTES.STAFF_AUCTION_SUPPORT} element={<StaffAuctionSupportPage />} />
+          <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
+          <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
+          <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
+
+          {/* Non-admin fallback */}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
-
-        {/* Auth routes */}
-        <Route path={ROUTES.LOGIN} element={<Login />} />
-        <Route element={<AuthLayout />}>
-          <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-          <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-          <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
-          <Route path={ROUTES.VERIFY_OTP} element={<VerifyOtpPage />} />
-        </Route>
-
-        {/* Seller routes */}
-        <Route
-          path={ROUTES.SELLER}
-          element={
-            <SellerSession>
-              <SellerLayout />
-            </SellerSession>
-          }
-        >
-          <Route index element={<SellerDashboardPage home />} />
-          <Route path="overview" element={<SellerDashboardPage />} />
-          <Route path="reviews" element={<SellerReviewsPage />} />
-          <Route path="products" element={<SellerProductsPage />} />
-          <Route path="products/new" element={<SellerDraftPage />} />
-          <Route path="orders" element={<SellerOrdersPage />} />
-          <Route path="orders/:id" element={<SellerOrderDetailPage />} />
-          <Route path="auctions" element={<SellerAuctionsPage />} />
-          <Route path="auctions/new" element={<SellerDraftPage auction />} />
-          <Route path="finance" element={<SellerFinancePage />} />
-          <Route path="inventory" element={<SellerProductsPage inventory />} />
-          <Route path="disputes" element={<SellerDisputesPage />} />
-          <Route path="settings" element={<SellerSettingsPage />} />
-        </Route>
-
-        {/* Staff routes */}
-        <Route path="/staff/activate" element={<StaffActivationPage />} />
-        <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
-        <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
-        <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
-        <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
-        <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
-        <Route path={ROUTES.STAFF_AUCTION_SUPPORT} element={<StaffAuctionSupportPage />} />
-        <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
-        <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
-        <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
-
         {/* Route cha giữ khung chung; mỗi route con mở một page cụ thể trong Outlet. */}
         <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
           <Route index element={<Navigate to="overview" replace />} />
@@ -221,9 +223,6 @@ function AppRouter() {
           <Route path="settings" element={<AdminSettingsPage />} />
           <Route path="*" element={<Navigate to="/admin/overview" replace />} />
         </Route>
-
-        {/* 404 Fallback */}
-        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );
