@@ -15,6 +15,7 @@ import SellerReviewsPage from '../pages/seller/SellerReviewsPage';
 import SellerDisputesPage from '../pages/seller/SellerDisputesPage';
 import SellerSettingsPage from '../pages/seller/SellerSettingsPage';
 import StaffActivationPage from '../pages/staff/StaffActivationPage';
+import StaffSession from '../pages/staff/StaffSession';
 import {
   // Auth
   Login,
@@ -196,15 +197,17 @@ function AppRouter() {
 
         {/* Staff routes */}
         <Route path="/staff/activate" element={<StaffActivationPage />} />
-        <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
-        <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
-        <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
-        <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
-        <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
-        <Route path={ROUTES.STAFF_AUCTION_SUPPORT} element={<StaffAuctionSupportPage />} />
-        <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
-        <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
-        <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
+        <Route element={<StaffSession />}>
+          <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
+          <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
+          <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
+          <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
+          <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
+          <Route path={ROUTES.STAFF_AUCTION_SUPPORT} element={<StaffAuctionSupportPage />} />
+          <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
+          <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
+          <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
+        </Route>
 
         {/* Route cha giữ khung chung; mỗi route con mở một page cụ thể trong Outlet. */}
         <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
