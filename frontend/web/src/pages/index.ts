@@ -31,19 +31,6 @@ export { default as BuyerBidsPage } from './buyer/BuyerBidsPage';
 export { default as BuyerDisputesPage } from './buyer/BuyerDisputesPage';
 export { default as BuyerAddressesPage } from './buyer/BuyerAddressesPage';
 
-// Seller Pages
-export { default as SellerDashboardPage } from './seller/SellerDashboardPage';
-export { default as SellerProductsPage } from './seller/SellerProductsPage';
-export { default as SellerOrdersPage } from './seller/SellerOrdersPage';
-export { default as SellerOrderDetailPage } from './seller/SellerOrderDetailPage';
-export { default as SellerAuctionsPage } from './seller/SellerAuctionsPage';
-export { default as SellerFinancePage } from './seller/SellerFinancePage';
-export { default as SellerCreateProductPage } from './seller/SellerCreateProductPage';
-export { default as SellerCreateAuctionPage } from './seller/SellerCreateAuctionPage';
-export { default as SellerInventoryPage } from './seller/SellerInventoryPage';
-export { default as SellerDisputesPage } from './seller/SellerDisputesPage';
-export { default as SellerSettingsPage } from './seller/SellerSettingsPage';
-
 // Staff Pages
 export { default as StaffDashboard } from './staff/StaffDashboard';
 export { default as StaffSellerApprovalPage } from './staff/StaffSellerApprovalPage';

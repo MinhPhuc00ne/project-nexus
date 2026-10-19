@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { CloseOutlined } from '@ant-design/icons';
 
 export type PopupSize = 'sm' | 'md' | 'lg' | 'xl';
 
@@ -139,7 +139,7 @@ const Popup: React.FC<PopupProps> = ({
                 onClick={onClose}
                 aria-label="Đóng"
               >
-                <X />
+                <CloseOutlined className="text-2xl" aria-hidden="true" />
               </button>
             )}
           </div>

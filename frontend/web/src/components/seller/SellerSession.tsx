@@ -12,6 +12,7 @@ import { getStoredToken } from '../../services/auth';
 import { getSellerSession, SellerSessionError } from '../../services/seller';
 import type { UserProfile } from '../../services/users';
 
+// Shared session guard for the current Seller workspace.
 const SellerContext = createContext<UserProfile | null>(null);
 
 export function useSellerSession() {
