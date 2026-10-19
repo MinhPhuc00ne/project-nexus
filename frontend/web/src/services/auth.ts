@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1').replace(/\/$/, '');
 
 interface ApiResponse<T> {
@@ -89,11 +91,16 @@ export function clearAuthSession(): void {
     localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
     window.dispatchEvent(new Event('nexus:auth-change'));
     if (storedRefreshToken) {
-      void fetch(`${apiUrl}/auth/logout`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken: storedRefreshToken }),
-      }).catch(() => {});
+      void axios
+        .post(
+          `${apiUrl}/auth/logout`,
+          { refreshToken: storedRefreshToken },
+          {
+            headers: { 'Content-Type': 'application/json' },
+            timeout: 20000,
+          },
+        )
+        .catch(() => {});
     }
   } catch {
     /* Storage may be disabled */
@@ -134,27 +141,26 @@ export function consumeOAuthCallbackFromUrl(): AuthUser | null {
 }
 
 async function post<T>(path: string, body: object): Promise<T> {
-  let response: Response;
+  let response;
   try {
-    response = await fetch(`${apiUrl}/auth/${path}`, {
-      method: 'POST',
+    response = await axios.post(`${apiUrl}/auth/${path}`, body, {
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(20000),
+      timeout: 20000,
+      validateStatus: () => true,
     });
   } catch {
     throw new Error('Không thể kết nối máy chủ. Vui lòng thử lại.');
   }
   let payload: ApiResponse<T>;
   try {
-    payload = (await response.json()) as ApiResponse<T>;
+    payload = response.data as ApiResponse<T>;
   } catch {
     throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');
   }
   if (!payload || typeof payload !== 'object') {
     throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');
   }
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     const errors = Array.isArray(payload.errors)
       ? payload.errors.filter((error): error is string => typeof error === 'string').join(' · ')
       : '';
