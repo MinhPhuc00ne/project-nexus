@@ -21,7 +21,7 @@ export class MailService {
     const port = Number(this.configService.get<string>('SMTP_PORT') || 587);
     const user = this.configService.get<string>('SMTP_USER');
     const pass = this.configService.get<string>('SMTP_PASS');
-    const from = this.configService.get<string>('SMTP_FROM') || 'Project Nexus <nexus@gmail.com>';
+    const from = this.configService.get<string>('SMTP_FROM') || 'Admin <admin@gmail.com>';
 
     // Log the email content explicitly in all environments so testing without SMTP credentials is easy
     this.logger.log(`\n=================== [OUTGOING EMAIL] ===================
