@@ -1,5 +1,8 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import api, { ApiRequestError } from './api';
+import { isMockEnabled, mockDelay } from '../mocks/config';
+import { MOCK_SUPPORT_TICKETS } from '../mocks/tickets.mock';
+import type { SupportTicket } from '../pages/staff/StaffTicketConversationView';
 
 export interface StaffInvitationInfo {
   valid: boolean;
@@ -45,4 +48,18 @@ export function activateStaff(dto: ActivateStaffDto): Promise<{
   assignedEmail: string;
 }> {
   return staffRequest({ url: '/staff/activate', method: 'POST', data: dto });
+}
+
+export async function getSupportTickets(): Promise<SupportTicket[]> {
+  if (isMockEnabled()) {
+    await mockDelay(100);
+    return MOCK_SUPPORT_TICKETS;
+  }
+
+  try {
+    const res = await api.get<{ data: SupportTicket[] }>('/staff/tickets');
+    return res.data.data;
+  } catch {
+    return MOCK_SUPPORT_TICKETS;
+  }
 }

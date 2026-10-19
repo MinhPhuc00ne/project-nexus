@@ -6,6 +6,7 @@ export interface ApiResponse<T> {
   data: T;
   timestamp: string;
   traceId?: string;
+  errors?: unknown;
 }
 
 export interface PaginatedResponse<T> {

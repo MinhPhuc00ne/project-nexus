@@ -1,34 +1,36 @@
 # Project Nexus
 
-Project Nexus is an e-commerce platform that seamlessly integrates traditional online retail with real-time 3D live auctions. The system is built using a Modular Monolith architecture.
+Project Nexus is an e-commerce platform that seamlessly integrates traditional online retail with real-time 3D live auctions. The system is built using an Enterprise Modular Monolith architecture within an NPM Workspaces Monorepo.
 
 ---
 
-## Features
+## Key Features
 
-- Effortlessly switch between Buyer and Seller modes within a single session without re-authenticating.
-- High-concurrency live bidding rooms featuring WebGL 3D item showcases (Three.js), sub-300ms bidding queues, and anti-sniping bid extensions (+5 minutes if bid placed in final 2 minutes).
-- Buyer funds are securely held in platform escrow upon order creation and disbursed to the seller (minus a 7% platform fee) only after the buyer confirms receipt without dispute.
-- Automated penalty algorithm that deducts reputation scores for unwarranted order cancellations or payment defaults to safeguard marketplace integrity.
-- SKU-based inventory across warehouses, immutable movement ledgers, and dynamic shipping calculations via GHN logistics.
-- Shared contracts and DTOs maintained centrally in `@nexus/types`.
+- **Unified Identity & Seamless Role Toggle:** Effortlessly switch between Buyer and Seller modes within a single session without logging out or re-authenticating.
+- **Real-Time 3D Live Auctions (WebGL / Three.js):** High-concurrency live bidding rooms featuring interactive 3D item showcases, sub-300ms bidding queues, and automated anti-sniping duration extensions (+5 minutes if a bid is placed in the final 2 minutes).
+- **Automated Platform Escrow (7.0% Commission):** Buyer payments are securely locked in escrow upon order placement and disbursed to the seller (minus a 7% platform fee) only after the buyer confirms receipt without dispute.
+- **Dynamic Reputation & Trust Levels:** Automated score tracking that rewards successful transactions (+2 points) and penalizes order cancellations or auction defaults (-10 points).
+- **Staff Gateway & Customer Support Center:** Integrated backoffice center for dispute arbitration, live customer support chat, and staff provisioning with corporate `@staff.com` credentials.
+- **Centralized Session & In-Flight Deduplication (`AuthContext`):** Eliminates redundant network requests to `/users/me` on route transitions and synchronizes user state across multiple browser tabs.
+- **Configurable Mock Layer & Auto-Fallback:** Toggle between mock data and real APIs with `VITE_USE_MOCK=true/false` in `.env`, featuring automated fallback to prevent UI crashes if backend endpoints return errors.
+- **Shared Type-Safe Contracts (`@nexus/types`):** Single source of truth for all DTOs, Enums, and WebSocket event payloads shared across Backend and Frontend.
 
 ---
 
 ## Tech Stack
 
-- Monorepo: NPM Workspaces (`packages/*`, `backend`, `frontend/*`).
-- Frontend: React 18, TypeScript, Tailwind CSS, Three.js (WebGL 3D rendering), Vite, TanStack Query, Zustand.
-- Backend: NestJS (Modular Monolith Architecture, TypeScript).
-- Database: PostgreSQL 17 (Prisma ORM, ACID transactions, Logical Schema Separation).
-- Cache & Real-Time: Redis 7 (caching, distributed Redlock, in-memory atomic bidding queues, Socket.IO adapter).
-- Infrastructure: Docker & Docker Compose.
-- Payments: PayOS (Vietnamese domestic banking QR), Stripe (International cards).
-- Logistics: GHN API (Giao Hàng Nhanh logistics adapter).
+- **Monorepo:** NPM Workspaces (`packages/*`, `backend`, `frontend/web`).
+- **Frontend Portal:** React 19, TypeScript (Strict Mode), Vite 8, Tailwind CSS v4, Three.js (WebGL 3D graphics), Lucide Icons, React Router 7.
+- **Backend Service:** NestJS 12 (Modular Monolith Architecture, TypeScript).
+- **Database:** PostgreSQL 17 (Prisma ORM 7, ACID Transactions, Logical Schema Separation).
+- **Cache & Real-Time Engine:** Redis 7 (Caching, Redlock distributed locking, in-memory atomic bidding queue, Socket.IO adapter).
+- **Infrastructure:** Docker & Docker Compose.
+- **Payment Providers:** PayOS (Vietnamese domestic VietQR banking), Stripe (International credit cards), Internal Wallet.
+- **Logistics Integration:** GHN API (Giao Hàng Nhanh logistics adapter).
 
 ---
 
-## Repository Source Tree Structure
+## Repository Structure
 
 ```text
 project-nexus/
@@ -44,179 +46,84 @@ project-nexus/
 ├── eslint.config.mjs
 ├── package.json
 ├── README.md
-├── .gitlab/
-│   └── merge_request_templates/
-│       └── default.md
-├── docs/
-│   ├── api/
-│   ├── architecture/
-│   ├── srs/
-│   └── standards/
-├── infra/
-│   ├── docker/
-│   │   ├── Dockerfile.backend
-│   │   └── Dockerfile.web
-│   ├── docker-compose.yml
-│   └── README.md
+├── docs/                          # Standardized Engineering Documentation & Portal
+│   ├── README.md                  # Documentation Portal & Navigation Index
+│   ├── architecture/              # Architecture, component topology, ERD & business rules
+│   │   ├── ARCHITECTURE_MODEL.md  # Modular Monolith architecture, components & ERD
+│   │   ├── BUSINESS_RULES.md      # Business rules, escrow, reputation & anti-sniping
+│   │   └── DESIGN_PATTERNS.md     # IoC, Repository, Strategy, Observer, React Context
+│   ├── standards/                 # Code quality and engineering standards
+│   │   ├── CLEAN_CODE.md          # Code limits (< 300 lines), strict TypeScript & Prettier
+│   │   ├── DESIGN_PRINCIPLES.md   # SOLID, KISS, YAGNI, DRY, Monolith boundaries
+│   │   └── NAMING_CONVENTIONS.md  # Universal naming conventions for code & database
+│   ├── frontend/                  # Frontend specifications & guides
+│   │   ├── FRONTEND_GUIDE.md      # Complete frontend guide (React 19, Vite, Mocks)
+│   │   └── UI_SPECIFICATION.md    # UI tokens, 4-portal hierarchy & component breakdown
+│   ├── backend/                   # Backend specifications & guides
+│   │   └── BACKEND_GUIDE.md       # Complete backend guide (NestJS, Prisma, Redis)
+│   ├── api/                       # API documentation index & REST/WS contracts
+│   └── srs/                       # Software Requirements Specification (SRS)
+├── infra/                         # Docker compose & container configurations
 ├── packages/
-│   ├── types/
-│   │   ├── package.json
-│   │   ├── tsconfig.json
+│   ├── types/                     # Shared TypeScript contracts (@nexus/types)
 │   │   └── src/
-│   │       ├── enums/
-│   │       ├── events/
-│   │       ├── models/
-│   │       └── index.ts
-│   └── config/
-│       ├── package.json
-│       └── tsconfig.base.json
-├── backend/
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── tsconfig.build.json
-│   ├── nest-cli.json
-│   ├── prisma/
-│   │   ├── schema.prisma
-│   │   ├── migrations/
-│   │   └── seeds/
-│   └── src/
-│       ├── main.ts
-│       ├── app.module.ts
-│       ├── core/
-│       │   ├── prisma/
-│       │   ├── redis/
-│       │   ├── filters/
-│       │   └── exceptions/
-│       └── modules/
-│           ├── auth/
-│           ├── users/
-│           ├── catalog/
-│           ├── commerce/
-│           ├── fulfillment/
-│           ├── auction/
-│           ├── notification/
-│           └── backoffice/
+│   │       ├── enums/             # Role, OrderStatus, AuctionStatus, EscrowStatus
+│   │       ├── events/            # WS_AUCTION_EVENTS, Domain Event Payloads
+│   │       ├── models/            # ApiResponse<T>, PaginatedResponse<T>, DTOs
+│   │       └── index.ts           # Public Barrel Export
+│   └── config/                    # Shared tsconfig base settings
+├── backend/                       # NestJS Modular Monolith application
+│   ├── prisma/                    # schema.prisma, migrations, seeds
+│   └── src/                       # Domain modules (auth, users, catalog, commerce, etc.)
 └── frontend/
-    ├── web/
-    │   ├── package.json
-    │   ├── vite.config.ts
-    │   ├── tsconfig.json
-    │   ├── public/models-3d/
-    │   └── src/
-    │       ├── components/
-    │       ├── context/
-    │       ├── features/
-    │       │   └── auction/
-    │       │       ├── components/
-    │       │       ├── hooks/
-    │       │       └── three/
-    │       └── stores/
-    └── admin/
-        ├── package.json
-        ├── vite.config.ts
-        ├── tsconfig.json
-        └── src/
-            ├── components/
-            └── features/
+    └── web/                       # Unified web portal (Buyer, Seller, Staff, Admin)
+        ├── src/
+        │   ├── components/        # Decomposed UI subcomponents (< 300 lines)
+        │   ├── contexts/          # AuthContext with in-flight deduplication
+        │   ├── mocks/             # Curated mock data & configuration
+        │   ├── pages/             # Route pages (auth, buyer, seller, staff, guest, admin)
+        │   ├── routes/            # AppRouter and navigation route guards
+        │   └── services/          # API services with graceful fallback
+        └── vite.config.ts         # Vite with @nexus/types native TS resolution
 ```
 
 ---
 
 ## Documentation Reading Roadmap
 
-To build a clear mental model without feeling overwhelmed, we recommend reading the documentation in `docs/` in the following sequence:
+For new engineers joining the project, read the comprehensive documentation in [`docs/`](docs/) in the following order:
 
 ```text
-[1. SRS] ──> [2. Architecture] ──> [3. Design Patterns] ──> [4. Clean Code Standards] ──> [5. API Specs]
+[1. ARCHITECTURE_MODEL] ──> [2. BUSINESS_RULES] ──> [3. FRONTEND / BACKEND GUIDES] ──> [4. CLEAN_CODE & STANDARDS]
 ```
 
-1. [docs/srs/README.md](docs/srs/README.md): Full requirements, System Configurations, RBAC Privileges Matrix, 60+ Domain Events, and NFR performance SLAs.
-2. [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md): Modular Monolith design, in-process event emission, logical schema separation, and Redis distributed lock design.
-3. [docs/architecture/DESIGN_PATTERNS.md](docs/architecture/DESIGN_PATTERNS.md): Repository pattern, Strategy pattern (PayOS, Stripe, GHN), and Three.js WebGL scene lifecycle management.
-4. [docs/standards/CLEAN_CODE.md](docs/standards/CLEAN_CODE.md) & [docs/standards/DESIGN_PRINCIPLES.md](docs/standards/DESIGN_PRINCIPLES.md): Naming standards, strict TypeScript (`no-explicit-any`), DTO validation, and SOLID principles.
-5. [docs/api/README.md](docs/api/README.md): RESTful endpoint matrix (`/api/v1/...`) and WebSocket real-time contracts (`/ws/auctions`).
+1. **Architecture & Data Models:** [`docs/architecture/ARCHITECTURE_MODEL.md`](docs/architecture/ARCHITECTURE_MODEL.md) — System context, monorepo packages, and the complete PostgreSQL ERD.
+2. **Business Rules:** [`docs/architecture/BUSINESS_RULES.md`](docs/architecture/BUSINESS_RULES.md) — Escrow calculation, reputation points, anti-sniping duration rules.
+3. **Frontend & Backend Guides:** [`docs/frontend/FRONTEND_GUIDE.md`](docs/frontend/FRONTEND_GUIDE.md) & [`docs/backend/BACKEND_GUIDE.md`](docs/backend/BACKEND_GUIDE.md) — Setup, HMR alias, AuthContext, and Redis locks.
+4. **Engineering Standards:** [`docs/standards/CLEAN_CODE.md`](docs/standards/CLEAN_CODE.md), [`docs/architecture/DESIGN_PATTERNS.md`](docs/architecture/DESIGN_PATTERNS.md), [`docs/standards/DESIGN_PRINCIPLES.md`](docs/standards/DESIGN_PRINCIPLES.md), and [`docs/standards/NAMING_CONVENTIONS.md`](docs/standards/NAMING_CONVENTIONS.md).
 
 ---
 
-## Development Environment
+## Development Environment Requirements
 
-Ensure your development machine has the following tools installed:
-
-- Node.js: Recommended LTS v22.x (`node -v`).
-- NPM: Bundled with Node.js, minimum v11.x (`npm -v`).
-- Git: Minimum v2.50+ (`git --version`).
-- Docker & Docker Compose: For running PostgreSQL 17 and Redis 7 (`docker compose version`).
-- Recommended IDE Extensions (VS Code):
-  - _ESLint_ (`dbaeumer.vscode-eslint`)
-  - _Prettier_ (`esbenp.prettier-vscode`)
-  - _EditorConfig_ (`editorconfig.editorconfig`)
-  - _Prisma_ (`Prisma.prisma`)
+- **Node.js:** Recommended LTS v22.x or v24.x (`node -v`).
+- **NPM:** Bundled with Node.js, v11.x (`npm -v`).
+- **Docker & Docker Compose:** For running PostgreSQL 17 and Redis 7 (`docker compose version`).
+- **Git:** Minimum v2.50+ (`git --version`).
 
 ---
 
-## Cloning the repository from GitLab
+## Quickstart Guide
 
-The repository is hosted on the Project Nexus GitLab server.\
-Clone using:
+### 1. Install Dependencies
 
-```bash
-git clone https://github.com/MinhPhuc00ne/project-nexus.git
-cd project-nexus
-```
-
-Git might prompt for your Project Nexus GitLab credentials. Use your Project Nexus username and password or personal access token.
-
----
-
-## Local Git Configuration
-
-Set up your local Git identity and line endings:
-
-1. Configure User Name and Email:
-
-   ```bash
-   git config user.name "Your Name"
-   git config user.email "your_email@your.domain"
-   ```
-
-2. Configure Line Endings (CRLF vs LF):
-
-   ```bash
-   # Windows:
-   git config core.autocrlf true
-
-   # macOS / Linux:
-   git config core.autocrlf input
-   ```
-
-3. Switch to Development Branch (`dev`):
-
-   ```bash
-   git checkout dev
-   git pull origin dev
-   ```
-
----
-
-## Project Setup
-
-### Step 1: Install Dependencies
-
-Run from the root directory to link monorepo workspaces and activate Husky hooks:
+Run from the root directory to link workspaces and activate Husky hooks:
 
 ```bash
 npm install
 ```
 
-### Step 2: Build Shared Types
-
-Compile the `@nexus/types` package so Backend and Frontends can consume shared contracts:
-
-```bash
-npm run build:types
-```
-
-### Step 3: Configure Environment Variables
+### 2. Configure Environment Variables
 
 ```bash
 # Windows (PowerShell):
@@ -226,92 +133,59 @@ Copy-Item .env.example .env
 cp .env.example .env
 ```
 
-### Step 4: Start Local Infrastructure with Docker
+_(Optionally set `VITE_USE_MOCK=true` or `false` in `.env` depending on your workflow)._
 
-Launch PostgreSQL 17 and Redis 7 in detached mode:
+### 3. Start Local Infrastructure
+
+Launch PostgreSQL 17 (port 5432) and Redis 7 (port 6379) in detached mode:
 
 ```bash
 npm run docker:up
 ```
 
-Verify containers are running:
+### 4. Initialize Database
 
-```bash
-docker ps
-```
-
-- `nexus-postgres`: PostgreSQL database on port `5432` (`POSTGRES_DB=nexus_main`).
-- `nexus-redis`: Redis cache and distributed lock engine on port `6379`.
-
-### Step 5: Initialize Database Schema
-
-Generate Prisma client and run initial migrations:
+Generate Prisma client and apply database migrations:
 
 ```bash
 npm run prisma:generate
 npm run prisma:migrate
+npm run prisma:seed
 ```
 
-### Step 6: Run Applications
+### 5. Run Applications
 
-- Backend NestJS Application:
+- **Backend NestJS Server (port 3000):**
 
   ```bash
   npm run dev:backend
   ```
 
-  _(Server runs at `http://localhost:3000`, Swagger documentation at `http://localhost:3000/api/docs`)_
+  _(Swagger API documentation available at `http://localhost:3000/api/docs`)_
 
-- Frontend Web Portal (Buyer & Seller):
-
+- **Frontend Web Portal (port 5173):**
   ```bash
   npm run dev:web
   ```
-
-  _(Web portal runs at `http://localhost:5173`)_
-
-- Frontend Admin Portal (Staff & Operations):
-
-  ```bash
-  npm run dev:admin
-  ```
-
-  _(Admin portal runs at `http://localhost:5174`)_
+  _(Web portal available at `http://localhost:5173`)_
 
 ---
 
 ## Frequently Used Commands
 
-| Command                   | Description                                                 |
-| :------------------------ | :---------------------------------------------------------- |
-| `npm install`             | Install monorepo dependencies and activate Husky hooks      |
-| `npm run build:types`     | Compile `@nexus/types` shared package                       |
-| `npm run build:all`       | Build shared types, backend, and both frontend applications |
-| `npm run dev:backend`     | Start NestJS Modular Monolith backend in watch mode         |
-| `npm run dev:web`         | Start React Buyer/Seller web portal with Vite               |
-| `npm run dev:admin`       | Start React Backoffice admin portal with Vite               |
-| `npm run prisma:generate` | Generate Prisma client from `backend/prisma/schema.prisma`  |
-| `npm run prisma:migrate`  | Apply database migrations in development                    |
-| `npm run prisma:studio`   | Open interactive database UI in browser                     |
-| `npm run lint`            | Run ESLint across all monorepo workspaces                   |
-| `npm run lint:fix`        | Automatically fix auto-fixable ESLint issues                |
-| `npm run format`          | Format entire codebase using Prettier                       |
-| `npm run format:check`    | Verify formatting compliance with Prettier                  |
-| `npm run docker:up`       | Launch PostgreSQL and Redis background containers           |
-| `npm run docker:down`     | Stop local Docker containers                                |
-| `npm run docker:logs`     | Stream logs from PostgreSQL and Redis                       |
-
----
-
-## Contributing
-
-Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines, git branching strategy, commit standards, and the Merge Request workflow.
-
----
-
-## Common Pitfalls
-
-1. Commit Rejected by `commitlint`: Ensure message matches `<type>(<scope>): <summary>` (e.g., `feat(catalog): add pagination`).
-2. Commit Blocked by `pre-commit`: Staged files have `any` types or lint errors. Run `npm run lint` to find and resolve.
-3. CRLF vs LF Warnings on Windows: Run `git config core.autocrlf true` and `npm run format`.
-4. Docker Port Allocation Conflict: Port `5432` or `6379` is already allocated by a host service. Stop the local service or change ports in `.env`.
+| Command                   | Purpose                                      |
+| :------------------------ | :------------------------------------------- |
+| `npm run dev:web`         | Start frontend React/Vite development server |
+| `npm run dev:backend`     | Start backend NestJS development server      |
+| `npm run build:web`       | Compile and bundle frontend for production   |
+| `npm run build:backend`   | Compile backend for production               |
+| `npm run build:types`     | Compile `@nexus/types` package               |
+| `npm run build:all`       | Build shared types, backend, and frontend    |
+| `npm run lint`            | Run ESLint across all workspaces             |
+| `npm run format`          | Auto-format entire codebase with Prettier    |
+| `npm run format:check`    | Check code formatting compliance             |
+| `npm run prisma:generate` | Update Prisma Client from schema.prisma      |
+| `npm run prisma:migrate`  | Apply database migrations                    |
+| `npm run prisma:studio`   | Open interactive database web interface      |
+| `npm run docker:up`       | Launch local PostgreSQL & Redis containers   |
+| `npm run docker:down`     | Stop local Docker containers                 |

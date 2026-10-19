@@ -1,34 +1,73 @@
-# Project Nexus - Clean Code & Quality Standards
+# Project Nexus - Clean Code and Documentation Standards
 
-This document specifies the coding conventions, formatting requirements, and linting standards enforced across Project Nexus. Compliance with this specification is mandatory for all Pull Requests.
-
----
-
-## 1. Naming Conventions
-
-| Target                            | Convention                 | Valid Example                                     | Invalid Example                        |
-| :-------------------------------- | :------------------------- | :------------------------------------------------ | :------------------------------------- |
-| Files & Directories               | `kebab-case`               | `auction-engine.service.ts`, `auth-guard.ts`      | `AuctionEngine.ts`, `auth_guard.ts`    |
-| Classes, Interfaces, Types, Enums | `PascalCase`               | `AuctionItem`, `IWalletRepository`, `OrderStatus` | `auctionItem`, `i_wallet_repository`   |
-| Functions, Methods, Variables     | `camelCase`                | `calculateEscrowFee()`, `totalAmount`             | `CalculateEscrowFee()`, `total_amount` |
-| Constants & Environment Variables | `UPPER_SNAKE_CASE`         | `MAX_BID_INCREMENT`, `REDIS_HOST`                 | `maxBidIncrement`, `redisHost`         |
-| Database Tables & Columns         | `snake_case`               | `auction_items`, `created_at`, `wallet_id`        | `AuctionItems`, `createdAt`            |
-| React Components                  | `PascalCase`               | `AuctionBidBoard.tsx`, `ThreeCanvas.tsx`          | `auctionBidBoard.tsx`                  |
-| React Custom Hooks                | `camelCase` (prefix `use`) | `useLiveAuction.ts`, `useSocket.ts`               | `liveAuctionHook.ts`                   |
-
-### Supplementary Rules
-
-- Expressive Names: Variable and function names must clearly reveal their intent. Avoid single-character identifiers such as `x`, `data`, `item`, `temp`, except for standard short loop counters (`i`, `j`).
-- Boolean Identifiers: Prefix boolean variables and functions with auxiliary verbs: `isValid`, `hasPermission`, `canBid`, `isSoldOut`.
-- Interface Naming: Interfaces defining persistence ports or repository contracts within the Domain layer should be prefixed with `I` (e.g., `IOrderRepository`, `IPaymentGatewayPort`) to clearly differentiate abstractions from infrastructure implementations (`PrismaOrderRepository`).
+This document specifies the engineering conventions, code limits, formatting rules, and documentation standards enforced across Project Nexus. Strict adherence is required for all codebase contributions.
 
 ---
 
-## 2. Formatting Standards
+## 1. Core Architecture Constraints & File Limits
 
-All project files are formatted automatically with Prettier governed by `.prettierrc.json` in the workspace root.
+### 1.1 Maximum File Length Limit (< 300 Lines Rule)
 
-### 2.1. Standard Configuration
+To prevent the emergence of "God Files" and ensure high maintainability, readability, and testability, all contributors must adhere to the mentor-enforced rule:
+
+- **No single component or source file may exceed 300 lines of code.**
+- When a file approaches 250-280 lines, engineers must proactively decompose it using:
+  - **Subcomponent Extraction:** Split complex JSX into cohesive child components in dedicated subdirectories (e.g., `ProductImageGallery.tsx`, `ProductInfoTabs.tsx`).
+  - **Custom Hook Extraction:** Move state machines, event handlers, and data fetching into dedicated hooks (e.g., `useLiveAuction.ts`, `useStaffNavigation.ts`).
+  - **Metadata / Configuration Separation:** Extract static tables, navigation items, and constants into configuration files (e.g., `staffNavigationData.ts`).
+
+### 1.2 Modular Page Decomposition
+
+- **`HomePage.tsx`:** Decomposed from 895 lines into modular subcomponents located in `components/home/` (`HomeHeroBanner.tsx`, `HomeLiveAuction.tsx`, `HomeFlashSaleCard.tsx`, `HomeAuctionCard.tsx`, `HomeRecommendationCard.tsx`, `HomeBenefit.tsx`, `HomeCountdown.tsx`) and mock data in `mocks/home.mock.ts`. The orchestrator page is now ~175 lines, strictly satisfying the < 300 lines Clean Code limit.
+
+### 1.3 Commenting & Documentation Hygiene
+
+- **No ASCII Art or Visual Noise:** Redundant ASCII banners, decorative section dividers (e.g., `// ================== HELPER FUNCTIONS ==================`), and boilerplate comments must be removed.
+- **Meaningful Docstrings:** Preserve clear JSDoc comments explaining business rationale, non-obvious algorithms, mathematical models, or edge-case handling.
+- **Self-Documenting Code:** Choose expressive variable and function names so that the code speaks for itself without relying on inline commentary.
+
+---
+
+## 2. TypeScript Quality Standards
+
+Project Nexus enforces strict TypeScript configuration (`tsconfig.base.json`):
+
+### 2.1 Elimination of `any`
+
+```typescript
+// ❌ STRICTLY FORBIDDEN:
+const handleEvent = (data: any) => { ... };
+
+// ✅ MANDATORY: Use precise types, generics, or unknown with type guards:
+const handleEvent = (data: OrderCreatedEventPayload) => { ... };
+const parsePayload = (raw: unknown): UserProfile => {
+  if (isUserProfile(raw)) return raw;
+  throw new InvalidPayloadException();
+};
+```
+
+### 2.2 Explicit Return Types on Public Methods
+
+All exported service methods, controllers, and domain interfaces must declare explicit return types:
+
+```typescript
+// ✅ Good:
+async getSellerSession(): Promise<UserProfile> { ... }
+
+// ❌ Bad:
+async getSellerSession() { ... }
+```
+
+### 2.3 Strict Null Checks & Optional Chaining
+
+- Leverage optional chaining `?.` and nullish coalescing `??` rather than manual truthiness checks.
+- Avoid non-null assertion operator `!` unless dealing with standard DOM root mounting in `main.tsx`.
+
+---
+
+## 3. Formatting Standards (Prettier)
+
+All files are automatically formatted via Prettier according to `.prettierrc.json`:
 
 ```json
 {
@@ -44,183 +83,55 @@ All project files are formatted automatically with Prettier governed by `.pretti
 }
 ```
 
-### 2.2. Formatting Rules Breakdown
-
-- Indentation: Exactly 2 spaces (no tabs). The `.editorconfig` file enforces this globally.
-- Semicolons (`semi`): Mandatory at the end of every statement.
-- Quotes (`singleQuote`): Single quotes `'` for JavaScript/TypeScript strings; double quotes `"` in JSON and JSX/HTML attributes.
-- Line Length (`printWidth`): Maximum of 100 characters per line.
-- Trailing Commas (`trailingComma`): Enforced on all multiline object and array definitions for clean git diffs.
-- Line Endings: Mandatory LF (`\n`), never CRLF (`\r\n`).
+- Run `npm run format` to automatically format all files.
+- Run `npm run format:check` to verify code compliance before opening a Pull/Merge Request.
 
 ---
 
-## 3. Linting Standards
+## 4. Linting Rules (ESLint 9 Flat Config)
 
-The repository enforces ESLint 9 (Flat Config) configured in `eslint.config.mjs`.
+Governed by `eslint.config.mjs`:
 
-### 3.1. Core Rules
-
-1. `@typescript-eslint/no-explicit-any`: 'error'
-   - Direct usage of `any` is strictly prohibited.
-   - For unstructured external payloads, use `unknown` combined with type guards or schema validation (e.g., Zod or class-validator).
-2. `no-console`: 'warn' / 'error'
-   - Direct usage of `console.log` and `console.error` in production services is disallowed.
-   - Use structured loggers from `backend/src/modules/common/logger` or NestJS `Logger`.
-3. `@typescript-eslint/explicit-function-return-type`:
-   - Public methods in services, controllers, and use cases must declare explicit return types:
-
-     ```typescript
-     // Correct
-     async findById(id: string): Promise<OrderResultDto> { ... }
-
-     // Incorrect
-     async findById(id: string) { ... }
-     ```
-
-4. `@typescript-eslint/no-floating-promises`: 'error'
-   - All Promises must be handled with `await` or `.catch()`. Unhandled rejections that risk process instability are prohibited.
-5. `@typescript-eslint/no-unused-vars`: 'error'
-   - Unused imports and variables are flagged as errors. Intentional unused arguments must be prefixed with an underscore `_`.
-6. React Hooks Rules (`react-hooks/rules-of-hooks`, `react-hooks/exhaustive-deps`):
-   - All dependency arrays in `useEffect`, `useCallback`, and `useMemo` must be exhaustive.
-
----
-
-## 4. Strict TypeScript Configuration
-
-The project's `tsconfig.json` files must enforce strict type-checking flags:
-
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
-  }
-}
-```
+- `@typescript-eslint/no-explicit-any`: `'error'`
+- `no-debugger`: `'error'`
+- `no-var`: `'error'`
+- `prefer-const`: `'error'`
+- `eqeqeq`: `['error', 'always']`
+- `no-console`: `['warn', { allow: ['warn', 'error', 'info'] }]` (disallows raw `console.log` in production services).
+- `@typescript-eslint/no-unused-vars`: Unused variables must be removed or prefixed with `_` if intentionally ignored.
 
 ---
 
 ## 5. Function Design & Complexity Control
 
-- Function Size:
-  - Keep functions focused and concise (20-30 lines maximum). Break larger procedures into private helper methods or separate classes.
-- Parameter Count:
-  - Maximum of 3 parameters per function. When more arguments are required, consolidate them into a typed parameter object or DTO.
-- Guard Clauses & Early Return:
-  - Avoid deeply nested conditionals (> 2 levels). Handle edge cases and validation failures first with early returns or thrown exceptions:
-
-  ```typescript
-  // Correct (Guard Clauses)
-  if (!user) throw new UserNotFoundException(userId);
-  if (!user.isActive) throw new UserSuspendedException(userId);
-  return this.processWallet(user);
-
-  // Incorrect (Nested pyramid)
-  if (user) {
-    if (user.isActive) {
-      return this.processWallet(user);
-    } else {
-      throw new UserSuspendedException(userId);
-    }
-  } else {
-    throw new UserNotFoundException(userId);
-  }
-  ```
-
----
-
-## 6. Error Handling & Exception Standards
-
-### 6.1. Domain Exception Hierarchy
-
-All business errors must derive from the abstract `DomainException` defined in `backend/src/modules/common/exceptions`:
+- **Function Size:** Functions should ideally not exceed 25-30 lines.
+- **Parameter Count:** Limit parameters to $\le 3$. Group larger sets into typed DTOs or options objects.
+- **Early Return / Guard Clauses:** Eliminate nested `if-else` pyramids:
 
 ```typescript
-export abstract class DomainException extends Error {
-  abstract readonly errorCode: string;
-  abstract readonly httpStatus: number;
+// ✅ Clean Early Return:
+function processPayment(user: User, amount: number) {
+  if (!user.isVerified) throw new UnverifiedUserException();
+  if (user.walletBalance < amount) throw new InsufficientFundsException();
 
-  constructor(message: string) {
-    super(message);
-    this.name = this.constructor.name;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-
-export class InsufficientBalanceException extends DomainException {
-  readonly errorCode = 'WALLET_INSUFFICIENT_BALANCE';
-  readonly httpStatus = 400;
-
-  constructor(walletId: string, currentBalance: number, requiredAmount: number) {
-    super(
-      `Wallet ${walletId} has insufficient funds (Current: ${currentBalance}, Required: ${requiredAmount})`,
-    );
-  }
-}
-```
-
-### 6.2. Standard JSON Error Response
-
-All errors returned by the NestJS monolithic backend pass through `GlobalHttpExceptionFilter` to produce a uniform schema:
-
-```json
-{
-  "statusCode": 400,
-  "errorCode": "WALLET_INSUFFICIENT_BALANCE",
-  "message": "Wallet w-123 has insufficient funds",
-  "timestamp": "2026-10-02T15:30:00.000Z",
-  "path": "/api/v1/auctions/bid",
-  "traceId": "req-9a8b-7c6d-5e4f",
-  "errors": null
+  return executeTransfer(user, amount);
 }
 ```
 
 ---
 
-## 7. DTOs & Input Validation
+## 6. Commit Message & Git Quality Gates
 
-- Every incoming payload must be defined as a dedicated DTO class.
-- Decorate all DTO properties with `class-validator` rules.
-- Controllers must enable the global NestJS `ValidationPipe`:
+We enforce [Conventional Commits v1.0.0](https://www.conventionalcommits.org/):
 
-  ```typescript
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // Strips unexpected properties
-      forbidNonWhitelisted: true, // Returns 400 if unrecognized fields are passed
-      transform: true, // Automatically coerces primitives (strings to numbers/booleans)
-    }),
-  );
-  ```
+```text
+<type>(<scope>): <summary>
+```
 
----
+Examples:
 
-## 8. Logging & Data Privacy
+- `feat(auction): implement anti-sniping duration extension`
+- `fix(types): resolve ESM named export alias in vite config`
+- `refactor(staff): decompose dashboard into modular subpanels`
 
-- Structured JSON Logging: Every log line is serialized as JSON containing `context`, `level`, `timestamp`, and `traceId`.
-- Log Levels:
-  - `DEBUG`: Internal lifecycle details for local development.
-  - `INFO`: Business milestones (User logged in, Order created, Bid accepted).
-  - `WARN`: Recoverable anomalies (Connection retry, approaching rate limit).
-  - `ERROR`: Unhandled exceptions, broken external calls, system failures.
-- Data Protection: Never log passwords, PINs, full payment details, JWT tokens, or personally identifiable information (PII).
-
----
-
-## 9. Automated Local Enforcement
-
-Local verification tools prevent non-compliant code from entering the repository:
-
-- Husky: Automates Git hooks (`pre-commit`, `commit-msg`).
-- lint-staged: Runs `eslint --fix` and `prettier --write` automatically on staged files before commit creation.
-- commitlint: Enforces Conventional Commits v1.0.0 format (e.g., `feat(auction): add anti-sniping duration extension`).
+Local automation via **Husky** and **lint-staged** automatically verifies format and lint on every staged commit.

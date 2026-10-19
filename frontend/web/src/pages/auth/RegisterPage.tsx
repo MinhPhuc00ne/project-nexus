@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { verifyEmail } from '../../services/auth';
-import { register } from '../../services/auth.service';
+import { register, verifyEmail } from '../../services/auth';
 import {
   ArrowRight,
   BadgeCheck,

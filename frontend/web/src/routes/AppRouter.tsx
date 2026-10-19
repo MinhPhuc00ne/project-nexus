@@ -103,6 +103,13 @@ export const ROUTES = {
 
   // Seller
   SELLER: '/seller',
+  SELLER_PRODUCTS: '/seller/products',
+  SELLER_ORDERS: '/seller/orders',
+  SELLER_ORDER_DETAIL: '/seller/orders/:id',
+  SELLER_AUCTIONS: '/seller/auctions',
+  SELLER_FINANCE: '/seller/finance',
+  SELLER_DISPUTES: '/seller/disputes',
+  SELLER_SETTINGS: '/seller/settings',
 
   // Staff
   STAFF: '/staff',
@@ -163,8 +170,8 @@ function AppRouter() {
           </Route>
 
           {/* Auth routes */}
-          <Route path={ROUTES.LOGIN} element={<Login />} />
           <Route element={<AuthLayout />}>
+            <Route path={ROUTES.LOGIN} element={<Login />} />
             <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
             <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
             <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
