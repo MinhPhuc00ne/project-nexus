@@ -48,13 +48,15 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   const endpoint = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
-  let response: Response;
+  let response;
   try {
-    response = await fetch(endpoint, {
+    response = await api.request({
+      url: endpoint,
       method,
       headers,
-      body: isFormData ? (body as BodyInit) : body !== undefined ? JSON.stringify(body) : undefined,
-      signal: AbortSignal.timeout(30000),
+      data: body,
+      timeout: 30000,
+      validateStatus: () => true,
     });
   } catch {
     throw new Error(
@@ -71,12 +73,13 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
   let payload: ApiResponsePayload | null = null;
   try {
-    payload = (await response.json()) as ApiResponsePayload;
+    payload = response.data as ApiResponsePayload;
+    if (!payload || typeof payload !== 'object') throw new Error('Invalid response');
   } catch {
     throw new ApiRequestError('Máy chủ phản hồi định dạng dữ liệu không hợp lệ.', response.status);
   }
 
-  if (!response.ok) {
+  if (response.status < 200 || response.status >= 300) {
     const errorMsg = Array.isArray(payload?.errors)
       ? payload.errors.join(' · ')
       : typeof payload?.message === 'string'
