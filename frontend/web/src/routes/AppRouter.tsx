@@ -182,13 +182,13 @@ function AppRouter() {
           >
             <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
             <Route path={ROUTES.SELLER_PRODUCTS} element={<SellerProductsPage />} />
-            <Route path={ROUTES.SELLER_CREATE_PRODUCT} element={<SellerCreateProductPage />} />
+            {/* <Route path={ROUTES.SELLER_CREATE_PRODUCT} element={<SellerCreateProductPage />} /> */}
             <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
             <Route path={ROUTES.SELLER_ORDER_DETAIL} element={<SellerOrderDetailPage />} />
             <Route path={ROUTES.SELLER_AUCTIONS} element={<SellerAuctionsPage />} />
-            <Route path={ROUTES.SELLER_CREATE_AUCTION} element={<SellerCreateAuctionPage />} />
+            {/* <Route path={ROUTES.SELLER_CREATE_AUCTION} element={<SellerCreateAuctionPage />} /> */}
             <Route path={ROUTES.SELLER_FINANCE} element={<SellerFinancePage />} />
-            <Route path={ROUTES.SELLER_INVENTORY} element={<SellerInventoryPage />} />
+            {/* <Route path={ROUTES.SELLER_INVENTORY} element={<SellerInventoryPage />} /> */}
             <Route path={ROUTES.SELLER_DISPUTES} element={<SellerDisputesPage />} />
             <Route path={ROUTES.SELLER_SETTINGS} element={<SellerSettingsPage />} />
           </Route>
