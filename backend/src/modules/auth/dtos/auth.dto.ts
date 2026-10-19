@@ -129,13 +129,21 @@ export class ActivateStaffDto {
   @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
   phoneNumber!: string;
 
-  @ApiProperty({ example: 'Huy@123456', description: 'Mật khẩu mới (tối thiểu 6 ký tự)' })
+  @ApiProperty({
+    example: 'Staff@123456',
+    description:
+      'Mật khẩu mới (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt)',
+  })
   @IsString()
-  @MinLength(6, { message: 'Mật khẩu mới phải có tối thiểu 6 ký tự' })
   @IsNotEmpty({ message: 'Mật khẩu mới không được để trống' })
+  @MinLength(8, { message: 'Mật khẩu mới phải có tối thiểu 8 ký tự' })
+  @Matches(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).+$/, {
+    message:
+      'Mật khẩu mới phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt',
+  })
   newPassword!: string;
 
-  @ApiProperty({ example: 'Huy@123456', description: 'Xác nhận lại mật khẩu mới' })
+  @ApiProperty({ example: 'Staff@123456', description: 'Xác nhận lại mật khẩu mới' })
   @IsString()
   @IsNotEmpty({ message: 'Xác nhận mật khẩu không được để trống' })
   confirmPassword!: string;

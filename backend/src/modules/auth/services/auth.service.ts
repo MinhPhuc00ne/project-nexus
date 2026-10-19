@@ -404,25 +404,19 @@ export class AuthService {
 
     await this.mailService.sendEmail({
       to: dto.email,
-      subject: '[Project Nexus] Thư mời và mã Token kích hoạt tài khoản Quản trị & Hỗ trợ (Staff)',
-      text: `Xin chào ${dto.fullName},\n\nBạn được Admin mời gia nhập đội ngũ Quản trị Project Nexus.\n\nTài khoản công tác nền tảng cấp cho bạn: ${assignedEmail}\n\nMÃ TOKEN KÍCH HOẠT:\n${token}\n(Mã Token có hiệu lực trong vòng 7 ngày)\n\nThông tin xác nhận:\n- Họ và tên: ${dto.fullName}\n- Số điện thoại: ${dto.phoneNumber || 'Chưa cung cấp'}\n- Email cá nhân nhận thư: ${dto.email}\n- Tài khoản công ty cấp: ${assignedEmail}\n\nVui lòng truy cập đường dẫn sau để xác nhận lại thông tin và tạo mật khẩu mới:\n${activationLink}\n\nSau khi hoàn tất, bạn sẽ sử dụng tài khoản ${assignedEmail} và mật khẩu mới tạo để đăng nhập vào hệ thống với vai trò Staff.`,
+      subject: 'Thư mời kích hoạt tài khoản Quản trị & Hỗ trợ (Staff)',
+      text: `Xin chào ${dto.fullName},\n\nBạn được Admin mời gia nhập đội ngũ Quản trị & Hỗ trợ (Staff).\n\nTài khoản công tác nền tảng cấp cho bạn: ${assignedEmail}\n\nThông tin xác nhận:\n- Họ và tên: ${dto.fullName}\n- Số điện thoại: ${dto.phoneNumber || 'Chưa cung cấp'}\n- Email cá nhân nhận thư: ${dto.email}\n- Tài khoản công ty cấp: ${assignedEmail}\n\nVui lòng truy cập đường dẫn sau để xác nhận lại thông tin và tạo mật khẩu mới:\n${activationLink}\n\nSau khi hoàn tất, bạn sẽ sử dụng tài khoản ${assignedEmail} và mật khẩu mới tạo để đăng nhập vào hệ thống với vai trò Staff.`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #2563eb; margin-top: 0;">Chào mừng bạn gia nhập đội ngũ Support Staff - Project Nexus</h2>
+          <h2 style="color: #2563eb; margin-top: 0;">Chào mừng bạn gia nhập đội ngũ Support Staff</h2>
           <p>Xin chào <strong>${dto.fullName}</strong>,</p>
-          <p>Quản trị viên đã khởi tạo lời mời gia nhập đội ngũ Staff cho bạn trên hệ thống Project Nexus.</p>
+          <p>Quản trị viên đã khởi tạo lời mời gia nhập đội ngũ Staff cho bạn trên hệ thống.</p>
           
           <div style="background-color: #f1f5f9; border-left: 4px solid #2563eb; padding: 15px; border-radius: 4px; margin: 15px 0;">
             <p style="margin: 4px 0;"><strong>Tài khoản công tác được cấp:</strong> <span style="color: #2563eb; font-weight: bold; font-size: 15px;">${assignedEmail}</span></p>
             <p style="margin: 4px 0;"><strong>Họ và tên:</strong> ${dto.fullName}</p>
             <p style="margin: 4px 0;"><strong>Số điện thoại:</strong> ${dto.phoneNumber || 'Chưa cung cấp'}</p>
             <p style="margin: 4px 0;"><strong>Email cá nhân nhận thư:</strong> ${dto.email}</p>
-          </div>
-
-          <div style="background-color: #eff6ff; border: 1px solid #2563eb; padding: 16px; margin: 20px 0; border-radius: 8px;">
-            <p style="margin: 0 0 8px 0; color: #1e40af; font-weight: bold; font-size: 14px;">Mã Token kích hoạt tài khoản Staff của bạn:</p>
-            <code style="display: block; background: #ffffff; padding: 10px; border-radius: 4px; word-break: break-all; font-size: 13px; color: #2563eb; border: 1px solid #cbd5e1;">${token}</code>
-            <p style="margin: 8px 0 0 0; color: #64748b; font-size: 12px;">Mã Token có hiệu lực trong vòng 7 ngày</p>
           </div>
 
           <p>Vui lòng nhấp vào liên kết dưới đây để xác nhận lại thông tin và thiết lập mật khẩu mới cho tài khoản:</p>
@@ -439,7 +433,7 @@ export class AuthService {
     );
     return {
       success: true,
-      message: `Đã gửi thư mời và mã Token kích hoạt tài khoản Staff tới email cá nhân ${dto.email}`,
+      message: `Đã gửi thư mời kích hoạt tài khoản Staff tới email cá nhân ${dto.email}`,
       invitationId: invitation.id,
       assignedEmail,
       token,
@@ -496,6 +490,16 @@ export class AuthService {
   }> {
     if (dto.newPassword !== dto.confirmPassword) {
       throw new BadRequestException('Mật khẩu xác nhận không khớp');
+    }
+
+    if (dto.newPassword.length < 8) {
+      throw new BadRequestException('Mật khẩu mới phải có tối thiểu 8 ký tự');
+    }
+
+    if (!/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).+$/.test(dto.newPassword)) {
+      throw new BadRequestException(
+        'Mật khẩu mới phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt',
+      );
     }
 
     const token = dto.token?.trim();
