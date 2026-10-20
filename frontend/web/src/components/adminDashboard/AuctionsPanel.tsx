@@ -4,7 +4,7 @@ import { Box, Gavel, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
 import { formatMoney } from './adminData';
-import { mockSettings } from './mockData';
+import { mockSettings } from './mockData/settings';
 import type { AdminTabProps } from './adminTypes';
 
 // Quản lý danh sách phiên. preview chỉ ẩn một số công cụ, vẫn giữ bảng và bộ lọc trạng thái.

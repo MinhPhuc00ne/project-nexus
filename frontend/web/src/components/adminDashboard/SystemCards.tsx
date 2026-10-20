@@ -1,4 +1,4 @@
-import { mockLogistics, mockSystemEvents } from './mockData';
+import { mockLogistics, mockSystemEvents } from './mockData/system';
 // Hai khối dùng ở Tổng quan và Hệ thống: trạng thái vận chuyển và danh sách nhật ký sự kiện.
 
 import { Download, ScrollText, Truck } from 'lucide-react';

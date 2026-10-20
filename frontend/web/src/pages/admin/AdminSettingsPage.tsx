@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { ModerationCard } from '../../components/adminDashboard/ModerationCard';
 import { Button, Panel } from '../../components/adminDashboard/AdminUI';
 import { useAdminContext } from '../../components/adminDashboard/useAdminContext';
-import { mockSettings } from '../../components/adminDashboard/mockData';
+import { mockSettings } from '../../components/adminDashboard/mockData/settings';
 
 // Nội dung riêng của trang; các card dùng ở cả Tổng quan được tách sang components/adminDashboard.
 export default function AdminSettingsPage() {

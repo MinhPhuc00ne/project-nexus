@@ -2,7 +2,7 @@ import { Activity, Server } from 'lucide-react';
 import { EventLog, LogisticsCard } from '../../components/adminDashboard/SystemCards';
 import { Panel } from '../../components/adminDashboard/AdminUI';
 import { useAdminContext } from '../../components/adminDashboard/useAdminContext';
-import { mockSystemStatus } from '../../components/adminDashboard/mockData';
+import { mockSystemStatus } from '../../components/adminDashboard/mockData/system';
 
 // Nội dung riêng của trang; các card dùng ở cả Tổng quan được tách sang components/adminDashboard.
 export default function AdminSystemPage() {

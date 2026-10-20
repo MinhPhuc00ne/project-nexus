@@ -2,9 +2,9 @@ import {
   mockRevenuePeriods,
   mockRevenueCompositionItems,
   mockRevenueComposition,
-  mockOverviewMetrics,
-  mockSettings,
-} from './mockData';
+} from './mockData/revenue';
+import { mockOverviewMetrics } from './mockData/dashboard';
+import { mockSettings } from './mockData/settings';
 // Biểu đồ dùng chung cho Tổng quan và Tài chính: đường doanh thu + vòng tròn cơ cấu nguồn thu.
 
 import { ChartNoAxesCombined, CircleDollarSign, TrendingUp } from 'lucide-react';

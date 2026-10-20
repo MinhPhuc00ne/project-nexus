@@ -8,7 +8,7 @@ import {
   AdminSellerRequestsProvider,
   useAdminSellerRequests,
 } from '../components/adminDashboard/AdminSellerRequests';
-import { initialAdminData } from '../components/adminDashboard/mockData';
+import { initialAdminData } from '../components/adminDashboard/mockData/admin';
 import { applyCommerceChange } from '../components/adminDashboard/commerceData';
 import type { AdminActions, AdminData } from '../components/adminDashboard/adminTypes';
 import { Role, type UserProfile } from '../types';

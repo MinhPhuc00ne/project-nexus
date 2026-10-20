@@ -1,4 +1,4 @@
-import { mockModeration, mockModerationKeywords } from './mockData';
+import { mockModeration, mockModerationKeywords } from './mockData/moderation';
 // Khối chỉnh từ khóa cấm dùng ở Tổng quan và Cài đặt; dữ liệu hiện chỉ lưu trong từng lần mở.
 
 import { ShieldCheck } from 'lucide-react';

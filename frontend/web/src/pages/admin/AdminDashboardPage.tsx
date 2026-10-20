@@ -3,10 +3,10 @@ import {
   mockBidFrequencyValues,
   mockBidFrequencyLabels,
   mockBidFrequencySummary,
-  mockSystemStatus,
   mockOverviewMetrics,
-  mockSettings,
-} from '../../components/adminDashboard/mockData';
+} from '../../components/adminDashboard/mockData/dashboard';
+import { mockSystemStatus } from '../../components/adminDashboard/mockData/system';
+import { mockSettings } from '../../components/adminDashboard/mockData/settings';
 import { formatMoney } from '../../components/adminDashboard/adminData';
 import { useAdminSellerRequests } from '../../components/adminDashboard/AdminSellerRequests';
 import {

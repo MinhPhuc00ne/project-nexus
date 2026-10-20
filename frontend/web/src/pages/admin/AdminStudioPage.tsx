@@ -2,7 +2,8 @@ import { Box, Mic, Radio, Video, Volume2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, Panel } from '../../components/adminDashboard/AdminUI';
 import { useAdminContext } from '../../components/adminDashboard/useAdminContext';
-import { mockSettings, mockStudio } from '../../components/adminDashboard/mockData';
+import { mockSettings } from '../../components/adminDashboard/mockData/settings';
+import { mockStudio } from '../../components/adminDashboard/mockData/studio';
 
 // Studio mô phỏng giao diện điều khiển phiên, chưa mở camera/micro hoặc dựng mô hình WebGL.
 export default function AdminStudioPage() {
