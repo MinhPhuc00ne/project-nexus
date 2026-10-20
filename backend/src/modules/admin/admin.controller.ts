@@ -19,9 +19,12 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { AdminService } from './admin.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { AdminInviteStaffDto } from './dto/invite-staff.dto';
+import { LockUserDto, UpdateUserStatusDto } from './dto/lock-user.dto';
 import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
 import { QueryStaffDto } from './dto/query-staff.dto';
+import { QueryUsersDto } from './dto/query-users.dto';
 import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
+import { AdminUsersService } from './services/admin-users.service';
 
 @ApiTags('5. ADMIN')
 @ApiBearerAuth()
@@ -29,7 +32,10 @@ import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
 @Roles(Role.ADMIN)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly adminUsersService: AdminUsersService,
+  ) {}
 
   // ================= 1. TẠO / MỜI TÀI KHOẢN CHO STAFF =================
   @Post('staff')
@@ -127,5 +133,71 @@ export class AdminController {
     @Body() dto: RejectSellerRequestDto,
   ) {
     return this.adminService.rejectSellerRequest(id, admin.id, dto);
+  }
+
+  // ================= 7. DANH SÁCH TOÀN BỘ NGƯỜI DÙNG =================
+  @Get('users')
+  @ApiOperation({
+    summary: 'Lấy toàn bộ danh sách người dùng (kèm phân trang, lọc và tìm kiếm)',
+    description:
+      'Admin xem danh sách tất cả người dùng trong hệ thống. Hỗ trợ lọc theo role, trạng thái khóa (ACTIVE/LOCKED), và tìm kiếm theo tên, email, sđt.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách người dùng thành công' })
+  async listUsers(@Query() query: QueryUsersDto) {
+    return this.adminUsersService.listUsers(query);
+  }
+
+  // ================= 8. KHÓA TÀI KHOẢN NGƯỜI DÙNG =================
+  @Patch('users/:id/lock')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin khóa tài khoản người dùng',
+    description:
+      'Chuyển trustLevel sang SUSPENDED và thu hồi toàn bộ Refresh Tokens của người dùng để đăng xuất ngay lập tức.',
+  })
+  @ApiResponse({ status: 200, description: 'Khóa tài khoản thành công' })
+  @ApiResponse({ status: 400, description: 'Không thể khóa Admin hoặc tài khoản đã bị khóa' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản người dùng' })
+  async lockUser(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: LockUserDto,
+  ) {
+    return this.adminUsersService.lockUser(id, admin.id, dto);
+  }
+
+  // ================= 9. MỞ KHÓA TÀI KHOẢN NGƯỜI DÙNG =================
+  @Patch('users/:id/unlock')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin mở khóa tài khoản người dùng',
+    description:
+      'Khôi phục trustLevel của người dùng về STANDARD/EXCELLENT dựa trên reputationScore.',
+  })
+  @ApiResponse({ status: 200, description: 'Mở khóa tài khoản thành công' })
+  @ApiResponse({ status: 400, description: 'Tài khoản không ở trạng thái bị khóa' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản người dùng' })
+  async unlockUser(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: LockUserDto,
+  ) {
+    return this.adminUsersService.unlockUser(id, admin.id, dto);
+  }
+
+  // ================= 10. CẬP NHẬT TRẠNG THÁI KHÓA/MỞ KHÓA =================
+  @Patch('users/:id/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin cập nhật trạng thái khóa/mở khóa tài khoản',
+    description: 'Bật hoặc tắt trạng thái khóa tài khoản thông qua trường isLocked boolean.',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật trạng thái thành công' })
+  async updateUserStatus(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: UpdateUserStatusDto,
+  ) {
+    return this.adminUsersService.updateUserStatus(id, admin.id, dto);
   }
 }

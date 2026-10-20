@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
   NotFoundException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -19,7 +20,7 @@ import {
   InviteStaffDto,
   ActivateStaffDto,
 } from '../dtos/auth.dto';
-import { Role } from '@nexus/types';
+import { Role, ReputationTrustLevel } from '@nexus/types';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { generateStaffBaseEmail } from '../utils/staff-email.util';
@@ -117,6 +118,12 @@ export class AuthService {
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid email or password');
+    }
+
+    if (user.trustLevel === ReputationTrustLevel.SUSPENDED) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+      );
     }
 
     this.logger.log(`User logged in successfully: ${user.email} (Role: ${user.role})`);
