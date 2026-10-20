@@ -108,18 +108,43 @@ export function consumeOAuthCallbackFromUrl(): AuthUser | null {
   return null;
 }
 
+export class RegistrationError extends Error {
+  constructor(
+    public readonly messages: string[],
+    public readonly status: number,
+  ) {
+    super(messages.join(' · '));
+    this.name = 'RegistrationError';
+  }
+}
+
 async function post<T>(path: string, body: object): Promise<T> {
   let response;
   try {
     response = await api.post<ApiResponse<T>>(`/auth/${path}`, body);
   } catch (error) {
-    if (axios.isAxiosError<ApiResponse<T>>(error)) {
+    if (axios.isAxiosError<ApiResponse<T> & { errors?: unknown }>(error)) {
       const payload = error.response?.data;
       const errors = Array.isArray(payload?.errors)
         ? (payload.errors as unknown[])
             .filter((err: unknown): err is string => typeof err === 'string')
             .join(' · ')
         : '';
+      // Chỉ xử lý thêm lỗi validation cho luồng đăng ký và xác thực tài khoản.
+      if (path === 'register' || path === 'verify-email') {
+        if (!error.response) {
+          throw new Error('Không thể kết nối máy chủ. Vui lòng thử lại.');
+        }
+        const message: unknown = payload?.message;
+        const values = errors ? payload?.errors : Array.isArray(message) ? message : [message];
+        const messages = Array.isArray(values)
+          ? values.filter((item): item is string => typeof item === 'string' && !!item.trim())
+          : [];
+        throw new RegistrationError(
+          messages.length ? messages : ['Yêu cầu thất bại.'],
+          error.response.status,
+        );
+      }
       throw new Error(
         errors || (typeof payload?.message === 'string' && payload.message) || 'Yêu cầu thất bại.',
       );
