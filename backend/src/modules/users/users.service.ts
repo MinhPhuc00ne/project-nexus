@@ -2,16 +2,24 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Role, SellerRequestStatus } from '@prisma/client';
+import * as fs from 'fs';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { CloudinaryStorageService } from '../../core/storage/cloudinary.service';
 import { CreateSellerRequestDto } from './dto/create-seller-request.dto';
 import { ToggleSellerDto } from './dto/toggle-seller.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(UsersService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storageService: CloudinaryStorageService,
+  ) {}
 
   // ================= 1. THÔNG TIN NGƯỜI DÙNG HIỆN TẠI (GET /me) =================
   async getMe(userId: string) {
@@ -121,6 +129,31 @@ export class UsersService {
     let attachmentUrl = dto.attachmentUrl?.trim();
     if (file) {
       attachmentUrl = `/uploads/seller-proofs/${file.filename}`;
+
+      try {
+        let fileBuffer = file.buffer;
+        if (!fileBuffer && file.path && fs.existsSync(file.path)) {
+          fileBuffer = fs.readFileSync(file.path);
+        }
+
+        if (fileBuffer) {
+          const cloudRes = await this.storageService.uploadFile(
+            fileBuffer,
+            file.originalname || file.filename,
+            'nexus/seller-proofs',
+          );
+          if (cloudRes && cloudRes.url && !cloudRes.url.startsWith('data:')) {
+            attachmentUrl = cloudRes.url;
+            this.logger.log(
+              `Tải file chứng minh của Buyer lên Cloudinary thành công: ${attachmentUrl}`,
+            );
+          }
+        }
+      } catch (uploadError) {
+        this.logger.warn(
+          `Không thể upload file chứng minh lên Cloudinary, sử dụng URL cục bộ: ${uploadError}`,
+        );
+      }
     }
 
     // Bắt buộc phải có file hoặc chứng từ đính kèm để chứng minh danh tính/kinh doanh
