@@ -1,3 +1,4 @@
+import { mockModeration, mockModerationKeywords } from './mockData';
 // Khối chỉnh từ khóa cấm dùng ở Tổng quan và Cài đặt; dữ liệu hiện chỉ lưu trong từng lần mở.
 
 import { ShieldCheck } from 'lucide-react';
@@ -8,13 +9,7 @@ import type { AdminTabProps } from './adminTypes';
 // Khối từ khóa dùng chung ở Tổng quan/Cài đặt. State nằm trong mỗi instance component,
 // nên hai nơi chưa đồng bộ và sẽ reset khi đổi tab. Để lưu chung cần đưa state lên AdminLayout.
 export function ModerationCard({ actions }: Pick<AdminTabProps, 'actions'>) {
-  const [keywords, setKeywords] = useState([
-    'súng, đạn',
-    'vũ khí',
-    'chất gây nghiện',
-    'ngà voi',
-    'tiền giả',
-  ]);
+  const [keywords, setKeywords] = useState(() => [...mockModerationKeywords]);
   const [editing, setEditing] = useState(false);
   // draft là bản đang sửa; tách khỏi keywords để bấm Hủy không đổi danh sách đã hiển thị.
   const [draft, setDraft] = useState(keywords.join('; '));
@@ -24,7 +19,7 @@ export function ModerationCard({ actions }: Pick<AdminTabProps, 'actions'>) {
       title="Kiểm duyệt từ khóa cấm"
       subtitle="Bộ lọc hỗ trợ chặn đăng tin chứa hàng hóa vi phạm"
       icon={<ShieldCheck size={19} />}
-      action={<Badge tone="green">ACTIVE</Badge>}
+      action={<Badge tone="green">{mockModeration.status}</Badge>}
     >
       {editing ? (
         <form
@@ -69,7 +64,8 @@ export function ModerationCard({ actions }: Pick<AdminTabProps, 'actions'>) {
           </div>
           <div className="mt-7 flex items-center justify-between gap-2 text-[10px]">
             <p className="text-slate-500">
-              24h qua chặn: <b className="text-primary">18 tin vi phạm</b>
+              24h qua chặn:{' '}
+              <b className="text-primary">{mockModeration.blockedLast24Hours} tin vi phạm</b>
             </p>
             <button
               onClick={() => {

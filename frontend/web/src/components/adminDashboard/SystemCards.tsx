@@ -1,3 +1,4 @@
+import { mockLogistics, mockSystemEvents } from './mockData';
 // Hai khối dùng ở Tổng quan và Hệ thống: trạng thái vận chuyển và danh sách nhật ký sự kiện.
 
 import { Download, ScrollText, Truck } from 'lucide-react';
@@ -5,29 +6,6 @@ import { Badge, Button, Panel } from './AdminUI';
 import type { AdminTabProps } from './adminTypes';
 
 // Nhật ký cố định để dựng UI. Muốn cập nhật thời gian thực cần nguồn API/WebSocket riêng.
-const events = [
-  {
-    time: '14:32:01',
-    message: 'Admin Alex Tran bật Stream Broadcast 3D #AUCT-109.',
-    tone: 'text-primary',
-  },
-  {
-    time: '14:31:45',
-    message: 'Atomic Bid #9802 khớp lệnh thành công 128.5M (Queue: 0ms).',
-    tone: 'text-blue-500',
-  },
-  { time: '14:30:12', message: 'Vận đơn GHN #VN88231 đã giao thành công.', tone: 'text-slate-500' },
-  {
-    time: '14:28:36',
-    message: 'Support Staff đã gửi hồ sơ hoàn tiền #NX-ORD-991204.',
-    tone: 'text-slate-500',
-  },
-  {
-    time: '14:25:08',
-    message: 'WebGL node #06 hoàn tất kiểm tra trạng thái.',
-    tone: 'text-emerald-600',
-  },
-];
 
 // Pick chỉ lấy kiểu của prop actions; card này không cần nhận toàn bộ AdminData.
 // Endpoint và trạng thái GHN dưới đây chỉ là nội dung hiển thị, chưa gửi request thật.
@@ -41,16 +19,16 @@ export function LogisticsCard({ actions }: Pick<AdminTabProps, 'actions'>) {
       <div className="space-y-3 rounded-lg bg-blue-50 p-3 text-[11px]">
         <div className="flex justify-between gap-2">
           <span className="text-slate-500">Webhook endpoint</span>
-          <code className="break-all text-primary">/api/v1/ghn/webhook</code>
+          <code className="break-all text-primary">{mockLogistics.webhookEndpoint}</code>
         </div>
         <div className="flex justify-between">
           <span className="text-slate-500">Tạo vận đơn tự động</span>
-          <Badge tone="green">Hoạt động</Badge>
+          <Badge tone="green">{mockLogistics.automaticShipmentStatus}</Badge>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[10px]">
         <span className="text-slate-500">
-          Độ trễ phản hồi: <b>45ms</b>
+          Độ trễ phản hồi: <b>{mockLogistics.latency}</b>
         </span>
         <button
           onClick={() => actions.notify('Chưa kết nối API GHN. Đây là trạng thái minh họa.')}
@@ -72,7 +50,7 @@ export function EventLog({ compact = false }: { compact?: boolean }) {
       new Blob(
         [
           JSON.stringify(
-            events.map(({ time, message }) => ({ time, message })),
+            mockSystemEvents.map(({ time, message }) => ({ time, message })),
             null,
             2,
           ),
@@ -95,7 +73,7 @@ export function EventLog({ compact = false }: { compact?: boolean }) {
       action={<span className="mt-3 size-2 shrink-0 rounded-full bg-blue-500" />}
     >
       <div className="space-y-2">
-        {events.slice(0, compact ? 3 : events.length).map((event) => (
+        {mockSystemEvents.slice(0, compact ? 3 : mockSystemEvents.length).map((event) => (
           <p
             key={event.time}
             className="rounded-lg bg-slate-50 p-3 font-mono text-[10px] leading-5 text-slate-600"

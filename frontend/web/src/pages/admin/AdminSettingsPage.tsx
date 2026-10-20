@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ModerationCard } from '../../components/adminDashboard/ModerationCard';
 import { Button, Panel } from '../../components/adminDashboard/AdminUI';
 import { useAdminContext } from '../../components/adminDashboard/useAdminContext';
+import { mockSettings } from '../../components/adminDashboard/mockData';
 
 // Nội dung riêng của trang; các card dùng ở cả Tổng quan được tách sang components/adminDashboard.
 export default function AdminSettingsPage() {
@@ -10,10 +11,10 @@ export default function AdminSettingsPage() {
   const { actions } = useAdminContext();
 
   // Cấu hình riêng của trang: đổi trang sẽ reset; nút Lưu hiện chỉ thông báo demo.
-  const [auctionFee, setAuctionFee] = useState(16);
-  const [normalFee, setNormalFee] = useState(7);
-  const [deposit, setDeposit] = useState(10);
-  const [antiSniping, setAntiSniping] = useState(120);
+  const [auctionFee, setAuctionFee] = useState(mockSettings.auctionFee);
+  const [normalFee, setNormalFee] = useState(mockSettings.normalFee);
+  const [deposit, setDeposit] = useState(mockSettings.deposit);
+  const [antiSniping, setAntiSniping] = useState(mockSettings.antiSniping);
 
   return (
     <div className="grid items-start gap-5 xl:grid-cols-2">

@@ -1,4 +1,6 @@
 // Union type: chỉ chấp nhận các tên tab này, giúp TypeScript phát hiện tên tab viết sai.
+import type { AdminCommerceData, CommerceChange } from './commerceTypes';
+
 export type AdminTab =
   | 'overview'
   | 'auctions'
@@ -6,6 +8,10 @@ export type AdminTab =
   | 'studio'
   | 'users'
   | 'sellers'
+  | 'products'
+  | 'orders'
+  | 'stores'
+  | 'reports'
   | 'refunds'
   | 'finance'
   | 'system'
@@ -46,7 +52,7 @@ export interface AdminUser {
 }
 
 // Gói dữ liệu chung do AdminLayout sở hữu và truyền xuống các tab qua props.
-export interface AdminData {
+export interface AdminData extends AdminCommerceData {
   refunds: RefundRequest[];
   auctions: AuctionItem[];
   users: AdminUser[];
@@ -55,6 +61,7 @@ export interface AdminData {
 // Hợp đồng callback giữa trang cha và tab: tab yêu cầu thao tác, trang cha cập nhật data.
 // Các hàm hiện trả void vì thao tác đồng bộ trong demo; API thực tế có thể cần Promise.
 export interface AdminActions {
+  updateCommerce: (change: CommerceChange) => void;
   navigate: (tab: AdminTab) => void;
   reviewRefund: (id: string, status: 'approved' | 'rejected') => void;
   approveAuction: (id: string) => void;

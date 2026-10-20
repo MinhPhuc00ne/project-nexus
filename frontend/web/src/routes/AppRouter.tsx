@@ -56,6 +56,10 @@ import {
   StaffHistoryPage,
   StaffPerformancePage,
   // Admin
+  AdminProductsPage,
+  AdminOrdersPage,
+  AdminStoresPage,
+  AdminReportsPage,
   AdminDashboardPage,
   AdminUsersPage,
   AdminSellersPage,
@@ -124,6 +128,10 @@ export const ROUTES = {
 
   // Admin
   ADMIN: '/admin',
+  ADMIN_PRODUCTS: '/admin/products',
+  ADMIN_ORDERS: '/admin/orders',
+  ADMIN_STORES: '/admin/stores',
+  ADMIN_REPORTS: '/admin/reports',
   ADMIN_CATEGORIES: '/admin/categories',
   ADMIN_OVERVIEW: '/admin/overview',
   ADMIN_USERS: '/admin/users',
@@ -223,6 +231,10 @@ function AppRouter() {
           <Route path="overview" element={<AdminDashboardPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="sellers" element={<AdminSellersPage />} />
+          <Route path="products" element={<AdminProductsPage />} />
+          <Route path="orders" element={<AdminOrdersPage />} />
+          <Route path="stores" element={<AdminStoresPage />} />
+          <Route path="reports" element={<AdminReportsPage />} />
           <Route path="auctions" element={<AdminAuctionsPage />} />
           <Route path="refunds" element={<AdminRefundsPage />} />
           <Route path="studio" element={<AdminStudioPage />} />

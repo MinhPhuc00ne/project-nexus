@@ -8,7 +8,8 @@ import {
   AdminSellerRequestsProvider,
   useAdminSellerRequests,
 } from '../components/adminDashboard/AdminSellerRequests';
-import { initialAdminData } from '../components/adminDashboard/adminData';
+import { initialAdminData } from '../components/adminDashboard/mockData';
+import { applyCommerceChange } from '../components/adminDashboard/commerceData';
 import type { AdminActions, AdminData } from '../components/adminDashboard/adminTypes';
 import { Role, type UserProfile } from '../types';
 import { getStoredToken } from '../services/auth';
@@ -203,6 +204,10 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   // Các tab nhận một bộ callback chung thay vì tự sửa dữ liệu riêng.
   // Khi nối API: gửi yêu cầu tại các action, chỉ cập nhật state sau khi server thành công.
   const actions: AdminActions = {
+    updateCommerce: (change) => {
+      setData((current) => applyCommerceChange(current, change));
+      notify('Đã cập nhật dữ liệu mẫu. Thay đổi sẽ mất khi tải lại trang.');
+    },
     navigate: (target) => navigate(`/admin/${target}`),
     notify,
     showDetail: (title, content) => setDetail({ title, content }),
@@ -254,6 +259,10 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   // Tính số đếm từ dữ liệu hiện tại; duyệt hồ sơ xong badge sẽ tự giảm sau lần render tiếp.
   const sellerCount = sellerRequests.pendingTotal;
   const refundCount = data.refunds.filter((item) => item.status === 'pending').length;
+  const productCount = data.products.filter((item) => item.status === 'pending').length;
+  const reportCount = data.reports.filter((item) =>
+    ['open', 'investigating'].includes(item.status),
+  ).length;
   return (
     <div className="h-dvh overflow-hidden bg-[#f5f7fb] text-slate-800 selection:bg-blue-100">
       {/* Đây là sidebar: menu điều hướng bên trái, dùng chung cho mọi trang admin.
@@ -263,6 +272,8 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         onClose={() => setSidebarOpen(false)}
         sellerCount={sellerCount}
         refundCount={refundCount}
+        productCount={productCount}
+        reportCount={reportCount}
       />
       {/* lg:ml-64 chừa 256px cho sidebar trên desktop. min-w-0 giúp bảng cuộn trong khung. */}
       <div className="flex h-full min-w-0 flex-col lg:ml-64">
@@ -273,6 +284,8 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
           pendingCount={
             sellerCount +
             refundCount +
+            productCount +
+            reportCount +
             data.auctions.filter((item) => item.status === 'pending').length
           }
         />
