@@ -11,92 +11,15 @@ import {
 import { initialAdminData } from '../components/adminDashboard/adminData';
 import type { AdminActions, AdminData } from '../components/adminDashboard/adminTypes';
 import { Role, type UserProfile } from '../types';
-import { getStoredToken } from '../services/auth';
-import { getMe } from '../services/users';
-import { ApiRequestError } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
-// Mỗi kết quả gắn với đúng token đã kiểm tra, tránh dùng quyền của phiên đăng nhập cũ.
-type AdminAccess = { token: string | null } & (
-  | { status: 'loading' | 'unauthenticated' | 'forbidden' }
-  | { status: 'error'; message: string }
-  | { status: 'allowed'; user: UserProfile }
-);
-
-// Mọi URL /admin/* đều đi qua đây, kể cả khi nhập thẳng đường dẫn trên trình duyệt.
-// Chưa xác minh xong thì tuyệt đối chưa render sidebar, header hay page con.
+// Every admin route uses the profile verified by AuthContext; no separate /me call.
 export default function AdminLayout() {
-  const token = getStoredToken();
-  const [access, setAccess] = useState<AdminAccess>({ token: null, status: 'loading' });
-  const [retry, setRetry] = useState(0);
+  const { token, user, isLoading, refreshProfile } = useAuth();
+  const [retrying, setRetrying] = useState(false);
 
-  // Kiểm tra quyền khi vào khu vực admin và khi phiên đăng nhập thay đổi.
-  useEffect(() => {
-    let active = true;
-    let requestId = 0;
-
-    const checkAccess = async () => {
-      const currentRequest = ++requestId;
-      const checkedToken = getStoredToken();
-
-      if (!checkedToken) {
-        setAccess({ token: null, status: 'unauthenticated' });
-        return;
-      }
-
-      setAccess({ token: checkedToken, status: 'loading' });
-      const isCurrent = () =>
-        active && currentRequest === requestId && checkedToken === getStoredToken();
-
-      try {
-        // Chỉ tin role do backend trả về, không đọc role từ localStorage để cấp quyền.
-        const user = await getMe();
-        if (!isCurrent()) return;
-        if (!user || typeof user.id !== 'string' || typeof user.email !== 'string') {
-          throw new Error('Thông tin tài khoản từ máy chủ không hợp lệ.');
-        }
-        setAccess(
-          user.role === Role.ADMIN
-            ? { token: checkedToken, status: 'allowed', user }
-            : { token: checkedToken, status: 'forbidden' },
-        );
-      } catch (error: unknown) {
-        if (!isCurrent()) return;
-        if (error instanceof ApiRequestError && error.status === 401) {
-          setAccess({ token: checkedToken, status: 'unauthenticated' });
-        } else if (error instanceof ApiRequestError && error.status === 403) {
-          setAccess({ token: checkedToken, status: 'forbidden' });
-        } else {
-          // Mất mạng/lỗi server vẫn chặn nội dung, nhưng cho thử lại thay vì tự đăng xuất.
-          setAccess({
-            token: checkedToken,
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Không thể kiểm tra quyền truy cập.',
-          });
-        }
-      }
-    };
-
-    const syncAuth = () => void checkAccess();
-    const syncStorage = (event: StorageEvent) => {
-      if (event.key === null || event.key === 'nexus:auth-token') syncAuth();
-    };
-    syncAuth();
-    window.addEventListener('nexus:auth-change', syncAuth);
-    window.addEventListener('storage', syncStorage);
-    return () => {
-      active = false;
-      window.removeEventListener('nexus:auth-change', syncAuth);
-      window.removeEventListener('storage', syncStorage);
-    };
-  }, [retry]);
-
-  // Chưa đăng nhập hoặc token không hợp lệ: chuyển sang trang login.
-  if (!token || (access.token === token && access.status === 'unauthenticated')) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Đang xác minh tài khoản: chỉ hiện loading, chưa hiện giao diện admin.
-  if (access.token !== token || access.status === 'loading') {
+  if (!token) return <Navigate to="/login" replace />;
+  if (isLoading || retrying) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
         <p role="status" className="text-sm text-slate-600">
@@ -105,38 +28,36 @@ export default function AdminLayout() {
       </main>
     );
   }
-
-  if (access.status === 'allowed') {
-    // Header dùng cùng profile này; không gọi /users/me thêm lần nữa.
-    // Provider chia sẻ dữ liệu hồ sơ Seller; AdminWorkspace ghép các phần giao diện.
+  // Only a server-verified profile grants access; a role saved in localStorage is insufficient.
+  if (user?.role === Role.ADMIN) {
     return (
       <AdminSellerRequestsProvider key={token}>
-        <AdminWorkspace user={access.user} />
+        <AdminWorkspace user={user} />
       </AdminSellerRequestsProvider>
     );
   }
 
-  // Sai role thì hiện 403; lỗi kiểm tra quyền thì hiện thông báo và nút thử lại.
+  const retry = async (): Promise<void> => {
+    setRetrying(true);
+    try {
+      await refreshProfile();
+    } finally {
+      setRetrying(false);
+    }
+  };
   return (
     <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
         <h1 className="text-xl font-bold text-primary">
-          {access.status === 'forbidden'
-            ? '403 — Không có quyền truy cập'
-            : 'Không thể kiểm tra quyền truy cập'}
+          {user ? '403 — Không có quyền truy cập' : 'Không thể kiểm tra quyền truy cập'}
         </h1>
-        <p
-          role={access.status === 'error' ? 'alert' : undefined}
-          className="mt-3 text-sm leading-6 text-slate-500"
-        >
-          {access.status === 'error'
-            ? access.message
-            : 'Chỉ tài khoản có vai trò ADMIN mới được truy cập khu vực quản trị.'}
+        <p role={!user ? 'alert' : undefined} className="mt-3 text-sm leading-6 text-slate-500">
+          {user
+            ? 'Chỉ tài khoản có vai trò ADMIN mới được truy cập khu vực quản trị.'
+            : 'Chưa thể lấy thông tin tài khoản từ máy chủ. Vui lòng thử lại.'}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          {access.status === 'error' && (
-            <Button onClick={() => setRetry((current) => current + 1)}>Thử lại</Button>
-          )}
+          {!user && <Button onClick={() => void retry()}>Thử lại</Button>}
           <Link
             to="/"
             className="rounded-lg bg-blue-50 px-4 py-2.5 text-xs font-semibold text-primary"

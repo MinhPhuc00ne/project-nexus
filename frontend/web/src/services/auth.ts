@@ -113,7 +113,7 @@ async function post<T>(path: string, body: object): Promise<T> {
   try {
     response = await api.post<ApiResponse<T>>(`/auth/${path}`, body);
   } catch (error) {
-    if (axios.isAxiosError<ApiResponse<T>>(error)) {
+    if (axios.isAxiosError<ApiResponse<T> & { errors?: unknown }>(error)) {
       const payload = error.response?.data;
       const errors = Array.isArray(payload?.errors)
         ? (payload.errors as unknown[])
