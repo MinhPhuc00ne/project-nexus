@@ -1,228 +1,108 @@
 # Project Nexus - Design Patterns Specification
 
-This document formalizes the software design patterns mandated across Project Nexus, encompassing both the backend Modular Monolith (NestJS) and client applications (React + Three.js). All engineers contributing to the codebase must adhere to these established patterns.
+This document details the software design patterns implemented across the Backend Modular Monolith and Client Applications in Project Nexus.
 
 ---
 
-## 1. Backend Patterns
+## 1. Backend Design Patterns
 
-### 1.1. Dependency Injection (Inversion of Control - IoC)
+### 1.1 Inversion of Control & Dependency Injection (IoC / DI)
 
-- Purpose: Decouples component creation from usage, enabling robust unit testing through mocking/stubbing and achieving loose coupling.
-- Rules:
-  - Never instantiate stateful or I/O-bound dependencies (Repositories, HTTP Clients, Loggers) directly via the `new` keyword inside business services.
-  - Declare dependencies through constructor parameters utilizing NestJS IoC containers or custom string/symbol tokens.
-- Example:
-
+- **Problem:** Direct instantiation of database clients, loggers, or external APIs couples business services to infrastructure, hampering testability.
+- **Pattern:** Leverages NestJS IoC container. Dependencies are declared via constructor parameters.
+- **Example:**
   ```typescript
   @Injectable()
   export class PlaceBidService {
     constructor(
       private readonly auctionRepository: AuctionRepository,
       private readonly eventEmitter: EventEmitter2,
+      private readonly redisService: RedisService,
     ) {}
   }
   ```
 
----
+### 1.2 Repository Pattern & Unit of Work (ACID Transactions)
 
-### 1.2. Repository Pattern & Unit of Work (ACID Transactions)
-
-- Purpose: Abstracts database operations and encapsulates query logic away from business services. In our monolithic architecture, PostgreSQL ACID transactions guarantee multi-step consistency without distributed transaction overhead.
-- Rules:
-  - Implement repository classes within each module to encapsulate Prisma database queries.
-  - When executing multi-step interdependent database writes (e.g., deducting buyer wallet balance and creating an escrow record), use `prisma.$transaction()` to guarantee atomicity and rollback on error.
-- Example:
-
+- **Problem:** Database queries scattered across business logic lead to code duplication and broken transactions when multi-table writes fail midway.
+- **Pattern:** Repository classes encapsulate Prisma queries. Multi-step operations execute inside `prisma.$transaction()` Units of Work.
+- **Example (Escrow Hold on Payment):**
   ```typescript
-  @Injectable()
-  export class EscrowTransactionService {
-    constructor(private readonly prisma: PrismaService) {}
-
-    async holdOrderFunds(orderId: string, buyerId: string, amount: number): Promise<void> {
-      await this.prisma.$transaction(async (tx) => {
-        // 1. Deduct wallet balance
-        const user = await tx.user.update({
-          where: { id: buyerId },
-          data: { walletBalance: { decrement: amount } },
-        });
-
-        if (user.walletBalance.toNumber() < 0) {
-          throw new InsufficientFundsException();
-        }
-
-        // 2. Create Escrow record
-        await tx.escrowRecord.create({
-          data: {
-            orderId,
-            amount,
-            status: 'HELD',
-          },
-        });
-
-        // 3. Mark order as PAID
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: 'PAID' },
-        });
-      });
-    }
-  }
+  await this.prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: buyerId },
+      data: { walletBalance: { decrement: amount } },
+    });
+    await tx.escrowRecord.create({
+      data: { orderId, amount, status: 'HELD' },
+    });
+    await tx.order.update({
+      where: { id: orderId },
+      data: { status: 'PAID' },
+    });
+  });
   ```
+
+### 1.3 Strategy Pattern (Payment & Logistics Gateways)
+
+- **Problem:** Adding new payment gateways or shipping carriers should not require altering existing business classes (Open/Closed Principle).
+- **Pattern:** Abstract strategy interfaces define execution contracts (`IPaymentStrategy`, `ILogisticsStrategy`). Concrete providers implement the interface and register with a central context registry.
+- **Concrete Strategies:**
+  - `PayOSPaymentStrategy`: Vietnamese domestic bank QR code with cryptographic webhook signature verification.
+  - `StripePaymentStrategy`: International cards via Stripe PaymentIntents.
+  - `WalletPaymentStrategy`: Instant internal balance settlement.
+  - `GhnLogisticsStrategy`: Giao Hàng Nhanh shipping quotation and waybill generation.
+
+### 1.4 In-Process Observer & Domain Events Pattern
+
+- **Problem:** Monolithic modules must notify each other without tight coupling or circular imports (`forwardRef`).
+- **Pattern:** State mutations emit domain events via `@nestjs/event-emitter`. Other modules register listeners using `@OnEvent()`.
+- **Workflow:**
+  - `CommerceModule` emits `OrderCreatedEvent`.
+  - `FulfillmentModule` listens and holds funds in escrow.
+  - `NotificationModule` listens and writes an immutable audit record to `event_logs`, sending an email confirmation.
+
+### 1.5 Distributed Lock (Redlock) & Atomic Queue
+
+- **Problem:** High-concurrency auctions risk race conditions, simultaneous highest bids, and double-spending.
+- **Pattern:** Uses Redis distributed locks (`Redlock`) to serialize bids down to the millisecond on `auction:{id}` before committing state to PostgreSQL.
 
 ---
 
-### 1.3. Strategy Pattern (Payment & Logistics)
+## 2. Frontend Design Patterns
 
-- Purpose: Enables switching third-party vendor algorithms or integrations dynamically at runtime without modifying core business logic (Open/Closed Principle).
-- Use Cases in Nexus:
-  - Payment Gateways: `PayOSPaymentStrategy` (domestic Vietnamese VietQR banking) and `StripePaymentStrategy` (international credit cards).
-  - Logistics: `GhnShippingStrategy` (Giao Hàng Nhanh) and future providers (e.g., GHTK, ViettelPost).
-- Example:
+### 2.1 Barrel Pattern (Single Entry Point Re-export)
 
+- **Problem:** Modules needing types or enums had to navigate complex, deep directory paths (`import ... from '@nexus/types/dist/models/index.js'`).
+- **Pattern:** `packages/types/src/index.ts` serves as a public barrel export:
   ```typescript
-  export interface IPaymentStrategy {
-    readonly provider: 'PAYOS' | 'STRIPE';
-    createPaymentLink(order: OrderDto): Promise<PaymentLinkResult>;
-    verifyWebhook(payload: unknown, signature: string): Promise<PaymentWebhookResult>;
-  }
-
-  @Injectable()
-  export class PaymentContextService {
-    private readonly strategies: Map<string, IPaymentStrategy> = new Map();
-
-    constructor(strategies: IPaymentStrategy[]) {
-      strategies.forEach((s) => this.strategies.set(s.provider, s));
-    }
-
-    getStrategy(provider: 'PAYOS' | 'STRIPE'): IPaymentStrategy {
-      const strategy = this.strategies.get(provider);
-      if (!strategy) {
-        throw new UnsupportedPaymentProviderException(provider);
-      }
-      return strategy;
-    }
-  }
+  export * from './enums/index.js';
+  export * from './events/index.js';
+  export * from './models/index.js';
   ```
+  Client and server code simply imports from `@nexus/types`.
 
----
+### 2.2 In-Flight Request Deduplication & Cross-Tab Sync (`AuthContext`)
 
-### 1.4. In-Process Observer & Domain Events Pattern
+- **Problem:** Multiple simultaneous components on page reload or route changes triggered 6–7 duplicate `/users/me` API requests.
+- **Pattern:**
+  - **In-Flight Promise Ref:** Maintains a shared `inFlightPromiseRef` in React Context. If a request is already pending, subsequent calls latch onto the existing Promise instead of dispatching new network requests.
+  - **Storage Event Synchronization:** Listens to `window.addEventListener('storage')` and custom `nexus:auth-change` events to keep user profile and tokens synchronized across multiple open browser tabs.
 
-- Purpose: Allows decoupled asynchronous notifications between monolithic modules without creating circular dependencies.
-- Implementation:
-  - Uses `@nestjs/event-emitter` (`EventEmitter2`).
-  - When an event occurs in one module, it emits a domain event payload:
+### 2.3 Mock Layer & Graceful Fallback Strategy
 
-    ```typescript
-    this.eventEmitter.emit(
-      'order.created',
-      new OrderCreatedEvent(order.id, order.buyerId, order.totalAmount),
-    );
-    ```
+- **Problem:** Frontend development is blocked when backend endpoints are incomplete, or local databases are offline.
+- **Pattern:**
+  - Services check `isMockEnabled()` (`VITE_USE_MOCK=true`).
+  - When mock mode is disabled (`false`), services call the real API. If the API returns a network or 404/500 error, the service automatically falls back to curated mock data (`frontend/web/src/mocks/`) without crashing the UI.
 
-  - Other modules listen using the `@OnEvent()` decorator:
+### 2.4 Data-Driven UI (Configuration over Code)
 
-    ```typescript
-    @OnEvent('order.created')
-    async handleOrderCreated(event: OrderCreatedEvent) {
-      await this.escrowService.createEscrowHold(event.orderId, event.amount);
-    }
-    ```
+- **Problem:** Hardcoding navigation links, icons, and route paths inside UI components bloated files past the 300-line threshold.
+- **Pattern:** Extracted into metadata definitions (e.g., [`staffNavigationData.ts`](../frontend/web/src/pages/staff/staffNavigationData.ts)). Sidebar and dashboard components simply map over the dataset, allowing instant UI updates via single-line configuration changes.
 
----
+### 2.5 Three.js Scene Lifecycle & Asset Manager Pattern
 
-### 1.5. Real-Time Distributed Lock & Pub-Sub Pattern (Auction Engine)
-
-- Purpose: Serializes concurrent bids and broadcasts updates to connected live auction participants with sub-10ms latency.
-- Implementation:
-  - `AuctionModule` receives incoming bids $\rightarrow$ Obtains a Redis lock (`Redlock`) to eliminate concurrent double-bids.
-  - Commits the validated bid into PostgreSQL.
-  - Broadcasts the update via WebSocket Gateway to all connected clients in the auction room (`auction:bid:placed`).
-
----
-
-### 1.6. Audit Event Logging & Asynchronous Notification Pattern
-
-- Purpose: Satisfies SRS 3.2 requirements by automatically capturing every published system domain event into an immutable audit table (`event_logs`) and triggering user notifications (Email/Push) without blocking core workflows.
-- Implementation:
-  - The `NotificationModule` registers wildcard or domain-specific listeners (`@OnEvent('')` or specific events like `auction.bid.placed`):
-
-  ```typescript
-  @Injectable()
-  export class EventAuditListener {
-    constructor(
-      private readonly prisma: PrismaService,
-      private readonly notificationService: NotificationService,
-    ) {}
-
-    @OnEvent('order.created')
-    async handleOrderCreated(payload: OrderCreatedEventPayload): Promise<void> {
-      // 1. Immutable Audit Logging
-      await this.prisma.eventLog.create({
-        data: {
-          eventName: 'OrderCreated',
-          payload: JSON.stringify(payload),
-          operatorId: payload.buyerId,
-        },
-      });
-
-      // 2. Multi-channel Notification Dispatch
-      await this.notificationService.sendTransactionalNotification({
-        userId: payload.sellerId,
-        title: 'New Order Received',
-        content: `Order #${payload.orderId} was placed with amount ${payload.totalAmount}`,
-      });
-    }
-  }
-  ```
-
----
-
-## 2. Frontend Patterns (React + Three.js)
-
-### 2.1. Container-Presenter & Custom Hooks Pattern
-
-- Purpose: Completely isolates business logic, API communication, and state management (Custom Hooks) from rendering concerns (Presentational Components).
-- Rules:
-  - Encapsulate all WebSocket events, auction countdown countdown timers, and bidding logic inside dedicated custom hooks (e.g., `useLiveAuction(auctionId)`).
-  - Presentational UI components (`AuctionBidBoard.tsx`, `AuctionTimer.tsx`) must receive pure props and render interface elements without embedding side-effecting API hooks directly.
-
----
-
-### 2.2. Three.js Scene Lifecycle & Asset Manager Pattern
-
-- Purpose: Governs the loading, rendering, and systematic disposal of 3D assets (Models, Geometries, Materials, Textures, Shaders) to avoid client-side browser memory leaks.
-- Rules:
-  1. Singleton Asset Cache: Caches fetched `.glb`/`.gltf` model buffers to enable instant re-rendering across transitions.
-  2. Lifecycle Cleanup: Ensures all scene objects, animations, and WebGL contexts are disposed when components unmount:
-
-  ```typescript
-  // frontend/web/src/features/auction/components/ThreeCanvas.tsx
-  useEffect(() => {
-    const sceneManager = new AuctionSceneManager(canvasRef.current);
-    sceneManager.init(itemModelUrl);
-
-    return () => {
-      sceneManager.dispose(); // Explicitly disposes geometries, textures, and renderer
-    };
-  }, [itemModelUrl]);
-  ```
-
-- Fallback Pattern: Utilizes the Null Object / Fallback pattern: if no 3D asset matches the item among the 15 hardcoded models, the renderer transitions to a default 3D pedestal (`fallback-pedestal.glb`) textured with the seller's 2D photos.
-
----
-
-### 2.3. Compound Components Pattern (Complex UI Layouts)
-
-- Purpose: Construct flexible, cohesive component hierarchies that implicitly share state via React Context (e.g., `LiveAuctionRoom`, `Modal`, `Accordion`).
-- Example:
-
-  ```tsx
-  <LiveAuctionRoom auctionId="auc-123">
-    <LiveAuctionRoom.WebGLViewer />
-    <LiveAuctionRoom.Timer />
-    <LiveAuctionRoom.BidHistory />
-    <LiveAuctionRoom.BidControls />
-  </LiveAuctionRoom>
-  ```
+- **Problem:** Three.js WebGL contexts cause browser memory leaks if geometries and textures are not explicitly disposed when unmounting.
+- **Pattern:** `AuctionSceneManager` encapsulates scene creation, render loops, and systematic disposal (`geometry.dispose()`, `material.dispose()`, `renderer.dispose()`) outside React's render cycle.
+- **Fallback Pedestal:** If a 3D model asset is absent, the manager loads `fallback-pedestal.glb` and projects 2D product photos onto dynamic texture coordinates.

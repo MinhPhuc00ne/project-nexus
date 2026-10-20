@@ -1,26 +1,12 @@
 # Contributing to Project Nexus
 
-This is a guide for contributing to **Project Nexus**! This document outlines our branching strategy, commit guidelines, code standards, and the Merge Request lifecycle on GitLab.
+Thank you for contributing to **Project Nexus**! This document outlines our git workflow, branching strategy, commit guidelines, code quality gates, and the Merge Request lifecycle.
 
 ---
 
-## Git Workflow
+## 1. Git Branching Strategy
 
-- Branching:
-  - `main`: Protected production branch.
-  - `dev`: Active integration branch.
-  - Feature branches: `feature/<module>-<short-description>` (e.g., `feature/auction-live-board`).
-- Commit Standards: Strictly conforms to Conventional Commits v1.0.0 (`feat`, `fix`, `docs`, `refactor`, etc.).
-- Pre-MR Quality Gate:
-
-  ```bash
-  npm run lint
-  npm run format:check
-  ```
-
----
-
-## Contributing Workflow
+Our git branching model revolves around a protected `main` branch and an active integration branch `dev`:
 
 ```mermaid
 gitGraph
@@ -40,23 +26,22 @@ gitGraph
 
 ### Branch Roles
 
-- `main`: Protected production branch. Direct commits are forbidden.
-- `dev`: The active integration branch. All feature branches originate from `dev` and merge back into `dev`.
-- Feature Branches: `feature/<module>-<short-description>` (e.g., `feature/auction-anti-sniping`, `feature/commerce-checkout`, `feature/auction-live-board`).
-- Bugfix Branches: `bugfix/<module>-<task>`: Dedicated branches for resolving defects during development.
-- Hotfix Branches: `hotfix/<issue>`: Urgent production fixes branching directly off `main` and merged back into both `main` and `dev`.
+- **`main`:** Protected production branch. Direct commits and pushes are strictly forbidden.
+- **`dev`:** Active integration branch. All feature branches must branch off `dev` and merge back into `dev`.
+- **Feature Branches:** `feature/<module>-<short-description>` (e.g., `feature/auction-anti-sniping`, `feature/commerce-checkout`, `feature/staff-chat`).
+- **Bugfix Branches:** `bugfix/<module>-<task>`: Dedicated branches for resolving defects during development.
+- **Hotfix Branches:** `hotfix/<issue>`: Critical production patches branching directly off `main` and merged back into both `main` and `dev`.
 
 ---
 
-## Commit Message Standards
+## 2. Commit Message Standards
 
-All commit messages must strictly comply with the [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) specification.\
-Commits must be atomic—each commit encapsulates a single logical change.
+All commits must strictly comply with the [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) specification:
 
 ### Format
 
 ```text
-<type>(<scope>): <short description>
+<type>(<scope>): <short description in English>
 ```
 
 ### Allowed Types (enforced via `commitlint.config.js`):
@@ -75,55 +60,61 @@ Commits must be atomic—each commit encapsulates a single logical change.
 
 ---
 
-## Coding Standards
+## 3. Engineering Quality Standards & Checklists
 
-All contributors must adhere to our formal engineering specifications:
+Before opening a Merge Request or committing, all contributors must ensure their changes comply with our engineering specifications in [`docs/`](docs/):
 
-- Read and follow [CLEAN_CODE.md](./docs/standards/CLEAN_CODE.md) for naming conventions, formatting, ESLint rules, strict TypeScript (`no-explicit-any`), and DTO validation.
-- Read [DESIGN_PRINCIPLES.md](./docs/standards/DESIGN_PRINCIPLES.md) for SOLID, KISS, YAGNI, DRY, and Twelve-Factor App guidelines.
-- Read [DESIGN_PATTERNS.md](./docs/architecture/DESIGN_PATTERNS.md) for Repository, Strategy (PayOS/Stripe/GHN), In-Process Observer/Events, PostgreSQL ACID transactions, and Three.js lifecycle management.
-- Read [ARCHITECTURE.md](./docs/architecture/ARCHITECTURE.md) for modular boundaries, in-process event communication (`@nestjs/event-emitter`), and presentation layers.
+- **File Length Constraint (< 300 Lines Limit):** No component or source file may exceed 300 lines of code. Decompose larger views into subcomponents, hooks, or configuration files (see [`docs/standards/CLEAN_CODE.md`](docs/standards/CLEAN_CODE.md)). All pages, including `HomePage.tsx`, adhere to this rule.
+- **Clean Code & Strict TypeScript:**
+  - Zero usage of `any` (`@typescript-eslint/no-explicit-any`).
+  - Public methods must declare explicit return types.
+  - No `console.log` statements in production services or components.
+  - Inputs validated using DTOs with `class-validator`.
+- **Design Patterns:** Adhere to established patterns in [`docs/architecture/DESIGN_PATTERNS.md`](docs/architecture/DESIGN_PATTERNS.md) (IoC, Repository, Strategy, In-Process Events, AuthContext deduplication).
 
-### Quick Quality Checklist Before Committing
+### Pre-MR Local Verification Checklist
 
-- [ ] No `any` type used (`@typescript-eslint/no-explicit-any`).
-- [ ] Public methods have explicit return types.
-- [ ] Code formatted with Prettier (`npm run format:check`).
-- [ ] Code passes all linter checks (`npm run lint`).
-- [ ] No `console.log` statements in production logic.
-- [ ] Inputs validated using DTOs with `class-validator`.
-- [ ] Commit message conforms to Conventional Commits (enforced via `commitlint`).
+Run these commands locally to verify compliance before opening a Merge Request:
+
+```bash
+# 1. Verify code formatting with Prettier
+npm run format:check
+
+# 2. Run static analysis with ESLint
+npm run lint
+
+# 3. Verify TypeScript build and production bundle
+npm run build:web
+npm run build:backend
+```
 
 ---
 
-## Step-by-Step Merge Request Workflow
+## 4. Step-by-Step Merge Request Workflow
 
-1. Pre-MR Local Verification:
-
-   ```bash
-   npm run lint
-   npm run format:check
-   ```
-
-2. Rebase on Latest `dev`: Always sync and rebase the latest changes from `origin/dev` before pushing:
+1. **Keep Your Branch Updated:** Rebase on the latest `dev` branch before opening an MR:
 
    ```bash
-   git checkout dev && git pull origin dev
+   git checkout dev
+   git pull origin dev
    git checkout feature/your-branch-name
    git rebase dev
    ```
 
-3. Push to GitLab:
+2. **Push to GitLab:**
 
    ```bash
    git push -u origin feature/your-branch-name
    ```
 
-4. Open a Merge Request on GitLab:
-   - Target branch: **`dev`** ⚠️ _(Never target `main`)_.
-   - Title: Follow Conventional Commits format (e.g., `feat(auction): add live bidding broadcast`).
-   - Description: Complete the template loaded from `.gitlab/merge_request_templates/default.md`.
-   - Check: `Delete source branch when merge request is accepted`.
-   - Assignee: Yourself | Reviewer: Tech Lead / Peer reviewer.
+3. **Open a Merge Request on GitLab:**
+   - **Target Branch:** **`dev`** ⚠️ _(Never target `main` directly)_.
+   - **Title:** Conventional Commits format (e.g., `feat(auction): implement anti-sniping duration extension`).
+   - **Description:** Complete the checklist from `.gitlab/merge_request_templates/default.md`.
+   - **Check Option:** `Delete source branch when merge request is accepted`.
+   - **Assignee:** Yourself | **Reviewer:** Tech Lead or designated peer reviewer.
 
-5. Code Review & Merge: Address comments, resolve threads, receive approval (minimum 1 approval required), ensure CI passes, and merge into `dev`.
+4. **Code Review & Approval:**
+   - Address reviewer comments and resolve all open discussion threads.
+   - Ensure all automated CI/CD pipeline checks pass.
+   - Once approved (minimum 1 peer approval required), the MR is merged into `dev`.

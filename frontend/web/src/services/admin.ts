@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig } from 'axios';
+import { Role } from '@nexus/types';
 import api, { ApiRequestError } from './api';
 import { getStoredToken } from './auth';
 import type { SellerUpgradeRequest } from './users';
@@ -37,7 +38,7 @@ export interface StaffUser {
   email: string;
   fullName: string;
   phoneNumber: string | null;
-  role: string;
+  role: Role;
   isVerified: boolean;
   createdAt: string;
 }

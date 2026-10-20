@@ -10,8 +10,9 @@ import {
 } from '../components/adminDashboard/AdminSellerRequests';
 import { initialAdminData } from '../components/adminDashboard/adminData';
 import type { AdminActions, AdminData } from '../components/adminDashboard/adminTypes';
+import { Role, type UserProfile } from '../types';
 import { getStoredToken } from '../services/auth';
-import { getMe, type UserProfile } from '../services/users';
+import { getMe } from '../services/users';
 import { ApiRequestError } from '../services/api';
 
 // Mỗi kết quả gắn với đúng token đã kiểm tra, tránh dùng quyền của phiên đăng nhập cũ.
@@ -54,7 +55,7 @@ export default function AdminLayout() {
           throw new Error('Thông tin tài khoản từ máy chủ không hợp lệ.');
         }
         setAccess(
-          user.role === 'ADMIN'
+          user.role === Role.ADMIN
             ? { token: checkedToken, status: 'allowed', user }
             : { token: checkedToken, status: 'forbidden' },
         );

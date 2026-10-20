@@ -1,15 +1,6 @@
-export interface CartItem {
-  id: string | number;
-  name: string;
-  price: number; // in VND numeric
-  formattedPrice: string; // e.g. "128.500.000 ₫"
-  qty: number;
-  img: string;
-  shopName?: string;
-  selected?: boolean;
-  category?: string;
-  brand?: string;
-}
+import type { CartItem } from '../types/cart.types';
+
+export type { CartItem };
 
 const CART_STORAGE_KEY = 'nexus:cart-items';
 

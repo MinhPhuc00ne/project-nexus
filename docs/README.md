@@ -1,21 +1,56 @@
 # Project Nexus - Documentation Portal
 
-Welcome to the official documentation portal for Project Nexus. Please refer to the technical specifications and standards documents below:
+Welcome to the comprehensive technical documentation portal for Project Nexus — a high-performance, modular monolith platform for Luxury E-commerce and Realtime 3D Auctions.
 
-## 1. Requirements
+---
 
-- [Software Requirements Specification (SRS)](./srs/README.md): Detailed specification of functional requirements (E-commerce, 3D Realtime Auction, Escrow, Reputation) and non-functional requirements.
+## 1. System Architecture & Domain Specifications
 
-## 2. System Architecture
+Located in [`docs/architecture/`](./architecture/):
 
-- [System Architecture Specification](./architecture/ARCHITECTURE.md): Modular Monolith architecture, module boundaries, in-process event communication (`@nestjs/event-emitter`), unified PostgreSQL ACID persistence, Redis caching/queues, and WebSocket synchronization.
-- [Design Patterns Specification](./architecture/DESIGN_PATTERNS.md): Implementation guide for design patterns: Repository, Strategy (PayOS/Stripe/GHN), In-Process Observer/Event-Driven, Unit of Work / ACID Transactions, and Three.js Scene Lifecycle Management.
+| Document                                                            | Description                                                                                                                 | Focus Area         |
+| :------------------------------------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| **[`ARCHITECTURE_MODEL.md`](./architecture/ARCHITECTURE_MODEL.md)** | Modular Monolith architecture, Prisma database schema, domain models, and transaction boundaries.                           | Backend & Database |
+| **[`BUSINESS_RULES.md`](./architecture/BUSINESS_RULES.md)**         | Core domain business rules: Escrow lifecycle, 3D Realtime Auction, Anti-Sniping, Atomic Queue, KYC, and Reputation scoring. | Domain Logic       |
+| **[`DESIGN_PATTERNS.md`](./architecture/DESIGN_PATTERNS.md)**       | Applied GoF and architectural patterns: Repository, Strategy, In-Process Event-Driven, Unit of Work, and React Context.     | Architecture       |
 
-## 3. Engineering & Clean Code Standards
+---
 
-- [Design Principles Specification](./standards/DESIGN_PRINCIPLES.md): SOLID principles, KISS, YAGNI, DRY, Modular Cohesion, and Low Coupling in a monolithic codebase.
-- [Clean Code & Quality Standards](./standards/CLEAN_CODE.md): Naming conventions, Code Formatting (Prettier), Linting (ESLint), Strict TypeScript, Error Handling, Structured Logging, and Git Hooks enforcement.
+## 2. Engineering & Clean Code Standards
 
-## 4. Interfaces & API
+Located in [`docs/standards/`](./standards/):
 
-- [API Documentation Index](./api/README.md): RESTful conventions, WebSocket contracts, and unified Swagger specifications.
+| Document                                                         | Description                                                                                                                                | Focus Area             |
+| :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
+| **[`CLEAN_CODE.md`](./standards/CLEAN_CODE.md)**                 | Clean Code and documentation guidelines: **Strict < 300 lines/file limit**, Modular Page Decomposition, Strict TypeScript, and zero `any`. | Code Quality           |
+| **[`DESIGN_PRINCIPLES.md`](./standards/DESIGN_PRINCIPLES.md)**   | Software design principles: SOLID, KISS, YAGNI, DRY, Low Coupling, and High Cohesion across modules.                                       | Engineering Principles |
+| **[`NAMING_CONVENTIONS.md`](./standards/NAMING_CONVENTIONS.md)** | Naming conventions across TypeScript, React components, NestJS modules, DTOs, interfaces, and database models.                             | Consistency            |
+
+---
+
+## 3. Frontend & UI Engineering Guides
+
+Located in [`docs/frontend/`](./frontend/):
+
+| Document                                                    | Description                                                                                                           | Audience           |
+| :---------------------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------- | :----------------- |
+| **[`FRONTEND_GUIDE.md`](./frontend/FRONTEND_GUIDE.md)**     | Complete frontend guide: React 19, Vite, Tailwind CSS, Dual-Mode Mock/Live API architecture, and component standards. | Frontend Engineers |
+| **[`UI_SPECIFICATION.md`](./frontend/UI_SPECIFICATION.md)** | Console user interface hierarchy, design tokens, color palette, responsive breakpoints, and role-based route tree.    | UI/UX & Design     |
+
+---
+
+## 4. Backend Engineering Guide
+
+Located in [`docs/backend/`](./backend/):
+
+| Document                                             | Description                                                                                                  | Audience          |
+| :--------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :---------------- |
+| **[`BACKEND_GUIDE.md`](./backend/BACKEND_GUIDE.md)** | Complete backend guide: NestJS 11, Prisma ORM 6, PostgreSQL, Redis BullMQ, PayOS gateway, and WebSocket/SSE. | Backend Engineers |
+
+---
+
+## 5. Specifications & Reference Documents
+
+- **[Software Requirements Specification (SRS)](./srs/README.md):** Functional & non-functional requirements and stakeholder specifications.
+- **[API Specification Index](./api/README.md):** RESTful endpoints and Swagger schema conventions.
+- **[Authentication Frontend Verification](./auth-frontend-verification.md):** Authentication verification checklist and test results.

@@ -1,5 +1,11 @@
-import axios from 'axios';
-import { getStoredToken } from './auth';
+import axios, { type AxiosError } from 'axios';
+import {
+  clearAuthSession,
+  getStoredRefreshToken,
+  getStoredToken,
+  getStoredUser,
+  saveAuthSession,
+} from './auth';
 
 export const API_BASE_URL = (
   import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
@@ -31,6 +37,113 @@ export class ApiRequestError extends Error {
   }
 }
 
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}> = [];
+
+function processQueue(error: unknown, token: string | null = null) {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else if (token) {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+}
+
+// Request Interceptor: Tự động đính kèm Bearer token từ getStoredToken() nếu chưa có
+api.interceptors.request.use((config) => {
+  const token = getStoredToken();
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response Interceptor: Tự động refresh token khi nhận HTTP 401
+api.interceptors.response.use(
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as
+      (typeof error.config & { _retry?: boolean }) | undefined;
+
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const isAuthEndpoint =
+      originalRequest.url?.includes('/auth/refresh') ||
+      originalRequest.url?.includes('/auth/login') ||
+      originalRequest.url?.includes('/auth/register');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+      const storedRefreshToken = getStoredRefreshToken();
+      if (!storedRefreshToken) {
+        clearAuthSession();
+        return Promise.reject(error);
+      }
+
+      if (isRefreshing) {
+        return new Promise<string>((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshResponse = await axios.post<{
+          data: { accessToken: string; refreshToken?: string };
+        }>(
+          `${API_BASE_URL}/auth/refresh`,
+          { refreshToken: storedRefreshToken },
+          { headers: { 'Content-Type': 'application/json' }, timeout: 15000 },
+        );
+
+        const newTokens = refreshResponse.data?.data;
+        if (!newTokens?.accessToken) {
+          throw new Error('Refresh token invalid');
+        }
+
+        const currentUser = getStoredUser();
+        if (currentUser) {
+          saveAuthSession(currentUser, newTokens.accessToken, newTokens.refreshToken);
+        } else {
+          try {
+            localStorage.setItem('nexus:auth-token', newTokens.accessToken);
+            if (newTokens.refreshToken) {
+              localStorage.setItem('nexus:auth-refresh-token', newTokens.refreshToken);
+            }
+          } catch {
+            /* Storage disabled */
+          }
+        }
+
+        processQueue(null, newTokens.accessToken);
+        originalRequest.headers.Authorization = `Bearer ${newTokens.accessToken}`;
+        return api(originalRequest);
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        clearAuthSession();
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, isFormData = false, requireAuth = false } = options;
   const headers: Record<string, string> = {};
@@ -46,23 +159,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     throw new Error('Vui lòng đăng nhập để thực hiện thao tác này.');
   }
 
-  const endpoint = `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
-
-  let response;
-  try {
-    response = await api.request({
-      url: endpoint,
-      method,
-      headers,
-      data: body,
-      timeout: 30000,
-      validateStatus: () => true,
-    });
-  } catch {
-    throw new Error(
-      'Không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ backend.',
-    );
-  }
+  const endpoint = path.startsWith('/') ? path : `/${path}`;
 
   interface ApiResponsePayload {
     data?: unknown;
@@ -71,28 +168,38 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     [key: string]: unknown;
   }
 
-  let payload: ApiResponsePayload | null = null;
   try {
-    payload = response.data as ApiResponsePayload;
-    if (!payload || typeof payload !== 'object') throw new Error('Invalid response');
-  } catch {
-    throw new ApiRequestError('Máy chủ phản hồi định dạng dữ liệu không hợp lệ.', response.status);
-  }
+    const response = await api.request<ApiResponsePayload>({
+      url: endpoint,
+      method,
+      headers,
+      data: body,
+      timeout: 30000,
+    });
 
-  if (response.status < 200 || response.status >= 300) {
-    const errorMsg = Array.isArray(payload?.errors)
-      ? payload.errors.join(' · ')
-      : typeof payload?.message === 'string'
-        ? payload.message
-        : 'Yêu cầu thất bại.';
-    throw new ApiRequestError(errorMsg, response.status);
-  }
+    const payload = response.data;
+    if (payload && typeof payload === 'object' && 'data' in payload) {
+      return payload.data as T;
+    }
 
-  if (payload && typeof payload === 'object' && 'data' in payload) {
-    return payload.data as T;
+    return payload as unknown as T;
+  } catch (error) {
+    if (axios.isAxiosError<ApiResponsePayload>(error)) {
+      if (!error.response) {
+        throw new Error(
+          'Không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ backend.',
+        );
+      }
+      const payload = error.response.data;
+      const errorMsg = Array.isArray(payload?.errors)
+        ? payload.errors.join(' · ')
+        : typeof payload?.message === 'string'
+          ? payload.message
+          : 'Yêu cầu thất bại.';
+      throw new ApiRequestError(errorMsg, error.response.status);
+    }
+    throw error;
   }
-
-  return payload as unknown as T;
 }
 
 // Export để các service dùng chung cấu hình Axios.

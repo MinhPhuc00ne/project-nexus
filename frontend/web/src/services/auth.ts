@@ -1,32 +1,9 @@
 import axios from 'axios';
+import type { ApiResponse } from '@nexus/types';
+import api, { API_BASE_URL } from './api';
+import type { AuthMessage, AuthUser, LoginResponse } from '../types/user.types';
 
-const apiUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1').replace(/\/$/, '');
-
-interface ApiResponse<T> {
-  data: T;
-  message: string;
-  errors?: string[];
-}
-
-export interface AuthMessage {
-  message: string;
-  email?: string;
-  devOtpCode?: string;
-}
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  fullName: string;
-  role?: string;
-  avatarUrl?: string | null;
-}
-
-export interface LoginResponse extends AuthMessage {
-  accessToken?: string;
-  refreshToken?: string;
-  user: AuthUser;
-}
+export type { AuthMessage, AuthUser, LoginResponse };
 
 const AUTH_USER_KEY = 'nexus:auth-user';
 const AUTH_TOKEN_KEY = 'nexus:auth-token';
@@ -91,16 +68,7 @@ export function clearAuthSession(): void {
     localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
     window.dispatchEvent(new Event('nexus:auth-change'));
     if (storedRefreshToken) {
-      void axios
-        .post(
-          `${apiUrl}/auth/logout`,
-          { refreshToken: storedRefreshToken },
-          {
-            headers: { 'Content-Type': 'application/json' },
-            timeout: 20000,
-          },
-        )
-        .catch(() => {});
+      void api.post('/auth/logout', { refreshToken: storedRefreshToken }).catch(() => {});
     }
   } catch {
     /* Storage may be disabled */
@@ -143,32 +111,24 @@ export function consumeOAuthCallbackFromUrl(): AuthUser | null {
 async function post<T>(path: string, body: object): Promise<T> {
   let response;
   try {
-    response = await axios.post(`${apiUrl}/auth/${path}`, body, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 20000,
-      validateStatus: () => true,
-    });
-  } catch {
+    response = await api.post<ApiResponse<T>>(`/auth/${path}`, body);
+  } catch (error) {
+    if (axios.isAxiosError<ApiResponse<T>>(error)) {
+      const payload = error.response?.data;
+      const errors = Array.isArray(payload?.errors)
+        ? (payload.errors as unknown[])
+            .filter((err: unknown): err is string => typeof err === 'string')
+            .join(' · ')
+        : '';
+      throw new Error(
+        errors || (typeof payload?.message === 'string' && payload.message) || 'Yêu cầu thất bại.',
+      );
+    }
     throw new Error('Không thể kết nối máy chủ. Vui lòng thử lại.');
   }
-  let payload: ApiResponse<T>;
-  try {
-    payload = response.data as ApiResponse<T>;
-  } catch {
-    throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');
-  }
-  if (!payload || typeof payload !== 'object') {
-    throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');
-  }
-  if (response.status < 200 || response.status >= 300) {
-    const errors = Array.isArray(payload.errors)
-      ? payload.errors.filter((error): error is string => typeof error === 'string').join(' · ')
-      : '';
-    throw new Error(
-      errors || (typeof payload.message === 'string' && payload.message) || 'Yêu cầu thất bại.',
-    );
-  }
-  if (!('data' in payload) || !payload.data || typeof payload.data !== 'object') {
+
+  const payload = response.data;
+  if (!payload || typeof payload !== 'object' || !('data' in payload) || !payload.data) {
     throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');
   }
   return payload.data;
@@ -209,5 +169,5 @@ export function refreshToken(): Promise<{ accessToken: string; refreshToken: str
 }
 
 export function startGoogleLogin(): void {
-  window.location.assign(`${apiUrl}/auth/google`);
+  window.location.assign(`${API_BASE_URL}/auth/google`);
 }
