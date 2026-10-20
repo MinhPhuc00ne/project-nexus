@@ -9,6 +9,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MediaModule } from './modules/media/media.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
+import { CommerceModule } from './modules/commerce/commerce.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { MediaModule } from './modules/media/media.module';
     UsersModule,
     AdminModule,
     MediaModule,
+    CatalogModule,
+    CommerceModule,
   ],
 })
 export class AppModule {}

@@ -73,6 +73,14 @@ async function bootstrap(): Promise<void> {
       'Chức năng Admin: Quản lý nhân viên (Support Staff) & phê duyệt/từ chối hồ sơ nâng cấp Seller',
     )
     .addTag('6. MEDIA', 'Chức năng Media: Tải lên hình ảnh, tài liệu lưu trữ máy chủ & Cloudinary')
+    .addTag(
+      '7. CATALOG',
+      'Danh mục sản phẩm, Đăng bán sản phẩm, Quản lý tồn kho & Tìm kiếm sản phẩm',
+    )
+    .addTag(
+      '8. COMMERCE - CART',
+      'Quản lý giỏ hàng Buyer, Price Revalidation, Merge giỏ hàng Guest',
+    )
     .addBearerAuth()
     .build();
 
