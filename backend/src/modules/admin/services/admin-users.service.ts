@@ -1,35 +1,17 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma, ReputationTrustLevel, Role } from '@prisma/client';
+import { Prisma, ReputationTrustLevel, Role, User } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { LockUserDto, UpdateUserStatusDto } from '../dto/lock-user.dto';
 import { QueryUsersDto, UserStatusFilter } from '../dto/query-users.dto';
+import {
+  AdminUserDetailResponse,
+  AdminUserItemResponse,
+  AdminUsersListResponse,
+} from '../dto/user-response.dto';
 
-export interface AdminUserItemResponse {
-  id: string;
-  email: string;
-  fullName: string;
-  phoneNumber: string | null;
-  avatarUrl: string | null;
-  role: Role;
-  isSellerActive: boolean;
-  reputationScore: number;
-  trustLevel: ReputationTrustLevel;
-  isLocked: boolean;
-  status: 'ACTIVE' | 'LOCKED';
-  isVerified: boolean;
-  platformEmail: string | null;
-  walletBalance: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface AdminUsersListResponse {
-  items: AdminUserItemResponse[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+type UserWithWallet = User & {
+  wallet?: { balance: Prisma.Decimal } | null;
+};
 
 @Injectable()
 export class AdminUsersService {
@@ -37,17 +19,15 @@ export class AdminUsersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // 1. Lấy toàn bộ danh sách người dùng (kèm phân trang, tìm kiếm, lọc role & trạng thái khóa)
+  // 1. Lấy danh sách người dùng (tự động loại trừ GUEST, hỗ trợ lọc BUYER, SELLER, SUPPORT_STAFF, ADMIN)
   async listUsers(query: QueryUsersDto): Promise<AdminUsersListResponse> {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, query.limit || 10);
     const skip = (page - 1) * limit;
 
-    const where: Prisma.UserWhereInput = {};
-
-    if (query.role) {
-      where.role = query.role;
-    }
+    const where: Prisma.UserWhereInput = {
+      role: query.role ? (query.role as unknown as Role) : { not: Role.GUEST },
+    };
 
     if (query.status === UserStatusFilter.LOCKED) {
       where.trustLevel = ReputationTrustLevel.SUSPENDED;
@@ -72,38 +52,12 @@ export class AdminUsersService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
-          wallet: {
-            select: { balance: true },
-          },
-        },
+        include: { wallet: { select: { balance: true } } },
       }),
     ]);
 
-    const items: AdminUserItemResponse[] = users.map((u) => {
-      const isLocked = u.trustLevel === ReputationTrustLevel.SUSPENDED;
-      return {
-        id: u.id,
-        email: u.email,
-        fullName: u.fullName,
-        phoneNumber: u.phoneNumber,
-        avatarUrl: u.avatarUrl,
-        role: u.role,
-        isSellerActive: u.isSellerActive,
-        reputationScore: u.reputationScore,
-        trustLevel: u.trustLevel,
-        isLocked,
-        status: isLocked ? 'LOCKED' : 'ACTIVE',
-        isVerified: u.isVerified,
-        platformEmail: u.platformEmail,
-        walletBalance: u.wallet ? Number(u.wallet.balance) : 0,
-        createdAt: u.createdAt,
-        updatedAt: u.updatedAt,
-      };
-    });
-
     return {
-      items,
+      items: users.map((u) => this.toUserItem(u)),
       total,
       page,
       limit,
@@ -111,7 +65,53 @@ export class AdminUsersService {
     };
   }
 
-  // 2. Khóa tài khoản người dùng
+  // 2. Xem chi tiết cá nhân người dùng (loại trừ GUEST)
+  async getUserById(targetUserId: string): Promise<AdminUserDetailResponse> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: targetUserId, role: { not: Role.GUEST } },
+      include: {
+        wallet: { select: { balance: true, lockedBalance: true, currency: true } },
+        addresses: { orderBy: { isDefault: 'desc' } },
+        _count: {
+          select: {
+            products: true,
+            ordersAsBuyer: true,
+            ordersAsSeller: true,
+            auctions: true,
+            disputesOpened: true,
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    }
+
+    const base = this.toUserItem(user);
+
+    return {
+      ...base,
+      personalEmail: user.personalEmail,
+      wallet: user.wallet
+        ? {
+            balance: Number(user.wallet.balance),
+            lockedBalance: Number(user.wallet.lockedBalance),
+            currency: user.wallet.currency,
+          }
+        : null,
+      addresses: user.addresses,
+      stats: {
+        products: user._count.products,
+        ordersAsBuyer: user._count.ordersAsBuyer,
+        ordersAsSeller: user._count.ordersAsSeller,
+        auctions: user._count.auctions,
+        disputesOpened: user._count.disputesOpened,
+      },
+    };
+  }
+
+  // 3. Khóa tài khoản người dùng
   async lockUser(
     targetUserId: string,
     adminId: string,
@@ -122,7 +122,7 @@ export class AdminUsersService {
       include: { wallet: { select: { balance: true } } },
     });
 
-    if (!user) {
+    if (!user || user.role === Role.GUEST) {
       throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
     }
 
@@ -136,9 +136,7 @@ export class AdminUsersService {
 
     const updated = await this.prisma.user.update({
       where: { id: targetUserId },
-      data: {
-        trustLevel: ReputationTrustLevel.SUSPENDED,
-      },
+      data: { trustLevel: ReputationTrustLevel.SUSPENDED },
       include: { wallet: { select: { balance: true } } },
     });
 
@@ -149,34 +147,17 @@ export class AdminUsersService {
     });
 
     this.logger.log(
-      `Admin (${adminId}) đã khóa tài khoản người dùng ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
+      `Admin (${adminId}) đã khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
     );
 
     return {
       success: true,
       message: `Khóa tài khoản ${user.email} thành công.`,
-      user: {
-        id: updated.id,
-        email: updated.email,
-        fullName: updated.fullName,
-        phoneNumber: updated.phoneNumber,
-        avatarUrl: updated.avatarUrl,
-        role: updated.role,
-        isSellerActive: updated.isSellerActive,
-        reputationScore: updated.reputationScore,
-        trustLevel: updated.trustLevel,
-        isLocked: true,
-        status: 'LOCKED',
-        isVerified: updated.isVerified,
-        platformEmail: updated.platformEmail,
-        walletBalance: updated.wallet ? Number(updated.wallet.balance) : 0,
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt,
-      },
+      user: this.toUserItem(updated),
     };
   }
 
-  // 3. Mở khóa tài khoản người dùng
+  // 4. Mở khóa tài khoản người dùng
   async unlockUser(
     targetUserId: string,
     adminId: string,
@@ -187,7 +168,7 @@ export class AdminUsersService {
       include: { wallet: { select: { balance: true } } },
     });
 
-    if (!user) {
+    if (!user || user.role === Role.GUEST) {
       throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
     }
 
@@ -200,45 +181,49 @@ export class AdminUsersService {
 
     const updated = await this.prisma.user.update({
       where: { id: targetUserId },
-      data: {
-        trustLevel: targetTrustLevel,
-      },
+      data: { trustLevel: targetTrustLevel },
       include: { wallet: { select: { balance: true } } },
     });
 
     this.logger.log(
-      `Admin (${adminId}) đã mở khóa tài khoản người dùng ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
+      `Admin (${adminId}) đã mở khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
     );
 
     return {
       success: true,
       message: `Mở khóa tài khoản ${user.email} thành công.`,
-      user: {
-        id: updated.id,
-        email: updated.email,
-        fullName: updated.fullName,
-        phoneNumber: updated.phoneNumber,
-        avatarUrl: updated.avatarUrl,
-        role: updated.role,
-        isSellerActive: updated.isSellerActive,
-        reputationScore: updated.reputationScore,
-        trustLevel: updated.trustLevel,
-        isLocked: false,
-        status: 'ACTIVE',
-        isVerified: updated.isVerified,
-        platformEmail: updated.platformEmail,
-        walletBalance: updated.wallet ? Number(updated.wallet.balance) : 0,
-        createdAt: updated.createdAt,
-        updatedAt: updated.updatedAt,
-      },
+      user: this.toUserItem(updated),
     };
   }
 
-  // 4. Toggle hoặc cập nhật trạng thái khóa/mở khóa qua DTO
+  // 5. Cập nhật trạng thái khóa/mở khóa qua DTO
   async updateUserStatus(targetUserId: string, adminId: string, dto: UpdateUserStatusDto) {
     if (dto.isLocked === false) {
       return this.unlockUser(targetUserId, adminId, { reason: dto.reason });
     }
     return this.lockUser(targetUserId, adminId, { reason: dto.reason });
+  }
+
+  // Helper chuyển đổi User entity sang DTO response
+  private toUserItem(u: UserWithWallet): AdminUserItemResponse {
+    const isLocked = u.trustLevel === ReputationTrustLevel.SUSPENDED;
+    return {
+      id: u.id,
+      email: u.email,
+      fullName: u.fullName,
+      phoneNumber: u.phoneNumber,
+      avatarUrl: u.avatarUrl,
+      role: u.role,
+      isSellerActive: u.isSellerActive,
+      reputationScore: u.reputationScore,
+      trustLevel: u.trustLevel,
+      isLocked,
+      status: isLocked ? 'LOCKED' : 'ACTIVE',
+      isVerified: u.isVerified,
+      platformEmail: u.platformEmail,
+      walletBalance: u.wallet ? Number(u.wallet.balance) : 0,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    };
   }
 }

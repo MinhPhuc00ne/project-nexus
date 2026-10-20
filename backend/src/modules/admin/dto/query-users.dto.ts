@@ -1,5 +1,4 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
@@ -9,9 +8,16 @@ export enum UserStatusFilter {
   LOCKED = 'LOCKED',
 }
 
+export enum AdminTargetRole {
+  BUYER = 'BUYER',
+  SELLER = 'SELLER',
+  SUPPORT_STAFF = 'SUPPORT_STAFF',
+  ADMIN = 'ADMIN',
+}
+
 export class QueryUsersDto {
   @ApiPropertyOptional({
-    description: 'Từ khóa tìm kiếm theo tên, email hoặc số điện thoại',
+    description: 'Từ khóa tìm kiếm theo tên, email, sđt hoặc email công tác',
     example: 'nguyen van a',
   })
   @IsOptional()
@@ -19,13 +25,16 @@ export class QueryUsersDto {
   search?: string;
 
   @ApiPropertyOptional({
-    description: 'Lọc theo vai trò người dùng trong hệ thống',
-    enum: Role,
-    example: Role.BUYER,
+    description:
+      'Lọc theo vai trò: BUYER, SELLER, SUPPORT_STAFF, ADMIN (Mặc định không truyền sẽ lấy tất cả vai trò, tự động loại trừ GUEST)',
+    enum: AdminTargetRole,
+    example: AdminTargetRole.BUYER,
   })
   @IsOptional()
-  @IsEnum(Role, { message: 'Vai trò không hợp lệ' })
-  role?: Role;
+  @IsEnum(AdminTargetRole, {
+    message: 'Vai trò lọc không hợp lệ. Chỉ chấp nhận BUYER, SELLER, SUPPORT_STAFF, ADMIN',
+  })
+  role?: AdminTargetRole;
 
   @ApiPropertyOptional({
     description: 'Lọc theo trạng thái tài khoản: ALL, ACTIVE, LOCKED',

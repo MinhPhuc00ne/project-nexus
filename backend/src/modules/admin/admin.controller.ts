@@ -138,16 +138,29 @@ export class AdminController {
   // ================= 7. DANH SÁCH TOÀN BỘ NGƯỜI DÙNG =================
   @Get('users')
   @ApiOperation({
-    summary: 'Lấy toàn bộ danh sách người dùng (kèm phân trang, lọc và tìm kiếm)',
+    summary: 'Lấy toàn bộ danh sách người dùng (kèm phân trang, lọc vai trò và tìm kiếm)',
     description:
-      'Admin xem danh sách tất cả người dùng trong hệ thống. Hỗ trợ lọc theo role, trạng thái khóa (ACTIVE/LOCKED), và tìm kiếm theo tên, email, sđt.',
+      'Admin xem danh sách người dùng trong hệ thống (tự động loại trừ GUEST). Hỗ trợ lọc theo vai trò (BUYER, SELLER, SUPPORT_STAFF, ADMIN), trạng thái khóa (ACTIVE/LOCKED), và tìm kiếm theo tên, email, sđt.',
   })
   @ApiResponse({ status: 200, description: 'Lấy danh sách người dùng thành công' })
   async listUsers(@Query() query: QueryUsersDto) {
     return this.adminUsersService.listUsers(query);
   }
 
-  // ================= 8. KHÓA TÀI KHOẢN NGƯỜI DÙNG =================
+  // ================= 8. CHI TIẾT CÁ NHÂN NGƯỜI DÙNG =================
+  @Get('users/:id')
+  @ApiOperation({
+    summary: 'Admin xem chi tiết cá nhân một người dùng',
+    description:
+      'Xem đầy đủ thông tin cá nhân, ví tiền, sổ địa chỉ và thống kê đơn hàng/sản phẩm của người dùng.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy thông tin người dùng thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
+  async getUserById(@Param('id') id: string) {
+    return this.adminUsersService.getUserById(id);
+  }
+
+  // ================= 9. KHÓA TÀI KHOẢN NGƯỜI DÙNG =================
   @Patch('users/:id/lock')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -166,7 +179,7 @@ export class AdminController {
     return this.adminUsersService.lockUser(id, admin.id, dto);
   }
 
-  // ================= 9. MỞ KHÓA TÀI KHOẢN NGƯỜI DÙNG =================
+  // ================= 10. MỞ KHÓA TÀI KHOẢN NGƯỜI DÙNG =================
   @Patch('users/:id/unlock')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -185,7 +198,7 @@ export class AdminController {
     return this.adminUsersService.unlockUser(id, admin.id, dto);
   }
 
-  // ================= 10. CẬP NHẬT TRẠNG THÁI KHÓA/MỞ KHÓA =================
+  // ================= 11. CẬP NHẬT TRẠNG THÁI KHÓA/MỞ KHÓA =================
   @Patch('users/:id/status')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
