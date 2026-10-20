@@ -9,11 +9,13 @@ import {
 } from 'react';
 import { getSellerRequests, type PaginatedResult } from '../../services/admin';
 import type { SellerUpgradeRequest } from '../../services/users';
+import { useAuth } from '../../contexts/AuthContext';
 
 export type SellerRequestFilter = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL';
 
 // Giữ danh sách/bộ lọc/phân trang dùng chung cho panel, sidebar và trang tổng quan.
 function useSellerRequests() {
+  const { token } = useAuth();
   const [status, setStatus] = useState<SellerRequestFilter>('PENDING');
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<PaginatedResult<SellerUpgradeRequest>>({
@@ -28,6 +30,10 @@ function useSellerRequests() {
   const [error, setError] = useState('');
   const [refreshRevision, setRefreshRevision] = useState(0);
   const revision = useRef(0);
+  const inFlight = useRef<{
+    key: string;
+    promise: Promise<[PaginatedResult<SellerUpgradeRequest>, number]>;
+  } | null>(null);
 
   // AdminLayout chỉ tạo provider này sau khi xác minh tài khoản có role ADMIN.
   // Tải lại khi đổi trạng thái, đổi trang hoặc gọi refresh().
@@ -36,16 +42,37 @@ function useSellerRequests() {
     setLoading(true);
     setError('');
     setResult((previous) => ({ ...previous, items: [] }));
-    // Request 1 lấy trang đang xem. Request 2 chỉ cần total PENDING cho badge/sidebar,
-    // vì trang đang xem có thể lọc APPROVED/REJECTED và không chứa tổng số chờ duyệt.
-    void Promise.all([
-      getSellerRequests({ status: status === 'ALL' ? undefined : status, page, limit: 10 }),
-      getSellerRequests({ status: 'PENDING', page: 1, limit: 1 }),
-    ])
+    // Reuse a pending load during StrictMode effect replay, but always reload after
+    // an explicit refresh or a session/filter/page change.
+    const key = JSON.stringify([token, status, page, refreshRevision]);
+    if (inFlight.current?.key !== key) {
+      const list = getSellerRequests({
+        status: status === 'ALL' ? undefined : status,
+        page,
+        limit: 10,
+      });
+      const pendingTotal =
+        status === 'PENDING'
+          ? list.then((result) => result.total)
+          : getSellerRequests({ status: 'PENDING', page: 1, limit: 1 }).then(
+              (result) => result.total,
+            );
+      const request = { key, promise: Promise.all([list, pendingTotal]) };
+      inFlight.current = request;
+      void request.promise.then(
+        () => {
+          if (inFlight.current === request) inFlight.current = null;
+        },
+        () => {
+          if (inFlight.current === request) inFlight.current = null;
+        },
+      );
+    }
+    void inFlight.current.promise
       .then(([list, pending]) => {
         // Nếu bộ lọc/trang đã đổi trong lúc chờ, bỏ phản hồi cũ.
         if (current !== revision.current) return;
-        setPendingTotal(pending.total);
+        setPendingTotal(pending);
         // Sau khi duyệt hồ sơ cuối trang, quay về trang còn dữ liệu nếu số trang giảm.
         if (page > Math.max(1, list.totalPages)) {
           setPage(Math.max(1, list.totalPages));
@@ -63,7 +90,7 @@ function useSellerRequests() {
     return () => {
       revision.current++;
     };
-  }, [status, page, refreshRevision]);
+  }, [token, status, page, refreshRevision]);
 
   // Tăng revision để effect chạy lại, kể cả khi bộ lọc và số trang vẫn như cũ.
   const refresh = useCallback(() => setRefreshRevision((value) => value + 1), []);

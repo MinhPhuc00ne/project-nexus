@@ -15,6 +15,7 @@ import SellerDisputesPage from '../pages/seller/SellerDisputesPage';
 import SellerSettingsPage from '../pages/seller/SellerSettingsPage';
 import SellerDraftPage from '../pages/seller/SellerDraftPage';
 import SellerReviewsPage from '../pages/seller/SellerReviewsPage';
+import SellerCreateProductPage from '../pages/seller/SellerCreateProductPage';
 import StaffActivationPage from '../pages/staff/StaffActivationPage';
 import StaffSession from '../pages/staff/StaffSession';
 import {
@@ -192,7 +193,7 @@ function AppRouter() {
             <Route index element={<SellerDashboardPage home />} />
             <Route path="overview" element={<SellerDashboardPage />} />
             <Route path="products" element={<SellerProductsPage />} />
-            <Route path="products/new" element={<SellerDraftPage />} />
+            <Route path="products/new" element={<SellerCreateProductPage />} />
             <Route path="orders" element={<SellerOrdersPage />} />
             <Route path="orders/:id" element={<SellerOrderDetailPage />} />
             <Route path="auctions" element={<SellerAuctionsPage />} />
@@ -202,6 +203,7 @@ function AppRouter() {
             <Route path="reviews" element={<SellerReviewsPage />} />
             <Route path="disputes" element={<SellerDisputesPage />} />
             <Route path="settings" element={<SellerSettingsPage />} />
+            <Route path="profile" element={<BuyerProfilePage />} />
           </Route>
 
           {/* Staff routes */}

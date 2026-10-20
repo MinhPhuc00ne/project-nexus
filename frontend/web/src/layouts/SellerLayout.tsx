@@ -20,10 +20,12 @@ import {
   TruckOutlined,
   WalletOutlined,
   CloseOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useSellerSession } from '../components/seller/SellerSession';
 import { clearAuthSession } from '../services/auth';
-import { getMySellerRequests, toggleSellerMode } from '../services/users';
+import { toggleSellerMode } from '../services/users';
+import { useSellerStore } from '../components/seller/useSellerStore';
 import { SellerWorkspaceContext } from '../components/seller/SellerWorkspace';
 import type { SellerDraft } from '../components/seller/sellerData';
 
@@ -37,6 +39,7 @@ const links = [
   { to: '/seller/reviews', label: 'Đánh giá & Khách hàng', icon: StarOutlined },
   { to: '/seller/disputes', label: 'Khiếu nại', icon: SafetyCertificateOutlined },
   { to: '/seller/settings', label: 'Cài đặt Shop', icon: SettingOutlined },
+  { to: '/seller/profile', label: 'Hồ sơ cá nhân', icon: UserOutlined },
 ];
 function readDrafts(key: string): SellerDraft[] {
   try {
@@ -71,30 +74,12 @@ function SellerWorkspace() {
   const [preview, setPreview] = useState(false);
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState('');
-  const [store, setStore] = useState({ name: '', loading: true, error: '' });
+  const store = useSellerStore(user.id);
   const draftKey = `nexus:seller-drafts:${user.id}`;
   const [drafts, setDrafts] = useState(() => readDrafts(draftKey));
   const accountRef = useRef<HTMLDivElement>(null);
   const noticeRef = useRef<HTMLDivElement>(null);
   const toggleLock = useRef(false);
-  useEffect(() => {
-    let active = true;
-    void getMySellerRequests()
-      .then((result) => {
-        if (active)
-          setStore({
-            name: result.requests.find((item) => item.status === 'APPROVED')?.storeName || '',
-            loading: false,
-            error: '',
-          });
-      })
-      .catch(() => {
-        if (active) setStore({ name: '', loading: false, error: 'Chưa thể tải tên gian hàng.' });
-      });
-    return () => {
-      active = false;
-    };
-  }, [user.id]);
   useEffect(() => {
     if (!toast) return;
     const timer = window.setTimeout(() => setToast(''), 4000);
