@@ -1,0 +1,161 @@
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  emptyProductForm,
+  flattenCategories,
+  getProductCategories,
+  getMyProducts,
+  sellerProductToForm,
+  publishSellerProduct,
+  type ProductCategory,
+  type SellerProduct,
+} from '../../services/sellerProducts';
+
+export default function useSellerProductForm(productId?: string) {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({ ...emptyProductForm });
+  const [files, setFiles] = useState<File[]>([]);
+  const [product, setProduct] = useState<SellerProduct | null>(null);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [productLoading, setProductLoading] = useState(Boolean(productId));
+  const [productError, setProductError] = useState('');
+  const [productRevision, setProductRevision] = useState(0);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [categoryError, setCategoryError] = useState('');
+  const [categoryLoading, setCategoryLoading] = useState(true);
+  const [revision, setRevision] = useState(0);
+  const [pending, setPending] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [error, setError] = useState('');
+  const lock = useRef(false);
+  const active = useRef(true);
+  const uploaded = useRef(new Map<File, string>());
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!productId) return;
+    let current = true;
+    setProductLoading(true);
+    setProductError('');
+    getMyProducts()
+      .then((products) => {
+        if (!current) return;
+        const found = products.find((item) => item.id === productId);
+        if (!found) throw new Error('Sản phẩm không tồn tại hoặc không thuộc gian hàng của bạn.');
+        setProduct(found);
+        setForm(sellerProductToForm(found));
+        setExistingImages(found.images.map((image) => image.imageUrl));
+      })
+      .catch((cause) => {
+        if (current)
+          setProductError(cause instanceof Error ? cause.message : 'Không tải được sản phẩm.');
+      })
+      .finally(() => {
+        if (current) setProductLoading(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [productId, productRevision]);
+  useEffect(() => {
+    let current = true;
+    setCategoryLoading(true);
+    setCategoryError('');
+    getProductCategories()
+      .then(
+        (result) => {
+          if (current) setCategories(result);
+        },
+        (cause) => {
+          if (current)
+            setCategoryError(cause instanceof Error ? cause.message : 'Không tải được danh mục.');
+        },
+      )
+      .finally(() => {
+        if (current) setCategoryLoading(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, [revision]);
+  const categoryOptions = flattenCategories(categories);
+  const retryCategories = useCallback(() => setRevision((value) => value + 1), []);
+  function reset() {
+    if (lock.current) return;
+    setForm(product ? sellerProductToForm(product) : { ...emptyProductForm });
+    setExistingImages(product?.images.map((image) => image.imageUrl) ?? []);
+    setFiles([]);
+    setError('');
+    uploaded.current.clear();
+  }
+  async function submit() {
+    if (lock.current) return;
+    if (productLoading || productError || (productId && !product)) return;
+    if (
+      categoryLoading ||
+      categoryError ||
+      !categoryOptions.some((category) => category.id === form.categoryId)
+    ) {
+      setError('Vui lòng chọn danh mục hợp lệ từ hệ thống.');
+      return;
+    }
+    lock.current = true;
+    setPending(true);
+    setError('');
+    try {
+      const saved = await publishSellerProduct(
+        form,
+        files,
+        uploaded.current,
+        (message) => {
+          if (active.current) setProgress(message);
+        },
+        product ? { product, images: existingImages } : undefined,
+      );
+      if (!saved?.id)
+        throw new Error(
+          'Chưa xác nhận được kết quả đăng bán. Hãy kiểm tra danh sách sản phẩm trước khi gửi lại.',
+        );
+      if (active.current)
+        navigate('/seller/products', {
+          replace: true,
+          state: product
+            ? { updatedProduct: { id: saved.id, title: saved.title } }
+            : { publishedProduct: { id: saved.id, title: saved.title } },
+        });
+    } catch (cause) {
+      if (active.current)
+        setError(cause instanceof Error ? cause.message : 'Không thể đăng bán sản phẩm.');
+    } finally {
+      lock.current = false;
+      if (active.current) {
+        setPending(false);
+        setProgress('');
+      }
+    }
+  }
+  return {
+    form,
+    setForm,
+    files,
+    setFiles,
+    existingImages,
+    setExistingImages,
+    productLoading,
+    productError,
+    retryProduct: () => setProductRevision((value) => value + 1),
+    categoryOptions,
+    categoryLoading,
+    categoryError,
+    retryCategories,
+    pending,
+    progress,
+    error,
+    reset,
+    submit,
+  };
+}

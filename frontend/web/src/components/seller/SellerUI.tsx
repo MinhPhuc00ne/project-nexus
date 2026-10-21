@@ -118,9 +118,9 @@ export function PageHeading({
   actions?: ReactNode;
 }) {
   return (
-    <>
+    <header className="space-y-3">
       <nav
-        className="flex items-center gap-2 text-[#8a9ebf] text-[10px] mb-[-11px] [&>a]:text-[#8a9ebf] [&>span:not(.anticon)]:text-[#627495]"
+        className="flex flex-wrap items-center gap-2 text-[#8a9ebf] text-[10px] [&>a]:text-[#8a9ebf] [&>span:not(.anticon)]:text-[#627495]"
         data-seller="breadcrumb"
         aria-label="Đường dẫn"
       >
@@ -140,7 +140,7 @@ export function PageHeading({
           {actions}
         </div>
       </div>
-    </>
+    </header>
   );
 }
 export function ModuleNotice({ label }: { label: string }) {
