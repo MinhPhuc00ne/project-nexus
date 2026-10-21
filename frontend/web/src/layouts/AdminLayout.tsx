@@ -155,24 +155,6 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
       }));
       notify('Đã duyệt lịch đấu giá trong bản demo.');
     },
-    // Một action dùng cho cả khóa và mở khóa bằng cách đảo giá trị banned.
-    toggleBan: (id) => {
-      const user = data.users.find((item) => item.id === id);
-      if (!user) return;
-      setConfirmation({
-        title: user.banned ? 'Mở khóa tài khoản?' : 'Khóa tài khoản?',
-        content: `${user.email}\nThao tác chỉ áp dụng trong bản demo.`,
-        execute: () => {
-          setData((current) => ({
-            ...current,
-            users: current.users.map((item) =>
-              item.id === id ? { ...item, banned: !item.banned } : item,
-            ),
-          }));
-          notify('Đã cập nhật trạng thái tài khoản trong bản demo.');
-        },
-      });
-    },
   };
   const title =
     adminNavigation.flatMap((group) => group.items).find((item) => item.id === tab)?.label ??
@@ -221,9 +203,13 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
                 <span className="font-medium text-slate-600">{title}</span>
               </div>
               <span className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] text-primary">
-                {tab === 'sellers'
-                  ? 'Hồ sơ Seller từ hệ thống'
-                  : 'Hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
+                {tab === 'categories'
+                  ? 'Danh mục từ hệ thống'
+                  : tab === 'users'
+                    ? 'Người dùng từ hệ thống'
+                    : tab === 'sellers'
+                      ? 'Hồ sơ Seller từ hệ thống'
+                      : 'Người dùng, danh mục và hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
               </span>
             </div>
             {/* Tiêu đề trang con; trang overview có tiêu đề riêng nên không hiển thị ở đây. */}

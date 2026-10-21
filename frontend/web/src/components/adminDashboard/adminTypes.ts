@@ -41,21 +41,10 @@ export interface AuctionItem {
   status: 'pending' | 'scheduled' | 'live';
 }
 
-// role là vai trò tài khoản; banned là trạng thái khóa, độc lập với vai trò.
-export interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  role: 'Buyer' | 'Seller' | 'Staff';
-  banned: boolean;
-  note: string;
-}
-
 // Gói dữ liệu chung do AdminLayout sở hữu và truyền xuống các tab qua props.
 export interface AdminData extends AdminCommerceData {
   refunds: RefundRequest[];
   auctions: AuctionItem[];
-  users: AdminUser[];
 }
 
 // Hợp đồng callback giữa trang cha và tab: tab yêu cầu thao tác, trang cha cập nhật data.
@@ -65,7 +54,6 @@ export interface AdminActions {
   navigate: (tab: AdminTab) => void;
   reviewRefund: (id: string, status: 'approved' | 'rejected') => void;
   approveAuction: (id: string) => void;
-  toggleBan: (id: string) => void;
   showDetail: (title: string, content: string) => void;
   notify: (message: string) => void;
 }

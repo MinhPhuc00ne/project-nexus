@@ -4,12 +4,6 @@ import { Button as ShadcnButton } from '../ui/button';
 import { Card } from '../ui/card';
 import { Input } from '../ui/input';
 
-/*
- * Các khối UI dùng chung, giúp tab có cùng màu, khoảng cách và kiểu nút.
- * text-primary/bg-primary lấy màu từ @theme trong src/index.css.
- * sm:/lg:/xl: là breakpoint Tailwind: class chỉ có hiệu lực từ kích thước đó trở lên.
- */
-// Panel là khung card: title/subtitle ở đầu, action ở góc phải, children là nội dung bên trong.
 export function Panel({
   title,
   subtitle,
@@ -50,8 +44,6 @@ export function Panel({
   );
 }
 
-// variant chọn màu nút. ...props chuyển onClick, disabled, type, aria-* xuống thẻ button.
-// type mặc định là button để tránh submit form ngoài ý muốn; form cần truyền type="submit".
 export function Button({
   children,
   variant = 'primary',
@@ -77,7 +69,6 @@ export function Button({
   );
 }
 
-// Badge hiển thị nhãn ngắn hoặc trạng thái; tone đổi màu theo ý nghĩa của trạng thái.
 export function Badge({
   children,
   tone = 'blue',
@@ -102,8 +93,6 @@ export function Badge({
   );
 }
 
-// Controlled input: giá trị nằm ở component cha, mỗi lần gõ gọi onChange để cha cập nhật.
-// Component này chỉ hiển thị ô nhập; logic lọc danh sách nằm trong từng tab.
 export function SearchInput({
   value,
   onChange,
@@ -127,7 +116,6 @@ export function SearchInput({
   );
 }
 
-// Dùng khi không có hồ sơ chờ hoặc không có kết quả khớp bộ lọc/từ khóa tìm kiếm.
 export function EmptyState({ text = 'Không có yêu cầu nào trong danh sách.' }: { text?: string }) {
   return (
     <div className="flex flex-col items-center gap-3 py-12 text-center text-sm text-slate-400">

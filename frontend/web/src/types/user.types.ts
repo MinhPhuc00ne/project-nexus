@@ -93,3 +93,39 @@ export interface CreateSellerRequestDto {
   identityCardNumber?: string;
   attachmentUrl?: string;
 }
+
+export type AdminUserRole = 'BUYER' | 'SELLER' | 'SUPPORT_STAFF' | 'ADMIN';
+export type AdminUserStatus = 'ALL' | 'ACTIVE' | 'LOCKED';
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  fullName: string;
+  phoneNumber: string | null;
+  avatarUrl: string | null;
+  role: AdminUserRole;
+  isSellerActive: boolean;
+  reputationScore: number;
+  trustLevel: string;
+  isLocked: boolean;
+  status: Exclude<AdminUserStatus, 'ALL'>;
+  isVerified: boolean;
+  platformEmail: string | null;
+  walletBalance: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface QueryUsersParams {
+  search?: string;
+  role?: AdminUserRole;
+  status?: AdminUserStatus;
+  page?: number;
+  limit?: number;
+}
+
+export interface UserStatusResult {
+  success: boolean;
+  message: string;
+  user: AdminUser;
+}

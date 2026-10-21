@@ -14,8 +14,10 @@ export default function AdminUsersPage() {
         Quản lý thành viên, phân quyền và tài khoản hỗ trợ
       </div>
       <div className="grid items-start gap-5 xl:grid-cols-[1fr_1.5fr]">
-        {/* Form tạo tài khoản Staff; danh sách thật nằm trong data của layout. */}
-        <StaffInvite data={data} actions={actions} />
+        {/* Form gửi lời mời tạo tài khoản Staff qua API. */}
+        <div className="min-w-0 xl:sticky xl:top-0">
+          <StaffInvite data={data} actions={actions} />
+        </div>
         {/* Danh sách người dùng: tìm kiếm, lọc vai trò và khóa/mở khóa tài khoản. */}
         <UserSecurity data={data} actions={actions} />
       </div>
