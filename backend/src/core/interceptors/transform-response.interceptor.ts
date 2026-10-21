@@ -31,10 +31,16 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<T, Respo
           payload = (data as { data: unknown }).data;
         }
 
+        const extraProperties =
+          payload && typeof payload === 'object' && 'url' in payload
+            ? { url: (payload as { url: unknown }).url }
+            : {};
+
         return {
           statusCode,
           message,
           data: payload,
+          ...extraProperties,
           timestamp: new Date().toISOString(),
           traceId,
         };

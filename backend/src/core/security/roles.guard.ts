@@ -16,7 +16,12 @@ export const RBAC_PRIVILEGES_MAP: Record<string, Role[]> = {
   'ROLE.MANAGE': [Role.ADMIN],
   'PRODUCT.CREATE': [Role.ADMIN, Role.SELLER],
   'PRODUCT.UPDATE': [Role.ADMIN, Role.SELLER],
+  'PRODUCT.DELETE': [Role.ADMIN, Role.SELLER],
   'PRODUCT.VIEW': [Role.ADMIN, Role.SUPPORT_STAFF, Role.SELLER, Role.BUYER],
+  'CART.MANAGE': [Role.BUYER],
+  'CHECKOUT.START': [Role.BUYER],
+  'ORDER.CREATE': [Role.BUYER],
+  'SHIPPING.QUOTE': [Role.ADMIN, Role.SUPPORT_STAFF, Role.SELLER, Role.BUYER],
 };
 
 @Injectable()

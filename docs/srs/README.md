@@ -211,6 +211,7 @@ Project Nexus utilizes a decoupled, in-process and distributed event-driven mode
 1. Shopping Cart Lifecycle:
    - Single active cart per user with automatic expiration after 7 days of inactivity.
    - Price revalidation: Cart recalculates current item prices, available stock, and shipping quotes during checkout initialization.
+   - Anti-Self-Purchase Constraint (Wash Trading Prevention): An authenticated user acting as a Buyer ($A$) is strictly prohibited from adding to cart or purchasing items created by their own merchant profile ($A'$) where $\text{product.sellerId} = \text{buyer.id}$. Backend validation must immediately reject such operations with `400 Bad Request` (`CANNOT_PURCHASE_OWN_PRODUCT`) to eliminate wash trading, self-review manipulation, and fraudulent reputation farming (+2 points per completed order).
 2. Checkout & Idempotent Payments:
    - Multi-step checkout requiring valid delivery address and selected payment method.
    - Strategy Pattern integration:
@@ -231,6 +232,7 @@ Project Nexus utilizes a decoupled, in-process and distributed event-driven mode
    - Low-latency WebSocket bidding gateway at `/ws/auctions`.
    - Concurrency control: Utilizes Redis distributed locks (`Redlock`) to serialize concurrent bids on a single auction item.
    - Wallet deduction: Accepting a new highest bid atomically deducts the bid amount from the new bidder's wallet and immediately refunds the superseded bidder in full.
+   - Anti-Shill Bidding Enforcement: A seller is strictly prohibited from placing bids on auction rooms hosting their own products ($\text{auction.sellerId} = \text{bidder.id}$). Attempted bids are rejected with `AUCTION_BID_SELF_FORBIDDEN`.
 3. Anti-Sniping Algorithm:
    - If a valid bid is placed within the final `2 minutes` (`AUCTION_ANTI_SNIPING_TRIGGER_MINUTES`) of the auction clock, the system automatically extends the closing deadline by `5 minutes` (`AUCTION_ANTI_SNIPING_EXTEND_MINUTES`).
    - Broadcasts `auction:time_extended` to all connected clients in the room to synchronize countdown clocks.

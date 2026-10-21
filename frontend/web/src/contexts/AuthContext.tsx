@@ -36,66 +36,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(() => Boolean(getStoredToken()));
 
-  const inFlightPromiseRef = useRef<Promise<UserProfile | null> | null>(null);
+  const inFlightPromiseRef = useRef<{ token: string; promise: Promise<UserProfile | null> } | null>(
+    null,
+  );
+  const revision = useRef(0);
+  const sessionToken = useRef(token);
 
   const refreshProfile = useCallback(async (): Promise<UserProfile | null> => {
     const currentToken = getStoredToken();
     if (!currentToken) {
+      revision.current++;
+      inFlightPromiseRef.current = null;
       setUser(null);
       setIsLoading(false);
       return null;
     }
 
-    if (inFlightPromiseRef.current) {
-      return inFlightPromiseRef.current;
+    if (inFlightPromiseRef.current?.token === currentToken) {
+      return inFlightPromiseRef.current.promise;
     }
-
+    const current = ++revision.current;
+    const isCurrent = () => current === revision.current && currentToken === getStoredToken();
     const promise = (async () => {
       try {
         const profile = await getMe();
+        if (!isCurrent()) return null;
         setUser(profile);
         return profile;
       } catch (error) {
         console.warn('[AuthContext] Không thể lấy thông tin profile người dùng:', error);
         return null;
       } finally {
-        setIsLoading(false);
-        inFlightPromiseRef.current = null;
+        if (isCurrent()) setIsLoading(false);
+        if (current === revision.current) inFlightPromiseRef.current = null;
       }
     })();
 
-    inFlightPromiseRef.current = promise;
+    inFlightPromiseRef.current = { token: currentToken, promise };
     return promise;
   }, []);
 
   useEffect(() => {
-    if (token) {
-      void refreshProfile();
-    } else {
-      setIsLoading(false);
-    }
-
     const handleAuthChange = () => {
       const nextToken = getStoredToken();
       const nextStoredUser = getStoredUser();
+      if (sessionToken.current !== nextToken) {
+        revision.current++;
+        inFlightPromiseRef.current = null;
+        sessionToken.current = nextToken;
+        setUser(null);
+        setIsLoading(Boolean(nextToken));
+      }
       setToken(nextToken);
       setStoredUser(nextStoredUser);
 
       if (nextToken) {
         void refreshProfile();
       } else {
+        revision.current++;
+        inFlightPromiseRef.current = null;
         setUser(null);
         setIsLoading(false);
       }
     };
-
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key.startsWith('nexus:auth-')) handleAuthChange();
+    };
     window.addEventListener('nexus:auth-change', handleAuthChange);
-    window.addEventListener('storage', handleAuthChange);
+    window.addEventListener('storage', handleStorage);
+    handleAuthChange();
     return () => {
       window.removeEventListener('nexus:auth-change', handleAuthChange);
-      window.removeEventListener('storage', handleAuthChange);
+      window.removeEventListener('storage', handleStorage);
     };
-  }, [token, refreshProfile]);
+  }, [refreshProfile]);
 
   const login = useCallback(
     async (authUser: AuthUser, accessToken?: string, refreshToken?: string) => {

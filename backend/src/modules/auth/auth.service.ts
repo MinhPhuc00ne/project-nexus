@@ -1,6 +1,13 @@
-import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { ReputationTrustLevel } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
@@ -188,6 +195,11 @@ export class AuthService {
         'Tài khoản chưa được xác thực. Vui lòng kiểm tra email để lấy mã OTP.',
       );
     }
+    if (user.trustLevel === ReputationTrustLevel.SUSPENDED) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+      );
+    }
 
     const { accessToken, refreshToken } = await this.generateTokens({
       id: user.id,
@@ -234,6 +246,12 @@ export class AuthService {
         isVerified: true,
       },
     });
+
+    if (userRecord.trustLevel === ReputationTrustLevel.SUSPENDED) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+      );
+    }
 
     const { accessToken, refreshToken } = await this.generateTokens({
       id: userRecord.id,
@@ -382,6 +400,12 @@ export class AuthService {
       new Date() > tokenRecord.expiresAt
     ) {
       throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
+    }
+
+    if (tokenRecord.user.trustLevel === ReputationTrustLevel.SUSPENDED) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+      );
     }
 
     const isTokenMatch = await bcrypt.compare(this.sha256(dto.refreshToken), tokenRecord.tokenHash);

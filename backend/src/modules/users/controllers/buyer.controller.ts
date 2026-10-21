@@ -3,6 +3,8 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
+  Param,
   Body,
   UseGuards,
   HttpCode,
@@ -21,8 +23,13 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService, AuthTokensResult } from '../../auth/services/auth.service';
 import { UsersService, UserProfileResponse } from '../services/users.service';
+import { AddressService } from '../services/address.service';
 import { RegisterBuyerDto } from '../../auth/dtos/auth.dto';
-import { UpdateProfileDto, ApplySellerUpgradeDto } from '../../users/dtos/users.dto';
+import {
+  UpdateProfileDto,
+  ApplySellerUpgradeDto,
+  CreateAddressDto,
+} from '../../users/dtos/users.dto';
 import { Public, CurrentUser, RequirePrivilege } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -33,6 +40,7 @@ export class BuyerController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
+    private readonly addressService: AddressService,
   ) {}
 
   @ApiExcludeEndpoint()
@@ -99,5 +107,47 @@ export class BuyerController {
     @Body() dto: ApplySellerUpgradeDto,
   ): Promise<{ success: boolean; message: string; requestId: string }> {
     return this.usersService.applySellerUpgrade(userId, dto);
+  }
+
+  // --- QUẢN LÝ SỔ ĐỊA CHỈ GIAO HÀNG (USER ADDRESSES) ---
+
+  @ApiOperation({
+    summary: '[BUYER] Xem danh sách sổ địa chỉ nhận hàng của Buyer',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('addresses')
+  async getAddresses(@CurrentUser('id') userId: string) {
+    return this.addressService.getAddresses(userId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Thêm địa chỉ nhận hàng mới',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('addresses')
+  async createAddress(@CurrentUser('id') userId: string, @Body() dto: CreateAddressDto) {
+    return this.addressService.createAddress(userId, dto);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Đặt làm địa chỉ nhận hàng mặc định',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('addresses/:id/default')
+  async setDefaultAddress(@CurrentUser('id') userId: string, @Param('id') addressId: string) {
+    return this.addressService.setDefaultAddress(userId, addressId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Xóa một địa chỉ nhận hàng',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Delete('addresses/:id')
+  async deleteAddress(@CurrentUser('id') userId: string, @Param('id') addressId: string) {
+    return this.addressService.deleteAddress(userId, addressId);
   }
 }

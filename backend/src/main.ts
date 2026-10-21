@@ -17,7 +17,7 @@ async function bootstrap(): Promise<void> {
 
   // Enable CORS for frontend applications
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => callback(null, true),
     credentials: true,
   });
 
@@ -36,12 +36,17 @@ async function bootstrap(): Promise<void> {
   // Global Response Transform Interceptor
   app.useGlobalInterceptors(new TransformResponseInterceptor());
 
-  // Serve static files uploaded by users (e.g., seller proofs, KYC docs)
+  // Serve static files uploaded by users (e.g., seller proofs, KYC docs, media)
   const uploadsDir = path.join(process.cwd(), 'uploads');
+  const mediaDir = path.join(uploadsDir, 'media');
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
+  if (!fs.existsSync(mediaDir)) {
+    fs.mkdirSync(mediaDir, { recursive: true });
+  }
   app.use('/uploads', express.static(uploadsDir));
+  app.use('/api/v1/uploads', express.static(uploadsDir));
 
   // Swagger Documentation Setup
   const config = new DocumentBuilder()
@@ -66,6 +71,15 @@ async function bootstrap(): Promise<void> {
     .addTag(
       '5. ADMIN',
       'Chức năng Admin: Quản lý nhân viên (Support Staff) & phê duyệt/từ chối hồ sơ nâng cấp Seller',
+    )
+    .addTag('6. MEDIA', 'Chức năng Media: Tải lên hình ảnh, tài liệu lưu trữ máy chủ & Cloudinary')
+    .addTag(
+      '7. CATALOG',
+      'Danh mục sản phẩm, Đăng bán sản phẩm, Quản lý tồn kho & Tìm kiếm sản phẩm',
+    )
+    .addTag(
+      '8. COMMERCE - CART',
+      'Quản lý giỏ hàng Buyer, Price Revalidation, Merge giỏ hàng Guest',
     )
     .addBearerAuth()
     .build();

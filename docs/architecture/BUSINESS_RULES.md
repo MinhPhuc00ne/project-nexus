@@ -147,6 +147,13 @@ $$\text{Seller Payout} = \text{Subtotal} - \text{Platform Fee} + \text{Shipping 
 - **Stripe:** Card payment via PaymentIntent; validated via Stripe webhook secret.
 - **Wallet:** Deducts directly from user's internal liquid balance with zero processing delay.
 
+### 6.3 Anti-Self-Purchase & Wash Trading Prevention
+
+- **Constraint:** A user acting as a Buyer ($A$) is strictly prohibited from adding to cart or purchasing goods sold by their own Seller profile ($A'$), enforcing `product.sellerId !== buyer.id`.
+- **Enforcement:** The backend API strictly rejects such requests with an HTTP `400 Bad Request` (`CANNOT_PURCHASE_OWN_PRODUCT`).
+- **Rationale:** Protects platform financial integrity, prevents artificial order volume, eliminates fake review manipulation, and blocks fraudulent farming of completion reputation bonuses (+2 points per order).
+- **Auction Parity:** Sellers are likewise forbidden from placing bids in their own live auction rooms (`auction.sellerId !== bidder.id`), rejecting any attempts with `AUCTION_BID_SELF_FORBIDDEN`.
+
 ---
 
 ## 7. 3D WebGL Exhibition & Asset Fallback

@@ -13,6 +13,9 @@ import SellerProductsPage from '../pages/seller/SellerProductsPage';
 import SellerFinancePage from '../pages/seller/SellerFinancePage';
 import SellerDisputesPage from '../pages/seller/SellerDisputesPage';
 import SellerSettingsPage from '../pages/seller/SellerSettingsPage';
+import SellerDraftPage from '../pages/seller/SellerDraftPage';
+import SellerReviewsPage from '../pages/seller/SellerReviewsPage';
+import SellerCreateProductPage from '../pages/seller/SellerCreateProductPage';
 import StaffActivationPage from '../pages/staff/StaffActivationPage';
 import StaffSession from '../pages/staff/StaffSession';
 import {
@@ -188,23 +191,27 @@ function AppRouter() {
 
           {/* Seller routes */}
           <Route
+            path={ROUTES.SELLER}
             element={
               <SellerSession>
                 <SellerLayout />
               </SellerSession>
             }
           >
-            <Route path={ROUTES.SELLER} element={<SellerDashboardPage />} />
-            <Route path={ROUTES.SELLER_PRODUCTS} element={<SellerProductsPage />} />
-            {/* <Route path={ROUTES.SELLER_CREATE_PRODUCT} element={<SellerCreateProductPage />} /> */}
-            <Route path={ROUTES.SELLER_ORDERS} element={<SellerOrdersPage />} />
-            <Route path={ROUTES.SELLER_ORDER_DETAIL} element={<SellerOrderDetailPage />} />
-            <Route path={ROUTES.SELLER_AUCTIONS} element={<SellerAuctionsPage />} />
-            {/* <Route path={ROUTES.SELLER_CREATE_AUCTION} element={<SellerCreateAuctionPage />} /> */}
-            <Route path={ROUTES.SELLER_FINANCE} element={<SellerFinancePage />} />
-            {/* <Route path={ROUTES.SELLER_INVENTORY} element={<SellerInventoryPage />} /> */}
-            <Route path={ROUTES.SELLER_DISPUTES} element={<SellerDisputesPage />} />
-            <Route path={ROUTES.SELLER_SETTINGS} element={<SellerSettingsPage />} />
+            <Route index element={<SellerDashboardPage home />} />
+            <Route path="overview" element={<SellerDashboardPage />} />
+            <Route path="products" element={<SellerProductsPage />} />
+            <Route path="products/new" element={<SellerCreateProductPage />} />
+            <Route path="orders" element={<SellerOrdersPage />} />
+            <Route path="orders/:id" element={<SellerOrderDetailPage />} />
+            <Route path="auctions" element={<SellerAuctionsPage />} />
+            <Route path="auctions/new" element={<SellerDraftPage auction />} />
+            <Route path="finance" element={<SellerFinancePage />} />
+            <Route path="inventory" element={<SellerProductsPage inventory />} />
+            <Route path="reviews" element={<SellerReviewsPage />} />
+            <Route path="disputes" element={<SellerDisputesPage />} />
+            <Route path="settings" element={<SellerSettingsPage />} />
+            <Route path="profile" element={<BuyerProfilePage />} />
           </Route>
 
           {/* Staff routes */}

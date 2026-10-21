@@ -73,3 +73,42 @@ export class ReviewSellerUpgradeDto {
   @IsOptional()
   rejectionReason?: string;
 }
+
+export class CreateAddressDto {
+  @ApiProperty({ example: 'Đinh Tú Liên', description: 'Họ tên người nhận hàng' })
+  @IsString()
+  @IsNotEmpty()
+  recipientName: string;
+
+  @ApiProperty({ example: '0909123456', description: 'Số điện thoại người nhận' })
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+
+  @ApiProperty({
+    example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ',
+    description: 'Địa chỉ cụ thể',
+  })
+  @IsString()
+  @IsNotEmpty()
+  street: string;
+
+  @ApiPropertyOptional({ example: 'Phường 22' })
+  @IsString()
+  @IsOptional()
+  ward?: string;
+
+  @ApiPropertyOptional({ example: 'Quận Bình Thạnh' })
+  @IsString()
+  @IsOptional()
+  district?: string;
+
+  @ApiProperty({ example: 'TP. Hồ Chí Minh' })
+  @IsString()
+  @IsNotEmpty()
+  city: string;
+
+  @ApiPropertyOptional({ example: true, default: false })
+  @IsOptional()
+  isDefault?: boolean;
+}
