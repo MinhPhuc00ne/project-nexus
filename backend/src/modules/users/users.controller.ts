@@ -20,7 +20,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Role } from '@prisma/client';
 import { CreateSellerRequestDto } from './dto/create-seller-request.dto';
 import { ToggleSellerDto } from './dto/toggle-seller.dto';
 import { UsersService } from './users.service';
@@ -68,6 +71,8 @@ export class UsersController {
 
   // ================= 3. BUYER GỬI YÊU CẦU VÀ FILE ĐÍNH KÈM CHỨNG MINH =================
   @Post('seller-request')
+  @UseGuards(RolesGuard)
+  @Roles(Role.BUYER)
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -113,6 +118,21 @@ export class UsersController {
           example: '001202008888',
           description: 'Số CMND/CCCD hoặc Mã số định danh doanh nghiệp',
         },
+        street: {
+          type: 'string',
+          example: '720A Điện Biên Phủ',
+          description: 'Địa chỉ cụ thể / số nhà, tên đường của cửa hàng',
+        },
+        ward: { type: 'string', example: 'Phường 22', description: 'Phường/xã' },
+        district: { type: 'string', example: 'Quận Bình Thạnh', description: 'Quận/huyện' },
+        city: { type: 'string', example: 'TP. Hồ Chí Minh', description: 'Tỉnh/thành phố' },
+        latitude: { type: 'number', example: 10.795, description: 'Vĩ độ GPS bản đồ' },
+        longitude: { type: 'number', example: 106.721, description: 'Kinh độ GPS bản đồ' },
+        formattedAddress: {
+          type: 'string',
+          example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh',
+        },
+        placeId: { type: 'string', example: 'ChIJ_landmark81_hcm' },
         file: {
           type: 'string',
           format: 'binary',
@@ -121,7 +141,7 @@ export class UsersController {
         },
         attachmentUrl: {
           type: 'string',
-          example: '/uploads/seller-proofs/proof-sample.png',
+          example: 'https://res.cloudinary.com/...',
           description:
             'Hoặc đường dẫn file chứng minh đã tải lên trước (nếu không upload qua form-data)',
         },
@@ -147,6 +167,8 @@ export class UsersController {
 
   // ================= 4. XEM TRẠNG THÁI YÊU CẦU NÂNG CẤP CỦA TÔI =================
   @Get('seller-request/me')
+  @UseGuards(RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
   @ApiOperation({
     summary: 'Xem lịch sử và trạng thái các yêu cầu nâng cấp Seller của tài khoản hiện tại',
   })

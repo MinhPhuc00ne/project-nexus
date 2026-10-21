@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateSellerRequestDto {
   @ApiProperty({
@@ -50,4 +51,70 @@ export class CreateSellerRequestDto {
   @IsOptional()
   @IsString({ message: 'Đường dẫn file đính kèm phải là chuỗi ký tự' })
   attachmentUrl?: string;
+
+  @ApiProperty({
+    description: 'Địa chỉ cụ thể / số nhà, tên đường của cửa hàng hoặc kho lấy hàng',
+    example: '720A Điện Biên Phủ',
+  })
+  @IsNotEmpty({ message: 'Địa chỉ cửa hàng không được để trống' })
+  @IsString({ message: 'Địa chỉ cửa hàng phải là chuỗi ký tự' })
+  street!: string;
+
+  @ApiPropertyOptional({
+    description: 'Phường / Xã của cửa hàng',
+    example: 'Phường 22',
+  })
+  @IsOptional()
+  @IsString({ message: 'Phường/xã phải là chuỗi ký tự' })
+  ward?: string;
+
+  @ApiPropertyOptional({
+    description: 'Quận / Huyện của cửa hàng',
+    example: 'Quận Bình Thạnh',
+  })
+  @IsOptional()
+  @IsString({ message: 'Quận/huyện phải là chuỗi ký tự' })
+  district?: string;
+
+  @ApiProperty({
+    description: 'Tỉnh / Thành phố của cửa hàng',
+    example: 'TP. Hồ Chí Minh',
+  })
+  @IsNotEmpty({ message: 'Tỉnh/thành phố của cửa hàng không được để trống' })
+  @IsString({ message: 'Tỉnh/thành phố phải là chuỗi ký tự' })
+  city!: string;
+
+  @ApiPropertyOptional({
+    description: 'Vĩ độ GPS (Latitude) định vị gian hàng trên bản đồ',
+    example: 10.795,
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({
+    description: 'Kinh độ GPS (Longitude) định vị gian hàng trên bản đồ',
+    example: 106.721,
+  })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
+  @ApiPropertyOptional({
+    description: 'Địa chỉ chuẩn hóa đầy đủ từ bản đồ toàn cầu (Google Maps / OSM)',
+    example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh',
+  })
+  @IsOptional()
+  @IsString({ message: 'Địa chỉ chuẩn hóa phải là chuỗi ký tự' })
+  formattedAddress?: string;
+
+  @ApiPropertyOptional({
+    description: 'Place ID bản đồ',
+    example: 'ChIJw8qV...',
+  })
+  @IsOptional()
+  @IsString({ message: 'Place ID phải là chuỗi ký tự' })
+  placeId?: string;
 }

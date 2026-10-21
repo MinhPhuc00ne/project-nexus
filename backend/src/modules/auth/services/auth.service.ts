@@ -367,9 +367,9 @@ export class AuthService {
       },
     });
 
-    if (existing) {
+    if (existing && (existing.role === Role.ADMIN || existing.role === Role.SUPPORT_STAFF)) {
       throw new ConflictException(
-        `Email cá nhân '${dto.email}' đã được đăng ký hoặc liên kết với tài khoản khác.`,
+        `Email cá nhân '${dto.email}' đã là tài khoản ${existing.role} trong hệ thống.`,
       );
     }
 
@@ -547,37 +547,58 @@ export class AuthService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
 
-    const newStaffUser = await this.prisma.user.create({
-      data: {
-        id: crypto.randomUUID(),
-        email: platformEmail,
-        platformEmail,
-        personalEmail: invitation.personalEmail,
-        fullName: dto.fullName.trim() || invitation.fullName,
-        phoneNumber: dto.phoneNumber.trim() || invitation.phoneNumber,
-        passwordHash,
-        role: Role.SUPPORT_STAFF,
-        isSellerActive: false,
-        reputationScore: 100,
-        isVerified: true,
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: invitation.personalEmail }, { personalEmail: invitation.personalEmail }],
       },
     });
 
-    // Mark invitation as accepted
-    await this.prisma.staffInvitation.update({
-      where: { id: invitation.id },
-      data: { isAccepted: true },
-    });
+    let newStaffUser;
+    if (existingUser) {
+      newStaffUser = await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          role: Role.SUPPORT_STAFF,
+          platformEmail,
+          personalEmail: invitation.personalEmail,
+          fullName: dto.fullName.trim() || invitation.fullName,
+          phoneNumber: dto.phoneNumber.trim() || invitation.phoneNumber,
+          passwordHash,
+          isVerified: true,
+        },
+      });
 
-    // Create wallet for staff
-    await this.prisma.wallet.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId: newStaffUser.id,
-        balance: 0,
-        currency: 'VND',
-      },
-    });
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: existingUser.id, isRevoked: false },
+        data: { isRevoked: true },
+      });
+    } else {
+      newStaffUser = await this.prisma.user.create({
+        data: {
+          id: crypto.randomUUID(),
+          email: platformEmail,
+          platformEmail,
+          personalEmail: invitation.personalEmail,
+          fullName: dto.fullName.trim() || invitation.fullName,
+          phoneNumber: dto.phoneNumber.trim() || invitation.phoneNumber,
+          passwordHash,
+          role: Role.SUPPORT_STAFF,
+          isSellerActive: false,
+          reputationScore: 100,
+          isVerified: true,
+        },
+      });
+
+      // Create wallet for staff
+      await this.prisma.wallet.create({
+        data: {
+          id: crypto.randomUUID(),
+          userId: newStaffUser.id,
+          balance: 0,
+          currency: 'VND',
+        },
+      });
+    }
 
     this.logger.log(`Staff activated: ${newStaffUser.fullName} | Assigned Email: ${platformEmail}`);
 
