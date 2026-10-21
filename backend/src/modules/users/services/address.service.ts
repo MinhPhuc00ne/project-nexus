@@ -4,7 +4,7 @@ import { CreateAddressDto } from '../dtos/users.dto';
 
 @Injectable()
 export class AddressService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Lấy danh sách địa chỉ nhận hàng của Buyer
