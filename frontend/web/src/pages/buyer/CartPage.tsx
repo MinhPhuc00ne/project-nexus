@@ -21,6 +21,7 @@ import {
 } from '../../services/cart';
 import CheckoutModal, { type DeliveryAddress } from '../../components/cart/CheckoutModal';
 import CartOrderSummary from '../../components/cart/CartOrderSummary';
+import { getStoredToken } from '../../services/auth';
 
 export type { DeliveryAddress };
 
@@ -243,7 +244,13 @@ export default function CartPage() {
                 }
               }}
               onRemoveVoucher={() => setAppliedVoucher(null)}
-              onProceedCheckout={() => setShowCheckoutModal(true)}
+              onProceedCheckout={() => {
+                if (!getStoredToken()) {
+                  navigate('/login', { state: { from: '/cart' } });
+                  return;
+                }
+                setShowCheckoutModal(true);
+              }}
             />
           </div>
         )}
