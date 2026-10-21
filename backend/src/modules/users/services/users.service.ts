@@ -3,10 +3,11 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { Role } from '@nexus/types';
-import { SellerRequestStatus } from '@prisma/client';
+import { SellerRequestStatus, User, Wallet } from '@prisma/client';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
@@ -37,19 +38,7 @@ export class UsersService {
     private readonly storageService: CloudinaryStorageService,
   ) {}
 
-  // 1. PROFILE.VIEW: Lấy thông tin cá nhân và số dư ví
-  async getProfile(userId: string): Promise<UserProfileResponse> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        wallet: true,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID '${userId}' not found`);
-    }
-
+  private formatProfile(user: User & { wallet: Wallet | null }): UserProfileResponse {
     return {
       id: user.id,
       email: user.email,
@@ -67,12 +56,20 @@ export class UsersService {
     };
   }
 
+  // 1. PROFILE.VIEW: Lấy thông tin cá nhân và số dư ví
+  async getProfile(userId: string): Promise<UserProfileResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { wallet: true },
+    });
+    if (!user) throw new NotFoundException(`User with ID '${userId}' not found`);
+    return this.formatProfile(user);
+  }
+
   // 2. PROFILE.UPDATE: Cập nhật thông tin cá nhân
   async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
@@ -82,44 +79,38 @@ export class UsersService {
         ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
         updatedAt: new Date(),
       },
-      include: {
-        wallet: true,
-      },
+      include: { wallet: true },
     });
-
-    return {
-      id: updated.id,
-      email: updated.email,
-      personalEmail: updated.personalEmail,
-      platformEmail: updated.platformEmail,
-      fullName: updated.fullName,
-      phoneNumber: updated.phoneNumber,
-      avatarUrl: updated.avatarUrl,
-      role: updated.role as Role,
-      isSellerActive: updated.isSellerActive,
-      walletBalance: updated.wallet ? Number(updated.wallet.balance) : 0,
-      reputationScore: updated.reputationScore,
-      trustLevel: updated.trustLevel,
-      createdAt: updated.createdAt,
-    };
+    return this.formatProfile(updated);
   }
 
-  // 3. Buyer nộp hồ sơ xin nâng cấp lên Seller (kèm file/ảnh chứng minh)
+  // 3. Buyer nộp hồ sơ xin nâng cấp lên Seller (kèm thông tin cửa hàng, địa chỉ & file chứng minh)
   async applySellerUpgrade(
     userId: string,
     dto: ApplySellerUpgradeDto,
+    file?: Express.Multer.File,
   ): Promise<{ success: boolean; message: string; requestId: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException('User not found');
+
+    if (user.role !== Role.BUYER) {
+      if (user.role === Role.ADMIN || user.role === Role.SUPPORT_STAFF) {
+        throw new ForbiddenException(
+          `Tài khoản với vai trò ${user.role} là nhân sự quản trị hệ thống, không được phép gửi yêu cầu nâng cấp lên Người bán.`,
+        );
+      }
+      if (user.role === Role.SELLER) {
+        throw new BadRequestException(
+          'Tài khoản của bạn đã là Người bán (Seller) rồi. Bạn không cần gửi yêu cầu nâng cấp nữa.',
+        );
+      }
+      throw new ForbiddenException(
+        'Chỉ tài khoản Người mua (BUYER) mới có quyền gửi yêu cầu nâng cấp lên Người bán.',
+      );
     }
 
-    // Kiểm tra xem đã có request pending hay chưa
     const existingPending = await this.prisma.sellerUpgradeRequest.findFirst({
-      where: {
-        userId: userId,
-        status: SellerRequestStatus.PENDING,
-      },
+      where: { userId, status: SellerRequestStatus.PENDING },
     });
 
     if (existingPending) {
@@ -128,16 +119,43 @@ export class UsersService {
       );
     }
 
+    let attachmentUrl = dto.attachmentUrl?.trim();
+    if (file && file.buffer) {
+      const cloudRes = await this.storageService.uploadFile(
+        file.buffer,
+        file.originalname || 'proof-document',
+        'nexus/seller-proofs',
+      );
+      if (cloudRes?.url) {
+        attachmentUrl = cloudRes.url;
+      }
+    }
+
+    if (!attachmentUrl) {
+      throw new BadRequestException(
+        'Vui lòng tải lên file hoặc đính kèm tài liệu chứng minh (CCCD/CMND hoặc Giấy phép kinh doanh).',
+      );
+    }
+
     const newRequest = await this.prisma.sellerUpgradeRequest.create({
       data: {
         id: crypto.randomUUID(),
-        userId: userId,
-        storeName: dto.storeName,
-        storeDescription: dto.storeDescription || null,
-        phone: dto.phone,
-        businessEmail: dto.businessEmail || null,
-        identityCardNumber: dto.identityCardNumber || null,
-        attachmentUrl: dto.attachmentUrl,
+        userId,
+        storeName: dto.storeName.trim(),
+        storeDescription: dto.storeDescription?.trim() || null,
+        phone: dto.phone.trim(),
+        businessEmail: dto.businessEmail?.trim() || null,
+        identityCardNumber: dto.identityCardNumber?.trim() || null,
+        attachmentUrl,
+        street: dto.street?.trim() || null,
+        ward: dto.ward?.trim() || null,
+        district: dto.district?.trim() || null,
+        city: dto.city?.trim() || null,
+        latitude: dto.latitude !== undefined && dto.latitude !== null ? Number(dto.latitude) : null,
+        longitude:
+          dto.longitude !== undefined && dto.longitude !== null ? Number(dto.longitude) : null,
+        formattedAddress: dto.formattedAddress?.trim() || null,
+        placeId: dto.placeId?.trim() || null,
         status: SellerRequestStatus.PENDING,
         updatedAt: new Date(),
       },
@@ -186,9 +204,7 @@ export class UsersService {
       where: { id: requestId },
     });
 
-    if (!request) {
-      throw new NotFoundException('Seller upgrade request not found');
-    }
+    if (!request) throw new NotFoundException('Seller upgrade request not found');
 
     if (request.status !== SellerRequestStatus.PENDING) {
       throw new BadRequestException(
@@ -197,7 +213,6 @@ export class UsersService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      // Update request status
       await tx.sellerUpgradeRequest.update({
         where: { id: requestId },
         data: {
@@ -209,21 +224,35 @@ export class UsersService {
         },
       });
 
-      // Nếu duyệt thành công: nâng role thành SELLER và cho phép chuyển đổi
       if (dto.status === SellerRequestStatus.APPROVED) {
         await tx.user.update({
           where: { id: request.userId },
-          data: {
-            role: Role.SELLER,
-            isSellerActive: true,
-            updatedAt: new Date(),
-          },
+          data: { role: Role.SELLER, isSellerActive: true, updatedAt: new Date() },
         });
+
+        // Tự động tạo địa chỉ kho/cửa hàng cho Seller nếu có thông tin địa chỉ
+        if (request.street && request.city) {
+          await tx.userAddress.create({
+            data: {
+              userId: request.userId,
+              recipientName: request.storeName,
+              phone: request.phone,
+              street: request.street,
+              ward: request.ward,
+              district: request.district,
+              city: request.city,
+              latitude: request.latitude,
+              longitude: request.longitude,
+              formattedAddress: request.formattedAddress,
+              placeId: request.placeId,
+              isDefault: true,
+            },
+          });
+        }
       }
     });
 
     this.logger.log(`Seller request ${requestId} reviewed by admin ${adminId}: ${dto.status}`);
-
     return {
       success: true,
       message: `Seller upgrade request has been ${dto.status.toLowerCase()}`,
@@ -231,36 +260,27 @@ export class UsersService {
   }
 
   // 6. Chuyển đổi qua lại giữa role Seller hoặc Buyer (Toggle Seller Mode)
-  // Khi buyer đã trở thành tài khoản seller thì có thể chuyển đổi qua lại giữa role seller hoặc buyer
   async toggleSellerMode(userId: string): Promise<{
     success: boolean;
     isSellerActive: boolean;
     currentMode: 'SELLER' | 'BUYER';
   }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+    if (!user) throw new NotFoundException('User not found');
 
-    // Phải có role là SELLER hoặc ADMIN mới được chuyển đổi chế độ bán hàng
-    if (user.role !== Role.SELLER && user.role !== Role.ADMIN) {
+    if (user.role !== Role.SELLER && user.role !== Role.ADMIN && user.role !== Role.SUPPORT_STAFF) {
       throw new BadRequestException(
         'Account is not registered as a Seller. Please submit a seller upgrade application first.',
       );
     }
 
     const newSellerActive = !user.isSellerActive;
-
     await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        isSellerActive: newSellerActive,
-        updatedAt: new Date(),
-      },
+      data: { isSellerActive: newSellerActive, updatedAt: new Date() },
     });
 
     this.logger.log(`User ${userId} toggled seller mode: ${newSellerActive ? 'SELLER' : 'BUYER'}`);
-
     return {
       success: true,
       isSellerActive: newSellerActive,

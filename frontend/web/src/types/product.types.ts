@@ -1,8 +1,8 @@
 export interface ProductShopInfo {
   name: string;
   verified: boolean;
-  trustScore: number;
-  responseRate: string;
+  trustScore?: number;
+  responseRate?: string;
 }
 
 export interface ProductDetail {
@@ -14,9 +14,10 @@ export interface ProductDetail {
   formattedOldPrice?: string;
   discount?: number;
   stock: number;
-  rating: number;
-  reviewsCount: number;
-  soldCount: number;
+  rating?: number;
+  reviewsCount?: number;
+  soldCount?: number;
+  categoryName?: string;
   images: string[];
   is3d?: boolean;
   isAuction?: boolean;

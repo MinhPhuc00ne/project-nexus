@@ -1,65 +1,96 @@
-import api from './api';
-import { isMockEnabled, mockDelay } from '../mocks/config';
-import { MOCK_PRODUCTS_CATALOG } from '../mocks/products.mock';
+﻿import { apiRequest } from './api';
 import type { ProductDetail } from '../types/product.types';
 
-/**
- * Lấy danh sách toàn bộ sản phẩm catalog.
- * - Môi trường Dev/Mock: trả về dữ liệu mẫu từ mocks/products.mock.ts
- * - Môi trường Backend: gọi API REST qua Axios và fallback nếu backend chưa kết nối.
- */
-export async function getProductsCatalog(): Promise<ProductDetail[]> {
-  if (isMockEnabled()) {
-    await mockDelay(100);
-    return MOCK_PRODUCTS_CATALOG;
-  }
-
-  try {
-    const res = await api.get<ProductDetail[]>('/products');
-    return res.data;
-  } catch (error) {
-    console.warn(
-      '[ProductsService] Backend API không khả dụng, sử dụng dữ liệu mẫu dự phòng (fallback).',
-      error,
-    );
-    return MOCK_PRODUCTS_CATALOG;
-  }
+interface CatalogProduct {
+  id: string;
+  title: string;
+  description: string;
+  basePrice: number;
+  availableQty: number;
+  images: string[];
+  threeModelKey: string | null;
+  category: { id: string; name: string } | null;
+  seller: { id: string; fullName: string; reputationScore?: number } | null;
+  weightGrams?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
+  status?: string;
 }
-
-/**
- * Lấy chi tiết 1 sản phẩm theo ID (bất đồng bộ).
- */
+interface CatalogPage {
+  items: CatalogProduct[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+export interface ProductsPage extends Omit<CatalogPage, 'items'> {
+  items: ProductDetail[];
+}
+export interface CatalogQuery {
+  search?: string;
+  categoryId?: string;
+  sellerId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  page?: number;
+  limit?: number;
+  sortBy?: 'newest' | 'price_asc' | 'price_desc';
+}
+function mapProduct(product: CatalogProduct): ProductDetail {
+  const specs: Record<string, string> = {};
+  if (product.category) specs['Danh mục'] = product.category.name;
+  if (product.weightGrams !== undefined) specs['Khối lượng'] = `${product.weightGrams} g`;
+  if (product.lengthCm !== undefined) specs['Chiều dài'] = `${product.lengthCm} cm`;
+  if (product.widthCm !== undefined) specs['Chiều rộng'] = `${product.widthCm} cm`;
+  if (product.heightCm !== undefined) specs['Chiều cao'] = `${product.heightCm} cm`;
+  return {
+    id: product.id,
+    name: product.title,
+    brand: '',
+    price: product.basePrice,
+    formattedPrice: `${product.basePrice.toLocaleString('vi-VN')} ₫`,
+    stock: product.status && product.status !== 'ACTIVE' ? 0 : product.availableQty,
+    images: product.images,
+    is3d: Boolean(product.threeModelKey),
+    categoryName: product.category?.name,
+    shop: {
+      name: product.seller?.fullName ?? 'Chưa có thông tin người bán',
+      verified: false,
+      trustScore: product.seller?.reputationScore,
+    },
+    description: product.description,
+    specs,
+  };
+}
+// Only reuse pending requests, never substitute mock data after a failure.
+const pending = new Map<string, Promise<unknown>>();
+function request<T>(path: string): Promise<T> {
+  const existing = pending.get(path);
+  if (existing) return existing as Promise<T>;
+  const promise = apiRequest<T>(path).finally(() => {
+    if (pending.get(path) === promise) pending.delete(path);
+  });
+  pending.set(path, promise);
+  return promise;
+}
+export async function getProductsPage(query: CatalogQuery = {}): Promise<ProductsPage> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== '') params.set(key, String(value));
+  }
+  const suffix = params.size ? `?${params.toString()}` : '';
+  const page = await request<CatalogPage>(`/catalog/products${suffix}`);
+  return { ...page, items: page.items.map(mapProduct) };
+}
+export async function getProductsCatalog(query: CatalogQuery = {}): Promise<ProductDetail[]> {
+  return (await getProductsPage(query)).items;
+}
 export async function getProductByIdAsync(id: string): Promise<ProductDetail> {
-  if (isMockEnabled()) {
-    await mockDelay(100);
-    const found = MOCK_PRODUCTS_CATALOG.find((p) => p.id === id);
-    return found || MOCK_PRODUCTS_CATALOG[0];
-  }
-
-  try {
-    const res = await api.get<ProductDetail>(`/products/${id}`);
-    return res.data;
-  } catch (error) {
-    console.warn(
-      `[ProductsService] Không thể tải sản phẩm ${id} từ API, fallback sang mock data.`,
-      error,
-    );
-    const found = MOCK_PRODUCTS_CATALOG.find((p) => p.id === id);
-    return found || MOCK_PRODUCTS_CATALOG[0];
-  }
+  if (!id.trim()) throw new Error('Thiếu mã sản phẩm.');
+  return mapProduct(await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(id)}`));
 }
-
-/**
- * Hàm lấy sản phẩm đồng bộ để tương thích ngược 100% với các component hiện tại
- */
-export function getProductById(id: string): ProductDetail {
-  const found = MOCK_PRODUCTS_CATALOG.find((p) => p.id === id);
-  return found || MOCK_PRODUCTS_CATALOG[0];
-}
-
-/**
- * Lấy danh sách sản phẩm gợi ý liên quan
- */
-export function getRelatedProducts(currentId: string, limit = 4): ProductDetail[] {
-  return MOCK_PRODUCTS_CATALOG.filter((p) => p.id !== currentId).slice(0, limit);
+export async function getRelatedProducts(currentId: string, limit = 4): Promise<ProductDetail[]> {
+  const products = await getProductsCatalog({ limit: limit + 1 });
+  return products.filter((product) => product.id !== currentId).slice(0, limit);
 }

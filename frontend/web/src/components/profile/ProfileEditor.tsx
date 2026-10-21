@@ -50,7 +50,6 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
     setPending(true);
     try {
       await updateMyProfile(changes, password);
-      // Keep the visible header current even if the subsequent profile reload fails.
       setProfile((current) => (current?.id === profile.id ? { ...current, ...changes } : current));
       await refreshProfile();
       setSuccess('Đã cập nhật hồ sơ cá nhân.');

@@ -1,4 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Role } from '@nexus/types';
+import ProtectedRoute from './ProtectedRoute';
 import AdminLayout from '../layouts/AdminLayout';
 import NonAdminLayout from '../layouts/NonAdminLayout';
 import AuthLayout from '../layouts/AuthLayout';
@@ -17,7 +19,6 @@ import SellerDraftPage from '../pages/seller/SellerDraftPage';
 import SellerReviewsPage from '../pages/seller/SellerReviewsPage';
 import SellerCreateProductPage from '../pages/seller/SellerCreateProductPage';
 import StaffActivationPage from '../pages/staff/StaffActivationPage';
-import StaffSession from '../pages/staff/StaffSession';
 import {
   // Auth
   Login,
@@ -166,18 +167,22 @@ function AppRouter() {
             <Route path={ROUTES.TERMS} element={<TermsPage />} />
             <Route path={ROUTES.PRIVACY} element={<PrivacyPage />} />
 
-            {/* Buyer */}
+            {/* Cart */}
             <Route path={ROUTES.CART} element={<CartPage />} />
-            <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
-            <Route path={ROUTES.BUYER} element={<BuyerDashboardPage />} />
-            <Route path={ROUTES.BUYER_ORDERS} element={<BuyerOrdersPage />} />
-            <Route path={ROUTES.BUYER_ORDER_DETAIL} element={<BuyerOrderDetailPage />} />
-            <Route path={ROUTES.BUYER_PROFILE} element={<BuyerProfilePage />} />
-            <Route path={ROUTES.BUYER_WISHLIST} element={<BuyerWishlistPage />} />
-            <Route path={ROUTES.BUYER_WALLET} element={<BuyerWalletPage />} />
-            <Route path={ROUTES.BUYER_BIDS} element={<BuyerBidsPage />} />
-            <Route path={ROUTES.BUYER_DISPUTES} element={<BuyerDisputesPage />} />
-            <Route path={ROUTES.BUYER_ADDRESSES} element={<BuyerAddressesPage />} />
+
+            {/* Buyer routes requiring authentication */}
+            <Route element={<ProtectedRoute />}>
+              <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
+              <Route path={ROUTES.BUYER} element={<BuyerDashboardPage />} />
+              <Route path={ROUTES.BUYER_ORDERS} element={<BuyerOrdersPage />} />
+              <Route path={ROUTES.BUYER_ORDER_DETAIL} element={<BuyerOrderDetailPage />} />
+              <Route path={ROUTES.BUYER_PROFILE} element={<BuyerProfilePage />} />
+              <Route path={ROUTES.BUYER_WISHLIST} element={<BuyerWishlistPage />} />
+              <Route path={ROUTES.BUYER_WALLET} element={<BuyerWalletPage />} />
+              <Route path={ROUTES.BUYER_BIDS} element={<BuyerBidsPage />} />
+              <Route path={ROUTES.BUYER_DISPUTES} element={<BuyerDisputesPage />} />
+              <Route path={ROUTES.BUYER_ADDRESSES} element={<BuyerAddressesPage />} />
+            </Route>
           </Route>
 
           {/* Auth routes */}
@@ -190,33 +195,36 @@ function AppRouter() {
           </Route>
 
           {/* Seller routes */}
-          <Route
-            path={ROUTES.SELLER}
-            element={
-              <SellerSession>
-                <SellerLayout />
-              </SellerSession>
-            }
-          >
-            <Route index element={<SellerDashboardPage home />} />
-            <Route path="overview" element={<SellerDashboardPage />} />
-            <Route path="products" element={<SellerProductsPage />} />
-            <Route path="products/new" element={<SellerCreateProductPage />} />
-            <Route path="orders" element={<SellerOrdersPage />} />
-            <Route path="orders/:id" element={<SellerOrderDetailPage />} />
-            <Route path="auctions" element={<SellerAuctionsPage />} />
-            <Route path="auctions/new" element={<SellerDraftPage auction />} />
-            <Route path="finance" element={<SellerFinancePage />} />
-            <Route path="inventory" element={<SellerProductsPage inventory />} />
-            <Route path="reviews" element={<SellerReviewsPage />} />
-            <Route path="disputes" element={<SellerDisputesPage />} />
-            <Route path="settings" element={<SellerSettingsPage />} />
-            <Route path="profile" element={<BuyerProfilePage />} />
+          <Route element={<ProtectedRoute allowedRoles={[Role.SELLER]} />}>
+            <Route
+              path={ROUTES.SELLER}
+              element={
+                <SellerSession>
+                  <SellerLayout />
+                </SellerSession>
+              }
+            >
+              <Route index element={<SellerDashboardPage home />} />
+              <Route path="overview" element={<SellerDashboardPage />} />
+              <Route path="products" element={<SellerProductsPage />} />
+              <Route path="products/new" element={<SellerCreateProductPage />} />
+              <Route path="products/:id/edit" element={<SellerCreateProductPage />} />
+              <Route path="orders" element={<SellerOrdersPage />} />
+              <Route path="orders/:id" element={<SellerOrderDetailPage />} />
+              <Route path="auctions" element={<SellerAuctionsPage />} />
+              <Route path="auctions/new" element={<SellerDraftPage auction />} />
+              <Route path="finance" element={<SellerFinancePage />} />
+              <Route path="inventory" element={<SellerProductsPage inventory />} />
+              <Route path="reviews" element={<SellerReviewsPage />} />
+              <Route path="disputes" element={<SellerDisputesPage />} />
+              <Route path="settings" element={<SellerSettingsPage />} />
+              <Route path="profile" element={<BuyerProfilePage />} />
+            </Route>
           </Route>
 
           {/* Staff routes */}
           <Route path="/staff/activate" element={<StaffActivationPage />} />
-          <Route element={<StaffSession />}>
+          <Route element={<ProtectedRoute allowedRoles={[Role.SUPPORT_STAFF]} />}>
             <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
             <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
             <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
@@ -232,23 +240,25 @@ function AppRouter() {
           <Route path="*" element={<NotFoundPage />} />
         </Route>
         {/* Route cha giữ khung chung; mỗi route con mở một page cụ thể trong Outlet. */}
-        <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
-          <Route index element={<Navigate to="overview" replace />} />
-          <Route path="categories" element={<AdminCategoriesPage />} />
-          <Route path="overview" element={<AdminDashboardPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="sellers" element={<AdminSellersPage />} />
-          <Route path="products" element={<AdminProductsPage />} />
-          <Route path="orders" element={<AdminOrdersPage />} />
-          <Route path="stores" element={<AdminStoresPage />} />
-          <Route path="reports" element={<AdminReportsPage />} />
-          <Route path="auctions" element={<AdminAuctionsPage />} />
-          <Route path="refunds" element={<AdminRefundsPage />} />
-          <Route path="studio" element={<AdminStudioPage />} />
-          <Route path="finance" element={<AdminFinancePage />} />
-          <Route path="system" element={<AdminSystemPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
-          <Route path="*" element={<Navigate to="/admin/overview" replace />} />
+        <Route element={<ProtectedRoute allowedRoles={[Role.ADMIN]} />}>
+          <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="categories" element={<AdminCategoriesPage />} />
+            <Route path="overview" element={<AdminDashboardPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="sellers" element={<AdminSellersPage />} />
+            <Route path="products" element={<AdminProductsPage />} />
+            <Route path="orders" element={<AdminOrdersPage />} />
+            <Route path="stores" element={<AdminStoresPage />} />
+            <Route path="reports" element={<AdminReportsPage />} />
+            <Route path="auctions" element={<AdminAuctionsPage />} />
+            <Route path="refunds" element={<AdminRefundsPage />} />
+            <Route path="studio" element={<AdminStudioPage />} />
+            <Route path="finance" element={<AdminFinancePage />} />
+            <Route path="system" element={<AdminSystemPage />} />
+            <Route path="settings" element={<AdminSettingsPage />} />
+            <Route path="*" element={<Navigate to="/admin/overview" replace />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

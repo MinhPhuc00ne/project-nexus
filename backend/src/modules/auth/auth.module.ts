@@ -5,6 +5,7 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthService as ModularAuthService } from './services/auth.service';
+import { AuthProfileService } from './services/auth-profile.service';
 import { StaffController } from './controllers/staff.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -29,7 +30,7 @@ import { UsersModule } from '../users/users.module';
     forwardRef(() => UsersModule),
   ],
   controllers: [AuthController, StaffController],
-  providers: [AuthService, ModularAuthService, JwtStrategy, GoogleStrategy],
-  exports: [AuthService, ModularAuthService, JwtModule, PassportModule],
+  providers: [AuthService, ModularAuthService, AuthProfileService, JwtStrategy, GoogleStrategy],
+  exports: [AuthService, ModularAuthService, AuthProfileService, JwtModule, PassportModule],
 })
 export class AuthModule {}

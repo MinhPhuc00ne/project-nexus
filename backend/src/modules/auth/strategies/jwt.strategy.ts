@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { PrismaService } from '../../../core/prisma/prisma.service';
 
 interface JwtPayload {
   sub: string;
@@ -12,7 +13,10 @@ interface JwtPayload {
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(configService: ConfigService) {
+  constructor(
+    configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
@@ -34,6 +38,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    return { id: payload.sub, userId: payload.sub, email: payload.email, role: payload.role };
+    let role = payload.role;
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { role: true, isSellerActive: true },
+      });
+      if (user) {
+        role = user.role;
+      }
+    } catch {
+      // Fallback to token payload role if db query fails
+    }
+    return { id: payload.sub, userId: payload.sub, email: payload.email, role };
   }
 }

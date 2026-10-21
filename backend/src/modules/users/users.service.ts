@@ -49,7 +49,8 @@ export class UsersService {
       role: user.role,
       isSellerActive: user.isSellerActive,
       currentMode: user.isSellerActive ? 'SELLER' : 'BUYER',
-      canToggleSeller: user.role === Role.SELLER || user.role === Role.ADMIN,
+      canToggleSeller:
+        user.role === Role.SELLER || user.role === Role.ADMIN || user.role === Role.SUPPORT_STAFF,
       reputationScore: user.reputationScore,
       trustLevel: user.trustLevel,
       isVerified: user.isVerified,
@@ -76,7 +77,7 @@ export class UsersService {
     }
 
     // Chỉ tài khoản đã nâng cấp thành SELLER (hoặc ADMIN) mới được phép chuyển đổi
-    if (user.role !== Role.SELLER && user.role !== Role.ADMIN) {
+    if (user.role !== Role.SELLER && user.role !== Role.ADMIN && user.role !== Role.SUPPORT_STAFF) {
       throw new ForbiddenException(
         'Bạn chưa được cấp quyền Seller. Chỉ tài khoản đã nâng cấp thành công lên Người bán mới có quyền chuyển đổi giữa chế độ Người mua và Người bán. Vui lòng gửi yêu cầu nâng cấp lên Admin.',
       );
@@ -119,16 +120,27 @@ export class UsersService {
       throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
     }
 
-    if (user.role === Role.SELLER) {
-      throw new BadRequestException(
-        'Tài khoản của bạn đã là Người bán (Seller) rồi. Bạn không cần gửi yêu cầu nâng cấp nữa.',
+    if (user.role !== Role.BUYER) {
+      if (user.role === Role.ADMIN || user.role === Role.SUPPORT_STAFF) {
+        throw new ForbiddenException(
+          `Tài khoản với vai trò ${user.role} là nhân sự quản trị hệ thống, không được phép gửi yêu cầu nâng cấp lên Người bán.`,
+        );
+      }
+      if (user.role === Role.SELLER) {
+        throw new BadRequestException(
+          'Tài khoản của bạn đã là Người bán (Seller) rồi. Bạn không cần gửi yêu cầu nâng cấp nữa.',
+        );
+      }
+      throw new ForbiddenException(
+        'Chỉ tài khoản Người mua (BUYER) mới có quyền gửi yêu cầu nâng cấp lên Người bán.',
       );
     }
 
     // Xác định đường dẫn file đính kèm chứng minh từ file upload hoặc từ dto
     let attachmentUrl = dto.attachmentUrl?.trim();
     if (file) {
-      attachmentUrl = `/uploads/seller-proofs/${file.filename}`;
+      const port = process.env.PORT_BACKEND || '3000';
+      attachmentUrl = `http://localhost:${port}/uploads/seller-proofs/${file.filename}`;
 
       try {
         let fileBuffer = file.buffer;
@@ -186,6 +198,22 @@ export class UsersService {
         businessEmail: dto.businessEmail?.trim() || null,
         identityCardNumber: dto.identityCardNumber?.trim() || null,
         attachmentUrl,
+        street: dto.street?.trim() || null,
+        ward: dto.ward?.trim() || null,
+        district: dto.district?.trim() || null,
+        city: dto.city?.trim() || null,
+        latitude:
+          dto.latitude !== undefined && dto.latitude !== null && String(dto.latitude).trim() !== ''
+            ? Number(dto.latitude)
+            : null,
+        longitude:
+          dto.longitude !== undefined &&
+          dto.longitude !== null &&
+          String(dto.longitude).trim() !== ''
+            ? Number(dto.longitude)
+            : null,
+        formattedAddress: dto.formattedAddress?.trim() || null,
+        placeId: dto.placeId?.trim() || null,
         status: SellerRequestStatus.PENDING,
       },
     });

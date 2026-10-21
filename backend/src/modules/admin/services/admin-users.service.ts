@@ -1,8 +1,10 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, ReputationTrustLevel, Role, User } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { generateStaffBaseEmail } from '../../auth/utils/staff-email.util';
 import { LockUserDto, UpdateUserStatusDto } from '../dto/lock-user.dto';
 import { QueryUsersDto, UserStatusFilter } from '../dto/query-users.dto';
+import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
 import {
   AdminUserDetailResponse,
   AdminUserItemResponse,
@@ -198,10 +200,68 @@ export class AdminUsersService {
 
   // 5. Cập nhật trạng thái khóa/mở khóa qua DTO
   async updateUserStatus(targetUserId: string, adminId: string, dto: UpdateUserStatusDto) {
-    if (dto.isLocked === false) {
-      return this.unlockUser(targetUserId, adminId, { reason: dto.reason });
+    return dto.isLocked === false
+      ? this.unlockUser(targetUserId, adminId, { reason: dto.reason })
+      : this.lockUser(targetUserId, adminId, { reason: dto.reason });
+  }
+
+  // 6. Cập nhật vai trò (Role) cho người dùng
+  async updateUserRole(
+    targetUserId: string,
+    adminId: string,
+    dto: UpdateUserRoleDto,
+  ): Promise<{ success: boolean; message: string; user: AdminUserItemResponse }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      include: { wallet: { select: { balance: true } } },
+    });
+    if (!user || user.role === Role.GUEST)
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    if (user.id === adminId && dto.role !== Role.ADMIN) {
+      throw new BadRequestException('Quản trị viên không thể tự hạ quyền của chính mình.');
     }
-    return this.lockUser(targetUserId, adminId, { reason: dto.reason });
+
+    let platformEmail = user.platformEmail;
+    if (dto.role === Role.SUPPORT_STAFF && !platformEmail) {
+      const baseName = generateStaffBaseEmail(user.fullName);
+      let assignedEmail = `${baseName}@staff.com`;
+      for (let idx = 2; idx <= 99; idx++) {
+        const taken = await this.prisma.user.findFirst({
+          where: { OR: [{ email: assignedEmail }, { platformEmail: assignedEmail }] },
+        });
+        if (!taken) {
+          platformEmail = assignedEmail;
+          break;
+        }
+        assignedEmail = `${baseName}${idx}@staff.com`;
+      }
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: targetUserId },
+      data: {
+        role: dto.role,
+        platformEmail: platformEmail || undefined,
+        personalEmail:
+          user.personalEmail || (dto.role === Role.SUPPORT_STAFF ? user.email : undefined),
+        isSellerActive: dto.role === Role.SELLER ? true : user.isSellerActive,
+      },
+      include: { wallet: { select: { balance: true } } },
+    });
+
+    // Thu hồi toàn bộ Refresh Token của user để đồng bộ role mới ngay lập tức
+    await this.prisma.refreshToken.updateMany({
+      where: { userId: targetUserId, isRevoked: false },
+      data: { isRevoked: true },
+    });
+
+    this.logger.log(`Admin (${adminId}) đã chuyển vai trò của user ${user.email} sang ${dto.role}`);
+
+    return {
+      success: true,
+      message: `Đã cập nhật vai trò của tài khoản thành ${dto.role} thành công!`,
+      user: this.toUserItem(updated),
+    };
   }
 
   // Helper chuyển đổi User entity sang DTO response

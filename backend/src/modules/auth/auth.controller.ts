@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Patch,
   Post,
   Req,
   Res,
@@ -11,15 +12,20 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { AuthService, GoogleUser } from './auth.service';
+import { AuthService, GoogleUser, UserProfileResponse } from './auth.service';
+import { AuthProfileService } from './services/auth-profile.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ConfirmChangePasswordOtpDto } from './dto/confirm-change-password-otp.dto';
+import { JwtAuthGuard } from '../../core/security/jwt-auth.guard';
+import { CurrentUser } from '../../core/security/roles.decorator';
 
 interface RequestWithUser extends Request {
   user?: GoogleUser;
@@ -31,6 +37,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly authProfileService: AuthProfileService,
   ) {}
 
   // ================= 1. ĐĂNG NHẬP =================
@@ -124,5 +131,76 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
   async logout(@Body() dto: RefreshTokenDto): Promise<{ message: string }> {
     return this.authService.logout(dto);
+  }
+
+  // --- Profile Management & Security ---
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'PROFILE.VIEW - Xem thông tin hồ sơ của tài khoản đang đăng nhập',
+    description: 'Bóc tách userId từ Token qua JwtAuthGuard và trả về thông tin chi tiết.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy thông tin tài khoản thành công' })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập hoặc token không hợp lệ' })
+  async getProfile(@CurrentUser('id') userId: string): Promise<UserProfileResponse> {
+    return this.authProfileService.getProfile(userId);
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'PROFILE.UPDATE - Cập nhật thông tin cá nhân (Họ tên, SĐT, Avatar)',
+    description:
+      'Cho phép người dùng chỉnh sửa họ tên, số điện thoại hoặc ảnh đại diện (không cần OTP).',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật hồ sơ thành công' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  async updateProfile(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<UserProfileResponse> {
+    return this.authProfileService.updateProfile(userId, dto);
+  }
+
+  @Post('change-password/request-otp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'PROFILE.CHANGE_PASSWORD (Bước 1) - Gửi mã OTP xác nhận đổi mật khẩu về Gmail',
+    description:
+      'Tạo mã OTP ngẫu nhiên 6 số (hạn 15 phút) gửi về hòm thư Gmail hiện tại của người dùng.',
+  })
+  @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về Gmail thành công' })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  async requestChangePasswordOtp(
+    @CurrentUser('id') userId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.authProfileService.requestChangePasswordOtp(userId);
+  }
+
+  @Post('change-password/confirm-otp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'PROFILE.CHANGE_PASSWORD (Bước 2) - Xác nhận OTP và cập nhật mật khẩu mới',
+    description:
+      'Xác thực OTP, cập nhật mật khẩu mới và thu hồi toàn bộ phiên đăng nhập cũ để bảo mật tài khoản.',
+  })
+  @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công' })
+  @ApiResponse({ status: 400, description: 'Mã OTP không đúng hoặc đã hết hạn' })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  async confirmChangePasswordWithOtp(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ConfirmChangePasswordOtpDto,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.authProfileService.confirmChangePasswordWithOtp(userId, dto);
   }
 }

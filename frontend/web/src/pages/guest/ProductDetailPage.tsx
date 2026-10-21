@@ -1,296 +1,147 @@
-import { useState, useEffect } from 'react';
+﻿import { useCallback, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  ShoppingCart,
-  ArrowLeft,
-  Zap,
-  Star,
-  Check,
-  ChevronRight,
-  Minus,
-  Plus,
-  MessageCircle,
-  CheckCircle2,
-} from 'lucide-react';
-import { getProductById, type ProductDetail } from '../../components/products';
+import { ArrowLeftOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { getProductByIdAsync, type ProductDetail } from '../../components/products';
 import { addToCart } from '../../services/cart';
 import ProductImageGallery from '../../components/productDetail/ProductImageGallery';
 import ProductInfoTabs from '../../components/productDetail/ProductInfoTabs';
 import RelatedProductsSection from '../../components/productDetail/RelatedProductsSection';
+import useProductResource from '../../components/productDetail/useProductResource';
 
 export default function ProductDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id = '' } = useParams<{ id: string }>();
+  const load = useCallback(() => getProductByIdAsync(id), [id]);
+  const { data: product, loading, error, retry } = useProductResource(load);
+  if (loading)
+    return (
+      <div role="status" className="p-12 text-center text-slate-600">
+        Đang tải sản phẩm…
+      </div>
+    );
+  if (error || !product)
+    return (
+      <div
+        role="alert"
+        className="mx-auto my-12 max-w-xl space-y-4 rounded-xl border border-red-100 bg-white p-8 text-center"
+      >
+        <h1 className="text-xl font-bold">Không thể tải sản phẩm</h1>
+        <p>{error || 'Sản phẩm không tồn tại.'}</p>
+        <button
+          type="button"
+          onClick={retry}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-white"
+        >
+          Thử lại
+        </button>
+        <Link to="/" className="ml-4 text-blue-600">
+          Về trang chủ
+        </Link>
+      </div>
+    );
+  return <ProductContent key={product.id} product={product} />;
+}
 
-  const [product, setProduct] = useState<ProductDetail>(() =>
-    getProductById(id || 'ap-tourbillon'),
-  );
+function ProductContent({ product }: { product: ProductDetail }) {
+  const navigate = useNavigate();
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedColor, setSelectedColor] = useState('Bản Tiêu Chuẩn');
-  const [toast, setToast] = useState<string | null>(null);
-  const [isFavorite, setIsFavorite] = useState(false);
-
-  useEffect(() => {
-    if (id) {
-      setProduct(getProductById(id));
-      setSelectedImgIdx(0);
-      setQuantity(1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [id]);
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const handleAddToCart = () => {
+  const [toast, setToast] = useState('');
+  const canBuy = product.stock > 0;
+  function add(buyNow: boolean) {
+    if (!canBuy || quantity < 1 || quantity > product.stock) return;
     addToCart(
       {
         id: product.id,
         name: product.name,
         price: product.price,
         formattedPrice: product.formattedPrice,
-        img: product.images[0] || '/images/watches/watch-1.png',
+        img: product.images[0] || '',
         shopName: product.shop.name,
         brand: product.brand,
       },
       quantity,
     );
-    showToast(`Đã thêm ${quantity} sản phẩm vào giỏ hàng thành công!`);
-  };
-
-  const handleBuyNow = () => {
-    addToCart(
-      {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        formattedPrice: product.formattedPrice,
-        img: product.images[0] || '/images/watches/watch-1.png',
-        shopName: product.shop.name,
-        brand: product.brand,
-      },
-      quantity,
-    );
-    navigate('/cart');
-  };
-
+    if (buyNow) navigate('/cart');
+    else setToast(`Đã thêm ${quantity} sản phẩm vào giỏ hàng.`);
+  }
   return (
-    <div className="min-h-screen bg-slate-50 py-6">
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 rounded-xl bg-slate-900 px-5 py-3.5 text-white shadow-2xl animate-fade-in">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-semibold">{toast}</span>
-        </div>
-      )}
-
-      <div className="max-w-[1280px] mx-auto px-4">
-        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <nav className="flex items-center gap-2 text-xs text-slate-500">
-            <Link to="/" className="hover:text-indigo-600 transition">
-              Trang Chủ
-            </Link>
-            <ChevronRight size={13} />
-            <Link to="/search" className="hover:text-indigo-600 transition">
-              Đồng Hồ & Trang Sức
-            </Link>
-            <ChevronRight size={13} />
-            <span className="font-semibold text-slate-800 line-clamp-1">{product.name}</span>
-          </nav>
-          <button
-            type="button"
-            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition shadow-sm cursor-pointer"
-          >
-            <ArrowLeft size={14} />
-            Quay lại
-          </button>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 mb-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <main className="min-h-screen bg-slate-50 py-6">
+      <div className="mx-auto max-w-[1280px] space-y-6 px-4">
+        <nav className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+          <Link to="/" className="text-blue-600">
+            <ArrowLeftOutlined /> Trang chủ
+          </Link>
+          <span>/</span>
+          <span>{product.categoryName || 'Sản phẩm'}</span>
+          <span>/</span>
+          <span>{product.name}</span>
+        </nav>
+        {toast && (
+          <div role="status" className="rounded-xl bg-blue-50 p-4 text-blue-800">
+            {toast}
+          </div>
+        )}
+        <section className="grid gap-8 rounded-2xl border border-slate-200 bg-white p-6 lg:grid-cols-12">
           <ProductImageGallery
             product={product}
             selectedImgIdx={selectedImgIdx}
             onSelectImage={setSelectedImgIdx}
-            isFavorite={isFavorite}
-            onToggleFavorite={() => {
-              setIsFavorite(!isFavorite);
-              showToast(
-                isFavorite
-                  ? 'Đã bỏ yêu thích sản phẩm'
-                  : 'Đã lưu sản phẩm vào danh sách yêu thích!',
-              );
-            }}
           />
-
-          <div className="lg:col-span-7 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <span className="text-xs font-bold text-indigo-600 tracking-wider uppercase">
-                  {product.brand}
-                </span>
-                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <Check size={12} /> Còn hàng ({product.stock} chiếc)
-                </span>
-              </div>
-
-              <h1 className="text-2xl font-bold text-slate-900 mb-3 leading-snug">
-                {product.name}
-              </h1>
-
-              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 mb-5 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-1 text-amber-500 font-bold">
-                  <Star size={15} fill="currentColor" />
-                  <span>{product.rating}</span>
-                </div>
-                <span className="text-slate-300">|</span>
-                <span className="text-slate-700">
-                  <strong>{product.reviewsCount}</strong> đánh giá
-                </span>
-                <span className="text-slate-300">|</span>
-                <span className="text-slate-700">
-                  <strong>{product.soldCount}</strong> đã giao dịch
-                </span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-50/70 via-amber-50/50 to-white border border-orange-200/60 mb-6">
-                <div className="text-xs text-slate-500 mb-1 font-medium">Giá bán niêm yết:</div>
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="text-3xl font-extrabold text-[#f24e1e] tracking-tight">
-                    {product.formattedPrice}
-                  </span>
-                  {product.formattedOldPrice && (
-                    <span className="text-base text-slate-400 line-through">
-                      {product.formattedOldPrice}
-                    </span>
-                  )}
-                  {product.discount && (
-                    <span className="px-2 py-0.5 rounded-md bg-red-100 text-red-600 text-xs font-bold">
-                      -{product.discount}%
-                    </span>
-                  )}
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-orange-200/40 flex items-center gap-2 text-xs text-slate-700">
-                  <span className="px-2 py-0.5 rounded bg-orange-500 text-white font-bold text-[11px]">
-                    VOUCHER SÀN
-                  </span>
-                  <span>
-                    Nhập mã <strong>NEXUS500K</strong> giảm ngay 500.000đ khi thanh toán
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    Phiên bản & Màu sắc:
-                  </label>
-                  <div className="flex flex-wrap gap-2.5">
-                    {['Bản Tiêu Chuẩn', 'Vàng Hồng 18K', 'Titanium Xám Khói'].map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        onClick={() => setSelectedColor(opt)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer ${
-                          selectedColor === opt
-                            ? 'border-[#f24e1e] bg-orange-50 text-[#f24e1e] shadow-sm'
-                            : 'border-slate-200 text-slate-700 hover:border-slate-300 bg-white'
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-2">
-                    Số lượng đặt mua:
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50 overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="p-2.5 hover:bg-slate-200 transition text-slate-600 cursor-pointer"
-                        title="Giảm số lượng"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-12 text-center text-sm font-bold text-slate-900 bg-white py-2">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                        className="p-2.5 hover:bg-slate-200 transition text-slate-600 cursor-pointer"
-                        title="Tăng số lượng"
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                    <span className="text-xs text-slate-500">Tối đa {product.stock} sản phẩm</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-5 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
+          <div className="space-y-6 lg:col-span-7">
+            <h1 className="text-2xl font-bold text-slate-900">{product.name}</h1>
+            <p className={canBuy ? 'text-emerald-700' : 'text-slate-500'}>
+              {canBuy ? `Còn ${product.stock} sản phẩm` : 'Sản phẩm hiện không có hàng để bán'}
+            </p>
+            <p className="rounded-xl bg-blue-50 p-5 text-3xl font-bold text-blue-600">
+              {product.formattedPrice}
+            </p>
+            <label className="block space-y-2 text-sm font-medium text-slate-700">
+              <span>Số lượng</span>
+              <input
+                type="number"
+                min={1}
+                max={product.stock}
+                step={1}
+                disabled={!canBuy}
+                value={quantity}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  if (Number.isInteger(next))
+                    setQuantity(Math.max(1, Math.min(product.stock, next)));
+                }}
+                className="block w-28 rounded-lg border border-slate-200 px-3 py-2 disabled:bg-slate-100"
+              />
+            </label>
+            <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={handleAddToCart}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl border-2 border-[#f24e1e] text-[#f24e1e] bg-orange-50/50 hover:bg-orange-100 font-bold text-sm transition shadow-sm cursor-pointer"
+                disabled={!canBuy}
+                onClick={() => add(false)}
+                className="rounded-xl border border-blue-600 px-5 py-3 font-semibold text-blue-600 disabled:opacity-40"
               >
-                <ShoppingCart size={18} />
-                Thêm Vào Giỏ Hàng
+                <ShoppingCartOutlined /> Thêm vào giỏ hàng
               </button>
-
               <button
                 type="button"
-                onClick={handleBuyNow}
-                className="flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-[#f24e1e] hover:bg-[#d63b0e] text-white font-bold text-sm transition shadow-md hover:shadow-lg cursor-pointer"
+                disabled={!canBuy}
+                onClick={() => add(true)}
+                className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white disabled:opacity-40"
               >
-                <Zap size={18} />
-                Mua Ngay (Escrow PayOS)
+                Mua ngay
               </button>
             </div>
-
-            <div className="mt-6 p-4 rounded-xl border border-slate-200/80 bg-slate-50/60 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-sm">
-                  {product.shop.name.charAt(0)}
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                    {product.shop.name}
-                    {product.shop.verified && <CheckCircle2 size={14} className="text-blue-500" />}
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Điểm uy tín: <strong>{product.shop.trustScore}/100</strong> • Phản hồi:{' '}
-                    {product.shop.responseRate}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => showToast('Đang kết nối tin nhắn trực tiếp với Gian hàng...')}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold transition"
-              >
-                <MessageCircle size={14} />
-                Chat Shop
-              </button>
+            <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs text-slate-500">Người bán</p>
+              <p className="font-semibold text-slate-900">{product.shop.name}</p>
+              {product.shop.trustScore !== undefined && (
+                <p className="text-sm text-slate-600">Điểm uy tín: {product.shop.trustScore}</p>
+              )}
             </div>
           </div>
-        </div>
-
+        </section>
         <ProductInfoTabs product={product} />
-
         <RelatedProductsSection currentProductId={product.id} />
       </div>
-    </div>
+    </main>
   );
 }

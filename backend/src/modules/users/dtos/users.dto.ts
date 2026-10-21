@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEmail, IsEnum, IsNumber } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SellerRequestStatus } from '@prisma/client';
 
@@ -45,13 +46,58 @@ export class ApplySellerUpgradeDto {
   @IsOptional()
   identityCardNumber?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'https://res.cloudinary.com/nexus/proof.jpg',
-    description: 'Uploaded proof document or image URL (obtained via /seller-upgrade/upload-proof)',
+    description: 'Đường dẫn file chứng minh (nếu không upload trực tiếp file trong form-data)',
   })
   @IsString()
-  @IsNotEmpty({ message: 'Proof document or image URL is required' })
-  attachmentUrl: string;
+  @IsOptional()
+  attachmentUrl?: string;
+
+  @ApiProperty({ example: '720A Điện Biên Phủ', description: 'Store address / street' })
+  @IsString()
+  @IsNotEmpty({ message: 'Store street address is required' })
+  street: string;
+
+  @ApiPropertyOptional({ example: 'Phường 22' })
+  @IsString()
+  @IsOptional()
+  ward?: string;
+
+  @ApiPropertyOptional({ example: 'Quận Bình Thạnh' })
+  @IsString()
+  @IsOptional()
+  district?: string;
+
+  @ApiProperty({ example: 'TP. Hồ Chí Minh' })
+  @IsString()
+  @IsNotEmpty({ message: 'Store city is required' })
+  city: string;
+
+  @ApiPropertyOptional({ example: 10.795, description: 'GPS Latitude' })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({ example: 106.721, description: 'GPS Longitude' })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
+  @ApiPropertyOptional({
+    example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh',
+    description: 'Formatted address',
+  })
+  @IsString()
+  @IsOptional()
+  formattedAddress?: string;
+
+  @ApiPropertyOptional({ example: 'ChIJw8qV...', description: 'Place ID' })
+  @IsString()
+  @IsOptional()
+  placeId?: string;
 }
 
 export class ReviewSellerUpgradeDto {
@@ -108,7 +154,88 @@ export class CreateAddressDto {
   @IsNotEmpty()
   city: string;
 
+  @ApiPropertyOptional({ example: 10.795, description: 'Vĩ độ GPS (Latitude) từ bản đồ' })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({ example: 106.721, description: 'Kinh độ GPS (Longitude) từ bản đồ' })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
+  @ApiPropertyOptional({
+    example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh',
+    description: 'Địa chỉ đầy đủ định dạng chuẩn bản đồ',
+  })
+  @IsString()
+  @IsOptional()
+  formattedAddress?: string;
+
+  @ApiPropertyOptional({ example: 'ChIJw8qV...', description: 'Google / OSM Place ID' })
+  @IsString()
+  @IsOptional()
+  placeId?: string;
   @ApiPropertyOptional({ example: true, default: false })
+  @IsOptional()
+  isDefault?: boolean;
+}
+export class UpdateAddressDto {
+  @ApiPropertyOptional({ example: 'Nguyen Van A' })
+  @IsString()
+  @IsOptional()
+  recipientName?: string;
+
+  @ApiPropertyOptional({ example: '0909123456' })
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @ApiPropertyOptional({ example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ' })
+  @IsString()
+  @IsOptional()
+  street?: string;
+
+  @ApiPropertyOptional({ example: 'Phường 22' })
+  @IsString()
+  @IsOptional()
+  ward?: string;
+
+  @ApiPropertyOptional({ example: 'Quận Bình Thạnh' })
+  @IsString()
+  @IsOptional()
+  district?: string;
+
+  @ApiPropertyOptional({ example: 'TP. Hồ Chí Minh' })
+  @IsString()
+  @IsOptional()
+  city?: string;
+
+  @ApiPropertyOptional({ example: 10.795 })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional({ example: 106.721 })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  longitude?: number;
+
+  @ApiPropertyOptional({ example: 'Landmark 81, 720A Điện Biên Phủ, Bình Thạnh' })
+  @IsString()
+  @IsOptional()
+  formattedAddress?: string;
+
+  @ApiPropertyOptional({ example: 'ChIJw8qV...' })
+  @IsString()
+  @IsOptional()
+  placeId?: string;
+
+  @ApiPropertyOptional({ example: false })
   @IsOptional()
   isDefault?: boolean;
 }

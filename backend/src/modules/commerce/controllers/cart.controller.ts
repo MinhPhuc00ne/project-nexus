@@ -30,7 +30,7 @@ export class CartController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER] Xem giỏ hàng cá nhân kèm Price Revalidation',
+    summary: '[BUYER / SELLER] Xem giỏ hàng cá nhân kèm Price Revalidation',
     description:
       'Lấy danh sách sản phẩm trong giỏ hàng. Tự động so sánh giá lúc thêm và giá hiện tại của Shop (hasPriceChanged), đồng thời kiểm tra tình trạng tồn kho.',
   })
@@ -42,7 +42,7 @@ export class CartController {
   @Post('items')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER] Thêm sản phẩm vào giỏ hàng',
+    summary: '[BUYER / SELLER] Thêm sản phẩm vào giỏ hàng',
     description:
       'Thêm sản phẩm kèm số lượng. Bắt buộc kiểm tra: tồn kho khả dụng, sản phẩm ACTIVE, và chặn tự mua hàng của chính mình (Anti-Self-Purchase).',
   })
@@ -58,7 +58,7 @@ export class CartController {
   @Patch('items/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER] Cập nhật số lượng của một món hàng trong giỏ',
+    summary: '[BUYER / SELLER] Cập nhật số lượng của một món hàng trong giỏ',
     description:
       'Thay đổi số lượng món hàng. Nếu số lượng = 0 sẽ tự động xóa. Kiểm tra số lượng tồn kho khả dụng trước khi cập nhật.',
   })
@@ -75,7 +75,7 @@ export class CartController {
   @Delete('items/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER] Xóa một món hàng khỏi giỏ',
+    summary: '[BUYER / SELLER] Xóa một món hàng khỏi giỏ',
   })
   @ApiResponse({ status: 200, description: 'Xóa món hàng thành công' })
   async removeCartItem(@CurrentUser('id') userId: string, @Param('id') cartItemId: string) {
@@ -85,7 +85,7 @@ export class CartController {
   @Delete()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER] Xóa toàn bộ giỏ hàng (Clear Cart)',
+    summary: '[BUYER / SELLER] Xóa toàn bộ giỏ hàng (Clear Cart)',
   })
   @ApiResponse({ status: 200, description: 'Đã dọn dẹp sạch giỏ hàng' })
   async clearCart(@CurrentUser('id') userId: string) {
@@ -95,7 +95,7 @@ export class CartController {
   @Post('merge')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[BUYER] Gộp giỏ hàng từ Guest (LocalStorage) vào Database sau khi đăng nhập',
+    summary: '[BUYER / SELLER] Gộp giỏ hàng từ Guest (LocalStorage) vào Database sau khi đăng nhập',
     description:
       'Nhận danh sách các món Guest đã lưu tạm trên trình duyệt, tự động lọc bỏ sản phẩm của chính mình và gộp số lượng vào giỏ hàng PostgreSQL.',
   })
