@@ -5,6 +5,7 @@ import AdminLayout from '../layouts/AdminLayout';
 import NonAdminLayout from '../layouts/NonAdminLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import GuestLayout from '../layouts/GuestLayout';
+import BuyerLayout from '../layouts/BuyerLayout';
 import SellerLayout from '../layouts/SellerLayout';
 import SellerSession from '../components/seller/SellerSession';
 import SellerDashboardPage from '../pages/seller/SellerDashboardPage';
@@ -165,15 +166,17 @@ function AppRouter() {
             {/* Buyer routes requiring authentication */}
             <Route element={<ProtectedRoute />}>
               <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
-              <Route path={ROUTES.BUYER} element={<BuyerDashboardPage />} />
-              <Route path={ROUTES.BUYER_ORDERS} element={<BuyerOrdersPage />} />
-              <Route path={ROUTES.BUYER_ORDER_DETAIL} element={<BuyerOrderDetailPage />} />
-              <Route path={ROUTES.BUYER_PROFILE} element={<BuyerProfilePage />} />
-              <Route path={ROUTES.BUYER_WISHLIST} element={<BuyerWishlistPage />} />
-              <Route path={ROUTES.BUYER_WALLET} element={<BuyerWalletPage />} />
-              <Route path={ROUTES.BUYER_BIDS} element={<BuyerBidsPage />} />
-              <Route path={ROUTES.BUYER_DISPUTES} element={<BuyerDisputesPage />} />
-              <Route path={ROUTES.BUYER_ADDRESSES} element={<BuyerAddressesPage />} />
+              <Route element={<BuyerLayout />}>
+                <Route path={ROUTES.BUYER} element={<BuyerDashboardPage />} />
+                <Route path={ROUTES.BUYER_ORDERS} element={<BuyerOrdersPage />} />
+                <Route path={ROUTES.BUYER_ORDER_DETAIL} element={<BuyerOrderDetailPage />} />
+                <Route path={ROUTES.BUYER_PROFILE} element={<BuyerProfilePage />} />
+                <Route path={ROUTES.BUYER_WISHLIST} element={<BuyerWishlistPage />} />
+                <Route path={ROUTES.BUYER_WALLET} element={<BuyerWalletPage />} />
+                <Route path={ROUTES.BUYER_BIDS} element={<BuyerBidsPage />} />
+                <Route path={ROUTES.BUYER_DISPUTES} element={<BuyerDisputesPage />} />
+                <Route path={ROUTES.BUYER_ADDRESSES} element={<BuyerAddressesPage />} />
+              </Route>
             </Route>
           </Route>
 

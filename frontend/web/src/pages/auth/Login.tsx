@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, type FormEvent } from 'react';
 import { GoogleOutlined } from '@ant-design/icons';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { login, saveAuthSession, startGoogleLogin } from '../../services/auth';
+import { mergeGuestCartAfterLogin } from '../../services/cart';
 import { ROUTES } from '../../routes/AppRouter';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import AuthHeroSection from './AuthHeroSection';
@@ -10,6 +11,7 @@ import { Button } from '@/components/ui/button';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [email, setEmail] = useState(() => {
@@ -53,7 +55,18 @@ const Login: React.FC = () => {
       const result = await login(email.trim(), password);
       saveAuthSession(result.user, result.accessToken, result.refreshToken);
       setFeedback(result.message + ' Xin chào ' + result.user.fullName + '.');
-      if (result.user.role === 'ADMIN') {
+
+      // Gộp giỏ hàng khách vào database tài khoản trước khi chuyển trang
+      try {
+        await mergeGuestCartAfterLogin();
+      } catch (mergeErr) {
+        console.error('Lỗi khi gộp giỏ hàng khách vào tài khoản:', mergeErr);
+      }
+
+      const redirectPath = (location.state as { from?: string })?.from;
+      if (redirectPath) {
+        navigate(redirectPath);
+      } else if (result.user.role === 'ADMIN') {
         navigate(ROUTES.ADMIN);
       } else if (result.user.role === 'SUPPORT_STAFF') {
         navigate(ROUTES.STAFF);
@@ -95,6 +108,8 @@ const Login: React.FC = () => {
                       <User />
                     </div>
                     <input
+                      id="email"
+                      name="email"
                       type="email"
                       required
                       autoComplete="username"
@@ -113,7 +128,12 @@ const Login: React.FC = () => {
 
                 <div className="flex flex-col">
                   <div className="flex justify-between items-center mb-1.5">
-                    <label className="text-xs font-semibold text-slate-700 mb-1.5">Mật khẩu</label>
+                    <label
+                      htmlFor="password"
+                      className="text-xs font-semibold text-slate-700 mb-1.5"
+                    >
+                      Mật khẩu
+                    </label>
                     <button
                       type="button"
                       className="text-xs font-semibold text-blue-600 no-underline hover:underline bg-transparent border-0 cursor-pointer text-indigo-600 hover:text-indigo-800"
@@ -127,6 +147,8 @@ const Login: React.FC = () => {
                       <Lock />
                     </div>
                     <input
+                      id="password"
+                      name="password"
                       type={showPassword ? 'text' : 'password'}
                       className="block w-full [padding:0.625rem_0.875rem_0.625rem_2.5rem] [background-color:rgba(248,_250,_252,_0.5)] [border:1px_solid_#e2e8f0] rounded-xl text-sm text-slate-800 [outline:none] [transition:all_0.15s_ease] [&::placeholder]:text-slate-400 focus:bg-white focus:border-blue-600 focus:[box-shadow:0_0_0_3px_rgba(37,_99,_235,_0.15)]"
                       placeholder="Nhập mật khẩu an toàn của bạn"
@@ -168,6 +190,7 @@ const Login: React.FC = () => {
                   </p>
                 )}
                 <Button
+                  id="login-submit-button"
                   type="submit"
                   className="w-full mt-2 h-11 bg-[#2f54eb] hover:bg-[#2040c7] text-white text-sm font-bold rounded-xl shadow-[0_10px_15px_-3px_rgba(47,84,235,0.25)] flex justify-center items-center gap-2 transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={pending}

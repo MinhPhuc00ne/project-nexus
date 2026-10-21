@@ -25,10 +25,10 @@ export default function BuyerProfilePage() {
       </div>
     );
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-2 text-2xl font-bold text-slate-900">Hồ sơ cá nhân</h1>
-      <p className="mb-6 text-sm text-slate-500">Quản lý thông tin tài khoản NEXUS của bạn.</p>
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
+      <h1 className="mb-1 text-xl font-bold text-slate-900">Hồ sơ cá nhân</h1>
+      <p className="mb-6 text-xs text-slate-500">Quản lý và cập nhật thông tin cá nhân của bạn.</p>
       <ProfileEditor key={user.id} profile={user} />
-    </main>
+    </div>
   );
 }

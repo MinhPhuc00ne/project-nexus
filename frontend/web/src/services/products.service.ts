@@ -1,5 +1,6 @@
-﻿import { apiRequest } from './api';
+import { apiRequest } from './api';
 import type { ProductDetail } from '../types/product.types';
+import { MOCK_PRODUCTS_CATALOG } from '../mocks/products.mock';
 
 interface CatalogProduct {
   id: string;
@@ -86,9 +87,40 @@ export async function getProductsPage(query: CatalogQuery = {}): Promise<Product
 export async function getProductsCatalog(query: CatalogQuery = {}): Promise<ProductDetail[]> {
   return (await getProductsPage(query)).items;
 }
+
+const MOCK_ID_MAP: Record<string, string> = {
+  'ap-tourbillon': '00000000-0000-4000-a000-000000000001',
+  'patek-celestial': '00000000-0000-4000-a000-000000000002',
+  'hublot-unico': '00000000-0000-4000-a000-000000000003',
+  'rolex-daytona': '00000000-0000-4000-a000-000000000004',
+  'rolex-submariner': '00000000-0000-4000-a000-000000000004',
+  'rm-055': '00000000-0000-4000-a000-000000000005',
+  'omega-speedmaster': '00000000-0000-4000-a000-000000000006',
+  'tissot-tourelles': '00000000-0000-4000-a000-000000000007',
+  'cartier-santos': '00000000-0000-4000-a000-000000000008',
+  '1': '00000000-0000-4000-a000-000000000001',
+  '2': '00000000-0000-4000-a000-000000000002',
+  '3': '00000000-0000-4000-a000-000000000003',
+  '4': '00000000-0000-4000-a000-000000000004',
+  '5': '00000000-0000-4000-a000-000000000005',
+  '6': '00000000-0000-4000-a000-000000000006',
+  '7': '00000000-0000-4000-a000-000000000007',
+  '8': '00000000-0000-4000-a000-000000000008',
+};
+
 export async function getProductByIdAsync(id: string): Promise<ProductDetail> {
-  if (!id.trim()) throw new Error('Thiếu mã sản phẩm.');
-  return mapProduct(await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(id)}`));
+  const trimmed = id.trim();
+  if (!trimmed) throw new Error('Thiếu mã sản phẩm.');
+  const resolvedId = MOCK_ID_MAP[trimmed] || trimmed;
+  try {
+    return mapProduct(
+      await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(resolvedId)}`),
+    );
+  } catch (error) {
+    const fallback = MOCK_PRODUCTS_CATALOG.find((p) => p.id === trimmed || p.id === resolvedId);
+    if (fallback) return fallback;
+    throw error;
+  }
 }
 export async function getRelatedProducts(currentId: string, limit = 4): Promise<ProductDetail[]> {
   const products = await getProductsCatalog({ limit: limit + 1 });

@@ -11,6 +11,7 @@ import {
 import { Role } from '@nexus/types';
 import { clearAuthSession, getStoredToken, getStoredUser, saveAuthSession } from '../services/auth';
 import { getMe } from '../services/users';
+import { mergeGuestCartAfterLogin } from '../services/cart';
 import type { AuthUser, UserProfile } from '../types/user.types';
 
 export interface AuthContextType {
@@ -92,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (nextToken) {
         void refreshProfile();
+        void mergeGuestCartAfterLogin();
       } else {
         revision.current++;
         inFlightPromiseRef.current = null;
@@ -117,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(accessToken || getStoredToken());
       setStoredUser(authUser);
       await refreshProfile();
+      await mergeGuestCartAfterLogin();
     },
     [refreshProfile],
   );

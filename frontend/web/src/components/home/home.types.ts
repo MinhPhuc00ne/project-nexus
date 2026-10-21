@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 export interface HomeProduct {
-  id: number;
+  id: number | string;
   name: string;
   price?: number;
   oldPrice?: number;

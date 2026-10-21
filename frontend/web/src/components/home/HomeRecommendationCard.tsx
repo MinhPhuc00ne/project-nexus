@@ -8,14 +8,7 @@ export interface HomeRecommendationCardProps {
 }
 
 export function HomeRecommendationCard({ product }: HomeRecommendationCardProps) {
-  const prodId =
-    product.id === 1
-      ? 'ap-tourbillon'
-      : product.id === 2
-        ? 'patek-celestial'
-        : product.id === 3
-          ? 'hublot-unico'
-          : 'rolex-daytona';
+  const prodId = String(product.id);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -23,6 +16,7 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
     addToCart(
       {
         id: prodId,
+        productId: prodId,
         name: product.name,
         price: product.price || 18500000,
         formattedPrice: product.price
@@ -51,7 +45,8 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
           <span className="text-xs text-slate-400">Chưa có hình ảnh</span>
         )}
         <span className="absolute left-2 top-2 rounded bg-[#f24e1e] px-2 py-1 text-[9px] font-bold text-white">
-          {product.badge || (product.id % 2 === 0 ? 'HOT' : 'MALL')}
+          {product.badge ||
+            (typeof product.id === 'number' && product.id % 2 === 0 ? 'HOT' : 'MALL')}
         </span>
         <button
           type="button"

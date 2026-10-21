@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
-  const { token, user, isLoading } = useAuth();
+  const { token, user, storedUser, isLoading } = useAuth();
   const location = useLocation();
 
   if (!token) {
@@ -26,7 +26,8 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
     );
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role as Role)) {
+  const effectiveRole = (user?.role || storedUser?.role) as Role | undefined;
+  if (allowedRoles && effectiveRole && !allowedRoles.includes(effectiveRole)) {
     return <Navigate to="/" replace />;
   }
 
