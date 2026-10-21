@@ -16,7 +16,7 @@ export class SellerController {
   @ApiOperation({
     summary: '[SELLER] PROFILE.VIEW - Xem hồ sơ và ví người bán',
   })
-  @Roles(Role.SELLER, Role.ADMIN)
+  @Roles(Role.SELLER, Role.ADMIN, Role.SUPPORT_STAFF)
   @RequirePrivilege('PROFILE.VIEW')
   @Get('profile')
   async getSellerProfile(@CurrentUser('id') userId: string): Promise<UserProfileResponse> {
@@ -28,7 +28,7 @@ export class SellerController {
     description:
       'Sau khi Buyer đã được Admin duyệt thành tài khoản Seller, tài khoản có thể linh hoạt chuyển đổi chế độ hoạt động (isSellerActive: true/false) trong cùng phiên làm việc.',
   })
-  @Roles(Role.SELLER, Role.ADMIN)
+  @Roles(Role.SELLER, Role.ADMIN, Role.SUPPORT_STAFF)
   @Patch('toggle-mode')
   @HttpCode(HttpStatus.OK)
   async toggleSellerMode(@CurrentUser('id') userId: string): Promise<{

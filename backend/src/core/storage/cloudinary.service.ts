@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import * as https from 'https';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export interface UploadResult {
   url: string;
@@ -24,23 +26,29 @@ export class CloudinaryStorageService {
     const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
     const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
 
-    // If Cloudinary keys are not provided, convert to Base64 Data URI as standard portable URL
+    // Nếu chưa cấu hình Cloudinary trong .env, lưu vào thư mục static uploads để Admin có thể xem được URL
     if (!cloudName || !apiKey || !apiSecret) {
       this.logger.warn(
-        'Cloudinary credentials not provided in .env. Storing file as standard Base64 Data URL payload.',
+        'Chưa cấu hình thông tin Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) trong .env. Lưu tạm vào thư mục static server.',
       );
+      const port = this.configService.get<string>('PORT_BACKEND') || '3000';
       const ext = fileName.split('.').pop()?.toLowerCase() || 'png';
-      const mime = ext === 'pdf' ? 'application/pdf' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-      const dataUri = `data:${mime};base64,${fileBuffer.toString('base64')}`;
+      const cleanFileName = `proof-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+      const uploadDir = path.join(process.cwd(), 'uploads', 'seller-proofs');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      fs.writeFileSync(path.join(uploadDir, cleanFileName), fileBuffer);
+      const localUrl = `http://localhost:${port}/uploads/seller-proofs/${cleanFileName}`;
       return {
-        url: dataUri,
-        publicId: `local-${Date.now()}-${fileName}`,
+        url: localUrl,
+        publicId: `local-${cleanFileName}`,
         format: ext,
       };
     }
 
     const timestamp = Math.floor(Date.now() / 1000);
-    const signaturePayload = `folder=${folder}&timestamp=${timestamp}${apiSecret}`;
+    const signaturePayload = `access_mode=public&folder=${folder}&timestamp=${timestamp}${apiSecret}`;
     const signature = crypto.createHash('sha1').update(signaturePayload).digest('hex');
 
     const boundary = '----WebKitFormBoundary' + crypto.randomBytes(16).toString('hex');
@@ -55,6 +63,7 @@ export class CloudinaryStorageService {
       );
     };
 
+    addField('access_mode', 'public');
     addField('api_key', apiKey);
     addField('timestamp', String(timestamp));
     addField('signature', signature);

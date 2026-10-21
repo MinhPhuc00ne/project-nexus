@@ -27,12 +27,73 @@ export class AdminService {
 
     const { email, password, fullName, phoneNumber } = dto;
 
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: email, mode: 'insensitive' } },
+          { personalEmail: { equals: email, mode: 'insensitive' } },
+        ],
+      },
     });
 
     if (existingUser) {
-      throw new BadRequestException('Email này đã được sử dụng trong hệ thống.');
+      if (existingUser.role === Role.ADMIN || existingUser.role === Role.SUPPORT_STAFF) {
+        throw new BadRequestException(
+          `Email '${email}' đã là tài khoản ${existingUser.role} trong hệ thống.`,
+        );
+      }
+
+      const saltRounds = 10;
+      const passwordHash = await bcrypt.hash(password, saltRounds);
+
+      let platformEmail = existingUser.platformEmail;
+      if (!platformEmail) {
+        const baseName = generateStaffBaseEmail(fullName || existingUser.fullName);
+        let assignedEmail = `${baseName}@staff.com`;
+        for (let idx = 2; idx <= 99; idx++) {
+          const taken = await this.prisma.user.findFirst({
+            where: { OR: [{ email: assignedEmail }, { platformEmail: assignedEmail }] },
+          });
+          if (!taken) {
+            platformEmail = assignedEmail;
+            break;
+          }
+          assignedEmail = `${baseName}${idx}@staff.com`;
+        }
+      }
+
+      const updatedUser = await this.prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          role: Role.SUPPORT_STAFF,
+          passwordHash,
+          fullName: fullName || existingUser.fullName,
+          phoneNumber: phoneNumber || existingUser.phoneNumber,
+          personalEmail: existingUser.email,
+          platformEmail: platformEmail || undefined,
+          isVerified: true,
+        },
+      });
+
+      await this.prisma.refreshToken.updateMany({
+        where: { userId: existingUser.id, isRevoked: false },
+        data: { isRevoked: true },
+      });
+
+      return {
+        message: `Tài khoản '${email}' (trước đây là ${existingUser.role}) đã được nâng cấp lên Nhân viên hỗ trợ (Support Staff) thành công!`,
+        staff: {
+          id: updatedUser.id,
+          email: updatedUser.email,
+          platformEmail: updatedUser.platformEmail,
+          personalEmail: updatedUser.personalEmail,
+          fullName: updatedUser.fullName,
+          phoneNumber: updatedUser.phoneNumber,
+          role: updatedUser.role,
+          isVerified: updatedUser.isVerified,
+          createdAt: updatedUser.createdAt,
+        },
+      };
     }
 
     const saltRounds = 10;
@@ -89,9 +150,9 @@ export class AdminService {
       },
     });
 
-    if (existing) {
+    if (existing && (existing.role === Role.ADMIN || existing.role === Role.SUPPORT_STAFF)) {
       throw new BadRequestException(
-        `Email cá nhân '${dto.email}' đã được đăng ký hoặc liên kết với tài khoản khác.`,
+        `Email cá nhân '${dto.email}' đã là tài khoản ${existing.role} trong hệ thống.`,
       );
     }
 
@@ -379,6 +440,26 @@ export class AdminService {
           isSellerActive: true,
         },
       });
+
+      // 2.1 Tự động tạo sổ địa chỉ mặc định cho Seller nếu có thông tin địa chỉ cửa hàng
+      if (request.street && request.city) {
+        await tx.userAddress.create({
+          data: {
+            userId: request.userId,
+            recipientName: request.storeName,
+            phone: request.phone,
+            street: request.street,
+            ward: request.ward,
+            district: request.district,
+            city: request.city,
+            latitude: request.latitude,
+            longitude: request.longitude,
+            formattedAddress: request.formattedAddress,
+            placeId: request.placeId,
+            isDefault: true,
+          },
+        });
+      }
 
       // 3. Gửi thông báo hệ thống cho người dùng
       await tx.notification.create({

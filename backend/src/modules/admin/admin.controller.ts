@@ -24,6 +24,7 @@ import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
 import { QueryStaffDto } from './dto/query-staff.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { AdminUsersService } from './services/admin-users.service';
 
 @ApiTags('5. ADMIN')
@@ -212,5 +213,24 @@ export class AdminController {
     @Body() dto: UpdateUserStatusDto,
   ) {
     return this.adminUsersService.updateUserStatus(id, admin.id, dto);
+  }
+
+  // ================= 12. CẬP NHẬT VAI TRÒ (ROLE) CHO TÀI KHOẢN =================
+  @Patch('users/:id/role')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin cấp/thay đổi vai trò (Role) cho người dùng',
+    description:
+      'Admin có thể cấp mọi vai trò (BUYER, SELLER, SUPPORT_STAFF, ADMIN) cho bất kỳ tài khoản email nào trong hệ thống.',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật vai trò thành công' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ hoặc hạ quyền chính mình' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
+  async updateUserRole(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: UpdateUserRoleDto,
+  ) {
+    return this.adminUsersService.updateUserRole(id, admin.id, dto);
   }
 }

@@ -197,10 +197,14 @@ model UserAddress {
   ward          String?
   district      String?
   city          String
-  country       String   @default("VN")
-  isDefault     Boolean  @default(false) @map("is_default")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  country          String   @default("VN")
+  latitude         Decimal? @db.Decimal(10, 8)
+  longitude        Decimal? @db.Decimal(11, 8)
+  formattedAddress String?  @map("formatted_address")
+  placeId          String?  @map("place_id")
+  isDefault        Boolean  @default(false) @map("is_default")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -326,6 +330,8 @@ model Warehouse {
   code      String   @unique @default("WH_001")
   name      String
   address   String?
+  latitude  Decimal? @db.Decimal(10, 8)
+  longitude Decimal? @db.Decimal(11, 8)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -632,6 +638,14 @@ model SellerUpgradeRequest {
   businessEmail      String?             @map("business_email")
   identityCardNumber String?             @map("identity_card_number")
   attachmentUrl      String?             @map("attachment_url")
+  street             String?             @map("street")
+  ward               String?             @map("ward")
+  district           String?             @map("district")
+  city               String?             @map("city")
+  latitude           Decimal?            @db.Decimal(10, 8)
+  longitude          Decimal?            @db.Decimal(11, 8)
+  formattedAddress   String?             @map("formatted_address")
+  placeId            String?             @map("place_id")
   status             SellerRequestStatus @default(PENDING)
   rejectionReason    String?             @map("rejection_reason") @db.Text
   reviewedByAdminId  String?             @map("reviewed_by_admin_id")

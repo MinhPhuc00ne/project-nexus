@@ -6,6 +6,7 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -18,6 +19,7 @@ import {
   ApiOperation,
   ApiBearerAuth,
   ApiConsumes,
+  ApiBody,
   ApiExcludeEndpoint,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -29,10 +31,17 @@ import {
   UpdateProfileDto,
   ApplySellerUpgradeDto,
   CreateAddressDto,
+  UpdateAddressDto,
 } from '../../users/dtos/users.dto';
-import { Public, CurrentUser, RequirePrivilege } from '../../../core/security/roles.decorator';
+import {
+  Public,
+  CurrentUser,
+  RequirePrivilege,
+  Roles,
+} from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
+import { Role } from '@nexus/types';
 
 @ApiTags('2. BUYER')
 @Controller('buyer')
@@ -81,7 +90,8 @@ export class BuyerController {
     description: 'Hỗ trợ định dạng file ảnh hoặc PDF chứng minh hoạt động kinh doanh/căn cước.',
   })
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER)
   @ApiConsumes('multipart/form-data')
   @Post('seller-upgrade/upload-proof')
   @UseInterceptors(FileInterceptor('file'))
@@ -95,21 +105,100 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Nộp đơn xin nâng cấp thành tài khoản Seller',
+    summary:
+      '[BUYER] Nộp đơn xin nâng cấp thành tài khoản Seller (Gộp thông tin gian hàng & file chứng minh)',
     description:
-      'Buyer nộp thông tin cửa hàng kèm URL ảnh/file chứng minh đã tải lên để chờ Admin duyệt.',
+      'Gửi thông tin gian hàng, địa chỉ, tọa độ GPS và đính kèm trực tiếp file/ảnh chứng minh (CCCD/GPKD) trong 1 lần request duy nhất.',
   })
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER)
+  @UseInterceptors(FileInterceptor('file'))
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['storeName', 'phone', 'street', 'city'],
+      properties: {
+        storeName: {
+          type: 'string',
+          example: 'Gốm Sứ Bát Tràng Store',
+          description: 'Tên gian hàng',
+        },
+        storeDescription: {
+          type: 'string',
+          example: 'Chuyên cung cấp đồ gốm sứ nghệ thuật cao cấp',
+        },
+        phone: { type: 'string', example: '0988776655', description: 'Số điện thoại gian hàng' },
+        businessEmail: { type: 'string', example: 'shop@battrangceramics.vn' },
+        identityCardNumber: {
+          type: 'string',
+          example: '001202008888',
+          description: 'Số CCCD/CMND',
+        },
+        street: {
+          type: 'string',
+          example: '720A Điện Biên Phủ',
+          description: 'Địa chỉ đường/số nhà',
+        },
+        ward: { type: 'string', example: 'Phường 22' },
+        district: { type: 'string', example: 'Quận Bình Thạnh' },
+        city: { type: 'string', example: 'TP. Hồ Chí Minh' },
+        latitude: { type: 'number', example: 10.795, description: 'Vĩ độ GPS bản đồ' },
+        longitude: { type: 'number', example: 106.721, description: 'Kinh độ GPS bản đồ' },
+        formattedAddress: {
+          type: 'string',
+          example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh',
+        },
+        placeId: { type: 'string', example: 'ChIJ_landmark81_hcm' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Ảnh CCCD/CMND hoặc file Giấy phép kinh doanh (JPG, PNG, WEBP, PDF)',
+        },
+        attachmentUrl: {
+          type: 'string',
+          example: 'https://res.cloudinary.com/...',
+          description:
+            'Hoặc link file chứng minh đã tải lên trước (nếu không đính kèm file trực tiếp)',
+        },
+      },
+    },
+  })
   @Post('seller-upgrade/apply')
   async applySellerUpgrade(
     @CurrentUser('id') userId: string,
     @Body() dto: ApplySellerUpgradeDto,
+    @UploadedFile() file?: Express.Multer.File,
   ): Promise<{ success: boolean; message: string; requestId: string }> {
-    return this.usersService.applySellerUpgrade(userId, dto);
+    return this.usersService.applySellerUpgrade(userId, dto, file);
   }
 
-  // --- QUẢN LÝ SỔ ĐỊA CHỈ GIAO HÀNG (USER ADDRESSES) ---
+  // --- QUẢN LÝ SỔ ĐỊA CHỈ GIAO HÀNG (USER ADDRESSES) & BẢN ĐỒ TOÀN CẦU ---
+
+  @ApiOperation({
+    summary: '[BUYER] Tìm kiếm gợi ý địa chỉ toàn cầu (Geocoding Autocomplete)',
+    description:
+      'Tìm kiếm gợi ý địa chỉ và tọa độ GPS qua bản đồ toàn cầu (OpenStreetMap Nominatim).',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('addresses/search')
+  async searchAddress(@Query('q') query: string) {
+    return this.addressService.searchAddress(query);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Dịch ngược tọa độ ghim bản đồ thành địa chỉ chi tiết (Reverse Geocoding)',
+    description:
+      'Truyền tọa độ GPS (lat, lng) khi kéo ghim trên bản đồ để tự động bóc tách số nhà, phường xã, quận huyện, tỉnh thành.',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('addresses/reverse')
+  async reverseGeocode(@Query('lat') lat: string, @Query('lng') lng: string) {
+    return this.addressService.reverseGeocode(parseFloat(lat), parseFloat(lng));
+  }
 
   @ApiOperation({
     summary: '[BUYER] Xem danh sách sổ địa chỉ nhận hàng của Buyer',
@@ -122,13 +211,27 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Thêm địa chỉ nhận hàng mới',
+    summary: '[BUYER] Thêm địa chỉ nhận hàng mới kèm tọa độ bản đồ',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('addresses')
   async createAddress(@CurrentUser('id') userId: string, @Body() dto: CreateAddressDto) {
     return this.addressService.createAddress(userId, dto);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Cập nhật thông tin địa chỉ và tọa độ bản đồ',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('addresses/:id')
+  async updateAddress(
+    @CurrentUser('id') userId: string,
+    @Param('id') addressId: string,
+    @Body() dto: UpdateAddressDto,
+  ) {
+    return this.addressService.updateAddress(userId, addressId, dto);
   }
 
   @ApiOperation({
