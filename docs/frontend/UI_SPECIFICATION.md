@@ -54,9 +54,9 @@ flowchart TD
 
 ---
 
-## 3. Component Decomposition Architecture (< 300 Lines Rule)
+## 3. Component Decomposition Architecture (< 300 Lines Guideline)
 
-In strict compliance with Clean Code standards, major views have been decomposed into isolated child components:
+In accordance with Clean Code guidelines and separation of concerns, major views have been decomposed into isolated child components:
 
 ### 3.1 Authentication Group (`frontend/web/src/pages/auth/`)
 

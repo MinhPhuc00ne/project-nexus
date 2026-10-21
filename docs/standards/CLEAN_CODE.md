@@ -6,19 +6,20 @@ This document specifies the engineering conventions, code limits, formatting rul
 
 ## 1. Core Architecture Constraints & File Limits
 
-### 1.1 Maximum File Length Limit (< 300 Lines Rule)
+### 1.1 Recommended File Length & Separation of Concerns (< 300 Lines Guideline)
 
-To prevent the emergence of "God Files" and ensure high maintainability, readability, and testability, all contributors must adhere to the mentor-enforced rule:
+The primary goal of this guideline is **Separation of Concerns and Maintainability**:
 
-- **No single component or source file may exceed 300 lines of code.**
-- When a file approaches 250-280 lines, engineers must proactively decompose it using:
+- **Avoid Mixing Unrelated Concerns:** Do not bundle unrelated responsibilities, state machines, business rules, or disparate UI sections into the same file. Mixing unrelated logic makes code significantly harder to locate, understand, debug, and safely modify.
+- **Recommended Threshold (~300 Lines):** Keeping files under **300 lines** is strongly recommended as a heuristic for healthy cohesion and readability. When a file approaches 250–300 lines, engineers should proactively evaluate whether it can be decomposed using:
   - **Subcomponent Extraction:** Split complex JSX into cohesive child components in dedicated subdirectories (e.g., `ProductImageGallery.tsx`, `ProductInfoTabs.tsx`).
   - **Custom Hook Extraction:** Move state machines, event handlers, and data fetching into dedicated hooks (e.g., `useLiveAuction.ts`, `useStaffNavigation.ts`).
   - **Metadata / Configuration Separation:** Extract static tables, navigation items, and constants into configuration files (e.g., `staffNavigationData.ts`).
+- **Pragmatic Permissibility (Guideline vs. Absolute Rule):** The 300-line mark is a strong architectural recommendation, not a dogmatic ban. If a file legitimately exceeds 300 lines while adhering strictly to a single, cohesive responsibility (Single Responsibility Principle), and splitting it would artificially fragment logic or hurt comprehension, **it is fully permitted**. Code clarity, cohesion, and sensible design always take precedence over an arbitrary line count.
 
 ### 1.2 Modular Page Decomposition
 
-- **`HomePage.tsx`:** Decomposed from 895 lines into modular subcomponents located in `components/home/` (`HomeHeroBanner.tsx`, `HomeLiveAuction.tsx`, `HomeFlashSaleCard.tsx`, `HomeAuctionCard.tsx`, `HomeRecommendationCard.tsx`, `HomeBenefit.tsx`, `HomeCountdown.tsx`) and mock data in `mocks/home.mock.ts`. The orchestrator page is now ~175 lines, strictly satisfying the < 300 lines Clean Code limit.
+- **`HomePage.tsx`:** Decomposed from 895 lines into modular subcomponents located in `components/home/` (`HomeHeroBanner.tsx`, `HomeLiveAuction.tsx`, `HomeFlashSaleCard.tsx`, `HomeAuctionCard.tsx`, `HomeRecommendationCard.tsx`, `HomeBenefit.tsx`, `HomeCountdown.tsx`) and mock data in `mocks/home.mock.ts`. The orchestrator page is now ~175 lines, exemplifying the modular decomposition guideline.
 
 ### 1.3 Commenting & Documentation Hygiene
 

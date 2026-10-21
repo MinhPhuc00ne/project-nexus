@@ -143,12 +143,14 @@ export async function getProducts(params?: ProductFilterParams): Promise<Product
 
 ---
 
-## 5. Clean Code Standards & Component Limits (< 300 Lines)
+## 5. Clean Code Standards & Component Limits (< 300 Lines Guideline)
 
-- **Strict File Limit:** Every component or page must remain below **300 lines** (including `HomePage.tsx`, which is decomposed into modular subcomponents in `components/home/`).
+- **Guideline & Core Purpose:** Keeping files under **~300 lines** is strongly recommended to maintain high cohesion and prevent "God Components". Unrelated responsibilities and disparate logic must not be bundled together in the same file, as this creates maintenance bottlenecks and makes searching or editing code difficult.
+- **Pragmatic Flexibility:** The 300-line limit is an architectural guideline and best practice rather than an absolute restriction. If a file legitimately exceeds 300 lines while adhering strictly to a single, coherent responsibility and natural design, it is fully permitted.
 - **Decomposition Strategy:**
-  - Break visual sections into subcomponents (e.g. `ProductImageGallery.tsx`, `CartOrderSummary.tsx`).
-  - Move static navigation and tables into configuration files (e.g. `staffNavigationData.ts`).
+  - Break visual sections into subcomponents (e.g., `ProductImageGallery.tsx`, `CartOrderSummary.tsx`).
+  - Extract reusable business logic and side effects into custom hooks (e.g., `useLiveAuction.ts`).
+  - Move static navigation and tables into configuration files (e.g., `staffNavigationData.ts`).
   - Keep styling clean using Tailwind CSS utilities.
 
 ---

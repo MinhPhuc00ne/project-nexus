@@ -20,11 +20,11 @@ Located in [`docs/architecture/`](./architecture/):
 
 Located in [`docs/standards/`](./standards/):
 
-| Document                                                         | Description                                                                                                                                | Focus Area             |
-| :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
-| **[`CLEAN_CODE.md`](./standards/CLEAN_CODE.md)**                 | Clean Code and documentation guidelines: **Strict < 300 lines/file limit**, Modular Page Decomposition, Strict TypeScript, and zero `any`. | Code Quality           |
-| **[`DESIGN_PRINCIPLES.md`](./standards/DESIGN_PRINCIPLES.md)**   | Software design principles: SOLID, KISS, YAGNI, DRY, Low Coupling, and High Cohesion across modules.                                       | Engineering Principles |
-| **[`NAMING_CONVENTIONS.md`](./standards/NAMING_CONVENTIONS.md)** | Naming conventions across TypeScript, React components, NestJS modules, DTOs, interfaces, and database models.                             | Consistency            |
+| Document                                                         | Description                                                                                                                                                | Focus Area             |
+| :--------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------- |
+| **[`CLEAN_CODE.md`](./standards/CLEAN_CODE.md)**                 | Clean Code and documentation guidelines: **Recommended < 300 lines/file guideline**, Separation of Concerns, Modular Decomposition, and Strict TypeScript. | Code Quality           |
+| **[`DESIGN_PRINCIPLES.md`](./standards/DESIGN_PRINCIPLES.md)**   | Software design principles: SOLID, KISS, YAGNI, DRY, Low Coupling, and High Cohesion across modules.                                                       | Engineering Principles |
+| **[`NAMING_CONVENTIONS.md`](./standards/NAMING_CONVENTIONS.md)** | Naming conventions across TypeScript, React components, NestJS modules, DTOs, interfaces, and database models.                                             | Consistency            |
 
 ---
 
