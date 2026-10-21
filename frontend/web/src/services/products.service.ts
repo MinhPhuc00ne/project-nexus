@@ -24,6 +24,9 @@ interface CatalogPage {
   limit: number;
   totalPages: number;
 }
+export interface ProductsPage extends Omit<CatalogPage, 'items'> {
+  items: ProductDetail[];
+}
 export interface CatalogQuery {
   search?: string;
   categoryId?: string;
@@ -71,7 +74,7 @@ function request<T>(path: string): Promise<T> {
   pending.set(path, promise);
   return promise;
 }
-export async function getProductsPage(query: CatalogQuery = {}) {
+export async function getProductsPage(query: CatalogQuery = {}): Promise<ProductsPage> {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
     if (value !== undefined && value !== '') params.set(key, String(value));
@@ -80,7 +83,6 @@ export async function getProductsPage(query: CatalogQuery = {}) {
   const page = await request<CatalogPage>(`/catalog/products${suffix}`);
   return { ...page, items: page.items.map(mapProduct) };
 }
-// The default page contains 12 products. Use getProductsPage for pagination.
 export async function getProductsCatalog(query: CatalogQuery = {}): Promise<ProductDetail[]> {
   return (await getProductsPage(query)).items;
 }
