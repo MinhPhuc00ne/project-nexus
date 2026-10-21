@@ -1,52 +1,57 @@
+﻿import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye } from 'lucide-react';
-import { PRODUCTS_CATALOG } from '../../components/products';
+import { PictureOutlined } from '@ant-design/icons';
+import { getRelatedProducts } from '../../services/products.service';
+import useProductResource from './useProductResource';
 
-interface RelatedProductsSectionProps {
-  currentProductId: string;
-}
-
-export default function RelatedProductsSection({ currentProductId }: RelatedProductsSectionProps) {
-  const relatedProducts = PRODUCTS_CATALOG.filter((p) => p.id !== currentProductId).slice(0, 4);
-
+export default function RelatedProductsSection({ currentProductId }: { currentProductId: string }) {
+  const load = useCallback(() => getRelatedProducts(currentProductId), [currentProductId]);
+  const { data: products, loading, error, retry } = useProductResource(load);
   return (
-    <div className="mb-12">
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <Eye size={20} className="text-[#f24e1e]" />
-          Sản Phẩm Tương Tự Có Thể Bạn Thích
-        </h3>
-        <Link to="/search" className="text-xs font-bold text-indigo-600 hover:underline">
-          Xem tất cả sàn &gt;
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {relatedProducts.map((rel) => (
-          <Link
-            key={rel.id}
-            to={`/product/${rel.id}`}
-            className="group bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition flex flex-col justify-between"
-          >
-            <div className="aspect-square bg-slate-50 p-4 overflow-hidden flex items-center justify-center">
-              <img
-                src={rel.images[0]}
-                alt={rel.name}
-                className="w-full h-full object-contain group-hover:scale-105 transition duration-300"
-              />
-            </div>
-            <div className="p-3.5">
-              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">
-                {rel.brand.split('•')[0]}
-              </span>
-              <h4 className="text-xs font-bold text-slate-800 line-clamp-2 mb-2 group-hover:text-[#f24e1e] transition">
-                {rel.name}
-              </h4>
-              <div className="text-sm font-extrabold text-[#f24e1e]">{rel.formattedPrice}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
+    <section className="pb-12">
+      <h2 className="mb-5 text-lg font-bold text-slate-900">Sản phẩm khác</h2>
+      {loading ? (
+        <p role="status" className="text-sm text-slate-500">
+          Đang tải sản phẩm…
+        </p>
+      ) : error ? (
+        <div role="alert" className="rounded-xl border border-red-100 bg-white p-4 text-sm">
+          <p>{error}</p>
+          <button type="button" onClick={retry} className="mt-2 text-blue-600">
+            Thử lại
+          </button>
+        </div>
+      ) : !products?.length ? (
+        <p className="text-sm text-slate-500">Chưa có sản phẩm khác để hiển thị.</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          {products.map((product) => (
+            <Link
+              key={product.id}
+              to={`/product/${product.id}`}
+              className="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-blue-400"
+            >
+              <div className="flex aspect-square items-center justify-center bg-slate-50 p-4">
+                {product.images[0] ? (
+                  <img
+                    src={product.images[0]}
+                    alt={product.name}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <PictureOutlined className="text-3xl text-slate-300" />
+                )}
+              </div>
+              <div className="space-y-2 p-4">
+                <h3 className="line-clamp-2 text-sm font-semibold text-slate-800">
+                  {product.name}
+                </h3>
+                <p className="text-sm font-bold text-blue-600">{product.formattedPrice}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

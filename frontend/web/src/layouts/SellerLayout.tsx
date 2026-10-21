@@ -23,6 +23,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { useSellerSession } from '../components/seller/SellerSession';
+import { useAuth } from '../contexts/AuthContext';
 import { clearAuthSession } from '../services/auth';
 import { toggleSellerMode } from '../services/users';
 import { useSellerStore } from '../components/seller/useSellerStore';
@@ -64,6 +65,7 @@ export default function SellerLayout() {
 }
 function SellerWorkspace() {
   const user = useSellerSession();
+  const { setProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [pending, setPending] = useState(false);
@@ -138,7 +140,15 @@ function SellerWorkspace() {
     setPending(true);
     setError('');
     try {
-      await toggleSellerMode(false);
+      const result = await toggleSellerMode(false);
+      setProfile((current) =>
+        current?.id === user.id
+          ? { ...current, isSellerActive: result.isSellerActive, currentMode: result.currentMode }
+          : current,
+      );
+      if (result.isSellerActive || result.currentMode !== 'BUYER') {
+        throw new Error('Máy chủ chưa chuyển tài khoản về chế độ người mua. Vui lòng thử lại.');
+      }
       navigate('/buyer');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể chuyển chế độ.');

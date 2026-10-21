@@ -200,6 +200,7 @@ function AppRouter() {
               <Route path="overview" element={<SellerDashboardPage />} />
               <Route path="products" element={<SellerProductsPage />} />
               <Route path="products/new" element={<SellerCreateProductPage />} />
+              <Route path="products/:id/edit" element={<SellerCreateProductPage />} />
               <Route path="orders" element={<SellerOrdersPage />} />
               <Route path="orders/:id" element={<SellerOrderDetailPage />} />
               <Route path="auctions" element={<SellerAuctionsPage />} />
