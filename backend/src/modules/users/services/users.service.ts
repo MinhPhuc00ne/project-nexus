@@ -11,11 +11,7 @@ import { SellerRequestStatus, User, Wallet } from '@prisma/client';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
-import {
-  UpdateProfileDto,
-  ApplySellerUpgradeDto,
-  ReviewSellerUpgradeDto,
-} from '../dtos/users.dto';
+import { UpdateProfileDto, ApplySellerUpgradeDto, ReviewSellerUpgradeDto } from '../dtos/users.dto';
 
 export interface UserProfileResponse {
   id: string;
@@ -40,7 +36,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: CloudinaryStorageService,
-  ) { }
+  ) {}
 
   private formatProfile(user: User & { wallet: Wallet | null }): UserProfileResponse {
     return {
