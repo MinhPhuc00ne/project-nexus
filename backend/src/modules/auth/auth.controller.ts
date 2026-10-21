@@ -15,6 +15,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { AuthService, GoogleUser, UserProfileResponse } from './auth.service';
+import { AuthProfileService } from './services/auth-profile.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -36,6 +37,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly authProfileService: AuthProfileService,
   ) {}
 
   // ================= 1. ĐĂNG NHẬP =================
@@ -131,7 +133,7 @@ export class AuthController {
     return this.authService.logout(dto);
   }
 
-  // ================= 6. HỒ SƠ CÁ NHÂN & BẢO MẬT =================
+  // --- Profile Management & Security ---
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
@@ -144,7 +146,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Lấy thông tin tài khoản thành công' })
   @ApiResponse({ status: 401, description: 'Chưa đăng nhập hoặc token không hợp lệ' })
   async getProfile(@CurrentUser('id') userId: string): Promise<UserProfileResponse> {
-    return this.authService.getProfile(userId);
+    return this.authProfileService.getProfile(userId);
   }
 
   @Patch('profile')
@@ -163,7 +165,7 @@ export class AuthController {
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateProfileDto,
   ): Promise<UserProfileResponse> {
-    return this.authService.updateProfile(userId, dto);
+    return this.authProfileService.updateProfile(userId, dto);
   }
 
   @Post('change-password/request-otp')
@@ -180,7 +182,7 @@ export class AuthController {
   async requestChangePasswordOtp(
     @CurrentUser('id') userId: string,
   ): Promise<{ success: boolean; message: string }> {
-    return this.authService.requestChangePasswordOtp(userId);
+    return this.authProfileService.requestChangePasswordOtp(userId);
   }
 
   @Post('change-password/confirm-otp')
@@ -199,6 +201,6 @@ export class AuthController {
     @CurrentUser('id') userId: string,
     @Body() dto: ConfirmChangePasswordOtpDto,
   ): Promise<{ success: boolean; message: string }> {
-    return this.authService.confirmChangePasswordWithOtp(userId, dto);
+    return this.authProfileService.confirmChangePasswordWithOtp(userId, dto);
   }
 }
