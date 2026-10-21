@@ -1,0 +1,34 @@
+import type { ReactNode } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Role } from '@nexus/types';
+import { useAuth } from '../contexts/AuthContext';
+
+interface ProtectedRouteProps {
+  allowedRoles?: Role[];
+  children?: ReactNode;
+}
+
+export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
+  const { token, user, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (!token) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  if (isLoading) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
+        <p role="status" className="text-sm font-medium text-slate-600">
+          Đang kiểm tra quyền truy cập…
+        </p>
+      </main>
+    );
+  }
+
+  if (allowedRoles && user && !allowedRoles.includes(user.role as Role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children ? <>{children}</> : <Outlet />;
+}
