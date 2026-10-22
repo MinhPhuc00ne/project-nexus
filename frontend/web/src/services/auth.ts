@@ -80,9 +80,10 @@ export function consumeOAuthCallbackFromUrl(): AuthUser | null {
   const rawUser = params.get('user');
   const token = params.get('token');
   const refreshToken = params.get('refreshToken');
-  if (!rawUser) return null;
+  if (!params.has('user') && !params.has('token') && !params.has('refreshToken')) return null;
 
   try {
+    if (!rawUser || !token?.trim() || !refreshToken?.trim()) return null;
     const parsed = JSON.parse(rawUser) as Partial<AuthUser>;
     if (parsed && typeof parsed.id === 'string' && typeof parsed.email === 'string') {
       const user: AuthUser = {
@@ -92,18 +93,18 @@ export function consumeOAuthCallbackFromUrl(): AuthUser | null {
         role: parsed.role,
         avatarUrl: parsed.avatarUrl ?? null,
       };
-      saveAuthSession(user, token || undefined, refreshToken || undefined);
-
-      params.delete('user');
-      params.delete('token');
-      params.delete('refreshToken');
-      const remainingQuery = params.toString();
-      const nextUrl = `${window.location.pathname}${remainingQuery ? `?${remainingQuery}` : ''}${window.location.hash}`;
-      window.history.replaceState(null, '', nextUrl);
+      saveAuthSession(user, token, refreshToken);
       return user;
     }
   } catch {
     /* Ignore malformed query parameter */
+  } finally {
+    params.delete('user');
+    params.delete('token');
+    params.delete('refreshToken');
+    const remainingQuery = params.toString();
+    const nextUrl = `${window.location.pathname}${remainingQuery ? `?${remainingQuery}` : ''}${window.location.hash}`;
+    window.history.replaceState(window.history.state, '', nextUrl);
   }
   return null;
 }
