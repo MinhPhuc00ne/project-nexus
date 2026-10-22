@@ -174,7 +174,6 @@ export class AuthService {
         OR: [
           { email: { equals: normalizedEmail, mode: 'insensitive' } },
           { platformEmail: { equals: normalizedEmail, mode: 'insensitive' } },
-          { personalEmail: { equals: normalizedEmail, mode: 'insensitive' } },
         ],
       },
     });
@@ -307,7 +306,8 @@ export class AuthService {
     const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // Hạn 10 phút
 
     // Gửi email đặt lại mật khẩu - ném lỗi nếu SMTP thất bại (không nuốt lỗi)
-    await this.sendPasswordResetEmail(email, resetCode);
+    const recipientEmail = user.personalEmail || email;
+    await this.sendPasswordResetEmail(recipientEmail, resetCode);
 
     await this.prisma.user.update({
       where: { email },
