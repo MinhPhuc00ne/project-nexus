@@ -2,6 +2,8 @@ import { Box, Mic, Radio, Video, Volume2 } from 'lucide-react';
 import { useState } from 'react';
 import { Badge, Button, Panel } from '../../components/adminDashboard/AdminUI';
 import { useAdminContext } from '../../components/adminDashboard/useAdminContext';
+import { mockSettings } from '../../components/adminDashboard/mockData/settings';
+import { mockStudio } from '../../components/adminDashboard/mockData/studio';
 
 // Studio mô phỏng giao diện điều khiển phiên, chưa mở camera/micro hoặc dựng mô hình WebGL.
 export default function AdminStudioPage() {
@@ -47,7 +49,7 @@ export default function AdminStudioPage() {
             Camera, âm thanh và mô hình 3D chưa kết nối dịch vụ trực tiếp.
           </p>
           <span className="absolute left-4 top-4 rounded bg-white/10 px-2 py-1 text-[10px]">
-            PREVIEW • 1920 × 1080
+            PREVIEW • {mockStudio.previewResolution}
           </span>
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -99,15 +101,15 @@ export default function AdminStudioPage() {
           <div className="mt-5 space-y-3 text-xs">
             <div className="flex justify-between">
               <span className="text-slate-500">Chất lượng phát</span>
-              <b>1080p / 60 FPS</b>
+              <b>{mockStudio.quality}</b>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Anti-sniping</span>
-              <b className="text-primary">+120 giây</b>
+              <b className="text-primary">+{mockSettings.antiSniping} giây</b>
             </div>
             <div className="flex justify-between">
               <span className="text-slate-500">Phí sàn</span>
-              <b>16%</b>
+              <b>{mockSettings.auctionFee}%</b>
             </div>
           </div>
           <Button

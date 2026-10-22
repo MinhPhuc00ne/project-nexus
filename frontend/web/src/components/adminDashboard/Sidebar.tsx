@@ -2,6 +2,9 @@ import {
   Activity,
   ChartNoAxesCombined,
   Gavel,
+  Package,
+  ShoppingBag,
+  Flag,
   Layers,
   LayoutDashboard,
   Radio,
@@ -26,6 +29,8 @@ export const adminNavigation: {
     label: 'ĐIỀU HÀNH TRỰC TIẾP',
     items: [
       { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
+      { id: 'products', label: 'Quản lý sản phẩm', icon: Package },
+      { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingBag },
       { id: 'auctions', label: 'Quản lý đấu giá 3D', icon: Gavel },
       // Mở trang quản lý danh mục tại /admin/categories.
       { id: 'categories', label: 'Quản lý danh mục', icon: Layers },
@@ -37,6 +42,8 @@ export const adminNavigation: {
     items: [
       { id: 'users', label: 'Quản trị người dùng', icon: Users },
       { id: 'sellers', label: 'Phê duyệt nâng cấp Seller', icon: Store },
+      { id: 'stores', label: 'Seller & cửa hàng', icon: Store },
+      { id: 'reports', label: 'Khiếu nại & báo cáo', icon: Flag },
       { id: 'refunds', label: 'Phê duyệt hoàn tiền', icon: ShieldCheck },
     ],
   },
@@ -56,11 +63,15 @@ export default function Sidebar({
   onClose,
   sellerCount,
   refundCount,
+  productCount,
+  reportCount,
 }: {
   open: boolean;
   onClose: () => void;
   sellerCount: number;
   refundCount: number;
+  productCount: number;
+  reportCount: number;
 }) {
   return (
     <>
@@ -117,9 +128,15 @@ export default function Sidebar({
                   >
                     <Icon size={17} />
                     <span className="flex-1">{label}</span>
-                    {(id === 'sellers' || id === 'refunds') && (
+                    {['sellers', 'refunds', 'products', 'reports'].includes(id) && (
                       <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                        {id === 'sellers' ? sellerCount : refundCount}
+                        {id === 'sellers'
+                          ? sellerCount
+                          : id === 'refunds'
+                            ? refundCount
+                            : id === 'products'
+                              ? productCount
+                              : reportCount}
                       </span>
                     )}
                   </NavLink>

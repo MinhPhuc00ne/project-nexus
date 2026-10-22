@@ -3,6 +3,8 @@ import { Role } from '@nexus/types';
 import api, { ApiRequestError } from './api';
 import { getStoredToken } from './auth';
 import type { SellerUpgradeRequest } from './users';
+import type { AdminUser, QueryUsersParams, UserStatusResult } from '../types/user.types';
+import type { CategoryTreeItem } from '../types/category.types';
 
 // Các API admin dùng chung Axios client, token phiên hiện tại và định dạng lỗi.
 async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
@@ -79,6 +81,39 @@ export interface PaginatedResult<T> {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export function listUsers(params: QueryUsersParams, signal?: AbortSignal) {
+  return adminRequest<PaginatedResult<AdminUser>>({
+    url: '/admin/users',
+    method: 'GET',
+    params,
+    signal,
+  });
+}
+
+export function getCategoryTree(signal?: AbortSignal): Promise<CategoryTreeItem[]> {
+  return adminRequest<CategoryTreeItem[]>({
+    url: '/catalog/categories',
+    method: 'GET',
+    signal,
+  });
+}
+
+export function lockUser(id: string, reason?: string) {
+  return adminRequest<UserStatusResult>({
+    url: `/admin/users/${encodeURIComponent(id)}/lock`,
+    method: 'PATCH',
+    data: { reason },
+  });
+}
+
+export function unlockUser(id: string, reason?: string) {
+  return adminRequest<UserStatusResult>({
+    url: `/admin/users/${encodeURIComponent(id)}/unlock`,
+    method: 'PATCH',
+    data: { reason },
+  });
 }
 
 export interface QuerySellerRequestsParams {

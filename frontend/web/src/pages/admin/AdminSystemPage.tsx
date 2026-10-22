@@ -2,6 +2,7 @@ import { Activity, Server } from 'lucide-react';
 import { EventLog, LogisticsCard } from '../../components/adminDashboard/SystemCards';
 import { Panel } from '../../components/adminDashboard/AdminUI';
 import { useAdminContext } from '../../components/adminDashboard/useAdminContext';
+import { mockSystemStatus } from '../../components/adminDashboard/mockData/system';
 
 // Nội dung riêng của trang; các card dùng ở cả Tổng quan được tách sang components/adminDashboard.
 export default function AdminSystemPage() {
@@ -13,9 +14,9 @@ export default function AdminSystemPage() {
       {/* 1. Các thẻ trạng thái kỹ thuật: độ trễ WebSocket, cụm WebGL và thời gian hoạt động. */}
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'WebSocket engine', value: '12ms', icon: Activity },
-          { label: 'WebGL cluster', value: '6 nodes online', icon: Server },
-          { label: 'Uptime hệ thống', value: '99.98%', icon: Activity },
+          { label: 'WebSocket engine', value: mockSystemStatus.websocketLatency, icon: Activity },
+          { label: 'WebGL cluster', value: mockSystemStatus.webglCluster, icon: Server },
+          { label: 'Uptime hệ thống', value: mockSystemStatus.uptime, icon: Activity },
         ].map(({ label, value, icon: Icon }) => (
           <Panel key={label} title={label} icon={<Icon size={18} />}>
             <p className="text-2xl font-bold text-primary">{value}</p>

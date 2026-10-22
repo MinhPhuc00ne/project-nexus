@@ -43,6 +43,10 @@ export { default as StaffHistoryPage } from './staff/StaffHistoryPage';
 export { default as StaffPerformancePage } from './staff/StaffPerformancePage';
 
 // Admin Pages
+export { default as AdminProductsPage } from './admin/AdminProductsPage';
+export { default as AdminOrdersPage } from './admin/AdminOrdersPage';
+export { default as AdminStoresPage } from './admin/AdminStoresPage';
+export { default as AdminReportsPage } from './admin/AdminReportsPage';
 export { default as AdminDashboardPage } from './admin/AdminDashboardPage';
 export { default as AdminAuctionsPage } from './admin/AdminAuctionsPage';
 export { default as AdminStudioPage } from './admin/AdminStudioPage';

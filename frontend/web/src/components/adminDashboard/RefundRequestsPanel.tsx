@@ -12,10 +12,13 @@ export default function RefundRequestsPanel({
   data,
   actions,
   preview = false,
-}: AdminTabProps & { preview?: boolean }) {
+  orderId,
+}: AdminTabProps & { preview?: boolean; orderId?: string }) {
   const [search, setSearch] = useState('');
   // Phê duyệt/bác bỏ xong, trạng thái không còn pending nên hồ sơ rời danh sách này.
-  const pending = data.refunds.filter((item) => item.status === 'pending');
+  const pending = data.refunds.filter(
+    (item) => item.status === 'pending' && (!orderId || item.id === orderId),
+  );
   // Tìm theo mã đơn hoặc tên sản phẩm; không thay đổi dữ liệu gốc.
   const visible = pending.filter((item) =>
     `${item.id} ${item.product}`.toLowerCase().includes(search.toLowerCase()),

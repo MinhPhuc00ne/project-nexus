@@ -1,3 +1,13 @@
+import {
+  mockUserBreakdown,
+  mockBidFrequencyValues,
+  mockBidFrequencyLabels,
+  mockBidFrequencySummary,
+  mockOverviewMetrics,
+} from '../../components/adminDashboard/mockData/dashboard';
+import { mockSystemStatus } from '../../components/adminDashboard/mockData/system';
+import { mockSettings } from '../../components/adminDashboard/mockData/settings';
+import { formatMoney } from '../../components/adminDashboard/adminData';
 import { useAdminSellerRequests } from '../../components/adminDashboard/AdminSellerRequests';
 import {
   Activity,
@@ -44,7 +54,7 @@ export default function AdminDashboardPage() {
             <Badge>LỆNH CAO CẤP HỆ THỐNG</Badge>
             <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
               <span className="size-1.5 rounded-full bg-blue-500" />
-              Tất cả dịch vụ hoạt động bình thường
+              {mockSystemStatus.serviceStatus}
             </span>
           </div>
           <h1 className="text-2xl font-bold leading-tight tracking-tight text-slate-900 sm:text-3xl">
@@ -54,15 +64,16 @@ export default function AdminDashboardPage() {
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[10px] text-slate-500">
             <span className="flex items-center gap-1.5">
               <Activity size={13} className="text-primary" />
-              WebSocket Engine: <b className="text-slate-800">12ms</b>
+              WebSocket Engine:{' '}
+              <b className="text-slate-800">{mockSystemStatus.websocketLatency}</b>
             </span>
             <span className="flex items-center gap-1.5">
               <BadgeDollarSign size={13} className="text-primary" />
-              PayOS & Stripe: <b className="text-slate-800">Sẵn sàng</b>
+              PayOS & Stripe: <b className="text-slate-800">{mockSystemStatus.paymentStatus}</b>
             </span>
             <span className="flex items-center gap-1.5">
               <ShieldCheck size={13} className="text-primary" />
-              WebGL Cluster: <b className="text-slate-800">6 nodes online</b>
+              WebGL Cluster: <b className="text-slate-800">{mockSystemStatus.webglCluster}</b>
             </span>
           </div>
         </div>
@@ -92,17 +103,20 @@ export default function AdminDashboardPage() {
           icon={<BadgeDollarSign size={19} />}
         >
           <p className="text-2xl font-bold tracking-tight">
-            1.842.500.000 <span className="text-base">₫</span>
+            {mockOverviewMetrics.monthlyPlatformFee.toLocaleString('vi-VN')}{' '}
+            <span className="text-base">₫</span>
           </p>
-          <p className="mt-2 text-[10px] text-primary">+18.4% so với tháng trước</p>
+          <p className="mt-2 text-[10px] text-primary">
+            +{mockOverviewMetrics.revenueGrowth} so với tháng trước
+          </p>
           <div className="mt-5 space-y-2 rounded-lg bg-blue-50/80 p-3 text-[11px]">
             <div className="flex justify-between gap-2">
-              <span className="text-slate-500">Phí đơn thường (7%)</span>
-              <b>924.300.000 ₫</b>
+              <span className="text-slate-500">Phí đơn thường ({mockSettings.normalFee}%)</span>
+              <b>{formatMoney(mockOverviewMetrics.normalFeeRevenue)}</b>
             </div>
             <div className="flex justify-between gap-2">
-              <span className="text-slate-500">Phí đấu giá 3D (16%)</span>
-              <b className="text-primary">918.200.000 ₫</b>
+              <span className="text-slate-500">Phí đấu giá 3D ({mockSettings.auctionFee}%)</span>
+              <b className="text-primary">{formatMoney(mockOverviewMetrics.auctionFeeRevenue)}</b>
             </div>
             <div className="flex h-1.5 overflow-hidden rounded-full">
               <div className="w-1/2 bg-primary" />
@@ -115,15 +129,17 @@ export default function AdminDashboardPage() {
             <p className="text-2xl font-bold">{live} phiên live</p>
             <Badge tone="green">BROADCAST</Badge>
           </div>
-          <p className="mt-2 text-[11px] text-slate-500">142 người trả giá theo giây</p>
+          <p className="mt-2 text-[11px] text-slate-500">
+            {mockOverviewMetrics.biddersPerSecond} người trả giá theo giây
+          </p>
           <div className="mt-5 rounded-lg bg-blue-50/80 p-3 text-[11px]">
             <p className="flex justify-between gap-2">
               <span className="text-slate-500">Atomic Queue</span>
-              <b className="text-primary">Không tắc nghẽn</b>
+              <b className="text-primary">{mockOverviewMetrics.atomicQueueStatus}</b>
             </p>
             <p className="mt-2 flex justify-between gap-2">
               <span className="text-slate-500">Anti-sniping Engine</span>
-              <b className="text-primary">+120s khi đấu giây cuối</b>
+              <b className="text-primary">+{mockSettings.antiSniping}s khi đấu giây cuối</b>
             </p>
           </div>
         </Panel>
@@ -157,18 +173,14 @@ export default function AdminDashboardPage() {
           icon={<Users size={19} />}
         >
           <p className="text-2xl font-bold">
-            38.420 <span className="text-base font-medium">users</span>
+            {mockOverviewMetrics.usersTotal.toLocaleString('vi-VN')}{' '}
+            <span className="text-base font-medium">users</span>
           </p>
           <p className="mt-2 text-[11px] text-slate-500">
-            +280 tài khoản đăng ký mới trong 24h qua
+            +{mockOverviewMetrics.newUsers24h} tài khoản đăng ký mới trong 24h qua
           </p>
           <div className="mt-5 grid grid-cols-4 gap-1 rounded-lg bg-blue-50/80 p-3 text-center text-[10px]">
-            {[
-              ['34.1K', 'Buyer'],
-              ['3.85K', 'Seller'],
-              ['42', 'Staff'],
-              ['8', 'Banned'],
-            ].map(([value, label]) => (
+            {mockUserBreakdown.map(([value, label]) => (
               <div key={label}>
                 <b className="text-primary">{value}</b>
                 <p className="mt-1 text-slate-500">{label}</p>
@@ -213,35 +225,36 @@ export default function AdminDashboardPage() {
 // Biểu đồ cột nhỏ: mỗi cột có chiều cao theo giá trị mẫu, giờ cao điểm dùng màu primary.
 // Badge LIVE là nhãn minh họa, component chưa đăng ký WebSocket hoặc cập nhật theo thời gian.
 function BidFrequency() {
-  const values = [15, 28, 52, 65, 58, 77, 85, 98, 67, 41];
-  const labels = ['02h', '06h', '09h', '12h', '15h', '18h', '20h', '21h', '22h', '24h'];
-
   return (
     <Panel
       title="Tần suất khớp lệnh theo giờ"
-      subtitle="Tải WebGL 6 nodes & khung giờ vàng"
+      subtitle={mockBidFrequencySummary.subtitle}
       icon={<TrendingUp size={19} />}
       action={<Badge>● LIVE</Badge>}
     >
       <div className="flex h-28 items-end gap-1.5 rounded-xl bg-blue-50/70 px-3 pt-3">
-        {values.map((value, index) => (
+        {mockBidFrequencyValues.map((value, index) => (
           <div key={index} className="flex h-full flex-1 flex-col justify-end gap-2">
             <div
               className={`min-h-1 rounded-t ${index === 6 || index === 7 ? 'bg-primary' : 'bg-blue-300'}`}
               style={{ height: `${value * 0.8}%` }}
-              title={`${labels[index]}: ${value * 44} lượt trả giá (demo)`}
+              title={`${mockBidFrequencyLabels[index]}: ${value * mockBidFrequencySummary.bidsPerUnit} lượt trả giá (demo)`}
             />
-            <span className="pb-2 text-center text-[8px] text-slate-500">{labels[index]}</span>
+            <span className="pb-2 text-center text-[8px] text-slate-500">
+              {mockBidFrequencyLabels[index]}
+            </span>
           </div>
         ))}
       </div>
       <div className="mt-3 flex items-start justify-between gap-2 text-[11px]">
         <p className="text-slate-500">
-          Khung 20h – 22h đạt:
+          Khung {mockBidFrequencySummary.peakWindow} đạt:
           <br />
-          <strong className="text-primary">4.280 bids/phút</strong>
+          <strong className="text-primary">
+            {mockBidFrequencySummary.peakBidsPerMinute.toLocaleString('vi-VN')} bids/phút
+          </strong>
         </p>
-        <Badge>CPU 18% • 6 nodes OK</Badge>
+        <Badge>{mockBidFrequencySummary.health}</Badge>
       </div>
     </Panel>
   );

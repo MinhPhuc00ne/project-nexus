@@ -1,3 +1,10 @@
+import {
+  mockRevenuePeriods,
+  mockRevenueCompositionItems,
+  mockRevenueComposition,
+} from './mockData/revenue';
+import { mockOverviewMetrics } from './mockData/dashboard';
+import { mockSettings } from './mockData/settings';
 // Biểu đồ dùng chung cho Tổng quan và Tài chính: đường doanh thu + vòng tròn cơ cấu nguồn thu.
 
 import { ChartNoAxesCombined, CircleDollarSign, TrendingUp } from 'lucide-react';
@@ -8,54 +15,12 @@ import { formatMoney } from './adminData';
 // Mỗi phần tử là một kỳ thống kê mẫu. total/auction/normal tính bằng VND.
 // auctionValues/normalValues tính bằng triệu VND để vẽ SVG, là chuỗi minh họa riêng
 // và chưa được tính từ các tổng ở trên. Khi nối API cần trả về chuỗi và tổng đồng nhất.
-const periods = [
-  {
-    label: '7 ngày',
-    total: 438500000,
-    auction: 226200000,
-    normal: 212300000,
-    unit: 'tuần này',
-    labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'],
-    auctionValues: [40, 90, 65, 120, 150, 180, 172],
-    normalValues: [60, 78, 95, 108, 132, 146, 135],
-  },
-  {
-    label: '30 ngày',
-    total: 1842500000,
-    auction: 918200000,
-    normal: 924300000,
-    unit: '30 ngày',
-    labels: ['Ngày 1', 'Ngày 5', 'Ngày 10', 'Ngày 15', 'Ngày 20', 'Ngày 25', 'Ngày 30'],
-    auctionValues: [52, 70, 95, 82, 140, 165, 190],
-    normalValues: [48, 85, 82, 110, 125, 150, 175],
-  },
-  {
-    label: 'Tháng này',
-    total: 1258000000,
-    auction: 640000000,
-    normal: 618000000,
-    unit: 'tháng này',
-    labels: ['Ngày 1', 'Ngày 3', 'Ngày 5', 'Ngày 7', 'Ngày 9', 'Ngày 11', 'Ngày 14'],
-    auctionValues: [30, 58, 100, 88, 132, 175, 162],
-    normalValues: [45, 62, 75, 108, 115, 138, 152],
-  },
-  {
-    label: 'Năm 2026',
-    total: 18650000000,
-    auction: 9400000000,
-    normal: 9250000000,
-    unit: 'năm nay',
-    labels: ['Tháng 1', 'Tháng 3', 'Tháng 5', 'Tháng 7', 'Tháng 9', 'Tháng 10', 'Tháng 12'],
-    auctionValues: [45, 80, 72, 115, 152, 178, 192],
-    normalValues: [38, 65, 88, 102, 130, 148, 168],
-  },
-];
 
 export function RevenueChart() {
   // period là vị trí kỳ được chọn trong mảng; hovered là vị trí điểm đang được rê chuột.
   const [period, setPeriod] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
-  const current = periods[period];
+  const current = mockRevenuePeriods[period];
   // Chuyển số liệu thành chuỗi tọa độ SVG "x,y x,y ..." cho polyline/polygon.
   // x bắt đầu 48 và cách nhau 76; y=236-value vì trục y của SVG tăng từ trên xuống.
   // Hàm hiện thiết kế cho 7 điểm, giá trị 0–200; đổi số điểm/thang đo cần tính lại tọa độ.
@@ -65,12 +30,12 @@ export function RevenueChart() {
   return (
     <Panel
       title="Biểu đồ xu hướng doanh thu phí sàn & tỷ trọng"
-      subtitle="Phân tích dòng tiền phí 16% (đấu giá 3D) và phí 7% (đơn TMĐT) theo thời gian"
+      subtitle={`Phân tích dòng tiền phí ${mockSettings.auctionFee}% (đấu giá 3D) và phí ${mockSettings.normalFee}% (đơn TMĐT) theo thời gian`}
       icon={<ChartNoAxesCombined size={19} />}
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-1 rounded-lg bg-slate-50 p-1">
-          {periods.map((item, index) => (
+          {mockRevenuePeriods.map((item, index) => (
             <button
               key={item.label}
               onClick={() => {
@@ -90,19 +55,22 @@ export function RevenueChart() {
           <p className="text-[9px] uppercase text-slate-500">Tổng phí sàn {current.unit}</p>
           <p className="mt-1 text-base font-bold tracking-tight">{formatMoney(current.total)}</p>
           <span className="mt-1 flex items-center gap-1 text-[10px] text-primary">
-            <TrendingUp size={12} />
-            +18.4% so với kỳ trước
+            <TrendingUp size={12} />+{mockOverviewMetrics.revenueGrowth} so với kỳ trước
           </span>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-slate-500">Phí đấu giá 3D (16%)</p>
+          <p className="text-[9px] uppercase text-slate-500">
+            Phí đấu giá 3D ({mockSettings.auctionFee}%)
+          </p>
           <p className="mt-1 text-base font-bold text-primary">{formatMoney(current.auction)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
             Tỷ trọng: {((current.auction / current.total) * 100).toFixed(1)}%
           </p>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-slate-500">Phí đơn thường (7%)</p>
+          <p className="text-[9px] uppercase text-slate-500">
+            Phí đơn thường ({mockSettings.normalFee}%)
+          </p>
           <p className="mt-1 text-base font-bold text-blue-500">{formatMoney(current.normal)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
             Tỷ trọng: {((current.normal / current.total) * 100).toFixed(1)}%
@@ -113,11 +81,11 @@ export function RevenueChart() {
         <div className="flex gap-4">
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-sm bg-primary" />
-            Phí đấu giá 3D (16%)
+            Phí đấu giá 3D ({mockSettings.auctionFee}%)
           </span>
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-sm bg-blue-400" />
-            Phí đơn thường (7%)
+            Phí đơn thường ({mockSettings.normalFee}%)
           </span>
         </div>
         <span>Đơn vị: Triệu VND</span>
@@ -225,31 +193,20 @@ export function RevenueComposition() {
     >
       <div
         className="relative mx-auto my-6 flex size-40 items-center justify-center rounded-full"
-        style={{ background: 'conic-gradient(var(--color-primary) 0% 50.1%, #60a5fa 50.1% 100%)' }}
+        style={{
+          background: `conic-gradient(var(--color-primary) 0% ${mockRevenueComposition.primaryPercentage}%, #60a5fa ${mockRevenueComposition.primaryPercentage}% 100%)`,
+        }}
       >
         <div className="flex size-29 flex-col items-center justify-center rounded-full bg-white">
           <span className="text-[9px] text-slate-500">TỔNG PHÍ SÀN</span>
-          <strong className="my-1 text-xl text-slate-900">1.84 tỷ</strong>
+          <strong className="my-1 text-xl text-slate-900">
+            {mockRevenueComposition.totalLabel}
+          </strong>
           <span className="text-[9px] text-primary">VND / Tháng</span>
         </div>
       </div>
       <div className="space-y-2">
-        {[
-          {
-            name: 'Đơn thường TMĐT (7%)',
-            description: 'NEXUS Verified Sellers',
-            amount: '924.3M ₫',
-            percentage: '50.1%',
-            color: 'bg-primary',
-          },
-          {
-            name: 'Đấu giá 3D độc bản (16%)',
-            description: 'WebGL Interactive Room',
-            amount: '918.2M ₫',
-            percentage: '49.9%',
-            color: 'bg-blue-400',
-          },
-        ].map((item) => (
+        {mockRevenueCompositionItems.map((item) => (
           <div key={item.name} className="flex items-start gap-2 rounded-lg bg-slate-50 p-3">
             <span className={`mt-1 size-2 shrink-0 rounded-full ${item.color}`} />
             <div className="flex-1">
