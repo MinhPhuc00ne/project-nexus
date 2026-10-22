@@ -55,7 +55,7 @@ export class AuthService {
   async registerBuyer(dto: RegisterBuyerDto): Promise<AuthTokensResult> {
     const existing = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: dto.email }, { personalEmail: dto.email }],
+        email: { equals: dto.email, mode: 'insensitive' },
       },
     });
 
@@ -99,13 +99,12 @@ export class AuthService {
   async login(dto: LoginDto): Promise<AuthTokensResult> {
     const normalizedInput = dto.email.trim();
 
-    // Check by email or platformEmail or personalEmail
+    // Check by email or platformEmail (personalEmail cannot be used to log in as Staff)
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: normalizedInput },
-          { platformEmail: normalizedInput },
-          { personalEmail: normalizedInput },
+          { email: { equals: normalizedInput, mode: 'insensitive' } },
+          { platformEmail: { equals: normalizedInput, mode: 'insensitive' } },
         ],
       },
     });
@@ -234,7 +233,7 @@ export class AuthService {
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: dto.email }, { platformEmail: dto.email }, { personalEmail: dto.email }],
+        OR: [{ email: dto.email }, { platformEmail: dto.email }],
       },
     });
 
@@ -290,7 +289,7 @@ export class AuthService {
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: dto.email }, { platformEmail: dto.email }, { personalEmail: dto.email }],
+        OR: [{ email: dto.email }, { platformEmail: dto.email }],
       },
     });
 
@@ -363,13 +362,21 @@ export class AuthService {
   }> {
     const existing = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: dto.email }, { personalEmail: dto.email }],
+        AND: [
+          {
+            OR: [
+              { email: { equals: dto.email, mode: 'insensitive' } },
+              { personalEmail: { equals: dto.email, mode: 'insensitive' } },
+            ],
+          },
+          { role: { in: [Role.ADMIN, Role.SUPPORT_STAFF] } },
+        ],
       },
     });
 
-    if (existing && (existing.role === Role.ADMIN || existing.role === Role.SUPPORT_STAFF)) {
+    if (existing) {
       throw new ConflictException(
-        `Email cá nhân '${dto.email}' đã là tài khoản ${existing.role} trong hệ thống.`,
+        `Email cá nhân '${dto.email}' đã liên kết với tài khoản ${existing.role} trong hệ thống.`,
       );
     }
 
@@ -547,40 +554,44 @@ export class AuthService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
 
-    const existingUser = await this.prisma.user.findFirst({
+    // Kiểm tra xem đã có tài khoản Staff ứng với platformEmail này chưa
+    let staffUser = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: invitation.personalEmail }, { personalEmail: invitation.personalEmail }],
+        OR: [
+          { email: { equals: platformEmail, mode: 'insensitive' } },
+          { platformEmail: { equals: platformEmail, mode: 'insensitive' } },
+        ],
       },
     });
 
-    let newStaffUser;
-    if (existingUser) {
-      newStaffUser = await this.prisma.user.update({
-        where: { id: existingUser.id },
+    if (staffUser) {
+      staffUser = await this.prisma.user.update({
+        where: { id: staffUser.id },
         data: {
           role: Role.SUPPORT_STAFF,
           platformEmail,
           personalEmail: invitation.personalEmail,
-          fullName: dto.fullName.trim() || invitation.fullName,
-          phoneNumber: dto.phoneNumber.trim() || invitation.phoneNumber,
+          fullName: dto.fullName?.trim() || invitation.fullName,
+          phoneNumber: dto.phoneNumber?.trim() || invitation.phoneNumber,
           passwordHash,
           isVerified: true,
         },
       });
 
       await this.prisma.refreshToken.updateMany({
-        where: { userId: existingUser.id, isRevoked: false },
+        where: { userId: staffUser.id, isRevoked: false },
         data: { isRevoked: true },
       });
     } else {
-      newStaffUser = await this.prisma.user.create({
+      // Luôn tạo tài khoản Staff độc lập, KHÔNG ghi đè lên tài khoản Buyer cùng personalEmail
+      staffUser = await this.prisma.user.create({
         data: {
           id: crypto.randomUUID(),
           email: platformEmail,
           platformEmail,
           personalEmail: invitation.personalEmail,
-          fullName: dto.fullName.trim() || invitation.fullName,
-          phoneNumber: dto.phoneNumber.trim() || invitation.phoneNumber,
+          fullName: dto.fullName?.trim() || invitation.fullName,
+          phoneNumber: dto.phoneNumber?.trim() || invitation.phoneNumber,
           passwordHash,
           role: Role.SUPPORT_STAFF,
           isSellerActive: false,
@@ -589,18 +600,24 @@ export class AuthService {
         },
       });
 
-      // Create wallet for staff
+      // Tạo ví cho nhân viên hỗ trợ
       await this.prisma.wallet.create({
         data: {
           id: crypto.randomUUID(),
-          userId: newStaffUser.id,
+          userId: staffUser.id,
           balance: 0,
           currency: 'VND',
         },
       });
     }
 
-    this.logger.log(`Staff activated: ${newStaffUser.fullName} | Assigned Email: ${platformEmail}`);
+    // Đánh dấu lời mời đã được hoàn tất kích hoạt
+    await this.prisma.staffInvitation.update({
+      where: { id: invitation.id },
+      data: { isAccepted: true },
+    });
+
+    this.logger.log(`Staff activated: ${staffUser.fullName} | Assigned Email: ${platformEmail}`);
 
     return {
       success: true,
@@ -608,10 +625,10 @@ export class AuthService {
         'Kích hoạt tài khoản Staff thành công! Vui lòng sử dụng tài khoản được cấp (@staff.com) và mật khẩu mới để đăng nhập.',
       assignedEmail: platformEmail,
       user: {
-        id: newStaffUser.id,
-        fullName: newStaffUser.fullName,
+        id: staffUser.id,
+        fullName: staffUser.fullName,
         platformEmail,
-        role: newStaffUser.role as Role,
+        role: staffUser.role as Role,
       },
     };
   }

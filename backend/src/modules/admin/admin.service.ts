@@ -27,82 +27,50 @@ export class AdminService {
 
     const { email, password, fullName, phoneNumber } = dto;
 
-    const existingUser = await this.prisma.user.findFirst({
+    // Kiểm tra xem đã có tài khoản Staff hoặc Admin liên kết với email này chưa
+    const existingStaff = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { email: { equals: email, mode: 'insensitive' } },
-          { personalEmail: { equals: email, mode: 'insensitive' } },
+        AND: [
+          {
+            OR: [
+              { email: { equals: email, mode: 'insensitive' } },
+              { personalEmail: { equals: email, mode: 'insensitive' } },
+            ],
+          },
+          { role: { in: [Role.ADMIN, Role.SUPPORT_STAFF] } },
         ],
       },
     });
 
-    if (existingUser) {
-      if (existingUser.role === Role.ADMIN || existingUser.role === Role.SUPPORT_STAFF) {
-        throw new BadRequestException(
-          `Email '${email}' đã là tài khoản ${existingUser.role} trong hệ thống.`,
-        );
-      }
+    if (existingStaff) {
+      throw new BadRequestException(
+        `Email '${email}' đã liên kết với tài khoản ${existingStaff.role} trong hệ thống.`,
+      );
+    }
 
-      const saltRounds = 10;
-      const passwordHash = await bcrypt.hash(password, saltRounds);
-
-      let platformEmail = existingUser.platformEmail;
-      if (!platformEmail) {
-        const baseName = generateStaffBaseEmail(fullName || existingUser.fullName);
-        let assignedEmail = `${baseName}@staff.com`;
-        for (let idx = 2; idx <= 99; idx++) {
-          const taken = await this.prisma.user.findFirst({
-            where: { OR: [{ email: assignedEmail }, { platformEmail: assignedEmail }] },
-          });
-          if (!taken) {
-            platformEmail = assignedEmail;
-            break;
-          }
-          assignedEmail = `${baseName}${idx}@staff.com`;
-        }
-      }
-
-      const updatedUser = await this.prisma.user.update({
-        where: { id: existingUser.id },
-        data: {
-          role: Role.SUPPORT_STAFF,
-          passwordHash,
-          fullName: fullName || existingUser.fullName,
-          phoneNumber: phoneNumber || existingUser.phoneNumber,
-          personalEmail: existingUser.email,
-          platformEmail: platformEmail || undefined,
-          isVerified: true,
-        },
+    // Luôn sinh email công tác theo chuẩn: Tên + Viết tắt Họ Đệm + @staff.com
+    const baseName = generateStaffBaseEmail(fullName);
+    let assignedEmail = `${baseName}@staff.com`;
+    for (let idx = 2; idx <= 99; idx++) {
+      const taken = await this.prisma.user.findFirst({
+        where: { OR: [{ email: assignedEmail }, { platformEmail: assignedEmail }] },
       });
-
-      await this.prisma.refreshToken.updateMany({
-        where: { userId: existingUser.id, isRevoked: false },
-        data: { isRevoked: true },
-      });
-
-      return {
-        message: `Tài khoản '${email}' (trước đây là ${existingUser.role}) đã được nâng cấp lên Nhân viên hỗ trợ (Support Staff) thành công!`,
-        staff: {
-          id: updatedUser.id,
-          email: updatedUser.email,
-          platformEmail: updatedUser.platformEmail,
-          personalEmail: updatedUser.personalEmail,
-          fullName: updatedUser.fullName,
-          phoneNumber: updatedUser.phoneNumber,
-          role: updatedUser.role,
-          isVerified: updatedUser.isVerified,
-          createdAt: updatedUser.createdAt,
-        },
-      };
+      if (!taken) {
+        break;
+      }
+      assignedEmail = `${baseName}${idx}@staff.com`;
     }
 
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
+    // Luôn tạo tài khoản Staff mới với email công tác @staff.com, không ghi đè tài khoản Buyer/Seller
     const staffUser = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          email,
+          email: assignedEmail,
+          platformEmail: assignedEmail,
+          personalEmail: email,
           passwordHash,
           fullName,
           phoneNumber: phoneNumber || null,
@@ -128,6 +96,8 @@ export class AdminService {
       staff: {
         id: staffUser.id,
         email: staffUser.email,
+        platformEmail: staffUser.platformEmail,
+        personalEmail: staffUser.personalEmail,
         fullName: staffUser.fullName,
         phoneNumber: staffUser.phoneNumber,
         role: staffUser.role,
@@ -146,13 +116,21 @@ export class AdminService {
   }) {
     const existing = await this.prisma.user.findFirst({
       where: {
-        OR: [{ email: dto.email }, { personalEmail: dto.email }],
+        AND: [
+          {
+            OR: [
+              { email: { equals: dto.email, mode: 'insensitive' } },
+              { personalEmail: { equals: dto.email, mode: 'insensitive' } },
+            ],
+          },
+          { role: { in: [Role.ADMIN, Role.SUPPORT_STAFF] } },
+        ],
       },
     });
 
-    if (existing && (existing.role === Role.ADMIN || existing.role === Role.SUPPORT_STAFF)) {
+    if (existing) {
       throw new BadRequestException(
-        `Email cá nhân '${dto.email}' đã là tài khoản ${existing.role} trong hệ thống.`,
+        `Email cá nhân '${dto.email}' đã liên kết với tài khoản ${existing.role} trong hệ thống.`,
       );
     }
 
