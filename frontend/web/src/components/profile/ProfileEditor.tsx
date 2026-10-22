@@ -4,6 +4,8 @@ import { Role } from '@nexus/types';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateMyProfile, type ProfileChanges } from '../../services/profile';
 import type { UserProfile } from '../../types';
+import AvatarPicker from './AvatarPicker';
+import ChangePasswordModal from './ChangePasswordModal';
 
 const inputClass =
   'mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50';
@@ -16,10 +18,12 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
     avatarUrl: profile.avatarUrl || '',
   });
   const [form, setForm] = useState(initial);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const locked = useRef(false);
   const seller = profile.role === Role.SELLER;
   const canEdit = profile.role === Role.BUYER || seller;
@@ -42,15 +46,13 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
       setError('Số điện thoại cần từ 9 đến 15 chữ số.');
       return;
     }
-    if (changes.avatarUrl && !/^https?:\/\/\S+$/i.test(changes.avatarUrl)) {
-      setError('Ảnh đại diện phải là URL http hoặc https hợp lệ.');
-      return;
-    }
     locked.current = true;
     setPending(true);
     try {
-      await updateMyProfile(changes, password);
-      setProfile((current) => (current?.id === profile.id ? { ...current, ...changes } : current));
+      const saved = await updateMyProfile(changes, password, avatarFile);
+      setForm(saved);
+      setAvatarFile(null);
+      setProfile((current) => (current?.id === profile.id ? { ...current, ...saved } : current));
       await refreshProfile();
       setSuccess('Đã cập nhật hồ sơ cá nhân.');
     } catch (cause) {
@@ -112,17 +114,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
               autoComplete="tel"
             />
           </label>
-          <label className="text-sm font-medium text-slate-700 sm:col-span-2">
-            URL ảnh đại diện
-            <input
-              type="url"
-              maxLength={2048}
-              value={form.avatarUrl}
-              onChange={(event) => setForm({ ...form, avatarUrl: event.target.value })}
-              className={inputClass}
-              placeholder="https://…"
-            />
-          </label>
+          <AvatarPicker savedUrl={form.avatarUrl} file={avatarFile} onChange={setAvatarFile} />
         </fieldset>
         <label className="block text-sm font-medium text-slate-700">
           Email đăng nhập
@@ -180,6 +172,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
               disabled={pending}
               onClick={() => {
                 setForm(initial());
+                setAvatarFile(null);
                 setPassword('');
                 setError('');
                 setSuccess('');
@@ -191,6 +184,27 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
           </div>
         )}
       </form>
+      {canEdit && (
+        <div className="mt-7 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-6">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800">Bảo mật tài khoản</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Đổi mật khẩu bằng mã xác minh gửi qua email.
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => setShowChangePassword(true)}
+            className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+          >
+            <LockOutlined className="mr-2" /> Đổi mật khẩu
+          </button>
+        </div>
+      )}
+      {canEdit && showChangePassword && (
+        <ChangePasswordModal userId={profile.id} onClose={() => setShowChangePassword(false)} />
+      )}
     </section>
   );
 }

@@ -4,6 +4,7 @@ import { ShoppingBag, Clock, AlertCircle, CheckCircle2, Upload } from 'lucide-re
 import Popup from '../Popup';
 import { createSellerRequest, getMySellerRequests } from '../../services/users';
 import type { SellerUpgradeRequest, UserProfile } from '../../types';
+import { VIETNAM_PROVINCES } from '../../constants/vietnamProvinces';
 
 interface UpgradeSellerModalProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
 
   const [storeName, setStoreName] = useState('');
   const [storeDescription, setStoreDescription] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
   const [phone, setPhone] = useState('');
   const [businessEmail, setBusinessEmail] = useState('');
   const [identityCardNumber, setIdentityCardNumber] = useState('');
@@ -75,6 +78,11 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       return;
     }
 
+    if (!street.trim() || !VIETNAM_PROVINCES.includes(city)) {
+      setUpgradeError('Vui lòng nhập Số nhà, tên đường và chọn Tỉnh/Thành phố của gian hàng.');
+      return;
+    }
+
     setIsSubmittingUpgrade(true);
     setUpgradeError('');
     setUpgradeSuccess('');
@@ -83,6 +91,8 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       const formData = new FormData();
       formData.append('storeName', storeName.trim());
       formData.append('phone', phone.trim());
+      formData.append('street', street.trim());
+      formData.append('city', city.trim());
       if (storeDescription.trim()) formData.append('storeDescription', storeDescription.trim());
       if (businessEmail.trim()) formData.append('businessEmail', businessEmail.trim());
       if (identityCardNumber.trim()) {
@@ -99,6 +109,8 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       setUpgradeRequests(updated.requests || []);
       setStoreName('');
       setStoreDescription('');
+      setStreet('');
+      setCity('');
       setIdentityCardNumber('');
       setProofFile(null);
     } catch (err: unknown) {
@@ -156,6 +168,14 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   <span className="text-slate-500">Tên gian hàng:</span>
                   <strong className="text-slate-800">{pendingReq.storeName}</strong>
                 </div>
+                {(pendingReq.street || pendingReq.city) && (
+                  <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
+                    <span className="text-slate-500 shrink-0">Địa chỉ gian hàng:</span>
+                    <span className="text-slate-800 font-medium text-right break-words min-w-0">
+                      {[pendingReq.street, pendingReq.city].filter(Boolean).join(', ')}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between border-b border-slate-200 pb-2">
                   <span className="text-slate-500">Số điện thoại liên hệ:</span>
                   <span className="text-slate-800 font-medium">{pendingReq.phone}</span>
@@ -229,6 +249,55 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
           )}
 
           <form onSubmit={handleSubmitUpgrade} className="space-y-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="seller-store-street"
+                  className="block text-xs font-semibold text-slate-700 mb-1"
+                >
+                  Số nhà, tên đường <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="seller-store-street"
+                  name="street"
+                  type="text"
+                  required
+                  autoComplete="address-line1"
+                  placeholder="VD: 720A Điện Biên Phủ"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={street}
+                  onChange={(e) => setStreet(e.target.value)}
+                  disabled={isSubmittingUpgrade}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="seller-store-city"
+                  className="block text-xs font-semibold text-slate-700 mb-1"
+                >
+                  Tỉnh/Thành phố <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="seller-store-city"
+                  name="city"
+                  required
+                  autoComplete="address-level1"
+                  className="w-full px-3 py-2 border border-slate-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  disabled={isSubmittingUpgrade}
+                >
+                  <option value="" disabled>
+                    Chọn Tỉnh/Thành phố
+                  </option>
+                  {VIETNAM_PROVINCES.map((province) => (
+                    <option key={province} value={province}>
+                      {province}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">

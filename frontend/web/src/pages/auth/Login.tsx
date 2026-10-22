@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, type FormEvent } from 'react';
 import { GoogleOutlined } from '@ant-design/icons';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { login, saveAuthSession, startGoogleLogin } from '../../services/auth';
 import { ROUTES } from '../../routes/AppRouter';
 import ForgotPasswordModal from './ForgotPasswordModal';
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [email, setEmail] = useState(() => {
@@ -24,7 +25,11 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState(() =>
-    searchParams.get('verified') === '1' ? 'Email đã được xác thực. Vui lòng đăng nhập.' : '',
+    (location.state as { passwordChanged?: boolean } | null)?.passwordChanged
+      ? 'Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.'
+      : searchParams.get('verified') === '1'
+        ? 'Email đã được xác thực. Vui lòng đăng nhập.'
+        : '',
   );
   const [failed, setFailed] = useState(false);
   const requestInFlight = useRef(false);
