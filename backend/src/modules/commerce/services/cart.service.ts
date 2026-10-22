@@ -14,20 +14,14 @@ export class CartService {
    * Tìm hoặc tạo mới giỏ hàng cho user
    */
   private async findOrCreateCart(userId: string) {
-    let cart = await this.prisma.cart.findUnique({
+    return this.prisma.cart.upsert({
       where: { userId },
+      update: {},
+      create: {
+        userId,
+        expiresAt: getCartExpiresAt(),
+      },
     });
-
-    if (!cart) {
-      cart = await this.prisma.cart.create({
-        data: {
-          userId,
-          expiresAt: getCartExpiresAt(),
-        },
-      });
-    }
-
-    return cart;
   }
 
   /**
@@ -119,22 +113,24 @@ export class CartService {
       );
     }
 
-    // 6. Cập nhật hoặc tạo mới CartItem
-    if (existingItem) {
-      await this.prisma.cartItem.update({
-        where: { id: existingItem.id },
-        data: { quantity: targetQty },
-      });
-    } else {
-      await this.prisma.cartItem.create({
-        data: {
+    // 6. Cập nhật hoặc tạo mới CartItem (dùng upsert để đảm bảo an toàn đa luồng/race conditions)
+    await this.prisma.cartItem.upsert({
+      where: {
+        cartId_productId: {
           cartId: cart.id,
           productId: dto.productId,
-          quantity: dto.quantity,
-          priceAtAdded: product.basePrice,
         },
-      });
-    }
+      },
+      update: {
+        quantity: targetQty,
+      },
+      create: {
+        cartId: cart.id,
+        productId: dto.productId,
+        quantity: dto.quantity,
+        priceAtAdded: product.basePrice,
+      },
+    });
 
     // 7. Gia hạn 7 ngày cho giỏ hàng
     await this.prisma.cart.update({
@@ -222,9 +218,22 @@ export class CartService {
   async mergeGuestCart(userId: string, dto: MergeCartDto) {
     const cart = await this.findOrCreateCart(userId);
 
-    for (const guestItem of dto.items) {
+    if (!dto.items || !Array.isArray(dto.items) || dto.items.length === 0) {
+      return this.getCart(userId);
+    }
+
+    // 1. Gộp các items có cùng productId để loại trừ trùng lặp từ FE payload
+    const itemMap = new Map<string, number>();
+    for (const item of dto.items) {
+      if (!item?.productId) continue;
+      const qty = Math.max(1, Number(item.quantity) || 1);
+      itemMap.set(item.productId, (itemMap.get(item.productId) || 0) + qty);
+    }
+
+    // 2. Lần lượt xử lý từng sản phẩm với upsert nguyên tử (atomic), chống hoàn toàn race condition
+    for (const [productId, guestQty] of itemMap.entries()) {
       const product = await this.prisma.product.findUnique({
-        where: { id: guestItem.productId },
+        where: { id: productId },
         include: { inventories: true },
       });
 
@@ -239,28 +248,33 @@ export class CartService {
         where: {
           cartId_productId: {
             cartId: cart.id,
-            productId: guestItem.productId,
+            productId,
           },
         },
       });
 
-      if (existing) {
-        const mergedQty = Math.min(totalAvailable, existing.quantity + guestItem.quantity);
-        await this.prisma.cartItem.update({
-          where: { id: existing.id },
-          data: { quantity: mergedQty },
-        });
-      } else {
-        const validQty = Math.min(totalAvailable, guestItem.quantity);
-        await this.prisma.cartItem.create({
-          data: {
+      const mergedQty = Math.min(
+        totalAvailable,
+        (existing?.quantity || 0) + guestQty,
+      );
+
+      await this.prisma.cartItem.upsert({
+        where: {
+          cartId_productId: {
             cartId: cart.id,
-            productId: guestItem.productId,
-            quantity: validQty,
-            priceAtAdded: product.basePrice,
+            productId,
           },
-        });
-      }
+        },
+        update: {
+          quantity: mergedQty,
+        },
+        create: {
+          cartId: cart.id,
+          productId,
+          quantity: Math.min(totalAvailable, guestQty),
+          priceAtAdded: product.basePrice,
+        },
+      });
     }
 
     await this.prisma.cart.update({
