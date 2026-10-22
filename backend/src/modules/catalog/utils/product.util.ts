@@ -1,4 +1,4 @@
-import { Prisma, ProductStatus } from '@prisma/client';
+import { Prisma, ProductStatus, SellerRequestStatus } from '@prisma/client';
 import { QueryProductDto } from '../dtos/query-product.dto';
 
 export interface PaginatedResult<T> {
@@ -38,10 +38,21 @@ export function buildProductWhere(
   };
 
   if (query.search) {
+    const trimmed = query.search.trim();
     where.OR = [
-      { title: { contains: query.search.trim(), mode: 'insensitive' } },
-      { description: { contains: query.search.trim(), mode: 'insensitive' } },
-      { seller: { fullName: { contains: query.search.trim(), mode: 'insensitive' } } },
+      { title: { contains: trimmed, mode: 'insensitive' } },
+      { description: { contains: trimmed, mode: 'insensitive' } },
+      { seller: { fullName: { contains: trimmed, mode: 'insensitive' } } },
+      {
+        seller: {
+          sellerUpgradeRequests: {
+            some: {
+              status: SellerRequestStatus.APPROVED,
+              storeName: { contains: trimmed, mode: 'insensitive' },
+            },
+          },
+        },
+      },
     ];
   }
 
