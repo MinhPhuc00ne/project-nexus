@@ -26,7 +26,11 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState(() =>
-    searchParams.get('verified') === '1' ? 'Email đã được xác thực. Vui lòng đăng nhập.' : '',
+    (location.state as { passwordChanged?: boolean } | null)?.passwordChanged
+      ? 'Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.'
+      : searchParams.get('verified') === '1'
+        ? 'Email đã được xác thực. Vui lòng đăng nhập.'
+        : '',
   );
   const [failed, setFailed] = useState(false);
   const requestInFlight = useRef(false);

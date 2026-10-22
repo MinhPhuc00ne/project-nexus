@@ -49,6 +49,8 @@ export interface SellerUpgradeRequest {
   userId: string;
   storeName: string;
   storeDescription: string | null;
+  street?: string | null;
+  city?: string | null;
   phone: string;
   businessEmail: string | null;
   identityCardNumber: string | null;
@@ -87,6 +89,8 @@ export interface ToggleSellerResponse {
 
 export interface CreateSellerRequestDto {
   storeName: string;
+  street: string;
+  city: string;
   storeDescription?: string;
   phone: string;
   businessEmail?: string;
