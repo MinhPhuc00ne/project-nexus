@@ -14,50 +14,11 @@ import {
   ExternalLink,
 } from 'lucide-react';
 
-/* ─────────── Mock order data ─────────── */
-const mockOrderDetail = {
-  id: 'NX-20241020-001',
-  status: 'DELIVERING' as const,
-  date: '20/10/2024 08:32',
-  product: {
-    name: 'Audemars Piguet Royal Oak Chrono Tourbillon 3D Skeleton',
-    shopName: 'NEXUS Official Flagship Mall',
-    price: 128500000,
-    qty: 1,
-    img: '/images/watches/watch-1.png',
-    variant: 'Titanium Case • Rubber Strap',
-  },
-  shipping: {
-    fee: 0,
-    method: 'GHN Express – Giao hàng siêu tốc',
-    trackingCode: 'GHN10293847',
-    estimatedDate: '22/10/2024',
-  },
-  address: {
-    name: 'Nguyễn Văn An',
-    phone: '0912 345 678',
-    address: '123 Đường Lê Lợi, Phường Bến Nghé, Quận 1, TP. Hồ Chí Minh',
-  },
-  payment: {
-    method: 'NEXUS Pay (Ký quỹ Escrow)',
-    subtotal: 128500000,
-    shippingFee: 0,
-    discount: 0,
-    total: 128500000,
-  },
-  timeline: [
-    { label: 'Đặt hàng thành công', time: '20/10 08:32', done: true },
-    { label: 'Người bán xác nhận', time: '20/10 09:15', done: true },
-    { label: 'Bàn giao vận chuyển', time: '20/10 14:00', done: true },
-    { label: 'Đang giao hàng', time: 'Dự kiến 22/10', done: false, active: true },
-    { label: 'Giao hàng thành công', time: '', done: false },
-    { label: 'Hoàn tất – Giải ngân', time: '', done: false },
-  ],
-};
+import { MOCK_ORDER_DETAIL } from '../../mocks';
 
 export default function BuyerOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const order = mockOrderDetail; // In production, fetch by id
+  const order = MOCK_ORDER_DETAIL; // In production, fetch by id
 
   const fmt = (n: number) => (n === 0 ? 'Miễn phí' : n.toLocaleString('vi-VN') + ' ₫');
 

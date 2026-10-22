@@ -17,86 +17,18 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
-/* ─────────── Types ─────────── */
-type TxType = 'TOP_UP' | 'PAYMENT' | 'REFUND' | 'ESCROW_LOCK' | 'ESCROW_RELEASE';
-type FilterType = 'ALL' | 'TOP_UP' | 'PAYMENT' | 'REFUND';
+import {
+  MOCK_BUYER_TRANSACTIONS,
+  type BuyerFilterType,
+  type BuyerTransaction,
+  type BuyerTxType,
+} from '../../mocks';
 
-interface Transaction {
-  id: string;
-  type: TxType;
-  label: string;
-  amount: number;
-  date: string;
-  status: 'COMPLETED' | 'PENDING' | 'FAILED';
-  ref?: string;
-}
+type TxType = BuyerTxType;
+type FilterType = BuyerFilterType;
+type Transaction = BuyerTransaction;
 
-/* ─────────── Mock Data ─────────── */
-const mockTransactions: Transaction[] = [
-  {
-    id: 'TX001',
-    type: 'TOP_UP',
-    label: 'Nạp tiền qua PayOS',
-    amount: 5000000,
-    date: '20/10/2024 09:12',
-    status: 'COMPLETED',
-    ref: 'PAYOS-293847',
-  },
-  {
-    id: 'TX002',
-    type: 'ESCROW_LOCK',
-    label: 'Ký quỹ đơn NX-20241020-001',
-    amount: -128500000,
-    date: '20/10/2024 08:35',
-    status: 'COMPLETED',
-    ref: 'NX-20241020-001',
-  },
-  {
-    id: 'TX003',
-    type: 'REFUND',
-    label: 'Hoàn tiền đơn NX-20241005-022',
-    amount: 95000000,
-    date: '10/10/2024 14:20',
-    status: 'COMPLETED',
-    ref: 'NX-20241005-022',
-  },
-  {
-    id: 'TX004',
-    type: 'TOP_UP',
-    label: 'Nạp tiền qua VNPay',
-    amount: 10000000,
-    date: '01/10/2024 10:05',
-    status: 'COMPLETED',
-    ref: 'VNPAY-109283',
-  },
-  {
-    id: 'TX005',
-    type: 'PAYMENT',
-    label: 'Thanh toán đơn NX-20241018-004',
-    amount: -85000000,
-    date: '18/10/2024 16:45',
-    status: 'COMPLETED',
-    ref: 'NX-20241018-004',
-  },
-  {
-    id: 'TX006',
-    type: 'ESCROW_RELEASE',
-    label: 'Giải ngân đặt cọc đấu giá',
-    amount: 5000000,
-    date: '15/09/2024 11:00',
-    status: 'COMPLETED',
-    ref: 'AUC-20240915',
-  },
-  {
-    id: 'TX007',
-    type: 'TOP_UP',
-    label: 'Nạp tiền qua Stripe',
-    amount: 2000000,
-    date: '05/09/2024 08:30',
-    status: 'PENDING',
-    ref: 'STRIPE-82763',
-  },
-];
+const mockTransactions = MOCK_BUYER_TRANSACTIONS;
 
 const txConfig: Record<
   TxType,

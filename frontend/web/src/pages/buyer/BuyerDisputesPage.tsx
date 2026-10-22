@@ -14,64 +14,12 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-/* ─────────── Types ─────────── */
-type DisputeStatus = 'ALL' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED';
-type DisputeReason = 'NOT_RECEIVED' | 'ITEM_DEFECTIVE' | 'WRONG_ITEM' | 'COUNTERFEIT' | 'OTHER';
+import { MOCK_BUYER_DISPUTES, type BuyerDisputeReason, type BuyerDisputeStatus } from '../../mocks';
 
-interface Dispute {
-  id: string;
-  orderId: string;
-  product: string;
-  img: string;
-  reason: DisputeReason;
-  amount: number;
-  status: Exclude<DisputeStatus, 'ALL'>;
-  openDate: string;
-  updateDate: string;
-  messages: number;
-  resolution?: string;
-}
+type DisputeStatus = BuyerDisputeStatus;
+type DisputeReason = BuyerDisputeReason;
 
-/* ─────────── Mock Data ─────────── */
-const mockDisputes: Dispute[] = [
-  {
-    id: 'DSP001',
-    orderId: 'NX-20241005-022',
-    product: 'Hublot Big Bang Unico Ferrari Carbon Fiber',
-    img: '/images/watches/watch-5.png',
-    reason: 'ITEM_DEFECTIVE',
-    amount: 95000000,
-    status: 'RESOLVED',
-    openDate: '08/10/2024',
-    updateDate: '12/10/2024',
-    messages: 5,
-    resolution: 'Hoàn tiền 100% thành công vào ví NEXUS Pay',
-  },
-  {
-    id: 'DSP002',
-    orderId: 'NX-20241010-017',
-    product: 'Rolex Daytona Rainbow Bezel Pave Diamonds',
-    img: '/images/watches/watch-4.png',
-    reason: 'WRONG_ITEM',
-    amount: 320000000,
-    status: 'UNDER_REVIEW',
-    openDate: '14/10/2024',
-    updateDate: '20/10/2024',
-    messages: 3,
-  },
-  {
-    id: 'DSP003',
-    orderId: 'NX-20240928-031',
-    product: 'Vacheron Constantin Overseas Perpetual Calendar',
-    img: '/images/watches/watch-6.png',
-    reason: 'NOT_RECEIVED',
-    amount: 450000000,
-    status: 'OPEN',
-    openDate: '05/10/2024',
-    updateDate: '05/10/2024',
-    messages: 1,
-  },
-];
+const mockDisputes = MOCK_BUYER_DISPUTES;
 
 /* ─────────── Config ─────────── */
 const statusConfig: Record<

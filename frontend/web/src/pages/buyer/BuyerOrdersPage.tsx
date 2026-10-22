@@ -14,97 +14,11 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 
-/* ─────────── Types ─────────── */
-type OrderStatus = 'ALL' | 'PENDING' | 'CONFIRMED' | 'DELIVERING' | 'COMPLETED' | 'CANCELLED';
+import { MOCK_BUYER_ORDERS, type BuyerOrderStatus } from '../../mocks';
 
-interface OrderItem {
-  id: string;
-  product: string;
-  shopName: string;
-  price: string;
-  qty: number;
-  status: Exclude<OrderStatus, 'ALL'>;
-  date: string;
-  img: string;
-  canReview: boolean;
-  canReturn: boolean;
-}
+type OrderStatus = BuyerOrderStatus;
 
-/* ─────────── Mock Data ─────────── */
-const mockOrders: OrderItem[] = [
-  {
-    id: 'NX-20241020-001',
-    product: 'Audemars Piguet Royal Oak Chrono Tourbillon 3D Skeleton',
-    shopName: 'NEXUS Official Flagship Mall',
-    price: '128.500.000 ₫',
-    qty: 1,
-    status: 'DELIVERING',
-    date: '20/10/2024',
-    img: '/images/watches/watch-1.png',
-    canReview: false,
-    canReturn: false,
-  },
-  {
-    id: 'NX-20241018-004',
-    product: 'Patek Philippe Grand Complications Celestial Blue Dial',
-    shopName: 'Geneva Luxury Watch Co.',
-    price: '85.000.000 ₫',
-    qty: 1,
-    status: 'COMPLETED',
-    date: '18/10/2024',
-    img: '/images/watches/watch-2.png',
-    canReview: true,
-    canReturn: true,
-  },
-  {
-    id: 'NX-20241015-009',
-    product: 'Richard Mille RM 055 Bubba Watson NTPT Carbon',
-    shopName: 'Swiss Elite Timepieces',
-    price: '210.000.000 ₫',
-    qty: 1,
-    status: 'PENDING',
-    date: '15/10/2024',
-    img: '/images/watches/watch-3.png',
-    canReview: false,
-    canReturn: false,
-  },
-  {
-    id: 'NX-20241010-017',
-    product: 'Rolex Daytona Rainbow Bezel Pave Diamonds',
-    shopName: 'Crown & Calibre VN',
-    price: '320.000.000 ₫',
-    qty: 1,
-    status: 'COMPLETED',
-    date: '10/10/2024',
-    img: '/images/watches/watch-4.png',
-    canReview: false,
-    canReturn: false,
-  },
-  {
-    id: 'NX-20241005-022',
-    product: 'Hublot Big Bang Unico Ferrari Carbon Fiber',
-    shopName: 'NEXUS Official Flagship Mall',
-    price: '95.000.000 ₫',
-    qty: 2,
-    status: 'CANCELLED',
-    date: '05/10/2024',
-    img: '/images/watches/watch-5.png',
-    canReview: false,
-    canReturn: false,
-  },
-  {
-    id: 'NX-20240928-031',
-    product: 'Vacheron Constantin Overseas Perpetual Calendar',
-    shopName: 'Maison du Temps',
-    price: '450.000.000 ₫',
-    qty: 1,
-    status: 'CONFIRMED',
-    date: '28/09/2024',
-    img: '/images/watches/watch-6.png',
-    canReview: false,
-    canReturn: false,
-  },
-];
+const mockOrders = MOCK_BUYER_ORDERS;
 
 /* ─────────── Status Config ─────────── */
 const statusConfig: Record<

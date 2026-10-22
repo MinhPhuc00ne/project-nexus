@@ -13,91 +13,11 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 
-/* ─────────── Types ─────────── */
-type BidStatus = 'ALL' | 'ACTIVE' | 'WINNING' | 'OUTBID' | 'WON' | 'LOST' | 'ENDED';
+import { MOCK_BUYER_BIDS, type BuyerBidStatus } from '../../mocks';
 
-interface Bid {
-  id: string;
-  auctionId: string;
-  productName: string;
-  img: string;
-  myBid: number;
-  currentBid: number;
-  endTime: string;
-  timeLeft: string;
-  status: Exclude<BidStatus, 'ALL'>;
-  totalBids: number;
-  startPrice: number;
-}
+type BidStatus = BuyerBidStatus;
 
-/* ─────────── Mock Data ─────────── */
-const mockBids: Bid[] = [
-  {
-    id: 'BID001',
-    auctionId: 'AUC2024001',
-    productName: 'Patek Philippe Nautilus 5726A Annual Calendar',
-    img: '/images/watches/watch-2.png',
-    myBid: 420000000,
-    currentBid: 420000000,
-    endTime: '21/10/2024 22:00',
-    timeLeft: '2 giờ 30 phút',
-    status: 'WINNING',
-    totalBids: 24,
-    startPrice: 300000000,
-  },
-  {
-    id: 'BID002',
-    auctionId: 'AUC2024002',
-    productName: 'Rolex Submariner Date 116610LN Ceramic Bezel',
-    img: '/images/watches/watch-1.png',
-    myBid: 85000000,
-    currentBid: 91000000,
-    endTime: '21/10/2024 20:00',
-    timeLeft: '30 phút',
-    status: 'OUTBID',
-    totalBids: 38,
-    startPrice: 60000000,
-  },
-  {
-    id: 'BID003',
-    auctionId: 'AUC2024003',
-    productName: 'A. Lange & Söhne Datograph Up/Down Platinum',
-    img: '/images/watches/watch-3.png',
-    myBid: 650000000,
-    currentBid: 650000000,
-    endTime: '22/10/2024 18:00',
-    timeLeft: '1 ngày 4 giờ',
-    status: 'ACTIVE',
-    totalBids: 11,
-    startPrice: 500000000,
-  },
-  {
-    id: 'BID004',
-    auctionId: 'AUC2024004',
-    productName: 'Audemars Piguet Royal Oak Offshore Chronograph',
-    img: '/images/watches/watch-4.png',
-    myBid: 180000000,
-    currentBid: 210000000,
-    endTime: '18/10/2024 15:00',
-    timeLeft: 'Đã kết thúc',
-    status: 'LOST',
-    totalBids: 52,
-    startPrice: 150000000,
-  },
-  {
-    id: 'BID005',
-    auctionId: 'AUC2024005',
-    productName: 'Hublot Classic Fusion Aerofusion Moonphase Titanium',
-    img: '/images/watches/watch-5.png',
-    myBid: 75000000,
-    currentBid: 75000000,
-    endTime: '15/10/2024 10:00',
-    timeLeft: 'Đã kết thúc',
-    status: 'WON',
-    totalBids: 29,
-    startPrice: 50000000,
-  },
-];
+const mockBids = MOCK_BUYER_BIDS;
 
 /* ─────────── Status Config ─────────── */
 const statusConfig: Record<

@@ -16,69 +16,20 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  MOCK_BUYER_DASHBOARD_STATS,
+  MOCK_BUYER_RECENT_ORDERS,
+  type BuyerDashboardStatKey,
+} from '../../mocks';
 
-/* ─────────── Mock data ─────────── */
-const mockStats = [
-  {
-    label: 'Đơn hàng',
-    value: '12',
-    sub: '3 đang giao',
-    icon: Package,
-    color: 'from-blue-500 to-indigo-600',
-    link: '/buyer/orders',
-  },
-  {
-    label: 'Yêu thích',
-    value: '28',
-    sub: '5 còn hàng',
-    icon: Heart,
-    color: 'from-rose-500 to-pink-600',
-    link: '/buyer/wishlist',
-  },
-  {
-    label: 'Số dư ví',
-    value: '4.500.000 ₫',
-    sub: 'NEXUS Pay',
-    icon: Wallet,
-    color: 'from-amber-500 to-orange-500',
-    link: '/buyer/wallet',
-  },
-  {
-    label: 'Đấu giá',
-    value: '3',
-    sub: '1 đang dẫn đầu',
-    icon: Gavel,
-    color: 'from-violet-500 to-purple-600',
-    link: '/buyer/bids',
-  },
-];
+const statIconMap: Record<BuyerDashboardStatKey, React.ComponentType<{ size?: number }>> = {
+  orders: Package,
+  wishlist: Heart,
+  wallet: Wallet,
+  bids: Gavel,
+};
 
-const mockOrders = [
-  {
-    id: 'NX-20241020-001',
-    product: 'Audemars Piguet Royal Oak Tourbillon',
-    price: '128.500.000 ₫',
-    status: 'DELIVERING',
-    date: '20/10/2024',
-    img: '/images/watches/watch-1.png',
-  },
-  {
-    id: 'NX-20241018-004',
-    product: 'Patek Philippe Celestial Blue Dial',
-    price: '85.000.000 ₫',
-    status: 'COMPLETED',
-    date: '18/10/2024',
-    img: '/images/watches/watch-2.png',
-  },
-  {
-    id: 'NX-20241015-009',
-    product: 'Richard Mille RM 055 Bubba Watson',
-    price: '210.000.000 ₫',
-    status: 'PENDING',
-    date: '15/10/2024',
-    img: '/images/watches/watch-3.png',
-  },
-];
+const mockOrders = MOCK_BUYER_RECENT_ORDERS;
 
 const statusMap: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
   PENDING: {
@@ -144,22 +95,25 @@ export default function BuyerDashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {mockStats.map((stat) => (
-          <Link
-            key={stat.label}
-            to={stat.link}
-            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
-          >
-            <div
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} text-white mb-3 shadow-sm group-hover:scale-110 transition-transform`}
+        {MOCK_BUYER_DASHBOARD_STATS.map((stat) => {
+          const Icon = statIconMap[stat.key];
+          return (
+            <Link
+              key={stat.key}
+              to={stat.link}
+              className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
             >
-              <stat.icon size={18} />
-            </div>
-            <p className="text-lg font-extrabold text-slate-900 leading-tight">{stat.value}</p>
-            <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">{stat.sub}</p>
-          </Link>
-        ))}
+              <div
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} text-white mb-3 shadow-sm group-hover:scale-110 transition-transform`}
+              >
+                <Icon size={18} />
+              </div>
+              <p className="text-lg font-extrabold text-slate-900 leading-tight">{stat.value}</p>
+              <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{stat.sub}</p>
+            </Link>
+          );
+        })}
       </div>
 
       {/* Recent Orders */}

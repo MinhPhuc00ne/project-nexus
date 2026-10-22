@@ -3,90 +3,10 @@ import { Link } from 'react-router-dom';
 import { Heart, ShoppingCart, Trash2, Search, Tag, Star, ShoppingBag } from 'lucide-react';
 import { addToCart } from '../../services/cart';
 
-/* ─────────── Mock Data ─────────── */
-interface WishItem {
-  id: string;
-  name: string;
-  shopName: string;
-  price: number;
-  originalPrice?: number;
-  img: string;
-  rating: number;
-  sold: number;
-  inStock: boolean;
-  category: string;
-}
+import { MOCK_BUYER_WISHLIST, type BuyerWishItem } from '../../mocks';
 
-const mockWishlist: WishItem[] = [
-  {
-    id: 'ap-tourbillon',
-    name: 'Audemars Piguet Royal Oak Chrono Tourbillon 3D Skeleton',
-    shopName: 'NEXUS Official Flagship Mall',
-    price: 128500000,
-    img: '/images/watches/watch-1.png',
-    rating: 4.9,
-    sold: 12,
-    inStock: true,
-    category: 'Đồng hồ',
-  },
-  {
-    id: 'patek-celestial',
-    name: 'Patek Philippe Grand Complications Celestial Blue Dial',
-    shopName: 'Geneva Luxury Watch Co.',
-    price: 85000000,
-    originalPrice: 92000000,
-    img: '/images/watches/watch-2.png',
-    rating: 4.8,
-    sold: 7,
-    inStock: true,
-    category: 'Đồng hồ',
-  },
-  {
-    id: 'rm055',
-    name: 'Richard Mille RM 055 Bubba Watson NTPT Carbon Limited',
-    shopName: 'Swiss Elite Timepieces',
-    price: 210000000,
-    img: '/images/watches/watch-3.png',
-    rating: 5.0,
-    sold: 3,
-    inStock: false,
-    category: 'Đồng hồ',
-  },
-  {
-    id: 'rolex-daytona',
-    name: 'Rolex Daytona Rainbow Bezel Pave Diamond Indices',
-    shopName: 'Crown & Calibre VN',
-    price: 320000000,
-    img: '/images/watches/watch-4.png',
-    rating: 4.9,
-    sold: 5,
-    inStock: true,
-    category: 'Đồng hồ',
-  },
-  {
-    id: 'hublot-ferrari',
-    name: 'Hublot Big Bang Unico Ferrari Carbon Fiber Racing',
-    shopName: 'NEXUS Official Flagship Mall',
-    price: 95000000,
-    originalPrice: 105000000,
-    img: '/images/watches/watch-5.png',
-    rating: 4.7,
-    sold: 19,
-    inStock: true,
-    category: 'Đồng hồ',
-  },
-  {
-    id: 'vc-overseas',
-    name: 'Vacheron Constantin Overseas Perpetual Calendar Ultra-Thin',
-    shopName: 'Maison du Temps',
-    price: 450000000,
-    img: '/images/watches/watch-6.png',
-    rating: 5.0,
-    sold: 2,
-    inStock: true,
-    category: 'Đồng hồ',
-  },
-];
+type WishItem = BuyerWishItem;
+const mockWishlist = MOCK_BUYER_WISHLIST;
 
 /* ─────────── Component ─────────── */
 export default function BuyerWishlistPage() {
