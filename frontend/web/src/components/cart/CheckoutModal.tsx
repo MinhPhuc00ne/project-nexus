@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Popup from '../Popup';
 import { clearCart, type CartItem } from '../../services/cart';
-import { getStoredUser } from '../../services/auth';
+import { getStoredUser, getStoredToken } from '../../services/auth';
+import { getAddresses } from '../../services/address';
 import { CheckCircle2, MapPin, Edit2, QrCode, Wallet, CreditCard } from 'lucide-react';
 
 export interface DeliveryAddress {
@@ -28,12 +29,12 @@ function getStoredAddress(): DeliveryAddress {
   }
   const user = getStoredUser();
   return {
-    recipientName: user?.fullName || 'Đinh Tú Liên',
-    phone: '0909123456',
+    recipientName: user?.fullName || 'Khách hàng',
+    phone: '',
     city: 'TP. Hồ Chí Minh',
-    district: 'Quận Bình Thạnh',
-    ward: 'Phường 22',
-    street: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ',
+    district: '',
+    ward: '',
+    street: '',
   };
 }
 
@@ -62,6 +63,27 @@ export default function CheckoutModal({
   const [paymentMethod, setPaymentMethod] = useState<'PAYOS' | 'WALLET' | 'STRIPE'>('PAYOS');
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !getStoredToken()) return;
+    getAddresses()
+      .then((list) => {
+        if (list && list.length > 0) {
+          const defaultAddr = list.find((a) => a.isDefault) || list[0];
+          const loaded: DeliveryAddress = {
+            recipientName: defaultAddr.recipientName,
+            phone: defaultAddr.phone,
+            city: defaultAddr.city,
+            district: defaultAddr.district || '',
+            ward: defaultAddr.ward || '',
+            street: defaultAddr.street,
+          };
+          setAddress(loaded);
+          setEditForm(loaded);
+        }
+      })
+      .catch(() => {});
+  }, [isOpen]);
 
   const handleSaveAddress = (e: FormEvent) => {
     e.preventDefault();

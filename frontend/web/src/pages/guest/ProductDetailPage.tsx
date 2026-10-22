@@ -1,7 +1,8 @@
-﻿import { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeftOutlined, ShoppingCartOutlined } from '@ant-design/icons';
-import { getProductByIdAsync, type ProductDetail } from '../../components/products';
+import { getProductByIdAsync } from '../../services/products.service';
+import type { ProductDetail } from '../../types/product.types';
 import { addToCart } from '../../services/cart';
 import ProductImageGallery from '../../components/productDetail/ProductImageGallery';
 import ProductInfoTabs from '../../components/productDetail/ProductInfoTabs';
@@ -45,24 +46,43 @@ function ProductContent({ product }: { product: ProductDetail }) {
   const navigate = useNavigate();
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [toast, setToast] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const canBuy = product.stock > 0;
-  function add(buyNow: boolean) {
-    if (!canBuy || quantity < 1 || quantity > product.stock) return;
-    addToCart(
-      {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        formattedPrice: product.formattedPrice,
-        img: product.images[0] || '',
-        shopName: product.shop.name,
-        brand: product.brand,
-      },
-      quantity,
-    );
-    if (buyNow) navigate('/cart');
-    else setToast(`Đã thêm ${quantity} sản phẩm vào giỏ hàng.`);
+
+  async function add(buyNow: boolean) {
+    if (!canBuy || quantity < 1 || quantity > product.stock || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await addToCart(
+        {
+          id: product.id,
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          formattedPrice: product.formattedPrice,
+          img: product.images[0] || '',
+          shopName: product.shop.name,
+          brand: product.brand,
+        },
+        quantity,
+      );
+      if (buyNow) {
+        navigate('/cart');
+      } else {
+        setToast({
+          type: 'success',
+          message: `Đã thêm ${quantity} sản phẩm vào giỏ hàng.`,
+        });
+      }
+    } catch (err: unknown) {
+      setToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Không thể thêm sản phẩm vào giỏ hàng.',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
   return (
     <main className="min-h-screen bg-slate-50 py-6">
@@ -77,8 +97,22 @@ function ProductContent({ product }: { product: ProductDetail }) {
           <span>{product.name}</span>
         </nav>
         {toast && (
-          <div role="status" className="rounded-xl bg-blue-50 p-4 text-blue-800">
-            {toast}
+          <div
+            role="alert"
+            className={`flex items-center justify-between rounded-xl p-4 text-sm font-medium ${
+              toast.type === 'error'
+                ? 'border border-red-200 bg-red-50 text-red-700'
+                : 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+            }`}
+          >
+            <span>{toast.message}</span>
+            <button
+              type="button"
+              onClick={() => setToast(null)}
+              className="ml-4 font-bold opacity-60 hover:opacity-100"
+            >
+              ✕
+            </button>
           </div>
         )}
         <section className="grid gap-8 rounded-2xl border border-slate-200 bg-white p-6 lg:grid-cols-12">
@@ -102,7 +136,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 min={1}
                 max={product.stock}
                 step={1}
-                disabled={!canBuy}
+                disabled={!canBuy || isSubmitting}
                 value={quantity}
                 onChange={(event) => {
                   const next = Number(event.target.value);
@@ -115,17 +149,17 @@ function ProductContent({ product }: { product: ProductDetail }) {
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
-                disabled={!canBuy}
+                disabled={!canBuy || isSubmitting}
                 onClick={() => add(false)}
-                className="rounded-xl border border-blue-600 px-5 py-3 font-semibold text-blue-600 disabled:opacity-40"
+                className="rounded-xl border border-blue-600 px-5 py-3 font-semibold text-blue-600 transition hover:bg-blue-50 disabled:opacity-40"
               >
-                <ShoppingCartOutlined /> Thêm vào giỏ hàng
+                <ShoppingCartOutlined /> {isSubmitting ? 'Đang thêm…' : 'Thêm vào giỏ hàng'}
               </button>
               <button
                 type="button"
-                disabled={!canBuy}
+                disabled={!canBuy || isSubmitting}
                 onClick={() => add(true)}
-                className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white disabled:opacity-40"
+                className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-40"
               >
                 Mua ngay
               </button>

@@ -66,7 +66,10 @@ export function clearAuthSession(): void {
     localStorage.removeItem(AUTH_USER_KEY);
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
+    localStorage.removeItem('nexus:auth-cart-cache');
+    localStorage.removeItem('nexus:cart-selected-ids');
     window.dispatchEvent(new Event('nexus:auth-change'));
+    window.dispatchEvent(new CustomEvent('nexus:cart-change'));
     if (storedRefreshToken) {
       void api.post('/auth/logout', { refreshToken: storedRefreshToken }).catch(() => {});
     }
