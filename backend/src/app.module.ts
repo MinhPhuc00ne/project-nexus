@@ -11,6 +11,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { MediaModule } from './modules/media/media.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CommerceModule } from './modules/commerce/commerce.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { CommerceModule } from './modules/commerce/commerce.module';
     MediaModule,
     CatalogModule,
     CommerceModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

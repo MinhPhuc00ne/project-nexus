@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { QueryProductDto } from '../dtos/query-product.dto';
@@ -28,6 +29,9 @@ export class ProductService {
    * Đăng bán sản phẩm mới và tự động khởi tạo tồn kho
    */
   async createProduct(sellerId: string, dto: CreateProductDto) {
+    assertCleanContent(dto.title, 'Tên sản phẩm');
+    assertCleanContent(dto.description, 'Mô tả sản phẩm');
+
     const category = await this.prisma.category.findUnique({
       where: { id: dto.categoryId },
     });
@@ -107,6 +111,13 @@ export class ProductService {
    * Cập nhật sản phẩm & điều chỉnh số lượng tồn kho
    */
   async updateProduct(sellerId: string, productId: string, dto: UpdateProductDto) {
+    if (dto.title) {
+      assertCleanContent(dto.title, 'Tên sản phẩm');
+    }
+    if (dto.description) {
+      assertCleanContent(dto.description, 'Mô tả sản phẩm');
+    }
+
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
       include: { inventories: true },
@@ -200,6 +211,10 @@ export class ProductService {
    * Tìm kiếm & Lấy danh sách sản phẩm công khai
    */
   async getProducts(query: QueryProductDto): Promise<PaginatedResult<unknown>> {
+    if (query.search) {
+      assertCleanContent(query.search, 'Từ khóa tìm kiếm');
+    }
+
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 12));
     const skip = (page - 1) * limit;

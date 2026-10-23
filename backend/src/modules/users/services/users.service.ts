@@ -11,6 +11,7 @@ import { SellerRequestStatus, User, Wallet } from '@prisma/client';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
+import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { UpdateProfileDto, ApplySellerUpgradeDto, ReviewSellerUpgradeDto } from '../dtos/users.dto';
 
 export interface UserProfileResponse {
@@ -90,6 +91,11 @@ export class UsersService {
     dto: ApplySellerUpgradeDto,
     file?: Express.Multer.File,
   ): Promise<{ success: boolean; message: string; requestId: string }> {
+    assertCleanContent(dto.storeName, 'Tên gian hàng');
+    if (dto.storeDescription) {
+      assertCleanContent(dto.storeDescription, 'Mô tả gian hàng');
+    }
+
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 

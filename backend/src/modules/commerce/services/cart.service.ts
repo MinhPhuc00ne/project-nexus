@@ -253,10 +253,7 @@ export class CartService {
         },
       });
 
-      const mergedQty = Math.min(
-        totalAvailable,
-        (existing?.quantity || 0) + guestQty,
-      );
+      const mergedQty = Math.min(totalAvailable, (existing?.quantity || 0) + guestQty);
 
       await this.prisma.cartItem.upsert({
         where: {

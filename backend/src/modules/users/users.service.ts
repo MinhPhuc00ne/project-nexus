@@ -9,6 +9,7 @@ import { Role, SellerRequestStatus } from '@prisma/client';
 import * as fs from 'fs';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CloudinaryStorageService } from '../../core/storage/cloudinary.service';
+import { assertCleanContent } from '../../core/moderation/content-moderation.util';
 import { CreateSellerRequestDto } from './dto/create-seller-request.dto';
 import { ToggleSellerDto } from './dto/toggle-seller.dto';
 
@@ -112,6 +113,11 @@ export class UsersService {
     dto: CreateSellerRequestDto,
     file?: Express.Multer.File,
   ) {
+    assertCleanContent(dto.storeName, 'Tên gian hàng');
+    if (dto.storeDescription) {
+      assertCleanContent(dto.storeDescription, 'Mô tả gian hàng');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });

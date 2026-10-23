@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { QueryShopDto } from '../dtos/query-shop.dto';
 import { InventoryService } from './inventory.service';
 import { Role, SellerRequestStatus, ProductStatus, Prisma } from '@prisma/client';
@@ -43,7 +44,7 @@ export class ShopService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly inventoryService: InventoryService,
-  ) { }
+  ) {}
 
   /**
    * Tìm kiếm & Lấy danh sách gian hàng (Shop/Seller)
@@ -69,6 +70,7 @@ export class ShopService {
 
     // Tìm kiếm theo từ khóa: tên gian hàng, mô tả gian hàng, họ tên chủ shop
     if (query.search) {
+      assertCleanContent(query.search, 'Từ khóa tìm kiếm gian hàng');
       const searchKeyword = query.search.trim();
       andConditions.push({
         OR: [
@@ -162,10 +164,10 @@ export class ShopService {
       const description = approvedRequest?.storeDescription || null;
       const address = approvedRequest
         ? {
-          city: approvedRequest.city || null,
-          district: approvedRequest.district || null,
-          formattedAddress: approvedRequest.formattedAddress || null,
-        }
+            city: approvedRequest.city || null,
+            district: approvedRequest.district || null,
+            formattedAddress: approvedRequest.formattedAddress || null,
+          }
         : null;
 
       return {
@@ -245,10 +247,10 @@ export class ShopService {
     const description = approvedRequest?.storeDescription || null;
     const address = approvedRequest
       ? {
-        city: approvedRequest.city || null,
-        district: approvedRequest.district || null,
-        formattedAddress: approvedRequest.formattedAddress || null,
-      }
+          city: approvedRequest.city || null,
+          district: approvedRequest.district || null,
+          formattedAddress: approvedRequest.formattedAddress || null,
+        }
       : null;
 
     const [products, totalProducts] = await Promise.all([

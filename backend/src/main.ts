@@ -70,7 +70,7 @@ async function bootstrap(): Promise<void> {
     )
     .addTag(
       '5. ADMIN',
-      'Chức năng Admin: Quản lý nhân viên (Support Staff) & phê duyệt/từ chối hồ sơ nâng cấp Seller',
+      'Chức năng Admin: Quản lý nhân viên, duyệt Seller, quản lý người dùng, kiểm duyệt sản phẩm, quản lý gian hàng, danh mục và cấu hình sàn',
     )
     .addTag('6. MEDIA', 'Chức năng Media: Tải lên hình ảnh, tài liệu lưu trữ máy chủ & Cloudinary')
     .addTag(
@@ -80,6 +80,11 @@ async function bootstrap(): Promise<void> {
     .addTag(
       '8. COMMERCE - CART',
       'Quản lý giỏ hàng Buyer, Price Revalidation, Merge giỏ hàng Guest',
+    )
+    .addTag('9. NOTIFICATIONS', 'Thông báo người dùng, danh sách thông báo và đánh dấu đã đọc')
+    .addTag(
+      '9. NOTIFICATIONS',
+      'Thông báo người dùng, danh sách thông báo và đánh dấu đã đọc',
     )
     .addBearerAuth()
     .build();

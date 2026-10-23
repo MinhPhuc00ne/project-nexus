@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -25,7 +26,18 @@ import { QueryStaffDto } from './dto/query-staff.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { QueryAdminProductsDto } from './dto/query-admin-products.dto';
+import { UpdateProductStatusDto } from './dto/update-product-status.dto';
+import { QueryAdminShopsDto } from './dto/query-admin-shops.dto';
+import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
+import { UpdateSystemSettingsDto } from './dto/update-system-settings.dto';
 import { AdminUsersService } from './services/admin-users.service';
+import { AdminProductsService } from './services/admin-products.service';
+import { AdminShopsService } from './services/admin-shops.service';
+import { AdminSettingsService } from './services/admin-settings.service';
+import { CategoryService } from '../catalog/services/category.service';
+import { CreateCategoryDto } from '../catalog/dtos/create-category.dto';
+import { UpdateCategoryDto } from '../catalog/dtos/update-category.dto';
 
 @ApiTags('5. ADMIN')
 @ApiBearerAuth()
@@ -36,6 +48,10 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly adminUsersService: AdminUsersService,
+    private readonly adminProductsService: AdminProductsService,
+    private readonly adminShopsService: AdminShopsService,
+    private readonly adminSettingsService: AdminSettingsService,
+    private readonly categoryService: CategoryService,
   ) {}
 
   // ================= 1. TẠO / MỜI TÀI KHOẢN CHO STAFF =================
@@ -232,5 +248,160 @@ export class AdminController {
     @Body() dto: UpdateUserRoleDto,
   ) {
     return this.adminUsersService.updateUserRole(id, admin.id, dto);
+  }
+
+  // ================= 13. DANH SÁCH SẢN PHẨM TOÀN SÀN =================
+  @Get('products')
+  @ApiOperation({
+    summary: 'Admin xem danh sách toàn bộ sản phẩm trên hệ thống',
+    description:
+      'Hỗ trợ tìm kiếm, lọc theo trạng thái (ACTIVE, INACTIVE, DRAFT), theo Seller hoặc theo Danh mục kèm phân trang.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách sản phẩm thành công' })
+  async listProducts(@Query() query: QueryAdminProductsDto) {
+    return this.adminProductsService.listProducts(query);
+  }
+
+  // ================= 14. CHI TIẾT SẢN PHẨM =================
+  @Get('products/:id')
+  @ApiOperation({
+    summary: 'Admin xem chi tiết một sản phẩm kèm thông tin tồn kho và shop',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy chi tiết sản phẩm thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
+  async getProductById(@Param('id') id: string) {
+    return this.adminProductsService.getProductById(id);
+  }
+
+  // ================= 15. DUYỆT HOẶC ẨN/KHÓA SẢN PHẨM =================
+  @Patch('products/:id/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin duyệt hoặc ẩn/khóa sản phẩm vi phạm',
+    description:
+      'Chuyển trạng thái sản phẩm sang ACTIVE (cho phép bán) hoặc INACTIVE (ẩn sản phẩm vi phạm, gửi thông báo lý do đến Seller).',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật trạng thái sản phẩm thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
+  async updateProductStatus(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: UpdateProductStatusDto,
+  ) {
+    return this.adminProductsService.updateProductStatus(id, admin.id, dto);
+  }
+
+  // ================= 16. XÓA SẢN PHẨM =================
+  @Delete('products/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin xóa sản phẩm',
+    description:
+      'Xóa an toàn sản phẩm nếu chưa phát sinh đơn hàng, hoặc tự động ẩn nếu đã có lịch sử đơn hàng.',
+  })
+  @ApiResponse({ status: 200, description: 'Xóa hoặc ẩn sản phẩm thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
+  async deleteProduct(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+    return this.adminProductsService.deleteProduct(id, admin.id);
+  }
+
+  // ================= 17. DANH SÁCH GIAN HÀNG (SHOPS) =================
+  @Get('shops')
+  @ApiOperation({
+    summary: 'Admin xem danh sách toàn bộ gian hàng (Shop/Seller)',
+    description:
+      'Hỗ trợ lọc gian hàng theo trạng thái ACTIVE (đang mở) hoặc SUSPENDED (đang bị đình chỉ), lọc theo Tỉnh/Thành và tìm kiếm.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách gian hàng thành công' })
+  async listShops(@Query() query: QueryAdminShopsDto) {
+    return this.adminShopsService.listShops(query);
+  }
+
+  // ================= 18. ĐÌNH CHỈ HOẶC MỞ LẠI GIAN HÀNG =================
+  @Patch('shops/:id/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin đình chỉ hoặc mở lại gian hàng (Shop Suspension)',
+    description:
+      'Tạm ngưng hoạt động bán hàng của một shop (ẩn toàn bộ sản phẩm của shop) mà không khóa tài khoản cá nhân (vẫn được mua hàng làm Buyer).',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật trạng thái gian hàng thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  async updateShopStatus(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: UpdateShopStatusDto,
+  ) {
+    return this.adminShopsService.updateShopStatus(id, admin.id, dto);
+  }
+
+  // ================= 19. XEM CẤU HÌNH HỆ THỐNG SÀN =================
+  @Get('settings')
+  @ApiOperation({
+    summary: 'Admin xem các thông số cấu hình vận hành hệ thống sàn',
+    description:
+      'Lấy các thông số như tỷ lệ phí sàn, thời gian giỏ hàng, thời gian giữ tồn kho khi checkout, giới hạn ảnh, giới hạn cấp danh mục.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy cấu hình thành công' })
+  async getSettings() {
+    return this.adminSettingsService.getSettings();
+  }
+
+  // ================= 20. CẬP NHẬT CẤU HÌNH HỆ THỐNG SÀN =================
+  @Patch('settings')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin cập nhật các thông số vận hành sàn runtime',
+    description:
+      'Chỉnh sửa tỷ lệ phí sàn (%), thời hạn giỏ hàng (ngày), timeout checkout (phút)... mà không cần deploy lại code.',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật cấu hình thành công' })
+  async updateSettings(
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: UpdateSystemSettingsDto,
+  ) {
+    return this.adminSettingsService.updateSettings(admin.id, dto);
+  }
+
+  // ================= 21. TẠO DANH MỤC HÀNG HÓA =================
+  @Post('categories')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Admin tạo mới danh mục sản phẩm (tối đa 3 cấp)',
+    description: 'Tạo danh mục gốc (level 1) hoặc danh mục con cấp 2, 3 bằng cách truyền parentId.',
+  })
+  @ApiResponse({ status: 201, description: 'Tạo danh mục thành công' })
+  @ApiResponse({ status: 400, description: 'Vượt quá 3 cấp danh mục hoặc dữ liệu không hợp lệ' })
+  @ApiResponse({ status: 409, description: 'Tên danh mục đã tồn tại' })
+  async createCategory(@Body() dto: CreateCategoryDto) {
+    return this.categoryService.createCategory(dto);
+  }
+
+  // ================= 22. CẬP NHẬT DANH MỤC HÀNG HÓA =================
+  @Patch('categories/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin cập nhật danh mục hoặc điều chuyển danh mục cha (re-parenting)',
+    description: 'Chỉnh sửa tên, slug hoặc dời danh mục sang danh mục cha mới (parentId).',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật danh mục thành công' })
+  @ApiResponse({ status: 400, description: 'Không thể chuyển vì gây vòng lặp hoặc vượt quá 3 cấp' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
+  async updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+    return this.categoryService.updateCategory(id, dto);
+  }
+
+  // ================= 23. XÓA DANH MỤC HÀNG HÓA =================
+  @Delete('categories/:id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin xóa danh mục sản phẩm',
+    description: 'Chỉ xóa được danh mục khi không có danh mục con và không có sản phẩm liên kết.',
+  })
+  @ApiResponse({ status: 200, description: 'Xóa danh mục thành công' })
+  @ApiResponse({ status: 400, description: 'Danh mục đang có danh mục con hoặc có sản phẩm' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
+  async deleteCategory(@Param('id') id: string) {
+    return this.categoryService.deleteCategory(id);
   }
 }
