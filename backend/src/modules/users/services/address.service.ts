@@ -84,8 +84,6 @@ export class AddressService {
   }
 
   /**
-<<<<<<< HEAD
-=======
    * Cập nhật thông tin địa chỉ và tọa độ ghim bản đồ
    */
   async updateAddress(userId: string, addressId: string, dto: UpdateAddressDto) {
