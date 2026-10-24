@@ -10,7 +10,7 @@ import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { QueryProductDto } from '../dtos/query-product.dto';
 import { InventoryService } from './inventory.service';
-import { ProductStatus, Prisma } from '@prisma/client';
+import { ProductStatus, Prisma, Role } from '@prisma/client';
 import {
   PaginatedResult,
   buildProductWhere,
@@ -25,19 +25,33 @@ export class ProductService {
     private readonly inventoryService: InventoryService,
   ) {}
 
-  /**
-   * Đăng bán sản phẩm mới và tự động khởi tạo tồn kho
-   */
+  private async validateSellerActiveShop(sellerId: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: sellerId },
+      select: { role: true, isSellerActive: true, isShopSuspended: true, suspensionReason: true },
+    });
+    if (!user) throw new NotFoundException('Không tìm thấy thông tin người bán.');
+    if (user.role === Role.ADMIN) return;
+    if (user.isShopSuspended) {
+      throw new ForbiddenException(
+        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''} Không thể thực hiện thao tác này.`,
+      );
+    }
+    if (!user.isSellerActive) {
+      throw new ForbiddenException(
+        'Gian hàng chưa được kích hoạt chế độ Người bán. Vui lòng chuyển sang chế độ Người bán trước khi thực hiện.',
+      );
+    }
+  }
+
+  /** Đăng bán sản phẩm mới và tự động khởi tạo tồn kho */
   async createProduct(sellerId: string, dto: CreateProductDto) {
+    await this.validateSellerActiveShop(sellerId);
     assertCleanContent(dto.title, 'Tên sản phẩm');
     assertCleanContent(dto.description, 'Mô tả sản phẩm');
 
-    const category = await this.prisma.category.findUnique({
-      where: { id: dto.categoryId },
-    });
-    if (!category) {
-      throw new BadRequestException('Danh mục sản phẩm không tồn tại.');
-    }
+    const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
+    if (!category) throw new BadRequestException('Danh mục sản phẩm không tồn tại.');
 
     const warehouse = await this.inventoryService.ensureDefaultWarehouse();
 
@@ -85,9 +99,7 @@ export class ProductService {
     });
   }
 
-  /**
-   * Lấy danh sách sản phẩm của chính Seller đang đăng bán
-   */
+  /** Lấy danh sách sản phẩm của chính Seller đang đăng bán */
   async getSellerProducts(sellerId: string) {
     const products = await this.prisma.product.findMany({
       where: { sellerId },
@@ -107,26 +119,18 @@ export class ProductService {
     }));
   }
 
-  /**
-   * Cập nhật sản phẩm & điều chỉnh số lượng tồn kho
-   */
+  /** Cập nhật sản phẩm & điều chỉnh số lượng tồn kho */
   async updateProduct(sellerId: string, productId: string, dto: UpdateProductDto) {
-    if (dto.title) {
-      assertCleanContent(dto.title, 'Tên sản phẩm');
-    }
-    if (dto.description) {
-      assertCleanContent(dto.description, 'Mô tả sản phẩm');
-    }
+    await this.validateSellerActiveShop(sellerId);
+    if (dto.title) assertCleanContent(dto.title, 'Tên sản phẩm');
+    if (dto.description) assertCleanContent(dto.description, 'Mô tả sản phẩm');
 
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
       include: { inventories: true },
     });
 
-    if (!product) {
-      throw new NotFoundException('Sản phẩm không tồn tại.');
-    }
-
+    if (!product) throw new NotFoundException('Sản phẩm không tồn tại.');
     if (product.sellerId !== sellerId) {
       throw new ForbiddenException('Bạn không có quyền chỉnh sửa sản phẩm này.');
     }
@@ -183,18 +187,11 @@ export class ProductService {
     });
   }
 
-  /**
-   * Xóa / Ẩn sản phẩm
-   */
+  /** Xóa / Ẩn sản phẩm */
   async deleteProduct(sellerId: string, productId: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Sản phẩm không tồn tại.');
-    }
-
+    await this.validateSellerActiveShop(sellerId);
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product) throw new NotFoundException('Sản phẩm không tồn tại.');
     if (product.sellerId !== sellerId) {
       throw new ForbiddenException('Bạn không có quyền xóa sản phẩm này.');
     }
@@ -207,13 +204,9 @@ export class ProductService {
     return { success: true, message: 'Đã ẩn sản phẩm thành công.' };
   }
 
-  /**
-   * Tìm kiếm & Lấy danh sách sản phẩm công khai
-   */
+  /** Tìm kiếm & Lấy danh sách sản phẩm công khai */
   async getProducts(query: QueryProductDto): Promise<PaginatedResult<unknown>> {
-    if (query.search) {
-      assertCleanContent(query.search, 'Từ khóa tìm kiếm');
-    }
+    if (query.search) assertCleanContent(query.search, 'Từ khóa tìm kiếm');
 
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 12));
@@ -229,13 +222,9 @@ export class ProductService {
     }
 
     const where = buildProductWhere(query, categoryIds);
-
     let orderBy: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' };
-    if (query.sortBy === 'price_asc') {
-      orderBy = { basePrice: 'asc' };
-    } else if (query.sortBy === 'price_desc') {
-      orderBy = { basePrice: 'desc' };
-    }
+    if (query.sortBy === 'price_asc') orderBy = { basePrice: 'asc' };
+    else if (query.sortBy === 'price_desc') orderBy = { basePrice: 'desc' };
 
     const [items, total] = await Promise.all([
       this.prisma.product.findMany({
@@ -267,9 +256,7 @@ export class ProductService {
     };
   }
 
-  /**
-   * Lấy chi tiết 1 sản phẩm
-   */
+  /** Lấy chi tiết 1 sản phẩm */
   async getProductDetail(productId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
@@ -296,10 +283,7 @@ export class ProductService {
       },
     });
 
-    if (!product) {
-      throw new NotFoundException('Sản phẩm không tồn tại.');
-    }
-
+    if (!product) throw new NotFoundException('Sản phẩm không tồn tại.');
     const availableQty = this.inventoryService.calculateAvailable(product.inventories);
     const totalQty = this.inventoryService.calculateTotal(product.inventories);
 
