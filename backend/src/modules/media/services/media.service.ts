@@ -5,7 +5,10 @@ import type { Request } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
-import { MediaUploadResponseDto } from '../dtos/media-upload-response.dto';
+import {
+  MediaUploadResponseDto,
+  MultipleMediaUploadResponseDto,
+} from '../dtos/media-upload-response.dto';
 
 const ALLOWED_EXTENSIONS = new Set([
   '.jpg',
@@ -102,6 +105,24 @@ export class MediaService {
       originalName: file.originalname,
       mimeType: file.mimetype || 'image/png',
       size: file.size,
+      urls: [finalUrl],
     };
+  }
+
+  /**
+   * Upload đồng thời một mảng nhiều file hình ảnh lên server / Cloudinary
+   */
+  async uploadMultipleMedia(
+    files: Express.Multer.File[],
+    req?: Request,
+  ): Promise<MultipleMediaUploadResponseDto> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Vui lòng chọn ít nhất một file hình ảnh để tải lên.');
+    }
+
+    const items = await Promise.all(files.map((file) => this.uploadMedia(file, req)));
+    const urls = items.map((item) => item.url);
+
+    return { urls, items };
   }
 }
