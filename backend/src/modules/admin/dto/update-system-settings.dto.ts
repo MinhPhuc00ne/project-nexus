@@ -92,4 +92,3 @@ export class UpdateSystemSettingsDto {
   @Max(30)
   antiSnipingExtendMinutes?: number;
 }
-

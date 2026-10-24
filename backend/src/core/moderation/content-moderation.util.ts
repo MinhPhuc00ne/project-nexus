@@ -142,4 +142,3 @@ export function assertCleanContent(text?: string | null, fieldLabel = 'Nội dun
     );
   }
 }
-
