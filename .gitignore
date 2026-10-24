@@ -71,3 +71,6 @@ backend/uploads/
 skills-lock.json
 
 .husky/
+ngrok.exe
+.ngrok*
+

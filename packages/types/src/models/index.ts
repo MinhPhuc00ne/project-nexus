@@ -25,6 +25,8 @@ export interface UserSummaryDto {
   walletBalance: number;
   reputationScore: number;
   isSellerActive: boolean;
+  isShopSuspended?: boolean;
+  suspensionReason?: string | null;
 }
 
 export interface ProductSummaryDto {

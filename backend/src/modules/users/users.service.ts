@@ -49,9 +49,14 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       role: user.role,
       isSellerActive: user.isSellerActive,
+      isShopSuspended: user.isShopSuspended,
+      suspensionReason: user.suspensionReason,
       currentMode: user.isSellerActive ? 'SELLER' : 'BUYER',
       canToggleSeller:
-        user.role === Role.SELLER || user.role === Role.ADMIN || user.role === Role.SUPPORT_STAFF,
+        (user.role === Role.SELLER ||
+          user.role === Role.ADMIN ||
+          user.role === Role.SUPPORT_STAFF) &&
+        !user.isShopSuspended,
       reputationScore: user.reputationScore,
       trustLevel: user.trustLevel,
       isVerified: user.isVerified,
@@ -85,6 +90,13 @@ export class UsersService {
     }
 
     const nextState = dto?.isSellerActive !== undefined ? dto.isSellerActive : !user.isSellerActive;
+
+    // Nếu shop đang bị Admin đình chỉ hoạt động mà người dùng muốn kích hoạt chế độ Người bán
+    if (user.isShopSuspended && nextState) {
+      throw new ForbiddenException(
+        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''} Không thể kích hoạt chế độ Người bán.`,
+      );
+    }
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },

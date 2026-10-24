@@ -21,4 +21,3 @@ export class UpdateProductStatusDto {
   @MaxLength(500, { message: 'Lý do tối đa 500 ký tự' })
   reason?: string;
 }
-

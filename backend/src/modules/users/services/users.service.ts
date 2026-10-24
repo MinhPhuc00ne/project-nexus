@@ -12,23 +12,14 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
-import { UpdateProfileDto, ApplySellerUpgradeDto, ReviewSellerUpgradeDto } from '../dtos/users.dto';
+import {
+  UpdateProfileDto,
+  ApplySellerUpgradeDto,
+  ReviewSellerUpgradeDto,
+  UserProfileResponse,
+} from '../dtos/users.dto';
 
-export interface UserProfileResponse {
-  id: string;
-  email: string;
-  personalEmail?: string | null;
-  platformEmail?: string | null;
-  fullName: string;
-  phoneNumber?: string | null;
-  avatarUrl?: string | null;
-  role: Role;
-  isSellerActive: boolean;
-  walletBalance: number;
-  reputationScore: number;
-  trustLevel: string;
-  createdAt: Date;
-}
+export type { UserProfileResponse };
 
 @Injectable()
 export class UsersService {
@@ -50,6 +41,8 @@ export class UsersService {
       avatarUrl: user.avatarUrl,
       role: user.role as Role,
       isSellerActive: user.isSellerActive,
+      isShopSuspended: user.isShopSuspended,
+      suspensionReason: user.suspensionReason,
       walletBalance: user.wallet ? Number(user.wallet.balance) : 0,
       reputationScore: user.reputationScore,
       trustLevel: user.trustLevel,
@@ -281,6 +274,11 @@ export class UsersService {
     }
 
     const newSellerActive = !user.isSellerActive;
+    if (user.isShopSuspended && newSellerActive) {
+      throw new ForbiddenException(
+        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''} Không thể chuyển sang chế độ Người bán.`,
+      );
+    }
     await this.prisma.user.update({
       where: { id: userId },
       data: { isSellerActive: newSellerActive, updatedAt: new Date() },

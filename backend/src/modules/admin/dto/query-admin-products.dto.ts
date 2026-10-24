@@ -54,4 +54,3 @@ export class QueryAdminProductsDto {
   @IsString()
   categoryId?: string;
 }
-

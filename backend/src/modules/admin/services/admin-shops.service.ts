@@ -23,9 +23,10 @@ export class AdminShopsService {
     };
 
     if (query.status === 'ACTIVE') {
+      where.isShopSuspended = false;
       where.isSellerActive = true;
     } else if (query.status === 'SUSPENDED') {
-      where.isSellerActive = false;
+      where.isShopSuspended = true;
     }
 
     if (query.search?.trim()) {
@@ -93,7 +94,9 @@ export class AdminShopsService {
         storeDescription: latestRequest?.storeDescription || null,
         avatarUrl: s.avatarUrl,
         isSellerActive: s.isSellerActive,
-        status: s.isSellerActive ? 'ACTIVE' : 'SUSPENDED',
+        isShopSuspended: s.isShopSuspended,
+        suspensionReason: s.suspensionReason,
+        status: s.isShopSuspended ? 'SUSPENDED' : s.isSellerActive ? 'ACTIVE' : 'INACTIVE',
         totalProducts: s._count.products,
         address: defaultAddress
           ? {
@@ -140,10 +143,16 @@ export class AdminShopsService {
     const storeName = seller.sellerUpgradeRequests[0]?.storeName || seller.fullName;
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Cập nhật isSellerActive
+      // 1. Cập nhật isShopSuspended, suspensionReason và isSellerActive
       const updatedUser = await tx.user.update({
         where: { id: sellerId },
-        data: { isSellerActive: dto.isSellerActive },
+        data: {
+          isSellerActive: dto.isSellerActive,
+          isShopSuspended: isSuspending,
+          suspensionReason: isSuspending
+            ? dto.reason?.trim() || 'Gian hàng bị Admin tạm đình chỉ'
+            : null,
+        },
       });
 
       // 2. Nếu đình chỉ gian hàng, tự động ẩn toàn bộ sản phẩm của gian hàng để người mua không đặt được
@@ -184,7 +193,13 @@ export class AdminShopsService {
         id: result.id,
         storeName,
         isSellerActive: result.isSellerActive,
-        status: result.isSellerActive ? 'ACTIVE' : 'SUSPENDED',
+        isShopSuspended: result.isShopSuspended,
+        suspensionReason: result.suspensionReason,
+        status: result.isShopSuspended
+          ? 'SUSPENDED'
+          : result.isSellerActive
+            ? 'ACTIVE'
+            : 'INACTIVE',
       },
     };
   }

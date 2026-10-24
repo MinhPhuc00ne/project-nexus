@@ -2,6 +2,25 @@ import { IsString, IsNotEmpty, IsOptional, IsEmail, IsEnum, IsNumber } from 'cla
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SellerRequestStatus } from '@prisma/client';
+import { Role } from '@nexus/types';
+
+export interface UserProfileResponse {
+  id: string;
+  email: string;
+  personalEmail?: string | null;
+  platformEmail?: string | null;
+  fullName: string;
+  phoneNumber?: string | null;
+  avatarUrl?: string | null;
+  role: Role;
+  isSellerActive: boolean;
+  isShopSuspended?: boolean;
+  suspensionReason?: string | null;
+  walletBalance: number;
+  reputationScore: number;
+  trustLevel: string;
+  createdAt: Date;
+}
 
 export class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'Nguyen Van A', description: 'Updated full name' })

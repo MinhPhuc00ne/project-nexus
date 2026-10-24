@@ -27,4 +27,3 @@ export class CreateCategoryDto {
   @IsString({ message: 'Parent ID phải là chuỗi ký tự' })
   parentId?: string | null;
 }
-
