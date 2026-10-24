@@ -12,15 +12,12 @@ import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
 import { useAdminSellerRequests, type SellerRequestFilter } from './AdminSellerRequests';
 import type { AdminTabProps } from './adminTypes';
 
-// Đổi trạng thái backend thành nhãn tiếng Việt để dùng trong danh sách và popup.
 const labels: Record<SellerUpgradeRequest['status'], string> = {
   PENDING: 'Chờ duyệt',
   APPROVED: 'Đã duyệt',
   REJECTED: 'Đã từ chối',
 };
 
-// Chuẩn hóa đường dẫn tài liệu: ghép đường dẫn tương đối với host backend.
-// Chỉ cho mở liên kết HTTP/HTTPS; không mở các URL như javascript:.
 function attachmentLink(value: string | null): string | null {
   if (!value) return null;
   try {
@@ -41,16 +38,12 @@ export default function SellerApplicationsPanel({
   actions,
   preview = false,
 }: Pick<AdminTabProps, 'actions'> & { preview?: boolean }) {
-  // Đọc dữ liệu dùng chung với sidebar/tổng quan, không gọi lại API danh sách ở đây.
   const state = useAdminSellerRequests();
   const [search, setSearch] = useState('');
-  // Nhóm state cho popup "Xem hồ sơ": dữ liệu, đang tải, lỗi và trạng thái mở.
   const [detail, setDetail] = useState<SellerUpgradeRequest | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
-  // null: đóng popup xác nhận. Có giá trị: hồ sơ đang xử lý và quyết định của admin.
-  // approve=true là đồng ý, false là từ chối.
   const [decision, setDecision] = useState<{
     request: SellerUpgradeRequest;
     approve: boolean;

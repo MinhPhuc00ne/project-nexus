@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { listUsers, type PaginatedResult } from '../../services/admin';
+import { listUsers } from '../../services/admin';
+import type { PaginatedResult } from '../../types/admin.types';
 import type { AdminUser, QueryUsersParams } from '../../types/user.types';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -12,7 +13,7 @@ export function useAdminUsers(preview: boolean) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Gửi từ khóa sau khi ngừng gõ; tìm kiếm/lọc luôn bắt đầu lại từ trang 1.
+  //tìm kiếm/lọc luôn bắt đầu lại từ trang 1.
   useEffect(() => {
     const timer = setTimeout(() => {
       setQuery((current) => {

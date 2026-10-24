@@ -7,7 +7,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { getSellerRequests, type PaginatedResult } from '../../services/admin';
+import { getSellerRequests } from '../../services/admin';
+import type { PaginatedResult } from '../../types/admin.types';
 import type { SellerUpgradeRequest } from '../../services/users';
 import { useAuth } from '../../contexts/AuthContext';
 

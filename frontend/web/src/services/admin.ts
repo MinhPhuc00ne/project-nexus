@@ -1,10 +1,24 @@
 import axios, { type AxiosRequestConfig } from 'axios';
-import { Role } from '@nexus/types';
 import api, { ApiRequestError } from './api';
 import { getStoredToken } from './auth';
-import type { SellerUpgradeRequest } from './users';
-import type { AdminUser, QueryUsersParams, UserStatusResult } from '../types/user.types';
+import type {
+  AdminUser,
+  QueryUsersParams,
+  SellerUpgradeRequest,
+  UserStatusResult,
+} from '../types/user.types';
 import type { CategoryTreeItem } from '../types/category.types';
+import type {
+  CreateStaffDto,
+  CreateStaffResult,
+  InviteStaffDto,
+  PaginatedResult,
+  QuerySellerRequestsParams,
+  QueryStaffParams,
+  SellerRequestReviewResult,
+  StaffInvitationResult,
+  StaffUser,
+} from '../types/admin.types';
 
 // Các API admin dùng chung Axios client, token phiên hiện tại và định dạng lỗi.
 async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
@@ -35,37 +49,6 @@ async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
   }
 }
 
-export interface StaffUser {
-  id: string;
-  email: string;
-  fullName: string;
-  phoneNumber: string | null;
-  role: Role;
-  isVerified: boolean;
-  createdAt: string;
-}
-
-export interface CreateStaffDto {
-  email: string;
-  password: string;
-  fullName: string;
-  phoneNumber?: string;
-}
-
-export interface InviteStaffDto {
-  email: string;
-  fullName: string;
-  phoneNumber?: string;
-  department?: string;
-}
-
-export interface StaffInvitationResult {
-  success: boolean;
-  message: string;
-  invitationId: string;
-  assignedEmail: string;
-}
-
 // Không gửi mật khẩu: nhân viên tự đặt mật khẩu qua link gửi đến email cá nhân.
 export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult> {
   return adminRequest<StaffInvitationResult>({
@@ -73,14 +56,6 @@ export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult>
     method: 'POST',
     data: dto,
   });
-}
-
-export interface PaginatedResult<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
 }
 
 export function listUsers(params: QueryUsersParams, signal?: AbortSignal) {
@@ -116,23 +91,11 @@ export function unlockUser(id: string, reason?: string) {
   });
 }
 
-export interface QuerySellerRequestsParams {
-  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
-  page?: number;
-  limit?: number;
-}
-
-export interface QueryStaffParams {
-  search?: string;
-  page?: number;
-  limit?: number;
-}
-
 /**
  * 1. Admin tạo tài khoản cho nhân viên hỗ trợ (Support Staff)
  */
-export function createStaff(dto: CreateStaffDto): Promise<{ message: string; staff: StaffUser }> {
-  return adminRequest<{ message: string; staff: StaffUser }>({
+export function createStaff(dto: CreateStaffDto): Promise<CreateStaffResult> {
+  return adminRequest<CreateStaffResult>({
     url: '/admin/staff',
     method: 'POST',
     data: dto,
@@ -176,10 +139,8 @@ export function getSellerRequestById(id: string): Promise<SellerUpgradeRequest> 
 /**
  * 5. Admin phê duyệt yêu cầu nâng cấp lên Seller
  */
-export function approveSellerRequest(
-  id: string,
-): Promise<{ message: string; request: SellerUpgradeRequest }> {
-  return adminRequest<{ message: string; request: SellerUpgradeRequest }>({
+export function approveSellerRequest(id: string): Promise<SellerRequestReviewResult> {
+  return adminRequest<SellerRequestReviewResult>({
     url: `/admin/seller-requests/${id}/approve`,
     method: 'PATCH',
   });
@@ -191,8 +152,8 @@ export function approveSellerRequest(
 export function rejectSellerRequest(
   id: string,
   rejectionReason: string,
-): Promise<{ message: string; request: SellerUpgradeRequest }> {
-  return adminRequest<{ message: string; request: SellerUpgradeRequest }>({
+): Promise<SellerRequestReviewResult> {
+  return adminRequest<SellerRequestReviewResult>({
     url: `/admin/seller-requests/${id}/reject`,
     method: 'PATCH',
     data: { rejectionReason },
