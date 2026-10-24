@@ -16,16 +16,17 @@ import CategoryDialogs, {
   type CategoryAction,
 } from '../../components/adminDashboard/CategoryDialogs';
 import { Input } from '../../components/ui/input';
+import { useToast } from '../../components/ToastNotification';
 import { getCategoryTree } from '../../services/admin';
 import type { CategoryTreeItem } from '../../types/category.types';
 
 export default function AdminCategoriesPage() {
+  const toast = useToast();
   const [categories, setCategories] = useState<CategoryTreeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const [action, setAction] = useState<CategoryAction | null>(null);
-  const [message, setMessage] = useState('');
   const [dragged, setDragged] = useState<CategoryTreeItem | null>(null);
   const [dropError, setDropError] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -50,7 +51,6 @@ export default function AdminCategoriesPage() {
 
   const openAction = (next: CategoryAction) => {
     setDropError('');
-    setMessage('');
     setAction(next);
   };
 
@@ -164,11 +164,6 @@ export default function AdminCategoriesPage() {
             Thả vào đây để chuyển thành danh mục gốc (cấp 1)
           </div>
         )}
-        {message && (
-          <p role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
-            {message}
-          </p>
-        )}
         {loading ? (
           <p role="status" className="py-8 text-center text-sm text-slate-500">
             Đang tải danh mục…
@@ -205,7 +200,7 @@ export default function AdminCategoriesPage() {
             onClose={() => setAction(null)}
             onSuccess={(text) => {
               setAction(null);
-              setMessage(text);
+              toast.success(text);
               setRevision((value) => value + 1);
             }}
           />

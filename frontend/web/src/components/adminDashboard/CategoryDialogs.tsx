@@ -5,6 +5,7 @@ import type { CategoryTreeItem } from '../../types/category.types';
 import Popup from '../Popup';
 import { Input } from '../ui/input';
 import { Button } from './AdminUI';
+import { useToast } from '../ToastNotification';
 
 export type CategoryAction =
   | { kind: 'create'; parent: CategoryTreeItem | null }
@@ -23,6 +24,7 @@ export default function CategoryDialogs({
   onClose: () => void;
   onSuccess: (message: string) => void;
 }) {
+  const toast = useToast();
   const [name, setName] = useState(action.kind === 'edit' ? action.category.name : '');
   const [slug, setSlug] = useState(action.kind === 'edit' ? action.category.slug : '');
   const [parentId, setParentId] = useState(
@@ -96,7 +98,9 @@ export default function CategoryDialogs({
         onSuccess(result.message);
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể cập nhật danh mục.');
+      const message = cause instanceof Error ? cause.message : 'Không thể cập nhật danh mục.';
+      setError(message);
+      toast.error(message);
     } finally {
       inFlight.current = false;
       setPending(false);

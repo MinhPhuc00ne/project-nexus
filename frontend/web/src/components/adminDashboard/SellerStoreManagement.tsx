@@ -1,299 +1,308 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { RefreshCw, Store } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { listAdminShops, updateAdminShopStatus } from '../../services/admin';
+import type { AdminShop, PaginatedResult, QueryAdminShopsParams } from '../../types/admin.types';
 import Popup from '../Popup';
-import { getSellerRequests } from '../../services/admin';
-import type { PaginatedResult } from '../../types/admin.types';
-import type { SellerUpgradeRequest } from '../../services/users';
-import type { AdminTabProps } from './adminTypes';
-import { Badge, Button, Panel } from './AdminUI';
-import {
-  DecisionDialog,
-  DemoNotice,
-  DetailFields,
-  labelOptions,
-  ManagementTable,
-  StatusBadge,
-} from './CommerceUI';
-import type { ManagedStore } from './commerceTypes';
+import { useToast } from '../ToastNotification';
+import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
 import ShopDetail from './ShopDetail';
 
-function ApprovedSellerDirectory() {
-  const [page, setPage] = useState(1);
+export default function SellerStoreManagement() {
+  const { token } = useAuth();
+  const toast = useToast();
+  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState<QueryAdminShopsParams>({ page: 1, limit: 10 });
   const [revision, setRevision] = useState(0);
-  const [result, setResult] = useState<PaginatedResult<SellerUpgradeRequest> | null>(null);
+  const [result, setResult] = useState<PaginatedResult<AdminShop> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [target, setTarget] = useState<AdminShop | null>(null);
+  const refresh = () => setRevision((value) => value + 1);
+
   useEffect(() => {
-    let active = true;
+    const timer = setTimeout(() => {
+      const value = search.trim() || undefined;
+      setQuery((current) =>
+        current.search === value ? current : { ...current, search: value, page: 1 },
+      );
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    const controller = new AbortController();
     setLoading(true);
     setError('');
     setResult(null);
-    void getSellerRequests({ status: 'APPROVED', page, limit: 8 })
+    void listAdminShops(query, controller.signal)
       .then((value) => {
-        if (active) setResult(value);
+        if (controller.signal.aborted) return;
+        const lastPage = Math.max(1, value.totalPages);
+        if ((query.page ?? 1) > lastPage) {
+          setQuery((current) => ({ ...current, page: lastPage }));
+          return;
+        }
+        setResult(value);
       })
       .catch((cause) => {
-        if (active)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải danh sách Seller.');
+        if (!controller.signal.aborted)
+          setError(cause instanceof Error ? cause.message : 'Không thể tải danh sách cửa hàng.');
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, [page, revision]);
+    return () => controller.abort();
+  }, [query, revision, token]);
+
   return (
     <Panel
-      title="Seller đã được phê duyệt"
-      subtitle="Hồ sơ thật từ hệ thống. Trạng thái phê duyệt không đồng nghĩa cửa hàng đang hoạt động."
+      title="Quản lý cửa hàng"
+      subtitle="Xem danh sách cửa hàng, đình chỉ hoặc khôi phục hoạt động bán hàng"
       icon={<Store size={19} />}
       action={
-        <Button
-          variant="secondary"
-          disabled={loading}
-          onClick={() => setRevision((value) => value + 1)}
-        >
-          <RefreshCw size={14} /> Làm mới
+        <Button variant="secondary" disabled={loading} onClick={refresh}>
+          <RefreshCw size={14} aria-hidden="true" /> Làm mới
         </Button>
       }
     >
+      <div className="mb-4 flex flex-wrap gap-3">
+        <div className="min-w-48 flex-1">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Tìm tên shop, tên chủ shop, email hoặc số điện thoại…"
+          />
+        </div>
+        <select
+          aria-label="Lọc trạng thái bán hàng"
+          value={query.status ?? ''}
+          onChange={(event) =>
+            setQuery((current) => ({
+              ...current,
+              page: 1,
+              status: (event.target.value || undefined) as AdminShop['status'] | undefined,
+            }))
+          }
+          className="min-h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs"
+        >
+          <option value="">Tất cả trạng thái</option>
+          <option value="ACTIVE">Đang mở bán</option>
+          <option value="SUSPENDED">Đang ngừng bán</option>
+        </select>
+      </div>
       {loading ? (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
-          Đang tải danh sách Seller…
+          Đang tải cửa hàng…
         </p>
       ) : error ? (
         <div role="alert" className="space-y-3 rounded-lg bg-red-50 p-4 text-sm text-red-700">
           <p>{error}</p>
-          <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
+          <Button variant="secondary" onClick={refresh}>
             Thử lại
           </Button>
         </div>
       ) : (
         result && (
           <>
-            <ManagementTable
-              paginate={false}
-              key={page}
-              rows={result.items}
-              searchPlaceholder="Tìm trong trang hồ sơ hiện tại..."
-              searchText={(row) =>
-                `${row.storeName} ${row.user?.fullName ?? ''} ${row.user?.email ?? ''} ${row.businessEmail ?? ''}`
-              }
-              columns={[
-                {
-                  title: 'Cửa hàng',
-                  render: (row) => (
-                    <>
-                      <p className="font-semibold">{row.storeName}</p>
-                      <span className="text-slate-400">{row.id}</span>
-                    </>
-                  ),
-                },
-                {
-                  title: 'Chủ tài khoản',
-                  render: (row) => (
-                    <>
-                      {row.user?.fullName ?? '—'}
-                      <p className="text-slate-500">{row.user?.email ?? '—'}</p>
-                    </>
-                  ),
-                },
-                {
-                  title: 'Liên hệ',
-                  render: (row) => (
-                    <>
-                      {row.phone}
-                      <p>{row.businessEmail ?? '—'}</p>
-                    </>
-                  ),
-                },
-                { title: 'Hồ sơ', render: () => <Badge tone="green">Đã duyệt</Badge> },
-                {
-                  title: 'Thao tác',
-                  render: (row) => (
-                    <Button variant="secondary" onClick={() => setDetailId(row.id)}>
-                      Xem chi tiết
-                    </Button>
-                  ),
-                },
-              ]}
-            />
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
+            {result.items.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-left text-xs">
+                  <thead className="bg-blue-50 text-slate-500">
+                    <tr>
+                      {[
+                        'Cửa hàng',
+                        'Chủ shop',
+                        'Địa chỉ',
+                        'Sản phẩm',
+                        'Trạng thái',
+                        'Thao tác',
+                      ].map((title) => (
+                        <th key={title} scope="col" className="p-3 font-semibold">
+                          {title}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {result.items.map((shop) => (
+                      <tr key={shop.id} className="align-top hover:bg-slate-50/70">
+                        <td className="max-w-60 break-words p-3">
+                          <p className="font-semibold">{shop.storeName}</p>
+                          <p className="mt-1 break-all text-[10px] text-slate-400">{shop.id}</p>
+                        </td>
+                        <td className="max-w-56 break-words p-3">
+                          <p>{shop.sellerFullName}</p>
+                          <p className="mt-1 break-all text-slate-500">{shop.sellerEmail}</p>
+                          <p className="mt-1 text-slate-500">
+                            {shop.sellerPhone || 'Chưa có số điện thoại'}
+                          </p>
+                        </td>
+                        <td className="max-w-60 break-words p-3">
+                          {shop.address
+                            ? shop.address.formattedAddress ||
+                              [
+                                shop.address.street,
+                                shop.address.ward,
+                                shop.address.district,
+                                shop.address.city,
+                              ]
+                                .filter(Boolean)
+                                .join(', ')
+                            : 'Chưa có địa chỉ'}
+                        </td>
+                        <td className="p-3">{shop.totalProducts}</td>
+                        <td className="p-3">
+                          <Badge tone={shop.isSellerActive ? 'green' : 'red'}>
+                            {shop.isSellerActive ? 'Đang mở bán' : 'Đang ngừng bán'}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="secondary" onClick={() => setDetailId(shop.id)}>
+                              Xem chi tiết
+                            </Button>
+                            <Button
+                              variant={shop.isSellerActive ? 'danger' : 'primary'}
+                              onClick={() => setTarget(shop)}
+                            >
+                              {shop.isSellerActive ? 'Đình chỉ' : 'Khôi phục'}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <EmptyState text="Không có cửa hàng phù hợp với bộ lọc." />
+            )}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
               <span>
-                Tổng {result.total} hồ sơ • Trang API {page}/{Math.max(1, result.totalPages)}
+                {result.total} cửa hàng · Trang {result.page}/{Math.max(1, result.totalPages)}
               </span>
               <div className="flex gap-2">
                 <Button
                   variant="secondary"
-                  disabled={page <= 1}
-                  onClick={() => setPage((value) => value - 1)}
+                  disabled={result.page <= 1}
+                  onClick={() => setQuery((current) => ({ ...current, page: result.page - 1 }))}
                 >
-                  Trang trước
+                  Trước
                 </Button>
                 <Button
                   variant="secondary"
-                  disabled={page >= result.totalPages}
-                  onClick={() => setPage((value) => value + 1)}
+                  disabled={result.page >= result.totalPages}
+                  onClick={() => setQuery((current) => ({ ...current, page: result.page + 1 }))}
                 >
-                  Trang sau
+                  Sau
                 </Button>
               </div>
             </div>
           </>
         )
       )}
-      <p className="mt-4 text-xs leading-5 text-slate-500">
-        Đình chỉ bán hàng trên dữ liệu thật chưa khả dụng. Màn này không dùng trạng thái bật/tắt
-        Seller Mode để thay cho trạng thái đình chỉ.
-      </p>
-      {detailId && (
-        <ShopDetail onClose={() => setDetailId(null)} />
+      {detailId && <ShopDetail onClose={() => setDetailId(null)} />}
+      {target && (
+        <ShopStatusDialog
+          key={target.id}
+          shop={target}
+          onClose={() => setTarget(null)}
+          onSuccess={(message) => {
+            setTarget(null);
+            toast.success(message);
+            refresh();
+          }}
+        />
       )}
     </Panel>
   );
 }
 
-export default function SellerStoreManagement({ data, actions }: AdminTabProps) {
-  const [tab, setTab] = useState<'approved' | 'demo'>('approved');
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const [decision, setDecision] = useState<{ id: string; status: ManagedStore['status'] } | null>(
-    null,
-  );
-  const detail = data.stores.find((item) => item.id === detailId);
+function ShopStatusDialog({
+  shop,
+  onClose,
+  onSuccess,
+}: {
+  shop: AdminShop;
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}) {
+  const toast = useToast();
+  const [reason, setReason] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const inFlight = useRef(false);
+  const suspending = shop.isSellerActive;
+  const title = suspending ? 'Đình chỉ bán hàng' : 'Khôi phục bán hàng';
+  const close = () => {
+    if (!inFlight.current) onClose();
+  };
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (inFlight.current) return;
+    if (suspending && !reason.trim()) {
+      setError('Vui lòng nhập lý do đình chỉ.');
+      return;
+    }
+    inFlight.current = true;
+    setPending(true);
+    setError('');
+    try {
+      const result = await updateAdminShopStatus(shop.id, {
+        isSellerActive: !suspending,
+        reason: reason.trim() || undefined,
+      });
+      onSuccess(result.message);
+    } catch (cause) {
+      const message =
+        cause instanceof Error ? cause.message : 'Không thể cập nhật trạng thái cửa hàng.';
+      setError(message);
+      toast.error(message);
+    } finally {
+      inFlight.current = false;
+      setPending(false);
+    }
+  };
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Nguồn dữ liệu cửa hàng">
-        <Button
-          variant={tab === 'approved' ? 'primary' : 'secondary'}
-          aria-pressed={tab === 'approved'}
-          onClick={() => setTab('approved')}
-        >
-          Seller đã duyệt từ hệ thống
-        </Button>
-        <Button
-          variant={tab === 'demo' ? 'primary' : 'secondary'}
-          aria-pressed={tab === 'demo'}
-          onClick={() => setTab('demo')}
-        >
-          Thử quản lý cửa hàng mẫu
-        </Button>
-      </div>
-      {tab === 'approved' ? (
-        <ApprovedSellerDirectory />
-      ) : (
-        <>
-          <DemoNotice />
-          <Panel
-            title="Quản lý cửa hàng mẫu"
-            subtitle="Xem thông tin và thử quy trình đình chỉ / khôi phục bán hàng"
-            icon={<Store size={19} />}
-          >
-            <ManagementTable
-              rows={data.stores}
-              searchText={(row) => `${row.id} ${row.name} ${row.owner} ${row.email}`}
-              filters={[
-                {
-                  key: 'status',
-                  label: 'Tất cả trạng thái',
-                  options: labelOptions({
-                    active: 'Đang hoạt động',
-                    suspended: 'Đình chỉ bán hàng',
-                  }),
-                },
-              ]}
-              columns={[
-                {
-                  title: 'Cửa hàng',
-                  render: (row) => (
-                    <>
-                      <p className="font-semibold">{row.name}</p>
-                      <span className="text-slate-400">{row.id}</span>
-                    </>
-                  ),
-                },
-                { title: 'Chủ cửa hàng', render: (row) => row.owner },
-                {
-                  title: 'Liên hệ',
-                  render: (row) => (
-                    <>
-                      {row.email}
-                      <p>{row.phone}</p>
-                    </>
-                  ),
-                },
-                {
-                  title: 'Trạng thái',
-                  render: (row) => (
-                    <StatusBadge
-                      status={row.status}
-                      label={row.status === 'active' ? 'Đang hoạt động' : 'Đình chỉ bán hàng'}
-                    />
-                  ),
-                },
-                {
-                  title: 'Thao tác',
-                  render: (row) => (
-                    <div className="flex flex-wrap gap-2">
-                      <Button variant="secondary" onClick={() => setDetailId(row.id)}>
-                        Chi tiết
-                      </Button>
-                      <Button
-                        variant={row.status === 'active' ? 'danger' : 'secondary'}
-                        onClick={() =>
-                          setDecision({
-                            id: row.id,
-                            status: row.status === 'active' ? 'suspended' : 'active',
-                          })
-                        }
-                      >
-                        {row.status === 'active' ? 'Đình chỉ' : 'Khôi phục'}
-                      </Button>
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          </Panel>
-        </>
-      )}
-      <Popup
-        isOpen={!!detail && tab === 'demo'}
-        onClose={() => setDetailId(null)}
-        title="Thông tin cửa hàng mẫu"
-        size="lg"
-      >
-        {detail && (
-          <DetailFields
-            fields={[
-              ['Cửa hàng', detail.name],
-              ['Chủ cửa hàng', detail.owner],
-              ['Email', detail.email],
-              ['Điện thoại', detail.phone],
-              ['Trạng thái', detail.status === 'active' ? 'Đang hoạt động' : 'Đình chỉ bán hàng'],
-              ['Ghi chú xử lý', detail.note],
-            ]}
+    <Popup isOpen title={title} onClose={close} closeOnEsc={!pending} closeOnOverlay={!pending}>
+      <form onSubmit={submit} className="space-y-4">
+        <p className="break-words text-sm text-slate-600">
+          {title} cho <strong>{shop.storeName}</strong>?
+        </p>
+        <p className="rounded-lg bg-blue-50 p-3 text-sm text-slate-600">
+          {suspending
+            ? 'Sản phẩm đang hoạt động của shop sẽ bị ẩn. Tài khoản cá nhân vẫn có thể mua hàng.'
+            : 'Shop sẽ được mở bán trở lại. Các sản phẩm đã bị ẩn cần được kích hoạt lại riêng.'}
+        </p>
+        <label className="block text-sm font-medium">
+          {suspending ? 'Lý do đình chỉ' : 'Ghi chú (không bắt buộc)'}
+          <textarea
+            autoFocus
+            required={suspending}
+            maxLength={500}
+            rows={3}
+            value={reason}
+            disabled={pending}
+            onChange={(event) => setReason(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
           />
+        </label>
+        {error && (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
         )}
-      </Popup>
-      {decision && (
-        <DecisionDialog
-          key={decision.id}
-          title={decision.status === 'suspended' ? 'Đình chỉ bán hàng' : 'Khôi phục bán hàng'}
-          description={`${decision.id}. Thao tác chỉ cập nhật cửa hàng mẫu, không khóa tài khoản Seller thật.`}
-          onClose={() => setDecision(null)}
-          onConfirm={(reason) => {
-            actions.updateCommerce({
-              entity: 'stores',
-              id: decision.id,
-              status: decision.status,
-              reason,
-            });
-            setDecision(null);
-          }}
-        />
-      )}
-    </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="secondary" onClick={close} disabled={pending}>
+            Hủy
+          </Button>
+          <Button type="submit" variant={suspending ? 'danger' : 'primary'} disabled={pending}>
+            {pending ? 'Đang xử lý…' : 'Xác nhận'}
+          </Button>
+        </div>
+      </form>
+    </Popup>
   );
 }

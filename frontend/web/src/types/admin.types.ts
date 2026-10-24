@@ -61,3 +61,43 @@ export interface SellerRequestReviewResult {
   message: string;
   request: SellerUpgradeRequest;
 }
+
+export interface AdminShop {
+  id: string;
+  sellerFullName: string;
+  sellerEmail: string;
+  sellerPhone: string | null;
+  storeName: string;
+  storeDescription: string | null;
+  avatarUrl: string | null;
+  isSellerActive: boolean;
+  status: 'ACTIVE' | 'SUSPENDED';
+  totalProducts: number;
+  address: {
+    street: string;
+    ward: string | null;
+    district: string | null;
+    city: string;
+    formattedAddress: string | null;
+  } | null;
+  createdAt: string;
+}
+
+export interface QueryAdminShopsParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: AdminShop['status'];
+  city?: string;
+}
+
+export interface UpdateShopStatusDto {
+  isSellerActive: boolean;
+  reason?: string;
+}
+
+export interface UpdateShopStatusResult {
+  success: boolean;
+  message: string;
+  shop: Pick<AdminShop, 'id' | 'storeName' | 'isSellerActive' | 'status'>;
+}

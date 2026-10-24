@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, ChevronRight, X } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
+import { useToast } from '../components/ToastNotification';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar, { adminNavigation } from '../components/adminDashboard/Sidebar';
 import AdminHeader from '../components/adminDashboard/AdminHeader';
@@ -92,7 +93,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   const [data, setData] = useState<AdminData>(initialAdminData);
   // Các state bên dưới quản lý giao diện: menu mobile, thông báo và hai loại hộp thoại.
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [toast, setToast] = useState('');
+  const { success: notify } = useToast();
   const [detail, setDetail] = useState<{ title: string; content: string } | null>(null);
   // execute giữ thao tác cần chạy, chỉ được gọi khi người dùng bấm "Xác nhận".
   const [confirmation, setConfirmation] = useState<{
@@ -100,15 +101,6 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
     content: string;
     execute: () => void;
   } | null>(null);
-  // useRef giữ ID của timer qua các lần render mà không gây render thêm như useState.
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Hàm cleanup chạy khi rời trang admin, tránh timer cũ tiếp tục cập nhật toast.
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    [],
-  );
   // Đổi tab thì cuộn lên đầu và đóng hộp thoại của tab trước đó.
   useEffect(() => {
     contentRef.current?.scrollTo(0, 0);
@@ -116,12 +108,6 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
     setDetail(null);
     setConfirmation(null);
   }, [pathname]);
-  const notify = (message: string) => {
-    setToast(message);
-    // Hủy timer trước để toast mới không bị timer của toast cũ đóng sớm.
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(''), 4000);
-  };
   // Các tab nhận một bộ callback chung thay vì tự sửa dữ liệu riêng.
   // Khi nối API: gửi yêu cầu tại các action, chỉ cập nhật state sau khi server thành công.
   const actions: AdminActions = {
@@ -209,9 +195,11 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
                     ? 'Sản phẩm từ hệ thống'
                     : tab === 'users'
                       ? 'Người dùng từ hệ thống'
-                      : tab === 'sellers'
-                        ? 'Hồ sơ Seller từ hệ thống'
-                        : 'Người dùng, danh mục và hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
+                      : tab === 'stores'
+                        ? 'Cửa hàng từ hệ thống'
+                        : tab === 'sellers'
+                          ? 'Hồ sơ Seller từ hệ thống'
+                          : 'Người dùng, danh mục và hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
               </span>
             </div>
             {/* Tiêu đề trang con; trang overview có tiêu đề riêng nên không hiển thị ở đây. */}
@@ -229,19 +217,6 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
           <span>3D Auction & Commerce Platform</span>
         </footer>
       </div>
-      {/* Đây là thông báo nổi (toast) sau thao tác; chuỗi toast rỗng thì ẩn. */}
-      {toast && (
-        <div
-          role="status"
-          className="fixed bottom-5 right-4 z-50 flex max-w-[calc(100vw-2rem)] items-center gap-3 rounded-xl bg-primary px-4 py-3 text-xs text-white shadow-xl sm:right-7"
-        >
-          <CheckCircle2 size={18} className="shrink-0" />
-          <span>{toast}</span>
-          <button aria-label="Đóng thông báo" onClick={() => setToast('')}>
-            <X size={16} />
-          </button>
-        </div>
-      )}
       {/* Hộp thoại thông tin chỉ để xem; hộp thoại confirmation bên dưới dành cho thao tác. */}
       {detail && <DetailDialog {...detail} onClose={() => setDetail(null)} />}
       {/* Đây là hộp xác nhận: chỉ chạy thao tác đã lưu khi bấm "Xác nhận". */}

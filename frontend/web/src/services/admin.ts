@@ -32,6 +32,10 @@ import type {
   SellerRequestReviewResult,
   StaffInvitationResult,
   StaffUser,
+  AdminShop,
+  QueryAdminShopsParams,
+  UpdateShopStatusDto,
+  UpdateShopStatusResult,
 } from '../types/admin.types';
 
 // Các API admin dùng chung Axios client, token phiên hiện tại và định dạng lỗi.
@@ -155,6 +159,29 @@ export function deleteAdminProduct(id: string): Promise<AdminProductMutationResu
   return adminRequest<AdminProductMutationResult>({
     url: `/admin/products/${encodeURIComponent(id)}`,
     method: 'DELETE',
+  });
+}
+
+export function listAdminShops(
+  params: QueryAdminShopsParams,
+  signal?: AbortSignal,
+): Promise<PaginatedResult<AdminShop>> {
+  return adminRequest<PaginatedResult<AdminShop>>({
+    url: '/admin/shops',
+    method: 'GET',
+    params,
+    signal,
+  });
+}
+
+export function updateAdminShopStatus(
+  sellerId: string,
+  dto: UpdateShopStatusDto,
+): Promise<UpdateShopStatusResult> {
+  return adminRequest<UpdateShopStatusResult>({
+    url: `/admin/shops/${encodeURIComponent(sellerId)}/status`,
+    method: 'PATCH',
+    data: dto,
   });
 }
 

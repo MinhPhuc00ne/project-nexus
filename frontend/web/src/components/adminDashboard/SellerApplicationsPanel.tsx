@@ -1,6 +1,7 @@
 import { RefreshCw, Store } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import Popup from '../Popup';
+import { useToast } from '../ToastNotification';
 import { API_BASE_URL } from '../../services/api';
 import {
   approveSellerRequest,
@@ -39,6 +40,7 @@ export default function SellerApplicationsPanel({
   preview = false,
 }: Pick<AdminTabProps, 'actions'> & { preview?: boolean }) {
   const state = useAdminSellerRequests();
+  const toast = useToast();
   const [search, setSearch] = useState('');
   const [detail, setDetail] = useState<SellerUpgradeRequest | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -108,12 +110,15 @@ export default function SellerApplicationsPanel({
       // Provider tải lại danh sách và tổng số chờ duyệt, đồng bộ cả sidebar/tổng quan.
       state.refresh();
       if (!active.current) return;
-      actions.notify(result.message);
+      toast.success(result.message);
       setDecision(null);
       setDetailOpen(false);
     } catch (cause) {
-      if (active.current)
-        setActionError(cause instanceof Error ? cause.message : 'Không thể xử lý hồ sơ.');
+      if (active.current) {
+        const message = cause instanceof Error ? cause.message : 'Không thể xử lý hồ sơ.';
+        setActionError(message);
+        toast.error(message);
+      }
     } finally {
       inFlight.current = false;
       if (active.current) setSubmitting(false);
