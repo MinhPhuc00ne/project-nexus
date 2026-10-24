@@ -15,6 +15,8 @@ export interface ShopSummaryItem {
   trustLevel: string;
   isSellerActive: boolean;
   address: {
+    street: string | null;
+    ward: string | null;
     city: string | null;
     district: string | null;
     formattedAddress: string | null;
@@ -164,9 +166,21 @@ export class ShopService {
       const description = approvedRequest?.storeDescription || null;
       const address = approvedRequest
         ? {
+            street: approvedRequest.street || null,
+            ward: approvedRequest.ward || null,
             city: approvedRequest.city || null,
             district: approvedRequest.district || null,
-            formattedAddress: approvedRequest.formattedAddress || null,
+            formattedAddress:
+              approvedRequest.formattedAddress ||
+              [
+                approvedRequest.street,
+                approvedRequest.ward,
+                approvedRequest.district,
+                approvedRequest.city,
+              ]
+                .filter(Boolean)
+                .join(', ') ||
+              null,
           }
         : null;
 
@@ -247,9 +261,21 @@ export class ShopService {
     const description = approvedRequest?.storeDescription || null;
     const address = approvedRequest
       ? {
+          street: approvedRequest.street || null,
+          ward: approvedRequest.ward || null,
           city: approvedRequest.city || null,
           district: approvedRequest.district || null,
-          formattedAddress: approvedRequest.formattedAddress || null,
+          formattedAddress:
+            approvedRequest.formattedAddress ||
+            [
+              approvedRequest.street,
+              approvedRequest.ward,
+              approvedRequest.district,
+              approvedRequest.city,
+            ]
+              .filter(Boolean)
+              .join(', ') ||
+            null,
         }
       : null;
 

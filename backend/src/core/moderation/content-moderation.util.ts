@@ -76,6 +76,50 @@ export const SENSITIVE_KEYWORDS: readonly string[] = [
   'so de',
 ];
 
+function hasVietnameseDiacritics(str: string): boolean {
+  return /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđĐ]/i.test(str);
+}
+
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Kiểm tra xem từ khóa có xuất hiện trong chuỗi với ranh giới từ (word boundary) đầy đủ hay không.
+ * Sử dụng Unicode property escape (?<=^|[^\p{L}\p{N}]) và (?=[^\p{L}\p{N}]|$) để phân tách chính xác
+ * ranh giới chữ cái/số trong tiếng Việt và quốc tế, tránh nhận nhầm chuỗi con (như 'Samsung' dính 'sung', 'iPad mini' dính 'min').
+ */
+function testWordBoundary(text: string, keyword: string): boolean {
+  const escaped = escapeRegex(keyword).replace(/\s+/g, '\\s+');
+  const regex = new RegExp(`(?<=^|[^\\p{L}\\p{N}])${escaped}(?=[^\\p{L}\\p{N}]|$)`, 'iu');
+  return regex.test(text);
+}
+
+/**
+ * Gom các ký tự bị cố tình chèn dấu ngắt nhịp (ví dụ: "s.ú.n.g", "đ-ạ-n", "m*ì*n")
+ * hoặc viết cách từng chữ cái (ví dụ: "s u n g") để chống lách bộ lọc,
+ * trong khi vẫn giữ nguyên cấu trúc phân tách từ của câu.
+ */
+function collapseEvasion(text: string): string {
+  // 1. Bỏ ký tự ngắt nhịp nằm trực tiếp giữa các ký tự chữ/số
+  let res = text.replace(/(?<=[\p{L}\p{N}])[._\-*~`!@#$%^&()+=]+(?=[\p{L}\p{N}])/gu, '');
+
+  // 2. Gom các ký tự đơn lẻ đứng rời rạc cạnh nhau: "s u n g" -> "sung"
+  const cleanSpacedSingleLetters = (t: string) =>
+    t.replace(
+      /(?<=^|[^\p{L}\p{N}])(\p{L})[\s._\-*~`!@#$%^&()+=]+(?=\p{L}(?:[^\p{L}\p{N}]|$))/gu,
+      '$1',
+    );
+
+  let prev = '';
+  while (res !== prev) {
+    prev = res;
+    res = cleanSpacedSingleLetters(res);
+  }
+
+  return res;
+}
+
 /**
  * Chuẩn hóa chuỗi văn bản tiếng Việt sang dạng không dấu, loại bỏ ký tự ngắt nhịp (dấu chấm, gạch ngang)
  * để phát hiện các hình thức lách từ (ví dụ: "s.ú.n.g", "đ-ạ-n", "c.ầ.n s.a")
@@ -91,9 +135,6 @@ export function normalizeText(rawText: string): string {
       .replace(/đ/g, 'd')
       .replace(/Đ/g, 'D')
       .toLowerCase()
-      // Thay thế các ký tự ngắt (chấm, gạch ngang, gạch dưới, phẩy, sao) bằng chuỗi rỗng để nối lại
-      .replace(/[._\-*~`!@#$%^&()+=]/g, '')
-      // Chuẩn hóa khoảng trắng
       .replace(/\s+/g, ' ')
       .trim()
   );
@@ -110,21 +151,48 @@ export function checkSensitiveContent(text?: string | null): {
     return { hasSensitive: false };
   }
 
-  const rawLower = text.toLowerCase();
-  const normalized = normalizeText(text);
-
+  // 1. Kiểm tra trực tiếp trên văn bản gốc với ranh giới từ (word boundary)
   for (const keyword of SENSITIVE_KEYWORDS) {
-    const normKeyword = normalizeText(keyword);
-
-    // 1. Kiểm tra trên văn bản gốc
-    if (rawLower.includes(keyword)) {
+    if (testWordBoundary(text, keyword)) {
       return { hasSensitive: true, matchedWord: keyword };
     }
+  }
 
-    // 2. Kiểm tra trên văn bản đã chuẩn hóa chống lách từ
-    const regex = new RegExp(`(^|\\s)${normKeyword}(\\s|$)`, 'i');
-    if (regex.test(normalized) || normalized.includes(normKeyword)) {
-      return { hasSensitive: true, matchedWord: keyword };
+  // 2. Chống lách từ qua dấu ngăn cách và tách chữ cái (ví dụ: "s.ú.n.g", "s u n g")
+  const evasionCleaned = collapseEvasion(text);
+  if (evasionCleaned !== text) {
+    for (const keyword of SENSITIVE_KEYWORDS) {
+      if (testWordBoundary(evasionCleaned, keyword)) {
+        return { hasSensitive: true, matchedWord: keyword };
+      }
+    }
+  }
+
+  // 3. Kiểm tra các từ khóa không dấu đối với văn bản không dấu (ví dụ: "ban sung", "ban dan", "ban min")
+  // Đồng thời đảm bảo không bắt nhầm các từ có dấu hợp lệ khác (ví dụ: "Đàn guitar" không bị nhận nhầm thành "dan" -> "đạn")
+  const normOriginal = normalizeText(text);
+  const normEvasion = normalizeText(evasionCleaned);
+
+  for (const keyword of SENSITIVE_KEYWORDS) {
+    if (!hasVietnameseDiacritics(keyword)) {
+      const escaped = escapeRegex(keyword).replace(/\s+/g, '\\s+');
+      const regex = new RegExp(`(?<=^|[^\\p{L}\\p{N}])(${escaped})(?=[^\\p{L}\\p{N}]|$)`, 'giu');
+
+      for (const target of [normOriginal, normEvasion]) {
+        let match: RegExpExecArray | null;
+        while ((match = regex.exec(target)) !== null) {
+          const matchIndex = match.index;
+          const matchLength = match[0].length;
+          const originalSnippet = text.slice(matchIndex, matchIndex + matchLength);
+
+          if (
+            !hasVietnameseDiacritics(originalSnippet) ||
+            originalSnippet.toLowerCase() === keyword.toLowerCase()
+          ) {
+            return { hasSensitive: true, matchedWord: keyword };
+          }
+        }
+      }
     }
   }
 
