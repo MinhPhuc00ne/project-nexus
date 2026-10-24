@@ -82,7 +82,7 @@ async function bootstrap(): Promise<void> {
       'Quản lý giỏ hàng Buyer, Price Revalidation, Merge giỏ hàng Guest',
     )
     .addTag('9. NOTIFICATIONS', 'Thông báo người dùng, danh sách thông báo và đánh dấu đã đọc')
-    .addTag('9. NOTIFICATIONS', 'Thông báo người dùng, danh sách thông báo và đánh dấu đã đọc')
+    .addTag('10. FULFILLMENT & SHIPPING', 'Vận chuyển, tính cước giao hàng GHN và cự ly bản đồ')
     .addBearerAuth()
     .build();
 

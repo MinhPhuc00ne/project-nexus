@@ -12,6 +12,7 @@ import { MediaModule } from './modules/media/media.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CommerceModule } from './modules/commerce/commerce.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { FulfillmentModule } from './modules/fulfillment/fulfillment.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     CatalogModule,
     CommerceModule,
     NotificationsModule,
+    FulfillmentModule,
   ],
 })
 export class AppModule {}
