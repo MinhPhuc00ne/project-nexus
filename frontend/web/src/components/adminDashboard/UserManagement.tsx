@@ -5,6 +5,7 @@ import type { AdminUser, AdminUserRole, AdminUserStatus } from '../../types/user
 import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
 import type { AdminTabProps } from './adminTypes';
 import { useAdminUsers } from './useAdminUsers';
+import UserAccountDetail from './UserAccountDetail';
 
 export function StaffInvite({ actions }: AdminTabProps) {
   const [name, setName] = useState('');
@@ -131,6 +132,7 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
   const { search, setSearch, query, setQuery, result, loading, error, refresh } =
     useAdminUsers(preview);
   const [target, setTarget] = useState<AdminUser | null>(null);
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
 
   return (
     <Panel
@@ -237,6 +239,9 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
                   {user.isVerified ? 'Đã xác minh' : 'Chưa xác minh'}
                 </p>
               </div>
+              <Button variant="secondary" onClick={() => setDetailUserId(user.id)}>
+                Xem chi tiết
+              </Button>
               {user.role !== 'ADMIN' && (
                 <Button
                   variant={user.isLocked ? 'secondary' : 'danger'}
@@ -274,6 +279,13 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
             </Button>
           </div>
         </div>
+      )}
+      {detailUserId && (
+        <UserAccountDetail
+          key={detailUserId}
+          userId={detailUserId}
+          onClose={() => setDetailUserId(null)}
+        />
       )}
       {target && (
         <UserStatusDialog

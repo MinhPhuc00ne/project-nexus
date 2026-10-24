@@ -50,7 +50,10 @@ export interface SellerUpgradeRequest {
   storeName: string;
   storeDescription: string | null;
   street?: string | null;
+  ward?: string | null;
+  district?: string | null;
   city?: string | null;
+  formattedAddress?: string | null;
   phone: string;
   businessEmail: string | null;
   identityCardNumber: string | null;
@@ -118,6 +121,38 @@ export interface AdminUser {
   walletBalance: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdminUserAddress {
+  id: string;
+  userId: string;
+  recipientName: string;
+  phone: string;
+  street: string;
+  ward: string | null;
+  district: string | null;
+  city: string;
+  country: string;
+  latitude: string | null;
+  longitude: string | null;
+  formattedAddress: string | null;
+  placeId: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  personalEmail: string | null;
+  wallet: UserWallet | null;
+  addresses: AdminUserAddress[];
+  stats: {
+    products: number;
+    ordersAsBuyer: number;
+    ordersAsSeller: number;
+    auctions: number;
+    disputesOpened: number;
+  };
 }
 
 export interface QueryUsersParams {

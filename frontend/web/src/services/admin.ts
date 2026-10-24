@@ -1,13 +1,27 @@
 import axios, { type AxiosRequestConfig } from 'axios';
+import type {
+  AdminProduct,
+  AdminProductDetail,
+  AdminProductMutationResult,
+  QueryAdminProductsParams,
+  UpdateProductStatusDto,
+  UpdateProductStatusResult,
+} from '../types/admin-product.types';
 import api, { ApiRequestError } from './api';
 import { getStoredToken } from './auth';
 import type {
   AdminUser,
+  AdminUserDetail,
   QueryUsersParams,
   SellerUpgradeRequest,
   UserStatusResult,
 } from '../types/user.types';
-import type { CategoryTreeItem } from '../types/category.types';
+import type {
+  CategoryTreeItem,
+  CreateCategoryDto,
+  DeleteCategoryResult,
+  UpdateCategoryDto,
+} from '../types/category.types';
 import type {
   CreateStaffDto,
   CreateStaffResult,
@@ -67,11 +81,80 @@ export function listUsers(params: QueryUsersParams, signal?: AbortSignal) {
   });
 }
 
+export function getUserById(id: string, signal?: AbortSignal): Promise<AdminUserDetail> {
+  return adminRequest<AdminUserDetail>({
+    url: `/admin/users/${encodeURIComponent(id)}`,
+    method: 'GET',
+    signal,
+  });
+}
+
 export function getCategoryTree(signal?: AbortSignal): Promise<CategoryTreeItem[]> {
   return adminRequest<CategoryTreeItem[]>({
     url: '/catalog/categories',
     method: 'GET',
     signal,
+  });
+}
+
+export function createCategory(dto: CreateCategoryDto): Promise<CategoryTreeItem> {
+  return adminRequest<CategoryTreeItem>({
+    url: '/admin/categories',
+    method: 'POST',
+    data: dto,
+  });
+}
+
+export function updateCategory(id: string, dto: UpdateCategoryDto): Promise<CategoryTreeItem> {
+  return adminRequest<CategoryTreeItem>({
+    url: `/admin/categories/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    data: dto,
+  });
+}
+
+export function deleteCategory(id: string): Promise<DeleteCategoryResult> {
+  return adminRequest<DeleteCategoryResult>({
+    url: `/admin/categories/${encodeURIComponent(id)}`,
+    method: 'DELETE',
+  });
+}
+
+export function listAdminProducts(
+  params: QueryAdminProductsParams,
+  signal?: AbortSignal,
+): Promise<PaginatedResult<AdminProduct>> {
+  return adminRequest<PaginatedResult<AdminProduct>>({
+    url: '/admin/products',
+    method: 'GET',
+    params,
+    signal,
+  });
+}
+
+export function getAdminProductById(id: string, signal?: AbortSignal): Promise<AdminProductDetail> {
+  return adminRequest<AdminProductDetail>({
+    url: `/admin/products/${encodeURIComponent(id)}`,
+    method: 'GET',
+    signal,
+  });
+}
+
+export function updateAdminProductStatus(
+  id: string,
+  dto: UpdateProductStatusDto,
+): Promise<UpdateProductStatusResult> {
+  return adminRequest<UpdateProductStatusResult>({
+    url: `/admin/products/${encodeURIComponent(id)}/status`,
+    method: 'PATCH',
+    data: dto,
+  });
+}
+
+export function deleteAdminProduct(id: string): Promise<AdminProductMutationResult> {
+  return adminRequest<AdminProductMutationResult>({
+    url: `/admin/products/${encodeURIComponent(id)}`,
+    method: 'DELETE',
   });
 }
 

@@ -295,10 +295,17 @@ export default function SellerApplicationsPanel({
                   ['Email tài khoản', detail.user?.email],
                   ['Điện thoại', detail.phone],
                   ['Email kinh doanh', detail.businessEmail],
+                  [
+                    'Địa chỉ cửa hàng / kho lấy hàng',
+                    detail.formattedAddress?.trim() ||
+                      [detail.street, detail.ward, detail.district, detail.city]
+                        .map((part) => part?.trim())
+                        .filter(Boolean)
+                        .join(', '),
+                  ],
                   ['CCCD / Mã doanh nghiệp', detail.identityCardNumber],
                   ['Ngày gửi', new Date(detail.createdAt).toLocaleString('vi-VN')],
                   ['Trạng thái', labels[detail.status]],
-                  ['Người xét duyệt', detail.reviewedBy?.fullName],
                   [
                     'Ngày xét duyệt',
                     detail.reviewedAt ? new Date(detail.reviewedAt).toLocaleString('vi-VN') : null,

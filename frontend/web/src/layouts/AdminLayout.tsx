@@ -205,11 +205,13 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
               <span className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] text-primary">
                 {tab === 'categories'
                   ? 'Danh mục từ hệ thống'
-                  : tab === 'users'
-                    ? 'Người dùng từ hệ thống'
-                    : tab === 'sellers'
-                      ? 'Hồ sơ Seller từ hệ thống'
-                      : 'Người dùng, danh mục và hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
+                  : tab === 'products'
+                    ? 'Sản phẩm từ hệ thống'
+                    : tab === 'users'
+                      ? 'Người dùng từ hệ thống'
+                      : tab === 'sellers'
+                        ? 'Hồ sơ Seller từ hệ thống'
+                        : 'Người dùng, danh mục và hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
               </span>
             </div>
             {/* Tiêu đề trang con; trang overview có tiêu đề riêng nên không hiển thị ở đây. */}

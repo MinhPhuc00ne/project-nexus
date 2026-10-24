@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { RefreshCw, Store } from 'lucide-react';
 import Popup from '../Popup';
 import { getSellerRequests } from '../../services/admin';
@@ -16,6 +15,7 @@ import {
   StatusBadge,
 } from './CommerceUI';
 import type { ManagedStore } from './commerceTypes';
+import ShopDetail from './ShopDetail';
 
 function ApprovedSellerDirectory() {
   const [page, setPage] = useState(1);
@@ -23,7 +23,7 @@ function ApprovedSellerDirectory() {
   const [result, setResult] = useState<PaginatedResult<SellerUpgradeRequest> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [detail, setDetail] = useState<SellerUpgradeRequest | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -113,8 +113,8 @@ function ApprovedSellerDirectory() {
                 {
                   title: 'Thao tác',
                   render: (row) => (
-                    <Button variant="secondary" onClick={() => setDetail(row)}>
-                      Xem cửa hàng
+                    <Button variant="secondary" onClick={() => setDetailId(row.id)}>
+                      Xem chi tiết
                     </Button>
                   ),
                 },
@@ -148,35 +148,9 @@ function ApprovedSellerDirectory() {
         Đình chỉ bán hàng trên dữ liệu thật chưa khả dụng. Màn này không dùng trạng thái bật/tắt
         Seller Mode để thay cho trạng thái đình chỉ.
       </p>
-      <Popup
-        isOpen={!!detail}
-        onClose={() => setDetail(null)}
-        title="Hồ sơ cửa hàng đã duyệt"
-        size="lg"
-      >
-        {detail && (
-          <div className="space-y-5">
-            <DetailFields
-              fields={[
-                ['Tên cửa hàng', detail.storeName],
-                ['Chủ tài khoản', detail.user?.fullName],
-                ['Email tài khoản', detail.user?.email],
-                ['Email kinh doanh', detail.businessEmail],
-                ['Điện thoại', detail.phone],
-                ['Mô tả cửa hàng', detail.storeDescription],
-                [
-                  'Ngày duyệt',
-                  detail.reviewedAt ? new Date(detail.reviewedAt).toLocaleDateString('vi-VN') : '—',
-                ],
-                ['Người duyệt', detail.reviewedBy?.fullName],
-              ]}
-            />
-            <Link to="/admin/sellers" className="text-sm font-semibold text-primary underline">
-              Đến hồ sơ phê duyệt Seller
-            </Link>
-          </div>
-        )}
-      </Popup>
+      {detailId && (
+        <ShopDetail onClose={() => setDetailId(null)} />
+      )}
     </Panel>
   );
 }

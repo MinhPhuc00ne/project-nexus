@@ -1,155 +1,266 @@
-import { useState } from 'react';
-import { Package } from 'lucide-react';
-import Popup from '../Popup';
-import { Button, Panel } from './AdminUI';
-import {
-  DecisionDialog,
-  DemoNotice,
-  DetailFields,
-  labelOptions,
-  ManagementTable,
-  StatusBadge,
-} from './CommerceUI';
+import { useEffect, useState } from 'react';
+import { Package, RefreshCw, Trash2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { getCategoryTree } from '../../services/admin';
+import type { AdminProduct, AdminProductStatus } from '../../types/admin-product.types';
+import type { CategoryTreeItem } from '../../types/category.types';
+import { flattenCategories } from '../../utils/category-tree';
+import { Badge, Button, EmptyState, Panel, SearchInput } from './AdminUI';
+import { ProductActionDialog, ProductDetailDialog } from './ProductDialogs';
 import { formatMoney } from './adminData';
+import { adminProductLabels } from './adminProductData';
 import type { AdminTabProps } from './adminTypes';
-import { productLabels, saleTypeLabels, type ProductStatus } from './commerceTypes';
+import { useAdminProducts } from './useAdminProducts';
 
-export default function ProductManagement({ data, actions }: AdminTabProps) {
+export default function ProductManagement({ actions }: AdminTabProps) {
+  const { token } = useAuth();
+  const { search, setSearch, query, setQuery, result, loading, error, refresh } =
+    useAdminProducts();
+  const [categories, setCategories] = useState<CategoryTreeItem[]>([]);
+  const [categoryError, setCategoryError] = useState('');
+  const [categoryRevision, setCategoryRevision] = useState(0);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [decision, setDecision] = useState<{
-    id: string;
-    status: ProductStatus;
-    title: string;
+    product: AdminProduct;
+    kind: 'activate' | 'hide' | 'delete';
   } | null>(null);
-  const detail = data.products.find((item) => item.id === detailId);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setCategoryError('');
+    void getCategoryTree(controller.signal)
+      .then((value) => {
+        if (!controller.signal.aborted) setCategories(value);
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted)
+          setCategoryError(
+            cause instanceof Error ? cause.message : 'Không thể tải bộ lọc danh mục.',
+          );
+      });
+    return () => controller.abort();
+  }, [token, categoryRevision]);
+
   return (
-    <div className="space-y-5">
-      <DemoNotice />
-      <Panel
-        title="Sản phẩm của Seller"
-        subtitle="Duyệt nội dung, kiểm tra thông tin và ẩn sản phẩm vi phạm"
-        icon={<Package size={19} />}
-      >
-        <ManagementTable
-          rows={data.products}
-          searchText={(row) => `${row.id} ${row.name} ${row.seller} ${row.category}`}
-          searchPlaceholder="Tìm mã sản phẩm, tên, seller hoặc danh mục..."
-          filters={[
-            { key: 'status', label: 'Tất cả trạng thái', options: labelOptions(productLabels) },
-            { key: 'type', label: 'Mọi hình thức bán', options: labelOptions(saleTypeLabels) },
-          ]}
-          columns={[
-            {
-              title: 'Sản phẩm',
-              render: (row) => (
-                <>
-                  <p className="font-semibold">{row.name}</p>
-                  <span className="text-slate-400">
-                    {row.id} • {row.category}
-                  </span>
-                </>
-              ),
-            },
-            { title: 'Seller', render: (row) => row.seller },
-            { title: 'Hình thức', render: (row) => saleTypeLabels[row.type] },
-            { title: 'Giá / khởi điểm', render: (row) => formatMoney(row.price) },
-            {
-              title: 'Trạng thái',
-              render: (row) => (
-                <StatusBadge status={row.status} label={productLabels[row.status]} />
-              ),
-            },
-            {
-              title: 'Thao tác',
-              render: (row) => (
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="secondary" onClick={() => setDetailId(row.id)}>
-                    Chi tiết
-                  </Button>
-                  {row.status === 'pending' && (
-                    <>
-                      <Button
-                        onClick={() =>
-                          setDecision({ id: row.id, status: 'active', title: 'Duyệt sản phẩm' })
-                        }
-                      >
-                        Duyệt
-                      </Button>
-                      <Button
-                        variant="danger"
-                        onClick={() =>
-                          setDecision({ id: row.id, status: 'rejected', title: 'Từ chối sản phẩm' })
-                        }
-                      >
-                        Từ chối
-                      </Button>
-                    </>
-                  )}
-                  {row.status === 'active' && (
-                    <Button
-                      variant="danger"
-                      onClick={() =>
-                        setDecision({ id: row.id, status: 'hidden', title: 'Ẩn sản phẩm' })
-                      }
-                    >
-                      Ẩn
-                    </Button>
-                  )}
-                  {row.status === 'hidden' && (
-                    <Button
-                      onClick={() =>
-                        setDecision({ id: row.id, status: 'active', title: 'Hiện lại sản phẩm' })
-                      }
-                    >
-                      Hiện lại
-                    </Button>
-                  )}
-                </div>
-              ),
-            },
-          ]}
-        />
-      </Panel>
-      <Popup
-        isOpen={!!detail}
-        onClose={() => setDetailId(null)}
-        title="Chi tiết sản phẩm"
-        size="lg"
-      >
-        {detail && (
-          <DetailFields
-            fields={[
-              ['Mã sản phẩm', detail.id],
-              ['Tên sản phẩm', detail.name],
-              ['Seller', detail.seller],
-              ['Danh mục', detail.category],
-              ['Hình thức bán', saleTypeLabels[detail.type]],
-              ['Giá / giá khởi điểm', formatMoney(detail.price)],
-              ['Trạng thái', productLabels[detail.status]],
-              ['Mô tả', detail.description],
-              ['Ghi chú kiểm duyệt', detail.note],
-            ]}
+    <Panel
+      title="Sản phẩm của Seller"
+      subtitle="Xem thông tin, quản lý trạng thái và xử lý sản phẩm trên hệ thống"
+      icon={<Package size={19} />}
+      action={
+        <Button variant="secondary" disabled={loading} onClick={refresh}>
+          <RefreshCw size={14} aria-hidden="true" /> Làm mới
+        </Button>
+      }
+    >
+      <div className="mb-4 flex flex-wrap gap-3">
+        <div className="min-w-48 flex-1">
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Tìm tên, mô tả sản phẩm hoặc tên/email seller…"
           />
-        )}
-      </Popup>
+        </div>
+        <select
+          aria-label="Lọc trạng thái sản phẩm"
+          value={query.status ?? ''}
+          onChange={(event) =>
+            setQuery((current) => ({
+              ...current,
+              status: (event.target.value || undefined) as AdminProductStatus | undefined,
+              page: 1,
+            }))
+          }
+          className="min-h-10 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"
+        >
+          <option value="">Tất cả trạng thái</option>
+          {Object.entries(adminProductLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Lọc danh mục sản phẩm"
+          value={query.categoryId ?? ''}
+          onChange={(event) =>
+            setQuery((current) => ({
+              ...current,
+              categoryId: event.target.value || undefined,
+              page: 1,
+            }))
+          }
+          className="min-h-10 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"
+        >
+          <option value="">Tất cả danh mục</option>
+          {flattenCategories(categories).map(({ category, path }) => (
+            <option key={category.id} value={category.id}>
+              {path}
+            </option>
+          ))}
+        </select>
+      </div>
+      {categoryError && (
+        <div role="alert" className="mb-4 flex flex-wrap items-center gap-2 text-xs text-red-700">
+          <p>Không tải được bộ lọc danh mục: {categoryError}</p>
+          <Button variant="secondary" onClick={() => setCategoryRevision((value) => value + 1)}>
+            Thử lại
+          </Button>
+        </div>
+      )}
+      {loading ? (
+        <p role="status" className="py-10 text-center text-sm text-slate-500">
+          Đang tải sản phẩm…
+        </p>
+      ) : error ? (
+        <div role="alert" className="space-y-3 py-5 text-sm text-red-700">
+          <p>{error}</p>
+          <Button variant="secondary" onClick={refresh}>
+            Thử lại
+          </Button>
+        </div>
+      ) : (
+        result && (
+          <>
+            {result.items.length ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[900px] text-left text-xs">
+                  <thead className="bg-blue-50 text-slate-500">
+                    <tr>
+                      {[
+                        'Sản phẩm',
+                        'Seller',
+                        'Giá niêm yết',
+                        'Tồn kho',
+                        'Trạng thái',
+                        'Thao tác',
+                      ].map((title) => (
+                        <th scope="col" key={title} className="p-3 font-semibold">
+                          {title}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {result.items.map((product) => (
+                      <tr key={product.id} className="align-top hover:bg-slate-50/70">
+                        <td className="p-3">
+                          <div className="flex gap-3">
+                            {product.thumbnailUrl && (
+                              <img
+                                src={product.thumbnailUrl}
+                                alt=""
+                                className="size-14 shrink-0 rounded-lg border border-slate-200 object-contain"
+                              />
+                            )}
+                            <div className="max-w-72 break-words">
+                              <p className="font-semibold">{product.title}</p>
+                              <p className="mt-1 text-slate-500">{product.category.name}</p>
+                              <p className="mt-1 break-all text-[10px] text-slate-400">
+                                {product.id}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="max-w-56 break-words p-3">
+                          <p>{product.seller.fullName}</p>
+                          <p className="mt-1 break-all text-slate-500">{product.seller.email}</p>
+                        </td>
+                        <td className="whitespace-nowrap p-3">{formatMoney(product.basePrice)}</td>
+                        <td className="p-3">
+                          <p>{product.stock.availableQty} có thể bán</p>
+                          <p className="mt-1 text-slate-500">Tổng: {product.stock.totalQty}</p>
+                        </td>
+                        <td className="p-3">
+                          <Badge
+                            tone={
+                              product.status === 'ACTIVE'
+                                ? 'green'
+                                : product.status === 'INACTIVE'
+                                  ? 'red'
+                                  : 'gray'
+                            }
+                          >
+                            {adminProductLabels[product.status]}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex max-w-64 flex-wrap gap-2">
+                            <Button variant="secondary" onClick={() => setDetailId(product.id)}>
+                              Chi tiết
+                            </Button>
+                            {product.status === 'ACTIVE' ? (
+                              <Button
+                                variant="danger"
+                                onClick={() => setDecision({ product, kind: 'hide' })}
+                              >
+                                Ẩn
+                              </Button>
+                            ) : (
+                              <Button onClick={() => setDecision({ product, kind: 'activate' })}>
+                                {product.status === 'DRAFT' ? 'Cho phép bán' : 'Hiện lại'}
+                              </Button>
+                            )}
+                            <Button
+                              variant="danger"
+                              aria-label={`Xóa sản phẩm ${product.title}`}
+                              title="Xóa sản phẩm"
+                              onClick={() => setDecision({ product, kind: 'delete' })}
+                            >
+                              <Trash2 size={15} aria-hidden="true" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <EmptyState text="Không có sản phẩm phù hợp với bộ lọc." />
+            )}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+              <span>
+                {result.total} sản phẩm · Trang {result.page}/{Math.max(1, result.totalPages)}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  disabled={result.page <= 1}
+                  onClick={() => setQuery((current) => ({ ...current, page: result.page - 1 }))}
+                >
+                  Trước
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={result.page >= result.totalPages}
+                  onClick={() => setQuery((current) => ({ ...current, page: result.page + 1 }))}
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
+          </>
+        )
+      )}
+      {detailId && (
+        <ProductDetailDialog
+          key={detailId}
+          productId={detailId}
+          onClose={() => setDetailId(null)}
+        />
+      )}
       {decision && (
-        <DecisionDialog
-          key={`${decision.id}-${decision.status}`}
-          title={decision.title}
-          description={`${decision.id}. Quyết định chỉ áp dụng cho dữ liệu mẫu, không thay đổi lịch đấu giá.`}
-          requireReason={decision.status !== 'active'}
+        <ProductActionDialog
+          key={`${decision.product.id}-${decision.kind}`}
+          {...decision}
           onClose={() => setDecision(null)}
-          onConfirm={(reason) => {
-            actions.updateCommerce({
-              entity: 'products',
-              id: decision.id,
-              status: decision.status,
-              reason,
-            });
+          onSuccess={(message) => {
             setDecision(null);
+            actions.notify(message);
+            refresh();
           }}
         />
       )}
-    </div>
+    </Panel>
   );
 }
