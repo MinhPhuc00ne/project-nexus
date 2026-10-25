@@ -188,44 +188,50 @@ model User {
   createdAt        DateTime             @default(now()) @map("created_at")
   updatedAt        DateTime             @updatedAt @map("updated_at")
 
-  wallet                  Wallet?
-  addresses               UserAddress[]
-  refreshTokens           RefreshToken[]
-  products                Product[]
-  ordersAsBuyer           Order[]                  @relation("BuyerOrders")
-  ordersAsSeller          Order[]                  @relation("SellerOrders")
-  auctions                Auction[]
-  bids                    Bid[]
-  cart                    Cart?
-  reputationLogs          ReputationLog[]
-  notifications           Notification[]
-  notificationPreferences NotificationPreference[]
-  reviewsGiven            Review[]                 @relation("Reviewer")
-  reviewsReceived         Review[]                 @relation("Reviewee")
-  disputesOpened          Dispute[]                @relation("DisputeOpener")
-  disputesResolved        Dispute[]                @relation("DisputeResolver")
-  sellerUpgradeRequests   SellerUpgradeRequest[]   @relation("UserSellerRequests")
-  reviewedSellerRequests  SellerUpgradeRequest[]   @relation("AdminReviewedSellerRequests")
-  shopActionLogs          ShopActionLog[]          @relation("ShopActionLogs")
-  administeredShopActionLogs ShopActionLog[]       @relation("AdminShopActionLogs")
-  shopViolations          ShopViolation[]          @relation("ShopViolations")
-  reportedShopViolations  ShopViolation[]          @relation("ReportedShopViolations")
-  handledShopViolations   ShopViolation[]          @relation("HandledShopViolations")
-  withdrawalRequests      WithdrawalRequest[]      @relation("UserWithdrawalRequests")
-  reviewedWithdrawalRequests WithdrawalRequest[]   @relation("AdminReviewedWithdrawals")
+  wallet                     Wallet?
+  addresses                  UserAddress[]
+  refreshTokens              RefreshToken[]
+  products                   Product[]
+  ordersAsBuyer              Order[]                  @relation("BuyerOrders")
+  ordersAsSeller             Order[]                  @relation("SellerOrders")
+  auctions                   Auction[]
+  bids                       Bid[]
+  cart                       Cart?
+  reputationLogs             ReputationLog[]
+  notifications              Notification[]
+  notificationPreferences    NotificationPreference[]
+  reviewsGiven               Review[]                 @relation("Reviewer")
+  reviewsReceived            Review[]                 @relation("Reviewee")
+  disputesOpened             Dispute[]                @relation("DisputeOpener")
+  disputesResolved           Dispute[]                @relation("DisputeResolver")
+  sellerUpgradeRequests      SellerUpgradeRequest[]   @relation("UserSellerRequests")
+  reviewedSellerRequests     SellerUpgradeRequest[]   @relation("AdminReviewedSellerRequests")
+  shopActionLogs             ShopActionLog[]          @relation("ShopActionLogs")
+  administeredShopActionLogs ShopActionLog[]          @relation("AdminShopActionLogs")
+  shopViolations             ShopViolation[]          @relation("ShopViolations")
+  reportedShopViolations     ShopViolation[]          @relation("ReportedShopViolations")
+  handledShopViolations      ShopViolation[]          @relation("HandledShopViolations")
+  withdrawalRequests         WithdrawalRequest[]      @relation("UserWithdrawalRequests")
+  reviewedWithdrawalRequests WithdrawalRequest[]      @relation("AdminReviewedWithdrawals")
+  chatConversationsUser1     ChatConversation[]       @relation("ChatParticipant1")
+  chatConversationsUser2     ChatConversation[]       @relation("ChatParticipant2")
+  chatMessagesSent           ChatMessage[]            @relation("ChatSender")
+  chatConversationsUser1  ChatConversation[]       @relation("ChatParticipant1")
+  chatConversationsUser2  ChatConversation[]       @relation("ChatParticipant2")
+  chatMessagesSent        ChatMessage[]            @relation("ChatSender")
 
   @@map("users")
 }
 
 model UserAddress {
-  id            String   @id @default(uuid())
-  userId        String   @map("user_id")
-  recipientName String   @map("recipient_name")
-  phone         String
-  street        String
-  ward          String?
-  district      String?
-  city          String
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  recipientName    String   @map("recipient_name")
+  phone            String
+  street           String
+  ward             String?
+  district         String?
+  city             String
   country          String   @default("VN")
   latitude         Decimal? @db.Decimal(10, 8)
   longitude        Decimal? @db.Decimal(11, 8)
@@ -745,19 +751,19 @@ model ShopViolation {
 }
 
 model WithdrawalRequest {
-  id                 String           @id @default(uuid())
-  userId             String           @map("user_id")
-  amount             Decimal          @db.Decimal(14, 2)
-  bankName           String           @map("bank_name")
-  accountNumber      String           @map("account_number")
-  accountHolderName  String           @map("account_holder_name")
-  status             WithdrawalStatus @default(PENDING)
-  rejectionReason    String?          @map("rejection_reason") @db.Text
-  adminNote          String?          @map("admin_note") @db.Text
-  reviewedByAdminId  String?          @map("reviewed_by_admin_id")
-  reviewedAt         DateTime?        @map("reviewed_at")
-  createdAt          DateTime         @default(now()) @map("created_at")
-  updatedAt          DateTime         @updatedAt @map("updated_at")
+  id                String           @id @default(uuid())
+  userId            String           @map("user_id")
+  amount            Decimal          @db.Decimal(14, 2)
+  bankName          String           @map("bank_name")
+  accountNumber     String           @map("account_number")
+  accountHolderName String           @map("account_holder_name")
+  status            WithdrawalStatus @default(PENDING)
+  rejectionReason   String?          @map("rejection_reason") @db.Text
+  adminNote         String?          @map("admin_note") @db.Text
+  reviewedByAdminId String?          @map("reviewed_by_admin_id")
+  reviewedAt        DateTime?        @map("reviewed_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
 
   user       User  @relation("UserWithdrawalRequests", fields: [userId], references: [id], onDelete: Cascade)
   reviewedBy User? @relation("AdminReviewedWithdrawals", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
@@ -765,3 +771,90 @@ model WithdrawalRequest {
   @@index([userId, status])
   @@map("withdrawal_requests")
 }
+
+model ChatConversation {
+  id               String    @id @default(uuid())
+  type             String    @default("BUYER_SELLER")
+  participant1Id   String    @map("participant1_id")
+  participant2Id   String    @map("participant2_id")
+  title            String?   @db.Text
+  contextId        String?   @map("context_id")
+  contextType      String?   @map("context_type")
+  lastMessage      String?   @map("last_message") @db.Text
+  lastMessageAt    DateTime? @map("last_message_at")
+  unreadCountUser1 Int       @default(0) @map("unread_count_user1")
+  unreadCountUser2 Int       @default(0) @map("unread_count_user2")
+  status           String    @default("ACTIVE")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  participant1 User          @relation("ChatParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2 User          @relation("ChatParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  messages     ChatMessage[]
+
+  @@index([participant1Id, participant2Id])
+  @@index([contextId])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String    @id @default(uuid())
+  conversationId String    @map("conversation_id")
+  senderId       String    @map("sender_id")
+  body           String    @db.Text
+  attachments    Json?     @default("[]")
+  isRead         Boolean   @default(false) @map("is_read")
+  readAt         DateTime? @map("read_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User             @relation("ChatSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("chat_messages")
+}
+
+model ChatConversation {
+  id               String        @id @default(uuid())
+  type             String        @default("BUYER_SELLER")
+  participant1Id   String        @map("participant1_id")
+  participant2Id   String        @map("participant2_id")
+  title            String?       @db.Text
+  contextId        String?       @map("context_id")
+  contextType      String?       @map("context_type")
+  lastMessage      String?       @map("last_message") @db.Text
+  lastMessageAt    DateTime?     @map("last_message_at")
+  unreadCountUser1 Int           @default(0) @map("unread_count_user1")
+  unreadCountUser2 Int           @default(0) @map("unread_count_user2")
+  status           String        @default("ACTIVE")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  participant1     User          @relation("ChatParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2     User          @relation("ChatParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  messages         ChatMessage[]
+
+  @@index([participant1Id, participant2Id])
+  @@index([contextId])
+  @@map("chat_conversations")
+}
+
+model ChatMessage {
+  id             String           @id @default(uuid())
+  conversationId String           @map("conversation_id")
+  senderId       String           @map("sender_id")
+  body           String           @db.Text
+  attachments    Json?            @default("[]")
+  isRead         Boolean          @default(false) @map("is_read")
+  readAt         DateTime?        @map("read_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User             @relation("ChatSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@map("chat_messages")
+}
+

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma, ReputationTrustLevel, Role, User } from '@prisma/client';
+import { Prisma, ProductStatus, ReputationTrustLevel, Role, User } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { generateStaffBaseEmail } from '../../auth/utils/staff-email.util';
 import { LockUserDto, UpdateUserStatusDto } from '../dto/lock-user.dto';
@@ -136,11 +136,30 @@ export class AdminUsersService {
       throw new BadRequestException('Tài khoản này đã bị khóa từ trước.');
     }
 
+    const isSeller = user.role === Role.SELLER;
+
     const updated = await this.prisma.user.update({
       where: { id: targetUserId },
-      data: { trustLevel: ReputationTrustLevel.SUSPENDED },
+      data: {
+        trustLevel: ReputationTrustLevel.SUSPENDED,
+        ...(isSeller
+          ? {
+              isShopSuspended: true,
+              isSellerActive: false,
+              suspensionReason:
+                dto?.reason?.trim() || 'Tài khoản người bán bị khóa bởi Quản trị viên',
+            }
+          : {}),
+      },
       include: { wallet: { select: { balance: true } } },
     });
+
+    if (isSeller) {
+      await this.prisma.product.updateMany({
+        where: { sellerId: targetUserId, status: ProductStatus.ACTIVE },
+        data: { status: ProductStatus.INACTIVE },
+      });
+    }
 
     // Thu hồi toàn bộ Refresh Token của user để buộc đăng xuất ngay lập tức
     await this.prisma.refreshToken.updateMany({
@@ -180,12 +199,29 @@ export class AdminUsersService {
 
     const targetTrustLevel =
       user.reputationScore >= 100 ? ReputationTrustLevel.EXCELLENT : ReputationTrustLevel.STANDARD;
+    const isSeller = user.role === Role.SELLER;
 
     const updated = await this.prisma.user.update({
       where: { id: targetUserId },
-      data: { trustLevel: targetTrustLevel },
+      data: {
+        trustLevel: targetTrustLevel,
+        ...(isSeller
+          ? {
+              isShopSuspended: false,
+              isSellerActive: true,
+              suspensionReason: null,
+            }
+          : {}),
+      },
       include: { wallet: { select: { balance: true } } },
     });
+
+    if (isSeller) {
+      await this.prisma.product.updateMany({
+        where: { sellerId: targetUserId, status: ProductStatus.INACTIVE },
+        data: { status: ProductStatus.ACTIVE },
+      });
+    }
 
     this.logger.log(
       `Admin (${adminId}) đã mở khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,

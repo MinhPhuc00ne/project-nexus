@@ -25,7 +25,9 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ConfirmChangePasswordOtpDto } from './dto/confirm-change-password-otp.dto';
 import { JwtAuthGuard } from '../../core/security/jwt-auth.guard';
-import { CurrentUser } from '../../core/security/roles.decorator';
+import { RolesGuard } from '../../core/security/roles.guard';
+import { CurrentUser, Roles, RequirePrivilege } from '../../core/security/roles.decorator';
+import { Role } from '@nexus/types';
 
 interface RequestWithUser extends Request {
   user?: GoogleUser;
@@ -150,7 +152,9 @@ export class AuthController {
   }
 
   @Patch('profile')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @RequirePrivilege('PROFILE.UPDATE')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

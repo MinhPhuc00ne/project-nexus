@@ -60,8 +60,16 @@ export class SellerController {
   @HttpCode(HttpStatus.OK)
   async toggleSellerMode(@CurrentUser('id') userId: string): Promise<{
     success: boolean;
+    message: string;
     isSellerActive: boolean;
     currentMode: 'SELLER' | 'BUYER';
+    user: {
+      id: string;
+      email: string;
+      fullName: string;
+      role: string;
+      isSellerActive: boolean;
+    };
   }> {
     return this.usersService.toggleSellerMode(userId);
   }

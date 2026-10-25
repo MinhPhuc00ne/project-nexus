@@ -48,6 +48,7 @@ export class OrderService {
             product: {
               include: {
                 inventories: true,
+                seller: { select: { isShopSuspended: true } },
               },
             },
           },
@@ -72,6 +73,12 @@ export class OrderService {
     // 1. Kiểm tra trạng thái sản phẩm, tồn kho và quy tắc Anti-Self-Purchase
     for (const item of itemsToCheckout) {
       const product = item.product;
+
+      if (product.seller?.isShopSuspended) {
+        throw new BadRequestException(
+          `Sản phẩm "${product.title}" thuộc gian hàng đang bị tạm đình chỉ hoạt động, không thể đặt mua.`,
+        );
+      }
 
       if (product.status !== ProductStatus.ACTIVE) {
         throw new BadRequestException(

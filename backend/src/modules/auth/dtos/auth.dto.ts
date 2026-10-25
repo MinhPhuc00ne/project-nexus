@@ -124,10 +124,10 @@ export class ActivateStaffDto {
   @IsNotEmpty({ message: 'Họ và tên không được để trống' })
   fullName!: string;
 
-  @ApiProperty({ example: '0912345678', description: 'Xác nhận Số điện thoại nhân viên' })
+  @ApiPropertyOptional({ example: '0912345678', description: 'Xác nhận Số điện thoại nhân viên' })
   @IsString()
-  @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
-  phoneNumber!: string;
+  @IsOptional()
+  phoneNumber?: string;
 
   @ApiProperty({
     example: 'Staff@123456',

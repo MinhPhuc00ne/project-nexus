@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { RedisService } from '../../core/redis/redis.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -41,6 +42,7 @@ export class AuthService {
     private prisma: PrismaService,
     private configService: ConfigService,
     private jwtService: JwtService,
+    private redisService: RedisService,
   ) {
     // Cấu hình Nodemailer gửi mail qua Gmail
     this.transporter = nodemailer.createTransport({
@@ -201,12 +203,20 @@ export class AuthService {
       );
     }
 
+    const effectiveSellerActive = user.isShopSuspended ? false : user.isSellerActive;
+
     const { accessToken, refreshToken } = await this.generateTokens({
       id: user.id,
       email: user.email,
       role: user.role,
-      isSellerActive: user.isSellerActive,
+      isSellerActive: effectiveSellerActive,
     });
+
+    try {
+      await this.redisService.set(`seller_recent_reauth:${user.id}`, Date.now().toString(), 300);
+    } catch {
+      // In case Redis is unreachable, continue smoothly
+    }
 
     return {
       message: 'Đăng nhập thành công!',
@@ -219,6 +229,9 @@ export class AuthService {
         fullName: user.fullName,
         role: user.role,
         avatarUrl: user.avatarUrl,
+        isSellerActive: effectiveSellerActive,
+        isShopSuspended: user.isShopSuspended,
+        suspensionReason: user.suspensionReason,
       },
     };
   }

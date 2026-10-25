@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Role, WithdrawalStatus } from '@prisma/client';
+import { OrderStatus, Role, WithdrawalStatus } from '@prisma/client';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -350,6 +350,23 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
   async getShopDetail(@Param('id') id: string) {
     return this.adminShopsService.getShopDetail(id);
+  }
+
+  // ================= 18b-2. XEM DANH SÁCH ĐƠN HÀNG CỦA 1 GIAN HÀNG =================
+  @Get('shops/:id/orders')
+  @ApiOperation({
+    summary: 'Admin xem danh sách đơn hàng của một gian hàng (Shop)',
+    description:
+      'Hỗ trợ phân trang và lọc theo trạng thái (PENDING_PAYMENT, PAID, PREPARING, SHIPPING, DELIVERED, CONFIRMED, CANCELLED, REFUNDED).',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách đơn hàng của gian hàng thành công' })
+  async getShopOrders(
+    @Param('id') id: string,
+    @Query('status') status?: OrderStatus,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.adminShopsService.getShopOrders(id, { status, page, limit });
   }
 
   // ================= 18c. CẢNH CÁO GIAN HÀNG =================

@@ -9,8 +9,10 @@ import {
 import { Role } from '@nexus/types';
 import { SellerRequestStatus, User, Wallet } from '@prisma/client';
 import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
+import { RedisService } from '../../../core/redis/redis.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import {
   UpdateProfileDto,
@@ -29,6 +31,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: CloudinaryStorageService,
+    private readonly redisService: RedisService,
   ) {}
 
   private formatProfile(user: User & { wallet: Wallet | null }): UserProfileResponse {
@@ -61,10 +64,63 @@ export class UsersService {
     return this.formatProfile(user);
   }
 
-  // 2. PROFILE.UPDATE: Cập nhật thông tin cá nhân
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserProfileResponse> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+  // 2. PROFILE.UPDATE: Cập nhật thông tin cá nhân (chỉ Buyer & Seller; Seller yêu cầu xác minh lại mật khẩu gần đây)
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+    callerRole?: Role,
+    verificationToken?: string,
+  ): Promise<UserProfileResponse> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { wallet: true },
+    });
     if (!user) throw new NotFoundException('User not found');
+
+    const effectiveRole = callerRole || (user.role as Role);
+    if (effectiveRole !== Role.BUYER && effectiveRole !== Role.SELLER) {
+      throw new ForbiddenException('Chỉ Buyer và Seller được phép chỉnh sửa hồ sơ cá nhân.');
+    }
+
+    if (effectiveRole === Role.SELLER) {
+      let isVerified = false;
+
+      // 1. Kiểm tra xác minh gần đây trong Redis (thiết lập khi Seller đăng nhập lại trong vòng 5 phút)
+      try {
+        const cached = await this.redisService.get(`seller_recent_reauth:${userId}`);
+        if (cached) {
+          isVerified = true;
+        }
+      } catch (err) {
+        this.logger.warn(`Redis get seller_recent_reauth failed: ${err}`);
+      }
+
+      // 2. Kiểm tra nếu có truyền mật khẩu xác minh trực tiếp trong payload
+      if (!isVerified && dto.password && user.passwordHash) {
+        const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
+        if (isMatch) {
+          isVerified = true;
+        }
+      }
+
+      // 3. Kiểm tra nếu có truyền token xác minh (verificationToken)
+      const tokenProof = verificationToken || dto.verificationToken;
+      if (!isVerified && tokenProof) {
+        const tokenHash = crypto.createHash('sha256').update(tokenProof).digest('hex');
+        const tokenRecord = await this.prisma.refreshToken.findFirst({
+          where: { userId, tokenHash },
+        });
+        if (tokenRecord) {
+          isVerified = true;
+        }
+      }
+
+      if (!isVerified) {
+        throw new ForbiddenException(
+          'Yêu cầu xác minh lại mật khẩu gần đây trước khi cập nhật hồ sơ người bán (Seller re-authentication required).',
+        );
+      }
+    }
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
@@ -262,8 +318,16 @@ export class UsersService {
   // 6. Chuyển đổi qua lại giữa role Seller hoặc Buyer (Toggle Seller Mode)
   async toggleSellerMode(userId: string): Promise<{
     success: boolean;
+    message: string;
     isSellerActive: boolean;
     currentMode: 'SELLER' | 'BUYER';
+    user: {
+      id: string;
+      email: string;
+      fullName: string;
+      role: string;
+      isSellerActive: boolean;
+    };
   }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -275,9 +339,11 @@ export class UsersService {
     }
 
     const newSellerActive = !user.isSellerActive;
-    if (user.isShopSuspended && newSellerActive) {
+    if (user.isShopSuspended) {
       throw new ForbiddenException(
-        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''} Không thể chuyển sang chế độ Người bán.`,
+        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
+          user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
+        } Không thể chuyển sang chế độ Người bán.`,
       );
     }
     await this.prisma.user.update({
@@ -288,8 +354,18 @@ export class UsersService {
     this.logger.log(`User ${userId} toggled seller mode: ${newSellerActive ? 'SELLER' : 'BUYER'}`);
     return {
       success: true,
+      message: newSellerActive
+        ? 'Chuyển sang chế độ Người bán (Seller mode) thành công!'
+        : 'Chuyển về chế độ Người mua (Buyer mode) thành công!',
       isSellerActive: newSellerActive,
       currentMode: newSellerActive ? 'SELLER' : 'BUYER',
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        isSellerActive: newSellerActive,
+      },
     };
   }
 

@@ -277,6 +277,7 @@ export class ProductService {
             avatarUrl: true,
             reputationScore: true,
             trustLevel: true,
+            isShopSuspended: true,
           },
         },
         inventories: true,
@@ -284,6 +285,11 @@ export class ProductService {
     });
 
     if (!product) throw new NotFoundException('Sản phẩm không tồn tại.');
+    if (product.seller?.isShopSuspended) {
+      throw new NotFoundException(
+        'Sản phẩm không tồn tại hoặc gian hàng hiện đang tạm đình chỉ hoạt động.',
+      );
+    }
     const availableQty = this.inventoryService.calculateAvailable(product.inventories);
     const totalQty = this.inventoryService.calculateTotal(product.inventories);
 

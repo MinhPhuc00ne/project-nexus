@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { MailService } from '../../../core/mail/mail.service';
+import { RedisService } from '../../../core/redis/redis.service';
 import {
   RegisterBuyerDto,
   LoginDto,
@@ -49,6 +50,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly redisService: RedisService,
   ) {}
 
   // 1. Đăng ký tài khoản Buyer
@@ -126,6 +128,13 @@ export class AuthService {
     }
 
     this.logger.log(`User logged in successfully: ${user.email} (Role: ${user.role})`);
+
+    try {
+      await this.redisService.set(`seller_recent_reauth:${user.id}`, Date.now().toString(), 300);
+    } catch {
+      // In case Redis is unreachable, continue smoothly
+    }
+
     return this.generateTokens(user);
   }
 
@@ -639,6 +648,7 @@ export class AuthService {
     fullName: string;
     role: string;
     isSellerActive: boolean;
+    isShopSuspended?: boolean;
     platformEmail?: string | null;
   }): Promise<AuthTokensResult> {
     const jwtSecret =
@@ -660,7 +670,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role as Role,
-      isSellerActive: user.isSellerActive,
+      isSellerActive: user.isShopSuspended ? false : user.isSellerActive,
     };
 
     const accessToken = LightweightJwt.sign(payload as unknown as Record<string, unknown>, {
