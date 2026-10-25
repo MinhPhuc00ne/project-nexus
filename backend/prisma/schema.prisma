@@ -216,9 +216,6 @@ model User {
   chatConversationsUser1     ChatConversation[]       @relation("ChatParticipant1")
   chatConversationsUser2     ChatConversation[]       @relation("ChatParticipant2")
   chatMessagesSent           ChatMessage[]            @relation("ChatSender")
-  chatConversationsUser1  ChatConversation[]       @relation("ChatParticipant1")
-  chatConversationsUser2  ChatConversation[]       @relation("ChatParticipant2")
-  chatMessagesSent        ChatMessage[]            @relation("ChatSender")
 
   @@map("users")
 }
@@ -809,49 +806,6 @@ model ChatMessage {
 
   conversation ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User             @relation("ChatSender", fields: [senderId], references: [id], onDelete: Cascade)
-
-  @@index([conversationId, createdAt])
-  @@index([senderId])
-  @@map("chat_messages")
-}
-
-model ChatConversation {
-  id               String        @id @default(uuid())
-  type             String        @default("BUYER_SELLER")
-  participant1Id   String        @map("participant1_id")
-  participant2Id   String        @map("participant2_id")
-  title            String?       @db.Text
-  contextId        String?       @map("context_id")
-  contextType      String?       @map("context_type")
-  lastMessage      String?       @map("last_message") @db.Text
-  lastMessageAt    DateTime?     @map("last_message_at")
-  unreadCountUser1 Int           @default(0) @map("unread_count_user1")
-  unreadCountUser2 Int           @default(0) @map("unread_count_user2")
-  status           String        @default("ACTIVE")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
-
-  participant1     User          @relation("ChatParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
-  participant2     User          @relation("ChatParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
-  messages         ChatMessage[]
-
-  @@index([participant1Id, participant2Id])
-  @@index([contextId])
-  @@map("chat_conversations")
-}
-
-model ChatMessage {
-  id             String           @id @default(uuid())
-  conversationId String           @map("conversation_id")
-  senderId       String           @map("sender_id")
-  body           String           @db.Text
-  attachments    Json?            @default("[]")
-  isRead         Boolean          @default(false) @map("is_read")
-  readAt         DateTime?        @map("read_at")
-  createdAt      DateTime         @default(now()) @map("created_at")
-
-  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User             @relation("ChatSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([conversationId, createdAt])
   @@index([senderId])
