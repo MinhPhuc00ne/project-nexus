@@ -35,6 +35,13 @@ export function buildProductWhere(
 ): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {
     status: query.status || ProductStatus.ACTIVE,
+    AND: [
+      {
+        seller: {
+          isShopSuspended: false,
+        },
+      },
+    ],
   };
 
   if (query.search) {

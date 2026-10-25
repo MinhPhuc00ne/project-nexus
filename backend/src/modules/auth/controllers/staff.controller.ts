@@ -11,7 +11,12 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
 import { UsersService, UserProfileResponse } from '../../users/services/users.service';
-import { ActivateStaffDto, StaffForgotPasswordDto, StaffResetPasswordDto } from '../dtos/auth.dto';
+import {
+  ActivateStaffDto,
+  ChangePasswordDto,
+  StaffForgotPasswordDto,
+  StaffResetPasswordDto,
+} from '../dtos/auth.dto';
 import {
   Public,
   CurrentUser,
@@ -101,5 +106,21 @@ export class StaffController {
     @Body() dto: StaffResetPasswordDto,
   ): Promise<{ success: boolean; message: string }> {
     return this.authService.resetPasswordWithOtp(dto);
+  }
+
+  @ApiOperation({
+    summary: '[STAFF] PROFILE.CHANGE_PASSWORD - Đổi mật khẩu trực tiếp cho Staff khi đã đăng nhập',
+    description: 'Staff nhập mật khẩu hiện tại và mật khẩu mới để đổi mật khẩu bảo mật.',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPPORT_STAFF, Role.ADMIN)
+  @Post('change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.authService.changePassword(userId, dto);
   }
 }

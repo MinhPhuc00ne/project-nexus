@@ -1,4 +1,10 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  BadGatewayException,
+  HttpException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface GhnFeeRequest {
@@ -48,6 +54,19 @@ export class GhnLogisticsService {
     this.orderApiBaseUrl = rawApiUrl.endsWith('/v2') ? rawApiUrl : `${rawApiUrl}/v2`;
   }
 
+  private validateConfig(requireShopId = false): void {
+    if (!this.token || !this.token.trim()) {
+      throw new BadGatewayException(
+        'Cấu hình GHN lỗi: GHN_TOKEN chưa được thiết lập. Vui lòng kiểm tra biến môi trường.',
+      );
+    }
+    if (requireShopId && (!this.shopId || !this.shopId.trim())) {
+      throw new BadGatewayException(
+        'Cấu hình GHN lỗi: GHN_SHOP_ID chưa được thiết lập. Vui lòng kiểm tra biến môi trường.',
+      );
+    }
+  }
+
   private getHeaders(includeShopId = true): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -60,20 +79,89 @@ export class GhnLogisticsService {
   }
 
   /**
+   * Chẩn đoán token, shop ID, URL môi trường và kết nối GHN
+   */
+  async getDiagnostic() {
+    const tokenConfigured = Boolean(this.token && this.token.trim());
+    const shopIdConfigured = Boolean(this.shopId && this.shopId.trim());
+    const environment = this.masterDataBaseUrl.includes('dev-online-gateway')
+      ? 'SANDBOX'
+      : 'PRODUCTION';
+
+    let pingStatus = 'UNKNOWN';
+    let latencyMs = 0;
+    let message = '';
+    let ghnCode: number | null = null;
+
+    if (!tokenConfigured) {
+      pingStatus = 'TOKEN_MISSING';
+      message = 'GHN_TOKEN chưa được thiết lập trong biến môi trường.';
+    } else {
+      const start = Date.now();
+      try {
+        const res = await fetch(`${this.masterDataBaseUrl}/master-data/province`, {
+          headers: this.getHeaders(false),
+        });
+        latencyMs = Date.now() - start;
+        const json = (await res.json()) as { code?: number; message?: string };
+        ghnCode = json.code ?? null;
+        if (json.code === 200) {
+          pingStatus = 'CONNECTED';
+          message = 'Kết nối cổng GHN thành công';
+        } else {
+          pingStatus = 'GHN_API_ERROR';
+          message = json.message || `GHN API trả mã phản hồi: ${json.code}`;
+        }
+      } catch (err) {
+        latencyMs = Date.now() - start;
+        pingStatus = 'CONNECTION_FAILED';
+        message = (err as Error).message;
+      }
+    }
+
+    return {
+      tokenConfigured,
+      tokenMasked: tokenConfigured ? `${this.token.slice(0, 4)}...${this.token.slice(-4)}` : null,
+      shopIdConfigured,
+      shopId: this.shopId || null,
+      masterDataBaseUrl: this.masterDataBaseUrl,
+      orderApiBaseUrl: this.orderApiBaseUrl,
+      environment,
+      ping: {
+        status: pingStatus,
+        ghnCode,
+        latencyMs,
+        message,
+      },
+    };
+  }
+
+  /**
    * 1. Lấy danh sách 63 Tỉnh/Thành phố toàn quốc từ GHN Master Data
    */
   async getProvinces() {
+    this.validateConfig(false);
     try {
       const url = `${this.masterDataBaseUrl}/master-data/province`;
       const response = await fetch(url, {
         headers: this.getHeaders(false),
       });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new BadGatewayException(`Cổng GHN trả mã HTTP ${response.status}: ${errText}`);
+      }
       const data = (await response.json()) as {
         code: number;
         message: string;
-        data: Array<{ ProvinceID: number; ProvinceName: string; Code: string }>;
+        data?: Array<{ ProvinceID: number; ProvinceName: string; Code: string }>;
       };
-      if (data.code === 200 && Array.isArray(data.data)) {
+      if (data.code !== 200) {
+        this.logger.error(`GHN getProvinces code ${data.code}: ${data.message}`);
+        throw new BadGatewayException(
+          `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Tỉnh/Thành'}`,
+        );
+      }
+      if (Array.isArray(data.data)) {
         return data.data.map((p) => ({
           provinceId: p.ProvinceID,
           provinceName: p.ProvinceName,
@@ -82,8 +170,11 @@ export class GhnLogisticsService {
       }
       return [];
     } catch (err) {
-      this.logger.error(`Lỗi khi lấy danh sách Tỉnh/Thành từ GHN: ${err}`);
-      return [];
+      if (err instanceof HttpException) throw err;
+      this.logger.error(`Lỗi khi gọi GHN Master Data: ${err}`);
+      throw new BadGatewayException(
+        `Không thể kết nối đến cổng dịch vụ GHN: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -91,6 +182,10 @@ export class GhnLogisticsService {
    * 2. Lấy danh sách Quận/Huyện theo Tỉnh/Thành
    */
   async getDistricts(provinceId: number) {
+    if (!provinceId || isNaN(provinceId) || provinceId <= 0) {
+      throw new BadRequestException('Mã Tỉnh/Thành (provinceId) phải là số nguyên dương hợp lệ.');
+    }
+    this.validateConfig(false);
     try {
       const url = `${this.masterDataBaseUrl}/master-data/district`;
       const response = await fetch(url, {
@@ -98,12 +193,22 @@ export class GhnLogisticsService {
         headers: this.getHeaders(false),
         body: JSON.stringify({ province_id: Number(provinceId) }),
       });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new BadGatewayException(`Cổng GHN trả mã HTTP ${response.status}: ${errText}`);
+      }
       const data = (await response.json()) as {
         code: number;
         message: string;
-        data: Array<{ DistrictID: number; DistrictName: string; Code: string }>;
+        data?: Array<{ DistrictID: number; DistrictName: string; Code: string }>;
       };
-      if (data.code === 200 && Array.isArray(data.data)) {
+      if (data.code !== 200) {
+        this.logger.error(`GHN getDistricts code ${data.code}: ${data.message}`);
+        throw new BadGatewayException(
+          `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Quận/Huyện'}`,
+        );
+      }
+      if (Array.isArray(data.data)) {
         return data.data.map((d) => ({
           districtId: d.DistrictID,
           districtName: d.DistrictName,
@@ -112,8 +217,11 @@ export class GhnLogisticsService {
       }
       return [];
     } catch (err) {
+      if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi lấy danh sách Quận/Huyện từ GHN: ${err}`);
-      return [];
+      throw new BadGatewayException(
+        `Không thể kết nối đến cổng dịch vụ GHN: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -121,17 +229,31 @@ export class GhnLogisticsService {
    * 3. Lấy danh sách Phường/Xã theo Quận/Huyện
    */
   async getWards(districtId: number) {
+    if (!districtId || isNaN(districtId) || districtId <= 0) {
+      throw new BadRequestException('Mã Quận/Huyện (districtId) phải là số nguyên dương hợp lệ.');
+    }
+    this.validateConfig(false);
     try {
       const url = `${this.masterDataBaseUrl}/master-data/ward?district_id=${districtId}`;
       const response = await fetch(url, {
         headers: this.getHeaders(false),
       });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new BadGatewayException(`Cổng GHN trả mã HTTP ${response.status}: ${errText}`);
+      }
       const data = (await response.json()) as {
         code: number;
         message: string;
-        data: Array<{ WardCode: string; WardName: string }>;
+        data?: Array<{ WardCode: string; WardName: string }>;
       };
-      if (data.code === 200 && Array.isArray(data.data)) {
+      if (data.code !== 200) {
+        this.logger.error(`GHN getWards code ${data.code}: ${data.message}`);
+        throw new BadGatewayException(
+          `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Phường/Xã'}`,
+        );
+      }
+      if (Array.isArray(data.data)) {
         return data.data.map((w) => ({
           wardCode: w.WardCode,
           wardName: w.WardName,
@@ -139,8 +261,11 @@ export class GhnLogisticsService {
       }
       return [];
     } catch (err) {
+      if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi lấy danh sách Phường/Xã từ GHN: ${err}`);
-      return [];
+      throw new BadGatewayException(
+        `Không thể kết nối đến cổng dịch vụ GHN: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -148,10 +273,13 @@ export class GhnLogisticsService {
    * 4. Lấy danh sách các gói dịch vụ GHN khả dụng giữa 2 quận
    */
   async getAvailableServices(fromDistrictId: number, toDistrictId: number) {
-    if (!this.token || !this.shopId) {
-      this.logger.warn('GHN_TOKEN hoặc GHN_SHOP_ID chưa được cấu hình.');
-      return [];
+    if (!fromDistrictId || isNaN(fromDistrictId) || fromDistrictId <= 0) {
+      throw new BadRequestException('Mã Quận/Huyện gửi (fromDistrictId) không hợp lệ.');
     }
+    if (!toDistrictId || isNaN(toDistrictId) || toDistrictId <= 0) {
+      throw new BadRequestException('Mã Quận/Huyện nhận (toDistrictId) không hợp lệ.');
+    }
+    this.validateConfig(true);
     try {
       const url = `${this.orderApiBaseUrl}/shipping-order/available-services`;
       const response = await fetch(url, {
@@ -163,12 +291,21 @@ export class GhnLogisticsService {
           to_district: Number(toDistrictId),
         }),
       });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new BadGatewayException(`Cổng GHN trả mã HTTP ${response.status}: ${errText}`);
+      }
       const data = (await response.json()) as {
         code: number;
         message: string;
-        data: Array<{ service_id: number; short_name: string; service_type_id: number }>;
+        data?: Array<{ service_id: number; short_name: string; service_type_id: number }>;
       };
-      if (data.code === 200 && Array.isArray(data.data)) {
+      if (data.code !== 200) {
+        throw new BadGatewayException(
+          `GHN API trả lỗi (${data.code}): ${data.message || 'Không tìm thấy gói dịch vụ'}`,
+        );
+      }
+      if (Array.isArray(data.data)) {
         return data.data.map((s) => ({
           serviceId: s.service_id,
           shortName: s.short_name,
@@ -177,8 +314,11 @@ export class GhnLogisticsService {
       }
       return [];
     } catch (err) {
+      if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi lấy danh sách dịch vụ GHN khả dụng: ${err}`);
-      return [];
+      throw new BadGatewayException(
+        `Không thể kết nối đến cổng dịch vụ GHN: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -186,13 +326,9 @@ export class GhnLogisticsService {
    * 5. Tính trước cước phí vận chuyển GHN (Shipping Fee Calculation)
    */
   async calculateFee(req: GhnFeeRequest): Promise<GhnFeeResponse | null> {
+    this.validateConfig(true);
     try {
       const url = `${this.orderApiBaseUrl}/shipping-order/fee`;
-
-      if (!this.token || !this.shopId) {
-        this.logger.warn('GHN_TOKEN hoặc GHN_SHOP_ID chưa được cấu hình.');
-        return null;
-      }
 
       // Mặc định dịch vụ Chuẩn (service_type_id = 2)
       const serviceTypeId = req.serviceTypeId || 2;
@@ -220,6 +356,13 @@ export class GhnLogisticsService {
         body: JSON.stringify(payload),
       });
 
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new BadGatewayException(
+          `Cổng GHN tính phí trả mã HTTP ${response.status}: ${errText}`,
+        );
+      }
+
       const resData = (await response.json()) as {
         code: number;
         message: string;
@@ -243,10 +386,15 @@ export class GhnLogisticsService {
       }
 
       this.logger.warn(`GHN fee response code ${resData.code}: ${resData.message}`);
-      return null;
+      throw new BadGatewayException(
+        `GHN tính phí trả lỗi (${resData.code}): ${resData.message || 'Không thể tính phí'}`,
+      );
     } catch (err) {
+      if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi gọi API tính phí GHN: ${err}`);
-      return null;
+      throw new BadGatewayException(
+        `Không thể kết nối đến cổng tính phí GHN: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -254,6 +402,7 @@ export class GhnLogisticsService {
    * 6. Tạo đơn giao hàng chính thức trên GHN
    */
   async createShippingOrder(orderPayload: Record<string, unknown>) {
+    this.validateConfig(true);
     try {
       const url = `${this.orderApiBaseUrl}/shipping-order/create`;
       const response = await fetch(url, {
@@ -261,11 +410,29 @@ export class GhnLogisticsService {
         headers: this.getHeaders(true),
         body: JSON.stringify(orderPayload),
       });
-      const data = await response.json();
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new BadGatewayException(
+          `Cổng GHN tạo đơn trả mã HTTP ${response.status}: ${errText}`,
+        );
+      }
+      const data = (await response.json()) as {
+        code: number;
+        message: string;
+        data?: unknown;
+      };
+      if (data.code !== 200) {
+        throw new BadGatewayException(
+          `GHN tạo đơn trả lỗi (${data.code}): ${data.message || 'Không thể tạo vận đơn'}`,
+        );
+      }
       return data;
     } catch (err) {
+      if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi tạo vận đơn GHN: ${err}`);
-      throw new BadRequestException('Không thể kết nối đến cổng vận chuyển GHN.');
+      throw new BadGatewayException(
+        `Không thể kết nối đến cổng vận chuyển GHN: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -273,6 +440,7 @@ export class GhnLogisticsService {
    * 7. Tra cứu thông tin hành trình vận đơn qua GHN
    */
   async trackOrder(orderCode: string) {
+    this.validateConfig(true);
     try {
       const url = `${this.orderApiBaseUrl}/shipping-order/detail`;
       const response = await fetch(url, {
@@ -280,11 +448,27 @@ export class GhnLogisticsService {
         headers: this.getHeaders(true),
         body: JSON.stringify({ order_code: orderCode }),
       });
-      const data = await response.json();
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new BadGatewayException(
+          `Cổng GHN tra cứu vận đơn trả HTTP ${response.status}: ${errText}`,
+        );
+      }
+      const data = (await response.json()) as {
+        code: number;
+        message: string;
+        data?: unknown;
+      };
+      if (data.code !== 200) {
+        throw new BadGatewayException(
+          `GHN tra cứu vận đơn lỗi (${data.code}): ${data.message || 'Không tìm thấy vận đơn'}`,
+        );
+      }
       return data;
     } catch (err) {
+      if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi tra cứu vận đơn GHN ${orderCode}: ${err}`);
-      return null;
+      throw new BadGatewayException(`Không thể kết nối tra cứu GHN: ${(err as Error).message}`);
     }
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   NotificationType,
+  OrderStatus,
   Prisma,
   ProductStatus,
   Role,
@@ -157,6 +158,7 @@ export class AdminShopsService {
             category: { select: { id: true, name: true, slug: true } },
             images: { orderBy: { sortOrder: 'asc' }, take: 1 },
             inventories: { select: { availableQty: true, totalQty: true } },
+            auctions: { select: { id: true, status: true }, take: 1 },
           },
         },
         shopViolations: {
@@ -182,20 +184,39 @@ export class AdminShopsService {
     const latestApprovedRequest = seller.sellerUpgradeRequests[0];
     const defaultAddress = seller.addresses[0];
 
-    // Thống kê phân loại trạng thái sản phẩm
-    const allProducts = await this.prisma.product.findMany({
-      where: { sellerId: shopId },
-      select: {
-        id: true,
-        status: true,
-        inventories: { select: { availableQty: true } },
-      },
-    });
+    // Thống kê phân loại sản phẩm (bán thường vs đấu giá) & đơn hàng & đánh giá
+    const [allProducts, orders, reviews, disputes] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { sellerId: shopId },
+        select: {
+          id: true,
+          status: true,
+          inventories: { select: { availableQty: true } },
+          auctions: { select: { id: true, status: true }, take: 1 },
+        },
+      }),
+      this.prisma.order.findMany({
+        where: { sellerId: shopId },
+        include: {
+          escrowRecord: true,
+        },
+      }),
+      this.prisma.review.findMany({
+        where: { targetUserId: shopId, isShopReview: true },
+        select: { rating: true },
+      }),
+      this.prisma.dispute.findMany({
+        where: { order: { sellerId: shopId } },
+        select: { id: true, status: true },
+      }),
+    ]);
 
     let activeCount = 0;
     let outOfStockCount = 0;
     let inactiveCount = 0;
     let draftCount = 0;
+    let regularCount = 0;
+    let auctionCount = 0;
 
     for (const p of allProducts) {
       const availableQty = p.inventories.reduce((acc, inv) => acc + inv.availableQty, 0);
@@ -210,6 +231,12 @@ export class AdminShopsService {
       } else if (p.status === ProductStatus.DRAFT) {
         draftCount++;
       }
+
+      if (p.auctions && p.auctions.length > 0) {
+        auctionCount++;
+      } else {
+        regularCount++;
+      }
     }
 
     // Vi phạm: báo cáo chờ xử lý vs vi phạm đã xác nhận
@@ -219,6 +246,43 @@ export class AdminShopsService {
     const confirmedViolations = seller.shopViolations.filter(
       (v) => v.status === ViolationStatus.CONFIRMED,
     );
+
+    // Kinh doanh: Giá trị đơn hoàn tất, số đơn hoàn tất, tiền hoàn trả, phí sàn thu được
+    const completedOrders = orders.filter(
+      (o) => o.status === OrderStatus.DELIVERED || o.status === OrderStatus.CONFIRMED,
+    );
+    const completedOrdersCount = completedOrders.length;
+    const completedOrderValue = completedOrders.reduce((acc, o) => acc + Number(o.totalAmount), 0);
+    const refundedOrders = orders.filter(
+      (o) => o.status === OrderStatus.REFUNDED || o.escrowRecord?.status === 'REFUNDED',
+    );
+    const refundedAmount = refundedOrders.reduce((acc, o) => acc + Number(o.totalAmount), 0);
+    const platformFeeCollected = completedOrders.reduce((acc, o) => {
+      if (o.escrowRecord?.platformFee) {
+        return acc + Number(o.escrowRecord.platformFee);
+      }
+      return acc + Math.round(Number(o.totalAmount) * 0.07);
+    }, 0);
+
+    // Đơn hàng: Đang xử lý, đang giao, hoàn tất, đã hủy; bấm vào để xem danh sách
+    const processingOrdersCount = orders.filter(
+      (o) => o.status === OrderStatus.PAID || o.status === OrderStatus.PREPARING,
+    ).length;
+    const shippingOrdersCount = orders.filter((o) => o.status === OrderStatus.SHIPPING).length;
+    const cancelledOrdersCount = orders.filter((o) => o.status === OrderStatus.CANCELLED).length;
+
+    // Chất lượng phục vụ: Điểm đánh giá và số lượt đánh giá, tỷ lệ hủy do shop, giao trễ, hoàn trả/tranh chấp
+    const totalReviews = reviews.length;
+    const ratingScore =
+      totalReviews > 0
+        ? Number((reviews.reduce((acc, r) => acc + Number(r.rating), 0) / totalReviews).toFixed(1))
+        : 5.0;
+    const cancellationRate =
+      orders.length > 0 ? Number(((cancelledOrdersCount / orders.length) * 100).toFixed(1)) : 0;
+    const disputeCount = disputes.length;
+    const returnOrDisputeRate =
+      orders.length > 0 ? Number(((disputeCount / orders.length) * 100).toFixed(1)) : 0;
+    const lateDeliveryRate = 0.0;
 
     return {
       shop: {
@@ -283,10 +347,13 @@ export class AdminShopsService {
           outOfStock: outOfStockCount, // Hết hàng (ACTIVE nhưng tồn kho <= 0)
           inactive: inactiveCount, // Bị ẩn / khóa do vi phạm (INACTIVE)
           draft: draftCount, // Bản nháp / chờ duyệt (DRAFT)
+          regular: regularCount, // Phân biệt bán thường (giá cố định)
+          auction: auctionCount, // Phân biệt đấu giá
         },
         sampleList: seller.products.map((p) => {
           const availableQty = p.inventories.reduce((acc, inv) => acc + inv.availableQty, 0);
           const totalQty = p.inventories.reduce((acc, inv) => acc + inv.totalQty, 0);
+          const hasAuction = Boolean((p as { auctions?: unknown[] }).auctions?.length);
           return {
             id: p.id,
             title: p.title,
@@ -297,9 +364,36 @@ export class AdminShopsService {
             availableQty,
             totalQty,
             isOutOfStock: availableQty <= 0,
+            productType: hasAuction ? 'AUCTION' : 'REGULAR',
             createdAt: p.createdAt,
           };
         }),
+      },
+      business: {
+        completedOrderValue,
+        completedOrdersCount,
+        refundedAmount,
+        platformFeeCollected,
+        totalRevenue: completedOrderValue,
+        currency: 'VND',
+      },
+      orders: {
+        summary: {
+          total: orders.length,
+          processing: processingOrdersCount,
+          shipping: shippingOrdersCount,
+          completed: completedOrdersCount,
+          cancelled: cancelledOrdersCount,
+          refunded: refundedOrders.length,
+        },
+      },
+      serviceQuality: {
+        ratingScore,
+        totalReviews,
+        cancellationRate,
+        lateDeliveryRate,
+        returnOrDisputeRate,
+        disputeCount,
       },
       violations: {
         summary: {
@@ -348,6 +442,98 @@ export class AdminShopsService {
   }
 
   /**
+   * Lấy danh sách đơn hàng của một gian hàng (Shop) dành cho Admin xem chi tiết
+   */
+  async getShopOrders(
+    shopId: string,
+    query: { status?: OrderStatus; page?: number; limit?: number },
+  ) {
+    const page = Math.max(1, query.page || 1);
+    const limit = Math.max(1, Math.min(100, query.limit || 10));
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.OrderWhereInput = {
+      sellerId: shopId,
+    };
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    const [total, orders] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          buyer: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              avatarUrl: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  title: true,
+                  images: { take: 1, orderBy: { sortOrder: 'asc' } },
+                },
+              },
+            },
+          },
+          shipment: true,
+          escrowRecord: true,
+        },
+      }),
+    ]);
+
+    const items = orders.map((o) => ({
+      id: o.id,
+      buyer: o.buyer,
+      subtotal: Number(o.subtotal),
+      shippingFee: Number(o.shippingFee),
+      totalAmount: Number(o.totalAmount),
+      status: o.status,
+      shippingAddress: o.shippingAddressSnapshot,
+      itemsCount: o.items.reduce((acc, it) => acc + it.quantity, 0),
+      items: o.items.map((it) => ({
+        id: it.id,
+        productId: it.productId,
+        title: it.product?.title || '',
+        thumbnail: it.product?.images?.[0]?.imageUrl || null,
+        unitPrice: Number(it.unitPrice),
+        quantity: it.quantity,
+        totalPrice: Number(it.totalPrice),
+      })),
+      shipment: o.shipment
+        ? {
+            carrier: o.shipment.carrier,
+            trackingNumber: o.shipment.trackingNumber,
+            waybillCode: o.shipment.waybillCode,
+            status: o.shipment.status,
+          }
+        : null,
+      createdAt: o.createdAt,
+      updatedAt: o.updatedAt,
+    }));
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
    * Đình chỉ hoặc Khôi phục hoạt động của một gian hàng (Shop Suspension)
    * Đồng thời lưu nhật ký hành vi vào bảng shop_action_logs
    */
@@ -385,11 +571,16 @@ export class AdminShopsService {
         },
       });
 
-      // 2. Nếu đình chỉ gian hàng, tự động ẩn toàn bộ sản phẩm của gian hàng để người mua không đặt được
+      // 2. Nếu đình chỉ gian hàng, tự động ẩn toàn bộ sản phẩm của gian hàng; khi khôi phục (unban) thì tự động hiển thị lại
       if (isSuspending) {
         await tx.product.updateMany({
           where: { sellerId, status: ProductStatus.ACTIVE },
           data: { status: ProductStatus.INACTIVE },
+        });
+      } else {
+        await tx.product.updateMany({
+          where: { sellerId, status: ProductStatus.INACTIVE },
+          data: { status: ProductStatus.ACTIVE },
         });
       }
 

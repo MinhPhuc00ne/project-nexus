@@ -37,6 +37,18 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   avatarUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Mật khẩu tài khoản để xác minh trực tiếp khi Seller cập nhật hồ sơ',
+  })
+  @IsString()
+  @IsOptional()
+  password?: string;
+
+  @ApiPropertyOptional({ description: 'Mã token xác minh đăng nhập gần đây của Seller' })
+  @IsString()
+  @IsOptional()
+  verificationToken?: string;
 }
 
 export class ApplySellerUpgradeDto {

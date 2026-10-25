@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { NotificationType, Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { QueryAdminProductsDto } from '../dto/query-admin-products.dto';
@@ -182,11 +182,26 @@ export class AdminProductsService {
   async updateProductStatus(id: string, adminId: string, dto: UpdateProductStatusDto) {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: { seller: { select: { id: true, fullName: true, email: true } } },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            isShopSuspended: true,
+          },
+        },
+      },
     });
 
     if (!product) {
       throw new NotFoundException('Không tìm thấy sản phẩm.');
+    }
+
+    if (dto.status === ProductStatus.ACTIVE && product.seller?.isShopSuspended) {
+      throw new BadRequestException(
+        'Không thể kích hoạt sản phẩm vì gian hàng của người bán này đang bị đình chỉ hoạt động.',
+      );
     }
 
     const oldStatus = product.status;

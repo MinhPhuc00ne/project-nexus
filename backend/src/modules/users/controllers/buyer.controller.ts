@@ -13,6 +13,7 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
+  Headers,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -72,17 +73,20 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] PROFILE.UPDATE - Cập nhật thông tin hồ sơ cá nhân',
+    summary: '[BUYER / SELLER] PROFILE.UPDATE - Cập nhật thông tin hồ sơ cá nhân',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
   @RequirePrivilege('PROFILE.UPDATE')
   @Patch('profile')
   async updateProfile(
     @CurrentUser('id') userId: string,
+    @CurrentUser('role') userRole: Role,
     @Body() dto: UpdateProfileDto,
+    @Headers('x-verification-token') verificationHeader?: string,
   ): Promise<UserProfileResponse> {
-    return this.usersService.updateProfile(userId, dto);
+    return this.usersService.updateProfile(userId, dto, userRole, verificationHeader);
   }
 
   @ApiOperation({

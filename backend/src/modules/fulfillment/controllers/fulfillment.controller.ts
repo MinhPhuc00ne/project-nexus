@@ -58,6 +58,21 @@ export class FulfillmentController {
     };
   }
 
+  @Get('diagnostic')
+  @Public()
+  @ApiOperation({
+    summary: 'Chẩn đoán cấu hình và kiểm tra kết nối cổng GHN Express',
+    description:
+      'Kiểm tra token, shop ID, URL môi trường (Sandbox/Production) và trạng thái kết nối GHN.',
+  })
+  async getDiagnostic() {
+    const diagnostic = await this.ghnService.getDiagnostic();
+    return {
+      message: 'Chẩn đoán kết nối GHN thành công',
+      data: diagnostic,
+    };
+  }
+
   @Get('provinces')
   @Public()
   @ApiOperation({ summary: 'Lấy danh sách 63 Tỉnh/Thành phố từ GHN Master Data' })
@@ -65,6 +80,7 @@ export class FulfillmentController {
     const provinces = await this.ghnService.getProvinces();
     return {
       message: 'Lấy danh sách Tỉnh/Thành thành công',
+      total: provinces.length,
       data: provinces,
     };
   }
@@ -75,7 +91,9 @@ export class FulfillmentController {
   async getDistricts(@Param('provinceId', ParseIntPipe) provinceId: number) {
     const districts = await this.ghnService.getDistricts(provinceId);
     return {
-      message: 'Lấy danh sách Quận/Huyện thành công',
+      message:
+        districts.length > 0 ? 'Lấy danh sách Quận/Huyện thành công' : 'Danh sách Quận/Huyện rỗng',
+      total: districts.length,
       data: districts,
     };
   }
@@ -86,7 +104,8 @@ export class FulfillmentController {
   async getWards(@Param('districtId', ParseIntPipe) districtId: number) {
     const wards = await this.ghnService.getWards(districtId);
     return {
-      message: 'Lấy danh sách Phường/Xã thành công',
+      message: wards.length > 0 ? 'Lấy danh sách Phường/Xã thành công' : 'Danh sách Phường/Xã rỗng',
+      total: wards.length,
       data: wards,
     };
   }
@@ -103,6 +122,7 @@ export class FulfillmentController {
     const services = await this.ghnService.getAvailableServices(fromDistrictId, toDistrictId);
     return {
       message: 'Tra cứu dịch vụ khả dụng thành công',
+      total: services.length,
       data: services,
     };
   }

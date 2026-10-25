@@ -71,11 +71,20 @@ export class CartService {
     // 1. Kiểm tra sản phẩm tồn tại và đang mở bán
     const product = await this.prisma.product.findUnique({
       where: { id: dto.productId },
-      include: { inventories: true },
+      include: {
+        inventories: true,
+        seller: { select: { isShopSuspended: true, suspensionReason: true } },
+      },
     });
 
     if (!product || product.status !== ProductStatus.ACTIVE) {
       throw new BadRequestException('Sản phẩm không tồn tại hoặc đã ngừng mở bán.');
+    }
+
+    if (product.seller?.isShopSuspended) {
+      throw new BadRequestException(
+        'Gian hàng của sản phẩm này hiện đang bị tạm đình chỉ hoạt động, không thể thêm vào giỏ hàng.',
+      );
     }
 
     // 2. Chặn Người bán tự mua sản phẩm của chính mình (Anti-Self-Purchase)

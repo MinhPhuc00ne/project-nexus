@@ -91,10 +91,12 @@ export class UsersService {
 
     const nextState = dto?.isSellerActive !== undefined ? dto.isSellerActive : !user.isSellerActive;
 
-    // Nếu shop đang bị Admin đình chỉ hoạt động mà người dùng muốn kích hoạt chế độ Người bán
-    if (user.isShopSuspended && nextState) {
+    // Nếu shop đang bị Admin đình chỉ hoạt động, nghiêm cấm mọi thao tác chuyển sang chế độ Người bán
+    if (user.isShopSuspended) {
       throw new ForbiddenException(
-        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''} Không thể kích hoạt chế độ Người bán.`,
+        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
+          user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
+        } Không thể kích hoạt hoặc chuyển đổi chế độ Người bán.`,
       );
     }
 
