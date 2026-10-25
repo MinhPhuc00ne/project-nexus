@@ -66,8 +66,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Cho user tham gia phòng riêng cá nhân để nhận thông báo tin nhắn mới
       client.join(`user:${userId}`);
       this.logger.log(`User ${userId} connected via WebSocket (socketId: ${client.id})`);
-    } catch (err: any) {
-      this.logger.error(`Error handling socket connection: ${err.message}`);
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Error handling socket connection: ${errMsg}`);
       client.disconnect();
     }
   }
@@ -130,8 +131,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(`conversation:${data.conversationId}`).emit('new_message', message);
 
       return { status: 'ok', data: message };
-    } catch (err: any) {
-      return { status: 'error', message: err.message || 'Lỗi gửi tin nhắn' };
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Lỗi gửi tin nhắn';
+      return { status: 'error', message: errMsg };
     }
   }
 

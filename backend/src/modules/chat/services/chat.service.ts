@@ -4,12 +4,60 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { CreateConversationDto } from '../dtos/create-conversation.dto';
 import { QueryConversationsDto, QueryMessagesDto } from '../dtos/query-chat.dto';
 import { SendMessageDto } from '../dtos/send-message.dto';
+
+interface RawConversationRecord {
+  id: string;
+  type: string;
+  participant1_id: string;
+  participant2_id: string;
+  title: string | null;
+  context_id: string | null;
+  context_type: string | null;
+  last_message: string | null;
+  last_message_at: Date | null;
+  unread_count_user1: number;
+  unread_count_user2: number;
+  status: string;
+  created_at: Date;
+  updated_at: Date;
+  u1_name?: string;
+  u1_email?: string;
+  u1_avatar?: string | null;
+  u1_role?: string;
+  u2_name?: string;
+  u2_email?: string;
+  u2_avatar?: string | null;
+  u2_role?: string;
+}
+
+interface RawMessageRecord {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  body: string;
+  attachments?: string[] | null;
+  is_read: boolean;
+  read_at: Date | null;
+  created_at: Date;
+  sender_name?: string;
+  sender_avatar?: string | null;
+  sender_role?: string;
+}
+
+interface RawCountRecord {
+  total?: number | string | bigint;
+}
+
+interface RawTotalUnreadRecord {
+  total_unread?: number | string | bigint;
+}
 
 export interface ChatParticipantInfo {
   id: string;
@@ -36,10 +84,57 @@ export interface ChatConversationItem {
 }
 
 @Injectable()
-export class ChatService {
+export class ChatService implements OnModuleInit {
   private readonly logger = new Logger(ChatService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  async onModuleInit() {
+    await this.ensureChatTables();
+  }
+
+  private async ensureChatTables() {
+    try {
+      await this.prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS chat_conversations (
+          id TEXT NOT NULL PRIMARY KEY,
+          type TEXT NOT NULL DEFAULT 'BUYER_SELLER',
+          participant1_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          participant2_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          title TEXT,
+          context_id TEXT,
+          context_type TEXT,
+          last_message TEXT,
+          last_message_at TIMESTAMP(3),
+          unread_count_user1 INTEGER NOT NULL DEFAULT 0,
+          unread_count_user2 INTEGER NOT NULL DEFAULT 0,
+          status TEXT NOT NULL DEFAULT 'ACTIVE',
+          created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id TEXT NOT NULL PRIMARY KEY,
+          conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+          sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          body TEXT NOT NULL,
+          attachments JSONB DEFAULT '[]'::jsonb,
+          is_read BOOLEAN NOT NULL DEFAULT false,
+          read_at TIMESTAMP(3),
+          created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS chat_conversations_participant1_idx ON chat_conversations(participant1_id);
+        CREATE INDEX IF NOT EXISTS chat_conversations_participant2_idx ON chat_conversations(participant2_id);
+        CREATE INDEX IF NOT EXISTS chat_conversations_context_idx ON chat_conversations(context_id);
+        CREATE INDEX IF NOT EXISTS chat_messages_conv_created_idx ON chat_messages(conversation_id, created_at);
+        CREATE INDEX IF NOT EXISTS chat_messages_sender_idx ON chat_messages(sender_id);
+      `);
+      this.logger.log('Database tables for Chat verified/initialized successfully.');
+    } catch (err) {
+      this.logger.warn(`Could not verify/init chat tables directly: ${err}`);
+    }
+  }
 
   /**
    * Khởi tạo hoặc lấy cuộc trò chuyện có sẵn giữa 2 người dùng
@@ -76,9 +171,9 @@ export class ChatService {
     });
 
     // 2. Tìm cuộc trò chuyện sẵn có giữa 2 bên
-    let existingRows: any[] = [];
+    let existingRows: RawConversationRecord[] = [];
     if (dto.contextId) {
-      existingRows = await this.prisma.$queryRawUnsafe<any[]>(
+      existingRows = await this.prisma.$queryRawUnsafe<RawConversationRecord[]>(
         `SELECT * FROM chat_conversations
          WHERE ((participant1_id = $1 AND participant2_id = $2) OR (participant1_id = $2 AND participant2_id = $1))
            AND context_id = $3
@@ -88,7 +183,7 @@ export class ChatService {
         dto.contextId,
       );
     } else {
-      existingRows = await this.prisma.$queryRawUnsafe<any[]>(
+      existingRows = await this.prisma.$queryRawUnsafe<RawConversationRecord[]>(
         `SELECT * FROM chat_conversations
          WHERE ((participant1_id = $1 AND participant2_id = $2) OR (participant1_id = $2 AND participant2_id = $1))
          ORDER BY updated_at DESC
@@ -208,12 +303,10 @@ export class ChatService {
   /**
    * Lấy danh sách các cuộc trò chuyện của người dùng hiện tại (hỗ trợ phân trang & bộ lọc)
    */
-  async listUserConversations(userId: string, userRole: string, query: QueryConversationsDto) {
+  async listUserConversations(userId: string, _userRole: string, query: QueryConversationsDto) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 20));
     const offset = (page - 1) * limit;
-
-    const isStaff = userRole === 'SUPPORT_STAFF' || userRole === 'ADMIN';
 
     let countQuery = `SELECT COUNT(*) as total FROM chat_conversations WHERE (participant1_id = $1 OR participant2_id = $1)`;
     let selectQuery = `
@@ -226,7 +319,7 @@ export class ChatService {
       WHERE (c.participant1_id = $1 OR c.participant2_id = $1)
     `;
 
-    const params: any[] = [userId];
+    const params: (string | number)[] = [userId];
 
     if (query.type) {
       params.push(query.type);
@@ -248,13 +341,13 @@ export class ChatService {
     selectQuery += ` ORDER BY c.updated_at DESC LIMIT ${limit} OFFSET ${offset}`;
 
     const [totalRes, rows] = await Promise.all([
-      this.prisma.$queryRawUnsafe<any[]>(countQuery, ...params),
-      this.prisma.$queryRawUnsafe<any[]>(selectQuery, ...params),
+      this.prisma.$queryRawUnsafe<RawCountRecord[]>(countQuery, ...params),
+      this.prisma.$queryRawUnsafe<RawConversationRecord[]>(selectQuery, ...params),
     ]);
 
     const total = Number(totalRes[0]?.total || 0);
 
-    const items: ChatConversationItem[] = rows.map((r) => {
+    const items: ChatConversationItem[] = rows.map((r: RawConversationRecord) => {
       const isUser1 = r.participant1_id === userId;
       const partnerId = isUser1 ? r.participant2_id : r.participant1_id;
       const partnerName = isUser1 ? r.u2_name : r.u1_name;
@@ -277,10 +370,10 @@ export class ChatService {
         updatedAt: r.updated_at,
         partner: {
           id: partnerId,
-          fullName: partnerName,
-          email: partnerEmail,
-          avatarUrl: partnerAvatar,
-          role: partnerRole,
+          fullName: partnerName || 'Người dùng',
+          email: partnerEmail || '',
+          avatarUrl: partnerAvatar || null,
+          role: partnerRole || 'BUYER',
         },
       };
     });
@@ -300,7 +393,7 @@ export class ChatService {
    * Xem chi tiết một cuộc trò chuyện
    */
   async getConversationById(conversationId: string, currentUserId: string, userRole: string) {
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+    const rows = await this.prisma.$queryRawUnsafe<RawConversationRecord[]>(
       `SELECT c.*,
               u1.full_name as u1_name, u1.email as u1_email, u1.avatar_url as u1_avatar, u1.role as u1_role,
               u2.full_name as u2_name, u2.email as u2_email, u2.avatar_url as u2_avatar, u2.role as u2_role
@@ -346,10 +439,10 @@ export class ChatService {
       updatedAt: conv.updated_at,
       partner: {
         id: partnerId,
-        fullName: partnerName,
-        email: partnerEmail,
-        avatarUrl: partnerAvatar,
-        role: partnerRole,
+        fullName: partnerName || 'Người dùng',
+        email: partnerEmail || '',
+        avatarUrl: partnerAvatar || null,
+        role: partnerRole || 'BUYER',
       },
     };
   }
@@ -374,7 +467,7 @@ export class ChatService {
       JOIN users u ON m.sender_id = u.id
       WHERE m.conversation_id = $1
     `;
-    const params: any[] = [conversationId];
+    const params: (string | Date)[] = [conversationId];
 
     if (query.before) {
       params.push(new Date(query.before));
@@ -383,10 +476,10 @@ export class ChatService {
 
     sql += ` ORDER BY m.created_at DESC LIMIT ${limit}`;
 
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(sql, ...params);
+    const rows = await this.prisma.$queryRawUnsafe<RawMessageRecord[]>(sql, ...params);
 
     // Đảo ngược mảng để client nhận theo thứ tự thời gian tăng dần (cũ -> mới)
-    const items = rows.reverse().map((r) => ({
+    const items = rows.reverse().map((r: RawMessageRecord) => ({
       id: r.id,
       conversationId: r.conversation_id,
       senderId: r.sender_id,
@@ -418,7 +511,7 @@ export class ChatService {
     senderRole: string,
     dto: SendMessageDto,
   ) {
-    const convRows = await this.prisma.$queryRawUnsafe<any[]>(
+    const convRows = await this.prisma.$queryRawUnsafe<RawConversationRecord[]>(
       `SELECT * FROM chat_conversations WHERE id = $1 LIMIT 1`,
       conversationId,
     );
@@ -491,7 +584,7 @@ export class ChatService {
    * Đánh dấu đã đọc toàn bộ tin nhắn trong cuộc trò chuyện
    */
   async markAsRead(conversationId: string, currentUserId: string) {
-    const convRows = await this.prisma.$queryRawUnsafe<any[]>(
+    const convRows = await this.prisma.$queryRawUnsafe<RawConversationRecord[]>(
       `SELECT * FROM chat_conversations WHERE id = $1 LIMIT 1`,
       conversationId,
     );
@@ -531,7 +624,7 @@ export class ChatService {
    * Đếm tổng số tin nhắn chưa đọc của người dùng trên toàn hệ thống
    */
   async getTotalUnreadCount(currentUserId: string): Promise<number> {
-    const rows = await this.prisma.$queryRawUnsafe<any[]>(
+    const rows = await this.prisma.$queryRawUnsafe<RawTotalUnreadRecord[]>(
       `SELECT COALESCE(SUM(
          CASE
            WHEN participant1_id = $1 THEN unread_count_user1

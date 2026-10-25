@@ -648,6 +648,7 @@ export class AuthService {
     fullName: string;
     role: string;
     isSellerActive: boolean;
+    isShopSuspended?: boolean;
     platformEmail?: string | null;
   }): Promise<AuthTokensResult> {
     const jwtSecret =
@@ -669,7 +670,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role as Role,
-      isSellerActive: (user as any).isShopSuspended ? false : user.isSellerActive,
+      isSellerActive: user.isShopSuspended ? false : user.isSellerActive,
     };
 
     const accessToken = LightweightJwt.sign(payload as unknown as Record<string, unknown>, {
