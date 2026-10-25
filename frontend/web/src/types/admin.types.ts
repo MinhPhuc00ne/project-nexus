@@ -1,5 +1,5 @@
 import type { Role } from '@nexus/types';
-import type { SellerUpgradeRequest } from './user.types';
+import type { SellerUpgradeRequest } from './user.types.ts';
 
 export interface StaffUser {
   id: string;
@@ -94,6 +94,85 @@ export interface QueryAdminShopsParams {
 export interface UpdateShopStatusDto {
   isSellerActive: boolean;
   reason?: string;
+}
+
+export interface AdminShopDetail {
+  shop: {
+    id: string;
+    storeName: string;
+    storeDescription: string | null;
+    owner: {
+      id: string;
+      fullName: string;
+      email: string;
+      phone: string | null;
+      avatarUrl: string | null;
+    };
+    contact: {
+      phone: string | null;
+      businessEmail: string;
+      identityCardNumber: string | null;
+      address:
+        | (NonNullable<AdminShop['address']> & {
+            latitude: number | null;
+            longitude: number | null;
+          })
+        | null;
+    };
+    openedAt: string;
+    status: {
+      isSellerActive: boolean;
+      isShopSuspended: boolean;
+      currentStatus: 'ACTIVE' | 'SUSPENDED' | 'INACTIVE';
+      suspensionReason: string | null;
+      reputationScore: number;
+      trustLevel: string;
+    };
+  };
+  products: {
+    breakdown: {
+      total: number;
+      active: number;
+      outOfStock: number;
+      inactive: number;
+      draft: number;
+    };
+    sampleList: {
+      id: string;
+      title: string;
+      basePrice: number;
+      status: string;
+      category: { id: string; name: string; slug: string };
+      thumbnail: string | null;
+      availableQty: number;
+      totalQty: number;
+      isOutOfStock: boolean;
+      createdAt: string;
+    }[];
+  };
+  violations: {
+    summary: { total: number; pending: number; confirmed: number };
+    items: {
+      id: string;
+      title: string;
+      description: string;
+      evidenceUrls: unknown;
+      penaltyLevel: string | null;
+      status: string;
+      resolutionNotes: string | null;
+      handledAt: string | null;
+      handledBy: { id: string; fullName: string; email: string } | null;
+      reporter: { id: string; fullName: string; email: string } | null;
+      createdAt: string;
+    }[];
+  };
+  moderationHistory: {
+    id: string;
+    action: string;
+    reason: string | null;
+    createdAt: string;
+    admin: { id: string; fullName: string; email: string };
+  }[];
 }
 
 export interface UpdateShopStatusResult {

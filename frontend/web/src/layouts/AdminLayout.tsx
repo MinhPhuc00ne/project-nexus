@@ -2,16 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import { useToast } from '../components/ToastNotification';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import Sidebar, { adminNavigation } from '../components/adminDashboard/Sidebar';
-import AdminHeader from '../components/adminDashboard/AdminHeader';
-import { Button } from '../components/adminDashboard/AdminUI';
+import Sidebar, { adminNavigation } from '../components/adminDashboard/Layout/Sidebar';
+import AdminHeader from '../components/adminDashboard/Layout/AdminHeader';
+import { Button } from '../components/adminDashboard/shared/AdminUI';
 import {
   AdminSellerRequestsProvider,
   useAdminSellerRequests,
-} from '../components/adminDashboard/AdminSellerRequests';
-import { initialAdminData } from '../components/adminDashboard/mockData/admin';
-import { applyCommerceChange } from '../components/adminDashboard/commerceData';
-import type { AdminActions, AdminData } from '../components/adminDashboard/adminTypes';
+} from '../components/adminDashboard/Sellers/AdminSellerRequests';
+import { initialAdminData } from '../components/adminDashboard/shared/mockData/admin';
+import { applyCommerceChange } from '../components/adminDashboard/shared/commerceData';
+import type { AdminActions, AdminData } from '../components/adminDashboard/shared/adminTypes';
 import { Role, type UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 

@@ -1,5 +1,1 @@
-import SellerStoreManagement from '../../components/adminDashboard/SellerStoreManagement';
-
-export default function AdminStoresPage() {
-  return <SellerStoreManagement />;
-}
+export { default } from '../../components/adminDashboard/Stores/Stores';

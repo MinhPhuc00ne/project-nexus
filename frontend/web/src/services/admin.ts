@@ -10,6 +10,11 @@ import type {
 import api, { ApiRequestError } from './api';
 import { getStoredToken } from './auth';
 import type {
+  SystemSettings,
+  UpdateSystemSettingsDto,
+  UpdateSystemSettingsResult,
+} from '../types/admin-settings.types';
+import type {
   AdminUser,
   AdminUserDetail,
   QueryUsersParams,
@@ -33,6 +38,7 @@ import type {
   StaffInvitationResult,
   StaffUser,
   AdminShop,
+  AdminShopDetail,
   QueryAdminShopsParams,
   UpdateShopStatusDto,
   UpdateShopStatusResult,
@@ -73,6 +79,22 @@ export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult>
     url: '/admin/staff/invite',
     method: 'POST',
     data: dto,
+  });
+}
+
+export function getAdminSettings(signal?: AbortSignal): Promise<SystemSettings> {
+  return adminRequest<SystemSettings>({ url: '/admin/settings', method: 'GET', signal });
+}
+
+export function updateAdminSettings(
+  dto: UpdateSystemSettingsDto,
+  signal?: AbortSignal,
+): Promise<UpdateSystemSettingsResult> {
+  return adminRequest<UpdateSystemSettingsResult>({
+    url: '/admin/settings',
+    method: 'PATCH',
+    data: dto,
+    signal,
   });
 }
 
@@ -182,6 +204,14 @@ export function updateAdminShopStatus(
     url: `/admin/shops/${encodeURIComponent(sellerId)}/status`,
     method: 'PATCH',
     data: dto,
+  });
+}
+
+export function getAdminShopById(id: string, signal?: AbortSignal): Promise<AdminShopDetail> {
+  return adminRequest<AdminShopDetail>({
+    url: `/admin/shops/${encodeURIComponent(id)}`,
+    method: 'GET',
+    signal,
   });
 }
 
