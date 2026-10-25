@@ -1,10 +1,12 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Patch,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -12,6 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { CurrentUser } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { QueryNotificationDto } from '../dtos/query-notification.dto';
+import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
 import { NotificationsService } from '../services/notifications.service';
 
 @ApiTags('9. NOTIFICATIONS')
@@ -34,6 +37,32 @@ export class NotificationsController {
     @Query() query: QueryNotificationDto,
   ) {
     return this.notificationsService.getUserNotifications(userId, query);
+  }
+
+  @Get('preferences')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Lấy tùy chọn nhận thông báo của người dùng (Email, Push, In-App)',
+    description: 'Trả về trạng thái bật/tắt nhận thông báo theo từng kênh truyền dẫn.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy tùy chọn thành công' })
+  async getPreferences(@CurrentUser('id') userId: string) {
+    return this.notificationsService.getPreferences(userId);
+  }
+
+  @Put('preferences')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Lưu / Cập nhật tùy chọn nhận thông báo (Email, Push, In-App)',
+    description:
+      'Cho phép người dùng hoặc Seller tùy chọn bật/tắt nhận thông báo qua Email, Web Push hoặc In-App.',
+  })
+  @ApiResponse({ status: 200, description: 'Lưu tùy chọn thành công' })
+  async updatePreferences(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateNotificationPreferencesDto,
+  ) {
+    return this.notificationsService.updatePreferences(userId, dto);
   }
 
   @Get('unread-count')

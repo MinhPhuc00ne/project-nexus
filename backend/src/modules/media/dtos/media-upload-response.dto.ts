@@ -37,4 +37,30 @@ export class MediaUploadResponseDto {
     description: 'Kích thước file theo bytes',
   })
   size!: number;
+
+  @ApiProperty({
+    example: ['https://res.cloudinary.com/demo/image/upload/sample.jpg'],
+    description: 'Mảng URL của các ảnh đã tải lên',
+    required: false,
+    type: [String],
+  })
+  urls?: string[];
+}
+
+export class MultipleMediaUploadResponseDto {
+  @ApiProperty({
+    example: [
+      'https://res.cloudinary.com/demo/image/upload/sample1.jpg',
+      'https://res.cloudinary.com/demo/image/upload/sample2.jpg',
+    ],
+    description: 'Mảng chứa danh sách các URL của toàn bộ file ảnh vừa được tải lên',
+    type: [String],
+  })
+  urls!: string[];
+
+  @ApiProperty({
+    description: 'Danh sách chi tiết thông tin của từng file ảnh vừa được tải lên',
+    type: [MediaUploadResponseDto],
+  })
+  items!: MediaUploadResponseDto[];
 }

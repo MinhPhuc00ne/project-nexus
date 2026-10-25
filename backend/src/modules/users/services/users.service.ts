@@ -18,6 +18,7 @@ import {
   ReviewSellerUpgradeDto,
   UserProfileResponse,
 } from '../dtos/users.dto';
+import { UpdateShopProfileDto } from '../dtos/update-shop-profile.dto';
 
 export type { UserProfileResponse };
 
@@ -289,6 +290,257 @@ export class UsersService {
       success: true,
       isSellerActive: newSellerActive,
       currentMode: newSellerActive ? 'SELLER' : 'BUYER',
+    };
+  }
+
+  // 7. Lấy thông tin hồ sơ gian hàng của Seller
+  async getShopProfile(sellerId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: sellerId },
+      include: {
+        sellerUpgradeRequests: {
+          where: { status: SellerRequestStatus.APPROVED },
+          orderBy: { updatedAt: 'desc' },
+          take: 1,
+        },
+        addresses: {
+          where: { isDefault: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    }
+
+    const latestApproved = user.sellerUpgradeRequests[0];
+    const defaultAddress = user.addresses[0];
+
+    return {
+      id: user.id,
+      storeName: latestApproved?.storeName || user.fullName,
+      storeDescription: latestApproved?.storeDescription || null,
+      phone: latestApproved?.phone || user.phoneNumber,
+      businessEmail: latestApproved?.businessEmail || user.email,
+      address: latestApproved
+        ? {
+            street: latestApproved.street,
+            ward: latestApproved.ward,
+            district: latestApproved.district,
+            city: latestApproved.city,
+            formattedAddress: latestApproved.formattedAddress,
+            latitude: latestApproved.latitude ? Number(latestApproved.latitude) : null,
+            longitude: latestApproved.longitude ? Number(latestApproved.longitude) : null,
+            placeId: latestApproved.placeId,
+          }
+        : defaultAddress
+          ? {
+              street: defaultAddress.street,
+              ward: defaultAddress.ward,
+              district: defaultAddress.district,
+              city: defaultAddress.city,
+              formattedAddress: defaultAddress.formattedAddress,
+              latitude: defaultAddress.latitude ? Number(defaultAddress.latitude) : null,
+              longitude: defaultAddress.longitude ? Number(defaultAddress.longitude) : null,
+              placeId: defaultAddress.placeId,
+            }
+          : null,
+      isSellerActive: user.isSellerActive,
+      isShopSuspended: user.isShopSuspended,
+      suspensionReason: user.suspensionReason,
+      reputationScore: user.reputationScore,
+      trustLevel: user.trustLevel,
+      createdAt: latestApproved?.createdAt || user.createdAt,
+      updatedAt: latestApproved?.updatedAt || user.updatedAt,
+    };
+  }
+
+  // 8. Cập nhật tên, mô tả, thông tin liên hệ và địa chỉ của gian hàng
+  async updateShopProfile(sellerId: string, dto: UpdateShopProfileDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: sellerId },
+      include: {
+        sellerUpgradeRequests: {
+          where: { status: SellerRequestStatus.APPROVED },
+          orderBy: { updatedAt: 'desc' },
+          take: 1,
+        },
+        addresses: {
+          where: { isDefault: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    }
+
+    if (user.role !== Role.SELLER && user.role !== Role.ADMIN) {
+      throw new ForbiddenException(
+        'Chỉ tài khoản Người bán (Seller) mới có quyền chỉnh sửa thông tin gian hàng.',
+      );
+    }
+
+    if (user.isShopSuspended) {
+      throw new ForbiddenException(
+        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
+          user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
+        } Không thể chỉnh sửa hồ sơ.`,
+      );
+    }
+
+    if (dto.storeName) {
+      assertCleanContent(dto.storeName, 'Tên gian hàng');
+    }
+    if (dto.storeDescription) {
+      assertCleanContent(dto.storeDescription, 'Mô tả gian hàng');
+    }
+
+    const latestApproved = user.sellerUpgradeRequests[0];
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      // 1. Cập nhật số điện thoại cá nhân nếu có truyền phone
+      if (dto.phone) {
+        await tx.user.update({
+          where: { id: sellerId },
+          data: { phoneNumber: dto.phone.trim(), updatedAt: new Date() },
+        });
+      }
+
+      // 2. Cập nhật hoặc tạo bản ghi SellerUpgradeRequest
+      let updatedRequest;
+      if (latestApproved) {
+        updatedRequest = await tx.sellerUpgradeRequest.update({
+          where: { id: latestApproved.id },
+          data: {
+            storeName: dto.storeName?.trim() || latestApproved.storeName,
+            storeDescription:
+              dto.storeDescription !== undefined
+                ? dto.storeDescription?.trim() || null
+                : latestApproved.storeDescription,
+            phone: dto.phone?.trim() || latestApproved.phone,
+            businessEmail:
+              dto.businessEmail !== undefined
+                ? dto.businessEmail?.trim() || null
+                : latestApproved.businessEmail,
+            street: dto.street !== undefined ? dto.street?.trim() || null : latestApproved.street,
+            ward: dto.ward !== undefined ? dto.ward?.trim() || null : latestApproved.ward,
+            district:
+              dto.district !== undefined ? dto.district?.trim() || null : latestApproved.district,
+            city: dto.city !== undefined ? dto.city?.trim() || null : latestApproved.city,
+            latitude:
+              dto.latitude !== undefined
+                ? dto.latitude !== null
+                  ? Number(dto.latitude)
+                  : null
+                : latestApproved.latitude,
+            longitude:
+              dto.longitude !== undefined
+                ? dto.longitude !== null
+                  ? Number(dto.longitude)
+                  : null
+                : latestApproved.longitude,
+            formattedAddress:
+              dto.formattedAddress !== undefined
+                ? dto.formattedAddress?.trim() || null
+                : latestApproved.formattedAddress,
+            placeId:
+              dto.placeId !== undefined ? dto.placeId?.trim() || null : latestApproved.placeId,
+            updatedAt: new Date(),
+          },
+        });
+      } else {
+        updatedRequest = await tx.sellerUpgradeRequest.create({
+          data: {
+            userId: sellerId,
+            storeName: dto.storeName?.trim() || user.fullName,
+            storeDescription: dto.storeDescription?.trim() || null,
+            phone: dto.phone?.trim() || user.phoneNumber || '0900000000',
+            businessEmail: dto.businessEmail?.trim() || user.email,
+            street: dto.street?.trim() || null,
+            ward: dto.ward?.trim() || null,
+            district: dto.district?.trim() || null,
+            city: dto.city?.trim() || null,
+            latitude:
+              dto.latitude !== undefined && dto.latitude !== null ? Number(dto.latitude) : null,
+            longitude:
+              dto.longitude !== undefined && dto.longitude !== null ? Number(dto.longitude) : null,
+            formattedAddress: dto.formattedAddress?.trim() || null,
+            placeId: dto.placeId?.trim() || null,
+            status: SellerRequestStatus.APPROVED,
+          },
+        });
+      }
+
+      // 3. Đồng bộ sổ địa chỉ mặc định của Seller nếu có thông tin địa chỉ
+      if (dto.street && dto.city) {
+        const defaultAddr = user.addresses[0];
+        if (defaultAddr) {
+          await tx.userAddress.update({
+            where: { id: defaultAddr.id },
+            data: {
+              recipientName: updatedRequest.storeName,
+              phone: updatedRequest.phone,
+              street: dto.street.trim(),
+              ward: dto.ward?.trim() || defaultAddr.ward,
+              district: dto.district?.trim() || defaultAddr.district,
+              city: dto.city.trim(),
+              latitude: dto.latitude !== undefined ? Number(dto.latitude) : defaultAddr.latitude,
+              longitude:
+                dto.longitude !== undefined ? Number(dto.longitude) : defaultAddr.longitude,
+              formattedAddress: dto.formattedAddress?.trim() || defaultAddr.formattedAddress,
+              placeId: dto.placeId?.trim() || defaultAddr.placeId,
+              updatedAt: new Date(),
+            },
+          });
+        } else {
+          await tx.userAddress.create({
+            data: {
+              userId: sellerId,
+              recipientName: updatedRequest.storeName,
+              phone: updatedRequest.phone,
+              street: dto.street.trim(),
+              ward: dto.ward?.trim() || null,
+              district: dto.district?.trim() || null,
+              city: dto.city.trim(),
+              latitude: dto.latitude !== undefined ? Number(dto.latitude) : null,
+              longitude: dto.longitude !== undefined ? Number(dto.longitude) : null,
+              formattedAddress: dto.formattedAddress?.trim() || null,
+              placeId: dto.placeId?.trim() || null,
+              isDefault: true,
+            },
+          });
+        }
+      }
+
+      return updatedRequest;
+    });
+
+    this.logger.log(`Seller ${sellerId} updated shop profile: ${result.storeName}`);
+
+    return {
+      success: true,
+      message: 'Cập nhật thông tin gian hàng thành công!',
+      shop: {
+        id: sellerId,
+        storeName: result.storeName,
+        storeDescription: result.storeDescription,
+        phone: result.phone,
+        businessEmail: result.businessEmail,
+        address: {
+          street: result.street,
+          ward: result.ward,
+          district: result.district,
+          city: result.city,
+          formattedAddress: result.formattedAddress,
+          latitude: result.latitude ? Number(result.latitude) : null,
+          longitude: result.longitude ? Number(result.longitude) : null,
+          placeId: result.placeId,
+        },
+        updatedAt: result.updatedAt,
+      },
     };
   }
 }

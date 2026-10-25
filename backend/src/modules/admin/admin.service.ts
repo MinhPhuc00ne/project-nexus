@@ -1,6 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NotificationType, Role, SellerRequestStatus } from '@prisma/client';
+import {
+  NotificationType,
+  Prisma,
+  Role,
+  SellerRequestStatus,
+  WalletTransactionStatus,
+  WithdrawalStatus,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { PrismaService } from '../../core/prisma/prisma.service';
@@ -10,6 +17,7 @@ import { CreateStaffDto } from './dto/create-staff.dto';
 import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
 import { QueryStaffDto } from './dto/query-staff.dto';
 import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
+import { ReviewWithdrawalDto } from './dto/review-withdrawal.dto';
 
 @Injectable()
 export class AdminService {
@@ -510,6 +518,171 @@ export class AdminService {
     return {
       message: 'Đã từ chối yêu cầu nâng cấp người bán.',
       request: updatedRequest,
+    };
+  }
+
+  // ================= 7. DANH SÁCH YÊU CẦU RÚT TIỀN CỦA SELLER =================
+  async listWithdrawalRequests(status?: WithdrawalStatus, page = 1, limit = 10) {
+    const p = Math.max(1, Number(page) || 1);
+    const l = Math.max(1, Math.min(100, Number(limit) || 10));
+    const skip = (p - 1) * l;
+
+    const where: Prisma.WithdrawalRequestWhereInput = status ? { status } : {};
+    const [total, items] = await Promise.all([
+      this.prisma.withdrawalRequest.count({ where }),
+      this.prisma.withdrawalRequest.findMany({
+        where,
+        skip,
+        take: l,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              sellerUpgradeRequests: {
+                where: { status: SellerRequestStatus.APPROVED },
+                take: 1,
+                select: { storeName: true },
+              },
+            },
+          },
+          reviewedBy: {
+            select: { id: true, fullName: true, email: true },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      page: p,
+      limit: l,
+      totalPages: Math.ceil(total / l),
+      items: items.map((w) => ({
+        id: w.id,
+        userId: w.userId,
+        sellerName: w.user.sellerUpgradeRequests[0]?.storeName || w.user.fullName,
+        sellerEmail: w.user.email,
+        sellerPhone: w.user.phoneNumber,
+        amount: Number(w.amount),
+        bankName: w.bankName,
+        accountNumber: w.accountNumber,
+        accountHolderName: w.accountHolderName,
+        status: w.status,
+        rejectionReason: w.rejectionReason,
+        adminNote: w.adminNote,
+        reviewedBy: w.reviewedBy,
+        reviewedAt: w.reviewedAt,
+        createdAt: w.createdAt,
+      })),
+    };
+  }
+
+  // ================= 8. DUYỆT HOẶC TỪ CHỐI RÚT TIỀN =================
+  async reviewWithdrawalRequest(id: string, adminId: string, dto: ReviewWithdrawalDto) {
+    const req = await this.prisma.withdrawalRequest.findUnique({
+      where: { id },
+      include: {
+        user: {
+          include: {
+            wallet: true,
+          },
+        },
+      },
+    });
+
+    if (!req) {
+      throw new NotFoundException('Không tìm thấy yêu cầu rút tiền.');
+    }
+
+    if (req.status !== WithdrawalStatus.PENDING) {
+      throw new BadRequestException('Yêu cầu rút tiền này đã được xử lý trước đó.');
+    }
+
+    const wallet = req.user.wallet;
+    if (!wallet) {
+      throw new BadRequestException('Người dùng này không có ví.');
+    }
+
+    const amount = req.amount;
+
+    await this.prisma.$transaction(async (tx) => {
+      if (dto.status === WithdrawalStatus.REJECTED) {
+        if (!dto.rejectionReason?.trim()) {
+          throw new BadRequestException('Vui lòng nhập lý do từ chối yêu cầu rút tiền.');
+        }
+
+        // Trả lại tiền từ lockedBalance về balance
+        await tx.wallet.update({
+          where: { id: wallet.id },
+          data: {
+            lockedBalance: { decrement: amount },
+            balance: { increment: amount },
+          },
+        });
+
+        // Cập nhật WalletTransaction tương ứng sang FAILED
+        await tx.walletTransaction.updateMany({
+          where: { referenceId: req.id },
+          data: {
+            status: WalletTransactionStatus.FAILED,
+            description: `Từ chối rút tiền: ${dto.rejectionReason.trim()}`,
+          },
+        });
+      } else {
+        // APPROVED hoặc COMPLETED: Trừ hẳn lockedBalance
+        await tx.wallet.update({
+          where: { id: wallet.id },
+          data: {
+            lockedBalance: { decrement: amount },
+          },
+        });
+
+        // Cập nhật WalletTransaction tương ứng sang SUCCESS
+        await tx.walletTransaction.updateMany({
+          where: { referenceId: req.id },
+          data: {
+            status: WalletTransactionStatus.SUCCESS,
+            description: dto.adminNote?.trim() || 'Rút tiền về tài khoản ngân hàng thành công',
+          },
+        });
+      }
+
+      // Cập nhật trạng thái WithdrawalRequest
+      await tx.withdrawalRequest.update({
+        where: { id },
+        data: {
+          status: dto.status,
+          rejectionReason: dto.rejectionReason?.trim() || null,
+          adminNote: dto.adminNote?.trim() || null,
+          reviewedByAdminId: adminId,
+          reviewedAt: new Date(),
+        },
+      });
+
+      // Gửi thông báo đến Seller
+      await tx.notification.create({
+        data: {
+          userId: req.userId,
+          title:
+            dto.status === WithdrawalStatus.REJECTED
+              ? 'Yêu cầu rút tiền của bạn bị từ chối ⚠️'
+              : 'Yêu cầu rút tiền đã được phê duyệt thành công 🎉',
+          content:
+            dto.status === WithdrawalStatus.REJECTED
+              ? `Yêu cầu rút ${Number(amount).toLocaleString('vi-VN')} VND về ${req.bankName} (${req.accountNumber}) đã bị từ chối. Lý do: ${dto.rejectionReason}. Số tiền đã được hoàn trả lại ví của bạn.`
+              : `Yêu cầu rút ${Number(amount).toLocaleString('vi-VN')} VND về ${req.bankName} (${req.accountNumber}) đã được xử lý thành công. Tiền sẽ về tài khoản ngân hàng của bạn trong ít phút.`,
+          type: NotificationType.PAYMENT,
+        },
+      });
+    });
+
+    return {
+      success: true,
+      message: `Đã cập nhật yêu cầu rút tiền thành ${dto.status}.`,
     };
   }
 }

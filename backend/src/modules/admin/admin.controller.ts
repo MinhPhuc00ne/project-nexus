@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { Role, WithdrawalStatus } from '@prisma/client';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -30,6 +30,9 @@ import { QueryAdminProductsDto } from './dto/query-admin-products.dto';
 import { UpdateProductStatusDto } from './dto/update-product-status.dto';
 import { QueryAdminShopsDto } from './dto/query-admin-shops.dto';
 import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
+import { WarnShopDto } from './dto/warn-shop.dto';
+import { CreateShopViolationDto } from './dto/create-shop-violation.dto';
+import { ReviewWithdrawalDto } from './dto/review-withdrawal.dto';
 import { UpdateSystemSettingsDto } from './dto/update-system-settings.dto';
 import { AdminUsersService } from './services/admin-users.service';
 import { AdminProductsService } from './services/admin-products.service';
@@ -323,7 +326,7 @@ export class AdminController {
   @ApiOperation({
     summary: 'Admin đình chỉ hoặc mở lại gian hàng (Shop Suspension)',
     description:
-      'Tạm ngưng hoạt động bán hàng của một shop (ẩn toàn bộ sản phẩm của shop) mà không khóa tài khoản cá nhân (vẫn được mua hàng làm Buyer).',
+      'Tạm ngưng hoạt động bán hàng của một shop (ẩn toàn bộ sản phẩm của shop) mà không khóa tài khoản cá nhân (vẫn được mua hàng làm Buyer). Tự động ghi vết lịch sử quản trị.',
   })
   @ApiResponse({ status: 200, description: 'Cập nhật trạng thái gian hàng thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
@@ -333,6 +336,112 @@ export class AdminController {
     @Body() dto: UpdateShopStatusDto,
   ) {
     return this.adminShopsService.updateShopStatus(id, admin.id, dto);
+  }
+
+  // ================= 18b. XEM THÔNG TIN CHI TIẾT 1 GIAN HÀNG =================
+  @Get('shops/:id')
+  @ApiOperation({
+    summary:
+      'Admin xem chi tiết toàn diện 1 gian hàng (Thông tin, Sản phẩm, Vi phạm, Lịch sử quản trị)',
+    description:
+      'Trả về đầy đủ thông tin gian hàng: Tên, chủ shop, liên hệ, ngày mở, trạng thái; Thống kê sản phẩm (đang bán, hết hàng, bị ẩn/chờ duyệt); Hồ sơ vi phạm (báo cáo chờ duyệt, xác nhận, mức xử lý, bằng chứng); Lịch sử quản trị (ai cảnh cáo/đình chỉ/khôi phục, lúc nào, lý do gì).',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy thông tin chi tiết gian hàng thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  async getShopDetail(@Param('id') id: string) {
+    return this.adminShopsService.getShopDetail(id);
+  }
+
+  // ================= 18c. CẢNH CÁO GIAN HÀNG =================
+  @Post('shops/:id/warn')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin gửi văn bản cảnh cáo gian hàng (Shop Warning)',
+    description:
+      'Gửi cảnh cáo đến shop vi phạm, ghi vết vào lịch sử quản trị, gửi thông báo hệ thống và tùy chọn trừ điểm uy tín.',
+  })
+  @ApiResponse({ status: 200, description: 'Gửi cảnh cáo thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  async warnShop(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: WarnShopDto,
+  ) {
+    return this.adminShopsService.warnShop(id, admin.id, dto);
+  }
+
+  // ================= 18d. LẬP BIÊN BẢN VI PHẠM CHO GIAN HÀNG =================
+  @Post('shops/:id/violations')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Admin lập biên bản vi phạm cho gian hàng (Shop Violation)',
+    description:
+      'Ghi nhận hành vi vi phạm, bằng chứng (URL tài liệu/hình ảnh), mức xử lý (WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN) và ghi chú giải quyết.',
+  })
+  @ApiResponse({ status: 201, description: 'Lập hồ sơ vi phạm thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  async createShopViolation(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: CreateShopViolationDto,
+  ) {
+    return this.adminShopsService.createShopViolation(id, admin.id, dto);
+  }
+
+  // ================= 18e. DANH SÁCH VI PHẠM CỦA GIAN HÀNG =================
+  @Get('shops/:id/violations')
+  @ApiOperation({
+    summary: 'Admin xem danh sách các vi phạm của một gian hàng',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách vi phạm thành công' })
+  async getShopViolations(@Param('id') id: string) {
+    return this.adminShopsService.getShopViolations(id);
+  }
+
+  // ================= 18f. LỊCH SỬ THAO TÁC QUẢN TRỊ TRÊN GIAN HÀNG =================
+  @Get('shops/:id/action-logs')
+  @ApiOperation({
+    summary:
+      'Admin xem lịch sử thao tác quản trị trên gian hàng (Ai cảnh cáo/đình chỉ/khôi phục, lúc nào, lý do gì)',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy lịch sử thao tác thành công' })
+  async getShopActionLogs(@Param('id') id: string) {
+    return this.adminShopsService.getShopActionLogs(id);
+  }
+
+  // ================= 18g. DANH SÁCH YÊU CẦU RÚT TIỀN CỦA SELLER =================
+  @Get('withdrawals')
+  @ApiOperation({
+    summary: 'Admin xem danh sách các yêu cầu rút tiền của Người bán (Sellers)',
+    description:
+      'Hỗ trợ lọc theo trạng thái (PENDING, APPROVED, REJECTED, COMPLETED) kèm phân trang.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu rút tiền thành công' })
+  async listWithdrawals(
+    @Query('status') status?: WithdrawalStatus,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.adminService.listWithdrawalRequests(status, page, limit);
+  }
+
+  // ================= 18h. XÉT DUYỆT YÊU CẦU RÚT TIỀN =================
+  @Patch('withdrawals/:id/review')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin phê duyệt hoặc từ chối yêu cầu rút tiền của Người bán',
+    description:
+      'Nếu REJECTED: Hoàn trả số dư bị khóa về ví của Seller. Nếu APPROVED / COMPLETED: Khấu trừ tiền ví thành công.',
+  })
+  @ApiResponse({ status: 200, description: 'Xét duyệt yêu cầu rút tiền thành công' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ hoặc đã xử lý trước đó' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu rút tiền' })
+  async reviewWithdrawal(
+    @Param('id') id: string,
+    @CurrentUser() admin: CurrentUserPayload,
+    @Body() dto: ReviewWithdrawalDto,
+  ) {
+    return this.adminService.reviewWithdrawalRequest(id, admin.id, dto);
   }
 
   // ================= 19. XEM CẤU HÌNH HỆ THỐNG SÀN =================

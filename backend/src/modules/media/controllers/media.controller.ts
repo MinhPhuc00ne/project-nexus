@@ -11,7 +11,10 @@ import {
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
-import { MediaUploadResponseDto } from '../dtos/media-upload-response.dto';
+import {
+  MediaUploadResponseDto,
+  MultipleMediaUploadResponseDto,
+} from '../dtos/media-upload-response.dto';
 import { MediaService } from '../services/media.service';
 
 @ApiTags('6. MEDIA')
@@ -24,7 +27,7 @@ export class MediaController {
   @ApiOperation({
     summary: '[MEDIA] Upload file hình ảnh lên server / Cloudinary',
     description:
-      'Nhận file hình ảnh từ client (field "file" hoặc "image"), lưu trữ vào máy chủ và trả về đường dẫn URL của ảnh.',
+      'Nhận file hình ảnh từ client (field "file" hoặc "image"), lưu trữ vào máy chủ và trả về đường dẫn URL của ảnh. Nếu gửi nhiều file, hệ thống sẽ tự động upload toàn bộ mảng và trả về danh sách urls.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -55,14 +58,71 @@ export class MediaController {
     @Req() req?: Request,
   ): Promise<MediaUploadResponseDto> {
     const rawReq = req as unknown as { file?: Express.Multer.File };
-    const uploadedFile = (files && files.length > 0 ? files[0] : undefined) || rawReq?.file;
 
-    if (!uploadedFile) {
+    if (!files || files.length === 0) {
+      if (rawReq?.file) {
+        return this.mediaService.uploadMedia(rawReq.file, req);
+      }
       throw new BadRequestException(
         'Vui lòng chọn file hình ảnh để tải lên (field name "file" hoặc "image").',
       );
     }
 
-    return this.mediaService.uploadMedia(uploadedFile, req);
+    if (files.length > 1) {
+      const multi = await this.mediaService.uploadMultipleMedia(files, req);
+      return {
+        ...multi.items[0],
+        urls: multi.urls,
+      };
+    }
+
+    return this.mediaService.uploadMedia(files[0], req);
+  }
+
+  @Post('upload-multiple')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[MEDIA] Upload mảng nhiều file hình ảnh cùng 1 lần (Array / Batch Upload)',
+    description:
+      'Nhận một mảng các file hình ảnh từ client (field name "files" hoặc "images"), lưu trữ và tải lên song song, trả về mảng danh sách URL ảnh để gán trực tiếp vào mảng ảnh sản phẩm/hồ sơ.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Mảng các file hình ảnh đính kèm (chọn cùng lúc nhiều ảnh)',
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description: 'Danh sách mảng các file hình ảnh',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Upload toàn bộ danh sách file thành công, trả về mảng URL và thông tin chi tiết',
+    type: MultipleMediaUploadResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Không có file hoặc file không đúng định dạng',
+  })
+  @UseInterceptors(AnyFilesInterceptor())
+  async uploadMultipleMedia(
+    @UploadedFiles() files?: Express.Multer.File[],
+    @Req() req?: Request,
+  ): Promise<MultipleMediaUploadResponseDto> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException(
+        'Vui lòng chọn ít nhất một file hình ảnh để tải lên (field name "files" hoặc "images").',
+      );
+    }
+
+    return this.mediaService.uploadMultipleMedia(files, req);
   }
 }
