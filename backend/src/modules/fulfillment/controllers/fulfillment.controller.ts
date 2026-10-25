@@ -5,7 +5,11 @@ import { CurrentUser, Public } from '../../../core/security/roles.decorator';
 import { FulfillmentService } from '../services/fulfillment.service';
 import { DistanceService } from '../services/distance.service';
 import { GhnLogisticsService } from '../services/ghn-logistics.service';
-import { ShippingQuoteDto, DirectDistanceDto } from '../dtos/shipping-quote.dto';
+import {
+  ShippingQuoteDto,
+  DirectDistanceDto,
+  CalculateGhnFeeDto,
+} from '../dtos/shipping-quote.dto';
 
 @ApiTags('10. FULFILLMENT & SHIPPING')
 @Controller('fulfillment/shipping')
@@ -15,6 +19,33 @@ export class FulfillmentController {
     private readonly distanceService: DistanceService,
     private readonly ghnService: GhnLogisticsService,
   ) {}
+
+  @Post('fee')
+  @Public()
+  @ApiOperation({
+    summary: 'Tính cước phí chuẩn chính thức từ cổng GHN Express (Official Carrier API)',
+    description:
+      'Tra cứu cước phí vận chuyển chính xác theo quy chuẩn bảng giá Giao Hàng Nhanh: Mã Quận/Huyện, Phường/Xã, trọng lượng gram và kích thước 3 chiều.',
+  })
+  @ApiResponse({ status: 200, description: 'Cước phí vận chuyển GHN chính thức' })
+  async calculateOfficialGhnFee(@Body() dto: CalculateGhnFeeDto) {
+    const fee = await this.ghnService.calculateFee({
+      toDistrictId: dto.toDistrictId,
+      toWardCode: dto.toWardCode,
+      fromDistrictId: dto.fromDistrictId,
+      fromWardCode: dto.fromWardCode,
+      weightGrams: dto.weightGrams ?? 500,
+      lengthCm: dto.lengthCm ?? 10,
+      widthCm: dto.widthCm ?? 10,
+      heightCm: dto.heightCm ?? 10,
+      insuranceValue: dto.insuranceValue ?? 0,
+      serviceTypeId: dto.serviceTypeId ?? 2,
+    });
+    return {
+      message: 'Tính cước phí giao hàng GHN thành công',
+      data: fee,
+    };
+  }
 
   @Post('quote')
   @UseGuards(JwtAuthGuard)

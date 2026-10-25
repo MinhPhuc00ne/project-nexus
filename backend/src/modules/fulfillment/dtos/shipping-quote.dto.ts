@@ -128,3 +128,74 @@ export class DirectDistanceDto {
   @IsNumber()
   weightGrams?: number = 500;
 }
+
+export class CalculateGhnFeeDto {
+  @ApiProperty({ description: 'Mã Quận/Huyện nhận hàng (GHN District ID)', example: 1444 })
+  @IsNumber()
+  @Min(1)
+  toDistrictId!: number;
+
+  @ApiProperty({ description: 'Mã Phường/Xã nhận hàng (GHN Ward Code)', example: '20308' })
+  @IsString()
+  toWardCode!: string;
+
+  @ApiPropertyOptional({
+    description: 'Mã Quận/Huyện gửi hàng (nếu bỏ trống hệ thống tự lấy theo kho/shop người bán)',
+    example: 1442,
+  })
+  @IsOptional()
+  @IsNumber()
+  fromDistrictId?: number;
+
+  @ApiPropertyOptional({ description: 'Mã Phường/Xã gửi hàng', example: '20101' })
+  @IsOptional()
+  @IsString()
+  fromWardCode?: string;
+
+  @ApiPropertyOptional({
+    description: 'Trọng lượng gói hàng tính theo gram',
+    example: 1000,
+    default: 500,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  weightGrams?: number = 500;
+
+  @ApiPropertyOptional({ description: 'Chiều dài kiện hàng (cm)', example: 20, default: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  lengthCm?: number = 10;
+
+  @ApiPropertyOptional({ description: 'Chiều rộng kiện hàng (cm)', example: 15, default: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  widthCm?: number = 10;
+
+  @ApiPropertyOptional({ description: 'Chiều cao kiện hàng (cm)', example: 10, default: 10 })
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  heightCm?: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'Giá trị khai giá / bảo hiểm hàng hóa (VNĐ)',
+    example: 500000,
+    default: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  insuranceValue?: number = 0;
+
+  @ApiPropertyOptional({
+    description: 'Loại gói dịch vụ GHN (1: Nhanh, 2: Chuẩn/Tiêu chuẩn)',
+    example: 2,
+    default: 2,
+  })
+  @IsOptional()
+  @IsNumber()
+  serviceTypeId?: number = 2;
+}
