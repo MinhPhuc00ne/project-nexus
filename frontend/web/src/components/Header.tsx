@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowLeft, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ROUTES } from '../routes/AppRouter';
+import { ROUTES } from '../routes/paths';
 
 interface HeaderProps {
   backUrl?: string;

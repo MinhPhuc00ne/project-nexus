@@ -1,4 +1,5 @@
 import axios, { type AxiosError } from 'axios';
+import { getApiErrorMessage } from '../lib/apiErrors';
 import {
   clearAuthSession,
   getStoredRefreshToken,
@@ -164,7 +165,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   interface ApiResponsePayload {
     data?: unknown;
     errors?: unknown[];
-    message?: string;
+    message?: unknown;
     [key: string]: unknown;
   }
 
@@ -191,11 +192,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
         );
       }
       const payload = error.response.data;
-      const errorMsg = Array.isArray(payload?.errors)
-        ? payload.errors.join(' · ')
-        : typeof payload?.message === 'string'
-          ? payload.message
-          : 'Yêu cầu thất bại.';
+      const errorMsg = getApiErrorMessage(payload);
       throw new ApiRequestError(errorMsg, error.response.status);
     }
     throw error;

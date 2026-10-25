@@ -1,29 +1,14 @@
-import {
-  Truck,
-  Zap,
-  Gavel,
-  ShieldCheck,
-  Tag,
-  WalletCards,
-  ShoppingCart,
-  Gift,
-  ChevronDown,
-} from 'lucide-react';
+import { Truck, Zap, Gavel, ShieldCheck, Tag, WalletCards, ShoppingCart, Gift } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import CatalogListing from '../../components/products/CatalogListing';
 import {
   HomeBenefit,
   HomeCountdown,
   HomeFlashSaleCard,
-  HomeRecommendationCard,
   HomeHeroBanner,
   HomeLiveAuction,
 } from '../../components/home';
-import {
-  categories,
-  flashSaleProducts,
-  auctionProducts,
-  recommendationProducts,
-  heroSlides,
-} from '../../mocks/home.mock';
+import { categories, flashSaleProducts, auctionProducts, heroSlides } from '../../mocks/home.mock';
 
 function HomePage() {
   return (
@@ -153,19 +138,13 @@ function HomePage() {
             </h2>
           </div>
 
-          <button className="text-xs font-semibold text-sky-500">Xem thêm →</button>
+          <Link to="/search" className="text-xs font-semibold text-blue-600">
+            Xem tất cả →
+          </Link>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-          {recommendationProducts.map((product) => (
-            <HomeRecommendationCard key={product.id} product={product} />
-          ))}
-        </div>
-
-        <div className="mt-6 flex justify-center">
-          <button className="rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-sky-300 hover:bg-sky-50">
-            Xem Thêm 2,400+ Sản Phẩm Khác <ChevronDown size={14} className="ml-1 inline" />
-          </button>
+        <div className="mt-4">
+          <CatalogListing preview />
         </div>
       </section>
     </main>

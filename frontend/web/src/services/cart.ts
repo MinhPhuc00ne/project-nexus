@@ -1,12 +1,67 @@
 import { apiRequest } from './api';
-import { getStoredToken } from './auth';
+import { getStoredToken, getStoredUser } from './auth';
 import type { CartItem } from '../types/cart.types';
 
 export type { CartItem };
 
 const GUEST_CART_STORAGE_KEY = 'nexus:guest-cart';
 const AUTH_CART_CACHE_KEY = 'nexus:auth-cart-cache';
+const AUTH_CART_OWNER_KEY = 'nexus:auth-cart-owner';
 const SELECTED_IDS_STORAGE_KEY = 'nexus:cart-selected-ids';
+let sessionVersion = 0;
+let cartVersion = 0;
+const pendingReads = new Map<string, Promise<CartItem[]>>();
+const pendingMerges = new Map<string, Promise<void>>();
+const CART_READ_FRESH_MS = 1000;
+let recentRead: { key: string; version: number; at: number; items: CartItem[] } | null = null;
+
+interface CartScope {
+  token: string;
+  owner: string | undefined;
+  session: number;
+  version: number;
+}
+function scopeFor(token: string): CartScope {
+  return { token, owner: getStoredUser()?.id, session: sessionVersion, version: cartVersion };
+}
+function scopeKey(scope: CartScope): string {
+  return JSON.stringify([scope.owner || scope.token, scope.session]);
+}
+function isCurrent(scope: CartScope): boolean {
+  return (
+    scope.session === sessionVersion &&
+    !!getStoredToken() &&
+    (scope.owner ? getStoredUser()?.id === scope.owner : getStoredToken() === scope.token)
+  );
+}
+export function resetCartSync(): void {
+  sessionVersion++;
+  cartVersion++;
+  pendingReads.clear();
+  pendingMerges.clear();
+  recentRead = null;
+  try {
+    localStorage.removeItem(AUTH_CART_CACHE_KEY);
+    localStorage.removeItem(AUTH_CART_OWNER_KEY);
+    localStorage.removeItem(SELECTED_IDS_STORAGE_KEY);
+  } catch {
+    /* Storage may be disabled. */
+  }
+  emitCartChange();
+}
+function mutationScope(token: string): CartScope {
+  cartVersion++;
+  return scopeFor(token);
+}
+function applyRemoteCart(response: BackendCartResponse, scope: CartScope): CartItem[] {
+  if (!isCurrent(scope)) return [];
+  if (scope.version !== cartVersion) return getAuthCartCache();
+  const selected = getStoredSelectedIds();
+  const items = (response?.items || []).map((item) => mapBackendItemToCartItem(item, selected));
+  saveAuthCartCache(items);
+  recentRead = { key: scopeKey(scope), version: scope.version, at: Date.now(), items };
+  return items;
+}
 
 export interface BackendCartItem {
   id: string; // cartItemId
@@ -112,6 +167,7 @@ function saveGuestCartItems(items: CartItem[]): void {
 
 function getAuthCartCache(): CartItem[] {
   try {
+    if (localStorage.getItem(AUTH_CART_OWNER_KEY) !== getStoredUser()?.id) return [];
     const raw = localStorage.getItem(AUTH_CART_CACHE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
@@ -122,7 +178,11 @@ function getAuthCartCache(): CartItem[] {
 }
 
 function saveAuthCartCache(items: CartItem[]): void {
+  const token = getStoredToken();
+  if (token && recentRead?.key === scopeKey(scopeFor(token)) && recentRead.version === cartVersion)
+    recentRead.items = items;
   try {
+    localStorage.setItem(AUTH_CART_OWNER_KEY, getStoredUser()?.id || '');
     localStorage.setItem(AUTH_CART_CACHE_KEY, JSON.stringify(items));
     emitCartChange();
   } catch {
@@ -142,29 +202,38 @@ export function getCartItems(): CartItem[] {
 }
 
 /**
- * Tải giỏ hàng mới nhất từ API backend nếu đã đăng nhập, hoặc từ guest storage nếu chưa đăng nhập.
+ * Gộp các GET đang chạy và tái sử dụng kết quả API trong 1 giây khi trang vừa tải.
+ * force bỏ qua khoảng tái sử dụng; thay đổi giỏ hàng/tài khoản luôn làm kết quả cũ hết hiệu lực.
  */
-export async function fetchCart(): Promise<CartItem[]> {
+export function fetchCart({ force = false }: { force?: boolean } = {}): Promise<CartItem[]> {
   const token = getStoredToken();
-  if (!token) {
-    return getGuestCartItems();
-  }
+  if (!token) return Promise.resolve(getGuestCartItems());
+  const scope = scopeFor(token);
+  const merging = pendingMerges.get(scopeKey(scope));
+  return merging
+    ? merging.then(() => (isCurrent(scope) ? getAuthCartCache() : []))
+    : loadRemoteCart(scope, force);
+}
 
-  try {
-    const res = await apiRequest<BackendCartResponse>('/commerce/cart', {
-      method: 'GET',
-      requireAuth: true,
+function loadRemoteCart(scope: CartScope, force = false): Promise<CartItem[]> {
+  const key = JSON.stringify([scopeKey(scope), scope.version]);
+  const existing = pendingReads.get(key);
+  if (existing) return existing;
+  if (
+    !force &&
+    recentRead?.key === scopeKey(scope) &&
+    recentRead.version === scope.version &&
+    Date.now() - recentRead.at < CART_READ_FRESH_MS
+  )
+    return Promise.resolve(recentRead.items);
+  const request = apiRequest<BackendCartResponse>('/commerce/cart', { requireAuth: true })
+    .then((response) => applyRemoteCart(response, scope))
+    .catch(() => (isCurrent(scope) ? getAuthCartCache() : []))
+    .finally(() => {
+      if (pendingReads.get(key) === request) pendingReads.delete(key);
     });
-
-    const selectedSet = getStoredSelectedIds();
-    const mapped = (res?.items || []).map((item) => mapBackendItemToCartItem(item, selectedSet));
-
-    saveAuthCartCache(mapped);
-    return mapped;
-  } catch (error) {
-    console.warn('Lỗi khi tải giỏ hàng từ server:', error);
-    return getAuthCartCache();
-  }
+  pendingReads.set(key, request);
+  return request;
 }
 
 const PRODUCT_UUID_MAP: Record<string, string> = {
@@ -203,6 +272,7 @@ export async function addToCart(
   const token = getStoredToken();
 
   if (token) {
+    const scope = mutationScope(token);
     const productId = resolveProductId(item.productId || item.id);
     const res = await apiRequest<BackendCartResponse>('/commerce/cart/items', {
       method: 'POST',
@@ -213,9 +283,7 @@ export async function addToCart(
       requireAuth: true,
     });
 
-    const selectedSet = getStoredSelectedIds();
-    const mapped = (res?.items || []).map((it) => mapBackendItemToCartItem(it, selectedSet));
-    saveAuthCartCache(mapped);
+    applyRemoteCart(res, scope);
     return;
   }
 
@@ -248,6 +316,7 @@ export async function updateCartQty(id: string | number, qty: number): Promise<v
   const token = getStoredToken();
 
   if (token) {
+    const scope = mutationScope(token);
     const targetQty = Math.max(0, qty);
     const res = await apiRequest<BackendCartResponse>(`/commerce/cart/items/${id}`, {
       method: 'PATCH',
@@ -255,9 +324,7 @@ export async function updateCartQty(id: string | number, qty: number): Promise<v
       requireAuth: true,
     });
 
-    const selectedSet = getStoredSelectedIds();
-    const mapped = (res?.items || []).map((it) => mapBackendItemToCartItem(it, selectedSet));
-    saveAuthCartCache(mapped);
+    applyRemoteCart(res, scope);
     return;
   }
 
@@ -281,14 +348,13 @@ export async function removeFromCart(id: string | number): Promise<void> {
   const token = getStoredToken();
 
   if (token) {
+    const scope = mutationScope(token);
     const res = await apiRequest<BackendCartResponse>(`/commerce/cart/items/${id}`, {
       method: 'DELETE',
       requireAuth: true,
     });
 
-    const selectedSet = getStoredSelectedIds();
-    const mapped = (res?.items || []).map((it) => mapBackendItemToCartItem(it, selectedSet));
-    saveAuthCartCache(mapped);
+    applyRemoteCart(res, scope);
     return;
   }
 
@@ -345,6 +411,7 @@ export async function clearCart(): Promise<void> {
   const token = getStoredToken();
 
   if (token) {
+    const scope = mutationScope(token);
     try {
       await apiRequest<BackendCartResponse>('/commerce/cart', {
         method: 'DELETE',
@@ -353,8 +420,10 @@ export async function clearCart(): Promise<void> {
     } catch {
       // Ignore cleanup error
     }
-    saveAuthCartCache([]);
-    saveStoredSelectedIds([]);
+    if (isCurrent(scope) && scope.version === cartVersion) {
+      saveAuthCartCache([]);
+      saveStoredSelectedIds([]);
+    }
     return;
   }
 
@@ -365,48 +434,51 @@ export async function clearCart(): Promise<void> {
 /**
  * Tự động gộp giỏ hàng Guest (LocalStorage) vào Database của Buyer sau khi đăng nhập.
  */
-export async function mergeGuestCartAfterLogin(): Promise<void> {
+export function mergeGuestCartAfterLogin(): Promise<void> {
   const token = getStoredToken();
-  if (!token) return;
+  if (!token) return Promise.resolve();
+  const scope = scopeFor(token);
+  const key = scopeKey(scope);
+  const existing = pendingMerges.get(key);
+  if (existing) return existing;
+  const request = synchronizeCart(scope).finally(() => {
+    if (pendingMerges.get(key) === request) pendingMerges.delete(key);
+  });
+  pendingMerges.set(key, request);
+  return request;
+}
 
+async function synchronizeCart(scope: CartScope): Promise<void> {
   const guestItems = getGuestCartItems();
-  if (guestItems.length === 0) {
-    // Không có món nào từ guest -> chỉ cần tải giỏ từ backend
-    await fetchCart();
+  const items = guestItems
+    .filter((item) => item.qty > 0)
+    .map((item) => ({
+      productId: resolveProductId(item.productId || item.id),
+      quantity: item.qty,
+    }));
+  if (!items.length) {
+    await loadRemoteCart(scope);
     return;
   }
-
+  const mergingScope = mutationScope(scope.token);
   try {
-    const payloadItems = guestItems
-      .filter((i) => i.qty > 0)
-      .map((i) => ({
-        productId: resolveProductId(i.productId || i.id),
-        quantity: i.qty,
-      }));
-
-    if (payloadItems.length > 0) {
-      const res = await apiRequest<BackendCartResponse>('/commerce/cart/merge', {
-        method: 'POST',
-        body: { items: payloadItems },
-        requireAuth: true,
-      });
-
-      if (res && Array.isArray(res.items)) {
-        const selectedSet = getStoredSelectedIds();
-        const mapped = res.items.map((it) => mapBackendItemToCartItem(it, selectedSet));
-        saveAuthCartCache(mapped);
-      }
+    const response = await apiRequest<BackendCartResponse>('/commerce/cart/merge', {
+      method: 'POST',
+      body: { items },
+      requireAuth: true,
+    });
+    if (!response || !Array.isArray(response.items))
+      throw new Error('Máy chủ chưa xác nhận kết quả gộp giỏ hàng.');
+    if (!isCurrent(mergingScope)) return;
+    applyRemoteCart(response, mergingScope);
+    // Preserve guest items added in another tab while this request was pending.
+    if (JSON.stringify(getGuestCartItems()) === JSON.stringify(guestItems)) {
+      localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+      localStorage.removeItem('nexus:cart-items');
     }
-
-    // Xóa giỏ tạm của guest sau khi gộp thành công
-    localStorage.removeItem(GUEST_CART_STORAGE_KEY);
-    localStorage.removeItem('nexus:cart-items');
-
-    // Đồng bộ lại lần nữa để đảm bảo thống nhất
-    await fetchCart();
-  } catch (error) {
-    console.error('Lỗi khi gộp giỏ hàng khách vào tài khoản:', error);
-    await fetchCart();
+  } catch {
+    // Keep the guest cart for a later retry; fetch only the actual server cart.
+    if (isCurrent(mergingScope)) await loadRemoteCart(scopeFor(scope.token));
   }
 }
 

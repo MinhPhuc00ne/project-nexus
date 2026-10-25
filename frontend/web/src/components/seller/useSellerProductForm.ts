@@ -1,5 +1,8 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../ToastNotification';
+import { useSellerSession } from './SellerSession';
+import { useSellerWorkspace } from './SellerWorkspace';
 import {
   emptyProductForm,
   flattenCategories,
@@ -13,6 +16,9 @@ import {
 
 export default function useSellerProductForm(productId?: string) {
   const navigate = useNavigate();
+  const toast = useToast();
+  const user = useSellerSession();
+  const { refreshShop } = useSellerWorkspace();
   const [form, setForm] = useState({ ...emptyProductForm });
   const [files, setFiles] = useState<File[]>([]);
   const [product, setProduct] = useState<SellerProduct | null>(null);
@@ -94,6 +100,10 @@ export default function useSellerProductForm(productId?: string) {
   }
   async function submit() {
     if (lock.current) return;
+    if (user.isShopSuspended || !user.isSellerActive) {
+      setError('Gian hàng chưa được phép đăng bán. Vui lòng kiểm tra trạng thái người bán.');
+      return;
+    }
     if (productLoading || productError || (productId && !product)) return;
     if (
       categoryLoading ||
@@ -120,16 +130,21 @@ export default function useSellerProductForm(productId?: string) {
         throw new Error(
           'Chưa xác nhận được kết quả đăng bán. Hãy kiểm tra danh sách sản phẩm trước khi gửi lại.',
         );
-      if (active.current)
-        navigate('/seller/products', {
-          replace: true,
-          state: product
-            ? { updatedProduct: { id: saved.id, title: saved.title } }
-            : { publishedProduct: { id: saved.id, title: saved.title } },
-        });
+      if (active.current) {
+        toast.success(
+          product
+            ? `Đã cập nhật sản phẩm ${saved.title}.`
+            : `Đã đăng bán sản phẩm ${saved.title} thành công.`,
+        );
+        navigate('/seller/products', { replace: true });
+        refreshShop();
+      }
     } catch (cause) {
-      if (active.current)
-        setError(cause instanceof Error ? cause.message : 'Không thể đăng bán sản phẩm.');
+      if (active.current) {
+        const message = cause instanceof Error ? cause.message : 'Không thể đăng bán sản phẩm.';
+        setError(message);
+        toast.error(message);
+      }
     } finally {
       lock.current = false;
       if (active.current) {

@@ -19,7 +19,7 @@ export function SellerButton({
     <button
       type="button"
       className={cn(
-        `inline-flex items-center justify-center gap-[7px] bg-[#315eea] border border-solid border-[#315eea] rounded-[7px] text-[#fff] py-[9px] px-3.5 text-[11px]! font-[550] whitespace-nowrap min-h-9 [&:hover]:bg-[#244ed1] [&:hover]:[box-shadow:0_3px_9px_#315eea20] ${secondary ? 'bg-white border-[#dfe6f1] text-[#4d5f7e] [&:hover]:bg-[#f3f7ff] [&:hover]:text-[#315eea] [&:hover]:[box-shadow:none]' : ''} ${className}`,
+        `inline-flex items-center justify-center gap-[7px] bg-[#315eea] border border-solid border-[#315eea] rounded-[7px] text-[#fff] py-[9px] px-3.5 text-[11px]! font-[550] whitespace-nowrap min-h-9 disabled:cursor-not-allowed disabled:opacity-50 [&:hover]:bg-[#244ed1] [&:hover]:[box-shadow:0_3px_9px_#315eea20] ${secondary ? 'bg-white border-[#dfe6f1] text-[#4d5f7e] [&:hover]:bg-[#f3f7ff] [&:hover]:text-[#315eea] [&:hover]:[box-shadow:none]' : ''} ${className}`,
       )}
       data-seller="button button-secondary"
       {...props}

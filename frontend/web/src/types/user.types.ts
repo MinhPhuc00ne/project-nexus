@@ -34,6 +34,8 @@ export interface UserProfile {
   avatarUrl: string | null;
   role: Role;
   isSellerActive: boolean;
+  isShopSuspended: boolean;
+  suspensionReason: string | null;
   currentMode: 'SELLER' | 'BUYER';
   canToggleSeller: boolean;
   reputationScore: number;
