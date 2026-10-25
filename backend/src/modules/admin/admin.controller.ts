@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { Role, WithdrawalStatus } from '@prisma/client';
 import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -33,7 +33,6 @@ import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
 import { WarnShopDto } from './dto/warn-shop.dto';
 import { CreateShopViolationDto } from './dto/create-shop-violation.dto';
 import { ReviewWithdrawalDto } from './dto/review-withdrawal.dto';
-import { WithdrawalStatus } from '@prisma/client';
 import { UpdateSystemSettingsDto } from './dto/update-system-settings.dto';
 import { AdminUsersService } from './services/admin-users.service';
 import { AdminProductsService } from './services/admin-products.service';
