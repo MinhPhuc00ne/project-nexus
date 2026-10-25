@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { QueryNotificationDto } from '../dtos/query-notification.dto';
+import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
 
 @Injectable()
 export class NotificationsService {
@@ -132,5 +133,65 @@ export class NotificationsService {
         channel: params.channel || NotificationChannel.IN_APP,
       },
     });
+  }
+
+  /**
+   * Lấy danh sách tùy chọn nhận thông báo của người dùng (Email, Push, In-App)
+   */
+  async getPreferences(userId: string) {
+    const preferences = await this.prisma.notificationPreference.findMany({
+      where: { userId },
+    });
+
+    const prefMap = new Map<NotificationChannel, boolean>();
+    for (const p of preferences) {
+      prefMap.set(p.channel, p.isEnabled);
+    }
+
+    const allChannels = [
+      NotificationChannel.IN_APP,
+      NotificationChannel.EMAIL,
+      NotificationChannel.PUSH,
+    ];
+
+    return {
+      userId,
+      preferences: allChannels.map((channel) => ({
+        channel,
+        isEnabled: prefMap.has(channel) ? prefMap.get(channel)! : true, // Mặc định là bật true
+      })),
+    };
+  }
+
+  /**
+   * Cập nhật / Lưu tùy chọn nhận thông báo của người dùng
+   */
+  async updatePreferences(userId: string, dto: UpdateNotificationPreferencesDto) {
+    const operations = dto.preferences.map((item) =>
+      this.prisma.notificationPreference.upsert({
+        where: {
+          userId_channel: {
+            userId,
+            channel: item.channel,
+          },
+        },
+        create: {
+          userId,
+          channel: item.channel,
+          isEnabled: item.isEnabled,
+        },
+        update: {
+          isEnabled: item.isEnabled,
+        },
+      }),
+    );
+
+    await this.prisma.$transaction(operations);
+
+    return {
+      success: true,
+      message: 'Lưu tùy chọn nhận thông báo thành công!',
+      ...(await this.getPreferences(userId)),
+    };
   }
 }

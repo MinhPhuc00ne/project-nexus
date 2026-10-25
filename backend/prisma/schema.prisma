@@ -147,6 +147,26 @@ enum SellerRequestStatus {
   REJECTED
 }
 
+enum ShopActionType {
+  WARN
+  SUSPEND
+  RESTORE
+}
+
+enum ViolationStatus {
+  PENDING
+  INVESTIGATING
+  CONFIRMED
+  DISMISSED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
 model User {
   id               String               @id @default(uuid())
   email            String               @unique
@@ -186,6 +206,13 @@ model User {
   disputesResolved        Dispute[]                @relation("DisputeResolver")
   sellerUpgradeRequests   SellerUpgradeRequest[]   @relation("UserSellerRequests")
   reviewedSellerRequests  SellerUpgradeRequest[]   @relation("AdminReviewedSellerRequests")
+  shopActionLogs          ShopActionLog[]          @relation("ShopActionLogs")
+  administeredShopActionLogs ShopActionLog[]       @relation("AdminShopActionLogs")
+  shopViolations          ShopViolation[]          @relation("ShopViolations")
+  reportedShopViolations  ShopViolation[]          @relation("ReportedShopViolations")
+  handledShopViolations   ShopViolation[]          @relation("HandledShopViolations")
+  withdrawalRequests      WithdrawalRequest[]      @relation("UserWithdrawalRequests")
+  reviewedWithdrawalRequests WithdrawalRequest[]   @relation("AdminReviewedWithdrawals")
 
   @@map("users")
 }
@@ -677,4 +704,64 @@ model StaffInvitation {
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp(6)
 
   @@map("staff_invitations")
+}
+
+model ShopActionLog {
+  id        String         @id @default(uuid())
+  shopId    String         @map("shop_id")
+  adminId   String         @map("admin_id")
+  action    ShopActionType
+  reason    String         @db.Text
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  shop  User @relation("ShopActionLogs", fields: [shopId], references: [id], onDelete: Cascade)
+  admin User @relation("AdminShopActionLogs", fields: [adminId], references: [id], onDelete: Restrict)
+
+  @@index([shopId, createdAt])
+  @@map("shop_action_logs")
+}
+
+model ShopViolation {
+  id               String          @id @default(uuid())
+  shopId           String          @map("shop_id")
+  reporterId       String?         @map("reporter_id")
+  title            String
+  description      String          @db.Text
+  evidenceUrls     Json?           @map("evidence_urls")
+  penaltyLevel     String?         @map("penalty_level")
+  status           ViolationStatus @default(PENDING)
+  resolutionNotes  String?         @map("resolution_notes") @db.Text
+  handledByAdminId String?         @map("handled_by_admin_id")
+  handledAt        DateTime?       @map("handled_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  shop      User  @relation("ShopViolations", fields: [shopId], references: [id], onDelete: Cascade)
+  reporter  User? @relation("ReportedShopViolations", fields: [reporterId], references: [id], onDelete: SetNull)
+  handledBy User? @relation("HandledShopViolations", fields: [handledByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([shopId, status])
+  @@map("shop_violations")
+}
+
+model WithdrawalRequest {
+  id                 String           @id @default(uuid())
+  userId             String           @map("user_id")
+  amount             Decimal          @db.Decimal(14, 2)
+  bankName           String           @map("bank_name")
+  accountNumber      String           @map("account_number")
+  accountHolderName  String           @map("account_holder_name")
+  status             WithdrawalStatus @default(PENDING)
+  rejectionReason    String?          @map("rejection_reason") @db.Text
+  adminNote          String?          @map("admin_note") @db.Text
+  reviewedByAdminId  String?          @map("reviewed_by_admin_id")
+  reviewedAt         DateTime?        @map("reviewed_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  user       User  @relation("UserWithdrawalRequests", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("AdminReviewedWithdrawals", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@map("withdrawal_requests")
 }

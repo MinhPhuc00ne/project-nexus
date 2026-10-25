@@ -1,10 +1,11 @@
-import { Controller, Patch, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService, UserProfileResponse } from '../services/users.service';
-import { CurrentUser, Roles, RequirePrivilege } from '../../../core/security/roles.decorator';
+import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
+import { UpdateShopProfileDto } from '../dtos/update-shop-profile.dto';
 
 @ApiTags('3. SELLER')
 @ApiBearerAuth()
@@ -21,6 +22,32 @@ export class SellerController {
   @Get('profile')
   async getSellerProfile(@CurrentUser('id') userId: string): Promise<UserProfileResponse> {
     return this.usersService.getProfile(userId);
+  }
+
+  @ApiOperation({
+    summary: '[SELLER] Xem thông tin chi tiết hồ sơ gian hàng của mình',
+    description:
+      'Lấy thông tin tên gian hàng, mô tả, hotline, email kinh doanh và địa chỉ kho hàng.',
+  })
+  @Roles(Role.SELLER, Role.ADMIN)
+  @Get('shop-profile')
+  async getShopProfile(@CurrentUser('id') userId: string) {
+    return this.usersService.getShopProfile(userId);
+  }
+
+  @ApiOperation({
+    summary:
+      '[SELLER] Cập nhật thông tin gian hàng (Sửa tên, mô tả, thông tin liên hệ và địa chỉ shop)',
+    description:
+      'Người bán cập nhật lại tên thương hiệu gian hàng, lời giới thiệu/mô tả shop, số hotline, email liên hệ và địa chỉ kho xuất hàng.',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật thông tin gian hàng thành công' })
+  @ApiResponse({ status: 403, description: 'Chưa có quyền Seller hoặc shop đang bị đình chỉ' })
+  @Roles(Role.SELLER, Role.ADMIN)
+  @Patch('shop-profile')
+  @HttpCode(HttpStatus.OK)
+  async updateShopProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateShopProfileDto) {
+    return this.usersService.updateShopProfile(userId, dto);
   }
 
   @ApiOperation({
