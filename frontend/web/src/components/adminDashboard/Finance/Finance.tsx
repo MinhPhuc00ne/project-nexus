@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Button } from '../shared/AdminUI';
 import { RevenueChart, RevenueComposition } from './RevenueChart';
 import TransactionHistory from './TransactionHistory';
+import AdminWallet from './AdminWallet';
 import { useAdminContext } from '../shared/useAdminContext';
 
 export default function AdminFinancePage() {
   const context = useAdminContext();
-  const [tab, setTab] = useState<'transactions' | 'overview'>('transactions');
+  const [tab, setTab] = useState<'transactions' | 'overview' | 'wallet'>('transactions');
   return (
     <div className="space-y-5">
       <div role="group" aria-label="Nội dung tài chính" className="flex flex-wrap gap-2">
@@ -24,14 +25,23 @@ export default function AdminFinancePage() {
         >
           Tổng quan doanh thu
         </Button>
+        <Button
+          variant={tab === 'wallet' ? 'primary' : 'secondary'}
+          aria-pressed={tab === 'wallet'}
+          onClick={() => setTab('wallet')}
+        >
+          Ví nền tảng
+        </Button>
       </div>
       {tab === 'transactions' ? (
         <TransactionHistory {...context} />
-      ) : (
+      ) : tab === 'overview' ? (
         <div className="grid items-start gap-5 xl:grid-cols-[2fr_1fr]">
           <RevenueChart />
           <RevenueComposition />
         </div>
+      ) : (
+        <AdminWallet />
       )}
     </div>
   );

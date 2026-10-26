@@ -42,7 +42,16 @@ import type {
   QueryAdminShopsParams,
   UpdateShopStatusDto,
   UpdateShopStatusResult,
+  WarnAdminShopDto,
+  WarnAdminShopResult,
 } from '../types/admin.types';
+import type {
+  AdminWalletSummary,
+  AdminWalletTransactionPage,
+  AdminWalletTransactionQueryDto,
+  DepositAdminWalletDto,
+  DepositAdminWalletResult,
+} from '../types/admin-wallet.types';
 
 // Các API admin dùng chung Axios client, token phiên hiện tại và định dạng lỗi.
 async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
@@ -207,11 +216,46 @@ export function updateAdminShopStatus(
   });
 }
 
+export function warnAdminShop(
+  sellerId: string,
+  dto: WarnAdminShopDto,
+): Promise<WarnAdminShopResult> {
+  return adminRequest<WarnAdminShopResult>({
+    url: `/admin/shops/${encodeURIComponent(sellerId)}/warn`,
+    method: 'POST',
+    data: dto,
+  });
+}
+
 export function getAdminShopById(id: string, signal?: AbortSignal): Promise<AdminShopDetail> {
   return adminRequest<AdminShopDetail>({
     url: `/admin/shops/${encodeURIComponent(id)}`,
     method: 'GET',
     signal,
+  });
+}
+
+export function getAdminWallet(signal?: AbortSignal): Promise<AdminWalletSummary> {
+  return adminRequest<AdminWalletSummary>({ url: '/admin/wallet', method: 'GET', signal });
+}
+
+export function getAdminWalletTransactions(
+  params: AdminWalletTransactionQueryDto,
+  signal?: AbortSignal,
+): Promise<AdminWalletTransactionPage> {
+  return adminRequest<AdminWalletTransactionPage>({
+    url: '/admin/wallet/transactions',
+    method: 'GET',
+    params,
+    signal,
+  });
+}
+
+export function depositToAdminWallet(dto: DepositAdminWalletDto): Promise<DepositAdminWalletResult> {
+  return adminRequest<DepositAdminWalletResult>({
+    url: '/admin/wallet/deposit',
+    method: 'POST',
+    data: dto,
   });
 }
 
