@@ -27,6 +27,7 @@ export interface ShippingQuoteResult {
     baseFee: number;
     distanceFee: number;
     weightFee: number;
+    insuranceFee?: number;
     distanceTotalFee: number;
     ghnCarrierFee: number | null;
     finalShippingFee: number;
@@ -107,36 +108,44 @@ export class FulfillmentService {
     let destLon = dto.destLongitude;
     let destRecipient = 'Người nhận';
     let destAddressText = 'Địa chỉ giao hàng';
+    let destinationAddress: {
+      recipientName?: string;
+      city?: string;
+      district?: string | null;
+      ward?: string | null;
+      street?: string;
+      formattedAddress?: string | null;
+      latitude?: unknown;
+      longitude?: unknown;
+    } | null = null;
 
-    if (destLat === undefined || destLon === undefined) {
-      let address;
-      if (dto.addressId) {
-        address = await this.prisma.userAddress.findUnique({
-          where: { id: dto.addressId },
+    if (dto.addressId) {
+      destinationAddress = await this.prisma.userAddress.findUnique({
+        where: { id: dto.addressId },
+      });
+    } else if (userId) {
+      destinationAddress = await this.prisma.userAddress.findFirst({
+        where: { userId, isDefault: true },
+      });
+      if (!destinationAddress) {
+        destinationAddress = await this.prisma.userAddress.findFirst({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
         });
-      } else {
-        // Lấy địa chỉ mặc định của Buyer
-        address = await this.prisma.userAddress.findFirst({
-          where: { userId, isDefault: true },
-        });
-        if (!address) {
-          address = await this.prisma.userAddress.findFirst({
-            where: { userId },
-            orderBy: { createdAt: 'desc' },
-          });
-        }
       }
+    }
 
-      if (address) {
-        destRecipient = address.recipientName;
-        destAddressText =
-          address.formattedAddress ||
-          `${address.street}, ${address.ward || ''}, ${address.district || ''}, ${address.city}`;
+    if (destinationAddress) {
+      destRecipient = destinationAddress.recipientName || destRecipient;
+      destAddressText =
+        destinationAddress.formattedAddress ||
+        `${destinationAddress.street}, ${destinationAddress.ward || ''}, ${destinationAddress.district || ''}, ${destinationAddress.city}`;
 
-        if (address.latitude && address.longitude) {
-          destLat = Number(address.latitude);
-          destLon = Number(address.longitude);
-        }
+      if (destLat === undefined && destinationAddress.latitude) {
+        destLat = Number(destinationAddress.latitude);
+      }
+      if (destLon === undefined && destinationAddress.longitude) {
+        destLon = Number(destinationAddress.longitude);
       }
     }
 
@@ -204,26 +213,55 @@ export class FulfillmentService {
       chargeableWeightKg,
     );
 
-    // 5. Thử tính cước GHN Express trực tiếp (nếu có đủ mã quận/phường)
+    // 5. Thử tính cước GHN Express trực tiếp (theo chuẩn web giao hàng chính thức)
     let ghnFee: number | null = null;
-    if (dto.fromDistrictId && dto.toDistrictId && dto.toWardCode) {
-      const ghnRes = await this.ghnService.calculateFee({
-        fromDistrictId: dto.fromDistrictId,
-        fromWardCode: dto.fromWardCode,
-        toDistrictId: dto.toDistrictId,
-        toWardCode: dto.toWardCode,
-        weightGrams: totalActualGrams,
-      });
-      if (ghnRes) {
-        ghnFee = ghnRes.total;
+    let ghnCarrierResponse: {
+      serviceFee: number;
+      insuranceFee: number;
+      r2sFee: number;
+      codFee: number;
+    } | null = null;
+
+    let targetToDistrictId = dto.toDistrictId;
+    let targetToWardCode = dto.toWardCode;
+
+    if (!targetToDistrictId || !targetToWardCode) {
+      if (destinationAddress && destinationAddress.city && destinationAddress.district) {
+        const resolved = await this.ghnService.resolveDistrictAndWard(
+          destinationAddress.city,
+          destinationAddress.district,
+          destinationAddress.ward,
+        );
+        if (resolved) {
+          targetToDistrictId = resolved.districtId;
+          targetToWardCode = resolved.wardCode;
+        }
       }
     }
 
-    // Phí vận chuyển cuối cùng áp dụng: ưu tiên GHN nếu cự ly xa (>30km) hoặc lấy cước khoảng cách
-    let finalShippingFee = distanceResult.totalFee;
-    if (ghnFee && distanceResult.distanceKm > 30) {
-      finalShippingFee = ghnFee;
+    if (targetToDistrictId && targetToWardCode) {
+      try {
+        const ghnRes = await this.ghnService.calculateFee({
+          fromDistrictId: dto.fromDistrictId,
+          fromWardCode: dto.fromWardCode,
+          toDistrictId: targetToDistrictId,
+          toWardCode: targetToWardCode,
+          weightGrams: Math.max(totalActualGrams, maxVolumetricGrams),
+          lengthCm: 10,
+          widthCm: 10,
+          heightCm: 10,
+        });
+        if (ghnRes) {
+          ghnFee = ghnRes.total;
+          ghnCarrierResponse = ghnRes;
+        }
+      } catch (err) {
+        this.logger.warn(`GHN calculateFee fallback: ${(err as Error).message}`);
+      }
     }
+
+    // Phí vận chuyển cuối cùng áp dụng: ưu tiên tuyệt đối cước chuẩn GHN Express
+    const finalShippingFee = ghnFee !== null ? ghnFee : distanceResult.totalFee;
 
     return {
       origin: {
@@ -245,9 +283,10 @@ export class FulfillmentService {
         calculationMethod: distanceResult.method,
       },
       rates: {
-        baseFee: distanceResult.baseFee,
-        distanceFee: distanceResult.distanceFee,
-        weightFee: distanceResult.weightFee,
+        baseFee: ghnCarrierResponse ? ghnCarrierResponse.serviceFee : distanceResult.baseFee,
+        distanceFee: ghnFee !== null ? 0 : distanceResult.distanceFee,
+        weightFee: ghnFee !== null ? 0 : distanceResult.weightFee,
+        insuranceFee: ghnCarrierResponse ? ghnCarrierResponse.insuranceFee : 0,
         distanceTotalFee: distanceResult.totalFee,
         ghnCarrierFee: ghnFee,
         finalShippingFee,

@@ -22,7 +22,9 @@ export class ShippingController {
     status: HttpStatus.BAD_REQUEST,
     description: 'Dữ liệu đầu vào không hợp lệ',
   })
-  public calculateShippingFee(@Body() dto: CalculateShippingDto): ShippingCalculationResult {
+  public async calculateShippingFee(
+    @Body() dto: CalculateShippingDto,
+  ): Promise<ShippingCalculationResult> {
     return this.shippingService.calculateShippingFee(dto);
   }
 }

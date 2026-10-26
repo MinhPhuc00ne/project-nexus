@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 
 export interface GhnFeeRequest {
-  fromDistrictId: number;
+  fromDistrictId?: number;
   fromWardCode?: string;
   toDistrictId: number;
   toWardCode: string;
@@ -335,17 +335,21 @@ export class GhnLogisticsService {
 
       const payload: Record<string, unknown> = {
         service_type_id: serviceTypeId,
-        from_district_id: Number(req.fromDistrictId),
-        ...(req.fromWardCode && { from_ward_code: String(req.fromWardCode) }),
         to_district_id: Number(req.toDistrictId),
         to_ward_code: String(req.toWardCode),
         weight: Math.max(100, Math.round(req.weightGrams)),
         length: Math.max(5, Math.round(req.lengthCm || 10)),
         width: Math.max(5, Math.round(req.widthCm || 10)),
         height: Math.max(5, Math.round(req.heightCm || 10)),
-        insurance_value: Math.min(5000000, Math.round(req.insuranceValue || 0)),
+        insurance_value: Math.min(5000000, Math.max(0, Math.round(req.insuranceValue || 0))),
       };
 
+      if (req.fromDistrictId) {
+        payload.from_district_id = Number(req.fromDistrictId);
+      }
+      if (req.fromWardCode) {
+        payload.from_ward_code = String(req.fromWardCode);
+      }
       if (req.serviceId) {
         payload.service_id = req.serviceId;
       }
@@ -395,6 +399,69 @@ export class GhnLogisticsService {
       throw new BadGatewayException(
         `Không thể kết nối đến cổng tính phí GHN: ${(err as Error).message}`,
       );
+    }
+  }
+
+  /**
+   * Tự động phân giải Tỉnh/Thành, Quận/Huyện, Phường/Xã dạng chuỗi sang mã GHN
+   */
+  async resolveDistrictAndWard(
+    cityName: string,
+    districtName: string,
+    wardName?: string | null,
+  ): Promise<{ districtId: number; wardCode: string } | null> {
+    try {
+      const provinces = await this.getProvinces();
+      const cleanCity = cityName
+        .toLowerCase()
+        .replace(/tỉnh|thành phố|tp\.?|tp/gi, '')
+        .trim();
+      const matchedProvince = provinces.find((p) => {
+        const pName = p.provinceName.toLowerCase();
+        return pName.includes(cleanCity) || cleanCity.includes(pName);
+      });
+      if (!matchedProvince) return null;
+
+      const districts = await this.getDistricts(matchedProvince.provinceId);
+      const cleanDistrict = districtName
+        .toLowerCase()
+        .replace(/quận|huyện|thị xã|thành phố|tp\.?/gi, '')
+        .trim();
+      const matchedDistrict = districts.find((d) => {
+        const dName = d.districtName
+          .toLowerCase()
+          .replace(/quận|huyện|thị xã|thành phố|tp\.?/gi, '')
+          .trim();
+        return (
+          dName === cleanDistrict || d.districtName.toLowerCase() === districtName.toLowerCase()
+        );
+      });
+      if (!matchedDistrict) return null;
+
+      if (!wardName) {
+        return { districtId: matchedDistrict.districtId, wardCode: '' };
+      }
+
+      const wards = await this.getWards(matchedDistrict.districtId);
+      const cleanWard = wardName
+        .toLowerCase()
+        .replace(/phường|xã|thị trấn/gi, '')
+        .trim();
+      const matchedWard = wards.find((w) => {
+        const wName = w.wardName
+          .toLowerCase()
+          .replace(/phường|xã|thị trấn/gi, '')
+          .trim();
+        return wName === cleanWard || w.wardName.toLowerCase() === wardName.toLowerCase();
+      });
+
+      return {
+        districtId: matchedDistrict.districtId,
+        wardCode: matchedWard ? matchedWard.wardCode : '',
+      };
+    } catch (err) {
+      this.logger.warn(`Không thể phân giải địa chỉ GHN: ${(err as Error).message}`);
+      return null;
     }
   }
 
