@@ -6,3 +6,16 @@ export interface CategoryTreeItem {
   parentId: string | null;
   children?: CategoryTreeItem[];
 }
+
+export interface CreateCategoryDto {
+  name: string;
+  slug?: string;
+  parentId?: string | null;
+}
+
+export interface DeleteCategoryResult {
+  success: boolean;
+  message: string;
+}
+
+export type UpdateCategoryDto = Partial<CreateCategoryDto>;

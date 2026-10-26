@@ -1,10 +1,48 @@
 import axios, { type AxiosRequestConfig } from 'axios';
-import { Role } from '@nexus/types';
+import type {
+  AdminProduct,
+  AdminProductDetail,
+  AdminProductMutationResult,
+  QueryAdminProductsParams,
+  UpdateProductStatusDto,
+  UpdateProductStatusResult,
+} from '../types/admin-product.types';
 import api, { ApiRequestError } from './api';
 import { getStoredToken } from './auth';
-import type { SellerUpgradeRequest } from './users';
-import type { AdminUser, QueryUsersParams, UserStatusResult } from '../types/user.types';
-import type { CategoryTreeItem } from '../types/category.types';
+import type {
+  SystemSettings,
+  UpdateSystemSettingsDto,
+  UpdateSystemSettingsResult,
+} from '../types/admin-settings.types';
+import type {
+  AdminUser,
+  AdminUserDetail,
+  QueryUsersParams,
+  SellerUpgradeRequest,
+  UserStatusResult,
+} from '../types/user.types';
+import type {
+  CategoryTreeItem,
+  CreateCategoryDto,
+  DeleteCategoryResult,
+  UpdateCategoryDto,
+} from '../types/category.types';
+import type {
+  CreateStaffDto,
+  CreateStaffResult,
+  InviteStaffDto,
+  PaginatedResult,
+  QuerySellerRequestsParams,
+  QueryStaffParams,
+  SellerRequestReviewResult,
+  StaffInvitationResult,
+  StaffUser,
+  AdminShop,
+  AdminShopDetail,
+  QueryAdminShopsParams,
+  UpdateShopStatusDto,
+  UpdateShopStatusResult,
+} from '../types/admin.types';
 
 // Các API admin dùng chung Axios client, token phiên hiện tại và định dạng lỗi.
 async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
@@ -35,37 +73,6 @@ async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
   }
 }
 
-export interface StaffUser {
-  id: string;
-  email: string;
-  fullName: string;
-  phoneNumber: string | null;
-  role: Role;
-  isVerified: boolean;
-  createdAt: string;
-}
-
-export interface CreateStaffDto {
-  email: string;
-  password: string;
-  fullName: string;
-  phoneNumber?: string;
-}
-
-export interface InviteStaffDto {
-  email: string;
-  fullName: string;
-  phoneNumber?: string;
-  department?: string;
-}
-
-export interface StaffInvitationResult {
-  success: boolean;
-  message: string;
-  invitationId: string;
-  assignedEmail: string;
-}
-
 // Không gửi mật khẩu: nhân viên tự đặt mật khẩu qua link gửi đến email cá nhân.
 export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult> {
   return adminRequest<StaffInvitationResult>({
@@ -75,12 +82,20 @@ export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult>
   });
 }
 
-export interface PaginatedResult<T> {
-  items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+export function getAdminSettings(signal?: AbortSignal): Promise<SystemSettings> {
+  return adminRequest<SystemSettings>({ url: '/admin/settings', method: 'GET', signal });
+}
+
+export function updateAdminSettings(
+  dto: UpdateSystemSettingsDto,
+  signal?: AbortSignal,
+): Promise<UpdateSystemSettingsResult> {
+  return adminRequest<UpdateSystemSettingsResult>({
+    url: '/admin/settings',
+    method: 'PATCH',
+    data: dto,
+    signal,
+  });
 }
 
 export function listUsers(params: QueryUsersParams, signal?: AbortSignal) {
@@ -92,9 +107,109 @@ export function listUsers(params: QueryUsersParams, signal?: AbortSignal) {
   });
 }
 
+export function getUserById(id: string, signal?: AbortSignal): Promise<AdminUserDetail> {
+  return adminRequest<AdminUserDetail>({
+    url: `/admin/users/${encodeURIComponent(id)}`,
+    method: 'GET',
+    signal,
+  });
+}
+
 export function getCategoryTree(signal?: AbortSignal): Promise<CategoryTreeItem[]> {
   return adminRequest<CategoryTreeItem[]>({
     url: '/catalog/categories',
+    method: 'GET',
+    signal,
+  });
+}
+
+export function createCategory(dto: CreateCategoryDto): Promise<CategoryTreeItem> {
+  return adminRequest<CategoryTreeItem>({
+    url: '/admin/categories',
+    method: 'POST',
+    data: dto,
+  });
+}
+
+export function updateCategory(id: string, dto: UpdateCategoryDto): Promise<CategoryTreeItem> {
+  return adminRequest<CategoryTreeItem>({
+    url: `/admin/categories/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    data: dto,
+  });
+}
+
+export function deleteCategory(id: string): Promise<DeleteCategoryResult> {
+  return adminRequest<DeleteCategoryResult>({
+    url: `/admin/categories/${encodeURIComponent(id)}`,
+    method: 'DELETE',
+  });
+}
+
+export function listAdminProducts(
+  params: QueryAdminProductsParams,
+  signal?: AbortSignal,
+): Promise<PaginatedResult<AdminProduct>> {
+  return adminRequest<PaginatedResult<AdminProduct>>({
+    url: '/admin/products',
+    method: 'GET',
+    params,
+    signal,
+  });
+}
+
+export function getAdminProductById(id: string, signal?: AbortSignal): Promise<AdminProductDetail> {
+  return adminRequest<AdminProductDetail>({
+    url: `/admin/products/${encodeURIComponent(id)}`,
+    method: 'GET',
+    signal,
+  });
+}
+
+export function updateAdminProductStatus(
+  id: string,
+  dto: UpdateProductStatusDto,
+): Promise<UpdateProductStatusResult> {
+  return adminRequest<UpdateProductStatusResult>({
+    url: `/admin/products/${encodeURIComponent(id)}/status`,
+    method: 'PATCH',
+    data: dto,
+  });
+}
+
+export function deleteAdminProduct(id: string): Promise<AdminProductMutationResult> {
+  return adminRequest<AdminProductMutationResult>({
+    url: `/admin/products/${encodeURIComponent(id)}`,
+    method: 'DELETE',
+  });
+}
+
+export function listAdminShops(
+  params: QueryAdminShopsParams,
+  signal?: AbortSignal,
+): Promise<PaginatedResult<AdminShop>> {
+  return adminRequest<PaginatedResult<AdminShop>>({
+    url: '/admin/shops',
+    method: 'GET',
+    params,
+    signal,
+  });
+}
+
+export function updateAdminShopStatus(
+  sellerId: string,
+  dto: UpdateShopStatusDto,
+): Promise<UpdateShopStatusResult> {
+  return adminRequest<UpdateShopStatusResult>({
+    url: `/admin/shops/${encodeURIComponent(sellerId)}/status`,
+    method: 'PATCH',
+    data: dto,
+  });
+}
+
+export function getAdminShopById(id: string, signal?: AbortSignal): Promise<AdminShopDetail> {
+  return adminRequest<AdminShopDetail>({
+    url: `/admin/shops/${encodeURIComponent(id)}`,
     method: 'GET',
     signal,
   });
@@ -116,23 +231,11 @@ export function unlockUser(id: string, reason?: string) {
   });
 }
 
-export interface QuerySellerRequestsParams {
-  status?: 'PENDING' | 'APPROVED' | 'REJECTED';
-  page?: number;
-  limit?: number;
-}
-
-export interface QueryStaffParams {
-  search?: string;
-  page?: number;
-  limit?: number;
-}
-
 /**
  * 1. Admin tạo tài khoản cho nhân viên hỗ trợ (Support Staff)
  */
-export function createStaff(dto: CreateStaffDto): Promise<{ message: string; staff: StaffUser }> {
-  return adminRequest<{ message: string; staff: StaffUser }>({
+export function createStaff(dto: CreateStaffDto): Promise<CreateStaffResult> {
+  return adminRequest<CreateStaffResult>({
     url: '/admin/staff',
     method: 'POST',
     data: dto,
@@ -176,10 +279,8 @@ export function getSellerRequestById(id: string): Promise<SellerUpgradeRequest> 
 /**
  * 5. Admin phê duyệt yêu cầu nâng cấp lên Seller
  */
-export function approveSellerRequest(
-  id: string,
-): Promise<{ message: string; request: SellerUpgradeRequest }> {
-  return adminRequest<{ message: string; request: SellerUpgradeRequest }>({
+export function approveSellerRequest(id: string): Promise<SellerRequestReviewResult> {
+  return adminRequest<SellerRequestReviewResult>({
     url: `/admin/seller-requests/${id}/approve`,
     method: 'PATCH',
   });
@@ -191,8 +292,8 @@ export function approveSellerRequest(
 export function rejectSellerRequest(
   id: string,
   rejectionReason: string,
-): Promise<{ message: string; request: SellerUpgradeRequest }> {
-  return adminRequest<{ message: string; request: SellerUpgradeRequest }>({
+): Promise<SellerRequestReviewResult> {
+  return adminRequest<SellerRequestReviewResult>({
     url: `/admin/seller-requests/${id}/reject`,
     method: 'PATCH',
     data: { rejectionReason },

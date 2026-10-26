@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { BadgeCheck, UserPlus, RefreshCw, Users, CheckCircle } from 'lucide-react';
-import { listStaff, inviteStaff, type StaffUser } from '../../services/admin';
+import { listStaff, inviteStaff } from '../../services/admin';
+import type { StaffUser } from '../../types/admin.types';
 import Popup from '../../components/Popup';
 
 interface StaffTeamManagementPanelProps {
