@@ -41,7 +41,9 @@ export function createChatConversation(body: CreateChatConversation): Promise<Ch
   return chatRequest({ method: 'POST', url: '/chat/conversations', data: body });
 }
 //Retrieve conversations with search and pagination support.
-export function getChatConversations(params: ChatConversationQuery = {}): Promise<ChatConversationList> {
+export function getChatConversations(
+  params: ChatConversationQuery = {},
+): Promise<ChatConversationList> {
   return chatRequest({ method: 'GET', url: '/chat/conversations', params });
 }
 //Retrieve details of a specific conversation.
@@ -49,7 +51,10 @@ export function getChatConversation(id: string): Promise<ChatConversation> {
   return chatRequest({ method: 'GET', url: conversationPath(id) }, true);
 }
 //Retrieve message history; use before to load older messages.
-export function getChatMessages(id: string, params: ChatMessageQuery = {}): Promise<ChatMessageList> {
+export function getChatMessages(
+  id: string,
+  params: ChatMessageQuery = {},
+): Promise<ChatMessageList> {
   return chatRequest({ method: 'GET', url: `${conversationPath(id)}/messages`, params }, true);
 }
 //Send a message with optional attachment URLs.
@@ -62,6 +67,9 @@ export function markChatAsRead(id: string): Promise<ChatReadResult> {
 }
 //Retrieve the total unread message count for the chat badge.
 export async function getChatUnreadCount(): Promise<number> {
-  const result = await chatRequest<{ unreadCount: number }>({ method: 'GET', url: '/chat/unread-count' });
+  const result = await chatRequest<{ unreadCount: number }>({
+    method: 'GET',
+    url: '/chat/unread-count',
+  });
   return result.unreadCount;
 }

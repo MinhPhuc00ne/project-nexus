@@ -22,8 +22,17 @@ interface ChatClientEvents {
 
 export type ChatSocket = Socket<ChatServerEvents, ChatClientEvents>;
 
+export interface ChatConnectionClient {
+  socket: ChatSocket;
+  connect: () => void;
+  joinConversation: (conversationId: string) => void;
+  leaveConversation: (conversationId: string) => void;
+  setTyping: (conversationId: string, isTyping: boolean) => void;
+  disconnect: () => void;
+}
+
 // Subscribe to events before calling connect(). Send messages through Axios.
-export function createChatConnection() {
+export function createChatConnection(): ChatConnectionClient {
   if (!getStoredToken()) throw new Error('Vui lòng đăng nhập để sử dụng chat.');
   const backendUrl = new URL(API_BASE_URL, window.location.origin);
   const socket: ChatSocket = io(`${backendUrl.origin}/chat`, {
