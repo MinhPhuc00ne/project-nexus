@@ -4,12 +4,12 @@ import { Type } from 'class-transformer';
 
 export class CreateWithdrawalDto {
   @ApiProperty({
-    example: 500000,
-    description: 'Số tiền muốn rút (VND, tối thiểu 50.000 VND)',
+    example: 50000,
+    description: 'Số tiền muốn rút (VND, phải lớn hơn 0)',
   })
   @Type(() => Number)
   @IsNumber()
-  @Min(50000, { message: 'Số tiền rút tối thiểu là 50.000 VND' })
+  @Min(1, { message: 'Số tiền rút phải lớn hơn 0 VND' })
   amount: number;
 
   @ApiPropertyOptional({

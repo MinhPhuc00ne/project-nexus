@@ -103,7 +103,7 @@ $$\text{Seller Payout} = \text{Subtotal} - \text{Platform Fee} + \text{Shipping 
 ### 4.3 Wallet Withdrawal & Payout Workflow
 
 1. **Submission & Bank Details Priority**:
-   - Minimum withdrawal amount: `50,000 VND`. Maximum pending requests per account: `3`.
+   - Minimum withdrawal amount: `> 0 VND` (User can withdraw any positive amount $\le$ available liquid balance). Maximum pending requests per account: `3`.
    - **Bank Account Resolution**: System prioritizes beneficiaries' bank details saved in the User Profile (`bankName`, `accountNumber`, `accountHolderName`). If not configured in Profile, user manually enters the beneficiary information.
 2. **Escrow Locking & Confirmation Notification**:
    - Upon submitting a withdrawal request, the withdrawal amount is atomically deducted from available `balance` and transferred to `lockedBalance`.
