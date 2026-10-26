@@ -10,3 +10,4 @@ export const mergeMessages = (old: ChatMessage[], incoming: ChatMessage[]): Chat
   [...new Map([...old, ...incoming].map((message) => [message.id, message])).values()].sort(
     (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
   );
+
