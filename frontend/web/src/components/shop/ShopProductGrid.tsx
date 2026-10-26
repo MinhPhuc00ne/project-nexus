@@ -1,0 +1,145 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Package, Eye, ShoppingCart } from 'lucide-react';
+import type { CatalogProduct } from '../../services/products.service';
+
+interface ShopProductGridProps {
+  products: CatalogProduct[];
+  totalProducts: number;
+  page: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+  onAddToCart: (product: CatalogProduct, e: React.MouseEvent) => void;
+}
+
+export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
+  products,
+  totalProducts,
+  page,
+  totalPages,
+  onPageChange,
+  onAddToCart,
+}) => {
+  return (
+    <main className="max-w-screen-2xl mx-auto px-6 py-10">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">Sản Phẩm Của Gian Hàng</h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Tất cả đồng hồ và tài sản xa xỉ được bảo chứng bởi gian hàng này
+          </p>
+        </div>
+        <span className="text-xs font-bold text-slate-400">
+          HIỂN THỊ {products.length} / {totalProducts} SẢN PHẨM
+        </span>
+      </div>
+
+      {products.length === 0 ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-lg mx-auto shadow-sm">
+          <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+          <h3 className="text-base font-bold text-slate-800 mb-1">Chưa có sản phẩm nào</h3>
+          <p className="text-xs text-slate-500 mb-6">
+            Gian hàng này hiện chưa niêm yết sản phẩm mới nào hoặc các sản phẩm đã được bán hết.
+          </p>
+          <Link
+            to="/search"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
+          >
+            Khám phá sản phẩm khác
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col"
+            >
+              <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
+                <img
+                  src={product.thumbnail || product.images[0] || '/images/watches/watch-1.png'}
+                  alt={product.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                {product.threeModelKey && (
+                  <span className="absolute top-3 left-3 bg-blue-600/90 backdrop-blur-sm text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    3D Model
+                  </span>
+                )}
+              </div>
+
+              <div className="p-4 flex flex-col flex-1">
+                {product.category && (
+                  <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1">
+                    {product.category.name}
+                  </span>
+                )}
+                <Link
+                  to={`/product/${product.id}`}
+                  className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition line-clamp-2 mb-2"
+                >
+                  {product.title}
+                </Link>
+
+                <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">
+                      Giá niêm yết
+                    </span>
+                    <span className="text-base font-extrabold text-blue-600">
+                      {product.basePrice.toLocaleString('vi-VN')} ₫
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      to={`/product/${product.id}`}
+                      className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition"
+                      title="Xem chi tiết"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={(e) => onAddToCart(product, e)}
+                      className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm"
+                      title="Thêm vào giỏ"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-12 pt-6 border-t border-slate-200">
+          <button
+            type="button"
+            disabled={page === 1}
+            onClick={() => onPageChange(Math.max(1, page - 1))}
+            className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            Trang trước
+          </button>
+          <span className="text-xs font-semibold text-slate-500 px-3">
+            Trang {page} / {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+            className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+          >
+            Trang sau
+          </button>
+        </div>
+      )}
+    </main>
+  );
+};
+
+export default ShopProductGrid;

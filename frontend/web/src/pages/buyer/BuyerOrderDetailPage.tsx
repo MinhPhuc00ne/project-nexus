@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Package,
@@ -5,226 +6,232 @@ import {
   Truck,
   CheckCircle,
   Clock,
-  MapPin,
-  Phone,
-  User,
   CreditCard,
   ShieldCheck,
-  Copy,
+  Loader2,
   ExternalLink,
 } from 'lucide-react';
+import { getBuyerOrderDetailApi, payOrderApi, type BuyerOrder } from '../../services/orders';
+import OrderTimeline from '../../components/orders/OrderTimeline';
+import OrderAddressCard from '../../components/orders/OrderAddressCard';
+import OrderItemsSummary from '../../components/orders/OrderItemsSummary';
 
-import { MOCK_ORDER_DETAIL } from '../../mocks';
+const statusMap: Record<
+  string,
+  { label: string; color: string; bg: string; border: string; icon: typeof Clock }
+> = {
+  PENDING_PAYMENT: {
+    label: 'Chờ thanh toán',
+    color: 'text-amber-800',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    icon: Clock,
+  },
+  PAID: {
+    label: 'Đã thanh toán',
+    color: 'text-emerald-800',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    icon: CheckCircle,
+  },
+  PREPARING: {
+    label: 'Chuẩn bị hàng',
+    color: 'text-blue-800',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    icon: Package,
+  },
+  SHIPPING: {
+    label: 'Đang giao hàng',
+    color: 'text-indigo-800',
+    bg: 'bg-indigo-50',
+    border: 'border-indigo-200',
+    icon: Truck,
+  },
+  DELIVERED: {
+    label: 'Đã giao hàng',
+    color: 'text-emerald-800',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200',
+    icon: CheckCircle,
+  },
+  COMPLETED: {
+    label: 'Hoàn thành',
+    color: 'text-teal-800',
+    bg: 'bg-teal-50',
+    border: 'border-teal-200',
+    icon: CheckCircle,
+  },
+  CANCELLED: {
+    label: 'Đã huỷ',
+    color: 'text-rose-800',
+    bg: 'bg-rose-50',
+    border: 'border-rose-200',
+    icon: Clock,
+  },
+};
 
 export default function BuyerOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const order = MOCK_ORDER_DETAIL; // In production, fetch by id
+  const [order, setOrder] = useState<BuyerOrder | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isPaying, setIsPaying] = useState(false);
 
-  const fmt = (n: number) => (n === 0 ? 'Miễn phí' : n.toLocaleString('vi-VN') + ' ₫');
+  const fetchOrderDetail = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getBuyerOrderDetailApi(id);
+      setOrder(data);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Không thể tải chi tiết đơn hàng.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
-  const copyToClipboard = (text: string) => {
-    void navigator.clipboard.writeText(text);
+  useEffect(() => {
+    void fetchOrderDetail();
+  }, [fetchOrderDetail]);
+
+  const handlePayNow = async () => {
+    if (!order) return;
+    setIsPaying(true);
+    try {
+      const paymentInfo = await payOrderApi(order.id, 'PAYOS');
+      if (paymentInfo.checkoutUrl) {
+        window.open(paymentInfo.checkoutUrl, '_blank');
+      }
+    } catch {
+      alert('Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.');
+    } finally {
+      setIsPaying(false);
+    }
   };
 
-  return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center gap-3">
+  const currentAddress = (order?.shippingAddressSnapshot ||
+    order?.shippingAddress ||
+    {}) as NonNullable<BuyerOrder['shippingAddress']>;
+
+  const statusConfig = (order?.status && statusMap[order.status]) || statusMap.PENDING_PAYMENT;
+  const StatusIcon = statusConfig.icon;
+
+  if (loading) {
+    return (
+      <div className="py-20 flex flex-col items-center justify-center text-slate-400 text-xs">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
+        <span>Đang tải thông tin đơn hàng...</span>
+      </div>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <div className="py-16 text-center max-w-md mx-auto bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+        <p className="text-sm font-semibold text-rose-600 mb-4">
+          {error || 'Không tìm thấy đơn hàng'}
+        </p>
         <Link
           to="/buyer/orders"
-          className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-600 transition"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition"
         >
-          <ChevronLeft size={14} />
-          Đơn hàng
+          <ChevronLeft size={14} /> Quay lại danh sách đơn hàng
         </Link>
-        <span className="text-slate-300">/</span>
-        <span className="text-xs font-bold text-slate-900">{id ?? order.id}</span>
       </div>
+    );
+  }
 
-      {/* Order Status Banner */}
-      <div className="rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Truck size={16} className="text-blue-600" />
-            <span className="text-sm font-bold text-blue-800">Đang giao hàng</span>
-          </div>
-          <span className="text-xs text-slate-500">Dự kiến: {order.shipping.estimatedDate}</span>
+  return (
+    <div className="space-y-6 text-slate-800">
+      {/* Top Bar Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <Link
+            to="/buyer/orders"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-600 transition mb-2"
+          >
+            <ChevronLeft size={14} /> Quay lại danh sách đơn hàng
+          </Link>
+          <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+            <span>Chi tiết đơn hàng #{order.orderNumber}</span>
+            <span
+              className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${statusConfig.color} ${statusConfig.bg} ${statusConfig.border}`}
+            >
+              <StatusIcon size={12} />
+              {statusConfig.label}
+            </span>
+          </h1>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Ngày đặt hàng: {new Date(order.createdAt).toLocaleString('vi-VN')}
+          </p>
         </div>
-        {/* Timeline */}
-        <div className="relative">
-          <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-slate-200" />
-          <div className="space-y-3">
-            {order.timeline.map((step, i) => (
-              <div key={i} className="flex items-start gap-3 pl-1">
-                <div
-                  className={`relative z-10 h-4 w-4 shrink-0 rounded-full border-2 flex items-center justify-center mt-0.5 ${
-                    step.done
-                      ? 'bg-blue-600 border-blue-600'
-                      : step.active
-                        ? 'bg-white border-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]'
-                        : 'bg-white border-slate-300'
-                  }`}
-                >
-                  {step.done && <CheckCircle size={10} className="text-white" />}
-                  {step.active && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
-                </div>
-                <div className="flex-1 min-w-0 pb-0.5">
-                  <p
-                    className={`text-xs font-semibold ${
-                      step.done || step.active ? 'text-slate-800' : 'text-slate-400'
-                    }`}
-                  >
-                    {step.label}
-                  </p>
-                  {step.time && <p className="text-[11px] text-slate-400">{step.time}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      {/* Tracking Code */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-          <Package size={13} className="text-indigo-600" />
-          Mã vận đơn GHN
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-sm font-bold text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg flex-1">
-            {order.shipping.trackingCode}
-          </span>
+        {order.status === 'PENDING_PAYMENT' && (
           <button
             type="button"
-            onClick={() => copyToClipboard(order.shipping.trackingCode)}
-            className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition"
-            title="Sao chép"
+            disabled={isPaying}
+            onClick={handlePayNow}
+            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
           >
-            <Copy size={14} />
+            {isPaying ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                <span>Đang kết nối PayOS...</span>
+              </>
+            ) : (
+              <>
+                <CreditCard size={14} />
+                <span>Thanh toán PayOS ngay</span>
+                <ExternalLink size={12} />
+              </>
+            )}
           </button>
-          <a
-            href={`https://ghn.vn/tracking?order_code=${order.shipping.trackingCode}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition"
-            title="Xem trên GHN"
-          >
-            <ExternalLink size={14} />
-          </a>
-        </div>
+        )}
       </div>
 
-      {/* Product */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
-          <p className="text-xs font-bold text-slate-600">{order.product.shopName}</p>
-        </div>
-        <div className="flex items-start gap-4 p-4">
-          <div className="h-16 w-16 shrink-0 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden flex items-center justify-center">
-            <img
-              src={order.product.img}
-              alt={order.product.name}
-              className="h-full w-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.opacity = '0.3';
-              }}
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-slate-900 line-clamp-2">{order.product.name}</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">{order.product.variant}</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">x{order.product.qty}</p>
-          </div>
-          <span className="text-sm font-extrabold text-[#f24e1e] shrink-0">
-            {order.product.price.toLocaleString('vi-VN')} ₫
-          </span>
-        </div>
-      </div>
+      {/* Order Timeline */}
+      <OrderTimeline
+        status={order.status}
+        createdAt={order.createdAt}
+        updatedAt={order.updatedAt}
+      />
 
-      {/* Delivery Address */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-xs font-bold text-slate-900 mb-3 flex items-center gap-1.5">
-          <MapPin size={13} className="text-teal-600" />
-          Địa chỉ giao hàng
-        </h3>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-xs">
-            <User size={12} className="text-slate-400 shrink-0" />
-            <span className="font-semibold text-slate-800">{order.address.name}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <Phone size={12} className="text-slate-400 shrink-0" />
-            <span className="text-slate-600">{order.address.phone}</span>
-          </div>
-          <div className="flex items-start gap-2 text-xs">
-            <MapPin size={12} className="text-slate-400 shrink-0 mt-0.5" />
-            <span className="text-slate-600">{order.address.address}</span>
-          </div>
+      {/* Main Details (2 Columns) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left: Items Summary */}
+        <div className="lg:col-span-8">
+          <OrderItemsSummary order={order} />
         </div>
-      </div>
 
-      {/* Payment Summary */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-xs font-bold text-slate-900 mb-3 flex items-center gap-1.5">
-          <CreditCard size={13} className="text-violet-600" />
-          Chi tiết thanh toán
-        </h3>
-        <div className="space-y-2 text-xs">
-          <div className="flex justify-between">
-            <span className="text-slate-500">Phương thức</span>
-            <span className="font-semibold text-slate-800">{order.payment.method}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">Tạm tính</span>
-            <span className="font-semibold text-slate-800">
-              {order.payment.subtotal.toLocaleString('vi-VN')} ₫
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500">Phí vận chuyển</span>
-            <span className="font-semibold text-emerald-600">{fmt(order.payment.shippingFee)}</span>
-          </div>
-          {order.payment.discount > 0 && (
-            <div className="flex justify-between">
-              <span className="text-slate-500">Giảm giá</span>
-              <span className="font-semibold text-red-500">
-                -{order.payment.discount.toLocaleString('vi-VN')} ₫
-              </span>
+        {/* Right: Address & Payment Info */}
+        <div className="lg:col-span-4 space-y-6">
+          <OrderAddressCard address={currentAddress} />
+
+          {/* Payment Method Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <CreditCard size={16} className="text-blue-600" />
+              <span>Phương thức thanh toán</span>
+            </h3>
+            <div className="p-3 bg-slate-50 rounded-xl text-xs space-y-1">
+              <div className="flex justify-between font-bold text-slate-800">
+                <span>Hình thức:</span>
+                <span className="text-blue-600">PayOS VietQR (Escrow)</span>
+              </div>
+              <div className="flex justify-between text-slate-500 text-[11px]">
+                <span>Trạng thái:</span>
+                <span className="font-semibold text-slate-700">{statusConfig.label}</span>
+              </div>
             </div>
-          )}
-          <div className="flex justify-between pt-2 border-t border-slate-100">
-            <span className="font-bold text-slate-900">Tổng thanh toán</span>
-            <span className="text-base font-extrabold text-[#f24e1e]">
-              {order.payment.total.toLocaleString('vi-VN')} ₫
-            </span>
+            <div className="flex items-start gap-2 text-[11px] text-indigo-700 bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-100/70">
+              <ShieldCheck size={16} className="text-indigo-600 shrink-0 mt-0.5" />
+              <span>Giao dịch được bảo hộ 100% qua cơ chế ký quỹ NEXUS Escrow.</span>
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Escrow Notice */}
-      <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-3.5 flex items-start gap-3">
-        <ShieldCheck size={16} className="text-indigo-600 shrink-0 mt-0.5" />
-        <p className="text-[11px] text-indigo-700 leading-relaxed">
-          Đơn hàng đang được bảo vệ bởi cơ chế <strong>Ký quỹ Escrow</strong>. Tiền sẽ chỉ được giải
-          ngân cho người bán sau khi bạn xác nhận đã nhận hàng thành công.
-        </p>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition"
-        >
-          <CheckCircle size={14} />
-          Xác nhận đã nhận hàng
-        </button>
-        <button
-          type="button"
-          className="px-4 py-3 rounded-xl bg-white border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition shadow-sm"
-        >
-          <Clock size={14} />
-        </button>
       </div>
     </div>
   );

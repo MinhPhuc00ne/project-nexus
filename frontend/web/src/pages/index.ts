@@ -12,6 +12,7 @@ export { default as AuctionPage } from './guest/AuctionPage';
 export { default as ProductDetailPage } from './guest/ProductDetailPage';
 export { default as AuctionDetailPage } from './guest/AuctionDetailPage';
 export { default as CategoryPage } from './guest/CategoryPage';
+export { default as ShopDetailPage } from './guest/ShopDetailPage';
 export { default as AboutPage } from './guest/AboutPage';
 export { default as ContactPage } from './guest/ContactPage';
 export { default as TermsPage } from './guest/TermsPage';

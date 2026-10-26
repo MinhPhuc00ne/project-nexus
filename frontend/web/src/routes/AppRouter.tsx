@@ -37,6 +37,7 @@ const SearchPage = lazy(() => import('../pages/guest/SearchPage'));
 const AuctionPage = lazy(() => import('../pages/guest/AuctionPage'));
 const AuctionDetailPage = lazy(() => import('../pages/guest/AuctionDetailPage'));
 const ProductDetailPage = lazy(() => import('../pages/guest/ProductDetailPage'));
+const ShopDetailPage = lazy(() => import('../pages/guest/ShopDetailPage'));
 const CategoryPage = lazy(() => import('../pages/guest/CategoryPage'));
 const AboutPage = lazy(() => import('../pages/guest/AboutPage'));
 const ContactPage = lazy(() => import('../pages/guest/ContactPage'));
@@ -102,6 +103,7 @@ function AppRouter() {
                 <Route path={ROUTES.AUCTION} element={<AuctionPage />} />
                 <Route path={ROUTES.AUCTION_DETAIL} element={<AuctionDetailPage />} />
                 <Route path={ROUTES.PRODUCT} element={<ProductDetailPage />} />
+                <Route path={ROUTES.SHOP_DETAIL} element={<ShopDetailPage />} />
                 <Route path={ROUTES.ABOUT} element={<AboutPage />} />
                 <Route path={ROUTES.CONTACT} element={<ContactPage />} />
                 <Route path={ROUTES.TERMS} element={<TermsPage />} />

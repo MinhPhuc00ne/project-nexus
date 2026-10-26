@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined, ShopOutlined } from '@ant-design/icons';
 import { getProductsPage, type CatalogQuery } from '../../services/products.service';
 import useProductResource from '../productDetail/useProductResource';
 import type { ProductDetail } from '../../types/product.types';
@@ -131,7 +131,10 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
       <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
         <p className="truncate text-xs text-slate-500">{product.categoryName}</p>
         <h3 className="line-clamp-2 text-sm font-semibold text-slate-800">{product.name}</h3>
-        <p className="truncate text-xs text-slate-500">{product.shop.name}</p>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <ShopOutlined className="text-blue-600 shrink-0" />
+          <span className="truncate">{product.shop.name}</span>
+        </div>
         <p className="mt-auto pt-2 text-base font-bold text-blue-600">{product.formattedPrice}</p>
         <p className={`text-xs ${product.stock > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
           {product.stock > 0 ? `Còn ${product.stock} sản phẩm` : 'Hết hàng'}
