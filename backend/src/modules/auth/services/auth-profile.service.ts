@@ -11,7 +11,7 @@ import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ConfirmChangePasswordOtpDto } from '../dto/confirm-change-password-otp.dto';
-import { UpdateProfileDto } from '../dto/update-profile.dto';
+import { UpdateAuthProfileDto } from '../dto/update-profile.dto';
 
 export interface UserProfileResponse {
   id: string;
@@ -76,7 +76,7 @@ export class AuthProfileService {
     return user;
   }
 
-  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<UserProfileResponse> {
+  async updateProfile(userId: string, dto: UpdateAuthProfileDto): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('Không tìm thấy thông tin người dùng.');

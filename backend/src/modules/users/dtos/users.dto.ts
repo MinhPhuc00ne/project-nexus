@@ -25,7 +25,7 @@ export interface UserProfileResponse {
   createdAt: Date;
 }
 
-export class UpdateProfileDto {
+export class UpdateBuyerProfileDto {
   @ApiPropertyOptional({ example: 'Nguyen Van A', description: 'Updated full name' })
   @IsString()
   @IsOptional()

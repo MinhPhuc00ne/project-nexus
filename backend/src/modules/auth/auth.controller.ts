@@ -22,7 +22,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateAuthProfileDto } from './dto/update-profile.dto';
 import { ConfirmChangePasswordOtpDto } from './dto/confirm-change-password-otp.dto';
 import { JwtAuthGuard } from '../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../core/security/roles.guard';
@@ -167,7 +167,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
   async updateProfile(
     @CurrentUser('id') userId: string,
-    @Body() dto: UpdateProfileDto,
+    @Body() dto: UpdateAuthProfileDto,
   ): Promise<UserProfileResponse> {
     return this.authProfileService.updateProfile(userId, dto);
   }

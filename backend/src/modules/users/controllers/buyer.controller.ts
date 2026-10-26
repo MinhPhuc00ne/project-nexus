@@ -29,7 +29,7 @@ import { UsersService, UserProfileResponse } from '../services/users.service';
 import { AddressService } from '../services/address.service';
 import { RegisterBuyerDto } from '../../auth/dtos/auth.dto';
 import {
-  UpdateProfileDto,
+  UpdateBuyerProfileDto,
   ApplySellerUpgradeDto,
   CreateAddressDto,
   UpdateAddressDto,
@@ -83,7 +83,7 @@ export class BuyerController {
   async updateProfile(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: Role,
-    @Body() dto: UpdateProfileDto,
+    @Body() dto: UpdateBuyerProfileDto,
     @Headers('x-verification-token') verificationHeader?: string,
   ): Promise<UserProfileResponse> {
     return this.usersService.updateProfile(userId, dto, userRole, verificationHeader);

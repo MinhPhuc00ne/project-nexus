@@ -15,7 +15,7 @@ import { CloudinaryStorageService } from '../../../core/storage/cloudinary.servi
 import { RedisService } from '../../../core/redis/redis.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import {
-  UpdateProfileDto,
+  UpdateBuyerProfileDto,
   ApplySellerUpgradeDto,
   ReviewSellerUpgradeDto,
   UserProfileResponse,
@@ -70,7 +70,7 @@ export class UsersService {
   // 2. PROFILE.UPDATE: Cập nhật thông tin cá nhân (chỉ Buyer & Seller; Seller yêu cầu xác minh lại mật khẩu gần đây)
   async updateProfile(
     userId: string,
-    dto: UpdateProfileDto,
+    dto: UpdateBuyerProfileDto,
     callerRole?: Role,
     verificationToken?: string,
   ): Promise<UserProfileResponse> {

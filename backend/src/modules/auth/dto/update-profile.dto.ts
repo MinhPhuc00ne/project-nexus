@@ -1,7 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, Length, Matches } from 'class-validator';
 
-export class UpdateProfileDto {
+export class UpdateAuthProfileDto {
   @ApiPropertyOptional({
     example: 'Nguyen Van A',
     description: 'Họ và tên của người dùng (từ 2 đến 100 ký tự)',
