@@ -175,6 +175,8 @@ Project Nexus utilizes a decoupled, in-process and distributed event-driven mode
 2. Wallet Management:
    - Every registered user possesses an attached platform wallet tracking balances to 2 decimal places.
    - Atomic deposits, withdrawals, and balance deduction locks.
+   - Withdrawal requests prioritize default banking information from user profile (fallback to manual entry).
+   - Disbursement window: 3-7 business days with automated notifications upon receipt, approval, and rejection.
 3. Reputation Scoring & Trust Levels:
    - Users initialize with a baseline score of `100` points.
    - Scores are dynamically recalculated based on:

@@ -60,6 +60,9 @@ export class UsersService {
       reputationScore: user.reputationScore,
       trustLevel: user.trustLevel,
       isVerified: user.isVerified,
+      bankName: user.bankName,
+      accountNumber: user.accountNumber,
+      accountHolderName: user.accountHolderName,
       wallet: user.wallet
         ? {
             balance: Number(user.wallet.balance),

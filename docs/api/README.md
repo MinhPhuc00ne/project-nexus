@@ -112,6 +112,17 @@ This directory contains specifications and endpoint definitions for the entire N
 | `POST` | `/api/v1/staff/activate`        | Staff xác nhận lại Họ tên, SĐT, tạo & xác nhận mật khẩu mới -> Kích hoạt tài khoản công tác `@staff.com` | Public |
 | `POST` | `/api/v1/auth/login`            | Staff đăng nhập bằng tài khoản `@staff.com` và mật khẩu mới tạo với vai trò `SUPPORT_STAFF`              | Public |
 
+### 2.9 Wallet & Withdrawal Management (`/api/v1/seller/finance`, `/api/v1/admin/withdrawals`)
+
+| Method  | Path                                   | Description                                                                                       | Access        |
+| :------ | :------------------------------------- | :------------------------------------------------------------------------------------------------ | :------------ |
+| `GET`   | `/api/v1/seller/finance/revenue`       | Lấy tổng quan doanh thu, số dư ví khả dụng, tiền tạm khóa                                         | Seller, Admin |
+| `POST`  | `/api/v1/seller/finance/withdraw`      | Gửi yêu cầu rút tiền (khóa số dư khả dụng, gửi thông báo giải ngân 3-7 ngày làm việc)             | Seller, Admin |
+| `GET`   | `/api/v1/seller/finance/withdrawals`   | Xem lịch sử các yêu cầu rút tiền đã gửi và trạng thái xử lý                                       | Seller, Admin |
+| `GET`   | `/api/v1/seller/finance/transactions`  | Xem lịch sử biến động số dư ví (DEPOSIT, WITHDRAW, ESCROW...)                                     | Seller, Admin |
+| `GET`   | `/api/v1/admin/withdrawals`            | Admin xem danh sách các yêu cầu rút tiền (lọc theo status PENDING, APPROVED, REJECTED, COMPLETED) | Admin         |
+| `PATCH` | `/api/v1/admin/withdrawals/:id/review` | Admin phê duyệt (khấu trừ tiền khóa) hoặc từ chối (hoàn trả 100% về ví khả dụng kèm lý do)        | Admin         |
+
 ---
 
 ## 3. Real-Time WebSocket Specifications (`/ws/auctions`)

@@ -217,10 +217,35 @@ export class SellerFinanceService {
       );
     }
 
+    // Ưu tiên lấy thông tin ngân hàng thụ hưởng từ Profile người dùng nếu DTO không truyền
+    const finalBankName = (dto.bankName?.trim() || seller.bankName)?.trim();
+    const finalAccountNumber = (dto.accountNumber?.trim() || seller.accountNumber)?.trim();
+    const finalAccountHolderName = (dto.accountHolderName?.trim() || seller.accountHolderName)
+      ?.trim()
+      ?.toUpperCase();
+
+    if (!finalBankName || !finalAccountNumber || !finalAccountHolderName) {
+      throw new BadRequestException(
+        'Thông tin ngân hàng chưa đầy đủ. Vui lòng cập nhật thông tin ngân hàng trong Hồ sơ cá nhân hoặc nhập trực tiếp khi gửi yêu cầu rút tiền.',
+      );
+    }
+
     const storeName = seller.sellerUpgradeRequests[0]?.storeName || seller.fullName;
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Chuyển tiền từ balance sang lockedBalance
+      // 1. Nếu profile chưa có thông tin ngân hàng mà người dùng nhập ở request, tự động cập nhật vào profile
+      if (!seller.bankName && dto.bankName) {
+        await tx.user.update({
+          where: { id: sellerId },
+          data: {
+            bankName: finalBankName,
+            accountNumber: finalAccountNumber,
+            accountHolderName: finalAccountHolderName,
+          },
+        });
+      }
+
+      // 2. Chuyển tiền từ balance sang lockedBalance
       const updatedWallet = await tx.wallet.update({
         where: { id: wallet.id },
         data: {
@@ -229,20 +254,20 @@ export class SellerFinanceService {
         },
       });
 
-      // 2. Tạo bản ghi WithdrawalRequest
+      // 3. Tạo bản ghi WithdrawalRequest
       const req = await tx.withdrawalRequest.create({
         data: {
           userId: sellerId,
           amount: withdrawAmount,
-          bankName: dto.bankName.trim(),
-          accountNumber: dto.accountNumber.trim(),
-          accountHolderName: dto.accountHolderName.trim().toUpperCase(),
+          bankName: finalBankName,
+          accountNumber: finalAccountNumber,
+          accountHolderName: finalAccountHolderName,
           adminNote: dto.note?.trim() || null,
           status: WithdrawalStatus.PENDING,
         },
       });
 
-      // 3. Tạo bản ghi giao dịch ví WalletTransaction với type WITHDRAW và status PENDING
+      // 4. Tạo bản ghi giao dịch ví WalletTransaction với type WITHDRAW và status PENDING
       const transaction = await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,
@@ -250,18 +275,18 @@ export class SellerFinanceService {
           type: WalletTransactionType.WITHDRAW,
           status: WalletTransactionStatus.PENDING,
           referenceId: req.id,
-          description: `Yêu cầu rút tiền về ${dto.bankName.trim()} - STK: ${dto.accountNumber.trim()} (${dto.accountHolderName.trim().toUpperCase()})`,
+          description: `Yêu cầu rút tiền về ${finalBankName} - STK: ${finalAccountNumber} (${finalAccountHolderName})`,
         },
       });
 
-      // 4. Gửi thông báo đến người bán
+      // 5. Gửi thông báo đến người bán (thời gian giải ngân 3-7 ngày làm việc)
       await tx.notification.create({
         data: {
           userId: sellerId,
           title: 'Yêu cầu rút tiền đã được tiếp nhận ⏳',
           content: `Yêu cầu rút ${withdrawAmount.toLocaleString(
             'vi-VN',
-          )} VND về ${dto.bankName.trim()} (${dto.accountNumber.trim()}) đã được gửi đến Quản trị viên. Số dư ví khả dụng đã được tạm giữ an toàn.`,
+          )} VND về ${finalBankName} (${finalAccountNumber}) đã được tiếp nhận. Hệ thống sẽ thẩm định và giải ngân trong vòng 3-7 ngày làm việc. Số dư ví khả dụng đã được tạm giữ an toàn.`,
           type: NotificationType.PAYMENT,
         },
       });
@@ -276,7 +301,7 @@ export class SellerFinanceService {
     return {
       success: true,
       message:
-        'Gửi yêu cầu rút tiền thành công! Quản trị viên sẽ kiểm tra và chuyển khoản cho bạn.',
+        'Gửi yêu cầu rút tiền thành công! Hệ thống sẽ thẩm định và giải ngân trong vòng 3-7 ngày làm việc.',
       withdrawalRequest: {
         id: result.req.id,
         amount: Number(result.req.amount),

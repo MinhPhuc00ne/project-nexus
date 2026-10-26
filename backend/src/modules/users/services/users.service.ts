@@ -50,6 +50,9 @@ export class UsersService {
       walletBalance: user.wallet ? Number(user.wallet.balance) : 0,
       reputationScore: user.reputationScore,
       trustLevel: user.trustLevel,
+      bankName: user.bankName,
+      accountNumber: user.accountNumber,
+      accountHolderName: user.accountHolderName,
       createdAt: user.createdAt,
     };
   }
@@ -128,6 +131,13 @@ export class UsersService {
         ...(dto.fullName ? { fullName: dto.fullName } : {}),
         ...(dto.phoneNumber !== undefined ? { phoneNumber: dto.phoneNumber } : {}),
         ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
+        ...(dto.bankName !== undefined ? { bankName: dto.bankName?.trim() || null } : {}),
+        ...(dto.accountNumber !== undefined
+          ? { accountNumber: dto.accountNumber?.trim() || null }
+          : {}),
+        ...(dto.accountHolderName !== undefined
+          ? { accountHolderName: dto.accountHolderName?.trim()?.toUpperCase() || null }
+          : {}),
         updatedAt: new Date(),
       },
       include: { wallet: true },

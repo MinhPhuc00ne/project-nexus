@@ -19,6 +19,9 @@ export interface UserProfileResponse {
   walletBalance: number;
   reputationScore: number;
   trustLevel: string;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  accountHolderName?: string | null;
   createdAt: Date;
 }
 
@@ -37,6 +40,24 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   avatarUrl?: string;
+
+  @ApiPropertyOptional({ example: 'Vietcombank', description: 'Tên ngân hàng thụ hưởng' })
+  @IsString()
+  @IsOptional()
+  bankName?: string;
+
+  @ApiPropertyOptional({ example: '1029384756', description: 'Số tài khoản ngân hàng thụ hưởng' })
+  @IsString()
+  @IsOptional()
+  accountNumber?: string;
+
+  @ApiPropertyOptional({
+    example: 'NGUYEN VAN A',
+    description: 'Họ và tên chủ tài khoản ngân hàng (viết hoa)',
+  })
+  @IsString()
+  @IsOptional()
+  accountHolderName?: string;
 
   @ApiPropertyOptional({
     description: 'Mật khẩu tài khoản để xác minh trực tiếp khi Seller cập nhật hồ sơ',

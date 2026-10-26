@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateWithdrawalDto {
@@ -12,29 +12,30 @@ export class CreateWithdrawalDto {
   @Min(50000, { message: 'Số tiền rút tối thiểu là 50.000 VND' })
   amount: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Vietcombank',
-    description: 'Tên ngân hàng thụ hưởng (e.g., Vietcombank, MB Bank, Techcombank)',
+    description:
+      'Tên ngân hàng thụ hưởng (e.g., Vietcombank, MB Bank). Nếu để trống sẽ lấy từ Hồ sơ cá nhân.',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Tên ngân hàng không được để trống' })
-  bankName: string;
+  bankName?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '1029384756',
-    description: 'Số tài khoản ngân hàng thụ hưởng',
+    description: 'Số tài khoản ngân hàng thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Số tài khoản không được để trống' })
-  accountNumber: string;
+  accountNumber?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'NGUYEN VAN A',
-    description: 'Họ và tên chủ tài khoản thụ hưởng (viết hoa không dấu)',
+    description: 'Họ và tên chủ tài khoản thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Tên chủ tài khoản không được để trống' })
-  accountHolderName: string;
+  accountHolderName?: string;
 
   @ApiPropertyOptional({
     example: 'Rút tiền doanh thu bán hàng tháng 10',

@@ -100,6 +100,19 @@ $$\text{Seller Payout} = \text{Subtotal} - \text{Platform Fee} + \text{Shipping 
 - If buyer clicks **Confirm Delivery**, or if the 3-day window lapses with no dispute, escrow automatically transitions to `DISBURSED`, crediting `seller_payout` directly to the seller's wallet.
 - If buyer opens a **Dispute**, automated disbursement is immediately frozen (`DISPUTED`) until support staff reviews evidence and issues an arbitration verdict.
 
+### 4.3 Wallet Withdrawal & Payout Workflow
+
+1. **Submission & Bank Details Priority**:
+   - Minimum withdrawal amount: `50,000 VND`. Maximum pending requests per account: `3`.
+   - **Bank Account Resolution**: System prioritizes beneficiaries' bank details saved in the User Profile (`bankName`, `accountNumber`, `accountHolderName`). If not configured in Profile, user manually enters the beneficiary information.
+2. **Escrow Locking & Confirmation Notification**:
+   - Upon submitting a withdrawal request, the withdrawal amount is atomically deducted from available `balance` and transferred to `lockedBalance`.
+   - System immediately sends an In-App notification confirming receipt of request:
+     > _"Yêu cầu rút tiền đã được tiếp nhận. Hệ thống sẽ thẩm định và giải ngân trong vòng 3-7 ngày làm việc."_
+3. **Administrative Review & Notifications**:
+   - **Approved / Completed**: Admin executes disbursement transfer. The `lockedBalance` is permanently debited, transaction status is marked `SUCCESS`, and user receives a congratulatory notification.
+   - **Rejected**: Admin specifies a mandatory rejection reason (`rejectionReason`). The system automatically refunds 100% of the locked amount from `lockedBalance` back to available `balance`, updates transaction status to `FAILED`, and sends an alert notification explaining the rejection cause.
+
 ---
 
 ## 5. Real-Time 3D Live Auction & Anti-Sniping Engine
