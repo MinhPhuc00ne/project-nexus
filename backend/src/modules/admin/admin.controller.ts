@@ -34,10 +34,12 @@ import { WarnShopDto } from './dto/warn-shop.dto';
 import { CreateShopViolationDto } from './dto/create-shop-violation.dto';
 import { ReviewWithdrawalDto } from './dto/review-withdrawal.dto';
 import { UpdateSystemSettingsDto } from './dto/update-system-settings.dto';
+import { DepositAdminWalletDto, QueryAdminWalletTransactionsDto } from './dto/admin-wallet.dto';
 import { AdminUsersService } from './services/admin-users.service';
 import { AdminProductsService } from './services/admin-products.service';
 import { AdminShopsService } from './services/admin-shops.service';
 import { AdminSettingsService } from './services/admin-settings.service';
+import { AdminFinanceService } from './services/admin-finance.service';
 import { CategoryService } from '../catalog/services/category.service';
 import { CreateCategoryDto } from '../catalog/dtos/create-category.dto';
 import { UpdateCategoryDto } from '../catalog/dtos/update-category.dto';
@@ -54,6 +56,7 @@ export class AdminController {
     private readonly adminProductsService: AdminProductsService,
     private readonly adminShopsService: AdminShopsService,
     private readonly adminSettingsService: AdminSettingsService,
+    private readonly adminFinanceService: AdminFinanceService,
     private readonly categoryService: CategoryService,
   ) {}
 
@@ -459,6 +462,47 @@ export class AdminController {
     @Body() dto: ReviewWithdrawalDto,
   ) {
     return this.adminService.reviewWithdrawalRequest(id, admin.id, dto);
+  }
+
+  // ================= 18i. THÔNG TIN VÍ HỆ THỐNG CỦA ADMIN =================
+  @Get('wallet')
+  @ApiOperation({
+    summary: 'Admin xem số dư ví hệ thống & tổng thu phí sàn hoa hồng',
+    description:
+      'Trả về số dư ví Admin, tổng tiền % phí sàn đã thu từ các đơn hàng thành công, và tổng tiền Admin đã nạp vào ví.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy thông tin ví hệ thống thành công' })
+  async getAdminWallet(@CurrentUser('id') adminId: string) {
+    return this.adminFinanceService.getAdminWallet(adminId);
+  }
+
+  // ================= 18j. LỊCH SỬ BIẾN ĐỘNG SỐ DƯ VÍ ADMIN =================
+  @Get('wallet/transactions')
+  @ApiOperation({
+    summary: 'Admin xem lịch sử biến động số dư ví hệ thống (Hoa hồng sàn & Nạp tiền)',
+    description:
+      'Lịch sử chi tiết: thu % phí hoa hồng từ đơn hàng nào, nạp tiền vào ví, v.v. kèm phân trang và bộ lọc.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy lịch sử giao dịch thành công' })
+  async getAdminWalletTransactions(
+    @CurrentUser('id') adminId: string,
+    @Query() query: QueryAdminWalletTransactionsDto,
+  ) {
+    return this.adminFinanceService.getAdminWalletTransactions(adminId, query);
+  }
+
+  // ================= 18k. ADMIN NẠP TIỀN VÀO VÍ HỆ THỐNG =================
+  @Post('wallet/deposit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin nạp thêm tiền vào ví hệ thống (có lưu lịch sử giao dịch)',
+    description:
+      'Cho phép Admin nạp thêm vốn/tiền dự phòng vào ví nền tảng và tự động ghi nhận vào lịch sử giao dịch (DEPOSIT).',
+  })
+  @ApiResponse({ status: 200, description: 'Nạp tiền vào ví thành công' })
+  @ApiResponse({ status: 400, description: 'Số tiền nạp không hợp lệ' })
+  async depositAdminWallet(@CurrentUser('id') adminId: string, @Body() dto: DepositAdminWalletDto) {
+    return this.adminFinanceService.depositToAdminWallet(adminId, dto);
   }
 
   // ================= 19. XEM CẤU HÌNH HỆ THỐNG SÀN =================

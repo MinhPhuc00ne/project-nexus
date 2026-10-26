@@ -5,6 +5,7 @@ import { AdminUsersService } from './services/admin-users.service';
 import { AdminProductsService } from './services/admin-products.service';
 import { AdminShopsService } from './services/admin-shops.service';
 import { AdminSettingsService } from './services/admin-settings.service';
+import { AdminFinanceService } from './services/admin-finance.service';
 import { AuthModule } from '../auth/auth.module';
 import { CatalogModule } from '../catalog/catalog.module';
 
@@ -17,6 +18,7 @@ import { CatalogModule } from '../catalog/catalog.module';
     AdminProductsService,
     AdminShopsService,
     AdminSettingsService,
+    AdminFinanceService,
   ],
   exports: [
     AdminService,
@@ -24,6 +26,7 @@ import { CatalogModule } from '../catalog/catalog.module';
     AdminProductsService,
     AdminShopsService,
     AdminSettingsService,
+    AdminFinanceService,
   ],
 })
 export class AdminModule {}

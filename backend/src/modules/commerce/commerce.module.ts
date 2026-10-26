@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
+import { AdminModule } from '../admin/admin.module';
 import { CartService } from './services/cart.service';
 import { PayosService } from './services/payos.service';
 import { OrderService } from './services/order.service';
@@ -15,7 +16,7 @@ import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { SellerEngagementController } from './controllers/seller-engagement.controller';
 
 @Module({
-  imports: [PrismaModule, FulfillmentModule],
+  imports: [PrismaModule, FulfillmentModule, forwardRef(() => AdminModule)],
   controllers: [
     CartController,
     OrderController,

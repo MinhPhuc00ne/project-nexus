@@ -70,7 +70,7 @@ async function bootstrap(): Promise<void> {
     )
     .addTag(
       '5. ADMIN',
-      'Chức năng Admin: Quản lý nhân viên, duyệt Seller, quản lý người dùng, kiểm duyệt sản phẩm, quản lý gian hàng, danh mục và cấu hình sàn',
+      'Chức năng Admin: Quản lý nhân viên, duyệt Seller, quản lý người dùng, kiểm duyệt sản phẩm, quản lý gian hàng, danh mục, cấu hình sàn và quản lý ví hệ thống (thu phí sàn, nạp tiền)',
     )
     .addTag('6. MEDIA', 'Chức năng Media: Tải lên hình ảnh, tài liệu lưu trữ máy chủ & Cloudinary')
     .addTag(
@@ -80,6 +80,18 @@ async function bootstrap(): Promise<void> {
     .addTag(
       '8. COMMERCE - CART',
       'Quản lý giỏ hàng Buyer, Price Revalidation, Merge giỏ hàng Guest',
+    )
+    .addTag(
+      '8. COMMERCE - ORDERS & PAYMENTS',
+      'Đặt hàng, thanh toán qua PayOS VietQR hoặc Ví NEXUS Pay, xem đơn hàng và quản lý ví cá nhân',
+    )
+    .addTag(
+      '8. COMMERCE - SELLER FINANCE',
+      'Tài chính người bán: Quản lý số dư, xem doanh thu ròng, yêu cầu rút tiền và lịch sử giao dịch',
+    )
+    .addTag(
+      '8. COMMERCE - SELLER ORDERS',
+      'Quản lý đơn hàng người bán: Xem danh sách, chi tiết, xác nhận và bàn giao đơn GHN',
     )
     .addTag('9. NOTIFICATIONS', 'Thông báo người dùng, danh sách thông báo và đánh dấu đã đọc')
     .addTag('10. FULFILLMENT & SHIPPING', 'Vận chuyển, tính cước giao hàng GHN và cự ly bản đồ')

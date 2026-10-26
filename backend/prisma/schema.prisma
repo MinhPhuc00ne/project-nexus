@@ -114,6 +114,8 @@ enum WalletTransactionType {
   ESCROW_LOCK
   ESCROW_PAYOUT
   ESCROW_REFUND
+  ORDER_PAYMENT
+  PLATFORM_FEE
 }
 
 enum WalletTransactionStatus {
