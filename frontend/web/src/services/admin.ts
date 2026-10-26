@@ -251,7 +251,9 @@ export function getAdminWalletTransactions(
   });
 }
 
-export function depositToAdminWallet(dto: DepositAdminWalletDto): Promise<DepositAdminWalletResult> {
+export function depositToAdminWallet(
+  dto: DepositAdminWalletDto,
+): Promise<DepositAdminWalletResult> {
   return adminRequest<DepositAdminWalletResult>({
     url: '/admin/wallet/deposit',
     method: 'POST',

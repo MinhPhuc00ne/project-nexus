@@ -63,10 +63,7 @@ export default function AdminWallet() {
     setError('');
     void Promise.all([
       getAdminWallet(controller.signal),
-      getAdminWalletTransactions(
-        { page, limit: 10, ...(type ? { type } : {}) },
-        controller.signal,
-      ),
+      getAdminWalletTransactions({ page, limit: 10, ...(type ? { type } : {}) }, controller.signal),
     ])
       .then(([wallet, history]) => {
         if (controller.signal.aborted) return;
@@ -132,7 +129,10 @@ export default function AdminWallet() {
         }
       >
         {error && (
-          <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          <div
+            role="alert"
+            className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+          >
             <p>{error}</p>
             <Button variant="secondary" onClick={() => setRefreshKey((current) => current + 1)}>
               Thử lại
@@ -141,22 +141,35 @@ export default function AdminWallet() {
         )}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric label="Số dư hiện tại" value={summary ? formatMoney(summary.balance) : '—'} />
-          <Metric label="Số dư đang khóa" value={summary ? formatMoney(summary.lockedBalance) : '—'} />
+          <Metric
+            label="Số dư đang khóa"
+            value={summary ? formatMoney(summary.lockedBalance) : '—'}
+          />
           <Metric
             label="Tổng phí sàn đã thu"
             value={summary ? formatMoney(summary.totalPlatformFeeCollected) : '—'}
           />
-          <Metric label="Tổng tiền đã nạp" value={summary ? formatMoney(summary.totalDeposited) : '—'} />
+          <Metric
+            label="Tổng tiền đã nạp"
+            value={summary ? formatMoney(summary.totalDeposited) : '—'}
+          />
         </div>
         {summary && (
           <p className="mt-3 text-xs text-slate-500">
-            {summary.totalTransactions} giao dịch · Cập nhật lần cuối {formatDate(summary.updatedAt)}
+            {summary.totalTransactions} giao dịch · Cập nhật lần cuối{' '}
+            {formatDate(summary.updatedAt)}
           </p>
         )}
       </Panel>
 
-      <Panel title="Nạp tiền vào ví hệ thống" subtitle="Ghi nhận khoản nạp vào số dư ví và lịch sử giao dịch">
-        <form onSubmit={submitDeposit} className="grid gap-3 md:grid-cols-[1fr_2fr_auto] md:items-end">
+      <Panel
+        title="Nạp tiền vào ví hệ thống"
+        subtitle="Ghi nhận khoản nạp vào số dư ví và lịch sử giao dịch"
+      >
+        <form
+          onSubmit={submitDeposit}
+          className="grid gap-3 md:grid-cols-[1fr_2fr_auto] md:items-end"
+        >
           <label className="block text-xs font-medium text-slate-700">
             Số tiền (VND)
             <input
@@ -199,7 +212,10 @@ export default function AdminWallet() {
         )}
       </Panel>
 
-      <Panel title="Lịch sử biến động ví" subtitle="Các khoản nạp và giao dịch ghi nhận vào ví hệ thống">
+      <Panel
+        title="Lịch sử biến động ví"
+        subtitle="Các khoản nạp và giao dịch ghi nhận vào ví hệ thống"
+      >
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <label className="text-xs text-slate-500">
             Loại giao dịch
@@ -230,11 +246,13 @@ export default function AdminWallet() {
             <table className="w-full min-w-[720px] text-left text-xs">
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
-                  {['Thời gian', 'Loại', 'Mô tả', 'Mã tham chiếu', 'Số tiền', 'Trạng thái'].map((heading) => (
-                    <th key={heading} scope="col" className="p-3 font-semibold">
-                      {heading}
-                    </th>
-                  ))}
+                  {['Thời gian', 'Loại', 'Mô tả', 'Mã tham chiếu', 'Số tiền', 'Trạng thái'].map(
+                    (heading) => (
+                      <th key={heading} scope="col" className="p-3 font-semibold">
+                        {heading}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -245,7 +263,9 @@ export default function AdminWallet() {
                     <td className="max-w-64 break-words p-3">{transaction.description || '—'}</td>
                     <td className="max-w-48 break-all p-3">{transaction.referenceId || '—'}</td>
                     <td className="whitespace-nowrap p-3 font-semibold">
-                      {transaction.type === 'DEPOSIT' || transaction.type === 'PLATFORM_FEE' ? '+' : '−'}
+                      {transaction.type === 'DEPOSIT' || transaction.type === 'PLATFORM_FEE'
+                        ? '+'
+                        : '−'}
                       {formatMoney(transaction.amount)}
                     </td>
                     <td className="p-3">{statusLabels[transaction.status]}</td>
@@ -260,9 +280,15 @@ export default function AdminWallet() {
           </p>
         )}
         <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500">
-          <span>Trang {page}/{totalPages}</span>
+          <span>
+            Trang {page}/{totalPages}
+          </span>
           <div className="flex gap-2">
-            <Button variant="secondary" disabled={page <= 1 || loading} onClick={() => setPage(page - 1)}>
+            <Button
+              variant="secondary"
+              disabled={page <= 1 || loading}
+              onClick={() => setPage(page - 1)}
+            >
               Trước
             </Button>
             <Button

@@ -18,4 +18,3 @@ export class DepositWalletDto {
   @IsOptional()
   description?: string;
 }
-

@@ -59,4 +59,3 @@ export class QueryAdminWalletTransactionsDto {
   @IsString()
   search?: string;
 }
-
