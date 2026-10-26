@@ -6,6 +6,7 @@ export const ROUTES = {
   AUCTION: '/auction',
   AUCTION_DETAIL: '/auction/:id',
   PRODUCT: '/product/:id',
+  SHOP_DETAIL: '/shop/:id',
   ABOUT: '/about',
   CONTACT: '/contact',
   TERMS: '/terms',

@@ -61,76 +61,36 @@ export interface CategoryNode {
   children?: CategoryNode[];
 }
 
-export function mapCatalogToProductItem(
-  p: CatalogProduct,
-  timerAp = '04:18m',
-  timerRm = '12:45m',
-): ProductItem {
-  const titleLower = p.title.toLowerCase();
-  const isAuction = titleLower.includes('tourbillon') || titleLower.includes('watson');
-  const has3D =
-    Boolean(p.threeModelKey) ||
-    titleLower.includes('3d') ||
-    titleLower.includes('tourbillon') ||
-    titleLower.includes('skeleton');
-
-  let brandName = 'NEXUS LUXURY';
-  if (titleLower.includes('audemars') || titleLower.includes('royal oak')) {
-    brandName = 'AUDEMARS PIGUET • SWISS';
-  } else if (titleLower.includes('patek')) {
-    brandName = 'PATEK PHILIPPE • GENEVA';
-  } else if (titleLower.includes('hublot')) {
-    brandName = 'HUBLOT • GENEVA';
-  } else if (titleLower.includes('rolex')) {
-    brandName = 'ROLEX • GENEVA';
-  } else if (titleLower.includes('richard') || titleLower.includes('rm')) {
-    brandName = 'RICHARD MILLE • SWISS';
-  } else if (titleLower.includes('omega')) {
-    brandName = 'OMEGA • SWISS';
-  } else if (titleLower.includes('tissot')) {
-    brandName = 'TISSOT • 1853';
-  } else if (titleLower.includes('cartier')) {
-    brandName = 'CARTIER • PARIS';
-  }
+export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
+  const brandName = p.category?.name ? `${p.category.name.toUpperCase()} • LUXURY` : 'NEXUS LUXURY';
+  const has3D = Boolean(p.threeModelKey);
 
   return {
     id: p.id,
     brand: brandName,
     title: p.title,
     image: p.thumbnail || p.images[0] || '/images/watches/watch-1.png',
-    type: isAuction ? 'live_auction' : 'mall',
-    primaryBadge: isAuction
-      ? { text: 'LIVE 3D AUCTION', type: 'live' }
-      : { text: 'NEXUS MALL', type: 'mall' },
+    type: 'mall',
+    primaryBadge: { text: 'NEXUS MALL', type: 'mall' },
     subBadge: has3D ? { text: '3D Model Verified', icon: '3d' } : { text: 'Chính Hãng 100%' },
     imageOverlay: {
       leftText: has3D ? 'Chạm xoay 360°' : '',
       leftIcon: has3D ? 'rotate' : undefined,
-      rightText: isAuction ? 'Đang đấu giá' : '',
+      rightText: '',
     },
     rating: 5.0,
-    soldCount: Math.floor(Math.random() * 20) + 5,
+    soldCount: 0,
     currentPrice: `${p.basePrice.toLocaleString('vi-VN')} ₫`,
-    priceColor: isAuction ? 'orange' : 'red',
-    priceLabel: isAuction ? 'Giá hiện tại:' : undefined,
-    timer: isAuction ? (titleLower.includes('richard') ? timerRm : timerAp) : undefined,
-    subMetaLeft: isAuction
-      ? `Cọc 10%: ${(p.basePrice * 0.1).toLocaleString('vi-VN')} ₫`
-      : 'Freeship GHN Express',
-    subMetaRight: isAuction ? 'PayOS Escrow' : undefined,
-    subMetaRightType: isAuction ? 'link' : 'green_ship',
-    actionButton: isAuction ? { text: 'Tham Gia Đấu Giá', type: 'bid', icon: 'gavel' } : undefined,
+    priceColor: 'red',
+    subMetaLeft: 'Freeship GHN Express',
+    subMetaRightType: 'green_ship',
     shopId: p.seller?.id,
     shopName: p.seller?.fullName || 'Gian Hàng NEXUS',
     rawPrice: p.basePrice,
   };
 }
 
-export async function searchProductsApi(
-  query: CatalogQuery = {},
-  timerAp = '04:18m',
-  timerRm = '12:45m',
-): Promise<SearchProductsResult> {
+export async function searchProductsApi(query: CatalogQuery = {}): Promise<SearchProductsResult> {
   const response = await api.get<{
     statusCode: number;
     message: string;
@@ -154,7 +114,7 @@ export async function searchProductsApi(
       : (payload as unknown as CatalogPage);
 
   return {
-    items: (pageData.items || []).map((p) => mapCatalogToProductItem(p, timerAp, timerRm)),
+    items: (pageData.items || []).map((p) => mapCatalogToProductItem(p)),
     total: pageData.total || 0,
     page: pageData.page || 1,
     limit: pageData.limit || 12,
@@ -182,7 +142,7 @@ function mapProduct(product: CatalogProduct): ProductDetail {
   return {
     id: product.id,
     name: product.title,
-    brand: '',
+    brand: product.category?.name || 'NEXUS',
     price: product.basePrice,
     formattedPrice: `${product.basePrice.toLocaleString('vi-VN')} ₫`,
     stock: product.status && product.status !== 'ACTIVE' ? 0 : product.availableQty,
@@ -225,36 +185,15 @@ export async function getProductsCatalog(query: CatalogQuery = {}): Promise<Prod
   return (await getProductsPage(query)).items;
 }
 
-const MOCK_ID_MAP: Record<string, string> = {
-  'ap-tourbillon': '00000000-0000-4000-a000-000000000001',
-  'patek-celestial': '00000000-0000-4000-a000-000000000002',
-  'hublot-unico': '00000000-0000-4000-a000-000000000003',
-  'rolex-daytona': '00000000-0000-4000-a000-000000000004',
-  'rolex-submariner': '00000000-0000-4000-a000-000000000004',
-  'rm-055': '00000000-0000-4000-a000-000000000005',
-  'omega-speedmaster': '00000000-0000-4000-a000-000000000006',
-  'tissot-tourelles': '00000000-0000-4000-a000-000000000007',
-  'cartier-santos': '00000000-0000-4000-a000-000000000008',
-  '1': '00000000-0000-4000-a000-000000000001',
-  '2': '00000000-0000-4000-a000-000000000002',
-  '3': '00000000-0000-4000-a000-000000000003',
-  '4': '00000000-0000-4000-a000-000000000004',
-  '5': '00000000-0000-4000-a000-000000000005',
-  '6': '00000000-0000-4000-a000-000000000006',
-  '7': '00000000-0000-4000-a000-000000000007',
-  '8': '00000000-0000-4000-a000-000000000008',
-};
-
 export async function getProductByIdAsync(id: string): Promise<ProductDetail> {
   const trimmed = id.trim();
   if (!trimmed) throw new Error('Thiếu mã sản phẩm.');
-  const resolvedId = MOCK_ID_MAP[trimmed] || trimmed;
   try {
     return mapProduct(
-      await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(resolvedId)}`),
+      await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(trimmed)}`),
     );
   } catch (error) {
-    const fallback = MOCK_PRODUCTS_CATALOG.find((p) => p.id === trimmed || p.id === resolvedId);
+    const fallback = MOCK_PRODUCTS_CATALOG.find((p) => p.id === trimmed);
     if (fallback) return fallback;
     throw error;
   }
@@ -306,6 +245,17 @@ export interface PaginatedShops {
   totalPages: number;
 }
 
+export interface ShopDetailResult {
+  shop: ShopListItem;
+  products: {
+    items: CatalogProduct[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export async function getShopsApi(query: ShopQuery = {}): Promise<PaginatedShops> {
   const response = await api.get<{
     statusCode: number;
@@ -328,41 +278,14 @@ export async function getShopDetailApi(
   shopId: string,
   page = 1,
   limit = 12,
-): Promise<{
-  shop: ShopListItem;
-  products: {
-    items: CatalogProduct[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}> {
+): Promise<ShopDetailResult> {
   const response = await api.get<{
     statusCode: number;
     message: string;
-    data: {
-      shop: ShopListItem;
-      products: {
-        items: CatalogProduct[];
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-      };
-    };
+    data: ShopDetailResult;
   }>(`/catalog/shops/${encodeURIComponent(shopId)}`, {
     params: { page, limit },
   });
   const payload = response.data;
-  return (payload && 'data' in payload ? payload.data : payload) as unknown as {
-    shop: ShopListItem;
-    products: {
-      items: CatalogProduct[];
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
-  };
+  return (payload && 'data' in payload ? payload.data : payload) as unknown as ShopDetailResult;
 }
