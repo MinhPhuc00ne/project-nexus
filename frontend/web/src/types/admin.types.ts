@@ -180,3 +180,13 @@ export interface UpdateShopStatusResult {
   message: string;
   shop: Pick<AdminShop, 'id' | 'storeName' | 'isSellerActive' | 'status'>;
 }
+
+export interface WarnAdminShopDto {
+  reason: string;
+  penaltyPoints?: number;
+}
+
+export interface WarnAdminShopResult {
+  success: boolean;
+  message: string;
+}

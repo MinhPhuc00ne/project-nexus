@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { RefreshCw, Store } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { listAdminShops, updateAdminShopStatus } from '../../../services/admin';
+import { listAdminShops, updateAdminShopStatus, warnAdminShop } from '../../../services/admin';
 import type { AdminShop, PaginatedResult, QueryAdminShopsParams } from '../../../types/admin.types';
 import Popup from '../../Popup';
 import { useToast } from '../../ToastNotification';
@@ -19,6 +19,7 @@ export default function SellerStoreManagement() {
   const [error, setError] = useState('');
   const [detailId, setDetailId] = useState<string | null>(null);
   const [target, setTarget] = useState<AdminShop | null>(null);
+  const [warningTarget, setWarningTarget] = useState<AdminShop | null>(null);
   const refresh = () => setRevision((value) => value + 1);
 
   useEffect(() => {
@@ -163,6 +164,9 @@ export default function SellerStoreManagement() {
                             <Button variant="secondary" onClick={() => setDetailId(shop.id)}>
                               Xem chi tiết
                             </Button>
+                            <Button variant="danger" onClick={() => setWarningTarget(shop)}>
+                              Cảnh báo
+                            </Button>
                             <Button
                               variant={shop.isSellerActive ? 'danger' : 'primary'}
                               onClick={() => setTarget(shop)}
@@ -218,7 +222,129 @@ export default function SellerStoreManagement() {
           }}
         />
       )}
+      {warningTarget && (
+        <ShopWarningDialog
+          key={warningTarget.id}
+          shop={warningTarget}
+          onClose={() => setWarningTarget(null)}
+          onSuccess={(message) => {
+            setWarningTarget(null);
+            toast.success(message);
+            refresh();
+          }}
+        />
+      )}
     </Panel>
+  );
+}
+
+function ShopWarningDialog({
+  shop,
+  onClose,
+  onSuccess,
+}: {
+  shop: AdminShop;
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}) {
+  const toast = useToast();
+  const [reason, setReason] = useState('');
+  const [penaltyPoints, setPenaltyPoints] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const inFlight = useRef(false);
+
+  const close = () => {
+    if (!inFlight.current) onClose();
+  };
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (inFlight.current) return;
+    if (!reason.trim()) {
+      setError('Vui lòng nhập lý do cảnh báo.');
+      return;
+    }
+
+    const points = penaltyPoints.trim() ? Number(penaltyPoints) : 0;
+    if (!Number.isInteger(points) || points < 0) {
+      setError('Điểm phạt phải là số nguyên không âm.');
+      return;
+    }
+
+    inFlight.current = true;
+    setPending(true);
+    setError('');
+    try {
+      const result = await warnAdminShop(shop.id, {
+        reason: reason.trim(),
+        ...(points > 0 ? { penaltyPoints: points } : {}),
+      });
+      onSuccess(result.message);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'Không thể gửi cảnh báo shop.';
+      setError(message);
+      toast.error(message);
+    } finally {
+      inFlight.current = false;
+      setPending(false);
+    }
+  };
+
+  return (
+    <Popup
+      isOpen
+      title="Cảnh báo shop"
+      onClose={close}
+      closeOnEsc={!pending}
+      closeOnOverlay={!pending}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <p className="break-words text-sm text-slate-600">
+          Gửi cảnh báo cho <strong>{shop.storeName}</strong>?
+        </p>
+        <label className="block text-sm font-medium">
+          Lý do cảnh báo
+          <textarea
+            autoFocus
+            required
+            maxLength={1000}
+            rows={4}
+            value={reason}
+            disabled={pending}
+            onChange={(event) => setReason(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
+            placeholder="Nêu rõ hành vi vi phạm và yêu cầu shop khắc phục"
+          />
+        </label>
+        <label className="block text-sm font-medium">
+          Điểm uy tín cần trừ (không bắt buộc)
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={penaltyPoints}
+            disabled={pending}
+            onChange={(event) => setPenaltyPoints(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
+            placeholder="0"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={close} disabled={pending}>
+            Hủy
+          </Button>
+          <Button type="submit" variant="danger" disabled={pending}>
+            {pending ? 'Đang gửi…' : 'Xác nhận cảnh báo'}
+          </Button>
+        </div>
+      </form>
+    </Popup>
   );
 }
 
