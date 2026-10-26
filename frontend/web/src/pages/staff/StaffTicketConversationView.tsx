@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 export interface ChatMessage {
-  id: number;
+  id: number | string;
   author: string;
   time: string;
   body: string;
@@ -24,7 +24,7 @@ export interface SupportTicket {
   customer: string;
   initials: string;
   role: string;
-  category: 'Auction 3D' | 'Shipping' | 'Escrow';
+  category: 'Auction 3D' | 'Shipping' | 'Escrow' | 'General';
   status: 'chatting' | 'waiting' | 'resolved';
   time: string;
   preview: string;
@@ -37,6 +37,7 @@ interface StaffTicketConversationViewProps {
   onReplyChange: (val: string) => void;
   onSendReply: () => void;
   notify: (msg: string) => void;
+  sending?: boolean;
 }
 
 export default function StaffTicketConversationView({
@@ -45,11 +46,12 @@ export default function StaffTicketConversationView({
   onReplyChange,
   onSendReply,
   notify,
+  sending = false,
 }: StaffTicketConversationViewProps) {
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
-      onSendReply();
+      if (!sending) onSendReply();
     }
   };
 
@@ -141,6 +143,7 @@ export default function StaffTicketConversationView({
               </span>
             </div>
             <textarea
+              disabled={sending}
               value={reply}
               onChange={(event) => onReplyChange(event.target.value)}
               onKeyDown={handleComposerKeyDown}
@@ -154,7 +157,7 @@ export default function StaffTicketConversationView({
               <button
                 className="inline-flex items-center gap-2 [padding:9px_12px] [border:0] [border-radius:8px] [color:white] [background:var(--staff-accent)] text-[10px] font-extrabold cursor-pointer [&:hover:not(:disabled)]:[background:var(--staff-accent-strong)] disabled:cursor-not-allowed disabled:[opacity:0.55]"
                 onClick={onSendReply}
-                disabled={!reply.trim()}
+                disabled={sending || !reply.trim()}
               >
                 Gửi phản hồi <Send size={15} />
               </button>

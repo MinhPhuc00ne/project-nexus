@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Gavel, Inbox, Search, ShieldCheck, Truck } from 'lucide-react';
 import StaffMetricCards from './StaffMetricCards';
 import StaffTicketConversationView, { type SupportTicket } from './StaffTicketConversationView';
-import { getSupportTickets } from '../../services/staff';
+import { createChatConversation, getChatConversations } from '../../services/chat';
+import { useAuth } from '../../contexts/AuthContext';
+import { useChatRoom } from '../../components/chat/useChatRoom';
+import type { ChatConversation } from '../../types/chat.types';
 
 export type TicketStatus = 'chatting' | 'waiting' | 'resolved';
 export type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
@@ -19,19 +22,87 @@ export default function StaffTicketChatPanel({
   onSearchChange,
   notify,
 }: StaffTicketChatPanelProps) {
-  const [tickets, setTickets] = useState<SupportTicket[] | null>(null);
+  const { storedUser } = useAuth();
+  const [conversations, setConversations] = useState<ChatConversation[] | null>(null);
+  const [revision, setRevision] = useState(0);
+  const [listError, setListError] = useState('');
+  const [participantId, setParticipantId] = useState('');
+  const [recipientRole, setRecipientRole] = useState<'BUYER' | 'SELLER'>('BUYER');
+  const [creating, setCreating] = useState(false);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | TicketStatus>('all');
-  const [reply, setReply] = useState('');
+  const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  const room = useChatRoom({
+    activeId: activeTicketId ?? undefined,
+    userId: storedUser?.id ?? '',
+    isOpen: Boolean(storedUser),
+    onRevisionChange: refresh,
+  });
+  const reply = room.draft;
+  const setReply = room.setDraft;
 
   useEffect(() => {
-    void getSupportTickets().then((data) => {
-      setTickets(data);
-      if (data.length > 0) {
-        setActiveTicketId(data[0].id);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const items: ChatConversation[] = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const result = await getChatConversations({ page, limit: 50 });
+          items.push(...result.items);
+          totalPages = result.pagination.totalPages;
+          page++;
+        } while (page <= totalPages && !cancelled);
+        if (cancelled) return;
+        const staffChats = items.filter(
+          (c) => c.type === 'STAFF_BUYER' || c.type === 'STAFF_SELLER',
+        );
+        setConversations(staffChats);
+        setActiveTicketId((current) => current ?? staffChats[0]?.id ?? null);
+        setListError('');
+      } catch (error) {
+        if (!cancelled)
+          setListError(error instanceof Error ? error.message : 'Không thể tải hội thoại.');
       }
-    });
-  }, []);
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [revision]);
+
+  const tickets: SupportTicket[] | null =
+    conversations?.map((c) => ({
+      id: c.id,
+      customer: c.partner.fullName,
+      initials: c.partner.fullName.slice(0, 2).toUpperCase(),
+      role: c.partner.role,
+      category: 'General',
+      status: c.unreadCount > 0 ? 'waiting' : 'chatting',
+      time: c.lastMessageAt
+        ? new Date(c.lastMessageAt).toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : '',
+      preview: c.lastMessage ?? '',
+      messages:
+        c.id === activeTicketId && !room.loading
+          ? room.messages.map((m) => ({
+              id: m.id,
+              author: m.senderName ?? '',
+              body: m.body,
+              isAgent: m.senderId === storedUser?.id,
+              time: new Date(m.createdAt).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+            }))
+          : [],
+    })) ?? null;
 
   const ticketList = tickets ?? [];
   const activeTicket = ticketList.find((ticket) => ticket.id === activeTicketId);
@@ -51,11 +122,83 @@ export default function StaffTicketChatPanel({
   const sendReply = (): void => {
     const messageText = reply.trim();
     if (!messageText || !activeTicket) return;
-    notify('Chức năng gửi tin nhắn chưa được kết nối API.');
+    if (!room.loading && !room.sending) void room.send();
   };
+
+  async function startConversation() {
+    if (!participantId.trim() || creating) return;
+    setCreating(true);
+    try {
+      const conversation = await createChatConversation({
+        participantId: participantId.trim(),
+        type: recipientRole === 'SELLER' ? 'STAFF_SELLER' : 'STAFF_BUYER',
+      });
+      setConversations((current) => [
+        conversation,
+        ...(current ?? []).filter((c) => c.id !== conversation.id),
+      ]);
+      setActiveTicketId(conversation.id);
+      setParticipantId('');
+      refresh();
+    } catch (error) {
+      setListError(error instanceof Error ? error.message : 'Không thể mở hội thoại.');
+    } finally {
+      setCreating(false);
+    }
+  }
 
   return (
     <>
+      <form
+        className="my-3 flex flex-wrap gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void startConversation();
+        }}
+      >
+        <input
+          aria-label="ID người nhận"
+          required
+          value={participantId}
+          onChange={(event) => setParticipantId(event.target.value)}
+          placeholder="ID tài khoản Buyer / Seller"
+          className="min-w-60 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+        />
+        <select
+          aria-label="Vai trò người nhận"
+          value={recipientRole}
+          onChange={(event) => setRecipientRole(event.target.value as 'BUYER' | 'SELLER')}
+          className="rounded-lg border border-slate-200 bg-white px-3 text-sm"
+        >
+          <option value="BUYER">Buyer</option>
+          <option value="SELLER">Seller</option>
+        </select>
+        <button
+          disabled={creating}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50"
+        >
+          {creating ? 'Đang mở…' : 'Mở hội thoại'}
+        </button>
+        <button type="button" onClick={refresh} className="rounded-lg border px-3 text-sm">
+          Tải lại
+        </button>
+      </form>
+      {(listError || room.error) && (
+        <p role="alert" className="my-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+          {listError || room.error}
+        </p>
+      )}
+      {room.loading && <p role="status">Đang tải tin nhắn…</p>}
+      {room.typing && <p className="text-sm text-slate-500">Người nhận đang nhập…</p>}
+      {room.hasOlder && (
+        <button
+          disabled={room.older}
+          onClick={() => void room.loadOlder()}
+          className="text-sm text-blue-600"
+        >
+          {room.older ? 'Đang tải…' : 'Xem tin nhắn cũ hơn'}
+        </button>
+      )}
       <StaffMetricCards
         chattingCount={chattingCount}
         waitingCount={waitingCount}
@@ -145,7 +288,10 @@ export default function StaffTicketChatPanel({
                           </>
                         ) : (
                           <>
-                            <ShieldCheck size={12} /> Thanh toán Escrow
+                            <ShieldCheck size={12} />{' '}
+                            {ticket.category === 'General'
+                              ? 'Hỗ trợ trực tuyến'
+                              : 'Thanh toán Escrow'}
                           </>
                         )}
                       </span>
@@ -171,6 +317,7 @@ export default function StaffTicketChatPanel({
           reply={reply}
           onReplyChange={setReply}
           onSendReply={sendReply}
+          sending={room.sending || room.loading}
           notify={notify}
         />
 

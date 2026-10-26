@@ -11,14 +11,28 @@ import ChatConversationList from './ChatConversationList';
 import ChatMessageArea from './ChatMessageArea';
 import { getChatErrorMessage } from './chatUtils';
 import { useChatRoom } from './useChatRoom';
+import SupportMenu from './SupportMenu';
 
 export default function ChatWidget(): JSX.Element | null {
   const { token, storedUser } = useAuth();
   if (!token || !storedUser) return null;
-  return <ChatPanel key={storedUser.id} userId={storedUser.id} />;
+  return (
+    <ChatPanel
+      key={storedUser.id}
+      userId={storedUser.id}
+      canRequestSupport={storedUser.role === 'BUYER' || storedUser.role === 'SELLER'}
+    />
+  );
 }
 
-function ChatPanel({ userId }: { userId: string }): JSX.Element {
+function ChatPanel({
+  userId,
+  canRequestSupport,
+}: {
+  userId: string;
+  canRequestSupport: boolean;
+}): JSX.Element {
+  const [view, setView] = useState<'chat' | 'support'>(canRequestSupport ? 'support' : 'chat');
   const [open, setOpen] = useState(false);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [active, setActive] = useState<ChatConversation | null>(null);
@@ -37,7 +51,7 @@ function ChatPanel({ userId }: { userId: string }): JSX.Element {
   const room = useChatRoom({
     activeId,
     userId,
-    isOpen: open,
+    isOpen: open && view === 'chat',
     onRevisionChange: () => setRevision((v) => v + 1),
   });
 
@@ -117,7 +131,7 @@ function ChatPanel({ userId }: { userId: string }): JSX.Element {
           className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white shadow-xl hover:bg-blue-700"
           aria-label="Mở tin nhắn"
         >
-          <MessageCircle size={22} /> Tin nhắn{' '}
+          <MessageCircle size={22} /> {canRequestSupport ? 'Tin nhắn & Hỗ trợ' : 'Tin nhắn'}{' '}
           {unread > 0 && <span className="rounded-full bg-red-500 px-2 text-xs">{unread}</span>}
         </button>
       ) : (
@@ -142,6 +156,23 @@ function ChatPanel({ userId }: { userId: string }): JSX.Element {
             </button>
           </header>
 
+          {canRequestSupport && (
+            <nav
+              aria-label="Tin nhắn và hỗ trợ"
+              className="flex gap-2 border-b border-slate-100 px-4 py-2"
+            >
+              {(['support', 'chat'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setView(tab)}
+                  aria-pressed={view === tab}
+                  className={`rounded-lg px-4 py-2 text-sm font-semibold ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                >
+                  {tab === 'support' ? 'Hỗ trợ' : 'Tin nhắn'}
+                </button>
+              ))}
+            </nav>
+          )}
           {displayError && (
             <div
               role="alert"
@@ -154,47 +185,58 @@ function ChatPanel({ userId }: { userId: string }): JSX.Element {
             </div>
           )}
 
-          <div className="flex min-h-0 flex-1">
-            <ChatConversationList
+          {view === 'support' && canRequestSupport ? (
+            <SupportMenu
               conversations={conversations}
-              activeId={activeId}
-              onSelect={(c) => {
-                setActive(c);
+              onOpenConversation={(conversation) => {
+                setActive(conversation);
+                setView('chat');
                 clearError();
               }}
-              search={search}
-              onSearchChange={(val) => {
-                setSearch(val);
-                setPage(1);
-              }}
-              participantId={participantId}
-              onParticipantIdChange={setParticipantId}
-              type={type}
-              onTypeChange={setType}
-              creating={creating}
-              onCreateConversation={() => void handleStartConversation()}
-              hasMorePages={page < totalPages}
-              onLoadMore={() => setPage((v) => v + 1)}
-              hiddenOnMobile={!!active}
             />
+          ) : (
+            <div className="flex min-h-0 flex-1">
+              <ChatConversationList
+                conversations={conversations}
+                activeId={activeId}
+                onSelect={(c) => {
+                  setActive(c);
+                  clearError();
+                }}
+                search={search}
+                onSearchChange={(val) => {
+                  setSearch(val);
+                  setPage(1);
+                }}
+                participantId={participantId}
+                onParticipantIdChange={setParticipantId}
+                type={type}
+                onTypeChange={setType}
+                creating={creating}
+                onCreateConversation={() => void handleStartConversation()}
+                hasMorePages={page < totalPages}
+                onLoadMore={() => setPage((v) => v + 1)}
+                hiddenOnMobile={!!active}
+              />
 
-            <ChatMessageArea
-              active={active}
-              userId={userId}
-              connected={room.connected}
-              loading={room.loading}
-              messages={room.messages}
-              hasOlder={room.hasOlder}
-              older={room.older}
-              typing={room.typing}
-              draft={room.draft}
-              sending={room.sending}
-              onBack={() => setActive(null)}
-              onLoadOlder={() => void room.loadOlder()}
-              onDraftChange={room.setDraft}
-              onSend={() => void room.send()}
-            />
-          </div>
+              <ChatMessageArea
+                active={active}
+                userId={userId}
+                connected={room.connected}
+                loading={room.loading}
+                messages={room.messages}
+                hasOlder={room.hasOlder}
+                older={room.older}
+                typing={room.typing}
+                draft={room.draft}
+                sending={room.sending}
+                onBack={() => setActive(null)}
+                onLoadOlder={() => void room.loadOlder()}
+                onDraftChange={room.setDraft}
+                onSend={() => void room.send()}
+              />
+            </div>
+          )}
         </section>
       )}
     </div>
