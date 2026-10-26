@@ -1,7 +1,8 @@
-import React, { useState, type FormEvent } from 'react';
-import { MapPin, Edit2, Check } from 'lucide-react';
+import React, { useState, useEffect, type FormEvent } from 'react';
+import { MapPin, Edit2, Plus } from 'lucide-react';
 import type { UserAddress } from '../../services/address';
 import type { ShippingAddressInput } from '../../services/orders';
+import CheckoutAddressForm from './CheckoutAddressForm';
 
 interface CheckoutAddressSectionProps {
   addresses: UserAddress[];
@@ -20,7 +21,10 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
   onSaveNewAddress,
   showToast,
 }) => {
-  const [isEditing, setIsEditing] = useState(addresses.length === 0);
+  const [mode, setMode] = useState<'VIEW' | 'SELECT' | 'NEW'>(
+    addresses.length > 0 ? 'VIEW' : 'NEW',
+  );
+
   const [formState, setFormState] = useState<ShippingAddressInput>({
     recipientName: currentAddress.recipientName || '',
     phone: currentAddress.phone || '',
@@ -30,198 +34,189 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
     street: currentAddress.street || '',
   });
 
-  const handleSubmit = async (e: FormEvent) => {
+  useEffect(() => {
+    if (addresses.length > 0) {
+      if (mode === 'NEW' && !formState.recipientName) {
+        setMode('VIEW');
+      }
+    } else {
+      setMode('NEW');
+    }
+  }, [addresses.length]);
+
+  const activeAddress = addresses.find((a) => a.id === selectedAddressId);
+  const displayAddress = activeAddress
+    ? {
+        recipientName: activeAddress.recipientName,
+        phone: activeAddress.phone,
+        city: activeAddress.city,
+        district: activeAddress.district || '',
+        ward: activeAddress.ward || '',
+        street: activeAddress.street,
+        isDefault: activeAddress.isDefault,
+      }
+    : {
+        recipientName: currentAddress.recipientName,
+        phone: currentAddress.phone,
+        city: currentAddress.city,
+        district: currentAddress.district || '',
+        ward: currentAddress.ward || '',
+        street: currentAddress.street,
+        isDefault: false,
+      };
+
+  const formattedAddress = [
+    displayAddress.street,
+    displayAddress.ward,
+    displayAddress.district,
+    displayAddress.city,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const handleSubmitNew = async (e: FormEvent) => {
     e.preventDefault();
     if (!formState.recipientName.trim() || !formState.phone.trim() || !formState.street.trim()) {
       showToast('Vui lòng điền đủ họ tên, số điện thoại và địa chỉ nhận hàng.');
       return;
     }
     await onSaveNewAddress(formState);
-    setIsEditing(false);
+    setMode('VIEW');
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
           <MapPin className="text-[#f24e1e]" size={18} />
           <span>Địa chỉ nhận hàng (GHN Express)</span>
         </h2>
-        {!isEditing && (
+
+        {mode === 'VIEW' && (
           <button
             type="button"
-            onClick={() => setIsEditing(true)}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1"
+            onClick={() => setMode('SELECT')}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer"
           >
             <Edit2 size={13} />
-            <span>{addresses.length > 0 ? 'Thay đổi địa chỉ' : 'Nhập địa chỉ'}</span>
+            <span>Thay đổi</span>
+          </button>
+        )}
+
+        {mode === 'SELECT' && (
+          <button
+            type="button"
+            onClick={() => setMode('VIEW')}
+            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+          >
+            Đóng
           </button>
         )}
       </div>
 
-      {isEditing ? (
-        <form onSubmit={handleSubmit} className="space-y-3 pt-2 border-t border-slate-100">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Họ và tên người nhận *
-              </label>
-              <input
-                type="text"
-                required
-                value={formState.recipientName}
-                onChange={(e) => setFormState({ ...formState, recipientName: e.target.value })}
-                placeholder="Nguyễn Văn A"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600 bg-white"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Số điện thoại liên hệ *
-              </label>
-              <input
-                type="tel"
-                required
-                value={formState.phone}
-                onChange={(e) => setFormState({ ...formState, phone: e.target.value })}
-                placeholder="0912345678"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600 bg-white"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Tỉnh / Thành phố *
-              </label>
-              <input
-                type="text"
-                required
-                value={formState.city}
-                onChange={(e) => setFormState({ ...formState, city: e.target.value })}
-                placeholder="TP. Hồ Chí Minh"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600 bg-white"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Quận / Huyện *
-              </label>
-              <input
-                type="text"
-                required
-                value={formState.district}
-                onChange={(e) => setFormState({ ...formState, district: e.target.value })}
-                placeholder="Quận 1"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600 bg-white"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                Phường / Xã *
-              </label>
-              <input
-                type="text"
-                required
-                value={formState.ward}
-                onChange={(e) => setFormState({ ...formState, ward: e.target.value })}
-                placeholder="Bến Nghé"
-                className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600 bg-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 mb-1">
-              Địa chỉ chi tiết (Số nhà, tên đường) *
-            </label>
-            <input
-              type="text"
-              required
-              value={formState.street}
-              onChange={(e) => setFormState({ ...formState, street: e.target.value })}
-              placeholder="123 Đường Lê Lợi"
-              className="w-full px-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600 bg-white"
-            />
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2">
-            {addresses.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition"
-              >
-                Hủy bỏ
-              </button>
+      {mode === 'VIEW' && (
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-slate-900 text-sm">
+              {displayAddress.recipientName || 'Chưa có họ tên người nhận'}
+            </span>
+            <span className="text-slate-500">•</span>
+            <span className="font-semibold text-slate-700">{displayAddress.phone}</span>
+            {displayAddress.isDefault && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                Mặc định
+              </span>
             )}
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow flex items-center gap-1.5"
-            >
-              <Check size={14} />
-              <span>Lưu và sử dụng địa chỉ này</span>
-            </button>
           </div>
-        </form>
-      ) : (
+          <p className="text-slate-600 leading-relaxed">
+            {formattedAddress || 'Chưa có thông tin địa chỉ chi tiết.'}
+          </p>
+        </div>
+      )}
+
+      {mode === 'SELECT' && (
         <div className="space-y-3">
-          {addresses.length > 0 && (
-            <div className="space-y-2">
-              {addresses.map((a) => (
-                <label
-                  key={a.id}
-                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
-                    selectedAddressId === a.id
-                      ? 'border-blue-600 bg-blue-50/50 shadow-sm'
-                      : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="shippingAddress"
-                    checked={selectedAddressId === a.id}
-                    onChange={() => onSelectAddressId(a.id)}
-                    className="mt-0.5 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-900">
-                      {a.recipientName} • {a.phone}
-                    </span>
+          <p className="text-xs font-semibold text-slate-600">
+            Chọn địa chỉ từ sổ địa chỉ của bạn:
+          </p>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {addresses.map((a) => (
+              <label
+                key={a.id}
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition ${
+                  selectedAddressId === a.id
+                    ? 'border-blue-600 bg-blue-50/60 shadow-sm'
+                    : 'border-slate-200 hover:border-slate-300 bg-slate-50/40'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="shippingAddressChoice"
+                  checked={selectedAddressId === a.id}
+                  onChange={() => {
+                    onSelectAddressId(a.id);
+                    setMode('VIEW');
+                  }}
+                  className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                />
+                <div className="text-xs flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-900">{a.recipientName}</span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-slate-600">{a.phone}</span>
                     {a.isDefault && (
-                      <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
                         Mặc định
                       </span>
                     )}
-                    <p className="text-slate-600 mt-0.5">
-                      {[a.street, a.ward, a.district, a.city].filter(Boolean).join(', ')}
-                    </p>
                   </div>
-                </label>
-              ))}
-            </div>
-          )}
+                  <p className="text-slate-600 mt-1">
+                    {[a.street, a.ward, a.district, a.city].filter(Boolean).join(', ')}
+                  </p>
+                </div>
+              </label>
+            ))}
+          </div>
 
-          {addresses.length === 0 && (
-            <div className="text-xs text-slate-600 space-y-1">
-              <p className="font-bold text-slate-900">
-                {currentAddress.recipientName || 'Chưa có thông tin người nhận'} •{' '}
-                {currentAddress.phone}
-              </p>
-              <p>
-                {[
-                  currentAddress.street,
-                  currentAddress.ward,
-                  currentAddress.district,
-                  currentAddress.city,
-                ]
-                  .filter(Boolean)
-                  .join(', ')}
-              </p>
-            </div>
-          )}
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => {
+                setFormState({
+                  recipientName: '',
+                  phone: '',
+                  city: 'TP. Hồ Chí Minh',
+                  district: '',
+                  ward: '',
+                  street: '',
+                });
+                setMode('NEW');
+              }}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Plus size={14} />
+              <span>Thêm địa chỉ nhận hàng mới</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMode('VIEW')}
+              className="px-4 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+            >
+              Hoàn tất
+            </button>
+          </div>
         </div>
+      )}
+
+      {mode === 'NEW' && (
+        <CheckoutAddressForm
+          formState={formState}
+          setFormState={setFormState}
+          addressesCount={addresses.length}
+          onSubmit={handleSubmitNew}
+          onCancel={() => setMode('SELECT')}
+        />
       )}
     </div>
   );
