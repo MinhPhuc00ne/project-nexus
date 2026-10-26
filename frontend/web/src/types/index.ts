@@ -3,6 +3,7 @@ export * from './cart.types';
 export * from './product.types';
 export * from './auction.types';
 export * from './category.types';
+export * from './chat.types';
 
 export interface NotificationItem {
   id: string | number;

@@ -1,0 +1,202 @@
+import { type JSX, useEffect, useState } from 'react';
+import { MessageCircle, X } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  createChatConversation,
+  getChatConversations,
+  getChatUnreadCount,
+} from '../../services/chat';
+import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
+import ChatConversationList from './ChatConversationList';
+import ChatMessageArea from './ChatMessageArea';
+import { getChatErrorMessage } from './chatUtils';
+import { useChatRoom } from './useChatRoom';
+
+export default function ChatWidget(): JSX.Element | null {
+  const { token, storedUser } = useAuth();
+  if (!token || !storedUser) return null;
+  return <ChatPanel key={storedUser.id} userId={storedUser.id} />;
+}
+
+function ChatPanel({ userId }: { userId: string }): JSX.Element {
+  const [open, setOpen] = useState(false);
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [active, setActive] = useState<ChatConversation | null>(null);
+  const [search, setSearch] = useState('');
+  const [unread, setUnread] = useState(0);
+  const [panelError, setPanelError] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [creating, setCreating] = useState(false);
+  const [participantId, setParticipantId] = useState('');
+  const [type, setType] = useState<ChatConversationType>('BUYER_SELLER');
+  const [revision, setRevision] = useState(0);
+
+  const activeId = active?.id;
+
+  const room = useChatRoom({
+    activeId,
+    userId,
+    isOpen: open,
+    onRevisionChange: () => setRevision((v) => v + 1),
+  });
+
+  const displayError = panelError || room.error;
+
+  const clearError = (): void => {
+    setPanelError('');
+    room.setError('');
+    setRevision((v) => v + 1);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = (): void => {
+      void getChatUnreadCount()
+        .then((count) => {
+          if (!cancelled) setUnread(count);
+        })
+        .catch(() => {});
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [revision]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void getChatConversations({ search, page, limit: 20 })
+        .then((result) => {
+          if (cancelled) return;
+          setConversations((current) =>
+            page === 1
+              ? result.items
+              : [...new Map([...current, ...result.items].map((c) => [c.id, c])).values()],
+          );
+          setTotalPages(result.pagination.totalPages);
+        })
+        .catch((err) => {
+          if (!cancelled) setPanelError(getChatErrorMessage(err));
+        });
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, search, page, revision]);
+
+  async function handleStartConversation(): Promise<void> {
+    if (!participantId.trim() || creating) return;
+    setCreating(true);
+    setPanelError('');
+    try {
+      const conversation = await createChatConversation({
+        participantId: participantId.trim(),
+        type,
+      });
+      setActive(conversation);
+      setParticipantId('');
+      setRevision((v) => v + 1);
+    } catch (err) {
+      setPanelError(getChatErrorMessage(err));
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <div className="fixed bottom-5 right-5 z-[100] font-sans max-sm:bottom-3 max-sm:right-3">
+      {!open ? (
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white shadow-xl hover:bg-blue-700"
+          aria-label="Mở tin nhắn"
+        >
+          <MessageCircle size={22} /> Tin nhắn{' '}
+          {unread > 0 && <span className="rounded-full bg-red-500 px-2 text-xs">{unread}</span>}
+        </button>
+      ) : (
+        <section
+          aria-label="Hộp tin nhắn"
+          className="flex h-[min(640px,85dvh)] w-[min(760px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl"
+        >
+          <header className="flex items-center justify-between bg-blue-600 px-5 py-4 text-white">
+            <div className="flex items-center gap-3">
+              <MessageCircle />
+              <div>
+                <h2 className="font-bold">Nexus Chat</h2>
+                <p className="text-xs text-blue-100">Kết nối người mua, người bán và hỗ trợ</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="Đóng chat"
+              className="rounded-lg p-2 hover:bg-blue-500"
+            >
+              <X size={20} />
+            </button>
+          </header>
+
+          {displayError && (
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-2 bg-red-50 px-4 py-2 text-sm text-red-700"
+            >
+              {displayError}
+              <button onClick={clearError} aria-label="Đóng thông báo">
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
+          <div className="flex min-h-0 flex-1">
+            <ChatConversationList
+              conversations={conversations}
+              activeId={activeId}
+              onSelect={(c) => {
+                setActive(c);
+                clearError();
+              }}
+              search={search}
+              onSearchChange={(val) => {
+                setSearch(val);
+                setPage(1);
+              }}
+              participantId={participantId}
+              onParticipantIdChange={setParticipantId}
+              type={type}
+              onTypeChange={setType}
+              creating={creating}
+              onCreateConversation={() => void handleStartConversation()}
+              hasMorePages={page < totalPages}
+              onLoadMore={() => setPage((v) => v + 1)}
+              hiddenOnMobile={!!active}
+            />
+
+            <ChatMessageArea
+              active={active}
+              userId={userId}
+              connected={room.connected}
+              loading={room.loading}
+              messages={room.messages}
+              hasOlder={room.hasOlder}
+              older={room.older}
+              typing={room.typing}
+              draft={room.draft}
+              sending={room.sending}
+              onBack={() => setActive(null)}
+              onLoadOlder={() => void room.loadOlder()}
+              onDraftChange={room.setDraft}
+              onSend={() => void room.send()}
+            />
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
