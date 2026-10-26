@@ -3,9 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   SwapOutlined,
-  BellOutlined,
   CodeSandboxOutlined,
-  CheckOutlined,
   DownOutlined,
   QuestionCircleOutlined,
   DashboardOutlined,
@@ -19,7 +17,6 @@ import {
   ShopOutlined,
   TruckOutlined,
   WalletOutlined,
-  CloseOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { useSellerSession } from '../components/seller/SellerSession';
@@ -27,8 +24,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { clearAuthSession } from '../services/auth';
 import { toggleSellerMode } from '../services/users';
 import { useSellerStore } from '../components/seller/useSellerStore';
+import SellerNotifications from '../components/seller/SellerNotifications';
 import { SellerWorkspaceContext } from '../components/seller/SellerWorkspace';
 import type { SellerDraft } from '../components/seller/sellerData';
+import { useToast } from '../components/ToastNotification';
 
 const links = [
   { to: '/seller', label: 'Trung tâm người bán', icon: ShopOutlined },
@@ -65,28 +64,22 @@ export default function SellerLayout() {
 }
 function SellerWorkspace() {
   const user = useSellerSession();
-  const { setProfile } = useAuth();
+  const { setProfile, token, refreshProfile } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState('');
   const [sidebar, setSidebar] = useState(false);
   const [account, setAccount] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [preview, setPreview] = useState(false);
   const [search, setSearch] = useState('');
-  const [toast, setToast] = useState('');
   const store = useSellerStore(user.id);
   const draftKey = `nexus:seller-drafts:${user.id}`;
   const [drafts, setDrafts] = useState(() => readDrafts(draftKey));
   const accountRef = useRef<HTMLDivElement>(null);
   const noticeRef = useRef<HTMLDivElement>(null);
   const toggleLock = useRef(false);
-  useEffect(() => {
-    if (!toast) return;
-    const timer = window.setTimeout(() => setToast(''), 4000);
-    return () => window.clearTimeout(timer);
-  }, [toast]);
   useEffect(() => {
     setSidebar(false);
     setAccount(false);
@@ -117,10 +110,10 @@ function SellerWorkspace() {
     try {
       localStorage.setItem(draftKey, JSON.stringify(next));
       setDrafts(next);
-      setToast('Đã lưu bản nháp trên thiết bị này.');
+      toast.success('Đã lưu bản nháp trên thiết bị này.');
       return true;
     } catch {
-      setToast('Không thể lưu bản nháp. Vui lòng kiểm tra bộ nhớ trình duyệt.');
+      toast.error('Không thể lưu bản nháp. Vui lòng kiểm tra bộ nhớ trình duyệt.');
       return false;
     }
   };
@@ -129,16 +122,15 @@ function SellerWorkspace() {
     try {
       localStorage.setItem(draftKey, JSON.stringify(next));
       setDrafts(next);
-      setToast('Đã xóa bản nháp trên thiết bị.');
+      toast.success('Đã xóa bản nháp trên thiết bị.');
     } catch {
-      setToast('Không thể xóa bản nháp. Vui lòng thử lại.');
+      toast.error('Không thể xóa bản nháp. Vui lòng thử lại.');
     }
   };
   const switchToBuyer = async () => {
     if (toggleLock.current) return;
     toggleLock.current = true;
     setPending(true);
-    setError('');
     try {
       const result = await toggleSellerMode(false);
       setProfile((current) =>
@@ -149,9 +141,10 @@ function SellerWorkspace() {
       if (result.isSellerActive || result.currentMode !== 'BUYER') {
         throw new Error('Máy chủ chưa chuyển tài khoản về chế độ người mua. Vui lòng thử lại.');
       }
+      toast.success(result.message);
       navigate('/buyer');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể chuyển chế độ.');
+      toast.error(cause instanceof Error ? cause.message : 'Không thể chuyển chế độ.');
     } finally {
       toggleLock.current = false;
       setPending(false);
@@ -171,9 +164,13 @@ function SellerWorkspace() {
         storeName: store.name,
         storeLoading: store.loading,
         storeError: store.error,
+        shop: store.shop,
+        refreshShop: store.refresh,
         search,
         setSearch,
-        notify: setToast,
+        notify: (message, variant = 'success') => {
+          toast[variant](message);
+        },
         drafts,
         saveDraft,
         deleteDraft,
@@ -325,30 +322,22 @@ function SellerWorkspace() {
                   className="w-1.5 h-1.5 inline-block rounded-full bg-[#14b58a] shrink-0"
                   data-seller="dot"
                 />
-                {user.isSellerActive ? 'Gian hàng hoạt động' : 'Chế độ người mua'}
+                {user.isShopSuspended
+                  ? 'Gian hàng bị đình chỉ'
+                  : user.isSellerActive
+                    ? 'Gian hàng hoạt động'
+                    : 'Chế độ người mua'}
               </span>
               <div className="relative" data-seller="popover-anchor" ref={noticeRef}>
-                <button
-                  className="[border:0] bg-transparent p-[7px] text-[#7f8ca4] grid [place-items:center] rounded-[7px] [&:hover]:bg-[#edf3ff] [&:hover]:text-[#315eea]"
-                  data-seller="icon-button"
-                  aria-label="Thông báo người bán"
-                  aria-expanded={notifications}
-                  onClick={() => {
+                <SellerNotifications
+                  key={`${user.id}:${token}`}
+                  userId={user.id}
+                  isOpen={notifications}
+                  onToggle={() => {
                     setNotifications(!notifications);
                     setAccount(false);
                   }}
-                >
-                  <BellOutlined className="text-[19px]" aria-hidden="true" />
-                </button>
-                {notifications && (
-                  <div
-                    className="absolute right-0 top-[calc(100%_+_18px)] w-[270px] p-4.5 [border:1px_solid_#e5ebf4] bg-white rounded-[12px] [box-shadow:0_12px_35px_#19356317] z-[60] [&_p]:text-[11px] [&_p]:text-[#8d9ab0] [&_p]:[margin:7px_0_15px] [&_p]:[overflow-wrap:anywhere] max-[760px]:right-0 max-[540px]:w-[255px] max-[540px]:max-w-[calc(100vw_-_28px)]"
-                    data-seller="popover"
-                  >
-                    <strong>Thông báo gian hàng</strong>
-                    <p>Thông báo sẽ hiển thị khi dịch vụ thông báo được kết nối.</p>
-                  </div>
-                )}
+                />
               </div>
               <div className="relative" data-seller="popover-anchor" ref={accountRef}>
                 <button
@@ -410,15 +399,17 @@ function SellerWorkspace() {
             className="max-w-[1550px] m-auto [padding:30px_32px_20px] min-h-[calc(100vh_-_136px)] min-[1600px]:pt-[35px] max-[1250px]:py-[25px] max-[1250px]:px-[23px] max-[760px]:py-[23px] max-[760px]:px-4.5 max-[540px]:py-5 max-[540px]:px-3.5"
             data-seller="main"
           >
-            {error && (
+            {user.isShopSuspended && (
               <div
                 role="alert"
-                className="flex items-center justify-between gap-3 py-[13px] px-[17px] [border:1px_solid_#f6d9df] bg-[#fff3f5] rounded-[9px] text-[#bb5265] mb-4 text-[12px] [&_button]:bg-transparent [&_button]:[border:0] [&_button]:text-inherit"
-                data-seller="error"
+                className="mb-5 space-y-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
               >
-                {error}
-                <button aria-label="Đóng lỗi" onClick={() => setError('')}>
-                  <CloseOutlined className="text-[16px]" aria-hidden="true" />
+                <p className="font-semibold">
+                  Gian hàng đã bị đình chỉ. Bạn vẫn có thể xem thông tin và chuyển sang người mua.
+                </p>
+                {user.suspensionReason && <p>Lý do: {user.suspensionReason}</p>}
+                <button type="button" className="underline" onClick={() => void refreshProfile()}>
+                  Kiểm tra lại trạng thái
                 </button>
               </div>
             )}
@@ -435,19 +426,6 @@ function SellerWorkspace() {
             </span>
           </footer>
         </div>
-        {toast && (
-          <div
-            className="fixed bottom-[25px] right-[25px] flex items-center gap-2.5 bg-[#213d79] text-[#fff] py-[15px] px-4.5 rounded-[11px] max-w-[min(490px,_calc(100vw_-_32px))] [box-shadow:0_6px_30px_#132d5d25] z-[1100] text-[12px] [&>.anticon]:shrink-0 [&>.anticon]:text-[#90d7be]! [&>button]:ml-[9px] [&>button]:bg-transparent [&>button]:[border:0] [&>button]:text-[#c9d8f5] max-[540px]:right-4 max-[540px]:bottom-4 max-[540px]:text-[11px]"
-            data-seller="toast"
-            role="status"
-          >
-            <CheckOutlined className="text-[18px]" aria-hidden="true" />
-            <span>{toast}</span>
-            <button aria-label="Đóng thông báo" onClick={() => setToast('')}>
-              <CloseOutlined className="text-[16px]" aria-hidden="true" />
-            </button>
-          </div>
-        )}
       </div>
     </SellerWorkspaceContext.Provider>
   );

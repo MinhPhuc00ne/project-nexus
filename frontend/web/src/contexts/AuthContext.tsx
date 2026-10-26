@@ -11,7 +11,7 @@ import {
 import { Role } from '@nexus/types';
 import { clearAuthSession, getStoredToken, getStoredUser, saveAuthSession } from '../services/auth';
 import { getMe } from '../services/users';
-import { mergeGuestCartAfterLogin } from '../services/cart';
+import { mergeGuestCartAfterLogin, resetCartSync } from '../services/cart';
 import type { AuthUser, UserProfile } from '../types/user.types';
 
 export interface AuthContextType {
@@ -42,6 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
   const revision = useRef(0);
   const sessionToken = useRef(token);
+  const cartOwner = useRef(token ? getStoredUser()?.id || token : null);
+  const cartInitialized = useRef(false);
 
   const refreshProfile = useCallback(async (): Promise<UserProfile | null> => {
     const currentToken = getStoredToken();
@@ -81,6 +83,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const handleAuthChange = () => {
       const nextToken = getStoredToken();
       const nextStoredUser = getStoredUser();
+      const nextCartOwner = nextToken ? nextStoredUser?.id || nextToken : null;
+      const cartOwnerChanged = cartOwner.current !== nextCartOwner;
+      if (cartOwnerChanged) {
+        cartOwner.current = nextCartOwner;
+        resetCartSync();
+      }
       if (sessionToken.current !== nextToken) {
         revision.current++;
         inFlightPromiseRef.current = null;
@@ -93,8 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (nextToken) {
         void refreshProfile();
-        void mergeGuestCartAfterLogin();
+        if (cartOwnerChanged || !cartInitialized.current) {
+          cartInitialized.current = true;
+          void mergeGuestCartAfterLogin();
+        }
       } else {
+        cartInitialized.current = false;
         revision.current++;
         inFlightPromiseRef.current = null;
         setUser(null);
@@ -119,7 +131,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(accessToken || getStoredToken());
       setStoredUser(authUser);
       await refreshProfile();
-      await mergeGuestCartAfterLogin();
     },
     [refreshProfile],
   );

@@ -3,6 +3,7 @@ import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/s
 import SellerProductImages from '../../components/seller/SellerProductImages';
 import useSellerProductForm from '../../components/seller/useSellerProductForm';
 import { useParams } from 'react-router-dom';
+import { useSellerSession } from '../../components/seller/SellerSession';
 const inputClass =
   'mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-500';
 
@@ -11,6 +12,7 @@ export default function SellerCreateProductPage() {
   return <SellerProductFormPage key={id ?? 'new'} productId={id} />;
 }
 function SellerProductFormPage({ productId }: { productId?: string }) {
+  const user = useSellerSession();
   const editing = Boolean(productId);
   const {
     form,
@@ -76,6 +78,11 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
           {error}
         </div>
       )}
+      {(!user.isSellerActive || user.isShopSuspended) && (
+        <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+          Gian hàng đang bị đình chỉ hoặc chưa bật chế độ người bán nên chưa thể lưu sản phẩm.
+        </p>
+      )}
       {pending && (
         <p role="status" className="rounded-xl bg-blue-50 p-4 text-sm text-blue-800">
           {progress || 'Đang chuẩn bị đăng bán…'}
@@ -89,7 +96,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
         aria-busy={pending}
       >
         <fieldset
-          disabled={pending}
+          disabled={pending || user.isShopSuspended || !user.isSellerActive}
           className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]"
         >
           <div className="min-w-0 space-y-5">

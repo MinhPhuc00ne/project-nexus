@@ -1,0 +1,72 @@
+export const ROUTES = {
+  // Guest
+  HOME: '/',
+  SEARCH: '/search',
+  CATEGORY: '/categories',
+  AUCTION: '/auction',
+  AUCTION_DETAIL: '/auction/:id',
+  PRODUCT: '/product/:id',
+  ABOUT: '/about',
+  CONTACT: '/contact',
+  TERMS: '/terms',
+  PRIVACY: '/privacy',
+
+  // Auth
+  LOGIN: '/login',
+  REGISTER: '/register',
+  FORGOT_PASSWORD: '/forgot-password',
+  RESET_PASSWORD: '/reset-password',
+  VERIFY_OTP: '/verify-otp',
+
+  // Buyer
+  CART: '/cart',
+  CHECKOUT: '/checkout',
+  BUYER: '/buyer',
+  BUYER_ORDERS: '/buyer/orders',
+  BUYER_ORDER_DETAIL: '/buyer/orders/:id',
+  BUYER_PROFILE: '/buyer/profile',
+  BUYER_WISHLIST: '/buyer/wishlist',
+  BUYER_WALLET: '/buyer/wallet',
+  BUYER_BIDS: '/buyer/bids',
+  BUYER_DISPUTES: '/buyer/disputes',
+  BUYER_ADDRESSES: '/buyer/addresses',
+
+  // Seller
+  SELLER: '/seller',
+  SELLER_PRODUCTS: '/seller/products',
+  SELLER_ORDERS: '/seller/orders',
+  SELLER_ORDER_DETAIL: '/seller/orders/:id',
+  SELLER_SHIPPING: '/seller/shipping',
+  SELLER_AUCTIONS: '/seller/auctions',
+  SELLER_FINANCE: '/seller/finance',
+  SELLER_DISPUTES: '/seller/disputes',
+  SELLER_SETTINGS: '/seller/settings',
+
+  // Staff
+  STAFF: '/staff',
+  STAFF_SELLER_APPROVALS: '/staff/seller-approvals',
+  STAFF_TEAM: '/staff/team',
+  STAFF_INBOX: '/staff/inbox',
+  STAFF_DISPUTES: '/staff/disputes',
+  STAFF_AUCTION_SUPPORT: '/staff/auction-support',
+  STAFF_FAQ: '/staff/faq',
+  STAFF_HISTORY: '/staff/history',
+  STAFF_PERFORMANCE: '/staff/performance',
+
+  // Admin
+  ADMIN: '/admin',
+  ADMIN_PRODUCTS: '/admin/products',
+  ADMIN_ORDERS: '/admin/orders',
+  ADMIN_STORES: '/admin/stores',
+  ADMIN_REPORTS: '/admin/reports',
+  ADMIN_CATEGORIES: '/admin/categories',
+  ADMIN_OVERVIEW: '/admin/overview',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_SELLERS: '/admin/sellers',
+  ADMIN_AUCTIONS: '/admin/auctions',
+  ADMIN_REFUNDS: '/admin/refunds',
+  ADMIN_STUDIO: '/admin/studio',
+  ADMIN_FINANCE: '/admin/finance',
+  ADMIN_SYSTEM: '/admin/system',
+  ADMIN_SETTINGS: '/admin/settings',
+} as const;

@@ -6,12 +6,14 @@ import { updateMyProfile, type ProfileChanges } from '../../services/profile';
 import type { UserProfile } from '../../types';
 import AvatarPicker from './AvatarPicker';
 import ChangePasswordModal from './ChangePasswordModal';
+import { useToast } from '../ToastNotification';
 
 const inputClass =
   'mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50';
 
 export default function ProfileEditor({ profile }: { profile: UserProfile }) {
   const { refreshProfile, setProfile } = useAuth();
+  const toast = useToast();
   const initial = (): ProfileChanges => ({
     fullName: profile.fullName,
     phoneNumber: profile.phoneNumber || '',
@@ -22,7 +24,6 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showChangePassword, setShowChangePassword] = useState(false);
   const locked = useRef(false);
   const seller = profile.role === Role.SELLER;
@@ -37,7 +38,6 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
       avatarUrl: form.avatarUrl.trim(),
     };
     setError('');
-    setSuccess('');
     if (changes.fullName.length < 2 || changes.fullName.length > 100) {
       setError('Họ tên cần từ 2 đến 100 ký tự.');
       return;
@@ -54,9 +54,11 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
       setAvatarFile(null);
       setProfile((current) => (current?.id === profile.id ? { ...current, ...saved } : current));
       await refreshProfile();
-      setSuccess('Đã cập nhật hồ sơ cá nhân.');
+      toast.success('Đã cập nhật hồ sơ cá nhân.');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể cập nhật hồ sơ.');
+      const message = cause instanceof Error ? cause.message : 'Không thể cập nhật hồ sơ.';
+      setError(message);
+      toast.error(message);
     } finally {
       setPassword('');
       setPending(false);
@@ -152,11 +154,6 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
             {error}
           </p>
         )}
-        {success && (
-          <p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">
-            {success}
-          </p>
-        )}
         {canEdit && (
           <div className="flex flex-wrap gap-3">
             <button
@@ -175,7 +172,6 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
                 setAvatarFile(null);
                 setPassword('');
                 setError('');
-                setSuccess('');
               }}
               className="rounded-xl border border-slate-200 px-5 py-3 text-sm"
             >

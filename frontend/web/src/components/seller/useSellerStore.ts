@@ -1,46 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getMySellerRequests } from '../../services/users';
+import { getShopDetail } from '../../services/shops';
+import useProductResource from '../productDetail/useProductResource';
+import type { ShopProfile } from '../../types/shop.types';
 
-type Store = { name: string; loading: boolean; error: string };
+type Store = {
+  name: string;
+  shop: ShopProfile | null;
+  loading: boolean;
+  error: string;
+  refresh: () => void;
+};
 
 export function useSellerStore(userId: string): Store {
   const { token } = useAuth();
-  const [store, setStore] = useState<Store>({ name: '', loading: true, error: '' });
-  const inFlight = useRef<{
-    key: string;
-    promise: ReturnType<typeof getMySellerRequests>;
-  } | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    setStore({ name: '', loading: true, error: '' });
-    const key = JSON.stringify([token, userId]);
-    if (inFlight.current?.key !== key) {
-      const request = { key, promise: getMySellerRequests() };
-      inFlight.current = request;
-      const clear = () => {
-        if (inFlight.current === request) inFlight.current = null;
-      };
-      void request.promise.then(clear, clear);
-    }
-    void inFlight.current.promise.then(
-      (result) => {
-        if (active)
-          setStore({
-            name: result.requests.find((item) => item.status === 'APPROVED')?.storeName || '',
-            loading: false,
-            error: '',
-          });
-      },
-      () => {
-        if (active) setStore({ name: '', loading: false, error: 'Chưa thể tải tên gian hàng.' });
-      },
-    );
-    return () => {
-      active = false;
-    };
+  const load = useCallback(async () => {
+    if (!token) throw new Error('Vui lòng đăng nhập để xem gian hàng.');
+    const result = await getShopDetail(userId);
+    if (result.shop?.id !== userId) throw new Error('Thông tin gian hàng không hợp lệ.');
+    return result.shop;
   }, [token, userId]);
-
-  return store;
+  const { data, loading, error, retry } = useProductResource(load);
+  return { name: data?.name || '', shop: data, loading, error, refresh: retry };
 }

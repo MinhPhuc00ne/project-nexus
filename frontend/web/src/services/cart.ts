@@ -1,134 +1,28 @@
 import { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import type { CartItem } from '../types/cart.types';
+import {
+  type BackendCartItem,
+  type BackendCartResponse,
+  applyRemoteCart,
+  getAuthCartCache,
+  getGuestCartItems,
+  isCurrent,
+  loadRemoteCart,
+  mutationScope,
+  pendingMerges,
+  resetCartSync,
+  resolveProductId,
+  saveAuthCartCache,
+  saveGuestCartItems,
+  saveStoredSelectedIds,
+  scopeFor,
+  scopeKey,
+  synchronizeCart,
+} from './cartSync';
 
-export type { CartItem };
-
-const GUEST_CART_STORAGE_KEY = 'nexus:guest-cart';
-const AUTH_CART_CACHE_KEY = 'nexus:auth-cart-cache';
-const SELECTED_IDS_STORAGE_KEY = 'nexus:cart-selected-ids';
-
-export interface BackendCartItem {
-  id: string; // cartItemId
-  productId: string;
-  name: string;
-  thumbnail: string | null;
-  shop: {
-    id: string;
-    name: string;
-    avatarUrl: string | null;
-  };
-  quantity: number;
-  currentPrice: number;
-  priceAtAdded: number;
-  hasPriceChanged: boolean;
-  priceDifference: number;
-  availableQty: number;
-  isOutOfStock: boolean;
-  isStockInsufficient: boolean;
-  itemSubtotal: number;
-  createdAt: string;
-}
-
-export interface BackendCartResponse {
-  cartId: string;
-  userId: string;
-  expiresAt: string | null;
-  items: BackendCartItem[];
-  totalCount: number;
-  totalPrice: number;
-  hasPriceChanged: boolean;
-}
-
-function emitCartChange(): void {
-  window.dispatchEvent(new CustomEvent('nexus:cart-change'));
-}
-
-function getStoredSelectedIds(): Set<string> | null {
-  try {
-    const raw = localStorage.getItem(SELECTED_IDS_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? new Set(parsed.map(String)) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveStoredSelectedIds(ids: string[]): void {
-  try {
-    localStorage.setItem(SELECTED_IDS_STORAGE_KEY, JSON.stringify(ids));
-  } catch {
-    // ignore
-  }
-}
-
-function mapBackendItemToCartItem(
-  backendItem: BackendCartItem,
-  selectedSet: Set<string> | null,
-): CartItem {
-  const isSelected = selectedSet ? selectedSet.has(String(backendItem.id)) : true;
-
-  return {
-    id: backendItem.id, // CartItem ID in database
-    productId: backendItem.productId,
-    name: backendItem.name,
-    price: backendItem.currentPrice,
-    formattedPrice: `${Number(backendItem.currentPrice).toLocaleString('vi-VN')} ₫`,
-    qty: backendItem.quantity,
-    img: backendItem.thumbnail || '/placeholder-product.png',
-    shopName: backendItem.shop?.name || 'NEXUS Official',
-    shopId: backendItem.shop?.id,
-    selected: isSelected,
-    hasPriceChanged: backendItem.hasPriceChanged,
-    priceAtAdded: backendItem.priceAtAdded,
-    priceDifference: backendItem.priceDifference,
-    availableQty: backendItem.availableQty,
-    isOutOfStock: backendItem.isOutOfStock,
-    isStockInsufficient: backendItem.isStockInsufficient,
-  };
-}
-
-function getGuestCartItems(): CartItem[] {
-  try {
-    const raw =
-      localStorage.getItem(GUEST_CART_STORAGE_KEY) || localStorage.getItem('nexus:cart-items');
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveGuestCartItems(items: CartItem[]): void {
-  try {
-    localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
-    emitCartChange();
-  } catch {
-    // Storage quota or disabled
-  }
-}
-
-function getAuthCartCache(): CartItem[] {
-  try {
-    const raw = localStorage.getItem(AUTH_CART_CACHE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveAuthCartCache(items: CartItem[]): void {
-  try {
-    localStorage.setItem(AUTH_CART_CACHE_KEY, JSON.stringify(items));
-    emitCartChange();
-  } catch {
-    // Storage quota or disabled
-  }
-}
+export type { CartItem, BackendCartItem, BackendCartResponse };
+export { resetCartSync };
 
 /**
  * Lấy danh sách sản phẩm trong giỏ hàng đồng bộ (từ Cache hoặc LocalStorage).
@@ -142,54 +36,17 @@ export function getCartItems(): CartItem[] {
 }
 
 /**
- * Tải giỏ hàng mới nhất từ API backend nếu đã đăng nhập, hoặc từ guest storage nếu chưa đăng nhập.
+ * Gộp các GET đang chạy và tái sử dụng kết quả API trong 1 giây khi trang vừa tải.
+ * force bỏ qua khoảng tái sử dụng; thay đổi giỏ hàng/tài khoản luôn làm kết quả cũ hết hiệu lực.
  */
-export async function fetchCart(): Promise<CartItem[]> {
+export function fetchCart({ force = false }: { force?: boolean } = {}): Promise<CartItem[]> {
   const token = getStoredToken();
-  if (!token) {
-    return getGuestCartItems();
-  }
-
-  try {
-    const res = await apiRequest<BackendCartResponse>('/commerce/cart', {
-      method: 'GET',
-      requireAuth: true,
-    });
-
-    const selectedSet = getStoredSelectedIds();
-    const mapped = (res?.items || []).map((item) => mapBackendItemToCartItem(item, selectedSet));
-
-    saveAuthCartCache(mapped);
-    return mapped;
-  } catch (error) {
-    console.warn('Lỗi khi tải giỏ hàng từ server:', error);
-    return getAuthCartCache();
-  }
-}
-
-const PRODUCT_UUID_MAP: Record<string, string> = {
-  'ap-tourbillon': '00000000-0000-4000-a000-000000000001',
-  'patek-celestial': '00000000-0000-4000-a000-000000000002',
-  'hublot-unico': '00000000-0000-4000-a000-000000000003',
-  'rolex-daytona': '00000000-0000-4000-a000-000000000004',
-  'rolex-submariner': '00000000-0000-4000-a000-000000000004',
-  'rm-055': '00000000-0000-4000-a000-000000000005',
-  'omega-speedmaster': '00000000-0000-4000-a000-000000000006',
-  'tissot-tourelles': '00000000-0000-4000-a000-000000000007',
-  'cartier-santos': '00000000-0000-4000-a000-000000000008',
-  '1': '00000000-0000-4000-a000-000000000001',
-  '2': '00000000-0000-4000-a000-000000000002',
-  '3': '00000000-0000-4000-a000-000000000003',
-  '4': '00000000-0000-4000-a000-000000000004',
-  '5': '00000000-0000-4000-a000-000000000005',
-  '6': '00000000-0000-4000-a000-000000000006',
-  '7': '00000000-0000-4000-a000-000000000007',
-  '8': '00000000-0000-4000-a000-000000000008',
-};
-
-function resolveProductId(id: string | number): string {
-  const s = String(id).trim();
-  return PRODUCT_UUID_MAP[s] || s;
+  if (!token) return Promise.resolve(getGuestCartItems());
+  const scope = scopeFor(token);
+  const merging = pendingMerges.get(scopeKey(scope));
+  return merging
+    ? merging.then(() => (isCurrent(scope) ? getAuthCartCache() : []))
+    : loadRemoteCart(scope, force);
 }
 
 /**
@@ -203,6 +60,7 @@ export async function addToCart(
   const token = getStoredToken();
 
   if (token) {
+    const scope = mutationScope(token);
     const productId = resolveProductId(item.productId || item.id);
     const res = await apiRequest<BackendCartResponse>('/commerce/cart/items', {
       method: 'POST',
@@ -213,9 +71,7 @@ export async function addToCart(
       requireAuth: true,
     });
 
-    const selectedSet = getStoredSelectedIds();
-    const mapped = (res?.items || []).map((it) => mapBackendItemToCartItem(it, selectedSet));
-    saveAuthCartCache(mapped);
+    applyRemoteCart(res, scope);
     return;
   }
 
@@ -248,6 +104,7 @@ export async function updateCartQty(id: string | number, qty: number): Promise<v
   const token = getStoredToken();
 
   if (token) {
+    const scope = mutationScope(token);
     const targetQty = Math.max(0, qty);
     const res = await apiRequest<BackendCartResponse>(`/commerce/cart/items/${id}`, {
       method: 'PATCH',
@@ -255,9 +112,7 @@ export async function updateCartQty(id: string | number, qty: number): Promise<v
       requireAuth: true,
     });
 
-    const selectedSet = getStoredSelectedIds();
-    const mapped = (res?.items || []).map((it) => mapBackendItemToCartItem(it, selectedSet));
-    saveAuthCartCache(mapped);
+    applyRemoteCart(res, scope);
     return;
   }
 
@@ -281,14 +136,13 @@ export async function removeFromCart(id: string | number): Promise<void> {
   const token = getStoredToken();
 
   if (token) {
+    const scope = mutationScope(token);
     const res = await apiRequest<BackendCartResponse>(`/commerce/cart/items/${id}`, {
       method: 'DELETE',
       requireAuth: true,
     });
 
-    const selectedSet = getStoredSelectedIds();
-    const mapped = (res?.items || []).map((it) => mapBackendItemToCartItem(it, selectedSet));
-    saveAuthCartCache(mapped);
+    applyRemoteCart(res, scope);
     return;
   }
 
@@ -345,6 +199,7 @@ export async function clearCart(): Promise<void> {
   const token = getStoredToken();
 
   if (token) {
+    const scope = mutationScope(token);
     try {
       await apiRequest<BackendCartResponse>('/commerce/cart', {
         method: 'DELETE',
@@ -353,8 +208,10 @@ export async function clearCart(): Promise<void> {
     } catch {
       // Ignore cleanup error
     }
-    saveAuthCartCache([]);
-    saveStoredSelectedIds([]);
+    if (isCurrent(scope)) {
+      saveAuthCartCache([]);
+      saveStoredSelectedIds([]);
+    }
     return;
   }
 
@@ -365,49 +222,18 @@ export async function clearCart(): Promise<void> {
 /**
  * Tự động gộp giỏ hàng Guest (LocalStorage) vào Database của Buyer sau khi đăng nhập.
  */
-export async function mergeGuestCartAfterLogin(): Promise<void> {
+export function mergeGuestCartAfterLogin(): Promise<void> {
   const token = getStoredToken();
-  if (!token) return;
-
-  const guestItems = getGuestCartItems();
-  if (guestItems.length === 0) {
-    // Không có món nào từ guest -> chỉ cần tải giỏ từ backend
-    await fetchCart();
-    return;
-  }
-
-  try {
-    const payloadItems = guestItems
-      .filter((i) => i.qty > 0)
-      .map((i) => ({
-        productId: resolveProductId(i.productId || i.id),
-        quantity: i.qty,
-      }));
-
-    if (payloadItems.length > 0) {
-      const res = await apiRequest<BackendCartResponse>('/commerce/cart/merge', {
-        method: 'POST',
-        body: { items: payloadItems },
-        requireAuth: true,
-      });
-
-      if (res && Array.isArray(res.items)) {
-        const selectedSet = getStoredSelectedIds();
-        const mapped = res.items.map((it) => mapBackendItemToCartItem(it, selectedSet));
-        saveAuthCartCache(mapped);
-      }
-    }
-
-    // Xóa giỏ tạm của guest sau khi gộp thành công
-    localStorage.removeItem(GUEST_CART_STORAGE_KEY);
-    localStorage.removeItem('nexus:cart-items');
-
-    // Đồng bộ lại lần nữa để đảm bảo thống nhất
-    await fetchCart();
-  } catch (error) {
-    console.error('Lỗi khi gộp giỏ hàng khách vào tài khoản:', error);
-    await fetchCart();
-  }
+  if (!token) return Promise.resolve();
+  const scope = scopeFor(token);
+  const key = scopeKey(scope);
+  const existing = pendingMerges.get(key);
+  if (existing) return existing;
+  const request = synchronizeCart(scope).finally(() => {
+    if (pendingMerges.get(key) === request) pendingMerges.delete(key);
+  });
+  pendingMerges.set(key, request);
+  return request;
 }
 
 /**

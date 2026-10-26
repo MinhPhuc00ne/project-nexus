@@ -342,7 +342,10 @@ export default function SellerAuctionsPage() {
             <strong>{money(detail.price)}</strong>
             <SellerButton
               onClick={() =>
-                notify('Phòng đấu giá trực tiếp chưa được kết nối. Không có phiên thật được mở.')
+                notify(
+                  'Phòng đấu giá trực tiếp chưa được kết nối. Không có phiên thật được mở.',
+                  'error',
+                )
               }
             >
               <PlayCircleOutlined className="text-[15px]" aria-hidden="true" />

@@ -121,6 +121,16 @@ export function getMyProducts(): Promise<SellerProduct[]> {
   productRequests.set(token, promise);
   return promise;
 }
+export async function reactivateSellerProduct(id: string): Promise<SellerProduct> {
+  const product = await apiRequest<SellerProduct>(`/catalog/products/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: { status: 'ACTIVE' },
+    requireAuth: true,
+  });
+  if (product.id !== id || product.status !== 'ACTIVE')
+    throw new Error('Máy chủ chưa xác nhận bán lại sản phẩm.');
+  return product;
+}
 export async function publishSellerProduct(
   form: SellerProductForm,
   files: File[],

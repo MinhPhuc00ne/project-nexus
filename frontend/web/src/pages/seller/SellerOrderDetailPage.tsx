@@ -1,46 +1,27 @@
+import { type ReactElement } from 'react';
 import { useParams } from 'react-router-dom';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
-import {
-  EmptyState,
-  ModuleNotice,
-  PageHeading,
-  Panel,
-  SellerLink,
-} from '../../components/seller/SellerUI';
-import { previewOrders } from '../../components/seller/sellerData';
-import { OrderDetail, ShippingGuide } from '../../components/seller/SellerOrderPanels';
+import { useAuth } from '../../contexts/AuthContext';
+import { useSellerSession } from '../../components/seller/SellerSession';
+import { PageHeading, SellerLink } from '../../components/seller/SellerUI';
+import SellerLiveOrderDetail from '../../components/seller/SellerLiveOrderDetail';
 
-export default function SellerOrderDetailPage() {
+export default function SellerOrderDetailPage(): ReactElement {
   const { id } = useParams();
-  const { preview } = useSellerWorkspace();
-  const order = previewOrders.find((item) => item.id === id);
+  const user = useSellerSession();
+  const { token } = useAuth();
   return (
-    <div
-      className="flex flex-col gap-5.5 min-w-0 [&>[data-seller~=page-stack]]:gap-4 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 max-[540px]:gap-[17px]"
-      data-seller="page-stack"
-    >
+    <div className="space-y-5">
       <PageHeading
-        title={`Chi tiết đơn hàng ${id || ''}`}
+        title="Chi tiết đơn hàng"
         actions={
           <SellerLink to="/seller/orders" secondary>
-            <ArrowLeftOutlined className="text-[15px]" aria-hidden="true" />
+            <ArrowLeftOutlined />
             Danh sách đơn hàng
           </SellerLink>
         }
       />
-      <ModuleNotice label="Chi tiết đơn hàng" />
-      <Panel title="Thông tin đơn hàng">
-        {preview && order ? (
-          <OrderDetail order={order} />
-        ) : (
-          <EmptyState
-            title="Chưa có thông tin đơn hàng"
-            description="Đơn hàng thật chưa được đồng bộ. Mã mẫu chỉ hiển thị khi bật dữ liệu minh họa."
-          />
-        )}
-      </Panel>
-      <ShippingGuide />
+      <SellerLiveOrderDetail key={`${user.id}:${token}:${id}`} id={id || ''} />
     </div>
   );
 }

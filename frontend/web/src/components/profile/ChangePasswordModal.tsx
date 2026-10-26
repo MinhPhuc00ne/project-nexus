@@ -4,6 +4,7 @@ import { EyeInvisibleOutlined, EyeOutlined, LockOutlined, MailOutlined } from '@
 import Popup from '../Popup';
 import { useAuth } from '../../contexts/AuthContext';
 import useChangePassword from './useChangePassword';
+import { markPasswordChanged } from '../../services/authNotice';
 
 const inputClass =
   'mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50';
@@ -23,6 +24,7 @@ export default function ChangePasswordModal({
   const state = useChangePassword(
     userId,
     () => {
+      markPasswordChanged();
       logout();
       navigate('/login', { replace: true, state: { passwordChanged: true } });
     },

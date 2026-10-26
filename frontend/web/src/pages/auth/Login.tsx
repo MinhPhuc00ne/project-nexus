@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState, type FormEvent } from 'react';
 import { GoogleOutlined } from '@ant-design/icons';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { login, saveAuthSession, startGoogleLogin } from '../../services/auth';
-import { mergeGuestCartAfterLogin } from '../../services/cart';
-import { ROUTES } from '../../routes/AppRouter';
+import { login, startGoogleLogin } from '../../services/auth';
+import { useAuth } from '../../contexts/AuthContext';
+import { clearPasswordChangedNotice, hasPasswordChangedNotice } from '../../services/authNotice';
+import { ROUTES } from '../../routes/paths';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import AuthHeroSection from './AuthHeroSection';
 import { ArrowLeft, Lock, Eye, EyeOff, Gift, Shield, User } from 'lucide-react';
@@ -11,8 +12,9 @@ import { Button } from '@/components/ui/button';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const { login: establishSession } = useAuth();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const [email, setEmail] = useState(() => {
     try {
@@ -26,7 +28,8 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState(() =>
-    (location.state as { passwordChanged?: boolean } | null)?.passwordChanged
+    (location.state as { passwordChanged?: boolean } | null)?.passwordChanged ||
+    hasPasswordChangedNotice()
       ? 'Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.'
       : searchParams.get('verified') === '1'
         ? 'Email đã được xác thực. Vui lòng đăng nhập.'
@@ -37,17 +40,28 @@ const Login: React.FC = () => {
 
   const [showForgotModal, setShowForgotModal] = useState(false);
   useEffect(() => {
+    clearPasswordChangedNotice();
     try {
       sessionStorage.removeItem('nexus:verified-email');
     } catch {
       /* Storage may be disabled. */
     }
-    if (searchParams.get('verified') === '1') {
+    const routeState = location.state as { passwordChanged?: boolean; from?: string } | null;
+    if (searchParams.get('verified') === '1' || routeState?.passwordChanged) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete('verified');
-      setSearchParams(nextParams, { replace: true });
+      const nextState = { ...routeState };
+      delete nextState.passwordChanged;
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextParams.toString() ? `?${nextParams}` : '',
+          hash: location.hash,
+        },
+        { replace: true, state: Object.keys(nextState).length ? nextState : null },
+      );
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, location.pathname, location.hash, location.state, navigate]);
   async function handleLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (requestInFlight.current) return;
@@ -57,15 +71,8 @@ const Login: React.FC = () => {
     setFailed(false);
     try {
       const result = await login(email.trim(), password);
-      saveAuthSession(result.user, result.accessToken, result.refreshToken);
+      await establishSession(result.user, result.accessToken, result.refreshToken);
       setFeedback(result.message + ' Xin chào ' + result.user.fullName + '.');
-
-      // Gộp giỏ hàng khách vào database tài khoản trước khi chuyển trang
-      try {
-        await mergeGuestCartAfterLogin();
-      } catch (mergeErr) {
-        console.error('Lỗi khi gộp giỏ hàng khách vào tài khoản:', mergeErr);
-      }
 
       const redirectPath = (location.state as { from?: string })?.from;
       if (redirectPath) {

@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   InboxOutlined,
   PlusOutlined,
@@ -21,9 +21,12 @@ import {
 } from '../../components/seller/SellerUI';
 import useSellerProducts from '../../components/seller/useSellerProducts';
 import Popup from '../../components/Popup';
+import { useSellerSession } from '../../components/seller/SellerSession';
 
 const statuses = { ACTIVE: 'Đang bán', INACTIVE: 'Ngừng bán', DRAFT: 'Bản nháp' };
 export default function SellerProductsPage({ inventory = false }: { inventory?: boolean }) {
+  const user = useSellerSession();
+  const canManage = user.isSellerActive && !user.isShopSuspended;
   const [status, setStatus] = useState('all');
   const [query, setQuery] = useState('');
   const {
@@ -34,15 +37,10 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
     hide,
     pendingId,
     actionError,
-    notice,
     selectedProduct,
     closeHide,
     confirmHide,
   } = useSellerProducts();
-  const location = useLocation();
-  const updated = (location.state as { updatedProduct?: { title: string } } | null)?.updatedProduct;
-  const published = (location.state as { publishedProduct?: { id: string; title: string } } | null)
-    ?.publishedProduct;
   const filtered = products.filter(
     (product) =>
       (status === 'all' || product.status === status) &&
@@ -50,6 +48,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
   );
   const available = products.reduce((sum, product) => sum + product.availableQty, 0);
   const unavailable = loading || Boolean(error);
+  const stopping = selectedProduct?.status === 'ACTIVE';
   return (
     <div className="space-y-6">
       <PageHeading
@@ -61,24 +60,6 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
           </SellerLink>
         }
       />
-      {(notice || updated) && (
-        <p role="status" className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
-          {notice || `Đã cập nhật sản phẩm ${updated?.title}.`}
-        </p>
-      )}
-      {actionError && (
-        <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
-          {actionError}
-        </p>
-      )}
-      {published?.id && (
-        <p
-          role="status"
-          className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800"
-        >
-          Đã đăng bán sản phẩm {published.title} thành công.
-        </p>
-      )}
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           label="Sản phẩm của gian hàng"
@@ -225,16 +206,22 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                     <td className="px-3 py-4">{product.availableQty}</td>
                     <td className="px-3 py-4">
                       <div className="flex flex-wrap gap-2">
-                        <SellerLink to={`/seller/products/${product.id}/edit`} secondary>
-                          <EditOutlined /> Sửa
-                        </SellerLink>
+                        {canManage && (
+                          <SellerLink to={`/seller/products/${product.id}/edit`} secondary>
+                            <EditOutlined /> Sửa
+                          </SellerLink>
+                        )}
                         <SellerButton
                           secondary
-                          disabled={Boolean(pendingId) || product.status === 'INACTIVE'}
+                          disabled={Boolean(pendingId) || !canManage}
                           onClick={() => void hide(product)}
                         >
                           <StopOutlined />{' '}
-                          {pendingId === product.id ? 'Đang ngừng bán…' : 'Ngừng bán'}
+                          {pendingId === product.id
+                            ? 'Đang xử lý…'
+                            : product.status === 'ACTIVE'
+                              ? 'Ngừng bán'
+                              : 'Bán lại'}
                         </SellerButton>
                       </div>
                     </td>
@@ -248,7 +235,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
       <Popup
         isOpen={Boolean(selectedProduct)}
         onClose={closeHide}
-        title="Xác nhận ngừng bán sản phẩm"
+        title={stopping ? 'Xác nhận ngừng bán sản phẩm' : 'Xác nhận bán lại sản phẩm'}
         closeOnOverlay={!pendingId}
         closeOnEsc={!pendingId}
         showCloseButton={!pendingId}
@@ -257,19 +244,24 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
             <SellerButton secondary disabled={Boolean(pendingId)} onClick={closeHide}>
               Hủy
             </SellerButton>
-            <SellerButton disabled={Boolean(pendingId)} onClick={() => void confirmHide()}>
+            <SellerButton
+              disabled={Boolean(pendingId) || !canManage}
+              onClick={() => void confirmHide()}
+            >
               <StopOutlined />
-              {pendingId ? 'Đang ngừng bán…' : 'Xác nhận ngừng bán'}
+              {pendingId ? 'Đang xử lý…' : stopping ? 'Xác nhận ngừng bán' : 'Xác nhận bán lại'}
             </SellerButton>
           </>
         }
       >
         <p className="text-sm text-slate-700">
-          Bạn có muốn ngừng bán sản phẩm{' '}
+          Bạn có muốn {stopping ? 'ngừng bán' : 'bán lại'} sản phẩm{' '}
           <strong className="break-words">{selectedProduct?.title}</strong>?
         </p>
         <p className="mt-3 text-sm text-slate-500">
-          Sản phẩm sẽ chuyển sang trạng thái ngừng bán và vẫn được giữ trong danh sách quản lý.
+          {stopping
+            ? 'Sản phẩm sẽ chuyển sang trạng thái ngừng bán và vẫn được giữ trong danh sách quản lý.'
+            : 'Sản phẩm sẽ được công khai trở lại cho người mua.'}
         </p>
         {pendingId && (
           <p role="status" className="mt-3 text-sm text-blue-600">

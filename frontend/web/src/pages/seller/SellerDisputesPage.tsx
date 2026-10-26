@@ -1,104 +1,154 @@
-import { cn } from '../../lib/utils';
-import { useState } from 'react';
+import { useCallback, useState, type ReactElement } from 'react';
+import { ReloadOutlined, FileTextOutlined } from '@ant-design/icons';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { getSellerDisputes } from '../../services/sellerDisputes';
+import type { SellerDispute, SellerDisputeStatus } from '../../types/seller-dispute.types';
+import useProductResource from '../../components/productDetail/useProductResource';
+import { useSellerSession } from '../../components/seller/SellerSession';
 import {
-  ArrowRightOutlined,
-  FileTextOutlined,
-  MessageOutlined,
-  SearchOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
-import { EmptyState, PageHeading, Panel, PolicyCards } from '../../components/seller/SellerUI';
+  Badge,
+  EmptyState,
+  PageHeading,
+  Panel,
+  SellerButton,
+} from '../../components/seller/SellerUI';
+import SellerResourceState from '../../components/seller/SellerResourceState';
+import SellerDisputeResponse from '../../components/seller/SellerDisputeResponse';
+import SellerPagination from '../../components/seller/SellerPagination';
+import { canRespondDispute, disputeLabels } from '../../components/seller/orderPresentation';
+import { financeDate, financeMoney } from '../../components/seller/financeFormat';
 
-export default function SellerDisputesPage() {
-  const [tab, setTab] = useState('open');
-  const [query, setQuery] = useState('');
+export default function SellerDisputesPage(): ReactElement {
+  const user = useSellerSession();
+  const { token } = useAuth();
+  return <DisputesWorkspace key={`${user.id}:${token}`} />;
+}
+function DisputesWorkspace(): ReactElement {
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState<SellerDisputeStatus | ''>('');
+  const [revision, setRevision] = useState(0);
+  const [selected, setSelected] = useState<SellerDispute | null>(null);
+  const refresh = (): void => setRevision((value) => value + 1);
+  const load = useCallback(() => {
+    void revision;
+    return getSellerDisputes(page, status);
+  }, [page, status, revision]);
+  const resource = useProductResource(load);
   return (
-    <div
-      className="flex flex-col gap-5.5 min-w-0 [&>[data-seller~=page-stack]]:gap-4 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 max-[540px]:gap-[17px]"
-      data-seller="page-stack"
-    >
+    <div className="space-y-5">
       <PageHeading
-        title="Khiếu nại & hỗ trợ"
-        description="Theo dõi vấn đề phát sinh và phối hợp xử lý cùng đội ngũ NEXUS."
+        title="Khiếu nại & giải trình"
+        description="Đối chiếu đơn hàng, bổ sung bằng chứng và phối hợp xử lý khiếu nại."
+        actions={
+          <SellerButton secondary onClick={refresh} disabled={resource.loading}>
+            <ReloadOutlined />
+            Làm mới
+          </SellerButton>
+        }
       />
-      <div
-        className="grid [grid-template-columns:repeat(2,_minmax(0,_1fr))] gap-5 max-[1050px]:[grid-template-columns:1fr]"
-        data-seller="two-columns"
+      <Panel
+        title="Hồ sơ khiếu nại của gian hàng"
+        subtitle="Giải trình được gửi tới đội ngũ kiểm duyệt để xem xét"
       >
-        <Panel title="Hồ sơ cần xử lý" subtitle="Tập trung bằng chứng, theo dõi tiến trình">
-          <div
-            className="flex gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:py-2 [&_button]:px-3 [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:text-[#315eea] [&_button.is-active]:bg-[#edf3ff] [&_button.is-active]:font-[650] [&_button>span:not(.anticon)]:text-[9px] [&_button>span:not(.anticon)]:bg-[#edf1f8] [&_button>span:not(.anticon)]:py-0 [&_button>span:not(.anticon)]:px-[5px] [&_button>span:not(.anticon)]:rounded-[4px] [&_button.is-active>span:not(.anticon)]:bg-[#315eea] [&_button.is-active>span:not(.anticon)]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px]"
-            data-seller="tabs"
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2 text-xs text-blue-800">
+            {resource.data &&
+              [
+                ['Tất cả', resource.data.counters.all],
+                ['Mới mở', resource.data.counters.open],
+                ['Đang xem xét', resource.data.counters.underReview],
+              ].map(([label, count]) => (
+                <span className="rounded-lg bg-blue-50 px-3 py-2" key={label}>
+                  {label}: <b>{count}</b>
+                </span>
+              ))}
+          </div>
+          <select
+            aria-label="Trạng thái khiếu nại"
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as SellerDisputeStatus | '');
+              setPage(1);
+            }}
           >
-            {[
-              ['open', 'Đang xử lý'],
-              ['resolved', 'Đã giải quyết'],
-              ['all', 'Tất cả'],
-            ].map(([key, label]) => (
-              <button
-                className={cn(tab === key ? 'is-active' : '')}
-                key={key}
-                onClick={() => setTab(key)}
-              >
+            <option value="">Tất cả trạng thái</option>
+            {Object.entries(disputeLabels).map(([key, label]) => (
+              <option value={key} key={key}>
                 {label}
-              </button>
+              </option>
             ))}
-          </div>
-          <label
-            className="flex items-center gap-2 [border:1px_solid_#e5ebf4] rounded-[7px] py-2 px-2.5 min-w-[160px] flex-1 text-[#8da0bf] bg-[#f9fbff] [&_input]:[border:0] [&_input]:bg-transparent [&_input]:[outline:none] [&_input]:w-full [&_input]:min-w-0 [&_input]:text-[10px] [&_input::placeholder]:text-[#a0aec3] mt-4 max-w-none"
-            data-seller="search-field"
-          >
-            <SearchOutlined className="text-[15px]" aria-hidden="true" />
-            <input
-              aria-label="Tìm khiếu nại"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Mã đơn hàng hoặc nội dung khiếu nại..."
-            />
-          </label>
-          <EmptyState
-            title="Chưa có dữ liệu khiếu nại"
-            description="Hồ sơ tranh chấp sẽ xuất hiện khi hệ thống hỗ trợ được kết nối."
-          />
-        </Panel>
-        <Panel title="Chuẩn bị hồ sơ hỗ trợ" subtitle="Thông tin đầy đủ giúp xử lý nhanh hơn">
-          <div
-            className="flex flex-col gap-3.5 [&>div]:flex [&>div]:items-start [&>div]:gap-2.5 [&>div]:p-[13px] [&>div]:[border:1px_solid_#ecf1f9] [&>div]:rounded-[9px] [&>div]:bg-[#f9fbff] [&_.anticon]:w-4.5 [&_.anticon]:shrink-0 [&_.anticon]:text-[#7295e4]! [&_.anticon]:mt-[1px] [&_strong]:text-[11px] [&_strong]:font-[550] [&_p]:text-[10px] [&_p]:text-[#91a0b8] [&_p]:[margin:4px_0_0] [&_p]:leading-[1.8]"
-            data-seller="checklist"
-          >
-            <div>
-              <FileTextOutlined className="text-[18px]" aria-hidden="true" />
-              <span>
-                <strong>Thông tin đơn hàng</strong>
-                <p>Mã đơn, sản phẩm và mô tả rõ vấn đề cần hỗ trợ.</p>
-              </span>
-            </div>
-            <div>
-              <SafetyCertificateOutlined className="text-[18px]" aria-hidden="true" />
-              <span>
-                <strong>Bằng chứng liên quan</strong>
-                <p>Ảnh, video đồng kiểm và biên bản bàn giao.</p>
-              </span>
-            </div>
-            <div>
-              <MessageOutlined className="text-[18px]" aria-hidden="true" />
-              <span>
-                <strong>Lịch sử trao đổi</strong>
-                <p>Lưu lại nội dung trao đổi để đối chiếu khi cần.</p>
-              </span>
-            </div>
-          </div>
-          <Link
-            className="inline-flex items-center gap-1.5 p-0 [border:0] bg-transparent text-[#315eea] text-[10px] font-[550]"
-            data-seller="text-button"
-            to="/seller/orders"
-          >
-            Kiểm tra đơn hàng <ArrowRightOutlined className="text-[14px]" aria-hidden="true" />
-          </Link>
-        </Panel>
-      </div>
-      <PolicyCards />
+          </select>
+        </div>
+        <SellerResourceState
+          loading={resource.loading}
+          error={resource.error}
+          retry={resource.retry}
+        >
+          {resource.data && (
+            <>
+              {resource.data.items.length ? (
+                <div className="space-y-4">
+                  {resource.data.items.map((item) => (
+                    <article key={item.id} className="rounded-xl border border-blue-100 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <Link
+                            to={`/seller/orders/${item.orderId}`}
+                            className="text-xs font-semibold text-blue-700"
+                          >
+                            Đơn #{item.orderId.slice(0, 8)}
+                          </Link>
+                          <p className="mt-2 text-xs text-slate-500">
+                            {item.openedBy.fullName} · {financeDate(item.createdAt)}
+                          </p>
+                        </div>
+                        <Badge tone={canRespondDispute(item.status) ? 'amber' : 'gray'}>
+                          {disputeLabels[item.status] || item.status}
+                        </Badge>
+                      </div>
+                      <p className="my-4 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+                        {item.reason}
+                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                        <span className="text-xs text-slate-500">
+                          {item.order.items.map((product) => product.title).join(', ') ||
+                            'Chi tiết trong đơn hàng'}{' '}
+                          · {financeMoney(item.order.totalAmount)}
+                        </span>
+                        <SellerButton secondary onClick={() => setSelected(item)}>
+                          <FileTextOutlined />
+                          {canRespondDispute(item.status) ? 'Xem & gửi giải trình' : 'Xem hồ sơ'}
+                        </SellerButton>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Không có khiếu nại phù hợp"
+                  description="Các khiếu nại liên quan đến đơn hàng của bạn sẽ hiển thị tại đây."
+                />
+              )}
+              <SellerPagination
+                page={resource.data.page}
+                totalPages={resource.data.totalPages}
+                total={resource.data.total}
+                onPage={setPage}
+              />
+            </>
+          )}
+        </SellerResourceState>
+      </Panel>
+      {selected && (
+        <SellerDisputeResponse
+          key={selected.id}
+          dispute={selected}
+          onClose={() => setSelected(null)}
+          onSaved={refresh}
+        />
+      )}
     </div>
   );
 }

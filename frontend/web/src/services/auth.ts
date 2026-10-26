@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { ApiResponse } from '@nexus/types';
 import api, { API_BASE_URL } from './api';
 import type { AuthMessage, AuthUser, LoginResponse } from '../types/user.types';
+import { getApiErrorMessage, getApiErrorMessages } from '../lib/apiErrors';
 
 export type { AuthMessage, AuthUser, LoginResponse };
 
@@ -67,6 +68,7 @@ export function clearAuthSession(): void {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
     localStorage.removeItem('nexus:auth-cart-cache');
+    localStorage.removeItem('nexus:auth-cart-owner');
     localStorage.removeItem('nexus:cart-selected-ids');
     window.dispatchEvent(new Event('nexus:auth-change'));
     window.dispatchEvent(new CustomEvent('nexus:cart-change'));
@@ -129,28 +131,22 @@ async function post<T>(path: string, body: object): Promise<T> {
   } catch (error) {
     if (axios.isAxiosError<ApiResponse<T> & { errors?: unknown }>(error)) {
       const payload = error.response?.data;
-      const errors = Array.isArray(payload?.errors)
-        ? (payload.errors as unknown[])
-            .filter((err: unknown): err is string => typeof err === 'string')
-            .join(' · ')
-        : '';
       // Chỉ xử lý thêm lỗi validation cho luồng đăng ký và xác thực tài khoản.
       if (path === 'register' || path === 'verify-email') {
         if (!error.response) {
           throw new Error('Không thể kết nối máy chủ. Vui lòng thử lại.');
         }
-        const message: unknown = payload?.message;
-        const values = errors ? payload?.errors : Array.isArray(message) ? message : [message];
-        const messages = Array.isArray(values)
-          ? values.filter((item): item is string => typeof item === 'string' && !!item.trim())
-          : [];
+        const messages = getApiErrorMessages(payload);
         throw new RegistrationError(
           messages.length ? messages : ['Yêu cầu thất bại.'],
           error.response.status,
         );
       }
       throw new Error(
-        errors || (typeof payload?.message === 'string' && payload.message) || 'Yêu cầu thất bại.',
+        getApiErrorMessage(
+          payload,
+          error.response ? 'Yêu cầu thất bại.' : 'Không thể kết nối máy chủ. Vui lòng thử lại.',
+        ),
       );
     }
     throw new Error('Không thể kết nối máy chủ. Vui lòng thử lại.');

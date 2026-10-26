@@ -1,14 +1,18 @@
 import { createContext, useContext } from 'react';
 import type { SellerDraft } from './sellerData';
+import type { ShopProfile } from '../../types/shop.types';
+import type { ToastItem } from '../../types/toast.types';
 export interface SellerWorkspaceState {
   preview: boolean;
   setPreview: (value: boolean) => void;
   storeName: string;
   storeLoading: boolean;
   storeError: string;
+  shop: ShopProfile | null;
+  refreshShop: () => void;
   search: string;
   setSearch: (value: string) => void;
-  notify: (message: string) => void;
+  notify: (message: string, variant?: ToastItem['variant']) => void;
   drafts: SellerDraft[];
   saveDraft: (draft: SellerDraft) => boolean;
   deleteDraft: (id: string) => void;

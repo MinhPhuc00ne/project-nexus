@@ -17,6 +17,11 @@ function GuestLayout() {
       <HomeHeader
         onLoginClick={() => navigate('/login')}
         onRegisterClick={() => navigate('/register')}
+        onSearch={(query) => {
+          const params = new URLSearchParams();
+          if (query.trim()) params.set('q', query.trim());
+          navigate(`/search${params.size ? `?${params.toString()}` : ''}`);
+        }}
       />
       <Outlet />
       <Footer />

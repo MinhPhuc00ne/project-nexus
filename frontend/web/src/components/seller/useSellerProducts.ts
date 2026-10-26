@@ -1,17 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../ToastNotification';
+import { useSellerSession } from './SellerSession';
+import { useSellerWorkspace } from './SellerWorkspace';
+import { getStoredToken } from '../../services/auth';
 import {
   getMyProducts,
   hideSellerProduct,
+  reactivateSellerProduct,
   type SellerProduct,
 } from '../../services/sellerProducts';
 
 export default function useSellerProducts() {
   const { token } = useAuth();
+  const user = useSellerSession();
+  const { refreshShop } = useSellerWorkspace();
+  const toast = useToast();
   const [revision, setRevision] = useState(0);
   const [pendingId, setPendingId] = useState('');
   const [actionError, setActionError] = useState('');
-  const [notice, setNotice] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<SellerProduct | null>(null);
   const lock = useRef(false);
   const active = useRef(true);
@@ -51,7 +58,7 @@ export default function useSellerProducts() {
   }, [token, revision]);
   const reload = useCallback(() => setRevision((value) => value + 1), []);
   function hide(product: SellerProduct) {
-    if (lock.current || product.status === 'INACTIVE') return;
+    if (lock.current || user.isShopSuspended || !user.isSellerActive) return;
     setActionError('');
     setSelectedProduct(product);
   }
@@ -59,23 +66,30 @@ export default function useSellerProducts() {
     if (!lock.current) setSelectedProduct(null);
   }
   async function confirmHide() {
-    if (lock.current || !selectedProduct) return;
+    if (lock.current || !selectedProduct || user.isShopSuspended || !user.isSellerActive) return;
     const product = selectedProduct;
     lock.current = true;
     setPendingId(product.id);
     setActionError('');
-    setNotice('');
     try {
-      const result = await hideSellerProduct(product.id);
-      if (!result.success) throw new Error('Máy chủ chưa xác nhận ngừng bán sản phẩm.');
-      if (active.current) {
+      const stopping = product.status === 'ACTIVE';
+      if (stopping) {
+        const result = await hideSellerProduct(product.id);
+        if (!result.success) throw new Error('Máy chủ chưa xác nhận ngừng bán sản phẩm.');
+      } else await reactivateSellerProduct(product.id);
+      if (active.current && token === getStoredToken()) {
         setSelectedProduct(null);
-        setNotice(`Đã ngừng bán sản phẩm ${product.title}.`);
+        toast.success(`Đã ${stopping ? 'ngừng bán' : 'bán lại'} sản phẩm ${product.title}.`);
         reload();
+        refreshShop();
       }
     } catch (cause) {
-      if (active.current)
-        setActionError(cause instanceof Error ? cause.message : 'Không thể ngừng bán sản phẩm.');
+      if (active.current && token === getStoredToken()) {
+        const message =
+          cause instanceof Error ? cause.message : 'Không thể đổi trạng thái sản phẩm.';
+        setActionError(message);
+        toast.error(message);
+      }
     } finally {
       lock.current = false;
       if (active.current) setPendingId('');
@@ -88,7 +102,6 @@ export default function useSellerProducts() {
         hide,
         pendingId,
         actionError,
-        notice,
         selectedProduct,
         closeHide,
         confirmHide,
@@ -101,7 +114,6 @@ export default function useSellerProducts() {
         hide,
         pendingId,
         actionError,
-        notice,
         selectedProduct,
         closeHide,
         confirmHide,

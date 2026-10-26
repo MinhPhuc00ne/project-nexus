@@ -308,7 +308,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
                     ['Đấu giá 3D', 218200000],
                     ['Bán lẻ', 130400000],
                   ])
-                : notify('Chưa có dữ liệu để xuất báo cáo.')
+                : notify('Chưa có dữ liệu để xuất báo cáo.', 'error')
             }
           >
             <DownloadOutlined className="text-[14px]" aria-hidden="true" />
