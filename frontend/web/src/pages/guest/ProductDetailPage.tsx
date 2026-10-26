@@ -165,8 +165,26 @@ function ProductContent({ product }: { product: ProductDetail }) {
               </button>
             </div>
             <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs text-slate-500">Người bán</p>
-              <p className="font-semibold text-slate-900">{product.shop.name}</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-slate-500">Người bán</p>
+                {product.shop.id && (
+                  <Link
+                    to={`/shop/${product.shop.id}`}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
+                  >
+                    Xem gian hàng →
+                  </Link>
+                )}
+              </div>
+              <p className="font-semibold text-slate-900">
+                {product.shop.id ? (
+                  <Link to={`/shop/${product.shop.id}`} className="hover:text-blue-600 transition">
+                    {product.shop.name}
+                  </Link>
+                ) : (
+                  product.shop.name
+                )}
+              </p>
               {product.shop.trustScore !== undefined && (
                 <p className="text-sm text-slate-600">Điểm uy tín: {product.shop.trustScore}</p>
               )}

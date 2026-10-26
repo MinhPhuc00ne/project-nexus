@@ -14,6 +14,8 @@ import {
   Flame,
   Clock,
   RotateCcw,
+  ShoppingCart,
+  Store,
 } from 'lucide-react';
 import type { ProductItem } from './types';
 
@@ -22,6 +24,7 @@ interface SearchResultCardProps {
   isLiked: boolean;
   onToggleLike: (id: string, e: React.MouseEvent) => void;
   onPreview: (item: ProductItem) => void;
+  onAddToCart?: (item: ProductItem, e: React.MouseEvent) => void;
 }
 
 export const SearchResultCard: React.FC<SearchResultCardProps> = ({
@@ -29,6 +32,7 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({
   isLiked,
   onToggleLike,
   onPreview,
+  onAddToCart,
 }) => {
   return (
     <div className="[background:#ffffff] [border:1px_solid_#e2e8f0] [border-radius:12px] overflow-hidden flex flex-col [transition:all_0.2s_ease] [box-shadow:0_1px_3px_rgba(0,_0,_0,_0.02)] relative hover:[transform:translateY(-3px)] hover:[box-shadow:0_8px_20px_rgba(0,_0,_0,_0.07)] hover:border-slate-300 hover:[&_.product-image-img]:[transform:scale(1.03)]">
@@ -143,6 +147,24 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({
           </Link>
         </h3>
 
+        {/* Shop / Seller Row */}
+        {item.shopName && (
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 mb-2">
+            <Store size={12} className="text-blue-600 shrink-0" />
+            {item.shopId ? (
+              <Link
+                to={`/shop/${item.shopId}`}
+                className="text-blue-600 hover:text-blue-700 hover:underline truncate"
+                title={`Xem gian hàng: ${item.shopName}`}
+              >
+                {item.shopName}
+              </Link>
+            ) : (
+              <span className="truncate">{item.shopName}</span>
+            )}
+          </div>
+        )}
+
         {/* Rating / Sold Row */}
         {item.rating && (
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mb-2">
@@ -215,7 +237,7 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({
         </div>
 
         {/* Action Button */}
-        {item.actionButton && (
+        {item.actionButton ? (
           <div className="mt-2.5">
             {item.actionButton.type === 'bid' && (
               <button
@@ -245,6 +267,25 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({
               >
                 <Zap className="w-3.5 h-3.5" />
                 {item.actionButton.text}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="mt-2.5 flex items-center gap-2">
+            <Link
+              to={`/product/${item.id}`}
+              className="flex-1 text-center py-2 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition"
+            >
+              Xem chi tiết
+            </Link>
+            {onAddToCart && (
+              <button
+                type="button"
+                onClick={(e) => onAddToCart(item, e)}
+                className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm cursor-pointer"
+                title="Thêm vào giỏ hàng"
+              >
+                <ShoppingCart className="w-4 h-4" />
               </button>
             )}
           </div>
