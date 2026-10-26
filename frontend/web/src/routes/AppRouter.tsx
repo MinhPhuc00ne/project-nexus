@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import ProtectedRoute from './ProtectedRoute';
+import ChatWidget from '../components/chat/ChatWidget';
 import NonAdminLayout from '../layouts/NonAdminLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import GuestLayout from '../layouts/GuestLayout';
@@ -205,6 +206,7 @@ function AppRouter() {
           </Routes>
         </Suspense>
       </RouteErrorBoundary>
+      <ChatWidget />
     </BrowserRouter>
   );
 }
