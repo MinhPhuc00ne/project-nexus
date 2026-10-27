@@ -105,16 +105,12 @@ This directory contains specifications and endpoint definitions for the entire N
 
 ### 2.8 Staff Management & Onboarding (`/api/v1/admin/staff`, `/api/v1/staff`)
 
-| Method | Path                            | Description                                                                                                     | Access |
-| :----- | :------------------------------ | :-------------------------------------------------------------------------------------------------------------- | :----- |
-| `POST` | `/api/v1/admin/staff/invite`    | Cấp ngay tài khoản `@staff.com` theo format cũ và mật khẩu ngẫu nhiên, gửi thông tin đăng nhập về email cá nhân | Admin  |
-| `GET`  | `/api/v1/staff/invitation-info` | Ngừng hỗ trợ, trả HTTP 410; không còn dùng link kích hoạt                                                       | Public |
-| `POST` | `/api/v1/staff/activate`        | Ngừng hỗ trợ, trả HTTP 410; tài khoản mới đã được kích hoạt khi admin cấp                                       | Public |
-| `POST` | `/api/v1/auth/login`            | Đăng nhập ngay bằng tài khoản `@staff.com` và mật khẩu nhận qua email                                           | Public |
-| `POST` | `/api/v1/auth/forgot-password`  | Nhập tài khoản `@staff.com`, nhận OTP tại email cá nhân đã liên kết                                             | Public |
-| `POST` | `/api/v1/auth/reset-password`   | Gửi `email`, `code`, `newPassword` để đặt lại mật khẩu; OTP dùng một lần                                        | Public |
-
-Chi tiết cấu hình và cách kiểm tra: [Luồng cấp tài khoản Staff](../backend/STAFF_PROVISIONING.md).
+| Method | Path                            | Description                                                                                              | Access |
+| :----- | :------------------------------ | :------------------------------------------------------------------------------------------------------- | :----- |
+| `POST` | `/api/v1/admin/staff/invite`    | Admin nhập thông tin Staff (Họ tên, mail cá nhân, SĐT) -> Hệ thống cấp `@staff.com`, gửi email xác thực  | Admin  |
+| `GET`  | `/api/v1/staff/invitation-info` | Staff kiểm tra token từ email mời -> Xem thông tin Họ tên, SĐT, tài khoản `@staff.com` được cấp          | Public |
+| `POST` | `/api/v1/staff/activate`        | Staff xác nhận lại Họ tên, SĐT, tạo & xác nhận mật khẩu mới -> Kích hoạt tài khoản công tác `@staff.com` | Public |
+| `POST` | `/api/v1/auth/login`            | Staff đăng nhập bằng tài khoản `@staff.com` và mật khẩu mới tạo với vai trò `SUPPORT_STAFF`              | Public |
 
 ### 2.9 Wallet & Withdrawal Management (`/api/v1/seller/finance`, `/api/v1/admin/withdrawals`)
 
