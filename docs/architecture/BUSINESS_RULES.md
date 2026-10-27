@@ -40,10 +40,10 @@ The following parameters represent platform-wide invariants:
 ### 2.2 Staff Provisioning & Account Activation
 
 1. **Admin Invitation:** An Administrator invites staff by providing their full name, personal email, phone number, and department.
-2. **Platform Email Assignment:** The system preserves the existing name format: Nguyễn Quang Huy becomes `HuyNQ@staff.com`; duplicates receive a numeric suffix.
-3. **Immediate Provisioning:** A verified `SUPPORT_STAFF` account and wallet are created with a cryptographically random password. Login credentials are sent to the personal email. SMTP failure rolls back provisioning; passwords are hashed in storage and excluded from API responses and logs.
-4. **Login & Password Reset:** Staff can log in immediately. To choose a password, they use the shared forgot-password flow with their `@staff.com` login. The OTP goes to the linked personal email, expires after 10 minutes, and can be consumed once. Resetting the password revokes refresh tokens.
-5. **Legacy Activation:** Activation links are no longer issued. The legacy invitation-info and activation endpoints return HTTP 410. Existing pending invitations must be reissued by an Admin through the new provisioning flow.
+2. **Platform Email Assignment:** The system generates a dedicated corporate email with the domain `@staff.com` (e.g. `john.doe@staff.com`).
+3. **Invitation Verification:** An invitation link containing a secure token and OTP is sent to the staff member's personal email.
+4. **Activation Flow:** The staff member confirms their personal information, sets a strong password, and completes activation.
+5. **Role Assignment:** Upon activation, the account is assigned the `SUPPORT_STAFF` role, granting access to the Staff Dashboard and dispute arbitration tools.
 
 ---
 
