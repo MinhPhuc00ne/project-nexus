@@ -25,7 +25,7 @@ export default function CatalogListing({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500" role="status">
-          {loading ? 'Đang tải sản phẩm…' : data ? `${data.total} sản phẩm đang bán` : ''}
+          {loading ? 'Đang tải sản phẩm…' : data ? `${data?.total} sản phẩm đang bán` : ''}
         </p>
         <div className="flex flex-wrap items-center gap-3">
           {!preview && (
