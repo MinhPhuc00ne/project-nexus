@@ -288,22 +288,24 @@ export class SellerEngagementService {
       updatedEvidences = Array.from(new Set([...updatedEvidences, ...dto.evidenceUrls]));
     }
 
-    const updated = await this.prisma.dispute.update({
-      where: { id: disputeId },
+    const updated = await this.prisma.dispute.updateMany({
+      where: { id: disputeId, status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] } },
       data: {
         resolutionNotes: newNotes,
         evidenceUrls: updatedEvidences as unknown as Prisma.InputJsonValue,
         status: DisputeStatus.UNDER_REVIEW,
       },
     });
+    if (updated.count !== 1)
+      throw new BadRequestException('Khiếu nại đã được xử lý, không thể ghi đè kết quả phân xử.');
 
     this.logger.log(`Seller ${sellerId} responded to dispute ${disputeId}`);
 
     return {
       success: true,
       message: 'Đã gửi phản hồi giải trình thành công. Đội ngũ kiểm duyệt Nexus sẽ xem xét hồ sơ.',
-      disputeId: updated.id,
-      status: updated.status,
+      disputeId,
+      status: DisputeStatus.UNDER_REVIEW,
     };
   }
 }

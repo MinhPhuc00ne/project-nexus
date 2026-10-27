@@ -7,12 +7,17 @@ import {
   Min,
   IsEnum,
   ValidateNested,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentProvider } from '@prisma/client';
 
 export class ShippingAddressDto {
+  @ApiPropertyOptional({ enum: ['VN'], default: 'VN' })
+  @IsOptional()
+  @IsIn(['VN'])
+  country?: string = 'VN';
   @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ tên người nhận' })
   @IsString()
   @IsNotEmpty()
@@ -60,7 +65,10 @@ export class CheckoutDto {
   @IsOptional()
   itemIds?: string[];
 
-  @ApiPropertyOptional({ example: 30000, description: 'Phí vận chuyển dự kiến (VND)' })
+  @ApiPropertyOptional({
+    deprecated: true,
+    description: 'Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN.',
+  })
   @IsNumber()
   @Min(0)
   @IsOptional()

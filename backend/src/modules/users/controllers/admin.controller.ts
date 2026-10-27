@@ -19,6 +19,7 @@ import { CurrentUser, Roles, RequirePrivilege } from '../../../core/security/rol
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
+import { ProvisionedStaffResult } from '../../auth/services/staff-provisioning.service';
 import { SellerRequestStatus } from '@prisma/client';
 
 @ApiTags('5. ADMIN')
@@ -33,20 +34,14 @@ export class AdminController {
   ) {}
 
   @ApiOperation({
-    summary: '[ADMIN] Điền thông tin Staff (Họ tên, mail, SĐT) và gửi mail mời xác thực',
+    summary: '[ADMIN] Cấp tài khoản Staff và gửi thông tin đăng nhập qua email cá nhân',
     description:
-      'Admin nhập Họ và tên, mail cá nhân, số điện thoại của Staff. Hệ thống gửi email chứa thông tin và liên kết/token xác thực về email của Staff.',
+      'Tạo tài khoản @staff.com theo format cũ, sinh mật khẩu ngẫu nhiên và gửi về email cá nhân. Staff dùng Quên mật khẩu để đặt lại; không dùng token kích hoạt.',
   })
   @RequirePrivilege('USER.MANAGE')
   @Post('staff/invite')
   @HttpCode(HttpStatus.CREATED)
-  async inviteStaff(@Body() dto: InviteStaffDto): Promise<{
-    success: boolean;
-    message: string;
-    invitationId: string;
-    assignedEmail: string;
-    token: string;
-  }> {
+  async inviteStaff(@Body() dto: InviteStaffDto): Promise<ProvisionedStaffResult> {
     return this.authService.inviteStaff(dto);
   }
 

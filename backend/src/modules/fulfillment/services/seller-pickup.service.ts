@@ -1,0 +1,167 @@
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Prisma, SellerPickupPoint } from '@prisma/client';
+import { PrismaService } from '../../../core/prisma/prisma.service';
+import { SellerPickupDto } from '../dtos/seller-pickup.dto';
+import { GhnLogisticsService } from './ghn-logistics.service';
+import { GhnShopApiService } from './ghn-shop-api.service';
+import { ghnEnvironment, GhnEnvironment } from './ghn-context';
+
+const phoneKey = (value: string): string => value.replace(/[\s.-]/g, '').replace(/^\+?84/, '0');
+
+@Injectable()
+export class SellerPickupService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
+    private readonly logistics: GhnLogisticsService,
+    private readonly shops: GhnShopApiService,
+  ) {}
+
+  environment(): GhnEnvironment {
+    return ghnEnvironment(this.config);
+  }
+
+  async mine(sellerId: string): Promise<SellerPickupPoint | null> {
+    return this.prisma.sellerPickupPoint.findUnique({
+      where: { sellerId_environment: { sellerId, environment: ghnEnvironment(this.config) } },
+    });
+  }
+
+  async pending(): Promise<SellerPickupPoint[]> {
+    return this.prisma.sellerPickupPoint.findMany({
+      where: { environment: ghnEnvironment(this.config), status: 'PENDING' },
+      orderBy: { updatedAt: 'asc' },
+      take: 100,
+    });
+  }
+
+  async propose(sellerId: string, dto: SellerPickupDto): Promise<SellerPickupPoint> {
+    const seller = await this.prisma.user.findUnique({
+      where: { id: sellerId },
+      select: { role: true },
+    });
+    if (!seller || seller.role !== 'SELLER')
+      throw new BadRequestException('Chỉ tài khoản seller được khai báo điểm lấy hàng.');
+    if ((dto.latitude !== undefined) !== (dto.longitude !== undefined)) {
+      throw new BadRequestException('Phải cung cấp cả vĩ độ và kinh độ hoặc bỏ trống cả hai.');
+    }
+    if (
+      !/^(0|\+?84)\d{9,10}$/.test(dto.phone.replace(/[\s.-]/g, '')) ||
+      [dto.name, dto.street, dto.city, dto.district, dto.ward].some((value) => !value.trim())
+    ) {
+      throw new BadRequestException('Thiếu địa chỉ lấy hàng hoặc số điện thoại Việt Nam hợp lệ.');
+    }
+    const location = await this.logistics.resolveDistrictAndWard(dto.city, dto.district, dto.ward);
+    if (!location?.districtId || !location.wardCode)
+      throw new BadRequestException('GHN không xác định được địa chỉ lấy hàng.');
+    const environment = ghnEnvironment(this.config);
+    const data = {
+      name: dto.name.trim(),
+      phone: phoneKey(dto.phone),
+      city: dto.city.trim(),
+      district: dto.district.trim(),
+      ward: dto.ward.trim(),
+      street: dto.street.trim(),
+      latitude: dto.latitude ?? null,
+      longitude: dto.longitude ?? null,
+      districtId: location.districtId,
+      wardCode: location.wardCode,
+      status: 'PENDING',
+      ghnShopId: null,
+      ghnClientId: null,
+      carrierName: null,
+      carrierPhone: null,
+      carrierAddress: null,
+      verifiedBy: null,
+      verifiedAt: null,
+    };
+    return this.prisma.sellerPickupPoint.upsert({
+      where: { sellerId_environment: { sellerId, environment } },
+      create: { sellerId, environment, ...data },
+      update: { ...data, version: { increment: 1 } },
+    });
+  }
+
+  async verify(pointId: string, shopId: number, adminId: string): Promise<SellerPickupPoint> {
+    const point = await this.prisma.sellerPickupPoint.findUnique({ where: { id: pointId } });
+    if (!point || point.environment !== ghnEnvironment(this.config))
+      throw new NotFoundException('Không tìm thấy điểm lấy hàng trong môi trường hiện tại.');
+    const shop = await this.shops.find(shopId);
+    const addressKey = (value: string): string =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/đ/g, 'd')
+        .replace(/[^a-z0-9]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (
+      !shop.active ||
+      shop.districtId !== point.districtId ||
+      shop.wardCode !== point.wardCode ||
+      phoneKey(shop.phone) !== phoneKey(point.phone)
+    ) {
+      throw new BadRequestException(
+        'Điểm GHN phải đang hoạt động, khớp quận/phường và số điện thoại đã khai báo.',
+      );
+    }
+    if (!` ${addressKey(shop.address)} `.includes(` ${addressKey(point.street)} `)) {
+      throw new BadRequestException(
+        'Địa chỉ đường/số nhà không khớp điểm GHN. Hãy đối chiếu lại trước khi xác minh.',
+      );
+    }
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.sellerPickupPoint.updateMany({
+          where: { id: pointId, version: point.version },
+          data: {
+            status: 'VERIFIED',
+            ghnShopId: shop.id,
+            ghnClientId: shop.clientId,
+            carrierName: shop.name,
+            carrierPhone: shop.phone,
+            carrierAddress: shop.address,
+            verifiedBy: adminId,
+            verifiedAt: new Date(),
+            version: { increment: 1 },
+          },
+        });
+        if (updated.count !== 1)
+          throw new ConflictException('Seller vừa thay đổi điểm lấy hàng. Hãy kiểm tra lại.');
+        return tx.sellerPickupPoint.findUniqueOrThrow({ where: { id: pointId } });
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException(
+          'Shop ID GHN đã được gắn với seller khác trong môi trường này.',
+        );
+      }
+      throw error;
+    }
+  }
+
+  async requireVerified(sellerId: string): Promise<SellerPickupPoint> {
+    const point = await this.mine(sellerId);
+    if (
+      !point ||
+      point.status !== 'VERIFIED' ||
+      !point.ghnShopId ||
+      !point.verifiedAt ||
+      !point.verifiedBy ||
+      !point.carrierAddress ||
+      !point.carrierPhone
+    ) {
+      throw new BadRequestException(
+        'Seller chưa có điểm lấy hàng GHN được xác minh. Vui lòng khai báo điểm lấy hàng và chờ admin duyệt.',
+      );
+    }
+    return point;
+  }
+}

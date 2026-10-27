@@ -6,6 +6,7 @@ import {
   NotFoundException,
   ForbiddenException,
   Logger,
+  GoneException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -24,7 +25,7 @@ import {
 import { Role, ReputationTrustLevel } from '@nexus/types';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { generateStaffBaseEmail } from '../utils/staff-email.util';
+import { StaffProvisioningService, ProvisionedStaffResult } from './staff-provisioning.service';
 import { LightweightJwt } from '../../../core/security/jwt.util';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 
@@ -51,6 +52,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
     private readonly redisService: RedisService,
+    private readonly staffProvisioning: StaffProvisioningService,
   ) {}
 
   // 1. Đăng ký tài khoản Buyer
@@ -337,309 +339,20 @@ export class AuthService {
     };
   }
 
-  private async isEmailTaken(email: string): Promise<boolean> {
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: { equals: email, mode: 'insensitive' } },
-          { platformEmail: { equals: email, mode: 'insensitive' } },
-        ],
-      },
-    });
-    if (existingUser) return true;
-
-    const existingInvitation = await this.prisma.staffInvitation.findFirst({
-      where: {
-        assignedEmail: { equals: email, mode: 'insensitive' },
-        isAccepted: false,
-      },
-    });
-    return !!existingInvitation;
+  async inviteStaff(dto: InviteStaffDto): Promise<ProvisionedStaffResult> {
+    return this.staffProvisioning.invite(dto);
   }
 
-  private generateBaseStaffEmail(fullName: string): string {
-    return generateStaffBaseEmail(fullName);
-  }
-
-  // 8. Admin tạo tài khoản cho Staff
-  async inviteStaff(dto: InviteStaffDto): Promise<{
-    success: boolean;
-    message: string;
-    invitationId: string;
-    assignedEmail: string;
-    token: string;
-  }> {
-    const existing = await this.prisma.user.findFirst({
-      where: {
-        AND: [
-          {
-            OR: [
-              { email: { equals: dto.email, mode: 'insensitive' } },
-              { personalEmail: { equals: dto.email, mode: 'insensitive' } },
-            ],
-          },
-          { role: { in: [Role.ADMIN, Role.SUPPORT_STAFF] } },
-        ],
-      },
-    });
-
-    if (existing) {
-      throw new ConflictException(
-        `Email cá nhân '${dto.email}' đã liên kết với tài khoản ${existing.role} trong hệ thống.`,
-      );
-    }
-
-    const baseName = this.generateBaseStaffEmail(dto.fullName);
-    let assignedEmail = `${baseName}@staff.com`;
-    let isTaken = await this.isEmailTaken(assignedEmail);
-    if (isTaken) {
-      let index = 2;
-      while (isTaken && index <= 99) {
-        assignedEmail = `${baseName}${index}@staff.com`;
-        isTaken = await this.isEmailTaken(assignedEmail);
-        index++;
-      }
-    }
-
-    // Sinh mã token kích hoạt bảo mật gửi về email cá nhân của Staff
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 ngày
-
-    const invitation = await this.prisma.staffInvitation.create({
-      data: {
-        id: crypto.randomUUID(),
-        fullName: dto.fullName.trim(),
-        personalEmail: dto.email.trim(),
-        phoneNumber: dto.phoneNumber?.trim() || null,
-        department: dto.department?.trim() || 'Support',
-        token,
-        expiresAt,
-        assignedEmail,
-        isAccepted: false,
-      },
-    });
-
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') ||
-      this.configService.get<string>('ADMIN_PORTAL_URL') ||
-      'http://localhost:5173';
-    const activationLink = `${frontendUrl}/staff/activate?token=${token}`;
-
-    await this.mailService.sendEmail({
-      to: dto.email,
-      subject: 'Thư mời kích hoạt tài khoản Quản trị & Hỗ trợ (Staff)',
-      text: `Xin chào ${dto.fullName},\n\nBạn được Admin mời gia nhập đội ngũ Quản trị & Hỗ trợ (Staff).\n\nTài khoản công tác nền tảng cấp cho bạn: ${assignedEmail}\n\nThông tin xác nhận:\n- Họ và tên: ${dto.fullName}\n- Số điện thoại: ${dto.phoneNumber || 'Chưa cung cấp'}\n- Email cá nhân nhận thư: ${dto.email}\n- Tài khoản công ty cấp: ${assignedEmail}\n\nVui lòng truy cập đường dẫn sau để xác nhận lại thông tin và tạo mật khẩu mới:\n${activationLink}\n\nSau khi hoàn tất, bạn sẽ sử dụng tài khoản ${assignedEmail} và mật khẩu mới tạo để đăng nhập vào hệ thống với vai trò Staff.`,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2 style="color: #2563eb; margin-top: 0;">Chào mừng bạn gia nhập đội ngũ Support Staff</h2>
-          <p>Xin chào <strong>${dto.fullName}</strong>,</p>
-          <p>Quản trị viên đã khởi tạo lời mời gia nhập đội ngũ Staff cho bạn trên hệ thống.</p>
-          
-          <div style="background-color: #f1f5f9; border-left: 4px solid #2563eb; padding: 15px; border-radius: 4px; margin: 15px 0;">
-            <p style="margin: 4px 0;"><strong>Tài khoản công tác được cấp:</strong> <span style="color: #2563eb; font-weight: bold; font-size: 15px;">${assignedEmail}</span></p>
-            <p style="margin: 4px 0;"><strong>Họ và tên:</strong> ${dto.fullName}</p>
-            <p style="margin: 4px 0;"><strong>Số điện thoại:</strong> ${dto.phoneNumber || 'Chưa cung cấp'}</p>
-            <p style="margin: 4px 0;"><strong>Email cá nhân nhận thư:</strong> ${dto.email}</p>
-          </div>
-
-          <p>Vui lòng nhấp vào liên kết dưới đây để xác nhận lại thông tin và thiết lập mật khẩu mới cho tài khoản:</p>
-          <div style="text-align: center; margin: 25px 0;">
-            <a href="${activationLink}" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Kích hoạt tài khoản Staff</a>
-          </div>
-          <p style="font-size: 13px; color: #475569;">Sau khi hoàn tất, bạn sẽ sử dụng tài khoản <strong>${assignedEmail}</strong> và mật khẩu mới tạo để đăng nhập vào hệ thống với vai trò là <strong>Staff</strong>.</p>
-        </div>
-      `,
-    });
-
-    this.logger.log(
-      `Staff invitation sent to ${dto.email} (Assigned: ${assignedEmail}, Token: ${token})`,
+  async getStaffInvitationInfo(_token: string): Promise<never> {
+    throw new GoneException(
+      'Staff được cấp tài khoản và mật khẩu qua email. Vui lòng đăng nhập hoặc dùng Quên mật khẩu.',
     );
-    return {
-      success: true,
-      message: `Đã gửi thư mời kích hoạt tài khoản Staff tới email cá nhân ${dto.email}`,
-      invitationId: invitation.id,
-      assignedEmail,
-      token,
-    };
   }
 
-  // 8b. Lấy thông tin lời mời để xác nhận khi Staff mở link
-  async getStaffInvitationInfo(token: string): Promise<{
-    valid: boolean;
-    fullName: string;
-    phoneNumber: string | null;
-    personalEmail: string;
-    assignedEmail: string | null;
-  }> {
-    const cleanToken = token?.trim();
-    if (!cleanToken) {
-      throw new BadRequestException('Mã token kích hoạt không được để trống.');
-    }
-
-    const invitation = await this.prisma.staffInvitation.findFirst({
-      where: {
-        token: cleanToken,
-      },
-    });
-
-    if (!invitation || invitation.isAccepted) {
-      throw new BadRequestException('Mã token kích hoạt không hợp lệ hoặc đã được sử dụng.');
-    }
-
-    if (invitation.expiresAt < new Date()) {
-      throw new BadRequestException('Mã token kích hoạt đã hết hạn.');
-    }
-
-    return {
-      valid: true,
-      fullName: invitation.fullName,
-      phoneNumber: invitation.phoneNumber,
-      personalEmail: invitation.personalEmail,
-      assignedEmail: invitation.assignedEmail,
-    };
-  }
-
-  // 9. Staff kích hoạt tài khoản:
-  async activateStaff(dto: ActivateStaffDto): Promise<{
-    success: boolean;
-    message: string;
-    assignedEmail: string;
-    user: {
-      id: string;
-      fullName: string;
-      platformEmail: string;
-      role: Role;
-    };
-  }> {
-    if (dto.newPassword !== dto.confirmPassword) {
-      throw new BadRequestException('Mật khẩu xác nhận không khớp');
-    }
-
-    if (dto.newPassword.length < 8) {
-      throw new BadRequestException('Mật khẩu mới phải có tối thiểu 8 ký tự');
-    }
-
-    if (!/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).+$/.test(dto.newPassword)) {
-      throw new BadRequestException(
-        'Mật khẩu mới phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt',
-      );
-    }
-
-    const token = dto.token?.trim();
-    if (!token) {
-      throw new BadRequestException('Mã token kích hoạt không được để trống');
-    }
-
-    const invitation = await this.prisma.staffInvitation.findFirst({
-      where: {
-        token,
-      },
-    });
-
-    if (!invitation || invitation.isAccepted) {
-      throw new BadRequestException('Mã token kích hoạt không hợp lệ hoặc đã được sử dụng');
-    }
-
-    if (invitation.expiresAt < new Date()) {
-      throw new BadRequestException('Mã token kích hoạt đã hết hạn');
-    }
-
-    // Lấy email đã cấp dạng @staff.com, nếu chưa có thì sinh mới
-    let platformEmail = invitation.assignedEmail;
-    if (!platformEmail) {
-      const baseName = this.generateBaseStaffEmail(invitation.fullName);
-      platformEmail = `${baseName}@staff.com`;
-      let isTaken = await this.isEmailTaken(platformEmail);
-      if (isTaken) {
-        let index = 2;
-        while (isTaken && index <= 99) {
-          platformEmail = `${baseName}${index}@staff.com`;
-          isTaken = await this.isEmailTaken(platformEmail);
-          index++;
-        }
-      }
-    }
-
-    const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
-
-    // Kiểm tra xem đã có tài khoản Staff ứng với platformEmail này chưa
-    let staffUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: { equals: platformEmail, mode: 'insensitive' } },
-          { platformEmail: { equals: platformEmail, mode: 'insensitive' } },
-        ],
-      },
-    });
-
-    if (staffUser) {
-      staffUser = await this.prisma.user.update({
-        where: { id: staffUser.id },
-        data: {
-          role: Role.SUPPORT_STAFF,
-          platformEmail,
-          personalEmail: invitation.personalEmail,
-          fullName: dto.fullName?.trim() || invitation.fullName,
-          phoneNumber: dto.phoneNumber?.trim() || invitation.phoneNumber,
-          passwordHash,
-          isVerified: true,
-        },
-      });
-
-      await this.prisma.refreshToken.updateMany({
-        where: { userId: staffUser.id, isRevoked: false },
-        data: { isRevoked: true },
-      });
-    } else {
-      // Luôn tạo tài khoản Staff độc lập, KHÔNG ghi đè lên tài khoản Buyer cùng personalEmail
-      staffUser = await this.prisma.user.create({
-        data: {
-          id: crypto.randomUUID(),
-          email: platformEmail,
-          platformEmail,
-          personalEmail: invitation.personalEmail,
-          fullName: dto.fullName?.trim() || invitation.fullName,
-          phoneNumber: dto.phoneNumber?.trim() || invitation.phoneNumber,
-          passwordHash,
-          role: Role.SUPPORT_STAFF,
-          isSellerActive: false,
-          reputationScore: 100,
-          isVerified: true,
-        },
-      });
-
-      // Tạo ví cho nhân viên hỗ trợ
-      await this.prisma.wallet.create({
-        data: {
-          id: crypto.randomUUID(),
-          userId: staffUser.id,
-          balance: 0,
-          currency: 'VND',
-        },
-      });
-    }
-
-    // Đánh dấu lời mời đã được hoàn tất kích hoạt
-    await this.prisma.staffInvitation.update({
-      where: { id: invitation.id },
-      data: { isAccepted: true },
-    });
-
-    this.logger.log(`Staff activated: ${staffUser.fullName} | Assigned Email: ${platformEmail}`);
-
-    return {
-      success: true,
-      message:
-        'Kích hoạt tài khoản Staff thành công! Vui lòng sử dụng tài khoản được cấp (@staff.com) và mật khẩu mới để đăng nhập.',
-      assignedEmail: platformEmail,
-      user: {
-        id: staffUser.id,
-        fullName: staffUser.fullName,
-        platformEmail,
-        role: staffUser.role as Role,
-      },
-    };
+  async activateStaff(_dto: ActivateStaffDto): Promise<never> {
+    throw new GoneException(
+      'Luồng kích hoạt bằng token đã ngừng. Vui lòng dùng tài khoản được cấp hoặc Quên mật khẩu.',
+    );
   }
 
   private async generateTokens(user: {

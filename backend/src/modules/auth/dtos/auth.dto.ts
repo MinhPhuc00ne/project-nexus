@@ -27,7 +27,7 @@ export class RegisterBuyerDto {
 export class LoginDto {
   @ApiProperty({
     example: 'admin@nexus.com',
-    description: 'Email or platform-assigned staff email (e.g. staff.nexus@gmail.com)',
+    description: 'Email or platform-assigned staff email (e.g. HuyNQ@staff.com)',
   })
   @IsString()
   @IsNotEmpty({ message: 'Email or platform identifier is required' })
@@ -93,7 +93,7 @@ export class InviteStaffDto {
 
   @ApiProperty({
     example: 'staff_personal@gmail.com',
-    description: 'Personal email to receive invitation link',
+    description: 'Personal email to receive the assigned staff login and random initial password',
   })
   @IsEmail({}, { message: 'Valid personal email is required' })
   @IsNotEmpty({ message: 'Email is required' })
@@ -151,8 +151,8 @@ export class ActivateStaffDto {
 
 export class StaffForgotPasswordDto {
   @ApiProperty({
-    example: 'nguyenvanstaff123.nexus@gmail.com',
-    description: 'Email nhân viên được cấp (đuôi nexus@gmail.com) hoặc email cá nhân',
+    example: 'HuyNQ@staff.com',
+    description: 'Tài khoản công tác @staff.com; OTP gửi về email cá nhân đã liên kết',
   })
   @IsEmail({}, { message: 'Must be a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })
@@ -161,8 +161,8 @@ export class StaffForgotPasswordDto {
 
 export class StaffResetPasswordDto {
   @ApiProperty({
-    example: 'nguyenvanstaff123.nexus@gmail.com',
-    description: 'Email nhân viên được cấp (đuôi nexus@gmail.com) hoặc email cá nhân',
+    example: 'HuyNQ@staff.com',
+    description: 'Tài khoản công tác @staff.com dùng khi yêu cầu OTP',
   })
   @IsEmail({}, { message: 'Must be a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })

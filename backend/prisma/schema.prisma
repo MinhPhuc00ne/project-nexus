@@ -221,6 +221,7 @@ model User {
   chatConversationsUser1     ChatConversation[]       @relation("ChatParticipant1")
   chatConversationsUser2     ChatConversation[]       @relation("ChatParticipant2")
   chatMessagesSent           ChatMessage[]            @relation("ChatSender")
+  pickupPoints               SellerPickupPoint[]
 
   @@map("users")
 }
@@ -375,6 +376,40 @@ model Warehouse {
   inventories Inventory[]
 
   @@map("warehouses")
+}
+
+model SellerPickupPoint {
+  id             String    @id @default(uuid())
+  sellerId       String    @map("seller_id")
+  environment    String
+  name           String
+  phone          String
+  city           String
+  district       String
+  ward           String
+  street         String
+  latitude       Decimal?  @db.Decimal(10, 8)
+  longitude      Decimal?  @db.Decimal(11, 8)
+  districtId     Int       @map("district_id")
+  wardCode       String    @map("ward_code")
+  status         String    @default("PENDING")
+  version        Int       @default(1)
+  ghnShopId      Int?      @map("ghn_shop_id")
+  ghnClientId    Int?      @map("ghn_client_id")
+  carrierName    String?   @map("carrier_name")
+  carrierPhone   String?   @map("carrier_phone")
+  carrierAddress String?   @map("carrier_address")
+  verifiedBy     String?   @map("verified_by")
+  verifiedAt     DateTime? @map("verified_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  seller User @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+
+  @@unique([sellerId, environment])
+  @@unique([environment, ghnShopId])
+  @@index([environment, status])
+  @@map("seller_pickup_points")
 }
 
 model Inventory {

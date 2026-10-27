@@ -1,9 +1,11 @@
 import { Controller, Post, Get, Body, Param, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
-import { CurrentUser, Public } from '../../../core/security/roles.decorator';
+import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
+import { RolesGuard } from '../../../core/security/roles.guard';
+import { Role } from '@nexus/types';
 import { FulfillmentService } from '../services/fulfillment.service';
-import { DistanceService } from '../services/distance.service';
+import { RouteDistanceService } from '../services/route-distance.service';
 import { GhnLogisticsService } from '../services/ghn-logistics.service';
 import {
   ShippingQuoteDto,
@@ -16,14 +18,17 @@ import {
 export class FulfillmentController {
   constructor(
     private readonly fulfillmentService: FulfillmentService,
-    private readonly distanceService: DistanceService,
+    private readonly distanceService: RouteDistanceService,
     private readonly ghnService: GhnLogisticsService,
   ) {}
 
   @Post('fee')
-  @Public()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Tính cước phí chuẩn chính thức từ cổng GHN Express (Official Carrier API)',
+    summary:
+      '[ADMIN] Kiểm tra API tính phí bằng shop GHN cấu hình chung; đơn seller dùng quote riêng',
     description:
       'Tra cứu cước phí vận chuyển chính xác theo quy chuẩn bảng giá Giao Hàng Nhanh: Mã Quận/Huyện, Phường/Xã, trọng lượng gram và kích thước 3 chiều.',
   })
@@ -39,7 +44,8 @@ export class FulfillmentController {
       widthCm: dto.widthCm ?? 10,
       heightCm: dto.heightCm ?? 10,
       insuranceValue: dto.insuranceValue ?? 0,
-      serviceTypeId: dto.serviceTypeId ?? 2,
+      serviceTypeId: dto.serviceTypeId,
+      items: dto.items,
     });
     return {
       message: 'Tính cước phí giao hàng GHN thành công',
@@ -51,9 +57,9 @@ export class FulfillmentController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Tính cước phí giao hàng linh hoạt dựa trên khoảng cách và GHN Express',
+    summary: 'Báo giá vận chuyển từ API GHN',
     description:
-      'Tự động tính cự ly giữa Kho/Seller và Địa chỉ nhận hàng, quy đổi cước theo công thức bậc khoảng cách và đối soát phí GHN.',
+      'Phí do GHN trả về theo địa chỉ và sản phẩm. Khoảng cách chỉ để tham khảo, không dùng tính cước. GHN lỗi sẽ không có báo giá dự phòng.',
   })
   @ApiResponse({ status: 200, description: 'Báo giá vận chuyển chi tiết' })
   async getShippingQuote(@CurrentUser('id') userId: string, @Body() dto: ShippingQuoteDto) {
@@ -67,24 +73,20 @@ export class FulfillmentController {
   @Post('distance')
   @Public()
   @ApiOperation({
-    summary: 'Đo cự ly thực tế giữa 2 tọa độ GPS và tính toán chi phí giao hàng',
-    description:
-      'Gọi API mạng lưới đường bộ OSRM để đo km và thời gian di chuyển, tự động quy đổi ra cước phí vận chuyển.',
+    summary: 'Đo khoảng cách tham khảo giữa hai tọa độ GPS',
+    description: 'Chỉ trả khoảng cách và thời gian di chuyển. Không tính hoặc trả phí vận chuyển.',
   })
-  @ApiResponse({ status: 200, description: 'Kết quả đo cự ly và quy đổi phí' })
+  @ApiResponse({ status: 200, description: 'Khoảng cách và thời gian di chuyển tham khảo' })
   async computeDirectDistance(@Body() dto: DirectDistanceDto) {
-    const chargeableWeightKg = dto.weightGrams ? Math.max(0.1, dto.weightGrams / 1000) : 0.5;
-
-    const result = await this.distanceService.computeDistanceAndFee(
+    const result = await this.distanceService.getRoadDistanceAndDuration(
       dto.originLat,
       dto.originLon,
       dto.destLat,
       dto.destLon,
-      chargeableWeightKg,
     );
 
     return {
-      message: 'Đo cự ly và tính cước thành công',
+      message: 'Đo khoảng cách thành công; phí vận chuyển được lấy riêng từ GHN',
       data: result,
     };
   }

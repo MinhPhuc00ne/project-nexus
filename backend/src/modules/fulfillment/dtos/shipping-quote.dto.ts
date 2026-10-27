@@ -1,5 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsArray, ValidateNested, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  Min,
+  IsInt,
+  IsIn,
+  IsNotEmpty,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ShippingItemDto {
@@ -9,7 +19,7 @@ export class ShippingItemDto {
 
   @ApiPropertyOptional({ description: 'Số lượng món hàng', default: 1 })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(1)
   quantity: number = 1;
 
@@ -131,12 +141,13 @@ export class DirectDistanceDto {
 
 export class CalculateGhnFeeDto {
   @ApiProperty({ description: 'Mã Quận/Huyện nhận hàng (GHN District ID)', example: 1444 })
-  @IsNumber()
+  @IsInt()
   @Min(1)
   toDistrictId!: number;
 
   @ApiProperty({ description: 'Mã Phường/Xã nhận hàng (GHN Ward Code)', example: '20308' })
   @IsString()
+  @IsNotEmpty()
   toWardCode!: string;
 
   @ApiPropertyOptional({
@@ -158,7 +169,7 @@ export class CalculateGhnFeeDto {
     default: 500,
   })
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(1)
   weightGrams?: number = 500;
 
@@ -191,11 +202,59 @@ export class CalculateGhnFeeDto {
   insuranceValue?: number = 0;
 
   @ApiPropertyOptional({
-    description: 'Loại gói dịch vụ GHN (1: Nhanh, 2: Chuẩn/Tiêu chuẩn)',
+    description:
+      'Dịch vụ GHN: 2 (hàng nhẹ), 5 (hàng nặng/nhiều kiện). Bỏ trống để chọn theo khối lượng.',
     example: 2,
-    default: 2,
   })
   @IsOptional()
   @IsNumber()
-  serviceTypeId?: number = 2;
+  @IsIn([2, 5])
+  serviceTypeId?: number;
+
+  @ApiPropertyOptional({
+    type: () => [GhnFeeItemDto],
+    description: 'Bắt buộc với dịch vụ hàng nặng GHN',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GhnFeeItemDto)
+  items?: GhnFeeItemDto[];
+}
+
+export class GhnFeeItemDto {
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @ApiProperty()
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+
+  @ApiProperty({ description: 'Khối lượng một sản phẩm/kiện, gram' })
+  @IsInt()
+  @Min(1)
+  weight!: number;
+
+  @ApiProperty({ description: 'Chiều dài, cm' })
+  @IsInt()
+  @Min(1)
+  length!: number;
+
+  @ApiProperty({ description: 'Chiều rộng, cm' })
+  @IsInt()
+  @Min(1)
+  width!: number;
+
+  @ApiProperty({ description: 'Chiều cao, cm' })
+  @IsInt()
+  @Min(1)
+  height!: number;
+
+  @ApiProperty()
+  @IsInt()
+  @Min(0)
+  price!: number;
 }

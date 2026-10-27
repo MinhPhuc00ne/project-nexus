@@ -66,7 +66,7 @@ export class AdminController {
   @ApiOperation({
     summary: 'Tạo tài khoản / Mời nhân viên hỗ trợ (Support Staff)',
     description:
-      'Admin nhập Họ tên, email cá nhân, số điện thoại, phòng ban. Hệ thống sẽ sinh tài khoản công tác @staff.com, trả về ngay khi gửi và gửi email mời kích hoạt về email cá nhân của Staff.',
+      'Admin nhập Họ tên, email cá nhân, số điện thoại, phòng ban. Hệ thống cấp tài khoản @staff.com dùng ngay và gửi mật khẩu ngẫu nhiên về email cá nhân. Staff dùng Quên mật khẩu để đặt lại mật khẩu.',
   })
   @ApiResponse({ status: 201, description: 'Gửi lời mời và cấp tài khoản @staff.com thành công' })
   @ApiResponse({ status: 400, description: 'Email đã tồn tại hoặc không hợp lệ' })
@@ -79,10 +79,9 @@ export class AdminController {
   @Post('staff/invite')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary:
-      'Gửi link lời mời kích hoạt tài khoản Staff qua email cá nhân và cấp tài khoản @staff.com',
+    summary: 'Cấp tài khoản Staff dùng ngay và gửi mật khẩu ngẫu nhiên qua email cá nhân',
     description:
-      'Admin nhập Họ và tên, email cá nhân, số điện thoại. Hệ thống sẽ sinh tài khoản công tác @staff.com, trả về ngay khi gửi và dispatch email mời kích hoạt về email cá nhân của Staff.',
+      'Backend tạo tài khoản @staff.com theo format cũ, gửi tài khoản và mật khẩu ngẫu nhiên qua email. Staff đăng nhập ngay và dùng Quên mật khẩu để đặt lại; không cần link kích hoạt. API không trả mật khẩu.',
   })
   @ApiResponse({
     status: 201,
