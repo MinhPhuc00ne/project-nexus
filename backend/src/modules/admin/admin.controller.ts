@@ -34,7 +34,12 @@ import { WarnShopDto } from './dto/warn-shop.dto';
 import { CreateShopViolationDto } from './dto/create-shop-violation.dto';
 import { ReviewWithdrawalDto } from './dto/review-withdrawal.dto';
 import { UpdateSystemSettingsDto } from './dto/update-system-settings.dto';
-import { DepositAdminWalletDto, QueryAdminWalletTransactionsDto } from './dto/admin-wallet.dto';
+import {
+  DepositAdminWalletDto,
+  QueryAdminWalletTransactionsDto,
+  AdminWalletResponseDto,
+  AdminWalletTransactionsResponseDto,
+} from './dto/admin-wallet.dto';
 import { AdminUsersService } from './services/admin-users.service';
 import { AdminProductsService } from './services/admin-products.service';
 import { AdminShopsService } from './services/admin-shops.service';
@@ -470,7 +475,11 @@ export class AdminController {
     description:
       'Trả về số dư ví Admin, tổng tiền % phí sàn đã thu từ các đơn hàng thành công, và tổng tiền Admin đã nạp vào ví.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin ví hệ thống thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy thông tin ví hệ thống thành công',
+    type: AdminWalletResponseDto,
+  })
   async getAdminWallet(@CurrentUser('id') adminId: string) {
     return this.adminFinanceService.getAdminWallet(adminId);
   }
@@ -478,11 +487,16 @@ export class AdminController {
   // ================= 18j. LỊCH SỬ BIẾN ĐỘNG SỐ DƯ VÍ ADMIN =================
   @Get('wallet/transactions')
   @ApiOperation({
-    summary: 'Admin xem lịch sử biến động số dư ví hệ thống (Hoa hồng sàn & Nạp tiền)',
+    summary:
+      'Admin xem lịch sử biến động số dư ví hệ thống (Ký quỹ, giải ngân, cước GHN, nạp tiền)',
     description:
-      'Lịch sử chi tiết: thu % phí hoa hồng từ đơn hàng nào, nạp tiền vào ví, v.v. kèm phân trang và bộ lọc.',
+      'Lịch sử chi tiết: tạm giữ tiền khách trả, xuất tiền cho shop, trừ cước GHN, thu % hoa hồng kèm bóc tách thông tin buyer, shop, đơn hàng.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy lịch sử giao dịch thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy lịch sử giao dịch thành công',
+    type: AdminWalletTransactionsResponseDto,
+  })
   async getAdminWalletTransactions(
     @CurrentUser('id') adminId: string,
     @Query() query: QueryAdminWalletTransactionsDto,

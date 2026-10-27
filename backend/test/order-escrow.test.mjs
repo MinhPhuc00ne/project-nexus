@@ -25,7 +25,7 @@ function fixture() {
     status: 'DELIVERED',
     shipment: { status: 'DELIVERED', metadata: { tracking: { status: 'delivered' } } },
     dispute: null,
-    escrowRecord: { status: 'HELD', totalAmount: 130000, platformFee: 7000, sellerPayout: 123000 },
+    escrowRecord: { status: 'HELD', totalAmount: 130000, platformFee: 7000, sellerPayout: 93000 },
   };
   const tx = {
     $queryRaw: mock.fn(async () => []),
@@ -69,15 +69,17 @@ function fixture() {
   return { service, tx, order };
 }
 
-test('payment holds funds; commission excludes shipping and no wallet is credited', async () => {
+test('payment holds funds; commission excludes shipping and admin wallet holds totalAmount', async () => {
   const f = fixture();
   f.order.escrowRecord = null;
   const result = await f.service.hold(f.tx, f.order);
   assert.equal(result.platformFee, 7000);
-  assert.equal(result.sellerPayout, 123000);
+  assert.equal(result.sellerPayout, 93000);
   assert.equal(result.escrowStatus, 'HELD');
-  assert.equal(f.tx.wallet.update.mock.callCount(), 0);
-  assert.equal(f.tx.walletTransaction.create.mock.callCount(), 0);
+  assert.equal(f.tx.wallet.update.mock.callCount(), 1);
+  assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].data.balance.increment, 130000);
+  assert.equal(f.tx.walletTransaction.create.mock.callCount(), 1);
+  assert.equal(f.tx.walletTransaction.create.mock.calls[0].arguments[0].data.type, 'ESCROW_LOCK');
 });
 
 test('verified buyer confirmation releases funds and awards reputation exactly once', async () => {
@@ -89,8 +91,8 @@ test('verified buyer confirmation releases funds and awards reputation exactly o
   assert.equal(f.order.status, 'CONFIRMED');
   assert.equal(f.order.escrowRecord.status, 'DISBURSED');
   assert.equal(f.tx.wallet.update.mock.callCount(), 2);
-  assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].data.balance.increment, 123000);
-  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].data.balance.increment, 7000);
+  assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].data.balance.increment, 93000);
+  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].data.balance.decrement, 123000);
   assert.equal(f.tx.reputationLog.create.mock.callCount(), 2);
   assert.equal(f.tx.notification.create.mock.callCount(), 1);
 });
@@ -142,10 +144,13 @@ test('staff resolution refunds buyer wallet once and does not pay seller', async
   );
   assert.equal(f.order.status, 'REFUNDED');
   assert.equal(f.order.escrowRecord.status, 'REFUNDED');
-  assert.equal(f.tx.wallet.update.mock.callCount(), 1);
+  assert.equal(f.tx.wallet.update.mock.callCount(), 2);
   assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].where.id, 'wallet-buyer');
   assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].data.balance.increment, 130000);
+  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].where.id, 'admin-wallet');
+  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].data.balance.decrement, 130000);
   assert.equal(f.tx.walletTransaction.create.mock.calls[0].arguments[0].data.type, 'ESCROW_REFUND');
+  assert.equal(f.tx.walletTransaction.create.mock.calls[1].arguments[0].data.type, 'ESCROW_REFUND');
 });
 
 test('buyer cannot grant themselves a refund through arbitration', async () => {

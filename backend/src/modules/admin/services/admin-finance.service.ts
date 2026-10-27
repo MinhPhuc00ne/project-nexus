@@ -170,21 +170,72 @@ export class AdminFinanceService {
       }),
     ]);
 
+    // Trích xuất mã đơn hàng từ referenceId để tra cứu thông tin Buyer và Shop
+    const orderIds = transactions
+      .map((tx) => tx.referenceId)
+      .filter((id): id is string => Boolean(id && id.trim()));
+
+    const orders =
+      orderIds.length > 0
+        ? await this.prisma.order.findMany({
+            where: { id: { in: orderIds } },
+            select: {
+              id: true,
+              subtotal: true,
+              shippingFee: true,
+              totalAmount: true,
+              buyer: {
+                select: { id: true, fullName: true, email: true },
+              },
+              seller: {
+                select: { id: true, fullName: true, email: true },
+              },
+              escrowRecord: {
+                select: { platformFee: true, sellerPayout: true, status: true },
+              },
+              shipment: {
+                select: { carrier: true, waybillCode: true, shippingFee: true },
+              },
+            },
+          })
+        : [];
+
+    const orderMap = new Map(orders.map((o) => [o.id, o]));
+
     return {
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
-      items: transactions.map((tx) => ({
-        id: tx.id,
-        walletId: tx.walletId,
-        amount: Number(tx.amount),
-        type: tx.type,
-        status: tx.status,
-        referenceId: tx.referenceId,
-        description: tx.description,
-        createdAt: tx.createdAt,
-      })),
+      items: transactions.map((tx) => {
+        const order = tx.referenceId ? orderMap.get(tx.referenceId) : null;
+        return {
+          id: tx.id,
+          walletId: tx.walletId,
+          amount: Number(tx.amount),
+          type: tx.type,
+          status: tx.status,
+          referenceId: tx.referenceId,
+          description: tx.description,
+          createdAt: tx.createdAt,
+          orderDetails: order
+            ? {
+                orderId: order.id,
+                buyerName: order.buyer?.fullName,
+                buyerEmail: order.buyer?.email,
+                shopName: order.seller?.fullName,
+                sellerEmail: order.seller?.email,
+                subtotal: Number(order.subtotal),
+                shippingFee: Number(order.shippingFee),
+                totalAmount: Number(order.totalAmount),
+                platformFee: Number(order.escrowRecord?.platformFee ?? 0),
+                sellerPayout: Number(order.escrowRecord?.sellerPayout ?? 0),
+                waybillCode: order.shipment?.waybillCode ?? undefined,
+                carrier: order.shipment?.carrier ?? undefined,
+              }
+            : null,
+        };
+      }),
     };
   }
 
