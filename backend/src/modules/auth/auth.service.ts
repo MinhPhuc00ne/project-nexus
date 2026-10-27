@@ -13,6 +13,8 @@ import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { RedisService } from '../../core/redis/redis.service';
+import { recentReauthentication } from '../../core/security/profile-reauth.service';
+import { userMode } from '../../core/security/user-mode';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -213,7 +215,11 @@ export class AuthService {
     });
 
     try {
-      await this.redisService.set(`seller_recent_reauth:${user.id}`, Date.now().toString(), 300);
+      await this.redisService.set(
+        `seller_recent_reauth:${user.id}`,
+        recentReauthentication(user.passwordHash),
+        300,
+      );
     } catch {
       // In case Redis is unreachable, continue smoothly
     }
@@ -229,9 +235,9 @@ export class AuthService {
         fullName: user.fullName,
         role: user.role,
         avatarUrl: user.avatarUrl,
-        isSellerActive: effectiveSellerActive,
         isShopSuspended: user.isShopSuspended,
         suspensionReason: user.suspensionReason,
+        ...userMode(user),
       },
     };
   }
@@ -266,6 +272,18 @@ export class AuthService {
       );
     }
 
+    if (userRecord.role === 'SELLER') {
+      try {
+        await this.redisService.set(
+          `seller_recent_reauth:${userRecord.id}`,
+          recentReauthentication(userRecord.passwordHash),
+          300,
+        );
+      } catch {
+        // Login remains available; profile edits still require a valid proof.
+      }
+    }
+
     const { accessToken, refreshToken } = await this.generateTokens({
       id: userRecord.id,
       email: userRecord.email,
@@ -283,6 +301,7 @@ export class AuthService {
         fullName: userRecord.fullName,
         role: userRecord.role,
         avatarUrl: userRecord.avatarUrl,
+        ...userMode(userRecord),
       },
     };
   }

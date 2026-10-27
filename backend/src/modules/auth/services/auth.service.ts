@@ -12,6 +12,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { MailService } from '../../../core/mail/mail.service';
 import { RedisService } from '../../../core/redis/redis.service';
+import { recentReauthentication } from '../../../core/security/profile-reauth.service';
+import { userMode } from '../../../core/security/user-mode';
 import {
   RegisterBuyerDto,
   LoginDto,
@@ -39,6 +41,9 @@ export interface AuthTokensResult {
     fullName: string;
     role: Role;
     isSellerActive: boolean;
+    accountRole?: string;
+    activeRole?: string;
+    currentMode?: 'BUYER' | 'SELLER';
     platformEmail?: string | null;
   };
 }
@@ -132,7 +137,11 @@ export class AuthService {
     this.logger.log(`User logged in successfully: ${user.email} (Role: ${user.role})`);
 
     try {
-      await this.redisService.set(`seller_recent_reauth:${user.id}`, Date.now().toString(), 300);
+      await this.redisService.set(
+        `seller_recent_reauth:${user.id}`,
+        recentReauthentication(user.passwordHash),
+        300,
+      );
     } catch {
       // In case Redis is unreachable, continue smoothly
     }
@@ -419,7 +428,11 @@ export class AuthService {
         email: user.email,
         fullName: user.fullName,
         role: user.role as Role,
-        isSellerActive: user.isSellerActive,
+        ...userMode({
+          role: user.role as Role,
+          isSellerActive: user.isSellerActive,
+          isShopSuspended: user.isShopSuspended ?? false,
+        }),
         platformEmail: user.platformEmail,
       },
     };

@@ -1,9 +1,22 @@
-import { IsOptional, IsString, IsNumber, IsInt, Min, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  IsInt,
+  Min,
+  Max,
+  IsEnum,
+  IsIn,
+  MaxLength,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ProductStatus } from '@prisma/client';
 
 export class QueryProductDto {
+  @IsOptional() @IsString() @MaxLength(100) city?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(5) minRating?: number;
+  @IsOptional() @IsIn(['true', 'false']) inStock?: string;
   @ApiPropertyOptional({ example: 'Audemars', description: 'Từ khóa tìm kiếm theo tên hoặc mô tả' })
   @IsOptional()
   @IsString()
@@ -50,6 +63,7 @@ export class QueryProductDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 12;
 
   @ApiPropertyOptional({
@@ -59,5 +73,6 @@ export class QueryProductDto {
   })
   @IsOptional()
   @IsString()
+  @IsIn(['newest', 'price_asc', 'price_desc'])
   sortBy?: 'newest' | 'price_asc' | 'price_desc';
 }

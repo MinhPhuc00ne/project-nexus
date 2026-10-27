@@ -205,24 +205,34 @@ export class AdminProductsService {
     }
 
     const oldStatus = product.status;
-    const updated = await this.prisma.product.update({
-      where: { id },
-      data: { status: dto.status },
-    });
-
     // Gửi thông báo đến người bán nếu sản phẩm bị ẩn hoặc được duyệt
     const isHidden = dto.status === ProductStatus.INACTIVE;
     const actionText = isHidden ? 'đã bị tạm ẩn/khóa' : 'đã được chuyển sang trạng thái hoạt động';
 
-    await this.prisma.notification.create({
-      data: {
-        userId: product.sellerId,
-        title: isHidden
-          ? 'Sản phẩm của bạn đã bị ẩn bởi Quản trị viên ⚠️'
-          : 'Sản phẩm đã được kích hoạt 🎉',
-        content: `Sản phẩm "${product.title}" của bạn ${actionText}.${dto.reason ? ` Lý do: ${dto.reason}` : ''}`,
-        type: NotificationType.SYSTEM,
-      },
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${product.sellerId} FOR UPDATE`;
+      const seller = await tx.user.findUnique({
+        where: { id: product.sellerId },
+        select: { isShopSuspended: true },
+      });
+      if (!seller || (dto.status === ProductStatus.ACTIVE && seller.isShopSuspended)) {
+        throw new BadRequestException('Không thể kích hoạt sản phẩm của shop đang bị đình chỉ.');
+      }
+      const result = await tx.product.update({
+        where: { id },
+        data: { status: dto.status, hiddenByShopSuspension: false },
+      });
+      await tx.notification.create({
+        data: {
+          userId: product.sellerId,
+          title: isHidden
+            ? 'Sản phẩm của bạn đã bị ẩn bởi Quản trị viên ⚠️'
+            : 'Sản phẩm đã được kích hoạt 🎉',
+          content: `Sản phẩm "${product.title}" của bạn ${actionText}.${dto.reason ? ` Lý do: ${dto.reason}` : ''}`,
+          type: NotificationType.SYSTEM,
+        },
+      });
+      return result;
     });
 
     this.logger.log(
@@ -259,7 +269,7 @@ export class AdminProductsService {
     if (product.orderItems.length > 0) {
       await this.prisma.product.update({
         where: { id },
-        data: { status: ProductStatus.INACTIVE },
+        data: { status: ProductStatus.INACTIVE, hiddenByShopSuspension: false },
       });
       return {
         success: true,

@@ -4,15 +4,18 @@ import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { IS_PUBLIC_KEY, AuthenticatedUserPayload } from './roles.decorator';
 import { LightweightJwt } from './jwt.util';
+import { PrismaService } from '../prisma/prisma.service';
+import { userMode } from './user-mode';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -45,13 +48,28 @@ export class JwtAuthGuard implements CanActivate {
 
     const rawPayload = verifyResult.payload as unknown as Record<string, unknown>;
     const userId = (rawPayload.id as string) || (rawPayload.sub as string);
+    if (!userId) throw new UnauthorizedException('Invalid authentication token');
+    const account = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        isSellerActive: true,
+        isShopSuspended: true,
+        trustLevel: true,
+      },
+    });
+    if (!account || account.trustLevel === 'SUSPENDED') {
+      throw new UnauthorizedException('Account unavailable');
+    }
     const userPayload: AuthenticatedUserPayload = {
       ...rawPayload,
       id: userId,
       sub: (rawPayload.sub as string) || userId,
-      email: (rawPayload.email as string) || '',
-      role: rawPayload.role as AuthenticatedUserPayload['role'],
-      isSellerActive: Boolean(rawPayload.isSellerActive),
+      email: account.email,
+      role: account.role as AuthenticatedUserPayload['role'],
+      ...userMode(account),
     };
 
     (request as unknown as { user: AuthenticatedUserPayload }).user = userPayload;

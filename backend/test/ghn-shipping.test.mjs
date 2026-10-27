@@ -245,15 +245,20 @@ test('raw heavy fee endpoint passes items to GHN', async (t) => {
 
 function checkoutFixture(quote) {
   const cart = {
+    id: 'cart',
+    userId: 'buyer',
     items: [1, 2].map((number) => ({
       id: `item-${number}`,
       productId: `product-${number}`,
       quantity: number,
+      optionKey: '',
+      selections: {},
       product: {
         id: `product-${number}`,
         sellerId: `seller-${number}`,
         title: 'Item',
         status: 'ACTIVE',
+        options: [],
         seller: { isShopSuspended: false },
         inventories: [{ availableQty: 10 }],
         basePrice: 100000,
@@ -265,15 +270,16 @@ function checkoutFixture(quote) {
     })),
   };
   const tx = {
+    $queryRaw: async () => [],
     order: { create: mock.fn(async ({ data }) => ({ id: `order-${data.sellerId}`, ...data })) },
-    cartItem: { deleteMany: mock.fn(async () => ({})) },
+    cartItem: { findMany: async () => cart.items, deleteMany: mock.fn(async () => ({})) },
   };
   const prisma = {
-    cart: { findUnique: async () => cart },
+    cart: { findUnique: async () => structuredClone(cart) },
     $transaction: mock.fn(async (run) => run(tx)),
   };
   const service = new OrderService(prisma, {}, {}, { quote }, {});
-  return { service, prisma, tx };
+  return { service, prisma, tx, cart };
 }
 
 test('checkout ignores client fee and uses each seller GHN quote in payment totals', async () => {
@@ -302,6 +308,32 @@ test('failure for a later seller leaves all orders and cart unchanged', async ()
   assert.equal(prisma.$transaction.mock.callCount(), 0);
   assert.equal(tx.order.create.mock.callCount(), 0);
   assert.equal(tx.cartItem.deleteMany.mock.callCount(), 0);
+});
+
+test('checkout rechecks cart and product price after all GHN responses, before creating orders', async () => {
+  const f = checkoutFixture(async () => {
+    f.cart.items[0].product.basePrice = 999000;
+    return { fee };
+  });
+  await assert.rejects(f.service.checkout('buyer', { shippingAddress: recipient }), /thay đổi/);
+  assert.equal(f.tx.order.create.mock.callCount(), 0);
+  assert.equal(f.tx.cartItem.deleteMany.mock.callCount(), 0);
+});
+
+test('sale price and selected options are frozen in GHN valuation and order items', async () => {
+  const quote = mock.fn(async () => ({ fee }));
+  const f = checkoutFixture(quote);
+  const item = f.cart.items[0];
+  item.product.salePrice = 70000;
+  item.product.options = [{ name: 'Color', values: ['Black'] }];
+  item.selections = { Color: 'Black' };
+  const result = await f.service.checkout('buyer', { shippingAddress: recipient });
+  assert.equal(result.orders[0].subtotal, 70000);
+  const data = f.tx.order.create.mock.calls[0].arguments[0].data.items.create[0];
+  assert.equal(data.unitPrice, 70000);
+  assert.deepEqual(data.selections, { Color: 'Black' });
+  assert.equal(quote.mock.calls[0].arguments[2][0].price, 70000);
+  assert.match(quote.mock.calls[0].arguments[2][0].name, /Black/);
 });
 
 test('product quote ignores client weights and works without GPS or distance tariffs', async () => {

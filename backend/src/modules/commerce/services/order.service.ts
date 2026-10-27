@@ -9,6 +9,9 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { PayosService } from './payos.service';
 import { CheckoutDto } from '../dtos/checkout.dto';
+import { effectivePrice } from '../../catalog/utils/product-price';
+import { productChoiceLabel, validateSelections } from '../../catalog/utils/product-options';
+import { validateQuotedCheckout } from '../utils/checkout-validation';
 import { PayOrderDto } from '../dtos/pay-order.dto';
 import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
 import {
@@ -76,6 +79,7 @@ export class OrderService {
    * Tạo đơn hàng từ giỏ hàng hiện tại (Price Revalidation + Anti-Self-Purchase)
    */
   async checkout(buyerId: string, dto: CheckoutDto, idempotencyKey?: string, quoteOnly = false) {
+    const pricedAt = new Date();
     const cart = await this.prisma.cart.findUnique({
       where: { userId: buyerId },
       include: {
@@ -84,6 +88,7 @@ export class OrderService {
             product: {
               include: {
                 inventories: true,
+                options: true,
                 seller: { select: { isShopSuspended: true } },
               },
             },
@@ -105,10 +110,15 @@ export class OrderService {
     if (itemsToCheckout.length === 0) {
       throw new BadRequestException('Không tìm thấy sản phẩm hợp lệ trong giỏ hàng để đặt hàng');
     }
+    if (dto.itemIds?.length && new Set(dto.itemIds).size !== itemsToCheckout.length) {
+      throw new BadRequestException('Có sản phẩm không thuộc giỏ hàng được chọn.');
+    }
 
     // 1. Kiểm tra trạng thái sản phẩm, tồn kho và quy tắc Anti-Self-Purchase
+    const quantityByProduct = new Map<string, number>();
     for (const item of itemsToCheckout) {
       const product = item.product;
+      validateSelections(product.options ?? [], item.selections);
 
       if (product.seller?.isShopSuspended) {
         throw new BadRequestException(
@@ -131,7 +141,9 @@ export class OrderService {
 
       // Kiểm tra tồn kho khả dụng
       const totalAvailable = product.inventories.reduce((acc, inv) => acc + inv.availableQty, 0);
-      if (item.quantity > totalAvailable) {
+      const selectedQty = (quantityByProduct.get(item.productId) ?? 0) + item.quantity;
+      quantityByProduct.set(item.productId, selectedQty);
+      if (selectedQty > totalAvailable) {
         throw new BadRequestException(
           `Sản phẩm "${product.title}" chỉ còn lại ${totalAvailable} sản phẩm trong kho`,
         );
@@ -153,14 +165,14 @@ export class OrderService {
       const quote = await this.shipping.quote(
         sellerId,
         dto.shippingAddress,
-        sellerItems.map(({ product, quantity }) => ({
-          name: product.title,
+        sellerItems.map(({ product, quantity, selections }) => ({
+          name: productChoiceLabel(product.title, selections),
           quantity,
           weight: product.weightGrams,
           length: product.lengthCm,
           width: product.widthCm,
           height: product.heightCm,
-          price: Number(product.basePrice),
+          price: effectivePrice(product, pricedAt),
         })),
       );
       shippingBySeller.set(sellerId, quote);
@@ -171,7 +183,7 @@ export class OrderService {
         const quote = shippingBySeller.get(sellerId);
         if (!quote) throw new BadRequestException('Chưa lấy được báo giá GHN.');
         const subtotal = items.reduce(
-          (sum, item) => sum + Number(item.product.basePrice) * item.quantity,
+          (sum, item) => sum + effectivePrice(item.product, pricedAt) * item.quantity,
           0,
         );
         return {
@@ -192,6 +204,19 @@ export class OrderService {
 
     // 3. Khởi tạo đơn hàng trong Transaction an toàn
     const createdOrders = await this.prisma.$transaction(async (tx) => {
+      await validateQuotedCheckout(
+        tx,
+        cart.id,
+        itemsToCheckout.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          sellerId: item.product.sellerId,
+          quantity: item.quantity,
+          optionKey: item.optionKey ?? '',
+          price: effectivePrice(item.product, pricedAt),
+        })),
+        pricedAt,
+      );
       const orders: Array<
         Prisma.OrderGetPayload<{
           include: {
@@ -213,7 +238,7 @@ export class OrderService {
         }
         const shippingPerShop = shippingQuote.fee.total;
         const subtotal = sellerItems.reduce(
-          (sum, i) => sum + Number(i.product.basePrice) * i.quantity,
+          (sum, i) => sum + effectivePrice(i.product, pricedAt) * i.quantity,
           0,
         );
         const totalAmount = subtotal + shippingPerShop;
@@ -240,9 +265,11 @@ export class OrderService {
             items: {
               create: sellerItems.map((item) => ({
                 productId: item.productId,
+                selections: validateSelections(item.product.options ?? [], item.selections)
+                  .selections,
                 quantity: item.quantity,
-                unitPrice: item.product.basePrice,
-                totalPrice: Number(item.product.basePrice) * item.quantity,
+                unitPrice: effectivePrice(item.product, pricedAt),
+                totalPrice: effectivePrice(item.product, pricedAt) * item.quantity,
               })),
             },
           },

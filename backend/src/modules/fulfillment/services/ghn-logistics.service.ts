@@ -54,8 +54,9 @@ export class GhnLogisticsService {
       'https://online-gateway.ghn.vn/shiip/public-api/v2';
 
     // Master data endpoint (Tỉnh/Thành, Quận/Huyện) không có tiền tố /v2
-    this.masterDataBaseUrl = rawApiUrl.replace(/\/v2$/, '');
-    this.orderApiBaseUrl = rawApiUrl.endsWith('/v2') ? rawApiUrl : `${rawApiUrl}/v2`;
+    const normalizedUrl = rawApiUrl.trim().replace(/\/+$/, '');
+    this.masterDataBaseUrl = normalizedUrl.replace(/\/v2$/, '');
+    this.orderApiBaseUrl = `${this.masterDataBaseUrl}/v2`;
   }
 
   private validateConfig(requireShopId = false, shopId?: number): void {
@@ -89,7 +90,7 @@ export class GhnLogisticsService {
    */
   async getDiagnostic() {
     const tokenConfigured = Boolean(this.token && this.token.trim());
-    const shopIdConfigured = Boolean(this.shopId && this.shopId.trim());
+    const shopIdConfigured = Number.isSafeInteger(Number(this.shopId)) && Number(this.shopId) > 0;
     const environment = this.masterDataBaseUrl.includes('dev-online-gateway')
       ? 'SANDBOX'
       : 'PRODUCTION';
@@ -110,14 +111,27 @@ export class GhnLogisticsService {
           signal: AbortSignal.timeout(10000),
         });
         latencyMs = Date.now() - start;
-        const json = (await res.json()) as { code?: number; message?: string };
+        const json = (await res.json()) as { code?: number; message?: string; data?: unknown };
         ghnCode = json.code ?? null;
-        if (json.code === 200) {
+        if (
+          res.ok &&
+          json.code === 200 &&
+          Array.isArray(json.data) &&
+          json.data.length > 0 &&
+          json.data.every(
+            (row: { ProvinceID?: number; ProvinceName?: string }) =>
+              Number.isSafeInteger(row?.ProvinceID) &&
+              Number(row.ProvinceID) > 0 &&
+              typeof row.ProvinceName === 'string' &&
+              row.ProvinceName.trim(),
+          )
+        ) {
           pingStatus = 'CONNECTED';
           message = 'Kết nối cổng GHN thành công';
         } else {
           pingStatus = 'GHN_API_ERROR';
-          message = json.message || `GHN API trả mã phản hồi: ${json.code}`;
+          message =
+            'GHN trả lỗi hoặc thiếu dữ liệu tỉnh/thành. Kiểm tra token, URL và môi trường GHN.';
         }
       } catch (err) {
         latencyMs = Date.now() - start;
@@ -128,7 +142,7 @@ export class GhnLogisticsService {
 
     return {
       tokenConfigured,
-      tokenMasked: tokenConfigured ? `${this.token.slice(0, 4)}...${this.token.slice(-4)}` : null,
+      tokenMasked: tokenConfigured ? '********' : null,
       shopIdConfigured,
       shopId: this.shopId || null,
       masterDataBaseUrl: this.masterDataBaseUrl,
@@ -169,14 +183,26 @@ export class GhnLogisticsService {
           `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Tỉnh/Thành'}`,
         );
       }
-      if (Array.isArray(data.data)) {
+      if (
+        Array.isArray(data.data) &&
+        data.data.length > 0 &&
+        data.data.every(
+          (p) =>
+            Number.isSafeInteger(p?.ProvinceID) &&
+            p.ProvinceID > 0 &&
+            typeof p.ProvinceName === 'string' &&
+            p.ProvinceName.trim(),
+        )
+      ) {
         return data.data.map((p) => ({
           provinceId: p.ProvinceID,
           provinceName: p.ProvinceName,
           code: p.Code,
         }));
       }
-      return [];
+      throw new BadGatewayException(
+        'GHN trả thiếu/sai dữ liệu tỉnh/thành. Kiểm tra token, URL và môi trường GHN.',
+      );
     } catch (err) {
       if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi gọi GHN Master Data: ${err}`);
@@ -190,7 +216,7 @@ export class GhnLogisticsService {
    * 2. Lấy danh sách Quận/Huyện theo Tỉnh/Thành
    */
   async getDistricts(provinceId: number) {
-    if (!provinceId || isNaN(provinceId) || provinceId <= 0) {
+    if (!Number.isSafeInteger(provinceId) || provinceId <= 0) {
       throw new BadRequestException('Mã Tỉnh/Thành (provinceId) phải là số nguyên dương hợp lệ.');
     }
     this.validateConfig(false);
@@ -217,14 +243,25 @@ export class GhnLogisticsService {
           `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Quận/Huyện'}`,
         );
       }
-      if (Array.isArray(data.data)) {
+      if (
+        Array.isArray(data.data) &&
+        data.data.every(
+          (d) =>
+            Number.isSafeInteger(d?.DistrictID) &&
+            d.DistrictID > 0 &&
+            typeof d.DistrictName === 'string' &&
+            d.DistrictName.trim(),
+        )
+      ) {
         return data.data.map((d) => ({
           districtId: d.DistrictID,
           districtName: d.DistrictName,
           code: d.Code,
         }));
       }
-      return [];
+      throw new BadGatewayException(
+        'GHN trả thiếu/sai dữ liệu quận/huyện. Kiểm tra token, URL và môi trường GHN.',
+      );
     } catch (err) {
       if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi lấy danh sách Quận/Huyện từ GHN: ${err}`);
@@ -238,7 +275,7 @@ export class GhnLogisticsService {
    * 3. Lấy danh sách Phường/Xã theo Quận/Huyện
    */
   async getWards(districtId: number) {
-    if (!districtId || isNaN(districtId) || districtId <= 0) {
+    if (!Number.isSafeInteger(districtId) || districtId <= 0) {
       throw new BadRequestException('Mã Quận/Huyện (districtId) phải là số nguyên dương hợp lệ.');
     }
     this.validateConfig(false);
@@ -263,13 +300,24 @@ export class GhnLogisticsService {
           `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Phường/Xã'}`,
         );
       }
-      if (Array.isArray(data.data)) {
+      if (
+        Array.isArray(data.data) &&
+        data.data.every(
+          (w) =>
+            typeof w?.WardCode === 'string' &&
+            w.WardCode.trim() &&
+            typeof w.WardName === 'string' &&
+            w.WardName.trim(),
+        )
+      ) {
         return data.data.map((w) => ({
           wardCode: w.WardCode,
           wardName: w.WardName,
         }));
       }
-      return [];
+      throw new BadGatewayException(
+        'GHN trả thiếu/sai dữ liệu phường/xã. Kiểm tra token, URL và môi trường GHN.',
+      );
     } catch (err) {
       if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi lấy danh sách Phường/Xã từ GHN: ${err}`);

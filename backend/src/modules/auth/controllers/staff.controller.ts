@@ -7,6 +7,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
@@ -27,6 +28,7 @@ import {
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
+import { UpdateStaffProfileDto } from '../dto/update-staff-profile.dto';
 
 @ApiTags('4. STAFF')
 @Controller('staff')
@@ -78,6 +80,18 @@ export class StaffController {
   @Get('profile')
   async getStaffProfile(@CurrentUser('id') userId: string): Promise<UserProfileResponse> {
     return this.usersService.getProfile(userId);
+  }
+
+  @Patch('profile')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPPORT_STAFF)
+  @ApiOperation({ summary: 'Staff cập nhật họ tên, số điện thoại và avatar của chính mình' })
+  updateStaffProfile(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateStaffProfileDto,
+  ): Promise<UserProfileResponse> {
+    return this.usersService.updateStaffProfile(userId, dto);
   }
 
   @ApiOperation({

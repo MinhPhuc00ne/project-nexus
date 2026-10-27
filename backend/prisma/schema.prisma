@@ -176,6 +176,7 @@ model User {
   fullName          String               @map("full_name")
   phoneNumber       String?              @map("phone_number")
   avatarUrl         String?              @map("avatar_url")
+  shopAvatarUrl     String?              @map("shop_avatar_url")
   role              Role                 @default(BUYER)
   isSellerActive    Boolean              @default(false) @map("is_seller_active")
   isShopSuspended   Boolean              @default(false) @map("is_shop_suspended")
@@ -222,6 +223,10 @@ model User {
   chatConversationsUser2     ChatConversation[]       @relation("ChatParticipant2")
   chatMessagesSent           ChatMessage[]            @relation("ChatSender")
   pickupPoints               SellerPickupPoint[]
+  productReviews             ProductReview[]
+  customerReviewsGiven       CustomerReview[]         @relation("CustomerReviewer")
+  customerReviewsReceived    CustomerReview[]         @relation("CustomerReviewee")
+  eventBanners               EventBanner[]
 
   @@map("users")
 }
@@ -324,28 +329,38 @@ model Category {
 }
 
 model Product {
-  id            String        @id @default(uuid())
-  sellerId      String        @map("seller_id")
-  categoryId    String        @map("category_id")
-  title         String
-  description   String        @db.Text
-  basePrice     Decimal       @map("base_price") @db.Decimal(14, 2)
-  weightGrams   Int           @default(500) @map("weight_grams")
-  lengthCm      Int           @default(10) @map("length_cm")
-  widthCm       Int           @default(10) @map("width_cm")
-  heightCm      Int           @default(10) @map("height_cm")
-  threeModelKey String?       @map("three_model_key")
-  status        ProductStatus @default(ACTIVE)
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
+  id                     String        @id @default(uuid())
+  sellerId               String        @map("seller_id")
+  categoryId             String        @map("category_id")
+  title                  String
+  description            String        @db.Text
+  basePrice              Decimal       @map("base_price") @db.Decimal(14, 2)
+  weightGrams            Int           @default(500) @map("weight_grams")
+  lengthCm               Int           @default(10) @map("length_cm")
+  widthCm                Int           @default(10) @map("width_cm")
+  heightCm               Int           @default(10) @map("height_cm")
+  threeModelKey          String?       @map("three_model_key")
+  status                 ProductStatus @default(ACTIVE)
+  hiddenByShopSuspension Boolean       @default(false) @map("hidden_by_shop_suspension")
+  salePrice              Decimal?      @map("sale_price") @db.Decimal(14, 2)
+  saleStartsAt           DateTime?     @map("sale_starts_at")
+  saleEndsAt             DateTime?     @map("sale_ends_at")
+  reviewCount            Int           @default(0) @map("review_count")
+  ratingSum              Int           @default(0) @map("rating_sum")
+  averageRating          Float         @default(0) @map("average_rating")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
 
-  seller      User           @relation(fields: [sellerId], references: [id], onDelete: Restrict)
-  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  images      ProductImage[]
-  inventories Inventory[]
-  cartItems   CartItem[]
-  orderItems  OrderItem[]
-  auctions    Auction[]
+  seller         User            @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  category       Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images         ProductImage[]
+  inventories    Inventory[]
+  cartItems      CartItem[]
+  orderItems     OrderItem[]
+  auctions       Auction[]
+  options        ProductOption[]
+  productReviews ProductReview[]
+  reports        ShopViolation[]
 
   @@map("products")
 }
@@ -361,6 +376,17 @@ model ProductImage {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("product_images")
+}
+
+model ProductOption {
+  id        String   @id @default(uuid())
+  productId String   @map("product_id")
+  name      String
+  values    String[]
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, name])
+  @@map("product_options")
 }
 
 model Warehouse {
@@ -477,6 +503,8 @@ model CartItem {
   id           String   @id @default(uuid())
   cartId       String   @map("cart_id")
   productId    String   @map("product_id")
+  optionKey    String   @default("") @map("option_key")
+  selections   Json?
   quantity     Int      @default(1)
   priceAtAdded Decimal  @map("price_at_added") @db.Decimal(14, 2)
   createdAt    DateTime @default(now()) @map("created_at")
@@ -485,7 +513,7 @@ model CartItem {
   cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  @@unique([cartId, productId])
+  @@unique([cartId, productId, optionKey])
   @@map("cart_items")
 }
 
@@ -497,19 +525,22 @@ model Order {
   shippingFee             Decimal     @default(0) @map("shipping_fee") @db.Decimal(14, 2)
   totalAmount             Decimal     @map("total_amount") @db.Decimal(14, 2)
   status                  OrderStatus @default(PENDING_PAYMENT)
+  cancellationActor       String?     @map("cancellation_actor")
   shippingAddressSnapshot Json        @map("shipping_address_snapshot")
   idempotencyKey          String?     @unique @map("idempotency_key")
   createdAt               DateTime    @default(now()) @map("created_at")
   updatedAt               DateTime    @updatedAt @map("updated_at")
 
-  buyer        User          @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
-  seller       User          @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
-  items        OrderItem[]
-  payments     Payment[]
-  escrowRecord EscrowRecord?
-  shipment     Shipment?
-  dispute      Dispute?
-  review       Review?
+  buyer          User            @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
+  seller         User            @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
+  items          OrderItem[]
+  payments       Payment[]
+  escrowRecord   EscrowRecord?
+  shipment       Shipment?
+  dispute        Dispute?
+  review         Review?
+  productReviews ProductReview[]
+  customerReview CustomerReview?
 
   @@map("orders")
 }
@@ -518,6 +549,7 @@ model OrderItem {
   id         String   @id @default(uuid())
   orderId    String   @map("order_id")
   productId  String   @map("product_id")
+  selections Json?
   quantity   Int      @default(1)
   unitPrice  Decimal  @map("unit_price") @db.Decimal(14, 2)
   totalPrice Decimal  @map("total_price") @db.Decimal(14, 2)
@@ -661,6 +693,57 @@ model Review {
   @@map("reviews")
 }
 
+model ProductReview {
+  id         String   @id @default(uuid())
+  orderId    String   @map("order_id")
+  productId  String   @map("product_id")
+  reviewerId String   @map("reviewer_id")
+  rating     Int
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+
+  @@unique([orderId, productId])
+  @@index([productId, createdAt])
+  @@map("product_reviews")
+}
+
+model CustomerReview {
+  id        String   @id @default(uuid())
+  orderId   String   @unique @map("order_id")
+  sellerId  String   @map("seller_id")
+  buyerId   String   @map("buyer_id")
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seller    User     @relation("CustomerReviewer", fields: [sellerId], references: [id], onDelete: Restrict)
+  buyer     User     @relation("CustomerReviewee", fields: [buyerId], references: [id], onDelete: Restrict)
+
+  @@index([buyerId, createdAt])
+  @@map("customer_reviews")
+}
+
+model EventBanner {
+  id        String    @id @default(uuid())
+  title     String
+  imageUrl  String    @map("image_url")
+  targetUrl String?   @map("target_url")
+  startsAt  DateTime? @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  isActive  Boolean   @default(true) @map("is_active")
+  priority  Int       @default(0)
+  creatorId String    @map("creator_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  creator   User      @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+
+  @@index([isActive, startsAt, endsAt])
+  @@map("event_banners")
+}
+
 model EventLog {
   id         String   @id @default(uuid())
   eventName  String   @map("event_name")
@@ -767,6 +850,7 @@ model ShopActionLog {
 model ShopViolation {
   id               String          @id @default(uuid())
   shopId           String          @map("shop_id")
+  productId        String?         @map("product_id")
   reporterId       String?         @map("reporter_id")
   title            String
   description      String          @db.Text
@@ -779,9 +863,10 @@ model ShopViolation {
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
 
-  shop      User  @relation("ShopViolations", fields: [shopId], references: [id], onDelete: Cascade)
-  reporter  User? @relation("ReportedShopViolations", fields: [reporterId], references: [id], onDelete: SetNull)
-  handledBy User? @relation("HandledShopViolations", fields: [handledByAdminId], references: [id], onDelete: SetNull)
+  shop      User     @relation("ShopViolations", fields: [shopId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  reporter  User?    @relation("ReportedShopViolations", fields: [reporterId], references: [id], onDelete: SetNull)
+  handledBy User?    @relation("HandledShopViolations", fields: [handledByAdminId], references: [id], onDelete: SetNull)
 
   @@index([shopId, status])
   @@map("shop_violations")

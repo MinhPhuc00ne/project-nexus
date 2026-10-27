@@ -8,11 +8,23 @@ import {
   Min,
   ArrayMinSize,
   ArrayMaxSize,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { ProductOptionDto } from './product-features.dto';
 
 export class CreateProductDto {
+  @ApiPropertyOptional({
+    type: [ProductOptionDto],
+    description: 'Màu, size... dùng chung giá và tồn kho của sản phẩm',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(6)
+  @ValidateNested({ each: true })
+  @Type(() => ProductOptionDto)
+  options?: ProductOptionDto[];
   @ApiProperty({ example: 'Đồng Hồ Audemars Piguet Skeleton' })
   @IsString()
   @IsNotEmpty()

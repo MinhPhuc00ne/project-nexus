@@ -9,10 +9,10 @@ import {
 import { Role } from '@nexus/types';
 import { SellerRequestStatus, User, Wallet } from '@prisma/client';
 import * as crypto from 'crypto';
-import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
-import { RedisService } from '../../../core/redis/redis.service';
+import { ProfileReauthService } from '../../../core/security/profile-reauth.service';
+import { toggleSellerState, userMode } from '../../../core/security/user-mode';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import {
   UpdateBuyerProfileDto,
@@ -21,6 +21,7 @@ import {
   UserProfileResponse,
 } from '../dtos/users.dto';
 import { UpdateShopProfileDto } from '../dtos/update-shop-profile.dto';
+import { UpdateStaffProfileDto } from '../../auth/dto/update-staff-profile.dto';
 
 export type { UserProfileResponse };
 
@@ -31,7 +32,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: CloudinaryStorageService,
-    private readonly redisService: RedisService,
+    private readonly profileReauth: ProfileReauthService,
   ) {}
 
   private formatProfile(user: User & { wallet: Wallet | null }): UserProfileResponse {
@@ -44,7 +45,7 @@ export class UsersService {
       phoneNumber: user.phoneNumber,
       avatarUrl: user.avatarUrl,
       role: user.role as Role,
-      isSellerActive: user.isSellerActive,
+      ...userMode(user),
       isShopSuspended: user.isShopSuspended,
       suspensionReason: user.suspensionReason,
       walletBalance: user.wallet ? Number(user.wallet.balance) : 0,
@@ -67,11 +68,32 @@ export class UsersService {
     return this.formatProfile(user);
   }
 
+  async updateStaffProfile(
+    userId: string,
+    dto: UpdateStaffProfileDto,
+  ): Promise<UserProfileResponse> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.role !== 'SUPPORT_STAFF')
+      throw new ForbiddenException('Chỉ Staff được chỉnh hồ sơ Staff của chính mình.');
+    if (dto.fullName !== undefined && dto.fullName.trim().length < 2)
+      throw new BadRequestException('Họ tên không hợp lệ.');
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: dto.fullName?.trim(),
+        phoneNumber: dto.phoneNumber,
+        avatarUrl: dto.avatarUrl,
+      },
+      include: { wallet: true },
+    });
+    return this.formatProfile(updated);
+  }
+
   // 2. PROFILE.UPDATE: Cập nhật thông tin cá nhân (chỉ Buyer & Seller; Seller yêu cầu xác minh lại mật khẩu gần đây)
   async updateProfile(
     userId: string,
     dto: UpdateBuyerProfileDto,
-    callerRole?: Role,
+    _callerRole?: Role,
     verificationToken?: string,
   ): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({
@@ -80,50 +102,15 @@ export class UsersService {
     });
     if (!user) throw new NotFoundException('User not found');
 
-    const effectiveRole = callerRole || (user.role as Role);
+    const effectiveRole = user.role;
     if (effectiveRole !== Role.BUYER && effectiveRole !== Role.SELLER) {
       throw new ForbiddenException('Chỉ Buyer và Seller được phép chỉnh sửa hồ sơ cá nhân.');
     }
 
-    if (effectiveRole === Role.SELLER) {
-      let isVerified = false;
-
-      // 1. Kiểm tra xác minh gần đây trong Redis (thiết lập khi Seller đăng nhập lại trong vòng 5 phút)
-      try {
-        const cached = await this.redisService.get(`seller_recent_reauth:${userId}`);
-        if (cached) {
-          isVerified = true;
-        }
-      } catch (err) {
-        this.logger.warn(`Redis get seller_recent_reauth failed: ${err}`);
-      }
-
-      // 2. Kiểm tra nếu có truyền mật khẩu xác minh trực tiếp trong payload
-      if (!isVerified && dto.password && user.passwordHash) {
-        const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
-        if (isMatch) {
-          isVerified = true;
-        }
-      }
-
-      // 3. Kiểm tra nếu có truyền token xác minh (verificationToken)
-      const tokenProof = verificationToken || dto.verificationToken;
-      if (!isVerified && tokenProof) {
-        const tokenHash = crypto.createHash('sha256').update(tokenProof).digest('hex');
-        const tokenRecord = await this.prisma.refreshToken.findFirst({
-          where: { userId, tokenHash },
-        });
-        if (tokenRecord) {
-          isVerified = true;
-        }
-      }
-
-      if (!isVerified) {
-        throw new ForbiddenException(
-          'Yêu cầu xác minh lại mật khẩu gần đây trước khi cập nhật hồ sơ người bán (Seller re-authentication required).',
-        );
-      }
-    }
+    await this.profileReauth.assert(user, {
+      password: dto.password,
+      verificationToken: verificationToken || dto.verificationToken,
+    });
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
@@ -339,27 +326,8 @@ export class UsersService {
       isSellerActive: boolean;
     };
   }> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
-
-    if (user.role !== Role.SELLER && user.role !== Role.ADMIN && user.role !== Role.SUPPORT_STAFF) {
-      throw new BadRequestException(
-        'Account is not registered as a Seller. Please submit a seller upgrade application first.',
-      );
-    }
-
-    const newSellerActive = !user.isSellerActive;
-    if (user.isShopSuspended) {
-      throw new ForbiddenException(
-        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
-          user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
-        } Không thể chuyển sang chế độ Người bán.`,
-      );
-    }
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { isSellerActive: newSellerActive, updatedAt: new Date() },
-    });
+    const user = await toggleSellerState(this.prisma, userId);
+    const newSellerActive = user.isSellerActive;
 
     this.logger.log(`User ${userId} toggled seller mode: ${newSellerActive ? 'SELLER' : 'BUYER'}`);
     return {
@@ -374,7 +342,7 @@ export class UsersService {
         email: user.email,
         fullName: user.fullName,
         role: user.role,
-        isSellerActive: newSellerActive,
+        ...userMode(user),
       },
     };
   }
@@ -406,6 +374,8 @@ export class UsersService {
     return {
       id: user.id,
       storeName: latestApproved?.storeName || user.fullName,
+      shopAvatarUrl: user.shopAvatarUrl,
+      avatarUrl: user.shopAvatarUrl,
       storeDescription: latestApproved?.storeDescription || null,
       phone: latestApproved?.phone || user.phoneNumber,
       businessEmail: latestApproved?.businessEmail || user.email,
@@ -487,11 +457,14 @@ export class UsersService {
     const latestApproved = user.sellerUpgradeRequests[0];
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Cập nhật số điện thoại cá nhân nếu có truyền phone
-      if (dto.phone) {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
+      const current = await tx.user.findUniqueOrThrow({ where: { id: sellerId } });
+      if (current.isShopSuspended) throw new ForbiddenException('Shop đang bị đình chỉ.');
+      // Store contact details belong to the shop request, not the seller's personal profile.
+      if (dto.shopAvatarUrl !== undefined) {
         await tx.user.update({
           where: { id: sellerId },
-          data: { phoneNumber: dto.phone.trim(), updatedAt: new Date() },
+          data: { shopAvatarUrl: dto.shopAvatarUrl?.trim() || null },
         });
       }
 
@@ -560,47 +533,6 @@ export class UsersService {
         });
       }
 
-      // 3. Đồng bộ sổ địa chỉ mặc định của Seller nếu có thông tin địa chỉ
-      if (dto.street && dto.city) {
-        const defaultAddr = user.addresses[0];
-        if (defaultAddr) {
-          await tx.userAddress.update({
-            where: { id: defaultAddr.id },
-            data: {
-              recipientName: updatedRequest.storeName,
-              phone: updatedRequest.phone,
-              street: dto.street.trim(),
-              ward: dto.ward?.trim() || defaultAddr.ward,
-              district: dto.district?.trim() || defaultAddr.district,
-              city: dto.city.trim(),
-              latitude: dto.latitude !== undefined ? Number(dto.latitude) : defaultAddr.latitude,
-              longitude:
-                dto.longitude !== undefined ? Number(dto.longitude) : defaultAddr.longitude,
-              formattedAddress: dto.formattedAddress?.trim() || defaultAddr.formattedAddress,
-              placeId: dto.placeId?.trim() || defaultAddr.placeId,
-              updatedAt: new Date(),
-            },
-          });
-        } else {
-          await tx.userAddress.create({
-            data: {
-              userId: sellerId,
-              recipientName: updatedRequest.storeName,
-              phone: updatedRequest.phone,
-              street: dto.street.trim(),
-              ward: dto.ward?.trim() || null,
-              district: dto.district?.trim() || null,
-              city: dto.city.trim(),
-              latitude: dto.latitude !== undefined ? Number(dto.latitude) : null,
-              longitude: dto.longitude !== undefined ? Number(dto.longitude) : null,
-              formattedAddress: dto.formattedAddress?.trim() || null,
-              placeId: dto.placeId?.trim() || null,
-              isDefault: true,
-            },
-          });
-        }
-      }
-
       return updatedRequest;
     });
 
@@ -611,6 +543,10 @@ export class UsersService {
       message: 'Cập nhật thông tin gian hàng thành công!',
       shop: {
         id: sellerId,
+        shopAvatarUrl:
+          dto.shopAvatarUrl !== undefined ? dto.shopAvatarUrl?.trim() || null : user.shopAvatarUrl,
+        avatarUrl:
+          dto.shopAvatarUrl !== undefined ? dto.shopAvatarUrl?.trim() || null : user.shopAvatarUrl,
         storeName: result.storeName,
         storeDescription: result.storeDescription,
         phone: result.phone,

@@ -1,8 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsEmail, IsNumber, IsOptional, IsString, IsUrl } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateShopProfileDto {
+  @ApiPropertyOptional({
+    description: 'Avatar riêng của gian hàng, không đổi avatar cá nhân',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
+  shopAvatarUrl?: string | null;
   @ApiPropertyOptional({
     example: 'Gốm Sứ Bát Tràng Store - Chi nhánh HCM',
     description: 'Tên gian hàng / thương hiệu của người bán',

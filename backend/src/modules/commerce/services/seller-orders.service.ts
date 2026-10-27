@@ -114,6 +114,7 @@ export class SellerOrdersService {
       items: o.items.map((it) => ({
         id: it.id,
         productId: it.productId,
+        selections: it.selections,
         title: it.product?.title || '',
         thumbnail: it.product?.images?.[0]?.imageUrl || null,
         unitPrice: Number(it.unitPrice),
@@ -201,6 +202,7 @@ export class SellerOrdersService {
       items: order.items.map((it) => ({
         id: it.id,
         productId: it.productId,
+        selections: it.selections,
         title: it.product?.title || '',
         weightGrams: it.product?.weightGrams || 500,
         dimensions: {

@@ -11,6 +11,7 @@ import { StaffController } from './controllers/staff.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { ProfileReauthService } from '../../core/security/profile-reauth.service';
 
 @Module({
   imports: [
@@ -36,10 +37,12 @@ import { UsersModule } from '../users/users.module';
     ModularAuthService,
     AuthProfileService,
     StaffProvisioningService,
+    ProfileReauthService,
     JwtStrategy,
     GoogleStrategy,
   ],
   exports: [
+    ProfileReauthService,
     AuthService,
     ModularAuthService,
     AuthProfileService,
