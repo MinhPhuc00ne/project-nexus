@@ -16,10 +16,14 @@ import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { SellerEngagementController } from './controllers/seller-engagement.controller';
 import { OrderLifecycleController } from './controllers/order-lifecycle.controller';
 import { OrderEscrowService } from './services/order-escrow.service';
+import { FeedbackController } from './controllers/feedback.controller';
+import { ReviewsService } from './services/reviews.service';
+import { ReportsService } from './services/reports.service';
 
 @Module({
   imports: [PrismaModule, FulfillmentModule, forwardRef(() => AdminModule)],
   controllers: [
+    FeedbackController,
     CartController,
     OrderController,
     PayosWebhookController,
@@ -29,6 +33,8 @@ import { OrderEscrowService } from './services/order-escrow.service';
     OrderLifecycleController,
   ],
   providers: [
+    ReviewsService,
+    ReportsService,
     CartService,
     PayosService,
     OrderService,

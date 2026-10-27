@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { effectivePrice } from '../../catalog/utils/product-price';
 import { ShippingQuoteDto } from '../dtos/shipping-quote.dto';
 import { GhnShippingService, GhnAddress, GhnShippingQuote } from './ghn-shipping.service';
 import { RouteDistanceService, RouteDistance } from './route-distance.service';
@@ -83,7 +84,7 @@ export class FulfillmentService {
         length: product.lengthCm,
         width: product.widthCm,
         height: product.heightCm,
-        price: Number(product.basePrice),
+        price: effectivePrice(product),
       };
     });
     const quote = await this.shipping.quote(sellerId, address ?? {}, items, dto);

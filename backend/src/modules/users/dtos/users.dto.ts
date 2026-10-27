@@ -14,6 +14,9 @@ export interface UserProfileResponse {
   avatarUrl?: string | null;
   role: Role;
   isSellerActive: boolean;
+  currentMode?: 'SELLER' | 'BUYER';
+  activeRole?: string;
+  accountRole?: string;
   isShopSuspended?: boolean;
   suspensionReason?: string | null;
   walletBalance: number;

@@ -15,6 +15,7 @@ import {
   ShipmentStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { productChoiceLabel } from '../../catalog/utils/product-options';
 import { DispatchGhnOrderDto } from '../../commerce/dtos/seller-order.dto';
 import { GhnAddress, GhnShippingQuote, GhnShippingService } from './ghn-shipping.service';
 import { GhnParcel } from './ghn-parcel';
@@ -98,8 +99,8 @@ export class GhnDispatchService {
     const request = objectValue(frozen.request);
     const items: GhnParcelItem[] = Array.isArray(frozenParcel.items)
       ? (frozenParcel.items as GhnParcelItem[])
-      : order.items.map(({ product, quantity, unitPrice }) => ({
-          name: product.title,
+      : order.items.map(({ product, quantity, unitPrice, selections }) => ({
+          name: productChoiceLabel(product.title, selections),
           quantity,
           weight: product.weightGrams,
           length: product.lengthCm,

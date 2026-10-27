@@ -2,6 +2,17 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, Length, Matches } from 'class-validator';
 
 export class UpdateAuthProfileDto {
+  @ApiPropertyOptional({ description: 'Mật khẩu xác minh lại khi Seller cập nhật hồ sơ' })
+  @IsOptional()
+  @IsString()
+  password?: string;
+
+  @ApiPropertyOptional({
+    description: 'Token PROFILE_UPDATE do API reauthenticate cấp, hạn 5 phút',
+  })
+  @IsOptional()
+  @IsString()
+  verificationToken?: string;
   @ApiPropertyOptional({
     example: 'Nguyen Van A',
     description: 'Họ và tên của người dùng (từ 2 đến 100 ký tự)',
@@ -30,4 +41,11 @@ export class UpdateAuthProfileDto {
   })
   @IsOptional()
   avatarUrl?: string;
+}
+
+export class ReauthenticateProfileDto {
+  @ApiPropertyOptional({ description: 'Mật khẩu hiện tại để xác minh hồ sơ' })
+  @IsString()
+  @Length(1, 200)
+  password!: string;
 }

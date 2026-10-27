@@ -1,4 +1,6 @@
 import { Prisma } from '@prisma/client';
+import { effectivePrice, PricedProduct } from '../../catalog/utils/product-price';
+import { ProductChoice, validateSelections } from '../../catalog/utils/product-options';
 
 export const CART_EXPIRATION_DAYS = 7;
 
@@ -6,13 +8,21 @@ export function getCartExpiresAt(): Date {
   return new Date(Date.now() + CART_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
 }
 
-export interface CartItemProductWithRelations {
+export interface CartItemProductWithRelations extends PricedProduct {
   id: string;
   title: string;
   basePrice: Prisma.Decimal | number;
   images: Array<{ imageUrl: string }>;
-  seller: { id: string; fullName: string; avatarUrl: string | null };
+  seller: {
+    id: string;
+    fullName: string;
+    avatarUrl: string | null;
+    shopAvatarUrl?: string | null;
+    isShopSuspended?: boolean;
+  };
   inventories: Array<{ availableQty: number }>;
+  options?: ProductChoice[];
+  status?: string;
 }
 
 export interface RawCartItem {
@@ -21,9 +31,13 @@ export interface RawCartItem {
   priceAtAdded: Prisma.Decimal | number;
   createdAt: Date;
   product: CartItemProductWithRelations;
+  selections?: unknown;
 }
 
 export interface FormattedCartItem {
+  selections: Record<string, string>;
+  hasInvalidSelections: boolean;
+  isUnavailable: boolean;
   id: string;
   productId: string;
   name: string;
@@ -47,7 +61,14 @@ export interface FormattedCartItem {
 
 export function formatCartItem(item: RawCartItem): FormattedCartItem {
   const product = item.product;
-  const currentPrice = Number(product.basePrice);
+  const currentPrice = effectivePrice(product);
+  let selections: Record<string, string> = {};
+  let hasInvalidSelections = false;
+  try {
+    selections = validateSelections(product.options ?? [], item.selections).selections;
+  } catch {
+    hasInvalidSelections = true;
+  }
   const priceAtAdded = Number(item.priceAtAdded);
   const hasPriceChanged = currentPrice !== priceAtAdded;
 
@@ -56,6 +77,13 @@ export function formatCartItem(item: RawCartItem): FormattedCartItem {
   const isStockInsufficient = item.quantity > availableQty;
 
   return {
+    selections,
+    hasInvalidSelections,
+    isUnavailable:
+      hasInvalidSelections ||
+      product.seller.isShopSuspended === true ||
+      product.status === 'INACTIVE' ||
+      product.status === 'DRAFT',
     id: item.id,
     productId: product.id,
     name: product.title,
@@ -63,7 +91,7 @@ export function formatCartItem(item: RawCartItem): FormattedCartItem {
     shop: {
       id: product.seller.id,
       name: product.seller.fullName,
-      avatarUrl: product.seller.avatarUrl,
+      avatarUrl: product.seller.shopAvatarUrl ?? null,
     },
     quantity: item.quantity,
     currentPrice,

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { priceView } from '../utils/product-price';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { QueryShopDto } from '../dtos/query-shop.dto';
 import { InventoryService } from './inventory.service';
@@ -58,6 +59,7 @@ export class ShopService {
 
     // Điều kiện cơ bản: Là SELLER hoặc có hồ sơ nâng cấp đã APPROVED
     const where: Prisma.UserWhereInput = {
+      isShopSuspended: false,
       OR: [
         { role: Role.SELLER },
         {
@@ -139,6 +141,9 @@ export class ShopService {
               id: true,
               title: true,
               basePrice: true,
+              salePrice: true,
+              saleStartsAt: true,
+              saleEndsAt: true,
               images: {
                 orderBy: { sortOrder: 'asc' },
                 take: 1,
@@ -189,7 +194,7 @@ export class ShopService {
         name,
         sellerFullName: seller.fullName,
         description,
-        avatarUrl: seller.avatarUrl,
+        avatarUrl: seller.shopAvatarUrl,
         reputationScore: seller.reputationScore,
         trustLevel: seller.trustLevel,
         isSellerActive: seller.isSellerActive,
@@ -201,6 +206,7 @@ export class ShopService {
           id: p.id,
           title: p.title,
           basePrice: Number(p.basePrice),
+          ...priceView(p),
           thumbnail: p.images[0]?.imageUrl || null,
         })),
         createdAt: approvedRequest?.createdAt || seller.createdAt,
@@ -243,7 +249,7 @@ export class ShopService {
       },
     });
 
-    if (!seller) {
+    if (!seller || seller.isShopSuspended) {
       throw new NotFoundException('Không tìm thấy gian hàng này.');
     }
 
@@ -292,6 +298,7 @@ export class ShopService {
           images: { orderBy: { sortOrder: 'asc' } },
           category: { select: { id: true, name: true, slug: true } },
           inventories: { select: { availableQty: true } },
+          options: true,
         },
       }),
       this.prisma.product.count({
@@ -309,6 +316,10 @@ export class ShopService {
         title: p.title,
         description: p.description,
         basePrice: Number(p.basePrice),
+        ...priceView(p),
+        options: p.options,
+        averageRating: p.averageRating,
+        reviewCount: p.reviewCount,
         category: p.category,
         images: p.images.map((img) => img.imageUrl),
         thumbnail: p.images[0]?.imageUrl || null,
@@ -325,7 +336,7 @@ export class ShopService {
         name,
         sellerFullName: seller.fullName,
         description,
-        avatarUrl: seller.avatarUrl,
+        avatarUrl: seller.shopAvatarUrl,
         reputationScore: seller.reputationScore,
         trustLevel: seller.trustLevel,
         isSellerActive: seller.isSellerActive,

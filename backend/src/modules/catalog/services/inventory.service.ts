@@ -11,21 +11,15 @@ export class InventoryService {
    */
   async ensureDefaultWarehouse(tx?: Prisma.TransactionClient) {
     const client = tx || this.prisma;
-    let warehouse = await client.warehouse.findUnique({
+    return client.warehouse.upsert({
       where: { code: 'WH_001' },
+      update: {},
+      create: {
+        code: 'WH_001',
+        name: 'Sổ tồn kho mặc định NEXUS',
+        address: 'Kho logic; địa điểm lấy hàng thực tế theo pickup point của từng Seller',
+      },
     });
-
-    if (!warehouse) {
-      warehouse = await client.warehouse.create({
-        data: {
-          code: 'WH_001',
-          name: 'Tổng kho NEXUS Tân Bình',
-          address: 'Số 123 Đường Cộng Hòa, Quận Tân Bình, TP. Hồ Chí Minh',
-        },
-      });
-    }
-
-    return warehouse;
   }
 
   /**

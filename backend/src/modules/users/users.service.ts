@@ -12,6 +12,7 @@ import { CloudinaryStorageService } from '../../core/storage/cloudinary.service'
 import { assertCleanContent } from '../../core/moderation/content-moderation.util';
 import { CreateSellerRequestDto } from './dto/create-seller-request.dto';
 import { ToggleSellerDto } from './dto/toggle-seller.dto';
+import { toggleSellerState, userMode } from '../../core/security/user-mode';
 
 @Injectable()
 export class UsersService {
@@ -48,10 +49,9 @@ export class UsersService {
       phoneNumber: user.phoneNumber,
       avatarUrl: user.avatarUrl,
       role: user.role,
-      isSellerActive: user.isSellerActive,
       isShopSuspended: user.isShopSuspended,
       suspensionReason: user.suspensionReason,
-      currentMode: user.isSellerActive ? 'SELLER' : 'BUYER',
+      ...userMode(user),
       canToggleSeller:
         (user.role === Role.SELLER ||
           user.role === Role.ADMIN ||
@@ -77,36 +77,8 @@ export class UsersService {
 
   // ================= 2. CHUYỂN ĐỔI CHẾ ĐỘ BUYER <-> SELLER =================
   async toggleSellerMode(userId: string, dto?: ToggleSellerDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
-    }
-
-    // Chỉ tài khoản đã nâng cấp thành SELLER (hoặc ADMIN) mới được phép chuyển đổi
-    if (user.role !== Role.SELLER && user.role !== Role.ADMIN && user.role !== Role.SUPPORT_STAFF) {
-      throw new ForbiddenException(
-        'Bạn chưa được cấp quyền Seller. Chỉ tài khoản đã nâng cấp thành công lên Người bán mới có quyền chuyển đổi giữa chế độ Người mua và Người bán. Vui lòng gửi yêu cầu nâng cấp lên Admin.',
-      );
-    }
-
-    const nextState = dto?.isSellerActive !== undefined ? dto.isSellerActive : !user.isSellerActive;
-
-    // Nếu shop đang bị Admin đình chỉ hoạt động, nghiêm cấm mọi thao tác chuyển sang chế độ Người bán
-    if (user.isShopSuspended) {
-      throw new ForbiddenException(
-        `Gian hàng của bạn hiện đang bị Admin đình chỉ hoạt động.${
-          user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''
-        } Không thể kích hoạt hoặc chuyển đổi chế độ Người bán.`,
-      );
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: { isSellerActive: nextState },
-    });
+    const updatedUser = await toggleSellerState(this.prisma, userId, dto?.isSellerActive);
+    const nextState = updatedUser.isSellerActive;
 
     return {
       message: nextState
@@ -119,7 +91,7 @@ export class UsersService {
         email: updatedUser.email,
         fullName: updatedUser.fullName,
         role: updatedUser.role,
-        isSellerActive: updatedUser.isSellerActive,
+        ...userMode(updatedUser),
       },
     };
   }

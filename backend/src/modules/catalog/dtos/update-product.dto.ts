@@ -7,12 +7,21 @@ import {
   Min,
   ArrayMaxSize,
   IsEnum,
+  ValidateNested,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ProductStatus } from '@prisma/client';
+import { ProductOptionDto } from './product-features.dto';
 
 export class UpdateProductDto {
+  @ApiPropertyOptional({ type: [ProductOptionDto] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(6)
+  @ValidateNested({ each: true })
+  @Type(() => ProductOptionDto)
+  options?: ProductOptionDto[];
   @ApiPropertyOptional({ example: 'Đồng Hồ Audemars Piguet Skeleton New Edition' })
   @IsOptional()
   @IsString()

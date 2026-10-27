@@ -12,6 +12,8 @@ import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ConfirmChangePasswordOtpDto } from '../dto/confirm-change-password-otp.dto';
 import { UpdateAuthProfileDto } from '../dto/update-profile.dto';
+import { ProfileReauthService } from '../../../core/security/profile-reauth.service';
+import { userMode } from '../../../core/security/user-mode';
 
 export interface UserProfileResponse {
   id: string;
@@ -30,14 +32,32 @@ export interface UserProfileResponse {
   updatedAt: Date;
 }
 
+const profileSelect = {
+  id: true,
+  email: true,
+  personalEmail: true,
+  platformEmail: true,
+  fullName: true,
+  phoneNumber: true,
+  avatarUrl: true,
+  role: true,
+  isSellerActive: true,
+  isShopSuspended: true,
+  reputationScore: true,
+  trustLevel: true,
+  isVerified: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 @Injectable()
 export class AuthProfileService {
   private readonly logger = new Logger(AuthProfileService.name);
   private readonly transporter: nodemailer.Transporter;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    private readonly profileReauth: ProfileReauthService,
   ) {
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -51,106 +71,58 @@ export class AuthProfileService {
   async getProfile(userId: string): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        personalEmail: true,
-        platformEmail: true,
-        fullName: true,
-        phoneNumber: true,
-        avatarUrl: true,
-        role: true,
-        isSellerActive: true,
-        reputationScore: true,
-        trustLevel: true,
-        isVerified: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: profileSelect,
     });
-
-    if (!user) {
-      throw new NotFoundException('Không tìm thấy thông tin người dùng.');
-    }
-
-    return user;
+    if (!user) throw new NotFoundException('Không tìm thấy thông tin người dùng.');
+    return { ...user, ...userMode(user) };
   }
 
   async updateProfile(userId: string, dto: UpdateAuthProfileDto): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('Không tìm thấy thông tin người dùng.');
-    }
-
+    if (!user) throw new NotFoundException('Không tìm thấy thông tin người dùng.');
     if (user.role !== 'BUYER' && user.role !== 'SELLER') {
       throw new ForbiddenException('Chỉ Buyer và Seller được phép chỉnh sửa hồ sơ cá nhân.');
     }
-
+    await this.profileReauth.assert(user, dto);
     const data: {
       fullName?: string;
       phoneNumber?: string | null;
       avatarUrl?: string | null;
       updatedAt: Date;
-    } = {
-      updatedAt: new Date(),
-    };
-
-    if (dto.fullName) {
-      data.fullName = dto.fullName.trim();
-    }
-    if (dto.phoneNumber !== undefined) {
-      data.phoneNumber = dto.phoneNumber.trim() || null;
-    }
-    if (dto.avatarUrl !== undefined) {
-      data.avatarUrl = dto.avatarUrl.trim() || null;
-    }
-
-    return this.prisma.user.update({
+    } = { updatedAt: new Date() };
+    if (dto.fullName) data.fullName = dto.fullName.trim();
+    if (dto.phoneNumber !== undefined) data.phoneNumber = dto.phoneNumber.trim() || null;
+    if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl.trim() || null;
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data,
-      select: {
-        id: true,
-        email: true,
-        personalEmail: true,
-        platformEmail: true,
-        fullName: true,
-        phoneNumber: true,
-        avatarUrl: true,
-        role: true,
-        isSellerActive: true,
-        reputationScore: true,
-        trustLevel: true,
-        isVerified: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: profileSelect,
     });
+    return { ...updated, ...userMode(updated) };
+  }
+
+  async reauthenticate(
+    userId: string,
+    password: string,
+  ): Promise<{ verificationToken: string; expiresIn: number }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !['BUYER', 'SELLER'].includes(user.role)) {
+      throw new ForbiddenException('Chỉ Buyer/Seller được xác minh cập nhật hồ sơ tại đây.');
+    }
+    return this.profileReauth.issue(user, password);
   }
 
   async requestChangePasswordOtp(userId: string): Promise<{ success: boolean; message: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('Không tìm thấy thông tin người dùng.');
-    }
-
+    if (!user) throw new NotFoundException('Không tìm thấy thông tin người dùng.');
     const recipientEmail = user.personalEmail || user.email;
     const otp = crypto.randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
     await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        verificationCode: otp,
-        codeExpiresAt: expiresAt,
-      },
+      data: { verificationCode: otp, codeExpiresAt: expiresAt },
     });
-
     await this.sendPasswordChangeOtpEmail(recipientEmail, user.fullName, otp);
-
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.debug(`[DEV ONLY] OTP change password for ${recipientEmail}: ${otp}`);
-    }
-
     return {
       success: true,
       message: `Mã OTP xác thực đổi mật khẩu đã được gửi đến email ${recipientEmail}.`,
@@ -165,41 +137,31 @@ export class AuthProfileService {
     if (!user || !user.verificationCode || !user.codeExpiresAt) {
       throw new BadRequestException('Chưa có yêu cầu gửi mã OTP hoặc mã OTP không hợp lệ.');
     }
-
-    if (user.codeExpiresAt < new Date()) {
+    if (user.codeExpiresAt < new Date())
       throw new BadRequestException(
         'Mã OTP đã hết hạn (chỉ có hiệu lực trong 15 phút). Vui lòng yêu cầu mã mới.',
       );
-    }
-
-    if (user.verificationCode !== dto.otp) {
+    if (user.verificationCode !== dto.otp)
       throw new BadRequestException('Mã OTP không chính xác. Vui lòng kiểm tra lại.');
+    if (user.passwordHash && (await bcrypt.compare(dto.newPassword, user.passwordHash))) {
+      throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
     }
-
-    if (user.passwordHash) {
-      const isSamePassword = await bcrypt.compare(dto.newPassword, user.passwordHash);
-      if (isSamePassword) {
-        throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
-      }
-    }
-
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(dto.newPassword, salt);
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        passwordHash,
-        verificationCode: null,
-        codeExpiresAt: null,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      const changed = await tx.user.updateMany({
+        where: {
+          id: userId,
+          verificationCode: dto.otp,
+          codeExpiresAt: { gt: new Date() },
+          passwordHash: user.passwordHash,
+        },
+        data: { passwordHash, verificationCode: null, codeExpiresAt: null },
+      });
+      if (changed.count !== 1)
+        throw new BadRequestException('Mã OTP đã được dùng hoặc đã hết hạn.');
+      await tx.refreshToken.updateMany({ where: { userId }, data: { isRevoked: true } });
     });
-
-    await this.prisma.refreshToken.updateMany({
-      where: { userId },
-      data: { isRevoked: true },
-    });
-
     return {
       success: true,
       message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại bằng mật khẩu mới.',
@@ -230,15 +192,11 @@ export class AuthProfileService {
           </div>
         `,
       });
-    } catch (error) {
-      this.logger.warn(
-        `[DEV MODE] Gửi email đổi mật khẩu thất bại (chưa cấu hình SMTP): ${(error as Error).message}`,
+    } catch {
+      this.logger.warn('Gửi email đổi mật khẩu thất bại.');
+      throw new BadRequestException(
+        'Không thể gửi email xác nhận đổi mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
       );
-      if (process.env.NODE_ENV === 'production') {
-        throw new BadRequestException(
-          'Không thể gửi email xác nhận đổi mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
-        );
-      }
     }
   }
 }

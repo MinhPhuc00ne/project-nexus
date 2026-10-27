@@ -1,35 +1,49 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AddToCartDto } from '../dtos/add-to-cart.dto';
 import { UpdateCartItemDto } from '../dtos/update-cart-item.dto';
 import { MergeCartDto } from '../dtos/merge-cart.dto';
-import { ProductStatus } from '@prisma/client';
-import { getCartExpiresAt, formatCartItem, summarizeCart } from '../utils/cart.util';
+import {
+  getCartExpiresAt,
+  formatCartItem,
+  summarizeCart,
+  FormattedCartItem,
+} from '../utils/cart.util';
+import { effectivePrice } from '../../catalog/utils/product-price';
+import { validateSelections } from '../../catalog/utils/product-options';
+
+export interface CartView {
+  cartId: string;
+  userId: string;
+  expiresAt: Date;
+  items: FormattedCartItem[];
+  totalCount: number;
+  totalPrice: number;
+  hasPriceChanged: boolean;
+  skippedItems?: Array<{ productId: string; reason: string }>;
+}
 
 @Injectable()
 export class CartService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Tìm hoặc tạo mới giỏ hàng cho user
-   */
-  private async findOrCreateCart(userId: string) {
-    return this.prisma.cart.upsert({
+  private async lockedCart(tx: Prisma.TransactionClient, userId: string): Promise<{ id: string }> {
+    const cart = await tx.cart.upsert({
       where: { userId },
-      update: {},
-      create: {
-        userId,
-        expiresAt: getCartExpiresAt(),
-      },
+      update: { expiresAt: getCartExpiresAt() },
+      create: { userId, expiresAt: getCartExpiresAt() },
     });
+    await tx.$queryRaw`SELECT id FROM carts WHERE id = ${cart.id} FOR UPDATE`;
+    return cart;
   }
 
-  /**
-   * Lấy giỏ hàng của Buyer kèm kiểm tra tái thẩm định giá (Price Revalidation)
-   */
-  async getCart(userId: string) {
-    const cart = await this.findOrCreateCart(userId);
-
+  async getCart(userId: string): Promise<CartView> {
+    const cart = await this.prisma.cart.upsert({
+      where: { userId },
+      update: {},
+      create: { userId, expiresAt: getCartExpiresAt() },
+    });
     const fullCart = await this.prisma.cart.findUnique({
       where: { id: cart.id },
       include: {
@@ -37,8 +51,17 @@ export class CartService {
           include: {
             product: {
               include: {
+                options: true,
                 images: { orderBy: { sortOrder: 'asc' } },
-                seller: { select: { id: true, fullName: true, avatarUrl: true } },
+                seller: {
+                  select: {
+                    id: true,
+                    fullName: true,
+                    avatarUrl: true,
+                    shopAvatarUrl: true,
+                    isShopSuspended: true,
+                  },
+                },
                 inventories: { select: { availableQty: true } },
               },
             },
@@ -47,247 +70,141 @@ export class CartService {
         },
       },
     });
-
-    if (!fullCart) {
-      throw new NotFoundException('Không tìm thấy giỏ hàng.');
-    }
-
-    const formattedItems = fullCart.items.map((item) => formatCartItem(item));
-    const summary = summarizeCart(formattedItems);
-
+    if (!fullCart) throw new NotFoundException('Không tìm thấy giỏ hàng.');
+    const items = fullCart.items.map((item) => formatCartItem(item));
     return {
       cartId: fullCart.id,
       userId: fullCart.userId,
       expiresAt: fullCart.expiresAt,
-      items: formattedItems,
-      ...summary,
+      items,
+      ...summarizeCart(items),
     };
   }
 
-  /**
-   * Thêm sản phẩm vào giỏ hàng
-   */
-  async addToCart(userId: string, dto: AddToCartDto) {
-    // 1. Kiểm tra sản phẩm tồn tại và đang mở bán
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId },
-      include: {
-        inventories: true,
-        seller: { select: { isShopSuspended: true, suspensionReason: true } },
-      },
+  private async purchasable(tx: Prisma.TransactionClient, userId: string, productId: string) {
+    const product = await tx.product.findUnique({
+      where: { id: productId },
+      include: { inventories: true, options: true, seller: { select: { isShopSuspended: true } } },
     });
-
-    if (!product || product.status !== ProductStatus.ACTIVE) {
-      throw new BadRequestException('Sản phẩm không tồn tại hoặc đã ngừng mở bán.');
+    if (!product || product.status !== ProductStatus.ACTIVE || product.seller.isShopSuspended) {
+      throw new BadRequestException('Sản phẩm ngừng bán hoặc shop đang bị đình chỉ.');
     }
+    if (product.sellerId === userId)
+      throw new BadRequestException('Không thể tự mua sản phẩm của mình.');
+    return product;
+  }
 
-    if (product.seller?.isShopSuspended) {
-      throw new BadRequestException(
-        'Gian hàng của sản phẩm này hiện đang bị tạm đình chỉ hoạt động, không thể thêm vào giỏ hàng.',
-      );
-    }
-
-    // 2. Chặn Người bán tự mua sản phẩm của chính mình (Anti-Self-Purchase)
-    if (product.sellerId === userId) {
-      throw new BadRequestException(
-        'Bạn không thể tự mua sản phẩm do chính mình đăng bán (Anti-Self-Purchase).',
-      );
-    }
-
-    // 3. Kiểm tra số lượng tồn kho khả dụng
-    const totalAvailable = product.inventories.reduce((acc, curr) => acc + curr.availableQty, 0);
-    if (totalAvailable <= 0) {
-      throw new BadRequestException('Sản phẩm này hiện tại đã hết hàng.');
-    }
-
-    // 4. Lấy giỏ hàng
-    const cart = await this.findOrCreateCart(userId);
-
-    // 5. Kiểm tra sản phẩm đã có trong giỏ chưa
-    const existingItem = await this.prisma.cartItem.findUnique({
+  private async append(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    cartId: string,
+    dto: AddToCartDto,
+    clamp = false,
+  ): Promise<void> {
+    if (!Number.isSafeInteger(dto.quantity) || dto.quantity < 1)
+      throw new BadRequestException('Số lượng không hợp lệ.');
+    const product = await this.purchasable(tx, userId, dto.productId);
+    const choice = validateSelections(product.options, dto.selections);
+    const totalAvailable = product.inventories.reduce((sum, inv) => sum + inv.availableQty, 0);
+    const existing = await tx.cartItem.aggregate({
+      where: { cartId, productId: dto.productId },
+      _sum: { quantity: true },
+    });
+    const room = totalAvailable - (existing._sum.quantity ?? 0);
+    const quantity = clamp ? Math.min(dto.quantity, room) : dto.quantity;
+    if (quantity < 1 || quantity > room)
+      throw new BadRequestException('Tổng số lượng các màu/size trong giỏ vượt tồn kho sản phẩm.');
+    await tx.cartItem.upsert({
       where: {
-        cartId_productId: {
-          cartId: cart.id,
+        cartId_productId_optionKey: {
+          cartId,
           productId: dto.productId,
+          optionKey: choice.optionKey,
         },
       },
-    });
-
-    const currentQtyInCart = existingItem ? existingItem.quantity : 0;
-    const targetQty = currentQtyInCart + dto.quantity;
-
-    if (targetQty > totalAvailable) {
-      throw new BadRequestException(
-        `Số lượng trong kho không đủ (chỉ còn lại ${totalAvailable} sản phẩm). Giỏ hàng của bạn hiện đã có ${currentQtyInCart} sản phẩm.`,
-      );
-    }
-
-    // 6. Cập nhật hoặc tạo mới CartItem (dùng upsert để đảm bảo an toàn đa luồng/race conditions)
-    await this.prisma.cartItem.upsert({
-      where: {
-        cartId_productId: {
-          cartId: cart.id,
-          productId: dto.productId,
-        },
-      },
-      update: {
-        quantity: targetQty,
-      },
+      update: { quantity: { increment: quantity } },
       create: {
-        cartId: cart.id,
+        cartId,
         productId: dto.productId,
-        quantity: dto.quantity,
-        priceAtAdded: product.basePrice,
+        optionKey: choice.optionKey,
+        selections: choice.selections,
+        quantity,
+        priceAtAdded: effectivePrice(product),
       },
     });
+  }
 
-    // 7. Gia hạn 7 ngày cho giỏ hàng
-    await this.prisma.cart.update({
-      where: { id: cart.id },
-      data: { expiresAt: getCartExpiresAt() },
+  async addToCart(userId: string, dto: AddToCartDto): Promise<CartView> {
+    await this.prisma.$transaction(async (tx) => {
+      const cart = await this.lockedCart(tx, userId);
+      await this.append(tx, userId, cart.id, dto);
     });
-
     return this.getCart(userId);
   }
 
-  /**
-   * Cập nhật số lượng của 1 món hàng trong giỏ
-   */
-  async updateCartItem(userId: string, cartItemId: string, dto: UpdateCartItemDto) {
-    const item = await this.prisma.cartItem.findUnique({
-      where: { id: cartItemId },
-      include: {
-        cart: true,
-        product: { include: { inventories: true } },
+  async updateCartItem(
+    userId: string,
+    cartItemId: string,
+    dto: UpdateCartItemDto,
+  ): Promise<CartView> {
+    if (!Number.isSafeInteger(dto.quantity) || dto.quantity < 0)
+      throw new BadRequestException('Số lượng không hợp lệ.');
+    await this.prisma.$transaction(async (tx) => {
+      const cart = await this.lockedCart(tx, userId);
+      const item = await tx.cartItem.findUnique({ where: { id: cartItemId } });
+      if (!item || item.cartId !== cart.id)
+        throw new NotFoundException('Món hàng không thuộc giỏ của bạn.');
+      if (dto.quantity === 0) {
+        await tx.cartItem.delete({ where: { id: item.id } });
+        return;
+      }
+      const product = await this.purchasable(tx, userId, item.productId);
+      validateSelections(product.options, item.selections);
+      const other = await tx.cartItem.aggregate({
+        where: { cartId: cart.id, productId: item.productId, id: { not: item.id } },
+        _sum: { quantity: true },
+      });
+      const available = product.inventories.reduce((sum, inv) => sum + inv.availableQty, 0);
+      if (dto.quantity + (other._sum.quantity ?? 0) > available)
+        throw new BadRequestException('Tổng lựa chọn vượt tồn kho sản phẩm.');
+      await tx.cartItem.update({ where: { id: item.id }, data: { quantity: dto.quantity } });
+    });
+    return this.getCart(userId);
+  }
+
+  async removeCartItem(userId: string, cartItemId: string): Promise<CartView> {
+    await this.prisma.$transaction(async (tx) => {
+      const cart = await this.lockedCart(tx, userId);
+      const result = await tx.cartItem.deleteMany({ where: { id: cartItemId, cartId: cart.id } });
+      if (result.count !== 1) throw new NotFoundException('Món hàng không thuộc giỏ của bạn.');
+    });
+    return this.getCart(userId);
+  }
+
+  async clearCart(userId: string): Promise<CartView> {
+    await this.prisma.$transaction(async (tx) => {
+      const cart = await this.lockedCart(tx, userId);
+      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+    });
+    return this.getCart(userId);
+  }
+
+  async mergeGuestCart(userId: string, dto: MergeCartDto): Promise<CartView> {
+    const skippedItems: Array<{ productId: string; reason: string }> = [];
+    await this.prisma.$transaction(
+      async (tx) => {
+        const cart = await this.lockedCart(tx, userId);
+        for (const item of dto.items) {
+          try {
+            await this.append(tx, userId, cart.id, item, true);
+          } catch (error) {
+            if (!(error instanceof BadRequestException)) throw error;
+            skippedItems.push({ productId: item.productId, reason: error.message });
+          }
+        }
       },
-    });
-
-    if (!item || item.cart.userId !== userId) {
-      throw new NotFoundException('Món hàng không tồn tại trong giỏ của bạn.');
-    }
-
-    if (dto.quantity <= 0) {
-      await this.prisma.cartItem.delete({ where: { id: cartItemId } });
-    } else {
-      const totalAvailable = item.product.inventories.reduce(
-        (acc, curr) => acc + curr.availableQty,
-        0,
-      );
-      if (dto.quantity > totalAvailable) {
-        throw new BadRequestException(
-          `Số lượng tồn kho không đủ (chỉ còn lại ${totalAvailable} sản phẩm).`,
-        );
-      }
-
-      await this.prisma.cartItem.update({
-        where: { id: cartItemId },
-        data: { quantity: dto.quantity },
-      });
-    }
-
-    await this.prisma.cart.update({
-      where: { id: item.cartId },
-      data: { expiresAt: getCartExpiresAt() },
-    });
-
-    return this.getCart(userId);
-  }
-
-  /**
-   * Xóa 1 món khỏi giỏ
-   */
-  async removeCartItem(userId: string, cartItemId: string) {
-    const item = await this.prisma.cartItem.findUnique({
-      where: { id: cartItemId },
-      include: { cart: true },
-    });
-
-    if (!item || item.cart.userId !== userId) {
-      throw new NotFoundException('Món hàng không tồn tại trong giỏ.');
-    }
-
-    await this.prisma.cartItem.delete({ where: { id: cartItemId } });
-    return this.getCart(userId);
-  }
-
-  /**
-   * Xóa toàn bộ giỏ hàng
-   */
-  async clearCart(userId: string) {
-    const cart = await this.findOrCreateCart(userId);
-    await this.prisma.cartItem.deleteMany({
-      where: { cartId: cart.id },
-    });
-    return this.getCart(userId);
-  }
-
-  /**
-   * Gộp giỏ hàng từ Guest (LocalStorage) khi đăng nhập thành công
-   */
-  async mergeGuestCart(userId: string, dto: MergeCartDto) {
-    const cart = await this.findOrCreateCart(userId);
-
-    if (!dto.items || !Array.isArray(dto.items) || dto.items.length === 0) {
-      return this.getCart(userId);
-    }
-
-    // 1. Gộp các items có cùng productId để loại trừ trùng lặp từ FE payload
-    const itemMap = new Map<string, number>();
-    for (const item of dto.items) {
-      if (!item?.productId) continue;
-      const qty = Math.max(1, Number(item.quantity) || 1);
-      itemMap.set(item.productId, (itemMap.get(item.productId) || 0) + qty);
-    }
-
-    // 2. Lần lượt xử lý từng sản phẩm với upsert nguyên tử (atomic), chống hoàn toàn race condition
-    for (const [productId, guestQty] of itemMap.entries()) {
-      const product = await this.prisma.product.findUnique({
-        where: { id: productId },
-        include: { inventories: true },
-      });
-
-      if (!product || product.status !== ProductStatus.ACTIVE || product.sellerId === userId) {
-        continue;
-      }
-
-      const totalAvailable = product.inventories.reduce((acc, curr) => acc + curr.availableQty, 0);
-      if (totalAvailable <= 0) continue;
-
-      const existing = await this.prisma.cartItem.findUnique({
-        where: {
-          cartId_productId: {
-            cartId: cart.id,
-            productId,
-          },
-        },
-      });
-
-      const mergedQty = Math.min(totalAvailable, (existing?.quantity || 0) + guestQty);
-
-      await this.prisma.cartItem.upsert({
-        where: {
-          cartId_productId: {
-            cartId: cart.id,
-            productId,
-          },
-        },
-        update: {
-          quantity: mergedQty,
-        },
-        create: {
-          cartId: cart.id,
-          productId,
-          quantity: Math.min(totalAvailable, guestQty),
-          priceAtAdded: product.basePrice,
-        },
-      });
-    }
-
-    await this.prisma.cart.update({
-      where: { id: cart.id },
-      data: { expiresAt: getCartExpiresAt() },
-    });
-
-    return this.getCart(userId);
+      { timeout: 20000 },
+    );
+    return { ...(await this.getCart(userId)), skippedItems };
   }
 }
