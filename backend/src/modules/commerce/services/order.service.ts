@@ -4,8 +4,6 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -21,13 +19,15 @@ import {
   Prisma,
   WalletTransactionType,
   WalletTransactionStatus,
-  EscrowStatus,
   NotificationType,
   NotificationChannel,
 } from '@prisma/client';
 import { Webhook } from '@payos/node';
-import { AdminSettingsService } from '../../admin/services/admin-settings.service';
-import { AdminFinanceService } from '../../admin/services/admin-finance.service';
+import { OrderEscrowService } from './order-escrow.service';
+import {
+  GhnShippingService,
+  GhnShippingQuote,
+} from '../../fulfillment/services/ghn-shipping.service';
 
 export interface PayosPaymentResponse {
   orderId: string;
@@ -56,6 +56,7 @@ export interface WalletPaymentResponse {
     transactionId: string;
     platformFeeDeducted: number;
     sellerPayout: number;
+    escrowStatus: string;
   };
 }
 
@@ -67,16 +68,14 @@ export class OrderService {
     private readonly prisma: PrismaService,
     private readonly payosService: PayosService,
     private readonly configService: ConfigService,
-    @Inject(forwardRef(() => AdminSettingsService))
-    private readonly adminSettingsService: AdminSettingsService,
-    @Inject(forwardRef(() => AdminFinanceService))
-    private readonly adminFinanceService: AdminFinanceService,
+    private readonly shipping: GhnShippingService,
+    private readonly escrow: OrderEscrowService,
   ) {}
 
   /**
    * Tạo đơn hàng từ giỏ hàng hiện tại (Price Revalidation + Anti-Self-Purchase)
    */
-  async checkout(buyerId: string, dto: CheckoutDto, idempotencyKey?: string) {
+  async checkout(buyerId: string, dto: CheckoutDto, idempotencyKey?: string, quoteOnly = false) {
     const cart = await this.prisma.cart.findUnique({
       where: { userId: buyerId },
       include: {
@@ -148,6 +147,49 @@ export class OrderService {
       itemsBySeller.set(sellerId, list);
     }
 
+    // Obtain every seller's official quote before opening the database transaction.
+    const shippingBySeller = new Map<string, GhnShippingQuote>();
+    for (const [sellerId, sellerItems] of itemsBySeller) {
+      const quote = await this.shipping.quote(
+        sellerId,
+        dto.shippingAddress,
+        sellerItems.map(({ product, quantity }) => ({
+          name: product.title,
+          quantity,
+          weight: product.weightGrams,
+          length: product.lengthCm,
+          width: product.widthCm,
+          height: product.heightCm,
+          price: Number(product.basePrice),
+        })),
+      );
+      shippingBySeller.set(sellerId, quote);
+    }
+
+    if (quoteOnly) {
+      const quotes = [...itemsBySeller].map(([sellerId, items]) => {
+        const quote = shippingBySeller.get(sellerId);
+        if (!quote) throw new BadRequestException('Chưa lấy được báo giá GHN.');
+        const subtotal = items.reduce(
+          (sum, item) => sum + Number(item.product.basePrice) * item.quantity,
+          0,
+        );
+        return {
+          sellerId,
+          subtotal,
+          shippingFee: quote.fee.total,
+          totalAmount: subtotal + quote.fee.total,
+          feeSource: 'GHN_API',
+          parcel: quote.parcel,
+        };
+      });
+      return {
+        quotes,
+        totalShippingFee: quotes.reduce((sum, quote) => sum + quote.shippingFee, 0),
+        totalAmount: quotes.reduce((sum, quote) => sum + quote.totalAmount, 0),
+      };
+    }
+
     // 3. Khởi tạo đơn hàng trong Transaction an toàn
     const createdOrders = await this.prisma.$transaction(async (tx) => {
       const orders: Array<
@@ -163,9 +205,13 @@ export class OrderService {
           };
         }>
       > = [];
-      const shippingPerShop = dto.shippingFee || 0;
 
       for (const [sellerId, sellerItems] of itemsBySeller.entries()) {
+        const shippingQuote = shippingBySeller.get(sellerId);
+        if (!shippingQuote) {
+          throw new BadRequestException('Chưa lấy được báo giá GHN cho người bán.');
+        }
+        const shippingPerShop = shippingQuote.fee.total;
         const subtotal = sellerItems.reduce(
           (sum, i) => sum + Number(i.product.basePrice) * i.quantity,
           0,
@@ -180,7 +226,16 @@ export class OrderService {
             shippingFee: shippingPerShop,
             totalAmount,
             status: OrderStatus.PENDING_PAYMENT,
-            shippingAddressSnapshot: dto.shippingAddress as unknown as Prisma.InputJsonValue,
+            shippingAddressSnapshot: {
+              ...dto.shippingAddress,
+              ghn: {
+                origin: shippingQuote.origin,
+                parcel: shippingQuote.parcel,
+                request: shippingQuote.request,
+                fee: shippingQuote.fee,
+                quotedAt: new Date().toISOString(),
+              },
+            } as unknown as Prisma.InputJsonValue,
             idempotencyKey: idempotencyKey ? `${idempotencyKey}-${sellerId}` : undefined,
             items: {
               create: sellerItems.map((item) => ({
@@ -376,132 +431,6 @@ export class OrderService {
   }
 
   /**
-   * Bộ xử lý chia tiền trực tiếp (Direct Settlement Engine):
-   * 1. Tính toán % phí hoa hồng sàn (mặc định từ AdminSettingsService).
-   * 2. Cộng ngay doanh thu (sau khi trừ phí sàn) vào Ví của Seller + lưu WalletTransaction (ESCROW_PAYOUT).
-   * 3. Cộng ngay % phí hoa hồng vào Ví của Admin + lưu WalletTransaction (PLATFORM_FEE).
-   * 4. Tạo bản ghi EscrowRecord ở trạng thái DISBURSED (đã giải ngân trực tiếp).
-   * 5. Gửi thông báo Notification cho Người bán.
-   */
-  async settleOrderPaymentDirectly(
-    tx: Prisma.TransactionClient,
-    order: Prisma.OrderGetPayload<{ include: { buyer?: true; seller?: true } }>,
-  ) {
-    const totalAmount = Number(order.totalAmount);
-    if (totalAmount <= 0) {
-      return { platformFee: 0, sellerPayout: 0, feePercentage: 0 };
-    }
-
-    // 1. Lấy tỷ lệ % phí sàn runtime từ AdminSettingsService
-    const settings = await this.adminSettingsService.getSettings();
-    const feePercentage = Number(settings?.platformFeePercentage ?? 7.0);
-
-    // Tính toán số tiền
-    const platformFee = Math.round((totalAmount * feePercentage) / 100);
-    const sellerPayout = Math.max(0, totalAmount - platformFee);
-
-    // 2. Lấy hoặc tạo ví của Người bán (Seller)
-    let sellerWallet = await tx.wallet.findUnique({
-      where: { userId: order.sellerId },
-    });
-    if (!sellerWallet) {
-      sellerWallet = await tx.wallet.create({
-        data: {
-          userId: order.sellerId,
-          balance: 0,
-          lockedBalance: 0,
-          currency: 'VND',
-        },
-      });
-    }
-
-    // 3. Cộng tiền trực tiếp vào ví Seller
-    await tx.wallet.update({
-      where: { id: sellerWallet.id },
-      data: {
-        balance: { increment: sellerPayout },
-      },
-    });
-
-    await tx.walletTransaction.create({
-      data: {
-        walletId: sellerWallet.id,
-        amount: new Prisma.Decimal(sellerPayout),
-        type: WalletTransactionType.ESCROW_PAYOUT,
-        status: WalletTransactionStatus.SUCCESS,
-        referenceId: order.id,
-        description: `Doanh thu bán hàng từ đơn #${order.id.slice(0, 8).toUpperCase()} (đã trừ ${feePercentage}% phí sàn)`,
-      },
-    });
-
-    // 4. Lấy hoặc tạo ví Quản trị viên hệ thống (Admin)
-    const adminWallet = await this.adminFinanceService.getOrCreatePrimaryAdminWallet(tx);
-
-    // 5. Cộng % phí sàn trực tiếp vào ví Admin
-    await tx.wallet.update({
-      where: { id: adminWallet.id },
-      data: {
-        balance: { increment: platformFee },
-      },
-    });
-
-    await tx.walletTransaction.create({
-      data: {
-        walletId: adminWallet.id,
-        amount: new Prisma.Decimal(platformFee),
-        type: WalletTransactionType.PLATFORM_FEE,
-        status: WalletTransactionStatus.SUCCESS,
-        referenceId: order.id,
-        description: `Thu ${feePercentage}% phí sàn từ đơn #${order.id.slice(0, 8).toUpperCase()}`,
-      },
-    });
-
-    // 6. Ghi nhận EscrowRecord ở trạng thái DISBURSED (đã giải ngân)
-    await tx.escrowRecord.upsert({
-      where: { orderId: order.id },
-      create: {
-        orderId: order.id,
-        totalAmount: new Prisma.Decimal(totalAmount),
-        platformFee: new Prisma.Decimal(platformFee),
-        sellerPayout: new Prisma.Decimal(sellerPayout),
-        status: EscrowStatus.DISBURSED,
-        heldAt: new Date(),
-        disbursedAt: new Date(),
-      },
-      update: {
-        totalAmount: new Prisma.Decimal(totalAmount),
-        platformFee: new Prisma.Decimal(platformFee),
-        sellerPayout: new Prisma.Decimal(sellerPayout),
-        status: EscrowStatus.DISBURSED,
-        disbursedAt: new Date(),
-      },
-    });
-
-    // 7. Gửi thông báo thông tin thanh toán cho Người bán
-    await tx.notification.create({
-      data: {
-        userId: order.sellerId,
-        title: 'Đơn hàng mới đã được thanh toán 🎉',
-        content: `Đơn hàng #${order.id.slice(0, 8).toUpperCase()} đã được thanh toán thành công. Doanh thu ${sellerPayout.toLocaleString('vi-VN')} VND (đã trừ ${feePercentage}% phí sàn) đã được cộng trực tiếp vào ví của bạn.`,
-        type: NotificationType.PAYMENT,
-        channel: NotificationChannel.IN_APP,
-      },
-    });
-
-    this.logger.log(
-      `[Settlement Engine] Đơn ${order.id}: Tổng ${totalAmount} VND | Phí sàn (${feePercentage}%): ${platformFee} VND -> Ví Admin | Seller nhận: ${sellerPayout} VND -> Ví Seller`,
-    );
-
-    return {
-      feePercentage,
-      platformFee,
-      sellerPayout,
-      sellerWalletId: sellerWallet.id,
-      adminWalletId: adminWallet.id,
-    };
-  }
-
-  /**
    * Xử lý thanh toán đơn hàng bằng số dư ví cá nhân (NEXUS Pay Wallet)
    */
   async payOrderByWallet(orderId: string, buyerId: string): Promise<WalletPaymentResponse> {
@@ -534,6 +463,10 @@ export class OrderService {
 
     // Thực thi toàn bộ trong transaction an toàn
     const settlementResult = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM orders WHERE id = ${order.id} FOR UPDATE`;
+      const payable = await tx.order.findUniqueOrThrow({ where: { id: order.id } });
+      if (payable.status !== OrderStatus.PENDING_PAYMENT)
+        throw new BadRequestException('Đơn hàng đã được thanh toán hoặc không còn chờ thanh toán.');
       // 1. Kiểm tra ví người mua (tạo mới nếu chưa có)
       let buyerWallet = await tx.wallet.findUnique({
         where: { userId: buyerId },
@@ -558,11 +491,13 @@ export class OrderService {
       }
 
       // 2. Trừ tiền ví người mua
-      const updatedBuyerWallet = await tx.wallet.update({
+      const debited = await tx.wallet.updateMany({
+        where: { id: buyerWallet.id, balance: { gte: order.totalAmount } },
+        data: { balance: { decrement: order.totalAmount } },
+      });
+      if (debited.count !== 1) throw new BadRequestException('Số dư ví không đủ để thanh toán.');
+      const updatedBuyerWallet = await tx.wallet.findUniqueOrThrow({
         where: { id: buyerWallet.id },
-        data: {
-          balance: { decrement: order.totalAmount },
-        },
       });
 
       // 3. Ghi lịch sử giao dịch cho người mua (ORDER_PAYMENT)
@@ -604,8 +539,8 @@ export class OrderService {
         },
       });
 
-      // 6. Phân bổ tiền trực tiếp cho Seller và Admin
-      const settlement = await this.settleOrderPaymentDirectly(tx, updatedOrder);
+      // Keep funds in escrow until verified delivery and buyer confirmation.
+      const settlement = await this.escrow.hold(tx, updatedOrder);
 
       // 7. Gửi thông báo cho người mua
       await tx.notification.create({
@@ -636,11 +571,12 @@ export class OrderService {
       amount: order.totalAmount,
       wallet: {
         walletId: settlementResult.updatedBuyerWallet.id,
-        balanceBefore: settlementResult.currentBalance,
+        balanceBefore: Number(settlementResult.updatedBuyerWallet.balance) + orderAmount,
         balanceAfter: Number(settlementResult.updatedBuyerWallet.balance),
         transactionId: settlementResult.buyerTx.id,
         platformFeeDeducted: settlementResult.settlement.platformFee,
         sellerPayout: settlementResult.settlement.sellerPayout,
+        escrowStatus: settlementResult.settlement.escrowStatus,
       },
     };
   }
@@ -676,12 +612,22 @@ export class OrderService {
         return { success: true, message: 'Already processed' };
       }
 
-      // Cập nhật trạng thái Payment -> SUCCESS, Order -> PAID và giải ngân trực tiếp cho Seller & Admin
+      // Record successful payment and hold funds in escrow.
       const currentMetadata = (
         payment.metadata && typeof payment.metadata === 'object' ? payment.metadata : {}
       ) as Record<string, unknown>;
 
+      if (Number(webhookData.amount) !== Number(payment.amount))
+        throw new BadRequestException('Số tiền PayOS không khớp đơn hàng.');
       await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM orders WHERE id = ${payment.orderId} FOR UPDATE`;
+        const currentPayment = await tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
+        if (currentPayment.status === PaymentStatus.SUCCESS) return;
+        const payable = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
+        if (payable.status !== OrderStatus.PENDING_PAYMENT)
+          throw new BadRequestException(
+            'Đơn đã thanh toán hoặc bị hủy; cần đối soát khoản thanh toán này.',
+          );
         await tx.payment.update({
           where: { id: payment.id },
           data: {
@@ -705,13 +651,11 @@ export class OrderService {
           },
         });
 
-        // Phân bổ trực tiếp tiền cho Seller và Admin
-        await this.settleOrderPaymentDirectly(tx, updatedOrder);
+        // Never disburse funds merely because the payment succeeded.
+        await this.escrow.hold(tx, updatedOrder);
       });
 
-      this.logger.log(
-        `Đã cập nhật trạng thái đơn hàng ${payment.orderId} sang PAID từ Webhook PayOS và hoàn tất giải ngân thành công!`,
-      );
+      this.logger.log(`Đơn ${payment.orderId} đã thanh toán PayOS; tiền được giữ ký quỹ.`);
     }
 
     return {

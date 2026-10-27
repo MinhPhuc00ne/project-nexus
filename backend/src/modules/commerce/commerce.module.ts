@@ -14,6 +14,8 @@ import { PayosWebhookController } from './controllers/payos-webhook.controller';
 import { SellerFinanceController } from './controllers/seller-finance.controller';
 import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { SellerEngagementController } from './controllers/seller-engagement.controller';
+import { OrderLifecycleController } from './controllers/order-lifecycle.controller';
+import { OrderEscrowService } from './services/order-escrow.service';
 
 @Module({
   imports: [PrismaModule, FulfillmentModule, forwardRef(() => AdminModule)],
@@ -24,6 +26,7 @@ import { SellerEngagementController } from './controllers/seller-engagement.cont
     SellerFinanceController,
     SellerOrdersController,
     SellerEngagementController,
+    OrderLifecycleController,
   ],
   providers: [
     CartService,
@@ -32,6 +35,7 @@ import { SellerEngagementController } from './controllers/seller-engagement.cont
     SellerFinanceService,
     SellerOrdersService,
     SellerEngagementService,
+    OrderEscrowService,
   ],
   exports: [
     CartService,

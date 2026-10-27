@@ -16,6 +16,8 @@ import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { DispatchGhnOrderDto, QuerySellerOrdersDto } from '../dtos/seller-order.dto';
 import { SellerOrdersService } from '../services/seller-orders.service';
+import { GhnDispatchService } from '../../fulfillment/services/ghn-dispatch.service';
+import { ShipmentTrackingService } from '../../fulfillment/services/shipment-tracking.service';
 
 @ApiTags('8. COMMERCE - SELLER ORDERS & GHN')
 @ApiBearerAuth()
@@ -23,7 +25,43 @@ import { SellerOrdersService } from '../services/seller-orders.service';
 @Roles(Role.SELLER, Role.ADMIN)
 @Controller('seller/orders')
 export class SellerOrdersController {
-  constructor(private readonly sellerOrdersService: SellerOrdersService) {}
+  constructor(
+    private readonly sellerOrdersService: SellerOrdersService,
+    private readonly dispatch: GhnDispatchService,
+    private readonly tracking: ShipmentTrackingService,
+  ) {}
+
+  @Get(':id/ghn-label')
+  @ApiOperation({ summary: '[SELLER] Lấy liên kết in phiếu chính thức GHN (A5, 80x80, 52x70)' })
+  ghnLabel(
+    @CurrentUser('id') sellerId: string,
+    @Param('id') id: string,
+  ): ReturnType<GhnDispatchService['label']> {
+    return this.dispatch.label(sellerId, id);
+  }
+
+  @Post(':id/shipping-quote')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[SELLER] Xem phí GHN cho kiện đóng gói thực tế và khoản chênh lệch seller chịu',
+  })
+  shippingQuote(
+    @CurrentUser('id') sellerId: string,
+    @Param('id') id: string,
+    @Body() dto: DispatchGhnOrderDto,
+  ) {
+    return this.dispatch.preview(sellerId, id, dto);
+  }
+
+  @Post(':id/reconcile-ghn')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[SELLER] Đối soát yêu cầu tạo vận đơn bị gián đoạn, không tạo lại vận đơn',
+  })
+  async reconcile(@CurrentUser('id') sellerId: string, @Param('id') id: string) {
+    await this.dispatch.reconcile(sellerId, id);
+    return this.tracking.refresh(id, { id: sellerId, role: 'SELLER' });
+  }
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -67,10 +105,9 @@ export class SellerOrdersController {
   @Post(':id/dispatch-ghn')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary:
-      '[SELLER] Tạo vận đơn GHN Express và bàn giao hàng (Chuyển trạng thái PREPARING -> SHIPPING)',
+    summary: '[SELLER] Tạo vận đơn GHN, chờ hãng xác nhận lấy hàng',
     description:
-      'Người bán gọi API kết nối GHN để sinh mã vận đơn, tạo bản ghi Shipment trên sàn, cập nhật trạng thái đơn hàng sang SHIPPING và bắn thông báo tới người mua.',
+      'Lưu yêu cầu chống gửi trùng, tạo mã vận đơn thật. Đơn giữ PREPARING và shipment CREATED; chỉ chuyển SHIPPING khi đồng bộ GHN xác nhận đã lấy hàng. Kết quả không rõ phải đối soát, không gửi tạo lại.',
   })
   @ApiResponse({ status: 200, description: 'Bàn giao vận đơn GHN thành công' })
   @ApiResponse({ status: 400, description: 'Đơn hàng chưa ở trạng thái chuẩn bị hàng' })

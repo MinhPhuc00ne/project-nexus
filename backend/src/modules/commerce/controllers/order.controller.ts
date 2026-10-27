@@ -25,6 +25,16 @@ import { RolesGuard } from '../../../core/security/roles.guard';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
+  @Post('checkout/quote')
+  @HttpCode(HttpStatus.OK)
+  @RequirePrivilege('CHECKOUT.START')
+  @ApiOperation({
+    summary: '[BUYER] Báo giá giỏ hàng theo từng shop, chưa tạo đơn hoặc thanh toán',
+  })
+  quoteCheckout(@CurrentUser('id') userId: string, @Body() dto: CheckoutDto) {
+    return this.orderService.checkout(userId, dto, undefined, true);
+  }
+
   @Post('checkout')
   @HttpCode(HttpStatus.CREATED)
   @RequirePrivilege('CHECKOUT.START')
@@ -54,7 +64,7 @@ export class OrderController {
   @ApiOperation({
     summary: '[BUYER] Thanh toán đơn hàng (PayOS VietQR hoặc Ví NEXUS Pay)',
     description:
-      'Nếu chọn PAYOS: Tạo liên kết thanh toán VietQR. Nếu chọn WALLET: Trừ tiền trực tiếp số dư ví người mua, khấu trừ % phí sàn và cộng tiền ngay cho Seller & Admin.',
+      'PAYOS tạo liên kết VietQR; WALLET trừ số dư người mua. Khi thanh toán thành công, tiền được giữ ký quỹ HELD; chỉ giải ngân sau xác nhận nhận hàng hoặc phân xử khiếu nại.',
   })
   @ApiResponse({ status: 200, description: 'Khởi tạo hoặc thanh toán đơn hàng thành công' })
   @ApiResponse({

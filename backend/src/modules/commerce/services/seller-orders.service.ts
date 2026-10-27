@@ -11,10 +11,9 @@ import {
   NotificationType,
   OrderStatus,
   Prisma,
-  ShipmentStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { GhnLogisticsService } from '../../fulfillment/services/ghn-logistics.service';
+import { GhnDispatchService } from '../../fulfillment/services/ghn-dispatch.service';
 import { DispatchGhnOrderDto, QuerySellerOrdersDto } from '../dtos/seller-order.dto';
 
 @Injectable()
@@ -23,7 +22,7 @@ export class SellerOrdersService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly ghnService: GhnLogisticsService,
+    private readonly dispatchService: GhnDispatchService,
   ) {}
 
   /**
@@ -299,160 +298,7 @@ export class SellerOrdersService {
    * 4. Seller tạo / bàn giao vận đơn GHN Express (Chuyển trạng thái PREPARING -> SHIPPING)
    */
   async dispatchGhn(sellerId: string, orderId: string, dto?: DispatchGhnOrderDto) {
-    const order = await this.prisma.order.findUnique({
-      where: { id: orderId },
-      include: {
-        buyer: true,
-        items: {
-          include: {
-            product: true,
-          },
-        },
-        shipment: true,
-      },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Không tìm thấy đơn hàng.');
-    }
-
-    if (order.sellerId !== sellerId) {
-      throw new ForbiddenException('Bạn không có quyền bàn giao đơn hàng này.');
-    }
-
-    if (order.status !== OrderStatus.PREPARING && order.status !== OrderStatus.PAID) {
-      throw new BadRequestException(
-        `Đơn hàng đang ở trạng thái '${order.status}', không thể tạo vận đơn GHN. Trạng thái hợp lệ: PAID hoặc PREPARING.`,
-      );
-    }
-
-    // Lấy thông tin địa chỉ kho xuất hàng của Seller
-    const _seller = await this.prisma.user.findUnique({
-      where: { id: sellerId },
-      include: {
-        sellerUpgradeRequests: {
-          where: { status: 'APPROVED' },
-          orderBy: { updatedAt: 'desc' },
-          take: 1,
-        },
-        addresses: {
-          where: { isDefault: true },
-          take: 1,
-        },
-      },
-    });
-
-    const shippingAddress = order.shippingAddressSnapshot as Record<
-      string,
-      string | null | undefined
-    >;
-
-    const totalWeightGrams =
-      dto?.weightGrams ||
-      order.items.reduce((acc, it) => acc + (it.product?.weightGrams || 500) * it.quantity, 0);
-
-    const lengthCm = dto?.lengthCm || 15;
-    const widthCm = dto?.widthCm || 15;
-    const heightCm = dto?.heightCm || 10;
-
-    let waybillCode = `GHN${Date.now().toString().slice(-8)}${Math.floor(100 + Math.random() * 900)}`;
-    let ghnResponseData: Record<string, unknown> = {};
-
-    try {
-      const ghnPayload: Record<string, unknown> = {
-        payment_type_id: 1, // Người gửi thanh toán cước
-        note: dto?.note || 'Giao hàng sàn TMĐT Project Nexus',
-        required_note: 'KHONGCHOXEMHANG',
-        to_name: shippingAddress?.recipientName || order.buyer?.fullName || 'Khách hàng',
-        to_phone: shippingAddress?.phone || order.buyer?.phoneNumber || '0900000000',
-        to_address:
-          shippingAddress?.street || shippingAddress?.formattedAddress || 'Địa chỉ nhận hàng',
-        to_ward_name: shippingAddress?.ward || '',
-        to_district_name: shippingAddress?.district || '',
-        to_province_name: shippingAddress?.city || '',
-        weight: Math.max(100, Math.round(totalWeightGrams)),
-        length: lengthCm,
-        width: widthCm,
-        height: heightCm,
-        service_type_id: 2, // Dịch vụ Chuẩn GHN
-        items: order.items.map((it) => ({
-          name: it.product?.title || 'Sản phẩm Nexus',
-          quantity: it.quantity,
-          price: Math.round(Number(it.unitPrice)),
-        })),
-      };
-
-      const res = await this.ghnService.createShippingOrder(ghnPayload);
-      if (res && typeof res === 'object') {
-        const parsedRes = res as { code?: number; data?: { order_code?: string } };
-        if (parsedRes.code === 200 && parsedRes.data?.order_code) {
-          waybillCode = parsedRes.data.order_code;
-        }
-        ghnResponseData = res as Record<string, unknown>;
-      }
-    } catch (err) {
-      this.logger.warn(
-        `GHN Gateway connection warning, fallback to waybill ${waybillCode}: ${err}`,
-      );
-      ghnResponseData = { fallback: true, generatedAt: new Date().toISOString() };
-    }
-
-    // Tạo hoặc cập nhật bản ghi Shipment
-    const shipment = await this.prisma.shipment.upsert({
-      where: { orderId: order.id },
-      create: {
-        orderId: order.id,
-        carrier: CarrierName.GHN,
-        trackingNumber: waybillCode,
-        waybillCode,
-        shippingFee: order.shippingFee,
-        chargeableWeight: totalWeightGrams / 1000,
-        status: ShipmentStatus.PICKED_UP,
-        metadata: ghnResponseData as Prisma.InputJsonValue,
-      },
-      update: {
-        carrier: CarrierName.GHN,
-        trackingNumber: waybillCode,
-        waybillCode,
-        shippingFee: order.shippingFee,
-        chargeableWeight: totalWeightGrams / 1000,
-        status: ShipmentStatus.PICKED_UP,
-        metadata: ghnResponseData as Prisma.InputJsonValue,
-      },
-    });
-
-    // Cập nhật trạng thái đơn hàng sang SHIPPING
-    const updatedOrder = await this.prisma.order.update({
-      where: { id: order.id },
-      data: { status: OrderStatus.SHIPPING },
-    });
-
-    // Gửi thông báo cho người mua
-    await this.prisma.notification.create({
-      data: {
-        userId: order.buyerId,
-        title: 'Đơn hàng của bạn đang được GHN vận chuyển',
-        content: `Đơn hàng #${order.id.slice(0, 8)} đã được người bán bàn giao cho đối tác vận chuyển GHN. Mã vận đơn: ${waybillCode}`,
-        type: NotificationType.ORDER,
-        channel: NotificationChannel.IN_APP,
-      },
-    });
-
-    this.logger.log(`Order ${order.id} dispatched via GHN with waybill ${waybillCode}`);
-
-    return {
-      success: true,
-      message: 'Đã tạo vận đơn GHN và bàn giao hàng thành công.',
-      orderId: updatedOrder.id,
-      orderStatus: updatedOrder.status,
-      shipment: {
-        carrier: shipment.carrier,
-        waybillCode: shipment.waybillCode,
-        trackingNumber: shipment.trackingNumber,
-        status: shipment.status,
-        chargeableWeightKg: Number(shipment.chargeableWeight),
-      },
-    };
+    return this.dispatchService.dispatch(sellerId, orderId, dto);
   }
 
   /**
@@ -494,7 +340,27 @@ export class SellerOrdersService {
       string,
       string | null | undefined
     >;
-    const waybillCode = order.shipment?.waybillCode || `GHN${order.id.slice(0, 8).toUpperCase()}`;
+    const waybillCode = order.shipment?.waybillCode;
+    const metadata = order.shipment?.metadata;
+    const carrierData =
+      metadata && typeof metadata === 'object' && 'data' in metadata ? metadata.data : null;
+    if (
+      !waybillCode ||
+      order.shipment?.carrier !== CarrierName.GHN ||
+      !metadata ||
+      typeof metadata !== 'object' ||
+      !('code' in metadata) ||
+      metadata.code !== 200 ||
+      ('fallback' in metadata && metadata.fallback) ||
+      !carrierData ||
+      typeof carrierData !== 'object' ||
+      !('order_code' in carrierData) ||
+      carrierData.order_code !== waybillCode
+    ) {
+      throw new BadRequestException(
+        'Đơn hàng chưa có vận đơn được GHN xác nhận. Chưa thể in phiếu.',
+      );
+    }
 
     return {
       waybillCode,
