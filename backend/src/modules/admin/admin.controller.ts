@@ -45,6 +45,8 @@ import { AdminProductsService } from './services/admin-products.service';
 import { AdminShopsService } from './services/admin-shops.service';
 import { AdminSettingsService } from './services/admin-settings.service';
 import { AdminFinanceService } from './services/admin-finance.service';
+import { AdminDisputesService } from './services/admin-disputes.service';
+import { QueryAdminDisputesDto } from './dto/query-admin-disputes.dto';
 import { CategoryService } from '../catalog/services/category.service';
 import { CreateCategoryDto } from '../catalog/dtos/create-category.dto';
 import { UpdateCategoryDto } from '../catalog/dtos/update-category.dto';
@@ -62,6 +64,7 @@ export class AdminController {
     private readonly adminShopsService: AdminShopsService,
     private readonly adminSettingsService: AdminSettingsService,
     private readonly adminFinanceService: AdminFinanceService,
+    private readonly adminDisputesService: AdminDisputesService,
     private readonly categoryService: CategoryService,
   ) {}
 
@@ -466,6 +469,20 @@ export class AdminController {
     @Body() dto: ReviewWithdrawalDto,
   ) {
     return this.adminService.reviewWithdrawalRequest(id, admin.id, dto);
+  }
+
+  // ================= 18h2. DANH SÁCH KHIẾU NẠI TRÊN TOÀN SÀN =================
+  @Get('disputes')
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[ADMIN / STAFF] Lấy danh sách các khiếu nại đang chờ xử lý trên toàn sàn',
+    description:
+      'Hỗ trợ lọc theo trạng thái (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED), tìm kiếm theo mã đơn, mã khiếu nại, tên/email khách hàng hoặc lý do, kèm bộ đếm counters thống kê theo từng trạng thái.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách khiếu nại toàn sàn thành công' })
+  async listDisputes(@Query() query: QueryAdminDisputesDto) {
+    return this.adminDisputesService.getDisputes(query);
   }
 
   // ================= 18i. THÔNG TIN VÍ HỆ THỐNG CỦA ADMIN =================

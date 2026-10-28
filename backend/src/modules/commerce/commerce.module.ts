@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
 import { AdminModule } from '../admin/admin.module';
+import { CatalogModule } from '../catalog/catalog.module';
 import { CartService } from './services/cart.service';
 import { PayosService } from './services/payos.service';
 import { OrderService } from './services/order.service';
@@ -21,7 +22,7 @@ import { ReviewsService } from './services/reviews.service';
 import { ReportsService } from './services/reports.service';
 
 @Module({
-  imports: [PrismaModule, FulfillmentModule, forwardRef(() => AdminModule)],
+  imports: [PrismaModule, FulfillmentModule, CatalogModule, forwardRef(() => AdminModule)],
   controllers: [
     FeedbackController,
     CartController,

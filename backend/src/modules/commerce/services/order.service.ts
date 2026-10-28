@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -31,6 +32,7 @@ import {
   GhnShippingService,
   GhnShippingQuote,
 } from '../../fulfillment/services/ghn-shipping.service';
+import { InventoryService } from '../../catalog/services/inventory.service';
 
 export interface PayosPaymentResponse {
   orderId: string;
@@ -73,12 +75,40 @@ export class OrderService {
     private readonly configService: ConfigService,
     private readonly shipping: GhnShippingService,
     private readonly escrow: OrderEscrowService,
+    @Optional() private readonly inventoryService?: InventoryService,
   ) {}
 
   /**
    * Tạo đơn hàng từ giỏ hàng hiện tại (Price Revalidation + Anti-Self-Purchase)
    */
   async checkout(buyerId: string, dto: CheckoutDto, idempotencyKey?: string, quoteOnly = false) {
+    if (idempotencyKey && !quoteOnly) {
+      const existingOrders = await this.prisma.order.findMany({
+        where: {
+          idempotencyKey: {
+            startsWith: `${idempotencyKey}-`,
+          },
+        },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: { id: true, title: true, basePrice: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (existingOrders.length > 0) {
+        return {
+          orders: existingOrders,
+          payosPayment: null,
+          walletPayment: null,
+        };
+      }
+    }
+
     const pricedAt = new Date();
     const cart = await this.prisma.cart.findUnique({
       where: { userId: buyerId },
@@ -283,6 +313,13 @@ export class OrderService {
             },
           },
         });
+
+        // Khóa / Đặt chỗ tồn kho cho từng sản phẩm trong đơn hàng
+        if (this.inventoryService) {
+          for (const item of sellerItems) {
+            await this.inventoryService.reserveStock(tx, item.productId, item.quantity, order.id);
+          }
+        }
 
         orders.push(order);
       }
@@ -566,6 +603,11 @@ export class OrderService {
         },
       });
 
+      // 6. Trừ kho vĩnh viễn khi thanh toán thành công
+      if (this.inventoryService) {
+        await this.inventoryService.commitReservation(tx, order.id);
+      }
+
       // Keep funds in escrow until verified delivery and buyer confirmation.
       const settlement = await this.escrow.hold(tx, updatedOrder);
 
@@ -677,6 +719,11 @@ export class OrderService {
             seller: true,
           },
         });
+
+        // Trừ kho vĩnh viễn khi PayOS thanh toán thành công
+        if (this.inventoryService) {
+          await this.inventoryService.commitReservation(tx, payment.orderId);
+        }
 
         // Never disburse funds merely because the payment succeeded.
         await this.escrow.hold(tx, updatedOrder);
