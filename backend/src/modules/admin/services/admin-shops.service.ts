@@ -35,7 +35,6 @@ export class AdminShopsService {
 
     if (query.status === 'ACTIVE') {
       where.isShopSuspended = false;
-      where.isSellerActive = true;
     } else if (query.status === 'SUSPENDED') {
       where.isShopSuspended = true;
     }
@@ -103,11 +102,11 @@ export class AdminShopsService {
         sellerPhone: s.phoneNumber,
         storeName: latestRequest?.storeName || s.fullName,
         storeDescription: latestRequest?.storeDescription || null,
-        avatarUrl: s.avatarUrl,
+        avatarUrl: s.shopAvatarUrl,
         isSellerActive: s.isSellerActive,
         isShopSuspended: s.isShopSuspended,
         suspensionReason: s.suspensionReason,
-        status: s.isShopSuspended ? 'SUSPENDED' : s.isSellerActive ? 'ACTIVE' : 'INACTIVE',
+        status: s.isShopSuspended ? 'SUSPENDED' : 'ACTIVE',
         totalProducts: s._count.products,
         address: defaultAddress
           ? {
@@ -248,20 +247,18 @@ export class AdminShopsService {
     );
 
     // Kinh doanh: Giá trị đơn hoàn tất, số đơn hoàn tất, tiền hoàn trả, phí sàn thu được
-    const completedOrders = orders.filter(
-      (o) => o.status === OrderStatus.DELIVERED || o.status === OrderStatus.CONFIRMED,
-    );
+    const completedOrders = orders.filter((o) => o.status === OrderStatus.CONFIRMED);
     const completedOrdersCount = completedOrders.length;
     const completedOrderValue = completedOrders.reduce((acc, o) => acc + Number(o.totalAmount), 0);
     const refundedOrders = orders.filter(
       (o) => o.status === OrderStatus.REFUNDED || o.escrowRecord?.status === 'REFUNDED',
     );
     const refundedAmount = refundedOrders.reduce((acc, o) => acc + Number(o.totalAmount), 0);
-    const platformFeeCollected = completedOrders.reduce((acc, o) => {
-      if (o.escrowRecord?.platformFee) {
+    const platformFeeCollected = orders.reduce((acc, o) => {
+      if (o.escrowRecord?.status === 'DISBURSED' && o.escrowRecord.platformFee !== null) {
         return acc + Number(o.escrowRecord.platformFee);
       }
-      return acc + Math.round(Number(o.totalAmount) * 0.07);
+      return acc;
     }, 0);
 
     // Đơn hàng: Đang xử lý, đang giao, hoàn tất, đã hủy; bấm vào để xem danh sách
@@ -276,18 +273,29 @@ export class AdminShopsService {
     const ratingScore =
       totalReviews > 0
         ? Number((reviews.reduce((acc, r) => acc + Number(r.rating), 0) / totalReviews).toFixed(1))
-        : 5.0;
-    const cancellationRate =
-      orders.length > 0 ? Number(((cancelledOrdersCount / orders.length) * 100).toFixed(1)) : 0;
+        : null;
+    const sellerCancelledOrders = orders.filter(
+      (o) => o.status === 'CANCELLED' && o.cancellationActor === 'SELLER',
+    ).length;
+    const unknownCancellationCount = orders.filter(
+      (o) => o.status === 'CANCELLED' && !o.cancellationActor,
+    ).length;
+    const cancellationRate = unknownCancellationCount
+      ? null
+      : orders.length > 0
+        ? Number(((sellerCancelledOrders / orders.length) * 100).toFixed(1))
+        : 0;
     const disputeCount = disputes.length;
     const returnOrDisputeRate =
       orders.length > 0 ? Number(((disputeCount / orders.length) * 100).toFixed(1)) : 0;
-    const lateDeliveryRate = 0.0;
+    // Legacy shipments do not store an authoritative carrier delivery timestamp.
+    const lateDeliveryRate = null;
 
     return {
       shop: {
         id: seller.id,
         storeName: latestApprovedRequest?.storeName || seller.fullName,
+        avatarUrl: seller.shopAvatarUrl,
         storeDescription: latestApprovedRequest?.storeDescription || null,
         owner: {
           id: seller.id,
@@ -330,11 +338,7 @@ export class AdminShopsService {
         status: {
           isSellerActive: seller.isSellerActive,
           isShopSuspended: seller.isShopSuspended,
-          currentStatus: seller.isShopSuspended
-            ? 'SUSPENDED'
-            : seller.isSellerActive
-              ? 'ACTIVE'
-              : 'INACTIVE',
+          currentStatus: seller.isShopSuspended ? 'SUSPENDED' : 'ACTIVE',
           suspensionReason: seller.suspensionReason,
           reputationScore: seller.reputationScore,
           trustLevel: seller.trustLevel,
@@ -391,7 +395,10 @@ export class AdminShopsService {
         ratingScore,
         totalReviews,
         cancellationRate,
+        sellerCancelledOrders,
+        unknownCancellationCount,
         lateDeliveryRate,
+        lateDeliveryDataAvailable: false,
         returnOrDisputeRate,
         disputeCount,
       },
@@ -403,6 +410,7 @@ export class AdminShopsService {
         },
         items: seller.shopViolations.map((v) => ({
           id: v.id,
+          productId: v.productId,
           title: v.title,
           description: v.description,
           evidenceUrls: v.evidenceUrls,
@@ -448,6 +456,14 @@ export class AdminShopsService {
     shopId: string,
     query: { status?: OrderStatus; page?: number; limit?: number },
   ) {
+    if (
+      !(await this.prisma.user.findFirst({
+        where: { id: shopId, role: 'SELLER' },
+        select: { id: true },
+      }))
+    ) {
+      throw new NotFoundException('Không tìm thấy shop.');
+    }
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));
     const skip = (page - 1) * limit;
@@ -506,6 +522,7 @@ export class AdminShopsService {
       items: o.items.map((it) => ({
         id: it.id,
         productId: it.productId,
+        selections: it.selections,
         title: it.product?.title || '',
         thumbnail: it.product?.images?.[0]?.imageUrl || null,
         unitPrice: Number(it.unitPrice),
@@ -561,6 +578,7 @@ export class AdminShopsService {
         : 'Gian hàng được Quản trị viên khôi phục hoạt động');
 
     const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
       // 1. Cập nhật isShopSuspended, suspensionReason và isSellerActive
       const updatedUser = await tx.user.update({
         where: { id: sellerId },
@@ -575,12 +593,12 @@ export class AdminShopsService {
       if (isSuspending) {
         await tx.product.updateMany({
           where: { sellerId, status: ProductStatus.ACTIVE },
-          data: { status: ProductStatus.INACTIVE },
+          data: { status: ProductStatus.INACTIVE, hiddenByShopSuspension: true },
         });
       } else {
         await tx.product.updateMany({
-          where: { sellerId, status: ProductStatus.INACTIVE },
-          data: { status: ProductStatus.ACTIVE },
+          where: { sellerId, status: ProductStatus.INACTIVE, hiddenByShopSuspension: true },
+          data: { status: ProductStatus.ACTIVE, hiddenByShopSuspension: false },
         });
       }
 
@@ -603,7 +621,7 @@ export class AdminShopsService {
             : 'Gian hàng của bạn đã được mở lại 🎉',
           content: isSuspending
             ? `Gian hàng "${storeName}" đã bị Quản trị viên tạm đình chỉ. Lý do: ${actionReason}. Toàn bộ sản phẩm của gian hàng đã được tạm ẩn. Bạn vẫn có thể sử dụng tài khoản để mua sắm bình thường.`
-            : `Gian hàng "${storeName}" đã được khôi phục trạng thái hoạt động. Bạn có thể kích hoạt lại các sản phẩm và tiếp tục kinh doanh.`,
+            : `Gian hàng "${storeName}" đã được khôi phục. Sản phẩm bị ẩn do đình chỉ đã được hiển thị lại; sản phẩm bị ẩn riêng vẫn giữ nguyên.`,
           type: NotificationType.SYSTEM,
         },
       });

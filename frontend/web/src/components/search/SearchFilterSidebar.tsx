@@ -1,8 +1,12 @@
 import React from 'react';
-import { SlidersHorizontal, ChevronUp, Shield, Star } from 'lucide-react';
+import { SlidersHorizontal, ChevronUp, Shield, Star, Layers, Check } from 'lucide-react';
 import type { TransactionTypeFilter, ConditionFilter, BrandFilter, ShippingFilter } from './types';
+import type { CategoryNode } from '../../services/products.service';
 
 interface SearchFilterSidebarProps {
+  categories?: CategoryNode[];
+  selectedCategoryId?: string;
+  onSelectCategory?: (id: string | undefined) => void;
   transactionTypes: TransactionTypeFilter;
   setTransactionTypes: React.Dispatch<React.SetStateAction<TransactionTypeFilter>>;
   conditionFilters: ConditionFilter;
@@ -15,12 +19,16 @@ interface SearchFilterSidebarProps {
   setPriceFrom: (val: string) => void;
   priceTo: string;
   setPriceTo: (val: string) => void;
+  onApplyPrice?: () => void;
   collapsedSections: Record<string, boolean>;
   onToggleSection: (section: string) => void;
   onClearAll: () => void;
 }
 
 export const SearchFilterSidebar: React.FC<SearchFilterSidebarProps> = ({
+  categories = [],
+  selectedCategoryId,
+  onSelectCategory,
   transactionTypes,
   setTransactionTypes,
   conditionFilters,
@@ -33,10 +41,36 @@ export const SearchFilterSidebar: React.FC<SearchFilterSidebarProps> = ({
   setPriceFrom,
   priceTo,
   setPriceTo,
+  onApplyPrice,
   collapsedSections,
   onToggleSection,
   onClearAll,
 }) => {
+  const renderCategoryItem = (cat: CategoryNode, depth = 0) => {
+    const isSelected = selectedCategoryId === cat.id;
+    return (
+      <React.Fragment key={cat.id}>
+        <div
+          onClick={() => {
+            if (onSelectCategory) {
+              onSelectCategory(isSelected ? undefined : cat.id);
+            }
+          }}
+          className={`flex items-center justify-between text-[12px] py-1.5 px-2 rounded-lg cursor-pointer transition select-none ${
+            isSelected
+              ? 'bg-blue-600 text-white font-bold shadow-sm'
+              : 'text-slate-700 hover:bg-slate-100'
+          }`}
+          style={{ paddingLeft: `${depth * 10 + 8}px` }}
+        >
+          <span className="truncate">{cat.name}</span>
+          {isSelected && <Check size={12} className="shrink-0 ml-1 text-white" />}
+        </div>
+        {cat.children && cat.children.map((child) => renderCategoryItem(child, depth + 1))}
+      </React.Fragment>
+    );
+  };
+
   return (
     <aside className="[width:260px] [flex-shrink:0] flex flex-col gap-4 max-[900px]:w-full">
       <div className="[background:#ffffff] [border:1px_solid_#e2e8f0] [border-radius:12px] p-[18px] [box-shadow:0_1px_3px_rgba(0,_0,_0,_0.02)]">
@@ -53,6 +87,33 @@ export const SearchFilterSidebar: React.FC<SearchFilterSidebarProps> = ({
             Xóa tất cả
           </button>
         </div>
+
+        {/* 0. DANH MỤC SẢN PHẨM (Từ API Backend) */}
+        {categories.length > 0 && (
+          <div className="mb-5 [border-bottom:1px_solid_#f1f5f9] pb-[18px]">
+            <div
+              className="flex items-center justify-between cursor-pointer mb-3 select-none"
+              onClick={() => onToggleSection('categoryTree')}
+            >
+              <div className="flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-extrabold text-slate-800 uppercase [letter-spacing:0.5px]">
+                  DANH MỤC SẢN PHẨM
+                </span>
+              </div>
+              <ChevronUp
+                className={`w-4 h-4 text-slate-400 [transition:transform_0.2s_ease] [&.collapsed]:[transform:rotate(180deg)] ${
+                  collapsedSections['categoryTree'] ? 'collapsed' : ''
+                }`}
+              />
+            </div>
+            {!collapsedSections['categoryTree'] && (
+              <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto pr-1">
+                {categories.map((cat) => renderCategoryItem(cat, 0))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 1. LOẠI HÌNH GIAO DỊCH */}
         <div className="mb-5 [border-bottom:1px_solid_#f1f5f9] pb-[18px] [&:last-child]:mb-0 [&:last-child]:[border-bottom:none] [&:last-child]:pb-0">
@@ -206,6 +267,7 @@ export const SearchFilterSidebar: React.FC<SearchFilterSidebarProps> = ({
 
               <button
                 type="button"
+                onClick={onApplyPrice}
                 className="w-full bg-blue-600 text-white [border:none] [border-radius:8px] [padding:9px_12px] text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5 [transition:background-color_0.15s_ease] mt-2.5 hover:bg-blue-700"
               >
                 <SlidersHorizontal className="w-3.5 h-3.5" /> Áp Dụng Khoảng Giá

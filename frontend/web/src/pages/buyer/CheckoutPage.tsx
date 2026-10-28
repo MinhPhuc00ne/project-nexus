@@ -1,11 +1,281 @@
-import PagePlaceholder from '../../components/PagePlaceholder';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { CheckCircle2, ShoppingBag, ArrowLeft, ChevronRight, Package } from 'lucide-react';
+import { fetchCart, clearCart, type CartItem } from '../../services/cart';
+import { getAddresses, createAddress, type UserAddress } from '../../services/address';
+import {
+  checkoutApi,
+  type PayosPaymentInfo,
+  type BuyerOrder,
+  type ShippingAddressInput,
+} from '../../services/orders';
+import { getStoredToken } from '../../services/auth';
+import PayosQrModal from '../../components/checkout/PayosQrModal';
+import CheckoutAddressSection from '../../components/checkout/CheckoutAddressSection';
+import CheckoutPaymentMethod from '../../components/checkout/CheckoutPaymentMethod';
+import CheckoutOrderSummary from '../../components/checkout/CheckoutOrderSummary';
 
 export default function CheckoutPage() {
+  const navigate = useNavigate();
+
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [loadingCart, setLoadingCart] = useState(true);
+
+  // Address State
+  const [addresses, setAddresses] = useState<UserAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [customAddress, setCustomAddress] = useState<ShippingAddressInput>({
+    recipientName: '',
+    phone: '',
+    city: 'TP. Hồ Chí Minh',
+    district: '',
+    ward: '',
+    street: '',
+  });
+
+  // Payment Method State
+  const [paymentMethod, setPaymentMethod] = useState<'PAYOS' | 'WALLET' | 'STRIPE'>('PAYOS');
+
+  // Checkout State
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checkoutDone, setCheckoutDone] = useState(false);
+  const [payosPayment, setPayosPayment] = useState<PayosPaymentInfo | null>(null);
+  const [createdOrders, setCreatedOrders] = useState<BuyerOrder[]>([]);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  useEffect(() => {
+    if (!getStoredToken()) {
+      navigate('/login', { state: { from: '/checkout' } });
+      return;
+    }
+
+    let isMounted = true;
+    const loadData = async () => {
+      setLoadingCart(true);
+      try {
+        const cart = await fetchCart();
+        const selected = cart.filter((i) => i.selected);
+        if (isMounted) {
+          setItems(selected.length > 0 ? selected : cart);
+        }
+
+        const addrList = await getAddresses();
+        if (isMounted && Array.isArray(addrList) && addrList.length > 0) {
+          setAddresses(addrList);
+          const def = addrList.find((a) => a.isDefault) || addrList[0];
+          setSelectedAddressId(def?.id ?? '');
+        }
+      } catch (err) {
+        console.warn('Lỗi tải dữ liệu thanh toán:', err);
+      } finally {
+        if (isMounted) setLoadingCart(false);
+      }
+    };
+
+    void loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
+
+  const activeAddress = addresses.find((a) => a.id === selectedAddressId);
+  const currentAddress: ShippingAddressInput = activeAddress
+    ? {
+        recipientName: activeAddress.recipientName,
+        phone: activeAddress.phone,
+        city: activeAddress.city,
+        district: activeAddress.district || '',
+        ward: activeAddress.ward || '',
+        street: activeAddress.street,
+      }
+    : customAddress;
+
+  const rawSubtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const shippingFee = items.length > 0 ? 30000 : 0;
+  const grandTotal = rawSubtotal + shippingFee;
+
+  const handleSaveNewAddress = async (addr: ShippingAddressInput) => {
+    setCustomAddress(addr);
+    showToast('Đã lưu và cập nhật địa chỉ giao hàng.');
+    try {
+      const created = await createAddress({
+        recipientName: addr.recipientName.trim(),
+        phone: addr.phone.trim(),
+        city: addr.city.trim(),
+        district: (addr.district || '').trim(),
+        ward: (addr.ward || '').trim(),
+        street: addr.street.trim(),
+        isDefault: true,
+      });
+      if (created) {
+        setAddresses((prev) => [created, ...prev]);
+        setSelectedAddressId(created.id);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleCheckout = async () => {
+    if (
+      !currentAddress.recipientName.trim() ||
+      !currentAddress.phone.trim() ||
+      !currentAddress.street.trim()
+    ) {
+      showToast('Vui lòng cung cấp đầy đủ thông tin địa chỉ giao hàng.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const res = await checkoutApi({
+        shippingAddress: {
+          recipientName: currentAddress.recipientName.trim(),
+          phone: currentAddress.phone.trim(),
+          city: currentAddress.city.trim(),
+          district: currentAddress.district ? currentAddress.district.trim() : undefined,
+          ward: currentAddress.ward ? currentAddress.ward.trim() : undefined,
+          street: currentAddress.street.trim(),
+        },
+        paymentMethod,
+        itemIds: items.map((it) => String(it.id)),
+      });
+
+      setCreatedOrders(Array.isArray(res?.orders) ? res.orders : []);
+      setPayosPayment(res?.payosPayment ?? null);
+      setCheckoutDone(true);
+      await clearCart();
+    } catch (err: unknown) {
+      console.error('Checkout failed:', err);
+      const msg = err instanceof Error ? err.message : 'Thanh toán thất bại. Vui lòng thử lại!';
+      showToast(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (loadingCart) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500 text-xs">
+        Đang tải thông tin thanh toán...
+      </div>
+    );
+  }
+
   return (
-    <PagePlaceholder
-      area="Buyer"
-      title="Thanh toán đơn hàng"
-      description="Xác nhận địa chỉ giao hàng, phương thức vận chuyển và thanh toán qua PayOS/Stripe/Ví Nexus."
-    />
+    <div className="min-h-screen bg-slate-50 text-slate-800 py-8">
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-medium animate-in fade-in slide-in-from-bottom-4">
+          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      <div className="max-w-6xl mx-auto px-4">
+        <div className="flex items-center gap-2 text-xs text-slate-500 mb-6">
+          <Link to="/" className="hover:text-blue-600 transition">
+            Trang chủ
+          </Link>
+          <ChevronRight size={13} />
+          <Link to="/cart" className="hover:text-blue-600 transition">
+            Giỏ hàng
+          </Link>
+          <ChevronRight size={13} />
+          <span className="font-semibold text-slate-800">Thanh toán đơn hàng</span>
+        </div>
+
+        {checkoutDone ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 max-w-2xl mx-auto text-center shadow-sm space-y-6">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 size={36} />
+            </div>
+
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900">Đặt Hàng Thành Công!</h1>
+              <p className="text-xs text-slate-500 mt-1">
+                {createdOrders.length > 0
+                  ? `Mã đơn hàng: ${createdOrders.map((o) => o.orderNumber).join(', ')}`
+                  : 'Đơn hàng của bạn đã được tiếp nhận và bảo chứng bởi NEXUS Escrow.'}
+              </p>
+            </div>
+
+            {payosPayment ? (
+              <PayosQrModal payment={payosPayment} onCopySuccess={showToast} />
+            ) : (
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-left text-xs leading-relaxed">
+                Đơn hàng đã được lưu trữ trong danh sách đơn mua. Bạn có thể theo dõi trạng thái
+                giao hàng bất kỳ lúc nào.
+              </div>
+            )}
+
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Link
+                to="/buyer/orders"
+                className="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition shadow flex items-center gap-1.5"
+              >
+                <ShoppingBag size={14} />
+                <span>Xem Đơn Hàng Của Tôi</span>
+              </Link>
+              <Link
+                to="/search"
+                className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition"
+              >
+                Tiếp tục mua sắm
+              </Link>
+            </div>
+          </div>
+        ) : items.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto shadow-sm">
+            <Package size={40} className="text-slate-300 mx-auto mb-3" />
+            <h2 className="text-lg font-bold text-slate-800 mb-1">
+              Không có sản phẩm nào để thanh toán
+            </h2>
+            <p className="text-xs text-slate-500 mb-6">
+              Vui lòng quay lại giỏ hàng và chọn sản phẩm.
+            </p>
+            <Link
+              to="/cart"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition"
+            >
+              <ArrowLeft size={14} />
+              <span>Quay lại giỏ hàng</span>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div className="lg:col-span-7 space-y-6">
+              <CheckoutAddressSection
+                addresses={addresses}
+                selectedAddressId={selectedAddressId}
+                onSelectAddressId={setSelectedAddressId}
+                currentAddress={currentAddress}
+                onSaveNewAddress={handleSaveNewAddress}
+                showToast={showToast}
+              />
+              <CheckoutPaymentMethod
+                paymentMethod={paymentMethod}
+                onSelectPaymentMethod={setPaymentMethod}
+                onShowNotice={showToast}
+              />
+            </div>
+            <div className="lg:col-span-5 space-y-5">
+              <CheckoutOrderSummary
+                items={items}
+                rawSubtotal={rawSubtotal}
+                shippingFee={shippingFee}
+                grandTotal={grandTotal}
+                isSubmitting={isSubmitting}
+                onCheckout={handleCheckout}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

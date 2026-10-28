@@ -1,23 +1,32 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined, ShopOutlined } from '@ant-design/icons';
 import { getProductsPage, type CatalogQuery } from '../../services/products.service';
 import useProductResource from '../productDetail/useProductResource';
 import type { ProductDetail } from '../../types/product.types';
 
 export default function CatalogListing({
   search = '',
+  categoryId = '',
   preview = false,
 }: {
   search?: string;
+  categoryId?: string;
   preview?: boolean;
 }) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<NonNullable<CatalogQuery['sortBy']>>('newest');
   const limit = preview ? 8 : 12;
   const load = useCallback(
-    () => getProductsPage({ search: search.trim(), page, limit, sortBy }),
-    [search, page, limit, sortBy],
+    () =>
+      getProductsPage({
+        search: search.trim() || undefined,
+        categoryId: categoryId.trim() || undefined,
+        page,
+        limit,
+        sortBy,
+      }),
+    [search, categoryId, page, limit, sortBy],
   );
   const { data, loading, error, retry } = useProductResource(load);
 
@@ -25,7 +34,7 @@ export default function CatalogListing({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-slate-500" role="status">
-          {loading ? 'Đang tải sản phẩm…' : data ? `${data.total} sản phẩm đang bán` : ''}
+          {loading ? 'Đang tải sản phẩm…' : data ? `${data?.total} sản phẩm đang bán` : ''}
         </p>
         <div className="flex flex-wrap items-center gap-3">
           {!preview && (
@@ -131,7 +140,10 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
       <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
         <p className="truncate text-xs text-slate-500">{product.categoryName}</p>
         <h3 className="line-clamp-2 text-sm font-semibold text-slate-800">{product.name}</h3>
-        <p className="truncate text-xs text-slate-500">{product.shop.name}</p>
+        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+          <ShopOutlined className="text-blue-600 shrink-0" />
+          <span className="truncate">{product.shop.name}</span>
+        </div>
         <p className="mt-auto pt-2 text-base font-bold text-blue-600">{product.formattedPrice}</p>
         <p className={`text-xs ${product.stock > 0 ? 'text-emerald-600' : 'text-slate-400'}`}>
           {product.stock > 0 ? `Còn ${product.stock} sản phẩm` : 'Hết hàng'}

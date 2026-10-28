@@ -1,11 +1,20 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateConversationDto {
-  @ApiProperty({ description: 'ID của người dùng muốn trò chuyện cùng (Seller, Buyer hoặc Staff)' })
+  @ApiPropertyOptional({
+    description: 'ID của người dùng muốn trò chuyện cùng (Seller, Buyer hoặc Staff)',
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  participantId: string;
+  participantId?: string;
+
+  @ApiPropertyOptional({
+    description: 'ID người nhận (alias tương đương participantId, tương thích format cũ)',
+  })
+  @IsOptional()
+  @IsString()
+  targetUserId?: string;
 
   @ApiPropertyOptional({
     description: 'Loại cuộc trò chuyện: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER, GENERAL',
@@ -18,6 +27,7 @@ export class CreateConversationDto {
   @ApiPropertyOptional({ description: 'Tiêu đề cuộc trò chuyện / chủ đề trao đổi' })
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   title?: string;
 
   @ApiPropertyOptional({
@@ -37,5 +47,6 @@ export class CreateConversationDto {
   })
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   initialMessage?: string;
 }

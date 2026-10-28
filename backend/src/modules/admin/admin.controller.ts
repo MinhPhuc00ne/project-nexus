@@ -34,10 +34,19 @@ import { WarnShopDto } from './dto/warn-shop.dto';
 import { CreateShopViolationDto } from './dto/create-shop-violation.dto';
 import { ReviewWithdrawalDto } from './dto/review-withdrawal.dto';
 import { UpdateSystemSettingsDto } from './dto/update-system-settings.dto';
+import {
+  DepositAdminWalletDto,
+  QueryAdminWalletTransactionsDto,
+  AdminWalletResponseDto,
+  AdminWalletTransactionsResponseDto,
+} from './dto/admin-wallet.dto';
 import { AdminUsersService } from './services/admin-users.service';
 import { AdminProductsService } from './services/admin-products.service';
 import { AdminShopsService } from './services/admin-shops.service';
 import { AdminSettingsService } from './services/admin-settings.service';
+import { AdminFinanceService } from './services/admin-finance.service';
+import { AdminDisputesService } from './services/admin-disputes.service';
+import { QueryAdminDisputesDto } from './dto/query-admin-disputes.dto';
 import { CategoryService } from '../catalog/services/category.service';
 import { CreateCategoryDto } from '../catalog/dtos/create-category.dto';
 import { UpdateCategoryDto } from '../catalog/dtos/update-category.dto';
@@ -54,6 +63,8 @@ export class AdminController {
     private readonly adminProductsService: AdminProductsService,
     private readonly adminShopsService: AdminShopsService,
     private readonly adminSettingsService: AdminSettingsService,
+    private readonly adminFinanceService: AdminFinanceService,
+    private readonly adminDisputesService: AdminDisputesService,
     private readonly categoryService: CategoryService,
   ) {}
 
@@ -63,7 +74,7 @@ export class AdminController {
   @ApiOperation({
     summary: 'Tạo tài khoản / Mời nhân viên hỗ trợ (Support Staff)',
     description:
-      'Admin nhập Họ tên, email cá nhân, số điện thoại, phòng ban. Hệ thống sẽ sinh tài khoản công tác @staff.com, trả về ngay khi gửi và gửi email mời kích hoạt về email cá nhân của Staff.',
+      'Admin nhập Họ tên, email cá nhân, số điện thoại, phòng ban. Hệ thống cấp tài khoản @staff.com dùng ngay và gửi mật khẩu ngẫu nhiên về email cá nhân. Staff dùng Quên mật khẩu để đặt lại mật khẩu.',
   })
   @ApiResponse({ status: 201, description: 'Gửi lời mời và cấp tài khoản @staff.com thành công' })
   @ApiResponse({ status: 400, description: 'Email đã tồn tại hoặc không hợp lệ' })
@@ -76,10 +87,9 @@ export class AdminController {
   @Post('staff/invite')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary:
-      'Gửi link lời mời kích hoạt tài khoản Staff qua email cá nhân và cấp tài khoản @staff.com',
+    summary: 'Cấp tài khoản Staff dùng ngay và gửi mật khẩu ngẫu nhiên qua email cá nhân',
     description:
-      'Admin nhập Họ và tên, email cá nhân, số điện thoại. Hệ thống sẽ sinh tài khoản công tác @staff.com, trả về ngay khi gửi và dispatch email mời kích hoạt về email cá nhân của Staff.',
+      'Backend tạo tài khoản @staff.com theo format cũ, gửi tài khoản và mật khẩu ngẫu nhiên qua email. Staff đăng nhập ngay và dùng Quên mật khẩu để đặt lại; không cần link kích hoạt. API không trả mật khẩu.',
   })
   @ApiResponse({
     status: 201,
@@ -459,6 +469,70 @@ export class AdminController {
     @Body() dto: ReviewWithdrawalDto,
   ) {
     return this.adminService.reviewWithdrawalRequest(id, admin.id, dto);
+  }
+
+  // ================= 18h2. DANH SÁCH KHIẾU NẠI TRÊN TOÀN SÀN =================
+  @Get('disputes')
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[ADMIN / STAFF] Lấy danh sách các khiếu nại đang chờ xử lý trên toàn sàn',
+    description:
+      'Hỗ trợ lọc theo trạng thái (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED), tìm kiếm theo mã đơn, mã khiếu nại, tên/email khách hàng hoặc lý do, kèm bộ đếm counters thống kê theo từng trạng thái.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách khiếu nại toàn sàn thành công' })
+  async listDisputes(@Query() query: QueryAdminDisputesDto) {
+    return this.adminDisputesService.getDisputes(query);
+  }
+
+  // ================= 18i. THÔNG TIN VÍ HỆ THỐNG CỦA ADMIN =================
+  @Get('wallet')
+  @ApiOperation({
+    summary: 'Admin xem số dư ví hệ thống & tổng thu phí sàn hoa hồng',
+    description:
+      'Trả về số dư ví Admin, tổng tiền % phí sàn đã thu từ các đơn hàng thành công, và tổng tiền Admin đã nạp vào ví.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy thông tin ví hệ thống thành công',
+    type: AdminWalletResponseDto,
+  })
+  async getAdminWallet(@CurrentUser('id') adminId: string) {
+    return this.adminFinanceService.getAdminWallet(adminId);
+  }
+
+  // ================= 18j. LỊCH SỬ BIẾN ĐỘNG SỐ DƯ VÍ ADMIN =================
+  @Get('wallet/transactions')
+  @ApiOperation({
+    summary:
+      'Admin xem lịch sử biến động số dư ví hệ thống (Ký quỹ, giải ngân, cước GHN, nạp tiền)',
+    description:
+      'Lịch sử chi tiết: tạm giữ tiền khách trả, xuất tiền cho shop, trừ cước GHN, thu % hoa hồng kèm bóc tách thông tin buyer, shop, đơn hàng.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lấy lịch sử giao dịch thành công',
+    type: AdminWalletTransactionsResponseDto,
+  })
+  async getAdminWalletTransactions(
+    @CurrentUser('id') adminId: string,
+    @Query() query: QueryAdminWalletTransactionsDto,
+  ) {
+    return this.adminFinanceService.getAdminWalletTransactions(adminId, query);
+  }
+
+  // ================= 18k. ADMIN NẠP TIỀN VÀO VÍ HỆ THỐNG =================
+  @Post('wallet/deposit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin nạp thêm tiền vào ví hệ thống (có lưu lịch sử giao dịch)',
+    description:
+      'Cho phép Admin nạp thêm vốn/tiền dự phòng vào ví nền tảng và tự động ghi nhận vào lịch sử giao dịch (DEPOSIT).',
+  })
+  @ApiResponse({ status: 200, description: 'Nạp tiền vào ví thành công' })
+  @ApiResponse({ status: 400, description: 'Số tiền nạp không hợp lệ' })
+  async depositAdminWallet(@CurrentUser('id') adminId: string, @Body() dto: DepositAdminWalletDto) {
+    return this.adminFinanceService.depositToAdminWallet(adminId, dto);
   }
 
   // ================= 19. XEM CẤU HÌNH HỆ THỐNG SÀN =================

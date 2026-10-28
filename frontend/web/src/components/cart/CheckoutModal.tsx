@@ -1,42 +1,20 @@
-import { useState, useEffect, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Popup from '../Popup';
 import { clearCart, type CartItem } from '../../services/cart';
-import { getStoredUser, getStoredToken } from '../../services/auth';
-import { getAddresses } from '../../services/address';
-import { CheckCircle2, MapPin, Edit2, QrCode, Wallet, CreditCard } from 'lucide-react';
+import { getStoredToken } from '../../services/auth';
+import { getAddresses, createAddress, type UserAddress } from '../../services/address';
+import {
+  checkoutApi,
+  type PayosPaymentInfo,
+  type BuyerOrder,
+  type ShippingAddressInput,
+} from '../../services/orders';
+import { CheckCircle2, Loader2 } from 'lucide-react';
+import PayosQrModal from '../checkout/PayosQrModal';
+import CheckoutAddressSection from '../checkout/CheckoutAddressSection';
+import CheckoutPaymentMethod from '../checkout/CheckoutPaymentMethod';
 
-export interface DeliveryAddress {
-  recipientName: string;
-  phone: string;
-  city: string;
-  district: string;
-  ward: string;
-  street: string;
-}
-
-const DEFAULT_ADDRESS_KEY = 'nexus:delivery-address';
-
-function getStoredAddress(): DeliveryAddress {
-  try {
-    const raw = localStorage.getItem(DEFAULT_ADDRESS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.recipientName === 'string') return parsed;
-    }
-  } catch {
-    // Storage read fallback
-  }
-  const user = getStoredUser();
-  return {
-    recipientName: user?.fullName || 'Khách hàng',
-    phone: '',
-    city: 'TP. Hồ Chí Minh',
-    district: '',
-    ward: '',
-    street: '',
-  };
-}
+export type DeliveryAddress = ShippingAddressInput;
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -55,343 +33,240 @@ export default function CheckoutModal({
   onCheckoutSuccess,
   showToast,
 }: CheckoutModalProps) {
-  const navigate = useNavigate();
-  const [address, setAddress] = useState<DeliveryAddress>(getStoredAddress);
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
-  const [editForm, setEditForm] = useState<DeliveryAddress>(address);
-  const [addressError, setAddressError] = useState('');
+  const [addresses, setAddresses] = useState<UserAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
+  const [customAddress, setCustomAddress] = useState<ShippingAddressInput>({
+    recipientName: '',
+    phone: '',
+    city: 'TP. Hồ Chí Minh',
+    district: '',
+    ward: '',
+    street: '',
+  });
+
   const [paymentMethod, setPaymentMethod] = useState<'PAYOS' | 'WALLET' | 'STRIPE'>('PAYOS');
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
+  const [payosPayment, setPayosPayment] = useState<PayosPaymentInfo | null>(null);
+  const [createdOrders, setCreatedOrders] = useState<BuyerOrder[]>([]);
 
   useEffect(() => {
     if (!isOpen || !getStoredToken()) return;
     getAddresses()
       .then((list) => {
-        if (list && list.length > 0) {
-          const defaultAddr = list.find((a) => a.isDefault) || list[0];
-          const loaded: DeliveryAddress = {
-            recipientName: defaultAddr.recipientName,
-            phone: defaultAddr.phone,
-            city: defaultAddr.city,
-            district: defaultAddr.district || '',
-            ward: defaultAddr.ward || '',
-            street: defaultAddr.street,
-          };
-          setAddress(loaded);
-          setEditForm(loaded);
+        if (Array.isArray(list) && list.length > 0) {
+          setAddresses(list);
+          const def = list.find((a) => a.isDefault) || list[0];
+          setSelectedAddressId(def?.id ?? '');
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // ignore
+      });
   }, [isOpen]);
 
-  const handleSaveAddress = (e: FormEvent) => {
-    e.preventDefault();
-    if (!editForm.recipientName.trim() || !editForm.phone.trim() || !editForm.street.trim()) {
-      setAddressError('Vui lòng điền họ tên, số điện thoại và địa chỉ cụ thể.');
-      return;
+  const activeAddress = addresses.find((a) => a.id === selectedAddressId);
+  const currentAddress: ShippingAddressInput = activeAddress
+    ? {
+        recipientName: activeAddress.recipientName,
+        phone: activeAddress.phone,
+        city: activeAddress.city,
+        district: activeAddress.district || '',
+        ward: activeAddress.ward || '',
+        street: activeAddress.street,
+      }
+    : customAddress;
+
+  const handleSaveNewAddress = async (addr: ShippingAddressInput) => {
+    setCustomAddress(addr);
+    showToast('Đã lưu và cập nhật địa chỉ giao hàng.');
+    try {
+      const created = await createAddress({
+        recipientName: addr.recipientName.trim(),
+        phone: addr.phone.trim(),
+        city: addr.city.trim(),
+        district: (addr.district || '').trim(),
+        ward: (addr.ward || '').trim(),
+        street: addr.street.trim(),
+        isDefault: true,
+      });
+      if (created) {
+        setAddresses((prev) => [created, ...prev]);
+        setSelectedAddressId(created.id);
+      }
+    } catch {
+      // ignore
     }
-    setAddress(editForm);
-    localStorage.setItem(DEFAULT_ADDRESS_KEY, JSON.stringify(editForm));
-    setIsEditingAddress(false);
-    showToast('Đã lưu và cập nhật địa chỉ giao hàng thành công!');
   };
 
-  const handleConfirmCheckout = () => {
+  const handleConfirmCheckout = async () => {
+    if (
+      !currentAddress.recipientName.trim() ||
+      !currentAddress.phone.trim() ||
+      !currentAddress.street.trim()
+    ) {
+      showToast('Vui lòng cung cấp đầy đủ thông tin địa chỉ giao hàng.');
+      return;
+    }
+
     setIsProcessingOrder(true);
-    setTimeout(() => {
-      setIsProcessingOrder(false);
+    try {
+      const res = await checkoutApi({
+        shippingAddress: {
+          recipientName: currentAddress.recipientName.trim(),
+          phone: currentAddress.phone.trim(),
+          city: currentAddress.city.trim(),
+          district: currentAddress.district ? currentAddress.district.trim() : undefined,
+          ward: currentAddress.ward ? currentAddress.ward.trim() : undefined,
+          street: currentAddress.street.trim(),
+        },
+        paymentMethod,
+        itemIds: selectedItems.map((it) => String(it.id)),
+      });
+
+      setCreatedOrders(Array.isArray(res?.orders) ? res.orders : []);
+      setPayosPayment(res?.payosPayment ?? null);
       setCheckoutSuccess(true);
-      clearCart();
-      if (onCheckoutSuccess) {
-        onCheckoutSuccess();
-      }
-    }, 1500);
+      await clearCart();
+      if (onCheckoutSuccess) onCheckoutSuccess();
+    } catch (err: unknown) {
+      console.error('Checkout failed:', err);
+      const resData = (err as { response?: { data?: { message?: string | string[] } } })?.response
+        ?.data;
+      const serverMsg = resData?.message;
+      const msg = Array.isArray(serverMsg)
+        ? serverMsg.join(', ')
+        : typeof serverMsg === 'string'
+          ? serverMsg
+          : err instanceof Error
+            ? err.message
+            : 'Thanh toán thất bại. Vui lòng thử lại!';
+      showToast(msg);
+    } finally {
+      setIsProcessingOrder(false);
+    }
   };
 
   const handleClose = () => {
-    if (!isProcessingOrder) {
-      if (checkoutSuccess) {
-        setCheckoutSuccess(false);
-      }
-      onClose();
-    }
+    setCheckoutSuccess(false);
+    onClose();
   };
 
   return (
-    <Popup isOpen={isOpen} onClose={handleClose} title="Xác Nhận Đặt Hàng & Ký Quỹ Escrow">
-      {checkoutSuccess ? (
-        <div className="text-center py-6 space-y-4">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle2 size={36} />
-          </div>
-          <h3 className="text-xl font-bold text-slate-900">Đặt Hàng & Ký Quỹ Thành Công!</h3>
-          <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
-            Mã giao dịch ký quỹ PayOS đã được tạo. Số tiền{' '}
-            <strong>{Number(grandTotal).toLocaleString('vi-VN')} ₫</strong> được giữ bảo chứng an
-            toàn.
-          </p>
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-left max-w-md mx-auto">
-            <span className="font-bold text-slate-800 text-xs block mb-1">
-              Địa chỉ nhận hàng (GHN Express):
-            </span>
-            <p className="text-slate-600 text-xs leading-relaxed">
-              <strong>{address.recipientName}</strong> • {address.phone} • {address.street},{' '}
-              {address.ward}, {address.district}, {address.city}
-            </p>
-          </div>
-          <div className="pt-4 flex justify-center gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                handleClose();
-                navigate('/search');
-              }}
-              className="px-6 py-2.5 rounded-xl bg-[#f24e1e] text-white font-bold text-xs hover:bg-[#d63b0e] transition shadow"
-            >
-              Tiếp tục mua sắm
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-5 text-xs text-slate-700">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-                <MapPin size={15} className="text-[#f24e1e]" />
-                Địa chỉ nhận hàng (GHN Express):
-              </span>
-              {!isEditingAddress && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditForm(address);
-                    setAddressError('');
-                    setIsEditingAddress(true);
-                  }}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
-                >
-                  <Edit2 size={13} />
-                  Chỉnh sửa
-                </button>
-              )}
+    <Popup
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={checkoutSuccess ? 'Thanh Toán Thành Công' : 'Xác Nhận Đặt Hàng & Thanh Toán'}
+      size={checkoutSuccess ? 'lg' : 'xl'}
+    >
+      <div className="space-y-6 text-slate-800">
+        {checkoutSuccess ? (
+          <div className="space-y-6 text-center">
+            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 size={36} />
             </div>
 
-            {isEditingAddress ? (
-              <form
-                onSubmit={handleSaveAddress}
-                className="space-y-3 pt-2.5 border-t border-slate-200 mt-2"
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Họ và tên người nhận *
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.recipientName}
-                      onChange={(e) => setEditForm({ ...editForm, recipientName: e.target.value })}
-                      placeholder="Nguyễn Văn A"
-                      className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#f24e1e]"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Số điện thoại liên hệ *
-                    </label>
-                    <input
-                      type="tel"
-                      value={editForm.phone}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                      placeholder="0901234567"
-                      className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#f24e1e]"
-                      required
-                    />
-                  </div>
-                </div>
+            <div>
+              <h2 className="text-xl font-extrabold text-slate-900">Thanh Toán Thành Công!</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                {createdOrders.length > 0
+                  ? `Mã đơn hàng: ${createdOrders.map((o) => o.orderNumber).join(', ')}`
+                  : 'Đơn hàng của bạn đã được thanh toán và bảo chứng bởi NEXUS Escrow.'}
+              </p>
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Tỉnh / Thành phố *
-                    </label>
-                    <select
-                      value={editForm.city}
-                      onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                      className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#f24e1e]"
-                    >
-                      <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                      <option value="Hà Nội">Hà Nội</option>
-                      <option value="Đà Nẵng">Đà Nẵng</option>
-                      <option value="Hải Phòng">Hải Phòng</option>
-                      <option value="Cần Thơ">Cần Thơ</option>
-                      <option value="Bình Dương">Bình Dương</option>
-                      <option value="Đồng Nai">Đồng Nai</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Quận / Huyện *
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.district}
-                      onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
-                      placeholder="Quận / Huyện"
-                      className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#f24e1e]"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Phường / Xã *
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.ward}
-                      onChange={(e) => setEditForm({ ...editForm, ward: e.target.value })}
-                      placeholder="Phường / Xã"
-                      className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#f24e1e]"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Địa chỉ cụ thể (Số nhà, tên đường, tòa nhà) *
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.street}
-                    onChange={(e) => setEditForm({ ...editForm, street: e.target.value })}
-                    placeholder="Số nhà, tên đường, số căn hộ/tòa nhà..."
-                    className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:outline-none focus:border-[#f24e1e]"
-                    required
-                  />
-                </div>
-
-                {addressError && (
-                  <p className="text-[11px] text-red-500 font-medium">{addressError}</p>
-                )}
-
-                <div className="flex justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingAddress(false)}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 transition cursor-pointer"
-                  >
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 text-xs font-bold rounded-lg text-white bg-[#f24e1e] hover:bg-[#d63b0e] transition shadow-sm cursor-pointer"
-                  >
-                    Lưu Địa Chỉ
-                  </button>
-                </div>
-              </form>
+            {payosPayment ? (
+              <PayosQrModal payment={payosPayment} onCopySuccess={showToast} />
             ) : (
-              <div className="text-slate-700 space-y-0.5">
-                <p className="font-bold text-slate-900 text-xs">
-                  {address.recipientName} •{' '}
-                  <span className="font-semibold text-slate-700">{address.phone}</span>
-                </p>
-                <p className="text-slate-600 text-xs leading-relaxed">
-                  {address.street}, {address.ward}, {address.district}, {address.city}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <span className="font-bold text-slate-800 block mb-2">
-              Phương thức thanh toán bảo chứng:
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {[
-                {
-                  id: 'PAYOS' as const,
-                  name: 'PayOS VietQR',
-                  icon: QrCode,
-                  desc: 'Quét mã ngân hàng 24/7',
-                },
-                {
-                  id: 'WALLET' as const,
-                  name: 'Ví NEXUS Pay',
-                  icon: Wallet,
-                  desc: 'Trừ trực tiếp số dư ví',
-                },
-                {
-                  id: 'STRIPE' as const,
-                  name: 'Thẻ Quốc Tế',
-                  icon: CreditCard,
-                  desc: 'Visa / Mastercard',
-                },
-              ].map((pm) => {
-                const Icon = pm.icon;
-                return (
-                  <button
-                    key={pm.id}
-                    type="button"
-                    onClick={() => setPaymentMethod(pm.id)}
-                    className={`p-3 rounded-xl border text-left transition cursor-pointer ${
-                      paymentMethod === pm.id
-                        ? 'border-[#f24e1e] bg-orange-50 text-slate-900 shadow-sm'
-                        : 'border-slate-200 bg-white hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Icon
-                        size={16}
-                        className={paymentMethod === pm.id ? 'text-[#f24e1e]' : 'text-slate-500'}
-                      />
-                      <span className="font-bold text-xs">{pm.name}</span>
-                    </div>
-                    <span className="text-[10px] text-slate-500 block">{pm.desc}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-xl p-3 bg-white">
-            {selectedItems.map((item) => (
-              <div key={item.id} className="py-2 flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <img
-                    src={item.img}
-                    alt={item.name}
-                    className="w-8 h-8 rounded object-contain border border-slate-100"
-                  />
-                  <span className="font-semibold text-slate-800 truncate">{item.name}</span>
-                  <span className="text-slate-400 shrink-0">x{item.qty}</span>
-                </div>
-                <span className="font-bold text-[#f24e1e] ml-3 shrink-0">
-                  {Number(item.price * item.qty).toLocaleString('vi-VN')} ₫
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-left text-xs text-emerald-900 leading-relaxed flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                <span>
+                  Đơn hàng đã được thanh toán thành công và bảo chứng an toàn qua hệ thống NEXUS
+                  Escrow.
                 </span>
               </div>
-            ))}
-          </div>
+            )}
 
-          <div className="flex justify-between items-baseline pt-2 border-t border-slate-200">
-            <span className="text-sm font-bold text-slate-900">Tổng thanh toán ký quỹ:</span>
-            <span className="text-xl font-extrabold text-[#f24e1e]">
-              {Number(grandTotal).toLocaleString('vi-VN')} ₫
-            </span>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>Hoàn tất</span>
+              </button>
+            </div>
           </div>
+        ) : (
+          <div className="space-y-5">
+            <CheckoutAddressSection
+              addresses={addresses}
+              selectedAddressId={selectedAddressId}
+              onSelectAddressId={setSelectedAddressId}
+              currentAddress={currentAddress}
+              onSaveNewAddress={handleSaveNewAddress}
+              showToast={showToast}
+            />
 
-          <button
-            type="button"
-            disabled={isProcessingOrder}
-            onClick={handleConfirmCheckout}
-            className="w-full py-3.5 rounded-xl bg-[#f24e1e] hover:bg-[#d63b0e] text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
-          >
-            {isProcessingOrder ? 'Đang tạo giao dịch ký quỹ...' : 'Xác Nhận Thanh Toán Ký Quỹ'}
-          </button>
-        </div>
-      )}
+            <CheckoutPaymentMethod
+              paymentMethod={paymentMethod}
+              onSelectPaymentMethod={setPaymentMethod}
+              onShowNotice={showToast}
+            />
+
+            <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2 text-xs">
+              <div className="flex justify-between font-bold text-slate-800 pb-2 border-b border-slate-200">
+                <span>Sản phẩm thanh toán ({selectedItems.length})</span>
+                <span>Thành tiền</span>
+              </div>
+              <div className="max-h-40 overflow-y-auto divide-y divide-slate-100">
+                {selectedItems.map((item) => (
+                  <div key={item.id} className="py-2 flex justify-between items-center gap-3">
+                    <span className="line-clamp-1 flex-1 font-medium text-slate-700">
+                      {item.name} <span className="text-slate-400">x{item.qty}</span>
+                    </span>
+                    <span className="font-bold text-slate-900 shrink-0">
+                      {(item.price * item.qty).toLocaleString('vi-VN')} ₫
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline font-bold">
+                <span className="text-slate-700">Tổng thanh toán:</span>
+                <span className="text-base text-blue-600 font-extrabold">
+                  {grandTotal.toLocaleString('vi-VN')} ₫
+                </span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isProcessingOrder}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmCheckout}
+                disabled={isProcessingOrder}
+                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition flex items-center gap-2 disabled:opacity-50"
+              >
+                {isProcessingOrder ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Đang xử lý đơn hàng...</span>
+                  </>
+                ) : (
+                  <span>Xác nhận đặt hàng</span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </Popup>
   );
 }

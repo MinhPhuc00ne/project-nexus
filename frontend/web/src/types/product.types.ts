@@ -1,4 +1,5 @@
 export interface ProductShopInfo {
+  id?: string;
   name: string;
   verified: boolean;
   trustScore?: number;
@@ -65,6 +66,9 @@ export interface ProductItem {
     type: 'bid' | 'schedule' | 'free_bid';
     icon?: 'gavel' | 'bell' | 'zap';
   };
+  shopId?: string;
+  shopName?: string;
+  rawPrice?: number;
 }
 
 export interface TransactionTypeFilter {

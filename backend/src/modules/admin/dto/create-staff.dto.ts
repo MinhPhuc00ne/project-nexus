@@ -1,10 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateStaffDto {
   @ApiProperty({
-    description:
-      'Email cá nhân của nhân viên (hệ thống sẽ cấp tài khoản @staff.com và gửi link kích hoạt đến email này)',
+    description: 'Email cá nhân nhận tài khoản @staff.com và mật khẩu ngẫu nhiên để đăng nhập ngay',
     example: 'hotro.canhan@gmail.com',
   })
   @IsNotEmpty({ message: 'Email không được để trống' })
@@ -36,11 +35,12 @@ export class CreateStaffDto {
   department?: string;
 
   @ApiPropertyOptional({
+    deprecated: true,
     description:
-      'Mật khẩu tài khoản nhân viên (tùy chọn; nếu để trống, hệ thống sẽ gửi mail cho staff tự tạo mật khẩu)',
+      'Trường cũ được chấp nhận nhưng bỏ qua; backend luôn sinh mật khẩu ngẫu nhiên và gửi qua email cá nhân',
     example: 'Staff@123456',
   })
   @IsOptional()
-  @MinLength(6, { message: 'Mật khẩu phải chứa ít nhất 6 ký tự' })
+  @IsString()
   password?: string;
 }

@@ -1,4 +1,4 @@
-import { Truck, Zap, Gavel, ShieldCheck, Tag, WalletCards, ShoppingCart, Gift } from 'lucide-react';
+import { Truck, Zap, Gavel, ShieldCheck, Tag, WalletCards, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CatalogListing from '../../components/products/CatalogListing';
 import {
@@ -7,8 +7,9 @@ import {
   HomeFlashSaleCard,
   HomeHeroBanner,
   HomeLiveAuction,
+  HomeCategoriesSection,
 } from '../../components/home';
-import { categories, flashSaleProducts, auctionProducts, heroSlides } from '../../mocks/home.mock';
+import { flashSaleProducts, auctionProducts, heroSlides } from '../../mocks/home.mock';
 
 function HomePage() {
   return (
@@ -66,44 +67,7 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="mt-5 rounded-[18px] border border-sky-200 bg-gradient-to-b from-sky-50/70 to-white p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sky-500">
-              <ShoppingCart size={18} />
-            </span>
-            <h2 className="text-[15px] font-extrabold uppercase tracking-[0.05em] text-slate-800">
-              Danh Mục Sản Phẩm
-            </h2>
-          </div>
-
-          <button className="text-xs font-semibold text-sky-500">Xem tất cả danh mục →</button>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
-          {categories.map((category) => (
-            <div
-              key={category.id}
-              className="rounded-[14px] border border-slate-100 bg-slate-50 p-3 text-center transition-[transform,box-shadow,border-color] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:border-sky-200 hover:bg-sky-50 hover:shadow-[0_10px_24px_rgb(28_57_115_/_10%)] motion-reduce:transition-none motion-reduce:hover:transform-none"
-            >
-              <img
-                src={category.image}
-                alt={category.name}
-                loading="lazy"
-                className="mx-auto h-20 w-20 rounded-[14px] object-cover"
-              />
-
-              <h3 className="mt-3 text-[13px] font-bold leading-5 text-slate-700">
-                {category.name}
-              </h3>
-
-              <p className="mt-1 text-[11px] text-slate-400">
-                {category.count ? `${category.count}+ sản phẩm` : 'Nhiều sản phẩm'}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <HomeCategoriesSection />
 
       <section className="mt-5 rounded-[18px] border border-slate-200 bg-white p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

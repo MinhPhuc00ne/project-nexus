@@ -6,10 +6,12 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthService as ModularAuthService } from './services/auth.service';
 import { AuthProfileService } from './services/auth-profile.service';
+import { StaffProvisioningService } from './services/staff-provisioning.service';
 import { StaffController } from './controllers/staff.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
+import { ProfileReauthService } from '../../core/security/profile-reauth.service';
 
 @Module({
   imports: [
@@ -30,7 +32,23 @@ import { UsersModule } from '../users/users.module';
     forwardRef(() => UsersModule),
   ],
   controllers: [AuthController, StaffController],
-  providers: [AuthService, ModularAuthService, AuthProfileService, JwtStrategy, GoogleStrategy],
-  exports: [AuthService, ModularAuthService, AuthProfileService, JwtModule, PassportModule],
+  providers: [
+    AuthService,
+    ModularAuthService,
+    AuthProfileService,
+    StaffProvisioningService,
+    ProfileReauthService,
+    JwtStrategy,
+    GoogleStrategy,
+  ],
+  exports: [
+    ProfileReauthService,
+    AuthService,
+    ModularAuthService,
+    AuthProfileService,
+    StaffProvisioningService,
+    JwtModule,
+    PassportModule,
+  ],
 })
 export class AuthModule {}

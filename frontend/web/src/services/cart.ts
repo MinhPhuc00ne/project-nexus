@@ -39,14 +39,22 @@ export function getCartItems(): CartItem[] {
  * Gộp các GET đang chạy và tái sử dụng kết quả API trong 1 giây khi trang vừa tải.
  * force bỏ qua khoảng tái sử dụng; thay đổi giỏ hàng/tài khoản luôn làm kết quả cũ hết hiệu lực.
  */
-export function fetchCart({ force = false }: { force?: boolean } = {}): Promise<CartItem[]> {
+export async function fetchCart({ force = false }: { force?: boolean } = {}): Promise<CartItem[]> {
   const token = getStoredToken();
-  if (!token) return Promise.resolve(getGuestCartItems());
+  if (!token) return getGuestCartItems();
   const scope = scopeFor(token);
+
+  if (getGuestCartItems().length > 0) {
+    await mergeGuestCartAfterLogin();
+    return getAuthCartCache();
+  }
+
   const merging = pendingMerges.get(scopeKey(scope));
-  return merging
-    ? merging.then(() => (isCurrent(scope) ? getAuthCartCache() : []))
-    : loadRemoteCart(scope, force);
+  if (merging) {
+    await merging;
+    return isCurrent(scope) ? getAuthCartCache() : [];
+  }
+  return loadRemoteCart(scope, force);
 }
 
 /**

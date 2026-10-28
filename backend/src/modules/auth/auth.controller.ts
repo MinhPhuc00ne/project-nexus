@@ -22,7 +22,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
-import { UpdateAuthProfileDto } from './dto/update-profile.dto';
+import { UpdateAuthProfileDto, ReauthenticateProfileDto } from './dto/update-profile.dto';
 import { ConfirmChangePasswordOtpDto } from './dto/confirm-change-password-otp.dto';
 import { JwtAuthGuard } from '../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../core/security/roles.guard';
@@ -160,7 +160,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'PROFILE.UPDATE - Cập nhật thông tin cá nhân (Họ tên, SĐT, Avatar)',
     description:
-      'Cho phép người dùng chỉnh sửa họ tên, số điện thoại hoặc ảnh đại diện (không cần OTP).',
+      'Buyer cập nhật thông thường; Seller cần đăng nhập bằng mật khẩu trong 5 phút gần đây, mật khẩu hiện tại hoặc token reauthenticate hợp lệ.',
   })
   @ApiResponse({ status: 200, description: 'Cập nhật hồ sơ thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
@@ -170,6 +170,19 @@ export class AuthController {
     @Body() dto: UpdateAuthProfileDto,
   ): Promise<UserProfileResponse> {
     return this.authProfileService.updateProfile(userId, dto);
+  }
+
+  @Post('profile/reauthenticate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xác minh lại mật khẩu, cấp token cập nhật hồ sơ trong 5 phút' })
+  @HttpCode(HttpStatus.OK)
+  reauthenticate(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ReauthenticateProfileDto,
+  ): ReturnType<AuthProfileService['reauthenticate']> {
+    return this.authProfileService.reauthenticate(userId, dto.password);
   }
 
   @Post('change-password/request-otp')

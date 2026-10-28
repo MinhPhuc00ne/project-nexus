@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { userMode } from '../../../core/security/user-mode';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
@@ -38,18 +39,25 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    let role = payload.role;
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        select: { role: true, isSellerActive: true },
-      });
-      if (user) {
-        role = user.role;
-      }
-    } catch {
-      // Fallback to token payload role if db query fails
-    }
-    return { id: payload.sub, userId: payload.sub, email: payload.email, role };
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: {
+        role: true,
+        email: true,
+        isSellerActive: true,
+        isShopSuspended: true,
+        trustLevel: true,
+      },
+    });
+    if (!user) throw new UnauthorizedException('Tài khoản không còn tồn tại.');
+    if (user.trustLevel === 'SUSPENDED') throw new ForbiddenException('Tài khoản đã bị khóa.');
+    return {
+      id: payload.sub,
+      userId: payload.sub,
+      email: user.email,
+      role: user.role,
+      isShopSuspended: user.isShopSuspended,
+      ...userMode(user),
+    };
   }
 }

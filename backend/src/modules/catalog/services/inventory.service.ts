@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, ReservationStatus } from '@prisma/client';
 
 @Injectable()
 export class InventoryService {
@@ -11,21 +11,15 @@ export class InventoryService {
    */
   async ensureDefaultWarehouse(tx?: Prisma.TransactionClient) {
     const client = tx || this.prisma;
-    let warehouse = await client.warehouse.findUnique({
+    return client.warehouse.upsert({
       where: { code: 'WH_001' },
+      update: {},
+      create: {
+        code: 'WH_001',
+        name: 'Sổ tồn kho mặc định NEXUS',
+        address: 'Kho logic; địa điểm lấy hàng thực tế theo pickup point của từng Seller',
+      },
     });
-
-    if (!warehouse) {
-      warehouse = await client.warehouse.create({
-        data: {
-          code: 'WH_001',
-          name: 'Tổng kho NEXUS Tân Bình',
-          address: 'Số 123 Đường Cộng Hòa, Quận Tân Bình, TP. Hồ Chí Minh',
-        },
-      });
-    }
-
-    return warehouse;
   }
 
   /**
@@ -125,5 +119,147 @@ export class InventoryService {
    */
   calculateTotal(inventories: Array<{ totalQty: number }>): number {
     return inventories.reduce((acc, curr) => acc + curr.totalQty, 0);
+  }
+
+  /**
+   * Khóa / Đặt chỗ tồn kho khi người mua đặt hàng (Order Checkout)
+   * Giảm availableQty, tăng reservedQty, tạo bản ghi InventoryReservation và InventoryLedger
+   */
+  async reserveStock(
+    tx: Prisma.TransactionClient,
+    productId: string,
+    quantity: number,
+    orderId: string,
+  ) {
+    if (quantity <= 0) {
+      throw new BadRequestException('Số lượng đặt hàng phải lớn hơn 0');
+    }
+
+    // 1. Tìm bản ghi kho của sản phẩm
+    let inventory = await tx.inventory.findFirst({
+      where: { productId },
+    });
+
+    if (!inventory) {
+      const warehouse = await this.ensureDefaultWarehouse(tx);
+      inventory = await tx.inventory.create({
+        data: {
+          warehouseId: warehouse.id,
+          productId,
+          totalQty: 0,
+          availableQty: 0,
+          reservedQty: 0,
+        },
+      });
+    }
+
+    if (inventory.availableQty < quantity) {
+      throw new BadRequestException(
+        `Số lượng tồn kho không đủ (còn ${inventory.availableQty}, yêu cầu ${quantity})`,
+      );
+    }
+
+    // 2. Cập nhật tồn kho khả dụng và số lượng tạm khóa
+    const updated = await tx.inventory.update({
+      where: { id: inventory.id },
+      data: {
+        availableQty: { decrement: quantity },
+        reservedQty: { increment: quantity },
+      },
+    });
+
+    // 3. Tạo bản ghi giữ chỗ tồn kho (hạn giữ chỗ 30 phút theo SRS)
+    await tx.inventoryReservation.create({
+      data: {
+        inventoryId: inventory.id,
+        quantity,
+        referenceId: orderId,
+        status: ReservationStatus.PENDING,
+        expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      },
+    });
+
+    // 4. Ghi sổ cái biến động kho
+    await tx.inventoryLedger.create({
+      data: {
+        inventoryId: inventory.id,
+        changeQty: -quantity,
+        balanceAfter: updated.availableQty,
+        reason: 'ORDER_CHECKOUT',
+        referenceId: orderId,
+      },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Xác nhận trừ kho vĩnh viễn khi đơn hàng thanh toán thành công (ORDER_PAID)
+   * Giảm totalQty, giảm reservedQty, chuyển trạng thái đặt chỗ sang COMMITTED
+   */
+  async commitReservation(tx: Prisma.TransactionClient, orderId: string) {
+    const reservations = await tx.inventoryReservation.findMany({
+      where: { referenceId: orderId, status: ReservationStatus.PENDING },
+    });
+
+    for (const res of reservations) {
+      const updated = await tx.inventory.update({
+        where: { id: res.inventoryId },
+        data: {
+          totalQty: { decrement: res.quantity },
+          reservedQty: { decrement: res.quantity },
+        },
+      });
+
+      await tx.inventoryReservation.update({
+        where: { id: res.id },
+        data: { status: ReservationStatus.COMMITTED },
+      });
+
+      await tx.inventoryLedger.create({
+        data: {
+          inventoryId: res.inventoryId,
+          changeQty: 0,
+          balanceAfter: updated.availableQty,
+          reason: 'ORDER_PAID',
+          referenceId: orderId,
+        },
+      });
+    }
+  }
+
+  /**
+   * Hoàn trả tồn kho khi đơn hàng bị hủy hoặc thanh toán thất bại
+   * Tăng availableQty, giảm reservedQty, chuyển trạng thái đặt chỗ sang RELEASED
+   */
+  async releaseReservation(tx: Prisma.TransactionClient, orderId: string) {
+    const reservations = await tx.inventoryReservation.findMany({
+      where: { referenceId: orderId, status: ReservationStatus.PENDING },
+    });
+
+    for (const res of reservations) {
+      const updated = await tx.inventory.update({
+        where: { id: res.inventoryId },
+        data: {
+          availableQty: { increment: res.quantity },
+          reservedQty: { decrement: res.quantity },
+        },
+      });
+
+      await tx.inventoryReservation.update({
+        where: { id: res.id },
+        data: { status: ReservationStatus.RELEASED },
+      });
+
+      await tx.inventoryLedger.create({
+        data: {
+          inventoryId: res.inventoryId,
+          changeQty: res.quantity,
+          balanceAfter: updated.availableQty,
+          reason: 'ORDER_CANCELLED',
+          referenceId: orderId,
+        },
+      });
+    }
   }
 }

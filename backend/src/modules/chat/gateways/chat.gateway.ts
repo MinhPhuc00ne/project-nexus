@@ -5,6 +5,7 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -12,7 +13,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { LightweightJwt } from '../../../core/security/jwt.util';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
-import { ChatService } from '../services/chat.service';
+import { ChatService, ChatSocketBroadcaster } from '../services/chat.service';
 
 @WebSocketGateway({
   cors: {
@@ -21,7 +22,9 @@ import { ChatService } from '../services/chat.service';
   },
   namespace: '/chat',
 })
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway
+  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, ChatSocketBroadcaster
+{
   @WebSocketServer()
   server: Server;
 
@@ -32,9 +35,32 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly configService: ConfigService,
   ) {}
 
-  /**
-   * Xác thực và đăng ký socket client khi kết nối
-   */
+  afterInit() {
+    this.chatService.setBroadcaster(this);
+    this.logger.log('Chat WebSocket Gateway initialized successfully.');
+  }
+
+  broadcastMessage(conversationId: string, message: unknown): void {
+    try {
+      this.server?.to(`conversation:${conversationId}`).emit('new_message', message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to broadcast new_message: ${msg}`);
+    }
+  }
+
+  broadcastRead(conversationId: string, userId: string): void {
+    try {
+      this.server?.to(`conversation:${conversationId}`).emit('messages_read', {
+        conversationId,
+        readBy: userId,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to broadcast messages_read: ${msg}`);
+    }
+  }
+
   handleConnection(client: Socket) {
     try {
       const rawToken =
@@ -63,10 +89,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const userId = user.id || user.sub;
       client.data.user = { ...user, id: userId };
 
-      // Cho user tham gia phòng riêng cá nhân để nhận thông báo tin nhắn mới
       client.join(`user:${userId}`);
       this.logger.log(`User ${userId} connected via WebSocket (socketId: ${client.id})`);
-    } catch (err) {
+    } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Error handling socket connection: ${errMsg}`);
       client.disconnect();
@@ -77,9 +102,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger.log(`Socket client disconnected: ${client.id}`);
   }
 
-  /**
-   * Tham gia vào phòng hội thoại cụ thể
-   */
   @SubscribeMessage('join_conversation')
   handleJoinConversation(
     @ConnectedSocket() client: Socket,
@@ -90,9 +112,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'joined', conversationId: data.conversationId };
   }
 
-  /**
-   * Rời khỏi phòng hội thoại
-   */
   @SubscribeMessage('leave_conversation')
   handleLeaveConversation(
     @ConnectedSocket() client: Socket,
@@ -103,43 +122,36 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return { event: 'left', conversationId: data.conversationId };
   }
 
-  /**
-   * Gửi tin nhắn qua WebSocket trong thời gian thực
-   */
   @SubscribeMessage('send_message')
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody()
     data: {
       conversationId: string;
-      body: string;
+      body?: string;
+      content?: string;
       attachments?: string[];
     },
   ) {
     const user = client.data.user;
-    if (!user || !data?.conversationId || !data?.body?.trim()) {
+    if (!user || !data?.conversationId) {
       return { status: 'error', message: 'Dữ liệu tin nhắn không hợp lệ.' };
     }
 
     try {
-      const message = await this.chatService.sendMessage(data.conversationId, user.id, user.role, {
-        body: data.body,
+      const message = await this.chatService.sendMessage(user.id, user.role, {
+        conversationId: data.conversationId,
+        content: data.content || data.body,
         attachments: data.attachments,
       });
 
-      // Broadcast tin nhắn mới tới tất cả các client đang mở conversation này
-      this.server.to(`conversation:${data.conversationId}`).emit('new_message', message);
-
       return { status: 'ok', data: message };
-    } catch (err) {
+    } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'Lỗi gửi tin nhắn';
       return { status: 'error', message: errMsg };
     }
   }
 
-  /**
-   * Trạng thái đang nhập văn bản (typing indicator)
-   */
   @SubscribeMessage('typing')
   handleTyping(
     @ConnectedSocket() client: Socket,
@@ -152,17 +164,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const user = client.data.user;
     if (!user || !data?.conversationId) return;
 
+    const isStaff = user.role === 'SUPPORT_STAFF';
+    const userName = isStaff
+      ? 'Nhân viên Hỗ trợ Nexus'
+      : user.fullName || user.email || 'Người dùng';
+
     client.to(`conversation:${data.conversationId}`).emit('user_typing', {
       conversationId: data.conversationId,
-      userId: user.id,
-      userName: user.email || 'Người dùng',
+      userId: isStaff ? 'SUPPORT_STAFF_DESK' : user.id,
+      userName,
       isTyping: data.isTyping,
     });
   }
 
-  /**
-   * Đánh dấu đã đọc qua WebSocket
-   */
   @SubscribeMessage('mark_read')
   async handleMarkRead(
     @ConnectedSocket() client: Socket,
@@ -171,13 +185,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const user = client.data.user;
     if (!user || !data?.conversationId) return;
 
-    await this.chatService.markAsRead(data.conversationId, user.id);
-
-    client.to(`conversation:${data.conversationId}`).emit('messages_read', {
-      conversationId: data.conversationId,
-      readBy: user.id,
-    });
-
+    await this.chatService.markAsRead(data.conversationId, user.id, user.role);
     return { status: 'ok' };
   }
 }

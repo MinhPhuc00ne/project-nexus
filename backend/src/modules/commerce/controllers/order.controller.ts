@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@n
 import { OrderService } from '../services/order.service';
 import { CheckoutDto } from '../dtos/checkout.dto';
 import { PayOrderDto } from '../dtos/pay-order.dto';
+import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
 import { CurrentUser, RequirePrivilege } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -23,6 +24,16 @@ import { RolesGuard } from '../../../core/security/roles.guard';
 @Controller('commerce')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
+
+  @Post('checkout/quote')
+  @HttpCode(HttpStatus.OK)
+  @RequirePrivilege('CHECKOUT.START')
+  @ApiOperation({
+    summary: '[BUYER] Báo giá giỏ hàng theo từng shop, chưa tạo đơn hoặc thanh toán',
+  })
+  quoteCheckout(@CurrentUser('id') userId: string, @Body() dto: CheckoutDto) {
+    return this.orderService.checkout(userId, dto, undefined, true);
+  }
 
   @Post('checkout')
   @HttpCode(HttpStatus.CREATED)
@@ -51,11 +62,15 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @RequirePrivilege('CHECKOUT.START')
   @ApiOperation({
-    summary: '[BUYER] Khởi tạo liên kết thanh toán PayOS VietQR cho đơn hàng',
+    summary: '[BUYER] Thanh toán đơn hàng (PayOS VietQR hoặc Ví NEXUS Pay)',
     description:
-      'Tạo giao dịch thanh toán trên PayOS và trả về URL thanh toán (checkoutUrl) kèm thông tin tài khoản và mã QR để khách quét trên ứng dụng ngân hàng.',
+      'PAYOS tạo liên kết VietQR; WALLET trừ số dư người mua. Khi thanh toán thành công, tiền được giữ ký quỹ HELD; chỉ giải ngân sau xác nhận nhận hàng hoặc phân xử khiếu nại.',
   })
-  @ApiResponse({ status: 200, description: 'Tạo link thanh toán PayOS thành công' })
+  @ApiResponse({ status: 200, description: 'Khởi tạo hoặc thanh toán đơn hàng thành công' })
+  @ApiResponse({
+    status: 400,
+    description: 'Số dư ví không đủ hoặc trạng thái đơn hàng không hợp lệ',
+  })
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
   async payOrder(
     @Param('id') orderId: string,
@@ -63,6 +78,29 @@ export class OrderController {
     @Body() dto: PayOrderDto,
   ) {
     return this.orderService.initializePayment(orderId, userId, dto);
+  }
+
+  @Get('wallet')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[BUYER / USER] Xem số dư ví và lịch sử giao dịch cá nhân',
+    description: 'Trả về số dư khả dụng, tiền tạm giữ và danh sách các giao dịch gần nhất của ví.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy thông tin ví thành công' })
+  async getMyWallet(@CurrentUser('id') userId: string) {
+    return this.orderService.getUserWallet(userId);
+  }
+
+  @Post('wallet/deposit')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[BUYER / USER] Nạp tiền vào ví cá nhân (NEXUS Pay)',
+    description: 'Nạp tiền vào ví để mua sắm và thanh toán đơn hàng bằng số dư ví.',
+  })
+  @ApiResponse({ status: 200, description: 'Nạp tiền thành công' })
+  @ApiResponse({ status: 400, description: 'Số tiền nạp không hợp lệ' })
+  async depositMyWallet(@CurrentUser('id') userId: string, @Body() dto: DepositWalletDto) {
+    return this.orderService.depositToUserWallet(userId, dto);
   }
 
   @Get('orders')

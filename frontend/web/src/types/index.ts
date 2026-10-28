@@ -4,6 +4,7 @@ export * from './product.types';
 export * from './auction.types';
 export * from './category.types';
 export * from './chat.types';
+export * from './admin-wallet.types';
 
 export interface NotificationItem {
   id: string | number;

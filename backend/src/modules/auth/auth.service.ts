@@ -13,6 +13,8 @@ import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { RedisService } from '../../core/redis/redis.service';
+import { recentReauthentication } from '../../core/security/profile-reauth.service';
+import { userMode } from '../../core/security/user-mode';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -213,7 +215,11 @@ export class AuthService {
     });
 
     try {
-      await this.redisService.set(`seller_recent_reauth:${user.id}`, Date.now().toString(), 300);
+      await this.redisService.set(
+        `seller_recent_reauth:${user.id}`,
+        recentReauthentication(user.passwordHash),
+        300,
+      );
     } catch {
       // In case Redis is unreachable, continue smoothly
     }
@@ -229,9 +235,9 @@ export class AuthService {
         fullName: user.fullName,
         role: user.role,
         avatarUrl: user.avatarUrl,
-        isSellerActive: effectiveSellerActive,
         isShopSuspended: user.isShopSuspended,
         suspensionReason: user.suspensionReason,
+        ...userMode(user),
       },
     };
   }
@@ -266,6 +272,18 @@ export class AuthService {
       );
     }
 
+    if (userRecord.role === 'SELLER') {
+      try {
+        await this.redisService.set(
+          `seller_recent_reauth:${userRecord.id}`,
+          recentReauthentication(userRecord.passwordHash),
+          300,
+        );
+      } catch {
+        // Login remains available; profile edits still require a valid proof.
+      }
+    }
+
     const { accessToken, refreshToken } = await this.generateTokens({
       id: userRecord.id,
       email: userRecord.email,
@@ -283,6 +301,7 @@ export class AuthService {
         fullName: userRecord.fullName,
         role: userRecord.role,
         avatarUrl: userRecord.avatarUrl,
+        ...userMode(userRecord),
       },
     };
   }
@@ -292,7 +311,14 @@ export class AuthService {
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; email: string }> {
     const { email } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: email.trim(), mode: 'insensitive' } },
+          { platformEmail: { equals: email.trim(), mode: 'insensitive' } },
+        ],
+      },
+    });
     if (!user) {
       throw new BadRequestException('Không tìm thấy tài khoản với email này.');
     }
@@ -315,29 +341,29 @@ export class AuthService {
       }
     }
 
-    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const resetCode = crypto.randomInt(100000, 1000000).toString();
     const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // Hạn 10 phút
 
     // Gửi email đặt lại mật khẩu - ném lỗi nếu SMTP thất bại (không nuốt lỗi)
-    const recipientEmail = user.personalEmail || email;
-    await this.sendPasswordResetEmail(recipientEmail, resetCode);
+    if (user.role === 'SUPPORT_STAFF' && !user.personalEmail) {
+      throw new BadRequestException(
+        'Tài khoản Staff chưa có email cá nhân nhận OTP. Vui lòng liên hệ Admin.',
+      );
+    }
+    const recipientEmail = user.personalEmail || user.email;
+    await this.sendPasswordResetEmail(recipientEmail, resetCode, user.role === 'SUPPORT_STAFF');
 
     await this.prisma.user.update({
-      where: { email },
+      where: { id: user.id },
       data: { verificationCode: resetCode, codeExpiresAt },
     });
-
-    Logger.log(
-      `🔑 [OTP FORGOT PASSWORD] Mã đặt lại mật khẩu cho ${email} là: ${resetCode}`,
-      AuthService.name,
-    );
 
     const isDev = (process.env.NODE_ENV || 'development') !== 'production';
 
     return {
       message: 'Mã OTP đặt lại mật khẩu đã được gửi đến hộp thư Gmail của bạn!',
-      email,
-      ...(isDev ? { devOtpCode: resetCode } : {}),
+      email: user.email,
+      ...(isDev && user.role !== 'SUPPORT_STAFF' ? { devOtpCode: resetCode } : {}),
     };
   }
 
@@ -345,7 +371,14 @@ export class AuthService {
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     const { email, code, newPassword } = dto;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: email.trim(), mode: 'insensitive' } },
+          { platformEmail: { equals: email.trim(), mode: 'insensitive' } },
+        ],
+      },
+    });
     if (!user || !user.isVerified) {
       throw new BadRequestException('Không tìm thấy tài khoản hợp lệ với email này.');
     }
@@ -367,14 +400,17 @@ export class AuthService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(newPassword, saltRounds);
 
-    await this.prisma.user.update({
-      where: { email },
-      data: { passwordHash, verificationCode: null, codeExpiresAt: null },
-    });
-
-    await this.prisma.refreshToken.updateMany({
-      where: { userId: user.id, isRevoked: false },
-      data: { isRevoked: true },
+    await this.prisma.$transaction(async (tx) => {
+      const consumed = await tx.user.updateMany({
+        where: { id: user.id, verificationCode: code, codeExpiresAt: { gt: new Date() } },
+        data: { passwordHash, verificationCode: null, codeExpiresAt: null },
+      });
+      if (consumed.count !== 1)
+        throw new BadRequestException('Mã OTP đã hết hạn hoặc đã được sử dụng.');
+      await tx.refreshToken.updateMany({
+        where: { userId: user.id, isRevoked: false },
+        data: { isRevoked: true },
+      });
     });
 
     return {
@@ -550,9 +586,13 @@ export class AuthService {
     }
   }
 
-  private async sendPasswordResetEmail(email: string, resetCode: string): Promise<void> {
+  private async sendPasswordResetEmail(
+    email: string,
+    resetCode: string,
+    requireDelivery = false,
+  ): Promise<void> {
     try {
-      await this.transporter.sendMail({
+      const info = await this.transporter.sendMail({
         from: `"Project Nexus E-Commerce" <${this.configService.get<string>('SMTP_USER')}>`,
         to: email,
         subject: 'Mã đặt lại mật khẩu Project Nexus',
@@ -566,12 +606,11 @@ export class AuthService {
           </div>
         `,
       });
-    } catch (error) {
-      Logger.warn(
-        `[DEV MODE] Gửi email đặt lại mật khẩu thất bại (chưa cấu hình SMTP): ${(error as Error).message}`,
-        AuthService.name,
-      );
-      if (process.env.NODE_ENV === 'production') {
+      if (requireDelivery && (!Array.isArray(info.accepted) || !info.accepted.length))
+        throw new Error('SMTP did not accept the recipient');
+    } catch {
+      Logger.warn('Gửi email đặt lại mật khẩu qua SMTP thất bại.', AuthService.name);
+      if (process.env.NODE_ENV === 'production' || requireDelivery) {
         throw new BadRequestException(
           'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
         );

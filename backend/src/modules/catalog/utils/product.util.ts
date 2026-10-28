@@ -1,5 +1,7 @@
 import { Prisma, ProductStatus, SellerRequestStatus } from '@prisma/client';
 import { QueryProductDto } from '../dtos/query-product.dto';
+import { priceView, PricedProduct } from './product-price';
+import { ProductChoice } from './product-options';
 
 export interface PaginatedResult<T> {
   items: T[];
@@ -9,7 +11,7 @@ export interface PaginatedResult<T> {
   totalPages: number;
 }
 
-export interface ProductSummaryInput {
+export interface ProductSummaryInput extends PricedProduct {
   id: string;
   title: string;
   description: string;
@@ -18,7 +20,15 @@ export interface ProductSummaryInput {
   createdAt: Date;
   images: Array<{ imageUrl: string }>;
   category: { id: string; name: string; slug: string } | null;
-  seller: { id: string; fullName: string; avatarUrl: string | null } | null;
+  seller: {
+    id: string;
+    fullName: string;
+    avatarUrl: string | null;
+    shopAvatarUrl?: string | null;
+  } | null;
+  options?: ProductChoice[];
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 export interface ProductDetailInput extends ProductSummaryInput {
@@ -34,7 +44,7 @@ export function buildProductWhere(
   categoryIds?: string[],
 ): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {
-    status: query.status || ProductStatus.ACTIVE,
+    status: ProductStatus.ACTIVE,
     AND: [
       {
         seller: {
@@ -71,10 +81,34 @@ export function buildProductWhere(
     where.sellerId = query.sellerId;
   }
 
+  const and = where.AND as Prisma.ProductWhereInput[];
+  if (query.city)
+    and.push({
+      seller: {
+        sellerUpgradeRequests: {
+          some: { status: 'APPROVED', city: { contains: query.city.trim(), mode: 'insensitive' } },
+        },
+      },
+    });
+  if (query.minRating !== undefined) where.averageRating = { gte: query.minRating };
+  if (query.inStock === 'true') and.push({ inventories: { some: { availableQty: { gt: 0 } } } });
+  if (query.inStock === 'false') and.push({ inventories: { none: { availableQty: { gt: 0 } } } });
   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
-    where.basePrice = {};
-    if (query.minPrice !== undefined) where.basePrice.gte = query.minPrice;
-    if (query.maxPrice !== undefined) where.basePrice.lte = query.maxPrice;
+    const now = new Date();
+    const price = { gte: query.minPrice, lte: query.maxPrice };
+    const activeSale: Prisma.ProductWhereInput = {
+      salePrice: { not: null },
+      AND: [
+        { OR: [{ saleStartsAt: null }, { saleStartsAt: { lte: now } }] },
+        { OR: [{ saleEndsAt: null }, { saleEndsAt: { gt: now } }] },
+      ],
+    };
+    and.push({
+      OR: [
+        { AND: [activeSale, { salePrice: price }] },
+        { AND: [{ NOT: activeSale }, { basePrice: price }] },
+      ],
+    });
   }
 
   return where;
@@ -86,8 +120,12 @@ export function formatProductSummary(p: ProductSummaryInput, availableQty: numbe
     title: p.title,
     description: p.description,
     basePrice: Number(p.basePrice),
+    ...priceView(p),
+    options: p.options ?? [],
+    averageRating: p.averageRating ?? 0,
+    reviewCount: p.reviewCount ?? 0,
     category: p.category,
-    seller: p.seller,
+    seller: p.seller ? { ...p.seller, avatarUrl: p.seller.shopAvatarUrl ?? null } : null,
     images: p.images.map((img) => img.imageUrl),
     thumbnail: p.images[0]?.imageUrl || null,
     threeModelKey: p.threeModelKey,
@@ -103,13 +141,17 @@ export function formatProductDetail(p: ProductDetailInput, availableQty: number,
     title: p.title,
     description: p.description,
     basePrice: Number(p.basePrice),
+    ...priceView(p),
+    options: p.options ?? [],
+    averageRating: p.averageRating ?? 0,
+    reviewCount: p.reviewCount ?? 0,
     weightGrams: p.weightGrams,
     lengthCm: p.lengthCm,
     widthCm: p.widthCm,
     heightCm: p.heightCm,
     status: p.status,
     category: p.category,
-    seller: p.seller,
+    seller: p.seller ? { ...p.seller, avatarUrl: p.seller.shopAvatarUrl ?? null } : null,
     images: p.images.map((img) => img.imageUrl),
     thumbnail: p.images[0]?.imageUrl || null,
     threeModelKey: p.threeModelKey,

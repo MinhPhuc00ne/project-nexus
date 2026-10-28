@@ -6,8 +6,11 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { GhnParcelItem } from './ghn-parcel';
+import { GhnCreateRejectedException } from './ghn-create-error';
 
 export interface GhnFeeRequest {
+  shopId?: number;
   fromDistrictId?: number;
   fromWardCode?: string;
   toDistrictId: number;
@@ -19,6 +22,7 @@ export interface GhnFeeRequest {
   serviceId?: number;
   serviceTypeId?: number;
   insuranceValue?: number;
+  items?: GhnParcelItem[];
 }
 
 export interface GhnFeeResponse {
@@ -50,30 +54,33 @@ export class GhnLogisticsService {
       'https://online-gateway.ghn.vn/shiip/public-api/v2';
 
     // Master data endpoint (Tỉnh/Thành, Quận/Huyện) không có tiền tố /v2
-    this.masterDataBaseUrl = rawApiUrl.replace(/\/v2$/, '');
-    this.orderApiBaseUrl = rawApiUrl.endsWith('/v2') ? rawApiUrl : `${rawApiUrl}/v2`;
+    const normalizedUrl = rawApiUrl.trim().replace(/\/+$/, '');
+    this.masterDataBaseUrl = normalizedUrl.replace(/\/v2$/, '');
+    this.orderApiBaseUrl = `${this.masterDataBaseUrl}/v2`;
   }
 
-  private validateConfig(requireShopId = false): void {
+  private validateConfig(requireShopId = false, shopId?: number): void {
     if (!this.token || !this.token.trim()) {
       throw new BadGatewayException(
         'Cấu hình GHN lỗi: GHN_TOKEN chưa được thiết lập. Vui lòng kiểm tra biến môi trường.',
       );
     }
-    if (requireShopId && (!this.shopId || !this.shopId.trim())) {
+    const selectedShop = shopId ?? Number(this.shopId);
+    if (requireShopId && (!Number.isSafeInteger(selectedShop) || selectedShop <= 0)) {
       throw new BadGatewayException(
         'Cấu hình GHN lỗi: GHN_SHOP_ID chưa được thiết lập. Vui lòng kiểm tra biến môi trường.',
       );
     }
   }
 
-  private getHeaders(includeShopId = true): Record<string, string> {
+  private getHeaders(includeShopId = true, shopId?: number): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       Token: this.token,
     };
-    if (includeShopId && this.shopId) {
-      headers.ShopId = this.shopId;
+    const selectedShop = shopId ?? Number(this.shopId);
+    if (includeShopId && Number.isSafeInteger(selectedShop) && selectedShop > 0) {
+      headers.ShopId = String(selectedShop);
     }
     return headers;
   }
@@ -83,7 +90,7 @@ export class GhnLogisticsService {
    */
   async getDiagnostic() {
     const tokenConfigured = Boolean(this.token && this.token.trim());
-    const shopIdConfigured = Boolean(this.shopId && this.shopId.trim());
+    const shopIdConfigured = Number.isSafeInteger(Number(this.shopId)) && Number(this.shopId) > 0;
     const environment = this.masterDataBaseUrl.includes('dev-online-gateway')
       ? 'SANDBOX'
       : 'PRODUCTION';
@@ -101,16 +108,30 @@ export class GhnLogisticsService {
       try {
         const res = await fetch(`${this.masterDataBaseUrl}/master-data/province`, {
           headers: this.getHeaders(false),
+          signal: AbortSignal.timeout(10000),
         });
         latencyMs = Date.now() - start;
-        const json = (await res.json()) as { code?: number; message?: string };
+        const json = (await res.json()) as { code?: number; message?: string; data?: unknown };
         ghnCode = json.code ?? null;
-        if (json.code === 200) {
+        if (
+          res.ok &&
+          json.code === 200 &&
+          Array.isArray(json.data) &&
+          json.data.length > 0 &&
+          json.data.every(
+            (row: { ProvinceID?: number; ProvinceName?: string }) =>
+              Number.isSafeInteger(row?.ProvinceID) &&
+              Number(row.ProvinceID) > 0 &&
+              typeof row.ProvinceName === 'string' &&
+              row.ProvinceName.trim(),
+          )
+        ) {
           pingStatus = 'CONNECTED';
           message = 'Kết nối cổng GHN thành công';
         } else {
           pingStatus = 'GHN_API_ERROR';
-          message = json.message || `GHN API trả mã phản hồi: ${json.code}`;
+          message =
+            'GHN trả lỗi hoặc thiếu dữ liệu tỉnh/thành. Kiểm tra token, URL và môi trường GHN.';
         }
       } catch (err) {
         latencyMs = Date.now() - start;
@@ -121,7 +142,7 @@ export class GhnLogisticsService {
 
     return {
       tokenConfigured,
-      tokenMasked: tokenConfigured ? `${this.token.slice(0, 4)}...${this.token.slice(-4)}` : null,
+      tokenMasked: tokenConfigured ? '********' : null,
       shopIdConfigured,
       shopId: this.shopId || null,
       masterDataBaseUrl: this.masterDataBaseUrl,
@@ -145,6 +166,7 @@ export class GhnLogisticsService {
       const url = `${this.masterDataBaseUrl}/master-data/province`;
       const response = await fetch(url, {
         headers: this.getHeaders(false),
+        signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
         const errText = await response.text();
@@ -161,14 +183,26 @@ export class GhnLogisticsService {
           `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Tỉnh/Thành'}`,
         );
       }
-      if (Array.isArray(data.data)) {
+      if (
+        Array.isArray(data.data) &&
+        data.data.length > 0 &&
+        data.data.every(
+          (p) =>
+            Number.isSafeInteger(p?.ProvinceID) &&
+            p.ProvinceID > 0 &&
+            typeof p.ProvinceName === 'string' &&
+            p.ProvinceName.trim(),
+        )
+      ) {
         return data.data.map((p) => ({
           provinceId: p.ProvinceID,
           provinceName: p.ProvinceName,
           code: p.Code,
         }));
       }
-      return [];
+      throw new BadGatewayException(
+        'GHN trả thiếu/sai dữ liệu tỉnh/thành. Kiểm tra token, URL và môi trường GHN.',
+      );
     } catch (err) {
       if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi gọi GHN Master Data: ${err}`);
@@ -182,7 +216,7 @@ export class GhnLogisticsService {
    * 2. Lấy danh sách Quận/Huyện theo Tỉnh/Thành
    */
   async getDistricts(provinceId: number) {
-    if (!provinceId || isNaN(provinceId) || provinceId <= 0) {
+    if (!Number.isSafeInteger(provinceId) || provinceId <= 0) {
       throw new BadRequestException('Mã Tỉnh/Thành (provinceId) phải là số nguyên dương hợp lệ.');
     }
     this.validateConfig(false);
@@ -192,6 +226,7 @@ export class GhnLogisticsService {
         method: 'POST',
         headers: this.getHeaders(false),
         body: JSON.stringify({ province_id: Number(provinceId) }),
+        signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
         const errText = await response.text();
@@ -208,14 +243,25 @@ export class GhnLogisticsService {
           `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Quận/Huyện'}`,
         );
       }
-      if (Array.isArray(data.data)) {
+      if (
+        Array.isArray(data.data) &&
+        data.data.every(
+          (d) =>
+            Number.isSafeInteger(d?.DistrictID) &&
+            d.DistrictID > 0 &&
+            typeof d.DistrictName === 'string' &&
+            d.DistrictName.trim(),
+        )
+      ) {
         return data.data.map((d) => ({
           districtId: d.DistrictID,
           districtName: d.DistrictName,
           code: d.Code,
         }));
       }
-      return [];
+      throw new BadGatewayException(
+        'GHN trả thiếu/sai dữ liệu quận/huyện. Kiểm tra token, URL và môi trường GHN.',
+      );
     } catch (err) {
       if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi lấy danh sách Quận/Huyện từ GHN: ${err}`);
@@ -229,7 +275,7 @@ export class GhnLogisticsService {
    * 3. Lấy danh sách Phường/Xã theo Quận/Huyện
    */
   async getWards(districtId: number) {
-    if (!districtId || isNaN(districtId) || districtId <= 0) {
+    if (!Number.isSafeInteger(districtId) || districtId <= 0) {
       throw new BadRequestException('Mã Quận/Huyện (districtId) phải là số nguyên dương hợp lệ.');
     }
     this.validateConfig(false);
@@ -237,6 +283,7 @@ export class GhnLogisticsService {
       const url = `${this.masterDataBaseUrl}/master-data/ward?district_id=${districtId}`;
       const response = await fetch(url, {
         headers: this.getHeaders(false),
+        signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
         const errText = await response.text();
@@ -253,13 +300,24 @@ export class GhnLogisticsService {
           `GHN API trả lỗi (${data.code}): ${data.message || 'Không thể lấy danh sách Phường/Xã'}`,
         );
       }
-      if (Array.isArray(data.data)) {
+      if (
+        Array.isArray(data.data) &&
+        data.data.every(
+          (w) =>
+            typeof w?.WardCode === 'string' &&
+            w.WardCode.trim() &&
+            typeof w.WardName === 'string' &&
+            w.WardName.trim(),
+        )
+      ) {
         return data.data.map((w) => ({
           wardCode: w.WardCode,
           wardName: w.WardName,
         }));
       }
-      return [];
+      throw new BadGatewayException(
+        'GHN trả thiếu/sai dữ liệu phường/xã. Kiểm tra token, URL và môi trường GHN.',
+      );
     } catch (err) {
       if (err instanceof HttpException) throw err;
       this.logger.error(`Lỗi khi lấy danh sách Phường/Xã từ GHN: ${err}`);
@@ -272,24 +330,25 @@ export class GhnLogisticsService {
   /**
    * 4. Lấy danh sách các gói dịch vụ GHN khả dụng giữa 2 quận
    */
-  async getAvailableServices(fromDistrictId: number, toDistrictId: number) {
+  async getAvailableServices(fromDistrictId: number, toDistrictId: number, shopId?: number) {
     if (!fromDistrictId || isNaN(fromDistrictId) || fromDistrictId <= 0) {
       throw new BadRequestException('Mã Quận/Huyện gửi (fromDistrictId) không hợp lệ.');
     }
     if (!toDistrictId || isNaN(toDistrictId) || toDistrictId <= 0) {
       throw new BadRequestException('Mã Quận/Huyện nhận (toDistrictId) không hợp lệ.');
     }
-    this.validateConfig(true);
+    this.validateConfig(true, shopId);
     try {
       const url = `${this.orderApiBaseUrl}/shipping-order/available-services`;
       const response = await fetch(url, {
         method: 'POST',
         headers: this.getHeaders(false),
         body: JSON.stringify({
-          shop_id: Number(this.shopId),
+          shop_id: shopId ?? Number(this.shopId),
           from_district: Number(fromDistrictId),
           to_district: Number(toDistrictId),
         }),
+        signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
         const errText = await response.text();
@@ -325,23 +384,38 @@ export class GhnLogisticsService {
   /**
    * 5. Tính trước cước phí vận chuyển GHN (Shipping Fee Calculation)
    */
-  async calculateFee(req: GhnFeeRequest): Promise<GhnFeeResponse | null> {
-    this.validateConfig(true);
+  async calculateFee(req: GhnFeeRequest): Promise<GhnFeeResponse> {
+    this.validateConfig(true, req.shopId);
+    if (
+      !Number.isSafeInteger(req.weightGrams) ||
+      req.weightGrams <= 0 ||
+      !Number.isSafeInteger(req.toDistrictId) ||
+      req.toDistrictId <= 0 ||
+      !req.toWardCode?.trim()
+    ) {
+      throw new BadRequestException('Thiếu địa chỉ GHN hoặc khối lượng kiện hàng không hợp lệ.');
+    }
     try {
       const url = `${this.orderApiBaseUrl}/shipping-order/fee`;
 
       // Mặc định dịch vụ Chuẩn (service_type_id = 2)
-      const serviceTypeId = req.serviceTypeId || 2;
+      const serviceTypeId = req.serviceTypeId ?? (req.weightGrams >= 20000 ? 5 : 2);
+      if (serviceTypeId === 5 && !req.items?.length) {
+        throw new BadRequestException(
+          'Dịch vụ hàng nặng GHN yêu cầu thông tin từng sản phẩm/kiện hàng.',
+        );
+      }
 
       const payload: Record<string, unknown> = {
         service_type_id: serviceTypeId,
         to_district_id: Number(req.toDistrictId),
         to_ward_code: String(req.toWardCode),
-        weight: Math.max(100, Math.round(req.weightGrams)),
-        length: Math.max(5, Math.round(req.lengthCm || 10)),
-        width: Math.max(5, Math.round(req.widthCm || 10)),
-        height: Math.max(5, Math.round(req.heightCm || 10)),
-        insurance_value: Math.min(5000000, Math.max(0, Math.round(req.insuranceValue || 0))),
+        weight: req.weightGrams,
+        length: Math.round(req.lengthCm ?? 10),
+        width: Math.round(req.widthCm ?? 10),
+        height: Math.round(req.heightCm ?? 10),
+        insurance_value: Math.round(req.insuranceValue ?? 0),
+        items: req.items,
       };
 
       if (req.fromDistrictId) {
@@ -356,8 +430,9 @@ export class GhnLogisticsService {
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: this.getHeaders(true),
+        headers: this.getHeaders(true, req.shopId),
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000),
       });
 
       if (!response.ok) {
@@ -379,13 +454,20 @@ export class GhnLogisticsService {
         };
       };
 
-      if (resData.code === 200 && resData.data) {
+      if (
+        resData.code === 200 &&
+        resData.data &&
+        Number.isSafeInteger(resData.data.total) &&
+        resData.data.total >= 0 &&
+        Number.isSafeInteger(resData.data.service_fee) &&
+        resData.data.service_fee >= 0
+      ) {
         return {
           total: resData.data.total,
           serviceFee: resData.data.service_fee,
-          insuranceFee: resData.data.insurance_fee,
-          r2sFee: resData.data.r2s_fee,
-          codFee: resData.data.cod_fee,
+          insuranceFee: resData.data.insurance_fee ?? 0,
+          r2sFee: resData.data.r2s_fee ?? 0,
+          codFee: resData.data.cod_fee ?? 0,
         };
       }
 
@@ -410,78 +492,67 @@ export class GhnLogisticsService {
     districtName: string,
     wardName?: string | null,
   ): Promise<{ districtId: number; wardCode: string } | null> {
-    try {
-      const provinces = await this.getProvinces();
-      const cleanCity = cityName
+    const provinces = await this.getProvinces();
+    const normalize = (value: string): string =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
-        .replace(/tỉnh|thành phố|tp\.?|tp/gi, '')
+        .replace(/đ/g, 'd')
+        .replace(/^(tinh|thanh pho|tp\.?|quan|huyen|thi xa|phuong|xa|thi tran)\s*/i, '')
+        .replace(/\b0+(\d)/g, '$1')
+        .replace(/\s+/g, ' ')
         .trim();
-      const matchedProvince = provinces.find((p) => {
-        const pName = p.provinceName.toLowerCase();
-        return pName.includes(cleanCity) || cleanCity.includes(pName);
-      });
-      if (!matchedProvince) return null;
+    const cleanCity = normalize(cityName);
+    const matchedProvince = provinces.find((p) => {
+      return normalize(p.provinceName) === cleanCity;
+    });
+    if (!matchedProvince) return null;
 
-      const districts = await this.getDistricts(matchedProvince.provinceId);
-      const cleanDistrict = districtName
-        .toLowerCase()
-        .replace(/quận|huyện|thị xã|thành phố|tp\.?/gi, '')
-        .trim();
-      const matchedDistrict = districts.find((d) => {
-        const dName = d.districtName
-          .toLowerCase()
-          .replace(/quận|huyện|thị xã|thành phố|tp\.?/gi, '')
-          .trim();
-        return (
-          dName === cleanDistrict || d.districtName.toLowerCase() === districtName.toLowerCase()
-        );
-      });
-      if (!matchedDistrict) return null;
+    const districts = await this.getDistricts(matchedProvince.provinceId);
+    const cleanDistrict = normalize(districtName);
+    const matchedDistrict = districts.find((d) => {
+      return normalize(d.districtName) === cleanDistrict;
+    });
+    if (!matchedDistrict) return null;
 
-      if (!wardName) {
-        return { districtId: matchedDistrict.districtId, wardCode: '' };
-      }
-
-      const wards = await this.getWards(matchedDistrict.districtId);
-      const cleanWard = wardName
-        .toLowerCase()
-        .replace(/phường|xã|thị trấn/gi, '')
-        .trim();
-      const matchedWard = wards.find((w) => {
-        const wName = w.wardName
-          .toLowerCase()
-          .replace(/phường|xã|thị trấn/gi, '')
-          .trim();
-        return wName === cleanWard || w.wardName.toLowerCase() === wardName.toLowerCase();
-      });
-
-      return {
-        districtId: matchedDistrict.districtId,
-        wardCode: matchedWard ? matchedWard.wardCode : '',
-      };
-    } catch (err) {
-      this.logger.warn(`Không thể phân giải địa chỉ GHN: ${(err as Error).message}`);
-      return null;
+    if (!wardName) {
+      return { districtId: matchedDistrict.districtId, wardCode: '' };
     }
+
+    const wards = await this.getWards(matchedDistrict.districtId);
+    const cleanWard = normalize(wardName);
+    const matchedWard = wards.find((w) => {
+      return normalize(w.wardName) === cleanWard;
+    });
+
+    return {
+      districtId: matchedDistrict.districtId,
+      wardCode: matchedWard ? matchedWard.wardCode : '',
+    };
   }
 
   /**
    * 6. Tạo đơn giao hàng chính thức trên GHN
    */
-  async createShippingOrder(orderPayload: Record<string, unknown>) {
-    this.validateConfig(true);
+  async createShippingOrder(orderPayload: Record<string, unknown>, shopId: number) {
+    if (!Number.isSafeInteger(shopId) || shopId <= 0)
+      throw new BadRequestException('Thiếu điểm GHN cho đơn hàng này.');
+    this.validateConfig(true, shopId);
     try {
       const url = `${this.orderApiBaseUrl}/shipping-order/create`;
       const response = await fetch(url, {
         method: 'POST',
-        headers: this.getHeaders(true),
+        headers: this.getHeaders(true, shopId),
         body: JSON.stringify(orderPayload),
+        signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
         const errText = await response.text();
-        throw new BadGatewayException(
-          `Cổng GHN tạo đơn trả mã HTTP ${response.status}: ${errText}`,
-        );
+        if (response.status >= 400 && response.status < 500) {
+          throw new GhnCreateRejectedException(`GHN từ chối tạo vận đơn: ${errText}`);
+        }
+        throw new BadGatewayException('GHN chưa xác nhận kết quả tạo vận đơn; cần đối soát.');
       }
       const data = (await response.json()) as {
         code: number;
@@ -489,6 +560,9 @@ export class GhnLogisticsService {
         data?: unknown;
       };
       if (data.code !== 200) {
+        if (data.code >= 400 && data.code < 500) {
+          throw new GhnCreateRejectedException(`GHN từ chối tạo vận đơn: ${data.message}`);
+        }
         throw new BadGatewayException(
           `GHN tạo đơn trả lỗi (${data.code}): ${data.message || 'Không thể tạo vận đơn'}`,
         );
@@ -506,14 +580,15 @@ export class GhnLogisticsService {
   /**
    * 7. Tra cứu thông tin hành trình vận đơn qua GHN
    */
-  async trackOrder(orderCode: string) {
-    this.validateConfig(true);
+  async trackOrder(orderCode: string, shopId: number) {
+    if (!Number.isSafeInteger(shopId) || shopId <= 0)
+      throw new BadRequestException('Thiếu điểm GHN cho vận đơn này.');
+    this.validateConfig(true, shopId);
     try {
-      const url = `${this.orderApiBaseUrl}/shipping-order/detail`;
+      const url = `${this.orderApiBaseUrl}/shipping-order/detail?order_code=${encodeURIComponent(orderCode)}`;
       const response = await fetch(url, {
-        method: 'POST',
-        headers: this.getHeaders(true),
-        body: JSON.stringify({ order_code: orderCode }),
+        headers: this.getHeaders(true, shopId),
+        signal: AbortSignal.timeout(10000),
       });
       if (!response.ok) {
         const errText = await response.text();
