@@ -40,16 +40,43 @@ const categories = [
 interface SupportMenuProps {
   conversations: ChatConversation[];
   onOpenConversation: (conversation: ChatConversation) => void;
+  onSendSupportMessage: (request: {
+    category: string;
+    description: string;
+    orderId?: string;
+  }) => Promise<void>;
+  sending: boolean;
 }
 
-export default function SupportMenu({ conversations, onOpenConversation }: SupportMenuProps) {
+export default function SupportMenu({
+  conversations,
+  onOpenConversation,
+  onSendSupportMessage,
+  sending,
+}: SupportMenuProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [orderId, setOrderId] = useState('');
   const category = categories.find((item) => item.id === selected);
   const staffChats = conversations.filter(
-    (c) => c.type === 'STAFF_BUYER' || c.type === 'STAFF_SELLER',
+    (c) => c.type === 'STAFF_BUYER' || c.type === 'STAFF_SELLER' || c.type === 'SUPPORT_TICKET',
   );
+
+  async function submitSupportMessage(): Promise<void> {
+    if (!category || !description.trim() || sending) return;
+    try {
+      await onSendSupportMessage({
+        category: category.title,
+        description: description.trim(),
+        ...(orderId.trim() ? { orderId: orderId.trim() } : {}),
+      });
+    } catch {
+      return;
+    }
+    setSelected(null);
+    setDescription('');
+    setOrderId('');
+  }
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-5 sm:p-6">
@@ -101,6 +128,7 @@ export default function SupportMenu({ conversations, onOpenConversation }: Suppo
                 <input
                   value={orderId}
                   onChange={(e) => setOrderId(e.target.value)}
+                  maxLength={80}
                   placeholder="Nhập mã đơn liên quan"
                   className="w-full bg-transparent py-2.5 font-normal outline-none"
                 />
@@ -111,29 +139,28 @@ export default function SupportMenu({ conversations, onOpenConversation }: Suppo
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                maxLength={4000}
+                maxLength={800}
                 rows={4}
                 placeholder="Mô tả vấn đề và thông tin cần nhân viên hỗ trợ…"
                 className="mt-2 w-full resize-y rounded-lg border border-slate-200 p-3 font-normal outline-blue-500"
               />
             </label>
-            <p className="text-right text-xs text-slate-400">{description.length}/4000</p>
+            <p className="text-right text-xs text-slate-400">{description.length}/800</p>
             <p
               role="status"
               className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-800"
             >
-              Chức năng gửi yêu cầu và tự phân công nhân viên chưa được mở. Bạn có thể chuẩn bị nội
-              dung tại đây hoặc tiếp tục hội thoại hỗ trợ đã có bên dưới.
+              Nội dung sẽ được gửi thành tin nhắn trong hội thoại với bộ phận hỗ trợ. Mã đơn hàng,
+              nếu có, sẽ được đính kèm trong nội dung tin nhắn.
             </p>
             <button
-              disabled
-              className="w-full cursor-not-allowed rounded-lg bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-500"
+              type="button"
+              disabled={!description.trim() || sending}
+              onClick={() => void submitSupportMessage()}
+              className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
             >
-              Gửi yêu cầu hỗ trợ — sắp có
+              {sending ? 'Đang gửi…' : 'Gửi tin nhắn hỗ trợ'}
             </button>
-            <p className="text-xs text-slate-400">
-              Nội dung chưa được gửi. Bản nháp chỉ được giữ khi khung chat còn mở.
-            </p>
           </div>
         </>
       )}

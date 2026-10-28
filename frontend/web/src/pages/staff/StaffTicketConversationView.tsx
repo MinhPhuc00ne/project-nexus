@@ -24,8 +24,13 @@ export interface SupportTicket {
   customer: string;
   initials: string;
   role: string;
+  subject?: string;
   category: 'Auction 3D' | 'Shipping' | 'Escrow' | 'General';
   status: 'chatting' | 'waiting' | 'resolved';
+  conversationStatus?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  assignedStaffId?: string | null;
+  assignedStaff?: string | null;
+  waitingTimeSeconds?: number;
   time: string;
   preview: string;
   messages: ChatMessage[];
@@ -38,6 +43,9 @@ interface StaffTicketConversationViewProps {
   onSendReply: () => void;
   notify: (msg: string) => void;
   sending?: boolean;
+  onClaim: () => void;
+  onResolve: () => void;
+  updatingStatus: boolean;
 }
 
 export default function StaffTicketConversationView({
@@ -47,6 +55,9 @@ export default function StaffTicketConversationView({
   onSendReply,
   notify,
   sending = false,
+  onClaim,
+  onResolve,
+  updatingStatus,
 }: StaffTicketConversationViewProps) {
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
@@ -68,7 +79,7 @@ export default function StaffTicketConversationView({
               </span>
               <span>
                 <b>{activeTicket.customer}</b>
-                <small>{activeTicket.category}</small>
+                <small>{activeTicket.subject || activeTicket.category}</small>
               </span>
             </div>
             <div className="flex [gap:5px] [&_.staff-icon-button]:[width:31px] [&_.staff-icon-button]:[height:31px] max-[420px]:[&_.staff-icon-button:last-child]:hidden">
@@ -93,6 +104,26 @@ export default function StaffTicketConversationView({
               >
                 <MoreHorizontal size={18} />
               </button>
+              {activeTicket.conversationStatus === 'OPEN' && (
+                <button
+                  type="button"
+                  onClick={onClaim}
+                  disabled={updatingStatus}
+                  className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {updatingStatus ? 'Đang nhận…' : 'Nhận xử lý'}
+                </button>
+              )}
+              {activeTicket.conversationStatus === 'IN_PROGRESS' && (
+                <button
+                  type="button"
+                  onClick={onResolve}
+                  disabled={updatingStatus}
+                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {updatingStatus ? 'Đang lưu…' : 'Hoàn tất'}
+                </button>
+              )}
             </div>
           </div>
           <div className="[align-self:center] [margin:12px_0_14px] [padding:7px_10px] [border-radius:999px] [color:#897e9c] [background:#f0efff] [font-size:8px] font-extrabold text-center">

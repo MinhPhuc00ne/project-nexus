@@ -1,4 +1,5 @@
-export type ChatConversationType = 'BUYER_SELLER' | 'STAFF_SELLER' | 'STAFF_BUYER' | 'GENERAL';
+export type ChatConversationType =
+  'BUYER_SELLER' | 'STAFF_SELLER' | 'STAFF_BUYER' | 'SUPPORT_TICKET' | 'GENERAL';
 
 export interface ChatParticipant {
   id: string;
@@ -22,6 +23,9 @@ export interface ChatConversation {
   createdAt: string;
   updatedAt: string;
   partner: ChatParticipant;
+  assignedStaffId?: string | null;
+  assignedStaff?: ChatParticipant | null;
+  waitingTimeSeconds?: number;
 }
 
 export interface ChatMessage {
@@ -82,3 +86,19 @@ export interface ChatReadResult {
   conversationId: string;
   message: string;
 }
+
+export interface RequestChatSupport {
+  subject?: string;
+  message: string;
+  contextId?: string;
+  contextType?: 'ORDER' | 'GENERAL';
+  attachments?: string[];
+}
+
+export interface ChatSupportQueue {
+  items: ChatConversation[];
+  onlineStaffCount: number;
+  pagination: ChatConversationList['pagination'];
+}
+
+export type SupportConversationStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';

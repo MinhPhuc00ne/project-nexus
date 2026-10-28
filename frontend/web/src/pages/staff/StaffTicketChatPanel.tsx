@@ -2,10 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Gavel, Inbox, Search, ShieldCheck, Truck } from 'lucide-react';
 import StaffMetricCards from './StaffMetricCards';
 import StaffTicketConversationView, { type SupportTicket } from './StaffTicketConversationView';
-import { createChatConversation, getChatConversations } from '../../services/chat';
+import {
+  claimChatConversation,
+  getChatConversations,
+  getChatSupportQueue,
+  updateChatConversationStatus,
+} from '../../services/chat';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChatRoom } from '../../components/chat/useChatRoom';
-import type { ChatConversation } from '../../types/chat.types';
+import type { ChatConversation, SupportConversationStatus } from '../../types/chat.types';
 
 export type TicketStatus = 'chatting' | 'waiting' | 'resolved';
 export type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
@@ -26,9 +31,7 @@ export default function StaffTicketChatPanel({
   const [conversations, setConversations] = useState<ChatConversation[] | null>(null);
   const [revision, setRevision] = useState(0);
   const [listError, setListError] = useState('');
-  const [participantId, setParticipantId] = useState('');
-  const [recipientRole, setRecipientRole] = useState<'BUYER' | 'SELLER'>('BUYER');
-  const [creating, setCreating] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | TicketStatus>('all');
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
@@ -45,25 +48,38 @@ export default function StaffTicketChatPanel({
     let cancelled = false;
     const load = async () => {
       try {
-        const items: ChatConversation[] = [];
+        const assigned: ChatConversation[] = [];
         let page = 1;
         let totalPages = 1;
         do {
           const result = await getChatConversations({ page, limit: 50 });
-          items.push(...result.items);
+          assigned.push(...result.items);
           totalPages = result.pagination.totalPages;
           page++;
         } while (page <= totalPages && !cancelled);
+        const firstQueuePage = await getChatSupportQueue({ page: 1, limit: 50 });
+        const queued = [...firstQueuePage.items];
+        for (let queuePage = 2; queuePage <= firstQueuePage.pagination.totalPages; queuePage++) {
+          if (cancelled) return;
+          const nextQueuePage = await getChatSupportQueue({ page: queuePage, limit: 50 });
+          queued.push(...nextQueuePage.items);
+        }
         if (cancelled) return;
-        const staffChats = items.filter(
-          (c) => c.type === 'STAFF_BUYER' || c.type === 'STAFF_SELLER',
+        const assignedSupport = assigned.filter(
+          (c) =>
+            c.type === 'STAFF_BUYER' || c.type === 'STAFF_SELLER' || c.type === 'SUPPORT_TICKET',
         );
-        setConversations(staffChats);
-        setActiveTicketId((current) => current ?? staffChats[0]?.id ?? null);
+        const allSupport = [...queued, ...assignedSupport];
+        const uniqueSupport = [...new Map(allSupport.map((c) => [c.id, c])).values()];
+        setConversations(uniqueSupport);
+        setActiveTicketId((current) => current ?? uniqueSupport[0]?.id ?? null);
         setListError('');
       } catch (error) {
-        if (!cancelled)
-          setListError(error instanceof Error ? error.message : 'Không thể tải hội thoại.');
+        if (!cancelled) {
+          setListError(
+            error instanceof Error ? error.message : 'Could not load support conversations.',
+          );
+        }
       }
     };
     void load();
@@ -80,8 +96,23 @@ export default function StaffTicketChatPanel({
       customer: c.partner.fullName,
       initials: c.partner.fullName.slice(0, 2).toUpperCase(),
       role: c.partner.role,
-      category: 'General',
-      status: c.unreadCount > 0 ? 'waiting' : 'chatting',
+      subject: c.title ?? undefined,
+      category:
+        c.contextType === 'ORDER'
+          ? 'Shipping'
+          : c.contextType === 'DISPUTE'
+            ? 'Escrow'
+            : 'General',
+      conversationStatus: c.status as SupportConversationStatus,
+      assignedStaffId: c.assignedStaffId,
+      assignedStaff: c.assignedStaff?.fullName ?? null,
+      waitingTimeSeconds: c.waitingTimeSeconds,
+      status:
+        c.status === 'OPEN'
+          ? 'waiting'
+          : c.status === 'RESOLVED' || c.status === 'CLOSED'
+            ? 'resolved'
+            : 'chatting',
       time: c.lastMessageAt
         ? new Date(c.lastMessageAt).toLocaleTimeString('vi-VN', {
             hour: '2-digit',
@@ -95,7 +126,7 @@ export default function StaffTicketChatPanel({
               id: m.id,
               author: m.senderName ?? '',
               body: m.body,
-              isAgent: m.senderId === storedUser?.id,
+              isAgent: m.isMe,
               time: new Date(m.createdAt).toLocaleTimeString('vi-VN', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -125,64 +156,53 @@ export default function StaffTicketChatPanel({
     if (!room.loading && !room.sending) void room.send();
   };
 
-  async function startConversation() {
-    if (!participantId.trim() || creating) return;
-    setCreating(true);
+  async function claimActiveConversation(): Promise<void> {
+    if (!activeTicket || updatingStatus) return;
+    setUpdatingStatus(true);
     try {
-      const conversation = await createChatConversation({
-        participantId: participantId.trim(),
-        type: recipientRole === 'SELLER' ? 'STAFF_SELLER' : 'STAFF_BUYER',
-      });
-      setConversations((current) => [
-        conversation,
-        ...(current ?? []).filter((c) => c.id !== conversation.id),
-      ]);
-      setActiveTicketId(conversation.id);
-      setParticipantId('');
+      const claimed = await claimChatConversation(activeTicket.id);
+      setConversations((current) =>
+        current?.map((conversation) => (conversation.id === claimed.id ? claimed : conversation)) ??
+        current,
+      );
+      notify('Support conversation claimed.');
       refresh();
     } catch (error) {
-      setListError(error instanceof Error ? error.message : 'Không thể mở hội thoại.');
+      setListError(
+        error instanceof Error ? error.message : 'Could not claim the conversation.',
+      );
     } finally {
-      setCreating(false);
+      setUpdatingStatus(false);
+    }
+  }
+
+  async function resolveActiveConversation(): Promise<void> {
+    if (!activeTicket || updatingStatus) return;
+    setUpdatingStatus(true);
+    try {
+      const resolved = await updateChatConversationStatus(activeTicket.id, 'RESOLVED');
+      setConversations((current) =>
+        current?.map((conversation) => (conversation.id === resolved.id ? resolved : conversation)) ??
+        current,
+      );
+      notify('Conversation marked as resolved.');
+      refresh();
+    } catch (error) {
+      setListError(
+        error instanceof Error ? error.message : 'Could not update the conversation status.',
+      );
+    } finally {
+      setUpdatingStatus(false);
     }
   }
 
   return (
     <>
-      <form
-        className="my-3 flex flex-wrap gap-2"
-        onSubmit={(event) => {
-          event.preventDefault();
-          void startConversation();
-        }}
-      >
-        <input
-          aria-label="ID người nhận"
-          required
-          value={participantId}
-          onChange={(event) => setParticipantId(event.target.value)}
-          placeholder="ID tài khoản Buyer / Seller"
-          className="min-w-60 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-        />
-        <select
-          aria-label="Vai trò người nhận"
-          value={recipientRole}
-          onChange={(event) => setRecipientRole(event.target.value as 'BUYER' | 'SELLER')}
-          className="rounded-lg border border-slate-200 bg-white px-3 text-sm"
-        >
-          <option value="BUYER">Buyer</option>
-          <option value="SELLER">Seller</option>
-        </select>
-        <button
-          disabled={creating}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white disabled:opacity-50"
-        >
-          {creating ? 'Đang mở…' : 'Mở hội thoại'}
-        </button>
+      <div className="my-3 flex flex-wrap gap-2">
         <button type="button" onClick={refresh} className="rounded-lg border px-3 text-sm">
-          Tải lại
+          Refresh
         </button>
-      </form>
+      </div>
       {(listError || room.error) && (
         <p role="alert" className="my-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
           {listError || room.error}
@@ -274,6 +294,13 @@ export default function StaffTicketChatPanel({
                       <small className="staff-ticket-time">{ticket.time}</small>
                     </div>
                     <p>{ticket.preview}</p>
+                    <small className="mt-1 block truncate text-slate-400">
+                      {ticket.subject || 'Hỗ trợ chung'}
+                      {ticket.assignedStaff ? ` · ${ticket.assignedStaff}` : ''}
+                      {ticket.status === 'waiting' && typeof ticket.waitingTimeSeconds === 'number'
+                        ? ` · Chờ ${Math.floor(ticket.waitingTimeSeconds / 60)} phút`
+                        : ''}
+                    </small>
                     <div className="staff-ticket-bottom">
                       <span
                         className={`staff-topic staff-topic--${ticket.category.toLowerCase().replace(' ', '-')}`}
@@ -317,8 +344,11 @@ export default function StaffTicketChatPanel({
           reply={reply}
           onReplyChange={setReply}
           onSendReply={sendReply}
-          sending={room.sending || room.loading}
+          sending={room.sending || room.loading || activeTicket?.conversationStatus !== 'IN_PROGRESS'}
           notify={notify}
+          onClaim={() => void claimActiveConversation()}
+          onResolve={() => void resolveActiveConversation()}
+          updatingStatus={updatingStatus}
         />
 
         {/* Right Column: Customer Info & Related Data */}

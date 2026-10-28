@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { getChatMessages, markChatAsRead, sendChatMessage } from '../../services/chat';
+import {
+  getChatMessages,
+  markChatAsRead,
+  normalizeChatMessage,
+  sendChatMessage,
+} from '../../services/chat';
 import { type ChatConnectionClient, createChatConnection } from '../../services/chatSocket';
 import type { ChatMessage } from '../../types/chat.types';
 import { getChatErrorMessage, mergeMessages } from './chatUtils';
@@ -83,9 +88,7 @@ export function useChatRoom({
     client.socket.on('connect_error', () => setConnected(false));
     client.socket.on('new_message', (message) => {
       if (message.conversationId !== activeId) return;
-      setMessages((current) =>
-        mergeMessages(current, [{ ...message, isMe: message.senderId === userId }]),
-      );
+      setMessages((current) => mergeMessages(current, [normalizeChatMessage(message, userId)]));
       onRevisionChange();
       if (message.senderId !== userId && document.visibilityState === 'visible') read();
     });
@@ -95,9 +98,7 @@ export function useChatRoom({
     client.socket.on('messages_read', (event) => {
       if (event.conversationId === activeId && event.readBy !== userId) {
         setMessages((current) =>
-          current.map((message) =>
-            message.senderId === userId ? { ...message, isRead: true } : message,
-          ),
+          current.map((message) => (message.isMe ? { ...message, isRead: true } : message)),
         );
       }
     });

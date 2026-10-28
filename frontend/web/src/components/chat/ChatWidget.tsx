@@ -5,6 +5,7 @@ import {
   createChatConversation,
   getChatConversations,
   getChatUnreadCount,
+  requestChatSupport,
 } from '../../services/chat';
 import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
 import ChatConversationList from './ChatConversationList';
@@ -12,6 +13,7 @@ import ChatMessageArea from './ChatMessageArea';
 import { getChatErrorMessage } from './chatUtils';
 import { useChatRoom } from './useChatRoom';
 import SupportMenu from './SupportMenu';
+import { OPEN_CHAT_WITH_USER_EVENT, type OpenChatWithUserRequest } from './chatEvents';
 
 export default function ChatWidget(): JSX.Element | null {
   const { token, storedUser } = useAuth();
@@ -45,6 +47,38 @@ function ChatPanel({
   const [participantId, setParticipantId] = useState('');
   const [type, setType] = useState<ChatConversationType>('BUYER_SELLER');
   const [revision, setRevision] = useState(0);
+
+  useEffect(() => {
+    const handleOpenChat = (event: Event): void => {
+      const request = (event as CustomEvent<OpenChatWithUserRequest>).detail;
+      if (!request?.userId || request.userId === userId || creating) return;
+
+      setOpen(true);
+      setView('chat');
+      setSearch('');
+      setPage(1);
+      setActive(null);
+      setPanelError('');
+      setCreating(true);
+
+      void createChatConversation({
+        participantId: request.userId,
+        type: 'BUYER_SELLER',
+        ...(request.userName ? { title: `Chat với ${request.userName}` } : {}),
+      })
+        .then((conversation) => {
+          setActive(conversation);
+          setRevision((value) => value + 1);
+        })
+        .catch((error: unknown) => {
+          setPanelError(getChatErrorMessage(error));
+        })
+        .finally(() => setCreating(false));
+    };
+
+    window.addEventListener(OPEN_CHAT_WITH_USER_EVENT, handleOpenChat);
+    return () => window.removeEventListener(OPEN_CHAT_WITH_USER_EVENT, handleOpenChat);
+  }, [creating, userId]);
 
   const activeId = active?.id;
 
@@ -123,6 +157,33 @@ function ChatPanel({
     }
   }
 
+  async function handleSendSupportMessage(request: {
+    category: string;
+    description: string;
+    orderId?: string;
+  }): Promise<void> {
+    if (creating) return;
+    setCreating(true);
+    setPanelError('');
+    try {
+      const conversation = await requestChatSupport({
+        subject: request.category,
+        message: request.description,
+        ...(request.orderId
+          ? { contextId: request.orderId, contextType: 'ORDER' as const }
+          : { contextType: 'GENERAL' as const }),
+      });
+      setActive(conversation);
+      setView('chat');
+      setRevision((value) => value + 1);
+    } catch (err) {
+      setPanelError(getChatErrorMessage(err));
+      throw err;
+    } finally {
+      setCreating(false);
+    }
+  }
+
   return (
     <div className="fixed bottom-5 right-5 z-[100] font-sans max-sm:bottom-3 max-sm:right-3">
       {!open ? (
@@ -188,6 +249,8 @@ function ChatPanel({
           {view === 'support' && canRequestSupport ? (
             <SupportMenu
               conversations={conversations}
+              onSendSupportMessage={handleSendSupportMessage}
+              sending={creating}
               onOpenConversation={(conversation) => {
                 setActive(conversation);
                 setView('chat');
@@ -221,8 +284,6 @@ function ChatPanel({
 
               <ChatMessageArea
                 active={active}
-                userId={userId}
-                connected={room.connected}
                 loading={room.loading}
                 messages={room.messages}
                 hasOlder={room.hasOlder}
