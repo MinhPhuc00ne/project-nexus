@@ -27,4 +27,3 @@ export class BackofficeDisputesController {
     return this.adminDisputesService.getDisputes(query);
   }
 }
-

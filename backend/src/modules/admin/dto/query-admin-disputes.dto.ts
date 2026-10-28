@@ -47,4 +47,3 @@ export class QueryAdminDisputesDto {
   @IsString()
   search?: string;
 }
-

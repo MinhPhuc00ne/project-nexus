@@ -69,7 +69,10 @@ test('same staff names get numbered usernames and independent random passwords',
     f.provision.invite(staffInput),
     f.provision.invite({ ...staffInput, email: 'second@example.test' }),
   ]);
-  assert.deepEqual([a.assignedEmail, b.assignedEmail], ['HuyNQ@staff.com', 'HuyNQ2@staff.com']);
+  assert.deepEqual(
+    [a.assignedEmail, b.assignedEmail].sort(),
+    ['HuyNQ2@staff.com', 'HuyNQ@staff.com'].sort(),
+  );
   assert.notEqual(initialPassword(f.emails[0]), initialPassword(f.emails[1]));
 });
 
