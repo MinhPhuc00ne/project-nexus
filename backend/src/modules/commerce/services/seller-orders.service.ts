@@ -272,10 +272,17 @@ export class SellerOrdersService {
       );
     }
 
-    const updated = await this.prisma.order.update({
-      where: { id: orderId },
+    const changed = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        status: { in: ['PAID', 'PREPARING'] },
+        OR: [{ afterSales: null }, { afterSales: { status: 'REJECTED' } }],
+      },
       data: { status: OrderStatus.PREPARING },
     });
+    if (changed.count !== 1)
+      throw new BadRequestException('Đơn đã thay đổi hoặc đang có yêu cầu hủy/trả hàng.');
+    const updated = { id: orderId, status: OrderStatus.PREPARING };
 
     // Thông báo cho Buyer
     await this.prisma.notification.create({

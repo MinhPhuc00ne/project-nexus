@@ -16,6 +16,7 @@ import {
   ApiBody,
   ApiConsumes,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -25,7 +26,10 @@ import {
   CreateConversationDto,
   QueryConversationsDto,
   QueryMessagesDto,
+  QueryQueueDto,
+  RequestSupportDto,
   SendMessageDto,
+  UpdateConversationStatusDto,
 } from '../dtos';
 import { ChatService } from '../services/chat.service';
 
@@ -38,11 +42,19 @@ export class ChatController {
 
   @Post('conversations')
   @ApiOperation({
-    summary: 'Tạo hoặc mở cuộc trò chuyện (Buyer - Seller, Staff - Seller, Staff - Buyer)',
-    description: 'Chặn hoàn toàn việc nhắn tin trực tiếp với Quản trị viên (Admin).',
+    summary: 'Tạo hoặc mở cuộc trò chuyện trực tiếp (Buyer - Seller)',
+    description:
+      'Chặn Staff tự ý tạo chat trực tiếp với người dùng. Chặn người dùng chat trực tiếp với Admin. Đảm bảo mỗi tranh chấp chỉ tạo đúng 1 hội thoại.',
   })
   @ApiResponse({ status: 201, description: 'Khởi tạo hoặc trả về cuộc trò chuyện hiện có.' })
-  @ApiResponse({ status: 400, description: 'Không thể tự chat hoặc không thể chat với Admin.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Không thể tự chat hoặc không thể nhắn tin trực tiếp cho Admin.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Nhân viên chỉ có thể phản hồi yêu cầu do người dùng gửi lên.',
+  })
   async createConversation(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
@@ -52,10 +64,101 @@ export class ChatController {
     return { message: 'Khởi tạo cuộc trò chuyện thành công.', data };
   }
 
+  @Post('request-support')
+  @ApiOperation({
+    summary: 'Buyer / Seller gửi yêu cầu hỗ trợ lên Nhân viên CSKH (Đưa vào Hàng đợi FIFO)',
+    description:
+      'Tạo yêu cầu hỗ trợ với trạng thái OPEN. Hệ thống tự động ưu tiên gán cho Staff nào đang Online trước nhất. Đảm bảo mỗi tranh chấp chỉ có 1 cuộc trò chuyện.',
+  })
+  @ApiResponse({ status: 201, description: 'Yêu cầu hỗ trợ đã được tạo và đưa vào hàng đợi.' })
+  async requestSupport(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+    @Body() dto: RequestSupportDto,
+  ) {
+    const data = await this.chatService.requestSupport(userId, role, dto);
+    return { message: 'Yêu cầu hỗ trợ đã được gửi thành công.', data };
+  }
+
+  @Post('support/request')
+  @ApiOperation({
+    summary: 'Alias gửi yêu cầu hỗ trợ (tương thích format đường dẫn RESTful)',
+  })
+  async requestSupportAlias(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+    @Body() dto: RequestSupportDto,
+  ) {
+    const data = await this.chatService.requestSupport(userId, role, dto);
+    return { message: 'Yêu cầu hỗ trợ đã được gửi thành công.', data };
+  }
+
+  @Post('disputes/:disputeId/conversation')
+  @ApiOperation({
+    summary: 'Tạo hoặc lấy duy nhất 1 cuộc trò chuyện hỗ trợ cho Khiếu nại / Tranh chấp',
+    description:
+      'Đảm bảo mỗi tranh chấp chỉ tạo DUY NHẤT một hội thoại. Trả về ngay hội thoại hiện có nếu đã tồn tại.',
+  })
+  @ApiParam({ name: 'disputeId', description: 'ID của khiếu nại tranh chấp' })
+  @ApiResponse({ status: 200, description: 'Hội thoại tranh chấp duy nhất.' })
+  async getDisputeConversation(
+    @Param('disputeId') disputeId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+  ) {
+    const data = await this.chatService.getOrCreateDisputeConversation(disputeId, userId, role);
+    return { message: 'Truy xuất hội thoại khiếu nại thành công.', data };
+  }
+
+  @Get('queue')
+  @ApiOperation({
+    summary: '[STAFF / ADMIN] Xem danh sách Hàng đợi yêu cầu hỗ trợ (FIFO Queue)',
+    description:
+      'Lấy danh sách các ticket đang chờ (status = OPEN, chưa có staff nhận), xếp theo thứ tự thời gian ai gửi trước đứng trước (FIFO) kèm thời gian chờ tính bằng giây.',
+  })
+  @ApiResponse({ status: 200, description: 'Danh sách hàng đợi hỗ trợ kèm phân trang.' })
+  async getQueue(@CurrentUser('role') role: string, @Query() query: QueryQueueDto) {
+    return this.chatService.getQueue(role, query);
+  }
+
+  @Post('conversations/:id/claim')
+  @ApiOperation({
+    summary: '[STAFF / ADMIN] Tiếp nhận (Claim) cuộc trò chuyện từ hàng đợi',
+    description:
+      'Nhân viên chủ động tiếp nhận xử lý ticket đang OPEN. Trạng thái chuyển thành IN_PROGRESS và gán assignedStaffId cho nhân viên này.',
+  })
+  @ApiParam({ name: 'id', description: 'ID cuộc trò chuyện cần tiếp nhận' })
+  async claimConversation(
+    @Param('id') id: string,
+    @CurrentUser('id') staffId: string,
+    @CurrentUser('role') role: string,
+  ) {
+    const data = await this.chatService.claimConversation(id, staffId, role);
+    return { message: 'Tiếp nhận cuộc trò chuyện thành công.', data };
+  }
+
+  @Patch('conversations/:id/status')
+  @ApiOperation({
+    summary: 'Cập nhật trạng thái cuộc trò chuyện (OPEN, IN_PROGRESS, RESOLVED, CLOSED)',
+    description:
+      'Staff phụ trách hoặc Admin có quyền cập nhật trạng thái. Khi chuyển thành RESOLVED/CLOSED, giải phóng slot của Staff và tự động kéo ticket tiếp theo trong hàng đợi về cho Staff đó.',
+  })
+  @ApiParam({ name: 'id', description: 'ID cuộc trò chuyện' })
+  async updateStatus(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+    @Body() dto: UpdateConversationStatusDto,
+  ) {
+    const data = await this.chatService.updateConversationStatus(id, userId, role, dto);
+    return { message: 'Cập nhật trạng thái cuộc trò chuyện thành công.', data };
+  }
+
   @Get('conversations')
   @ApiOperation({
     summary: 'Lấy danh sách các cuộc trò chuyện của người dùng hiện tại',
-    description: 'Nhân viên (SUPPORT_STAFF) sẽ thấy toàn bộ danh sách Hộp thư chung CSKH.',
+    description:
+      'BỎ HOÀN TOÀN CHAT CHUNG: Nhân viên chỉ thấy các cuộc trò chuyện mà chính mình phụ trách. Khách hàng chỉ thấy hội thoại của mình.',
   })
   async listConversations(
     @CurrentUser('id') userId: string,
@@ -72,7 +175,11 @@ export class ChatController {
   }
 
   @Get('conversations/:id')
-  @ApiOperation({ summary: 'Xem chi tiết một cuộc trò chuyện theo ID' })
+  @ApiOperation({
+    summary: 'Xem chi tiết một cuộc trò chuyện theo ID',
+    description:
+      'Ẩn danh thông tin nhân viên hỗ trợ với khách hàng. Chỉ Admin mới thấy thông tin thực.',
+  })
   async getConversation(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
@@ -86,7 +193,7 @@ export class ChatController {
   @ApiOperation({
     summary: 'Lấy lịch sử tin nhắn của cuộc trò chuyện',
     description:
-      'Tin nhắn từ nhân viên hỗ trợ được ẩn danh tên thành "Nhân viên Hỗ trợ Nexus" đối với khách hàng và các nhân viên khác.',
+      'Tin nhắn từ nhân viên hỗ trợ được ẩn danh thành "Nhân viên Hỗ trợ" đối với khách hàng. Chỉ Admin mới thấy ID và tên thật nhân viên.',
   })
   async listMessages(
     @Param('id') id: string,
@@ -100,8 +207,9 @@ export class ChatController {
 
   @Post('conversations/:id/messages')
   @ApiOperation({
-    summary: 'Gửi tin nhắn mới vào cuộc trò chuyện (Chuẩn RESTful cho Frontend)',
-    description: 'Tự động kiểm duyệt từ cấm/nhạy cảm và kích hoạt tin nhắn tự động (nếu có).',
+    summary: 'Gửi tin nhắn mới vào cuộc trò chuyện',
+    description:
+      'Tự động kiểm duyệt từ cấm/nhạy cảm. Nếu Staff phản hồi một hội thoại đang OPEN, hệ thống sẽ tự động gán và chuyển trạng thái sang IN_PROGRESS.',
   })
   async sendMessage(
     @Param('id') id: string,

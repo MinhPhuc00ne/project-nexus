@@ -11,7 +11,8 @@ export async function ensureChatDatabaseTables(
         id TEXT NOT NULL PRIMARY KEY,
         type TEXT NOT NULL DEFAULT 'BUYER_SELLER',
         participant1_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        participant2_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        participant2_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+        assigned_staff_id TEXT REFERENCES users(id) ON DELETE SET NULL,
         title TEXT,
         context_id TEXT,
         context_type TEXT,
@@ -19,10 +20,17 @@ export async function ensureChatDatabaseTables(
         last_message_at TIMESTAMP(3),
         unread_count_user1 INTEGER NOT NULL DEFAULT 0,
         unread_count_user2 INTEGER NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'ACTIVE',
+        status TEXT NOT NULL DEFAULT 'OPEN',
         created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
+
+      ALTER TABLE chat_conversations ALTER COLUMN participant2_id DROP NOT NULL;
+      ALTER TABLE chat_conversations ADD COLUMN IF NOT EXISTS assigned_staff_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS chat_conversations_assigned_staff_id_idx ON chat_conversations(assigned_staff_id);
+      CREATE INDEX IF NOT EXISTS chat_conversations_status_idx ON chat_conversations(status);
+      CREATE INDEX IF NOT EXISTS chat_conversations_context_idx ON chat_conversations(context_id, context_type);
+
       CREATE TABLE IF NOT EXISTS chat_messages (
         id TEXT NOT NULL PRIMARY KEY,
         conversation_id TEXT NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,

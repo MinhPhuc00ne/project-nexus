@@ -221,6 +221,7 @@ model User {
   reviewedWithdrawalRequests WithdrawalRequest[]      @relation("AdminReviewedWithdrawals")
   chatConversationsUser1     ChatConversation[]       @relation("ChatParticipant1")
   chatConversationsUser2     ChatConversation[]       @relation("ChatParticipant2")
+  assignedStaffConversations ChatConversation[]       @relation("AssignedStaffConversations")
   chatMessagesSent           ChatMessage[]            @relation("ChatSender")
   shopAutoReplies            ChatAutoReply[]          @relation("ShopAutoReplies")
   cancelledAutoReplies       ChatAutoReply[]          @relation("AdminCancelledReplies")
@@ -280,6 +281,7 @@ model Wallet {
 
   user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions WalletTransaction[]
+  refunds      OrderRefund[]
 
   @@map("wallets")
 }
@@ -295,6 +297,7 @@ model WalletTransaction {
   createdAt   DateTime                @default(now()) @map("created_at")
 
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  refund OrderRefund?
 
   @@map("wallet_transactions")
 }
@@ -543,6 +546,8 @@ model Order {
   review         Review?
   productReviews ProductReview[]
   customerReview CustomerReview?
+  afterSales     AfterSalesRequest?
+  refunds        OrderRefund[]
 
   @@map("orders")
 }
@@ -576,8 +581,53 @@ model Payment {
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refund OrderRefund?
 
   @@map("payments")
+}
+
+model AfterSalesRequest {
+  id                 String   @id @default(uuid())
+  orderId            String   @unique @map("order_id")
+  kind               String
+  status             String   @default("REQUESTED")
+  requestedBy        String   @map("requested_by")
+  reason             String   @db.Text
+  evidenceUrls       Json?    @map("evidence_urls")
+  refundToWallet     Boolean  @default(false) @map("refund_to_wallet")
+  decisionReason     String?  @map("decision_reason") @db.Text
+  reviewedBy         String?  @map("reviewed_by")
+  returnWaybillCode  String?  @map("return_waybill_code")
+  receivedAt         DateTime? @map("received_at")
+  restockedAt        DateTime? @map("restocked_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  order              Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@map("after_sales_requests")
+}
+
+model OrderRefund {
+  id                String   @id @default(uuid())
+  orderId           String   @map("order_id")
+  paymentId         String   @unique @map("payment_id")
+  amount            Decimal  @db.Decimal(14, 2)
+  destination       String
+  status            String   @default("PENDING")
+  adminWalletId     String   @map("admin_wallet_id")
+  transactionId     String   @unique @map("transaction_id")
+  externalReference String?  @unique @map("external_reference")
+  completedBy       String?  @map("completed_by")
+  completedAt       DateTime? @map("completed_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  payment           Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  adminWallet       Wallet   @relation(fields: [adminWalletId], references: [id], onDelete: Restrict)
+  transaction       WalletTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@map("order_refunds")
 }
 
 model Auction {
@@ -900,7 +950,8 @@ model ChatConversation {
   id               String    @id @default(uuid())
   type             String    @default("BUYER_SELLER")
   participant1Id   String    @map("participant1_id")
-  participant2Id   String    @map("participant2_id")
+  participant2Id   String?   @map("participant2_id")
+  assignedStaffId  String?   @map("assigned_staff_id")
   title            String?   @db.Text
   contextId        String?   @map("context_id")
   contextType      String?   @map("context_type")
@@ -908,16 +959,20 @@ model ChatConversation {
   lastMessageAt    DateTime? @map("last_message_at")
   unreadCountUser1 Int       @default(0) @map("unread_count_user1")
   unreadCountUser2 Int       @default(0) @map("unread_count_user2")
-  status           String    @default("ACTIVE")
+  status           String    @default("OPEN")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  participant1 User          @relation("ChatParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
-  participant2 User          @relation("ChatParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
-  messages     ChatMessage[]
+  participant1  User          @relation("ChatParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2  User?         @relation("ChatParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  assignedStaff User?         @relation("AssignedStaffConversations", fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  messages      ChatMessage[]
 
   @@index([participant1Id, participant2Id])
+  @@index([assignedStaffId])
   @@index([contextId])
+  @@index([contextId, contextType])
+  @@index([status])
   @@map("chat_conversations")
 }
 

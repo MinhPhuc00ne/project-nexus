@@ -6,6 +6,39 @@ import { Prisma, ReservationStatus } from '@prisma/client';
 export class InventoryService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Caller holds the order row lock; RELEASED reservations cannot be restocked twice. */
+  async restoreCommitted(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    reason: string,
+  ): Promise<void> {
+    const reservations = await tx.inventoryReservation.findMany({
+      where: { referenceId: orderId, status: ReservationStatus.COMMITTED },
+    });
+    for (const reservation of reservations) {
+      const updated = await tx.inventory.update({
+        where: { id: reservation.inventoryId },
+        data: {
+          totalQty: { increment: reservation.quantity },
+          availableQty: { increment: reservation.quantity },
+        },
+      });
+      await tx.inventoryReservation.update({
+        where: { id: reservation.id },
+        data: { status: ReservationStatus.RELEASED },
+      });
+      await tx.inventoryLedger.create({
+        data: {
+          inventoryId: reservation.inventoryId,
+          changeQty: reservation.quantity,
+          balanceAfter: updated.availableQty,
+          reason,
+          referenceId: orderId,
+        },
+      });
+    }
+  }
+
   /**
    * Đảm bảo kho lưu trữ mặc định WH_001 tồn tại
    */
