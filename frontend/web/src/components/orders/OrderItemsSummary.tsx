@@ -8,11 +8,12 @@ interface OrderItemsSummaryProps {
 }
 
 export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) => {
-  const rawSubtotal = order.items.reduce(
-    (sum, item) => sum + Number(item.unitPrice) * item.quantity,
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const rawSubtotal = items.reduce(
+    (sum, item) => sum + Number(item?.unitPrice ?? 0) * (item?.quantity ?? 0),
     0,
   );
-  const totalAmount = Number(order.totalAmount);
+  const totalAmount = Number(order?.totalAmount ?? 0);
   const shippingFee = Math.max(0, totalAmount - rawSubtotal);
 
   return (
@@ -25,12 +26,12 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-900">
-              {order.seller?.fullName || 'Gian Hàng NEXUS'}
+              {order?.seller?.fullName || 'Gian Hàng NEXUS'}
             </h4>
             <p className="text-[11px] text-slate-400">Người bán đối tác đã xác thực</p>
           </div>
         </div>
-        {order.seller?.id && (
+        {order?.seller?.id && (
           <Link
             to={`/shop/${order.seller.id}`}
             className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1"
@@ -43,15 +44,15 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
 
       {/* Items list */}
       <div className="divide-y divide-slate-100">
-        {order.items.map((item) => {
-          const title = item.product?.title || 'Sản phẩm đồng hồ';
+        {items.map((item) => {
+          const title = item?.product?.title || 'Sản phẩm mua sắm';
           const thumbnail =
-            item.product?.thumbnail ||
-            item.product?.images?.[0]?.url ||
+            item?.product?.thumbnail ||
+            item?.product?.images?.[0]?.url ||
             '/images/watches/watch-1.png';
 
           return (
-            <div key={item.id} className="py-4 flex items-center justify-between gap-4 text-xs">
+            <div key={item?.id} className="py-4 flex items-center justify-between gap-4 text-xs">
               <div className="flex items-center gap-3.5 min-w-0 flex-1">
                 <img
                   src={thumbnail}
@@ -59,7 +60,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                   className="w-14 h-14 object-contain rounded-xl border border-slate-100 bg-slate-50 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  {item.product?.id ? (
+                  {item?.product?.id ? (
                     <Link
                       to={`/product/${item.product.id}`}
                       className="font-bold text-slate-900 line-clamp-1 hover:text-blue-600 transition"
@@ -69,15 +70,17 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                   ) : (
                     <span className="font-bold text-slate-900 line-clamp-1">{title}</span>
                   )}
-                  <p className="text-[11px] text-slate-400 mt-0.5">Số lượng: x{item.quantity}</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Số lượng: x{item?.quantity ?? 1}
+                  </p>
                 </div>
               </div>
               <div className="text-right shrink-0">
                 <p className="font-extrabold text-slate-900 text-sm">
-                  {(Number(item.unitPrice) * item.quantity).toLocaleString('vi-VN')} ₫
+                  {(Number(item?.unitPrice ?? 0) * (item?.quantity ?? 1)).toLocaleString('vi-VN')} ₫
                 </p>
                 <p className="text-[10px] text-slate-400">
-                  {Number(item.unitPrice).toLocaleString('vi-VN')} ₫ / sản phẩm
+                  {Number(item?.unitPrice ?? 0).toLocaleString('vi-VN')} ₫ / sản phẩm
                 </p>
               </div>
             </div>

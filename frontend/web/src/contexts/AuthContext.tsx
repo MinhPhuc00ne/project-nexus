@@ -131,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(accessToken || getStoredToken());
       setStoredUser(authUser);
       await refreshProfile();
+      await mergeGuestCartAfterLogin();
     },
     [refreshProfile],
   );

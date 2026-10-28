@@ -65,10 +65,10 @@ export default function CheckoutPage() {
         }
 
         const addrList = await getAddresses();
-        if (isMounted && addrList && addrList.length > 0) {
+        if (isMounted && Array.isArray(addrList) && addrList.length > 0) {
           setAddresses(addrList);
           const def = addrList.find((a) => a.isDefault) || addrList[0];
-          setSelectedAddressId(def.id);
+          setSelectedAddressId(def?.id ?? '');
         }
       } catch (err) {
         console.warn('Lỗi tải dữ liệu thanh toán:', err);
@@ -146,8 +146,8 @@ export default function CheckoutPage() {
         itemIds: items.map((it) => String(it.id)),
       });
 
-      setCreatedOrders(res.orders || []);
-      setPayosPayment(res.payosPayment || null);
+      setCreatedOrders(Array.isArray(res?.orders) ? res.orders : []);
+      setPayosPayment(res?.payosPayment ?? null);
       setCheckoutDone(true);
       await clearCart();
     } catch (err: unknown) {

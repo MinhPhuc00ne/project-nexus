@@ -1,18 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingCart, Trash2, Search, Tag, Star, ShoppingBag } from 'lucide-react';
+import { Heart, ShoppingCart, Trash2, Search, Tag, ShoppingBag } from 'lucide-react';
 import { addToCart } from '../../services/cart';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  getBuyerWishlist,
+  removeBuyerWishlistItem,
+  type WishlistItem,
+} from '../../services/wishlist.service';
 
-import { MOCK_BUYER_WISHLIST, type BuyerWishItem } from '../../mocks';
-
-type WishItem = BuyerWishItem;
-const mockWishlist = MOCK_BUYER_WISHLIST;
-
-/* ─────────── Component ─────────── */
 export default function BuyerWishlistPage() {
-  const [items, setItems] = useState<WishItem[]>(mockWishlist);
+  const { user } = useAuth();
+  const [items, setItems] = useState<WishlistItem[]>([]);
   const [search, setSearch] = useState('');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setItems(getBuyerWishlist(user?.id));
+  }, [user?.id]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -20,11 +25,12 @@ export default function BuyerWishlistPage() {
   };
 
   const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+    const updated = removeBuyerWishlistItem(user?.id, id);
+    setItems(updated);
     showToast('Đã xoá khỏi danh sách yêu thích');
   };
 
-  const handleAddToCart = (item: WishItem) => {
+  const handleAddToCart = (item: WishlistItem) => {
     if (!item.inStock) return;
     addToCart({
       id: item.id,
@@ -71,9 +77,10 @@ export default function BuyerWishlistPage() {
           <button
             type="button"
             onClick={() => {
-              items.filter((i) => i.inStock).forEach((i) => handleAddToCart(i));
+              items.forEach((item) => handleAddToCart(item));
+              showToast('Đã thêm tất cả vào giỏ hàng!');
             }}
-            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-2 rounded-xl hover:bg-blue-100 transition shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition"
           >
             <ShoppingCart size={13} />
             Thêm tất cả vào giỏ
@@ -81,142 +88,118 @@ export default function BuyerWishlistPage() {
         )}
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search
-          size={14}
-          className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-        />
-        <input
-          type="text"
-          placeholder="Tìm sản phẩm yêu thích…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-400/30 focus:border-rose-400 placeholder:text-slate-400 transition"
-        />
-      </div>
+      {/* Search Input */}
+      {items.length > 0 && (
+        <div className="relative">
+          <Search
+            size={14}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+          />
+          <input
+            type="text"
+            placeholder="Tìm trong danh sách yêu thích…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 placeholder:text-slate-400 transition"
+          />
+        </div>
+      )}
 
-      {/* Empty State */}
+      {/* Grid */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-slate-200 bg-white">
-          <Heart size={36} className="text-slate-300 mb-3" />
-          <p className="text-sm font-semibold text-slate-500">Chưa có sản phẩm yêu thích nào</p>
-          <p className="text-xs text-slate-400 mt-1 mb-4">
-            Bấm ❤️ trên trang sản phẩm để lưu vào đây
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
+          <div className="h-16 w-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-400 mb-4">
+            <Heart size={28} />
+          </div>
+          <h3 className="text-sm font-bold text-slate-800 mb-1">
+            {search ? 'Không tìm thấy sản phẩm phù hợp' : 'Danh sách yêu thích trống'}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
+            {search
+              ? 'Thử tìm với từ khoá khác'
+              : 'Hãy lưu lại những sản phẩm bạn quan tâm để dễ dàng theo dõi và mua sắm sau.'}
           </p>
           <Link
             to="/search"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-500 text-white text-xs font-bold hover:bg-rose-600 transition shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm"
           >
-            <ShoppingBag size={13} />
-            Khám phá sản phẩm
+            <ShoppingBag size={14} />
+            Khám phá sản phẩm ngay
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {filtered.map((item) => (
-            <div
-              key={item.id}
-              className="group rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition"
-            >
-              {/* Product Image */}
-              <div className="relative overflow-hidden">
-                <Link to={`/product/${item.id}`}>
-                  <div className="h-44 bg-slate-50 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={item.img}
-                      alt={item.name}
-                      className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.opacity = '0.2';
-                      }}
-                    />
-                  </div>
-                </Link>
-                {/* Badges */}
-                <div className="absolute top-2 left-2 flex gap-1.5">
-                  {item.originalPrice && (
-                    <span className="flex items-center gap-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500 text-white">
-                      <Tag size={9} />-{discountPct(item.originalPrice, item.price)}%
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((item) => {
+            const hasDiscount = item.originalPrice && item.originalPrice > item.price;
+            return (
+              <div
+                key={item.id}
+                className="group relative flex flex-col rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-slate-300 transition"
+              >
+                {/* Image Area */}
+                <div className="relative aspect-square bg-slate-50 overflow-hidden flex items-center justify-center p-4">
+                  <img
+                    src={item.img}
+                    alt={item.name}
+                    className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  />
+                  {hasDiscount && (
+                    <span className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                      <Tag size={10} /> -{discountPct(item.originalPrice!, item.price)}%
                     </span>
                   )}
-                  {!item.inStock && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800/80 text-white">
-                      Hết hàng
-                    </span>
-                  )}
-                </div>
-                {/* Remove Button */}
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 shadow flex items-center justify-center text-rose-500 hover:bg-rose-50 transition opacity-0 group-hover:opacity-100"
-                  title="Xoá khỏi yêu thích"
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
-
-              {/* Info */}
-              <div className="p-3.5">
-                <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide mb-1 truncate">
-                  {item.shopName}
-                </p>
-                <Link to={`/product/${item.id}`}>
-                  <h3 className="text-xs font-bold text-slate-900 line-clamp-2 hover:text-blue-600 transition mb-2">
-                    {item.name}
-                  </h3>
-                </Link>
-
-                {/* Rating & Sold */}
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="flex items-center gap-0.5 text-[11px] text-amber-500 font-bold">
-                    <Star size={11} fill="currentColor" />
-                    {item.rating}
-                  </span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-[11px] text-slate-400">Đã bán {item.sold}</span>
-                </div>
-
-                {/* Price */}
-                <div className="flex items-baseline gap-2 mb-3">
-                  <span className="text-sm font-extrabold text-[#f24e1e]">
-                    {item.price.toLocaleString('vi-VN')} ₫
-                  </span>
-                  {item.originalPrice && (
-                    <span className="text-xs text-slate-400 line-through">
-                      {item.originalPrice.toLocaleString('vi-VN')} ₫
-                    </span>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleAddToCart(item)}
-                    disabled={!item.inStock}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold transition ${
-                      item.inStock
-                        ? 'bg-[#f24e1e] hover:bg-[#d63b0e] text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <ShoppingCart size={12} />
-                    {item.inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
-                  </button>
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    className="p-2 rounded-xl bg-rose-50 text-rose-500 hover:bg-rose-100 transition"
+                    className="absolute top-3 right-3 h-8 w-8 rounded-xl bg-white/90 hover:bg-red-50 text-slate-400 hover:text-red-500 shadow-sm flex items-center justify-center transition"
                     title="Xoá khỏi yêu thích"
                   >
-                    <Heart size={14} fill="currentColor" />
+                    <Trash2 size={14} />
                   </button>
                 </div>
+
+                {/* Info Area */}
+                <div className="p-4 flex flex-col flex-1 justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-medium text-slate-400 mb-1">{item.shopName}</p>
+                    <Link
+                      to={`/product/${item.id}`}
+                      className="text-xs font-bold text-slate-800 hover:text-blue-600 line-clamp-2 transition leading-snug"
+                    >
+                      {item.name}
+                    </Link>
+                  </div>
+
+                  <div>
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <span className="text-sm font-extrabold text-[#f24e1e]">
+                        {item.price.toLocaleString('vi-VN')} ₫
+                      </span>
+                      {hasDiscount && (
+                        <span className="text-[11px] text-slate-400 line-through">
+                          {item.originalPrice!.toLocaleString('vi-VN')} ₫
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleAddToCart(item)}
+                      disabled={!item.inStock}
+                      className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                        item.inStock
+                          ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                          : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <ShoppingCart size={13} />
+                      {item.inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

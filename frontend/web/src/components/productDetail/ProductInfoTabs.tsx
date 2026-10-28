@@ -1,5 +1,6 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import type { ProductDetail } from '../../types/product.types';
+import ProductReviewsSection from './ProductReviewsSection';
 
 export default function ProductInfoTabs({ product }: { product: ProductDetail }) {
   const [tab, setTab] = useState('description');
@@ -52,7 +53,13 @@ export default function ProductInfoTabs({ product }: { product: ProductDetail })
           ) : (
             <p>Chưa có thông số sản phẩm.</p>
           ))}
-        {tab === 'reviews' && <p>Chưa có dữ liệu đánh giá từ hệ thống.</p>}
+        {tab === 'reviews' && (
+          <ProductReviewsSection
+            productId={product.id}
+            productRating={product.rating}
+            reviewsCount={product.reviewsCount}
+          />
+        )}
       </div>
     </section>
   );

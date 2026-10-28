@@ -57,6 +57,7 @@ export interface BuyerOrder {
     | 'PREPARING'
     | 'SHIPPING'
     | 'DELIVERED'
+    | 'CONFIRMED'
     | 'COMPLETED'
     | 'CANCELLED'
     | 'DISPUTED'
@@ -99,8 +100,15 @@ export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse
     data: CheckoutResponse;
   }>('/commerce/checkout', data);
 
-  const payload = response.data;
-  return (payload && 'data' in payload ? payload.data : payload) as CheckoutResponse;
+  const payload = response?.data;
+  const result = (
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
+  ) as CheckoutResponse;
+
+  return {
+    orders: Array.isArray(result?.orders) ? result.orders : [],
+    payosPayment: result?.payosPayment ?? null,
+  };
 }
 
 /**
@@ -120,8 +128,10 @@ export async function payOrderApi(
     cancelUrl: `${window.location.origin}/buyer/orders?cancel=true`,
   });
 
-  const payload = response.data;
-  return (payload && 'data' in payload ? payload.data : payload) as PayosPaymentInfo;
+  const payload = response?.data;
+  return (
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
+  ) as PayosPaymentInfo;
 }
 
 /**
@@ -134,8 +144,10 @@ export async function getBuyerOrdersApi(): Promise<BuyerOrder[]> {
     data: BuyerOrder[];
   }>('/commerce/orders');
 
-  const payload = response.data;
-  return (payload && 'data' in payload ? payload.data : payload) as BuyerOrder[];
+  const payload = response?.data;
+  const items =
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload;
+  return Array.isArray(items) ? (items as BuyerOrder[]) : [];
 }
 
 /**
@@ -148,6 +160,28 @@ export async function getBuyerOrderDetailApi(orderId: string): Promise<BuyerOrde
     data: BuyerOrder;
   }>(`/commerce/orders/${encodeURIComponent(orderId)}`);
 
-  const payload = response.data;
-  return (payload && 'data' in payload ? payload.data : payload) as BuyerOrder;
+  const payload = response?.data;
+  return (
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
+  ) as BuyerOrder;
+}
+
+/**
+ * 5. Gửi khiếu nại đơn hàng (Dispute)
+ */
+export async function disputeOrderApi(orderId: string, reason: string): Promise<unknown> {
+  const response = await api.post(`/commerce/orders/${encodeURIComponent(orderId)}/dispute`, {
+    reason,
+  });
+  return response.data;
+}
+
+/**
+ * 6. Người mua xác nhận đã nhận hàng (Confirm Delivery & Release Escrow)
+ */
+export async function confirmDeliveryOrderApi(orderId: string): Promise<unknown> {
+  const response = await api.post(
+    `/commerce/orders/${encodeURIComponent(orderId)}/confirm-delivery`,
+  );
+  return response.data;
 }
