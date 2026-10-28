@@ -8,11 +8,18 @@ import { SellerAutoReplyController } from './controllers/seller-auto-reply.contr
 import { ChatGateway } from './gateways/chat.gateway';
 import { ChatAutoReplyService } from './services/chat-auto-reply.service';
 import { ChatService } from './services/chat.service';
+import { StaffQueueService } from './services/staff-queue.service';
 
 @Module({
   imports: [PrismaModule, StorageModule],
   controllers: [ChatController, SellerAutoReplyController, AdminChatController],
-  providers: [ChatService, ChatAutoReplyService, ChatGateway, CloudinaryStorageService],
-  exports: [ChatService, ChatAutoReplyService, ChatGateway],
+  providers: [
+    ChatService,
+    ChatAutoReplyService,
+    StaffQueueService,
+    ChatGateway,
+    CloudinaryStorageService,
+  ],
+  exports: [ChatService, ChatAutoReplyService, StaffQueueService, ChatGateway],
 })
 export class ChatModule {}

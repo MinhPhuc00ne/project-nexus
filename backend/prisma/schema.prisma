@@ -221,6 +221,7 @@ model User {
   reviewedWithdrawalRequests WithdrawalRequest[]      @relation("AdminReviewedWithdrawals")
   chatConversationsUser1     ChatConversation[]       @relation("ChatParticipant1")
   chatConversationsUser2     ChatConversation[]       @relation("ChatParticipant2")
+  assignedStaffConversations ChatConversation[]       @relation("AssignedStaffConversations")
   chatMessagesSent           ChatMessage[]            @relation("ChatSender")
   shopAutoReplies            ChatAutoReply[]          @relation("ShopAutoReplies")
   cancelledAutoReplies       ChatAutoReply[]          @relation("AdminCancelledReplies")
@@ -900,7 +901,8 @@ model ChatConversation {
   id               String    @id @default(uuid())
   type             String    @default("BUYER_SELLER")
   participant1Id   String    @map("participant1_id")
-  participant2Id   String    @map("participant2_id")
+  participant2Id   String?   @map("participant2_id")
+  assignedStaffId  String?   @map("assigned_staff_id")
   title            String?   @db.Text
   contextId        String?   @map("context_id")
   contextType      String?   @map("context_type")
@@ -908,16 +910,20 @@ model ChatConversation {
   lastMessageAt    DateTime? @map("last_message_at")
   unreadCountUser1 Int       @default(0) @map("unread_count_user1")
   unreadCountUser2 Int       @default(0) @map("unread_count_user2")
-  status           String    @default("ACTIVE")
+  status           String    @default("OPEN")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  participant1 User          @relation("ChatParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
-  participant2 User          @relation("ChatParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
-  messages     ChatMessage[]
+  participant1  User          @relation("ChatParticipant1", fields: [participant1Id], references: [id], onDelete: Cascade)
+  participant2  User?         @relation("ChatParticipant2", fields: [participant2Id], references: [id], onDelete: Cascade)
+  assignedStaff User?         @relation("AssignedStaffConversations", fields: [assignedStaffId], references: [id], onDelete: SetNull)
+  messages      ChatMessage[]
 
   @@index([participant1Id, participant2Id])
+  @@index([assignedStaffId])
   @@index([contextId])
+  @@index([contextId, contextType])
+  @@index([status])
   @@map("chat_conversations")
 }
 

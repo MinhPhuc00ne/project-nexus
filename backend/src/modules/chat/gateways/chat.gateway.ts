@@ -14,6 +14,7 @@ import { Server, Socket } from 'socket.io';
 import { LightweightJwt } from '../../../core/security/jwt.util';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 import { ChatService, ChatSocketBroadcaster } from '../services/chat.service';
+import { StaffQueueService } from '../services/staff-queue.service';
 
 @WebSocketGateway({
   cors: {
@@ -33,6 +34,7 @@ export class ChatGateway
   constructor(
     private readonly chatService: ChatService,
     private readonly configService: ConfigService,
+    private readonly staffQueueService: StaffQueueService,
   ) {}
 
   afterInit() {
@@ -58,6 +60,41 @@ export class ChatGateway
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Failed to broadcast messages_read: ${msg}`);
+    }
+  }
+
+  broadcastToUser(userId: string, event: string, payload: unknown): void {
+    try {
+      this.server?.to(`user:${userId}`).emit(event, payload);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to broadcast ${event} to user ${userId}: ${msg}`);
+    }
+  }
+
+  broadcastToStaff(event: string, payload: unknown): void {
+    try {
+      this.server?.to('role:SUPPORT_STAFF').emit(event, payload);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to broadcast ${event} to staff room: ${msg}`);
+    }
+  }
+
+  broadcastStatusChange(
+    conversationId: string,
+    status: string,
+    assignedStaffId?: string | null,
+  ): void {
+    try {
+      this.server?.to(`conversation:${conversationId}`).emit('conversation_status_changed', {
+        conversationId,
+        status,
+        assignedStaffId,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to broadcast conversation_status_changed: ${msg}`);
     }
   }
 
@@ -90,7 +127,17 @@ export class ChatGateway
       client.data.user = { ...user, id: userId };
 
       client.join(`user:${userId}`);
-      this.logger.log(`User ${userId} connected via WebSocket (socketId: ${client.id})`);
+
+      if (user.role === 'SUPPORT_STAFF') {
+        client.join('role:SUPPORT_STAFF');
+        this.staffQueueService.registerOnlineStaff(userId, client.id);
+        // Tự động kiểm tra và phân phối ticket trong hàng đợi cho staff này nếu có
+        void this.chatService.processQueueForStaff(userId);
+      }
+
+      this.logger.log(
+        `User ${userId} (${user.role}) connected via WebSocket (socketId: ${client.id})`,
+      );
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.error(`Error handling socket connection: ${errMsg}`);
@@ -99,6 +146,10 @@ export class ChatGateway
   }
 
   handleDisconnect(client: Socket) {
+    const user = client.data?.user;
+    if (user?.role === 'SUPPORT_STAFF' && user.id) {
+      this.staffQueueService.unregisterStaff(user.id, client.id);
+    }
     this.logger.log(`Socket client disconnected: ${client.id}`);
   }
 
@@ -165,9 +216,7 @@ export class ChatGateway
     if (!user || !data?.conversationId) return;
 
     const isStaff = user.role === 'SUPPORT_STAFF';
-    const userName = isStaff
-      ? 'Nhân viên Hỗ trợ Nexus'
-      : user.fullName || user.email || 'Người dùng';
+    const userName = isStaff ? 'Nhân viên Hỗ trợ' : user.fullName || user.email || 'Người dùng';
 
     client.to(`conversation:${data.conversationId}`).emit('user_typing', {
       conversationId: data.conversationId,

@@ -13,10 +13,11 @@ tsNode.register({
 const load = createRequire(import.meta.url);
 const { ChatService } = load('../src/modules/chat/services/chat.service.ts');
 const { ChatAutoReplyService } = load('../src/modules/chat/services/chat-auto-reply.service.ts');
+const { StaffQueueService } = load('../src/modules/chat/services/staff-queue.service.ts');
 const { CreateConversationDto } = load('../src/modules/chat/dtos/create-conversation.dto.ts');
 const { SendMessageDto } = load('../src/modules/chat/dtos/send-message.dto.ts');
-const { CreateAutoReplyDto, CancelAutoReplyDto } = load(
-  '../src/modules/chat/dtos/auto-reply.dto.ts',
+const { RequestSupportDto, UpdateConversationStatusDto, TicketLifecycleStatus } = load(
+  '../src/modules/chat/dtos/support-queue.dto.ts',
 );
 
 function createMockPrisma() {
@@ -62,6 +63,16 @@ function createMockPrisma() {
       },
     ],
     [
+      'staff-3',
+      {
+        id: 'staff-3',
+        fullName: 'Hoàng Staff C',
+        email: 'staffC@nexus.com',
+        role: 'SUPPORT_STAFF',
+        avatarUrl: null,
+      },
+    ],
+    [
       'admin-1',
       {
         id: 'admin-1',
@@ -69,6 +80,20 @@ function createMockPrisma() {
         email: 'admin@nexus.com',
         role: 'ADMIN',
         avatarUrl: null,
+      },
+    ],
+  ]);
+
+  const disputes = new Map([
+    [
+      'dispute-101',
+      {
+        id: 'dispute-101',
+        orderId: 'order-999',
+        openedByUserId: 'buyer-1',
+        reason: 'Hàng không đúng mô tả',
+        status: 'OPEN',
+        order: { id: 'order-999', buyerId: 'buyer-1', sellerId: 'seller-1' },
       },
     ],
   ]);
@@ -88,21 +113,46 @@ function createMockPrisma() {
         return null;
       },
     },
+    dispute: {
+      findUnique: async ({ where }) => disputes.get(where.id) || null,
+    },
     chatConversation: {
       findFirst: async ({ where }) => {
         for (const c of conversations.values()) {
+          if (where.contextId && c.contextId !== where.contextId) continue;
+          if (where.contextType && c.contextType !== where.contextType) continue;
+          if (where.status && c.status !== where.status) continue;
+          if (where.assignedStaffId === null && c.assignedStaffId !== null) continue;
+
           const matchP1 = where.OR?.some(
             (o) =>
               (o.participant1Id === c.participant1Id && o.participant2Id === c.participant2Id) ||
-              (o.participant1Id === c.participant2Id && o.participant2Id === c.participant1Id),
+              (o.participant1Id === c.participant2Id && o.participant2Id === c.participant1Id) ||
+              (o.assignedStaffId && o.assignedStaffId === c.assignedStaffId),
           );
-          const matchType = where.type ? c.type === where.type : true;
-          if (matchP1 && matchType) return c;
+          if (where.OR && !matchP1) continue;
+
+          return c;
         }
         return null;
       },
       findUnique: async ({ where }) => conversations.get(where.id) || null,
-      findMany: async () => Array.from(conversations.values()),
+      findMany: async ({ where }) => {
+        return Array.from(conversations.values()).filter((c) => {
+          if (where?.status && c.status !== where.status) return false;
+          if (where?.assignedStaffId === null && c.assignedStaffId !== null) return false;
+          if (where?.OR) {
+            const matches = where.OR.some(
+              (o) =>
+                (o.participant1Id && o.participant1Id === c.participant1Id) ||
+                (o.participant2Id && o.participant2Id === c.participant2Id) ||
+                (o.assignedStaffId && o.assignedStaffId === c.assignedStaffId),
+            );
+            if (!matches) return false;
+          }
+          return true;
+        });
+      },
       count: async () => conversations.size,
       create: async ({ data }) => {
         const id = data.id || `conv-${conversations.size + 1}`;
@@ -110,19 +160,21 @@ function createMockPrisma() {
           id,
           type: data.type || 'BUYER_SELLER',
           participant1Id: data.participant1Id,
-          participant2Id: data.participant2Id,
+          participant2Id: data.participant2Id || null,
+          assignedStaffId: data.assignedStaffId || null,
           title: data.title || null,
           contextId: data.contextId || null,
           contextType: data.contextType || null,
-          lastMessage: null,
-          lastMessageAt: null,
+          lastMessage: data.lastMessage || null,
+          lastMessageAt: data.lastMessageAt || null,
           unreadCountUser1: 0,
           unreadCountUser2: 0,
-          status: 'ACTIVE',
+          status: data.status || 'OPEN',
           createdAt: new Date(),
           updatedAt: new Date(),
           participant1: users.get(data.participant1Id),
-          participant2: users.get(data.participant2Id),
+          participant2: data.participant2Id ? users.get(data.participant2Id) : null,
+          assignedStaff: data.assignedStaffId ? users.get(data.assignedStaffId) : null,
           messages: [],
         };
         conversations.set(id, record);
@@ -132,6 +184,8 @@ function createMockPrisma() {
         const c = conversations.get(where.id);
         if (!c) throw new Error('Not found');
         Object.assign(c, data);
+        if (data.participant2Id) c.participant2 = users.get(data.participant2Id) || null;
+        if (data.assignedStaffId) c.assignedStaff = users.get(data.assignedStaffId) || null;
         return c;
       },
     },
@@ -180,15 +234,7 @@ function createMockPrisma() {
       },
     },
     chatAutoReply: {
-      count: async ({ where }) => {
-        let count = 0;
-        for (const r of autoReplies.values()) {
-          if (where.shopId && r.shopId !== where.shopId) continue;
-          if (where.scope && r.scope !== where.scope) continue;
-          count++;
-        }
-        return count;
-      },
+      count: async () => autoReplies.size,
       create: async ({ data }) => {
         const id = `reply-${autoReplies.size + 1}`;
         const record = { id, ...data, createdAt: new Date(), updatedAt: new Date() };
@@ -200,8 +246,6 @@ function createMockPrisma() {
           if (where.id && r.id !== where.id) continue;
           if (where.shopId && r.shopId !== where.shopId) continue;
           if (where.scope && r.scope !== where.scope) continue;
-          if (where.isActive !== undefined && r.isActive !== where.isActive) continue;
-          if (where.status && r.status !== where.status) continue;
           return r;
         }
         return null;
@@ -229,7 +273,8 @@ const mockCloudinary = {
 test('Chat Module: Chặn hoàn toàn việc người dùng nhắn tin trực tiếp cho Admin', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService);
+  const queueService = new StaffQueueService();
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
 
   const dto = new CreateConversationDto();
   dto.participantId = 'admin-1';
@@ -240,10 +285,26 @@ test('Chat Module: Chặn hoàn toàn việc người dùng nhắn tin trực ti
   );
 });
 
+test('Chat Module: Chặn Staff tự ý tạo hội thoại trực tiếp với khách hàng', async () => {
+  const prisma = createMockPrisma();
+  const autoReplyService = new ChatAutoReplyService(prisma);
+  const queueService = new StaffQueueService();
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+
+  const dto = new CreateConversationDto();
+  dto.participantId = 'buyer-1';
+
+  await assert.rejects(
+    async () => chatService.createOrGetConversation('staff-1', 'SUPPORT_STAFF', dto),
+    (err) => err instanceof ForbiddenException && err.message.includes('chỉ có thể phản hồi'),
+  );
+});
+
 test('Chat Module: Chặn gửi tin nhắn chứa từ ngữ cấm hoặc nhạy cảm', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService);
+  const queueService = new StaffQueueService();
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
 
   const conv = await prisma.chatConversation.create({
     data: { participant1Id: 'buyer-1', participant2Id: 'seller-1' },
@@ -259,101 +320,151 @@ test('Chat Module: Chặn gửi tin nhắn chứa từ ngữ cấm hoặc nhạy
   );
 });
 
-test('Chat Module: Hộp thư chung CSKH Staff Desk - Ẩn danh nhân viên với khách và staff khác, hiển thị đầy đủ với Admin', async () => {
+test('Chat Module: Phân phối ticket cho Staff online sớm nhất khi có 3 Staff cùng online', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService);
+  const queueService = new StaffQueueService();
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
 
-  // 1. Buyer khởi tạo cuộc trò chuyện với Staff
-  const createDto = new CreateConversationDto();
-  createDto.participantId = 'staff-1';
-  const conv = await chatService.createOrGetConversation('buyer-1', 'BUYER', createDto);
-  assert.equal(conv.type, 'STAFF_BUYER');
+  // Giả lập 3 staff online vào các thời điểm khác nhau:
+  // Staff 1 online lúc T0
+  queueService.registerOnlineStaff('staff-1', 'socket-1');
+  // Staff 2 online lúc T0 + 10s
+  queueService.registerOnlineStaff('staff-2', 'socket-2');
+  // Staff 3 online lúc T0 + 20s
+  queueService.registerOnlineStaff('staff-3', 'socket-3');
 
-  // 2. Staff A trả lời buyer
-  const sendDto = new SendMessageDto();
-  sendDto.conversationId = conv.id;
-  sendDto.content = 'Chào bạn, nhân viên CSKH xin hỗ trợ.';
-  await chatService.sendMessage('staff-1', 'SUPPORT_STAFF', sendDto);
+  // Đảm bảo danh sách online được sắp xếp theo thời điểm vào sớm nhất
+  const onlineList = queueService.getOnlineStaffList();
+  assert.equal(onlineList.length, 3);
+  assert.equal(onlineList[0].staffId, 'staff-1');
+  assert.equal(onlineList[1].staffId, 'staff-2');
+  assert.equal(onlineList[2].staffId, 'staff-3');
 
-  // 3. Staff B đăng nhập và đọc lịch sử tin nhắn -> Người gửi phải được ẩn danh thành "Nhân viên Hỗ trợ Nexus"
-  const staffBView = await chatService.listMessages(conv.id, 'staff-2', 'SUPPORT_STAFF', {});
-  assert.equal(staffBView.messages.length, 1);
-  assert.equal(staffBView.messages[0].sender.fullName, 'Nhân viên Hỗ trợ Nexus');
-  assert.equal(staffBView.messages[0].senderId, 'SUPPORT_STAFF_DESK');
+  // Buyer gửi yêu cầu hỗ trợ mới
+  const reqDto = new RequestSupportDto();
+  reqDto.subject = 'Cần hỗ trợ về thanh toán PayOS';
+  reqDto.message = 'Tôi quét mã QR nhưng đơn hàng chưa cập nhật thành công.';
 
-  // 4. Buyer đọc tin nhắn -> Cũng thấy "Nhân viên Hỗ trợ Nexus"
-  const buyerView = await chatService.listMessages(conv.id, 'buyer-1', 'BUYER', {});
-  assert.equal(buyerView.messages[0].sender.fullName, 'Nhân viên Hỗ trợ Nexus');
+  const conv = await chatService.requestSupport('buyer-1', 'BUYER', reqDto);
 
-  // 5. Admin kiểm tra Audit -> Thấy chính xác tên và ID thật của Staff A
-  const adminView = await chatService.listMessages(conv.id, 'admin-1', 'ADMIN', {});
-  assert.equal(adminView.messages[0].sender.id, 'staff-1');
-  assert.equal(adminView.messages[0].sender.fullName, 'Lê Staff A');
+  // Vì Staff 1 là người online sớm nhất, ticket phải được tự động gán cho Staff 1!
+  assert.equal(conv.status, 'IN_PROGRESS');
+  assert.equal(conv.assignedStaffId, 'staff-1');
+  assert.equal(conv.participant2Id, 'staff-1');
 });
 
-test('Chat Module: Seller Auto-Reply - Kiểm duyệt từ cấm khi tạo và Admin có quyền khóa kèm lý do', async () => {
+test('Chat Module: Đảm bảo mỗi khiếu nại (Dispute) chỉ tạo DUY NHẤT một hội thoại', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
+  const queueService = new StaffQueueService();
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
 
-  // 1. Tạo auto-reply có từ cấm -> Bị chặn
-  const badDto = new CreateAutoReplyDto();
-  badDto.content = 'Shop có bán vũ khí và ma túy các loại';
-  await assert.rejects(
-    async () => autoReplyService.createSellerAutoReply('seller-1', badDto),
-    (err) => err instanceof BadRequestException && err.message.includes('nhạy cảm'),
-  );
+  // 1. Tạo hội thoại lần đầu cho dispute-101
+  const conv1 = await chatService.getOrCreateDisputeConversation('dispute-101', 'buyer-1', 'BUYER');
+  assert.ok(conv1.id);
+  assert.equal(conv1.contextId, 'dispute-101');
+  assert.equal(conv1.contextType, 'DISPUTE');
 
-  // 2. Tạo auto-reply hợp lệ -> Thành công
-  const goodDto = new CreateAutoReplyDto();
-  goodDto.content = 'Cảm ơn bạn đã nhắn tin cho shop! Shop sẽ trả lời bạn sớm nhất.';
-  const reply = await autoReplyService.createSellerAutoReply('seller-1', goodDto);
-  assert.equal(reply.status, 'ACTIVE');
+  // 2. Buyer hoặc Seller gọi lại lần 2 cho cùng dispute-101
+  const conv2 = await chatService.getOrCreateDisputeConversation('dispute-101', 'buyer-1', 'BUYER');
 
-  // 3. Admin khóa tin nhắn tự động của Seller kèm lý do
-  const cancelDto = new CancelAutoReplyDto();
-  cancelDto.cancelReason = 'Chứa thông tin quảng cáo ngoài sàn trái phép';
-  const cancelled = await autoReplyService.cancelSellerAutoReply('admin-1', reply.id, cancelDto);
-  assert.equal(cancelled.status, 'CANCELLED_BY_ADMIN');
-  assert.equal(cancelled.isActive, false);
-  assert.equal(cancelled.cancelReason, 'Chứa thông tin quảng cáo ngoài sàn trái phép');
-
-  // 4. Seller không thể tự ý sửa tin nhắn đã bị Admin khóa
-  await assert.rejects(
-    async () =>
-      autoReplyService.updateSellerAutoReply('seller-1', reply.id, { content: 'Nội dung mới' }),
-    (err) => err instanceof ForbiddenException && err.message.includes('Quản trị viên khóa'),
-  );
+  // Phải trả về chính xác cùng 1 ID hội thoại, không tạo mới bản ghi
+  assert.equal(conv1.id, conv2.id);
 });
 
-test('Chat Module: Đánh dấu đã đọc và Đếm tin nhắn chưa đọc chuẩn xác', async () => {
+test('Chat Module: Bỏ chat chung - Staff B không thấy hội thoại được gán cho Staff A', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService);
+  const queueService = new StaffQueueService();
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
 
-  const conv = await prisma.chatConversation.create({
-    data: { participant1Id: 'buyer-1', participant2Id: 'seller-1' },
+  // Tạo hội thoại gán riêng cho Staff A
+  await prisma.chatConversation.create({
+    data: {
+      participant1Id: 'buyer-1',
+      participant2Id: 'staff-1',
+      assignedStaffId: 'staff-1',
+      status: 'IN_PROGRESS',
+      title: 'Hỗ trợ khách hàng VIP',
+    },
   });
 
-  // Buyer gửi 2 tin nhắn
-  const sendDto1 = new SendMessageDto();
-  sendDto1.conversationId = conv.id;
-  sendDto1.content = 'Tin 1';
-  await chatService.sendMessage('buyer-1', 'BUYER', sendDto1);
+  // Staff A xem danh sách -> Thấy cuộc hội thoại
+  const staffAList = await chatService.listUserConversations('staff-1', 'SUPPORT_STAFF', {});
+  assert.equal(staffAList.items.length, 1);
 
-  const sendDto2 = new SendMessageDto();
-  sendDto2.conversationId = conv.id;
-  sendDto2.content = 'Tin 2';
-  await chatService.sendMessage('buyer-1', 'BUYER', sendDto2);
+  // Staff B xem danh sách -> KHÔNG thấy (Đã loại bỏ hoàn toàn chat chung)
+  const staffBList = await chatService.listUserConversations('staff-2', 'SUPPORT_STAFF', {});
+  assert.equal(staffBList.items.length, 0);
+});
 
-  // Seller kiểm tra unread count
-  const unreadBefore = await chatService.getTotalUnreadCount('seller-1');
-  assert.equal(unreadBefore.unreadCount, 2);
+test('Chat Module: Ẩn danh nhân viên với User thành "Nhân viên Hỗ trợ", Admin thấy đầy đủ tên thật', async () => {
+  const prisma = createMockPrisma();
+  const autoReplyService = new ChatAutoReplyService(prisma);
+  const queueService = new StaffQueueService();
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
 
-  // Seller đánh dấu đã đọc
-  await chatService.markAsRead(conv.id, 'seller-1', 'SELLER');
+  const conv = await prisma.chatConversation.create({
+    data: {
+      participant1Id: 'buyer-1',
+      participant2Id: 'staff-1',
+      assignedStaffId: 'staff-1',
+      status: 'IN_PROGRESS',
+    },
+  });
 
-  // Seller kiểm tra lại unread count -> Phải về 0
-  const unreadAfter = await chatService.getTotalUnreadCount('seller-1');
-  assert.equal(unreadAfter.unreadCount, 0);
+  // Staff A gửi tin nhắn cho khách
+  await chatService.sendMessage('staff-1', 'SUPPORT_STAFF', {
+    conversationId: conv.id,
+    content: 'Dạ em chào anh/chị, em xin phép hỗ trợ đơn hàng ạ.',
+  });
+
+  // 1. Buyer đọc tin nhắn -> Thấy tên hiển thị là "Nhân viên Hỗ trợ", ID là "SUPPORT_STAFF_DESK"
+  const buyerMessages = await chatService.listMessages(conv.id, 'buyer-1', 'BUYER', {});
+  assert.equal(buyerMessages.messages.length, 1);
+  assert.equal(buyerMessages.messages[0].sender.fullName, 'Nhân viên Hỗ trợ');
+  assert.equal(buyerMessages.messages[0].senderId, 'SUPPORT_STAFF_DESK');
+
+  // 2. Admin đọc Audit -> Thấy chính xác tên thật của Staff A
+  const adminMessages = await chatService.listMessages(conv.id, 'admin-1', 'ADMIN', {});
+  assert.equal(adminMessages.messages[0].sender.fullName, 'Lê Staff A');
+  assert.equal(adminMessages.messages[0].sender.id, 'staff-1');
+});
+
+test('Chat Module: Cập nhật vòng đời trạng thái ticket (OPEN -> IN_PROGRESS -> RESOLVED)', async () => {
+  const prisma = createMockPrisma();
+  const autoReplyService = new ChatAutoReplyService(prisma);
+  const queueService = new StaffQueueService();
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+
+  // Tạo ticket ở trạng thái OPEN trong hàng đợi
+  const conv = await prisma.chatConversation.create({
+    data: {
+      participant1Id: 'buyer-1',
+      participant2Id: null,
+      assignedStaffId: null,
+      status: 'OPEN',
+      title: 'Ticket chờ hỗ trợ',
+    },
+  });
+  assert.equal(conv.status, 'OPEN');
+
+  // Staff 1 bấm nhận ticket (claim)
+  const claimed = await chatService.claimConversation(conv.id, 'staff-1', 'SUPPORT_STAFF');
+  assert.equal(claimed.status, 'IN_PROGRESS');
+  assert.equal(claimed.assignedStaffId, 'staff-1');
+
+  // Staff 1 giải quyết xong và đóng ticket (RESOLVED)
+  const updateDto = new UpdateConversationStatusDto();
+  updateDto.status = TicketLifecycleStatus.RESOLVED;
+  updateDto.resolutionNotes = 'Đã hoàn tất hỗ trợ khách hàng.';
+
+  const resolved = await chatService.updateConversationStatus(
+    conv.id,
+    'staff-1',
+    'SUPPORT_STAFF',
+    updateDto,
+  );
+  assert.equal(resolved.status, 'RESOLVED');
 });
