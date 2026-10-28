@@ -2,7 +2,10 @@ export interface ProductShopInfo {
   id?: string;
   name: string;
   verified: boolean;
+  avatarUrl?: string;
   trustScore?: number;
+  trustLevel?: string;
+  isSellerActive?: boolean;
   responseRate?: string;
 }
 
@@ -19,6 +22,12 @@ export interface ProductDetail {
   reviewsCount?: number;
   soldCount?: number;
   categoryName?: string;
+  category?: {
+    id: string;
+    name: string;
+    slug?: string;
+    parent?: { id: string; name: string } | null;
+  } | null;
   images: string[];
   is3d?: boolean;
   isAuction?: boolean;

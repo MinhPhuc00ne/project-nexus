@@ -98,6 +98,35 @@ function ChatPanel({
   };
 
   useEffect(() => {
+    const handleOpenChatEvent = async (event: Event) => {
+      const e = event as CustomEvent<{ sellerId?: string; shopName?: string }>;
+      const targetSellerId = e.detail?.sellerId;
+      setOpen(true);
+      if (!targetSellerId) return;
+
+      setCreating(true);
+      setPanelError('');
+      try {
+        const conversation = await createChatConversation({
+          participantId: targetSellerId,
+          type: 'BUYER_SELLER',
+        });
+        setActive(conversation);
+        setRevision((v) => v + 1);
+      } catch (err) {
+        setPanelError(getChatErrorMessage(err));
+      } finally {
+        setCreating(false);
+      }
+    };
+
+    window.addEventListener('nexus:open-chat', handleOpenChatEvent);
+    return () => {
+      window.removeEventListener('nexus:open-chat', handleOpenChatEvent);
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     const refresh = (): void => {
       void getChatUnreadCount()

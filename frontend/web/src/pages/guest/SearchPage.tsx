@@ -2,18 +2,26 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeftOutlined, SearchOutlined, CloseOutlined } from '@ant-design/icons';
 import CatalogListing from '../../components/products/CatalogListing';
+import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
 
 export default function SearchPage() {
   const [params, setParams] = useSearchParams();
-  const search = params.get('q')?.trim() ?? '';
-  const categoryId = params.get('categoryId')?.trim() ?? '';
-  const categoryName = params.get('categoryName')?.trim() ?? '';
+  const rawSearch = params.get('q')?.trim() ?? '';
+  const rawCategoryId = params.get('categoryId')?.trim() ?? '';
+  const rawCategoryName = params.get('categoryName')?.trim() ?? '';
 
-  const [inputVal, setInputVal] = useState(search);
+  const [inputVal, setInputVal] = useState(rawSearch);
+  const [categories, setCategories] = useState<CategoryNode[]>([]);
 
   useEffect(() => {
-    setInputVal(search);
-  }, [search]);
+    setInputVal(rawSearch);
+  }, [rawSearch]);
+
+  useEffect(() => {
+    void getCategoriesApi()
+      .then((data) => setCategories(data || []))
+      .catch(() => {});
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +42,24 @@ export default function SearchPage() {
     setParams(nextParams);
   };
 
-  const pageTitle = () => {
+  const matchedCategory = rawCategoryId
+    ? categories.find((c) => c.id === rawCategoryId)
+    : rawSearch
+      ? categories.find(
+          (c) =>
+            c.name.toLowerCase() === rawSearch.toLowerCase() ||
+            c.name.toLowerCase().includes(rawSearch.toLowerCase()),
+        )
+      : undefined;
+
+  const categoryId = rawCategoryId || matchedCategory?.id || '';
+  const categoryName = rawCategoryName || matchedCategory?.name || '';
+  const isCategoryExactSearch = Boolean(
+    matchedCategory && rawSearch.toLowerCase() === matchedCategory.name.toLowerCase(),
+  );
+  const search = isCategoryExactSearch ? '' : rawSearch;
+
+  const renderPageTitle = () => {
     if (search && categoryName) {
       return (
         <>
@@ -43,17 +68,20 @@ export default function SearchPage() {
         </>
       );
     }
-    if (search) {
-      return (
-        <>
-          Kết quả tìm kiếm: <span className="text-blue-600 font-semibold">{search}</span>
-        </>
-      );
-    }
     if (categoryName) {
       return (
         <>
           Danh mục: <span className="text-blue-600 font-semibold">{categoryName}</span>
+          {rawSearch && (
+            <span className="text-base font-normal text-slate-500"> (từ khóa: "{rawSearch}")</span>
+          )}
+        </>
+      );
+    }
+    if (search) {
+      return (
+        <>
+          Kết quả tìm kiếm: <span className="text-blue-600 font-semibold">{search}</span>
         </>
       );
     }
@@ -80,9 +108,9 @@ export default function SearchPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{pageTitle()}</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{renderPageTitle()}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Khám phá hàng ngàn sản phẩm cao cấp, chính hãng với cam kết bảo chứng từ NEXUS.
+            Khám phá các sản phẩm chất lượng được kiểm định từ các Seller uy tín trên NEXUS.
           </p>
 
           {(categoryId || categoryName) && (

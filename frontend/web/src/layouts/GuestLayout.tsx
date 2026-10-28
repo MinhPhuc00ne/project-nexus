@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import Footer from '../components/footer';
@@ -7,6 +8,12 @@ import { getStoredToken, getStoredUser } from '../services/auth';
 function GuestLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname]);
 
   if (pathname === '/' && getStoredToken() && getStoredUser()?.role === Role.SUPPORT_STAFF) {
     return <Navigate to="/staff/inbox" replace />;

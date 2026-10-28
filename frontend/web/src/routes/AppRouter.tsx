@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import ProtectedRoute from './ProtectedRoute';
+import ScrollToTop from '../components/common/ScrollToTop';
 import ChatWidget from '../components/chat/ChatWidget';
 import NonAdminLayout from '../layouts/NonAdminLayout';
 import AuthLayout from '../layouts/AuthLayout';
@@ -81,6 +82,7 @@ const AdminCategoriesPage = lazy(() => import('../pages/admin/AdminCategoriesPag
 function AppRouter() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <RouteErrorBoundary>
         <Suspense
           fallback={
