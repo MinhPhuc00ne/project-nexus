@@ -1,9 +1,16 @@
 import { useCallback, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeftOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { Star, Store, Heart } from 'lucide-react';
 import { getProductByIdAsync } from '../../services/products.service';
 import type { ProductDetail } from '../../types/product.types';
 import { addToCart } from '../../services/cart';
+import { useAuth } from '../../contexts/AuthContext';
+import {
+  getBuyerWishlist,
+  addBuyerWishlistItem,
+  removeBuyerWishlistItem,
+} from '../../services/wishlist.service';
 import ProductImageGallery from '../../components/productDetail/ProductImageGallery';
 import ProductInfoTabs from '../../components/productDetail/ProductInfoTabs';
 import RelatedProductsSection from '../../components/productDetail/RelatedProductsSection';
@@ -43,12 +50,36 @@ export default function ProductDetailPage() {
 }
 
 function ProductContent({ product }: { product: ProductDetail }) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isInWishlist, setIsInWishlist] = useState(() =>
+    getBuyerWishlist(user?.id).some((i) => i.id === product.id),
+  );
   const canBuy = product.stock > 0;
+
+  const toggleWishlist = () => {
+    if (isInWishlist) {
+      removeBuyerWishlistItem(user?.id, product.id);
+      setIsInWishlist(false);
+      setToast({ type: 'success', message: 'Đã xóa khỏi danh sách yêu thích.' });
+    } else {
+      addBuyerWishlistItem(user?.id, {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        img: product.images[0] || '',
+        shopName: product.shop.name,
+        category: product.categoryName,
+        inStock: product.stock > 0,
+      });
+      setIsInWishlist(true);
+      setToast({ type: 'success', message: 'Đã lưu vào danh sách yêu thích.' });
+    }
+  };
 
   async function add(buyNow: boolean) {
     if (!canBuy || quantity < 1 || quantity > product.stock || isSubmitting) return;
@@ -121,10 +152,55 @@ function ProductContent({ product }: { product: ProductDetail }) {
             selectedImgIdx={selectedImgIdx}
             onSelectImage={setSelectedImgIdx}
           />
-          <div className="space-y-6 lg:col-span-7">
-            <h1 className="text-2xl font-bold text-slate-900">{product.name}</h1>
-            <p className={canBuy ? 'text-emerald-700' : 'text-slate-500'}>
-              {canBuy ? `Còn ${product.stock} sản phẩm` : 'Sản phẩm hiện không có hàng để bán'}
+          <div className="space-y-5 lg:col-span-7">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 leading-snug">{product.name}</h1>
+              <div className="mt-2.5 flex flex-wrap items-center gap-4 text-xs">
+                {/* Rating & Số lượng đánh giá */}
+                <div className="flex items-center gap-1.5 pr-4 border-r border-slate-200">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Star
+                        key={s}
+                        size={14}
+                        className={
+                          (product.reviewsCount ?? 0) > 0 && s <= Math.round(product.rating ?? 0)
+                            ? 'fill-amber-400 text-amber-400'
+                            : 'text-slate-300'
+                        }
+                      />
+                    ))}
+                  </div>
+                  <span className="font-extrabold text-amber-700">
+                    {(product.reviewsCount ?? 0) > 0
+                      ? (product.rating ?? 0).toFixed(1)
+                      : 'Chưa có đánh giá'}
+                  </span>
+                  <span className="text-slate-400">({product.reviewsCount ?? 0} đánh giá)</span>
+                </div>
+
+                {/* Tên Shop Bán */}
+                <div className="flex items-center gap-1.5 text-slate-600">
+                  <Store size={14} className="text-blue-600 shrink-0" />
+                  <span>Gian hàng:</span>
+                  {product.shop.id ? (
+                    <Link
+                      to={`/shop/${product.shop.id}`}
+                      className="font-bold text-blue-600 hover:text-blue-700 hover:underline transition"
+                    >
+                      {product.shop.name}
+                    </Link>
+                  ) : (
+                    <span className="font-bold text-slate-800">{product.shop.name}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <p className={canBuy ? 'text-emerald-700 font-medium' : 'text-slate-500'}>
+              {canBuy
+                ? `✓ Còn ${product.stock} sản phẩm trong kho`
+                : 'Sản phẩm hiện không có hàng để bán'}
             </p>
             <p className="rounded-xl bg-blue-50 p-5 text-3xl font-bold text-blue-600">
               {product.formattedPrice}
@@ -162,6 +238,19 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-40"
               >
                 Mua ngay
+              </button>
+              <button
+                type="button"
+                onClick={toggleWishlist}
+                title={isInWishlist ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+                aria-label={isInWishlist ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+                className={`p-3 rounded-xl border transition flex items-center justify-center cursor-pointer ${
+                  isInWishlist
+                    ? 'border-rose-200 bg-rose-50 text-rose-600'
+                    : 'border-slate-200 bg-white text-slate-500 hover:text-rose-600 hover:border-rose-200'
+                }`}
+              >
+                <Heart size={20} className={isInWishlist ? 'fill-rose-500 text-rose-500' : ''} />
               </button>
             </div>
             <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">

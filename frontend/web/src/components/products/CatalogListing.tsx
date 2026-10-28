@@ -7,17 +7,26 @@ import type { ProductDetail } from '../../types/product.types';
 
 export default function CatalogListing({
   search = '',
+  categoryId = '',
   preview = false,
 }: {
   search?: string;
+  categoryId?: string;
   preview?: boolean;
 }) {
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<NonNullable<CatalogQuery['sortBy']>>('newest');
   const limit = preview ? 8 : 12;
   const load = useCallback(
-    () => getProductsPage({ search: search.trim(), page, limit, sortBy }),
-    [search, page, limit, sortBy],
+    () =>
+      getProductsPage({
+        search: search.trim() || undefined,
+        categoryId: categoryId.trim() || undefined,
+        page,
+        limit,
+        sortBy,
+      }),
+    [search, categoryId, page, limit, sortBy],
   );
   const { data, loading, error, retry } = useProductResource(load);
 

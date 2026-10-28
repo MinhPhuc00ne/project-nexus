@@ -1,16 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Trash2,
   ArrowLeft,
-  Minus,
-  Plus,
   ShoppingBag,
   ArrowRight,
-  ShieldCheck,
   CheckCircle2,
   ChevronRight,
-  AlertTriangle,
   Loader2,
 } from 'lucide-react';
 import {
@@ -24,6 +19,7 @@ import {
 } from '../../services/cart';
 import CheckoutModal, { type DeliveryAddress } from '../../components/cart/CheckoutModal';
 import CartOrderSummary from '../../components/cart/CartOrderSummary';
+import CartItemList from '../../components/cart/CartItemList';
 import { getStoredToken } from '../../services/auth';
 
 export type { DeliveryAddress };
@@ -36,7 +32,6 @@ export default function CartPage() {
     null,
   );
   const [toast, setToast] = useState<string | null>(null);
-
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
 
   useEffect(() => {
@@ -96,7 +91,6 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
-      {/* Toast popup */}
       {toast && (
         <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 rounded-xl bg-slate-900 px-5 py-3.5 text-white shadow-2xl animate-fade-in">
           <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
@@ -149,164 +143,14 @@ export default function CartPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-8 space-y-4">
-              <div className="bg-white rounded-xl border border-slate-200 px-5 py-3.5 flex items-center justify-between text-xs font-bold text-slate-600 shadow-sm">
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={(e) => toggleSelectAll(e.target.checked)}
-                    className="h-4 w-4 cursor-pointer rounded accent-[#f24e1e] focus:ring-orange-400"
-                  />
-                  <span>Chọn tất cả ({items.length} món)</span>
-                </label>
-                <div className="hidden sm:flex items-center gap-12 pr-6">
-                  <span className="w-24 text-right">Đơn giá</span>
-                  <span className="w-24 text-center">Số lượng</span>
-                  <span className="w-28 text-right">Số tiền</span>
-                  <span className="w-8"></span>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 shadow-sm overflow-hidden">
-                {items.map((item) => {
-                  const targetUrl = item.productId
-                    ? `/product/${item.productId}`
-                    : `/product/${item.id}`;
-                  return (
-                    <div
-                      key={item.id}
-                      className={`p-5 flex flex-col gap-3 transition ${
-                        item.isOutOfStock ? 'bg-red-50/40 opacity-80' : 'hover:bg-slate-50/50'
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                          <input
-                            type="checkbox"
-                            checked={Boolean(item.selected)}
-                            disabled={item.isOutOfStock}
-                            onChange={() => toggleSelectItem(item.id)}
-                            className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[#f24e1e] focus:ring-orange-400 disabled:opacity-50"
-                          />
-                          <Link
-                            to={targetUrl}
-                            className="shrink-0 w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 p-1 overflow-hidden flex items-center justify-center"
-                          >
-                            <img
-                              src={item.img}
-                              alt={item.name}
-                              className="w-full h-full object-contain"
-                            />
-                          </Link>
-                          <div className="min-w-0 flex-1">
-                            {item.shopName && (
-                              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-0.5">
-                                {item.shopName}
-                              </span>
-                            )}
-                            <Link
-                              to={targetUrl}
-                              className="text-xs font-bold text-slate-900 hover:text-[#f24e1e] transition line-clamp-2"
-                            >
-                              {item.name}
-                            </Link>
-                            <div className="flex items-center gap-2 mt-1">
-                              {item.isOutOfStock ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">
-                                  Hết hàng
-                                </span>
-                              ) : item.isStockInsufficient ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                                  Chỉ còn lại {item.availableQty} sản phẩm
-                                </span>
-                              ) : (
-                                <span className="text-[11px] text-slate-400">
-                                  Phân loại: Bản Tiêu Chuẩn • Bảo chứng Escrow
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                          <div className="w-24 text-right">
-                            <span className="text-xs font-semibold text-slate-700 block">
-                              {Number(item.price).toLocaleString('vi-VN')} ₫
-                            </span>
-                            {item.hasPriceChanged && item.priceAtAdded && (
-                              <span className="text-[10px] text-slate-400 line-through block">
-                                {Number(item.priceAtAdded).toLocaleString('vi-VN')} ₫
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 overflow-hidden">
-                            <button
-                              type="button"
-                              onClick={() => handleUpdateQty(item.id, item.qty - 1)}
-                              className="px-2 py-1 hover:bg-slate-200 transition text-slate-600 cursor-pointer"
-                            >
-                              <Minus size={12} />
-                            </button>
-                            <span className="w-8 text-center text-xs font-bold text-slate-900 bg-white py-1">
-                              {item.qty}
-                            </span>
-                            <button
-                              type="button"
-                              disabled={
-                                item.availableQty !== undefined && item.qty >= item.availableQty
-                              }
-                              onClick={() => handleUpdateQty(item.id, item.qty + 1)}
-                              className="px-2 py-1 hover:bg-slate-200 transition text-slate-600 cursor-pointer disabled:opacity-40"
-                            >
-                              <Plus size={12} />
-                            </button>
-                          </div>
-
-                          <div className="w-28 text-right text-sm font-extrabold text-[#f24e1e]">
-                            {Number(item.price * item.qty).toLocaleString('vi-VN')} ₫
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => handleRemove(item.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                            title="Xóa sản phẩm"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Thông báo điều chỉnh giá từ Shop */}
-                      {item.hasPriceChanged && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px]">
-                          <AlertTriangle size={14} className="shrink-0 text-amber-600" />
-                          <span>
-                            Giá sản phẩm vừa được người bán cập nhật: từ{' '}
-                            <strong>{Number(item.priceAtAdded).toLocaleString('vi-VN')} ₫</strong>{' '}
-                            sang <strong>{Number(item.price).toLocaleString('vi-VN')} ₫</strong>.
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 flex items-start gap-3">
-                <ShieldCheck size={20} className="text-indigo-600 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="font-bold mb-0.5">Thanh toán Ký quỹ Bảo chứng Escrow an toàn</h4>
-                  <p className="text-indigo-700 leading-relaxed text-[11px]">
-                    Toàn bộ đơn hàng được giữ tiền ký quỹ tại cổng PayOS / Stripe. Người bán chỉ
-                    nhận được khoản thanh toán sau khi quý khách đồng kiểm bưu kiện và xác nhận hoàn
-                    tất.
-                  </p>
-                </div>
-              </div>
-            </div>
+            <CartItemList
+              items={items}
+              isAllSelected={isAllSelected}
+              onToggleSelectAll={toggleSelectAll}
+              onToggleSelectItem={toggleSelectItem}
+              onUpdateQty={handleUpdateQty}
+              onRemoveItem={handleRemove}
+            />
 
             <CartOrderSummary
               selectedItems={selectedItems}
@@ -350,9 +194,7 @@ export default function CartPage() {
         onClose={() => setShowCheckoutModal(false)}
         selectedItems={selectedItems}
         grandTotal={grandTotal}
-        onCheckoutSuccess={() => {
-          setItems([]);
-        }}
+        onCheckoutSuccess={() => setItems([])}
         showToast={showToast}
       />
     </div>

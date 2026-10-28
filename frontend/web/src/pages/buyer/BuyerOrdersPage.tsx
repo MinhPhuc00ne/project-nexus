@@ -60,28 +60,28 @@ export default function BuyerOrdersPage() {
     }
   };
 
-  const displayOrders: DisplayOrder[] = realOrders.map((o) => {
-    const firstItem = o.items[0];
-    const title = firstItem?.product?.title || `Đơn hàng #${o.orderNumber}`;
+  const displayOrders: DisplayOrder[] = (Array.isArray(realOrders) ? realOrders : []).map((o) => {
+    const firstItem = o?.items?.[0];
+    const title = firstItem?.product?.title || `Đơn hàng #${o?.orderNumber ?? ''}`;
     const thumbnail =
       firstItem?.product?.thumbnail ||
       firstItem?.product?.images?.[0]?.url ||
       '/images/watches/watch-1.png';
-    const rawStatus = (o.status as TabStatus) || 'PENDING_PAYMENT';
+    const rawStatus = (o?.status as TabStatus) || 'PENDING_PAYMENT';
     const validStatus: Exclude<TabStatus, 'ALL'> =
       rawStatus in statusConfig ? (rawStatus as Exclude<TabStatus, 'ALL'>) : 'PENDING_PAYMENT';
 
     return {
-      id: o.id,
-      orderNumber: o.orderNumber,
-      shopName: o.seller?.fullName || 'Gian Hàng NEXUS',
+      id: o?.id ?? '',
+      orderNumber: o?.orderNumber ?? '',
+      shopName: o?.seller?.fullName || 'Gian Hàng NEXUS',
       product: title,
-      qty: o.items.reduce((s, it) => s + it.quantity, 0),
-      price: `${Number(o.totalAmount).toLocaleString('vi-VN')} ₫`,
-      date: new Date(o.createdAt).toLocaleDateString('vi-VN'),
+      qty: (o?.items ?? []).reduce((s, it) => s + (it?.quantity ?? 0), 0),
+      price: `${Number(o?.totalAmount ?? 0).toLocaleString('vi-VN')} ₫`,
+      date: o?.createdAt ? new Date(o.createdAt).toLocaleDateString('vi-VN') : '',
       status: validStatus,
       img: thumbnail,
-      itemsCount: o.items.length,
+      itemsCount: o?.items?.length ?? 0,
     };
   });
 
@@ -89,9 +89,9 @@ export default function BuyerOrdersPage() {
     const matchStatus = activeTab === 'ALL' || o.status === activeTab;
     const matchSearch =
       !search ||
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.orderNumber.toLowerCase().includes(search.toLowerCase()) ||
-      o.product.toLowerCase().includes(search.toLowerCase());
+      (o.id ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.orderNumber ?? '').toLowerCase().includes(search.toLowerCase()) ||
+      (o.product ?? '').toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
 

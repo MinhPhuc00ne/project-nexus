@@ -88,3 +88,66 @@ export interface UpdateSellerShopResult {
     'id' | 'storeName' | 'storeDescription' | 'phone' | 'businessEmail' | 'address' | 'updatedAt'
   >;
 }
+
+export interface ShopQuery {
+  search?: string;
+  city?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: 'reputation' | 'products' | 'newest';
+}
+
+export interface ShopListItem {
+  id: string;
+  name: string;
+  sellerFullName: string;
+  description: string | null;
+  avatarUrl: string | null;
+  reputationScore: number;
+  trustLevel: string;
+  isSellerActive: boolean;
+  address: {
+    city: string | null;
+    district: string | null;
+    formattedAddress: string | null;
+  } | null;
+  stats: {
+    totalProducts: number;
+  };
+  sampleProducts: Array<{
+    id: string;
+    title: string;
+    basePrice: number;
+    thumbnail: string | null;
+  }>;
+}
+
+export interface PaginatedShops {
+  items: ShopListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface ShopDetailResult {
+  shop: ShopListItem;
+  products: {
+    items: Array<{
+      id: string;
+      title: string;
+      description: string;
+      basePrice: number;
+      availableQty: number;
+      images: string[];
+      thumbnail?: string | null;
+      threeModelKey: string | null;
+      category: { id: string; name: string; slug?: string } | null;
+      seller: { id: string; fullName: string; reputationScore?: number } | null;
+    }>;
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}

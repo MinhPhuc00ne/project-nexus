@@ -1,29 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ShieldAlert,
   Plus,
   Clock,
   CheckCircle,
   XCircle,
-  MessageSquare,
   AlertTriangle,
-  ChevronDown,
-  ChevronUp,
   ShoppingBag,
-  ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getBuyerOrdersApi, disputeOrderApi, type BuyerOrder } from '../../services/orders';
+import CreateDisputeModal, { reasonLabels } from '../../components/disputes/CreateDisputeModal';
 
-import { MOCK_BUYER_DISPUTES, type BuyerDisputeReason, type BuyerDisputeStatus } from '../../mocks';
+export type BuyerDisputeStatus = 'ALL' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED';
+export type BuyerDisputeReason =
+  'NOT_RECEIVED' | 'ITEM_DEFECTIVE' | 'WRONG_ITEM' | 'COUNTERFEIT' | 'OTHER';
 
-type DisputeStatus = BuyerDisputeStatus;
-type DisputeReason = BuyerDisputeReason;
+export interface BuyerDisputeItem {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  productName: string;
+  img: string;
+  amount: number;
+  reason: BuyerDisputeReason;
+  status: Exclude<BuyerDisputeStatus, 'ALL'>;
+  createdAt: string;
+  updatedAt: string;
+  description: string;
+  sellerName: string;
+}
 
-const mockDisputes = MOCK_BUYER_DISPUTES;
-
-/* ─────────── Config ─────────── */
 const statusConfig: Record<
-  Exclude<DisputeStatus, 'ALL'>,
+  Exclude<BuyerDisputeStatus, 'ALL'>,
   { label: string; icon: React.ReactNode; cls: string }
 > = {
   OPEN: {
@@ -48,280 +58,208 @@ const statusConfig: Record<
   },
 };
 
-const reasonLabels: Record<DisputeReason, string> = {
-  NOT_RECEIVED: 'Không nhận được hàng',
-  ITEM_DEFECTIVE: 'Sản phẩm bị lỗi / hư hỏng',
-  WRONG_ITEM: 'Nhận sai sản phẩm',
-  COUNTERFEIT: 'Nghi ngờ hàng giả',
-  OTHER: 'Lý do khác',
-};
-
-const tabs: { key: DisputeStatus; label: string }[] = [
+const tabs: { key: BuyerDisputeStatus; label: string }[] = [
   { key: 'ALL', label: 'Tất cả' },
-  { key: 'OPEN', label: 'Đang chờ' },
-  { key: 'UNDER_REVIEW', label: 'Đang xem xét' },
+  { key: 'OPEN', label: 'Đang xử lý' },
   { key: 'RESOLVED', label: 'Đã giải quyết' },
   { key: 'REJECTED', label: 'Bị từ chối' },
 ];
 
-/* ─────────── New Dispute Form ─────────── */
-function NewDisputeForm({ onClose }: { onClose: () => void }) {
-  const [reason, setReason] = useState<DisputeReason>('NOT_RECEIVED');
-  const [orderId, setOrderId] = useState('');
-  const [desc, setDesc] = useState('');
-
-  return (
-    <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-5 space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          <ShieldAlert size={14} className="text-red-500" />
-          Mở khiếu nại mới
-        </h3>
-        <button
-          type="button"
-          onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 transition"
-        >
-          <XCircle size={16} />
-        </button>
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Mã đơn hàng *</label>
-        <input
-          type="text"
-          placeholder="VD: NX-20241020-001"
-          value={orderId}
-          onChange={(e) => setOrderId(e.target.value)}
-          className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
-        />
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Lý do khiếu nại *</label>
-        <select
-          value={reason}
-          onChange={(e) => setReason(e.target.value as DisputeReason)}
-          className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition appearance-none"
-        >
-          {Object.entries(reasonLabels).map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1">Mô tả chi tiết *</label>
-        <textarea
-          placeholder="Mô tả vấn đề bạn gặp phải một cách chi tiết…"
-          value={desc}
-          onChange={(e) => setDesc(e.target.value)}
-          rows={4}
-          className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition resize-none"
-        />
-        <p className="text-[11px] text-slate-400 mt-1">{desc.length}/500 ký tự</p>
-      </div>
-
-      <div className="flex gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
-        >
-          Huỷ bỏ
-        </button>
-        <button
-          type="button"
-          className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-bold transition shadow-sm"
-        >
-          Gửi khiếu nại
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────── Main Component ─────────── */
 export default function BuyerDisputesPage() {
-  const [activeTab, setActiveTab] = useState<DisputeStatus>('ALL');
-  const [showForm, setShowForm] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [disputes, setDisputes] = useState<BuyerDisputeItem[]>([]);
+  const [orders, setOrders] = useState<BuyerOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<BuyerDisputeStatus>('ALL');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState('');
+  const [reason, setReason] = useState<BuyerDisputeReason>('NOT_RECEIVED');
+  const [description, setDescription] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  const filtered = mockDisputes.filter((d) => activeTab === 'ALL' || d.status === activeTab);
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 3500);
+  };
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const ordersData = await getBuyerOrdersApi();
+      if (Array.isArray(ordersData)) {
+        setOrders(ordersData);
+        const mappedDisputes: BuyerDisputeItem[] = ordersData
+          .filter((o) => o?.status === 'DISPUTED')
+          .map((o) => ({
+            id: `disp-${o.id}`,
+            orderId: o.id,
+            orderNumber: o.orderNumber ?? '',
+            productName: o?.items?.[0]?.product?.title || `Đơn hàng #${o?.orderNumber ?? ''}`,
+            img: o?.items?.[0]?.product?.thumbnail || '/images/watches/watch-1.png',
+            amount: Number(o?.totalAmount ?? 0),
+            reason: 'ITEM_DEFECTIVE',
+            status: 'OPEN',
+            createdAt: o?.updatedAt || o?.createdAt || '',
+            updatedAt: o?.updatedAt || o?.createdAt || '',
+            description: 'Đơn hàng đang trong quy trình hòa giải Escrow NEXUS',
+            sellerName: o?.seller?.fullName || 'Gian Hàng NEXUS',
+          }));
+        setDisputes(mappedDisputes);
+      }
+    } catch {
+      setDisputes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  const handleSubmitDispute = async () => {
+    if (!selectedOrderId) {
+      showToast('Vui lòng chọn đơn hàng cần khiếu nại.');
+      return;
+    }
+    if (!description.trim()) {
+      showToast('Vui lòng nhập mô tả chi tiết lý do khiếu nại.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await disputeOrderApi(selectedOrderId, `[${reasonLabels[reason]}] ${description.trim()}`);
+      showToast('Đã gửi khiếu nại thành công! Tiền ký quỹ đã được phong tỏa để hòa giải.');
+      setShowCreateModal(false);
+      setSelectedOrderId('');
+      setDescription('');
+      void loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Không thể gửi khiếu nại.';
+      showToast(msg);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filtered = disputes.filter((d) => activeTab === 'ALL' || d.status === activeTab);
 
   return (
     <div className="space-y-5">
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 z-[9999] rounded-xl bg-slate-900 px-5 py-3 text-xs font-semibold text-white shadow-xl animate-fade-in">
+          {toastMsg}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
             <ShieldAlert size={18} className="text-red-500" />
-            Khiếu nại & Tranh chấp
+            Khiếu nại & Tranh chấp Escrow
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Quản lý yêu cầu hoàn tiền và khiếu nại chất lượng
+            Bảo vệ quyền lợi người mua, bảo chứng giải ngân an toàn bởi NEXUS
           </p>
         </div>
         <button
           type="button"
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-1.5 text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-3.5 py-2.5 rounded-xl transition shadow-sm"
+          onClick={() => setShowCreateModal(true)}
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition shadow-sm cursor-pointer"
         >
-          <Plus size={13} />
-          Mở khiếu nại
+          <Plus size={14} />
+          Tạo khiếu nại mới
         </button>
       </div>
 
-      {/* Notice */}
-      <div className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 flex items-start gap-3">
-        <AlertTriangle size={14} className="text-amber-600 shrink-0 mt-0.5" />
-        <p className="text-[11px] text-amber-700 leading-relaxed">
-          Khiếu nại có thể được mở trong vòng <strong>7 ngày</strong> kể từ khi nhận hàng hoặc khi
-          đơn hàng quá hạn giao. Chúng tôi sẽ phản hồi trong <strong>24-48 giờ</strong>.
-        </p>
-      </div>
-
-      {/* New Dispute Form */}
-      {showForm && <NewDisputeForm onClose={() => setShowForm(false)} />}
-
       {/* Filter Tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
-        {tabs.map((tab) => {
-          const count =
-            tab.key === 'ALL'
-              ? mockDisputes.length
-              : mockDisputes.filter((d) => d.status === tab.key).length;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
-                activeTab === tab.key
-                  ? 'bg-red-500 text-white shadow-sm shadow-red-500/20'
-                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              {tab.label}
-              {count > 0 && (
-                <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    activeTab === tab.key ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-3">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+              activeTab === tab.key
+                ? 'bg-red-600 text-white shadow-sm'
+                : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
-      {/* Dispute List */}
-      {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-slate-200 bg-white">
-          <ShieldAlert size={36} className="text-slate-300 mb-3" />
-          <p className="text-sm font-semibold text-slate-500">Không có khiếu nại nào</p>
-          <p className="text-xs text-slate-400 mt-1">Mọi giao dịch đều đang ổn 🎉</p>
+      {/* Modal */}
+      <CreateDisputeModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        orders={orders}
+        selectedOrderId={selectedOrderId}
+        setSelectedOrderId={setSelectedOrderId}
+        reason={reason}
+        setReason={setReason}
+        description={description}
+        setDescription={setDescription}
+        onSubmit={() => void handleSubmitDispute()}
+        submitting={submitting}
+      />
+
+      {/* List */}
+      {loading ? (
+        <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+          <Loader2 size={16} className="animate-spin text-red-600" /> Đang tải khiếu nại…
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
+          <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center text-red-400 mb-4">
+            <ShieldAlert size={28} />
+          </div>
+          <h3 className="text-sm font-bold text-slate-800 mb-1">Chưa có khiếu nại nào</h3>
+          <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
+            Tất cả giao dịch của bạn đều diễn ra thuận lợi. Nếu có bất kỳ vấn đề nào về sản phẩm,
+            bạn có thể mở khiếu nại để được hỗ trợ.
+          </p>
           <Link
             to="/buyer/orders"
-            className="mt-3 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm"
           >
-            <ShoppingBag size={13} />
-            Xem đơn hàng
+            <ShoppingBag size={14} />
+            Xem danh sách đơn hàng
           </Link>
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((dispute) => {
-            const s = statusConfig[dispute.status];
-            const isExpanded = expandedId === dispute.id;
-
+          {filtered.map((d) => {
+            const s = statusConfig[d.status] ?? statusConfig.OPEN;
             return (
               <div
-                key={dispute.id}
-                className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                key={d.id}
+                className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition"
               >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50/60 border-b border-slate-100">
-                  <span className="text-[11px] font-bold text-slate-500">
-                    #{dispute.id} • Đơn {dispute.orderId}
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <span className="text-xs font-bold text-slate-800">
+                    Đơn hàng #{d.orderNumber}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${s.cls}`}
+                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.cls}`}
                   >
-                    {s.icon}
-                    {s.label}
+                    {s.icon} {s.label}
                   </span>
                 </div>
-
-                {/* Body */}
-                <div className="flex items-start gap-4 px-4 py-4">
-                  <div className="h-12 w-12 shrink-0 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden flex items-center justify-center">
-                    <img
-                      src={dispute.img}
-                      alt={dispute.product}
-                      className="h-full w-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.opacity = '0.2';
-                      }}
-                    />
-                  </div>
+                <div className="pt-3 flex items-start gap-3">
+                  <img
+                    src={d.img}
+                    alt={d.productName}
+                    className="h-12 w-12 rounded-lg object-contain"
+                  />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 line-clamp-1">
-                      {dispute.product}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {reasonLabels[dispute.reason]}
-                    </p>
-                    <div className="flex items-center gap-3 mt-1.5">
-                      <span className="text-xs font-extrabold text-[#f24e1e]">
-                        {dispute.amount.toLocaleString('vi-VN')} ₫
-                      </span>
-                      <span className="text-[11px] text-slate-400 flex items-center gap-0.5">
-                        <MessageSquare size={10} />
-                        {dispute.messages} tin nhắn
-                      </span>
-                      <span className="text-[11px] text-slate-400">Mở {dispute.openDate}</span>
-                    </div>
-                    {dispute.resolution && (
-                      <div className="mt-2 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5">
-                        <CheckCircle size={11} />
-                        {dispute.resolution}
-                      </div>
-                    )}
+                    <p className="text-xs font-semibold text-slate-900">{d.productName}</p>
+                    <p className="text-[11px] text-slate-500 mt-1">{d.description}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedId(isExpanded ? null : dispute.id)}
-                    className="text-slate-400 hover:text-slate-600 transition p-1"
-                  >
-                    {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </button>
                 </div>
-
-                {/* Expanded – Chat preview */}
-                {isExpanded && (
-                  <div className="px-4 pb-4 pt-0 border-t border-slate-100">
-                    <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500 text-center">
-                      <MessageSquare size={20} className="mx-auto mb-2 text-slate-300" />
-                      <p className="font-semibold text-slate-600 mb-1">
-                        Kênh trao đổi với NEXUS Support
-                      </p>
-                      <p className="text-[11px]">
-                        Nhân viên hỗ trợ sẽ liên hệ qua kênh này trong 24-48 giờ làm việc.
-                      </p>
-                      <button
-                        type="button"
-                        className="mt-3 flex items-center gap-1 mx-auto text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
-                      >
-                        Mở hộp thoại chat <ArrowRight size={11} />
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             );
           })}

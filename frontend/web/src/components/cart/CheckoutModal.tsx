@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
 import Popup from '../Popup';
 import { clearCart, type CartItem } from '../../services/cart';
 import { getStoredToken } from '../../services/auth';
@@ -10,7 +9,7 @@ import {
   type BuyerOrder,
   type ShippingAddressInput,
 } from '../../services/orders';
-import { CheckCircle2, ShoppingBag, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2 } from 'lucide-react';
 import PayosQrModal from '../checkout/PayosQrModal';
 import CheckoutAddressSection from '../checkout/CheckoutAddressSection';
 import CheckoutPaymentMethod from '../checkout/CheckoutPaymentMethod';
@@ -34,8 +33,6 @@ export default function CheckoutModal({
   onCheckoutSuccess,
   showToast,
 }: CheckoutModalProps) {
-  const navigate = useNavigate();
-
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [customAddress, setCustomAddress] = useState<ShippingAddressInput>({
@@ -57,10 +54,10 @@ export default function CheckoutModal({
     if (!isOpen || !getStoredToken()) return;
     getAddresses()
       .then((list) => {
-        if (list && list.length > 0) {
+        if (Array.isArray(list) && list.length > 0) {
           setAddresses(list);
           const def = list.find((a) => a.isDefault) || list[0];
-          setSelectedAddressId(def.id);
+          setSelectedAddressId(def?.id ?? '');
         }
       })
       .catch(() => {
@@ -127,29 +124,38 @@ export default function CheckoutModal({
         itemIds: selectedItems.map((it) => String(it.id)),
       });
 
-      setCreatedOrders(res.orders || []);
-      setPayosPayment(res.payosPayment || null);
+      setCreatedOrders(Array.isArray(res?.orders) ? res.orders : []);
+      setPayosPayment(res?.payosPayment ?? null);
       setCheckoutSuccess(true);
       await clearCart();
       if (onCheckoutSuccess) onCheckoutSuccess();
     } catch (err: unknown) {
       console.error('Checkout failed:', err);
-      const msg = err instanceof Error ? err.message : 'Thanh toán thất bại. Vui lòng thử lại!';
+      const resData = (err as { response?: { data?: { message?: string | string[] } } })?.response
+        ?.data;
+      const serverMsg = resData?.message;
+      const msg = Array.isArray(serverMsg)
+        ? serverMsg.join(', ')
+        : typeof serverMsg === 'string'
+          ? serverMsg
+          : err instanceof Error
+            ? err.message
+            : 'Thanh toán thất bại. Vui lòng thử lại!';
       showToast(msg);
     } finally {
       setIsProcessingOrder(false);
     }
   };
 
+  const handleClose = () => {
+    setCheckoutSuccess(false);
+    onClose();
+  };
+
   return (
     <Popup
       isOpen={isOpen}
-      onClose={() => {
-        if (checkoutSuccess) {
-          navigate('/buyer/orders');
-        }
-        onClose();
-      }}
+      onClose={handleClose}
       title={checkoutSuccess ? 'Thanh Toán Thành Công' : 'Xác Nhận Đặt Hàng & Thanh Toán'}
       size={checkoutSuccess ? 'lg' : 'xl'}
     >
@@ -161,37 +167,33 @@ export default function CheckoutModal({
             </div>
 
             <div>
-              <h2 className="text-xl font-extrabold text-slate-900">Đặt Hàng Thành Công!</h2>
+              <h2 className="text-xl font-extrabold text-slate-900">Thanh Toán Thành Công!</h2>
               <p className="text-xs text-slate-500 mt-1">
                 {createdOrders.length > 0
                   ? `Mã đơn hàng: ${createdOrders.map((o) => o.orderNumber).join(', ')}`
-                  : 'Đơn hàng của bạn đã được ghi nhận và đưa vào cơ chế bảo chứng NEXUS Escrow.'}
+                  : 'Đơn hàng của bạn đã được thanh toán và bảo chứng bởi NEXUS Escrow.'}
               </p>
             </div>
 
             {payosPayment ? (
               <PayosQrModal payment={payosPayment} onCopySuccess={showToast} />
             ) : (
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-left text-xs leading-relaxed">
-                Đơn hàng đã được lưu trữ trong danh sách đơn mua của bạn.
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-left text-xs text-emerald-900 leading-relaxed flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                <span>
+                  Đơn hàng đã được thanh toán thành công và bảo chứng an toàn qua hệ thống NEXUS
+                  Escrow.
+                </span>
               </div>
             )}
 
             <div className="flex items-center justify-center gap-3 pt-2">
-              <Link
-                to="/buyer/orders"
-                onClick={onClose}
-                className="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition shadow flex items-center gap-1.5"
-              >
-                <ShoppingBag size={14} />
-                <span>Xem Đơn Hàng Của Tôi</span>
-              </Link>
               <button
                 type="button"
-                onClick={onClose}
-                className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition"
+                onClick={handleClose}
+                className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow flex items-center gap-1.5 cursor-pointer"
               >
-                Đóng
+                <span>Hoàn tất</span>
               </button>
             </div>
           </div>

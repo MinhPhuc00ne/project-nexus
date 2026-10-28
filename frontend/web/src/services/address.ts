@@ -35,10 +35,11 @@ export interface CreateAddressDto {
 export type UpdateAddressDto = Partial<CreateAddressDto>;
 
 export async function getAddresses(): Promise<UserAddress[]> {
-  return apiRequest<UserAddress[]>('/buyer/addresses', {
+  const res = await apiRequest<UserAddress[]>('/buyer/addresses', {
     method: 'GET',
     requireAuth: true,
   });
+  return Array.isArray(res) ? res : [];
 }
 
 export async function createAddress(dto: CreateAddressDto): Promise<UserAddress> {
@@ -84,13 +85,14 @@ export interface AddressSearchResult {
 }
 
 export async function searchAddress(query: string): Promise<AddressSearchResult[]> {
-  return apiRequest<AddressSearchResult[]>(
+  const res = await apiRequest<AddressSearchResult[]>(
     `/buyer/addresses/search?q=${encodeURIComponent(query)}`,
     {
       method: 'GET',
       requireAuth: true,
     },
   );
+  return Array.isArray(res) ? res : [];
 }
 
 export async function reverseGeocode(lat: number, lng: number): Promise<AddressSearchResult> {

@@ -137,12 +137,21 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
       </Link>
 
       <Link
-        to="/auction"
+        to="/buyer/wallet"
+        className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-slate-800 transition-colors hover:bg-slate-100"
+        onClick={onClose}
+      >
+        <Wallet size={15} />
+        <span>Ví NEXUS Pay</span>
+      </Link>
+
+      <Link
+        to="/buyer/bids"
         className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-slate-800 transition-colors hover:bg-slate-100"
         onClick={onClose}
       >
         <Gavel size={15} />
-        <span>Phiên đấu giá đang tham gia</span>
+        <span>Đấu giá của tôi</span>
       </Link>
 
       <Link

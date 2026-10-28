@@ -64,7 +64,6 @@ export interface CategoryNode {
 export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
   const brandName = p.category?.name ? `${p.category.name.toUpperCase()} • LUXURY` : 'NEXUS LUXURY';
   const has3D = Boolean(p.threeModelKey);
-
   return {
     id: p.id,
     brand: brandName,
@@ -107,18 +106,20 @@ export async function searchProductsApi(query: CatalogQuery = {}): Promise<Searc
     },
   });
 
-  const payload = response.data;
+  const payload = response?.data;
   const pageData =
     payload && typeof payload === 'object' && 'data' in payload
       ? (payload.data as CatalogPage)
       : (payload as unknown as CatalogPage);
 
   return {
-    items: (pageData.items || []).map((p) => mapCatalogToProductItem(p)),
-    total: pageData.total || 0,
-    page: pageData.page || 1,
-    limit: pageData.limit || 12,
-    totalPages: pageData.totalPages || 1,
+    items: Array.isArray(pageData?.items)
+      ? pageData.items.map((p) => mapCatalogToProductItem(p))
+      : [],
+    total: pageData?.total ?? 0,
+    page: pageData?.page ?? 1,
+    limit: pageData?.limit ?? 12,
+    totalPages: pageData?.totalPages ?? 1,
   };
 }
 
@@ -128,34 +129,38 @@ export async function getCategoriesApi(): Promise<CategoryNode[]> {
     message: string;
     data: CategoryNode[];
   }>('/catalog/categories');
-  const payload = response.data;
-  return (payload && 'data' in payload ? payload.data : payload) as CategoryNode[];
+  const payload = response?.data;
+  const items =
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload;
+  return Array.isArray(items) ? (items as CategoryNode[]) : [];
 }
 
 function mapProduct(product: CatalogProduct): ProductDetail {
   const specs: Record<string, string> = {};
-  if (product.category) specs['Danh mục'] = product.category.name;
-  if (product.weightGrams !== undefined) specs['Khối lượng'] = `${product.weightGrams} g`;
-  if (product.lengthCm !== undefined) specs['Chiều dài'] = `${product.lengthCm} cm`;
-  if (product.widthCm !== undefined) specs['Chiều rộng'] = `${product.widthCm} cm`;
-  if (product.heightCm !== undefined) specs['Chiều cao'] = `${product.heightCm} cm`;
+  if (product?.category?.name) specs['Danh mục'] = product.category.name;
+  if (product?.weightGrams !== undefined) specs['Khối lượng'] = `${product.weightGrams} g`;
+  if (product?.lengthCm !== undefined) specs['Chiều dài'] = `${product.lengthCm} cm`;
+  if (product?.widthCm !== undefined) specs['Chiều rộng'] = `${product.widthCm} cm`;
+  if (product?.heightCm !== undefined) specs['Chiều cao'] = `${product.heightCm} cm`;
   return {
-    id: product.id,
-    name: product.title,
-    brand: product.category?.name || 'NEXUS',
-    price: product.basePrice,
-    formattedPrice: `${product.basePrice.toLocaleString('vi-VN')} ₫`,
-    stock: product.status && product.status !== 'ACTIVE' ? 0 : product.availableQty,
-    images: product.images,
-    is3d: Boolean(product.threeModelKey),
-    categoryName: product.category?.name,
+    id: product?.id ?? '',
+    name: product?.title ?? '',
+    brand: product?.category?.name || 'NEXUS',
+    price: product?.basePrice ?? 0,
+    formattedPrice: `${Number(product?.basePrice ?? 0).toLocaleString('vi-VN')} ₫`,
+    stock: product?.status && product.status !== 'ACTIVE' ? 0 : (product?.availableQty ?? 0),
+    rating: (product as unknown as { averageRating?: number })?.averageRating ?? 0,
+    reviewsCount: (product as unknown as { reviewCount?: number })?.reviewCount ?? 0,
+    images: Array.isArray(product?.images) ? product.images : [],
+    is3d: Boolean(product?.threeModelKey),
+    categoryName: product?.category?.name,
     shop: {
-      id: product.seller?.id,
-      name: product.seller?.fullName ?? 'Chưa có thông tin người bán',
+      id: product?.seller?.id,
+      name: product?.seller?.fullName ?? 'Chưa có thông tin người bán',
       verified: false,
-      trustScore: product.seller?.reputationScore,
+      trustScore: product?.seller?.reputationScore,
     },
-    description: product.description,
+    description: product?.description ?? '',
     specs,
   };
 }
@@ -204,57 +209,18 @@ export async function getRelatedProducts(currentId: string, limit = 4): Promise<
   return products.filter((product) => product.id !== currentId).slice(0, limit);
 }
 
-export interface ShopQuery {
-  search?: string;
-  city?: string;
-  page?: number;
-  limit?: number;
-  sortBy?: 'reputation' | 'products' | 'newest';
-}
-
-export interface ShopListItem {
-  id: string;
-  name: string;
-  sellerFullName: string;
-  description: string | null;
-  avatarUrl: string | null;
-  reputationScore: number;
-  trustLevel: string;
-  isSellerActive: boolean;
-  address: {
-    city: string | null;
-    district: string | null;
-    formattedAddress: string | null;
-  } | null;
-  stats: {
-    totalProducts: number;
-  };
-  sampleProducts: Array<{
-    id: string;
-    title: string;
-    basePrice: number;
-    thumbnail: string | null;
-  }>;
-}
-
-export interface PaginatedShops {
-  items: ShopListItem[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
-
-export interface ShopDetailResult {
-  shop: ShopListItem;
-  products: {
-    items: CatalogProduct[];
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+export type {
+  ShopQuery,
+  ShopListItem,
+  PaginatedShops,
+  ShopDetailResult,
+} from '../types/shop.types';
+import type {
+  ShopQuery,
+  ShopListItem,
+  PaginatedShops,
+  ShopDetailResult,
+} from '../types/shop.types';
 
 export async function getShopsApi(query: ShopQuery = {}): Promise<PaginatedShops> {
   const response = await api.get<{
@@ -270,8 +236,17 @@ export async function getShopsApi(query: ShopQuery = {}): Promise<PaginatedShops
       sortBy: query.sortBy || undefined,
     },
   });
-  const payload = response.data;
-  return (payload && 'data' in payload ? payload.data : payload) as PaginatedShops;
+  const payload = response?.data;
+  const data = (
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
+  ) as PaginatedShops;
+  return {
+    items: Array.isArray(data?.items) ? data.items : [],
+    total: data?.total ?? 0,
+    page: data?.page ?? 1,
+    limit: data?.limit ?? 12,
+    totalPages: data?.totalPages ?? 1,
+  };
 }
 
 export async function getShopDetailApi(
@@ -286,6 +261,18 @@ export async function getShopDetailApi(
   }>(`/catalog/shops/${encodeURIComponent(shopId)}`, {
     params: { page, limit },
   });
-  const payload = response.data;
-  return (payload && 'data' in payload ? payload.data : payload) as unknown as ShopDetailResult;
+  const payload = response?.data;
+  const data = (payload && typeof payload === 'object' && 'data' in payload
+    ? payload.data
+    : payload) as unknown as ShopDetailResult;
+  return {
+    shop: data?.shop ?? ({} as ShopListItem),
+    products: {
+      items: Array.isArray(data?.products?.items) ? data.products.items : [],
+      total: data?.products?.total ?? 0,
+      page: data?.products?.page ?? 1,
+      limit: data?.products?.limit ?? 12,
+      totalPages: data?.products?.totalPages ?? 1,
+    },
+  };
 }

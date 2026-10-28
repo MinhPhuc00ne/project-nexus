@@ -265,13 +265,14 @@ export async function synchronizeCart(scope: CartScope): Promise<void> {
       throw new Error('Máy chủ chưa xác nhận kết quả gộp giỏ hàng.');
     if (!isCurrent(mergingScope)) return;
     applyRemoteCart(response, mergingScope);
-    // Preserve guest items added in another tab while this request was pending.
-    if (JSON.stringify(getGuestCartItems()) === JSON.stringify(guestItems)) {
-      localStorage.removeItem(GUEST_CART_STORAGE_KEY);
-      localStorage.removeItem('nexus:cart-items');
-    }
-  } catch {
-    // Keep the guest cart for a later retry; fetch only the actual server cart.
+    // Sau khi gộp thành công vào DB, toàn bộ hàng hóa đã nằm trong DB của user
+    // Xóa giỏ hàng tạm thời của Guest trong LocalStorage
+    localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+    localStorage.removeItem('nexus:cart-items');
+    emitCartChange();
+  } catch (err) {
+    console.error('[CartSync] Gộp giỏ hàng vào Database thất bại:', err);
+    // Giữ giỏ hàng guest để thử lại sau; tải lại giỏ hàng hiện tại trên server
     if (isCurrent(mergingScope)) await loadRemoteCart(scopeFor(scope.token));
   }
 }

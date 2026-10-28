@@ -6,3 +6,4 @@ export * from './HomeAuctionCard';
 export * from './HomeRecommendationCard';
 export * from './HomeHeroBanner';
 export * from './HomeLiveAuction';
+export { default as HomeCategoriesSection } from './HomeCategoriesSection';
