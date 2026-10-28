@@ -13,6 +13,7 @@ import {
   WalletTransactionType,
   Dispute,
 } from '@prisma/client';
+import { RefundService } from './refund.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AdminSettingsService } from '../../admin/services/admin-settings.service';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
@@ -20,7 +21,7 @@ import { objectValue } from '../../fulfillment/services/shipment-state';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
 
 type EscrowOrder = Prisma.OrderGetPayload<{
-  include: { escrowRecord: true; shipment: true; dispute: true };
+  include: { escrowRecord: true; shipment: true; dispute: true; afterSales: true; refunds: true };
 }>;
 
 export interface EscrowResult {
@@ -37,6 +38,7 @@ export class OrderEscrowService {
     private readonly prisma: PrismaService,
     private readonly settings: AdminSettingsService,
     private readonly finance: AdminFinanceService,
+    private readonly refunds: RefundService,
   ) {}
 
   async hold(
@@ -104,7 +106,13 @@ export class OrderEscrowService {
     await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
     const order = await tx.order.findUnique({
       where: { id: orderId },
-      include: { escrowRecord: true, shipment: true, dispute: true },
+      include: {
+        escrowRecord: true,
+        shipment: true,
+        dispute: true,
+        afterSales: true,
+        refunds: true,
+      },
     });
     if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
     return order;
@@ -115,6 +123,8 @@ export class OrderEscrowService {
     order: EscrowOrder,
     arbitration = false,
   ): Promise<EscrowResult> {
+    if (order.afterSales && !['REJECTED', 'COMPLETED'].includes(order.afterSales.status))
+      throw new BadRequestException('Đơn đang có yêu cầu hủy/trả hàng.');
     const escrow = order.escrowRecord;
     if (!escrow) throw new BadRequestException('Đơn chưa có tiền ký quỹ.');
     if (order.status === OrderStatus.CONFIRMED && escrow.status === EscrowStatus.DISBURSED)
@@ -266,6 +276,8 @@ export class OrderEscrowService {
       const order = await this.loadLocked(tx, orderId);
       if (order.buyerId !== buyerId)
         throw new ForbiddenException('Bạn không có quyền khiếu nại đơn hàng này.');
+      if (order.afterSales && !['REJECTED', 'COMPLETED'].includes(order.afterSales.status))
+        throw new BadRequestException('Đơn đang có yêu cầu hủy/trả hàng.');
       if (order.dispute) return { success: true, dispute: order.dispute };
       if (order.escrowRecord?.status !== EscrowStatus.HELD || !reason.trim())
         throw new BadRequestException('Đơn không còn tiền ký quỹ hoặc thiếu lý do khiếu nại.');
@@ -307,58 +319,14 @@ export class OrderEscrowService {
         },
       });
       if (verdict === 'SELLER') return this.release(tx, order, true);
-      const wallet = await tx.wallet.upsert({
-        where: { userId: order.buyerId },
-        update: {},
-        create: { userId: order.buyerId, balance: 0, lockedBalance: 0, currency: 'VND' },
-      });
-      await tx.wallet.update({
-        where: { id: wallet.id },
-        data: { balance: { increment: escrow.totalAmount } },
-      });
-      await tx.walletTransaction.create({
-        data: {
-          walletId: wallet.id,
-          amount: escrow.totalAmount,
-          type: WalletTransactionType.ESCROW_REFUND,
-          status: 'SUCCESS',
-          referenceId: orderId,
-          description: 'Hoàn tiền theo kết quả phân xử khiếu nại',
-        },
-      });
-      const admin = await this.finance.getOrCreatePrimaryAdminWallet(tx);
-      await tx.wallet.update({
-        where: { id: admin.id },
-        data: { balance: { decrement: escrow.totalAmount } },
-      });
-      await tx.walletTransaction.create({
-        data: {
-          walletId: admin.id,
-          amount: escrow.totalAmount,
-          type: WalletTransactionType.ESCROW_REFUND,
-          status: 'SUCCESS',
-          referenceId: orderId,
-          description: `Xuất tiền hoàn trả người mua đơn #${orderId.slice(0, 8)} theo kết quả phân xử`,
-        },
-      });
-      await tx.escrowRecord.update({
-        where: { orderId },
-        data: { status: EscrowStatus.REFUNDED, refundedAt: new Date() },
-      });
-      await tx.order.update({ where: { id: orderId }, data: { status: OrderStatus.REFUNDED } });
-      await tx.notification.create({
-        data: {
-          userId: order.buyerId,
-          type: 'PAYMENT',
-          channel: 'IN_APP',
-          title: 'Đã hoàn tiền đơn hàng',
-          content: `Tiền đơn #${orderId.slice(0, 8)} đã được hoàn vào ví NEXUS Pay.`,
-        },
-      });
+      const refunds = await this.refunds.issue(tx, order, false);
+      const complete = refunds.every((refund) => refund.status === 'SUCCESS');
       return {
         success: true,
-        orderStatus: OrderStatus.REFUNDED,
-        refundDestination: 'NEXUS_WALLET',
+        ...(complete ? { orderStatus: OrderStatus.REFUNDED } : {}),
+        refundDestination: refunds.every((refund) => refund.destination === 'WALLET')
+          ? 'NEXUS_WALLET'
+          : 'ORIGINAL',
       };
     });
   }

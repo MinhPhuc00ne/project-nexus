@@ -7,6 +7,7 @@ import { FulfillmentService } from './services/fulfillment.service';
 import { FulfillmentController } from './controllers/fulfillment.controller';
 import { GhnDispatchService } from './services/ghn-dispatch.service';
 import { GhnOrderApiService } from './services/ghn-order-api.service';
+import { GhnOrderActionService } from './services/ghn-order-action.service';
 import { ShipmentTrackingService } from './services/shipment-tracking.service';
 import { GhnWebhookController } from './controllers/ghn-webhook.controller';
 import { SellerPickupService } from './services/seller-pickup.service';
@@ -25,6 +26,7 @@ import {
     AdminPickupController,
   ],
   providers: [
+    GhnOrderActionService,
     RouteDistanceService,
     GhnLogisticsService,
     GhnShippingService,
@@ -36,6 +38,8 @@ import {
     GhnShopApiService,
   ],
   exports: [
+    GhnOrderActionService,
+    GhnOrderApiService,
     GhnLogisticsService,
     GhnShippingService,
     FulfillmentService,

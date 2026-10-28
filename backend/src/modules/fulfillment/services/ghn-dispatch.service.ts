@@ -212,8 +212,10 @@ export class GhnDispatchService {
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${order.id} FOR UPDATE`;
       const current = await tx.order.findUniqueOrThrow({
         where: { id: order.id },
-        include: { shipment: true },
+        include: { shipment: true, afterSales: true },
       });
+      if (current.afterSales && current.afterSales.status !== 'REJECTED')
+        throw new ConflictException('Đơn đang có yêu cầu hủy/trả hàng.');
       const state = objectValue(current.shipment?.metadata).dispatchState;
       if (
         current.shipment?.waybillCode ||
@@ -301,7 +303,7 @@ export class GhnDispatchService {
       await tx.$queryRaw`SELECT id FROM orders WHERE id = ${order.id} FOR UPDATE`;
       const current = await tx.order.findUniqueOrThrow({
         where: { id: order.id },
-        include: { shipment: true },
+        include: { shipment: true, afterSales: true },
       });
       if (!current.shipment) throw new ConflictException('Không tìm thấy yêu cầu gửi hàng đã lưu.');
       if (current.shipment.waybillCode) return { order: current, shipment: current.shipment };

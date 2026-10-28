@@ -38,6 +38,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
     'modules/fulfillment/controllers/seller-pickup.controller',
   );
   const controllers = [
+    source('modules/commerce/controllers/after-sales.controller').AfterSalesController,
     SellerPickupController,
     AdminPickupController,
     source('modules/fulfillment/controllers/fulfillment.controller').FulfillmentController,
@@ -51,6 +52,12 @@ test('shipping dependencies and routes initialize without live infrastructure', 
   Module({
     controllers,
     providers: [
+      source('modules/catalog/services/inventory.service').InventoryService,
+      source('modules/commerce/services/after-sales-store.service').AfterSalesStoreService,
+      source('modules/commerce/services/refund.service').RefundService,
+      source('modules/commerce/services/order-cancellation.service').OrderCancellationService,
+      source('modules/commerce/services/order-return.service').OrderReturnService,
+      source('modules/fulfillment/services/ghn-order-action.service').GhnOrderActionService,
       { provide: PrismaService, useValue: {} },
       { provide: ConfigService, useValue: { get: (_key, fallback) => fallback } },
       ...[PayosService, AdminSettingsService, AdminFinanceService, AuthService].map((provide) => ({
@@ -81,6 +88,16 @@ test('shipping dependencies and routes initialize without live infrastructure', 
       new DocumentBuilder().setTitle('Shipping smoke test').setVersion('1').build(),
     );
     for (const [path, method] of [
+      ['/api/v1/commerce/after-sales', 'get'],
+      ['/api/v1/commerce/refunds', 'get'],
+      ['/api/v1/commerce/disputes', 'get'],
+      ['/api/v1/commerce/orders/{id}/after-sales', 'get'],
+      ['/api/v1/commerce/orders/{id}/cancel', 'post'],
+      ['/api/v1/commerce/orders/{id}/returns', 'post'],
+      ['/api/v1/commerce/orders/{id}/returns/review', 'post'],
+      ['/api/v1/commerce/orders/{id}/returns/waybill', 'post'],
+      ['/api/v1/commerce/orders/{id}/returns/receive', 'post'],
+      ['/api/v1/commerce/refunds/{id}/complete', 'post'],
       ['/api/v1/auth/login', 'post'],
       ['/api/v1/seller/shipping/pickup-point', 'put'],
       ['/api/v1/admin/shipping/pickup-points/{id}/verify', 'post'],

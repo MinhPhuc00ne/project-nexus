@@ -20,10 +20,16 @@ import { OrderEscrowService } from './services/order-escrow.service';
 import { FeedbackController } from './controllers/feedback.controller';
 import { ReviewsService } from './services/reviews.service';
 import { ReportsService } from './services/reports.service';
+import { AfterSalesController } from './controllers/after-sales.controller';
+import { AfterSalesStoreService } from './services/after-sales-store.service';
+import { OrderCancellationService } from './services/order-cancellation.service';
+import { OrderReturnService } from './services/order-return.service';
+import { RefundService } from './services/refund.service';
 
 @Module({
   imports: [PrismaModule, FulfillmentModule, CatalogModule, forwardRef(() => AdminModule)],
   controllers: [
+    AfterSalesController,
     FeedbackController,
     CartController,
     OrderController,
@@ -34,6 +40,10 @@ import { ReportsService } from './services/reports.service';
     OrderLifecycleController,
   ],
   providers: [
+    AfterSalesStoreService,
+    OrderCancellationService,
+    OrderReturnService,
+    RefundService,
     ReviewsService,
     ReportsService,
     CartService,
