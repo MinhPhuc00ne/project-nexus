@@ -122,8 +122,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      const message = await this.chatService.sendMessage(data.conversationId, user.id, user.role, {
-        body: data.body,
+      // Truyền đúng 3 tham số: senderId, senderRole, dto (chứa conversationId, content, attachments)
+      const message = await this.chatService.sendMessage(user.id, user.role, {
+        conversationId: data.conversationId,
+        content: data.body,
         attachments: data.attachments,
       });
 

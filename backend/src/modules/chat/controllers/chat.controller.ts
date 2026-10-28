@@ -1,122 +1,120 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
-import { CurrentUser } from '../../../core/security/roles.decorator';
-import { CreateConversationDto } from '../dtos/create-conversation.dto';
-import { QueryConversationsDto, QueryMessagesDto } from '../dtos/query-chat.dto';
-import { SendMessageDto } from '../dtos/send-message.dto';
-import { ChatGateway } from '../gateways/chat.gateway';
-import { ChatService } from '../services/chat.service';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Role } from '@prisma/client';
+import { ChatService, PaginationQuery } from '../services/chat.service';
+import { CreateConversationDto, SendMessageDto } from '../dtos';
 
-@ApiTags('Chat Box')
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+
+@ApiTags('Chat')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller('chat')
 export class ChatController {
-  constructor(
-    private readonly chatService: ChatService,
-    private readonly chatGateway: ChatGateway,
-  ) {}
+  constructor(private readonly chatService: ChatService) {}
 
   @Post('conversations')
-  @ApiOperation({
-    summary: 'Tạo hoặc mở cuộc trò chuyện (Buyer - Seller, Staff - Seller, Staff - Buyer)',
-  })
-  async createOrGetConversation(
-    @CurrentUser('id') userId: string,
+  @ApiOperation({ summary: 'Tạo hoặc lấy cuộc trò chuyện' })
+  public async createConversation(
+    @CurrentUser() user: { id: string; role: Role },
     @Body() dto: CreateConversationDto,
   ) {
-    const result = await this.chatService.createOrGetConversation(userId, dto);
-    return {
-      message: 'Khởi tạo cuộc trò chuyện thành công.',
-      data: result,
-    };
+    return this.chatService.createOrGetConversation(user.id, user.role, dto);
   }
 
   @Get('conversations')
-  @ApiOperation({ summary: 'Lấy danh sách các cuộc trò chuyện của người dùng hiện tại' })
-  async listConversations(
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') role: string,
-    @Query() query: QueryConversationsDto,
+  @ApiOperation({ summary: 'Lấy danh sách cuộc trò chuyện của User' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  public async listUserConversations(
+    @CurrentUser() user: { id: string; role: Role },
+    @Query() query: PaginationQuery,
   ) {
-    const result = await this.chatService.listUserConversations(userId, role, query);
-    return result;
-  }
-
-  @Get('conversations/:id')
-  @ApiOperation({ summary: 'Xem chi tiết một cuộc trò chuyện' })
-  async getConversation(
-    @Param('id') id: string,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') role: string,
-  ) {
-    const result = await this.chatService.getConversationById(id, userId, role);
-    return {
-      data: result,
-    };
-  }
-
-  @Get('conversations/:id/messages')
-  @ApiOperation({ summary: 'Lấy lịch sử tin nhắn của cuộc trò chuyện' })
-  async listMessages(
-    @Param('id') id: string,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') role: string,
-    @Query() query: QueryMessagesDto,
-  ) {
-    const result = await this.chatService.listMessages(id, userId, role, query);
-    return {
-      data: result,
-    };
-  }
-
-  @Post('conversations/:id/messages')
-  @ApiOperation({ summary: 'Gửi tin nhắn mới vào cuộc trò chuyện' })
-  async sendMessage(
-    @Param('id') id: string,
-    @CurrentUser('id') userId: string,
-    @CurrentUser('role') role: string,
-    @Body() dto: SendMessageDto,
-  ) {
-    const message = await this.chatService.sendMessage(id, userId, role, dto);
-
-    // Đồng thời phát realtime qua WebSocket đến room tương ứng
-    try {
-      this.chatGateway.server?.to(`conversation:${id}`).emit('new_message', message);
-    } catch {
-      // Gateway emission optional in case socket server isn't bound yet
-    }
-
-    return {
-      message: 'Gửi tin nhắn thành công.',
-      data: message,
-    };
-  }
-
-  @Patch('conversations/:id/read')
-  @ApiOperation({ summary: 'Đánh dấu đã đọc toàn bộ tin nhắn trong cuộc trò chuyện' })
-  async markAsRead(@Param('id') id: string, @CurrentUser('id') userId: string) {
-    const result = await this.chatService.markAsRead(id, userId);
-
-    try {
-      this.chatGateway.server?.to(`conversation:${id}`).emit('messages_read', {
-        conversationId: id,
-        readBy: userId,
-      });
-    } catch {
-      // Silently continue
-    }
-
-    return result;
+    return this.chatService.listUserConversations(user.id, user.role, query);
   }
 
   @Get('unread-count')
-  @ApiOperation({ summary: 'Lấy tổng số tin nhắn chưa đọc của người dùng' })
-  async getUnreadCount(@CurrentUser('id') userId: string) {
-    const totalUnread = await this.chatService.getTotalUnreadCount(userId);
-    return {
-      unreadCount: totalUnread,
-    };
+  @ApiOperation({ summary: 'Lấy tổng số tin nhắn chưa đọc' })
+  public async getTotalUnreadCount(@CurrentUser() user: { id: string }) {
+    return this.chatService.getTotalUnreadCount(user.id);
+  }
+
+  @Get('conversations/:id')
+  @ApiOperation({ summary: 'Lấy chi tiết cuộc trò chuyện theo ID' })
+  public async getConversationById(
+    @Param('id') conversationId: string,
+    @CurrentUser() user: { id: string; role: Role },
+  ) {
+    return this.chatService.getConversationById(conversationId, user.id, user.role);
+  }
+
+  @Get('conversations/:id/messages')
+  @ApiOperation({ summary: 'Lấy danh sách tin nhắn trong cuộc trò chuyện' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  public async listMessages(
+    @Param('id') conversationId: string,
+    @CurrentUser() user: { id: string; role: Role },
+    @Query() query: PaginationQuery,
+  ) {
+    return this.chatService.listMessages(conversationId, user.id, user.role, query);
+  }
+
+  @Patch('conversations/:id/read')
+  @ApiOperation({ summary: 'Đánh dấu đã đọc cuộc trò chuyện' })
+  public async markAsRead(
+    @Param('id') conversationId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.chatService.markAsRead(conversationId, user.id);
+  }
+
+  @Post('messages')
+  @ApiOperation({ summary: 'Gửi tin nhắn mới' })
+  public async sendMessage(
+    @CurrentUser() user: { id: string; role: Role },
+    @Body() dto: SendMessageDto,
+  ) {
+    return this.chatService.sendMessage(user.id, user.role, dto);
+  }
+
+  @Post('upload')
+  @ApiOperation({ summary: 'Upload hình ảnh chat lên Cloudinary' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  @UseInterceptors(FilesInterceptor('files', 5))
+  public async uploadAttachments(@UploadedFiles() files: Express.Multer.File[]) {
+    const urls = await this.chatService.uploadAttachments(files);
+    return { urls };
   }
 }
