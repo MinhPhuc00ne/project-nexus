@@ -222,6 +222,8 @@ model User {
   chatConversationsUser1     ChatConversation[]       @relation("ChatParticipant1")
   chatConversationsUser2     ChatConversation[]       @relation("ChatParticipant2")
   chatMessagesSent           ChatMessage[]            @relation("ChatSender")
+  shopAutoReplies            ChatAutoReply[]          @relation("ShopAutoReplies")
+  cancelledAutoReplies       ChatAutoReply[]          @relation("AdminCancelledReplies")
   pickupPoints               SellerPickupPoint[]
   productReviews             ProductReview[]
   customerReviewsGiven       CustomerReview[]         @relation("CustomerReviewer")
@@ -935,4 +937,28 @@ model ChatMessage {
   @@index([conversationId, createdAt])
   @@index([senderId])
   @@map("chat_messages")
+}
+
+model ChatAutoReply {
+  id           String    @id @default(uuid())
+  scope        String    @default("SHOP")
+  shopId       String?   @map("shop_id")
+  name         String?   @db.Text
+  triggerType  String    @default("WELCOME") @map("trigger_type")
+  keyword      String?   @db.Text
+  content      String    @db.Text
+  isActive     Boolean   @default(true) @map("is_active")
+  status       String    @default("ACTIVE")
+  cancelReason String?   @map("cancel_reason") @db.Text
+  cancelledBy  String?   @map("cancelled_by")
+  cancelledAt  DateTime? @map("cancelled_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  shop            User? @relation("ShopAutoReplies", fields: [shopId], references: [id], onDelete: Cascade)
+  cancelledByUser User? @relation("AdminCancelledReplies", fields: [cancelledBy], references: [id], onDelete: SetNull)
+
+  @@index([shopId, scope])
+  @@index([status])
+  @@map("chat_auto_replies")
 }
