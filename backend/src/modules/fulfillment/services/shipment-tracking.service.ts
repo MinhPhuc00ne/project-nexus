@@ -109,7 +109,7 @@ export class ShipmentTrackingService {
       }
       const deliveredAt =
         metadata.deliveredAt ??
-        (detail.status === 'delivered' ? new Date().toISOString() : undefined);
+        (detail.status === 'delivered' ? new Date(timestamp).toISOString() : undefined);
       const actualWeight = Number(detail.calculate_weight);
       const nextMetadata = {
         ...metadata,

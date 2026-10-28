@@ -281,6 +281,7 @@ model Wallet {
 
   user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions WalletTransaction[]
+  refunds      OrderRefund[]
 
   @@map("wallets")
 }
@@ -296,6 +297,7 @@ model WalletTransaction {
   createdAt   DateTime                @default(now()) @map("created_at")
 
   wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  refund OrderRefund?
 
   @@map("wallet_transactions")
 }
@@ -544,6 +546,8 @@ model Order {
   review         Review?
   productReviews ProductReview[]
   customerReview CustomerReview?
+  afterSales     AfterSalesRequest?
+  refunds        OrderRefund[]
 
   @@map("orders")
 }
@@ -577,8 +581,53 @@ model Payment {
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refund OrderRefund?
 
   @@map("payments")
+}
+
+model AfterSalesRequest {
+  id                 String   @id @default(uuid())
+  orderId            String   @unique @map("order_id")
+  kind               String
+  status             String   @default("REQUESTED")
+  requestedBy        String   @map("requested_by")
+  reason             String   @db.Text
+  evidenceUrls       Json?    @map("evidence_urls")
+  refundToWallet     Boolean  @default(false) @map("refund_to_wallet")
+  decisionReason     String?  @map("decision_reason") @db.Text
+  reviewedBy         String?  @map("reviewed_by")
+  returnWaybillCode  String?  @map("return_waybill_code")
+  receivedAt         DateTime? @map("received_at")
+  restockedAt        DateTime? @map("restocked_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  order              Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@map("after_sales_requests")
+}
+
+model OrderRefund {
+  id                String   @id @default(uuid())
+  orderId           String   @map("order_id")
+  paymentId         String   @unique @map("payment_id")
+  amount            Decimal  @db.Decimal(14, 2)
+  destination       String
+  status            String   @default("PENDING")
+  adminWalletId     String   @map("admin_wallet_id")
+  transactionId     String   @unique @map("transaction_id")
+  externalReference String?  @unique @map("external_reference")
+  completedBy       String?  @map("completed_by")
+  completedAt       DateTime? @map("completed_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  order             Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  payment           Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  adminWallet       Wallet   @relation(fields: [adminWalletId], references: [id], onDelete: Restrict)
+  transaction       WalletTransaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@map("order_refunds")
 }
 
 model Auction {

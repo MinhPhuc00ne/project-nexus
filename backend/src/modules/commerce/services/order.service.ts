@@ -27,6 +27,8 @@ import {
   NotificationChannel,
 } from '@prisma/client';
 import { Webhook } from '@payos/node';
+import { RefundService } from './refund.service';
+import { AdminFinanceService } from '../../admin/services/admin-finance.service';
 import { OrderEscrowService } from './order-escrow.service';
 import {
   GhnShippingService,
@@ -76,6 +78,8 @@ export class OrderService {
     private readonly shipping: GhnShippingService,
     private readonly escrow: OrderEscrowService,
     @Optional() private readonly inventoryService?: InventoryService,
+    private readonly refunds?: RefundService,
+    private readonly finance?: AdminFinanceService,
   ) {}
 
   /**
@@ -693,6 +697,44 @@ export class OrderService {
         const currentPayment = await tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
         if (currentPayment.status === PaymentStatus.SUCCESS) return;
         const payable = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
+        if (payable.status === OrderStatus.CANCELLED && this.refunds && this.finance) {
+          // A verified transfer arriving after cancellation is still money owed to the buyer.
+          await tx.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.SUCCESS,
+              metadata: {
+                ...currentMetadata,
+                webhookData,
+                paidAfterCancellation: true,
+              } as Prisma.InputJsonValue,
+            },
+          });
+          const admin = await this.finance.getOrCreatePrimaryAdminWallet(tx);
+          await tx.wallet.update({
+            where: { id: admin.id },
+            data: { balance: { increment: currentPayment.amount } },
+          });
+          await tx.walletTransaction.create({
+            data: {
+              walletId: admin.id,
+              amount: currentPayment.amount,
+              type: 'ESCROW_LOCK',
+              status: 'SUCCESS',
+              referenceId: payment.id,
+              description: 'Ghi nhận thanh toán đến sau khi hủy đơn',
+            },
+          });
+          await this.refunds.reserve(tx, {
+            orderId: payable.id,
+            buyerId: payable.buyerId,
+            paymentId: payment.id,
+            amount: currentPayment.amount,
+            adminWalletId: admin.id,
+            toWallet: false,
+          });
+          return;
+        }
         if (payable.status !== OrderStatus.PENDING_PAYMENT)
           throw new BadRequestException(
             'Đơn đã thanh toán hoặc bị hủy; cần đối soát khoản thanh toán này.',
@@ -761,6 +803,9 @@ export class OrderService {
           orderBy: { createdAt: 'desc' },
         },
         escrowRecord: true,
+        dispute: true,
+        afterSales: true,
+        refunds: true,
       },
     });
 
@@ -799,6 +844,9 @@ export class OrderService {
           take: 1,
         },
         escrowRecord: true,
+        dispute: true,
+        afterSales: true,
+        refunds: true,
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test, mock } from 'node:test';
 import tsNode from 'ts-node';
+import { fixture as afterSalesFixture, admin } from './after-sales-fixture.mjs';
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
   transpileOnly: true,
@@ -128,29 +129,18 @@ test('buyer dispute freezes escrow and blocks receipt settlement', async () => {
 });
 
 test('staff resolution refunds buyer wallet once and does not pay seller', async () => {
-  const f = fixture();
-  await f.service.dispute('o1', 'buyer', 'Hàng lỗi');
-  await f.service.resolve(
-    'o1',
-    { id: 'staff', role: 'SUPPORT_STAFF' },
-    'BUYER',
-    'Đã đối chiếu chứng cứ',
-  );
-  await f.service.resolve(
-    'o1',
-    { id: 'staff', role: 'SUPPORT_STAFF' },
-    'BUYER',
-    'Gửi lại cùng kết quả',
-  );
-  assert.equal(f.order.status, 'REFUNDED');
-  assert.equal(f.order.escrowRecord.status, 'REFUNDED');
-  assert.equal(f.tx.wallet.update.mock.callCount(), 2);
-  assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].where.id, 'wallet-buyer');
-  assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].data.balance.increment, 130000);
-  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].where.id, 'admin-wallet');
-  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].data.balance.decrement, 130000);
-  assert.equal(f.tx.walletTransaction.create.mock.calls[0].arguments[0].data.type, 'ESCROW_REFUND');
-  assert.equal(f.tx.walletTransaction.create.mock.calls[1].arguments[0].data.type, 'ESCROW_REFUND');
+  const f = afterSalesFixture();
+  f.state.dispute = { status: 'OPEN', orderId: 'o1' };
+  f.state.escrow.status = 'DISPUTED';
+  f.tx.dispute = { update: async ({ data }) => Object.assign(f.state.dispute, data) };
+  const service = new OrderEscrowService(f.prisma, {}, f.finance, f.refunds);
+  await service.resolve('o1', admin, 'BUYER', 'Verified evidence');
+  await service.resolve('o1', admin, 'BUYER', 'Duplicate resolution');
+  assert.equal(f.state.order.status, 'REFUNDED');
+  assert.equal(f.state.escrow.status, 'REFUNDED');
+  assert.equal(f.state.refunds.length, 1);
+  assert.equal(f.state.wallets.find((w) => w.userId === 'buyer').balance, 130000);
+  assert.equal(f.state.wallets.find((w) => w.userId === 'seller').balance, 0);
 });
 
 test('buyer cannot grant themselves a refund through arbitration', async () => {
