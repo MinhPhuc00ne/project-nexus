@@ -4,7 +4,12 @@ import { ShoppingBag, Clock, AlertCircle, CheckCircle2, Upload } from 'lucide-re
 import Popup from '../Popup';
 import { createSellerRequest, getMySellerRequests } from '../../services/users';
 import type { SellerUpgradeRequest, UserProfile } from '../../types';
-import { VIETNAM_PROVINCES } from '../../constants/vietnamProvinces';
+import {
+  getShippingDistricts,
+  getShippingProvinces,
+  getShippingWards,
+} from '../../services/shipping';
+import type { GhnDistrict, GhnProvince, GhnWard } from '../../types/shipping.types';
 
 interface UpgradeSellerModalProps {
   isOpen: boolean;
@@ -28,7 +33,19 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
   const [storeName, setStoreName] = useState('');
   const [storeDescription, setStoreDescription] = useState('');
   const [street, setStreet] = useState('');
+  const [ward, setWard] = useState('');
+  const [district, setDistrict] = useState('');
   const [city, setCity] = useState('');
+  const [provinceId, setProvinceId] = useState('');
+  const [districtId, setDistrictId] = useState('');
+  const [wardCode, setWardCode] = useState('');
+  const [provinces, setProvinces] = useState<GhnProvince[]>([]);
+  const [districts, setDistricts] = useState<GhnDistrict[]>([]);
+  const [wards, setWards] = useState<GhnWard[]>([]);
+  const [isLoadingProvinces, setIsLoadingProvinces] = useState(false);
+  const [isLoadingDistricts, setIsLoadingDistricts] = useState(false);
+  const [isLoadingWards, setIsLoadingWards] = useState(false);
+  const [locationError, setLocationError] = useState('');
   const [phone, setPhone] = useState('');
   const [businessEmail, setBusinessEmail] = useState('');
   const [identityCardNumber, setIdentityCardNumber] = useState('');
@@ -67,6 +84,93 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
     };
   }, [isOpen, profile]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    let active = true;
+    setIsLoadingProvinces(true);
+    setLocationError('');
+
+    getShippingProvinces()
+      .then((data) => {
+        if (active) setProvinces(data);
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setLocationError(
+            err instanceof Error ? err.message : 'Không thể tải danh sách Tỉnh/Thành phố từ GHN.',
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoadingProvinces(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!provinceId) {
+      setDistricts([]);
+      return;
+    }
+
+    let active = true;
+    setIsLoadingDistricts(true);
+    setLocationError('');
+
+    getShippingDistricts(Number(provinceId))
+      .then((data) => {
+        if (active) setDistricts(data);
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setLocationError(
+            err instanceof Error ? err.message : 'Không thể tải danh sách Quận/Huyện từ GHN.',
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoadingDistricts(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [provinceId]);
+
+  useEffect(() => {
+    if (!districtId) {
+      setWards([]);
+      return;
+    }
+
+    let active = true;
+    setIsLoadingWards(true);
+    setLocationError('');
+
+    getShippingWards(Number(districtId))
+      .then((data) => {
+        if (active) setWards(data);
+      })
+      .catch((err: unknown) => {
+        if (active) {
+          setLocationError(
+            err instanceof Error ? err.message : 'Không thể tải danh sách Phường/Xã từ GHN.',
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoadingWards(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [districtId]);
+
   const handleSubmitUpgrade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!storeName.trim() || !phone.trim()) {
@@ -78,8 +182,10 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       return;
     }
 
-    if (!street.trim() || !VIETNAM_PROVINCES.includes(city)) {
-      setUpgradeError('Vui lòng nhập Số nhà, tên đường và chọn Tỉnh/Thành phố của gian hàng.');
+    if (!street.trim() || !city || !district || !ward) {
+      setUpgradeError(
+        'Vui lòng nhập Số nhà, tên đường và chọn đủ Tỉnh/Thành phố, Quận/Huyện, Phường/Xã của gian hàng.',
+      );
       return;
     }
 
@@ -92,6 +198,8 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       formData.append('storeName', storeName.trim());
       formData.append('phone', phone.trim());
       formData.append('street', street.trim());
+      formData.append('ward', ward);
+      formData.append('district', district);
       formData.append('city', city.trim());
       if (storeDescription.trim()) formData.append('storeDescription', storeDescription.trim());
       if (businessEmail.trim()) formData.append('businessEmail', businessEmail.trim());
@@ -110,7 +218,12 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       setStoreName('');
       setStoreDescription('');
       setStreet('');
+      setWard('');
+      setDistrict('');
       setCity('');
+      setProvinceId('');
+      setDistrictId('');
+      setWardCode('');
       setIdentityCardNumber('');
       setProofFile(null);
     } catch (err: unknown) {
@@ -172,7 +285,9 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
                     <span className="text-slate-500 shrink-0">Địa chỉ gian hàng:</span>
                     <span className="text-slate-800 font-medium text-right break-words min-w-0">
-                      {[pendingReq.street, pendingReq.city].filter(Boolean).join(', ')}
+                      {[pendingReq.street, pendingReq.ward, pendingReq.district, pendingReq.city]
+                        .filter(Boolean)
+                        .join(', ')}
                     </span>
                   </div>
                 )}
@@ -283,21 +398,106 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   required
                   autoComplete="address-level1"
                   className="w-full px-3 py-2 border border-slate-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  disabled={isSubmittingUpgrade}
+                  value={provinceId}
+                  onChange={(e) => {
+                    const nextProvinceId = e.target.value;
+                    const selectedProvince = provinces.find(
+                      (province) => String(province.provinceId) === nextProvinceId,
+                    );
+                    setProvinceId(nextProvinceId);
+                    setCity(selectedProvince?.provinceName || '');
+                    setDistrictId('');
+                    setDistrict('');
+                    setWardCode('');
+                    setWard('');
+                  }}
+                  disabled={isSubmittingUpgrade || isLoadingProvinces}
                 >
                   <option value="" disabled>
                     Chọn Tỉnh/Thành phố
                   </option>
-                  {VIETNAM_PROVINCES.map((province) => (
-                    <option key={province} value={province}>
-                      {province}
+                  {provinces.map((province) => (
+                    <option key={province.provinceId} value={province.provinceId}>
+                      {province.provinceName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="seller-store-district"
+                  className="block text-xs font-semibold text-slate-700 mb-1"
+                >
+                  Quận/Huyện <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="seller-store-district"
+                  name="district"
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50"
+                  value={districtId}
+                  onChange={(e) => {
+                    const nextDistrictId = e.target.value;
+                    const selectedDistrict = districts.find(
+                      (item) => String(item.districtId) === nextDistrictId,
+                    );
+                    setDistrictId(nextDistrictId);
+                    setDistrict(selectedDistrict?.districtName || '');
+                    setWardCode('');
+                    setWard('');
+                  }}
+                  disabled={!provinceId || isSubmittingUpgrade || isLoadingDistricts}
+                >
+                  <option value="">
+                    {isLoadingDistricts && provinceId ? 'Đang tải từ GHN…' : 'Chọn Quận/Huyện'}
+                  </option>
+                  {districts.map((item) => (
+                    <option key={item.districtId} value={item.districtId}>
+                      {item.districtName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="seller-store-ward"
+                  className="block text-xs font-semibold text-slate-700 mb-1"
+                >
+                  Phường/Xã <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="seller-store-ward"
+                  name="ward"
+                  required
+                  className="w-full px-3 py-2 border border-slate-300 bg-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50"
+                  value={wardCode}
+                  onChange={(e) => {
+                    const nextWardCode = e.target.value;
+                    const selectedWard = wards.find((item) => item.wardCode === nextWardCode);
+                    setWardCode(nextWardCode);
+                    setWard(selectedWard?.wardName || '');
+                  }}
+                  disabled={!districtId || isSubmittingUpgrade || isLoadingWards}
+                >
+                  <option value="">
+                    {isLoadingWards && districtId ? 'Đang tải từ GHN…' : 'Chọn Phường/Xã'}
+                  </option>
+                  {wards.map((item) => (
+                    <option key={item.wardCode} value={item.wardCode}>
+                      {item.wardName}
                     </option>
                   ))}
                 </select>
               </div>
             </div>
+            {locationError && (
+              <div
+                role="alert"
+                className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
+              >
+                Không thể tải địa chỉ từ GHN: {locationError}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
