@@ -91,7 +91,7 @@ export interface RequestChatSupport {
   subject?: string;
   message: string;
   contextId?: string;
-  contextType?: 'ORDER' | 'GENERAL';
+  contextType?: 'ORDER' | 'DISPUTE' | 'GENERAL';
   attachments?: string[];
 }
 

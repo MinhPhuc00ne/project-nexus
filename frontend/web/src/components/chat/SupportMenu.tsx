@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type JSX } from 'react';
 import {
   ArrowLeft,
   Truck,
@@ -53,7 +53,7 @@ export default function SupportMenu({
   onOpenConversation,
   onSendSupportMessage,
   sending,
-}: SupportMenuProps) {
+}: SupportMenuProps): JSX.Element {
   const [selected, setSelected] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [orderId, setOrderId] = useState('');

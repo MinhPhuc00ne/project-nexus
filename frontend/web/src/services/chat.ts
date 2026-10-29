@@ -177,12 +177,23 @@ export async function requestChatSupport(body: RequestChatSupport): Promise<Chat
   return normalizeConversation(result);
 }
 
+// Retrieve or initialize the single unique dispute conversation.
+export async function getDisputeChatConversation(disputeId: string): Promise<ChatConversation> {
+  const result = await chatRequest<unknown>({
+    method: 'POST',
+    url: `/chat/disputes/${encodeURIComponent(disputeId)}/conversation`,
+  });
+  return normalizeConversation(result);
+}
+
 // Retrieve open support tickets waiting for a staff member.
-export async function getChatSupportQueue(params: {
-  page?: number;
-  limit?: number;
-  contextType?: string;
-} = {}): Promise<ChatSupportQueue> {
+export async function getChatSupportQueue(
+  params: {
+    page?: number;
+    limit?: number;
+    contextType?: string;
+  } = {},
+): Promise<ChatSupportQueue> {
   const result = await chatRequest<{
     items: unknown[];
     onlineStaffCount: number;
@@ -271,11 +282,24 @@ export async function sendChatMessage(id: string, body: SendChatMessage): Promis
 export function markChatAsRead(id: string): Promise<ChatReadResult> {
   return chatRequest({ method: 'PATCH', url: `${conversationPath(id)}/read` });
 }
-//Retrieve the total unread message count for the chat badge.
+// Retrieve the total unread message count for the chat badge.
 export async function getChatUnreadCount(): Promise<number> {
   const result = await chatRequest<{ unreadCount: number }>({
     method: 'GET',
     url: '/chat/unread-count',
   });
   return result.unreadCount;
+}
+
+// Upload up to 5 image attachments to Cloudinary.
+export async function uploadChatAttachments(files: File[]): Promise<string[]> {
+  const formData = new FormData();
+  files.slice(0, 5).forEach((file) => formData.append('files', file));
+  const result = await chatRequest<{ urls: string[] }>({
+    method: 'POST',
+    url: '/chat/upload',
+    data: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return result.urls ?? [];
 }

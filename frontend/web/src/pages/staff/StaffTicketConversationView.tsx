@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from 'react';
+import { type ChangeEvent, type JSX, type KeyboardEvent, useRef, useState } from 'react';
 import {
   AtSign,
   BadgeCheck,
@@ -10,6 +10,7 @@ import {
   Smile,
   Tag,
 } from 'lucide-react';
+import { uploadChatAttachments } from '../../services/chat';
 
 export interface ChatMessage {
   id: number | string;
@@ -18,6 +19,8 @@ export interface ChatMessage {
   body: string;
   isAgent?: boolean;
 }
+
+export type TicketStatus = 'chatting' | 'waiting' | 'resolved';
 
 export interface SupportTicket {
   id: string;
@@ -58,11 +61,33 @@ export default function StaffTicketConversationView({
   onClaim,
   onResolve,
   updatingStatus,
-}: StaffTicketConversationViewProps) {
+}: StaffTicketConversationViewProps): JSX.Element {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       if (!sending) onSendReply();
+    }
+  };
+
+  const handleAttachFiles = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const urls = await uploadChatAttachments(files);
+      if (urls.length) {
+        notify(`Đã đính kèm ${urls.length} ảnh.`);
+        const attachmentText = urls.join('\n');
+        onReplyChange(reply.trim() ? `${reply.trim()}\n${attachmentText}` : attachmentText);
+      }
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Tải tệp đính kèm thất bại.');
+    } finally {
+      setUploading(false);
+      if (event.target) event.target.value = '';
     }
   };
 
@@ -163,14 +188,34 @@ export default function StaffTicketConversationView({
               <button aria-label="Danh sách">
                 <List size={15} />
               </button>
-              <button aria-label="Đính kèm tệp" onClick={() => notify('Chọn tệp đính kèm')}>
+              <button
+                type="button"
+                aria-label="Đính kèm tệp"
+                disabled={uploading || sending}
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <Paperclip size={15} />
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void handleAttachFiles(e)}
+              />
               <button aria-label="Chèn biểu tượng cảm xúc">
                 <Smile size={15} />
               </button>
               <span>
-                SLA: <b></b>
+                SLA:{' '}
+                <b>
+                  {activeTicket.conversationStatus === 'RESOLVED'
+                    ? 'Đã hoàn tất'
+                    : typeof activeTicket.waitingTimeSeconds === 'number'
+                      ? `${Math.floor(activeTicket.waitingTimeSeconds / 60)} phút`
+                      : '< 15 phút'}
+                </b>
               </span>
             </div>
             <textarea
