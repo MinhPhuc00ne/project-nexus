@@ -223,16 +223,33 @@ test('shop avatar and contact updates leave the personal profile and recipient a
       findUniqueOrThrow: async () => user,
       update: async ({ data }) => writes.push(data),
     },
-    sellerUpgradeRequest: { update: async ({ data }) => ({ ...request, ...data }) },
+    sellerUpgradeRequest: {
+      findFirst: async () => request,
+      update: async ({ data }) => ({ ...request, ...data }),
+    },
   };
   const prisma = { user: { findUnique: async () => user }, $transaction: (fn) => fn(tx) };
-  const result = await new UsersService(prisma, {}, {}).updateShopProfile('seller', {
+  let invalidated = false;
+  const pickup = {
+    invalidate: async (db, id) => {
+      assert.equal(db, tx);
+      assert.equal(id, 'seller');
+      invalidated = true;
+    },
+    synchronize: async () => {
+      assert.equal(invalidated, true);
+      throw new Error('GHN unavailable');
+    },
+  };
+  const result = await new UsersService(prisma, {}, {}, pickup).updateShopProfile('seller', {
     shopAvatarUrl: 'https://example.test/shop.png',
     phone: '0912345678',
     street: 'New Street',
     city: 'HCM',
   });
   assert.deepEqual(writes, [{ shopAvatarUrl: 'https://example.test/shop.png' }]);
+  assert.equal(result.shippingSync, 'PENDING');
+  assert.equal(result.shop.address.street, 'New Street');
   assert.equal(result.shop.avatarUrl, 'https://example.test/shop.png');
   assert.equal(user.avatarUrl, 'personal.png');
 });
