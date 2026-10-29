@@ -1,3 +1,4 @@
+import { SellerPickupService } from '../../fulfillment/services/seller-pickup.service';
 import {
   Injectable,
   NotFoundException,
@@ -33,6 +34,7 @@ export class UsersService {
     private readonly prisma: PrismaService,
     private readonly storageService: CloudinaryStorageService,
     private readonly profileReauth: ProfileReauthService,
+    private readonly pickup: SellerPickupService,
   ) {}
 
   private formatProfile(user: User & { wallet: Wallet | null }): UserProfileResponse {
@@ -454,12 +456,14 @@ export class UsersService {
       assertCleanContent(dto.storeDescription, 'Mô tả gian hàng');
     }
 
-    const latestApproved = user.sellerUpgradeRequests[0];
-
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
       const current = await tx.user.findUniqueOrThrow({ where: { id: sellerId } });
       if (current.isShopSuspended) throw new ForbiddenException('Shop đang bị đình chỉ.');
+      const latestApproved = await tx.sellerUpgradeRequest.findFirst({
+        where: { userId: sellerId, status: SellerRequestStatus.APPROVED },
+        orderBy: { updatedAt: 'desc' },
+      });
       // Store contact details belong to the shop request, not the seller's personal profile.
       if (dto.shopAvatarUrl !== undefined) {
         await tx.user.update({
@@ -533,14 +537,33 @@ export class UsersService {
         });
       }
 
+      const shippingChanged =
+        !latestApproved ||
+        ['storeName', 'phone', 'street', 'ward', 'district', 'city', 'latitude', 'longitude'].some(
+          (key) =>
+            String(latestApproved[key as keyof typeof latestApproved] ?? '') !==
+            String(updatedRequest[key as keyof typeof updatedRequest] ?? ''),
+        );
+      if (shippingChanged) await this.pickup.invalidate(tx, sellerId);
       return updatedRequest;
     });
+
+    let shippingSync: 'VERIFIED' | 'PENDING' = 'PENDING';
+    try {
+      await this.pickup.synchronize(sellerId);
+      shippingSync = 'VERIFIED';
+    } catch {
+      this.logger.warn(
+        `GHN pickup sync pending for seller ${sellerId}; retry on next shipping request.`,
+      );
+    }
 
     this.logger.log(`Seller ${sellerId} updated shop profile: ${result.storeName}`);
 
     return {
       success: true,
       message: 'Cập nhật thông tin gian hàng thành công!',
+      shippingSync,
       shop: {
         id: sellerId,
         shopAvatarUrl:

@@ -1,3 +1,4 @@
+import { ShopShippingProfileModule } from '../users/shop-shipping-profile.module';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { RouteDistanceService } from './services/route-distance.service';
@@ -18,7 +19,7 @@ import {
 } from './controllers/seller-pickup.controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, ShopShippingProfileModule],
   controllers: [
     FulfillmentController,
     GhnWebhookController,
@@ -38,6 +39,7 @@ import {
     GhnShopApiService,
   ],
   exports: [
+    SellerPickupService,
     GhnOrderActionService,
     GhnOrderApiService,
     GhnLogisticsService,

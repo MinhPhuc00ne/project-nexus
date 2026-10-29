@@ -67,7 +67,9 @@ function fixture() {
     wardCode: '01',
     active: true,
   };
+  const profile = { ...dto };
   const prisma = {
+    $queryRaw: async () => [],
     user: { findUnique: async () => ({ role: 'SELLER' }) },
     sellerPickupPoint: {
       findUnique: mock.fn(async () => point),
@@ -97,8 +99,11 @@ function fixture() {
     ensure: mock.fn(async (input) => ({ ...shop, address: input.address })),
   };
   return {
-    service: new SellerPickupService(prisma, config, logistics, shops),
+    service: new SellerPickupService(prisma, config, logistics, shops, {
+      read: async () => profile,
+    }),
     prisma,
+    profile,
     point,
     shop,
     shops,
@@ -118,7 +123,8 @@ test('seller saves a ready GHN point without an admin reviewer', async () => {
 test('saving the same verified address reuses the binding', async () => {
   const f = fixture();
   await f.service.propose('seller-a', dto);
-  await f.service.propose('seller-a', { ...dto, latitude: 10, longitude: 106 });
+  Object.assign(f.profile, { latitude: 10, longitude: 106 });
+  await f.service.synchronize('seller-a');
   assert.equal(f.shops.ensure.mock.callCount(), 1);
   assert.equal(f.point.latitude, 10);
 });
@@ -131,6 +137,7 @@ test('changing pickup address automatically establishes a new GHN binding', asyn
     id: 202,
     address: input.address,
   }));
+  f.profile.street = '15' + dto.street.slice(2);
   const point = await f.service.propose('seller-a', { ...dto, street: '15 Nguyễn Huệ' });
   assert.equal(point.status, 'VERIFIED');
   assert.equal(point.ghnShopId, 202);
@@ -140,6 +147,7 @@ test('changing pickup address automatically establishes a new GHN binding', asyn
 test('GHN failure does not overwrite the previous address or binding', async () => {
   const f = fixture();
   await f.service.propose('seller-a', dto);
+  f.profile.street = '15' + dto.street.slice(2);
   f.shops.ensure.mock.mockImplementation(async () => {
     throw new Error('GHN unavailable');
   });
@@ -499,4 +507,97 @@ test('malformed GHN registration response cannot produce a ready pickup', async 
     ),
     (error) => error.getStatus() === 502,
   );
+});
+
+test('legacy pickup endpoint cannot set an address different from the shop profile', async () => {
+  const f = fixture();
+  await assert.rejects(
+    f.service.propose('seller-a', { ...dto, street: 'Other address' }),
+    (error) => error.getStatus() === 400,
+  );
+  assert.equal(f.shops.ensure.mock.callCount(), 0);
+});
+
+test('shipping automatically binds the current profile without a separate pickup save', async () => {
+  const f = fixture();
+  f.profile.street = 'New profile address';
+  const point = await f.service.requireVerified('seller-a');
+  assert.equal(point.street, f.profile.street);
+  assert.ok(point.carrierAddress.startsWith(f.profile.street));
+});
+
+test('new shipping fails closed when the profile changed and GHN is unavailable', async () => {
+  const f = fixture();
+  await f.service.synchronize('seller-a');
+  f.profile.street = 'New profile address';
+  f.shops.ensure.mock.mockImplementation(async () => {
+    throw new Error('GHN unavailable');
+  });
+  await assert.rejects(f.service.requireVerified('seller-a'), /GHN unavailable/);
+});
+
+test('admin cannot verify a pickup address that differs from the current profile', async () => {
+  const f = fixture();
+  f.profile.street = 'New profile address';
+  await assert.rejects(
+    f.service.verify('pickup-a', 101, 'admin'),
+    (error) => error.getStatus() === 409,
+  );
+  assert.equal(f.prisma.sellerPickupPoint.updateMany.mock.callCount(), 0);
+});
+
+test('profile invalidation affects both environments in the profile transaction', async () => {
+  const f = fixture();
+  let mutation;
+  await f.service.invalidate(
+    {
+      sellerPickupPoint: {
+        updateMany: async (input) => {
+          mutation = input;
+          return { count: 2 };
+        },
+      },
+    },
+    'seller-a',
+  );
+  assert.deepEqual(mutation.where, { sellerId: 'seller-a' });
+  assert.equal(mutation.data.status, 'PENDING');
+  assert.equal(mutation.data.verifiedAt, null);
+  assert.deepEqual(mutation.data.version, { increment: 1 });
+});
+
+const { ShopShippingProfileService } = load(
+  '../src/modules/users/services/shop-shipping-profile.service.ts',
+);
+
+test('shipping source uses the approved shop profile ahead of personal addresses', async () => {
+  const service = new ShopShippingProfileService({
+    user: {
+      findUnique: async () => ({
+        role: 'SELLER',
+        fullName: 'Personal name',
+        phoneNumber: '0999999999',
+        sellerUpgradeRequests: [{ ...dto, storeName: dto.name, latitude: 0, longitude: 0 }],
+        addresses: [{ ...dto, street: 'Personal address' }],
+      }),
+    },
+  });
+  const profile = await service.read('seller-a');
+  assert.equal(profile.street, dto.street);
+  assert.equal(profile.name, dto.name);
+  assert.equal(profile.latitude, 0);
+});
+
+test('an incomplete approved shop profile cannot silently use a personal address', async () => {
+  const service = new ShopShippingProfileService({
+    user: {
+      findUnique: async () => ({
+        role: 'SELLER',
+        fullName: 'Personal name',
+        sellerUpgradeRequests: [{ ...dto, street: null }],
+        addresses: [dto],
+      }),
+    },
+  });
+  await assert.rejects(service.read('seller-a'), (error) => error.getStatus() === 400);
 });

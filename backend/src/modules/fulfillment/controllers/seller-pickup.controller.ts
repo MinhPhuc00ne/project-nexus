@@ -17,13 +17,16 @@ export class SellerPickupController {
   constructor(private readonly points: SellerPickupService) {}
 
   @Get()
-  @ApiOperation({ summary: '[SELLER] Xem điểm lấy hàng và tình trạng xác minh GHN' })
+  @ApiOperation({ summary: '[SELLER] Đồng bộ điểm lấy hàng GHN từ hồ sơ gian hàng' })
   mine(@CurrentUser('id') sellerId: string): ReturnType<SellerPickupService['mine']> {
     return this.points.mine(sellerId);
   }
 
   @Put()
-  @ApiOperation({ summary: '[SELLER] Lưu địa chỉ và tự động kết nối GHN, không cần admin duyệt' })
+  @ApiOperation({
+    summary: '[SELLER] Kết nối lại GHN bằng địa chỉ hồ sơ gian hàng',
+    description: 'Địa chỉ gửi lên phải khớp hồ sơ gian hàng. Thay đổi địa chỉ tại shop-profile.',
+  })
   propose(
     @CurrentUser('id') sellerId: string,
     @Body() dto: SellerPickupDto,
