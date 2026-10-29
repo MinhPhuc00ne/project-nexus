@@ -81,11 +81,77 @@ export class SellerPickupService {
       verifiedBy: null,
       verifiedAt: null,
     };
-    return this.prisma.sellerPickupPoint.upsert({
-      where: { sellerId_environment: { sellerId, environment } },
-      create: { sellerId, environment, ...data },
-      update: { ...data, version: { increment: 1 } },
-    });
+    // Upsert locks this seller/environment row until commit. Concurrent saves
+    // wait, then observe the completed binding instead of registering twice.
+    return this.prisma.$transaction(
+      async (tx) => {
+        const point = await tx.sellerPickupPoint.upsert({
+          where: { sellerId_environment: { sellerId, environment } },
+          create: { sellerId, environment, ...data },
+          update: { version: { increment: 1 } },
+        });
+        const sameAddress = [
+          'name',
+          'phone',
+          'city',
+          'district',
+          'ward',
+          'street',
+          'districtId',
+          'wardCode',
+        ].every((key) => point[key as keyof typeof point] === data[key as keyof typeof data]);
+        if (
+          sameAddress &&
+          point.status === 'VERIFIED' &&
+          point.ghnShopId &&
+          point.verifiedAt &&
+          point.carrierAddress &&
+          point.carrierPhone
+        ) {
+          return tx.sellerPickupPoint.update({
+            where: { id: point.id },
+            data: { latitude: data.latitude, longitude: data.longitude },
+          });
+        }
+        const assigned = await tx.sellerPickupPoint.findMany({
+          where: { environment, sellerId: { not: sellerId }, ghnShopId: { not: null } },
+          select: { ghnShopId: true },
+        });
+        const shop = await this.shops.ensure(
+          {
+            name: data.name,
+            phone: data.phone,
+            address: `${data.street}, ${data.ward}, ${data.district}, ${data.city}`,
+            districtId: data.districtId,
+            wardCode: data.wardCode,
+          },
+          assigned.flatMap((entry) => (entry.ghnShopId ? [entry.ghnShopId] : [])),
+        );
+        if (
+          !shop.active ||
+          shop.districtId !== data.districtId ||
+          shop.wardCode !== data.wardCode ||
+          phoneKey(shop.phone) !== data.phone
+        ) {
+          throw new BadRequestException('GHN trả điểm lấy hàng không khớp địa chỉ đã lưu.');
+        }
+        return tx.sellerPickupPoint.update({
+          where: { id: point.id },
+          data: {
+            ...data,
+            status: 'VERIFIED',
+            ghnShopId: shop.id,
+            ghnClientId: shop.clientId,
+            carrierName: shop.name,
+            carrierPhone: shop.phone,
+            carrierAddress: shop.address,
+            verifiedBy: null,
+            verifiedAt: new Date(),
+          },
+        });
+      },
+      { timeout: 60000, maxWait: 10000 },
+    );
   }
 
   async verify(pointId: string, shopId: number, adminId: string): Promise<SellerPickupPoint> {
@@ -154,12 +220,11 @@ export class SellerPickupService {
       point.status !== 'VERIFIED' ||
       !point.ghnShopId ||
       !point.verifiedAt ||
-      !point.verifiedBy ||
       !point.carrierAddress ||
       !point.carrierPhone
     ) {
       throw new BadRequestException(
-        'Seller chưa có điểm lấy hàng GHN được xác minh. Vui lòng khai báo điểm lấy hàng và chờ admin duyệt.',
+        'Chưa thiết lập điểm lấy hàng GHN. Vui lòng lưu địa chỉ lấy hàng trong cài đặt vận chuyển.',
       );
     }
     return point;

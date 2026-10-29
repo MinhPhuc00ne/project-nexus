@@ -72,6 +72,11 @@ function fixture() {
     sellerPickupPoint: {
       findUnique: mock.fn(async () => point),
       findUniqueOrThrow: async () => point,
+      findMany: async () => [],
+      update: mock.fn(async ({ data }) => {
+        Object.assign(point, data);
+        return point;
+      }),
       upsert: mock.fn(async ({ update }) => {
         Object.assign(point, { ...update, version: point.version + 1 });
         return point;
@@ -87,7 +92,10 @@ function fixture() {
   const logistics = {
     resolveDistrictAndWard: mock.fn(async () => ({ districtId: 1, wardCode: '01' })),
   };
-  const shops = { find: mock.fn(async () => shop) };
+  const shops = {
+    find: mock.fn(async () => shop),
+    ensure: mock.fn(async (input) => ({ ...shop, address: input.address })),
+  };
   return {
     service: new SellerPickupService(prisma, config, logistics, shops),
     prisma,
@@ -97,15 +105,50 @@ function fixture() {
   };
 }
 
-test('seller changes reset GHN binding and require verification again', async () => {
+test('seller saves a ready GHN point without an admin reviewer', async () => {
   const f = fixture();
-  await f.service.verify('pickup-a', 101, 'admin');
+  const point = await f.service.propose('seller-a', dto);
+  assert.equal(point.status, 'VERIFIED');
+  assert.equal(point.ghnShopId, 101);
+  assert.equal(point.verifiedBy, null);
   assert.equal((await f.service.requireVerified('seller-a')).ghnShopId, 101);
-  await f.service.propose('seller-a', { ...dto, street: '15 Nguyễn Huệ' });
-  assert.equal(f.point.status, 'PENDING');
-  assert.equal(f.point.ghnShopId, null);
-  assert.equal(f.point.verifiedBy, null);
-  await assert.rejects(f.service.requireVerified('seller-a'), (error) => error.getStatus() === 400);
+  assert.equal(f.shops.ensure.mock.callCount(), 1);
+});
+
+test('saving the same verified address reuses the binding', async () => {
+  const f = fixture();
+  await f.service.propose('seller-a', dto);
+  await f.service.propose('seller-a', { ...dto, latitude: 10, longitude: 106 });
+  assert.equal(f.shops.ensure.mock.callCount(), 1);
+  assert.equal(f.point.latitude, 10);
+});
+
+test('changing pickup address automatically establishes a new GHN binding', async () => {
+  const f = fixture();
+  await f.service.propose('seller-a', dto);
+  f.shops.ensure.mock.mockImplementation(async (input) => ({
+    ...f.shop,
+    id: 202,
+    address: input.address,
+  }));
+  const point = await f.service.propose('seller-a', { ...dto, street: '15 Nguyễn Huệ' });
+  assert.equal(point.status, 'VERIFIED');
+  assert.equal(point.ghnShopId, 202);
+  assert.ok(point.carrierAddress.startsWith('15 Nguyễn Huệ'));
+});
+
+test('GHN failure does not overwrite the previous address or binding', async () => {
+  const f = fixture();
+  await f.service.propose('seller-a', dto);
+  f.shops.ensure.mock.mockImplementation(async () => {
+    throw new Error('GHN unavailable');
+  });
+  await assert.rejects(
+    f.service.propose('seller-a', { ...dto, street: '15 Nguyễn Huệ' }),
+    /GHN unavailable/,
+  );
+  assert.equal(f.point.street, dto.street);
+  assert.equal(f.point.ghnShopId, 101);
 });
 
 test('admin verification saves canonical GHN address and reviewer', async () => {
@@ -361,4 +404,99 @@ test('GHN shop lookup follows provider cursors and verifies token account member
   assert.equal((await new GhnShopApiService(config).find(202)).id, 202);
   assert.ok(calls[1].url.includes('offset=101'));
   assert.equal(calls[0].options.headers.Token, 'test-token');
+});
+
+test('automatic setup recovers a matching shop without registering again', async () => {
+  const service = new GhnShopApiService(config);
+  const shop = fixture().shop;
+  service.list = async () => ({ shops: [shop], nextOffset: 101 });
+  const found = await service.ensure(
+    {
+      name: shop.name,
+      phone: '+84901234567',
+      address: shop.address,
+      districtId: shop.districtId,
+      wardCode: shop.wardCode,
+    },
+    [],
+  );
+  assert.equal(found.id, shop.id);
+});
+
+test('automatic registration uses platform credentials and verifies the returned shop', async (t) => {
+  const service = new GhnShopApiService(config);
+  const shop = fixture().shop;
+  service.list = async () => ({ shops: [], nextOffset: 0 });
+  service.find = async (id) => {
+    assert.equal(id, shop.id);
+    return shop;
+  };
+  const fetch = t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(url, 'https://ghn.test/v2/shop/register');
+    assert.equal(options.headers.Token, 'test-token');
+    assert.equal(options.headers.ShopId, '999');
+    assert.deepEqual(JSON.parse(options.body), {
+      name: shop.name,
+      phone: shop.phone,
+      address: shop.address,
+      district_id: shop.districtId,
+      ward_code: shop.wardCode,
+    });
+    return new Response(JSON.stringify({ code: 200, data: { shop_id: shop.id } }));
+  });
+  assert.equal(
+    (
+      await service.ensure(
+        {
+          name: shop.name,
+          phone: shop.phone,
+          address: shop.address,
+          districtId: shop.districtId,
+          wardCode: shop.wardCode,
+        },
+        [],
+      )
+    ).id,
+    shop.id,
+  );
+  assert.equal(fetch.mock.callCount(), 1);
+});
+
+test('a shop assigned to another seller is never reused', async (t) => {
+  const service = new GhnShopApiService(config);
+  const shop = fixture().shop;
+  service.list = async (offset) => ({ shops: offset ? [] : [shop], nextOffset: 101 });
+  t.mock.method(globalThis, 'fetch', async () => {
+    throw new Error('registration unavailable');
+  });
+  await assert.rejects(
+    service.ensure(
+      {
+        name: shop.name,
+        phone: shop.phone,
+        address: shop.address,
+        districtId: shop.districtId,
+        wardCode: shop.wardCode,
+      },
+      [shop.id],
+    ),
+    (error) => error.getStatus() === 502,
+  );
+});
+
+test('malformed GHN registration response cannot produce a ready pickup', async (t) => {
+  const service = new GhnShopApiService(config);
+  service.list = async () => ({ shops: [], nextOffset: 0 });
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () => new Response(JSON.stringify({ code: 200, data: { shop_id: '' } })),
+  );
+  await assert.rejects(
+    service.ensure(
+      { name: dto.name, phone: dto.phone, address: dto.street, districtId: 1, wardCode: '01' },
+      [],
+    ),
+    (error) => error.getStatus() === 502,
+  );
 });

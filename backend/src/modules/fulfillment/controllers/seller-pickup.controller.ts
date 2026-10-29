@@ -23,7 +23,7 @@ export class SellerPickupController {
   }
 
   @Put()
-  @ApiOperation({ summary: '[SELLER] Khai báo/đổi điểm lấy hàng; thay đổi sẽ phải xác minh lại' })
+  @ApiOperation({ summary: '[SELLER] Lưu địa chỉ và tự động kết nối GHN, không cần admin duyệt' })
   propose(
     @CurrentUser('id') sellerId: string,
     @Body() dto: SellerPickupDto,
