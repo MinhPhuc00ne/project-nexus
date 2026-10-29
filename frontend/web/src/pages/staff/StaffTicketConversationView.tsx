@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from 'react';
+import { type ChangeEvent, type JSX, type KeyboardEvent, useRef, useState } from 'react';
 import {
   AtSign,
   BadgeCheck,
@@ -10,22 +10,30 @@ import {
   Smile,
   Tag,
 } from 'lucide-react';
+import { uploadChatAttachments } from '../../services/chat';
 
 export interface ChatMessage {
-  id: number;
+  id: number | string;
   author: string;
   time: string;
   body: string;
   isAgent?: boolean;
 }
 
+export type TicketStatus = 'chatting' | 'waiting' | 'resolved';
+
 export interface SupportTicket {
   id: string;
   customer: string;
   initials: string;
   role: string;
-  category: 'Auction 3D' | 'Shipping' | 'Escrow';
+  subject?: string;
+  category: 'Auction 3D' | 'Shipping' | 'Escrow' | 'General';
   status: 'chatting' | 'waiting' | 'resolved';
+  conversationStatus?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  assignedStaffId?: string | null;
+  assignedStaff?: string | null;
+  waitingTimeSeconds?: number;
   time: string;
   preview: string;
   messages: ChatMessage[];
@@ -37,6 +45,10 @@ interface StaffTicketConversationViewProps {
   onReplyChange: (val: string) => void;
   onSendReply: () => void;
   notify: (msg: string) => void;
+  sending?: boolean;
+  onClaim: () => void;
+  onResolve: () => void;
+  updatingStatus: boolean;
 }
 
 export default function StaffTicketConversationView({
@@ -45,11 +57,37 @@ export default function StaffTicketConversationView({
   onReplyChange,
   onSendReply,
   notify,
-}: StaffTicketConversationViewProps) {
+  sending = false,
+  onClaim,
+  onResolve,
+  updatingStatus,
+}: StaffTicketConversationViewProps): JSX.Element {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
   const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
-      onSendReply();
+      if (!sending) onSendReply();
+    }
+  };
+
+  const handleAttachFiles = async (event: ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const urls = await uploadChatAttachments(files);
+      if (urls.length) {
+        notify(`Đã đính kèm ${urls.length} ảnh.`);
+        const attachmentText = urls.join('\n');
+        onReplyChange(reply.trim() ? `${reply.trim()}\n${attachmentText}` : attachmentText);
+      }
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Tải tệp đính kèm thất bại.');
+    } finally {
+      setUploading(false);
+      if (event.target) event.target.value = '';
     }
   };
 
@@ -66,7 +104,7 @@ export default function StaffTicketConversationView({
               </span>
               <span>
                 <b>{activeTicket.customer}</b>
-                <small>{activeTicket.category}</small>
+                <small>{activeTicket.subject || activeTicket.category}</small>
               </span>
             </div>
             <div className="flex [gap:5px] [&_.staff-icon-button]:[width:31px] [&_.staff-icon-button]:[height:31px] max-[420px]:[&_.staff-icon-button:last-child]:hidden">
@@ -91,6 +129,26 @@ export default function StaffTicketConversationView({
               >
                 <MoreHorizontal size={18} />
               </button>
+              {activeTicket.conversationStatus === 'OPEN' && (
+                <button
+                  type="button"
+                  onClick={onClaim}
+                  disabled={updatingStatus}
+                  className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {updatingStatus ? 'Đang nhận…' : 'Nhận xử lý'}
+                </button>
+              )}
+              {activeTicket.conversationStatus === 'IN_PROGRESS' && (
+                <button
+                  type="button"
+                  onClick={onResolve}
+                  disabled={updatingStatus}
+                  className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                >
+                  {updatingStatus ? 'Đang lưu…' : 'Hoàn tất'}
+                </button>
+              )}
             </div>
           </div>
           <div className="[align-self:center] [margin:12px_0_14px] [padding:7px_10px] [border-radius:999px] [color:#897e9c] [background:#f0efff] [font-size:8px] font-extrabold text-center">
@@ -130,17 +188,38 @@ export default function StaffTicketConversationView({
               <button aria-label="Danh sách">
                 <List size={15} />
               </button>
-              <button aria-label="Đính kèm tệp" onClick={() => notify('Chọn tệp đính kèm')}>
+              <button
+                type="button"
+                aria-label="Đính kèm tệp"
+                disabled={uploading || sending}
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <Paperclip size={15} />
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => void handleAttachFiles(e)}
+              />
               <button aria-label="Chèn biểu tượng cảm xúc">
                 <Smile size={15} />
               </button>
               <span>
-                SLA: <b></b>
+                SLA:{' '}
+                <b>
+                  {activeTicket.conversationStatus === 'RESOLVED'
+                    ? 'Đã hoàn tất'
+                    : typeof activeTicket.waitingTimeSeconds === 'number'
+                      ? `${Math.floor(activeTicket.waitingTimeSeconds / 60)} phút`
+                      : '< 15 phút'}
+                </b>
               </span>
             </div>
             <textarea
+              disabled={sending}
               value={reply}
               onChange={(event) => onReplyChange(event.target.value)}
               onKeyDown={handleComposerKeyDown}
@@ -154,7 +233,7 @@ export default function StaffTicketConversationView({
               <button
                 className="inline-flex items-center gap-2 [padding:9px_12px] [border:0] [border-radius:8px] [color:white] [background:var(--staff-accent)] text-[10px] font-extrabold cursor-pointer [&:hover:not(:disabled)]:[background:var(--staff-accent-strong)] disabled:cursor-not-allowed disabled:[opacity:0.55]"
                 onClick={onSendReply}
-                disabled={!reply.trim()}
+                disabled={sending || !reply.trim()}
               >
                 Gửi phản hồi <Send size={15} />
               </button>

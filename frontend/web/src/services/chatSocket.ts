@@ -12,6 +12,11 @@ interface ChatServerEvents {
     isTyping: boolean;
   }) => void;
   messages_read: (event: { conversationId: string; readBy: string }) => void;
+  conversation_status_changed: (event: {
+    conversationId: string;
+    status: string;
+    assignedStaffId?: string | null;
+  }) => void;
 }
 
 interface ChatClientEvents {

@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { getChatMessages, markChatAsRead, sendChatMessage } from '../../services/chat';
+import {
+  getChatMessages,
+  markChatAsRead,
+  normalizeChatMessage,
+  sendChatMessage,
+} from '../../services/chat';
 import { type ChatConnectionClient, createChatConnection } from '../../services/chatSocket';
 import type { ChatMessage } from '../../types/chat.types';
 import { getChatErrorMessage, mergeMessages } from './chatUtils';
@@ -23,7 +28,7 @@ export interface UseChatRoomResult {
   typing: boolean;
   error: string;
   setError: (value: string) => void;
-  send: () => Promise<void>;
+  send: (attachments?: string[]) => Promise<void>;
   loadOlder: () => Promise<void>;
 }
 
@@ -83,9 +88,7 @@ export function useChatRoom({
     client.socket.on('connect_error', () => setConnected(false));
     client.socket.on('new_message', (message) => {
       if (message.conversationId !== activeId) return;
-      setMessages((current) =>
-        mergeMessages(current, [{ ...message, isMe: message.senderId === userId }]),
-      );
+      setMessages((current) => mergeMessages(current, [normalizeChatMessage(message, userId)]));
       onRevisionChange();
       if (message.senderId !== userId && document.visibilityState === 'visible') read();
     });
@@ -95,10 +98,13 @@ export function useChatRoom({
     client.socket.on('messages_read', (event) => {
       if (event.conversationId === activeId && event.readBy !== userId) {
         setMessages((current) =>
-          current.map((message) =>
-            message.senderId === userId ? { ...message, isRead: true } : message,
-          ),
+          current.map((message) => (message.isMe ? { ...message, isRead: true } : message)),
         );
+      }
+    });
+    client.socket.on('conversation_status_changed', (event) => {
+      if (event?.conversationId === activeId) {
+        onRevisionChange();
       }
     });
 
@@ -144,14 +150,15 @@ export function useChatRoom({
     return () => window.clearTimeout(timer);
   }, [typing]);
 
-  async function send(): Promise<void> {
-    if (!activeId || !draft.trim() || sending) return;
+  async function send(attachments?: string[]): Promise<void> {
+    if (!activeId || (!draft.trim() && (!attachments || attachments.length === 0)) || sending)
+      return;
     const id = activeId;
     const body = draft.trim();
     setSending(true);
     setError('');
     try {
-      const message = await sendChatMessage(id, { body });
+      const message = await sendChatMessage(id, { body, attachments });
       if (connection.current && id === currentConversation.current) {
         setMessages((current) => mergeMessages(current, [message]));
         setDraft((current) => (current.trim() === body ? '' : current));

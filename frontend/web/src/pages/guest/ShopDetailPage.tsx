@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Package,
   Store,
@@ -17,10 +17,14 @@ import {
 import { addToCart } from '../../services/cart';
 import ShopHeader from '../../components/shop/ShopHeader';
 import ShopProductGrid from '../../components/shop/ShopProductGrid';
+import { useAuth } from '../../contexts/AuthContext';
+import { openChatWithUser } from '../../components/chat/chatEvents';
 
 export const ShopDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { token, storedUser } = useAuth();
 
   const [shop, setShop] = useState<ShopListItem | null>(null);
   const [products, setProducts] = useState<CatalogProduct[]>([]);
@@ -122,8 +126,24 @@ export const ShopDetailPage: React.FC = () => {
           setTimeout(() => setToastMessage(null), 3000);
         }}
         onContact={() => {
-          setToastMessage('Tính năng Chat đang kết nối với người bán...');
-          setTimeout(() => setToastMessage(null), 3000);
+          if (!token || !storedUser) {
+            navigate('/login', { state: { from: `${location.pathname}${location.search}` } });
+            return;
+          }
+
+          if (storedUser.role !== 'BUYER' && storedUser.role !== 'SELLER') {
+            setToastMessage('Tài khoản này không thể nhắn tin trực tiếp với người bán.');
+            setTimeout(() => setToastMessage(null), 3000);
+            return;
+          }
+
+          if (storedUser.id === shop.id) {
+            setToastMessage('Bạn đang xem gian hàng của chính mình.');
+            setTimeout(() => setToastMessage(null), 3000);
+            return;
+          }
+
+          openChatWithUser({ userId: shop.id, userName: shop.name });
         }}
       />
 

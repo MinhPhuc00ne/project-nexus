@@ -5,8 +5,6 @@ import { formatChatTime } from './chatUtils';
 
 interface ChatMessageAreaProps {
   active: ChatConversation | null;
-  userId: string;
-  connected: boolean;
   loading: boolean;
   messages: ChatMessage[];
   hasOlder: boolean;
@@ -22,8 +20,6 @@ interface ChatMessageAreaProps {
 
 export default function ChatMessageArea({
   active,
-  userId,
-  connected,
   loading,
   messages,
   hasOlder,
@@ -74,9 +70,6 @@ export default function ChatMessageArea({
         </button>
         <div>
           <h3 className="font-semibold">{active.partner.storeName || active.partner.fullName}</h3>
-          <p className={`text-xs ${connected ? 'text-emerald-600' : 'text-amber-600'}`}>
-            {connected ? 'Đã kết nối realtime' : 'Đang kết nối realtime…'}
-          </p>
         </div>
       </div>
       <div
@@ -104,11 +97,11 @@ export default function ChatMessageArea({
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.senderId === userId ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${message.isMe ? 'justify-end' : 'justify-start'}`}
           >
             <div className="max-w-[85%]">
               <div
-                className={`whitespace-pre-wrap break-words rounded-2xl px-4 py-2 text-sm ${message.senderId === userId ? 'rounded-br-sm bg-blue-600 text-white' : 'rounded-bl-sm border border-slate-200 bg-white'}`}
+                className={`whitespace-pre-wrap break-words rounded-2xl px-4 py-2 text-sm ${message.isMe ? 'rounded-br-sm bg-blue-600 text-white' : 'rounded-bl-sm border border-slate-200 bg-white'}`}
               >
                 {message.body}
                 {message.attachments.map(
@@ -128,7 +121,7 @@ export default function ChatMessageArea({
               </div>
               <p className="mt-1 text-right text-[10px] text-slate-400">
                 {formatChatTime(message.createdAt)}
-                {message.senderId === userId ? (message.isRead ? ' · Đã đọc' : ' · Đã gửi') : ''}
+                {message.isMe ? (message.isRead ? ' · Đã đọc' : ' · Đã gửi') : ''}
               </p>
             </div>
           </div>
