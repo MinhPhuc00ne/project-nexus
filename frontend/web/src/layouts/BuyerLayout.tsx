@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import {
@@ -74,12 +74,6 @@ export default function BuyerLayout() {
   const location = useLocation();
 
   const isSeller = profile?.role === Role.SELLER;
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  }, [location.pathname]);
 
   return (
     <div className="min-h-[calc(100vh-140px)] bg-slate-50/70 py-8">

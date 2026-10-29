@@ -45,11 +45,7 @@ export default function SearchPage() {
   const matchedCategory = rawCategoryId
     ? categories.find((c) => c.id === rawCategoryId)
     : rawSearch
-      ? categories.find(
-          (c) =>
-            c.name.toLowerCase() === rawSearch.toLowerCase() ||
-            c.name.toLowerCase().includes(rawSearch.toLowerCase()),
-        )
+      ? categories.find((c) => c.name.toLowerCase() === rawSearch.toLowerCase())
       : undefined;
 
   const categoryId = rawCategoryId || matchedCategory?.id || '';
