@@ -12,13 +12,22 @@ export interface CatalogProduct {
   thumbnail?: string | null;
   threeModelKey: string | null;
   category: { id: string; name: string; slug?: string } | null;
-  seller: { id: string; fullName: string; reputationScore?: number } | null;
+  seller: {
+    id: string;
+    fullName: string;
+    reputationScore?: number;
+    avatarUrl?: string | null;
+    trustLevel?: string;
+    isSellerActive?: boolean;
+  } | null;
   weightGrams?: number;
   lengthCm?: number;
   widthCm?: number;
   heightCm?: number;
   status?: string;
   createdAt?: string;
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 export interface CatalogPage {
@@ -149,16 +158,20 @@ function mapProduct(product: CatalogProduct): ProductDetail {
     price: product?.basePrice ?? 0,
     formattedPrice: `${Number(product?.basePrice ?? 0).toLocaleString('vi-VN')} ₫`,
     stock: product?.status && product.status !== 'ACTIVE' ? 0 : (product?.availableQty ?? 0),
-    rating: (product as unknown as { averageRating?: number })?.averageRating ?? 0,
-    reviewsCount: (product as unknown as { reviewCount?: number })?.reviewCount ?? 0,
     images: Array.isArray(product?.images) ? product.images : [],
     is3d: Boolean(product?.threeModelKey),
     categoryName: product?.category?.name,
+    category: product?.category,
+    rating: product?.averageRating ?? 0,
+    reviewsCount: product?.reviewCount ?? 0,
     shop: {
       id: product?.seller?.id,
       name: product?.seller?.fullName ?? 'Chưa có thông tin người bán',
-      verified: false,
+      verified: Boolean(product?.seller?.reputationScore && product.seller.reputationScore >= 80),
+      avatarUrl: product?.seller?.avatarUrl ?? undefined,
       trustScore: product?.seller?.reputationScore,
+      trustLevel: product?.seller?.trustLevel,
+      isSellerActive: product?.seller?.isSellerActive,
     },
     description: product?.description ?? '',
     specs,
@@ -223,17 +236,14 @@ import type {
 } from '../types/shop.types';
 
 export async function getShopsApi(query: ShopQuery = {}): Promise<PaginatedShops> {
-  const response = await api.get<{
-    statusCode: number;
-    message: string;
-    data: PaginatedShops;
-  }>('/catalog/shops', {
+  const { search, city, page = 1, limit = 12, sortBy } = query;
+  const response = await api.get<{ data: PaginatedShops }>('/catalog/shops', {
     params: {
-      search: query.search || undefined,
-      city: query.city || undefined,
-      page: query.page || 1,
-      limit: query.limit || 12,
-      sortBy: query.sortBy || undefined,
+      search: search || undefined,
+      city: city || undefined,
+      page,
+      limit,
+      sortBy: sortBy || undefined,
     },
   });
   const payload = response?.data;

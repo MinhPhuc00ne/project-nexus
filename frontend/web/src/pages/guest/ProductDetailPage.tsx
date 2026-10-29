@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeftOutlined, ShoppingCartOutlined } from '@ant-design/icons';
-import { Star, Store, Heart } from 'lucide-react';
+import { Star, Tag, Heart } from 'lucide-react';
 import { getProductByIdAsync } from '../../services/products.service';
 import type { ProductDetail } from '../../types/product.types';
 import { addToCart } from '../../services/cart';
@@ -12,6 +12,7 @@ import {
   removeBuyerWishlistItem,
 } from '../../services/wishlist.service';
 import ProductImageGallery from '../../components/productDetail/ProductImageGallery';
+import ProductShopBanner from '../../components/productDetail/ProductShopBanner';
 import ProductInfoTabs from '../../components/productDetail/ProductInfoTabs';
 import RelatedProductsSection from '../../components/productDetail/RelatedProductsSection';
 import useProductResource from '../../components/productDetail/useProductResource';
@@ -152,59 +153,68 @@ function ProductContent({ product }: { product: ProductDetail }) {
             selectedImgIdx={selectedImgIdx}
             onSelectImage={setSelectedImgIdx}
           />
-          <div className="space-y-5 lg:col-span-7">
+          <div className="space-y-6 lg:col-span-7">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 leading-snug">{product.name}</h1>
-              <div className="mt-2.5 flex flex-wrap items-center gap-4 text-xs">
-                {/* Rating & Số lượng đánh giá */}
-                <div className="flex items-center gap-1.5 pr-4 border-r border-slate-200">
-                  <div className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <Star
-                        key={s}
-                        size={14}
-                        className={
-                          (product.reviewsCount ?? 0) > 0 && s <= Math.round(product.rating ?? 0)
-                            ? 'fill-amber-400 text-amber-400'
-                            : 'text-slate-300'
-                        }
-                      />
-                    ))}
+              <h1 className="text-2xl font-bold text-slate-900">{product.name}</h1>
+              {/* Rating summary under title (Shopee style) */}
+              <div className="flex items-center gap-3 text-xs mt-2 flex-wrap">
+                {(product.reviewsCount ?? 0) > 0 ? (
+                  <div className="flex items-center gap-1 text-amber-500 font-bold">
+                    <span className="underline">
+                      {product.rating ? product.rating.toFixed(1) : '0.0'}
+                    </span>
+                    <div className="flex items-center">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={12}
+                          className={
+                            s <= Math.round(product.rating ?? 0)
+                              ? 'fill-amber-400 text-amber-400'
+                              : 'text-slate-200 fill-slate-200'
+                          }
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <span className="font-extrabold text-amber-700">
-                    {(product.reviewsCount ?? 0) > 0
-                      ? (product.rating ?? 0).toFixed(1)
-                      : 'Chưa có đánh giá'}
-                  </span>
-                  <span className="text-slate-400">({product.reviewsCount ?? 0} đánh giá)</span>
-                </div>
-
-                {/* Tên Shop Bán */}
-                <div className="flex items-center gap-1.5 text-slate-600">
-                  <Store size={14} className="text-blue-600 shrink-0" />
-                  <span>Gian hàng:</span>
-                  {product.shop.id ? (
-                    <Link
-                      to={`/shop/${product.shop.id}`}
-                      className="font-bold text-blue-600 hover:text-blue-700 hover:underline transition"
-                    >
-                      {product.shop.name}
-                    </Link>
-                  ) : (
-                    <span className="font-bold text-slate-800">{product.shop.name}</span>
-                  )}
-                </div>
+                ) : (
+                  <span className="font-medium text-slate-400">Chưa có đánh giá</span>
+                )}
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-600">
+                  <strong className="text-slate-900">{product.reviewsCount ?? 0}</strong> Đánh Giá
+                </span>
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-600">
+                  Đã bán <strong className="text-slate-900">{product.soldCount ?? 0}</strong>
+                </span>
               </div>
             </div>
-
-            <p className={canBuy ? 'text-emerald-700 font-medium' : 'text-slate-500'}>
-              {canBuy
-                ? `✓ Còn ${product.stock} sản phẩm trong kho`
-                : 'Sản phẩm hiện không có hàng để bán'}
+            <p className={canBuy ? 'text-emerald-700' : 'text-slate-500'}>
+              {canBuy ? `Còn ${product.stock} sản phẩm` : 'Sản phẩm hiện không có hàng để bán'}
             </p>
             <p className="rounded-xl bg-blue-50 p-5 text-3xl font-bold text-blue-600">
               {product.formattedPrice}
             </p>
+            <div className="flex items-center gap-2.5 text-sm">
+              <span className="font-medium text-slate-500">Danh mục:</span>
+              {product.category?.id ? (
+                <Link
+                  to={`/search?categoryId=${product.category.id}&categoryName=${encodeURIComponent(product.category.name)}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
+                >
+                  <Tag size={13} />
+                  {product.category?.parent?.name
+                    ? `${product.category.parent.name} › ${product.category.name}`
+                    : product.categoryName || 'Chưa phân loại'}
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                  <Tag size={13} />
+                  {product.categoryName || 'Chưa phân loại'}
+                </span>
+              )}
+            </div>
             <label className="block space-y-2 text-sm font-medium text-slate-700">
               <span>Số lượng</span>
               <input
@@ -253,33 +263,9 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 <Heart size={20} className={isInWishlist ? 'fill-rose-500 text-rose-500' : ''} />
               </button>
             </div>
-            <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-500">Người bán</p>
-                {product.shop.id && (
-                  <Link
-                    to={`/shop/${product.shop.id}`}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
-                  >
-                    Xem gian hàng →
-                  </Link>
-                )}
-              </div>
-              <p className="font-semibold text-slate-900">
-                {product.shop.id ? (
-                  <Link to={`/shop/${product.shop.id}`} className="hover:text-blue-600 transition">
-                    {product.shop.name}
-                  </Link>
-                ) : (
-                  product.shop.name
-                )}
-              </p>
-              {product.shop.trustScore !== undefined && (
-                <p className="text-sm text-slate-600">Điểm uy tín: {product.shop.trustScore}</p>
-              )}
-            </div>
           </div>
         </section>
+        <ProductShopBanner product={product} />
         <ProductInfoTabs product={product} />
         <RelatedProductsSection currentProductId={product.id} />
       </div>
