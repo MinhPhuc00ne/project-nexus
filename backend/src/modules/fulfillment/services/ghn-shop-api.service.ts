@@ -18,9 +18,80 @@ export interface GhnShop {
   active: boolean;
 }
 
+export interface GhnShopInput {
+  name: string;
+  phone: string;
+  address: string;
+  districtId: number;
+  wardCode: string;
+}
+
 @Injectable()
 export class GhnShopApiService {
   constructor(private readonly config: ConfigService) {}
+
+  // Recover an earlier registration after a timeout before attempting a new one.
+  async ensure(input: GhnShopInput, excludedIds: number[]): Promise<GhnShop> {
+    const key = (value: string): string => value.normalize('NFC').trim().toLowerCase();
+    const phone = (value: string): string => value.replace(/[\s.-]/g, '').replace(/^\+?84/, '0');
+    let offset = 0;
+    for (let page = 0; page < 100; page++) {
+      const result = await this.list(offset);
+      const found = result.shops.find(
+        (shop) =>
+          shop.active &&
+          !excludedIds.includes(shop.id) &&
+          shop.districtId === input.districtId &&
+          shop.wardCode === input.wardCode &&
+          phone(shop.phone) === phone(input.phone) &&
+          key(shop.name) === key(input.name) &&
+          key(shop.address) === key(input.address),
+      );
+      if (found) return found;
+      if (!result.shops.length) return this.register(input);
+      if (result.nextOffset <= offset)
+        throw new BadGatewayException('GHN trả con trỏ phân trang không hợp lệ.');
+      offset = result.nextOffset;
+    }
+    throw new BadGatewayException('Chưa kiểm tra hết điểm GHN. Vui lòng thử lại sau.');
+  }
+
+  private async register(input: GhnShopInput): Promise<GhnShop> {
+    const token = this.config.get<string>('GHN_TOKEN');
+    const parentShop = Number(this.config.get<string>('GHN_SHOP_ID'));
+    if (!token?.trim() || !Number.isSafeInteger(parentShop) || parentShop <= 0)
+      throw new BadGatewayException('Chưa cấu hình tài khoản và shop GHN của sàn.');
+    const raw = (
+      this.config.get<string>('GHN_API_URL') || 'https://online-gateway.ghn.vn/shiip/public-api/v2'
+    ).replace(/\/+$/, '');
+    const root = raw.endsWith('/v2') ? raw : `${raw}/v2`;
+    try {
+      const response = await fetch(`${root}/shop/register`, {
+        method: 'POST',
+        headers: { Token: token, ShopId: String(parentShop), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: input.name,
+          phone: input.phone,
+          address: input.address,
+          district_id: input.districtId,
+          ward_code: input.wardCode,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      const body = objectValue(await response.json());
+      const id = objectValue(body.data).shop_id;
+      if (!response.ok || body.code !== 200 || !Number.isSafeInteger(id) || Number(id) <= 0)
+        throw new BadGatewayException(
+          'GHN chưa xác nhận điểm lấy hàng. Kiểm tra địa chỉ và thử lưu lại.',
+        );
+      return this.find(Number(id));
+    } catch (error) {
+      if (error instanceof BadGatewayException) throw error;
+      throw new BadGatewayException(
+        'Kết nối GHN gián đoạn. Hãy lưu lại để hệ thống kiểm tra điểm đã tạo.',
+      );
+    }
+  }
 
   async list(offset = 0, limit = 100): Promise<{ shops: GhnShop[]; nextOffset: number }> {
     if (
