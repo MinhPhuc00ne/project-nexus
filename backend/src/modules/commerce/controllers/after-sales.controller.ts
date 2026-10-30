@@ -65,7 +65,7 @@ export class AfterSalesController {
   @Post('orders/:id/cancel')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Hủy toàn bộ đơn trước khi GHN lấy hàng; hoàn tiền và hoàn kho chống lặp',
+    summary: 'Hủy trước khi GHN lấy hàng; buyer cần Admin duyệt nếu seller đã xác nhận',
   })
   cancel(
     @Param('id') id: string,
@@ -73,6 +73,17 @@ export class AfterSalesController {
     @Body() dto: CancelOrderDto,
   ): Promise<AfterSalesRequest> {
     return this.cancellations.cancel(id, actor, dto);
+  }
+
+  @Post('orders/:id/cancel/review')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Admin duyệt hoặc từ chối yêu cầu hủy của người mua' })
+  reviewCancellation(
+    @Param('id') id: string,
+    @CurrentUser() actor: AuthenticatedUserPayload,
+    @Body() dto: ReviewReturnDto,
+  ): Promise<AfterSalesRequest> {
+    return this.cancellations.review(id, actor, dto);
   }
 
   @Post('orders/:id/returns')
