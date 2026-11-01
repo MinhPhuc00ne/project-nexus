@@ -25,6 +25,63 @@ function fixture(order = null) {
   return { prisma, ai, limit, bot: new ChatbotService(prisma, ai, limit) };
 }
 
+test('guest FAQ never reads orders or calls AI and offers login for protected actions', async () => {
+  const f = fixture();
+  for (const message of ['hi', 'hủy đơn', 'đơn hàng', 'unknown topic']) {
+    const result = await f.bot.replyGuest('peer-hash', { message, orderId: 'injected' });
+    assert.equal(result.engine, 'FAQ');
+    assert.equal(result.order, undefined);
+    assert.ok(result.actions.every((action) => action.type === 'LOGIN'));
+  }
+  assert.equal(f.ai.classify.mock.callCount(), 0);
+  assert.equal(f.prisma.order.findFirst.mock.callCount(), 0);
+  assert.equal(f.limit.check.mock.calls[0].arguments[0], 'guest:peer-hash');
+});
+
+test('auto replies detect shop/support offline, preserve first-message context and tolerate unknown presence', async () => {
+  let online = false;
+  const calls = [];
+  const service = new ChatService(
+    {
+      user: { findUnique: async () => ({ role: 'SELLER', isShopSuspended: false }) },
+      chatMessage: { count: async () => 1 },
+    },
+    {},
+    {
+      findMatchingReply: async (...args) => {
+        calls.push(args);
+        return null;
+      },
+    },
+    {},
+  );
+  service.setBroadcaster({ isUserOnline: async () => online, isSupportOnline: async () => online });
+  const conv = { id: 'c', type: 'BUYER_SELLER', participant1Id: 'buyer', participant2Id: 'shop' };
+  await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
+  assert.deepEqual(calls.at(-1)[3], { firstMessage: true, offline: true });
+  online = true;
+  await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
+  assert.equal(calls.at(-1)[3].offline, false);
+  online = null;
+  await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
+  assert.equal(calls.at(-1)[3].offline, false);
+  online = false;
+  await service.triggerAutoReply({ ...conv, type: 'STAFF_BUYER' }, 'buyer', 'BUYER', 'hi');
+  assert.equal(calls.at(-1)[1], 'SYSTEM');
+  assert.equal(calls.at(-1)[3].offline, true);
+  service.setBroadcaster({
+    isUserOnline: async (id) => id !== 'assigned',
+    isSupportOnline: async () => true,
+  });
+  await service.triggerAutoReply(
+    { ...conv, type: 'STAFF_BUYER', assignedStaffId: 'assigned' },
+    'buyer',
+    'BUYER',
+    'hi',
+  );
+  assert.equal(calls.at(-1)[3].offline, true);
+});
+
 test('FAQ understands Vietnamese accents, cancellation precedence and whole words', async () => {
   assert.equal(matchChatbotTopic('Hủy đơn hàng đã xác nhận'), 'CANCELLATION');
   assert.equal(matchChatbotTopic('hoan tien cho toi'), 'REFUND');
@@ -292,7 +349,7 @@ test('seller acting as customer receives shop replies; shop replies to buyer nev
   };
   await service.triggerAutoReply(conv, 'customer', 'SELLER', 'ship');
   assert.equal(calls[0][0], 'shop');
-  assert.deepEqual(calls[0][3], { firstMessage: true });
+  assert.deepEqual(calls[0][3], { firstMessage: true, offline: false });
   partnerRole = 'BUYER';
   await service.triggerAutoReply(conv, 'shop', 'SELLER', 'Thanks');
   assert.equal(calls.length, 1);

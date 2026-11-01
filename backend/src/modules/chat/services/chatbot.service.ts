@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { ChatbotMessageDto } from '../dtos/chatbot-message.dto';
+import { ChatbotMessageDto, GuestChatbotMessageDto } from '../dtos/chatbot-message.dto';
 import { ChatbotAiService } from './chatbot-ai.service';
 import {
   chatbotKnowledge,
@@ -15,7 +15,7 @@ export interface ChatbotReply {
   engine: 'FAQ' | 'GEMINI' | 'ORDER';
   topic: ChatbotTopic | 'WELCOME' | 'UNKNOWN';
   sources: { id: string; title: string }[];
-  actions: { type: 'REQUEST_SUPPORT' | 'SELECT_ORDER'; endpoint?: string }[];
+  actions: { type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN'; endpoint?: string }[];
   order?: {
     id: string;
     status: string;
@@ -54,11 +54,30 @@ export class ChatbotService {
   async reply(userId: string, dto: ChatbotMessageDto): Promise<ChatbotReply> {
     await this.rateLimit.check(userId);
     if (dto.orderId) return this.orderReply(userId, dto.orderId);
-    let topic = matchChatbotTopic(dto.message);
+    return this.answer(dto.message, true);
+  }
+
+  async replyGuest(identity: string, dto: GuestChatbotMessageDto): Promise<ChatbotReply> {
+    await this.rateLimit.check(`guest:${identity}`);
+    const response = await this.answer(dto.message, false);
+    if (response.topic === 'WELCOME') {
+      response.reply =
+        'Xin chào! Mình là trợ lý tự động NEXUS. Bạn có thể hỏi chính sách thanh toán, giao hàng, hủy/trả hàng và hoàn tiền. Vui lòng đăng nhập nếu cần tra cứu đơn hoặc liên hệ nhân viên.';
+    }
+    if (response.topic === 'ORDER') {
+      response.reply =
+        'Vui lòng đăng nhập để tra cứu đơn hàng của bạn. Khách chưa đăng nhập chỉ có thể hỏi chính sách chung của NEXUS.';
+    }
+    response.actions = response.actions.map(() => ({ type: 'LOGIN' }));
+    return response;
+  }
+
+  private async answer(message: string, allowAi: boolean): Promise<ChatbotReply> {
+    let topic = matchChatbotTopic(message);
     let engine: ChatbotReply['engine'] = 'FAQ';
     if (
       !topic &&
-      ['xin chao', 'chao', 'hello', 'hi'].some((word) => containsChatPhrase(dto.message, word))
+      ['xin chao', 'chao', 'hello', 'hi'].some((word) => containsChatPhrase(message, word))
     )
       return {
         reply:
@@ -68,8 +87,8 @@ export class ChatbotService {
         sources: [],
         actions: [],
       };
-    if (!topic) {
-      topic = await this.ai.classify(dto.message);
+    if (!topic && allowAi) {
+      topic = await this.ai.classify(message);
       if (topic) engine = 'GEMINI';
     }
     const entry = chatbotKnowledge.find((item) => item.id === topic);

@@ -25,6 +25,8 @@ import { maskStaffSender, SUPPORT_STAFF_MASK } from './chat-mask.util';
 import { StaffQueueService } from './staff-queue.service';
 
 export interface ChatSocketBroadcaster {
+  isUserOnline?(userId: string): Promise<boolean | null>;
+  isSupportOnline?(): Promise<boolean | null>;
   broadcastMessage(conversationId: string, message: unknown): void;
   broadcastRead(conversationId: string, userId: string): void;
   broadcastToUser(userId: string, event: string, payload: unknown): void;
@@ -677,6 +679,7 @@ export class ChatService implements OnModuleInit {
       participant1Id: string;
       participant2Id: string | null;
       status?: string;
+      assignedStaffId?: string | null;
     },
     senderId: string,
     senderRole: string,
@@ -699,6 +702,7 @@ export class ChatService implements OnModuleInit {
         if (partner?.role !== 'SELLER' || partner.isShopSuspended) return;
         const reply = await this.autoReplyService.findMatchingReply(partnerId, 'SHOP', text, {
           firstMessage,
+          offline: (await this.socketBroadcaster?.isUserOnline?.(partnerId)) === false,
         });
         if (reply) {
           const autoMsg = await this.saveAutoReply(conv, partnerId, reply);
@@ -710,6 +714,9 @@ export class ChatService implements OnModuleInit {
       ) {
         const reply = await this.autoReplyService.findMatchingReply(null, 'SYSTEM', text, {
           firstMessage,
+          offline: conv.assignedStaffId
+            ? (await this.socketBroadcaster?.isUserOnline?.(conv.assignedStaffId)) === false
+            : (await this.socketBroadcaster?.isSupportOnline?.()) === false,
         });
         if (reply) {
           const staffUser = await this.prisma.user.findFirst({

@@ -20,9 +20,8 @@ function templates(scope) {
       content: `${sender} đã nhận được thông tin. Bạn vui lòng mô tả thêm câu hỏi và gửi mã đơn nếu liên quan giao dịch để được kiểm tra nhé.`,
     },
     {
-      name: 'Vắng mặt (chưa bật)',
+      name: 'Vắng mặt',
       triggerType: 'OFFLINE',
-      isActive: false,
       content: `${sender} hiện chưa thể phản hồi trực tiếp. Bạn để lại câu hỏi và mã đơn nếu có để được hỗ trợ khi nhân viên quay lại nhé.`,
     },
     {
@@ -96,8 +95,30 @@ try {
         scopesCreated: 0,
         scopesSkipped: 0,
         templatesCreated: 0,
+        offlineDefaultsEnabled: 0,
       };
       for (const target of targets) {
+        // Explicitly upgrade only our original disabled default, never admin-blocked/custom text.
+        if (process.argv.includes('--enable-offline-defaults')) {
+          const offline = templates(target.scope).find((item) => item.triggerType === 'OFFLINE');
+          const where = {
+            ...target,
+            triggerType: 'OFFLINE',
+            name: 'Vắng mặt (chưa bật)',
+            content: offline.content,
+            status: 'ACTIVE',
+            isActive: false,
+          };
+          if (apply) {
+            const updated = await tx.chatAutoReply.updateMany({
+              where,
+              data: { name: 'Vắng mặt', isActive: true },
+            });
+            summary.offlineDefaultsEnabled += updated.count;
+          } else {
+            summary.offlineDefaultsEnabled += await tx.chatAutoReply.count({ where });
+          }
+        }
         if (await tx.chatAutoReply.count({ where: target })) {
           summary.scopesSkipped++;
           continue;

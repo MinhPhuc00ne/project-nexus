@@ -122,13 +122,40 @@ test(
       assert.equal((await post({ message: 'order', orderId: missing }, 'outsider')).status, 404);
       counts.set('chatbot:rate:owner', 20);
       assert.equal((await post({ message: 'hello' })).status, 429);
+      const guest = (body, extraHeaders = {}) =>
+        fetch(`${base}/guest/messages`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...extraHeaders },
+          body: JSON.stringify(body),
+        });
+      const guestFaq = await guest({ message: 'phí ship' });
+      assert.equal(guestFaq.status, 200);
+      assert.equal((await guestFaq.json()).engine, 'FAQ');
+      const guestOrder = await guest({ message: 'đơn hàng' });
+      assert.equal(guestOrder.status, 200);
+      const guestBody = await guestOrder.json();
+      assert.equal(guestBody.order, undefined);
+      assert.deepEqual(guestBody.actions, [{ type: 'LOGIN' }]);
+      for (const body of [
+        { message: 'hi', orderId },
+        { message: 'hi', userId: 'owner' },
+        { message: ' ' },
+      ]) {
+        assert.equal((await guest(body)).status, 400);
+      }
+      const guestKey = [...counts.keys()].find((key) => key.startsWith('chatbot:rate:guest:'));
+      assert.ok(guestKey);
+      counts.set(guestKey, 20);
+      assert.equal((await guest({ message: 'hi' }, { 'X-Forwarded-For': '1.2.3.4' })).status, 429);
       redisDown = true;
       assert.equal((await post({ message: 'hello' }, 'other')).status, 503);
+      assert.equal((await guest({ message: 'hi' })).status, 503);
       const doc = SwaggerModule.createDocument(
         app,
         new DocumentBuilder().setTitle('Chatbot').setVersion('1').build(),
       );
       assert.ok(doc.paths['/api/v1/chat/bot/messages'].post);
+      assert.deepEqual(doc.paths['/api/v1/chat/bot/guest/messages'].post.security, []);
       assert.ok(doc.components.schemas.ChatbotMessageDto.required.includes('message'));
     } finally {
       await app.close();

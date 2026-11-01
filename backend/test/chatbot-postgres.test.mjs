@@ -58,6 +58,29 @@ test(
         1,
       );
       assert.ok((await redis.ttl(rateKey)) > 0);
+      const guestBot = new ChatbotService(
+        {
+          order: {
+            findFirst: () => {
+              throw Error('Guest order access');
+            },
+          },
+        },
+        {
+          classify: () => {
+            throw Error('Guest AI access');
+          },
+        },
+        limit,
+      );
+      for (let i = 0; i < 20; i++) {
+        const response = await guestBot.replyGuest(marker, { message: 'đơn hàng' });
+        assert.deepEqual(response.actions, [{ type: 'LOGIN' }]);
+      }
+      await assert.rejects(
+        guestBot.replyGuest(marker, { message: 'hi' }),
+        (e) => e.getStatus() === 429,
+      );
       await assert.rejects(
         prisma.$transaction(async (tx) => {
           const buyer = await tx.user.create({
@@ -143,13 +166,45 @@ test(
           assert.equal(updated.unreadCountUser1, 1);
           assert.equal(updated.unreadCountUser2, 1);
           assert.equal(updated.lastMessage, automatic.body);
+          await tx.chatAutoReply.create({
+            data: {
+              shopId: seller.id,
+              scope: 'SHOP',
+              triggerType: 'OFFLINE',
+              content: 'Shop đang vắng mặt',
+              status: 'ACTIVE',
+              isActive: true,
+            },
+          });
+          let online = false;
+          chat.setBroadcaster({ isUserOnline: async () => online, broadcastMessage() {} });
+          await chat.sendMessage(buyer.id, 'BUYER', {
+            conversationId: conversation.id,
+            content: 'hi',
+          });
+          const offlineUpdate = await tx.chatConversation.findUniqueOrThrow({
+            where: { id: conversation.id },
+          });
+          assert.equal(offlineUpdate.lastMessage, '[Trả lời tự động] Shop đang vắng mặt');
+          assert.equal(offlineUpdate.unreadCountUser1, 2);
+          online = true;
+          await chat.sendMessage(buyer.id, 'BUYER', {
+            conversationId: conversation.id,
+            content: 'hi',
+          });
+          assert.equal(
+            await tx.chatMessage.count({
+              where: { conversationId: conversation.id, senderId: seller.id },
+            }),
+            2,
+          );
           throw rollback;
         }),
         (error) => error === rollback,
       );
       assert.equal(await prisma.user.count({ where: { fullName: marker } }), 0);
     } finally {
-      if (redis.status === 'ready') await redis.del(rateKey);
+      if (redis.status === 'ready') await redis.del(rateKey, `chatbot:rate:guest:${marker}`);
       redis.disconnect();
       await prisma.$disconnect();
       await pool.end();

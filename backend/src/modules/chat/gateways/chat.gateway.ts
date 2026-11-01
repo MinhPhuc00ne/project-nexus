@@ -42,6 +42,24 @@ export class ChatGateway
     this.logger.log('Chat WebSocket Gateway initialized successfully.');
   }
 
+  async isUserOnline(userId: string): Promise<boolean | null> {
+    return this.roomOnline(`user:${userId}`);
+  }
+
+  async isSupportOnline(): Promise<boolean | null> {
+    return this.roomOnline('role:SUPPORT_STAFF');
+  }
+
+  private async roomOnline(room: string): Promise<boolean | null> {
+    if (!this.server) return null;
+    try {
+      return (await this.server.in(room).fetchSockets()).length > 0;
+    } catch {
+      // An unavailable presence adapter does not establish that a shop is offline.
+      return null;
+    }
+  }
+
   broadcastMessage(conversationId: string, message: unknown): void {
     try {
       this.server?.to(`conversation:${conversationId}`).emit('new_message', message);
