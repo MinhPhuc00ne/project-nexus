@@ -20,12 +20,12 @@ const { matchChatbotTopic } = load('../src/modules/chat/services/chatbot-knowled
 
 function fixture(order = null) {
   const prisma = { order: { findFirst: mock.fn(async () => order) } };
-  const ai = { isConfigured: () => false, classify: mock.fn(async () => null) };
+  const ai = { isConfigured: () => false, answer: mock.fn(async () => null) };
   const limit = { check: mock.fn(async () => {}) };
   return { prisma, ai, limit, bot: new ChatbotService(prisma, ai, limit) };
 }
 
-test('guest FAQ never reads orders or calls AI and offers login for protected actions', async () => {
+test('guest fallback never reads orders and offers login for protected actions', async () => {
   const f = fixture();
   for (const message of ['hi', 'hủy đơn', 'đơn hàng', 'unknown topic']) {
     const result = await f.bot.replyGuest('peer-hash', { message, orderId: 'injected' });
@@ -33,7 +33,8 @@ test('guest FAQ never reads orders or calls AI and offers login for protected ac
     assert.equal(result.order, undefined);
     assert.ok(result.actions.every((action) => action.type === 'LOGIN'));
   }
-  assert.equal(f.ai.classify.mock.callCount(), 0);
+  assert.equal(f.ai.answer.mock.callCount(), 4);
+  assert.equal(f.ai.answer.mock.calls[0].arguments[2], false);
   assert.equal(f.prisma.order.findFirst.mock.callCount(), 0);
   assert.equal(f.limit.check.mock.calls[0].arguments[0], 'guest:peer-hash');
 });
@@ -90,28 +91,31 @@ test('FAQ understands Vietnamese accents, cancellation precedence and whole word
   const reply = await f.bot.reply('buyer', { message: 'HỦY ĐƠN đã xác nhận được không?' });
   assert.match(reply.reply, /Admin duyệt/);
   assert.equal(reply.engine, 'FAQ');
-  assert.equal(f.ai.classify.mock.callCount(), 0);
+  assert.equal(f.ai.answer.mock.callCount(), 1);
   assert.equal(f.prisma.order.findFirst.mock.callCount(), 0);
   assert.equal((await f.bot.reply('buyer', { message: 'Xin chào' })).topic, 'WELCOME');
 });
 
-test('unknown requests offer staff handoff, security questions bypass AI and AI chooses only canonical facts', async () => {
+test('unknown requests offer staff handoff, AI authors answers and security questions bypass AI', async () => {
   const f = fixture();
   const unknown = await f.bot.reply('buyer', { message: 'Tell me about quantum physics' });
   assert.equal(unknown.topic, 'UNKNOWN');
   assert.equal(unknown.actions[0].endpoint, '/api/v1/chat/request-support');
-  f.ai.classify.mock.mockImplementation(async () => 'REFUND');
+  f.ai.answer.mock.mockImplementation(async () => ({
+    topic: 'REFUND',
+    reply: 'Mình sẽ giải thích: tiền mặc định hoàn về nguồn thanh toán ban đầu.',
+  }));
   const ai = await f.bot.reply('buyer', {
     message: 'Where is my money after returning this item?',
   });
   assert.equal(ai.engine, 'GEMINI');
   assert.match(ai.reply, /mặc định hoàn về nguồn/);
-  const count = f.ai.classify.mock.callCount();
+  const count = f.ai.answer.mock.callCount();
   assert.equal(
     (await f.bot.reply('buyer', { message: 'OTP của tôi là 123456' })).topic,
     'SECURITY',
   );
-  assert.equal(f.ai.classify.mock.callCount(), count);
+  assert.equal(f.ai.answer.mock.callCount(), count);
 });
 
 test('order lookup restricts both buyer and seller and excludes private data from response and AI', async () => {
@@ -129,7 +133,7 @@ test('order lookup restricts both buyer and seller and excludes private data fro
   assert.equal(reply.engine, 'ORDER');
   assert.equal(reply.order.afterSalesStatus, 'REQUESTED');
   assert.equal(reply.order.waybillCode, null);
-  assert.equal(f.ai.classify.mock.callCount(), 0);
+  assert.equal(f.ai.answer.mock.callCount(), 0);
   const select = f.prisma.order.findFirst.mock.calls[0].arguments[0].select;
   assert.equal(select.shippingAddressSnapshot, undefined);
   assert.equal(select.payments, undefined);
@@ -138,7 +142,7 @@ test('order lookup restricts both buyer and seller and excludes private data fro
     outsider.bot.reply('stranger', { message: 'order', orderId: 'order-1' }),
     (e) => e.getStatus() === 404,
   );
-  assert.equal(outsider.ai.classify.mock.callCount(), 0);
+  assert.equal(outsider.ai.answer.mock.callCount(), 0);
 });
 
 test('rate limit is Redis-backed, independent by user and fails closed before DB/AI calls', async () => {
@@ -168,25 +172,38 @@ test('rate limit is Redis-backed, independent by user and fails closed before DB
   });
   await assert.rejects(f.bot.reply('buyer', { message: 'question', orderId: 'id' }));
   assert.equal(f.prisma.order.findFirst.mock.callCount(), 0);
-  assert.equal(f.ai.classify.mock.callCount(), 0);
+  assert.equal(f.ai.answer.mock.callCount(), 0);
 });
 
-test('Gemini classifier is opt-in, puts key only in header and validates structured output', async () => {
+test('Gemini conversation is opt-in, separates system prompt and history and validates output', async () => {
   const config = {
     CHATBOT_AI_ENABLED: 'true',
     GEMINI_API_KEY: 'test-key',
     CHATBOT_GEMINI_MODEL: 'gemini-test',
   };
   const ai = new ChatbotAiService({ get: (key) => config[key] });
-  const response = (topic, finishReason = 'STOP') =>
+  const response = (
+    topic,
+    finishReason = 'STOP',
+    reply = 'Bạn hãy chuẩn bị bằng chứng về sản phẩm bị lỗi nhé.',
+  ) =>
     new Response(
       JSON.stringify({
-        candidates: [{ finishReason, content: { parts: [{ text: JSON.stringify({ topic }) }] } }],
+        candidates: [
+          { finishReason, content: { parts: [{ text: JSON.stringify({ topic, reply }) }] } },
+        ],
       }),
     );
   const fetchMock = mock.method(globalThis, 'fetch', async (url, options) => {
     assert.equal(url.includes('test-key'), false);
     assert.equal(options.headers['x-goog-api-key'], 'test-key');
+    const payload = JSON.parse(options.body);
+    assert.match(payload.systemInstruction.parts[0].text, /trợ lý AI hội thoại/);
+    assert.match(payload.systemInstruction.parts[0].text, /Kiến thức NEXUS/);
+    assert.match(payload.systemInstruction.parts[0].text, /Không tự bịa thông tin/);
+    assert.equal(payload.contents[1].role, 'model');
+    assert.equal(payload.contents[0].parts[0].text, 'Tôi muốn trả hàng');
+    assert.equal(payload.contents.at(-1).parts[0].text, 'Tôi cần chuẩn bị gì?');
     assert.equal(
       JSON.stringify(JSON.parse(options.body).contents).includes('private-order'),
       false,
@@ -194,24 +211,34 @@ test('Gemini classifier is opt-in, puts key only in header and validates structu
     return response('RETURN');
   });
   try {
-    assert.equal(await ai.classify('I received a broken item'), 'RETURN');
+    const history = [
+      { role: 'user', content: 'Tôi muốn trả hàng' },
+      { role: 'assistant', content: 'Bạn nhận hàng khi nào?' },
+    ];
+    assert.deepEqual(await ai.answer('Tôi cần chuẩn bị gì?', history), {
+      topic: 'RETURN',
+      reply: 'Bạn hãy chuẩn bị bằng chứng về sản phẩm bị lỗi nhé.',
+    });
     for (const result of [
       response('INVENTED'),
       response('RETURN', 'SAFETY'),
+      response('RETURN', 'STOP', ''),
+      response('RETURN', 'STOP', 'x'.repeat(2001)),
+      response('RETURN', 'STOP', 123),
       new Response('{}'),
       new Response('bad json'),
       new Response('', { status: 429 }),
     ]) {
       fetchMock.mock.mockImplementation(async () => result);
-      assert.equal(await ai.classify('test'), null);
+      assert.equal(await ai.answer('test'), null);
     }
     fetchMock.mock.mockImplementation(async () => {
       throw Error('timeout');
     });
-    assert.equal(await ai.classify('test'), null);
+    assert.equal(await ai.answer('test'), null);
     config.CHATBOT_AI_ENABLED = 'false';
     const calls = fetchMock.mock.callCount();
-    assert.equal(await ai.classify('test'), null);
+    assert.equal(await ai.answer('test'), null);
     assert.equal(fetchMock.mock.callCount(), calls);
     config.CHATBOT_AI_ENABLED = 'true';
     config.CHATBOT_GEMINI_MODEL = '../../bad?key=leak';
@@ -219,6 +246,39 @@ test('Gemini classifier is opt-in, puts key only in header and validates structu
   } finally {
     fetchMock.mock.restore();
   }
+});
+
+test('AI handles keyword matches, greetings and follow-up questions for authenticated and guest users', async () => {
+  const f = fixture();
+  f.ai.answer.mock.mockImplementation(async () => ({
+    topic: 'CANCELLATION',
+    reply: 'Bạn cho mình biết shop đã xác nhận đơn chưa nhé?',
+  }));
+  const history = [
+    { role: 'user', content: 'Tôi muốn hủy đơn' },
+    { role: 'assistant', content: 'Shop đã xác nhận chưa?' },
+  ];
+  for (const message of ['hủy đơn', 'Xin chào', 'Rồi, giờ làm sao?']) {
+    const reply = await f.bot.reply('buyer', { message, history });
+    assert.equal(reply.engine, 'GEMINI');
+    assert.equal(reply.reply, 'Bạn cho mình biết shop đã xác nhận đơn chưa nhé?');
+    assert.deepEqual(f.ai.answer.mock.calls.at(-1).arguments, [message, history, true]);
+    assert.deepEqual(reply.sources, [{ id: 'CANCELLATION', title: 'Hủy đơn hàng' }]);
+  }
+  const guest = await f.bot.replyGuest('guest', { message: 'Rồi, giờ làm sao?', history });
+  assert.equal(guest.engine, 'GEMINI');
+  assert.equal(f.ai.answer.mock.calls.at(-1).arguments[2], false);
+  assert.deepEqual(guest.actions, [{ type: 'LOGIN' }]);
+  assert.equal(f.prisma.order.findFirst.mock.callCount(), 0);
+});
+
+test('credential-bearing history is redacted before follow-up reaches AI', async () => {
+  const f = fixture();
+  await f.bot.reply('buyer', {
+    message: 'Tôi cần làm gì tiếp?',
+    history: [{ role: 'user', content: 'OTP là 123456' }],
+  });
+  assert.equal(JSON.stringify(f.ai.answer.mock.calls[0].arguments).includes('123456'), false);
 });
 
 test('shop keyword replies are scoped, accent-insensitive, specific and do not fire on fragments', async () => {

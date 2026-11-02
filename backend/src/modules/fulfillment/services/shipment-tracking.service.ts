@@ -83,11 +83,12 @@ export class ShipmentTrackingService {
 
     // In dev mode, use mockStatus if explicitly provided, OR retain previously simulated status
     // during non-mock refreshes (e.g. when buyer confirms delivery) to avoid resetting to ready_to_pick.
-    const effectiveStatus = (isDev && mockStatus)
-      ? mockStatus
-      : (isDev && previousTracking.isSimulated && typeof previousTracking.status === 'string')
-        ? String(previousTracking.status)
-        : undefined;
+    const effectiveStatus =
+      isDev && mockStatus
+        ? mockStatus
+        : isDev && previousTracking.isSimulated && typeof previousTracking.status === 'string'
+          ? String(previousTracking.status)
+          : undefined;
 
     let detail: GhnOrderDetail;
     if (isDev && effectiveStatus) {

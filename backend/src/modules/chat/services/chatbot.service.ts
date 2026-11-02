@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { ChatbotMessageDto, GuestChatbotMessageDto } from '../dtos/chatbot-message.dto';
+import {
+  ChatbotHistoryMessageDto,
+  ChatbotMessageDto,
+  GuestChatbotMessageDto,
+} from '../dtos/chatbot-message.dto';
 import { ChatbotAiService } from './chatbot-ai.service';
 import {
   chatbotKnowledge,
@@ -54,13 +58,13 @@ export class ChatbotService {
   async reply(userId: string, dto: ChatbotMessageDto): Promise<ChatbotReply> {
     await this.rateLimit.check(userId);
     if (dto.orderId) return this.orderReply(userId, dto.orderId);
-    return this.answer(dto.message, true);
+    return this.answer(dto.message, true, dto.history ?? []);
   }
 
   async replyGuest(identity: string, dto: GuestChatbotMessageDto): Promise<ChatbotReply> {
     await this.rateLimit.check(`guest:${identity}`);
-    const response = await this.answer(dto.message, false);
-    if (response.topic === 'WELCOME') {
+    const response = await this.answer(dto.message, false, dto.history ?? []);
+    if (response.topic === 'WELCOME' && response.engine === 'FAQ') {
       response.reply =
         'Xin chào! Mình là trợ lý tự động NEXUS. Bạn có thể hỏi chính sách thanh toán, giao hàng, hủy/trả hàng và hoàn tiền. Vui lòng đăng nhập nếu cần tra cứu đơn hoặc liên hệ nhân viên.';
     }
@@ -72,9 +76,36 @@ export class ChatbotService {
     return response;
   }
 
-  private async answer(message: string, allowAi: boolean): Promise<ChatbotReply> {
-    let topic = matchChatbotTopic(message);
-    let engine: ChatbotReply['engine'] = 'FAQ';
+  private async answer(
+    message: string,
+    authenticated: boolean,
+    history: ChatbotHistoryMessageDto[] = [],
+  ): Promise<ChatbotReply> {
+    const topic = matchChatbotTopic(message);
+    const engine: ChatbotReply['engine'] = 'FAQ';
+    // Keep credential-bearing messages and history out of the external model.
+    if (topic !== 'SECURITY') {
+      const safeHistory = history.map((turn) =>
+        matchChatbotTopic(turn.content) === 'SECURITY'
+          ? { ...turn, content: '[Nội dung bảo mật đã được ẩn.]' }
+          : turn,
+      );
+      const generated = await this.ai.answer(message, safeHistory, authenticated);
+      if (generated) {
+        const entry = chatbotKnowledge.find((item) => item.id === generated.topic);
+        return {
+          ...generated,
+          engine: 'GEMINI',
+          sources: entry ? [{ id: entry.id, title: entry.title }] : [],
+          actions:
+            generated.topic === 'WELCOME'
+              ? []
+              : generated.topic === 'ORDER'
+                ? [{ type: 'SELECT_ORDER' }]
+                : [{ type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' }],
+        };
+      }
+    }
     if (
       !topic &&
       ['xin chao', 'chao', 'hello', 'hi'].some((word) => containsChatPhrase(message, word))
@@ -87,10 +118,6 @@ export class ChatbotService {
         sources: [],
         actions: [],
       };
-    if (!topic && allowAi) {
-      topic = await this.ai.classify(message);
-      if (topic) engine = 'GEMINI';
-    }
     const entry = chatbotKnowledge.find((item) => item.id === topic);
     if (!entry)
       return {

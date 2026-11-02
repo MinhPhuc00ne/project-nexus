@@ -67,8 +67,8 @@ test(
           },
         },
         {
-          classify: () => {
-            throw Error('Guest AI access');
+          answer: () => {
+            return null;
           },
         },
         limit,
@@ -111,7 +111,7 @@ test(
           });
           const ai = {
             isConfigured: () => false,
-            classify: () => {
+            answer: () => {
               throw Error('Order details must never reach AI');
             },
           };
