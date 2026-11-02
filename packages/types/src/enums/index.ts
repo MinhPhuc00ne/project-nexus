@@ -38,6 +38,16 @@ export enum AuctionStatus {
 }
 
 /**
+ * Verification state of an individual bid placed in an auction.
+ */
+export enum BidStatus {
+  ACCEPTED = 'ACCEPTED',
+  SUPERSEDED = 'SUPERSEDED',
+  WINNING = 'WINNING',
+  REJECTED = 'REJECTED',
+}
+
+/**
  * Financial lifecycle status of held escrow transactions.
  */
 export enum EscrowStatus {

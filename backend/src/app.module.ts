@@ -14,6 +14,7 @@ import { CommerceModule } from './modules/commerce/commerce.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FulfillmentModule } from './modules/fulfillment/fulfillment.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { AuctionModule } from './modules/auction/auction.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ChatModule } from './modules/chat/chat.module';
     NotificationsModule,
     FulfillmentModule,
     ChatModule,
+    AuctionModule,
   ],
 })
 export class AppModule {}
