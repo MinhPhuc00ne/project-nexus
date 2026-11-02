@@ -198,7 +198,7 @@ async function main() {
     },
   });
 
-  const catWomenWatches = await prisma.category.upsert({
+  const _catWomenWatches = await prisma.category.upsert({
     where: { slug: 'dong-ho-nu-thoi-trang' },
     update: { name: 'Đồng Hồ Nữ Thời Trang', parentId: catLuxuryWatches.id, level: 3 },
     create: {
@@ -282,7 +282,7 @@ async function main() {
     },
   });
 
-  const catProtectors = await prisma.category.upsert({
+  const _catProtectors = await prisma.category.upsert({
     where: { slug: 'op-lung-cuong-luc-bao-ve' },
     update: { name: 'Ốp Lưng & Giá Đỡ Thông Minh', parentId: catPhoneAcc.id, level: 3 },
     create: {
@@ -476,7 +476,7 @@ async function main() {
     },
   ];
 
-  const sellerEntities: Record<string, any> = {};
+  const sellerEntities: Record<string, { id: string; [key: string]: unknown }> = {};
 
   for (const s of sellerConfigs) {
     const sellerUser = await upsertDemoUser(prisma, {
@@ -1033,7 +1033,10 @@ async function main() {
   // =========================================================================
   // 10. HÀM SEED SẢN PHẨM & TỒN KHO AN TOÀN
   // =========================================================================
-  async function seedProductsForSeller(sellerUser: any, products: any[]) {
+  async function seedProductsForSeller(
+    sellerUser: { id: string },
+    products: Array<Record<string, unknown>>,
+  ) {
     for (const item of products) {
       let product = await prisma.product.findFirst({
         where: {

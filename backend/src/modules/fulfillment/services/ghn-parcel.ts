@@ -28,12 +28,8 @@ export const OBSOLETE_GHN_WARD_CODES: Record<string, string> = {
 };
 
 export function normalizeGhnWardCode(code: string): string;
-export function normalizeGhnWardCode(
-  code: string | number | undefined | null,
-): string | undefined;
-export function normalizeGhnWardCode(
-  code: string | number | undefined | null,
-): string | undefined {
+export function normalizeGhnWardCode(code: string | number | undefined | null): string | undefined;
+export function normalizeGhnWardCode(code: string | number | undefined | null): string | undefined {
   if (!code) return undefined;
   const str = String(code).trim();
   return OBSOLETE_GHN_WARD_CODES[str] ?? str;
