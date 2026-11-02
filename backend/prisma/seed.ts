@@ -459,7 +459,7 @@ async function main() {
       identityCardNumber: '001201009999',
       address: {
         street: '321 Hai Bà Trưng',
-        ward: 'Phường 8',
+        ward: 'Phường Võ Thị Sáu',
         district: 'Quận 3',
         city: 'TP. Hồ Chí Minh',
       },
@@ -468,10 +468,10 @@ async function main() {
         phone: '0901234006',
         city: 'TP. Hồ Chí Minh',
         district: 'Quận 3',
-        ward: 'Phường 8',
+        ward: 'Phường Võ Thị Sáu',
         street: '321 Hai Bà Trưng',
         districtId: 1444,
-        wardCode: '20308',
+        wardCode: '90795',
       },
     },
   ];
