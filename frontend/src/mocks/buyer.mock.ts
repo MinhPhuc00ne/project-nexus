@@ -327,11 +327,11 @@ export const MOCK_BUYER_TRANSACTIONS: BuyerTransaction[] = [
   {
     id: 'TX007',
     type: 'TOP_UP',
-    label: 'Nạp tiền qua Stripe',
+    label: 'Nạp tiền qua PayOS VietQR',
     amount: 2000000,
     date: '05/09/2024 08:30',
     status: 'PENDING',
-    ref: 'STRIPE-82763',
+    ref: 'PAYOS-82763',
   },
 ];
 

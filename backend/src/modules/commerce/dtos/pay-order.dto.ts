@@ -2,11 +2,14 @@ import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentProvider } from '@prisma/client';
 
+/**
+ * Data transfer object for initiating order payment transactions.
+ */
 export class PayOrderDto {
   @ApiPropertyOptional({
     enum: PaymentProvider,
     default: PaymentProvider.PAYOS,
-    description: 'Cổng thanh toán muốn sử dụng (PAYOS, STRIPE, WALLET)',
+    description: 'Cổng thanh toán muốn sử dụng (PAYOS, WALLET, COD)',
   })
   @IsEnum(PaymentProvider)
   @IsOptional()

@@ -163,8 +163,8 @@ export const CartItemList: React.FC<CartItemListProps> = ({
         <div>
           <h4 className="font-bold mb-0.5">Thanh toán Ký quỹ Bảo chứng Escrow an toàn</h4>
           <p className="text-indigo-700 leading-relaxed text-[11px]">
-            Toàn bộ đơn hàng được giữ tiền ký quỹ tại cổng PayOS / Stripe. Người bán chỉ nhận được
-            khoản thanh toán sau khi quý khách đồng kiểm bưu kiện và xác nhận hoàn tất.
+            Toàn bộ đơn hàng được giữ tiền ký quỹ tại cổng PayOS / Ví NEXUS Pay. Người bán chỉ nhận
+            được khoản thanh toán sau khi quý khách đồng kiểm bưu kiện và xác nhận hoàn tất.
           </p>
         </div>
       </div>

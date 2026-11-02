@@ -1,4 +1,4 @@
-import { Loader2, Smartphone, CreditCard, Building2 } from 'lucide-react';
+import { Loader2, Building2 } from 'lucide-react';
 
 interface WalletTopUpModalProps {
   isOpen: boolean;
@@ -12,9 +12,7 @@ interface WalletTopUpModalProps {
 }
 
 const topUpMethods = [
-  { id: 'PAYOS', icon: Building2, label: 'PayOS VietQR', desc: 'Chuyển khoản QR 24/7' },
-  { id: 'VNPAY', icon: Smartphone, label: 'VNPay QR', desc: 'Quét mã nhanh' },
-  { id: 'STRIPE', icon: CreditCard, label: 'Thẻ Quốc Tế', desc: 'Visa / Mastercard' },
+  { id: 'PAYOS', icon: Building2, label: 'PayOS VietQR', desc: 'Chuyển khoản QR ngân hàng 24/7' },
 ];
 
 const quickAmounts = [200000, 500000, 1000000, 2000000];

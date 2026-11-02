@@ -53,8 +53,8 @@ enum DisputeStatus {
 
 enum PaymentProvider {
   PAYOS
-  STRIPE
   WALLET
+  COD
 }
 
 enum PaymentStatus {
@@ -66,7 +66,6 @@ enum PaymentStatus {
 
 enum CarrierName {
   GHN
-  GHTK
 }
 
 enum ShipmentStatus {
@@ -116,6 +115,8 @@ enum WalletTransactionType {
   ESCROW_REFUND
   ORDER_PAYMENT
   PLATFORM_FEE
+  AUCTION_BID_LOCK
+  AUCTION_BID_REFUND
 }
 
 enum WalletTransactionStatus {

@@ -9,7 +9,7 @@ export interface ShippingAddressInput {
   street: string;
 }
 
-export type CheckoutPaymentMethodType = 'PAYOS' | 'COD' | 'WALLET' | 'STRIPE';
+export type CheckoutPaymentMethodType = 'PAYOS' | 'COD' | 'WALLET';
 
 export interface CheckoutInput {
   shippingAddress: ShippingAddressInput;
@@ -159,16 +159,12 @@ export async function getCheckoutQuoteApi(data: {
  */
 export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse> {
   const isCod = data.paymentMethod === 'COD';
-  const apiPayload = {
-    ...data,
-    paymentMethod: isCod ? 'STRIPE' : data.paymentMethod,
-  };
 
   const response = await api.post<{
     statusCode: number;
     message: string;
     data: CheckoutResponse;
-  }>('/commerce/checkout', apiPayload);
+  }>('/commerce/checkout', data);
 
   const payload = response?.data;
   const result = (
@@ -192,7 +188,7 @@ export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse
  */
 export async function payOrderApi(
   orderId: string,
-  provider: 'PAYOS' | 'WALLET' | 'STRIPE' = 'PAYOS',
+  provider: 'PAYOS' | 'WALLET' | 'COD' = 'PAYOS',
 ): Promise<PayosPaymentInfo> {
   const response = await api.post<{
     statusCode: number;

@@ -230,7 +230,7 @@ export const initialCommerceData: AdminCommerceData = {
       kind: 'payment',
       amount: 48500000,
       fee: 3395000,
-      gateway: 'Stripe',
+      gateway: 'PayOS',
       createdAt: '2026-10-18',
       status: 'reconciled',
       note: '',

@@ -63,7 +63,7 @@ export default function AdminDashboardPage() {
             </span>
             <span className="flex items-center gap-1.5">
               <BadgeDollarSign size={13} className="text-primary" />
-              PayOS & Stripe: <b className="text-slate-800">{mockSystemStatus.paymentStatus}</b>
+              PayOS VietQR: <b className="text-slate-800">{mockSystemStatus.paymentStatus}</b>
             </span>
             <span className="flex items-center gap-1.5">
               <ShieldCheck size={13} className="text-primary" />

@@ -128,6 +128,30 @@ export enum NotificationChannel {
 }
 
 /**
+ * Types of transactions recorded in the platform wallet ledger.
+ */
+export enum WalletTransactionType {
+  DEPOSIT = 'DEPOSIT',
+  WITHDRAW = 'WITHDRAW',
+  ESCROW_LOCK = 'ESCROW_LOCK',
+  ESCROW_PAYOUT = 'ESCROW_PAYOUT',
+  ESCROW_REFUND = 'ESCROW_REFUND',
+  ORDER_PAYMENT = 'ORDER_PAYMENT',
+  PLATFORM_FEE = 'PLATFORM_FEE',
+  AUCTION_BID_LOCK = 'AUCTION_BID_LOCK',
+  AUCTION_BID_REFUND = 'AUCTION_BID_REFUND',
+}
+
+/**
+ * Processing state for wallet ledger transactions.
+ */
+export enum WalletTransactionStatus {
+  PENDING = 'PENDING',
+  SUCCESS = 'SUCCESS',
+  FAILED = 'FAILED',
+}
+
+/**
  * Domain categorization for dispatching targeted notifications.
  */
 export enum NotificationType {
