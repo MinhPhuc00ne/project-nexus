@@ -17,10 +17,11 @@ import {
   toggleSelectAll,
   type CartItem,
 } from '../../services/cart';
-import CheckoutModal, { type DeliveryAddress } from '../../components/cart/CheckoutModal';
+import CheckoutModal from '../../components/cart/CheckoutModal';
 import CartOrderSummary from '../../components/cart/CartOrderSummary';
 import CartItemList from '../../components/cart/CartItemList';
 import { getStoredToken } from '../../services/auth';
+import type { ShippingAddressInput as DeliveryAddress } from '../../services/orders';
 
 export type { DeliveryAddress };
 
@@ -192,10 +193,10 @@ export default function CartPage() {
       <CheckoutModal
         isOpen={showCheckoutModal}
         onClose={() => setShowCheckoutModal(false)}
+        onCheckoutSuccess={() => setItems([])}
         selectedItems={selectedItems}
         shippingFee={appliedVoucher?.code === 'FREESHIP' ? 0 : 30000}
         grandTotal={appliedVoucher?.code === 'FREESHIP' ? grandTotal : grandTotal + 30000}
-        onCheckoutSuccess={() => setItems([])}
         showToast={showToast}
       />
     </div>

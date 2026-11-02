@@ -6,17 +6,18 @@ import { getStoredToken } from '../../services/auth';
 import { getAddresses, createAddress, type UserAddress } from '../../services/address';
 import {
   checkoutApi,
+  getCheckoutQuoteApi,
   type PayosPaymentInfo,
   type BuyerOrder,
   type ShippingAddressInput,
   type CheckoutPaymentMethodType,
+  DEFAULT_SHIPPING_ADDRESS,
 } from '../../services/orders';
 import { Loader2 } from 'lucide-react';
 import CheckoutSuccessCard from '../checkout/CheckoutSuccessCard';
 import CheckoutAddressSection from '../checkout/CheckoutAddressSection';
 import CheckoutPaymentMethod from '../checkout/CheckoutPaymentMethod';
-
-export type DeliveryAddress = ShippingAddressInput;
+import CheckoutItemsSummary from '../checkout/CheckoutItemsSummary';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -33,31 +34,23 @@ export default function CheckoutModal({
   onClose,
   selectedItems,
   shippingFee,
-  grandTotal,
+  grandTotal: propGrandTotal,
   onCheckoutSuccess,
   showToast,
 }: CheckoutModalProps) {
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
-  const [customAddress, setCustomAddress] = useState<ShippingAddressInput>({
-    recipientName: '',
-    phone: '',
-    city: 'TP. Hồ Chí Minh',
-    district: '',
-    ward: '',
-    street: '',
-  });
+  const [customAddress, setCustomAddress] =
+    useState<ShippingAddressInput>(DEFAULT_SHIPPING_ADDRESS);
 
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethodType>('PAYOS');
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [payosPayment, setPayosPayment] = useState<PayosPaymentInfo | null>(null);
   const [createdOrders, setCreatedOrders] = useState<BuyerOrder[]>([]);
-
-  const itemsSubtotal = selectedItems.reduce((sum, it) => sum + it.price * it.qty, 0);
-  const actualShippingFee = shippingFee !== undefined ? shippingFee : 30000;
-  const computedGrandTotal =
-    grandTotal !== undefined ? grandTotal : itemsSubtotal + actualShippingFee;
+  const [successGrandTotal, setSuccessGrandTotal] = useState<number>(0);
+  const [dynamicShippingFee, setDynamicShippingFee] = useState<number | null>(null);
+  const [isCalculatingFee, setIsCalculatingFee] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !getStoredToken()) return;
@@ -69,9 +62,7 @@ export default function CheckoutModal({
           setSelectedAddressId(def?.id ?? '');
         }
       })
-      .catch(() => {
-        // ignore
-      });
+      .catch(() => {});
   }, [isOpen]);
 
   const activeAddress = addresses.find((a) => a.id === selectedAddressId);
@@ -86,26 +77,63 @@ export default function CheckoutModal({
       }
     : customAddress;
 
+  const itemsSubtotal = selectedItems.reduce((sum, it) => sum + it.price * it.qty, 0);
+  const actualShippingFee =
+    dynamicShippingFee !== null ? dynamicShippingFee : (shippingFee ?? 30000);
+  const computedGrandTotal =
+    propGrandTotal !== undefined && dynamicShippingFee === null
+      ? propGrandTotal
+      : itemsSubtotal + actualShippingFee;
+
+  useEffect(() => {
+    if (!isOpen || !currentAddress?.city || selectedItems.length === 0) return;
+    let isCancelled = false;
+    setIsCalculatingFee(true);
+
+    getCheckoutQuoteApi({
+      shippingAddress: {
+        recipientName: currentAddress.recipientName || 'Người nhận',
+        phone: currentAddress.phone || '0901234567',
+        city: currentAddress.city.trim(),
+        district: currentAddress.district?.trim(),
+        ward: currentAddress.ward?.trim(),
+        street: currentAddress.street.trim() || 'Địa chỉ',
+      },
+      itemIds: selectedItems.map((it) => String(it.id)),
+    })
+      .then((res) => {
+        if (!isCancelled && typeof res?.totalShippingFee === 'number') {
+          setDynamicShippingFee(res.totalShippingFee);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!isCancelled) setIsCalculatingFee(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    isOpen,
+    selectedAddressId,
+    currentAddress.city,
+    currentAddress.district,
+    currentAddress.ward,
+    selectedItems.length,
+  ]);
+
   const handleSaveNewAddress = async (addr: ShippingAddressInput) => {
     setCustomAddress(addr);
     showToast('Đã lưu và cập nhật địa chỉ giao hàng.');
-    try {
-      const created = await createAddress({
-        recipientName: addr.recipientName.trim(),
-        phone: addr.phone.trim(),
-        city: addr.city.trim(),
-        district: (addr.district || '').trim(),
-        ward: (addr.ward || '').trim(),
-        street: addr.street.trim(),
-        isDefault: true,
-      });
-      if (created) {
-        setAddresses((prev) => [created, ...prev]);
-        setSelectedAddressId(created.id);
-      }
-    } catch {
-      // ignore
-    }
+    createAddress({ ...addr, isDefault: true })
+      .then((created) => {
+        if (created) {
+          setAddresses((prev) => [created, ...prev]);
+          setSelectedAddressId(created.id);
+        }
+      })
+      .catch(() => {});
   };
 
   const handleConfirmCheckout = async () => {
@@ -116,14 +144,15 @@ export default function CheckoutModal({
     }
 
     setIsProcessingOrder(true);
+    const lockedTotal = computedGrandTotal;
     try {
       const res = await checkoutApi({
         shippingAddress: {
           recipientName: recipientName.trim(),
           phone: phone.trim(),
           city: city.trim(),
-          district: district ? district.trim() : undefined,
-          ward: ward ? ward.trim() : undefined,
+          district: district?.trim() || undefined,
+          ward: ward?.trim() || undefined,
           street: street.trim(),
         },
         shippingFee: actualShippingFee,
@@ -131,24 +160,28 @@ export default function CheckoutModal({
         itemIds: selectedItems.map((it) => String(it.id)),
       });
 
-      setCreatedOrders(Array.isArray(res?.orders) ? res.orders : []);
+      const orders = Array.isArray(res?.orders) ? res.orders : [];
+      const ordersSum = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+      const finalAmount =
+        ordersSum > 0 ? ordersSum : Number(res?.payosPayment?.amount) || lockedTotal;
+
+      setCreatedOrders(orders);
       setPayosPayment(res?.payosPayment ?? null);
+      setSuccessGrandTotal(finalAmount);
       setCheckoutSuccess(true);
       await clearCart();
       if (onCheckoutSuccess) onCheckoutSuccess();
     } catch (err: unknown) {
       console.error('Checkout failed:', err);
-      const resData = (err as { response?: { data?: { message?: string | string[] } } })?.response
-        ?.data;
-      const serverMsg = resData?.message;
-      const msg = Array.isArray(serverMsg)
-        ? serverMsg.join(', ')
-        : typeof serverMsg === 'string'
-          ? serverMsg
-          : err instanceof Error
-            ? err.message
-            : 'Thanh toán thất bại. Vui lòng thử lại!';
-      showToast(msg);
+      const resMsg = (err as { response?: { data?: { message?: string | string[] } } })?.response
+        ?.data?.message;
+      showToast(
+        Array.isArray(resMsg)
+          ? resMsg.join(', ')
+          : typeof resMsg === 'string'
+            ? resMsg
+            : 'Thanh toán thất bại. Vui lòng thử lại!',
+      );
     } finally {
       setIsProcessingOrder(false);
     }
@@ -156,6 +189,8 @@ export default function CheckoutModal({
 
   const handleClose = () => {
     setCheckoutSuccess(false);
+    setSuccessGrandTotal(0);
+    setDynamicShippingFee(null);
     onClose();
   };
 
@@ -167,7 +202,9 @@ export default function CheckoutModal({
         checkoutSuccess
           ? paymentMethod === 'COD'
             ? 'Đặt Hàng COD Thành Công'
-            : 'Thanh Toán Thành Công'
+            : payosPayment
+              ? 'Quét Mã PayOS Để Thanh Toán'
+              : 'Đặt Hàng Thành Công'
           : 'Xác Nhận Đặt Hàng & Thanh Toán'
       }
       size={checkoutSuccess ? 'lg' : 'xl'}
@@ -178,24 +215,24 @@ export default function CheckoutModal({
             orders={createdOrders}
             isCod={paymentMethod === 'COD'}
             payosPayment={payosPayment}
-            grandTotal={computedGrandTotal}
+            grandTotal={successGrandTotal || computedGrandTotal}
             showToast={showToast}
             primaryAction={
               <Link
                 to="/buyer/orders"
                 onClick={handleClose}
-                className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow transition hover:bg-slate-800"
+                className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800"
               >
-                <span>Xem đơn hàng của tôi</span>
+                Xem đơn hàng của tôi
               </Link>
             }
             secondaryAction={
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow transition hover:bg-blue-700"
+                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-blue-700"
               >
-                <span>Hoàn tất</span>
+                Hoàn tất
               </button>
             }
           />
@@ -216,53 +253,18 @@ export default function CheckoutModal({
               onShowNotice={showToast}
             />
 
-            <div className="p-4 rounded-xl border border-slate-100 bg-slate-50 space-y-2 text-xs">
-              <div className="flex justify-between font-bold text-slate-800 pb-2 border-b border-slate-200">
-                <span>Sản phẩm thanh toán ({selectedItems.length})</span>
-                <span>Thành tiền</span>
-              </div>
-              <div className="max-h-36 overflow-y-auto divide-y divide-slate-100">
-                {selectedItems.map((item) => (
-                  <div key={item.id} className="py-2 flex justify-between items-center gap-3">
-                    <span className="line-clamp-1 flex-1 font-medium text-slate-700">
-                      {item.name} <span className="text-slate-400">x{item.qty}</span>
-                    </span>
-                    <span className="font-bold text-slate-900 shrink-0">
-                      {(item.price * item.qty).toLocaleString('vi-VN')} ₫
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <div className="pt-2 border-t border-slate-200 space-y-1 text-slate-600">
-                <div className="flex justify-between">
-                  <span>Tiền hàng:</span>
-                  <span className="font-semibold text-slate-800">
-                    {itemsSubtotal.toLocaleString('vi-VN')} ₫
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Phí vận chuyển GHN:</span>
-                  <span className="font-semibold text-slate-800">
-                    {actualShippingFee === 0 ? (
-                      <span className="text-emerald-600 font-bold">MIỄN PHÍ</span>
-                    ) : (
-                      `${actualShippingFee.toLocaleString('vi-VN')} ₫`
-                    )}
-                  </span>
-                </div>
-              </div>
-              <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline font-bold">
-                <span className="text-slate-700">Tổng thanh toán:</span>
-                <span className="text-base text-blue-600 font-extrabold">
-                  {computedGrandTotal.toLocaleString('vi-VN')} ₫
-                </span>
-              </div>
-            </div>
+            <CheckoutItemsSummary
+              items={selectedItems}
+              itemsSubtotal={itemsSubtotal}
+              shippingFee={actualShippingFee}
+              grandTotal={computedGrandTotal}
+              isCalculatingFee={isCalculatingFee}
+            />
 
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 disabled={isProcessingOrder}
                 className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
               >
@@ -271,17 +273,19 @@ export default function CheckoutModal({
               <button
                 type="button"
                 onClick={handleConfirmCheckout}
-                disabled={isProcessingOrder}
+                disabled={isProcessingOrder || isCalculatingFee}
                 className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition flex items-center gap-2 disabled:opacity-50"
               >
-                {isProcessingOrder ? (
-                  <>
-                    <Loader2 size={14} className="animate-spin" />
-                    <span>Đang xử lý đơn hàng...</span>
-                  </>
-                ) : (
-                  <span>Xác nhận đặt hàng</span>
+                {(isProcessingOrder || isCalculatingFee) && (
+                  <Loader2 size={14} className="animate-spin" />
                 )}
+                <span>
+                  {isProcessingOrder
+                    ? 'Đang xử lý đơn hàng...'
+                    : isCalculatingFee
+                      ? 'Đang tính cước GHN...'
+                      : 'Xác nhận đặt hàng'}
+                </span>
               </button>
             </div>
           </div>

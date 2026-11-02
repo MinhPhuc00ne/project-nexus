@@ -121,10 +121,37 @@ export function isCodOrder(order?: BuyerOrder | null): boolean {
   if (!order) return false;
   if (isCodOrderId(order.id) || isCodOrderId(order.orderNumber)) return true;
   const payments = order.payments ?? [];
-  const hasOnlineProvider = payments.some(
-    (p) => p.provider === 'PAYOS' || p.provider === 'WALLET' || p.provider === 'STRIPE',
-  );
-  return !hasOnlineProvider && order.status === 'PENDING_PAYMENT';
+  return payments.some((p) => p.provider === 'COD' || p.provider === 'CASH');
+}
+
+export interface CheckoutQuoteResponse {
+  quotes: Array<{
+    sellerId: string;
+    subtotal: number;
+    shippingFee: number;
+    totalAmount: number;
+  }>;
+  totalShippingFee: number;
+  totalAmount: number;
+}
+
+/**
+ * Lấy báo giá phí vận chuyển GHN chính thức trước khi đặt hàng
+ */
+export async function getCheckoutQuoteApi(data: {
+  shippingAddress: ShippingAddressInput;
+  itemIds?: string[];
+}): Promise<CheckoutQuoteResponse> {
+  const response = await api.post<{
+    statusCode: number;
+    message: string;
+    data: CheckoutQuoteResponse;
+  }>('/commerce/checkout/quote', data);
+
+  const payload = response?.data;
+  return (
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
+  ) as CheckoutQuoteResponse;
 }
 
 /**
@@ -234,3 +261,12 @@ export async function confirmDeliveryOrderApi(orderId: string): Promise<unknown>
   );
   return response.data;
 }
+
+export const DEFAULT_SHIPPING_ADDRESS: ShippingAddressInput = {
+  recipientName: '',
+  phone: '',
+  city: 'TP. Hồ Chí Minh',
+  district: '',
+  ward: '',
+  street: '',
+};

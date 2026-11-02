@@ -435,11 +435,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
         selectedItems={checkoutItems}
         shippingFee={30000}
         grandTotal={product.price * quantity + 30000}
-        onCheckoutSuccess={() => {
-          setShowCheckoutModal(false);
-          setToast({ type: 'success', message: 'Đơn hàng của bạn đã được đặt thành công!' });
-        }}
-        showToast={(message) => setToast({ type: 'success', message })}
+        showToast={(msg) => setToast({ type: 'success', message: msg })}
       />
     </main>
   );
