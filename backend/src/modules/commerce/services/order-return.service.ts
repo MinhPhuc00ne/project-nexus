@@ -214,11 +214,23 @@ export class OrderReturnService {
     const code = request.returnWaybillCode || order.shipment?.waybillCode;
     if (!code) throw new BadRequestException('Thiếu vận đơn hoàn hàng.');
     const context = shipmentGhnContext(order.shipment?.metadata);
-    const detail = await this.ghn.detail(code, context.shopId, context.environment);
-    if (detail.status !== (request.returnWaybillCode ? 'delivered' : 'returned'))
+    const isDev = process.env.NODE_ENV !== 'production';
+    const metadata = objectValue(order.shipment?.metadata);
+    const tracking = objectValue(metadata.tracking);
+    const simulatedReturned =
+      isDev && (order.shipment?.status === 'RETURNED' || tracking.status === 'returned');
+
+    let detailStatus: string;
+    if (simulatedReturned) {
+      detailStatus = request.returnWaybillCode ? 'delivered' : 'returned';
+    } else {
+      const detail = await this.ghn.detail(code, context.shopId, context.environment);
+      detailStatus = detail.status;
+      if (request.returnWaybillCode && detail.client_order_code !== `NX-RETURN-${orderId}`)
+        throw new BadRequestException('Vận đơn hoàn không khớp.');
+    }
+    if (detailStatus !== (request.returnWaybillCode ? 'delivered' : 'returned'))
       throw new BadRequestException('GHN chưa xác nhận hàng đã về shop.');
-    if (request.returnWaybillCode && detail.client_order_code !== `NX-RETURN-${orderId}`)
-      throw new BadRequestException('Vận đơn hoàn không khớp.');
     return this.prisma.$transaction(async (tx) => {
       const current = await this.store.lock(tx, orderId);
       if (current.afterSales?.status !== 'APPROVED')

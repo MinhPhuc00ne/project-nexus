@@ -43,20 +43,6 @@ export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
       </div>
 
       <p className="text-xs text-slate-700 leading-relaxed pl-10.5">{rev.comment}</p>
-
-      {rev.sellerResponse && (
-        <div className="ml-10 mt-2 p-3.5 bg-slate-50 border-l-2 border-blue-500 rounded-r-xl space-y-1">
-          <p className="text-xs font-bold text-blue-700">
-            Phản hồi từ {rev.sellerResponse.shopName}:
-          </p>
-          <p className="text-xs text-slate-600">{rev.sellerResponse.comment}</p>
-          <p className="text-[10px] text-slate-400">
-            {rev.sellerResponse.respondedAt
-              ? new Date(rev.sellerResponse.respondedAt).toLocaleDateString('vi-VN')
-              : ''}
-          </p>
-        </div>
-      )}
     </div>
   );
 };

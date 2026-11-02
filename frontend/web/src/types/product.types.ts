@@ -1,3 +1,5 @@
+import type { ProductOptionGroup, ProductSaleConfig } from '../services/productExtras';
+
 export interface ProductShopInfo {
   id?: string;
   name: string;
@@ -14,9 +16,13 @@ export interface ProductDetail {
   name: string;
   brand: string;
   price: number;
+  originalPrice?: number;
   formattedPrice: string;
   formattedOldPrice?: string;
   discount?: number;
+  saleLabel?: string;
+  saleInfo?: ProductSaleConfig;
+  options?: ProductOptionGroup[];
   stock: number;
   rating?: number;
   reviewsCount?: number;

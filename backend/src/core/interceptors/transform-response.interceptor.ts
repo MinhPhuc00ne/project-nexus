@@ -12,8 +12,13 @@ export interface ResponseEnvelope<T> {
 }
 
 @Injectable()
-export class TransformResponseInterceptor<T> implements NestInterceptor<T, ResponseEnvelope<T>> {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<ResponseEnvelope<T>> {
+export class TransformResponseInterceptor<T> implements NestInterceptor<
+  T,
+  T | ResponseEnvelope<T>
+> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<T | ResponseEnvelope<T>> {
+    // HTTP envelopes must not inspect or wrap Socket.IO event payloads.
+    if (context.getType() !== 'http') return next.handle();
     const httpContext = context.switchToHttp();
     const request = httpContext.getRequest<Request>();
     const response = httpContext.getResponse();

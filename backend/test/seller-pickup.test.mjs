@@ -414,6 +414,63 @@ test('GHN shop lookup follows provider cursors and verifies token account member
   assert.equal(calls[0].options.headers.Token, 'test-token');
 });
 
+test('GHN shop list handles null shops and ignores incomplete shops without failing', async (t) => {
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        JSON.stringify({
+          code: 200,
+          data: {
+            last_offset: 100,
+            shops: [
+              {
+                _id: 1,
+                client_id: 1,
+                district_id: 1,
+                name: '',
+                phone: '',
+                address: '',
+                ward_code: '',
+              },
+              {
+                _id: 2,
+                client_id: 1,
+                district_id: 1,
+                name: 'Valid Shop',
+                phone: '0901234567',
+                address: '123 Str',
+                ward_code: 'W1',
+                status: 1,
+              },
+            ],
+          },
+        }),
+      ),
+  );
+  const result = await new GhnShopApiService(config).list(0, 100);
+  assert.equal(result.shops.length, 1);
+  assert.equal(result.shops[0].id, 2);
+
+  t.mock.method(
+    globalThis,
+    'fetch',
+    async () =>
+      new Response(
+        JSON.stringify({
+          code: 200,
+          data: {
+            last_offset: 0,
+            shops: null,
+          },
+        }),
+      ),
+  );
+  const emptyResult = await new GhnShopApiService(config).list(100, 100);
+  assert.deepEqual(emptyResult.shops, []);
+});
+
 test('automatic setup recovers a matching shop without registering again', async () => {
   const service = new GhnShopApiService(config);
   const shop = fixture().shop;

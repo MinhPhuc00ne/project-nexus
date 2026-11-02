@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   NotificationChannel,
   NotificationType,
@@ -13,7 +14,7 @@ import {
   Shipment,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { GhnOrderApiService } from './ghn-order-api.service';
+import { GhnOrderApiService, GhnOrderDetail } from './ghn-order-api.service';
 import { mapGhnStatus, objectValue } from './shipment-state';
 import { shipmentGhnContext } from './ghn-context';
 
@@ -36,6 +37,7 @@ export class ShipmentTrackingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ghn: GhnOrderApiService,
+    private readonly config: ConfigService,
   ) {}
 
   async view(orderId: string, actor: ShipmentActor): Promise<TrackingResult> {
@@ -54,7 +56,11 @@ export class ShipmentTrackingService {
     return { orderId, orderStatus: order.status, shipment: order.shipment };
   }
 
-  async refresh(orderId: string, actor?: ShipmentActor): Promise<TrackingResult> {
+  async refresh(
+    orderId: string,
+    actor?: ShipmentActor,
+    mockStatus?: string,
+  ): Promise<TrackingResult> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
       include: { shipment: true },
@@ -71,8 +77,38 @@ export class ShipmentTrackingService {
     const waybill = order.shipment?.waybillCode;
     if (!waybill) throw new BadRequestException('Đơn chưa có vận đơn GHN được xác nhận.');
     const context = shipmentGhnContext(order.shipment?.metadata);
-    const detail = await this.ghn.detail(waybill, context.shopId, context.environment);
-    const mapped = mapGhnStatus(detail.status);
+    const isDev = this.config.get<string>('NODE_ENV') !== 'production';
+    const metadataBefore = objectValue(order.shipment?.metadata);
+    const previousTracking = objectValue(metadataBefore.tracking);
+
+    // In dev mode, use mockStatus if explicitly provided, OR retain previously simulated status
+    // during non-mock refreshes (e.g. when buyer confirms delivery) to avoid resetting to ready_to_pick.
+    const effectiveStatus =
+      isDev && mockStatus
+        ? mockStatus
+        : isDev && previousTracking.isSimulated && typeof previousTracking.status === 'string'
+          ? String(previousTracking.status)
+          : undefined;
+
+    let detail: GhnOrderDetail;
+    if (isDev && effectiveStatus) {
+      detail = {
+        order_code: waybill,
+        client_order_code: String(metadataBefore.clientOrderCode ?? order.id),
+        status: effectiveStatus,
+        shop_id: context.shopId,
+        updated_date: new Date().toISOString(),
+        calculate_weight: 500,
+      };
+    } else {
+      detail = (await this.ghn.detail(
+        waybill,
+        context.shopId,
+        context.environment,
+      )) as GhnOrderDetail;
+    }
+
+    const mapped = mapGhnStatus(String(detail.status));
     const timestamp = Date.parse(String(detail.updated_date));
     if (!Number.isFinite(timestamp) || timestamp > Date.now() + 60000) {
       throw new BadGatewayException('Thời gian cập nhật GHN không hợp lệ.');
@@ -97,8 +133,9 @@ export class ShipmentTrackingService {
       }
       const previous = objectValue(metadata.tracking);
       if (
-        timestamp < Date.parse(String(previous.updatedAt)) ||
-        (previous.terminal === true && previous.status !== detail.status)
+        !mockStatus &&
+        (timestamp < Date.parse(String(previous.updatedAt)) ||
+          (previous.terminal === true && previous.status !== detail.status))
       ) {
         return {
           orderId,
@@ -121,6 +158,7 @@ export class ShipmentTrackingService {
           leadtime: detail.leadtime ?? null,
           log: detail.log ?? null,
           needsAttention: mapped.shipment === 'FAILED' || mapped.shipment === 'RETURNED',
+          isSimulated: Boolean(isDev && effectiveStatus),
         },
         ...(deliveredAt ? { deliveredAt } : {}),
         ...(carrierFee

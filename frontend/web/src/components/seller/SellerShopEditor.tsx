@@ -1,8 +1,14 @@
-import { useState, type FormEvent, type ReactElement } from 'react';
-import { SaveOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { useEffect, useState, type FormEvent, type ReactElement } from 'react';
+import {
+  SaveOutlined,
+  EnvironmentOutlined,
+  UploadOutlined,
+  ShopOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
 import type { SellerShopProfile } from '../../types/shop.types';
 import { VIETNAM_PROVINCES } from '../../constants/vietnamProvinces';
-import { updateSellerShopProfile } from '../../services/shops';
+import { updateSellerShopProfile, uploadShopAvatarFile } from '../../services/shops';
 import { useToast } from '../ToastNotification';
 import { SellerButton } from './SellerUI';
 import useSellerAction from './useSellerAction';
@@ -20,17 +26,50 @@ export default function SellerShopEditor({
 }): ReactElement {
   const initial = shopFormFromProfile(profile);
   const [form, setForm] = useState(initial);
+  const initialShopAvatar = profile.shopAvatarUrl ?? '';
+  const [shopAvatarUrl, setShopAvatarUrl] = useState<string>(initialShopAvatar);
+  const [shopAvatarFile, setShopAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
   const action = useSellerAction();
   const toast = useToast();
+
+  useEffect(() => {
+    if (!shopAvatarFile) {
+      setAvatarPreview('');
+      return;
+    }
+    const objectUrl = URL.createObjectURL(shopAvatarFile);
+    setAvatarPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [shopAvatarFile]);
+
   const setField = (key: keyof typeof form, value: string): void =>
     setForm((current) => ({ ...current, [key]: value }));
+
+  const displayedShopAvatar = avatarPreview || shopAvatarUrl;
+
   function submit(event: FormEvent): void {
     event.preventDefault();
     void action.run(
-      () => {
+      async () => {
         if (profile.isShopSuspended)
           throw new Error('Gian hàng đang bị đình chỉ, chưa thể cập nhật thông tin.');
-        return updateSellerShopProfile(shopFormPayload(form, initial, section));
+
+        let finalShopAvatar: string | null = shopAvatarUrl || null;
+
+        if (section === 'store') {
+          if (shopAvatarFile) {
+            finalShopAvatar = await uploadShopAvatarFile(shopAvatarFile);
+            setShopAvatarUrl(finalShopAvatar);
+            setShopAvatarFile(null);
+          }
+        }
+
+        const payload = shopFormPayload(form, initial, section);
+        return updateSellerShopProfile({
+          ...payload,
+          ...(section === 'store' ? { shopAvatarUrl: finalShopAvatar } : {}),
+        });
       },
       (result) => {
         toast.success(result.message);
@@ -38,6 +77,7 @@ export default function SellerShopEditor({
       },
     );
   }
+
   return (
     <form onSubmit={submit} className="space-y-5">
       {profile.isShopSuspended && (
@@ -55,6 +95,66 @@ export default function SellerShopEditor({
       >
         {section === 'store' ? (
           <>
+            {/* Ảnh đại diện riêng của Gian hàng (Shop Avatar) tách biệt với Avatar Seller */}
+            <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-4 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="text-xs font-bold text-[#1c3973]">
+                    Ảnh đại diện Gian hàng (Logo Shop)
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Ảnh đại diện của Shop hiển thị riêng biệt trên trang Gian hàng & Sản phẩm (không
+                    dùng chung với ảnh cá nhân của chủ shop).
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-blue-200 bg-white text-2xl text-blue-600 shadow-xs">
+                  {displayedShopAvatar ? (
+                    <img
+                      src={displayedShopAvatar}
+                      alt={form.storeName || 'Logo gian hàng'}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ShopOutlined />
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">
+                      <UploadOutlined /> Tải ảnh đại diện Shop
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        onChange={(e) => {
+                          const selected = e.target.files?.[0];
+                          e.target.value = '';
+                          if (selected) setShopAvatarFile(selected);
+                        }}
+                      />
+                    </label>
+                    {(displayedShopAvatar || shopAvatarFile) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShopAvatarFile(null);
+                          setShopAvatarUrl('');
+                        }}
+                        className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                      >
+                        <DeleteOutlined /> Gỡ logo shop
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Định dạng JPG, PNG hoặc WEBP (Tối đa 10 MB).
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <label className={sellerLabelClass}>
               Tên gian hàng
               <input
@@ -99,9 +199,9 @@ export default function SellerShopEditor({
                 />
               </label>
             </div>
-            <p className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs leading-6 text-blue-800">
-              Email kinh doanh là thông tin liên hệ của shop. Email đăng nhập được quản lý trong hồ
-              sơ cá nhân.
+            <p className="rounded-lg border border-blue-100 bg-blue-50 p-3.5 text-xs leading-6 text-blue-800">
+              Email kinh doanh và Logo Shop là thông tin thương hiệu riêng của gian hàng. Thông tin
+              cá nhân của chủ tài khoản được quản lý độc lập ở mục Tài khoản.
             </p>
           </>
         ) : (
@@ -156,7 +256,7 @@ export default function SellerShopEditor({
                 ))}
               </select>
             </label>
-            <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+            <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
               <p className="mb-4 flex items-center gap-2 text-xs font-medium text-blue-800">
                 <EnvironmentOutlined /> Vị trí dùng tính khoảng cách vận chuyển
               </p>
@@ -201,7 +301,15 @@ export default function SellerShopEditor({
         </p>
       )}
       <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-        <SellerButton secondary disabled={action.pending} onClick={() => setForm(initial)}>
+        <SellerButton
+          secondary
+          disabled={action.pending}
+          onClick={() => {
+            setForm(initial);
+            setShopAvatarFile(null);
+            setShopAvatarUrl(initialShopAvatar);
+          }}
+        >
           Hủy thay đổi
         </SellerButton>
         <SellerButton type="submit" disabled={action.pending || profile.isShopSuspended}>

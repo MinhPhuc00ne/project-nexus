@@ -1,124 +1,192 @@
-import { cn } from '../../lib/utils';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   MessageOutlined,
   SafetyCertificateOutlined,
+  StarFilled,
   StarOutlined,
-  TruckOutlined,
 } from '@ant-design/icons';
 import { useSellerSession } from '../../components/seller/SellerSession';
 import { EmptyState, PageHeading, Panel } from '../../components/seller/SellerUI';
 import { trustLabels } from '../../components/seller/sellerData';
+import { getSellerProductReviewsApi, type ProductReviewItem } from '../../services/reviews.service';
+
+type ReviewTab = 'all' | 'positive' | 'improve';
+
+function formatDate(value: string): string {
+  return new Date(value).toLocaleString('vi-VN');
+}
 
 export default function SellerReviewsPage() {
   const user = useSellerSession();
-  const [tab, setTab] = useState('all');
+  const [tab, setTab] = useState<ReviewTab>('all');
+  const [reviews, setReviews] = useState<ProductReviewItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void getSellerProductReviewsApi()
+      .then((response) => {
+        if (active) setReviews(Array.isArray(response.items) ? response.items : []);
+      })
+      .catch((requestError: unknown) => {
+        if (!active) return;
+        setError(
+          requestError instanceof Error
+            ? requestError.message
+            : 'Không thể tải đánh giá từ máy chủ.',
+        );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const averageRating = useMemo(() => {
+    if (!reviews.length) return 0;
+    return reviews.reduce((total, review) => total + review.rating, 0) / reviews.length;
+  }, [reviews]);
+
+  const visibleReviews = useMemo(() => {
+    if (tab === 'positive') return reviews.filter((review) => review.rating >= 4);
+    if (tab === 'improve') return reviews.filter((review) => review.rating <= 3);
+    return reviews;
+  }, [reviews, tab]);
+
+  const tabs: Array<{ key: ReviewTab; label: string }> = [
+    { key: 'all', label: `Tất cả (${reviews.length})` },
+    {
+      key: 'positive',
+      label: `Tích cực (${reviews.filter((review) => review.rating >= 4).length})`,
+    },
+    {
+      key: 'improve',
+      label: `Cần cải thiện (${reviews.filter((review) => review.rating <= 3).length})`,
+    },
+  ];
+
   return (
-    <div
-      className="flex flex-col gap-5.5 min-w-0 [&>[data-seller~=page-stack]]:gap-4 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 max-[540px]:gap-[17px]"
-      data-seller="page-stack"
-    >
+    <div className="flex min-w-0 flex-col gap-5" data-seller="page-stack">
       <PageHeading
         title="Đánh giá & khách hàng"
-        description="Lắng nghe phản hồi, xây dựng niềm tin và phát triển gian hàng."
+        description="Theo dõi đánh giá sản phẩm thật từ người mua sau khi đơn hàng hoàn tất."
       />
-      <div
-        className="grid [grid-template-columns:repeat(2,_minmax(0,_1fr))] gap-5 max-[1050px]:[grid-template-columns:1fr]"
-        data-seller="two-columns"
-      >
-        <Panel title="Đánh giá gian hàng" subtitle="Chất lượng dịch vụ qua góc nhìn người mua">
-          <div
-            className="flex flex-col items-center p-[15px] gap-[7px] [&>strong]:text-[46px] [&>strong]:text-[#425b88] [&>strong]:tracking-[-2px] [&>div]:flex [&>div]:gap-[5px] [&>div]:text-[#d5e1f6] [&_p]:text-[10px] [&_p]:text-[#8b9fbc] [&_p]:m-0"
-            data-seller="reviews-rating"
-          >
-            <strong>
-              —<small>/5</small>
-            </strong>
-            <div>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <StarOutlined key={star} className="text-[23px]" aria-hidden="true" />
-              ))}
-            </div>
-            <p>Chưa có dữ liệu đánh giá</p>
-          </div>
-          {[5, 4, 3, 2, 1].map((star) => (
-            <div
-              className="flex items-center gap-2.5 text-[10px] text-[#91a0b9] py-2 px-0 [&>div]:h-1.5 [&>div]:bg-[#edf2fa] [&>div]:rounded-[9px] [&>div]:flex-1 [&>div]:overflow-hidden [&_i]:block [&_i]:h-full [&_i]:bg-[#6688eb] [&_i]:rounded-[9px] [&>span:not(.anticon):last-child]:min-w-4 [&>span:not(.anticon):last-child]:text-right"
-              data-seller="rating-bar"
-              key={star}
-            >
-              <span>{star} sao</span>
-              <div>
-                <i className="w-0" />
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Panel title="Đánh giá sản phẩm" subtitle="Tổng hợp phản hồi từ người mua">
+          <div className="flex items-center gap-5 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
+            <div className="text-center">
+              <strong className="block text-4xl font-bold text-[#1c3973]">
+                {averageRating ? averageRating.toFixed(1) : '—'}
+                <small className="text-base text-slate-500">/5</small>
+              </strong>
+              <div className="mt-2 flex justify-center gap-1 text-blue-600">
+                {[1, 2, 3, 4, 5].map((star) =>
+                  star <= Math.round(averageRating) ? (
+                    <StarFilled key={star} />
+                  ) : (
+                    <StarOutlined key={star} className="text-slate-300" />
+                  ),
+                )}
               </div>
-              <span>—</span>
+              <p className="mt-2 text-xs text-slate-500">{reviews.length} đánh giá</p>
             </div>
-          ))}
+            <div className="min-w-0 flex-1 space-y-2">
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = reviews.filter((review) => review.rating === star).length;
+                const width = reviews.length ? (count / reviews.length) * 100 : 0;
+                return (
+                  <div key={star} className="flex items-center gap-2 text-xs text-slate-600">
+                    <span className="w-10">{star} sao</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
+                      <i
+                        className="block h-full rounded-full bg-blue-600"
+                        style={{ width: `${width}%` }}
+                      />
+                    </div>
+                    <span className="w-5 text-right">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </Panel>
+
         <Panel
           title="Uy tín người bán"
           subtitle="Thông tin từ tài khoản của bạn"
-          action={<SafetyCertificateOutlined className="text-[20px]" aria-hidden="true" />}
+          action={
+            <SafetyCertificateOutlined className="text-xl text-blue-600" aria-hidden="true" />
+          }
         >
-          <div
-            className="[border:1px_solid_#e2eafa] [background:linear-gradient(120deg,_#f3f7ff,_#fafcff)] rounded-[10px] p-5 flex items-center justify-between gap-3 mb-[15px] [&_small]:text-[9px] [&_small]:text-[#899dbd] [&_small]:tracking-[0.7px] [&_strong]:block [&_strong]:text-[26px] [&_strong]:tracking-[-1px] [&_strong]:font-bold [&_strong]:my-1.5 [&_strong]:mx-0 [&_p]:text-[9px] [&_p]:text-[#93a4be] [&_p]:m-0 [&>.anticon]:text-[#81a2ec]!"
-            data-seller="wallet-highlight"
-          >
-            <div>
-              <small>ĐIỂM UY TÍN</small>
-              <strong>
-                {user.reputationScore}
-                <small> / 100</small>
-              </strong>
-              <p>{trustLabels[user.trustLevel] || user.trustLevel}</p>
-            </div>
-            <StarOutlined className="text-[35px]" aria-hidden="true" />
+          <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5">
+            <p className="text-xs font-medium text-slate-500">ĐIỂM UY TÍN</p>
+            <strong className="mt-1 block text-3xl text-[#1c3973]">
+              {user.reputationScore} <small className="text-base text-slate-500">/ 100</small>
+            </strong>
+            <p className="mt-2 text-sm text-slate-600">
+              {trustLabels[user.trustLevel] || user.trustLevel}
+            </p>
           </div>
-          <div
-            className="flex flex-col gap-3.5 [&>div]:flex [&>div]:items-start [&>div]:gap-2.5 [&>div]:p-[13px] [&>div]:[border:1px_solid_#ecf1f9] [&>div]:rounded-[9px] [&>div]:bg-[#f9fbff] [&_.anticon]:w-4.5 [&_.anticon]:shrink-0 [&_.anticon]:text-[#7295e4]! [&_.anticon]:mt-[1px] [&_strong]:text-[11px] [&_strong]:font-[550] [&_p]:text-[10px] [&_p]:text-[#91a0b8] [&_p]:[margin:4px_0_0] [&_p]:leading-[1.8]"
-            data-seller="checklist"
-          >
-            <div>
-              <MessageOutlined className="text-[18px]" aria-hidden="true" />
-              <span>
-                <strong>Phản hồi có trách nhiệm</strong>
-                <p>Lắng nghe và chủ động hỗ trợ người mua.</p>
-              </span>
-            </div>
-            <div>
-              <TruckOutlined className="text-[18px]" aria-hidden="true" />
-              <span>
-                <strong>Chất lượng trong từng đơn hàng</strong>
-                <p>Đúng mô tả, đúng sản phẩm và đúng thời gian cam kết.</p>
-              </span>
-            </div>
-          </div>
+          <p className="mt-4 text-xs leading-6 text-slate-500">
+            API hiện chỉ hỗ trợ nhận đánh giá sản phẩm. Chức năng phản hồi đánh giá sẽ được mở khi
+            Backend bổ sung endpoint tương ứng.
+          </p>
         </Panel>
       </div>
-      <Panel title="Phản hồi từ khách hàng">
-        <div
-          className="flex gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:py-2 [&_button]:px-3 [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:text-[#315eea] [&_button.is-active]:bg-[#edf3ff] [&_button.is-active]:font-[650] [&_button>span:not(.anticon)]:text-[9px] [&_button>span:not(.anticon)]:bg-[#edf1f8] [&_button>span:not(.anticon)]:py-0 [&_button>span:not(.anticon)]:px-[5px] [&_button>span:not(.anticon)]:rounded-[4px] [&_button.is-active>span:not(.anticon)]:bg-[#315eea] [&_button.is-active>span:not(.anticon)]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px]"
-          data-seller="tabs"
-        >
-          {[
-            ['all', 'Tất cả'],
-            ['unanswered', 'Chưa phản hồi'],
-            ['positive', 'Tích cực'],
-            ['improve', 'Cần cải thiện'],
-          ].map(([key, label]) => (
+
+      <Panel title="Phản hồi từ khách hàng" subtitle="Dữ liệu lấy từ GET /seller/product-reviews">
+        <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-4">
+          {tabs.map((item) => (
             <button
-              className={cn(tab === key ? 'is-active' : '')}
-              onClick={() => setTab(key)}
-              key={key}
+              key={item.key}
+              type="button"
+              onClick={() => setTab(item.key)}
+              className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                tab === item.key
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+              }`}
             >
-              {label}
+              {item.label}
             </button>
           ))}
         </div>
-        <EmptyState
-          title="Chưa có phản hồi trong mục này"
-          description="Đánh giá và phản hồi khách hàng sẽ hiển thị khi dịch vụ đánh giá được kết nối."
-        />
+
+        {loading ? (
+          <EmptyState title="Đang tải đánh giá" description="Đang lấy phản hồi từ hệ thống." />
+        ) : error ? (
+          <EmptyState title="Không thể tải đánh giá" description={error} />
+        ) : visibleReviews.length === 0 ? (
+          <EmptyState
+            title="Chưa có phản hồi trong mục này"
+            description="Đánh giá hợp lệ từ người mua sẽ hiển thị tại đây."
+          />
+        ) : (
+          <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white px-4">
+            {visibleReviews.map((review) => (
+              <article key={review.id} className="py-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <strong className="flex items-center gap-2 text-sm text-slate-800">
+                    <MessageOutlined className="text-blue-600" />
+                    {review.reviewer.fullName}
+                  </strong>
+                  <span className="text-sm font-semibold text-blue-700">
+                    {'★'.repeat(review.rating)}
+                    {'☆'.repeat(5 - review.rating)}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-slate-600">
+                  {review.comment || 'Người mua không để lại nội dung.'}
+                </p>
+                <p className="mt-2 text-xs text-slate-400">{formatDate(review.createdAt)}</p>
+              </article>
+            ))}
+          </div>
+        )}
       </Panel>
     </div>
   );

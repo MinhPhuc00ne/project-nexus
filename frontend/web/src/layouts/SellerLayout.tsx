@@ -22,7 +22,6 @@ import {
 import { useSellerSession } from '../components/seller/SellerSession';
 import { useAuth } from '../contexts/AuthContext';
 import { clearAuthSession } from '../services/auth';
-import { toggleSellerMode } from '../services/users';
 import { useSellerStore } from '../components/seller/useSellerStore';
 import SellerNotifications from '../components/seller/SellerNotifications';
 import { SellerWorkspaceContext } from '../components/seller/SellerWorkspace';
@@ -64,7 +63,7 @@ export default function SellerLayout() {
 }
 function SellerWorkspace() {
   const user = useSellerSession();
-  const { setProfile, token, refreshProfile } = useAuth();
+  const { switchActiveMode, token, refreshProfile } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -132,16 +131,8 @@ function SellerWorkspace() {
     toggleLock.current = true;
     setPending(true);
     try {
-      const result = await toggleSellerMode(false);
-      setProfile((current) =>
-        current?.id === user.id
-          ? { ...current, isSellerActive: result.isSellerActive, currentMode: result.currentMode }
-          : current,
-      );
-      if (result.isSellerActive || result.currentMode !== 'BUYER') {
-        throw new Error('Máy chủ chưa chuyển tài khoản về chế độ người mua. Vui lòng thử lại.');
-      }
-      toast.success(result.message);
+      await switchActiveMode('BUYER');
+      toast.success('Đã chuyển sang chế độ Khách hàng (Buyer).');
       navigate('/buyer');
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : 'Không thể chuyển chế độ.');

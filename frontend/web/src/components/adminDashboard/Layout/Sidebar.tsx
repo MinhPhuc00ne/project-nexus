@@ -1,5 +1,6 @@
 import {
   Activity,
+  Image,
   ChartNoAxesCombined,
   Gavel,
   Package,
@@ -46,6 +47,10 @@ export const adminNavigation: {
       { id: 'reports', label: 'Khiếu nại & báo cáo', icon: Flag },
       { id: 'refunds', label: 'Phê duyệt hoàn tiền', icon: ShieldCheck },
     ],
+  },
+  {
+    label: 'NỘI DUNG & HIỂN THỊ',
+    items: [{ id: 'banners', label: 'Quản lý banner', icon: Image }],
   },
   {
     label: 'TÀI CHÍNH & KỸ THUẬT',

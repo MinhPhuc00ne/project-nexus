@@ -8,6 +8,7 @@ export interface CartItem {
   img: string;
   shopName?: string;
   shopId?: string;
+  selections?: Record<string, string>;
   selected?: boolean;
   category?: string;
   brand?: string;

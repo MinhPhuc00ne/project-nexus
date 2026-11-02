@@ -31,6 +31,10 @@ export class BannerService {
         priority: true,
         createdAt: true,
         updatedAt: true,
+        ...(!publicOnly && {
+          creatorId: true,
+          creator: { select: { id: true, fullName: true, role: true } },
+        }),
       },
     });
   }

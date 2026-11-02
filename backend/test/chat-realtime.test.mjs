@@ -1,0 +1,99 @@
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+import { once } from 'node:events';
+import { test } from 'node:test';
+import { io } from 'socket.io-client';
+import tsNode from 'ts-node';
+
+tsNode.register({
+  project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
+  transpileOnly: true,
+});
+const load = createRequire(import.meta.url);
+const { Module, Controller, Get } = load('@nestjs/common');
+const { ConfigService } = load('@nestjs/config');
+const { NestFactory } = load('@nestjs/core');
+const { ChatGateway } = load('../src/modules/chat/gateways/chat.gateway.ts');
+const { ChatService } = load('../src/modules/chat/services/chat.service.ts');
+const { StaffQueueService } = load('../src/modules/chat/services/staff-queue.service.ts');
+const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
+const { TransformResponseInterceptor } = load(
+  '../src/core/interceptors/transform-response.interceptor.ts',
+);
+
+test(
+  'global HTTP interceptor preserves HTTP envelopes while real Nest websocket rooms receive raw chat messages',
+  { timeout: 15000 },
+  async () => {
+    let broadcaster;
+    class HealthController {
+      health() {
+        return { ready: true };
+      }
+    }
+    Controller('health')(HealthController);
+    Get()(
+      HealthController.prototype,
+      'health',
+      Object.getOwnPropertyDescriptor(HealthController.prototype, 'health'),
+    );
+    class RealtimeModule {}
+    Module({
+      controllers: [HealthController],
+      providers: [
+        ChatGateway,
+        {
+          provide: ChatService,
+          useValue: {
+            setBroadcaster(value) {
+              broadcaster = value;
+            },
+          },
+        },
+        { provide: ConfigService, useValue: { get: () => 'chat-realtime-test-secret' } },
+        { provide: StaffQueueService, useValue: {} },
+      ],
+    })(RealtimeModule);
+    const app = await NestFactory.create(RealtimeModule, { logger: false });
+    app.useGlobalInterceptors(new TransformResponseInterceptor());
+    let socket;
+    try {
+      await app.listen(0, '127.0.0.1');
+      const base = await app.getUrl();
+      const response = await fetch(`${base}/health`, {
+        headers: { 'x-trace-id': 'http-still-wrapped' },
+      });
+      const body = await response.json();
+      assert.equal(body.statusCode, 200);
+      assert.deepEqual(body.data, { ready: true });
+      assert.equal(body.traceId, 'http-still-wrapped');
+      socket = io(`${base}/chat`, {
+        auth: {
+          token: LightweightJwt.sign(
+            { sub: 'buyer', role: 'BUYER' },
+            { secret: 'chat-realtime-test-secret', expiresInSeconds: 60 },
+          ),
+        },
+        reconnection: false,
+      });
+      await once(socket, 'connect');
+      const joined = once(socket, 'joined');
+      socket.emit('join_conversation', { conversationId: 'realtime-conversation' });
+      await joined;
+      const message = {
+        id: 'realtime-message',
+        conversationId: 'realtime-conversation',
+        body: '[Trả lời tự động] Xin chào',
+        senderId: 'seller',
+      };
+      const received = once(socket, 'new_message');
+      broadcaster.broadcastMessage('realtime-conversation', message);
+      assert.deepEqual((await received)[0], message);
+      assert.equal((await app.get(ChatGateway).server.in('user:buyer').fetchSockets()).length, 1);
+    } finally {
+      socket?.disconnect();
+      await app.close();
+    }
+  },
+);

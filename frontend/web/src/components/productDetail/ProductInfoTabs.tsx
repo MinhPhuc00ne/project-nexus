@@ -7,10 +7,10 @@ export default function ProductInfoTabs({ product }: { product: ProductDetail })
   const tabs = [
     ['description', 'Mô tả sản phẩm'],
     ['specs', 'Thông số sản phẩm'],
-    ['reviews', 'Đánh giá'],
+    ['reviews', 'Đánh giá sản phẩm & Shop'],
   ];
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
       <div
         className="flex flex-wrap gap-5 border-b border-slate-200 px-6"
         role="tablist"
@@ -25,7 +25,9 @@ export default function ProductInfoTabs({ product }: { product: ProductDetail })
             aria-controls={`product-panel-${id}`}
             aria-selected={tab === id}
             onClick={() => setTab(id)}
-            className={`border-b-2 py-4 text-sm font-semibold ${tab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'}`}
+            className={`border-b-2 py-4 text-sm font-semibold cursor-pointer ${
+              tab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'
+            }`}
           >
             {label}
           </button>
@@ -56,6 +58,9 @@ export default function ProductInfoTabs({ product }: { product: ProductDetail })
         {tab === 'reviews' && (
           <ProductReviewsSection
             productId={product.id}
+            productTitle={product.name}
+            sellerId={product.shop?.id}
+            shopName={product.shop?.name}
             productRating={product.rating}
             reviewsCount={product.reviewsCount}
           />

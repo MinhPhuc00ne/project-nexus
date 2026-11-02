@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import {
   LayoutDashboard,
@@ -13,6 +13,7 @@ import {
   Store,
   ChevronRight,
   Award,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UpgradeSellerModal } from '../components/headers/UpgradeSellerModal';
@@ -28,67 +29,80 @@ const navItems: NavItem[] = [
   {
     to: '/buyer',
     label: 'Tổng quan tài khoản',
-    icon: <LayoutDashboard size={18} />,
+    icon: <LayoutDashboard size={17} />,
     end: true,
   },
   {
     to: '/buyer/profile',
     label: 'Hồ sơ cá nhân',
-    icon: <User size={18} />,
+    icon: <User size={17} />,
   },
   {
     to: '/buyer/orders',
     label: 'Đơn hàng của tôi',
-    icon: <Package size={18} />,
+    icon: <Package size={17} />,
   },
   {
     to: '/buyer/addresses',
     label: 'Sổ địa chỉ nhận hàng',
-    icon: <MapPin size={18} />,
+    icon: <MapPin size={17} />,
   },
   {
     to: '/buyer/wallet',
     label: 'Ví NEXUS Pay',
-    icon: <Wallet size={18} />,
+    icon: <Wallet size={17} />,
   },
   {
     to: '/buyer/wishlist',
     label: 'Sản phẩm yêu thích',
-    icon: <Heart size={18} />,
+    icon: <Heart size={17} />,
   },
   {
     to: '/buyer/bids',
     label: 'Phiên đấu giá',
-    icon: <Gavel size={18} />,
+    icon: <Gavel size={17} />,
   },
   {
     to: '/buyer/disputes',
     label: 'Khiếu nại & Tranh chấp',
-    icon: <ShieldAlert size={18} />,
+    icon: <ShieldAlert size={17} />,
   },
 ];
 
 export default function BuyerLayout() {
-  const { user: profile } = useAuth();
+  const { user: profile, switchActiveMode } = useAuth();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const isSeller = profile?.role === Role.SELLER;
+  const hasSellerRole = profile?.role === Role.SELLER;
+
+  // Khi đang ở khu vực Buyer (/buyer/*), đồng bộ chế độ hoạt động là BUYER
+  useEffect(() => {
+    if (profile && profile.role === Role.SELLER && profile.currentMode === 'SELLER') {
+      void switchActiveMode('BUYER').catch(() => undefined);
+    }
+  }, [profile, switchActiveMode]);
+
+  const handleGoToSellerCenter = async () => {
+    await switchActiveMode('SELLER');
+    navigate('/seller');
+  };
 
   return (
-    <div className="min-h-[calc(100vh-140px)] bg-slate-50/70 py-8">
+    <div className="min-h-[calc(100vh-140px)] bg-[#f6f8fc] py-7">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
-        <nav className="mb-6 flex items-center gap-2 text-xs text-slate-500">
-          <NavLink to="/" className="hover:text-blue-600 transition-colors">
+        <nav className="mb-5 flex items-center gap-2 text-xs text-slate-500">
+          <NavLink to="/" className="hover:text-blue-600 transition-colors font-medium">
             Trang chủ
           </NavLink>
           <ChevronRight size={13} />
-          <span className="font-semibold text-slate-800">Tài khoản Buyer</span>
+          <span className="font-semibold text-[#1c3973]">Tài khoản Khách hàng (Buyer)</span>
           {location.pathname !== '/buyer' && (
             <>
               <ChevronRight size={13} />
-              <span className="text-slate-600">
+              <span className="text-slate-700 font-medium">
                 {navItems.find((item) => item.to === location.pathname)?.label || 'Chi tiết'}
               </span>
             </>
@@ -96,51 +110,58 @@ export default function BuyerLayout() {
         </nav>
 
         {/* 2-Column Responsive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Buyer Navigation Sidebar */}
           <aside className="lg:col-span-4 xl:col-span-3 space-y-4">
-            {/* User Profile Card */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            {/* User Profile Card (Blue & White Theme) */}
+            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xs">
               <div className="flex items-center gap-3.5 mb-4">
                 {profile?.avatarUrl ? (
                   <img
                     src={profile.avatarUrl}
                     alt={profile.fullName}
-                    className="h-12 w-12 rounded-full object-cover border border-slate-200 shadow-sm"
+                    className="h-12 w-12 rounded-lg object-cover border border-blue-200"
                   />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-lg shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#1c3973] text-white font-bold text-lg">
                     {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-sm font-bold text-slate-900">
-                    {profile?.fullName || 'Người dùng NEXUS'}
+                    {profile?.fullName || 'Khách hàng NEXUS'}
                   </h3>
                   <p className="truncate text-xs text-slate-500">
                     {profile?.email || 'Chưa cập nhật email'}
                   </p>
-                  <span className="mt-1 inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60">
-                    {isSeller ? 'Người bán (Seller)' : 'Khách hàng (Buyer)'}
-                  </span>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-600 text-white">
+                      Khách hàng (Buyer)
+                    </span>
+                    {hasSellerRole && (
+                      <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                        Có Gian hàng
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Balance & Reputation Pills */}
+              {/* Balance & Reputation Boxes */}
               <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
-                <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-100">
-                  <div className="flex items-center gap-1 text-[11px] text-slate-500 mb-0.5">
-                    <Wallet size={12} className="text-amber-600" />
+                <div className="rounded-md bg-blue-50/60 p-2.5 border border-blue-100">
+                  <div className="flex items-center gap-1 text-[11px] text-slate-600 mb-0.5">
+                    <Wallet size={12} className="text-blue-600" />
                     <span>Số dư ví</span>
                   </div>
-                  <span className="font-bold text-emerald-600 text-xs truncate block">
+                  <span className="font-bold text-blue-700 text-xs truncate block">
                     {profile?.wallet?.balance
                       ? `${Number(profile.wallet.balance).toLocaleString('vi-VN')} ₫`
                       : '0 ₫'}
                   </span>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-100">
-                  <div className="flex items-center gap-1 text-[11px] text-slate-500 mb-0.5">
+                <div className="rounded-md bg-slate-50 p-2.5 border border-slate-200/80">
+                  <div className="flex items-center gap-1 text-[11px] text-slate-600 mb-0.5">
                     <Award size={12} className="text-blue-600" />
                     <span>Điểm uy tín</span>
                   </div>
@@ -152,17 +173,17 @@ export default function BuyerLayout() {
             </div>
 
             {/* Navigation Menu */}
-            <nav className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm space-y-1">
+            <nav className="rounded-lg border border-slate-200 bg-white p-2 shadow-xs space-y-1">
               {navItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    `flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-semibold transition-colors ${
                       isActive
-                        ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        ? 'bg-[#1c3973] text-white'
+                        : 'text-slate-700 hover:bg-blue-50 hover:text-blue-700'
                     }`
                   }
                 >
@@ -172,22 +193,41 @@ export default function BuyerLayout() {
               ))}
             </nav>
 
-            {/* Upgrade to Seller Promo Card */}
-            {!isSeller && (
-              <div className="rounded-2xl border border-orange-200/80 bg-gradient-to-br from-orange-50/60 via-amber-50/40 to-white p-4 shadow-sm">
-                <div className="flex items-center gap-2 text-orange-600 font-bold text-xs mb-1">
-                  <Store size={16} />
+            {/* Switch to Seller or Upgrade to Seller Card (Blue & White) */}
+            {hasSellerRole ? (
+              <div className="rounded-lg border border-blue-200 bg-white p-4 shadow-xs">
+                <div className="flex items-center gap-2 text-[#1c3973] font-bold text-xs mb-1">
+                  <Store size={15} className="text-blue-600" />
+                  <span>Kênh Người Bán (Seller Center)</span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
+                  Bạn đang ở chế độ Mua hàng (Buyer). Chuyển sang chế độ Người bán để quản lý gian
+                  hàng và sản phẩm.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleGoToSellerCenter()}
+                  className="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span>Chuyển sang Kênh Người Bán</span>
+                  <ArrowRight size={13} />
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 shadow-xs">
+                <div className="flex items-center gap-2 text-[#1c3973] font-bold text-xs mb-1">
+                  <Store size={15} className="text-blue-600" />
                   <span>Mở gian hàng kinh doanh</span>
                 </div>
                 <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
-                  Nâng cấp lên tài khoản Người bán để mở shop và tổ chức đấu giá trực tiếp 3D!
+                  Nâng cấp lên tài khoản Người bán để mở gian hàng và tổ chức đấu giá trực tiếp 3D.
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowUpgradeModal(true)}
-                  className="w-full py-2 px-3 rounded-xl bg-[#f24e1e] hover:bg-[#d63b0e] text-white font-bold text-xs transition shadow-sm cursor-pointer"
+                  className="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer"
                 >
-                  Nộp hồ sơ ngay
+                  Đăng ký trở thành Seller
                 </button>
               </div>
             )}

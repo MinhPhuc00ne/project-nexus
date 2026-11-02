@@ -153,6 +153,11 @@ test('public banners filter active time windows and invalid intervals never writ
   await service.list(true);
   assert.equal(filter.where.isActive, true);
   assert.equal(filter.where.AND.length, 2);
+  assert.equal(filter.select.creator, undefined);
+  assert.equal(filter.select.creatorId, undefined);
+  await service.list(false);
+  assert.deepEqual(filter.select.creator.select, { id: true, fullName: true, role: true });
+  assert.equal(filter.select.creatorId, true);
   await assert.rejects(
     service.save('staff', {
       title: 'Event',

@@ -39,7 +39,9 @@ test(
             // All service transactions share this outer transaction, which is always rolled back.
             const facade = new Proxy(tx, {
               get: (target, property) =>
-                property === '$transaction' ? (run) => run(tx) : target[property],
+                property === '$transaction'
+                  ? (run) => (Array.isArray(run) ? Promise.all(run) : run(tx))
+                  : target[property],
             });
             const users = [];
             for (const role of ['BUYER', 'SELLER', 'ADMIN'])
@@ -104,7 +106,7 @@ test(
                 data: {
                   buyerId: buyer.id,
                   sellerId: seller.id,
-                  status: 'PAID',
+                  status: provider === 'PAYOS' ? 'PREPARING' : 'PAID',
                   subtotal: 100000,
                   shippingFee: 30000,
                   totalAmount: 130000,
@@ -131,8 +133,23 @@ test(
                   expiresAt: new Date(),
                 },
               });
-              // Staff cancellation must use the existing SQL constraint value ADMIN, not STAFF.
-              await cancellations.cancel(order.id, admin, { reason: 'Verified cancellation' });
+              if (provider === 'PAYOS') {
+                const pending = await cancellations.cancel(order.id, buyer, {
+                  reason: 'Buyer request',
+                });
+                assert.equal(pending.status, 'REQUESTED');
+                assert.equal(await tx.orderRefund.count({ where: { orderId: order.id } }), 0);
+                assert.equal(
+                  (await tx.order.findUniqueOrThrow({ where: { id: order.id } })).status,
+                  'PREPARING',
+                );
+                await cancellations.review(order.id, admin, {
+                  reason: 'Verified cancellation',
+                  decision: 'APPROVE',
+                });
+              } else {
+                await cancellations.cancel(order.id, admin, { reason: 'Verified cancellation' });
+              }
               await cancellations.cancel(order.id, buyer, { reason: 'Retry' });
               const record = await tx.orderRefund.findFirstOrThrow({
                 where: { orderId: order.id },
@@ -144,6 +161,21 @@ test(
                 'CANCELLED',
               );
             }
+            const { AdminOrdersService } = source('admin/services/admin-orders.service');
+            const { QueryAdminOrdersDto } = source('admin/dto/query-admin-orders.dto');
+            const adminOrders = new AdminOrdersService(facade);
+            const page = await adminOrders.list(
+              Object.assign(new QueryAdminOrdersDto(), {
+                sellerId: seller.id,
+                search: marker,
+                status: 'CANCELLED',
+              }),
+            );
+            assert.equal(page.total, 2);
+            const detail = await adminOrders.detail(page.items[0].id);
+            assert.equal(detail.buyer.id, buyer.id);
+            assert.equal(detail.payments.length, 1);
+            assert.equal(detail.refunds.length, 1);
             const order = await tx.order.create({
               data: {
                 buyerId: buyer.id,
