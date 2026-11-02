@@ -28,7 +28,7 @@ export interface GhnShopInput {
 
 @Injectable()
 export class GhnShopApiService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) { }
 
   // Recover an earlier registration after a timeout before attempting a new one.
   async ensure(input: GhnShopInput, excludedIds: number[]): Promise<GhnShop> {
@@ -48,9 +48,9 @@ export class GhnShopApiService {
           key(shop.address) === key(input.address),
       );
       if (found) return found;
-      if (!result.shops.length) return this.register(input);
-      if (result.nextOffset <= offset)
-        throw new BadGatewayException('GHN trả con trỏ phân trang không hợp lệ.');
+      if (!result.shops.length || result.nextOffset === 0 || result.nextOffset <= offset) {
+        return this.register(input);
+      }
       offset = result.nextOffset;
     }
     throw new BadGatewayException('Chưa kiểm tra hết điểm GHN. Vui lòng thử lại sau.');
@@ -169,10 +169,9 @@ export class GhnShopApiService {
       const result = await this.list(offset);
       const found = result.shops.find((shop) => shop.id === shopId);
       if (found) return found;
-      if (!result.shops.length)
+      if (!result.shops.length || result.nextOffset === 0 || result.nextOffset <= offset) {
         throw new NotFoundException('Điểm GHN không thuộc tài khoản của sàn.');
-      if (result.nextOffset <= offset)
-        throw new BadGatewayException('GHN trả con trỏ phân trang không hợp lệ.');
+      }
       offset = result.nextOffset;
     }
     throw new BadGatewayException(

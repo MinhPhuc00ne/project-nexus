@@ -68,8 +68,13 @@ export class GhnWebhookController {
     const context = shipmentGhnContext(shipment.metadata);
     if (Number(body.ShopID) !== context.shopId)
       throw new UnauthorizedException('Shop GHN không khớp vận đơn.');
-    // Never use the callback's status or amounts to change business state directly.
-    await this.tracking.refresh(shipment.orderId);
+    // Never use callback status directly in production; allow simulation in dev mode.
+    const isDev = this.config.get<string>('NODE_ENV') !== 'production';
+    const mockStatus =
+      isDev && typeof body.Status === 'string' && body.Status.trim()
+        ? body.Status.trim().toLowerCase()
+        : undefined;
+    await this.tracking.refresh(shipment.orderId, undefined, mockStatus);
     return { success: true };
   }
 }

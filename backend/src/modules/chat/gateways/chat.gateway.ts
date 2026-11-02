@@ -24,8 +24,7 @@ import { StaffQueueService } from '../services/staff-queue.service';
   namespace: '/chat',
 })
 export class ChatGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, ChatSocketBroadcaster
-{
+  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, ChatSocketBroadcaster {
   @WebSocketServer()
   server: Server;
 
@@ -35,7 +34,7 @@ export class ChatGateway
     private readonly chatService: ChatService,
     private readonly configService: ConfigService,
     private readonly staffQueueService: StaffQueueService,
-  ) {}
+  ) { }
 
   afterInit() {
     this.chatService.setBroadcaster(this);
@@ -219,6 +218,7 @@ export class ChatGateway
       const errMsg = err instanceof Error ? err.message : 'Lỗi gửi tin nhắn';
       return { status: 'error', message: errMsg };
     }
+
   }
 
   @SubscribeMessage('typing')
