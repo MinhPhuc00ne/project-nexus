@@ -54,13 +54,92 @@ test('GHN timeout leaves durable pending cancellation without refund; confirmed 
   f.actions.change.mock.mockImplementationOnce(async () => {
     throw Error('timeout');
   });
-  await assert.rejects(f.cancel.cancel('o1', buyer, reason));
+  await f.cancel.cancel('o1', buyer, reason);
   assert.equal(f.state.request.status, 'REQUESTED');
+  await assert.rejects(f.cancel.review('o1', admin, { ...reason, decision: 'APPROVE' }));
+  assert.equal(f.state.request.status, 'APPROVING');
   assert.equal(f.state.refunds.length, 0);
   f.ghn.detail.mock.mockImplementation(async () => ({ status: 'cancel' }));
-  await f.cancel.cancel('o1', buyer, reason);
+  await f.cancel.review('o1', admin, { ...reason, decision: 'APPROVE' });
   assert.equal(f.state.order.status, 'CANCELLED');
   assert.equal(f.state.refunds.length, 1);
+});
+
+test('buyer cancellation after seller confirmation waits for Admin without touching GHN, money or stock', async () => {
+  const f = fixture();
+  delivered(f);
+  f.state.order.status = 'PREPARING';
+  const request = await f.cancel.cancel('o1', buyer, { ...reason, refundToWallet: true });
+  assert.equal(request.status, 'REQUESTED');
+  assert.equal(f.state.order.status, 'PREPARING');
+  assert.equal(f.state.refunds.length, 0);
+  assert.equal(f.state.inventory.availableQty, 0);
+  assert.equal(f.ghn.detail.mock.callCount(), 0);
+  assert.equal(f.actions.change.mock.callCount(), 0);
+  for (const actor of [seller, buyer, { id: 'staff', role: 'SUPPORT_STAFF' }]) {
+    await assert.rejects(
+      f.cancel.review('o1', actor, { ...reason, decision: 'APPROVE' }),
+      (error) => error.getStatus() === 403,
+    );
+  }
+  await assert.rejects(f.cancel.cancel('o1', seller, reason), (error) => error.getStatus() === 403);
+  await Promise.all([
+    f.cancel.review('o1', admin, { ...reason, decision: 'APPROVE' }),
+    f.cancel.review('o1', admin, { ...reason, decision: 'APPROVE' }),
+  ]);
+  assert.equal(f.state.order.status, 'CANCELLED');
+  assert.equal(f.state.request.reviewedBy, admin.id);
+  assert.equal(f.state.refunds.length, 1);
+  assert.equal(f.state.inventory.availableQty, 2);
+});
+
+test('Admin rejection leaves the order intact; a new buyer request replaces rejected consent and reason', async () => {
+  const f = fixture();
+  f.state.order.status = 'PREPARING';
+  await f.cancel.cancel('o1', buyer, { ...reason, refundToWallet: true });
+  await f.cancel.review('o1', admin, { reason: 'Seller evidence checked', decision: 'REJECT' });
+  assert.equal(f.state.request.status, 'REJECTED');
+  assert.equal(f.state.order.status, 'PREPARING');
+  assert.equal(f.state.refunds.length, 0);
+  await f.cancel.cancel('o1', buyer, { reason: 'New request' });
+  assert.equal(f.state.request.reason, 'New request');
+  assert.equal(f.state.request.refundToWallet, false);
+  assert.equal(f.state.request.reviewedBy, null);
+  assert.equal(f.state.request.status, 'REQUESTED');
+});
+
+test('Admin cannot grant wallet consent or approve missing, shipped or return requests', async () => {
+  const f = fixture();
+  const approve = { ...reason, decision: 'APPROVE', refundToWallet: true };
+  await assert.rejects(f.cancel.review('o1', admin, approve));
+  f.state.order.status = 'PREPARING';
+  f.state.payments[0].provider = 'PAYOS';
+  await f.cancel.cancel('o1', buyer, reason);
+  await f.cancel.review('o1', admin, approve);
+  assert.equal(f.state.refunds[0].destination, 'ORIGINAL');
+  const other = fixture();
+  other.state.order.status = 'PREPARING';
+  await other.cancel.cancel('o1', buyer, reason);
+  other.state.order.status = 'SHIPPING';
+  await assert.rejects(other.cancel.review('o1', admin, approve));
+  other.state.order.status = 'PREPARING';
+  other.state.request.kind = 'RETURN';
+  await assert.rejects(other.cancel.review('o1', admin, approve));
+});
+
+test('an uncertain approved cancellation cannot be rejected or reset by the buyer', async () => {
+  const f = fixture();
+  delivered(f);
+  f.state.order.status = 'PREPARING';
+  await f.cancel.cancel('o1', buyer, reason);
+  f.ghn.detail.mock.mockImplementation(async () => {
+    throw Error('network timeout');
+  });
+  await assert.rejects(f.cancel.review('o1', admin, { ...reason, decision: 'APPROVE' }));
+  await assert.rejects(f.cancel.review('o1', admin, { ...reason, decision: 'REJECT' }));
+  await f.cancel.cancel('o1', buyer, reason);
+  assert.equal(f.state.request.status, 'APPROVING');
+  assert.equal(f.state.refunds.length, 0);
 });
 
 test('seller-fault cancellation applies documented reputation penalty once', async () => {
