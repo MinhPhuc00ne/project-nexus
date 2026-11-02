@@ -15,6 +15,7 @@ export { ROUTES } from './paths';
 const AdminLayout = lazy(() => import('../layouts/AdminLayout'));
 const BuyerLayout = lazy(() => import('../layouts/BuyerLayout'));
 const SellerLayout = lazy(() => import('../layouts/SellerLayout'));
+const StaffLayout = lazy(() => import('../layouts/StaffLayout'));
 const SellerDashboardPage = lazy(() => import('../pages/seller/SellerDashboardPage'));
 const SellerOrdersPage = lazy(() => import('../pages/seller/SellerOrdersPage'));
 const SellerOrderDetailPage = lazy(() => import('../pages/seller/SellerOrderDetailPage'));
@@ -173,17 +174,28 @@ function AppRouter() {
 
               {/* Staff routes */}
               <Route path="/staff/activate" element={<StaffActivationPage />} />
-              <Route element={<ProtectedRoute allowedRoles={[Role.SUPPORT_STAFF]} />}>
-                <Route path={ROUTES.STAFF} element={<Navigate to={ROUTES.STAFF_INBOX} replace />} />
-                <Route path={ROUTES.STAFF_SELLER_APPROVALS} element={<StaffSellerApprovalPage />} />
-                <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
-                <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
-                <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
-                <Route path={ROUTES.STAFF_AUCTION_SUPPORT} element={<StaffAuctionSupportPage />} />
-                <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
-                <Route path={ROUTES.STAFF_BANNERS} element={<StaffBannersPage />} />
-                <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
-                <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
+              <Route element={<ProtectedRoute allowedRoles={[Role.SUPPORT_STAFF, Role.ADMIN]} />}>
+                <Route element={<StaffLayout />}>
+                  <Route
+                    path={ROUTES.STAFF}
+                    element={<Navigate to={ROUTES.STAFF_INBOX} replace />}
+                  />
+                  <Route
+                    path={ROUTES.STAFF_SELLER_APPROVALS}
+                    element={<StaffSellerApprovalPage />}
+                  />
+                  <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
+                  <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
+                  <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
+                  <Route
+                    path={ROUTES.STAFF_AUCTION_SUPPORT}
+                    element={<StaffAuctionSupportPage />}
+                  />
+                  <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
+                  <Route path={ROUTES.STAFF_BANNERS} element={<StaffBannersPage />} />
+                  <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
+                  <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
+                </Route>
               </Route>
 
               {/* Non-admin fallback */}
