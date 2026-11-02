@@ -16,7 +16,6 @@ import {
   X,
   CheckCircle2,
 } from 'lucide-react';
-import { toggleSellerMode } from '../../services/users';
 import { getCartItems } from '../../services/cart';
 import { useAuth } from '../../contexts/AuthContext';
 import type { CartItem as StoredCartItem, NotificationItem } from '../../types';
@@ -72,7 +71,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     user: profile,
     storedUser,
     isAuthenticated: authIsLoggedIn,
-    setProfile,
+    switchActiveMode,
     refreshProfile,
   } = useAuth();
   const [storedCart, setStoredCart] = useState<StoredCartItem[]>(() => getCartItems());
@@ -129,18 +128,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     }
     setIsTogglingSeller(true);
     try {
-      const nextActive = profile.role === Role.SELLER ? true : !profile.isSellerActive;
-      const res = await toggleSellerMode(nextActive);
-      setProfile((prev) =>
-        prev
-          ? {
-              ...prev,
-              isSellerActive: res.isSellerActive,
-              currentMode: res.currentMode,
-            }
-          : null,
-      );
-      showToast(res.message);
+      await switchActiveMode('SELLER');
+      showToast('Đã kích hoạt chế độ Người bán (Seller).');
       if (profile.role === Role.SELLER) window.location.assign('/seller');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Chuyển đổi chế độ thất bại.');
@@ -156,7 +145,17 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
       return;
     }
     if (profile?.role === Role.SELLER) {
-      showToast('Tài khoản của bạn đã là Người bán (Seller) rồi!');
+      void switchActiveMode('SELLER')
+        .then(() => {
+          window.location.assign('/seller/settings');
+        })
+        .catch((err: unknown) => {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : 'Không thể chuyển sang chế độ Người bán.',
+          );
+        });
       return;
     }
     setShowUpgradeModal(true);

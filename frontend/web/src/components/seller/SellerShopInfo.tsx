@@ -1,10 +1,12 @@
-import { ReloadOutlined } from '@ant-design/icons';
+import { ReloadOutlined, ShopOutlined } from '@ant-design/icons';
 import { useSellerWorkspace } from './SellerWorkspace';
 import { Panel, SellerButton } from './SellerUI';
 
 export default function SellerShopInfo() {
   const { shop, storeLoading, storeError, refreshShop } = useSellerWorkspace();
   const address = shop?.address;
+  const shopLogoUrl = shop?.avatarUrl ?? null;
+
   const fields = shop
     ? [
         ['Tên gian hàng', shop.name],
@@ -43,6 +45,21 @@ export default function SellerShopInfo() {
       )}
       {!storeLoading && !storeError && shop && (
         <div className="space-y-4">
+          <div className="flex items-center gap-3.5 border-b border-slate-100 pb-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-blue-200 bg-blue-50 text-xl text-blue-600">
+              {shopLogoUrl ? (
+                <img src={shopLogoUrl} alt={shop.name} className="h-full w-full object-cover" />
+              ) : (
+                <ShopOutlined />
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-slate-900">{shop.name}</p>
+              <p className="text-xs text-slate-500">
+                Logo gian hàng độc lập · Chủ sở hữu: {shop.sellerFullName}
+              </p>
+            </div>
+          </div>
           <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {fields.map(([label, value]) => (
               <div key={label} className="min-w-0">

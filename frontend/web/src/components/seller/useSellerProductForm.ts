@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../ToastNotification';
 import { useSellerSession } from './SellerSession';
@@ -10,9 +10,20 @@ import {
   getMyProducts,
   sellerProductToForm,
   publishSellerProduct,
+  updateProductSale,
   type ProductCategory,
   type SellerProduct,
 } from '../../services/sellerProducts';
+import { type ProductOptionGroup, type ProductSaleConfig } from '../../services/productExtras';
+
+const defaultSaleConfig: ProductSaleConfig = {
+  enabled: false,
+  discountPercent: 10,
+  salePrice: 0,
+  label: 'FLASH SALE',
+  startAt: '',
+  endAt: '',
+};
 
 export default function useSellerProductForm(productId?: string) {
   const navigate = useNavigate();
@@ -20,6 +31,8 @@ export default function useSellerProductForm(productId?: string) {
   const user = useSellerSession();
   const { refreshShop } = useSellerWorkspace();
   const [form, setForm] = useState({ ...emptyProductForm });
+  const [saleConfig, setSaleConfig] = useState<ProductSaleConfig>({ ...defaultSaleConfig });
+  const [optionGroups, setOptionGroups] = useState<ProductOptionGroup[]>([]);
   const [files, setFiles] = useState<File[]>([]);
   const [product, setProduct] = useState<SellerProduct | null>(null);
   const [existingImages, setExistingImages] = useState<string[]>([]);
@@ -36,12 +49,14 @@ export default function useSellerProductForm(productId?: string) {
   const lock = useRef(false);
   const active = useRef(true);
   const uploaded = useRef(new Map<File, string>());
+
   useEffect(() => {
     active.current = true;
     return () => {
       active.current = false;
     };
   }, []);
+
   useEffect(() => {
     if (!productId) return;
     let current = true;
@@ -55,6 +70,18 @@ export default function useSellerProductForm(productId?: string) {
         setProduct(found);
         setForm(sellerProductToForm(found));
         setExistingImages(found.images.map((image) => image.imageUrl));
+        if (found.salePrice) {
+          setSaleConfig({
+            ...defaultSaleConfig,
+            enabled: true,
+            salePrice: Number(found.salePrice),
+            startAt: found.saleStartsAt ?? '',
+            endAt: found.saleEndsAt ?? '',
+          });
+        } else {
+          setSaleConfig({ ...defaultSaleConfig });
+        }
+        setOptionGroups(found.options ? [...found.options] : []);
       })
       .catch((cause) => {
         if (current)
@@ -67,6 +94,7 @@ export default function useSellerProductForm(productId?: string) {
       current = false;
     };
   }, [productId, productRevision]);
+
   useEffect(() => {
     let current = true;
     setCategoryLoading(true);
@@ -88,16 +116,25 @@ export default function useSellerProductForm(productId?: string) {
       current = false;
     };
   }, [revision]);
+
   const categoryOptions = flattenCategories(categories);
   const retryCategories = useCallback(() => setRevision((value) => value + 1), []);
+
   function reset() {
     if (lock.current) return;
     setForm(product ? sellerProductToForm(product) : { ...emptyProductForm });
+    setSaleConfig(
+      product?.salePrice
+        ? { ...defaultSaleConfig, enabled: true, salePrice: Number(product.salePrice) }
+        : { ...defaultSaleConfig },
+    );
+    setOptionGroups(product?.options ? [...product.options] : []);
     setExistingImages(product?.images.map((image) => image.imageUrl) ?? []);
     setFiles([]);
     setError('');
     uploaded.current.clear();
   }
+
   async function submit() {
     if (lock.current) return;
     if (user.isShopSuspended || !user.isSellerActive) {
@@ -113,6 +150,16 @@ export default function useSellerProductForm(productId?: string) {
       setError('Vui lòng chọn danh mục hợp lệ từ hệ thống.');
       return;
     }
+
+    const basePrice = Number(form.price);
+    if (saleConfig.enabled) {
+      const pct = Number(saleConfig.discountPercent);
+      if (!Number.isFinite(pct) || pct < 1 || pct > 95) {
+        setError('Phần trăm giảm giá (Sale) phải từ 1% đến 95%.');
+        return;
+      }
+    }
+
     lock.current = true;
     setPending(true);
     setError('');
@@ -125,11 +172,29 @@ export default function useSellerProductForm(productId?: string) {
           if (active.current) setProgress(message);
         },
         product ? { product, images: existingImages } : undefined,
+        optionGroups,
       );
       if (!saved?.id)
         throw new Error(
           'Chưa xác nhận được kết quả đăng bán. Hãy kiểm tra danh sách sản phẩm trước khi gửi lại.',
         );
+
+      const computedSalePrice =
+        saleConfig.enabled && Number.isFinite(basePrice) && basePrice > 0
+          ? saleConfig.salePrice > 0 && saleConfig.salePrice < basePrice
+            ? Math.round(saleConfig.salePrice)
+            : Math.max(
+                1000,
+                Math.round((basePrice * (100 - Number(saleConfig.discountPercent || 0))) / 100),
+              )
+          : 0;
+
+      await updateProductSale(saved.id, {
+        salePrice: saleConfig.enabled ? computedSalePrice : null,
+        saleStartsAt: saleConfig.enabled && saleConfig.startAt ? saleConfig.startAt : null,
+        saleEndsAt: saleConfig.enabled && saleConfig.endAt ? saleConfig.endAt : null,
+      });
+
       if (active.current) {
         toast.success(
           product
@@ -153,9 +218,14 @@ export default function useSellerProductForm(productId?: string) {
       }
     }
   }
+
   return {
     form,
     setForm,
+    saleConfig,
+    setSaleConfig,
+    optionGroups,
+    setOptionGroups,
     files,
     setFiles,
     existingImages,

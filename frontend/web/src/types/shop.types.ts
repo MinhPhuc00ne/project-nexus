@@ -47,6 +47,7 @@ export interface SellerShopProfile {
   id: string;
   storeName: string;
   storeDescription: string | null;
+  shopAvatarUrl?: string | null;
   phone: string | null;
   businessEmail: string | null;
   address:
@@ -68,6 +69,7 @@ export interface SellerShopProfile {
 export interface UpdateSellerShop {
   storeName?: string;
   storeDescription?: string;
+  shopAvatarUrl?: string | null;
   phone?: string;
   businessEmail?: string;
   street?: string;

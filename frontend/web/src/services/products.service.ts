@@ -1,6 +1,6 @@
 import api, { apiRequest } from './api';
 import type { ProductDetail, ProductItem } from '../types/product.types';
-import { MOCK_PRODUCTS_CATALOG } from '../mocks/products.mock';
+import { computeEffectiveSale, saleConfigFromApi } from './productExtras';
 
 export interface CatalogProduct {
   id: string;
@@ -28,6 +28,10 @@ export interface CatalogProduct {
   createdAt?: string;
   averageRating?: number;
   reviewCount?: number;
+  salePrice?: number | null;
+  saleStartsAt?: string | null;
+  saleEndsAt?: string | null;
+  options?: { id?: string; name: string; values: string[] }[];
 }
 
 export interface CatalogPage {
@@ -73,28 +77,38 @@ export interface CategoryNode {
 export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
   const brandName = p.category?.name ? `${p.category.name.toUpperCase()} • LUXURY` : 'NEXUS LUXURY';
   const has3D = Boolean(p.threeModelKey);
+  const sale = computeEffectiveSale(
+    p.basePrice,
+    saleConfigFromApi(p.basePrice, p.salePrice, p.saleStartsAt, p.saleEndsAt),
+  );
+
   return {
     id: p.id,
     brand: brandName,
     title: p.title,
     image: p.thumbnail || p.images[0] || '/images/watches/watch-1.png',
-    type: 'mall',
-    primaryBadge: { text: 'NEXUS MALL', type: 'mall' },
+    type: sale.isOnSale ? 'flash_sale' : 'mall',
+    primaryBadge: sale.isOnSale
+      ? { text: `${sale.label} -${sale.discountPercent}%`, type: 'flash' }
+      : { text: 'NEXUS MALL', type: 'mall' },
     subBadge: has3D ? { text: '3D Model Verified', icon: '3d' } : { text: 'Chính Hãng 100%' },
     imageOverlay: {
       leftText: has3D ? 'Chạm xoay 360°' : '',
       leftIcon: has3D ? 'rotate' : undefined,
-      rightText: '',
+      rightText: sale.isOnSale ? `-${sale.discountPercent}%` : '',
+      isDiscount: sale.isOnSale,
+      discountText: sale.isOnSale ? `-${sale.discountPercent}%` : undefined,
     },
-    rating: 5.0,
+    rating: p.averageRating && p.averageRating > 0 ? p.averageRating : 5.0,
     soldCount: 0,
-    currentPrice: `${p.basePrice.toLocaleString('vi-VN')} ₫`,
+    oldPrice: sale.isOnSale ? `${sale.originalPrice.toLocaleString('vi-VN')} ₫` : undefined,
+    currentPrice: `${sale.effectivePrice.toLocaleString('vi-VN')} ₫`,
     priceColor: 'red',
     subMetaLeft: 'Freeship GHN Express',
     subMetaRightType: 'green_ship',
     shopId: p.seller?.id,
     shopName: p.seller?.fullName || 'Gian Hàng NEXUS',
-    rawPrice: p.basePrice,
+    rawPrice: sale.effectivePrice,
   };
 }
 
@@ -151,12 +165,38 @@ function mapProduct(product: CatalogProduct): ProductDetail {
   if (product?.lengthCm !== undefined) specs['Chiều dài'] = `${product.lengthCm} cm`;
   if (product?.widthCm !== undefined) specs['Chiều rộng'] = `${product.widthCm} cm`;
   if (product?.heightCm !== undefined) specs['Chiều cao'] = `${product.heightCm} cm`;
+
+  const rawBasePrice = Number(product?.basePrice ?? 0);
+  const saleInfo = saleConfigFromApi(
+    rawBasePrice,
+    product?.salePrice,
+    product?.saleStartsAt,
+    product?.saleEndsAt,
+  );
+  const sale = computeEffectiveSale(rawBasePrice, saleInfo);
+
+  if (product?.options && product.options.length > 0) {
+    for (const opt of product.options) {
+      if (opt.name && opt.values.length > 0) {
+        specs[opt.name] = opt.values.join(', ');
+      }
+    }
+  }
+
   return {
     id: product?.id ?? '',
     name: product?.title ?? '',
     brand: product?.category?.name || 'NEXUS',
-    price: product?.basePrice ?? 0,
-    formattedPrice: `${Number(product?.basePrice ?? 0).toLocaleString('vi-VN')} ₫`,
+    price: sale.effectivePrice,
+    originalPrice: rawBasePrice,
+    formattedPrice: `${sale.effectivePrice.toLocaleString('vi-VN')} ₫`,
+    formattedOldPrice: sale.isOnSale
+      ? `${sale.originalPrice.toLocaleString('vi-VN')} ₫`
+      : undefined,
+    discount: sale.isOnSale ? sale.discountPercent : undefined,
+    saleLabel: sale.isOnSale ? sale.label : undefined,
+    saleInfo,
+    options: product?.options,
     stock: product?.status && product.status !== 'ACTIVE' ? 0 : (product?.availableQty ?? 0),
     images: Array.isArray(product?.images) ? product.images : [],
     is3d: Boolean(product?.threeModelKey),
@@ -168,6 +208,7 @@ function mapProduct(product: CatalogProduct): ProductDetail {
       id: product?.seller?.id,
       name: product?.seller?.fullName ?? 'Chưa có thông tin người bán',
       verified: Boolean(product?.seller?.reputationScore && product.seller.reputationScore >= 80),
+      // Tách riêng hoàn toàn Avatar của Shop và Avatar của Seller
       avatarUrl: product?.seller?.avatarUrl ?? undefined,
       trustScore: product?.seller?.reputationScore,
       trustLevel: product?.seller?.trustLevel,
@@ -206,15 +247,7 @@ export async function getProductsCatalog(query: CatalogQuery = {}): Promise<Prod
 export async function getProductByIdAsync(id: string): Promise<ProductDetail> {
   const trimmed = id.trim();
   if (!trimmed) throw new Error('Thiếu mã sản phẩm.');
-  try {
-    return mapProduct(
-      await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(trimmed)}`),
-    );
-  } catch (error) {
-    const fallback = MOCK_PRODUCTS_CATALOG.find((p) => p.id === trimmed);
-    if (fallback) return fallback;
-    throw error;
-  }
+  return mapProduct(await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(trimmed)}`));
 }
 
 export async function getRelatedProducts(currentId: string, limit = 4): Promise<ProductDetail[]> {
@@ -251,7 +284,9 @@ export async function getShopsApi(query: ShopQuery = {}): Promise<PaginatedShops
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as PaginatedShops;
   return {
-    items: Array.isArray(data?.items) ? data.items : [],
+    items: Array.isArray(data?.items)
+      ? data.items
+      : [],
     total: data?.total ?? 0,
     page: data?.page ?? 1,
     limit: data?.limit ?? 12,
@@ -275,8 +310,9 @@ export async function getShopDetailApi(
   const data = (payload && typeof payload === 'object' && 'data' in payload
     ? payload.data
     : payload) as unknown as ShopDetailResult;
+  const rawShop = data?.shop ?? ({} as ShopListItem);
   return {
-    shop: data?.shop ?? ({} as ShopListItem),
+    shop: rawShop,
     products: {
       items: Array.isArray(data?.products?.items) ? data.products.items : [],
       total: data?.products?.total ?? 0,

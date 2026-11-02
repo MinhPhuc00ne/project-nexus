@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ChevronRight,
@@ -8,40 +8,52 @@ import {
   Clock,
   Share2,
   MessageCircle,
+  Flag,
 } from 'lucide-react';
 import type { ShopListItem } from '../../services/products.service';
+import ReportModal from '../report/ReportModal';
 
 interface ShopHeaderProps {
   shop: ShopListItem;
   onShare: () => void;
   onContact: () => void;
+  onReported?: (msg: string) => void;
 }
 
-export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact }) => {
+export const ShopHeader: React.FC<ShopHeaderProps> = ({
+  shop,
+  onShare,
+  onContact,
+  onReported,
+}) => {
+  const [showReportModal, setShowReportModal] = useState(false);
+
+  // Avatar của Shop là riêng biệt hoàn toàn với Avatar cá nhân của Seller
+  const shopLogoUrl = shop.avatarUrl;
+
   const getTrustBadge = (trustLevel: string) => {
-    const level = trustLevel.toUpperCase();
+    const level = (trustLevel || '').toUpperCase();
     if (level === 'DIAMOND') {
-      return { label: 'Kim Cương', color: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+      return { label: 'Kim Cương', color: 'bg-blue-50 text-blue-700 border-blue-200' };
     }
     if (level === 'PLATINUM') {
       return { label: 'Bạch Kim', color: 'bg-slate-100 text-slate-800 border-slate-300' };
     }
     if (level === 'GOLD') {
-      return { label: 'Hoàng Gia / Vàng', color: 'bg-amber-50 text-amber-700 border-amber-300' };
+      return { label: 'Hoàng Gia / Vàng', color: 'bg-blue-50 text-blue-700 border-blue-200' };
     }
     return {
       label: 'Đối Tác Xác Thực',
-      color: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      color: 'bg-blue-50 text-blue-700 border-blue-200',
     };
   };
 
   const badge = getTrustBadge(shop.trustLevel);
 
   return (
-    <section className="bg-slate-900 text-white relative overflow-hidden border-b border-slate-800">
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-900/40 via-slate-900 to-indigo-950/40 pointer-events-none" />
-      <div className="max-w-screen-2xl mx-auto px-6 py-10 relative z-10">
-        <div className="flex items-center gap-2 text-xs text-slate-400 mb-6">
+    <section className="bg-[#1c3973] text-white relative overflow-hidden border-b border-blue-900">
+      <div className="max-w-screen-2xl mx-auto px-6 py-9 relative z-10">
+        <div className="flex items-center gap-2 text-xs text-blue-200 mb-5">
           <Link to="/" className="hover:text-white transition">
             Trang chủ
           </Link>
@@ -50,88 +62,106 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
             Gian hàng
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
-          <span className="text-slate-200 font-semibold">{shop.name}</span>
+          <span className="text-white font-semibold">{shop.name}</span>
         </div>
 
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-5">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-2xl sm:text-3xl font-black shadow-lg shadow-blue-900/30 border-2 border-white/10 shrink-0 overflow-hidden">
-              {shop.avatarUrl ? (
-                <img src={shop.avatarUrl} alt={shop.name} className="w-full h-full object-cover" />
+            <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-lg bg-white text-[#1c3973] flex items-center justify-center text-2xl sm:text-3xl font-black shadow-md border-2 border-blue-200 shrink-0 overflow-hidden">
+              {shopLogoUrl ? (
+                <img src={shopLogoUrl} alt={shop.name} className="w-full h-full object-cover" />
               ) : (
-                <span>{shop.name.charAt(0).toUpperCase()}</span>
+                <span>{(shop.name || 'S').charAt(0).toUpperCase()}</span>
               )}
             </div>
 
             <div>
-              <div className="flex items-center gap-3 flex-wrap mb-2">
+              <div className="flex items-center gap-2.5 flex-wrap mb-1.5">
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
                   {shop.name}
                 </h1>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${badge.color}`}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold border ${badge.color}`}
                 >
                   <Award className="w-3.5 h-3.5" />
                   {badge.label}
                 </span>
                 {shop.isSellerActive && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-500/30">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-white/15 text-white border border-white/25">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     Đang hoạt động
                   </span>
                 )}
               </div>
 
-              <p className="text-sm text-slate-300 font-medium mb-3">
-                Đại diện: <span className="text-white font-semibold">{shop.sellerFullName}</span>
+              <p className="text-xs text-blue-100 font-medium mb-2">
+                Chủ gian hàng: <span className="text-white font-semibold">{shop.sellerFullName}</span>
               </p>
 
               {shop.description && (
-                <p className="text-xs text-slate-400 max-w-xl line-clamp-2 mb-3">
+                <p className="text-xs text-blue-100/90 max-w-xl line-clamp-2 mb-2.5">
                   {shop.description}
                 </p>
               )}
 
-              <div className="flex items-center gap-4 text-xs text-slate-400 flex-wrap">
+              <div className="flex items-center gap-4 text-xs text-blue-100 flex-wrap">
                 {shop.address && (
                   <span className="inline-flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-blue-400" />
+                    <MapPin className="w-3.5 h-3.5 text-blue-200" />
                     {shop.address.district ? `${shop.address.district}, ` : ''}
                     {shop.address.city || 'Việt Nam'}
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-200" />
                   Điểm uy tín: <strong className="text-white">{shop.reputationScore}/100</strong>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                  <Clock className="w-3.5 h-3.5 text-blue-200" />
                   Phản hồi: <strong className="text-white">99%</strong>
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
             <button
               type="button"
               onClick={onShare}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition cursor-pointer"
             >
-              <Share2 className="w-4 h-4 text-slate-300" />
+              <Share2 className="w-3.5 h-3.5" />
               <span>Chia sẻ</span>
             </button>
             <button
               type="button"
               onClick={onContact}
-              className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[#1c3973] hover:bg-blue-50 text-xs font-bold shadow-xs transition cursor-pointer"
             >
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle className="w-3.5 h-3.5" />
               <span>Liên hệ Shop</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowReportModal(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-red-500/20 text-blue-100 hover:text-white text-xs font-semibold border border-white/20 transition cursor-pointer"
+              title="Báo cáo vi phạm gian hàng"
+            >
+              <Flag className="w-3.5 h-3.5" />
+              <span>Báo cáo Shop</span>
             </button>
           </div>
         </div>
       </div>
+
+      <ReportModal
+        isOpen={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        targetType="SHOP"
+        targetId={shop.id}
+        targetName={shop.name}
+        onReported={onReported}
+      />
     </section>
   );
 };

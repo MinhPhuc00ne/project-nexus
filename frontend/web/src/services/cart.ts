@@ -75,6 +75,7 @@ export async function addToCart(
       body: {
         productId,
         quantity: Math.max(1, quantity),
+        selections: item.selections,
       },
       requireAuth: true,
     });

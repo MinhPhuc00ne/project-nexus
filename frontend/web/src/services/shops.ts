@@ -7,6 +7,26 @@ import type {
 } from '../types/shop.types';
 import { getSellerResource } from './sellerResources';
 
+export async function uploadShopAvatarFile(file: File): Promise<string> {
+  const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!validTypes.includes(file.type)) {
+    throw new Error('Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP cho ảnh đại diện gian hàng.');
+  }
+  if (file.size <= 0 || file.size > 10 * 1024 * 1024) {
+    throw new Error('Ảnh đại diện gian hàng không được vượt quá 10 MB.');
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  const uploaded = await apiRequest<{ url: string }>('/media/upload', {
+    method: 'POST',
+    body: formData,
+    isFormData: true,
+    requireAuth: true,
+  });
+  if (!uploaded?.url) throw new Error('Máy chủ chưa trả về URL ảnh đại diện hợp lệ.');
+  return uploaded.url;
+}
+
 const pending = new Map<string, Promise<ShopDetail>>();
 
 export function getShopDetail(sellerId: string, page = 1, limit = 1): Promise<ShopDetail> {
@@ -23,7 +43,7 @@ export function getShopDetail(sellerId: string, page = 1, limit = 1): Promise<Sh
 }
 
 export function getSellerShopProfile(): Promise<SellerShopProfile> {
-  return getSellerResource('/seller/shop-profile');
+  return getSellerResource<SellerShopProfile>('/seller/shop-profile');
 }
 
 export async function updateSellerShopProfile(
