@@ -306,6 +306,17 @@ export class OrderService {
                 totalPrice: effectivePrice(item.product, pricedAt) * item.quantity,
               })),
             },
+            payments:
+              dto.paymentMethod === PaymentProvider.COD
+                ? {
+                    create: {
+                      provider: PaymentProvider.COD,
+                      amount: totalAmount,
+                      status: PaymentStatus.PENDING,
+                      metadata: { note: 'Thanh toán tiền mặt khi nhận hàng (COD)' },
+                    },
+                  }
+                : undefined,
           },
           include: {
             items: {
@@ -315,6 +326,7 @@ export class OrderService {
                 },
               },
             },
+            payments: true,
           },
         });
 
@@ -339,6 +351,12 @@ export class OrderService {
     // 4. Tự động xử lý thanh toán nếu chỉ có 1 đơn hàng
     let payosPayment: PayosPaymentResponse | null = null;
     let walletPayment: WalletPaymentResponse | null = null;
+    let codPayment: {
+      orderId: string;
+      success: boolean;
+      message: string;
+      provider: PaymentProvider;
+    } | null = null;
 
     if (createdOrders.length === 1) {
       if (!dto.paymentMethod || dto.paymentMethod === PaymentProvider.PAYOS) {
@@ -356,6 +374,13 @@ export class OrderService {
         walletPayment = (await this.initializePayment(createdOrders[0].id, buyerId, {
           provider: PaymentProvider.WALLET,
         })) as WalletPaymentResponse;
+      } else if (dto.paymentMethod === PaymentProvider.COD) {
+        codPayment = {
+          orderId: createdOrders[0].id,
+          success: true,
+          message: 'Phương thức thanh toán COD đã được ghi nhận thành công.',
+          provider: PaymentProvider.COD,
+        };
       }
     }
 
@@ -363,17 +388,22 @@ export class OrderService {
       orders: createdOrders,
       payosPayment,
       walletPayment,
+      codPayment,
     };
   }
 
   /**
-   * Khởi tạo giao dịch thanh toán cho đơn hàng (Hỗ trợ PayOS VietQR & Ví NEXUS Pay)
+   * Khởi tạo giao dịch thanh toán cho đơn hàng (Hỗ trợ PayOS VietQR, Ví NEXUS Pay và COD).
    */
   async initializePayment(
     orderId: string,
     buyerId: string,
     dto?: PayOrderDto,
-  ): Promise<PayosPaymentResponse | WalletPaymentResponse> {
+  ): Promise<
+    | PayosPaymentResponse
+    | WalletPaymentResponse
+    | { orderId: string; success: boolean; message: string; provider: PaymentProvider }
+  > {
     const provider = dto?.provider || PaymentProvider.PAYOS;
 
     // 1. Nếu chọn thanh toán bằng VÍ (WALLET)
@@ -381,7 +411,12 @@ export class OrderService {
       return this.payOrderByWallet(orderId, buyerId);
     }
 
-    // 2. Nếu chọn cổng thanh toán khác ngoài PAYOS (ví dụ STRIPE chưa kích hoạt)
+    // 2. Nếu chọn thanh toán khi nhận hàng (COD)
+    if (provider === PaymentProvider.COD) {
+      return this.registerCodPayment(orderId, buyerId);
+    }
+
+    // 3. Nếu chọn cổng thanh toán khác ngoài PAYOS
     if (provider !== PaymentProvider.PAYOS) {
       throw new BadRequestException(`Cổng thanh toán ${provider} hiện chưa được kích hoạt`);
     }
@@ -651,6 +686,62 @@ export class OrderService {
         sellerPayout: settlementResult.settlement.sellerPayout,
         escrowStatus: settlementResult.settlement.escrowStatus,
       },
+    };
+  }
+
+  /**
+   * Registers cash on delivery (COD) payment for an order.
+   *
+   * @param orderId Target order identifier
+   * @param buyerId Buyer account identifier verifying ownership
+   * @returns Payment registration confirmation
+   */
+  async registerCodPayment(
+    orderId: string,
+    buyerId: string,
+  ): Promise<{ orderId: string; success: boolean; message: string; provider: PaymentProvider }> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { payments: true },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
+    }
+
+    if (order.buyerId !== buyerId) {
+      throw new ForbiddenException('Bạn không có quyền thao tác trên đơn hàng này');
+    }
+
+    if (order.status !== OrderStatus.PENDING_PAYMENT) {
+      throw new BadRequestException(
+        `Không thể ghi nhận thanh toán COD cho đơn hàng ở trạng thái '${order.status}'.`,
+      );
+    }
+
+    const hasSuccessfulPayment = order.payments.some((p) => p.status === PaymentStatus.SUCCESS);
+    if (hasSuccessfulPayment) {
+      throw new BadRequestException('Đơn hàng đã được thanh toán thành công trước đó.');
+    }
+
+    const existingCod = order.payments.find((p) => p.provider === PaymentProvider.COD);
+    if (!existingCod) {
+      await this.prisma.payment.create({
+        data: {
+          orderId: order.id,
+          provider: PaymentProvider.COD,
+          amount: order.totalAmount,
+          status: PaymentStatus.PENDING,
+          metadata: { note: 'Thanh toán tiền mặt khi nhận hàng (COD)' },
+        },
+      });
+    }
+
+    return {
+      orderId: order.id,
+      success: true,
+      message: 'Phương thức thanh toán COD đã được ghi nhận thành công.',
+      provider: PaymentProvider.COD,
     };
   }
 

@@ -18,7 +18,7 @@ export const initialAdminData: AdminData = {
       id: 'NX-ORD-887410',
       product: 'Đồng hồ Thụy Sĩ Omega Seamaster 300M',
       amount: 112000000,
-      gateway: 'STRIPE INTERNATIONAL',
+      gateway: 'PAYOS VIETQR',
       report:
         'Buyer khiếu nại sai số dây đeo kim loại không nguyên bản. Seller phản bác có giấy kiểm định.',
       recommendation: 'Yêu cầu giám định bên thứ ba hoặc hòa giải hoàn 10% phí phục hồi.',
@@ -47,7 +47,7 @@ export const initialAdminData: AdminData = {
       id: 'NX-ORD-887413',
       product: 'Mô hình xe cổ',
       amount: 8500000,
-      gateway: 'STRIPE INTERNATIONAL',
+      gateway: 'PAYOS VIETQR',
       report: 'Thiếu phụ kiện đi kèm theo mô tả.',
       recommendation: 'Yêu cầu Seller bổ sung phụ kiện hoặc hoàn tiền một phần.',
       status: 'pending',

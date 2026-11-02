@@ -15,9 +15,9 @@ In-Scope Features:
 - Unified identity and access management with seamless Buyer/Seller role toggling within a single session.
 - Dynamic user reputation scoring, trust-level enforcement, and violation penalty algorithms.
 - Full catalog management supporting hierarchical categories (up to 3 levels) and 3D asset metadata.
-- End-to-end e-commerce flow: active cart management, checkout with price revalidation, and pluggable payment providers (PayOS, Stripe).
+- End-to-end e-commerce flow: active cart management, checkout with price revalidation, and official payment providers (PayOS, Wallet, and COD).
 - Real-time 3D WebGL auction engine featuring atomic bidding queues, anti-sniping duration extensions, and automated settlement.
-- Fulfillment engine managing SKU-level inventory across warehouses, immutable inventory ledgers, and logistics orchestration via carrier adapters (GHN, GHTK).
+- Fulfillment engine managing SKU-level inventory across warehouses, immutable inventory ledgers, and logistics orchestration via carrier adapter (GHN).
 - Escrow protection holding buyer funds upon order placement and releasing payouts (minus a 7% platform fee) upon delivery confirmation.
 - Centralized event log tracking, broker health monitoring, and multi-channel notifications (Email, Push, In-App).
 
@@ -44,7 +44,7 @@ Project Nexus is architected as a Modular Monolith deployed within a unified Nod
 | Seller                | Authenticated merchant (mode-toggled from Buyer) who creates product listings, manages inventory, submits items for auction, and fulfills shipments. |
 | Support Staff         | Platform moderator who handles dispute arbitration, shipment tracking anomalies, refund approvals, and operational health monitoring.                |
 | Administrator (Admin) | Superuser responsible for platform governance, category hierarchies, system configuration, staff provisioning, and revenue audit.                    |
-| External Systems      | Third-party services including Payment Gateways (PayOS, Stripe) and Shipping Carriers (GHN, GHTK).                                                   |
+| External Systems      | Third-party services including Payment Gateways (PayOS, Wallet, COD) and Shipping Carrier (GHN).                                                     |
 
 ---
 
@@ -78,7 +78,7 @@ The platform behavior is governed by centralized system configurations:
 | `PLATFORM_FEE_PERCENTAGE`        | Platform escrow commission deducted upon release             | `7.0%`                    |
 | `DEFAULT_WAREHOUSE_ID`           | Default fulfillment warehouse identifier                     | `WH_001`                  |
 | `INVENTORY_RESERVATION_TIMEOUT`  | Inventory reservation lock timeout in checkout               | `30 minutes`              |
-| `SUPPORTED_CARRIERS`             | Integrated logistics carrier adapters                        | `GHN, GHTK`               |
+| `SUPPORTED_CARRIERS`             | Integrated logistics carrier adapters                        | `GHN`                     |
 | `DEFAULT_CARRIER`                | Default carrier for shipping calculations                    | `GHN`                     |
 | `SHIPPING_API_TIMEOUT_MS`        | External logistics API call timeout                          | `3000 ms`                 |
 | `NOTIFICATION_RETRY_LIMIT`       | Maximum delivery retry attempts for transient failures       | `3`                       |
@@ -218,7 +218,7 @@ Project Nexus utilizes a decoupled, in-process and distributed event-driven mode
    - Multi-step checkout requiring valid delivery address and selected payment method.
    - Strategy Pattern integration:
      - PayOS: Domestic Vietnamese banking with dynamic VietQR generation and webhook signature verification.
-     - Stripe: International credit/debit card processing via Payment Intents.
+     - COD: Cash on delivery with physical settlement upon delivery.
      - Wallet: Instant in-platform wallet settlement.
    - Enforces unique idempotency keys on checkout submissions to eliminate duplicate charges.
 3. Order Lifecycle & Invoicing:
@@ -250,7 +250,7 @@ Project Nexus utilizes a decoupled, in-process and distributed event-driven mode
    - Atomically reserves stock upon checkout or auction listing creation. Reservations expire automatically after 30 minutes if unconfirmed.
    - Maintains an append-only, immutable `inventory_ledgers` table for all stock movements.
 2. Shipping & Logistics Orchestration:
-   - Adapter-based architecture integrating carrier APIs (GHN as primary default, GHTK as secondary).
+   - Adapter-based architecture integrating carrier API (GHN Express adapter).
    - Real-time rate quotations based on parcel weight and destination coordinates.
    - Automated waybill and tracking code generation upon order packing.
    - Carrier webhook processing maps external tracking checkpoints to standardized internal statuses (`PICKED_UP`, `IN_TRANSIT`, `DELIVERED`).
@@ -316,7 +316,7 @@ To satisfy the core principles in Section 4.1 of the original SRS while operatin
 
 - Transport encryption via HTTPS/TLS 1.3 across all client connections; Secure WebSockets (`wss://`).
 - Password hashing utilizing `bcrypt` with a minimum salt round of 10.
-- Zero raw credit card storage; full compliance with PCI-DSS guidelines by delegating card data tokenization to Stripe Elements.
+- Zero raw credit card storage; full compliance with financial security standards by delegating VietQR banking to PayOS and handling cash on delivery through verified logistics workflows.
 - Strict input sanitization via NestJS `ValidationPipe` with `whitelist: true` and `forbidNonWhitelisted: true`.
 
 ### 8.5 Observability & Auditing

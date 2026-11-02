@@ -156,9 +156,9 @@ $$\text{Seller Payout} = \text{Subtotal} - \text{Platform Fee} + \text{Shipping 
 ### 6.2 Payment Idempotency & Gateways
 
 - All payment requests require an `Idempotency-Key` header (UUID v4) to prevent double charging on network drops.
-- **PayOS:** Generates VietQR domestic bank transfer code; relies on cryptographic signature verification on incoming webhooks.
-- **Stripe:** Card payment via PaymentIntent; validated via Stripe webhook secret.
-- **Wallet:** Deducts directly from user's internal liquid balance with zero processing delay.
+- PayOS: Generates VietQR domestic bank transfer code; relies on cryptographic signature verification on incoming webhooks.
+- COD: Cash on delivery option verified upon physical handover by the logistics courier.
+- Wallet: Deducts directly from user internal liquid balance with zero processing delay.
 
 ### 6.3 Anti-Self-Purchase & Wash Trading Prevention
 

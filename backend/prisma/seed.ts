@@ -7,6 +7,8 @@ import {
   SellerRequestStatus,
   WalletTransactionType,
   WalletTransactionStatus,
+  AuctionStatus,
+  BidStatus,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
@@ -1116,6 +1118,126 @@ async function main() {
 
   await seedProductsForSeller(sellerEntities['Huy'], huyProducts);
   console.info('✅ 8. Đã khởi tạo 20 sản phẩm cho Seller Huy (Đồng hồ & Phụ kiện)');
+
+  // =========================================================================
+  // 11. KHỞI TẠO CÁC PHIÊN ĐẤU GIÁ VÀ LƯỢT TRẢ GIÁ MẪU (AUCTIONS & BIDS)
+  // =========================================================================
+  const huyProduct = await prisma.product.findFirst({
+    where: {
+      sellerId: sellerEntities['Huy'].id,
+      title: 'Đồng hồ cơ nam lộ máy Automatic dây da cao cấp chính hãng',
+    },
+  });
+
+  const josProduct = await prisma.product.findFirst({
+    where: {
+      sellerId: sellerEntities['Jos'].id,
+      title: 'Đồng hồ thông minh theo dõi sức khỏe và nhịp tim đa năng',
+    },
+  });
+
+  const buyerLien = await prisma.user.findFirst({
+    where: { email: 'lien.buyer@gmail.com' },
+  });
+  const buyerCuong = await prisma.user.findFirst({
+    where: { email: 'cuong.buyer@gmail.com' },
+  });
+
+  if (huyProduct && buyerLien && buyerCuong) {
+    const now = new Date();
+    const liveStartTime = new Date(now.getTime() - 2 * 3600 * 1000);
+    const liveEndTime = new Date(now.getTime() + 4 * 3600 * 1000);
+
+    let liveAuction = await prisma.auction.findFirst({
+      where: {
+        productId: huyProduct.id,
+        title: 'Audemars Piguet Royal Oak Chronograph 41mm Selfwinding',
+      },
+    });
+
+    if (!liveAuction) {
+      liveAuction = await prisma.auction.create({
+        data: {
+          productId: huyProduct.id,
+          sellerId: sellerEntities['Huy'].id,
+          title: 'Audemars Piguet Royal Oak Chronograph 41mm Selfwinding',
+          startingPrice: 100000000,
+          reservePrice: 120000000,
+          currentHighestBid: 128500000,
+          currentHighestBidderId: buyerCuong.id,
+          bidIncrement: 1000000,
+          status: AuctionStatus.ACTIVE,
+          startTime: liveStartTime,
+          endTime: liveEndTime,
+          originalEndTime: liveEndTime,
+          isExtended: false,
+          totalBidsCount: 3,
+        },
+      });
+
+      await prisma.bid.createMany({
+        data: [
+          {
+            auctionId: liveAuction.id,
+            bidderId: buyerLien.id,
+            bidAmount: 110000000,
+            status: BidStatus.SUPERSEDED,
+            placedAt: new Date(now.getTime() - 90 * 60 * 1000),
+          },
+          {
+            auctionId: liveAuction.id,
+            bidderId: buyerCuong.id,
+            bidAmount: 120000000,
+            status: BidStatus.SUPERSEDED,
+            placedAt: new Date(now.getTime() - 45 * 60 * 1000),
+          },
+          {
+            auctionId: liveAuction.id,
+            bidderId: buyerCuong.id,
+            bidAmount: 128500000,
+            status: BidStatus.ACCEPTED,
+            placedAt: new Date(now.getTime() - 10 * 60 * 1000),
+          },
+        ],
+      });
+      console.info(
+        '✅ 9. Đã khởi tạo phiên đấu giá Live 3D (Audemars Piguet) cùng 3 lượt trả giá mẫu',
+      );
+    }
+
+    if (josProduct) {
+      const scheduledStart = new Date(now.getTime() + 24 * 3600 * 1000);
+      const scheduledEnd = new Date(now.getTime() + 48 * 3600 * 1000);
+
+      const existingScheduled = await prisma.auction.findFirst({
+        where: {
+          productId: josProduct.id,
+          title: 'Rolex Submariner Date 41mm Oystersteel Black Dial',
+        },
+      });
+
+      if (!existingScheduled) {
+        await prisma.auction.create({
+          data: {
+            productId: josProduct.id,
+            sellerId: sellerEntities['Jos'].id,
+            title: 'Rolex Submariner Date 41mm Oystersteel Black Dial',
+            startingPrice: 150000000,
+            reservePrice: 180000000,
+            currentHighestBid: 0,
+            bidIncrement: 2000000,
+            status: AuctionStatus.SCHEDULED,
+            startTime: scheduledStart,
+            endTime: scheduledEnd,
+            originalEndTime: scheduledEnd,
+            isExtended: false,
+            totalBidsCount: 0,
+          },
+        });
+        console.info('✅ 10. Đã khởi tạo phiên đấu giá lên lịch SCHEDULED (Rolex Submariner)');
+      }
+    }
+  }
 
   console.info('\n🎉🎉🎉 SEED TOÀN BỘ DỮ LIỆU DEMO THÀNH CÔNG RỰC RỠ! 🎉🎉🎉');
 }

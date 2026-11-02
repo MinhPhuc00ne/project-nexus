@@ -9,9 +9,9 @@ const commitments = [
   {
     icon: ShieldHalf,
     title: 'Thanh Toán Bảo Mật',
-    description: 'Escrow PayOS, Stripe & Thẻ quốc tế',
+    description: 'Bảo mật PayOS, Ví NEXUS & COD',
   },
-  { icon: Truck, title: 'Đồng Kiểm Tận Nơi', description: 'Vận hành GHN Express & Viettel Post' },
+  { icon: Truck, title: 'Đồng Kiểm Tận Nơi', description: 'Vận hành GHN Express an toàn' },
   { icon: Box, title: 'Mô Phỏng 3D Thực', description: 'Kiểm định micro-mesh & vật lý số' },
 ];
 
@@ -149,18 +149,15 @@ export function Footer({ className = '', showAssurances = true, year = 2025 }: F
           <div className="mb-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5">
               <span className="inline-flex items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm">
-                PayOS
+                PayOS VietQR
               </span>
               <span className="inline-flex items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm">
-                Stripe
+                Ví NEXUS Pay
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="inline-flex items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm">
-                Visa / Mastercard
-              </span>
-              <span className="inline-flex items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm">
-                Ví Trả Sau
+                COD (Tiền mặt)
               </span>
             </div>
           </div>

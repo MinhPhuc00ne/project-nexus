@@ -1,19 +1,19 @@
 # Project Nexus - Backend Engineering Guide
 
-This guide provides backend engineers with an end-to-end specification of the architecture, module design, database orchestration, real-time engines, and development workflows for the **Nexus Modular Monolith Backend** (`backend/`).
+This guide provides backend engineers with an end-to-end specification of the architecture, module design, database orchestration, real-time engines, and development workflows for the Nexus Modular Monolith Backend (`backend/`).
 
 ---
 
 ## 1. Architecture Overview
 
-Project Nexus is architected as an **Enterprise Modular Monolith** in NestJS:
+Project Nexus is architected as an Enterprise Modular Monolith in NestJS:
 
-- **Language / Runtime:** TypeScript 5.9 / Node.js LTS v22+
-- **Framework:** NestJS 12 (IoC container, Modular architecture)
-- **Database & ORM:** PostgreSQL 17 + Prisma ORM 7
-- **In-Memory Store:** Redis 7 (Distributed locking with Redlock, caching, Pub/Sub)
-- **Event Bus:** `@nestjs/event-emitter` (EventEmitter2 in-process domain events)
-- **Real-Time Gateway:** Socket.IO / `@nestjs/websockets`
+- Language and Runtime: TypeScript 5.9 and Node.js LTS v22+
+- Framework: NestJS 12 (IoC container, Modular architecture)
+- Database and ORM: PostgreSQL 17 and Prisma ORM 7
+- In-Memory Store: Redis 7 (Distributed locking with Redlock, caching, Pub/Sub)
+- Event Bus: `@nestjs/event-emitter` (EventEmitter2 in-process domain events)
+- Real-Time Gateway: Socket.IO / `@nestjs/websockets`
 
 ---
 
@@ -21,29 +21,29 @@ Project Nexus is architected as an **Enterprise Modular Monolith** in NestJS:
 
 The monolithic codebase is organized into decoupled domain modules under `backend/src/modules/`:
 
-| Module         | Primary Responsibilities                                                             |
-| :------------- | :----------------------------------------------------------------------------------- |
-| `auth`         | User registration, JWT issuing/refreshing, bcrypt hashing, role guards               |
-| `users`        | User profiles, wallet balances, reputation scoring, trust-level updates              |
-| `catalog`      | Categories (3-level hierarchy), product listings, 3D model asset metadata            |
-| `commerce`     | Shopping cart lifecycle, checkout validation, PayOS & Stripe gateways, order states  |
-| `fulfillment`  | SKU warehouse inventories, immutable inventory ledgers, escrow records, GHN shipping |
-| `auction`      | High-concurrency live bidding engine, Redis Redlock, anti-sniping duration extension |
-| `notification` | Multi-channel user notifications (Email, Push, In-App), immutable `event_logs` audit |
-| `backoffice`   | Staff management, dispute arbitration, escrow disbursement overrides                 |
+| Module         | Primary Responsibilities                                                                   |
+| :------------- | :----------------------------------------------------------------------------------------- |
+| `auth`         | User registration, JWT issuing/refreshing, bcrypt hashing, role guards                     |
+| `users`        | User profiles, wallet balances, reputation scoring, trust-level updates                    |
+| `catalog`      | Categories (3-level hierarchy), product listings, 3D model asset metadata                  |
+| `commerce`     | Shopping cart lifecycle, checkout validation, PayOS, Wallet and COD gateways, order states |
+| `fulfillment`  | SKU warehouse inventories, immutable inventory ledgers, escrow records, GHN shipping       |
+| `auction`      | High-concurrency live bidding engine, Redis Redlock, anti-sniping duration extension       |
+| `notification` | Multi-channel user notifications (Email, Push, In-App), immutable `event_logs` audit       |
+| `backoffice`   | Staff management, dispute arbitration, escrow disbursement overrides                       |
 
 ### 2.1 Layering Inside Each Module
 
 Each domain module enforces a clean 4-tier layer:
 
-1. **Controllers:** HTTP REST route handlers (`/api/v1/...`). Validates incoming payloads via DTOs.
-2. **DTOs:** Strongly-typed request/response schemas with `class-validator` annotations.
-3. **Services:** Core business logic, transaction orchestration, domain exception emission.
-4. **Repositories / Entities:** Database access queries utilizing Prisma client.
+1. Controllers: HTTP REST route handlers (`/api/v1/...`). Validates incoming payloads via DTOs.
+2. DTOs: Strongly-typed request/response schemas with `class-validator` annotations.
+3. Services: Core business logic, transaction orchestration, domain exception emission.
+4. Repositories and Entities: Database access queries utilizing Prisma client.
 
 ---
 
-## 3. Communication Boundaries & In-Process Events
+## 3. Communication Boundaries and In-Process Events
 
 ### 3.1 Logical Schema Separation
 
@@ -70,7 +70,7 @@ async handleOrderCreated(event: OrderCreatedEvent): Promise<void> {
   await this.escrowService.createEscrowHold(event.orderId, event.totalAmount);
 }
 
-// 3. Listening in NotificationService (Audit logging & email):
+// 3. Listening in NotificationService (Audit logging and email):
 @OnEvent('order.created')
 async logAndNotify(event: OrderCreatedEvent): Promise<void> {
   await this.auditLogService.recordEvent('OrderCreated', event);
@@ -80,18 +80,18 @@ async logAndNotify(event: OrderCreatedEvent): Promise<void> {
 
 ---
 
-## 4. Real-Time Auction Engine & High Concurrency
+## 4. Real-Time Auction Engine and High Concurrency
 
-The live auction engine (`/ws/auctions`) processes high-frequency bids with sub-300ms latency:
+The live auction engine on `/ws/auctions` processes high-frequency bids with sub-300ms latency:
 
-1. **Redis Redlock:** Serializes concurrent bids on `auction:{id}` down to the millisecond.
-2. **Pre-Validation:** Checks liquid wallet balance and bidder reputation ($\ge 40$).
-3. **Atomic Balance Transfer:** Deducts the bid amount from the new bidder's wallet and immediately credits the full amount back to the superseded bidder's wallet in a single PostgreSQL transaction.
-4. **Anti-Sniping Extension:** If a bid arrives in the final 2 minutes, extends `end_time` by $+5$ minutes and broadcasts `auction:time_extended` to all room sockets.
+- Concurrency Serialization: Employs PostgreSQL row-level locks and Redis locks on `auction:{id}` to serialize bids.
+- Liquid Balance Verification: Validates that the bidder has sufficient liquid funds in their NEXUS Pay wallet prior to accepting the bid.
+- Atomic Balance Reservation: Deducts the bid amount from the new bidder wallet, locks the funds, and credits the previously locked deposit back to the superseded bidder within a single ACID transaction.
+- Anti-Sniping Duration Extension: When a competitive bid arrives within the final 2 minutes of a session, the engine automatically extends `endTime` by 2 minutes and broadcasts an `auction:time_extended` WebSocket packet to connected clients.
 
 ---
 
-## 5. Database Setup & Migration Workflow
+## 5. Database Setup and Migration Workflow
 
 ### 5.1 Docker Infrastructure
 

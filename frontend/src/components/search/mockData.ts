@@ -102,7 +102,7 @@ export const getInitialProducts = (timerAp: string, timerRm: string): ProductIte
     priceLabel: 'Giá hiện tại:',
     timer: timerRm,
     subMetaLeft: 'Bước giá: 5.000.000đ',
-    subMetaRight: 'Stripe / PayOS',
+    subMetaRight: 'PayOS / Ví NEXUS',
     subMetaRightType: 'link',
     actionButton: { text: 'Tham Gia Đấu Giá', type: 'bid', icon: 'gavel' },
   },

@@ -10,6 +10,7 @@ import {
   NotificationChannel,
   NotificationType,
   OrderStatus,
+  PaymentProvider,
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -266,16 +267,29 @@ export class SellerOrdersService {
       throw new ForbiddenException('Bạn không có quyền thao tác trên đơn hàng này.');
     }
 
-    if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.PREPARING) {
+    const codPayment = await this.prisma.payment.findFirst({
+      where: { orderId, provider: PaymentProvider.COD },
+    });
+    const isCod = Boolean(codPayment);
+
+    const allowedStatuses: OrderStatus[] = isCod
+      ? [OrderStatus.PENDING_PAYMENT, OrderStatus.PREPARING]
+      : [OrderStatus.PAID, OrderStatus.PREPARING];
+
+    if (!allowedStatuses.includes(order.status as OrderStatus)) {
       throw new BadRequestException(
-        `Không thể xác nhận đơn hàng ở trạng thái '${order.status}'. Đơn hàng phải đã thanh toán (PAID).`,
+        `Không thể xác nhận đơn hàng ở trạng thái '${order.status}'. ${
+          isCod
+            ? 'Đơn hàng COD phải ở trạng thái PENDING_PAYMENT hoặc PREPARING.'
+            : 'Đơn hàng phải đã thanh toán (PAID).'
+        }`,
       );
     }
 
     const changed = await this.prisma.order.updateMany({
       where: {
         id: orderId,
-        status: { in: ['PAID', 'PREPARING'] },
+        status: { in: allowedStatuses },
         OR: [{ afterSales: null }, { afterSales: { status: 'REJECTED' } }],
       },
       data: { status: OrderStatus.PREPARING },

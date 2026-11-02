@@ -60,15 +60,14 @@ This directory contains specifications and endpoint definitions for the entire N
 
 ### 2.3 Commerce & Orders (`/api/v1/commerce`)
 
-| Method   | Path                               | Description                                   | Access   |
-| :------- | :--------------------------------- | :-------------------------------------------- | :------- |
-| `GET`    | `/api/v1/commerce/cart`            | Get active user cart with revalidated pricing | Buyer    |
-| `POST`   | `/api/v1/commerce/cart/items`      | Add or update cart item                       | Buyer    |
-| `DELETE` | `/api/v1/commerce/cart/items/:id`  | Remove item from cart                         | Buyer    |
-| `POST`   | `/api/v1/commerce/checkout`        | Create order from cart with idempotency key   | Buyer    |
-| `POST`   | `/api/v1/commerce/orders/:id/pay`  | Initialize PayOS / Stripe / Wallet payment    | Buyer    |
-| `POST`   | `/api/v1/commerce/webhooks/payos`  | PayOS VietQR payment confirmation webhook     | External |
-| `POST`   | `/api/v1/commerce/webhooks/stripe` | Stripe payment confirmation webhook           | External |
+| Method   | Path                              | Description                                          | Access   |
+| :------- | :-------------------------------- | :--------------------------------------------------- | :------- |
+| `GET`    | `/api/v1/commerce/cart`           | Get active user cart with revalidated pricing        | Buyer    |
+| `POST`   | `/api/v1/commerce/cart/items`     | Add or update cart item                              | Buyer    |
+| `DELETE` | `/api/v1/commerce/cart/items/:id` | Remove item from cart                                | Buyer    |
+| `POST`   | `/api/v1/commerce/checkout`       | Create order from cart with idempotency key          | Buyer    |
+| `POST`   | `/api/v1/commerce/orders/:id/pay` | Initialize PayOS / Wallet / COD payment registration | Buyer    |
+| `POST`   | `/api/v1/commerce/webhooks/payos` | PayOS VietQR payment confirmation webhook            | External |
 
 ### 2.4 Fulfillment & Logistics (`/api/v1/fulfillment`)
 
@@ -80,12 +79,15 @@ This directory contains specifications and endpoint definitions for the entire N
 
 ### 2.5 Live Auctions (`/api/v1/auctions`)
 
-| Method | Path                          | Description                                  | Access       |
-| :----- | :---------------------------- | :------------------------------------------- | :----------- |
-| `GET`  | `/api/v1/auctions`            | List scheduled and live auctions             | Public       |
-| `GET`  | `/api/v1/auctions/:id`        | Get auction room state and bid history       | Public       |
-| `POST` | `/api/v1/auctions`            | Create and schedule auction (Seller only)    | Seller       |
-| `POST` | `/api/v1/auctions/:id/cancel` | Cancel auction (Seller before start / Admin) | Seller/Admin |
+| Method | Path                        | Description                                           | Access         |
+| :----- | :-------------------------- | :---------------------------------------------------- | :------------- |
+| `GET`  | `/api/v1/auctions`          | List scheduled and live auctions with pagination      | Public         |
+| `GET`  | `/api/v1/auctions/my`       | List auctions created by the authenticated seller     | Seller         |
+| `GET`  | `/api/v1/auctions/my-bids`  | List bids submitted by the authenticated buyer        | Buyer          |
+| `GET`  | `/api/v1/auctions/:id`      | Get auction room state and masked bid history         | Public         |
+| `POST` | `/api/v1/auctions`          | Create and schedule auction for an owned product      | Seller         |
+| `POST` | `/api/v1/auctions/:id/bids` | Place competitive bid with wallet balance reservation | Buyer          |
+| `POST` | `/api/v1/auctions/:id/end`  | Finalize auction duration and settle winning bid      | Seller / Admin |
 
 ### 2.6 Backoffice & Disputes (`/api/v1/backoffice`)
 

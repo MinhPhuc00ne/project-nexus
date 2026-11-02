@@ -11,6 +11,7 @@ import {
   NotificationChannel,
   NotificationType,
   OrderStatus,
+  PaymentProvider,
   Prisma,
   ShipmentStatus,
 } from '@prisma/client';
@@ -27,7 +28,7 @@ import { GhnParcelItem } from './ghn-parcel';
 import { objectValue } from './shipment-state';
 
 type DispatchOrder = Prisma.OrderGetPayload<{
-  include: { items: { include: { product: true } }; shipment: true };
+  include: { items: { include: { product: true } }; shipment: true; payments: true };
 }>;
 
 export interface GhnDispatchResult {
@@ -84,7 +85,7 @@ export class GhnDispatchService {
   private async load(sellerId: string, orderId: string): Promise<DispatchOrder> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: { include: { product: true } }, shipment: true },
+      include: { items: { include: { product: true } }, shipment: true, payments: true },
     });
     if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
     if (order.sellerId !== sellerId)
@@ -168,7 +169,9 @@ export class GhnDispatchService {
       );
     }
     if (order.status !== OrderStatus.PAID && order.status !== OrderStatus.PREPARING) {
-      throw new BadRequestException('Đơn hàng phải đã thanh toán trước khi gửi GHN.');
+      throw new BadRequestException(
+        'Đơn hàng phải đã thanh toán hoặc đang chuẩn bị trước khi gửi GHN.',
+      );
     }
     const quote = await this.quote(order, dto);
     const { origin, parcel, request } = quote;
@@ -182,11 +185,13 @@ export class GhnDispatchService {
     ) {
       throw new BadRequestException('Thiếu thông tin liên hệ hoặc địa chỉ gửi/nhận hàng.');
     }
+    const isCodOrder = order.payments?.some((p) => p.provider === PaymentProvider.COD);
+    const codAmount = isCodOrder ? Math.round(Number(order.totalAmount)) : 0;
     const clientOrderCode = `NX-${order.id}`;
     const payload = {
       client_order_code: clientOrderCode,
       payment_type_id: 1,
-      cod_amount: 0,
+      cod_amount: codAmount,
       required_note: 'KHONGCHOXEMHANG',
       note: dto?.note || 'Giao hàng Project Nexus',
       to_name: address.recipientName,

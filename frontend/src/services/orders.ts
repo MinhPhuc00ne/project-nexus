@@ -9,7 +9,7 @@ export interface ShippingAddressInput {
   street: string;
 }
 
-export type CheckoutPaymentMethodType = 'PAYOS' | 'COD' | 'WALLET' | 'STRIPE';
+export type CheckoutPaymentMethodType = 'PAYOS' | 'COD' | 'WALLET';
 
 export interface CheckoutInput {
   shippingAddress: ShippingAddressInput;
@@ -92,34 +92,8 @@ export interface CheckoutResponse {
   payosPayment: PayosPaymentInfo | null;
 }
 
-const COD_ORDERS_STORAGE_KEY = 'nexus_cod_orders';
-
-export function markOrderAsCod(orderId: string): void {
-  try {
-    const raw = localStorage.getItem(COD_ORDERS_STORAGE_KEY);
-    const list: string[] = raw ? JSON.parse(raw) : [];
-    if (!list.includes(orderId)) {
-      list.push(orderId);
-      localStorage.setItem(COD_ORDERS_STORAGE_KEY, JSON.stringify(list));
-    }
-  } catch {
-    // Ignore localStorage access failures
-  }
-}
-
-export function isCodOrderId(orderId: string): boolean {
-  try {
-    const raw = localStorage.getItem(COD_ORDERS_STORAGE_KEY);
-    const list: string[] = raw ? JSON.parse(raw) : [];
-    return Array.isArray(list) && list.includes(orderId);
-  } catch {
-    return false;
-  }
-}
-
 export function isCodOrder(order?: BuyerOrder | null): boolean {
   if (!order) return false;
-  if (isCodOrderId(order.id) || isCodOrderId(order.orderNumber)) return true;
   const payments = order.payments ?? [];
   return payments.some((p) => p.provider === 'COD' || p.provider === 'CASH');
 }
@@ -159,16 +133,12 @@ export async function getCheckoutQuoteApi(data: {
  */
 export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse> {
   const isCod = data.paymentMethod === 'COD';
-  const apiPayload = {
-    ...data,
-    paymentMethod: isCod ? 'STRIPE' : data.paymentMethod,
-  };
 
   const response = await api.post<{
     statusCode: number;
     message: string;
     data: CheckoutResponse;
-  }>('/commerce/checkout', apiPayload);
+  }>('/commerce/checkout', data);
 
   const payload = response?.data;
   const result = (
@@ -176,10 +146,6 @@ export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse
   ) as CheckoutResponse;
 
   const orders = Array.isArray(result?.orders) ? result.orders : [];
-
-  if (isCod) {
-    orders.forEach((o) => markOrderAsCod(o.id));
-  }
 
   return {
     orders,
@@ -192,7 +158,7 @@ export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse
  */
 export async function payOrderApi(
   orderId: string,
-  provider: 'PAYOS' | 'WALLET' | 'STRIPE' = 'PAYOS',
+  provider: 'PAYOS' | 'WALLET' | 'COD' = 'PAYOS',
 ): Promise<PayosPaymentInfo> {
   const response = await api.post<{
     statusCode: number;

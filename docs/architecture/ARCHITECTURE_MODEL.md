@@ -18,7 +18,7 @@ flowchart TB
         end
 
         subgraph ClientTier["Client Presentation Tier (frontend/)"]
-            WebClient["Web Client (frontend/web)<br/>React 19 + Vite + Tailwind CSS v4<br/>Three.js (3D WebGL) + Zustand<br/>Unified Buyer/Seller/Staff Gateway"]
+            WebClient["Web Client (frontend/)<br/>React 19 + Vite + Tailwind CSS v4<br/>Unified Buyer/Seller/Staff Gateway"]
         end
 
         subgraph BackendTier["Modular Monolith Backend Tier (backend/)"]
@@ -26,15 +26,15 @@ flowchart TB
 
             subgraph IngressLayer["Presentation & Ingress"]
                 HTTPControllers["REST API Controllers (/api/v1/...)<br/>JWT Guards & RBAC Interceptors"]
-                WSGateway["WebSocket Gateway (/ws/auctions)<br/>Real-Time Bidding & 3D Camera Sync"]
+                WSGateway["WebSocket Gateway (/ws/auctions, /ws/chat)<br/>Real-Time Bidding & Live Chat"]
             end
 
             subgraph ModulesLayer["Encapsulated Domain Modules"]
                 AuthMod["Auth Module"]
                 UsersMod["Users & Wallet Module"]
-                CatalogMod["Catalog & 3D Module"]
+                CatalogMod["Catalog Module"]
                 CommerceMod["Commerce & Orders Module"]
-                FulfillMod["Fulfillment & Escrow Module"]
+                FulfillMod["Fulfillment & Logistics Module"]
                 AuctionMod["Auction & Bidding Module"]
                 NotifyMod["Notification & Audit Module"]
                 BackofficeMod["Backoffice & Dispute Module"]
@@ -55,7 +55,6 @@ flowchart TB
 
         subgraph ExternalAPIs["Third-Party Integrations"]
             PayOS["PayOS (Domestic VietQR Banking)"]
-            Stripe["Stripe (International Credit Cards)"]
             GHN["GHN (Giao Hàng Nhanh Logistics Adapter)"]
         end
     end
@@ -66,7 +65,6 @@ flowchart TB
     ModulesLayer --> PostgreSQL
     AuctionMod <--> Redis
     CommerceMod --> PayOS
-    CommerceMod --> Stripe
     FulfillMod --> GHN
 ```
 
@@ -215,7 +213,7 @@ SKU-level stock tracking across physical warehouses.
 E-commerce purchase records and payment gateway integration.
 
 - `orders`: `buyer_id`, `seller_id`, `subtotal`, `shipping_fee`, `total_amount`, `status`, `idempotency_key`, `shipping_address_snapshot`.
-- `payments`: Tracks provider (`PAYOS`, `STRIPE`, `WALLET`), transaction code, status (`PENDING`, `SUCCESS`, `FAILED`), and webhook metadata.
+- `payments`: Tracks provider (`PAYOS`, `WALLET`, `COD`), transaction code, status (`PENDING`, `SUCCESS`, `FAILED`), and webhook metadata.
 
 #### 6. `auctions` & `bids`
 
@@ -229,7 +227,7 @@ High-concurrency live auction engine records.
 Marketplace protection and logistics fulfillment.
 
 - `escrow_records`: Locks buyer payment upon order placement. Contains `total_amount`, `platform_fee` (7%), `seller_payout` (93%), and status (`HELD`, `DISBURSED`, `REFUNDED`, `DISPUTED`).
-- `shipments`: Integrates logistics adapters (GHN, GHTK), tracking code, waybill, and delivery statuses.
+- `shipments`: Integrates logistics adapter (GHN), tracking code, waybill, and delivery statuses.
 - `disputes`: Arbitration records opened by buyers, containing evidence attachments, resolution notes, and arbitrator staff ID.
 
 #### 8. `reputation_logs`, `event_logs`, `notifications`, `staff_invitations`
