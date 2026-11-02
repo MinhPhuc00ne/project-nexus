@@ -21,11 +21,13 @@ export interface HomeCategory {
 }
 
 export interface HomeHeroSlide {
-  badge: string;
-  title: string;
-  accent: string;
-  description: string;
+  badge?: string;
+  title?: string;
+  accent?: string;
+  description?: string;
   image: string;
+  targetUrl?: string;
+  isFullBanner?: boolean;
 }
 
 export interface HomeBenefitProps {

@@ -193,7 +193,8 @@ export default function CartPage() {
         isOpen={showCheckoutModal}
         onClose={() => setShowCheckoutModal(false)}
         selectedItems={selectedItems}
-        grandTotal={grandTotal}
+        shippingFee={appliedVoucher?.code === 'FREESHIP' ? 0 : 30000}
+        grandTotal={appliedVoucher?.code === 'FREESHIP' ? grandTotal : grandTotal + 30000}
         onCheckoutSuccess={() => setItems([])}
         showToast={showToast}
       />

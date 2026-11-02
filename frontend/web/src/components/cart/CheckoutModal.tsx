@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import Popup from '../Popup';
 import { clearCart, type CartItem } from '../../services/cart';
 import { getStoredToken } from '../../services/auth';
@@ -8,9 +9,10 @@ import {
   type PayosPaymentInfo,
   type BuyerOrder,
   type ShippingAddressInput,
+  type CheckoutPaymentMethodType,
 } from '../../services/orders';
-import { CheckCircle2, Loader2 } from 'lucide-react';
-import PayosQrModal from '../checkout/PayosQrModal';
+import { Loader2 } from 'lucide-react';
+import CheckoutSuccessCard from '../checkout/CheckoutSuccessCard';
 import CheckoutAddressSection from '../checkout/CheckoutAddressSection';
 import CheckoutPaymentMethod from '../checkout/CheckoutPaymentMethod';
 
@@ -20,7 +22,8 @@ interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedItems: CartItem[];
-  grandTotal: number;
+  shippingFee?: number;
+  grandTotal?: number;
   onCheckoutSuccess?: () => void;
   showToast: (msg: string) => void;
 }
@@ -29,6 +32,7 @@ export default function CheckoutModal({
   isOpen,
   onClose,
   selectedItems,
+  shippingFee,
   grandTotal,
   onCheckoutSuccess,
   showToast,
@@ -44,11 +48,16 @@ export default function CheckoutModal({
     street: '',
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<'PAYOS' | 'WALLET' | 'STRIPE'>('PAYOS');
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethodType>('PAYOS');
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [payosPayment, setPayosPayment] = useState<PayosPaymentInfo | null>(null);
   const [createdOrders, setCreatedOrders] = useState<BuyerOrder[]>([]);
+
+  const itemsSubtotal = selectedItems.reduce((sum, it) => sum + it.price * it.qty, 0);
+  const actualShippingFee = shippingFee !== undefined ? shippingFee : 30000;
+  const computedGrandTotal =
+    grandTotal !== undefined ? grandTotal : itemsSubtotal + actualShippingFee;
 
   useEffect(() => {
     if (!isOpen || !getStoredToken()) return;
@@ -100,11 +109,8 @@ export default function CheckoutModal({
   };
 
   const handleConfirmCheckout = async () => {
-    if (
-      !currentAddress.recipientName.trim() ||
-      !currentAddress.phone.trim() ||
-      !currentAddress.street.trim()
-    ) {
+    const { recipientName, phone, street, city, district, ward } = currentAddress;
+    if (!recipientName.trim() || !phone.trim() || !street.trim()) {
       showToast('Vui lòng cung cấp đầy đủ thông tin địa chỉ giao hàng.');
       return;
     }
@@ -113,13 +119,14 @@ export default function CheckoutModal({
     try {
       const res = await checkoutApi({
         shippingAddress: {
-          recipientName: currentAddress.recipientName.trim(),
-          phone: currentAddress.phone.trim(),
-          city: currentAddress.city.trim(),
-          district: currentAddress.district ? currentAddress.district.trim() : undefined,
-          ward: currentAddress.ward ? currentAddress.ward.trim() : undefined,
-          street: currentAddress.street.trim(),
+          recipientName: recipientName.trim(),
+          phone: phone.trim(),
+          city: city.trim(),
+          district: district ? district.trim() : undefined,
+          ward: ward ? ward.trim() : undefined,
+          street: street.trim(),
         },
+        shippingFee: actualShippingFee,
         paymentMethod,
         itemIds: selectedItems.map((it) => String(it.id)),
       });
@@ -156,47 +163,42 @@ export default function CheckoutModal({
     <Popup
       isOpen={isOpen}
       onClose={handleClose}
-      title={checkoutSuccess ? 'Thanh Toán Thành Công' : 'Xác Nhận Đặt Hàng & Thanh Toán'}
+      title={
+        checkoutSuccess
+          ? paymentMethod === 'COD'
+            ? 'Đặt Hàng COD Thành Công'
+            : 'Thanh Toán Thành Công'
+          : 'Xác Nhận Đặt Hàng & Thanh Toán'
+      }
       size={checkoutSuccess ? 'lg' : 'xl'}
     >
       <div className="space-y-6 text-slate-800">
         {checkoutSuccess ? (
-          <div className="space-y-6 text-center">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 size={36} />
-            </div>
-
-            <div>
-              <h2 className="text-xl font-extrabold text-slate-900">Thanh Toán Thành Công!</h2>
-              <p className="text-xs text-slate-500 mt-1">
-                {createdOrders.length > 0
-                  ? `Mã đơn hàng: ${createdOrders.map((o) => o.orderNumber).join(', ')}`
-                  : 'Đơn hàng của bạn đã được thanh toán và bảo chứng bởi NEXUS Escrow.'}
-              </p>
-            </div>
-
-            {payosPayment ? (
-              <PayosQrModal payment={payosPayment} onCopySuccess={showToast} />
-            ) : (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-left text-xs text-emerald-900 leading-relaxed flex items-center gap-3">
-                <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
-                <span>
-                  Đơn hàng đã được thanh toán thành công và bảo chứng an toàn qua hệ thống NEXUS
-                  Escrow.
-                </span>
-              </div>
-            )}
-
-            <div className="flex items-center justify-center gap-3 pt-2">
+          <CheckoutSuccessCard
+            orders={createdOrders}
+            isCod={paymentMethod === 'COD'}
+            payosPayment={payosPayment}
+            grandTotal={computedGrandTotal}
+            showToast={showToast}
+            primaryAction={
+              <Link
+                to="/buyer/orders"
+                onClick={handleClose}
+                className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow transition hover:bg-slate-800"
+              >
+                <span>Xem đơn hàng của tôi</span>
+              </Link>
+            }
+            secondaryAction={
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-8 py-2.5 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition shadow flex items-center gap-1.5 cursor-pointer"
+                className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow transition hover:bg-blue-700"
               >
                 <span>Hoàn tất</span>
               </button>
-            </div>
-          </div>
+            }
+          />
         ) : (
           <div className="space-y-5">
             <CheckoutAddressSection
@@ -219,7 +221,7 @@ export default function CheckoutModal({
                 <span>Sản phẩm thanh toán ({selectedItems.length})</span>
                 <span>Thành tiền</span>
               </div>
-              <div className="max-h-40 overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-36 overflow-y-auto divide-y divide-slate-100">
                 {selectedItems.map((item) => (
                   <div key={item.id} className="py-2 flex justify-between items-center gap-3">
                     <span className="line-clamp-1 flex-1 font-medium text-slate-700">
@@ -231,10 +233,28 @@ export default function CheckoutModal({
                   </div>
                 ))}
               </div>
+              <div className="pt-2 border-t border-slate-200 space-y-1 text-slate-600">
+                <div className="flex justify-between">
+                  <span>Tiền hàng:</span>
+                  <span className="font-semibold text-slate-800">
+                    {itemsSubtotal.toLocaleString('vi-VN')} ₫
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Phí vận chuyển GHN:</span>
+                  <span className="font-semibold text-slate-800">
+                    {actualShippingFee === 0 ? (
+                      <span className="text-emerald-600 font-bold">MIỄN PHÍ</span>
+                    ) : (
+                      `${actualShippingFee.toLocaleString('vi-VN')} ₫`
+                    )}
+                  </span>
+                </div>
+              </div>
               <div className="pt-2 border-t border-slate-200 flex justify-between items-baseline font-bold">
                 <span className="text-slate-700">Tổng thanh toán:</span>
                 <span className="text-base text-blue-600 font-extrabold">
-                  {grandTotal.toLocaleString('vi-VN')} ₫
+                  {computedGrandTotal.toLocaleString('vi-VN')} ₫
                 </span>
               </div>
             </div>

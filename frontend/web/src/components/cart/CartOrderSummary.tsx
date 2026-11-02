@@ -108,7 +108,11 @@ export default function CartOrderSummary({
 
           <div className="flex justify-between">
             <span>Phí vận chuyển GHN Express:</span>
-            <span className="font-semibold text-emerald-600">MIỄN PHÍ</span>
+            {appliedVoucher?.code === 'FREESHIP' ? (
+              <span className="font-semibold text-emerald-600">MIỄN PHÍ</span>
+            ) : (
+              <span className="font-medium text-slate-500 italic">Tính ở bước thanh toán</span>
+            )}
           </div>
         </div>
 
@@ -119,7 +123,9 @@ export default function CartOrderSummary({
               {Number(grandTotal).toLocaleString('vi-VN')} ₫
             </div>
             <span className="text-[10px] text-slate-400 block">
-              (Đã bao gồm VAT & Ký quỹ Escrow)
+              {appliedVoucher?.code === 'FREESHIP'
+                ? '(Đã bao gồm VAT & Ký quỹ Escrow)'
+                : '(Chưa gồm cước GHN theo địa chỉ nhận)'}
             </span>
           </div>
         </div>
