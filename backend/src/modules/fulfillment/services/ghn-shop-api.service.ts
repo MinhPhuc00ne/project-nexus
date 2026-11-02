@@ -28,7 +28,7 @@ export interface GhnShopInput {
 
 @Injectable()
 export class GhnShopApiService {
-  constructor(private readonly config: ConfigService) { }
+  constructor(private readonly config: ConfigService) {}
 
   // Recover an earlier registration after a timeout before attempting a new one.
   async ensure(input: GhnShopInput, excludedIds: number[]): Promise<GhnShop> {

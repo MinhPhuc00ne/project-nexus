@@ -217,7 +217,8 @@ export class OrderReturnService {
     const isDev = process.env.NODE_ENV !== 'production';
     const metadata = objectValue(order.shipment?.metadata);
     const tracking = objectValue(metadata.tracking);
-    const simulatedReturned = isDev && (order.shipment?.status === 'RETURNED' || tracking.status === 'returned');
+    const simulatedReturned =
+      isDev && (order.shipment?.status === 'RETURNED' || tracking.status === 'returned');
 
     let detailStatus: string;
     if (simulatedReturned) {

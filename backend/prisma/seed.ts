@@ -590,7 +590,9 @@ async function main() {
       },
     });
   }
-  console.info('✅ 6. Đã khởi tạo 2 Seller đã nâng cấp: Jos & Huy (Ví 30.000 VNĐ, Shop info đầy đủ)');
+  console.info(
+    '✅ 6. Đã khởi tạo 2 Seller đã nâng cấp: Jos & Huy (Ví 30.000 VNĐ, Shop info đầy đủ)',
+  );
 
   // =========================================================================
   // 8. KHỞI TẠO 20 SẢN PHẨM CHO SELLER JOS (Ngành Công Nghệ & Phụ Kiện Số)
@@ -694,7 +696,8 @@ async function main() {
     },
     {
       title: 'Kính cường lực điện thoại 9D chống nhìn trộm',
-      description: 'Góc nghiêng 28 độ chống soi lén riêng tư, phủ nano chống bám mồ hôi và vân tay.',
+      description:
+        'Góc nghiêng 28 độ chống soi lén riêng tư, phủ nano chống bám mồ hôi và vân tay.',
       basePrice: 22000,
       categoryId: catPhoneAcc.id,
       status: ProductStatus.ACTIVE,
@@ -962,7 +965,8 @@ async function main() {
     },
     {
       title: 'Kính lúp thợ kim hoàn phóng đại 10x soi chi tiết mặt đồng hồ',
-      description: 'Thấu kính thủy tinh quang học cho độ phóng đại sắc nét rõ từng chi tiết kim cọc.',
+      description:
+        'Thấu kính thủy tinh quang học cho độ phóng đại sắc nét rõ từng chi tiết kim cọc.',
       basePrice: 29000,
       categoryId: catWatchStraps.id,
       status: ProductStatus.ACTIVE,
