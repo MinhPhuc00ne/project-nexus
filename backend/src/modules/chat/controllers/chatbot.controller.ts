@@ -18,7 +18,7 @@ export class ChatbotController {
   @Post('guest/messages')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'FAQ cho khách chưa đăng nhập; không tra cứu đơn hoặc gọi AI',
+    summary: 'Hội thoại AI cho khách chưa đăng nhập; chỉ hướng dẫn chung, không tra cứu đơn',
     security: [],
   })
   guestReply(@Req() request: Request, @Body() dto: GuestChatbotMessageDto): Promise<ChatbotReply> {
