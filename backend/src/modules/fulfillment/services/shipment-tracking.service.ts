@@ -10,6 +10,8 @@ import {
   NotificationChannel,
   NotificationType,
   OrderStatus,
+  PaymentProvider,
+  PaymentStatus,
   Prisma,
   Shipment,
 } from '@prisma/client';
@@ -191,6 +193,12 @@ export class ShipmentTrackingService {
       const status = mapped.order && canAdvance ? mapped.order : current.status;
       if (status !== current.status)
         await tx.order.update({ where: { id: orderId }, data: { status } });
+      if (detail.status === 'delivered' && tx.payment) {
+        await tx.payment.updateMany({
+          where: { orderId, provider: PaymentProvider.COD, status: PaymentStatus.PENDING },
+          data: { status: PaymentStatus.SUCCESS },
+        });
+      }
       if (previous.status !== detail.status)
         await tx.notification.create({
           data: {

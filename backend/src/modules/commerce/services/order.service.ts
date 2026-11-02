@@ -713,6 +713,17 @@ export class OrderService {
       throw new ForbiddenException('Bạn không có quyền thao tác trên đơn hàng này');
     }
 
+    if (order.status !== OrderStatus.PENDING_PAYMENT) {
+      throw new BadRequestException(
+        `Không thể ghi nhận thanh toán COD cho đơn hàng ở trạng thái '${order.status}'.`,
+      );
+    }
+
+    const hasSuccessfulPayment = order.payments.some((p) => p.status === PaymentStatus.SUCCESS);
+    if (hasSuccessfulPayment) {
+      throw new BadRequestException('Đơn hàng đã được thanh toán thành công trước đó.');
+    }
+
     const existingCod = order.payments.find((p) => p.provider === PaymentProvider.COD);
     if (!existingCod) {
       await this.prisma.payment.create({

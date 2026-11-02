@@ -275,6 +275,9 @@ test('AuctionService.endAuction marks auction ENDED and bid WINNING when reserve
     auction: {
       findUnique: mock.fn(async () => ({
         id: 'auc-1',
+        sellerId: 'seller-1',
+        status: 'ACTIVE',
+        endTime: new Date(Date.now() - 1000),
         reservePrice: 50000000,
         bids: [
           {
@@ -302,7 +305,7 @@ test('AuctionService.endAuction marks auction ENDED and bid WINNING when reserve
   const gatewayMock = createMockGateway();
   const service = new AuctionService(prismaMock, gatewayMock);
 
-  const result = await service.endAuction('auc-1');
+  const result = await service.endAuction('auc-1', 'seller-1', 'SELLER');
 
   assert.equal(result.status, 'ENDED');
   assert.equal(result.winningBidderId, 'buyer-1');
@@ -310,4 +313,104 @@ test('AuctionService.endAuction marks auction ENDED and bid WINNING when reserve
   assert.equal(updatedAuctionStatus, 'ENDED');
   assert.equal(updatedBidStatus, 'WINNING');
   assert.equal(gatewayMock.broadcastAuctionEnded.mock.callCount(), 1);
+});
+
+test('AuctionService.endAuction marks FAILED and unlocks deposit when reserve is not met', async () => {
+  let walletRefunded = null;
+  let refundTxCreated = null;
+  let updatedBidStatus = null;
+  let updatedAuctionStatus = null;
+
+  const prismaMock = {
+    auction: {
+      findUnique: mock.fn(async () => ({
+        id: 'auc-1',
+        sellerId: 'seller-1',
+        status: 'ACTIVE',
+        endTime: new Date(Date.now() - 1000),
+        reservePrice: 80000000,
+        bids: [
+          {
+            id: 'bid-1',
+            bidderId: 'buyer-1',
+            bidAmount: 60000000,
+            status: 'ACCEPTED',
+          },
+        ],
+      })),
+      update: mock.fn(async ({ data }) => {
+        updatedAuctionStatus = data.status;
+      }),
+    },
+    wallet: {
+      findUnique: mock.fn(async () => ({
+        id: 'wal-buyer1',
+        userId: 'buyer-1',
+        balance: 10000000,
+        lockedBalance: 60000000,
+      })),
+      update: mock.fn(async ({ data }) => {
+        walletRefunded = data;
+      }),
+    },
+    walletTransaction: {
+      create: mock.fn(async ({ data }) => {
+        refundTxCreated = data;
+      }),
+    },
+    bid: {
+      update: mock.fn(async ({ data }) => {
+        updatedBidStatus = data.status;
+      }),
+    },
+    $transaction: mock.fn(async (cb) => {
+      return cb(prismaMock);
+    }),
+  };
+
+  const gatewayMock = createMockGateway();
+  const service = new AuctionService(prismaMock, gatewayMock);
+
+  const result = await service.endAuction('auc-1', 'admin-1', 'ADMIN');
+
+  assert.equal(result.status, 'FAILED');
+  assert.equal(result.winningBidderId, null);
+  assert.equal(updatedAuctionStatus, 'FAILED');
+  assert.equal(updatedBidStatus, 'REJECTED');
+  assert.deepEqual(walletRefunded, {
+    lockedBalance: { decrement: 60000000 },
+    balance: { increment: 60000000 },
+  });
+  assert.equal(refundTxCreated.type, 'AUCTION_BID_REFUND');
+  assert.equal(refundTxCreated.amount, 60000000);
+});
+
+test('AuctionService.endAuction rejects unauthorized callers and premature termination', async () => {
+  const prismaMock = {
+    auction: {
+      findUnique: mock.fn(async () => ({
+        id: 'auc-1',
+        sellerId: 'seller-1',
+        status: 'ACTIVE',
+        endTime: new Date(Date.now() + 600000),
+        bids: [],
+      })),
+    },
+  };
+
+  const service = new AuctionService(prismaMock, createMockGateway());
+
+  await assert.rejects(
+    async () => {
+      await service.endAuction('auc-1', 'seller-other', 'SELLER');
+    },
+    { message: /Bạn không có quyền kết thúc phiên đấu giá của người bán khác/ },
+  );
+
+  await assert.rejects(
+    async () => {
+      await service.endAuction('auc-1', 'seller-1', 'SELLER');
+    },
+    { message: /Phiên đấu giá chưa kết thúc thời gian thi đấu/ },
+  );
 });

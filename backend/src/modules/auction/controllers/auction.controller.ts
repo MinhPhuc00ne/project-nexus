@@ -3,7 +3,12 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@nexus/types';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
+import {
+  AuthenticatedUserPayload,
+  CurrentUser,
+  Public,
+  Roles,
+} from '../../../core/security/roles.decorator';
 import { AuctionService } from '../services/auction.service';
 import { AuctionQueryDto } from '../dtos/auction-query.dto';
 import { CreateAuctionDto } from '../dtos/create-auction.dto';
@@ -120,7 +125,7 @@ export class AuctionController {
   @Roles(Role.SELLER, Role.ADMIN, Role.SUPPORT_STAFF)
   @Post(':id/end')
   @ApiOperation({ summary: 'Kết thúc và chốt kết quả phiên đấu giá' })
-  async endAuction(@Param('id') id: string) {
-    return this.auctionService.endAuction(id);
+  async endAuction(@Param('id') id: string, @CurrentUser() user: AuthenticatedUserPayload) {
+    return this.auctionService.endAuction(id, user.id, user.role);
   }
 }

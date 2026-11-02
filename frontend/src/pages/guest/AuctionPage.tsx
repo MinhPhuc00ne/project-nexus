@@ -18,8 +18,6 @@ import {
 export const AuctionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [activeAuction, setActiveAuction] = useState<AuctionEntity | null>(null);
-
-  // 1. Live Countdown Timer State
   const [timeLeft, setTimeLeft] = useState(942);
   const [activeTab, setActiveTab] = useState<AuctionTabKey>('certs');
   const [viewerMode, setViewerMode] = useState<AuctionViewerMode>('photo');
@@ -27,16 +25,13 @@ export const AuctionPage: React.FC = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [likedSimilar, setLikedSimilar] = useState<Record<string, boolean>>({});
 
-  // 2. Bidding State
   const [currentPrice, setCurrentPrice] = useState(128500000);
   const [leadingBidder, setLeadingBidder] = useState('Nguyen_Horology');
   const [bidSuccessToast, setBidSuccessToast] = useState<string | null>(null);
   const [bidErrorToast, setBidErrorToast] = useState<string | null>(null);
 
-  // 3. 3D Rotation simulation
   const [rotationAngle, setRotationAngle] = useState(0);
 
-  // Load auction entity and establish real-time WebSocket connection
   useEffect(() => {
     let socketClient: ReturnType<typeof createAuctionSocket> | null = null;
 
@@ -86,7 +81,6 @@ export const AuctionPage: React.FC = () => {
     };
   }, [id]);
 
-  // Countdown timer interval
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
@@ -174,7 +168,7 @@ export const AuctionPage: React.FC = () => {
             </span>
             <span className="text-slate-300">/</span>
             <span className="text-slate-900 font-semibold">
-              Audemars Piguet Royal Oak Chronograph
+              {activeAuction?.title || 'Đang tải thông tin đấu giá...'}
             </span>
           </nav>
 

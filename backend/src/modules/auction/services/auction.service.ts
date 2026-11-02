@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { Role } from '@nexus/types';
 import {
   AuctionStatus,
   BidStatus,
@@ -242,6 +243,19 @@ export class AuctionService {
     const bidAmount = dto.bidAmount;
 
     const result = await this.prisma.$transaction(async (tx) => {
+      if (typeof (tx as unknown as { $queryRaw: unknown }).$queryRaw === 'function') {
+        await (
+          tx as unknown as {
+            $queryRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
+          }
+        ).$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
+        await (
+          tx as unknown as {
+            $queryRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
+          }
+        ).$queryRaw`SELECT id FROM wallets WHERE user_id = ${bidderId} FOR UPDATE`;
+      }
+
       const auction = await tx.auction.findUnique({
         where: { id: auctionId },
         include: {
@@ -499,9 +513,11 @@ export class AuctionService {
    * Concludes an auction room and marks the winning bid or failure state.
    *
    * @param auctionId Identifier of auction to finalize
+   * @param callerId Optional user identifier requesting the finalization
+   * @param callerRole Optional user role requesting the finalization
    * @returns Final auction entity state
    */
-  async endAuction(auctionId: string) {
+  async endAuction(auctionId: string, callerId?: string, callerRole?: string) {
     const auction = await this.prisma.auction.findUnique({
       where: { id: auctionId },
       include: {
@@ -515,6 +531,29 @@ export class AuctionService {
 
     if (!auction) {
       throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+    }
+
+    if (
+      auction.status === AuctionStatus.ENDED ||
+      auction.status === AuctionStatus.FAILED ||
+      auction.status === AuctionStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        `Phiên đấu giá đã kết thúc trước đó ở trạng thái ${auction.status}.`,
+      );
+    }
+
+    if (callerId && callerRole) {
+      const isPrivileged = callerRole === Role.ADMIN || callerRole === Role.SUPPORT_STAFF;
+      if (!isPrivileged && auction.sellerId !== callerId) {
+        throw new ForbiddenException(
+          'Bạn không có quyền kết thúc phiên đấu giá của người bán khác.',
+        );
+      }
+      const now = new Date();
+      if (!isPrivileged && now < auction.endTime) {
+        throw new BadRequestException('Phiên đấu giá chưa kết thúc thời gian thi đấu.');
+      }
     }
 
     const winningBid = auction.bids[0];
@@ -549,9 +588,44 @@ export class AuctionService {
       };
     }
 
-    await this.prisma.auction.update({
-      where: { id: auction.id },
-      data: { status: AuctionStatus.FAILED },
+    await this.prisma.$transaction(async (tx) => {
+      if (winningBid) {
+        const bidderWallet = await tx.wallet.findUnique({
+          where: { userId: winningBid.bidderId },
+        });
+
+        if (bidderWallet) {
+          const refundAmount = Number(winningBid.bidAmount);
+          await tx.wallet.update({
+            where: { id: bidderWallet.id },
+            data: {
+              lockedBalance: { decrement: refundAmount },
+              balance: { increment: refundAmount },
+            },
+          });
+
+          await tx.walletTransaction.create({
+            data: {
+              walletId: bidderWallet.id,
+              amount: refundAmount,
+              type: WalletTransactionType.AUCTION_BID_REFUND,
+              status: WalletTransactionStatus.SUCCESS,
+              referenceId: auction.id,
+              description: `Hoàn cọc do phiên đấu giá #${auction.id.slice(0, 8)} không đạt mức giá bảo lưu`,
+            },
+          });
+        }
+
+        await tx.bid.update({
+          where: { id: winningBid.id },
+          data: { status: BidStatus.REJECTED },
+        });
+      }
+
+      await tx.auction.update({
+        where: { id: auction.id },
+        data: { status: AuctionStatus.FAILED },
+      });
     });
 
     this.auctionGateway.broadcastAuctionEnded({
