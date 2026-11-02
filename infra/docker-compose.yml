@@ -13,7 +13,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
     networks:
@@ -30,9 +30,68 @@ services:
       - redis_data:/data
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - nexus-network
+
+  migrate:
+    profiles: ['full']
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.backend
+    container_name: nexus-migrate
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
+    command: sh -c "npx prisma migrate deploy --schema=backend/prisma/schema.prisma && npx ts-node prisma/seed.ts"
+    working_dir: /app/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - nexus-network
+
+  backend:
+    profiles: ['full']
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.backend
+    container_name: nexus-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-nexus_super_secret_jwt_key_2026}
+      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-15m}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - nexus-network
+
+  frontend:
+    profiles: ['full']
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.frontend
+    container_name: nexus-frontend
+    restart: unless-stopped
+    ports:
+      - '5173:80'
+    depends_on:
+      - backend
     networks:
       - nexus-network
 

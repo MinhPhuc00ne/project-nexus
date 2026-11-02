@@ -32,8 +32,10 @@
     "lint:fix": "eslint . --fix",
     "prepare": "husky",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
-    "docker:clean": "docker compose down -v",
+    "docker:infra": "docker compose up -d",
+    "docker:full": "docker compose --profile full up --build -d",
+    "docker:down": "docker compose --profile full down",
+    "docker:clean": "docker compose --profile full down -v",
     "docker:logs": "docker compose logs -f"
   },
   "devDependencies": {
