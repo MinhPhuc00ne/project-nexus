@@ -1,3 +1,5 @@
+import './staffSupportChat.css';
+import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
 import StaffMetricCards from './StaffMetricCards';
 import StaffTicketConversationView, {
@@ -96,6 +98,8 @@ export default function StaffTicketChatPanel({
   const tickets: SupportTicket[] | null =
     conversations?.map((c) => ({
       id: c.id,
+      customerId: c.partner.id,
+      avatarUrl: c.partner.avatarUrl,
       customer: c.partner.fullName,
       initials: c.partner.fullName.slice(0, 2).toUpperCase(),
       role: c.partner.role,
@@ -124,7 +128,9 @@ export default function StaffTicketChatPanel({
           ? room.messages.map((m) => ({
               id: m.id,
               author: m.senderName ?? '',
+              avatarUrl: m.senderAvatar,
               body: m.body,
+              attachments: m.attachments,
               isAgent: m.isMe,
               time: new Date(m.createdAt).toLocaleTimeString('vi-VN', {
                 hour: '2-digit',
@@ -144,15 +150,22 @@ export default function StaffTicketChatPanel({
       ticketList.filter((ticket) => {
         const matchesFilter = activeFilter === 'all' || ticket.status === activeFilter;
         const searchTarget = `${ticket.customer} ${ticket.id} ${ticket.preview}`.toLowerCase();
-        return matchesFilter && searchTarget.includes(searchText.toLowerCase());
+        return matchesFilter && searchTarget.includes(searchText.trim().toLowerCase());
       }),
     [activeFilter, searchText, ticketList],
   );
 
-  const sendReply = (): void => {
+  const sendReply = async (attachments: string[] = []): Promise<boolean> => {
     const messageText = reply.trim();
-    if (!messageText || !activeTicket) return;
-    if (!room.loading && !room.sending) void room.send();
+    if (
+      (!messageText && !attachments.length) ||
+      !activeTicket ||
+      updatingStatus ||
+      activeTicket.conversationStatus !== 'IN_PROGRESS'
+    )
+      return false;
+    if (!room.loading && !room.sending) return room.send(attachments);
+    return false;
   };
 
   async function claimActiveConversation(): Promise<void> {
@@ -166,7 +179,7 @@ export default function StaffTicketChatPanel({
             conversation.id === claimed.id ? claimed : conversation,
           ) ?? current,
       );
-      notify('Support conversation claimed.');
+      notify('Đã tiếp nhận hội thoại.');
       refresh();
     } catch (error) {
       setListError(error instanceof Error ? error.message : 'Could not claim the conversation.');
@@ -186,7 +199,7 @@ export default function StaffTicketChatPanel({
             conversation.id === resolved.id ? resolved : conversation,
           ) ?? current,
       );
-      notify('Conversation marked as resolved.');
+      notify('Đã hoàn tất hội thoại.');
       refresh();
     } catch (error) {
       setListError(
@@ -198,10 +211,14 @@ export default function StaffTicketChatPanel({
   }
 
   return (
-    <>
-      <div className="my-3 flex flex-wrap gap-2">
-        <button type="button" onClick={refresh} className="rounded-lg border px-3 text-sm">
-          Refresh
+    <div className="staff-support-chat">
+      <div className="support-toolbar">
+        <span>
+          Không gian hỗ trợ <span className="support-toolbar-dot" />{' '}
+          {room.connected ? 'Đã kết nối trực tuyến' : 'Đang kết nối trực tuyến…'}
+        </span>
+        <button type="button" onClick={refresh} className="support-refresh">
+          <RefreshCw size={14} /> Làm mới
         </button>
       </div>
       {(listError || room.error) && (
@@ -209,24 +226,14 @@ export default function StaffTicketChatPanel({
           {listError || room.error}
         </p>
       )}
-      {room.loading && <p role="status">Đang tải tin nhắn…</p>}
-      {room.typing && <p className="text-sm text-slate-500">Người nhận đang nhập…</p>}
-      {room.hasOlder && (
-        <button
-          disabled={room.older}
-          onClick={() => void room.loadOlder()}
-          className="text-sm text-blue-600"
-        >
-          {room.older ? 'Đang tải…' : 'Xem tin nhắn cũ hơn'}
-        </button>
-      )}
       <StaffMetricCards
         chattingCount={chattingCount}
         waitingCount={waitingCount}
         hasTickets={tickets !== null}
+        resolvedCount={ticketList.filter((ticket) => ticket.status === 'resolved').length}
       />
 
-      <section className="mt-4 grid gap-4 [align-items:start] [grid-template-columns:minmax(255px,_0.92fr)_minmax(330px,_1.2fr)_minmax(205px,_0.76fr)] max-[1100px]:[grid-template-columns:minmax(235px,_0.85fr)_minmax(310px,_1.15fr)] max-[760px]:[grid-template-columns:minmax(0,_1fr)]">
+      <section className="support-workspace">
         {/* Left Column: Tickets Queue List */}
         <StaffTicketQueueSidebar
           tickets={tickets}
@@ -243,6 +250,12 @@ export default function StaffTicketChatPanel({
 
         {/* Middle Column: Active Ticket Conversation View */}
         <StaffTicketConversationView
+          key={activeTicketId}
+          loading={room.loading}
+          typing={room.typing}
+          hasOlder={room.hasOlder}
+          loadingOlder={room.older}
+          onLoadOlder={() => void room.loadOlder()}
           activeTicket={activeTicket}
           reply={reply}
           onReplyChange={setReply}
@@ -259,6 +272,6 @@ export default function StaffTicketChatPanel({
         {/* Right Column: Customer Info & Related Data */}
         <StaffCustomerInfoAside activeTicket={activeTicket} />
       </section>
-    </>
+    </div>
   );
 }

@@ -60,6 +60,7 @@ const StaffSellerApprovalPage = lazy(() => import('../pages/staff/StaffSellerApp
 const StaffManagementPage = lazy(() => import('../pages/staff/StaffManagementPage'));
 const StaffInboxPage = lazy(() => import('../pages/staff/StaffInboxPage'));
 const StaffDisputesPage = lazy(() => import('../pages/staff/StaffDisputesPage'));
+const StaffBannersPage = lazy(() => import('../pages/staff/StaffBannersPage'));
 const StaffAuctionSupportPage = lazy(() => import('../pages/staff/StaffAuctionSupportPage'));
 const StaffFaqPage = lazy(() => import('../pages/staff/StaffFaqPage'));
 const StaffHistoryPage = lazy(() => import('../pages/staff/StaffHistoryPage'));
@@ -180,6 +181,7 @@ function AppRouter() {
                 <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
                 <Route path={ROUTES.STAFF_AUCTION_SUPPORT} element={<StaffAuctionSupportPage />} />
                 <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
+                <Route path={ROUTES.STAFF_BANNERS} element={<StaffBannersPage />} />
                 <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
                 <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
               </Route>

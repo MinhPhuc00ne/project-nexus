@@ -1,4 +1,13 @@
-import { Activity, BadgeCheck, BookOpen, Gavel, History, Inbox, ShieldCheck } from 'lucide-react';
+import {
+  Activity,
+  BadgeCheck,
+  BookOpen,
+  Gavel,
+  History,
+  Image,
+  Inbox,
+  ShieldCheck,
+} from 'lucide-react';
 
 export const navigation = [
   { label: 'Quản Lý Nhân Viên', icon: BadgeCheck },
@@ -6,6 +15,7 @@ export const navigation = [
   { label: 'Khiếu Nại & Tranh Chấp', icon: ShieldCheck },
   { label: 'Hỗ Trợ Đấu Giá 3D', icon: Gavel },
   { label: 'Hướng Dẫn & FAQ Sàn', icon: BookOpen },
+  { label: 'Quản Lý Banner', icon: Image },
   { label: 'Lịch Sử & CSAT', icon: History },
   { label: 'Hiệu Suất Cá Nhân', icon: Activity },
 ] as const;
@@ -46,6 +56,11 @@ export const sectionContent: Record<
       'Hoàn tất: thông báo kết quả, ghi nhận nội dung xử lý và xác nhận với khách hàng.',
     ],
   },
+  'Quản Lý Banner': {
+    title: 'Quản lý banner sự kiện',
+    description: 'Tạo, cập nhật và điều chỉnh lịch hiển thị banner trên sàn.',
+    topics: [],
+  },
   'Lịch Sử & CSAT': {
     title: 'Lịch sử hỗ trợ và đánh giá khách hàng',
     description: 'Tra cứu yêu cầu đã xử lý và phản hồi về chất lượng hỗ trợ.',
@@ -65,6 +80,7 @@ export const staffSectionPaths: Record<StaffSection, string> = {
   'Khiếu Nại & Tranh Chấp': '/staff/disputes',
   'Hỗ Trợ Đấu Giá 3D': '/staff/auction-support',
   'Hướng Dẫn & FAQ Sàn': '/staff/faq',
+  'Quản Lý Banner': '/staff/banners',
   'Lịch Sử & CSAT': '/staff/history',
   'Hiệu Suất Cá Nhân': '/staff/performance',
 };

@@ -28,7 +28,7 @@ export interface UseChatRoomResult {
   typing: boolean;
   error: string;
   setError: (value: string) => void;
-  send: (attachments?: string[]) => Promise<void>;
+  send: (attachments?: string[]) => Promise<boolean>;
   loadOlder: () => Promise<void>;
 }
 
@@ -150,9 +150,9 @@ export function useChatRoom({
     return () => window.clearTimeout(timer);
   }, [typing]);
 
-  async function send(attachments?: string[]): Promise<void> {
+  async function send(attachments?: string[]): Promise<boolean> {
     if (!activeId || (!draft.trim() && (!attachments || attachments.length === 0)) || sending)
-      return;
+      return false;
     const id = activeId;
     const body = draft.trim();
     setSending(true);
@@ -164,8 +164,10 @@ export function useChatRoom({
         setDraft((current) => (current.trim() === body ? '' : current));
       }
       onRevisionChange();
+      return true;
     } catch (err) {
       if (id === currentConversation.current) setError(getChatErrorMessage(err));
+      return false;
     } finally {
       setSending(false);
     }

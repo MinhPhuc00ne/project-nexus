@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import ChatAvatar from '../../components/chat/ChatAvatar';
 import { Gavel, Inbox, Search, ShieldCheck, Truck } from 'lucide-react';
 import type { SupportTicket, TicketStatus } from './StaffTicketConversationView';
 
@@ -39,7 +40,7 @@ export default function StaffTicketQueueSidebar({
       </div>
       <div
         className="flex [margin:8px_0] p-[3px] [border-radius:8px] [background:#f4f3fa] [&_button]:min-w-0 [&_button]:[flex:1] [&_button]:[padding:6px_3px] [&_button]:[border:0] [&_button]:[border-radius:6px] [&_button]:[color:#766f7e] [&_button]:[background:transparent] [&_button]:[font-size:9px] [&_button]:whitespace-nowrap [&_button]:cursor-pointer [&_button.is-selected]:[color:#243149] [&_button.is-selected]:[background:white] [&_button.is-selected]:[box-shadow:0_1px_3px_rgb(20_30_55_/_10%)]"
-        role="tablist"
+        role="group"
         aria-label="Lọc ticket"
       >
         <button
@@ -58,7 +59,13 @@ export default function StaffTicketQueueSidebar({
           className={activeFilter === 'waiting' ? 'is-selected' : ''}
           onClick={() => onFilterChange('waiting')}
         >
-          Chờ phản hồi{tickets !== null && ` (${waitingCount})`}
+          Chờ nhận{tickets !== null && ` (${waitingCount})`}
+        </button>
+        <button
+          className={activeFilter === 'resolved' ? 'is-selected' : ''}
+          onClick={() => onFilterChange('resolved')}
+        >
+          Đã xong
         </button>
       </div>
       <label className="flex [min-height:34px] items-center [gap:7px] [padding:0_9px] [border-radius:8px] [color:#9a91a0] [background:#f4f3fa] [&_input]:w-full [&_input]:min-w-0 [&_input]:[border:0] [&_input]:[outline:0] [&_input]:[color:#46516a] [&_input]:[background:transparent] [&_input]:[font:inherit] [&_input]:[font-size:9px]">
@@ -66,74 +73,83 @@ export default function StaffTicketQueueSidebar({
         <input
           value={searchText}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Tìm theo tên khách, SĐT, mã đơn..."
+          aria-label="Tìm hội thoại"
+          placeholder="Tìm tên khách, mã ticket, nội dung…"
         />
       </label>
-      <div className="[min-height:0] overflow-auto">
-        {visibleTickets.length
-          ? visibleTickets.map((ticket) => (
-              <button
-                key={ticket.id}
-                className={`relative block w-full [padding:10px_9px] [border:0] [border-bottom:1px_solid_#f1f1f5] [border-radius:8px] [color:inherit] [background:white] cursor-pointer text-left hover:[background:#fafaff] [&.is-current]:[background:#f1f1ff] [&.is-current::before]:absolute [&.is-current::before]:top-2 [&.is-current::before]:bottom-2 [&.is-current::before]:left-0 [&.is-current::before]:w-1 [&.is-current::before]:[border-radius:0_5px_5px_0] [&.is-current::before]:[background:var(--staff-accent)] [&.is-current::before]:[content:''] ${activeTicketId === ticket.id ? 'is-current' : ''}`}
-                onClick={() => onSelectTicket(ticket.id)}
-              >
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`[display:inline-grid] [width:35px] [height:35px] [place-items:center] rounded-full [color:#7f5637] [background:#ffdab5] text-xs font-extrabold staff-avatar--${ticket.initials.toLowerCase()}`}
-                  >
-                    {ticket.initials}
-                  </span>
-                  <span className="staff-ticket-customer">
-                    <b>{ticket.customer}</b>
-                    <small>{ticket.id}</small>
-                  </span>
-                  <span
-                    className={`[padding:3px_4px] rounded [color:#53617b] [background:#e8edff] [font-size:7px] [font-weight:850] [&.is-vip]:[color:#7d5730] [&.is-vip]:[background:#ffe2b8] [&.is-seller]:[color:#385690] [&.is-seller]:[background:#dbe6ff] ${ticket.role === 'VIP GOLD' ? 'is-vip' : ticket.role === 'SELLER VERIFIED' ? 'is-seller' : ''}`}
-                  >
-                    {ticket.role}
-                  </span>
-                  <small className="staff-ticket-time">{ticket.time}</small>
-                </div>
-                <p>{ticket.preview}</p>
-                <small className="mt-1 block truncate text-slate-400">
-                  {ticket.subject || 'Hỗ trợ chung'}
-                  {ticket.assignedStaff ? ` · ${ticket.assignedStaff}` : ''}
-                  {ticket.status === 'waiting' && typeof ticket.waitingTimeSeconds === 'number'
-                    ? ` · Chờ ${Math.floor(ticket.waitingTimeSeconds / 60)} phút`
-                    : ''}
-                </small>
-                <div className="staff-ticket-bottom">
-                  <span
-                    className={`staff-topic staff-topic--${ticket.category.toLowerCase().replace(' ', '-')}`}
-                  >
-                    {ticket.category === 'Auction 3D' ? (
-                      <>
-                        <Gavel size={12} /> Đấu giá 3D
-                      </>
-                    ) : ticket.category === 'Shipping' ? (
-                      <>
-                        <Truck size={12} /> Vận chuyển GHN
-                      </>
-                    ) : (
-                      <>
-                        <ShieldCheck size={12} />{' '}
-                        {ticket.category === 'General' ? 'Hỗ trợ trực tuyến' : 'Thanh toán Escrow'}
-                      </>
-                    )}
-                  </span>
-                  <span
-                    className={`[color:#9a8f8d] [font-size:8px] whitespace-nowrap [&.is-chatting]:[color:#3167e5] ${ticket.status === 'chatting' ? 'is-chatting' : ''}`}
-                  >
-                    {ticket.status === 'chatting'
-                      ? '● Đang hỗ trợ'
-                      : ticket.status === 'resolved'
-                        ? 'Đã xử lý'
-                        : 'Chờ phản hồi'}
-                  </span>
-                </div>
-              </button>
-            ))
-          : null}
+      <div className="support-ticket-list">
+        {visibleTickets.length ? (
+          visibleTickets.map((ticket) => (
+            <button
+              key={ticket.id}
+              className={`relative block w-full [padding:10px_9px] [border:0] [border-bottom:1px_solid_#f1f1f5] [border-radius:8px] [color:inherit] [background:white] cursor-pointer text-left hover:[background:#fafaff] [&.is-current]:[background:#f1f1ff] [&.is-current::before]:absolute [&.is-current::before]:top-2 [&.is-current::before]:bottom-2 [&.is-current::before]:left-0 [&.is-current::before]:w-1 [&.is-current::before]:[border-radius:0_5px_5px_0] [&.is-current::before]:[background:var(--staff-accent)] [&.is-current::before]:[content:''] ${activeTicketId === ticket.id ? 'is-current' : ''}`}
+              onClick={() => onSelectTicket(ticket.id)}
+            >
+              <div className="flex items-center gap-1.5">
+                <ChatAvatar src={ticket.avatarUrl} name={ticket.customer} size={38} />
+                <span className="support-ticket-customer">
+                  <b>{ticket.customer}</b>
+                  <small title={ticket.id}>#{ticket.id.slice(0, 8)}</small>
+                </span>
+                <span
+                  className={`[padding:3px_4px] rounded [color:#53617b] [background:#e8edff] [font-size:7px] [font-weight:850] [&.is-vip]:[color:#7d5730] [&.is-vip]:[background:#ffe2b8] [&.is-seller]:[color:#385690] [&.is-seller]:[background:#dbe6ff] ${ticket.role === 'VIP GOLD' ? 'is-vip' : ticket.role === 'SELLER VERIFIED' ? 'is-seller' : ''}`}
+                >
+                  {ticket.role}
+                </span>
+                <small className="support-ticket-time">{ticket.time}</small>
+              </div>
+              <p>{ticket.preview}</p>
+              <small className="mt-1 block truncate text-slate-400">
+                {ticket.subject || 'Hỗ trợ chung'}
+                {ticket.assignedStaff ? ` · ${ticket.assignedStaff}` : ''}
+                {ticket.status === 'waiting' && typeof ticket.waitingTimeSeconds === 'number'
+                  ? ` · Chờ ${Math.floor(ticket.waitingTimeSeconds / 60)} phút`
+                  : ''}
+              </small>
+              <div className="support-ticket-bottom">
+                <span
+                  className={`staff-topic staff-topic--${ticket.category.toLowerCase().replace(' ', '-')}`}
+                >
+                  {ticket.category === 'Auction 3D' ? (
+                    <>
+                      <Gavel size={12} /> Đấu giá 3D
+                    </>
+                  ) : ticket.category === 'Shipping' ? (
+                    <>
+                      <Truck size={12} /> Vận chuyển GHN
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck size={12} />{' '}
+                      {ticket.category === 'General' ? 'Hỗ trợ trực tuyến' : 'Thanh toán Escrow'}
+                    </>
+                  )}
+                </span>
+                <span
+                  className={`[color:#9a8f8d] [font-size:8px] whitespace-nowrap [&.is-chatting]:[color:#3167e5] ${ticket.status === 'chatting' ? 'is-chatting' : ''}`}
+                >
+                  {ticket.status === 'chatting'
+                    ? '● Đang hỗ trợ'
+                    : ticket.status === 'resolved'
+                      ? 'Đã xử lý'
+                      : 'Chờ phản hồi'}
+                </span>
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="support-empty">
+            <Inbox size={28} />
+            <strong>
+              {tickets === null ? 'Đang tải hội thoại…' : 'Không có hội thoại phù hợp'}
+            </strong>
+            <p>
+              {tickets === null
+                ? 'Vui lòng chờ trong giây lát.'
+                : 'Thử đổi bộ lọc hoặc từ khóa tìm kiếm.'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

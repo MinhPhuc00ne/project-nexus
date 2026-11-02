@@ -9,6 +9,7 @@ import {
   Package,
 } from 'lucide-react';
 import type { ChatConversation } from '../../types/chat.types';
+import ChatAvatar from './ChatAvatar';
 
 const categories = [
   {
@@ -174,7 +175,7 @@ export default function SupportMenu({
                 onClick={() => onOpenConversation(c)}
                 className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left hover:border-blue-400"
               >
-                <Headphones size={20} className="shrink-0 text-blue-600" />
+                <ChatAvatar src={c.partner.avatarUrl} name={c.partner.fullName} size={36} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold">{c.partner.fullName}</span>
                   <span className="block truncate text-xs text-slate-500">
