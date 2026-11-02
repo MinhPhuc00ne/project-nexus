@@ -149,4 +149,3 @@ export const ProductPurchaseSection: React.FC<ProductPurchaseSectionProps> = ({
 };
 
 export default ProductPurchaseSection;
-
