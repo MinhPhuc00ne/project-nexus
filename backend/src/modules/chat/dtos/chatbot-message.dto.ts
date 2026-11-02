@@ -1,6 +1,28 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+
+export class ChatbotHistoryMessageDto {
+  @ApiProperty({ enum: ['user', 'assistant'] })
+  @IsIn(['user', 'assistant'])
+  role!: 'user' | 'assistant';
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(2000)
+  content!: string;
+}
 
 export class GuestChatbotMessageDto {
   @ApiProperty({ example: 'Tôi muốn hủy đơn hàng đã được shop xác nhận' })
@@ -9,6 +31,18 @@ export class GuestChatbotMessageDto {
   @IsNotEmpty()
   @MaxLength(2000)
   message!: string;
+
+  @ApiPropertyOptional({
+    type: [ChatbotHistoryMessageDto],
+    description:
+      'Tối đa 12 tin gần nhất, không gồm tin hiện tại; không gửi dữ liệu đơn hàng hoặc bí mật.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(12)
+  @ValidateNested({ each: true })
+  @Type(() => ChatbotHistoryMessageDto)
+  history?: ChatbotHistoryMessageDto[];
 }
 
 export class ChatbotMessageDto extends GuestChatbotMessageDto {

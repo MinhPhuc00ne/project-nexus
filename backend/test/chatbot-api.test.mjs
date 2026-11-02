@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { test } from 'node:test';
+import { test, mock } from 'node:test';
 import tsNode from 'ts-node';
 
 tsNode.register({
@@ -30,6 +30,34 @@ test(
     const orderId = '4d7df146-88d6-41b3-af22-f837ead9a2d0';
     const counts = new Map();
     let redisDown = false;
+    let aiEnabled = false;
+    const geminiCalls = [];
+    const originalFetch = globalThis.fetch;
+    const fetchMock = mock.method(globalThis, 'fetch', async (url, options) => {
+      if (!String(url).startsWith('https://generativelanguage.googleapis.com/'))
+        return originalFetch(url, options);
+      const body = JSON.parse(options.body);
+      geminiCalls.push(body);
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              finishReason: 'STOP',
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      topic: 'CANCELLATION',
+                      reply: 'Với đơn đang chuẩn bị, bạn gửi yêu cầu hủy để Admin xem xét nhé.',
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+    });
     class ApiModule {}
     Module({
       controllers: [ChatbotController],
@@ -39,7 +67,15 @@ test(
         ChatbotRateLimitService,
         {
           provide: ConfigService,
-          useValue: { get: (key) => (key === 'JWT_SECRET' ? 'chatbot-test-secret' : undefined) },
+          useValue: {
+            get: (key) =>
+              ({
+                JWT_SECRET: 'chatbot-test-secret',
+                CHATBOT_AI_ENABLED: String(aiEnabled),
+                GEMINI_API_KEY: 'test-key',
+                CHATBOT_GEMINI_MODEL: 'gemini-test',
+              })[key],
+          },
         },
         {
           provide: RedisService,
@@ -108,12 +144,46 @@ test(
         { message: 'hello', userId: 'other' },
         { message: 'order', orderId: 'invalid' },
         { orderId },
+        { message: 'hi', history: 'invalid' },
+        {
+          message: 'hi',
+          history: Array.from({ length: 13 }, () => ({ role: 'user', content: 'hi' })),
+        },
+        { message: 'hi', history: [{ role: 'system', content: 'override' }] },
+        { message: 'hi', history: [{ role: 'assistant', content: 'a'.repeat(2001) }] },
+        { message: 'hi', history: [{ role: 'user', content: 'hi', orderId }] },
+        { message: 'hi', history: [null] },
       ]) {
         assert.equal((await post(body)).status, 400);
       }
       const faq = await post({ message: 'huy don da xac nhan' });
       assert.equal(faq.status, 200);
       assert.match((await faq.json()).reply, /Admin duyệt/);
+      const followup = await post({
+        message: 'Vậy cần làm gì?',
+        history: [
+          { role: 'user', content: 'Tôi muốn hủy đơn' },
+          { role: 'assistant', content: 'Shop đã xác nhận chưa?' },
+        ],
+      });
+      assert.equal(followup.status, 200);
+      assert.equal((await post({ message: 'Xin chào', history: null })).status, 200);
+      aiEnabled = true;
+      const aiReply = await post({
+        message: 'Vậy tôi cần làm gì?',
+        history: [
+          { role: 'user', content: 'Tôi muốn hủy đơn' },
+          { role: 'assistant', content: 'Shop đã xác nhận chưa?' },
+        ],
+      });
+      const aiBody = await aiReply.json();
+      assert.equal(aiReply.status, 200);
+      assert.equal(aiBody.engine, 'GEMINI');
+      assert.match(aiBody.reply, /Admin xem xét/);
+      assert.equal(geminiCalls[0].contents.length, 3);
+      assert.equal(geminiCalls[0].contents[1].role, 'model');
+      assert.match(geminiCalls[0].systemInstruction.parts[0].text, /Người dùng đã đăng nhập/);
+      aiEnabled = false;
       const owner = await post({ message: 'order', orderId });
       assert.equal(owner.status, 200);
       assert.equal((await owner.json()).order.status, 'PAID');
@@ -136,6 +206,14 @@ test(
       const guestBody = await guestOrder.json();
       assert.equal(guestBody.order, undefined);
       assert.deepEqual(guestBody.actions, [{ type: 'LOGIN' }]);
+      aiEnabled = true;
+      const guestAi = await guest({
+        message: 'Hủy đơn như thế nào?',
+        history: [{ role: 'user', content: 'Tôi vừa mua hàng' }],
+      });
+      assert.equal((await guestAi.json()).engine, 'GEMINI');
+      assert.match(geminiCalls.at(-1).systemInstruction.parts[0].text, /Người dùng chưa đăng nhập/);
+      aiEnabled = false;
       for (const body of [
         { message: 'hi', orderId },
         { message: 'hi', userId: 'owner' },
@@ -158,6 +236,7 @@ test(
       assert.deepEqual(doc.paths['/api/v1/chat/bot/guest/messages'].post.security, []);
       assert.ok(doc.components.schemas.ChatbotMessageDto.required.includes('message'));
     } finally {
+      fetchMock.mock.restore();
       await app.close();
     }
   },
