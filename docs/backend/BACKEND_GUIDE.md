@@ -21,16 +21,16 @@ Project Nexus is architected as an **Enterprise Modular Monolith** in NestJS:
 
 The monolithic codebase is organized into decoupled domain modules under `backend/src/modules/`:
 
-| Module         | Primary Responsibilities                                                             |
-| :------------- | :----------------------------------------------------------------------------------- |
-| `auth`         | User registration, JWT issuing/refreshing, bcrypt hashing, role guards               |
-| `users`        | User profiles, wallet balances, reputation scoring, trust-level updates              |
-| `catalog`      | Categories (3-level hierarchy), product listings, 3D model asset metadata            |
-| `commerce`     | Shopping cart lifecycle, checkout validation, PayOS & Stripe gateways, order states  |
-| `fulfillment`  | SKU warehouse inventories, immutable inventory ledgers, escrow records, GHN shipping |
-| `auction`      | High-concurrency live bidding engine, Redis Redlock, anti-sniping duration extension |
-| `notification` | Multi-channel user notifications (Email, Push, In-App), immutable `event_logs` audit |
-| `backoffice`   | Staff management, dispute arbitration, escrow disbursement overrides                 |
+| Module         | Primary Responsibilities                                                                   |
+| :------------- | :----------------------------------------------------------------------------------------- |
+| `auth`         | User registration, JWT issuing/refreshing, bcrypt hashing, role guards                     |
+| `users`        | User profiles, wallet balances, reputation scoring, trust-level updates                    |
+| `catalog`      | Categories (3-level hierarchy), product listings, 3D model asset metadata                  |
+| `commerce`     | Shopping cart lifecycle, checkout validation, PayOS, Wallet and COD gateways, order states |
+| `fulfillment`  | SKU warehouse inventories, immutable inventory ledgers, escrow records, GHN shipping       |
+| `auction`      | High-concurrency live bidding engine, Redis Redlock, anti-sniping duration extension       |
+| `notification` | Multi-channel user notifications (Email, Push, In-App), immutable `event_logs` audit       |
+| `backoffice`   | Staff management, dispute arbitration, escrow disbursement overrides                       |
 
 ### 2.1 Layering Inside Each Module
 

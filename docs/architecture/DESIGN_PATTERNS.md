@@ -49,7 +49,7 @@ This document details the software design patterns implemented across the Backen
 - **Pattern:** Abstract strategy interfaces define execution contracts (`IPaymentStrategy`, `ILogisticsStrategy`). Concrete providers implement the interface and register with a central context registry.
 - **Concrete Strategies:**
   - `PayOSPaymentStrategy`: Vietnamese domestic bank QR code with cryptographic webhook signature verification.
-  - `StripePaymentStrategy`: International cards via Stripe PaymentIntents.
+  - `CodPaymentStrategy`: Cash on delivery registration with pending payment tracking.
   - `WalletPaymentStrategy`: Instant internal balance settlement.
   - `GhnLogisticsStrategy`: Giao Hàng Nhanh shipping quotation and waybill generation.
 
@@ -89,17 +89,17 @@ This document details the software design patterns implemented across the Backen
   - **In-Flight Promise Ref:** Maintains a shared `inFlightPromiseRef` in React Context. If a request is already pending, subsequent calls latch onto the existing Promise instead of dispatching new network requests.
   - **Storage Event Synchronization:** Listens to `window.addEventListener('storage')` and custom `nexus:auth-change` events to keep user profile and tokens synchronized across multiple open browser tabs.
 
-### 2.3 Mock Layer & Graceful Fallback Strategy
+### 2.3 Fixture Consolidation and Clean API Consumption
 
-- **Problem:** Frontend development is blocked when backend endpoints are incomplete, or local databases are offline.
+- **Problem:** Frontend mock fallbacks can mask backend API breaking changes and create divergent states.
 - **Pattern:**
-  - Services check `isMockEnabled()` (`VITE_USE_MOCK=true`).
-  - When mock mode is disabled (`false`), services call the real API. If the API returns a network or 404/500 error, the service automatically falls back to curated mock data (`frontend/web/src/mocks/`) without crashing the UI.
+  - Complete demo fixtures and initial datasets are consolidated directly into `backend/prisma/seed.ts`.
+  - Frontend services cleanly consume backend REST endpoints and WebSocket channels with typed error handling.
 
 ### 2.4 Data-Driven UI (Configuration over Code)
 
 - **Problem:** Hardcoding navigation links, icons, and route paths inside UI components bloated files past the 300-line threshold.
-- **Pattern:** Extracted into metadata definitions (e.g., [`staffNavigationData.ts`](../frontend/web/src/pages/staff/staffNavigationData.ts)). Sidebar and dashboard components simply map over the dataset, allowing instant UI updates via single-line configuration changes.
+- **Pattern:** Extracted into metadata definitions (e.g., [`staffNavigationData.ts`](../frontend/src/pages/staff/staffNavigationData.ts)). Sidebar and dashboard components simply map over the dataset, allowing instant UI updates via single-line configuration changes.
 
 ### 2.5 Three.js Scene Lifecycle & Asset Manager Pattern
 

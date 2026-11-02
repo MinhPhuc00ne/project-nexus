@@ -1,120 +1,111 @@
-# Contributing to Project Nexus
+# Hướng Dẫn Đóng Góp Mã Nguồn (Contributing Guide)
 
-Thank you for contributing to **Project Nexus**! This document outlines our git workflow, branching strategy, commit guidelines, code quality gates, and the Merge Request lifecycle.
+Tài liệu này xác định quy trình cộng tác mã nguồn, chiến lược phân nhánh Git, tiêu chuẩn thông điệp commit, quy trình kiểm duyệt Merge Request và hướng dẫn sử dụng công cụ GitLab CLI (`glab`) cho toàn bộ kỹ sư tham gia Project Nexus.
 
----
+## 1. Chiến Lược Phân Nhánh Git (Git Branching Strategy)
 
-## 1. Git Branching Strategy
+Dự án áp dụng mô hình GitFlow tinh gọn xoay quanh nhánh chính được bảo vệ `main` và nhánh tích hợp liên tục `dev`.
 
-Our git branching model revolves around a protected `main` branch and an active integration branch `dev`:
+### Vai trò các nhánh chính
 
-```mermaid
-gitGraph
-   commit id: "Initial Monolith Setup"
-   branch dev
-   checkout dev
-   commit id: "Sprint Base"
-   branch feature/auction-anti-sniping
-   checkout feature/auction-anti-sniping
-   commit id: "feat: redis locks"
-   commit id: "test: unit tests"
-   checkout dev
-   merge feature/auction-anti-sniping id: "Merge MR into dev"
-   checkout main
-   merge dev id: "Release v1.0.0"
-```
+- Nhánh `main`: Nhánh môi trường sản xuất chính thức. Nghiêm cấm mọi thao tác đẩy mã trực tiếp lên nhánh này.
+- Nhánh `dev`: Nhánh tích hợp tập trung cho mọi hoạt động phát triển. Toàn bộ các nhánh tính năng đều phải xuất phát từ `dev` và tạo Merge Request quay trở lại `dev`.
 
-### Branch Roles
+### Quy tắc đặt tên nhánh làm việc
 
-- **`main`:** Protected production branch. Direct commits and pushes are strictly forbidden.
-- **`dev`:** Active integration branch. All feature branches must branch off `dev` and merge back into `dev`.
-- **Feature Branches:** `feature/<module>-<short-description>` (e.g., `feature/auction-anti-sniping`, `feature/commerce-checkout`, `feature/staff-chat`).
-- **Bugfix Branches:** `bugfix/<module>-<task>`: Dedicated branches for resolving defects during development.
-- **Hotfix Branches:** `hotfix/<issue>`: Critical production patches branching directly off `main` and merged back into both `main` and `dev`.
+- Nhánh tính năng mới: `feature/<module>-<ten-tinh-nang>` (ví dụ: `feature/auction-live-bid`, `feature/commerce-cod`).
+- Nhánh sửa lỗi trong phát triển: `bugfix/<module>-<ten-loi>` (ví dụ: `bugfix/chat-typing-status`).
+- Nhánh vá lỗi khẩn cấp cho sản xuất: `hotfix/<ten-su-co>` (nhánh xuất phát từ `main` và phải được hợp nhất đồng thời vào cả `main` và `dev`).
+- Nhánh tái cấu trúc kỹ thuật: `refactor/<hang-muc>` (ví dụ: `refactor/modular-monolith-phase3`).
 
----
+## 2. Tiêu Chuẩn Thông Điệp Commit (Conventional Commits)
 
-## 2. Commit Message Standards
+Toàn bộ thông điệp commit phải tuân thủ nghiêm ngặt quy chuẩn Conventional Commits v1.0.0 và được kiểm tra tự động qua Git hook commit-msg:
 
-All commits must strictly comply with the [Conventional Commits v1.0.0](https://www.conventionalcommits.org/) specification:
-
-### Format
+### Cú pháp thông điệp
 
 ```text
-<type>(<scope>): <short description in English>
+<loai>(<pham-vi>): <mo ta ngan gon bang tieng Anh hoac tieng Viet>
 ```
 
-### Allowed Types (enforced via `commitlint.config.js`):
+### Yêu cầu bắt buộc
 
-- `feat`: A new user-facing feature or API capability.
-- `fix`: A bug fix.
-- `docs`: Documentation updates only.
-- `style`: Formatting, missing semi-colons, white-space fixes (no production code change).
-- `refactor`: Code restructuring without bug fixes or new features.
-- `test`: Adding or refactoring unit or integration tests.
-- `chore`: Maintenance, repository configuration, dependency bumps.
-- `perf`: Performance optimizations.
-- `ci`: CI/CD pipeline modifications.
-- `build`: Build system or dependency management changes.
-- `revert`: Reverting a previous commit.
+- Tiêu đề commit không vượt quá 100 ký tự.
+- Viết rõ ràng liên từ "and" thay cho ký hiệu "&".
+- Sử dụng chữ thường cho loại commit và phạm vi.
 
----
+### Các loại commit được chấp nhận
 
-## 3. Engineering Quality Standards & Checklists
+- `feat`: Tính năng hoặc năng lực nghiệp vụ mới.
+- `fix`: Khắc phục lỗi phần mềm.
+- `docs`: Cập nhật hoặc bổ sung tài liệu.
+- `style`: Định dạng mã nguồn, khoảng trắng, chấm phẩy mà không thay đổi logic.
+- `refactor`: Tái cấu trúc mã nguồn không làm thay đổi hành vi nghiệp vụ.
+- `test`: Bổ sung hoặc điều chỉnh các kịch bản kiểm thử.
+- `chore`: Tác vụ bảo trì, cấu hình repository hoặc cập nhật gói phụ thuộc.
+- `perf`: Cải thiện hiệu năng xử lý.
+- `ci`: Thay đổi cấu hình pipeline tích hợp và triển khai liên tục.
+- `build`: Thay đổi hệ thống build hoặc dependency monorepo.
 
-Before opening a Merge Request or committing, all contributors must ensure their changes comply with our engineering specifications in [`docs/`](docs/):
+## 3. Quy Trình Merge Request (Merge Request Lifecycle)
 
-- **File Length Constraint (< 300 Lines Limit):** No component or source file may exceed 300 lines of code. Decompose larger views into subcomponents, hooks, or configuration files (see [`docs/standards/CLEAN_CODE.md`](docs/standards/CLEAN_CODE.md)). All pages, including `HomePage.tsx`, adhere to this rule.
-- **Clean Code & Strict TypeScript:**
-  - Zero usage of `any` (`@typescript-eslint/no-explicit-any`).
-  - Public methods must declare explicit return types.
-  - No `console.log` statements in production services or components.
-  - Inputs validated using DTOs with `class-validator`.
-- **Design Patterns:** Adhere to established patterns in [`docs/architecture/DESIGN_PATTERNS.md`](docs/architecture/DESIGN_PATTERNS.md) (IoC, Repository, Strategy, In-Process Events, AuthContext deduplication).
-
-### Pre-MR Local Verification Checklist
-
-Run these commands locally to verify compliance before opening a Merge Request:
+Trước khi gửi Merge Request vào nhánh `dev`, kỹ sư thực hiện đầy đủ các bước kiểm tra cục bộ:
 
 ```bash
-# 1. Verify code formatting with Prettier
+# Kiểm tra định dạng mã nguồn
 npm run format:check
 
-# 2. Run static analysis with ESLint
+# Kiểm tra quy chuẩn mã nguồn với ESLint
 npm run lint
 
-# 3. Verify TypeScript build and production bundle
-npm run build:web
-npm run build:backend
+# Kiểm tra quy trình build toàn bộ monorepo
+npx turbo run build
+
+# Chạy toàn bộ bộ kiểm thử đơn vị
+npx turbo run test
 ```
 
----
+Sau khi toàn bộ kiểm tra cục bộ thành công:
 
-## 4. Step-by-Step Merge Request Workflow
+1. Đảm bảo nhánh làm việc đã được rebase mới nhất từ `origin/dev`.
+2. Đẩy nhánh lên máy chủ GitLab.
+3. Tạo Merge Request với đích đến là nhánh `dev` theo mẫu chuẩn tại `.gitlab/merge_request_templates/default.md`.
+4. Đảm bảo pipeline CI/CD trên GitLab vượt qua cả ba giai đoạn validate, build và test.
+5. Merge Request cần nhận được sự đồng thuận từ thành viên xét duyệt trước khi thực hiện hợp nhất.
 
-1. **Keep Your Branch Updated:** Rebase on the latest `dev` branch before opening an MR:
+## 4. Hướng Dẫn Tùy Chọn Sử Dụng GitLab CLI (glab)
 
-   ```bash
-   git checkout dev
-   git pull origin dev
-   git checkout feature/your-branch-name
-   git rebase dev
-   ```
+Kỹ sư có thể sử dụng công cụ dòng lệnh chính thức `glab` để tự động hóa toàn bộ vòng đời phân nhánh và gửi Merge Request mà không cần thao tác qua giao diện web.
 
-2. **Push to GitLab:**
+### Xác thực tài khoản với máy chủ GitLab nội bộ
 
-   ```bash
-   git push -u origin feature/your-branch-name
-   ```
+```bash
+glab auth login --hostname github.com
+```
 
-3. **Open a Merge Request on GitLab:**
-   - **Target Branch:** **`dev`** ⚠️ _(Never target `main` directly)_.
-   - **Title:** Conventional Commits format (e.g., `feat(auction): implement anti-sniping duration extension`).
-   - **Description:** Complete the checklist from `.gitlab/merge_request_templates/default.md`.
-   - **Check Option:** `Delete source branch when merge request is accepted`.
-   - **Assignee:** Yourself | **Reviewer:** Tech Lead or designated peer reviewer.
+### Tạo Merge Request tự động từ nhánh hiện tại
 
-4. **Code Review & Approval:**
-   - Address reviewer comments and resolve all open discussion threads.
-   - Ensure all automated CI/CD pipeline checks pass.
-   - Once approved (minimum 1 peer approval required), the MR is merged into `dev`.
+```bash
+glab mr create --target-branch dev --title "feat(auction): implement real-time bidding terminal" --description "Mo ta chi tiet cac thay doi"
+```
+
+### Xem trạng thái và kiểm tra kết quả CI của Merge Request
+
+```bash
+glab mr view
+glab ci status
+```
+
+### Thực hiện hợp nhất sau khi hoàn tất kiểm duyệt
+
+```bash
+glab mr merge <mr-id> --rebase --remove-source-branch
+```
+
+## 5. Quy Chuẩn Kỹ Thuật Tham Chiếu
+
+Các tiêu chuẩn kỹ thuật chi tiết về giới hạn dòng lệnh, cấm comment dòng đơn vô nghĩa, bắt buộc khối tài liệu TSDoc và phong cách viết kỹ thuật được quy định chi tiết tại các tài liệu:
+
+- [Quy Chuẩn Clean Code](docs/standards/CLEAN_CODE.md)
+- [Quy Chuẩn Văn Phong Kỹ Thuật](docs/standards/WRITING_STYLE.md)
+- [Quy Ước Đặt Tên Hệ Thống](docs/standards/NAMING_CONVENTIONS.md)

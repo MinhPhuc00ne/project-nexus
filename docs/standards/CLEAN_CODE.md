@@ -1,45 +1,41 @@
-# Project Nexus - Clean Code and Documentation Standards
+# Quy Chuẩn Mã Nguồn Sạch Và Tài Liệu Hóa (Clean Code Standards)
 
-This document specifies the engineering conventions, code limits, formatting rules, and documentation standards enforced across Project Nexus. Strict adherence is required for all codebase contributions.
+Tài liệu này xác định các tiêu chuẩn bắt buộc về chất lượng mã nguồn, kiểm soát độ phức tạp, định dạng tự động và phương thức tài liệu hóa trên toàn bộ Project Nexus.
 
----
+## 1. Giới Hạn Tệp Và Phân Tách Trách Nhiệm
 
-## 1. Core Architecture Constraints & File Limits
+### Hướng dẫn kiểm soát độ dài tệp
 
-### 1.1 Recommended File Length & Separation of Concerns (< 300 Lines Guideline)
+Mục tiêu cốt lõi của việc kiểm soát độ dài là đảm bảo tính gắn kết và khả năng bảo trì:
 
-The primary goal of this guideline is **Separation of Concerns and Maintainability**:
+- Không trộn lẫn nhiều trách nhiệm: Tuyệt đối không gộp chung các luồng xử lý không liên quan, máy trạng thái, quy tắc tài chính và các khối giao diện khác biệt vào cùng một tệp.
+- Ngưỡng khuyến nghị xấp xỉ 300 dòng: Giữ kích thước tệp dưới 300 dòng là thước đo thực tế cho sự gắn kết lành mạnh. Khi một tệp đạt từ 250 đến 300 dòng, kỹ sư chủ động tái cấu trúc bằng cách tách component con, tách custom hook hoặc trích xuất hằng số cấu hình ra tệp riêng.
+- Tính linh hoạt theo trách nhiệm duy nhất: Ngưỡng 300 dòng là khuyến nghị kiến trúc chứ không áp đặt máy móc. Nếu một tệp vượt quá 300 dòng nhưng tuân thủ triệt để nguyên lý đơn nhiệm (Single Responsibility Principle) và việc chia nhỏ sẽ làm phân mảnh logic, cấu trúc đó hoàn toàn được chấp thuận.
 
-- **Avoid Mixing Unrelated Concerns:** Do not bundle unrelated responsibilities, state machines, business rules, or disparate UI sections into the same file. Mixing unrelated logic makes code significantly harder to locate, understand, debug, and safely modify.
-- **Recommended Threshold (~300 Lines):** Keeping files under **300 lines** is strongly recommended as a heuristic for healthy cohesion and readability. When a file approaches 250–300 lines, engineers should proactively evaluate whether it can be decomposed using:
-  - **Subcomponent Extraction:** Split complex JSX into cohesive child components in dedicated subdirectories (e.g., `ProductImageGallery.tsx`, `ProductInfoTabs.tsx`).
-  - **Custom Hook Extraction:** Move state machines, event handlers, and data fetching into dedicated hooks (e.g., `useLiveAuction.ts`, `useStaffNavigation.ts`).
-  - **Metadata / Configuration Separation:** Extract static tables, navigation items, and constants into configuration files (e.g., `staffNavigationData.ts`).
-- **Pragmatic Permissibility (Guideline vs. Absolute Rule):** The 300-line mark is a strong architectural recommendation, not a dogmatic ban. If a file legitimately exceeds 300 lines while adhering strictly to a single, cohesive responsibility (Single Responsibility Principle), and splitting it would artificially fragment logic or hurt comprehension, **it is fully permitted**. Code clarity, cohesion, and sensible design always take precedence over an arbitrary line count.
+## 2. Quy Định Bình Luận Và Tài Liệu Hóa Mã Nguồn
 
-### 1.2 Modular Page Decomposition
+### Cấm tuyệt đối comment dòng đơn vô nghĩa
 
-- **`HomePage.tsx`:** Decomposed from 895 lines into modular subcomponents located in `components/home/` (`HomeHeroBanner.tsx`, `HomeLiveAuction.tsx`, `HomeFlashSaleCard.tsx`, `HomeAuctionCard.tsx`, `HomeRecommendationCard.tsx`, `HomeBenefit.tsx`, `HomeCountdown.tsx`) and mock data in `mocks/home.mock.ts`. The orchestrator page is now ~175 lines, exemplifying the modular decomposition guideline.
+- Nghiêm cấm hoàn toàn việc viết comment dòng đơn (dạng `// ...`) để thuật lại cú pháp hoặc giải thích từng dòng mã nguồn hiển nhiên (ví dụ: `// bước 1`, `// gọi database`, `// kiểm tra id`).
+- Không sử dụng ký tự phân cách trang trí kiểu ASCII (ví dụ: `// ================== HELPER FUNCTIONS ==================`).
 
-### 1.3 Commenting & Documentation Hygiene
+### Bắt buộc chuẩn hóa khối tài liệu TSDoc và JSDoc
 
-- **No ASCII Art or Visual Noise:** Redundant ASCII banners, decorative section dividers (e.g., `// ================== HELPER FUNCTIONS ==================`), and boilerplate comments must be removed.
-- **Meaningful Docstrings:** Preserve clear JSDoc comments explaining business rationale, non-obvious algorithms, mathematical models, or edge-case handling.
-- **Self-Documenting Code:** Choose expressive variable and function names so that the code speaks for itself without relying on inline commentary.
+- Toàn bộ Class, Interface, Type, Service Method, Controller Endpoint, Helper Function và WebSocket Gateway phải được tài liệu hóa bằng khối cú pháp TSDoc hoặc JSDoc (`/** ... */`).
+- Khối tài liệu phải mô tả chức năng tổng quan, giải trình ý nghĩa tham số bằng `@param`, định nghĩa giá trị trả về bằng `@returns` và liệt kê các ngoại lệ phát sinh bằng `@throws`.
+- Đối với Prisma Schema: Sử dụng cú pháp ba dấu gạch chéo (`///`) phía trên các Model và Field quan trọng để phục vụ trích xuất tài liệu lược đồ cơ sở dữ liệu.
 
----
+## 3. Tiêu Chuẩn Chất Lượng TypeScript
 
-## 2. TypeScript Quality Standards
+Dự án áp dụng chế độ kiểm tra nghiêm ngặt cấu hình từ `@nexus/config/tsconfig.base.json`:
 
-Project Nexus enforces strict TypeScript configuration (`tsconfig.base.json`):
-
-### 2.1 Elimination of `any`
+### Loại bỏ hoàn toàn kiểu any
 
 ```typescript
-// ❌ STRICTLY FORBIDDEN:
+// Không được phép:
 const handleEvent = (data: any) => { ... };
 
-// ✅ MANDATORY: Use precise types, generics, or unknown with type guards:
+// Bắt buộc sử dụng kiểu dữ liệu tường minh hoặc unknown kèm type guard:
 const handleEvent = (data: OrderCreatedEventPayload) => { ... };
 const parsePayload = (raw: unknown): UserProfile => {
   if (isUserProfile(raw)) return raw;
@@ -47,92 +43,42 @@ const parsePayload = (raw: unknown): UserProfile => {
 };
 ```
 
-### 2.2 Explicit Return Types on Public Methods
+### Khai báo kiểu trả về tường minh
 
-All exported service methods, controllers, and domain interfaces must declare explicit return types:
+Toàn bộ service method, controller endpoint và hàm tiện ích công khai bắt buộc phải có kiểu trả về rõ ràng:
 
 ```typescript
-// ✅ Good:
+// Tuân thủ:
 async getSellerSession(): Promise<UserProfile> { ... }
 
-// ❌ Bad:
+// Không tuân thủ:
 async getSellerSession() { ... }
 ```
 
-### 2.3 Strict Null Checks & Optional Chaining
+### Xử lý giá trị null và undefined an toàn
 
-- Leverage optional chaining `?.` and nullish coalescing `??` rather than manual truthiness checks.
-- Avoid non-null assertion operator `!` unless dealing with standard DOM root mounting in `main.tsx`.
+- Ưu tiên toán tử optional chaining `?.` và toán tử nullish coalescing `??` thay vì kiểm tra truthy thủ công.
+- Tránh sử dụng toán tử non-null assertion `!` trừ trường hợp gắn root element tại `main.tsx`.
 
----
+## 4. Định Dạng Mã Nguồn Tự Động
 
-## 3. Formatting Standards (Prettier)
+Mã nguồn được tự động định dạng thông qua Prettier cấu hình tại `.prettierrc.json`:
 
-All files are automatically formatted via Prettier according to `.prettierrc.json`:
+- Chạy `npm run format` để tự động chuẩn hóa toàn bộ tệp tin.
+- Chạy `npm run format:check` để xác minh định dạng trong pipeline kiểm thử và Git hook.
 
-```json
-{
-  "semi": true,
-  "singleQuote": true,
-  "tabWidth": 2,
-  "useTabs": false,
-  "trailingComma": "all",
-  "printWidth": 100,
-  "bracketSpacing": true,
-  "arrowParens": "always",
-  "endOfLine": "lf"
-}
-```
+## 5. Quy Tắc Linting Với ESLint
 
-- Run `npm run format` to automatically format all files.
-- Run `npm run format:check` to verify code compliance before opening a Pull/Merge Request.
+Hệ thống quy chuẩn ESLint phẳng (`eslint.config.mjs`) giám sát các lỗi phổ biến:
 
----
+- Cấm sử dụng `any` (@typescript-eslint/no-explicit-any đặt mức `error`).
+- Cấm câu lệnh `debugger` và từ khóa `var`.
+- Bắt buộc so sánh nghiêm ngặt bằng toán tử `===` (eqeqeq đặt mức `error`).
+- Không sử dụng `console.log` trong các dịch vụ sản xuất; chỉ cho phép ghi nhận qua NestJS `Logger` hoặc các mức `warn`, `error`, `info`.
+- Biến không sử dụng phải được xóa bỏ hoặc đặt tiền tố gạch dưới `_` nếu cố ý giữ lại.
 
-## 4. Linting Rules (ESLint 9 Flat Config)
+## 6. Thiết Kế Hàm Và Kiểm Soát Độ Phức Tạp
 
-Governed by `eslint.config.mjs`:
-
-- `@typescript-eslint/no-explicit-any`: `'error'`
-- `no-debugger`: `'error'`
-- `no-var`: `'error'`
-- `prefer-const`: `'error'`
-- `eqeqeq`: `['error', 'always']`
-- `no-console`: `['warn', { allow: ['warn', 'error', 'info'] }]` (disallows raw `console.log` in production services).
-- `@typescript-eslint/no-unused-vars`: Unused variables must be removed or prefixed with `_` if intentionally ignored.
-
----
-
-## 5. Function Design & Complexity Control
-
-- **Function Size:** Functions should ideally not exceed 25-30 lines.
-- **Parameter Count:** Limit parameters to $\le 3$. Group larger sets into typed DTOs or options objects.
-- **Early Return / Guard Clauses:** Eliminate nested `if-else` pyramids:
-
-```typescript
-// ✅ Clean Early Return:
-function processPayment(user: User, amount: number) {
-  if (!user.isVerified) throw new UnverifiedUserException();
-  if (user.walletBalance < amount) throw new InsufficientFundsException();
-
-  return executeTransfer(user, amount);
-}
-```
-
----
-
-## 6. Commit Message & Git Quality Gates
-
-We enforce [Conventional Commits v1.0.0](https://www.conventionalcommits.org/):
-
-```text
-<type>(<scope>): <summary>
-```
-
-Examples:
-
-- `feat(auction): implement anti-sniping duration extension`
-- `fix(types): resolve ESM named export alias in vite config`
-- `refactor(staff): decompose dashboard into modular subpanels`
-
-Local automation via **Husky** and **lint-staged** automatically verifies format and lint on every staged commit.
+- Kích thước hàm: Khuyến nghị mỗi hàm không vượt quá 30 dòng.
+- Số lượng tham số: Giới hạn tối đa 3 tham số. Khi cần truyền nhiều dữ liệu, bắt buộc gom nhóm thành DTO hoặc object có định kiểu.
+- Áp dụng kỹ thuật Early Return: Triệt tiêu các cấu trúc điều kiện lồng nhau phức tạp để mã nguồn dễ theo dõi từ trên xuống dưới.

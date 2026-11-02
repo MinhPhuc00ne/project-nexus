@@ -1,191 +1,102 @@
 # Project Nexus
 
-Project Nexus is an e-commerce platform that seamlessly integrates traditional online retail with real-time 3D live auctions. The system is built using an Enterprise Modular Monolith architecture within an NPM Workspaces Monorepo.
+Project Nexus is an enterprise full-stack platform combining traditional multi-shop e-commerce with real-time 3D live auctions. The repository is organized as an NPM Workspaces and Turborepo monorepo with symmetric package boundaries.
 
----
+## 1. Công Nghệ Sử Dụng (Technology Stack)
 
-## Key Features
+| Tầng hệ thống          | Hạng mục công nghệ     | Công nghệ và phiên bản                             | Trách nhiệm chính                                             |
+| :--------------------- | :--------------------- | :------------------------------------------------- | :------------------------------------------------------------ |
+| Quản lý Monorepo       | Monorepo Workspaces    | npm workspaces and Turborepo                       | Điều phối pipeline build, lint, format và cache tác vụ        |
+| Hợp đồng dùng chung    | Type-safe Contracts    | TypeScript ^5.9.3 (`@nexus/types`)                 | Nguồn chân lý duy nhất cho Enums, Events và DTOs              |
+| Cấu hình dùng chung    | Shared Configurations  | `@nexus/config`                                    | Cung cấp cấu hình tsconfig.base đồng bộ toàn repository       |
+| Dịch vụ máy chủ        | Backend Framework      | NestJS ^12.1.2                                     | Kiến trúc Modular Monolith Mức 1.5 với 10 module độc lập      |
+| Cơ sở dữ liệu          | Database and ORM       | PostgreSQL 17 and Prisma ORM ^7.10.0               | Quản trị dữ liệu quan hệ, giao dịch ACID và schema migrations |
+| Bộ nhớ đệm và Realtime | Cache and Event Engine | Redis 7 and Socket.IO ^4.8.4                       | Quản lý phiên, streaming WebSocket cho Chat và Live Auction   |
+| Cổng thanh toán        | Payment Integrations   | PayOS VietQR, Ví NEXUS Pay and COD                 | Xử lý thanh toán đa kênh và giải ngân ký quỹ Escrow           |
+| Đơn vị vận chuyển      | Logistics Integration  | GHN Express API                                    | Tự động tính cước, định vị địa chỉ và tạo vận đơn             |
+| Giao diện người dùng   | Frontend Application   | React ^19.3.0, Vite ^8.3.4 and Tailwind CSS ^4.3.3 | Giao diện khách hàng, người bán, nhân viên và quản trị viên   |
+| Hạ tầng phát triển     | Containerization       | Docker and Docker Compose                          | Môi trường container hóa với hai chế độ phát triển linh hoạt  |
 
-- **Unified Identity & Seamless Role Toggle:** Effortlessly switch between Buyer and Seller modes within a single session without logging out or re-authenticating.
-- **Real-Time 3D Live Auctions (WebGL / Three.js):** High-concurrency live bidding rooms featuring interactive 3D item showcases, sub-300ms bidding queues, and automated anti-sniping duration extensions (+5 minutes if a bid is placed in the final 2 minutes).
-- **Automated Platform Escrow (7.0% Commission):** Buyer payments are securely locked in escrow upon order placement and disbursed to the seller (minus a 7% platform fee) only after the buyer confirms receipt without dispute.
-- **Dynamic Reputation & Trust Levels:** Automated score tracking that rewards successful transactions (+2 points) and penalizes order cancellations or auction defaults (-10 points).
-- **Staff Gateway & Customer Support Center:** Integrated backoffice center for dispute arbitration, live customer support chat, and staff provisioning with corporate `@staff.com` credentials.
-- **Centralized Session & In-Flight Deduplication (`AuthContext`):** Eliminates redundant network requests to `/users/me` on route transitions and synchronizes user state across multiple browser tabs.
-- **Configurable Mock Layer & Auto-Fallback:** Toggle between mock data and real APIs with `VITE_USE_MOCK=true/false` in `.env`, featuring automated fallback to prevent UI crashes if backend endpoints return errors.
-- **Shared Type-Safe Contracts (`@nexus/types`):** Single source of truth for all DTOs, Enums, and WebSocket event payloads shared across Backend and Frontend.
-
----
-
-## Tech Stack
-
-- **Monorepo:** NPM Workspaces (`packages/*`, `backend`, `frontend`).
-- **Frontend Portal:** React 19, TypeScript (Strict Mode), Vite 8, Tailwind CSS v4, Three.js (WebGL 3D graphics), Lucide Icons, React Router 7.
-- **Backend Service:** NestJS 12 (Modular Monolith Architecture, TypeScript).
-- **Database:** PostgreSQL 17 (Prisma ORM 7, ACID Transactions, Logical Schema Separation).
-- **Cache & Real-Time Engine:** Redis 7 (Caching, Redlock distributed locking, in-memory atomic bidding queue, Socket.IO adapter).
-- **Infrastructure:** Docker & Docker Compose.
-- **Payment Providers:** PayOS (Vietnamese domestic VietQR banking), Stripe (International credit cards), Internal Wallet.
-- **Logistics Integration:** GHN API (Giao Hàng Nhanh logistics adapter).
-
----
-
-## Repository Structure
+## 2. Cấu Trúc Thư Mục Repository (Repository Structure)
 
 ```text
 project-nexus/
-├── .editorconfig
-├── .env.example
-├── .gitattributes
-├── .gitignore
-├── .prettierignore
-├── .prettierrc.json
-├── commitlint.config.js
-├── CONTRIBUTING.md
-├── docker-compose.yml
-├── eslint.config.mjs
-├── package.json
-├── README.md
-├── docs/                          # Standardized Engineering Documentation & Portal
-│   ├── README.md                  # Documentation Portal & Navigation Index
-│   ├── architecture/              # Architecture, component topology, ERD & business rules
-│   │   ├── ARCHITECTURE_MODEL.md  # Modular Monolith architecture, components & ERD
-│   │   ├── BUSINESS_RULES.md      # Business rules, escrow, reputation & anti-sniping
-│   │   └── DESIGN_PATTERNS.md     # IoC, Repository, Strategy, Observer, React Context
-│   ├── standards/                 # Code quality and engineering standards
-│   │   ├── CLEAN_CODE.md          # Code limits (< 300 lines), strict TypeScript & Prettier
-│   │   ├── DESIGN_PRINCIPLES.md   # SOLID, KISS, YAGNI, DRY, Monolith boundaries
-│   │   └── NAMING_CONVENTIONS.md  # Universal naming conventions for code & database
-│   ├── frontend/                  # Frontend specifications & guides
-│   │   ├── FRONTEND_GUIDE.md      # Complete frontend guide (React 19, Vite, Mocks)
-│   │   └── UI_SPECIFICATION.md    # UI tokens, 4-portal hierarchy & component breakdown
-│   ├── backend/                   # Backend specifications & guides
-│   │   └── BACKEND_GUIDE.md       # Complete backend guide (NestJS, Prisma, Redis)
-│   ├── api/                       # API documentation index & REST/WS contracts
-│   └── srs/                       # Software Requirements Specification (SRS)
-├── infra/                         # Docker compose & container configurations
+├── .husky/                            # Git hooks tự động kiểm tra trước khi commit
+├── .gitlab/                           # Mẫu Merge Request và cấu hình GitLab
+├── .gitlab-ci.yml                     # Cấu hình pipeline CI/CD ba giai đoạn trên GitLab
+├── docs/                              # Toàn bộ tài liệu kỹ thuật và tiêu chuẩn dự án
+│   ├── api/                           # Đặc tả REST API và WebSocket contracts
+│   ├── architecture/                  # Kiến trúc Modular Monolith, luật nghiệp vụ và mẫu thiết kế
+│   ├── backend/                       # Cẩm nang phát triển dịch vụ NestJS và cơ sở dữ liệu
+│   ├── frontend/                      # Cẩm nang phát triển giao diện React và luồng trạng thái
+│   ├── srs/                           # Đặc tả yêu cầu phần mềm và luồng người dùng
+│   └── standards/                     # Bộ quy chuẩn Clean Code, đặt tên và văn phong kỹ thuật
+├── infra/                             # Cấu hình Dockerfiles và Docker Compose
 ├── packages/
-│   ├── types/                     # Shared TypeScript contracts (@nexus/types)
-│   │   └── src/
-│   │       ├── enums/             # Role, OrderStatus, AuctionStatus, EscrowStatus
-│   │       ├── events/            # WS_AUCTION_EVENTS, Domain Event Payloads
-│   │       ├── models/            # ApiResponse<T>, PaginatedResponse<T>, DTOs
-│   │       └── index.ts           # Public Barrel Export
-│   └── config/                    # Shared tsconfig base settings
-├── backend/                       # NestJS Modular Monolith application
-│   ├── prisma/                    # schema.prisma, migrations, seeds
-│   └── src/                       # Domain modules (auth, users, catalog, commerce, etc.)
-└── frontend/
-    └── web/                       # Unified web portal (Buyer, Seller, Staff, Admin)
-        ├── src/
-        │   ├── components/        # Decomposed UI subcomponents (< 300 lines)
-        │   ├── contexts/          # AuthContext with in-flight deduplication
-        │   ├── mocks/             # Curated mock data & configuration
-        │   ├── pages/             # Route pages (auth, buyer, seller, staff, guest, admin)
-        │   ├── routes/            # AppRouter and navigation route guards
-        │   └── services/          # API services with graceful fallback
-        └── vite.config.ts         # Vite with @nexus/types native TS resolution
+│   ├── config/                        # Cấu hình TypeScript cơ sở dùng chung
+│   └── types/                         # Thư viện hợp đồng kiểu dữ liệu (@nexus/types)
+├── backend/                           # Ứng dụng máy chủ NestJS Modular Monolith
+│   ├── prisma/                        # Schema Prisma, migrations và kịch bản khởi tạo seed
+│   ├── src/                           # Các module nghiệp vụ (auth, users, catalog, commerce, auction...)
+│   └── test/                          # Bộ kiểm thử đơn vị và kịch bản smoke test với node:test
+├── frontend/                          # Ứng dụng giao diện khách hàng React 19 và Vite
+│   ├── src/                           # Mã nguồn giao diện, layouts, routes và services
+│   └── index.html                     # Điểm khởi đầu trang web
+├── turbo.json                         # Cấu hình pipeline Turborepo
+├── package.json                       # Định nghĩa npm workspaces và kịch bản thực thi toàn dự án
+└── README.md                          # Hướng dẫn tổng quan và khởi chạy dự án
 ```
 
----
+## 3. Hướng Dẫn Cài Đặt Và Khởi Chạy (Local Quick Start)
 
-## Documentation Reading Roadmap
+### Yêu cầu môi trường
 
-For new engineers joining the project, read the comprehensive documentation in [`docs/`](docs/) in the following order:
+- Node.js phiên bản 20.x trở lên
+- npm phiên bản 10.x trở lên
+- Docker và Docker Compose đã khởi động
 
-```text
-[1. ARCHITECTURE_MODEL] ──> [2. BUSINESS_RULES] ──> [3. FRONTEND / BACKEND GUIDES] ──> [4. CLEAN_CODE & STANDARDS]
-```
+### Các bước khởi chạy môi trường phát triển
 
-1. **Architecture & Data Models:** [`docs/architecture/ARCHITECTURE_MODEL.md`](docs/architecture/ARCHITECTURE_MODEL.md) — System context, monorepo packages, and the complete PostgreSQL ERD.
-2. **Business Rules:** [`docs/architecture/BUSINESS_RULES.md`](docs/architecture/BUSINESS_RULES.md) — Escrow calculation, reputation points, anti-sniping duration rules.
-3. **Frontend & Backend Guides:** [`docs/frontend/FRONTEND_GUIDE.md`](docs/frontend/FRONTEND_GUIDE.md) & [`docs/backend/BACKEND_GUIDE.md`](docs/backend/BACKEND_GUIDE.md) — Setup, HMR alias, AuthContext, and Redis locks.
-4. **Engineering Standards:** [`docs/standards/CLEAN_CODE.md`](docs/standards/CLEAN_CODE.md), [`docs/architecture/DESIGN_PATTERNS.md`](docs/architecture/DESIGN_PATTERNS.md), [`docs/standards/DESIGN_PRINCIPLES.md`](docs/standards/DESIGN_PRINCIPLES.md), and [`docs/standards/NAMING_CONVENTIONS.md`](docs/standards/NAMING_CONVENTIONS.md).
-
----
-
-## Development Environment Requirements
-
-- **Node.js:** Recommended LTS v22.x or v24.x (`node -v`).
-- **NPM:** Bundled with Node.js, v11.x (`npm -v`).
-- **Docker & Docker Compose:** For running PostgreSQL 17 and Redis 7 (`docker compose version`).
-- **Git:** Minimum v2.50+ (`git --version`).
-
----
-
-## Quickstart Guide
-
-### 1. Install Dependencies
-
-Run from the root directory to link workspaces and activate Husky hooks:
+Cài đặt toàn bộ dependencies trong monorepo:
 
 ```bash
 npm install
 ```
 
-### 2. Configure Environment Variables
+Khởi động các dịch vụ phụ trợ nền tảng gồm PostgreSQL 17 và Redis 7:
 
 ```bash
-# Windows (PowerShell):
-Copy-Item .env.example .env
-
-# macOS / Linux:
-cp .env.example .env
+npm run docker:infra
 ```
 
-_(Optionally set `VITE_USE_MOCK=true` or `false` in `.env` depending on your workflow)._
-
-### 3. Start Local Infrastructure
-
-Launch PostgreSQL 17 (port 5432) and Redis 7 (port 6379) in detached mode:
+Sinh mã nguồn Prisma Client và nạp dữ liệu mẫu vào cơ sở dữ liệu:
 
 ```bash
-npm run docker:up
+npx prisma generate --schema=backend/prisma/schema.prisma
+npx prisma migrate dev --schema=backend/prisma/schema.prisma
+npm run db:seed
 ```
 
-### 4. Initialize Database
-
-Generate Prisma client and apply database migrations:
+Khởi chạy đồng thời toàn bộ dịch vụ backend và frontend trên một tiến trình:
 
 ```bash
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:seed
+npm run dev
 ```
 
-### 5. Run Applications
+Cổng truy cập mặc định của các dịch vụ cục bộ:
 
-- **Backend NestJS Server (port 3000):**
+- Cổng thông tin giao diện người dùng: `http://localhost:5173`
+- Cổng dịch vụ máy chủ Backend REST API: `http://localhost:3000`
+- Tài liệu tương tác Swagger API: `http://localhost:3000/api/docs`
 
-  ```bash
-  npm run dev:backend
-  ```
+### Chế độ khởi chạy toàn diện với Docker
 
-  _(Swagger API documentation available at `http://localhost:3000/api/docs`)_
+Dành cho mục đích trình diễn hoặc kiểm thử độc lập mà không cần cài đặt Node.js cục bộ:
 
-- **Frontend Web Portal (port 5173):**
-  ```bash
-  npm run dev:web
-  ```
-  _(Web portal available at `http://localhost:5173`)_
+```bash
+npm run docker:full
+```
 
----
+## 4. Tài Liệu Kỹ Thuật Chi Tiết
 
-## Frequently Used Commands
-
-| Command                   | Purpose                                      |
-| :------------------------ | :------------------------------------------- |
-| `npm run dev:web`         | Start frontend React/Vite development server |
-| `npm run dev:backend`     | Start backend NestJS development server      |
-| `npm run build:web`       | Compile and bundle frontend for production   |
-| `npm run build:backend`   | Compile backend for production               |
-| `npm run build:types`     | Compile `@nexus/types` package               |
-| `npm run build:all`       | Build shared types, backend, and frontend    |
-| `npm run lint`            | Run ESLint across all workspaces             |
-| `npm run format`          | Auto-format entire codebase with Prettier    |
-| `npm run format:check`    | Check code formatting compliance             |
-| `npm run prisma:generate` | Update Prisma Client from schema.prisma      |
-| `npm run prisma:migrate`  | Apply database migrations                    |
-| `npm run prisma:studio`   | Open interactive database web interface      |
-| `npm run docker:up`       | Launch local PostgreSQL & Redis containers   |
-| `npm run docker:down`     | Stop local Docker containers                 |
+Để tra cứu các tài liệu chuyên sâu về kiến trúc, luật nghiệp vụ, giao thức bảo mật và quy chuẩn phát triển mã nguồn, vui lòng tham khảo [Cổng Tài Liệu Dự Án](docs/README.md).

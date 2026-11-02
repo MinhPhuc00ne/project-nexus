@@ -230,11 +230,11 @@ Các đường dẫn trong tài liệu tính từ `frontend`.
 
 ### 5.2. Component hồ sơ và giỏ hàng
 
-| File                                                                             | Tác dụng thực tế                                                                                                                                                                                                             |
-| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [components/profile/ProfileEditor.tsx](src/components/profile/ProfileEditor.tsx) | Form sửa tên, điện thoại, avatar, hiển thị email/role chỉ đọc. Chỉ Buyer/Seller được sửa; Seller phải nhập mật khẩu xác minh. Validate form, chặn bấm lặp, gọi service và cập nhật/refresh AuthContext sau thành công.       |
-| [components/cart/CartOrderSummary.tsx](src/components/cart/CartOrderSummary.tsx) | Tổng tiền các món được chọn, thông tin ưu đãi/phí và nút thanh toán; tính trên dữ liệu giỏ FE, không gọi API báo phí hoặc thanh toán.                                                                                        |
-| [components/cart/CheckoutModal.tsx](src/components/cart/CheckoutModal.tsx)       | Popup thông tin giao hàng và chọn PayOS/Stripe/Wallet; lưu địa chỉ local. Xác nhận dùng `setTimeout` để mô phỏng thành công và xóa giỏ local; chưa tạo đơn, thu tiền hay giữ Escrow thật. Có thông tin địa chỉ mặc định mẫu. |
+| File                                                                             | Tác dụng thực tế                                                                                                                                                                                                          |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [components/profile/ProfileEditor.tsx](src/components/profile/ProfileEditor.tsx) | Form sửa tên, điện thoại, avatar, hiển thị email/role chỉ đọc. Chỉ Buyer/Seller được sửa; Seller phải nhập mật khẩu xác minh. Validate form, chặn bấm lặp, gọi service và cập nhật/refresh AuthContext sau thành công.    |
+| [components/cart/CartOrderSummary.tsx](src/components/cart/CartOrderSummary.tsx) | Tổng tiền các món được chọn, thông tin ưu đãi/phí và nút thanh toán; tính trên dữ liệu giỏ FE, không gọi API báo phí hoặc thanh toán.                                                                                     |
+| [components/cart/CheckoutModal.tsx](src/components/cart/CheckoutModal.tsx)       | Popup thông tin giao hàng và chọn PayOS/Wallet/COD; lưu địa chỉ local. Xác nhận dùng `setTimeout` để mô phỏng thành công và xóa giỏ local; chưa tạo đơn, thu tiền hay giữ Escrow thật. Có thông tin địa chỉ mặc định mẫu. |
 
 ### Luồng mua hàng hiện tại
 
