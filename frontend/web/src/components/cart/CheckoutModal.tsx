@@ -167,7 +167,9 @@ export default function CheckoutModal({
         checkoutSuccess
           ? paymentMethod === 'COD'
             ? 'Đặt Hàng COD Thành Công'
-            : 'Thanh Toán Thành Công'
+            : payosPayment
+              ? 'Quét Mã PayOS Để Thanh Toán'
+              : 'Đặt Hàng Thành Công'
           : 'Xác Nhận Đặt Hàng & Thanh Toán'
       }
       size={checkoutSuccess ? 'lg' : 'xl'}

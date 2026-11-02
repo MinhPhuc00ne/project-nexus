@@ -121,10 +121,7 @@ export function isCodOrder(order?: BuyerOrder | null): boolean {
   if (!order) return false;
   if (isCodOrderId(order.id) || isCodOrderId(order.orderNumber)) return true;
   const payments = order.payments ?? [];
-  const hasOnlineProvider = payments.some(
-    (p) => p.provider === 'PAYOS' || p.provider === 'WALLET' || p.provider === 'STRIPE',
-  );
-  return !hasOnlineProvider && order.status === 'PENDING_PAYMENT';
+  return payments.some((p) => p.provider === 'COD' || p.provider === 'CASH');
 }
 
 /**
