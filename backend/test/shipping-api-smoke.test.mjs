@@ -58,6 +58,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
       source('modules/commerce/services/order-cancellation.service').OrderCancellationService,
       source('modules/commerce/services/order-return.service').OrderReturnService,
       source('modules/fulfillment/services/ghn-order-action.service').GhnOrderActionService,
+      source('modules/users/services/shop-shipping-profile.service').ShopShippingProfileService,
       { provide: PrismaService, useValue: {} },
       { provide: ConfigService, useValue: { get: (_key, fallback) => fallback } },
       ...[PayosService, AdminSettingsService, AdminFinanceService, AuthService].map((provide) => ({

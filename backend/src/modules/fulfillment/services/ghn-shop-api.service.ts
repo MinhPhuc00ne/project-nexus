@@ -116,16 +116,22 @@ export class GhnShopApiService {
       });
       const body = objectValue(await response.json());
       const data = objectValue(body.data);
+      const rawShops = Array.isArray(data.shops)
+        ? data.shops
+        : data.shops === null || data.shops === undefined
+          ? []
+          : null;
       if (
         !response.ok ||
         body.code !== 200 ||
-        !Array.isArray(data.shops) ||
+        rawShops === null ||
         !Number.isSafeInteger(data.last_offset) ||
         Number(data.last_offset) < 0
       ) {
         throw new BadGatewayException('GHN chưa trả danh sách điểm lấy hàng hợp lệ.');
       }
-      const shops = data.shops.map((entry): GhnShop => {
+      const shops: GhnShop[] = [];
+      for (const entry of rawShops) {
         const shop = objectValue(entry);
         if (
           !Number.isSafeInteger(shop._id) ||
@@ -137,9 +143,9 @@ export class GhnShopApiService {
             (value) => typeof value !== 'string' || !value.trim(),
           )
         ) {
-          throw new BadGatewayException('Dữ liệu điểm GHN không hợp lệ.');
+          continue;
         }
-        return {
+        shops.push({
           id: Number(shop._id),
           clientId: Number(shop.client_id),
           districtId: Number(shop.district_id),
@@ -148,8 +154,8 @@ export class GhnShopApiService {
           address: String(shop.address),
           wardCode: String(shop.ward_code),
           active: shop.status === 1,
-        };
-      });
+        });
+      }
       return { shops, nextOffset: Number(data.last_offset) };
     } catch (error) {
       if (error instanceof BadGatewayException) throw error;
