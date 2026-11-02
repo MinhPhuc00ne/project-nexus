@@ -105,7 +105,7 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
               </span>
             </div>
             <span className="text-base font-black text-[#f24e1e] sm:text-lg">
-              {grandTotal.toLocaleString('vi-VN')} ₫
+              {Number(grandTotal || 0).toLocaleString('vi-VN')} ₫
             </span>
           </div>
 
@@ -149,7 +149,7 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-600">Tổng tiền đơn hàng:</span>
             <span className="text-base font-extrabold text-[#f24e1e]">
-              {grandTotal.toLocaleString('vi-VN')} ₫
+              {Number(grandTotal || 0).toLocaleString('vi-VN')} ₫
             </span>
           </div>
           <p className="pt-1 text-[11px] leading-relaxed text-blue-900">
