@@ -1,157 +1,293 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+﻿import { useEffect, useState } from 'react';
 import { Flag } from 'lucide-react';
 import Popup from '../../Popup';
-import { Button, Panel } from '../shared/AdminUI';
-import {
-  DecisionDialog,
-  DemoNotice,
-  DetailFields,
-  labelOptions,
-  ManagementTable,
-  StatusBadge,
-} from '../shared/CommerceUI';
-import type { AdminTabProps } from '../shared/adminTypes';
-import { reportLabels, reportTypeLabels, type ManagedReport } from '../shared/commerceTypes';
+import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
+import { DetailFields } from '../shared/CommerceUI';
+import { listAdminDisputes } from '../../../services/admin';
+import type {
+  AdminDispute,
+  AdminDisputePage,
+  AdminDisputeStatus,
+} from '../../../types/admin-dispute.types';
 
-export default function ReportsManagement({ data, actions }: AdminTabProps) {
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const [decision, setDecision] = useState<{ id: string; status: ManagedReport['status'] } | null>(
-    null,
+const labels: Record<AdminDisputeStatus, string> = {
+  OPEN: 'Mới mở',
+  UNDER_REVIEW: 'Đang xem xét',
+  RESOLVED_SELLER_FAVOR: 'Đã xử lý — bên bán thắng',
+  RESOLVED_BUYER_FAVOR: 'Đã xử lý — bên mua thắng',
+  CANCELLED: 'Đã hủy',
+};
+const money = (value: number) => value.toLocaleString('vi-VN') + ' ₫';
+const date = (value: string) => new Date(value).toLocaleString('vi-VN');
+function DisputeBadge({ status }: { status: AdminDisputeStatus }) {
+  return (
+    <Badge
+      tone={
+        status === 'OPEN'
+          ? 'amber'
+          : status === 'UNDER_REVIEW'
+            ? 'blue'
+            : status === 'CANCELLED'
+              ? 'gray'
+              : 'green'
+      }
+    >
+      {labels[status]}
+    </Badge>
   );
-  const detail = data.reports.find((item) => item.id === detailId);
+}
+
+export default function ReportsManagement() {
+  const [search, setSearch] = useState('');
+  const [term, setTerm] = useState('');
+  const [status, setStatus] = useState<AdminDisputeStatus | ''>('');
+  const [page, setPage] = useState(1);
+  const [result, setResult] = useState<AdminDisputePage | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [refresh, setRefresh] = useState(0);
+  const [detail, setDetail] = useState<AdminDispute | null>(null);
+  const evidenceUrls = Array.isArray(detail?.evidenceUrls)
+    ? detail.evidenceUrls.filter((url): url is string => typeof url === 'string')
+    : [];
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setTerm(search.trim());
+      setPage(1);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError('');
+    listAdminDisputes(
+      { page, limit: 10, search: term || undefined, status: status || undefined },
+      controller.signal,
+    )
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        if (page > Math.max(1, data.totalPages)) {
+          setPage(Math.max(1, data.totalPages));
+          return;
+        }
+        setResult(data);
+      })
+      .catch((cause: unknown) => {
+        if (!controller.signal.aborted) {
+          setResult(null);
+          setError(cause instanceof Error ? cause.message : 'Không thể tải danh sách khiếu nại.');
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [page, term, status, refresh]);
+
   return (
     <div className="space-y-5">
-      <DemoNotice />
+      {result && !loading && !error && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          {Object.entries({
+            'Tất cả khiếu nại': result.counters.all,
+            'Chờ xử lý': result.counters.pendingReview,
+            'Đã giải quyết':
+              result.counters.resolvedBuyerFavor + result.counters.resolvedSellerFavor,
+          }).map(([label, count]) => (
+            <div key={label} className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-xs text-slate-500">{label}</p>
+              <p className="mt-2 text-2xl font-bold text-primary">{count}</p>
+            </div>
+          ))}
+        </div>
+      )}
       <Panel
-        title="Tiếp nhận khiếu nại & báo cáo"
-        subtitle="Sản phẩm, seller, gian lận trả giá và tranh chấp đơn hàng"
+        title="Danh sách khiếu nại"
+        subtitle="Khiếu nại và tranh chấp đơn hàng trên toàn sàn"
         icon={<Flag size={19} />}
+        action={
+          <Button
+            variant="secondary"
+            onClick={() => setRefresh((value) => value + 1)}
+            disabled={loading}
+          >
+            Tải lại
+          </Button>
+        }
       >
-        <ManagementTable
-          rows={data.reports}
-          searchText={(row) => `${row.id} ${row.target} ${row.reporter} ${row.description}`}
-          filters={[
-            { key: 'type', label: 'Mọi loại báo cáo', options: labelOptions(reportTypeLabels) },
-            { key: 'status', label: 'Tất cả trạng thái', options: labelOptions(reportLabels) },
-          ]}
-          columns={[
-            {
-              title: 'Báo cáo',
-              render: (row) => (
-                <>
-                  <p className="font-semibold">{row.id}</p>
-                  {reportTypeLabels[row.type]}
-                </>
-              ),
-            },
-            {
-              title: 'Đối tượng',
-              render: (row) => (
-                <>
-                  <p>{row.target}</p>
-                  <span className="text-slate-400">Người báo cáo: {row.reporter}</span>
-                </>
-              ),
-            },
-            { title: 'Nội dung', render: (row) => <p className="max-w-xs">{row.description}</p> },
-            {
-              title: 'Trạng thái',
-              render: (row) => <StatusBadge status={row.status} label={reportLabels[row.status]} />,
-            },
-            {
-              title: 'Thao tác',
-              render: (row) => (
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="secondary" onClick={() => setDetailId(row.id)}>
-                    Xem báo cáo
-                  </Button>
-                  {row.status === 'open' && (
-                    <Button onClick={() => setDecision({ id: row.id, status: 'investigating' })}>
-                      Tiếp nhận
-                    </Button>
-                  )}
-                  {['open', 'investigating'].includes(row.status) && (
-                    <>
-                      <Button onClick={() => setDecision({ id: row.id, status: 'resolved' })}>
-                        Kết luận
-                      </Button>
-                      <Button
-                        variant="danger"
-                        onClick={() => setDecision({ id: row.id, status: 'dismissed' })}
-                      >
-                        Bác bỏ
-                      </Button>
-                    </>
-                  )}
-                </div>
-              ),
-            },
-          ]}
-        />
+        <div className="mb-4 flex flex-wrap gap-3">
+          <div className="min-w-48 flex-1">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Tìm mã khiếu nại, đơn hàng, người liên quan..."
+            />
+          </div>
+          <select
+            aria-label="Lọc trạng thái khiếu nại"
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value as AdminDisputeStatus | '');
+              setPage(1);
+            }}
+            className="max-w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">Tất cả trạng thái</option>
+            {Object.entries(labels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {loading ? (
+          <p role="status" className="py-12 text-center text-sm text-slate-500">
+            Đang tải danh sách khiếu nại…
+          </p>
+        ) : error ? (
+          <div role="alert" className="space-y-3 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+            <p>{error}</p>
+            <Button variant="secondary" onClick={() => setRefresh((value) => value + 1)}>
+              Thử lại
+            </Button>
+          </div>
+        ) : !result?.items.length ? (
+          <EmptyState text="Không tìm thấy khiếu nại phù hợp." />
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-200 text-xs text-slate-500">
+                  <tr>
+                    {[
+                      'Khiếu nại / đơn hàng',
+                      'Người mở / bên bán',
+                      'Nội dung',
+                      'Trạng thái',
+                      'Thao tác',
+                    ].map((title) => (
+                      <th key={title} className="px-3 py-3">
+                        {title}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.items.map((item) => (
+                    <tr key={item.id} className="border-b border-slate-100 align-top">
+                      <td className="max-w-56 break-words px-3 py-4">
+                        <p className="font-semibold">{item.id}</p>
+                        <p className="mt-1 text-xs text-slate-500">Đơn: {item.orderId}</p>
+                        <p className="mt-1 text-xs text-slate-400">{date(item.createdAt)}</p>
+                      </td>
+                      <td className="px-3 py-4">
+                        <p>{item.openedBy.fullName}</p>
+                        <p className="text-xs text-slate-500">{item.openedBy.email}</p>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Bên bán: {item.order.seller.fullName}
+                        </p>
+                      </td>
+                      <td className="max-w-xs whitespace-pre-line break-words px-3 py-4">
+                        {item.reason}
+                      </td>
+                      <td className="px-3 py-4">
+                        <DisputeBadge status={item.status} />
+                      </td>
+                      <td className="px-3 py-4">
+                        <Button variant="secondary" onClick={() => setDetail(item)}>
+                          Xem chi tiết
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+              <p>
+                {result.total} khiếu nại · Trang {result.page}/{Math.max(1, result.totalPages)}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  disabled={page <= 1}
+                  onClick={() => setPage((value) => value - 1)}
+                >
+                  Trước
+                </Button>
+                <Button
+                  variant="secondary"
+                  disabled={page >= result.totalPages}
+                  onClick={() => setPage((value) => value + 1)}
+                >
+                  Sau
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </Panel>
-      <Popup
-        isOpen={!!detail}
-        onClose={() => setDetailId(null)}
-        title="Chi tiết báo cáo & bằng chứng"
-        size="lg"
-      >
+      <Popup isOpen={!!detail} onClose={() => setDetail(null)} title="Chi tiết khiếu nại" size="lg">
         {detail && (
           <div className="space-y-5">
             <DetailFields
               fields={[
-                ['Mã báo cáo', detail.id],
-                ['Loại báo cáo', reportTypeLabels[detail.type]],
-                ['Đối tượng', detail.target],
-                ['Người báo cáo', detail.reporter],
-                ['Trạng thái', reportLabels[detail.status]],
-                ['Nội dung', detail.description],
-                ['Bằng chứng / thông tin xác minh', detail.evidence],
-                ['Kết luận / ghi chú', detail.note],
+                ['Mã khiếu nại', detail.id],
+                ['Mã đơn hàng', detail.orderId],
+                ['Người mở', `${detail.openedBy.fullName} (${detail.openedBy.email})`],
+                ['Bên mua', `${detail.order.buyer.fullName} (${detail.order.buyer.email})`],
+                ['Bên bán', `${detail.order.seller.fullName} (${detail.order.seller.email})`],
+                ['Trạng thái', labels[detail.status]],
+                ['Ngày mở', date(detail.createdAt)],
+                ['Tổng tiền đơn hàng', money(detail.order.totalAmount)],
+                [
+                  'Tiền ký quỹ',
+                  detail.order.escrowRecord ? money(detail.order.escrowRecord.totalAmount) : '—',
+                ],
+                ['Lý do khiếu nại', detail.reason],
+                ['Kết luận / ghi chú', detail.resolutionNotes],
+                ['Người xử lý', detail.resolvedBy?.fullName],
+                ['Ngày xử lý', detail.resolvedAt ? date(detail.resolvedAt) : '—'],
               ]}
             />
-            {detail.orderId && (
-              <div className="flex flex-wrap gap-4 text-sm font-semibold text-primary">
-                <Link
-                  className="underline"
-                  to={`/admin/orders?order=${encodeURIComponent(detail.orderId)}`}
-                >
-                  Xem đơn liên quan
-                </Link>
-                {data.refunds.some((item) => item.id === detail.orderId) ? (
-                  <Link
-                    className="underline"
-                    to={`/admin/refunds?order=${encodeURIComponent(detail.orderId)}`}
-                  >
-                    Xem yêu cầu hoàn tiền
-                  </Link>
-                ) : (
-                  <span className="font-normal text-slate-500">
-                    Chưa có yêu cầu hoàn tiền cho đơn này.
-                  </span>
-                )}
-              </div>
-            )}
+            <section>
+              <h3 className="mb-2 text-sm font-semibold">Sản phẩm trong đơn</h3>
+              {detail.order.items.map((item) => (
+                <p key={item.id} className="py-1 text-sm text-slate-600">
+                  {item.title} × {item.quantity} — {money(item.totalPrice)}
+                </p>
+              ))}
+            </section>
+            <section>
+              <h3 className="mb-2 text-sm font-semibold">Bằng chứng</h3>
+              {evidenceUrls.length ? (
+                evidenceUrls.map((url, index) =>
+                  /^https?:\/\//i.test(url) ? (
+                    <a
+                      key={`${index}-${url}`}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mb-2 block break-all text-sm text-primary underline"
+                    >
+                      Bằng chứng {index + 1}
+                    </a>
+                  ) : (
+                    <p key={`${index}-${url}`} className="break-all text-sm text-slate-500">
+                      {url}
+                    </p>
+                  ),
+                )
+              ) : (
+                <p className="text-sm text-slate-500">Chưa có bằng chứng đính kèm.</p>
+              )}
+            </section>
           </div>
         )}
       </Popup>
-      {decision && (
-        <DecisionDialog
-          key={`${decision.id}-${decision.status}`}
-          title={reportLabels[decision.status]}
-          description={`${decision.id}. Ghi lại kết quả hoặc hướng xử lý. Kết luận báo cáo không tự động hoàn tiền, ẩn sản phẩm hay đình chỉ Seller.`}
-          onClose={() => setDecision(null)}
-          onConfirm={(reason) => {
-            actions.updateCommerce({
-              entity: 'reports',
-              id: decision.id,
-              status: decision.status,
-              reason,
-            });
-            setDecision(null);
-          }}
-        />
-      )}
     </div>
   );
 }

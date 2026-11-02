@@ -78,6 +78,7 @@ const AdminFinancePage = lazy(() => import('../pages/admin/AdminFinancePage'));
 const AdminSystemPage = lazy(() => import('../pages/admin/AdminSystemPage'));
 const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'));
 const AdminCategoriesPage = lazy(() => import('../pages/admin/AdminCategoriesPage'));
+const AdminBannersPage = lazy(() => import('../pages/admin/AdminBannersPage'));
 
 function AppRouter() {
   return (
@@ -191,6 +192,7 @@ function AppRouter() {
               <Route path={ROUTES.ADMIN} element={<AdminLayout />}>
                 <Route index element={<Navigate to="overview" replace />} />
                 <Route path="categories" element={<AdminCategoriesPage />} />
+                <Route path="banners" element={<AdminBannersPage />} />
                 <Route path="overview" element={<AdminDashboardPage />} />
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="sellers" element={<AdminSellersPage />} />
