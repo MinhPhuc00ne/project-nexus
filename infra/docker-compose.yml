@@ -44,7 +44,7 @@ services:
     container_name: nexus-migrate
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
-    command: sh -c "npx prisma migrate deploy --schema=backend/prisma/schema.prisma && npx ts-node prisma/seed.ts"
+    command: sh -c "npx prisma migrate deploy --schema=prisma/schema.prisma && npx ts-node --project tsconfig.json prisma/seed.ts"
     working_dir: /app/backend
     depends_on:
       postgres:
@@ -86,6 +86,8 @@ services:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.frontend
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000/api/v1}
     container_name: nexus-frontend
     restart: unless-stopped
     ports:

@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b --watch",
+    "lint": "eslint .",
     "clean": "rimraf dist"
   },
   "devDependencies": {

@@ -45,6 +45,7 @@ prisma_validate:
 build_monorepo:
   stage: build
   script:
+    - npx prisma generate --schema=backend/prisma/schema.prisma
     - npx turbo build
   artifacts:
     expire_in: 1 day

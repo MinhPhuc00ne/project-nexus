@@ -13,8 +13,7 @@ export const API_BASE_URL = (
 ).replace(/\/$/, '');
 
 const api = axios.create({
-  // URL gốc trong frontend/web/.env, ví dụ http://localhost:3000/api/v1.
-  // Các service sẽ nối thêm đường dẫn như /auth/register vào URL này.
+  // Base API endpoint configured via frontend/.env (defaults to http://localhost:3000/api/v1).
   baseURL: API_BASE_URL,
   // Chờ tối đa 20 giây; đây không phải thời hạn của mã OTP.
   timeout: 20000,
