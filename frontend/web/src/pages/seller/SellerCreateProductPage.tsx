@@ -91,9 +91,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
       .filter(Boolean);
     setOptionGroups((prev) =>
       prev.map((g) =>
-        g.id === groupId
-          ? { ...g, values: Array.from(new Set([...g.values, ...parts])) }
-          : g,
+        g.id === groupId ? { ...g, values: Array.from(new Set([...g.values, ...parts])) } : g,
       ),
     );
     setNewOptionInput((prev) => ({ ...prev, [groupId]: '' }));
@@ -240,7 +238,9 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
             >
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-600">Thêm nhanh nhóm tùy chọn:</span>
+                  <span className="text-xs font-semibold text-slate-600">
+                    Thêm nhanh nhóm tùy chọn:
+                  </span>
                   {PRESET_OPTION_GROUPS.map((preset) => (
                     <button
                       key={preset.name}
@@ -262,107 +262,111 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
 
                 {optionGroups.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-xs text-slate-500">
-                    Chưa có nhóm phân loại nào. Bấm vào các nút phía trên (VD: <strong>+ Màu sắc</strong>,{' '}
-                    <strong>+ Kích thước (Size)</strong>) để người mua có thể chọn khi mua sản phẩm.
+                    Chưa có nhóm phân loại nào. Bấm vào các nút phía trên (VD:{' '}
+                    <strong>+ Màu sắc</strong>, <strong>+ Kích thước (Size)</strong>) để người mua
+                    có thể chọn khi mua sản phẩm.
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {optionGroups.map((group) => (
-                      <div
-                        key={group.id}
-                        className="rounded-lg border border-blue-100 bg-blue-50/30 p-4 space-y-3"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1">
-                            <label className="block text-xs font-semibold text-slate-700">
-                              Tên nhóm tùy chọn (VD: Màu sắc, Size, Chất liệu)
-                              <input
-                                type="text"
-                                value={group.name}
-                                onChange={(e) =>
-                                  setOptionGroups((prev) =>
-                                    prev.map((g) =>
-                                      g.id === group.id ? { ...g, name: e.target.value } : g,
-                                    ),
-                                  )
-                                }
-                                placeholder="Nhập tên nhóm (VD: Màu sắc)"
-                                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
-                              />
-                            </label>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setOptionGroups((prev) => prev.filter((g) => g.id !== group.id))
-                            }
-                            className="mt-5 inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
-                          >
-                            <DeleteOutlined /> Xóa nhóm
-                          </button>
-                        </div>
-
-                        <div>
-                          <span className="block text-xs font-semibold text-slate-700 mb-1.5">
-                            Các lựa chọn cho khách hàng:
-                          </span>
-                          <div className="flex flex-wrap gap-1.5 mb-2">
-                            {group.values.map((val) => (
-                              <span
-                                key={val}
-                                className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-[#1c3973]"
-                              >
-                                <TagOutlined className="text-blue-600 text-[11px]" />
-                                {val}
-                                <button
-                                  type="button"
-                                  onClick={() =>
+                    {optionGroups.map((group, groupIndex) => {
+                      const groupId = group.id ?? `option-${groupIndex}`;
+                      return (
+                        <div
+                          key={groupId}
+                          className="rounded-lg border border-blue-100 bg-blue-50/30 p-4 space-y-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <label className="block text-xs font-semibold text-slate-700">
+                                Tên nhóm tùy chọn (VD: Màu sắc, Size, Chất liệu)
+                                <input
+                                  type="text"
+                                  value={group.name}
+                                  onChange={(e) =>
                                     setOptionGroups((prev) =>
                                       prev.map((g) =>
-                                        g.id === group.id
-                                          ? { ...g, values: g.values.filter((v) => v !== val) }
-                                          : g,
+                                        g.id === groupId ? { ...g, name: e.target.value } : g,
                                       ),
                                     )
                                   }
-                                  className="text-slate-400 hover:text-red-600 font-bold"
-                                  aria-label={`Xóa ${val}`}
-                                >
-                                  ×
-                                </button>
-                              </span>
-                            ))}
-                          </div>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              value={newOptionInput[group.id] || ''}
-                              onChange={(e) =>
-                                setNewOptionInput((prev) => ({
-                                  ...prev,
-                                  [group.id]: e.target.value,
-                                }))
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  handleAddValueToGroup(group.id);
-                                }
-                              }}
-                              placeholder="Nhập thêm lựa chọn (ngăn cách bằng dấu phẩy, VD: Đỏ, Xám) rồi bấm Thêm"
-                              className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-600"
-                            />
+                                  placeholder="Nhập tên nhóm (VD: Màu sắc)"
+                                  className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
+                                />
+                              </label>
+                            </div>
                             <button
                               type="button"
-                              onClick={() => handleAddValueToGroup(group.id)}
-                              className="rounded-md bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                              onClick={() =>
+                                setOptionGroups((prev) => prev.filter((g) => g.id !== groupId))
+                              }
+                              className="mt-5 inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
                             >
-                              + Thêm lựa chọn
+                              <DeleteOutlined /> Xóa nhóm
                             </button>
                           </div>
+
+                          <div>
+                            <span className="block text-xs font-semibold text-slate-700 mb-1.5">
+                              Các lựa chọn cho khách hàng:
+                            </span>
+                            <div className="flex flex-wrap gap-1.5 mb-2">
+                              {group.values.map((val) => (
+                                <span
+                                  key={val}
+                                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-[#1c3973]"
+                                >
+                                  <TagOutlined className="text-blue-600 text-[11px]" />
+                                  {val}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setOptionGroups((prev) =>
+                                        prev.map((g) =>
+                                          g.id === groupId
+                                            ? { ...g, values: g.values.filter((v) => v !== val) }
+                                            : g,
+                                        ),
+                                      )
+                                    }
+                                    className="text-slate-400 hover:text-red-600 font-bold"
+                                    aria-label={`Xóa ${val}`}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={newOptionInput[groupId] || ''}
+                                onChange={(e) =>
+                                  setNewOptionInput((prev) => ({
+                                    ...prev,
+                                    [groupId]: e.target.value,
+                                  }))
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    handleAddValueToGroup(groupId);
+                                  }
+                                }}
+                                placeholder="Nhập thêm lựa chọn (ngăn cách bằng dấu phẩy, VD: Đỏ, Xám) rồi bấm Thêm"
+                                className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-600"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleAddValueToGroup(groupId)}
+                                className="rounded-md bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                              >
+                                + Thêm lựa chọn
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -494,7 +498,10 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                           const base = Number(form.price) || 0;
                           const pct =
                             base > 0 && customSale > 0 && customSale < base
-                              ? Math.max(1, Math.min(95, Math.round(((base - customSale) / base) * 100)))
+                              ? Math.max(
+                                  1,
+                                  Math.min(95, Math.round(((base - customSale) / base) * 100)),
+                                )
                               : saleConfig.discountPercent;
                           setSaleConfig((prev) => ({
                             ...prev,
@@ -631,7 +638,9 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                   <div className="flex justify-between gap-3">
                     <dt className="text-slate-500">Khuyến mãi Sale</dt>
                     <dd className="font-semibold text-blue-700">
-                      {effectiveSale.isOnSale ? `Đang bật (-${effectiveSale.discountPercent}%)` : 'Không bật'}
+                      {effectiveSale.isOnSale
+                        ? `Đang bật (-${effectiveSale.discountPercent}%)`
+                        : 'Không bật'}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">

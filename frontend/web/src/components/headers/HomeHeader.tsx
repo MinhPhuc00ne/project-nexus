@@ -150,11 +150,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           window.location.assign('/seller/settings');
         })
         .catch((err: unknown) => {
-          showToast(
-            err instanceof Error
-              ? err.message
-              : 'Không thể chuyển sang chế độ Người bán.',
-          );
+          showToast(err instanceof Error ? err.message : 'Không thể chuyển sang chế độ Người bán.');
         });
       return;
     }

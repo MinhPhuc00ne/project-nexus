@@ -25,6 +25,13 @@ const defaultSaleConfig: ProductSaleConfig = {
   endAt: '',
 };
 
+function withOptionIds(options: ProductOptionGroup[]): ProductOptionGroup[] {
+  return options.map((option, index) => ({
+    ...option,
+    id: option.id ?? `saved-option-${index}-${option.name}`,
+  }));
+}
+
 export default function useSellerProductForm(productId?: string) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -81,7 +88,7 @@ export default function useSellerProductForm(productId?: string) {
         } else {
           setSaleConfig({ ...defaultSaleConfig });
         }
-        setOptionGroups(found.options ? [...found.options] : []);
+        setOptionGroups(found.options ? withOptionIds(found.options) : []);
       })
       .catch((cause) => {
         if (current)
@@ -128,7 +135,7 @@ export default function useSellerProductForm(productId?: string) {
         ? { ...defaultSaleConfig, enabled: true, salePrice: Number(product.salePrice) }
         : { ...defaultSaleConfig },
     );
-    setOptionGroups(product?.options ? [...product.options] : []);
+    setOptionGroups(product?.options ? withOptionIds(product.options) : []);
     setExistingImages(product?.images.map((image) => image.imageUrl) ?? []);
     setFiles([]);
     setError('');

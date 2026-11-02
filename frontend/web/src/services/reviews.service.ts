@@ -55,10 +55,7 @@ export function getShopReviewsApi(
   );
 }
 
-export function getSellerProductReviewsApi(
-  page = 1,
-  limit = 50,
-): Promise<ProductReviewsResponse> {
+export function getSellerProductReviewsApi(page = 1, limit = 50): Promise<ProductReviewsResponse> {
   return apiRequest<ProductReviewsResponse>(`/seller/product-reviews${pageQuery(page, limit)}`, {
     requireAuth: true,
   });

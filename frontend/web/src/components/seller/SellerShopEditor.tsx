@@ -8,10 +8,7 @@ import {
 } from '@ant-design/icons';
 import type { SellerShopProfile } from '../../types/shop.types';
 import { VIETNAM_PROVINCES } from '../../constants/vietnamProvinces';
-import {
-  updateSellerShopProfile,
-  uploadShopAvatarFile,
-} from '../../services/shops';
+import { updateSellerShopProfile, uploadShopAvatarFile } from '../../services/shops';
 import { useToast } from '../ToastNotification';
 import { SellerButton } from './SellerUI';
 import useSellerAction from './useSellerAction';

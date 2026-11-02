@@ -32,11 +32,26 @@ export function computeEffectiveSale(
 } {
   const safeBase = Number.isFinite(basePrice) && basePrice > 0 ? basePrice : 0;
   if (!sale?.enabled || safeBase <= 0 || sale.salePrice <= 0 || sale.salePrice >= safeBase) {
-    return { isOnSale: false, effectivePrice: safeBase, originalPrice: safeBase, discountPercent: 0, label: '' };
+    return {
+      isOnSale: false,
+      effectivePrice: safeBase,
+      originalPrice: safeBase,
+      discountPercent: 0,
+      label: '',
+    };
   }
   const now = Date.now();
-  if ((sale.startAt && new Date(sale.startAt).getTime() > now) || (sale.endAt && new Date(sale.endAt).getTime() <= now)) {
-    return { isOnSale: false, effectivePrice: safeBase, originalPrice: safeBase, discountPercent: 0, label: '' };
+  if (
+    (sale.startAt && new Date(sale.startAt).getTime() > now) ||
+    (sale.endAt && new Date(sale.endAt).getTime() <= now)
+  ) {
+    return {
+      isOnSale: false,
+      effectivePrice: safeBase,
+      originalPrice: safeBase,
+      discountPercent: 0,
+      label: '',
+    };
   }
   return {
     isOnSale: true,

@@ -19,16 +19,18 @@ export default function SellerSession({ children }: { children: ReactNode }) {
   const [modeError, setModeError] = useState<string | null>(null);
   const needsSellerMode = Boolean(
     user &&
-      user.role === Role.SELLER &&
-      !user.isShopSuspended &&
-      (!user.isSellerActive || user.currentMode !== 'SELLER'),
+    user.role === Role.SELLER &&
+    !user.isShopSuspended &&
+    (!user.isSellerActive || user.currentMode !== 'SELLER'),
   );
 
   // Tự động kích hoạt chế độ Seller khi người bán đang ở trong Dashboard Seller (/seller/*)
   useEffect(() => {
     if (!needsSellerMode || modeError) return;
     void switchActiveMode('SELLER').catch((error: unknown) => {
-      setModeError(error instanceof Error ? error.message : 'Không thể chuyển sang chế độ Người bán.');
+      setModeError(
+        error instanceof Error ? error.message : 'Không thể chuyển sang chế độ Người bán.',
+      );
     });
   }, [modeError, needsSellerMode, switchActiveMode]);
 

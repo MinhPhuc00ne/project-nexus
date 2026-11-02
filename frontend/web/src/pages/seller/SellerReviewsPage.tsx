@@ -8,10 +8,7 @@ import {
 import { useSellerSession } from '../../components/seller/SellerSession';
 import { EmptyState, PageHeading, Panel } from '../../components/seller/SellerUI';
 import { trustLabels } from '../../components/seller/sellerData';
-import {
-  getSellerProductReviewsApi,
-  type ProductReviewItem,
-} from '../../services/reviews.service';
+import { getSellerProductReviewsApi, type ProductReviewItem } from '../../services/reviews.service';
 
 type ReviewTab = 'all' | 'positive' | 'improve';
 
@@ -61,8 +58,14 @@ export default function SellerReviewsPage() {
 
   const tabs: Array<{ key: ReviewTab; label: string }> = [
     { key: 'all', label: `Tất cả (${reviews.length})` },
-    { key: 'positive', label: `Tích cực (${reviews.filter((review) => review.rating >= 4).length})` },
-    { key: 'improve', label: `Cần cải thiện (${reviews.filter((review) => review.rating <= 3).length})` },
+    {
+      key: 'positive',
+      label: `Tích cực (${reviews.filter((review) => review.rating >= 4).length})`,
+    },
+    {
+      key: 'improve',
+      label: `Cần cải thiện (${reviews.filter((review) => review.rating <= 3).length})`,
+    },
   ];
 
   return (
@@ -99,7 +102,10 @@ export default function SellerReviewsPage() {
                   <div key={star} className="flex items-center gap-2 text-xs text-slate-600">
                     <span className="w-10">{star} sao</span>
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
-                      <i className="block h-full rounded-full bg-blue-600" style={{ width: `${width}%` }} />
+                      <i
+                        className="block h-full rounded-full bg-blue-600"
+                        style={{ width: `${width}%` }}
+                      />
                     </div>
                     <span className="w-5 text-right">{count}</span>
                   </div>
@@ -112,7 +118,9 @@ export default function SellerReviewsPage() {
         <Panel
           title="Uy tín người bán"
           subtitle="Thông tin từ tài khoản của bạn"
-          action={<SafetyCertificateOutlined className="text-xl text-blue-600" aria-hidden="true" />}
+          action={
+            <SafetyCertificateOutlined className="text-xl text-blue-600" aria-hidden="true" />
+          }
         >
           <div className="rounded-xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-5">
             <p className="text-xs font-medium text-slate-500">ĐIỂM UY TÍN</p>
@@ -167,7 +175,8 @@ export default function SellerReviewsPage() {
                     {review.reviewer.fullName}
                   </strong>
                   <span className="text-sm font-semibold text-blue-700">
-                    {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                    {'★'.repeat(review.rating)}
+                    {'☆'.repeat(5 - review.rating)}
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">

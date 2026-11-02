@@ -112,15 +112,17 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
       await updateProductSale(saleModalProduct.id, {
         salePrice: saleDraft.enabled ? computedSalePrice : null,
       });
-    toast.success(
-      saleDraft.enabled
-        ? `Đã bật chương trình Sale (-${pct}%) cho "${saleModalProduct.title}".`
-        : `Đã tắt chương trình Sale cho "${saleModalProduct.title}".`,
-    );
+      toast.success(
+        saleDraft.enabled
+          ? `Đã bật chương trình Sale (-${pct}%) cho "${saleModalProduct.title}".`
+          : `Đã tắt chương trình Sale cho "${saleModalProduct.title}".`,
+      );
       setSaleModalProduct(null);
       reload();
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : 'KhÃ´ng thá»ƒ cáº­p nháº­t chÆ°Æ¡ng trÃ¬nh Sale.');
+      toast.error(
+        cause instanceof Error ? cause.message : 'KhÃ´ng thá»ƒ cáº­p nháº­t chÆ°Æ¡ng trÃ¬nh Sale.',
+      );
     } finally {
       setSaleSaving(false);
     }

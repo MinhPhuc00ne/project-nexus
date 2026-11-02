@@ -247,7 +247,9 @@ export async function getProductsCatalog(query: CatalogQuery = {}): Promise<Prod
 export async function getProductByIdAsync(id: string): Promise<ProductDetail> {
   const trimmed = id.trim();
   if (!trimmed) throw new Error('Thiếu mã sản phẩm.');
-  return mapProduct(await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(trimmed)}`));
+  return mapProduct(
+    await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(trimmed)}`),
+  );
 }
 
 export async function getRelatedProducts(currentId: string, limit = 4): Promise<ProductDetail[]> {
@@ -284,9 +286,7 @@ export async function getShopsApi(query: ShopQuery = {}): Promise<PaginatedShops
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as PaginatedShops;
   return {
-    items: Array.isArray(data?.items)
-      ? data.items
-      : [],
+    items: Array.isArray(data?.items) ? data.items : [],
     total: data?.total ?? 0,
     page: data?.page ?? 1,
     limit: data?.limit ?? 12,

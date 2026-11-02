@@ -77,9 +77,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         const safeOrders = Array.isArray(orders) ? orders : [];
         const confirmedOrder = safeOrders.find(
           (o) =>
-            (o?.status === 'CONFIRMED' ||
-              o?.status === 'COMPLETED' ||
-              o?.status === 'DELIVERED') &&
+            (o?.status === 'CONFIRMED' || o?.status === 'COMPLETED' || o?.status === 'DELIVERED') &&
             o?.items?.some(
               (item) => item?.productId === productId || item?.product?.id === productId,
             ),

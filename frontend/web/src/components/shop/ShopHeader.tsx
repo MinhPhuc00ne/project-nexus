@@ -20,12 +20,7 @@ interface ShopHeaderProps {
   onReported?: (msg: string) => void;
 }
 
-export const ShopHeader: React.FC<ShopHeaderProps> = ({
-  shop,
-  onShare,
-  onContact,
-  onReported,
-}) => {
+export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact, onReported }) => {
   const [showReportModal, setShowReportModal] = useState(false);
 
   // Avatar của Shop là riêng biệt hoàn toàn với Avatar cá nhân của Seller
@@ -95,7 +90,8 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({
               </div>
 
               <p className="text-xs text-blue-100 font-medium mb-2">
-                Chủ gian hàng: <span className="text-white font-semibold">{shop.sellerFullName}</span>
+                Chủ gian hàng:{' '}
+                <span className="text-white font-semibold">{shop.sellerFullName}</span>
               </p>
 
               {shop.description && (
