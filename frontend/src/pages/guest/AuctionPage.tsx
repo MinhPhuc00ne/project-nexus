@@ -1,15 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, Share2, CheckCircle2 } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Heart, Share2, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { AuctionViewerMode, AuctionTabKey } from '../../types';
 import AuctionGallery from '../../components/auction/AuctionGallery';
 import AuctionBidTerminal from '../../components/auction/AuctionBidTerminal';
 import AuctionDetailTabs from '../../components/auction/AuctionDetailTabs';
 import SimilarAuctionsSection from '../../components/auction/SimilarAuctionsSection';
 import { thumbnails, similarWatches } from '../../components/auction/mockData';
+import {
+  getAuctionsApi,
+  getAuctionDetailApi,
+  placeBidApi,
+  createAuctionSocket,
+  type AuctionEntity,
+} from '../../services/auction.service';
 
 export const AuctionPage: React.FC = () => {
-  // 1. Live Countdown Timer State (15m 42s = 942 seconds)
+  const { id } = useParams<{ id: string }>();
+  const [activeAuction, setActiveAuction] = useState<AuctionEntity | null>(null);
+
+  // 1. Live Countdown Timer State
   const [timeLeft, setTimeLeft] = useState(942);
   const [activeTab, setActiveTab] = useState<AuctionTabKey>('certs');
   const [viewerMode, setViewerMode] = useState<AuctionViewerMode>('photo');
@@ -21,9 +31,60 @@ export const AuctionPage: React.FC = () => {
   const [currentPrice, setCurrentPrice] = useState(128500000);
   const [leadingBidder, setLeadingBidder] = useState('Nguyen_Horology');
   const [bidSuccessToast, setBidSuccessToast] = useState<string | null>(null);
+  const [bidErrorToast, setBidErrorToast] = useState<string | null>(null);
 
   // 3. 3D Rotation simulation
   const [rotationAngle, setRotationAngle] = useState(0);
+
+  // Load auction entity and establish real-time WebSocket connection
+  useEffect(() => {
+    let socketClient: ReturnType<typeof createAuctionSocket> | null = null;
+
+    async function loadAuction() {
+      try {
+        let auctionData: AuctionEntity | null = null;
+        if (id) {
+          auctionData = await getAuctionDetailApi(id);
+        } else {
+          const list = await getAuctionsApi({ limit: 1 });
+          if (list.items && list.items.length > 0) {
+            auctionData = await getAuctionDetailApi(list.items[0].id);
+          }
+        }
+
+        if (auctionData) {
+          setActiveAuction(auctionData);
+          const price = Number(auctionData.currentHighestBid) || Number(auctionData.startingPrice);
+          setCurrentPrice(price);
+          if (auctionData.bids && auctionData.bids.length > 0) {
+            setLeadingBidder(auctionData.bids[0].bidder.fullName);
+          }
+          const remaining = Math.max(
+            0,
+            Math.floor((new Date(auctionData.endTime).getTime() - Date.now()) / 1000),
+          );
+          setTimeLeft(remaining);
+
+          socketClient = createAuctionSocket(auctionData.id);
+          socketClient.onBidPlaced((payload) => {
+            setCurrentPrice(payload.bidAmount);
+            setLeadingBidder(payload.bidderName);
+          });
+          socketClient.onTimeExtended((payload) => {
+            setTimeLeft((prev) => prev + payload.extendedBySeconds);
+          });
+        }
+      } catch (err: unknown) {
+        console.warn('Không thể kết nối phòng đấu giá trực tiếp, dùng chế độ mô phỏng:', err);
+      }
+    }
+
+    void loadAuction();
+
+    return () => {
+      socketClient?.disconnect();
+    };
+  }, [id]);
 
   // Countdown timer interval
   useEffect(() => {
@@ -37,11 +98,33 @@ export const AuctionPage: React.FC = () => {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
   };
 
-  const handleBidSuccess = (amount: number) => {
+  const handleBidSuccess = async (amount: number) => {
+    if (activeAuction?.id) {
+      try {
+        const res = await placeBidApi(activeAuction.id, { bidAmount: amount });
+        setCurrentPrice(res.currentHighestBid);
+        setLeadingBidder('Bạn (Tài khoản hiện tại)');
+        setBidSuccessToast(
+          `Đặt giá thành công: ${formatVND(amount)}! Số dư ví NEXUS Pay đã được khóa cọc an toàn.`,
+        );
+        setTimeout(() => setBidSuccessToast(null), 4500);
+        return;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+              'Đặt giá không thành công. Vui lòng thử lại.';
+        setBidErrorToast(message);
+        setTimeout(() => setBidErrorToast(null), 5000);
+        return;
+      }
+    }
+
+    // Local simulation fallback if offline
     setCurrentPrice(amount);
     setLeadingBidder('Bạn (Tài khoản hiện tại)');
-    setBidSuccessToast(`Đặt giá thành công: ${formatVND(amount)}! Escrow đã tạm giữ 10% cọc.`);
-
+    setBidSuccessToast(`Đặt giá thành công: ${formatVND(amount)}! Escrow đã tạm giữ cọc.`);
     setTimeout(() => {
       setBidSuccessToast(null);
     }, 4500);
@@ -58,6 +141,13 @@ export const AuctionPage: React.FC = () => {
         <div className="fixed top-20 right-6 z-[2500] flex items-center gap-3 bg-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl animate-bounce">
           <CheckCircle2 className="w-5 h-5 text-white" />
           <span className="text-sm font-semibold">{bidSuccessToast}</span>
+        </div>
+      )}
+
+      {bidErrorToast && (
+        <div className="fixed top-20 right-6 z-[2500] flex items-center gap-3 bg-rose-600 text-white px-5 py-3.5 rounded-xl shadow-2xl animate-bounce">
+          <AlertCircle className="w-5 h-5 text-white" />
+          <span className="text-sm font-semibold">{bidErrorToast}</span>
         </div>
       )}
 
