@@ -10,9 +10,68 @@ import {
 } from 'react';
 import { Role } from '@nexus/types';
 import { clearAuthSession, getStoredToken, getStoredUser, saveAuthSession } from '../services/auth';
-import { getMe } from '../services/users';
+import { getMe, toggleSellerMode } from '../services/users';
 import { mergeGuestCartAfterLogin, resetCartSync } from '../services/cart';
 import type { AuthUser, UserProfile } from '../types/user.types';
+
+const ACTIVE_MODE_PREFIX = 'nexus:active-mode:';
+
+export function getStoredActiveMode(userId?: string | null): 'SELLER' | 'BUYER' | null {
+  if (!userId) return null;
+  try {
+    const val = localStorage.getItem(`${ACTIVE_MODE_PREFIX}${userId}`);
+    if (val === 'SELLER' || val === 'BUYER') return val;
+  } catch {
+    // Ignore storage error
+  }
+  return null;
+}
+
+export function setStoredActiveMode(
+  userId: string | undefined | null,
+  mode: 'SELLER' | 'BUYER',
+): void {
+  if (!userId) return;
+  try {
+    localStorage.setItem(`${ACTIVE_MODE_PREFIX}${userId}`, mode);
+  } catch {
+    // Ignore storage error
+  }
+}
+
+function applyModeOverride(profile: UserProfile): UserProfile {
+  if (profile.role !== Role.SELLER) {
+    return {
+      ...profile,
+      isSellerActive: false,
+      currentMode: 'BUYER',
+    };
+  }
+  const storedMode = getStoredActiveMode(profile.id);
+  const onSellerRoute =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/seller');
+  const onBuyerRoute =
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/buyer');
+
+  let effectiveMode: 'SELLER' | 'BUYER';
+  if (onSellerRoute) {
+    effectiveMode = 'SELLER';
+    setStoredActiveMode(profile.id, 'SELLER');
+  } else if (onBuyerRoute && storedMode === 'BUYER') {
+    effectiveMode = 'BUYER';
+  } else if (storedMode) {
+    effectiveMode = storedMode;
+  } else {
+    effectiveMode = profile.isSellerActive ? 'SELLER' : 'BUYER';
+    setStoredActiveMode(profile.id, effectiveMode);
+  }
+
+  return {
+    ...profile,
+    isSellerActive: effectiveMode === 'SELLER' && !profile.isShopSuspended,
+    currentMode: effectiveMode,
+  };
+}
 
 export interface AuthContextType {
   user: UserProfile | null;
@@ -23,6 +82,8 @@ export interface AuthContextType {
   isAdmin: boolean;
   isStaff: boolean;
   isSeller: boolean;
+  activeMode: 'SELLER' | 'BUYER';
+  switchActiveMode: (mode: 'SELLER' | 'BUYER') => Promise<void>;
   login: (user: AuthUser, accessToken?: string, refreshToken?: string) => Promise<void>;
   logout: () => void;
   refreshProfile: () => Promise<UserProfile | null>;
@@ -34,7 +95,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => getStoredToken());
   const [storedUser, setStoredUser] = useState<AuthUser | null>(() => getStoredUser());
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUserState] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(() => Boolean(getStoredToken()));
 
   const inFlightPromiseRef = useRef<{ token: string; promise: Promise<UserProfile | null> } | null>(
@@ -45,12 +106,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const cartOwner = useRef(token ? getStoredUser()?.id || token : null);
   const cartInitialized = useRef(false);
 
+  const setProfile: React.Dispatch<React.SetStateAction<UserProfile | null>> = useCallback(
+    (updater) => {
+      setUserState((prev) => {
+        const next = typeof updater === 'function' ? updater(prev) : updater;
+        if (!next) return null;
+        if (next.role === Role.SELLER) {
+          const desiredMode =
+            next.currentMode === 'BUYER' || !next.isSellerActive ? 'BUYER' : 'SELLER';
+          setStoredActiveMode(next.id, desiredMode);
+          return {
+            ...next,
+            isSellerActive: desiredMode === 'SELLER' && !next.isShopSuspended,
+            currentMode: desiredMode,
+          };
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  const switchActiveMode = useCallback(async (mode: 'SELLER' | 'BUYER'): Promise<void> => {
+    const wantSeller = mode === 'SELLER';
+    let previousMode: 'SELLER' | 'BUYER' = 'BUYER';
+    setUserState((prev) => {
+      if (!prev) return prev;
+      previousMode = prev.currentMode === 'SELLER' ? 'SELLER' : 'BUYER';
+      setStoredActiveMode(prev.id, mode);
+      return {
+        ...prev,
+        isSellerActive: wantSeller && !prev.isShopSuspended,
+        currentMode: mode,
+      };
+    });
+    try {
+      const res = await toggleSellerMode(wantSeller);
+      setUserState((prev) => {
+        if (!prev) return prev;
+        const finalMode = wantSeller && !prev.isShopSuspended ? 'SELLER' : 'BUYER';
+        setStoredActiveMode(prev.id, finalMode);
+        return {
+          ...prev,
+          isSellerActive: res?.isSellerActive ?? finalMode === 'SELLER',
+          currentMode: finalMode,
+        };
+      });
+    } catch (error) {
+      setUserState((prev) => {
+        if (!prev) return prev;
+        setStoredActiveMode(prev.id, previousMode);
+        return {
+          ...prev,
+          isSellerActive: previousMode === 'SELLER' && !prev.isShopSuspended,
+          currentMode: previousMode,
+        };
+      });
+      throw error;
+      // Giữ trạng thái mode trên FE ngay cả khi API BE gặp lỗi chuyển role
+    }
+  }, []);
+
   const refreshProfile = useCallback(async (): Promise<UserProfile | null> => {
     const currentToken = getStoredToken();
     if (!currentToken) {
       revision.current++;
       inFlightPromiseRef.current = null;
-      setUser(null);
+      setUserState(null);
       setIsLoading(false);
       return null;
     }
@@ -62,9 +184,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const isCurrent = () => current === revision.current && currentToken === getStoredToken();
     const promise = (async () => {
       try {
-        const profile = await getMe();
+        const rawProfile = await getMe();
         if (!isCurrent()) return null;
-        setUser(profile);
+        const profile = applyModeOverride(rawProfile);
+        setUserState(profile);
         return profile;
       } catch (error) {
         console.warn('[AuthContext] Không thể lấy thông tin profile người dùng:', error);
@@ -93,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         revision.current++;
         inFlightPromiseRef.current = null;
         sessionToken.current = nextToken;
-        setUser(null);
+        setUserState(null);
         setIsLoading(Boolean(nextToken));
       }
       setToken(nextToken);
@@ -109,7 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         cartInitialized.current = false;
         revision.current++;
         inFlightPromiseRef.current = null;
-        setUser(null);
+        setUserState(null);
         setIsLoading(false);
       }
     };
@@ -140,7 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearAuthSession();
     setToken(null);
     setStoredUser(null);
-    setUser(null);
+    setUserState(null);
     setIsLoading(false);
   }, []);
 
@@ -148,6 +271,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAdmin = role === Role.ADMIN;
   const isStaff = role === Role.SUPPORT_STAFF || role === Role.ADMIN;
   const isSeller = role === Role.SELLER;
+  const activeMode: 'SELLER' | 'BUYER' =
+    isSeller && user?.isSellerActive && user?.currentMode === 'SELLER' ? 'SELLER' : 'BUYER';
   const isAuthenticated = Boolean(token && (user || storedUser));
 
   const value = useMemo<AuthContextType>(
@@ -160,10 +285,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isStaff,
       isSeller,
+      activeMode,
+      switchActiveMode,
       login,
       logout,
       refreshProfile,
-      setProfile: setUser,
+      setProfile,
     }),
     [
       user,
@@ -174,9 +301,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin,
       isStaff,
       isSeller,
+      activeMode,
+      switchActiveMode,
       login,
       logout,
       refreshProfile,
+      setProfile,
     ],
   );
 

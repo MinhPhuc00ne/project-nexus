@@ -25,12 +25,12 @@ const statusMap: Record<string, { label: string; icon: React.ReactNode; cls: str
   PENDING_PAYMENT: {
     label: 'Chờ thanh toán',
     icon: <Clock size={12} />,
-    cls: 'bg-amber-50 text-amber-700 border-amber-200',
+    cls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
   PAID: {
     label: 'Đã thanh toán',
     icon: <CheckCircle size={12} />,
-    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    cls: 'bg-blue-50 text-blue-800 border-blue-200',
   },
   PREPARING: {
     label: 'Chuẩn bị hàng',
@@ -40,24 +40,24 @@ const statusMap: Record<string, { label: string; icon: React.ReactNode; cls: str
   SHIPPING: {
     label: 'Đang giao hàng',
     icon: <Truck size={12} />,
-    cls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    cls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
   COMPLETED: {
     label: 'Hoàn thành',
     icon: <CheckCircle size={12} />,
-    cls: 'bg-teal-50 text-teal-700 border-teal-200',
+    cls: 'bg-blue-600 text-white border-blue-600',
   },
   CANCELLED: {
     label: 'Đã huỷ',
     icon: <AlertCircle size={12} />,
-    cls: 'bg-red-50 text-red-700 border-red-200',
+    cls: 'bg-slate-100 text-slate-600 border-slate-200',
   },
 };
 
 const quickLinks = [
-  { to: '/buyer/addresses', icon: MapPin, label: 'Sổ địa chỉ', color: 'text-teal-600' },
-  { to: '/buyer/disputes', icon: ShieldAlert, label: 'Khiếu nại', color: 'text-red-500' },
-  { to: '/buyer/bids', icon: Gavel, label: 'Đấu giá', color: 'text-violet-600' },
+  { to: '/buyer/addresses', icon: MapPin, label: 'Sổ địa chỉ', color: 'text-blue-600' },
+  { to: '/buyer/disputes', icon: ShieldAlert, label: 'Khiếu nại', color: 'text-blue-600' },
+  { to: '/buyer/bids', icon: Gavel, label: 'Đấu giá', color: 'text-blue-600' },
   { to: '/search', icon: ShoppingBag, label: 'Mua sắm', color: 'text-blue-600' },
 ];
 
@@ -110,7 +110,6 @@ export default function BuyerDashboardPage() {
       value: String(safeOrders.length),
       sub: `${activeOrdersCount} đơn đang xử lý`,
       icon: Package,
-      color: 'from-blue-500 to-indigo-600',
       link: '/buyer/orders',
     },
     {
@@ -119,7 +118,6 @@ export default function BuyerDashboardPage() {
       value: `${walletBalance.toLocaleString('vi-VN')} ₫`,
       sub: 'Số dư ví khả dụng',
       icon: Wallet,
-      color: 'from-amber-500 to-orange-600',
       link: '/buyer/wallet',
     },
     {
@@ -128,7 +126,6 @@ export default function BuyerDashboardPage() {
       value: 'Sản phẩm đã lưu',
       sub: 'Khám phá bộ sưu tập',
       icon: Heart,
-      color: 'from-rose-500 to-pink-600',
       link: '/buyer/wishlist',
     },
     {
@@ -137,31 +134,30 @@ export default function BuyerDashboardPage() {
       value: 'Phiên đấu giá',
       sub: 'Theo dõi giá thầu',
       icon: Gavel,
-      color: 'from-violet-500 to-purple-600',
       link: '/buyer/bids',
     },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-700 p-6 text-white shadow-lg shadow-blue-500/20">
+    <div className="space-y-5">
+      {/* Welcome Banner (Blue & White Signature Theme) */}
+      <div className="relative overflow-hidden rounded-lg bg-[#1c3973] p-6 text-white shadow-xs">
         <div className="relative z-10">
-          <p className="text-xs font-semibold uppercase tracking-widest text-blue-200 mb-1">
-            Chào mừng trở lại 👋
+          <p className="text-xs font-semibold uppercase tracking-wider text-blue-200 mb-1">
+            Trung tâm Khách hàng NEXUS
           </p>
-          <h1 className="text-2xl font-extrabold mb-1">Xin chào, {firstName}!</h1>
-          <p className="text-sm text-blue-100">
-            Theo dõi đơn hàng, quản lý ví NEXUS Pay và khám phá mô hình 3D chính hãng.
+          <h1 className="text-xl font-bold mb-1">Xin chào, {firstName}!</h1>
+          <p className="text-xs text-blue-100">
+            Theo dõi đơn hàng, quản lý ví NEXUS Pay và khám phá sản phẩm chính hãng.
           </p>
-          <div className="mt-4 flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1 bg-white/15 px-3 py-1.5 rounded-full">
-              <Star size={12} className="text-amber-300" />
+          <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 px-3 py-1 rounded-md">
+              <Star size={12} className="text-blue-200" />
               Điểm uy tín: {user?.reputationScore ?? 100}
             </span>
-            <span className="flex items-center gap-1 bg-white/15 px-3 py-1.5 rounded-full">
-              <TrendingUp size={12} />
-              {user?.trustLevel ?? 'STANDARD'}
+            <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 px-3 py-1 rounded-md">
+              <TrendingUp size={12} className="text-blue-200" />
+              Hạng: {user?.trustLevel ?? 'STANDARD'}
             </span>
           </div>
         </div>
@@ -173,23 +169,21 @@ export default function BuyerDashboardPage() {
           <Link
             key={stat.key}
             to={stat.link}
-            className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+            className="group rounded-lg border border-slate-200 bg-white p-4 shadow-xs hover:border-blue-400 transition-all"
           >
-            <div
-              className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} text-white mb-3 shadow-sm group-hover:scale-110 transition-transform`}
-            >
-              <stat.icon size={18} />
+            <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-blue-50 text-blue-600 border border-blue-100 mb-2.5">
+              <stat.icon size={17} />
             </div>
-            <p className="text-lg font-extrabold text-slate-900 leading-tight">{stat.value}</p>
-            <p className="text-xs font-semibold text-slate-600">{stat.label}</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">{stat.value}</p>
+            <p className="text-xs font-semibold text-slate-700 mt-0.5">{stat.label}</p>
             <p className="text-[11px] text-slate-400 mt-0.5">{stat.sub}</p>
           </Link>
         ))}
       </div>
 
       {/* Recent Orders */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+      <div className="rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <Package size={15} className="text-blue-600" />
             Đơn hàng gần đây
@@ -231,9 +225,9 @@ export default function BuyerDashboardPage() {
                 <Link
                   key={order.id}
                   to={`/buyer/orders/${order.id}`}
-                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/70 transition group"
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-blue-50/40 transition group"
                 >
-                  <div className="h-11 w-11 shrink-0 rounded-xl border border-slate-100 bg-slate-50 overflow-hidden flex items-center justify-center">
+                  <div className="h-11 w-11 shrink-0 rounded-md border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
                     <img src={img} alt={title} className="h-full w-full object-contain" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -245,11 +239,11 @@ export default function BuyerDashboardPage() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs font-extrabold text-[#f24e1e]">
+                    <p className="text-xs font-bold text-blue-700">
                       {Number(order.totalAmount).toLocaleString('vi-VN')} ₫
                     </p>
                     <span
-                      className={`mt-1 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.cls}`}
+                      className={`mt-1 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${s.cls}`}
                     >
                       {s.icon} {s.label}
                     </span>
@@ -267,12 +261,12 @@ export default function BuyerDashboardPage() {
           <Link
             key={ql.to}
             to={ql.to}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white py-4 px-2 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all text-center group"
+            className="flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-white py-3.5 px-2 shadow-xs hover:border-blue-400 transition-all text-center group"
           >
-            <div className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <ql.icon size={18} className={ql.color} />
+            <div className="h-9 w-9 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center">
+              <ql.icon size={17} className={ql.color} />
             </div>
-            <span className="text-[11px] font-semibold text-slate-600">{ql.label}</span>
+            <span className="text-xs font-semibold text-slate-700">{ql.label}</span>
           </Link>
         ))}
       </div>

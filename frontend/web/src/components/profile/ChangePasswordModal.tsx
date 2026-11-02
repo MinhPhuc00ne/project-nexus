@@ -7,9 +7,9 @@ import useChangePassword from './useChangePassword';
 import { markPasswordChanged } from '../../services/authNotice';
 
 const inputClass =
-  'mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50';
+  'mt-1.5 w-full rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50';
 const buttonClass =
-  'inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50';
 
 export default function ChangePasswordModal({
   userId,
@@ -45,14 +45,14 @@ export default function ChangePasswordModal({
           event.preventDefault();
           void state.confirm();
         }}
-        className="space-y-5"
+        className="space-y-4"
         aria-busy={busy}
       >
-        <p className="text-sm leading-6 text-slate-600">
+        <p className="text-xs leading-5 text-slate-600">
           Nhận mã OTP qua email để xác nhận đổi mật khẩu. Sau khi đổi thành công, bạn cần đăng nhập
           lại.
         </p>
-        <div className="space-y-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
+        <div className="space-y-2.5 rounded-lg border border-blue-200 bg-blue-50/70 p-4">
           <button
             type="button"
             disabled={busy || state.resendWait > 0}
@@ -69,12 +69,12 @@ export default function ChangePasswordModal({
                   : 'Gửi mã OTP qua email'}
           </button>
           {state.message && (
-            <p role="status" className="break-words text-sm leading-6 text-blue-800">
+            <p role="status" className="break-words text-xs leading-5 text-blue-800">
               {state.message}
             </p>
           )}
           {state.sent && (
-            <p className="text-xs text-slate-600">
+            <p className="text-[11px] text-slate-600">
               {state.remaining > 0
                 ? `Mã có hiệu lực còn ${Math.floor(state.remaining / 60)} phút ${state.remaining % 60} giây.`
                 : 'Mã OTP đã hết hạn. Vui lòng gửi lại mã.'}
@@ -82,8 +82,8 @@ export default function ChangePasswordModal({
           )}
         </div>
         {state.sent && (
-          <fieldset disabled={busy} className="space-y-4">
-            <label className="block text-sm font-medium text-slate-700">
+          <fieldset disabled={busy} className="space-y-3.5">
+            <label className="block text-xs font-semibold text-slate-700">
               Mã OTP
               <input
                 type="text"
@@ -100,7 +100,7 @@ export default function ChangePasswordModal({
                 placeholder="Nhập 6 chữ số trong email"
               />
             </label>
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-xs font-semibold text-slate-700">
               Mật khẩu mới
               <div className="relative">
                 <input
@@ -110,23 +110,23 @@ export default function ChangePasswordModal({
                   autoComplete="new-password"
                   value={state.newPassword}
                   onChange={(event) => state.setNewPassword(event.target.value)}
-                  className={`${inputClass} pr-12`}
+                  className={`${inputClass} pr-10`}
                 />
                 <button
                   type="button"
                   aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                   aria-pressed={visible}
                   onClick={() => setVisible((value) => !value)}
-                  className="absolute bottom-0 right-0 flex h-12 w-12 items-center justify-center text-slate-500"
+                  className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center text-slate-500"
                 >
                   {visible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
                 </button>
               </div>
-              <span className="mt-2 block text-xs font-normal text-slate-500">
+              <span className="mt-1.5 block text-[11px] font-normal text-slate-500">
                 Ít nhất 8 ký tự, có chữ hoa và ký tự đặc biệt.
               </span>
             </label>
-            <label className="block text-sm font-medium text-slate-700">
+            <label className="block text-xs font-semibold text-slate-700">
               Xác nhận mật khẩu mới
               <input
                 type={visible ? 'text' : 'password'}
@@ -141,16 +141,16 @@ export default function ChangePasswordModal({
           </fieldset>
         )}
         {state.error && (
-          <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">
+          <p role="alert" className="rounded-md bg-red-50 p-3 text-xs text-red-700">
             {state.error}
           </p>
         )}
-        <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 pt-4">
+        <div className="flex flex-wrap justify-end gap-2.5 border-t border-slate-200 pt-3.5">
           <button
             type="button"
             disabled={busy}
             onClick={state.close}
-            className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm disabled:opacity-50"
+            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
             Hủy
           </button>

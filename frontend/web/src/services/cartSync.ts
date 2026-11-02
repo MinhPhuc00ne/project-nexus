@@ -102,6 +102,7 @@ export interface BackendCartItem {
   isStockInsufficient: boolean;
   itemSubtotal: number;
   createdAt: string;
+  selections: Record<string, string>;
 }
 
 export interface BackendCartResponse {
@@ -130,6 +131,7 @@ export function mapBackendItemToCartItem(
     img: backendItem.thumbnail || '/placeholder-product.png',
     shopName: backendItem.shop?.name || 'NEXUS Official',
     shopId: backendItem.shop?.id,
+    selections: backendItem.selections || {},
     selected: isSelected,
     hasPriceChanged: backendItem.hasPriceChanged,
     priceAtAdded: backendItem.priceAtAdded,
@@ -249,6 +251,7 @@ export async function synchronizeCart(scope: CartScope): Promise<void> {
     .map((item) => ({
       productId: resolveProductId(item.productId || item.id),
       quantity: item.qty,
+      selections: item.selections,
     }));
   if (!items.length) {
     await loadRemoteCart(scope);

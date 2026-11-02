@@ -1,5 +1,6 @@
 import { apiRequest } from './api';
 import { getStoredToken } from './auth';
+import type { ProductOptionGroup } from './productExtras';
 
 export const PRODUCT_IMAGE_LIMIT = 5;
 export const PRODUCT_IMAGE_MAX_BYTES = 25 * 1024 * 1024;
@@ -23,6 +24,10 @@ export interface SellerProduct {
   heightCm: number;
   category: { id: string; name: string };
   images: { imageUrl: string; sortOrder: number }[];
+  options?: ProductOptionGroup[];
+  salePrice?: number | null;
+  saleStartsAt?: string | null;
+  saleEndsAt?: string | null;
 }
 export const emptyProductForm = {
   title: '',
@@ -47,6 +52,7 @@ export interface CreateSellerProduct {
   lengthCm?: number;
   widthCm?: number;
   heightCm?: number;
+  options?: ProductOptionGroup[];
 }
 export function validateProductImages(files: File[]): void {
   if (!files.length || files.length > PRODUCT_IMAGE_LIMIT)
@@ -137,6 +143,7 @@ export async function publishSellerProduct(
   uploaded: Map<File, string>,
   onProgress: (message: string) => void,
   edit?: { product: SellerProduct; images: string[] },
+  options?: ProductOptionGroup[],
 ): Promise<{ id: string; title: string }> {
   const payload = buildProductPayload(form, Boolean(edit));
   if (edit && payload.quantity < edit.product.totalQty - edit.product.availableQty)
@@ -177,7 +184,17 @@ export async function publishSellerProduct(
   }
   assertSession();
   onProgress(edit ? 'Đang lưu thay đổi…' : 'Đang đăng bán sản phẩm…');
-  const body: Partial<CreateSellerProduct> = { ...payload, images };
+  const cleanedOptions = options
+    ?.map((option) => ({
+      name: option.name.trim(),
+      values: Array.from(new Set(option.values.map((value) => value.trim()).filter(Boolean))),
+    }))
+    .filter((option) => option.name && option.values.length > 0);
+  const body: Partial<CreateSellerProduct> = {
+    ...payload,
+    images,
+    ...(cleanedOptions?.length ? { options: cleanedOptions } : { options: [] }),
+  };
   // Không điều chỉnh kho hoặc ghi nhật ký khi người bán chưa đổi tổng tồn kho.
   if (edit && payload.quantity === edit.product.totalQty) delete body.quantity;
   return apiRequest<{ id: string; title: string }>(
@@ -188,6 +205,17 @@ export async function publishSellerProduct(
       requireAuth: true,
     },
   );
+}
+
+export function updateProductSale(
+  productId: string,
+  sale: { salePrice?: number | null; saleStartsAt?: string | null; saleEndsAt?: string | null },
+): Promise<SellerProduct> {
+  return apiRequest<SellerProduct>(`/catalog/products/${encodeURIComponent(productId)}/sale`, {
+    method: 'PATCH',
+    body: sale,
+    requireAuth: true,
+  });
 }
 
 export function hideSellerProduct(id: string): Promise<{ success: boolean; message: string }> {
