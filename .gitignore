@@ -70,7 +70,7 @@ backend/uploads/
 .agents/
 skills-lock.json
 
-.husky/
+.husky/_/
 ngrok.exe
 .ngrok*
 

@@ -37,7 +37,7 @@ export class ShipmentTrackingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ghn: GhnOrderApiService,
-    private readonly config: ConfigService,
+    private readonly config?: ConfigService,
   ) {}
 
   async view(orderId: string, actor: ShipmentActor): Promise<TrackingResult> {
@@ -77,7 +77,9 @@ export class ShipmentTrackingService {
     const waybill = order.shipment?.waybillCode;
     if (!waybill) throw new BadRequestException('Đơn chưa có vận đơn GHN được xác nhận.');
     const context = shipmentGhnContext(order.shipment?.metadata);
-    const isDev = this.config.get<string>('NODE_ENV') !== 'production';
+    const isDev = this.config
+      ? this.config.get<string>('NODE_ENV') !== 'production'
+      : process.env.NODE_ENV !== 'production';
     const metadataBefore = objectValue(order.shipment?.metadata);
     const previousTracking = objectValue(metadataBefore.tracking);
 

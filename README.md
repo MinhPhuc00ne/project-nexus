@@ -19,7 +19,7 @@ Project Nexus is an e-commerce platform that seamlessly integrates traditional o
 
 ## Tech Stack
 
-- **Monorepo:** NPM Workspaces (`packages/*`, `backend`, `frontend/web`).
+- **Monorepo:** NPM Workspaces (`packages/*`, `backend`, `frontend`).
 - **Frontend Portal:** React 19, TypeScript (Strict Mode), Vite 8, Tailwind CSS v4, Three.js (WebGL 3D graphics), Lucide Icons, React Router 7.
 - **Backend Service:** NestJS 12 (Modular Monolith Architecture, TypeScript).
 - **Database:** PostgreSQL 17 (Prisma ORM 7, ACID Transactions, Logical Schema Separation).

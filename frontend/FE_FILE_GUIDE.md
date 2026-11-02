@@ -2,7 +2,7 @@
 
 Ngày đối chiếu: 21/10/2026. Mốc code: `c8c40e2`.
 
-Phạm vi: **175 file mã nguồn và cấu hình** trong `frontend/web`, khoảng 20.153 dòng. Không tính `node_modules`, `dist`, tài nguyên ảnh/font/mô hình trong `public`, lockfile hay file cache do công cụ sinh ra. Đây là phân tích từ code, router, import, service và trạng thái lưu trữ; không phải kết quả kiểm thử tất cả màn hình trên trình duyệt.
+Phạm vi: **175 file mã nguồn và cấu hình** trong `frontend`, khoảng 20.153 dòng. Không tính `node_modules`, `dist`, tài nguyên ảnh/font/mô hình trong `public`, lockfile hay file cache do công cụ sinh ra. Đây là phân tích từ code, router, import, service và trạng thái lưu trữ; không phải kết quả kiểm thử tất cả màn hình trên trình duyệt.
 
 ## 1. Cách đọc tài liệu
 
@@ -49,7 +49,7 @@ flowchart LR
 
 ### 3.1. Cấu hình — dùng cho tất cả role
 
-Các đường dẫn trong tài liệu tính từ `frontend/web`.
+Các đường dẫn trong tài liệu tính từ `frontend`.
 
 | File                                   | Tác dụng thực tế                                                                                                                                                                                                                |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

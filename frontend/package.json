@@ -1,12 +1,13 @@
 {
-  "name": "nexus-web",
+  "name": "nexus-frontend",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Project Nexus - Buyer & Seller Web Portal",
+  "description": "Project Nexus - Buyer & Seller Frontend Portal",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -26,6 +27,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@nexus/config": "*",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

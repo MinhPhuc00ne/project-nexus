@@ -4,10 +4,11 @@
   "private": true,
   "description": "Project Nexus - Modular Monolith Backend",
   "scripts": {
-    "build": "nest build",
+    "build": "prisma generate && nest build",
     "format": "prettier --write \"src/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
+    "dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "prisma:generate": "prisma generate",
@@ -15,7 +16,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:studio": "prisma studio",
-    "test": "jest"
+    "lint": "eslint .",
+    "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.2",
@@ -49,6 +51,7 @@
   "devDependencies": {
     "@nestjs/cli": "^12.0.8",
     "@nestjs/schematics": "^12.0.6",
+    "@nexus/config": "*",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.3.0",

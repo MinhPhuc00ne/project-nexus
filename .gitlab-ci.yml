@@ -1,0 +1,66 @@
+image: node:22-alpine
+
+stages:
+  - validate
+  - build
+  - test
+
+variables:
+  npm_config_cache: '$CI_PROJECT_DIR/.npm'
+  TURBO_CACHE_DIR: '$CI_PROJECT_DIR/.turbo'
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - .npm/
+    - .turbo/
+    - node_modules/
+    - packages/*/node_modules/
+    - backend/node_modules/
+    - frontend/node_modules/
+
+before_script:
+  - apk add --no-cache libc6-compat openssl
+  - npm ci --cache .npm --prefer-offline
+
+lint_and_format:
+  stage: validate
+  script:
+    - npm run format:check
+    - npm run lint
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main"'
+
+prisma_validate:
+  stage: validate
+  script:
+    - npx prisma validate --schema=backend/prisma/schema.prisma
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main"'
+
+build_monorepo:
+  stage: build
+  script:
+    - npx prisma generate --schema=backend/prisma/schema.prisma
+    - npx turbo build
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - packages/*/dist/
+      - backend/dist/
+      - frontend/dist/
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main"'
+
+unit_and_integration_tests:
+  stage: test
+  script:
+    - npm test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main"'
