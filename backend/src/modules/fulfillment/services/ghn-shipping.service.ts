@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { SellerPickupService } from './seller-pickup.service';
 import { GhnEnvironment } from './ghn-context';
 import { GhnFeeRequest, GhnFeeResponse, GhnLogisticsService } from './ghn-logistics.service';
-import { buildGhnParcel, GhnParcel, GhnParcelItem } from './ghn-parcel';
+import { buildGhnParcel, GhnParcel, GhnParcelItem, normalizeGhnWardCode } from './ghn-parcel';
 
 export interface GhnAddress {
   ghnShopId?: number;
@@ -118,9 +118,11 @@ export class GhnShippingService {
         'Điểm GHN thuộc môi trường khác; không thể dùng lẫn sandbox và production.',
       );
     }
+    const normalizedOverrideWard = normalizeGhnWardCode(overrides.fromWardCode);
+    const normalizedOriginWard = normalizeGhnWardCode(origin.wardCode);
     if (
       (overrides.fromDistrictId && overrides.fromDistrictId !== origin.districtId) ||
-      (overrides.fromWardCode && overrides.fromWardCode !== origin.wardCode)
+      (normalizedOverrideWard && normalizedOverrideWard !== normalizedOriginWard)
     ) {
       throw new BadRequestException('Không được thay điểm gửi khác điểm lấy hàng đã xác minh.');
     }
@@ -132,10 +134,16 @@ export class GhnShippingService {
         throw new BadRequestException('Địa chỉ giao hàng phải dùng số điện thoại Việt Nam hợp lệ.');
       }
     }
-    const from = { districtId: origin.districtId, wardCode: origin.wardCode };
+    const from = {
+      districtId: origin.districtId,
+      wardCode: normalizeGhnWardCode(origin.wardCode)!,
+    };
     const to =
       overrides.toDistrictId && overrides.toWardCode
-        ? { districtId: overrides.toDistrictId, wardCode: overrides.toWardCode }
+        ? {
+            districtId: overrides.toDistrictId,
+            wardCode: normalizeGhnWardCode(overrides.toWardCode)!,
+          }
         : await this.resolveAddress(destination, 'Địa chỉ nhận hàng');
     const parcel = buildGhnParcel(items);
     for (const key of ['weightGrams', 'lengthCm', 'widthCm', 'heightCm'] as const) {
@@ -163,9 +171,9 @@ export class GhnShippingService {
       ...parcel,
       shopId: Number(origin.ghnShopId),
       fromDistrictId: from?.districtId,
-      fromWardCode: from?.wardCode,
+      fromWardCode: normalizeGhnWardCode(from?.wardCode),
       toDistrictId: to.districtId,
-      toWardCode: to.wardCode,
+      toWardCode: normalizeGhnWardCode(to.wardCode),
       serviceId: service?.serviceId,
     };
     return { parcel, origin, destination, request };

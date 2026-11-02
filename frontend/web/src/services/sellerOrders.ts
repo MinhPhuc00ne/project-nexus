@@ -96,7 +96,9 @@ export async function dispatchSellerOrder(
       throw new GhnDispatchUnverifiedError();
     return order;
   } catch (cause) {
-    if (cause instanceof ApiRequestError && cause.status >= 400 && cause.status < 500) throw cause;
+    if (cause instanceof ApiRequestError) {
+      if (cause.message) throw cause;
+    }
     throw new GhnDispatchUnverifiedError();
   }
 }

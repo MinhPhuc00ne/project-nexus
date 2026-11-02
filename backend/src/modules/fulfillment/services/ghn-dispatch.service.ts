@@ -18,7 +18,7 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { productChoiceLabel } from '../../catalog/utils/product-options';
 import { DispatchGhnOrderDto } from '../../commerce/dtos/seller-order.dto';
 import { GhnAddress, GhnShippingQuote, GhnShippingService } from './ghn-shipping.service';
-import { GhnParcel } from './ghn-parcel';
+import { GhnParcel, normalizeGhnWardCode } from './ghn-parcel';
 import { shipmentGhnContext } from './ghn-context';
 import { GhnLogisticsService } from './ghn-logistics.service';
 import { GhnOrderApiService } from './ghn-order-api.service';
@@ -196,9 +196,9 @@ export class GhnDispatchService {
       from_phone: origin.phone,
       from_address: origin.street || origin.formattedAddress,
       from_district_id: request.fromDistrictId,
-      from_ward_code: request.fromWardCode,
+      from_ward_code: normalizeGhnWardCode(request.fromWardCode),
       to_district_id: request.toDistrictId,
-      to_ward_code: request.toWardCode,
+      to_ward_code: normalizeGhnWardCode(request.toWardCode),
       weight: parcel.weightGrams,
       length: parcel.lengthCm,
       width: parcel.widthCm,

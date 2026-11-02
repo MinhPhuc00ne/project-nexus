@@ -20,6 +20,25 @@ export interface GhnParcel {
   items: GhnParcelItem[];
 }
 
+/** Obsolete / merged administrative ward codes mapped to current GHN ward codes */
+export const OBSOLETE_GHN_WARD_CODES: Record<string, string> = {
+  '20306': '90795', // Phường 6, Quận 3 -> Phường Võ Thị Sáu
+  '20307': '90795', // Phường 7, Quận 3 -> Phường Võ Thị Sáu
+  '20308': '90795', // Phường 8, Quận 3 -> Phường Võ Thị Sáu
+};
+
+export function normalizeGhnWardCode(code: string): string;
+export function normalizeGhnWardCode(
+  code: string | number | undefined | null,
+): string | undefined;
+export function normalizeGhnWardCode(
+  code: string | number | undefined | null,
+): string | undefined {
+  if (!code) return undefined;
+  const str = String(code).trim();
+  return OBSOLETE_GHN_WARD_CODES[str] ?? str;
+}
+
 /** Packaging estimate: stack units vertically; GHN determines billable weight and price. */
 export function buildGhnParcel(items: GhnParcelItem[]): GhnParcel {
   if (!items.length) throw new BadRequestException('Không có sản phẩm để tính cước GHN.');

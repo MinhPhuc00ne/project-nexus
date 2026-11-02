@@ -6,7 +6,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GhnParcelItem } from './ghn-parcel';
+import { GhnParcelItem, normalizeGhnWardCode } from './ghn-parcel';
 import { GhnCreateRejectedException } from './ghn-create-error';
 
 export interface GhnFeeRequest {
@@ -409,7 +409,7 @@ export class GhnLogisticsService {
       const payload: Record<string, unknown> = {
         service_type_id: serviceTypeId,
         to_district_id: Number(req.toDistrictId),
-        to_ward_code: String(req.toWardCode),
+        to_ward_code: normalizeGhnWardCode(String(req.toWardCode)),
         weight: req.weightGrams,
         length: Math.round(req.lengthCm ?? 10),
         width: Math.round(req.widthCm ?? 10),
@@ -422,7 +422,7 @@ export class GhnLogisticsService {
         payload.from_district_id = Number(req.fromDistrictId);
       }
       if (req.fromWardCode) {
-        payload.from_ward_code = String(req.fromWardCode);
+        payload.from_ward_code = normalizeGhnWardCode(String(req.fromWardCode));
       }
       if (req.serviceId) {
         payload.service_id = req.serviceId;
