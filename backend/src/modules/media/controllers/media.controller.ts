@@ -6,18 +6,29 @@ import {
   Post,
   Req,
   UploadedFiles,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 import {
   MediaUploadResponseDto,
   MultipleMediaUploadResponseDto,
 } from '../dtos/media-upload-response.dto';
 import { MediaService } from '../services/media.service';
+import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 
 @ApiTags('6. MEDIA')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('media')
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}

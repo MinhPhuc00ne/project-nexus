@@ -1,9 +1,9 @@
 import { Controller, Get, HttpCode, HttpStatus, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
+import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
+import { RolesGuard } from '../../../core/security/roles.guard';
+import { Roles } from '../../../core/security/roles.decorator';
 import { QueryAdminDisputesDto } from '../dto/query-admin-disputes.dto';
 import { AdminDisputesService } from '../services/admin-disputes.service';
 

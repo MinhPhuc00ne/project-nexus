@@ -13,10 +13,9 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OrderStatus, Role, WithdrawalStatus } from '@prisma/client';
-import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { JwtAuthGuard } from '../../core/security/jwt-auth.guard';
+import { RolesGuard } from '../../core/security/roles.guard';
+import { CurrentUser, Roles, AuthenticatedUserPayload } from '../../core/security/roles.decorator';
 import { AdminService } from './admin.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { AdminInviteStaffDto } from './dto/invite-staff.dto';
@@ -142,7 +141,10 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Phê duyệt thành công, tài khoản đã là Seller' })
   @ApiResponse({ status: 400, description: 'Yêu cầu không ở trạng thái PENDING' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu' })
-  async approveSellerRequest(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+  async approveSellerRequest(
+    @Param('id') id: string,
+    @CurrentUser() admin: AuthenticatedUserPayload,
+  ) {
     return this.adminService.approveSellerRequest(id, admin.id);
   }
 
@@ -159,7 +161,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu' })
   async rejectSellerRequest(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: RejectSellerRequestDto,
   ) {
     return this.adminService.rejectSellerRequest(id, admin.id, dto);
@@ -203,7 +205,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản người dùng' })
   async lockUser(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: LockUserDto,
   ) {
     return this.adminUsersService.lockUser(id, admin.id, dto);
@@ -222,7 +224,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản người dùng' })
   async unlockUser(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: LockUserDto,
   ) {
     return this.adminUsersService.unlockUser(id, admin.id, dto);
@@ -238,7 +240,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Cập nhật trạng thái thành công' })
   async updateUserStatus(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateUserStatusDto,
   ) {
     return this.adminUsersService.updateUserStatus(id, admin.id, dto);
@@ -257,7 +259,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
   async updateUserRole(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateUserRoleDto,
   ) {
     return this.adminUsersService.updateUserRole(id, admin.id, dto);
@@ -298,7 +300,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
   async updateProductStatus(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateProductStatusDto,
   ) {
     return this.adminProductsService.updateProductStatus(id, admin.id, dto);
@@ -314,7 +316,7 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Xóa hoặc ẩn sản phẩm thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
-  async deleteProduct(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+  async deleteProduct(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUserPayload) {
     return this.adminProductsService.deleteProduct(id, admin.id);
   }
 
@@ -342,7 +344,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
   async updateShopStatus(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateShopStatusDto,
   ) {
     return this.adminShopsService.updateShopStatus(id, admin.id, dto);
@@ -391,7 +393,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
   async warnShop(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: WarnShopDto,
   ) {
     return this.adminShopsService.warnShop(id, admin.id, dto);
@@ -409,7 +411,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
   async createShopViolation(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: CreateShopViolationDto,
   ) {
     return this.adminShopsService.createShopViolation(id, admin.id, dto);
@@ -465,7 +467,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu rút tiền' })
   async reviewWithdrawal(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: ReviewWithdrawalDto,
   ) {
     return this.adminService.reviewWithdrawalRequest(id, admin.id, dto);
@@ -557,7 +559,7 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Cập nhật cấu hình thành công' })
   async updateSettings(
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateSystemSettingsDto,
   ) {
     return this.adminSettingsService.updateSettings(admin.id, dto);
