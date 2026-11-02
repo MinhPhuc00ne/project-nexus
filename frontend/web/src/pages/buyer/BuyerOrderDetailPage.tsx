@@ -10,8 +10,14 @@ import {
   ShieldCheck,
   Loader2,
   ExternalLink,
+  Banknote,
 } from 'lucide-react';
-import { getBuyerOrderDetailApi, payOrderApi, type BuyerOrder } from '../../services/orders';
+import {
+  getBuyerOrderDetailApi,
+  payOrderApi,
+  isCodOrder,
+  type BuyerOrder,
+} from '../../services/orders';
 import OrderTimeline from '../../components/orders/OrderTimeline';
 import OrderAddressCard from '../../components/orders/OrderAddressCard';
 import OrderItemsSummary from '../../components/orders/OrderItemsSummary';
@@ -116,6 +122,7 @@ export default function BuyerOrderDetailPage() {
     order?.shippingAddress ||
     {}) as NonNullable<BuyerOrder['shippingAddress']>;
 
+  const isCod = isCodOrder(order);
   const statusConfig = (order?.status && statusMap[order.status]) || statusMap.PENDING_PAYMENT;
   const StatusIcon = statusConfig.icon;
 
@@ -169,27 +176,33 @@ export default function BuyerOrderDetailPage() {
           </p>
         </div>
 
-        {order.status === 'PENDING_PAYMENT' && (
-          <button
-            type="button"
-            disabled={isPaying}
-            onClick={handlePayNow}
-            className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2 cursor-pointer disabled:opacity-50 shrink-0"
-          >
-            {isPaying ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                <span>Đang kết nối PayOS...</span>
-              </>
-            ) : (
-              <>
-                <CreditCard size={14} />
-                <span>Thanh toán PayOS ngay</span>
-                <ExternalLink size={12} />
-              </>
-            )}
-          </button>
-        )}
+        {order.status === 'PENDING_PAYMENT' &&
+          (isCod ? (
+            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-700 shadow-sm">
+              <Banknote size={15} className="text-emerald-600" />
+              <span>Tiền mặt khi nhận hàng (COD)</span>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={isPaying}
+              onClick={handlePayNow}
+              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isPaying ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Đang kết nối PayOS...</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard size={14} />
+                  <span>Thanh toán PayOS ngay</span>
+                  <ExternalLink size={12} />
+                </>
+              )}
+            </button>
+          ))}
       </div>
 
       {/* Order Timeline */}
@@ -211,25 +224,61 @@ export default function BuyerOrderDetailPage() {
           <OrderAddressCard address={currentAddress} />
 
           {/* Payment Method Card */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <CreditCard size={16} className="text-blue-600" />
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+              {isCod ? (
+                <Banknote size={16} className="text-emerald-600" />
+              ) : (
+                <CreditCard size={16} className="text-blue-600" />
+              )}
               <span>Phương thức thanh toán</span>
             </h3>
-            <div className="p-3 bg-slate-50 rounded-xl text-xs space-y-1">
-              <div className="flex justify-between font-bold text-slate-800">
-                <span>Hình thức:</span>
-                <span className="text-blue-600">PayOS VietQR (Escrow)</span>
+            {isCod ? (
+              <div className="space-y-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs">
+                <div className="flex justify-between font-bold text-slate-800">
+                  <span>Hình thức:</span>
+                  <span className="font-extrabold text-emerald-700">
+                    Tiền mặt khi nhận hàng (COD)
+                  </span>
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>Cần trả shipper khi giao:</span>
+                  <span className="font-extrabold text-[#f24e1e]">
+                    {Number(order.totalAmount).toLocaleString('vi-VN')} ₫
+                  </span>
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>Trạng thái:</span>
+                  <span className="font-semibold text-amber-700">Chờ nhận hàng & thanh toán</span>
+                </div>
               </div>
-              <div className="flex justify-between text-slate-500 text-[11px]">
-                <span>Trạng thái:</span>
-                <span className="font-semibold text-slate-700">{statusConfig.label}</span>
+            ) : (
+              <div className="space-y-1 rounded-xl bg-slate-50 p-3 text-xs">
+                <div className="flex justify-between font-bold text-slate-800">
+                  <span>Hình thức:</span>
+                  <span className="text-blue-600">PayOS VietQR (Escrow)</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-slate-500">
+                  <span>Trạng thái:</span>
+                  <span className="font-semibold text-slate-700">{statusConfig.label}</span>
+                </div>
               </div>
-            </div>
-            <div className="flex items-start gap-2 text-[11px] text-indigo-700 bg-indigo-50/70 p-2.5 rounded-xl border border-indigo-100/70">
-              <ShieldCheck size={16} className="text-indigo-600 shrink-0 mt-0.5" />
-              <span>Giao dịch được bảo hộ 100% qua cơ chế ký quỹ NEXUS Escrow.</span>
-            </div>
+            )}
+
+            {isCod ? (
+              <div className="flex items-start gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/70 p-2.5 text-[11px] text-emerald-900">
+                <Truck size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                <span>
+                  Quý khách được quyền đồng kiểm tra sản phẩm với bưu tá GHN Express trước khi thanh
+                  toán.
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-xl border border-indigo-100/70 bg-indigo-50/70 p-2.5 text-[11px] text-indigo-700">
+                <ShieldCheck size={16} className="mt-0.5 shrink-0 text-indigo-600" />
+                <span>Giao dịch được bảo hộ 100% qua cơ chế ký quỹ NEXUS Escrow.</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

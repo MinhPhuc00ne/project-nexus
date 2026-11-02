@@ -8,9 +8,10 @@ import {
   type PayosPaymentInfo,
   type BuyerOrder,
   type ShippingAddressInput,
+  type CheckoutPaymentMethodType,
 } from '../../services/orders';
 import { getStoredToken } from '../../services/auth';
-import PayosQrModal from '../../components/checkout/PayosQrModal';
+import CheckoutSuccessCard from '../../components/checkout/CheckoutSuccessCard';
 import CheckoutAddressSection from '../../components/checkout/CheckoutAddressSection';
 import CheckoutPaymentMethod from '../../components/checkout/CheckoutPaymentMethod';
 import CheckoutOrderSummary from '../../components/checkout/CheckoutOrderSummary';
@@ -34,7 +35,7 @@ export default function CheckoutPage() {
   });
 
   // Payment Method State
-  const [paymentMethod, setPaymentMethod] = useState<'PAYOS' | 'WALLET' | 'STRIPE'>('PAYOS');
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethodType>('PAYOS');
 
   // Checkout State
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -190,44 +191,31 @@ export default function CheckoutPage() {
         </div>
 
         {checkoutDone ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-8 max-w-2xl mx-auto text-center shadow-sm space-y-6">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 size={36} />
-            </div>
-
-            <div>
-              <h1 className="text-2xl font-extrabold text-slate-900">Đặt Hàng Thành Công!</h1>
-              <p className="text-xs text-slate-500 mt-1">
-                {createdOrders.length > 0
-                  ? `Mã đơn hàng: ${createdOrders.map((o) => o.orderNumber).join(', ')}`
-                  : 'Đơn hàng của bạn đã được tiếp nhận và bảo chứng bởi NEXUS Escrow.'}
-              </p>
-            </div>
-
-            {payosPayment ? (
-              <PayosQrModal payment={payosPayment} onCopySuccess={showToast} />
-            ) : (
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-left text-xs leading-relaxed">
-                Đơn hàng đã được lưu trữ trong danh sách đơn mua. Bạn có thể theo dõi trạng thái
-                giao hàng bất kỳ lúc nào.
-              </div>
-            )}
-
-            <div className="flex items-center justify-center gap-3 pt-2">
-              <Link
-                to="/buyer/orders"
-                className="px-6 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition shadow flex items-center gap-1.5"
-              >
-                <ShoppingBag size={14} />
-                <span>Xem Đơn Hàng Của Tôi</span>
-              </Link>
-              <Link
-                to="/search"
-                className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition"
-              >
-                Tiếp tục mua sắm
-              </Link>
-            </div>
+          <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <CheckoutSuccessCard
+              orders={createdOrders}
+              isCod={paymentMethod === 'COD'}
+              payosPayment={payosPayment}
+              grandTotal={grandTotal}
+              showToast={showToast}
+              primaryAction={
+                <Link
+                  to="/buyer/orders"
+                  className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow transition hover:bg-slate-800"
+                >
+                  <ShoppingBag size={14} />
+                  <span>Xem Đơn Hàng Của Tôi</span>
+                </Link>
+              }
+              secondaryAction={
+                <Link
+                  to="/search"
+                  className="rounded-xl bg-slate-100 px-6 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+                >
+                  Tiếp tục mua sắm
+                </Link>
+              }
+            />
           </div>
         ) : items.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto shadow-sm">

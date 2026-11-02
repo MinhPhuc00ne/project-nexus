@@ -10,6 +10,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Banknote,
 } from 'lucide-react';
 
 export type TabStatus =
@@ -68,6 +69,7 @@ export interface DisplayOrder {
   status: Exclude<TabStatus, 'ALL'>;
   img: string;
   itemsCount: number;
+  isCod?: boolean;
 }
 
 interface OrderCardProps {
@@ -117,31 +119,37 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, isPaying, onPayNow 
         </div>
       </Link>
 
-      <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-slate-100 bg-slate-50/40">
-        {order.status === 'PENDING_PAYMENT' && (
-          <button
-            type="button"
-            disabled={isPaying}
-            onClick={(e) => onPayNow(order.id, e)}
-            className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-lg transition flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-          >
-            {isPaying ? (
-              <>
-                <Loader2 size={12} className="animate-spin" />
-                <span>Đang mở PayOS...</span>
-              </>
-            ) : (
-              <>
-                <CreditCard size={12} />
-                <span>Thanh toán PayOS</span>
-                <ExternalLink size={11} />
-              </>
-            )}
-          </button>
-        )}
+      <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/40 px-4 py-2.5">
+        {order.status === 'PENDING_PAYMENT' &&
+          (order.isCod ? (
+            <span className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
+              <Banknote size={13} className="text-emerald-600" />
+              <span>Tiền mặt khi nhận hàng (COD)</span>
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={isPaying}
+              onClick={(e) => onPayNow(order.id, e)}
+              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isPaying ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" />
+                  <span>Đang mở PayOS...</span>
+                </>
+              ) : (
+                <>
+                  <CreditCard size={12} />
+                  <span>Thanh toán PayOS</span>
+                  <ExternalLink size={11} />
+                </>
+              )}
+            </button>
+          ))}
         <Link
           to={`/buyer/orders/${order.id}`}
-          className="text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition flex items-center gap-1"
+          className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
         >
           Xem chi tiết <ChevronRight size={11} />
         </Link>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, Search, ShoppingBag, Loader2 } from 'lucide-react';
-import { getBuyerOrdersApi, payOrderApi, type BuyerOrder } from '../../services/orders';
+import { getBuyerOrdersApi, payOrderApi, isCodOrder, type BuyerOrder } from '../../services/orders';
 import OrderCard, {
   type TabStatus,
   type DisplayOrder,
@@ -82,6 +82,7 @@ export default function BuyerOrdersPage() {
       status: validStatus,
       img: thumbnail,
       itemsCount: o?.items?.length ?? 0,
+      isCod: isCodOrder(o),
     };
   });
 

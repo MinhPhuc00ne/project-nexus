@@ -9,11 +9,13 @@ export interface ShippingAddressInput {
   street: string;
 }
 
+export type CheckoutPaymentMethodType = 'PAYOS' | 'COD' | 'WALLET' | 'STRIPE';
+
 export interface CheckoutInput {
   shippingAddress: ShippingAddressInput;
   itemIds?: string[];
   shippingFee?: number;
-  paymentMethod?: 'PAYOS' | 'WALLET' | 'STRIPE';
+  paymentMethod?: CheckoutPaymentMethodType;
   returnUrl?: string;
   cancelUrl?: string;
 }
@@ -90,24 +92,71 @@ export interface CheckoutResponse {
   payosPayment: PayosPaymentInfo | null;
 }
 
+const COD_ORDERS_STORAGE_KEY = 'nexus_cod_orders';
+
+export function markOrderAsCod(orderId: string): void {
+  try {
+    const raw = localStorage.getItem(COD_ORDERS_STORAGE_KEY);
+    const list: string[] = raw ? JSON.parse(raw) : [];
+    if (!list.includes(orderId)) {
+      list.push(orderId);
+      localStorage.setItem(COD_ORDERS_STORAGE_KEY, JSON.stringify(list));
+    }
+  } catch {
+    // Ignore localStorage access failures
+  }
+}
+
+export function isCodOrderId(orderId: string): boolean {
+  try {
+    const raw = localStorage.getItem(COD_ORDERS_STORAGE_KEY);
+    const list: string[] = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) && list.includes(orderId);
+  } catch {
+    return false;
+  }
+}
+
+export function isCodOrder(order?: BuyerOrder | null): boolean {
+  if (!order) return false;
+  if (isCodOrderId(order.id) || isCodOrderId(order.orderNumber)) return true;
+  const payments = order.payments ?? [];
+  const hasOnlineProvider = payments.some(
+    (p) => p.provider === 'PAYOS' || p.provider === 'WALLET' || p.provider === 'STRIPE',
+  );
+  return !hasOnlineProvider && order.status === 'PENDING_PAYMENT';
+}
+
 /**
  * 1. Đặt hàng từ giỏ hàng hiện tại (Checkout)
  */
 export async function checkoutApi(data: CheckoutInput): Promise<CheckoutResponse> {
+  const isCod = data.paymentMethod === 'COD';
+  const apiPayload = {
+    ...data,
+    paymentMethod: isCod ? 'STRIPE' : data.paymentMethod,
+  };
+
   const response = await api.post<{
     statusCode: number;
     message: string;
     data: CheckoutResponse;
-  }>('/commerce/checkout', data);
+  }>('/commerce/checkout', apiPayload);
 
   const payload = response?.data;
   const result = (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as CheckoutResponse;
 
+  const orders = Array.isArray(result?.orders) ? result.orders : [];
+
+  if (isCod) {
+    orders.forEach((o) => markOrderAsCod(o.id));
+  }
+
   return {
-    orders: Array.isArray(result?.orders) ? result.orders : [],
-    payosPayment: result?.payosPayment ?? null,
+    orders,
+    payosPayment: isCod ? null : (result?.payosPayment ?? null),
   };
 }
 

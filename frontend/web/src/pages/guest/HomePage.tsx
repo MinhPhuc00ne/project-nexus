@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Truck, Zap, Gavel, ShieldCheck, Tag, WalletCards, Gift } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CatalogListing from '../../components/products/CatalogListing';
@@ -10,11 +11,35 @@ import {
   HomeCategoriesSection,
 } from '../../components/home';
 import { flashSaleProducts, auctionProducts, heroSlides } from '../../mocks/home.mock';
+import { getEventBannersApi } from '../../services/banners.service';
+import type { HomeHeroSlide } from '../../components/home/home.types';
 
 function HomePage() {
+  const [banners, setBanners] = useState<HomeHeroSlide[]>(heroSlides);
+
+  useEffect(() => {
+    let isMounted = true;
+    void getEventBannersApi()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          const apiSlides: HomeHeroSlide[] = data.map((b) => ({
+            title: b.title,
+            image: b.imageUrl,
+            targetUrl: b.targetUrl || '/search',
+            isFullBanner: true,
+          }));
+          setBanners(apiSlides);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   return (
     <main className="mx-auto max-w-[1280px] px-4 py-4">
-      <HomeHeroBanner slides={heroSlides} />
+      <HomeHeroBanner slides={banners} />
 
       <section className="mt-4 grid gap-4 md:grid-cols-2">
         <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
