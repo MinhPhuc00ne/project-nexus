@@ -23,7 +23,7 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
     source('modules/commerce/controllers/feedback.controller').FeedbackController,
     source('modules/commerce/controllers/after-sales.controller').AfterSalesController,
     source('modules/auth/controllers/staff.controller').StaffController,
-    source('modules/auth/auth.controller').AuthController,
+    source('modules/auth/controllers/auth.controller').AuthController,
   ];
   const providers = [
     source('modules/catalog/services/product.service').ProductService,
@@ -35,7 +35,6 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
     source('modules/commerce/services/reviews.service').ReviewsService,
     source('modules/commerce/services/reports.service').ReportsService,
     ...[
-      source('modules/auth/auth.service').AuthService,
       source('modules/auth/services/auth.service').AuthService,
       source('modules/auth/services/auth-profile.service').AuthProfileService,
       source('modules/users/services/users.service').UsersService,

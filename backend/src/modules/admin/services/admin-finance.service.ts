@@ -7,7 +7,7 @@ import {
   WalletTransactionType,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { DepositAdminWalletDto, QueryAdminWalletTransactionsDto } from '../dto/admin-wallet.dto';
+import { DepositAdminWalletDto, QueryAdminWalletTransactionsDto } from '../dtos/admin-wallet.dto';
 
 @Injectable()
 export class AdminFinanceService {

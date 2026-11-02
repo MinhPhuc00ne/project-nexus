@@ -13,7 +13,7 @@ const { AdminOrdersService } = load('../src/modules/admin/services/admin-orders.
 const { AdminOrdersController } = load(
   '../src/modules/admin/controllers/admin-orders.controller.ts',
 );
-const { QueryAdminOrdersDto } = load('../src/modules/admin/dto/query-admin-orders.dto.ts');
+const { QueryAdminOrdersDto } = load('../src/modules/admin/dtos/query-admin-orders.dto.ts');
 const { JwtAuthGuard } = load('../src/core/security/jwt-auth.guard.ts');
 const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');

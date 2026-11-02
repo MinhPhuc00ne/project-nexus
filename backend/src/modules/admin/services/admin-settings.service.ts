@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RedisService } from '../../../core/redis/redis.service';
-import { UpdateSystemSettingsDto } from '../dto/update-system-settings.dto';
+import { UpdateSystemSettingsDto } from '../dtos/update-system-settings.dto';
 
 export interface SystemSettings {
   platformFeePercentage: number;

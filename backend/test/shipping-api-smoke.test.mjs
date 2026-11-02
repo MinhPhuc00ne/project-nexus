@@ -20,6 +20,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
   const { AdminSettingsService } = source('modules/admin/services/admin-settings.service');
   const { AdminFinanceService } = source('modules/admin/services/admin-finance.service');
   const { AuthService } = source('modules/auth/services/auth.service');
+  const { AuthProfileService } = source('modules/auth/services/auth-profile.service');
   const { OrderService } = source('modules/commerce/services/order.service');
   const { OrderEscrowService } = source('modules/commerce/services/order-escrow.service');
   const { SellerOrdersService } = source('modules/commerce/services/seller-orders.service');
@@ -61,7 +62,13 @@ test('shipping dependencies and routes initialize without live infrastructure', 
       source('modules/users/services/shop-shipping-profile.service').ShopShippingProfileService,
       { provide: PrismaService, useValue: {} },
       { provide: ConfigService, useValue: { get: (_key, fallback) => fallback } },
-      ...[PayosService, AdminSettingsService, AdminFinanceService, AuthService].map((provide) => ({
+      ...[
+        PayosService,
+        AdminSettingsService,
+        AdminFinanceService,
+        AuthService,
+        AuthProfileService,
+      ].map((provide) => ({
         provide,
         useValue: {},
       })),

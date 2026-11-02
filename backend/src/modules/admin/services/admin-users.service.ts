@@ -2,14 +2,14 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { Prisma, ProductStatus, ReputationTrustLevel, Role, User } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { generateStaffBaseEmail } from '../../auth/utils/staff-email.util';
-import { LockUserDto, UpdateUserStatusDto } from '../dto/lock-user.dto';
-import { QueryUsersDto, UserStatusFilter } from '../dto/query-users.dto';
-import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
+import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
+import { QueryUsersDto, UserStatusFilter } from '../dtos/query-users.dto';
+import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';
 import {
   AdminUserDetailResponse,
   AdminUserItemResponse,
   AdminUsersListResponse,
-} from '../dto/user-response.dto';
+} from '../dtos/user-response.dto';
 
 type UserWithWallet = User & {
   wallet?: { balance: Prisma.Decimal } | null;

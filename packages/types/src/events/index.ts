@@ -1,6 +1,8 @@
 import { AuctionStatus, PenaltyType } from '../enums/index.js';
 
-// --- WebSocket Contracts (/ws/auctions) ---
+/**
+ * Realtime WebSocket event contracts for live bidding rooms (/ws/auctions).
+ */
 export const WS_AUCTION_EVENTS = {
   CLIENT: {
     JOIN_ROOM: 'auction:join',
@@ -17,6 +19,26 @@ export const WS_AUCTION_EVENTS = {
     AUCTION_ENDED: 'auction:ended',
     VIEWPORT_UPDATED: 'auction:3d:updated',
     ERROR: 'auction:error',
+  },
+} as const;
+
+/**
+ * Realtime WebSocket event contracts for direct and support messaging (/ws/chat).
+ */
+export const WS_CHAT_EVENTS = {
+  CLIENT: {
+    JOIN_CONVERSATION: 'join_conversation',
+    LEAVE_CONVERSATION: 'leave_conversation',
+    SEND_MESSAGE: 'send_message',
+    TYPING: 'typing',
+    MARK_READ: 'mark_read',
+  },
+  SERVER: {
+    NEW_MESSAGE: 'new_message',
+    USER_TYPING: 'user_typing',
+    MESSAGE_READ: 'message_read',
+    CONVERSATION_ASSIGNED: 'conversation_assigned',
+    ERROR: 'chat_error',
   },
 } as const;
 
@@ -60,7 +82,9 @@ export interface Ws3dSyncPayload {
   zoom: number;
 }
 
-// --- In-Process Domain Event Payloads ---
+/**
+ * Internal domain event payload dispatched upon order placement.
+ */
 export interface OrderCreatedEventPayload {
   orderId: string;
   buyerId: string;
@@ -70,6 +94,9 @@ export interface OrderCreatedEventPayload {
   createdAt: Date;
 }
 
+/**
+ * Internal domain event payload dispatched upon auction completion.
+ */
 export interface AuctionEndedEventPayload {
   auctionId: string;
   winnerId: string | null;
@@ -79,6 +106,9 @@ export interface AuctionEndedEventPayload {
   endedAt: Date;
 }
 
+/**
+ * Internal domain event payload dispatched upon escrow balance reservation.
+ */
 export interface EscrowLockedEventPayload {
   escrowId: string;
   orderId: string;
@@ -87,6 +117,9 @@ export interface EscrowLockedEventPayload {
   sellerDisbursableAmount: number;
 }
 
+/**
+ * Internal domain event payload dispatched when trust points are deducted.
+ */
 export interface ReputationPenaltyEventPayload {
   userId: string;
   penaltyType: PenaltyType;

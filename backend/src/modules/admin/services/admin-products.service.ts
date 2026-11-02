@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { NotificationType, Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { QueryAdminProductsDto } from '../dto/query-admin-products.dto';
-import { UpdateProductStatusDto } from '../dto/update-product-status.dto';
+import { QueryAdminProductsDto } from '../dtos/query-admin-products.dto';
+import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
 
 @Injectable()
 export class AdminProductsService {

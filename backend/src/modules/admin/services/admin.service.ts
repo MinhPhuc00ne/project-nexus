@@ -7,17 +7,17 @@ import {
   WalletTransactionStatus,
   WithdrawalStatus,
 } from '@prisma/client';
-import { PrismaService } from '../../core/prisma/prisma.service';
+import { PrismaService } from '../../../core/prisma/prisma.service';
 import {
   StaffProvisioningService,
   StaffInvitationInput,
   ProvisionedStaffResult,
-} from '../auth/services/staff-provisioning.service';
-import { CreateStaffDto } from './dto/create-staff.dto';
-import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
-import { QueryStaffDto } from './dto/query-staff.dto';
-import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
-import { ReviewWithdrawalDto } from './dto/review-withdrawal.dto';
+} from '../../auth/services/staff-provisioning.service';
+import { CreateStaffDto } from '../dtos/create-staff.dto';
+import { QuerySellerRequestsDto } from '../dtos/query-seller-requests.dto';
+import { QueryStaffDto } from '../dtos/query-staff.dto';
+import { RejectSellerRequestDto } from '../dtos/reject-seller-request.dto';
+import { ReviewWithdrawalDto } from '../dtos/review-withdrawal.dto';
 
 @Injectable()
 export class AdminService {

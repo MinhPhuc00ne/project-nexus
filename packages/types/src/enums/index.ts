@@ -1,3 +1,6 @@
+/**
+ * System roles defining principal authorization boundaries across all portals.
+ */
 export enum Role {
   ADMIN = 'ADMIN',
   SUPPORT_STAFF = 'SUPPORT_STAFF',
@@ -6,6 +9,9 @@ export enum Role {
   GUEST = 'GUEST',
 }
 
+/**
+ * Lifecycle states of an e-commerce order from placement through fulfillment.
+ */
 export enum OrderStatus {
   PENDING_PAYMENT = 'PENDING_PAYMENT',
   PAID = 'PAID',
@@ -17,6 +23,9 @@ export enum OrderStatus {
   REFUNDED = 'REFUNDED',
 }
 
+/**
+ * Operational states of an auction room.
+ */
 export enum AuctionStatus {
   DRAFT = 'DRAFT',
   SCHEDULED = 'SCHEDULED',
@@ -28,6 +37,9 @@ export enum AuctionStatus {
   FAILED = 'FAILED',
 }
 
+/**
+ * Financial lifecycle status of held escrow transactions.
+ */
 export enum EscrowStatus {
   HELD = 'HELD',
   DISBURSED = 'DISBURSED',
@@ -35,6 +47,9 @@ export enum EscrowStatus {
   DISPUTED = 'DISPUTED',
 }
 
+/**
+ * Resolution states for buyer-initiated transaction disputes.
+ */
 export enum DisputeStatus {
   OPEN = 'OPEN',
   UNDER_REVIEW = 'UNDER_REVIEW',
@@ -43,12 +58,18 @@ export enum DisputeStatus {
   CANCELLED = 'CANCELLED',
 }
 
+/**
+ * Officially supported payment providers.
+ */
 export enum PaymentProvider {
   PAYOS = 'PAYOS',
-  STRIPE = 'STRIPE',
   WALLET = 'WALLET',
+  COD = 'COD',
 }
 
+/**
+ * Transaction processing outcome status.
+ */
 export enum PaymentStatus {
   PENDING = 'PENDING',
   SUCCESS = 'SUCCESS',
@@ -56,11 +77,16 @@ export enum PaymentStatus {
   CANCELLED = 'CANCELLED',
 }
 
+/**
+ * Integrated logistics carriers.
+ */
 export enum CarrierName {
   GHN = 'GHN',
-  GHTK = 'GHTK',
 }
 
+/**
+ * Physical shipment states reported by the logistics provider.
+ */
 export enum ShipmentStatus {
   CREATED = 'CREATED',
   PICKED_UP = 'PICKED_UP',
@@ -70,6 +96,9 @@ export enum ShipmentStatus {
   RETURNED = 'RETURNED',
 }
 
+/**
+ * Reputation tier corresponding to user trust score bands.
+ */
 export enum ReputationTrustLevel {
   EXCELLENT = 'EXCELLENT',
   GOOD = 'GOOD',
@@ -78,6 +107,9 @@ export enum ReputationTrustLevel {
   SUSPENDED = 'SUSPENDED',
 }
 
+/**
+ * Infraction categories resulting in automated reputation penalties.
+ */
 export enum PenaltyType {
   PAYMENT_TIMEOUT = 'PAYMENT_TIMEOUT',
   ORDER_CANCELLATION = 'ORDER_CANCELLATION',
@@ -86,12 +118,18 @@ export enum PenaltyType {
   FRAUD = 'FRAUD',
 }
 
+/**
+ * Delivery channels supported by the notification dispatcher.
+ */
 export enum NotificationChannel {
   EMAIL = 'EMAIL',
   PUSH = 'PUSH',
   IN_APP = 'IN_APP',
 }
 
+/**
+ * Domain categorization for dispatching targeted notifications.
+ */
 export enum NotificationType {
   ORDER = 'ORDER',
   AUCTION = 'AUCTION',

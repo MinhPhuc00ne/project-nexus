@@ -1,172 +1,223 @@
 import {
-  Controller,
-  Post,
   Body,
-  UseGuards,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
+  Patch,
+  Post,
   Req,
   Res,
-  BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { AuthService, AuthTokensResult } from '../services/auth.service';
-import {
-  RegisterBuyerDto,
-  LoginDto,
-  RefreshTokenDto,
-  ChangePasswordDto,
-  ForgotPasswordRequestDto,
-  ResetPasswordWithOtpDto,
-} from '../dtos/auth.dto';
-import {
-  Public,
-  CurrentUser,
-  AuthenticatedUserPayload,
-} from '../../../core/security/roles.decorator';
+import { AuthService, GoogleUser, UserProfileResponse } from '../services/auth.service';
+import { AuthProfileService } from '../services/auth-profile.service';
+import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
+import { LoginDto } from '../dtos/login.dto';
+import { RefreshTokenDto } from '../dtos/refresh-token.dto';
+import { RegisterDto } from '../dtos/register.dto';
+import { ResetPasswordDto } from '../dtos/reset-password.dto';
+import { VerifyEmailDto } from '../dtos/verify-email.dto';
+import { UpdateAuthProfileDto, ReauthenticateProfileDto } from '../dtos/update-profile.dto';
+import { ConfirmChangePasswordOtpDto } from '../dtos/confirm-change-password-otp.dto';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
+import { RolesGuard } from '../../../core/security/roles.guard';
+import { CurrentUser, Roles, RequirePrivilege } from '../../../core/security/roles.decorator';
+import { Role } from '@nexus/types';
+
+interface RequestWithUser extends Request {
+  user?: GoogleUser;
+}
 
 @ApiTags('1. AUTH')
-@Controller(['auth', 'api/v1/auth'])
+@Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+    private readonly authProfileService: AuthProfileService,
+  ) {}
 
-  private extractCookieToken(req: Request): string | undefined {
-    const cookieHeader = req.headers?.cookie;
-    if (!cookieHeader) return undefined;
-    const cookies = cookieHeader.split(';').reduce(
-      (acc, str) => {
-        const [key, ...vals] = str.trim().split('=');
-        if (key) acc[key] = decodeURIComponent(vals.join('='));
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-    return cookies['refreshToken'];
-  }
-
-  private setRefreshTokenCookie(res: Response, token: string): void {
-    res.cookie('refreshToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
-  }
-
-  private clearRefreshTokenCookie(res: Response): void {
-    res.clearCookie('refreshToken', { path: '/' });
-  }
-
-  @ApiOperation({
-    summary: '[BUYER] AUTH.REGISTER - Đăng ký tài khoản Buyer mới',
-    description:
-      'Người mua đăng ký tài khoản với họ và tên, email cá nhân, mật khẩu và số điện thoại (tự động khởi tạo ví 0đ và tích hợp Refresh Token qua HttpOnly Cookie).',
-  })
-  @Public()
-  @Post('register')
-  @HttpCode(HttpStatus.CREATED)
-  async register(
-    @Body() dto: RegisterBuyerDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthTokensResult> {
-    const result = await this.authService.registerBuyer(dto);
-    this.setRefreshTokenCookie(res, result.refreshToken);
-    return result;
-  }
-
-  @ApiOperation({
-    summary: 'AUTH.LOGIN - Đăng nhập hệ thống (Dành cho Buyer, Seller, Staff, Admin)',
-    description:
-      'Đăng nhập hệ thống. Tự động thiết lập Refresh Token qua HttpOnly Cookie. Staff sử dụng email có đuôi nexus@gmail.com.',
-  })
-  @Public()
+  // ================= 1. ĐĂNG NHẬP =================
   @Post('login')
-  @HttpCode(HttpStatus.OK)
-  async login(
-    @Body() dto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<AuthTokensResult> {
-    const result = await this.authService.login(dto);
-    this.setRefreshTokenCookie(res, result.refreshToken);
-    return result;
+  @ApiOperation({ summary: 'Đăng nhập vào hệ thống' })
+  @ApiResponse({ status: 200, description: 'Đăng nhập thành công' })
+  @ApiResponse({ status: 401, description: 'Email hoặc mật khẩu không chính xác' })
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
   }
 
+  // ================= 2. GOOGLE OAUTH =================
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
   @ApiOperation({
-    summary: 'AUTH.LOGOUT - Đăng xuất và thu hồi Refresh Token (tự động xóa Cookie)',
+    summary: 'Đăng nhập bằng Google',
+    description: 'LƯU Ý: Vui lòng mở link trực tiếp trên trình duyệt, không bấm Execute.',
   })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Post('logout')
-  @HttpCode(HttpStatus.OK)
-  async logout(
-    @CurrentUser() user: AuthenticatedUserPayload,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body('refreshToken') bodyToken?: string,
-  ): Promise<{ success: boolean }> {
-    const token = bodyToken || this.extractCookieToken(req);
-    this.clearRefreshTokenCookie(res);
-    return this.authService.logout(user.id, token);
+  async googleAuth(): Promise<void> {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  @ApiOperation({ summary: 'Google Callback URL' })
+  async googleAuthRedirect(@Req() req: RequestWithUser, @Res() res: Response): Promise<void> {
+    const result = await this.authService.googleLogin(req.user);
+    const portWeb = this.configService.get<string>('PORT_WEB') || process.env.PORT_WEB || '5173';
+    const frontendUrl = (
+      this.configService.get<string>('FRONTEND_URL') ||
+      process.env.FRONTEND_URL ||
+      `http://localhost:${portWeb}`
+    ).replace(/\/$/, '');
+
+    const params = new URLSearchParams({
+      token: result.accessToken,
+      refreshToken: result.refreshToken,
+      user: JSON.stringify(result.user),
+    });
+
+    res.redirect(`${frontendUrl}/?${params.toString()}`);
   }
 
-  @ApiExcludeEndpoint()
-  @Public()
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  async refresh(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body() dto?: RefreshTokenDto,
-  ): Promise<AuthTokensResult> {
-    const token = dto?.refreshToken || this.extractCookieToken(req);
-    if (!token) {
-      throw new BadRequestException('Refresh token is required');
-    }
-    const result = await this.authService.refreshToken({ refreshToken: token });
-    this.setRefreshTokenCookie(res, result.refreshToken);
-    return result;
+  // ================= 3. ĐĂNG KÝ & XÁC THỰC =================
+  @Post('register')
+  @ApiOperation({ summary: 'Đăng ký tài khoản mới & gửi mã OTP về email' })
+  @ApiResponse({ status: 201, description: 'Đăng ký thành công, vui lòng check mail' })
+  async register(@Body() dto: RegisterDto): Promise<{ message: string; email: string }> {
+    return this.authService.register(dto);
   }
 
-  @ApiOperation({
-    summary: 'PROFILE.CHANGE_PASSWORD - Đổi mật khẩu tài khoản hiện tại',
-  })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Post('change-password')
-  @HttpCode(HttpStatus.OK)
-  async changePassword(
-    @CurrentUser('id') userId: string,
-    @Body() dto: ChangePasswordDto,
-  ): Promise<{ success: boolean; message: string }> {
-    return this.authService.changePassword(userId, dto);
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Xác thực tài khoản bằng mã OTP nhận từ email' })
+  @ApiResponse({ status: 200, description: 'Xác thực thành công' })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto);
   }
 
-  @ApiOperation({
-    summary: 'PROFILE.RESET_PASSWORD (Bước 1) - Quên mật khẩu: Gửi mã OTP 6 số về email',
-    description:
-      'Hỗ trợ cho mọi tài khoản (Staff khi quên mật khẩu sẽ nhận OTP qua email cá nhân đã đăng ký).',
-  })
-  @Public()
+  // ================= 4. QUÊN MẬT KHẨU =================
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Quên mật khẩu - gửi mã OTP đặt lại mật khẩu về Gmail' })
+  @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về email' })
+  @ApiResponse({ status: 400, description: 'Email không tồn tại hoặc tài khoản chưa xác thực' })
   async forgotPassword(
-    @Body() dto: ForgotPasswordRequestDto,
-  ): Promise<{ success: boolean; message: string }> {
-    return this.authService.requestForgotPassword(dto);
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<{ message: string; email: string }> {
+    return this.authService.forgotPassword(dto);
   }
 
-  @ApiOperation({
-    summary: 'PROFILE.RESET_PASSWORD (Bước 2) - Xác nhận OTP và đặt lại mật khẩu mới',
-  })
-  @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  async resetPassword(
-    @Body() dto: ResetPasswordWithOtpDto,
+  @ApiOperation({ summary: 'Đặt lại mật khẩu bằng mã OTP nhận từ email' })
+  @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công' })
+  @ApiResponse({ status: 400, description: 'Mã OTP không chính xác hoặc đã hết hạn' })
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+    return this.authService.resetPassword(dto);
+  }
+
+  // ================= 5. REFRESH TOKEN & ĐĂNG XUẤT =================
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Làm mới Access Token bằng Refresh Token' })
+  @ApiResponse({ status: 200, description: 'Làm mới token thành công' })
+  @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ hoặc đã hết hạn' })
+  async refreshToken(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto);
+  }
+
+  @Post('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Đăng xuất và thu hồi Refresh Token' })
+  @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
+  async logout(@Body() dto: RefreshTokenDto): Promise<{ message: string }> {
+    return this.authService.logout(dto);
+  }
+
+  // --- Profile Management & Security ---
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'PROFILE.VIEW - Xem thông tin hồ sơ của tài khoản đang đăng nhập',
+    description: 'Bóc tách userId từ Token qua JwtAuthGuard và trả về thông tin chi tiết.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy thông tin tài khoản thành công' })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập hoặc token không hợp lệ' })
+  async getProfile(@CurrentUser('id') userId: string): Promise<UserProfileResponse> {
+    return this.authProfileService.getProfile(userId);
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @RequirePrivilege('PROFILE.UPDATE')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'PROFILE.UPDATE - Cập nhật thông tin cá nhân (Họ tên, SĐT, Avatar)',
+    description:
+      'Buyer cập nhật thông thường; Seller cần đăng nhập bằng mật khẩu trong 5 phút gần đây, mật khẩu hiện tại hoặc token reauthenticate hợp lệ.',
+  })
+  @ApiResponse({ status: 200, description: 'Cập nhật hồ sơ thành công' })
+  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ' })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  async updateProfile(
+    @CurrentUser('id') userId: string,
+    @Body() dto: UpdateAuthProfileDto,
+  ): Promise<UserProfileResponse> {
+    return this.authProfileService.updateProfile(userId, dto);
+  }
+
+  @Post('profile/reauthenticate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Xác minh lại mật khẩu, cấp token cập nhật hồ sơ trong 5 phút' })
+  @HttpCode(HttpStatus.OK)
+  reauthenticate(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ReauthenticateProfileDto,
+  ): ReturnType<AuthProfileService['reauthenticate']> {
+    return this.authProfileService.reauthenticate(userId, dto.password);
+  }
+
+  @Post('change-password/request-otp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'PROFILE.CHANGE_PASSWORD (Bước 1) - Gửi mã OTP xác nhận đổi mật khẩu về Gmail',
+    description:
+      'Tạo mã OTP ngẫu nhiên 6 số (hạn 15 phút) gửi về hòm thư Gmail hiện tại của người dùng.',
+  })
+  @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về Gmail thành công' })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  async requestChangePasswordOtp(
+    @CurrentUser('id') userId: string,
   ): Promise<{ success: boolean; message: string }> {
-    return this.authService.resetPasswordWithOtp(dto);
+    return this.authProfileService.requestChangePasswordOtp(userId);
+  }
+
+  @Post('change-password/confirm-otp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'PROFILE.CHANGE_PASSWORD (Bước 2) - Xác nhận OTP và cập nhật mật khẩu mới',
+    description:
+      'Xác thực OTP, cập nhật mật khẩu mới và thu hồi toàn bộ phiên đăng nhập cũ để bảo mật tài khoản.',
+  })
+  @ApiResponse({ status: 200, description: 'Đổi mật khẩu thành công' })
+  @ApiResponse({ status: 400, description: 'Mã OTP không đúng hoặc đã hết hạn' })
+  @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
+  async confirmChangePasswordWithOtp(
+    @CurrentUser('id') userId: string,
+    @Body() dto: ConfirmChangePasswordOtpDto,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.authProfileService.confirmChangePasswordWithOtp(userId, dto);
   }
 }

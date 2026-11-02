@@ -8,10 +8,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import * as nodemailer from 'nodemailer';
+import { MailService } from '../../../core/mail/mail.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { ConfirmChangePasswordOtpDto } from '../dto/confirm-change-password-otp.dto';
-import { UpdateAuthProfileDto } from '../dto/update-profile.dto';
+import { ConfirmChangePasswordOtpDto } from '../dtos/confirm-change-password-otp.dto';
+import { UpdateAuthProfileDto } from '../dtos/update-profile.dto';
+import { UpdateStaffProfileDto } from '../dtos/update-staff-profile.dto';
+import { ChangePasswordDto } from '../dtos/auth.dto';
 import { ProfileReauthService } from '../../../core/security/profile-reauth.service';
 import { userMode } from '../../../core/security/user-mode';
 
@@ -53,20 +55,13 @@ const profileSelect = {
 @Injectable()
 export class AuthProfileService {
   private readonly logger = new Logger(AuthProfileService.name);
-  private readonly transporter: nodemailer.Transporter;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly profileReauth: ProfileReauthService,
-  ) {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: this.configService.get<string>('SMTP_USER'),
-        pass: this.configService.get<string>('SMTP_PASS'),
-      },
-    });
-  }
+    private readonly mailService: MailService,
+  ) {}
 
   async getProfile(userId: string): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({
@@ -96,6 +91,36 @@ export class AuthProfileService {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data,
+      select: profileSelect,
+    });
+    return { ...updated, ...userMode(updated) };
+  }
+
+  /**
+   * Update staff personal profile attributes.
+   *
+   * @param userId Support staff user ID.
+   * @param dto Profile update parameters.
+   * @returns Updated user profile.
+   */
+  async updateStaffProfile(
+    userId: string,
+    dto: UpdateStaffProfileDto,
+  ): Promise<UserProfileResponse> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.role !== 'SUPPORT_STAFF') {
+      throw new ForbiddenException('Chỉ Staff được chỉnh hồ sơ Staff của chính mình.');
+    }
+    if (dto.fullName !== undefined && dto.fullName.trim().length < 2) {
+      throw new BadRequestException('Họ tên không hợp lệ.');
+    }
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: dto.fullName?.trim(),
+        phoneNumber: dto.phoneNumber,
+        avatarUrl: dto.avatarUrl,
+      },
       select: profileSelect,
     });
     return { ...updated, ...userMode(updated) };
@@ -168,31 +193,72 @@ export class AuthProfileService {
     };
   }
 
+  /**
+   * Change user password directly with current password verification.
+   *
+   * @param userId Authenticated user ID.
+   * @param dto Current and new password payload.
+   * @returns Success confirmation.
+   */
+  async changePassword(
+    userId: string,
+    dto: ChangePasswordDto,
+  ): Promise<{ success: boolean; message: string }> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng.');
+    }
+    if (!user.passwordHash) {
+      throw new BadRequestException('Tài khoản này chưa thiết lập mật khẩu.');
+    }
+    const isMatch = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!isMatch) {
+      throw new BadRequestException('Mật khẩu hiện tại không chính xác.');
+    }
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+    }
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(dto.newPassword, saltRounds);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { passwordHash },
+      });
+      await tx.refreshToken.updateMany({
+        where: { userId, isRevoked: false },
+        data: { isRevoked: true },
+      });
+    });
+    return {
+      success: true,
+      message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại bằng mật khẩu mới.',
+    };
+  }
+
   private async sendPasswordChangeOtpEmail(
     email: string,
     fullName: string,
     otp: string,
   ): Promise<void> {
-    try {
-      await this.transporter.sendMail({
-        from: `"Project Nexus E-Commerce" <${this.configService.get<string>('SMTP_USER')}>`,
-        to: email,
-        subject: '[Project Nexus] Mã OTP xác nhận đổi mật khẩu',
-        html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h2 style="color: #2563eb;">Xác nhận đổi mật khẩu tài khoản</h2>
-            <p>Xin chào <strong>${fullName || 'Quý khách'}</strong>,</p>
-            <p>Hệ thống nhận được yêu cầu đổi mật khẩu cho tài khoản của bạn tại <strong>Project Nexus</strong>.</p>
-            <p>Mã xác thực OTP của bạn là:</p>
-            <div style="background-color: #f1f5f9; padding: 15px; border-radius: 8px; font-size: 28px; font-weight: bold; text-align: center; letter-spacing: 6px; color: #1e3a8a; margin: 20px 0;">
-              ${otp}
-            </div>
-            <p>Mã OTP có hiệu lực trong vòng <strong>15 phút</strong>. Tuyệt đối không chia sẻ mã này cho bất kỳ ai.</p>
-            <p style="color: #64748b; font-size: 13px; margin-top: 25px;">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc liên hệ quản trị viên để bảo vệ tài khoản.</p>
+    const success = await this.mailService.sendEmail({
+      to: email,
+      subject: '[Project Nexus] Mã OTP xác nhận đổi mật khẩu',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #2563eb;">Xác nhận đổi mật khẩu tài khoản</h2>
+          <p>Xin chào <strong>${fullName || 'Quý khách'}</strong>,</p>
+          <p>Hệ thống nhận được yêu cầu đổi mật khẩu cho tài khoản của bạn tại <strong>Project Nexus</strong>.</p>
+          <p>Mã xác thực OTP của bạn là:</p>
+          <div style="background-color: #f1f5f9; padding: 15px; border-radius: 8px; font-size: 28px; font-weight: bold; text-align: center; letter-spacing: 6px; color: #1e3a8a; margin: 20px 0;">
+            ${otp}
           </div>
-        `,
-      });
-    } catch {
+          <p>Mã OTP có hiệu lực trong vòng <strong>15 phút</strong>. Tuyệt đối không chia sẻ mã này cho bất kỳ ai.</p>
+          <p style="color: #64748b; font-size: 13px; margin-top: 25px;">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email hoặc liên hệ quản trị viên để bảo vệ tài khoản.</p>
+        </div>
+      `,
+    });
+    if (!success && process.env.NODE_ENV === 'production') {
       this.logger.warn('Gửi email đổi mật khẩu thất bại.');
       throw new BadRequestException(
         'Không thể gửi email xác nhận đổi mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',

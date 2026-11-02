@@ -9,7 +9,7 @@ export const load = createRequire(import.meta.url);
 const { StaffProvisioningService } = load(
   '../src/modules/auth/services/staff-provisioning.service.ts',
 );
-const { AuthService } = load('../src/modules/auth/auth.service.ts');
+const { AuthService } = load('../src/modules/auth/services/auth.service.ts');
 
 function matches(row, where) {
   return Object.entries(where).every(([key, condition]) => {
@@ -105,6 +105,7 @@ export function staffFixture({ mailAccepted = true } = {}) {
     config,
     { sign: () => 'test-token' },
     { set: async () => {} },
+    mail,
   );
   shared.transporter = {
     sendMail: async (message) => {

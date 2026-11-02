@@ -19,15 +19,18 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Role } from '@prisma/client';
-import { CreateSellerRequestDto } from './dto/create-seller-request.dto';
-import { ToggleSellerDto } from './dto/toggle-seller.dto';
-import { UsersService } from './users.service';
-import { sellerProofFileFilter, sellerProofStorage } from './utils/seller-proof-upload.util';
+import {
+  CurrentUser,
+  Roles,
+  AuthenticatedUserPayload,
+} from '../../../core/security/roles.decorator';
+import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
+import { RolesGuard } from '../../../core/security/roles.guard';
+import { Role } from '@nexus/types';
+import { CreateSellerRequestDto } from '../dtos/create-seller-request.dto';
+import { ToggleSellerDto } from '../dtos/toggle-seller.dto';
+import { UsersService } from '../services/users.service';
+import { sellerProofFileFilter, sellerProofStorage } from '../utils/seller-proof-upload.util';
 
 @ApiTags('2. BUYER')
 @ApiBearerAuth()
@@ -45,7 +48,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 200, description: 'Lấy thông tin thành công' })
   @ApiResponse({ status: 401, description: 'Chưa đăng nhập hoặc token không hợp lệ' })
-  async getMe(@CurrentUser() user: CurrentUserPayload) {
+  async getMe(@CurrentUser() user: AuthenticatedUserPayload) {
     return this.usersService.getMe(user.id);
   }
 
@@ -65,7 +68,7 @@ export class UsersController {
     status: 403,
     description: 'Tài khoản chưa được cấp quyền Seller, không thể chuyển đổi',
   })
-  async toggleSeller(@CurrentUser() user: CurrentUserPayload, @Body() dto: ToggleSellerDto) {
+  async toggleSeller(@CurrentUser() user: AuthenticatedUserPayload, @Body() dto: ToggleSellerDto) {
     return this.usersService.toggleSellerMode(user.id, dto);
   }
 
@@ -78,7 +81,7 @@ export class UsersController {
     FileInterceptor('file', {
       storage: sellerProofStorage,
       fileFilter: sellerProofFileFilter,
-      limits: { fileSize: 15 * 1024 * 1024 }, // Tối đa 15MB
+      limits: { fileSize: 15 * 1024 * 1024 },
     }),
   )
   @ApiConsumes('multipart/form-data', 'application/json')
@@ -157,15 +160,28 @@ export class UsersController {
     description:
       'Chưa đính kèm tài liệu chứng minh, hoặc đã có yêu cầu PENDING, hoặc tài khoản đã là Seller',
   })
+  /**
+   * Submit seller upgrade request.
+   *
+   * @param user Authenticated user payload.
+   * @param dto Seller upgrade request details.
+   * @param file Optional verification document.
+   * @returns Created seller request.
+   */
   async createSellerRequest(
-    @CurrentUser() user: CurrentUserPayload,
+    @CurrentUser() user: AuthenticatedUserPayload,
     @Body() dto: CreateSellerRequestDto,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.usersService.createSellerRequest(user.id, dto, file);
   }
 
-  // ================= 4. XEM TRẠNG THÁI YÊU CẦU NÂNG CẤP CỦA TÔI =================
+  /**
+   * Retrieve current user's seller upgrade requests.
+   *
+   * @param user Authenticated user payload.
+   * @returns List of seller requests.
+   */
   @Get('seller-request/me')
   @UseGuards(RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
@@ -173,7 +189,7 @@ export class UsersController {
     summary: 'Xem lịch sử và trạng thái các yêu cầu nâng cấp Seller của tài khoản hiện tại',
   })
   @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu thành công' })
-  async getMySellerRequests(@CurrentUser() user: CurrentUserPayload) {
+  async getMySellerRequests(@CurrentUser() user: AuthenticatedUserPayload) {
     return this.usersService.getMySellerRequests(user.id);
   }
 }

@@ -4,7 +4,6 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ChatMessage } from '@prisma/client';
@@ -20,7 +19,6 @@ import {
   UpdateConversationStatusDto,
 } from '../dtos';
 import { ChatAutoReplyService } from './chat-auto-reply.service';
-import { ensureChatDatabaseTables } from './chat-table.init';
 import { maskStaffSender, SUPPORT_STAFF_MASK } from './chat-mask.util';
 import { StaffQueueService } from './staff-queue.service';
 
@@ -39,7 +37,7 @@ export interface ChatSocketBroadcaster {
 }
 
 @Injectable()
-export class ChatService implements OnModuleInit {
+export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private socketBroadcaster: ChatSocketBroadcaster | null = null;
 
@@ -52,10 +50,6 @@ export class ChatService implements OnModuleInit {
 
   setBroadcaster(broadcaster: ChatSocketBroadcaster): void {
     this.socketBroadcaster = broadcaster;
-  }
-
-  async onModuleInit(): Promise<void> {
-    await ensureChatDatabaseTables(this.prisma, this.logger);
   }
 
   /**

@@ -2,12 +2,25 @@ import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/com
 import { Role } from '@nexus/types';
 
 export const IS_PUBLIC_KEY = 'isPublic';
+/**
+ * Mark an endpoint as public, bypassing JwtAuthGuard authentication.
+ */
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
 export const ROLES_KEY = 'roles';
-export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);
+/**
+ * Restrict an endpoint to users with specific roles.
+ *
+ * @param roles Permitted user roles.
+ */
+export const Roles = (...roles: (Role | `${Role}`)[]) => SetMetadata(ROLES_KEY, roles);
 
 export const PRIVILEGES_KEY = 'privileges';
+/**
+ * Restrict an endpoint to users with a specific granular privilege.
+ *
+ * @param privilege Privilege key.
+ */
 export const RequirePrivilege = (privilege: string) => SetMetadata(PRIVILEGES_KEY, privilege);
 
 export interface AuthenticatedUserPayload {

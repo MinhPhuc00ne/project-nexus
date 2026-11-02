@@ -1,140 +1,222 @@
 import {
-  Injectable,
-  UnauthorizedException,
   BadRequestException,
-  ConflictException,
-  NotFoundException,
   ForbiddenException,
-  Logger,
   GoneException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../../core/prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import { ReputationTrustLevel } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { MailService } from '../../../core/mail/mail.service';
+import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
 import { recentReauthentication } from '../../../core/security/profile-reauth.service';
 import { userMode } from '../../../core/security/user-mode';
-import {
-  RegisterBuyerDto,
-  LoginDto,
-  RefreshTokenDto,
-  ChangePasswordDto,
-  ForgotPasswordRequestDto,
-  ResetPasswordWithOtpDto,
-  InviteStaffDto,
-  ActivateStaffDto,
-} from '../dtos/auth.dto';
-import { Role, ReputationTrustLevel } from '@nexus/types';
-import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
-import { StaffProvisioningService, ProvisionedStaffResult } from './staff-provisioning.service';
-import { LightweightJwt } from '../../../core/security/jwt.util';
-import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
+import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
+import { LoginDto } from '../dtos/login.dto';
+import { RefreshTokenDto } from '../dtos/refresh-token.dto';
+import { RegisterDto } from '../dtos/register.dto';
+import { ResetPasswordDto } from '../dtos/reset-password.dto';
+import { VerifyEmailDto } from '../dtos/verify-email.dto';
+export type { UserProfileResponse } from './auth-profile.service';
 
-export interface AuthTokensResult {
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-  user: {
-    id: string;
-    email: string;
-    fullName: string;
-    role: Role;
-    isSellerActive: boolean;
-    accountRole?: string;
-    activeRole?: string;
-    currentMode?: 'BUYER' | 'SELLER';
-    platformEmail?: string | null;
-  };
+interface RefreshJwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+  jti: string;
 }
 
+export interface GoogleUser {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  picture?: string;
+}
+
+/**
+ * Handles core user authentication, registration, token generation, and password resets.
+ */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  public transporter?: {
+    sendMail: (opts: {
+      to?: string;
+      subject?: string;
+      html?: string;
+      text?: string;
+      from?: string;
+    }) => Promise<{ accepted?: string[] }>;
+  };
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-    private readonly mailService: MailService,
+    private readonly jwtService: JwtService,
     private readonly redisService: RedisService,
-    private readonly staffProvisioning: StaffProvisioningService,
+    private readonly mailService: MailService,
   ) {}
 
-  // 1. Đăng ký tài khoản Buyer
-  async registerBuyer(dto: RegisterBuyerDto): Promise<AuthTokensResult> {
-    const existing = await this.prisma.user.findFirst({
-      where: {
-        email: { equals: dto.email, mode: 'insensitive' },
-      },
-    });
+  // ================= 1. ĐĂNG KÝ =================
+  async register(dto: RegisterDto) {
+    const { email, password, fullName } = dto;
 
-    if (existing) {
-      throw new ConflictException(`User with email '${dto.email}' already exists`);
+    const existingUser = await this.prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      if (existingUser.isVerified) {
+        throw new BadRequestException('Email này đã được đăng ký và xác thực.');
+      }
+      // Kiểm tra thời gian chờ (cooldown 60 giây) nếu gửi lại OTP
+      if (existingUser.codeExpiresAt) {
+        const remainingMs = existingUser.codeExpiresAt.getTime() - Date.now();
+        const cooldownMs = 60 * 1000;
+        const expiryDurationMs = 10 * 60 * 1000;
+        if (remainingMs > expiryDurationMs - cooldownMs) {
+          const waitSeconds = Math.ceil((remainingMs - (expiryDurationMs - cooldownMs)) / 1000);
+          throw new BadRequestException(
+            `Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu gửi lại mã OTP mới.`,
+          );
+        }
+      }
     }
 
     const saltRounds = 10;
-    const passwordHash = await bcrypt.hash(dto.password, saltRounds);
+    const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    const newUser = await this.prisma.user.create({
-      data: {
-        id: crypto.randomUUID(),
-        email: dto.email,
-        personalEmail: dto.email,
-        fullName: dto.fullName,
-        phoneNumber: dto.phoneNumber || null,
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.prisma.user.upsert({
+      where: { email },
+      update: {
         passwordHash,
-        role: Role.BUYER,
-        isSellerActive: false,
-        reputationScore: 100,
-        isVerified: true,
+        fullName,
+        verificationCode,
+        codeExpiresAt,
+        isVerified: false,
+      },
+      create: {
+        email,
+        passwordHash,
+        fullName,
+        verificationCode,
+        codeExpiresAt,
+        isVerified: false,
       },
     });
 
-    // Create attached wallet
-    await this.prisma.wallet.create({
-      data: {
-        id: crypto.randomUUID(),
-        userId: newUser.id,
-        balance: 0,
-        currency: 'VND',
-      },
+    await this.mailService.sendEmail({
+      to: email,
+      subject: 'Mã xác thực tài khoản Project Nexus',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+          <h2 style="color: #4F46E5;">Chào mừng bạn đến với Project Nexus!</h2>
+          <p>Mã xác thực tài khoản của bạn là:</p>
+          <h1 style="background: #F3F4F6; padding: 10px; display: inline-block; letter-spacing: 5px; color: #111827;">${verificationCode}</h1>
+          <p>Mã này có hiệu lực trong vòng <b>10 phút</b>.</p>
+        </div>
+      `,
     });
 
-    this.logger.log(`New buyer registered: ${newUser.email} (${newUser.id})`);
-    return this.generateTokens(newUser);
+    this.logger.log(`🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} đã được xử lý`);
+
+    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
+
+    return {
+      message: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư Gmail để lấy mã OTP xác thực.',
+      email,
+      ...(isDev ? { devOtpCode: verificationCode } : {}),
+    };
   }
 
-  // 2. Login (Hỗ trợ cả Buyer/Seller đăng nhập bằng email, và Staff đăng nhập bằng email nexus@gmail.com)
-  async login(dto: LoginDto): Promise<AuthTokensResult> {
-    const normalizedInput = dto.email.trim();
+  // ================= 2. XÁC THỰC EMAIL =================
+  async verifyEmail(dto: VerifyEmailDto) {
+    const { email, code } = dto;
 
-    // Check by email or platformEmail (personalEmail cannot be used to log in as Staff)
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      throw new BadRequestException('Không tìm thấy tài khoản với email này.');
+    }
+    if (user.isVerified) {
+      return { message: 'Tài khoản này đã được xác thực trước đó rồi.' };
+    }
+    if (user.verificationCode !== code) {
+      throw new BadRequestException('Mã OTP không chính xác.');
+    }
+    if (user.codeExpiresAt && new Date() > user.codeExpiresAt) {
+      throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng đăng ký lại để nhận mã mới.');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { email },
+      data: {
+        isVerified: true,
+        verificationCode: null,
+        codeExpiresAt: null,
+      },
+    });
+
+    await this.prisma.wallet.upsert({
+      where: { userId: updatedUser.id },
+      update: {},
+      create: {
+        userId: updatedUser.id,
+        balance: 0,
+      },
+    });
+
+    return { message: 'Xác thực tài khoản thành công! Bây giờ bạn có thể đăng nhập.' };
+  }
+
+  // ================= 3. ĐĂNG NHẬP (THƯỜNG) =================
+  async login(dto: LoginDto) {
+    const { email, password } = dto;
+    const normalizedEmail = email.trim();
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
-          { email: { equals: normalizedInput, mode: 'insensitive' } },
-          { platformEmail: { equals: normalizedInput, mode: 'insensitive' } },
+          { email: { equals: normalizedEmail, mode: 'insensitive' } },
+          { platformEmail: { equals: normalizedEmail, mode: 'insensitive' } },
         ],
       },
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác.');
     }
-
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!user.passwordHash) {
+      throw new UnauthorizedException(
+        'Tài khoản này đăng nhập bằng Google. Vui lòng dùng tính năng Google OAuth.',
+      );
+    }
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Email hoặc mật khẩu không chính xác.');
     }
-
+    if (!user.isVerified) {
+      throw new UnauthorizedException(
+        'Tài khoản chưa được xác thực. Vui lòng kiểm tra email để lấy mã OTP.',
+      );
+    }
     if (user.trustLevel === ReputationTrustLevel.SUSPENDED) {
       throw new ForbiddenException(
         'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
       );
     }
 
-    this.logger.log(`User logged in successfully: ${user.email} (Role: ${user.role})`);
+    const effectiveSellerActive = user.isShopSuspended ? false : user.isSellerActive;
+
+    const { accessToken, refreshToken } = await this.generateTokens({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isSellerActive: effectiveSellerActive,
+    });
 
     try {
       await this.redisService.set(
@@ -146,295 +228,448 @@ export class AuthService {
       // In case Redis is unreachable, continue smoothly
     }
 
-    return this.generateTokens(user);
+    return {
+      message: 'Đăng nhập thành công!',
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        platformEmail: user.platformEmail,
+        fullName: user.fullName,
+        role: user.role,
+        avatarUrl: user.avatarUrl,
+        isShopSuspended: user.isShopSuspended,
+        suspensionReason: user.suspensionReason,
+        ...userMode(user),
+      },
+    };
   }
 
-  // 3. Logout
-  async logout(userId: string, refreshToken?: string): Promise<{ success: boolean }> {
-    if (refreshToken) {
-      const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-      await this.prisma.refreshToken.updateMany({
-        where: { userId, tokenHash },
-        data: { isRevoked: true },
-      });
-    } else {
-      // Revoke all tokens of the user
-      await this.prisma.refreshToken.updateMany({
-        where: { userId },
-        data: { isRevoked: true },
-      });
+  // ================= 4. ĐĂNG NHẬP BẰNG GOOGLE =================
+  async googleLogin(user?: GoogleUser) {
+    if (!user) {
+      throw new BadRequestException('Không nhận được thông tin từ Google.');
     }
-    return { success: true };
+
+    const { email, firstName, lastName, picture } = user;
+    const fullName: string = `${lastName || ''} ${firstName || ''}`.trim() || 'Người dùng Google';
+
+    const userRecord = await this.prisma.user.upsert({
+      where: { email },
+      update: {
+        avatarUrl: picture,
+        isVerified: true,
+      },
+      create: {
+        email,
+        fullName,
+        avatarUrl: picture,
+        passwordHash: '',
+        isVerified: true,
+      },
+    });
+
+    await this.prisma.wallet.upsert({
+      where: { userId: userRecord.id },
+      update: {},
+      create: {
+        userId: userRecord.id,
+        balance: 0,
+      },
+    });
+
+    if (userRecord.trustLevel === ReputationTrustLevel.SUSPENDED) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+      );
+    }
+
+    if (userRecord.role === 'SELLER') {
+      try {
+        await this.redisService.set(
+          `seller_recent_reauth:${userRecord.id}`,
+          recentReauthentication(userRecord.passwordHash),
+          300,
+        );
+      } catch {
+        // Login remains available; profile edits still require a valid proof.
+      }
+    }
+
+    const { accessToken, refreshToken } = await this.generateTokens({
+      id: userRecord.id,
+      email: userRecord.email,
+      role: userRecord.role,
+      isSellerActive: userRecord.isSellerActive,
+    });
+
+    return {
+      message: 'Đăng nhập bằng Google thành công!',
+      accessToken,
+      refreshToken,
+      user: {
+        id: userRecord.id,
+        email: userRecord.email,
+        fullName: userRecord.fullName,
+        role: userRecord.role,
+        avatarUrl: userRecord.avatarUrl,
+        ...userMode(userRecord),
+      },
+    };
   }
 
-  // 4. Refresh token
-  async refreshToken(dto: RefreshTokenDto): Promise<AuthTokensResult> {
+  // ================= 5. QUÊN MẬT KHẨU (GỬI OTP QUA GMAIL) =================
+  // Áp dụng cho tài khoản đăng ký bằng Gmail (đã xác thực) hoặc bằng Google (luôn isVerified).
+  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; email: string }> {
+    const { email } = dto;
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: email.trim(), mode: 'insensitive' } },
+          { platformEmail: { equals: email.trim(), mode: 'insensitive' } },
+        ],
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('Không tìm thấy tài khoản với email này.');
+    }
+    if (!user.isVerified) {
+      throw new BadRequestException(
+        'Tài khoản chưa được xác thực. Vui lòng xác thực email trước khi đặt lại mật khẩu.',
+      );
+    }
+
+    // Kiểm tra thời gian chờ (cooldown 60 giây) giữa các lần yêu cầu gửi OTP
+    if (user.codeExpiresAt) {
+      const remainingMs = user.codeExpiresAt.getTime() - Date.now();
+      const cooldownMs = 60 * 1000;
+      const expiryDurationMs = 10 * 60 * 1000;
+      if (remainingMs > expiryDurationMs - cooldownMs) {
+        const waitSeconds = Math.ceil((remainingMs - (expiryDurationMs - cooldownMs)) / 1000);
+        throw new BadRequestException(
+          `Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu gửi lại mã OTP mới.`,
+        );
+      }
+    }
+
+    const resetCode = crypto.randomInt(100000, 1000000).toString();
+    const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    if (user.role === 'SUPPORT_STAFF' && !user.personalEmail) {
+      throw new BadRequestException(
+        'Tài khoản Staff chưa có email cá nhân nhận OTP. Vui lòng liên hệ Admin.',
+      );
+    }
+    const recipientEmail = user.personalEmail || user.email;
+    await this.sendPasswordResetEmail(recipientEmail, resetCode, user.role === 'SUPPORT_STAFF');
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { verificationCode: resetCode, codeExpiresAt },
+    });
+
+    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
+
+    return {
+      message: 'Mã OTP đặt lại mật khẩu đã được gửi đến hộp thư Gmail của bạn!',
+      email: user.email,
+      ...(isDev && user.role !== 'SUPPORT_STAFF' ? { devOtpCode: resetCode } : {}),
+    };
+  }
+
+  // ================= 6. ĐẶT LẠI MẬT KHẨU BẰNG OTP =================
+  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+    const { email, code, newPassword } = dto;
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: email.trim(), mode: 'insensitive' } },
+          { platformEmail: { equals: email.trim(), mode: 'insensitive' } },
+        ],
+      },
+    });
+    if (!user || !user.isVerified) {
+      throw new BadRequestException('Không tìm thấy tài khoản hợp lệ với email này.');
+    }
+    if (!user.verificationCode || user.verificationCode !== code) {
+      throw new BadRequestException('Mã OTP không chính xác.');
+    }
+    if (!user.codeExpiresAt || new Date() > user.codeExpiresAt) {
+      throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.');
+    }
+
+    // Kiểm tra mật khẩu mới không được trùng với mật khẩu hiện tại
+    if (user.passwordHash) {
+      const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
+      if (isSamePassword) {
+        throw new BadRequestException('Mật khẩu mới không được trùng với mật khẩu hiện tại.');
+      }
+    }
+
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    await this.prisma.$transaction(async (tx) => {
+      const consumed = await tx.user.updateMany({
+        where: { id: user.id, verificationCode: code, codeExpiresAt: { gt: new Date() } },
+        data: { passwordHash, verificationCode: null, codeExpiresAt: null },
+      });
+      if (consumed.count !== 1)
+        throw new BadRequestException('Mã OTP đã hết hạn hoặc đã được sử dụng.');
+      await tx.refreshToken.updateMany({
+        where: { userId: user.id, isRevoked: false },
+        data: { isRevoked: true },
+      });
+    });
+
+    return {
+      message: 'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
+    };
+  }
+
+  // ================= 7. LÀM MỚI ACCESS TOKEN (REFRESH TOKEN) =================
+  async refreshToken(dto: RefreshTokenDto) {
     const refreshSecret =
       this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      'super-secret-refresh-key-nexus-change-in-production-2026';
+      process.env.REFRESH_TOKEN_SECRET ||
+      'nexus-refresh-secret-key';
 
-    const verify = LightweightJwt.verify<{ sub: string; tokenId: string }>(
-      dto.refreshToken,
-      refreshSecret,
-    );
-
-    if (!verify.valid || !verify.payload) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+    let payload: RefreshJwtPayload;
+    try {
+      payload = await this.jwtService.verifyAsync<RefreshJwtPayload>(dto.refreshToken, {
+        secret: refreshSecret,
+      });
+    } catch {
+      throw new UnauthorizedException('Refresh token không hợp lệ hoặc đã hết hạn.');
     }
 
-    const tokenHash = crypto.createHash('sha256').update(dto.refreshToken).digest('hex');
-    const storedToken = await this.prisma.refreshToken.findFirst({
-      where: {
-        userId: verify.payload.sub,
+    if (!payload.jti || !payload.sub) {
+      throw new UnauthorizedException('Refresh token không hợp lệ.');
+    }
+
+    const tokenRecord = await this.prisma.refreshToken.findUnique({
+      where: { id: payload.jti },
+      include: { user: true },
+    });
+
+    if (
+      !tokenRecord ||
+      tokenRecord.userId !== payload.sub ||
+      tokenRecord.isRevoked ||
+      new Date() > tokenRecord.expiresAt
+    ) {
+      throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
+    }
+
+    if (tokenRecord.user.trustLevel === ReputationTrustLevel.SUSPENDED) {
+      throw new ForbiddenException(
+        'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ bộ phận hỗ trợ.',
+      );
+    }
+
+    const isTokenMatch = await bcrypt.compare(this.sha256(dto.refreshToken), tokenRecord.tokenHash);
+    if (!isTokenMatch) {
+      throw new UnauthorizedException('Refresh token không hợp lệ.');
+    }
+
+    // Thu hồi refresh token cũ (Refresh Token Rotation)
+    await this.prisma.refreshToken.update({
+      where: { id: tokenRecord.id },
+      data: { isRevoked: true },
+    });
+
+    const { accessToken, refreshToken } = await this.generateTokens({
+      id: tokenRecord.user.id,
+      email: tokenRecord.user.email,
+      role: tokenRecord.user.role,
+      isSellerActive: tokenRecord.user.isSellerActive,
+    });
+
+    return {
+      message: 'Làm mới token thành công!',
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  // ================= 8. ĐĂNG XUẤT (THU HỒI REFRESH TOKEN) =================
+  async logout(dto: RefreshTokenDto): Promise<{ message: string }> {
+    const refreshSecret =
+      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
+      process.env.REFRESH_TOKEN_SECRET ||
+      'nexus-refresh-secret-key';
+
+    try {
+      const payload = await this.jwtService.verifyAsync<RefreshJwtPayload>(dto.refreshToken, {
+        secret: refreshSecret,
+        ignoreExpiration: true,
+      });
+
+      if (payload?.jti) {
+        await this.prisma.refreshToken.updateMany({
+          where: { id: payload.jti, userId: payload.sub, isRevoked: false },
+          data: { isRevoked: true },
+        });
+      }
+    } catch {
+      // Bỏ qua nếu token sai định dạng để đảm bảo idempotent khi đăng xuất
+    }
+
+    return { message: 'Đăng xuất thành công!' };
+  }
+
+  private async generateTokens(user: {
+    id: string;
+    email: string;
+    role: string;
+    isSellerActive?: boolean;
+  }): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessToken = this.jwtService.sign({
+      sub: user.id,
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isSellerActive: user.isSellerActive ?? false,
+    });
+
+    const tokenId = crypto.randomUUID();
+    const refreshSecret =
+      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
+      process.env.REFRESH_TOKEN_SECRET ||
+      'nexus-refresh-secret-key';
+    const refreshExpiresIn =
+      this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') ||
+      process.env.REFRESH_TOKEN_EXPIRES_IN ||
+      '30d';
+
+    const refreshToken = this.jwtService.sign(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        jti: tokenId,
+      },
+      {
+        secret: refreshSecret,
+        expiresIn: refreshExpiresIn as `${number}${'s' | 'm' | 'h' | 'd'}`,
+      },
+    );
+
+    const tokenHash = await bcrypt.hash(this.sha256(refreshToken), 10);
+    const expiresAt = new Date(Date.now() + this.parseDurationToMs(refreshExpiresIn));
+
+    await this.prisma.refreshToken.create({
+      data: {
+        id: tokenId,
+        userId: user.id,
         tokenHash,
+        expiresAt,
         isRevoked: false,
       },
     });
 
-    if (!storedToken || storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh token is revoked or expired');
-    }
-
-    // Revoke old refresh token (Token rotation)
-    await this.prisma.refreshToken.update({
-      where: { id: storedToken.id },
-      data: { isRevoked: true },
-    });
-
-    const user = await this.prisma.user.findUnique({
-      where: { id: verify.payload.sub },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User associated with token not found');
-    }
-
-    return this.generateTokens(user);
+    return { accessToken, refreshToken };
   }
 
-  // 5. Change Password (PROFILE.CHANGE_PASSWORD)
-  async changePassword(
-    userId: string,
-    dto: ChangePasswordDto,
-  ): Promise<{ success: boolean; message: string }> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    const isMatch = await bcrypt.compare(dto.currentPassword, user.passwordHash);
-    if (!isMatch) {
-      throw new BadRequestException('Current password does not match');
-    }
-
-    const newHash = await bcrypt.hash(dto.newPassword, 10);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        passwordHash: newHash,
-      },
-    });
-
-    // Revoke all existing sessions
-    await this.prisma.refreshToken.updateMany({
-      where: { userId },
-      data: { isRevoked: true },
-    });
-
-    return {
-      success: true,
-      message: 'Password changed successfully. Please log in again with new password.',
-    };
+  private sha256(value: string): string {
+    return crypto.createHash('sha256').update(value).digest('hex');
   }
 
-  // 6. Quên mật khẩu: Gửi OTP 6 số ngẫu nhiên về email (PROFILE.RESET_PASSWORD)
-  async requestForgotPassword(
-    dto: ForgotPasswordRequestDto,
-  ): Promise<{ success: boolean; message: string }> {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: dto.email }, { platformEmail: dto.email }],
-      },
-    });
-
-    if (!user) {
-      return {
-        success: true,
-        message: 'If the email exists in our system, an OTP has been dispatched to it.',
-      };
+  private parseDurationToMs(duration: string): number {
+    const match = /^(\d+)\s*([smhd])$/i.exec(duration.trim());
+    if (!match) {
+      return 30 * 24 * 60 * 60 * 1000;
     }
-
-    // Target email: if staff with platform email, send OTP to their personalEmail; otherwise send to their email
-    const recipientEmail = user.personalEmail || user.email;
-
-    // Generate random 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        verificationCode: otp,
-        codeExpiresAt: expiresAt,
-      },
-    });
-
-    await this.mailService.sendEmail({
-      to: recipientEmail,
-      subject: '[Project Nexus] Mã OTP đặt lại mật khẩu',
-      text: `Xin chào ${user.fullName},\n\nMã OTP của bạn để đặt lại mật khẩu là: ${otp}\nMã này có hiệu lực trong vòng 15 phút.\nNếu bạn không yêu cầu, vui lòng bỏ qua email này.`,
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2 style="color: #2563eb;">Project Nexus - Đặt lại mật khẩu</h2>
-          <p>Xin chào <strong>${user.fullName}</strong>,</p>
-          <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản tại Project Nexus.</p>
-          <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; text-align: center; letter-spacing: 5px; color: #1e3a8a; margin: 20px 0;">
-            ${otp}
-          </div>
-          <p>Mã OTP này có hiệu lực trong <strong>15 phút</strong>.</p>
-          <p style="color: #6b7280; font-size: 13px;">Nếu bạn không yêu cầu đặt lại mật khẩu, xin vui lòng bỏ qua thư này.</p>
-        </div>
-      `,
-    });
-
-    return {
-      success: true,
-      message: 'OTP sent to registered email address.',
-    };
+    const amount = parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+    switch (unit) {
+      case 's':
+        return amount * 1000;
+      case 'm':
+        return amount * 60 * 1000;
+      case 'h':
+        return amount * 60 * 60 * 1000;
+      case 'd':
+      default:
+        return amount * 24 * 60 * 60 * 1000;
+    }
   }
 
-  // 7. Xác nhận OTP và đặt lại mật khẩu mới
-  async resetPasswordWithOtp(
-    dto: ResetPasswordWithOtpDto,
-  ): Promise<{ success: boolean; message: string }> {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: dto.email }, { platformEmail: dto.email }],
-      },
-    });
-
-    if (!user || !user.verificationCode || !user.codeExpiresAt) {
-      throw new BadRequestException('Invalid or expired OTP');
-    }
-
-    if (user.codeExpiresAt < new Date()) {
-      throw new BadRequestException('OTP has expired');
-    }
-
-    if (user.verificationCode !== dto.otp) {
-      throw new BadRequestException('Incorrect OTP code');
-    }
-
-    const newHash = await bcrypt.hash(dto.newPassword, 10);
-
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordHash: newHash,
-        verificationCode: null,
-        codeExpiresAt: null,
-      },
-    });
-
-    // Revoke tokens
-    await this.prisma.refreshToken.updateMany({
-      where: { userId: user.id },
-      data: { isRevoked: true },
-    });
-
-    return {
-      success: true,
-      message: 'Password has been reset successfully. You can now login with your new credentials.',
-    };
-  }
-
-  async inviteStaff(dto: InviteStaffDto): Promise<ProvisionedStaffResult> {
-    return this.staffProvisioning.invite(dto);
-  }
-
+  /**
+   * Legacy activation endpoint stub returning HTTP 410 Gone.
+   */
   async getStaffInvitationInfo(_token: string): Promise<never> {
     throw new GoneException(
       'Staff được cấp tài khoản và mật khẩu qua email. Vui lòng đăng nhập hoặc dùng Quên mật khẩu.',
     );
   }
 
-  async activateStaff(_dto: ActivateStaffDto): Promise<never> {
+  /**
+   * Legacy activation endpoint stub returning HTTP 410 Gone.
+   */
+  async activateStaff(_dto: { token: string }): Promise<never> {
     throw new GoneException(
       'Luồng kích hoạt bằng token đã ngừng. Vui lòng dùng tài khoản được cấp hoặc Quên mật khẩu.',
     );
   }
 
-  private async generateTokens(user: {
-    id: string;
-    email: string;
-    fullName: string;
-    role: string;
-    isSellerActive: boolean;
-    isShopSuspended?: boolean;
-    platformEmail?: string | null;
-  }): Promise<AuthTokensResult> {
-    const jwtSecret =
-      this.configService.get<string>('JWT_SECRET') ||
-      'super-secret-jwt-key-nexus-change-in-production-2026';
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      'super-secret-refresh-key-nexus-change-in-production-2026';
+  private async sendPasswordResetEmail(
+    email: string,
+    resetCode: string,
+    requireDelivery = false,
+  ): Promise<void> {
+    if (this.transporter) {
+      try {
+        const info = await this.transporter.sendMail({
+          from: `"Project Nexus E-Commerce" <${this.configService.get<string>('SMTP_USER')}>`,
+          to: email,
+          subject: 'Mã đặt lại mật khẩu Project Nexus',
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+              <h2 style="color: #4F46E5;">Yêu cầu đặt lại mật khẩu</h2>
+              <p>Mã OTP để đặt lại mật khẩu tài khoản Project Nexus của bạn là:</p>
+              <h1 style="background: #F3F4F6; padding: 10px; display: inline-block; letter-spacing: 5px; color: #111827;">${resetCode}</h1>
+              <p>Mã này có hiệu lực trong vòng <b>10 phút</b>.</p>
+              <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+            </div>
+          `,
+        });
+        if (requireDelivery && (!Array.isArray(info.accepted) || !info.accepted.length)) {
+          throw new Error('SMTP did not accept the recipient');
+        }
+        return;
+      } catch {
+        this.logger.warn('Gửi email đặt lại mật khẩu qua SMTP thất bại.');
+        if (process.env.NODE_ENV === 'production' || requireDelivery) {
+          throw new BadRequestException(
+            'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
+          );
+        }
+        return;
+      }
+    }
 
-    const accessExpiry = LightweightJwt.parseDurationToSeconds(
-      this.configService.get<string>('JWT_EXPIRES_IN') || '7d',
-    );
-    const refreshExpiry = LightweightJwt.parseDurationToSeconds(
-      this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') || '30d',
-    );
-
-    const payload: AuthenticatedUserPayload = {
-      sub: user.id,
-      id: user.id,
-      email: user.email,
-      role: user.role as Role,
-      isSellerActive: user.isShopSuspended ? false : user.isSellerActive,
-    };
-
-    const accessToken = LightweightJwt.sign(payload as unknown as Record<string, unknown>, {
-      secret: jwtSecret,
-      expiresInSeconds: accessExpiry,
+    const success = await this.mailService.sendEmail({
+      to: email,
+      subject: 'Mã đặt lại mật khẩu Project Nexus',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+          <h2 style="color: #4F46E5;">Yêu cầu đặt lại mật khẩu</h2>
+          <p>Mã OTP để đặt lại mật khẩu tài khoản Project Nexus của bạn là:</p>
+          <h1 style="background: #F3F4F6; padding: 10px; display: inline-block; letter-spacing: 5px; color: #111827;">${resetCode}</h1>
+          <p>Mã này có hiệu lực trong vòng <b>10 phút</b>.</p>
+          <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+        </div>
+      `,
+      requireDelivery,
     });
-
-    const refreshTokenId = crypto.randomUUID();
-    const refreshToken = LightweightJwt.sign(
-      { sub: user.id, tokenId: refreshTokenId },
-      { secret: refreshSecret, expiresInSeconds: refreshExpiry },
-    );
-
-    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-    const refreshExpiresAt = new Date(Date.now() + refreshExpiry * 1000);
-
-    await this.prisma.refreshToken.create({
-      data: {
-        id: refreshTokenId,
-        userId: user.id,
-        tokenHash,
-        expiresAt: refreshExpiresAt,
-        isRevoked: false,
-      },
-    });
-
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn: accessExpiry,
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        role: user.role as Role,
-        ...userMode({
-          role: user.role as Role,
-          isSellerActive: user.isSellerActive,
-          isShopSuspended: user.isShopSuspended ?? false,
-        }),
-        platformEmail: user.platformEmail,
-      },
-    };
+    if (!success && (process.env.NODE_ENV === 'production' || requireDelivery)) {
+      throw new BadRequestException(
+        'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
+      );
+    }
   }
 }

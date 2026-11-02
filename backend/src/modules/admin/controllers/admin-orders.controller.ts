@@ -4,7 +4,7 @@ import { Role } from '@nexus/types';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { QueryAdminOrdersDto } from '../dto/query-admin-orders.dto';
+import { QueryAdminOrdersDto } from '../dtos/query-admin-orders.dto';
 import { AdminOrdersService } from '../services/admin-orders.service';
 
 @ApiTags('5. ADMIN - ORDERS')

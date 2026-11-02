@@ -8,38 +8,22 @@ import {
   Body,
   Query,
   UseGuards,
-  HttpCode,
-  HttpStatus,
   UploadedFile,
   UseInterceptors,
   BadRequestException,
   Headers,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBearerAuth,
-  ApiConsumes,
-  ApiBody,
-  ApiExcludeEndpoint,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AuthService, AuthTokensResult } from '../../auth/services/auth.service';
 import { UsersService, UserProfileResponse } from '../services/users.service';
 import { AddressService } from '../services/address.service';
-import { RegisterBuyerDto } from '../../auth/dtos/auth.dto';
 import {
   UpdateBuyerProfileDto,
   ApplySellerUpgradeDto,
   CreateAddressDto,
   UpdateAddressDto,
 } from '../../users/dtos/users.dto';
-import {
-  Public,
-  CurrentUser,
-  RequirePrivilege,
-  Roles,
-} from '../../../core/security/roles.decorator';
+import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
@@ -48,18 +32,9 @@ import { Role } from '@nexus/types';
 @Controller('buyer')
 export class BuyerController {
   constructor(
-    private readonly authService: AuthService,
     private readonly usersService: UsersService,
     private readonly addressService: AddressService,
   ) {}
-
-  @ApiExcludeEndpoint()
-  @Public()
-  @Post('register')
-  @HttpCode(HttpStatus.CREATED)
-  async registerBuyer(@Body() dto: RegisterBuyerDto): Promise<AuthTokensResult> {
-    return this.authService.registerBuyer(dto);
-  }
 
   @ApiOperation({
     summary: '[BUYER] PROFILE.VIEW - Xem thông tin cá nhân và số dư ví',

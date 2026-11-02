@@ -13,43 +13,46 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { OrderStatus, Role, WithdrawalStatus } from '@prisma/client';
-import { CurrentUser, CurrentUserPayload } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { AdminService } from './admin.service';
-import { CreateStaffDto } from './dto/create-staff.dto';
-import { AdminInviteStaffDto } from './dto/invite-staff.dto';
-import { LockUserDto, UpdateUserStatusDto } from './dto/lock-user.dto';
-import { QuerySellerRequestsDto } from './dto/query-seller-requests.dto';
-import { QueryStaffDto } from './dto/query-staff.dto';
-import { QueryUsersDto } from './dto/query-users.dto';
-import { RejectSellerRequestDto } from './dto/reject-seller-request.dto';
-import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import { QueryAdminProductsDto } from './dto/query-admin-products.dto';
-import { UpdateProductStatusDto } from './dto/update-product-status.dto';
-import { QueryAdminShopsDto } from './dto/query-admin-shops.dto';
-import { UpdateShopStatusDto } from './dto/update-shop-status.dto';
-import { WarnShopDto } from './dto/warn-shop.dto';
-import { CreateShopViolationDto } from './dto/create-shop-violation.dto';
-import { ReviewWithdrawalDto } from './dto/review-withdrawal.dto';
-import { UpdateSystemSettingsDto } from './dto/update-system-settings.dto';
+import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
+import { RolesGuard } from '../../../core/security/roles.guard';
+import {
+  CurrentUser,
+  Roles,
+  AuthenticatedUserPayload,
+} from '../../../core/security/roles.decorator';
+import { AdminService } from '../services/admin.service';
+import { CreateStaffDto } from '../dtos/create-staff.dto';
+import { AdminInviteStaffDto } from '../dtos/invite-staff.dto';
+import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
+import { QuerySellerRequestsDto } from '../dtos/query-seller-requests.dto';
+import { QueryStaffDto } from '../dtos/query-staff.dto';
+import { QueryUsersDto } from '../dtos/query-users.dto';
+import { RejectSellerRequestDto } from '../dtos/reject-seller-request.dto';
+import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';
+import { QueryAdminProductsDto } from '../dtos/query-admin-products.dto';
+import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
+import { QueryAdminShopsDto } from '../dtos/query-admin-shops.dto';
+import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
+import { WarnShopDto } from '../dtos/warn-shop.dto';
+import { CreateShopViolationDto } from '../dtos/create-shop-violation.dto';
+import { ReviewWithdrawalDto } from '../dtos/review-withdrawal.dto';
+import { UpdateSystemSettingsDto } from '../dtos/update-system-settings.dto';
 import {
   DepositAdminWalletDto,
   QueryAdminWalletTransactionsDto,
   AdminWalletResponseDto,
   AdminWalletTransactionsResponseDto,
-} from './dto/admin-wallet.dto';
-import { AdminUsersService } from './services/admin-users.service';
-import { AdminProductsService } from './services/admin-products.service';
-import { AdminShopsService } from './services/admin-shops.service';
-import { AdminSettingsService } from './services/admin-settings.service';
-import { AdminFinanceService } from './services/admin-finance.service';
-import { AdminDisputesService } from './services/admin-disputes.service';
-import { QueryAdminDisputesDto } from './dto/query-admin-disputes.dto';
-import { CategoryService } from '../catalog/services/category.service';
-import { CreateCategoryDto } from '../catalog/dtos/create-category.dto';
-import { UpdateCategoryDto } from '../catalog/dtos/update-category.dto';
+} from '../dtos/admin-wallet.dto';
+import { AdminUsersService } from '../services/admin-users.service';
+import { AdminProductsService } from '../services/admin-products.service';
+import { AdminShopsService } from '../services/admin-shops.service';
+import { AdminSettingsService } from '../services/admin-settings.service';
+import { AdminFinanceService } from '../services/admin-finance.service';
+import { AdminDisputesService } from '../services/admin-disputes.service';
+import { QueryAdminDisputesDto } from '../dtos/query-admin-disputes.dto';
+import { CategoryService } from '../../catalog/services/category.service';
+import { CreateCategoryDto } from '../../catalog/dtos/create-category.dto';
+import { UpdateCategoryDto } from '../../catalog/dtos/update-category.dto';
 
 @ApiTags('5. ADMIN')
 @ApiBearerAuth()
@@ -142,7 +145,10 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Phê duyệt thành công, tài khoản đã là Seller' })
   @ApiResponse({ status: 400, description: 'Yêu cầu không ở trạng thái PENDING' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu' })
-  async approveSellerRequest(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+  async approveSellerRequest(
+    @Param('id') id: string,
+    @CurrentUser() admin: AuthenticatedUserPayload,
+  ) {
     return this.adminService.approveSellerRequest(id, admin.id);
   }
 
@@ -159,7 +165,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu' })
   async rejectSellerRequest(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: RejectSellerRequestDto,
   ) {
     return this.adminService.rejectSellerRequest(id, admin.id, dto);
@@ -203,7 +209,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản người dùng' })
   async lockUser(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: LockUserDto,
   ) {
     return this.adminUsersService.lockUser(id, admin.id, dto);
@@ -222,7 +228,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản người dùng' })
   async unlockUser(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: LockUserDto,
   ) {
     return this.adminUsersService.unlockUser(id, admin.id, dto);
@@ -238,7 +244,7 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Cập nhật trạng thái thành công' })
   async updateUserStatus(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateUserStatusDto,
   ) {
     return this.adminUsersService.updateUserStatus(id, admin.id, dto);
@@ -257,7 +263,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
   async updateUserRole(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateUserRoleDto,
   ) {
     return this.adminUsersService.updateUserRole(id, admin.id, dto);
@@ -298,7 +304,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
   async updateProductStatus(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateProductStatusDto,
   ) {
     return this.adminProductsService.updateProductStatus(id, admin.id, dto);
@@ -314,7 +320,7 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Xóa hoặc ẩn sản phẩm thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
-  async deleteProduct(@Param('id') id: string, @CurrentUser() admin: CurrentUserPayload) {
+  async deleteProduct(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUserPayload) {
     return this.adminProductsService.deleteProduct(id, admin.id);
   }
 
@@ -342,7 +348,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
   async updateShopStatus(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateShopStatusDto,
   ) {
     return this.adminShopsService.updateShopStatus(id, admin.id, dto);
@@ -391,7 +397,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
   async warnShop(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: WarnShopDto,
   ) {
     return this.adminShopsService.warnShop(id, admin.id, dto);
@@ -409,7 +415,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
   async createShopViolation(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: CreateShopViolationDto,
   ) {
     return this.adminShopsService.createShopViolation(id, admin.id, dto);
@@ -465,7 +471,7 @@ export class AdminController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu rút tiền' })
   async reviewWithdrawal(
     @Param('id') id: string,
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: ReviewWithdrawalDto,
   ) {
     return this.adminService.reviewWithdrawalRequest(id, admin.id, dto);
@@ -557,7 +563,7 @@ export class AdminController {
   })
   @ApiResponse({ status: 200, description: 'Cập nhật cấu hình thành công' })
   async updateSettings(
-    @CurrentUser() admin: CurrentUserPayload,
+    @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateSystemSettingsDto,
   ) {
     return this.adminSettingsService.updateSettings(admin.id, dto);

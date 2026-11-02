@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { QueryAdminOrdersDto } from '../dto/query-admin-orders.dto';
+import { QueryAdminOrdersDto } from '../dtos/query-admin-orders.dto';
 
 const orderSelect = {
   id: true,
