@@ -7,15 +7,17 @@
   "workspaces": [
     "packages/*",
     "backend",
-    "frontend/web"
+    "frontend"
   ],
   "scripts": {
     "build:types": "npm run build --workspace=@nexus/types --if-present",
     "dev:backend": "npm run start:dev --workspace=backend",
-    "dev:web": "npm run dev --workspace=frontend/web",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "dev:web": "npm run dev:frontend",
     "build:backend": "npm run build --workspace=backend",
-    "build:web": "npm run build --workspace=frontend/web",
-    "build:all": "npm run build:types && npm run build:backend && npm run build:web",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:web": "npm run build:frontend",
+    "build:all": "npm run build:types && npm run build:backend && npm run build:frontend",
     "prisma:generate": "npm run prisma:generate --workspace=backend --if-present",
     "prisma:migrate": "npm run prisma:migrate --workspace=backend --if-present",
     "prisma:seed": "npm run prisma:seed --workspace=backend --if-present",

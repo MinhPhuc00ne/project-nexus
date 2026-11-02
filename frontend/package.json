@@ -1,9 +1,9 @@
 {
-  "name": "nexus-web",
+  "name": "nexus-frontend",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Project Nexus - Buyer & Seller Web Portal",
+  "description": "Project Nexus - Buyer & Seller Frontend Portal",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
