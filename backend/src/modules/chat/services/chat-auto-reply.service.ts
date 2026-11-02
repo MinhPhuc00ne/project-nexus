@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
+import { containsChatPhrase, normalizeChatText } from './chatbot-knowledge';
 import {
   CancelAutoReplyDto,
   CreateAutoReplyDto,
@@ -21,6 +22,7 @@ export class ChatAutoReplyService {
    * Tạo tin nhắn tự động cho Seller (tối đa 10 mẫu/shop)
    */
   async createSellerAutoReply(sellerId: string, dto: CreateAutoReplyDto) {
+    this.validateReply(dto.triggerType ?? 'WELCOME', dto.keyword, dto.content);
     assertCleanContent(dto.content, 'Nội dung tin nhắn tự động');
 
     const totalCount = await this.prisma.chatAutoReply.count({
@@ -74,6 +76,11 @@ export class ChatAutoReplyService {
       );
     }
 
+    this.validateReply(
+      dto.triggerType ?? existing.triggerType,
+      dto.keyword === undefined ? existing.keyword : dto.keyword,
+      dto.content ?? existing.content,
+    );
     if (dto.content) {
       assertCleanContent(dto.content, 'Nội dung tin nhắn tự động');
     }
@@ -134,6 +141,7 @@ export class ChatAutoReplyService {
    * Admin tạo tin nhắn tự động chung của hệ thống (dành cho Staff CSKH Desk)
    */
   async createSystemAutoReply(adminId: string, dto: CreateAutoReplyDto) {
+    this.validateReply(dto.triggerType ?? 'WELCOME', dto.keyword, dto.content);
     assertCleanContent(dto.content, 'Nội dung tin nhắn tự động hệ thống');
 
     return this.prisma.chatAutoReply.create({
@@ -243,15 +251,25 @@ export class ChatAutoReplyService {
     };
   }
 
-  /**
-   * Tìm tin nhắn tự động kích hoạt phù hợp (ưu tiên theo từ khóa, sau đó là WELCOME / DEFAULT)
-   */
+  private validateReply(
+    trigger: string,
+    keyword: string | null | undefined,
+    content: string,
+  ): void {
+    if (!content.trim()) throw new BadRequestException('Nội dung trả lời không được để trống.');
+    if (trigger === 'KEYWORD' && !normalizeChatText(keyword ?? ''))
+      throw new BadRequestException('Cấu hình KEYWORD cần từ khóa hợp lệ.');
+  }
+
+  /** Ưu tiên từ khóa cụ thể, sau đó tới các fallback phù hợp ngữ cảnh. */
   async findMatchingReply(
     shopId: string | null,
     scope: 'SHOP' | 'SYSTEM',
     text = '',
+    context: { firstMessage?: boolean; offline?: boolean } = {},
   ): Promise<string | null> {
-    const normalized = text.toLowerCase().trim();
+    if (scope === 'SHOP' && !shopId) return null;
+    const normalized = normalizeChatText(text);
 
     // 1. Kiểm tra trigger theo KEYWORD trước
     if (normalized) {
@@ -266,25 +284,37 @@ export class ChatAutoReplyService {
         },
       });
 
+      // Prefer specific phrases; deterministic order prevents overlapping triggers changing at random.
+      keywordReplies.sort(
+        (a, b) =>
+          normalizeChatText(b.keyword ?? '').length - normalizeChatText(a.keyword ?? '').length ||
+          a.id.localeCompare(b.id),
+      );
       for (const reply of keywordReplies) {
-        if (reply.keyword && normalized.includes(reply.keyword.toLowerCase().trim())) {
+        if (reply.keyword && containsChatPhrase(text, reply.keyword)) {
           return reply.content;
         }
       }
     }
 
-    // 2. Kiểm tra trigger theo WELCOME / DEFAULT
-    const defaultReply = await this.prisma.chatAutoReply.findFirst({
-      where: {
-        scope,
-        shopId: scope === 'SHOP' ? shopId : null,
-        isActive: true,
-        status: 'ACTIVE',
-        triggerType: { in: ['WELCOME', 'DEFAULT'] },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return defaultReply?.content || null;
+    const triggers = [
+      ...(context.offline ? ['OFFLINE'] : []),
+      ...(context.firstMessage ? ['WELCOME'] : []),
+      'DEFAULT',
+    ];
+    for (const triggerType of triggers) {
+      const reply = await this.prisma.chatAutoReply.findFirst({
+        where: {
+          scope,
+          shopId: scope === 'SHOP' ? shopId : null,
+          isActive: true,
+          status: 'ACTIVE',
+          triggerType,
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+      });
+      if (reply?.content) return reply.content;
+    }
+    return null;
   }
 }

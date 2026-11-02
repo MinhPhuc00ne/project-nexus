@@ -7,6 +7,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { ChatMessage } from '@prisma/client';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import {
@@ -24,6 +25,8 @@ import { maskStaffSender, SUPPORT_STAFF_MASK } from './chat-mask.util';
 import { StaffQueueService } from './staff-queue.service';
 
 export interface ChatSocketBroadcaster {
+  isUserOnline?(userId: string): Promise<boolean | null>;
+  isSupportOnline?(): Promise<boolean | null>;
   broadcastMessage(conversationId: string, message: unknown): void;
   broadcastRead(conversationId: string, userId: string): void;
   broadcastToUser(userId: string, event: string, payload: unknown): void;
@@ -251,6 +254,7 @@ export class ChatService implements OnModuleInit {
       this.logger.log(`Ticket ${conv.id} đã vào hàng đợi OPEN (chưa có staff rảnh online).`);
     }
 
+    await this.triggerAutoReply(conv, userId, role, text);
     return conv;
   }
 
@@ -669,42 +673,62 @@ export class ChatService implements OnModuleInit {
   }
 
   private async triggerAutoReply(
-    conv: { id: string; type: string; participant1Id: string; participant2Id: string | null },
+    conv: {
+      id: string;
+      type: string;
+      participant1Id: string;
+      participant2Id: string | null;
+      status?: string;
+      assignedStaffId?: string | null;
+    },
     senderId: string,
     senderRole: string,
     text: string,
   ): Promise<void> {
     try {
-      if (conv.type === 'BUYER_SELLER' && senderRole !== 'SELLER') {
+      if (!text || ['RESOLVED', 'CLOSED'].includes(conv.status ?? '')) return;
+      const firstMessage =
+        (await this.prisma.chatMessage.count({
+          where: { conversationId: conv.id, senderId },
+        })) === 1;
+      if (conv.type === 'BUYER_SELLER') {
         const partnerId =
           conv.participant1Id === senderId ? conv.participant2Id : conv.participant1Id;
         if (!partnerId) return;
-        const reply = await this.autoReplyService.findMatchingReply(partnerId, 'SHOP', text);
+        const partner = await this.prisma.user.findUnique({
+          where: { id: partnerId },
+          select: { role: true, isShopSuspended: true },
+        });
+        if (partner?.role !== 'SELLER' || partner.isShopSuspended) return;
+        const reply = await this.autoReplyService.findMatchingReply(partnerId, 'SHOP', text, {
+          firstMessage,
+          offline: (await this.socketBroadcaster?.isUserOnline?.(partnerId)) === false,
+        });
         if (reply) {
-          const autoMsg = await this.prisma.chatMessage.create({
-            data: { conversationId: conv.id, senderId: partnerId, body: reply, attachments: [] },
-            include: {
-              sender: { select: { id: true, fullName: true, avatarUrl: true, role: true } },
-            },
-          });
+          const autoMsg = await this.saveAutoReply(conv, partnerId, reply);
           this.socketBroadcaster?.broadcastMessage(conv.id, autoMsg);
         }
       } else if (
         (conv.type === 'STAFF_BUYER' || conv.type === 'STAFF_SELLER') &&
         senderRole !== 'SUPPORT_STAFF'
       ) {
-        const reply = await this.autoReplyService.findMatchingReply(null, 'SYSTEM', text);
+        const reply = await this.autoReplyService.findMatchingReply(null, 'SYSTEM', text, {
+          firstMessage,
+          offline: conv.assignedStaffId
+            ? (await this.socketBroadcaster?.isUserOnline?.(conv.assignedStaffId)) === false
+            : (await this.socketBroadcaster?.isSupportOnline?.()) === false,
+        });
         if (reply) {
           const staffUser = await this.prisma.user.findFirst({
             where: { role: 'SUPPORT_STAFF' },
             select: { id: true },
           });
-          const botId = staffUser?.id || senderId;
-          const autoMsg = await this.prisma.chatMessage.create({
-            data: { conversationId: conv.id, senderId: botId, body: reply, attachments: [] },
-          });
+          // Never store a system reply as if the customer had authored it.
+          if (!staffUser) return;
+          const autoMsg = await this.saveAutoReply(conv, staffUser.id, reply);
           this.socketBroadcaster?.broadcastMessage(conv.id, {
             ...autoMsg,
+            senderId: SUPPORT_STAFF_MASK.id,
             sender: SUPPORT_STAFF_MASK,
           });
         }
@@ -712,6 +736,31 @@ export class ChatService implements OnModuleInit {
     } catch {
       // Auto-reply failures must not block the main conversation flow
     }
+  }
+
+  private async saveAutoReply(
+    conv: { id: string; participant1Id: string },
+    senderId: string,
+    reply: string,
+  ): Promise<ChatMessage> {
+    return this.prisma.$transaction(async (tx) => {
+      const body = `[Trả lời tự động] ${reply}`;
+      const message = await tx.chatMessage.create({
+        data: { conversationId: conv.id, senderId, body, attachments: [] },
+        include: { sender: { select: { id: true, fullName: true, avatarUrl: true, role: true } } },
+      });
+      await tx.chatConversation.update({
+        where: { id: conv.id },
+        data: {
+          lastMessage: body,
+          lastMessageAt: message.createdAt,
+          ...(senderId === conv.participant1Id
+            ? { unreadCountUser2: { increment: 1 } }
+            : { unreadCountUser1: { increment: 1 } }),
+        },
+      });
+      return message;
+    });
   }
 
   async markAsRead(convId: string, userId: string, role: string) {
