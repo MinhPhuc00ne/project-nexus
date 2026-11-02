@@ -13,17 +13,40 @@ import ChatMessageArea from './ChatMessageArea';
 import { getChatErrorMessage } from './chatUtils';
 import { useChatRoom } from './useChatRoom';
 import SupportMenu from './SupportMenu';
+import ChatbotPanel from './ChatbotPanel';
 import { OPEN_CHAT_WITH_USER_EVENT, type OpenChatWithUserRequest } from './chatEvents';
 
 export default function ChatWidget(): JSX.Element | null {
   const { token, storedUser } = useAuth();
-  if (!token || !storedUser) return null;
+  if (!token || !storedUser) return <GuestChatbotWidget />;
   return (
     <ChatPanel
       key={storedUser.id}
       userId={storedUser.id}
       canRequestSupport={storedUser.role === 'BUYER' || storedUser.role === 'SELLER'}
     />
+  );
+}
+
+function GuestChatbotWidget(): JSX.Element {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="fixed bottom-5 right-5 z-[100] font-sans max-sm:bottom-3 max-sm:right-3">
+      <button
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-label={open ? 'Đóng trợ lý' : 'Mở trợ lý NEXUS'}
+        className="ml-auto flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white shadow-xl"
+      >
+        {open ? <X size={22} /> : <MessageCircle size={22} />} {open ? 'Đóng' : 'Hỗ trợ NEXUS'}
+      </button>
+      <section
+        aria-label="Chatbot NEXUS"
+        className={`${open ? 'flex' : 'hidden'} mt-3 h-[min(600px,75dvh)] w-[min(460px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
+      >
+        <ChatbotPanel guest />
+      </section>
+    </div>
   );
 }
 
@@ -34,7 +57,7 @@ function ChatPanel({
   userId: string;
   canRequestSupport: boolean;
 }): JSX.Element {
-  const [view, setView] = useState<'chat' | 'support'>(canRequestSupport ? 'support' : 'chat');
+  const [view, setView] = useState<'chat' | 'support' | 'bot'>(canRequestSupport ? 'bot' : 'chat');
   const [open, setOpen] = useState(false);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [active, setActive] = useState<ChatConversation | null>(null);
@@ -251,14 +274,18 @@ function ChatPanel({
               aria-label="Tin nhắn và hỗ trợ"
               className="flex gap-2 border-b border-slate-100 px-4 py-2"
             >
-              {(['support', 'chat'] as const).map((tab) => (
+              {(['bot', 'support', 'chat'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setView(tab)}
                   aria-pressed={view === tab}
                   className={`rounded-lg px-4 py-2 text-sm font-semibold ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
-                  {tab === 'support' ? 'Hỗ trợ' : 'Tin nhắn'}
+                  {tab === 'bot'
+                    ? 'Trợ lý NEXUS'
+                    : tab === 'support'
+                      ? 'Nhân viên hỗ trợ'
+                      : 'Tin nhắn'}
                 </button>
               ))}
             </nav>
@@ -275,7 +302,17 @@ function ChatPanel({
             </div>
           )}
 
-          {view === 'support' && canRequestSupport ? (
+          {canRequestSupport && (
+            <div className={view === 'bot' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}>
+              <ChatbotPanel
+                creating={creating}
+                onRequestSupport={(description, orderId) =>
+                  handleSendSupportMessage({ category: 'Hỗ trợ từ chatbot', description, orderId })
+                }
+              />
+            </div>
+          )}
+          {view === 'bot' && canRequestSupport ? null : view === 'support' && canRequestSupport ? (
             <SupportMenu
               conversations={conversations}
               onSendSupportMessage={handleSendSupportMessage}

@@ -40,6 +40,7 @@ export { default as StaffInboxPage } from './staff/StaffInboxPage';
 export { default as StaffDisputesPage } from './staff/StaffDisputesPage';
 export { default as StaffAuctionSupportPage } from './staff/StaffAuctionSupportPage';
 export { default as StaffFaqPage } from './staff/StaffFaqPage';
+export { default as StaffBannersPage } from './staff/StaffBannersPage';
 export { default as StaffHistoryPage } from './staff/StaffHistoryPage';
 export { default as StaffPerformancePage } from './staff/StaffPerformancePage';
 

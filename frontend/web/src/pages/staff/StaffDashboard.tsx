@@ -7,6 +7,8 @@ import StaffSidebar from './StaffSidebar';
 import StaffHeader from './StaffHeader';
 import StaffTeamManagementPanel from './StaffTeamManagementPanel';
 import StaffTicketChatPanel from './StaffTicketChatPanel';
+import StaffDisputesPanel from './StaffDisputesPanel';
+import StaffBannersPanel from './StaffBannersPanel';
 
 export type { StaffSection };
 
@@ -35,6 +37,11 @@ export default function StaffDashboard({
   };
 
   const content = sectionContent[activeNavigation];
+  const unavailableApiMessage: Partial<Record<StaffSection, string>> = {
+    'Hỗ Trợ Đấu Giá 3D': 'Backend hiện chưa có API dành cho yêu cầu hỗ trợ đấu giá 3D.',
+    'Lịch Sử & CSAT': 'Backend hiện chưa có API lịch sử xử lý và đánh giá CSAT của Staff.',
+    'Hiệu Suất Cá Nhân': 'Backend hiện chưa có API thống kê hiệu suất theo nhân viên.',
+  };
 
   if (activeNavigation === 'Quản Lý Nhân Viên' && managementAccess !== 'allowed') {
     return (
@@ -97,6 +104,10 @@ export default function StaffDashboard({
 
           {activeNavigation === 'Quản Lý Nhân Viên' ? (
             <StaffTeamManagementPanel notify={notify} />
+          ) : activeNavigation === 'Khiếu Nại & Tranh Chấp' ? (
+            <StaffDisputesPanel />
+          ) : activeNavigation === 'Quản Lý Banner' ? (
+            <StaffBannersPanel />
           ) : activeNavigation !== 'Hộp Thư Trực Tuyến' ? (
             <section
               className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
@@ -125,7 +136,8 @@ export default function StaffDashboard({
                   <Inbox className="mx-auto mb-3 text-slate-400" size={28} />
                   <h3 className="font-semibold text-slate-700">Chưa có dữ liệu để hiển thị</h3>
                   <p className="mt-2 text-sm text-slate-500">
-                    Dữ liệu {content.title.toLowerCase()} sẽ hiển thị khi được hệ thống cung cấp.
+                    {unavailableApiMessage[activeNavigation] ||
+                      `Dữ liệu ${content.title.toLowerCase()} sẽ hiển thị khi được hệ thống cung cấp.`}
                   </p>
                 </div>
               )}

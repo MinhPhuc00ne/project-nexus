@@ -51,6 +51,7 @@ export const ROUTES = {
   STAFF_DISPUTES: '/staff/disputes',
   STAFF_AUCTION_SUPPORT: '/staff/auction-support',
   STAFF_FAQ: '/staff/faq',
+  STAFF_BANNERS: '/staff/banners',
   STAFF_HISTORY: '/staff/history',
   STAFF_PERFORMANCE: '/staff/performance',
 

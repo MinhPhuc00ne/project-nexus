@@ -1,4 +1,5 @@
 import type { JSX } from 'react';
+import ChatAvatar from '../../components/chat/ChatAvatar';
 import type { SupportTicket } from './StaffTicketConversationView';
 
 export interface StaffCustomerInfoAsideProps {
@@ -17,14 +18,12 @@ export default function StaffCustomerInfoAside({
               HỒ SƠ KHÁCH HÀNG
             </div>
             <div className="flex items-center gap-2.5">
-              <span
-                className={`inline-grid h-10 w-10 place-items-center rounded-full bg-[#ffdab5] text-[13px] font-extrabold text-[#7f5637] staff-avatar--${activeTicket.initials.toLowerCase()}`}
-              >
-                {activeTicket.initials}
-              </span>
+              <ChatAvatar src={activeTicket.avatarUrl} name={activeTicket.customer} />
               <div className="grid min-w-0 gap-0.5">
                 <b className="truncate text-[10px] text-slate-800">{activeTicket.customer}</b>
-                <small className="truncate text-[8px] text-[#9b8f96]">ID: {activeTicket.id}</small>
+                <small className="truncate text-[8px] text-[#9b8f96]">
+                  Mã khách: {activeTicket.customerId || 'Chưa có thông tin'}
+                </small>
                 <small className="truncate text-[8px] text-[#9b8f96]">
                   Vai trò: {activeTicket.role}
                 </small>
@@ -38,7 +37,15 @@ export default function StaffCustomerInfoAside({
             <div className="space-y-1.5 text-[9px] text-slate-600">
               <div className="flex justify-between">
                 <span className="text-slate-400">Chuyên mục:</span>
-                <span className="font-semibold">{activeTicket.category}</span>
+                <span className="font-semibold">
+                  {activeTicket.category === 'Shipping'
+                    ? 'Vận chuyển'
+                    : activeTicket.category === 'Escrow'
+                      ? 'Thanh toán'
+                      : activeTicket.category === 'Auction 3D'
+                        ? 'Đấu giá 3D'
+                        : 'Hỗ trợ chung'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Chủ đề:</span>
@@ -49,7 +56,11 @@ export default function StaffCustomerInfoAside({
               <div className="flex justify-between">
                 <span className="text-slate-400">Trạng thái:</span>
                 <span className="font-semibold text-blue-600">
-                  {activeTicket.conversationStatus || 'IN_PROGRESS'}
+                  {activeTicket.status === 'waiting'
+                    ? 'Chờ tiếp nhận'
+                    : activeTicket.status === 'resolved'
+                      ? 'Đã hoàn tất'
+                      : 'Đang xử lý'}
                 </span>
               </div>
               {typeof activeTicket.waitingTimeSeconds === 'number' && (

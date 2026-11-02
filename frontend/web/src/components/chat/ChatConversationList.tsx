@@ -1,5 +1,6 @@
 import type { FormEvent, JSX } from 'react';
 import { Plus } from 'lucide-react';
+import ChatAvatar from './ChatAvatar';
 import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
 
 interface ChatConversationListProps {
@@ -97,9 +98,7 @@ export default function ChatConversationList({
             onClick={() => onSelect(c)}
             className={`flex w-full gap-3 border-b border-slate-50 p-3 text-left hover:bg-blue-50 ${activeId === c.id ? 'bg-blue-50' : ''}`}
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 font-semibold text-blue-700">
-              {c.partner.fullName.slice(0, 1).toUpperCase()}
-            </span>
+            <ChatAvatar src={c.partner.avatarUrl} name={c.partner.fullName} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">
                 {c.partner.storeName || c.partner.fullName}

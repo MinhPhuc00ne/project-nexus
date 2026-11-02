@@ -1,7 +1,9 @@
+import ChatMessageContent from './ChatMessageContent';
 import { type FormEvent, type JSX, type KeyboardEvent, useEffect, useRef } from 'react';
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
 import type { ChatConversation, ChatMessage } from '../../types/chat.types';
 import { formatChatTime } from './chatUtils';
+import ChatAvatar from './ChatAvatar';
 
 interface ChatMessageAreaProps {
   active: ChatConversation | null;
@@ -68,6 +70,7 @@ export default function ChatMessageArea({
         <button aria-label="Về danh sách" onClick={onBack} className="sm:hidden">
           <ArrowLeft size={20} />
         </button>
+        <ChatAvatar src={active.partner.avatarUrl} name={active.partner.fullName} size={36} />
         <div>
           <h3 className="font-semibold">{active.partner.storeName || active.partner.fullName}</h3>
         </div>
@@ -97,33 +100,29 @@ export default function ChatMessageArea({
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.isMe ? 'justify-end' : 'justify-start'}`}
+            className={`flex items-end gap-2 ${message.isMe ? 'justify-end' : 'justify-start'}`}
           >
-            <div className="max-w-[85%]">
+            {!message.isMe && (
+              <ChatAvatar
+                src={message.senderAvatar}
+                name={message.senderName || active.partner.fullName}
+                size={28}
+              />
+            )}
+            <div className="max-w-[calc(100%-40px)]">
               <div
                 className={`whitespace-pre-wrap break-words rounded-2xl px-4 py-2 text-sm ${message.isMe ? 'rounded-br-sm bg-blue-600 text-white' : 'rounded-bl-sm border border-slate-200 bg-white'}`}
               >
-                {message.body}
-                {message.attachments.map(
-                  (url, i) =>
-                    /^https?:\/\//i.test(url) && (
-                      <a
-                        key={`${url}-${i}`}
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 block underline"
-                      >
-                        Tệp đính kèm {i + 1}
-                      </a>
-                    ),
-                )}
+                <ChatMessageContent body={message.body} attachments={message.attachments} />
               </div>
               <p className="mt-1 text-right text-[10px] text-slate-400">
                 {formatChatTime(message.createdAt)}
                 {message.isMe ? (message.isRead ? ' · Đã đọc' : ' · Đã gửi') : ''}
               </p>
             </div>
+            {message.isMe && (
+              <ChatAvatar src={message.senderAvatar} name={message.senderName || 'Bạn'} size={28} />
+            )}
           </div>
         ))}
         {typing && <p className="text-xs italic text-slate-500">Đang nhập…</p>}
