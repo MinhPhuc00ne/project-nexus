@@ -1,95 +1,134 @@
-import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { HomeHeroSlide } from './home.types';
+import { bannerLink, bannerStatus, listBanners, type Banner } from '../../services/banners';
 
-export interface HomeHeroBannerProps {
-  slides: HomeHeroSlide[];
-}
-
-export function HomeHeroBanner({ slides }: HomeHeroBannerProps) {
+export function HomeHeroBanner() {
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [revision, setRevision] = useState(0);
+  const [now, setNow] = useState(Date.now());
 
-  const activeHeroSlide = slides[activeSlide];
-  const showPreviousSlide = () =>
-    setActiveSlide((current) => (current === 0 ? slides.length - 1 : current - 1));
-  const showNextSlide = () =>
-    setActiveSlide((current) => (current === slides.length - 1 ? 0 : current + 1));
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    listBanners(true)
+      .then((items) => {
+        if (active) {
+          setBanners(items);
+          setActiveSlide(0);
+          setNow(Date.now());
+        }
+      })
+      .catch(() => {
+        if (active) setError('Chưa thể tải banner trang chủ.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [revision]);
 
-  if (!activeHeroSlide) return null;
+  // Refresh scheduled campaigns while a visitor keeps the homepage open.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(Date.now());
+      setRevision((value) => value + 1);
+    }, 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const slides = banners.filter((banner) => bannerStatus(banner, now) === 'Đang hiển thị');
+  const index = activeSlide % (slides.length || 1);
+  const banner = slides[index];
+
+  if (loading && !banners.length)
+    return (
+      <div
+        role="status"
+        className="flex aspect-[3/1] items-center justify-center rounded-2xl bg-slate-100 text-sm text-slate-500"
+      >
+        Đang tải banner…
+      </div>
+    );
+  if (error && !banners.length)
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-4 text-xs text-slate-500">
+        <p role="status">{error}</p>
+        <button
+          type="button"
+          className="font-semibold text-blue-600"
+          onClick={() => setRevision((value) => value + 1)}
+        >
+          Thử lại
+        </button>
+      </div>
+    );
+  if (!banner) return null;
+
+  const href = bannerLink(banner.targetUrl);
+  const image = (
+    <img
+      src={banner.imageUrl}
+      alt={banner.title}
+      className="aspect-[3/1] w-full object-contain"
+      fetchPriority="high"
+    />
+  );
 
   return (
-    <section className="rounded-[18px] border border-slate-200 bg-slate-100/60 p-5">
-      <div className="relative flex h-[520px] flex-col overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-sky-50 via-sky-100 to-sky-50 p-5 shadow-[0_16px_40px_rgb(28_57_115_/_8%)] sm:h-[440px] sm:p-6 lg:h-[360px] lg:p-8">
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-[42%] opacity-20 sm:opacity-30 lg:w-[48%] lg:opacity-100">
-          <img
-            src={activeHeroSlide.image}
-            alt=""
-            aria-hidden="true"
-            className="h-full w-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-sky-100 via-sky-100/60 to-transparent" />
-        </div>
-
-        <div className="relative z-10 lg:max-w-[62%]">
-          <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-orange-500">
-            {activeHeroSlide.badge}
-          </span>
-
-          <h1 className="mt-4 max-w-[980px] text-2xl font-black leading-[1.04] tracking-[-0.04em] text-slate-900 sm:text-3xl lg:text-[44px]">
-            {activeHeroSlide.title}
-            <span className="mt-2 block text-sky-500">{activeHeroSlide.accent}</span>
-          </h1>
-
-          <p className="mt-3 line-clamp-2 max-w-[820px] text-sm leading-6 text-slate-600 sm:text-[15px]">
-            {activeHeroSlide.description}
-          </p>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <button className="rounded-xl bg-[#f36a22] px-6 py-3 text-base font-bold text-white shadow-[0_8px_20px_rgba(243,106,34,0.25)] transition hover:bg-[#ea5b10]">
-              Mua Sắm Ngay
-            </button>
-
-            <button className="rounded-xl border border-slate-300 bg-white/80 px-6 py-3 text-base font-semibold text-slate-700 transition hover:bg-white">
-              Xem Phòng Đấu Giá 3D
-            </button>
-          </div>
-        </div>
-
-        <div className="relative z-10 mt-auto flex items-center justify-between pt-4">
-          <div className="flex items-center gap-2">
-            {slides.map((_, index) => (
+    <section
+      aria-label="Banner trang chủ"
+      aria-roledescription="trình chiếu"
+      className="overflow-hidden rounded-[18px] border border-slate-200 bg-slate-50"
+    >
+      {href ? (
+        <a href={href} className="block focus-visible:outline-2 focus-visible:outline-blue-600">
+          {image}
+        </a>
+      ) : (
+        image
+      )}
+      {slides.length > 1 && (
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-white px-4 py-3">
+          <button
+            type="button"
+            aria-label="Banner trước"
+            onClick={() => setActiveSlide((index + slides.length - 1) % slides.length)}
+            className="rounded-full border border-slate-200 p-2 text-slate-600 hover:bg-blue-50"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div className="flex flex-wrap justify-center gap-2">
+            {slides.map((slide, slideIndex) => (
               <button
-                key={index}
+                key={slide.id}
                 type="button"
-                aria-label={`Chuyển đến slide ${index + 1}`}
-                onClick={() => setActiveSlide(index)}
-                className={`h-2.5 rounded-full transition-all ${
-                  activeSlide === index ? 'w-10 bg-[#f36a22]' : 'w-2.5 bg-slate-300'
-                }`}
-              />
+                aria-label={`Xem banner: ${slide.title}`}
+                aria-current={index === slideIndex ? 'true' : undefined}
+                onClick={() => setActiveSlide(slideIndex)}
+                className="flex min-h-8 min-w-8 items-center justify-center"
+              >
+                <span
+                  className={`h-2.5 rounded-full ${index === slideIndex ? 'w-7 bg-orange-500' : 'w-2.5 bg-slate-300'}`}
+                />
+              </button>
             ))}
           </div>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              aria-label="Banner trước"
-              onClick={showPreviousSlide}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-orange-300 hover:text-[#f36a22]"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              aria-label="Banner tiếp theo"
-              onClick={showNextSlide}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-700 transition hover:border-orange-300 hover:text-[#f36a22]"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
+          <button
+            type="button"
+            aria-label="Banner tiếp theo"
+            onClick={() => setActiveSlide((index + 1) % slides.length)}
+            className="rounded-full border border-slate-200 p-2 text-slate-600 hover:bg-blue-50"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
-      </div>
+      )}
     </section>
   );
 }

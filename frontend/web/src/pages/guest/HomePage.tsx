@@ -9,12 +9,12 @@ import {
   HomeLiveAuction,
   HomeCategoriesSection,
 } from '../../components/home';
-import { flashSaleProducts, auctionProducts, heroSlides } from '../../mocks/home.mock';
+import { flashSaleProducts, auctionProducts } from '../../mocks/home.mock';
 
 function HomePage() {
   return (
     <main className="mx-auto max-w-[1280px] px-4 py-4">
-      <HomeHeroBanner slides={heroSlides} />
+      <HomeHeroBanner />
 
       <section className="mt-4 grid gap-4 md:grid-cols-2">
         <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
