@@ -286,5 +286,5 @@ test('webhook authenticates and rechecks GHN rather than trusting callback statu
     Status: 'delivered',
     TotalFee: 1,
   });
-  assert.deepEqual(tracking.refresh.mock.calls[0].arguments, ['o1']);
+  assert.deepEqual(tracking.refresh.mock.calls[0].arguments, ['o1', undefined, 'delivered']);
 });
