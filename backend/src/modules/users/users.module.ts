@@ -1,18 +1,16 @@
+import { Module } from '@nestjs/common';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
-import { Module, forwardRef } from '@nestjs/common';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
-import { UsersService as ModularUsersService } from './services/users.service';
-import { AddressService } from './services/address.service';
+import { StorageModule } from '../../core/storage/storage.module';
+import { UsersController } from './controllers/users.controller';
 import { BuyerController } from './controllers/buyer.controller';
 import { SellerController } from './controllers/seller.controller';
-import { AuthModule } from '../auth/auth.module';
-import { StorageModule } from '../../core/storage/storage.module';
+import { UsersService } from './services/users.service';
+import { AddressService } from './services/address.service';
 
 @Module({
-  imports: [forwardRef(() => AuthModule), StorageModule, FulfillmentModule],
+  imports: [StorageModule, FulfillmentModule],
   controllers: [UsersController, BuyerController, SellerController],
-  providers: [UsersService, ModularUsersService, AddressService],
-  exports: [UsersService, ModularUsersService, AddressService],
+  providers: [UsersService, AddressService],
+  exports: [UsersService, AddressService],
 })
 export class UsersModule {}

@@ -4,7 +4,7 @@ import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Roles } from '../../../core/security/roles.decorator';
-import { QueryAdminDisputesDto } from '../dto/query-admin-disputes.dto';
+import { QueryAdminDisputesDto } from '../dtos/query-admin-disputes.dto';
 import { AdminDisputesService } from '../services/admin-disputes.service';
 
 @ApiTags('5. ADMIN')

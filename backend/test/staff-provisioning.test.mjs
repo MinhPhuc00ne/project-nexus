@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { staffFixture, staffInput, initialPassword, load } from './staff-fixture.mjs';
 const bcrypt = load('bcrypt');
-const { AdminService } = load('../src/modules/admin/admin.service.ts');
+const { AdminService } = load('../src/modules/admin/services/admin.service.ts');
 const { AuthService: ModularAuth } = load('../src/modules/auth/services/auth.service.ts');
 const { StaffController } = load('../src/modules/auth/controllers/staff.controller.ts');
 

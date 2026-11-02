@@ -10,10 +10,10 @@ import {
   ViolationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { QueryAdminShopsDto } from '../dto/query-admin-shops.dto';
-import { UpdateShopStatusDto } from '../dto/update-shop-status.dto';
-import { WarnShopDto } from '../dto/warn-shop.dto';
-import { CreateShopViolationDto } from '../dto/create-shop-violation.dto';
+import { QueryAdminShopsDto } from '../dtos/query-admin-shops.dto';
+import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
+import { WarnShopDto } from '../dtos/warn-shop.dto';
+import { CreateShopViolationDto } from '../dtos/create-shop-violation.dto';
 
 @Injectable()
 export class AdminShopsService {

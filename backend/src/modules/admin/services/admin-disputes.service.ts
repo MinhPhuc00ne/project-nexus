@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DisputeStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { QueryAdminDisputesDto } from '../dto/query-admin-disputes.dto';
+import { QueryAdminDisputesDto } from '../dtos/query-admin-disputes.dto';
 
 @Injectable()
 export class AdminDisputesService {

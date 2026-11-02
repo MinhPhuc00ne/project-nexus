@@ -19,14 +19,18 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { CurrentUser, Roles, AuthenticatedUserPayload } from '../../core/security/roles.decorator';
-import { JwtAuthGuard } from '../../core/security/jwt-auth.guard';
-import { RolesGuard } from '../../core/security/roles.guard';
+import {
+  CurrentUser,
+  Roles,
+  AuthenticatedUserPayload,
+} from '../../../core/security/roles.decorator';
+import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
+import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
-import { CreateSellerRequestDto } from './dto/create-seller-request.dto';
-import { ToggleSellerDto } from './dto/toggle-seller.dto';
-import { UsersService } from './users.service';
-import { sellerProofFileFilter, sellerProofStorage } from './utils/seller-proof-upload.util';
+import { CreateSellerRequestDto } from '../dtos/create-seller-request.dto';
+import { ToggleSellerDto } from '../dtos/toggle-seller.dto';
+import { UsersService } from '../services/users.service';
+import { sellerProofFileFilter, sellerProofStorage } from '../utils/seller-proof-upload.util';
 
 @ApiTags('2. BUYER')
 @ApiBearerAuth()
@@ -77,7 +81,7 @@ export class UsersController {
     FileInterceptor('file', {
       storage: sellerProofStorage,
       fileFilter: sellerProofFileFilter,
-      limits: { fileSize: 15 * 1024 * 1024 }, // Tối đa 15MB
+      limits: { fileSize: 15 * 1024 * 1024 },
     }),
   )
   @ApiConsumes('multipart/form-data', 'application/json')

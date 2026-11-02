@@ -8,11 +8,11 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  GoneException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
-import { AuthService as SharedAuthService } from '../auth.service';
-import { UsersService, UserProfileResponse } from '../../users/services/users.service';
+import { AuthProfileService, UserProfileResponse } from '../services/auth-profile.service';
 import {
   ActivateStaffDto,
   ChangePasswordDto,
@@ -28,16 +28,23 @@ import {
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
-import { UpdateStaffProfileDto } from '../dto/update-staff-profile.dto';
+import { UpdateStaffProfileDto } from '../dtos/update-staff-profile.dto';
 
 @ApiTags('4. STAFF')
 @Controller('staff')
 export class StaffController {
   constructor(
-    private readonly authService: AuthService,
-    private readonly usersService: UsersService,
-    private readonly sharedAuth: SharedAuthService,
-  ) {}
+    private readonly authProfileService: AuthProfileService,
+    private authService: AuthService,
+    sharedAuth?: AuthService,
+  ) {
+    if (
+      sharedAuth &&
+      typeof (sharedAuth as { forgotPassword?: unknown }).forgotPassword === 'function'
+    ) {
+      this.authService = sharedAuth;
+    }
+  }
 
   @ApiOperation({
     deprecated: true,
@@ -48,8 +55,10 @@ export class StaffController {
   @ApiQuery({ name: 'token', description: 'Mã token kích hoạt từ email' })
   @Public()
   @Get('invitation-info')
-  async getInvitationInfo(@Query('token') token: string) {
-    return this.authService.getStaffInvitationInfo(token);
+  async getInvitationInfo(@Query('token') _token: string): Promise<never> {
+    throw new GoneException(
+      'Staff được cấp tài khoản và mật khẩu qua email. Vui lòng đăng nhập hoặc dùng Quên mật khẩu.',
+    );
   }
 
   @ApiOperation({
@@ -61,13 +70,10 @@ export class StaffController {
   @Public()
   @Post('activate')
   @HttpCode(HttpStatus.OK)
-  async activateStaff(@Body() dto: ActivateStaffDto): Promise<{
-    success: boolean;
-    message: string;
-    assignedEmail: string;
-    user: { id: string; fullName: string; platformEmail: string; role: Role };
-  }> {
-    return this.authService.activateStaff(dto);
+  async activateStaff(@Body() _dto: ActivateStaffDto): Promise<never> {
+    throw new GoneException(
+      'Luồng kích hoạt bằng token đã ngừng. Vui lòng dùng tài khoản được cấp hoặc Quên mật khẩu.',
+    );
   }
 
   @ApiOperation({
@@ -79,7 +85,7 @@ export class StaffController {
   @RequirePrivilege('PROFILE.VIEW')
   @Get('profile')
   async getStaffProfile(@CurrentUser('id') userId: string): Promise<UserProfileResponse> {
-    return this.usersService.getProfile(userId);
+    return this.authProfileService.getProfile(userId);
   }
 
   @Patch('profile')
@@ -91,7 +97,7 @@ export class StaffController {
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateStaffProfileDto,
   ): Promise<UserProfileResponse> {
-    return this.usersService.updateStaffProfile(userId, dto);
+    return this.authProfileService.updateStaffProfile(userId, dto);
   }
 
   @ApiOperation({
@@ -106,7 +112,7 @@ export class StaffController {
   async forgotPassword(
     @Body() dto: StaffForgotPasswordDto,
   ): Promise<{ success: boolean; message: string }> {
-    const result = await this.sharedAuth.forgotPassword(dto);
+    const result = await this.authService.forgotPassword(dto);
     return { success: true, message: result.message };
   }
 
@@ -122,7 +128,7 @@ export class StaffController {
   async resetPassword(
     @Body() dto: StaffResetPasswordDto,
   ): Promise<{ success: boolean; message: string }> {
-    const result = await this.sharedAuth.resetPassword({
+    const result = await this.authService.resetPassword({
       email: dto.email,
       code: dto.otp,
       newPassword: dto.newPassword,
@@ -143,6 +149,6 @@ export class StaffController {
     @CurrentUser('id') userId: string,
     @Body() dto: ChangePasswordDto,
   ): Promise<{ success: boolean; message: string }> {
-    return this.authService.changePassword(userId, dto);
+    return this.authProfileService.changePassword(userId, dto);
   }
 }
