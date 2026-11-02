@@ -9,6 +9,7 @@ import type {
 } from '../types/admin-product.types';
 import api, { ApiRequestError } from './api';
 import { getStoredToken } from './auth';
+import type { AdminDisputePage, QueryAdminDisputes } from '../types/admin-dispute.types';
 import type {
   SystemSettings,
   UpdateSystemSettingsDto,
@@ -89,6 +90,13 @@ export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult>
     method: 'POST',
     data: dto,
   });
+}
+
+export function listAdminDisputes(
+  params: QueryAdminDisputes,
+  signal?: AbortSignal,
+): Promise<AdminDisputePage> {
+  return adminRequest<AdminDisputePage>({ url: '/admin/disputes', method: 'GET', params, signal });
 }
 
 export function getAdminSettings(signal?: AbortSignal): Promise<SystemSettings> {
