@@ -14,7 +14,6 @@ import { Server, Socket } from 'socket.io';
 import {
   WS_AUCTION_EVENTS,
   WsJoinRoomDto,
-  WsPlaceBidDto,
   WsBidPlacedPayload,
   WsTimerSyncPayload,
   WsTimeExtendedPayload,

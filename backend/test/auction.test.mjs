@@ -146,7 +146,7 @@ test('AuctionService.placeBid rejects when buyer wallet balance is insufficient'
           findUnique: mock.fn(async () => ({
             id: 'wal-1',
             userId: 'buyer-1',
-            balance: 10000000, // Only 10m, needs 55m
+            balance: 10000000,
             lockedBalance: 0,
           })),
         },
@@ -166,7 +166,7 @@ test('AuctionService.placeBid rejects when buyer wallet balance is insufficient'
 });
 
 test('AuctionService.placeBid triggers anti-sniping extension when placed within last 2 minutes and manages wallet balance locks', async () => {
-  const initialEndTime = new Date(Date.now() + 60000); // 1 minute left (<= 120s)
+  const initialEndTime = new Date(Date.now() + 60000);
 
   const buyerWallet = {
     id: 'wal-buyer2',
