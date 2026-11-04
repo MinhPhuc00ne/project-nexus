@@ -1,20 +1,21 @@
-# Toast notification
+# Toast Notification Component
 
-`ToastProvider` được gắn một lần trong `App.tsx`. Mọi page/component bên dưới có thể dùng hook:
+The `ToastProvider` is mounted once in `App.tsx`. All descendant pages and components consume notifications using the `useToast` hook:
 
 ```tsx
 import { useToast } from '@/components/ToastNotification';
 
-// Gọi hook bên trong component.
 const toast = useToast();
 
-toast.success('Đã lưu thay đổi.');
-toast.error('Không thể lưu thay đổi. Vui lòng thử lại.');
+toast.success('Changes saved successfully.');
+toast.error('Unable to save changes. Please try again.');
 ```
 
-- Thành công: xanh lá. Thất bại: đỏ. Cùng bố cục và nằm ở góc dưới bên phải.
-- Tự đóng sau 4 giây; mỗi thông báo có timer riêng và nút đóng.
-- Tối đa 3 thông báo hiển thị cùng lúc; thông báo mới thay thông báo cũ nhất khi đầy.
-- Đổi thời gian bằng `toast.success('Đã lưu.', { duration: 3000 })` (mili giây).
-- Có thể đóng sớm: `const id = toast.error('Lỗi.'); toast.dismiss(id);`.
-- Không cần import/render `Success` hoặc `Fail` trong từng page; provider quản lý chúng.
+## Behavior and Guidelines
+
+- Success notifications display in green; failure notifications display in red. Both share identical layout styling in the lower-right corner.
+- Notifications dismiss automatically after 4 seconds; each notification maintains an independent timer and close button.
+- A maximum of 3 notifications display simultaneously; incoming notifications replace the oldest entry when the queue is full.
+- Override default display duration via configuration: `toast.success('Saved.', { duration: 3000 })` (in milliseconds).
+- Early dismissal: `const id = toast.error('Error occurred.'); toast.dismiss(id);`.
+- Individual pages do not need to import or render presentation components; `ToastProvider` manages rendering and lifecycle transitions globally.

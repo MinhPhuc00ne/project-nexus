@@ -1,46 +1,49 @@
 # Project Nexus - Documentation Portal
 
-Welcome to the comprehensive technical documentation portal for Project Nexus — a high-performance, modular monolith platform for Luxury E-commerce and Realtime 3D Auctions.
+Welcome to the comprehensive technical documentation portal for Project Nexus, a modular monolith platform for luxury retail e-commerce and real-time 3D auctions.
 
-## 1. Kiến Trúc Hệ Thống Và Đặc Tả Nghiệp Vụ
+## 1. System Architecture and Business Rules
 
-Tài liệu chi tiết trong thư mục `docs/architecture/`:
+Detailed specifications located in `docs/architecture/`:
 
-| Tài liệu                                                        | Mô tả tóm lược                                                                            | Phạm vi chính            |
-| :-------------------------------------------------------------- | :---------------------------------------------------------------------------------------- | :----------------------- |
-| [`ARCHITECTURE_MODEL.md`](./architecture/ARCHITECTURE_MODEL.md) | Kiến trúc Modular Monolith, lược đồ cơ sở dữ liệu Prisma và ranh giới giao dịch           | Backend và Cơ sở dữ liệu |
-| [`BUSINESS_RULES.md`](./architecture/BUSINESS_RULES.md)         | Luật nghiệp vụ cốt lõi: vòng đời Escrow, đấu giá 3D realtime, anti-sniping và điểm uy tín | Logic nghiệp vụ          |
-| [`DESIGN_PATTERNS.md`](./architecture/DESIGN_PATTERNS.md)       | Các mẫu thiết kế ứng dụng: Repository, Strategy, In-Process Event và Unit of Work         | Kiến trúc phần mềm       |
+| Document                                                        | Summary                                                                                       | Scope                 |
+| :-------------------------------------------------------------- | :-------------------------------------------------------------------------------------------- | :-------------------- |
+| [`ARCHITECTURE_MODEL.md`](./architecture/ARCHITECTURE_MODEL.md) | Modular Monolith architecture, Prisma database schema, and transactional boundaries           | Backend and Database  |
+| [`BUSINESS_RULES.md`](./architecture/BUSINESS_RULES.md)         | Core business logic, escrow lifecycle, real-time 3D auctions, anti-sniping, and trust scoring | Business Logic        |
+| [`DESIGN_PATTERNS.md`](./architecture/DESIGN_PATTERNS.md)       | Implemented patterns including Repository, Strategy, In-Process Events, and Unit of Work      | Software Architecture |
 
-## 2. Tiêu Chuẩn Kỹ Thuật Và Quy Chuẩn Mã Nguồn
+## 2. Engineering Standards and Code Quality
 
-Tài liệu chi tiết trong thư mục `docs/standards/`:
+Detailed specifications located in `docs/standards/`:
 
-| Tài liệu                                                     | Mô tả tóm lược                                                                               | Phạm vi chính       |
-| :----------------------------------------------------------- | :------------------------------------------------------------------------------------------- | :------------------ |
-| [`CLEAN_CODE.md`](./standards/CLEAN_CODE.md)                 | Quy chuẩn mã nguồn sạch: phân tách trách nhiệm, cấm comment dòng đơn vô nghĩa và chuẩn TSDoc | Chất lượng mã nguồn |
-| [`WRITING_STYLE.md`](./standards/WRITING_STYLE.md)           | Quy chuẩn văn phong kỹ thuật: giọng văn trung lập, cấm in đậm giữa câu và quy định tài liệu  | Quy chuẩn tài liệu  |
-| [`DESIGN_PRINCIPLES.md`](./standards/DESIGN_PRINCIPLES.md)   | Nguyên tắc thiết kế phần mềm: SOLID, KISS, YAGNI, DRY và kiểm soát độ ghép nối               | Nguyên lý kỹ thuật  |
-| [`NAMING_CONVENTIONS.md`](./standards/NAMING_CONVENTIONS.md) | Quy ước đặt tên thống nhất cho TypeScript, React components, NestJS modules và cơ sở dữ liệu | Tính nhất quán      |
+| Document                                                     | Summary                                                                                                      | Scope                   |
+| :----------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------- | :---------------------- |
+| [`CLEAN_CODE.md`](./standards/CLEAN_CODE.md)                 | Clean code criteria, separation of concerns, prohibition of meaningless inline comments, and TSDoc standards | Code Quality            |
+| [`WRITING_STYLE.md`](./standards/WRITING_STYLE.md)           | Technical writing standards, neutral tone, typography rules, and documentation scope boundaries              | Documentation Standards |
+| [`DESIGN_PRINCIPLES.md`](./standards/DESIGN_PRINCIPLES.md)   | Software design principles including SOLID, KISS, YAGNI, DRY, and Twelve-Factor App guidelines               | Engineering Tenets      |
+| [`NAMING_CONVENTIONS.md`](./standards/NAMING_CONVENTIONS.md) | Universal naming conventions for TypeScript, React components, NestJS modules, and database models           | Consistency Standards   |
 
-## 3. Cẩm Nang Kỹ Thuật Giao Diện Người Dùng (Frontend)
+## 3. Frontend Engineering
 
-Tài liệu chi tiết trong thư mục `docs/frontend/`:
+Detailed specifications located in `docs/frontend/`:
 
-| Tài liệu                                                | Mô tả tóm lược                                                                               | Đối tượng độc giả |
-| :------------------------------------------------------ | :------------------------------------------------------------------------------------------- | :---------------- |
-| [`FRONTEND_GUIDE.md`](./frontend/FRONTEND_GUIDE.md)     | Cẩm nang phát triển giao diện: React 19, Vite, Tailwind CSS, Axios và dịch vụ thời gian thực | Kỹ sư Frontend    |
-| [`UI_SPECIFICATION.md`](./frontend/UI_SPECIFICATION.md) | Đặc tả phân tầng giao diện, bảng màu, điểm ngắt responsive và cây định tuyến phân quyền      | UI và UX Designer |
+| Document                                                | Summary                                                                                         | Target Audience                  |
+| :------------------------------------------------------ | :---------------------------------------------------------------------------------------------- | :------------------------------- |
+| [`FRONTEND_GUIDE.md`](./frontend/FRONTEND_GUIDE.md)     | Client-side development guide: React 19, Vite, Tailwind CSS, Axios, and real-time services      | Frontend Engineers               |
+| [`UI_SPECIFICATION.md`](./frontend/UI_SPECIFICATION.md) | Layered routing layouts, design tokens, color palette, and component decomposition architecture | Frontend Engineers and Designers |
 
-## 4. Cẩm Nang Kỹ Thuật Dịch Vụ Máy Chủ (Backend)
+## 4. Backend Engineering
 
-Tài liệu chi tiết trong thư mục `docs/backend/`:
+Detailed specifications located in `docs/backend/`:
 
-| Tài liệu                                         | Mô tả tóm lược                                                                              | Đối tượng độc giả |
-| :----------------------------------------------- | :------------------------------------------------------------------------------------------ | :---------------- |
-| [`BACKEND_GUIDE.md`](./backend/BACKEND_GUIDE.md) | Cẩm nang phát triển dịch vụ: NestJS 12, Prisma ORM 7, PostgreSQL, Redis, PayOS và WebSocket | Kỹ sư Backend     |
+| Document                                         | Summary                                                                                          | Target Audience   |
+| :----------------------------------------------- | :----------------------------------------------------------------------------------------------- | :---------------- |
+| [`BACKEND_GUIDE.md`](./backend/BACKEND_GUIDE.md) | Server-side development guide: NestJS 12, Prisma ORM 7, PostgreSQL, Redis, PayOS, and WebSockets | Backend Engineers |
 
-## 5. Đặc Tả Yêu Cầu Và Giao Diện Lập Trình (API & SRS)
+## 5. API and Requirements Specifications
 
-- [Đặc Tả Yêu Cầu Phần Mềm (SRS)](./srs/README.md): Yêu cầu chức năng và phi chức năng cho hệ thống thương mại điện tử kết hợp đấu giá.
-- [Chỉ Mục Đặc Tả API](./api/README.md): Danh mục các điểm cuối REST API và hợp đồng sự kiện WebSocket.
+Detailed specifications located in `docs/api/` and `docs/srs/`:
+
+- [Software Requirements Specification (SRS)](./srs/README.md): Comprehensive functional and non-functional requirements for the e-commerce and auction platform.
+- [API Specifications Index](./api/README.md): Central catalog of HTTP REST API endpoints and real-time WebSocket contracts.
+- [Order After-Sales Specification](./api/ORDER_AFTER_SALES.md): Protocol governing whole-order cancellations, returns, and dispute refunds.

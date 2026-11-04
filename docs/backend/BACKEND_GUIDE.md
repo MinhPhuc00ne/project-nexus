@@ -101,7 +101,7 @@ Launch PostgreSQL 17 and Redis 7:
 npm run docker:up
 ```
 
-### 5.2 Prisma Migrations & Seeding
+### 5.2 Prisma Migrations and Seeding
 
 ```bash
 # Generate Prisma Client
