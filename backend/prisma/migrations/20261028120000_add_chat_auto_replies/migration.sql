@@ -14,21 +14,21 @@ CREATE TABLE IF NOT EXISTS "chat_auto_replies" (
     "cancelled_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "chat_auto_replies_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "chat_auto_replies_shop_id_scope_idx" ON "chat_auto_replies"("shop_id", "scope");
+CREATE INDEX IF NOT EXISTS "chat_auto_replies_shop_id_scope_idx" ON "chat_auto_replies" ("shop_id", "scope");
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "chat_auto_replies_status_idx" ON "chat_auto_replies"("status");
+CREATE INDEX IF NOT EXISTS "chat_auto_replies_status_idx" ON "chat_auto_replies" ("status");
 
 -- AddForeignKey
 DO $$ BEGIN
     ALTER TABLE "chat_auto_replies" ADD CONSTRAINT "chat_auto_replies_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-EXCEPTION
-    WHEN duplicate_object THEN null;
+
+EXCEPTION WHEN duplicate_object THEN null;
+
 END $$;
 
 -- AddForeignKey

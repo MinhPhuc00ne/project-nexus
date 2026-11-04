@@ -15,7 +15,6 @@ CREATE TABLE "shop_action_logs" (
     "action" "ShopActionType" NOT NULL,
     "reason" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
     CONSTRAINT "shop_action_logs_pkey" PRIMARY KEY ("id")
 );
 
@@ -34,7 +33,6 @@ CREATE TABLE "shop_violations" (
     "handled_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "shop_violations_pkey" PRIMARY KEY ("id")
 );
 
@@ -42,7 +40,7 @@ CREATE TABLE "shop_violations" (
 CREATE TABLE "withdrawal_requests" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
-    "amount" DECIMAL(14,2) NOT NULL,
+    "amount" DECIMAL(14, 2) NOT NULL,
     "bank_name" TEXT NOT NULL,
     "account_number" TEXT NOT NULL,
     "account_holder_name" TEXT NOT NULL,
@@ -53,36 +51,42 @@ CREATE TABLE "withdrawal_requests" (
     "reviewed_at" TIMESTAMP(3),
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
-
     CONSTRAINT "withdrawal_requests_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE INDEX "shop_action_logs_shop_id_created_at_idx" ON "shop_action_logs"("shop_id", "created_at");
+CREATE INDEX "shop_action_logs_shop_id_created_at_idx" ON "shop_action_logs" ("shop_id", "created_at");
 
 -- CreateIndex
-CREATE INDEX "shop_violations_shop_id_status_idx" ON "shop_violations"("shop_id", "status");
+CREATE INDEX "shop_violations_shop_id_status_idx" ON "shop_violations" ("shop_id", "status");
 
 -- CreateIndex
-CREATE INDEX "withdrawal_requests_user_id_status_idx" ON "withdrawal_requests"("user_id", "status");
+CREATE INDEX "withdrawal_requests_user_id_status_idx" ON "withdrawal_requests" ("user_id", "status");
 
 -- AddForeignKey
-ALTER TABLE "shop_action_logs" ADD CONSTRAINT "shop_action_logs_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "shop_action_logs"
+ADD CONSTRAINT "shop_action_logs_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "shop_action_logs" ADD CONSTRAINT "shop_action_logs_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "shop_action_logs"
+ADD CONSTRAINT "shop_action_logs_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "shop_violations" ADD CONSTRAINT "shop_violations_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "shop_violations"
+ADD CONSTRAINT "shop_violations_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "shop_violations" ADD CONSTRAINT "shop_violations_reporter_id_fkey" FOREIGN KEY ("reporter_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "shop_violations"
+ADD CONSTRAINT "shop_violations_reporter_id_fkey" FOREIGN KEY ("reporter_id") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "shop_violations" ADD CONSTRAINT "shop_violations_handled_by_admin_id_fkey" FOREIGN KEY ("handled_by_admin_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "shop_violations"
+ADD CONSTRAINT "shop_violations_handled_by_admin_id_fkey" FOREIGN KEY ("handled_by_admin_id") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "withdrawal_requests" ADD CONSTRAINT "withdrawal_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "withdrawal_requests"
+ADD CONSTRAINT "withdrawal_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "withdrawal_requests" ADD CONSTRAINT "withdrawal_requests_reviewed_by_admin_id_fkey" FOREIGN KEY ("reviewed_by_admin_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "withdrawal_requests"
+ADD CONSTRAINT "withdrawal_requests_reviewed_by_admin_id_fkey" FOREIGN KEY ("reviewed_by_admin_id") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
