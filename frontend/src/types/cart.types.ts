@@ -2,8 +2,10 @@ export interface CartItem {
   id: string | number;
   productId?: string;
   name: string;
-  price: number; // Numeric amount in VND
-  formattedPrice: string; // e.g. "128.500.000 ₫"
+  /** Numeric amount in VND */
+  price: number;
+  /** Formatted currency string representation (e.g., "128.500.000 ₫") */
+  formattedPrice: string;
   qty: number;
   img: string;
   shopName?: string;

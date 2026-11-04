@@ -1,6 +1,6 @@
-// Union type: chỉ chấp nhận các tên tab này, giúp TypeScript phát hiện tên tab viết sai.
 import type { AdminCommerceData, CommerceChange } from './commerceTypes';
 
+/** Supported administrator dashboard navigation tabs. */
 export type AdminTab =
   | 'overview'
   | 'auctions'
@@ -18,7 +18,7 @@ export type AdminTab =
   | 'system'
   | 'settings';
 
-// Báo cáo khiếu nại để Admin xem xét hoàn tiền.
+/** Refund request dispute summary for administrator review. */
 export interface RefundRequest {
   id: string;
   product: string;
@@ -29,27 +29,29 @@ export interface RefundRequest {
   status: 'pending' | 'approved' | 'rejected';
 }
 
-// pending = chờ duyệt lịch, scheduled = đã lên lịch, live = đang diễn ra.
+/** Auction listing item representing pending, scheduled, or live bidding events. */
 export interface AuctionItem {
   id: string;
   name: string;
   seller: string;
-  price: number; // Giá khởi điểm, đơn vị VND; giữ kiểu number để tính tiền cọc/phí.
-  preset: string; // Tên mẫu hiển thị 3D; bản demo chưa chứa file mô hình GLB.
+  /** Starting bid price in VND */
+  price: number;
+  /** 3D model preset key */
+  preset: string;
   time: string;
-  duration: number; // Thời lượng phiên, đơn vị phút.
+  /** Session duration in minutes */
+  duration: number;
   image: string;
   status: 'pending' | 'scheduled' | 'live';
 }
 
-// Gói dữ liệu chung do AdminLayout sở hữu và truyền xuống các tab qua props.
+/** Shared dashboard state owned by AdminLayout and distributed down to tab panels. */
 export interface AdminData extends AdminCommerceData {
   refunds: RefundRequest[];
   auctions: AuctionItem[];
 }
 
-// Hợp đồng callback giữa trang cha và tab: tab yêu cầu thao tác, trang cha cập nhật data.
-// Các hàm hiện trả void vì thao tác đồng bộ trong demo; API thực tế có thể cần Promise.
+/** Action callbacks dispatched from administrator tab views to the root layout. */
 export interface AdminActions {
   updateCommerce: (change: CommerceChange) => void;
   navigate: (tab: AdminTab) => void;
