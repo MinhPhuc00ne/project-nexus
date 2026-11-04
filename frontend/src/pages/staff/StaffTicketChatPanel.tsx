@@ -75,7 +75,11 @@ export default function StaffTicketChatPanel({
             c.type === 'STAFF_BUYER' || c.type === 'STAFF_SELLER' || c.type === 'SUPPORT_TICKET',
         );
         const allSupport = [...queued, ...assignedSupport];
-        const uniqueSupport = [...new Map(allSupport.map((c) => [c.id, c])).values()];
+        const uniqueSupport = [...new Map(allSupport.map((c) => [c.id, c])).values()].sort(
+          (a, b) =>
+            new Date(b.lastMessageAt ?? b.createdAt).getTime() -
+              new Date(a.lastMessageAt ?? a.createdAt).getTime() || a.id.localeCompare(b.id),
+        );
         setConversations(uniqueSupport);
         setActiveTicketId((current) => current ?? uniqueSupport[0]?.id ?? null);
         setListError('');
@@ -132,6 +136,7 @@ export default function StaffTicketChatPanel({
               body: m.body,
               attachments: m.attachments,
               isAgent: m.isMe,
+              isRead: m.isRead,
               time: new Date(m.createdAt).toLocaleTimeString('vi-VN', {
                 hour: '2-digit',
                 minute: '2-digit',

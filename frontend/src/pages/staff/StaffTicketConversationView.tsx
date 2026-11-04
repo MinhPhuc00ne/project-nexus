@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
-import { MessageCircle, Paperclip, Send, ShieldCheck, CheckCheck, X } from 'lucide-react';
+import { MessageCircle, Paperclip, Send, ShieldCheck, Check, CheckCheck, X } from 'lucide-react';
 import { uploadChatAttachments } from '../../services/chat';
 import ChatAvatar from '../../components/chat/ChatAvatar';
 import ChatMessageContent from '../../components/chat/ChatMessageContent';
@@ -10,6 +10,7 @@ export interface ChatMessage {
   time: string;
   body: string;
   isAgent?: boolean;
+  isRead?: boolean;
   attachments?: string[];
 }
 export type TicketStatus = 'chatting' | 'waiting' | 'resolved';
@@ -121,7 +122,7 @@ export default function StaffTicketConversationView({
       </div>
     );
   return (
-    <div className="support-conversation">
+    <div className="support-conversation" data-chat-conversation-id={activeTicket.id}>
       <div className="support-conversation-header">
         <div className="support-person">
           <ChatAvatar src={activeTicket.avatarUrl} name={activeTicket.customer} />
@@ -195,6 +196,18 @@ export default function StaffTicketConversationView({
               {message.isAgent && <ShieldCheck size={13} />}
             </div>
             <ChatMessageContent body={message.body} attachments={message.attachments} />
+            {message.isAgent && (
+              <small
+                className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${message.isRead ? 'text-blue-600' : 'text-slate-400'}`}
+              >
+                {message.isRead ? (
+                  <CheckCheck size={13} aria-hidden="true" />
+                ) : (
+                  <Check size={13} aria-hidden="true" />
+                )}
+                {message.isRead ? 'Đã đọc' : 'Đã gửi'}
+              </small>
+            )}
           </article>
         ))}
         {typing && (

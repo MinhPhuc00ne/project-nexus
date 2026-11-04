@@ -19,6 +19,7 @@ import { OPEN_CHAT_WITH_USER_EVENT, type OpenChatWithUserRequest } from './chatE
 export default function ChatWidget(): JSX.Element | null {
   const { token, storedUser } = useAuth();
   if (!token || !storedUser) return <GuestChatbotWidget />;
+  if (storedUser.role === 'SUPPORT_STAFF') return null;
   return (
     <ChatPanel
       key={storedUser.id}
@@ -42,7 +43,7 @@ function GuestChatbotWidget(): JSX.Element {
       </button>
       <section
         aria-label="Chatbot NEXUS"
-        className={`${open ? 'flex' : 'hidden'} mt-3 h-[min(600px,75dvh)] w-[min(460px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
+        className={`${open ? 'flex' : 'hidden'} mt-3 h-[min(600px,calc(100dvh-100px))] w-[min(460px,calc(100vw-40px))] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
       >
         <ChatbotPanel guest />
       </section>
@@ -110,6 +111,13 @@ function ChatPanel({
     userId,
     isOpen: open && view === 'chat',
     onRevisionChange: () => setRevision((v) => v + 1),
+    onRead: (conversationId) => {
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === conversationId ? { ...conversation, unreadCount: 0 } : conversation,
+        ),
+      );
+    },
   });
 
   const displayError = panelError || room.error;
@@ -250,9 +258,9 @@ function ChatPanel({
       ) : (
         <section
           aria-label="Hộp tin nhắn"
-          className="flex h-[min(640px,85dvh)] w-[min(760px,calc(100vw-24px))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl"
+          className="flex h-[min(640px,calc(100dvh-40px))] w-[min(760px,calc(100vw-40px))] max-sm:h-[min(640px,calc(100dvh-24px))] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl"
         >
-          <header className="flex items-center justify-between bg-blue-600 px-5 py-4 text-white">
+          <header className="flex shrink-0 items-center justify-between gap-2 bg-blue-600 px-5 py-4 text-white">
             <div className="flex items-center gap-3">
               <MessageCircle />
               <div>
@@ -272,14 +280,14 @@ function ChatPanel({
           {canRequestSupport && (
             <nav
               aria-label="Tin nhắn và hỗ trợ"
-              className="flex gap-2 border-b border-slate-100 px-4 py-2"
+              className="flex shrink-0 flex-wrap gap-1 border-b border-slate-100 px-3 py-2"
             >
               {(['bot', 'support', 'chat'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setView(tab)}
                   aria-pressed={view === tab}
-                  className={`rounded-lg px-4 py-2 text-sm font-semibold ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
+                  className={`rounded-lg px-3 py-2 text-sm font-semibold max-sm:flex-1 max-sm:px-2 max-sm:text-xs ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
                   {tab === 'bot'
                     ? 'Trợ lý NEXUS'

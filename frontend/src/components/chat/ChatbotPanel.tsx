@@ -124,8 +124,8 @@ export default function ChatbotPanel({ guest = false, onRequestSupport, creating
     }
   }
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-slate-50">
-      <div className="flex items-center gap-3 border-b border-slate-200 bg-white px-5 py-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-slate-50">
+      <div className="flex shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-5 py-3">
         <span className="rounded-xl bg-blue-50 p-2 text-blue-600">
           <Bot size={22} />
         </span>
@@ -139,11 +139,11 @@ export default function ChatbotPanel({ guest = false, onRequestSupport, creating
         </div>
       </div>
       <div
-        className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain [overflow-wrap:anywhere] p-4 sm:p-5"
         role="log"
         aria-label="Hội thoại với chatbot"
       >
-        <div className="max-w-[90%] rounded-2xl rounded-tl-sm border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
+        <div className="w-fit max-w-[90%] rounded-2xl rounded-tl-sm border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
           Xin chào! Mình là trợ lý tự động NEXUS. Bạn cần hỗ trợ về thanh toán, giao hàng hay
           hủy/trả hàng?
           <div className="mt-3 flex flex-wrap gap-2">
@@ -162,7 +162,7 @@ export default function ChatbotPanel({ guest = false, onRequestSupport, creating
         {entries.map((entry) => (
           <div
             key={entry.id}
-            className={`max-w-[90%] rounded-2xl p-3.5 text-sm leading-6 ${entry.mine ? 'ml-auto rounded-tr-sm bg-blue-600 text-white' : 'rounded-tl-sm border border-slate-200 bg-white text-slate-700'}`}
+            className={`w-fit max-w-[90%] rounded-2xl px-3.5 py-2 text-sm leading-6 ${entry.mine ? 'ml-auto rounded-tr-sm bg-blue-600 text-white' : 'rounded-tl-sm border border-slate-200 bg-white text-slate-700'}`}
           >
             <p className="whitespace-pre-wrap break-words">{entry.text}</p>
             {entry.response?.sources.length ? (
@@ -173,7 +173,7 @@ export default function ChatbotPanel({ guest = false, onRequestSupport, creating
             {entry.response?.order?.waybillCode && (
               <p className="mt-2 text-xs">Mã vận đơn: {entry.response.order.waybillCode}</p>
             )}
-            <div className="mt-2 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-2 empty:hidden">
               {Array.from(new Set(entry.response?.actions.map((a) => a.type))).map((action) =>
                 action === 'LOGIN' ? (
                   <Link
@@ -235,7 +235,7 @@ export default function ChatbotPanel({ guest = false, onRequestSupport, creating
           )}
         </div>
       )}
-      <form onSubmit={submit} className="border-t border-slate-200 bg-white p-4">
+      <form onSubmit={submit} className="shrink-0 border-t border-slate-200 bg-white p-3 sm:p-4">
         {selectOrder && (
           <div className="mb-3">
             <label className="text-xs font-medium text-slate-600" htmlFor="chatbot-order-id">
@@ -282,7 +282,7 @@ export default function ChatbotPanel({ guest = false, onRequestSupport, creating
             type="submit"
             aria-label="Gửi câu hỏi"
             disabled={pending || creating || (!draft.trim() && !selectOrder)}
-            className="rounded-xl bg-blue-600 p-3 text-white hover:bg-blue-700 disabled:opacity-40"
+            className="shrink-0 rounded-xl bg-blue-600 p-3 text-white hover:bg-blue-700 disabled:opacity-40"
           >
             <Send size={19} />
           </button>
