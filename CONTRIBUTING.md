@@ -1,111 +1,112 @@
-# Hướng Dẫn Đóng Góp Mã Nguồn (Contributing Guide)
+# Contributing Guide
 
-Tài liệu này xác định quy trình cộng tác mã nguồn, chiến lược phân nhánh Git, tiêu chuẩn thông điệp commit, quy trình kiểm duyệt Merge Request và hướng dẫn sử dụng công cụ GitLab CLI (`glab`) cho toàn bộ kỹ sư tham gia Project Nexus.
+This document establishes the collaboration workflows, Git branching strategy, Conventional Commits specification, Merge Request lifecycle, and GitLab CLI (`glab`) operations for engineering contributors on Project Nexus.
 
-## 1. Chiến Lược Phân Nhánh Git (Git Branching Strategy)
+## 1. Git Branching Strategy
 
-Dự án áp dụng mô hình GitFlow tinh gọn xoay quanh nhánh chính được bảo vệ `main` và nhánh tích hợp liên tục `dev`.
+The repository follows a streamlined GitFlow model centered on the protected `main` branch and the continuous integration `dev` branch.
 
-### Vai trò các nhánh chính
+### Core Branches
 
-- Nhánh `main`: Nhánh môi trường sản xuất chính thức. Nghiêm cấm mọi thao tác đẩy mã trực tiếp lên nhánh này.
-- Nhánh `dev`: Nhánh tích hợp tập trung cho mọi hoạt động phát triển. Toàn bộ các nhánh tính năng đều phải xuất phát từ `dev` và tạo Merge Request quay trở lại `dev`.
+- `main`: Production release branch. Direct pushes to this branch are prohibited.
+- `dev`: Central integration branch for ongoing development. All feature branches branch from `dev` and merge back into `dev` through Merge Requests.
 
-### Quy tắc đặt tên nhánh làm việc
+### Working Branch Naming Conventions
 
-- Nhánh tính năng mới: `feature/<module>-<ten-tinh-nang>` (ví dụ: `feature/auction-live-bid`, `feature/commerce-cod`).
-- Nhánh sửa lỗi trong phát triển: `bugfix/<module>-<ten-loi>` (ví dụ: `bugfix/chat-typing-status`).
-- Nhánh vá lỗi khẩn cấp cho sản xuất: `hotfix/<ten-su-co>` (nhánh xuất phát từ `main` và phải được hợp nhất đồng thời vào cả `main` và `dev`).
-- Nhánh tái cấu trúc kỹ thuật: `refactor/<hang-muc>` (ví dụ: `refactor/modular-monolith-phase3`).
+- Feature branches: `feature/<module>-<feature-name>` (for example, `feature/auction-live-bid`, `feature/commerce-cod`).
+- Bugfix branches during development: `bugfix/<module>-<bug-name>` (for example, `bugfix/chat-typing-status`).
+- Hotfix branches for production: `hotfix/<incident-name>` (branches from `main` and must be merged into both `main` and `dev`).
+- Refactoring branches: `refactor/<scope>` (for example, `refactor/modular-monolith-phase3`).
 
-## 2. Tiêu Chuẩn Thông Điệp Commit (Conventional Commits)
+## 2. Conventional Commits Specification
 
-Toàn bộ thông điệp commit phải tuân thủ nghiêm ngặt quy chuẩn Conventional Commits v1.0.0 và được kiểm tra tự động qua Git hook commit-msg:
+All commit messages must adhere to Conventional Commits v1.0.0 and are verified automatically by the `commit-msg` Git hook.
 
-### Cú pháp thông điệp
+### Syntax
 
 ```text
-<loai>(<pham-vi>): <mo ta ngan gon bang tieng Anh hoac tieng Viet>
+<type>(<scope>): <concise description in Standard US English>
 ```
 
-### Yêu cầu bắt buộc
+### Commit Rules
 
-- Tiêu đề commit không vượt quá 100 ký tự.
-- Viết rõ ràng liên từ "and" thay cho ký hiệu "&".
-- Sử dụng chữ thường cho loại commit và phạm vi.
+- Commit subjects must not exceed 100 characters.
+- Spell out the coordinating conjunction "and" instead of using the ampersand symbol "&".
+- Use lowercase characters for commit type and scope identifiers.
+- Inline explanations and stray comments are forbidden; documentation belongs in standard docstrings.
 
-### Các loại commit được chấp nhận
+### Permitted Commit Types
 
-- `feat`: Tính năng hoặc năng lực nghiệp vụ mới.
-- `fix`: Khắc phục lỗi phần mềm.
-- `docs`: Cập nhật hoặc bổ sung tài liệu.
-- `style`: Định dạng mã nguồn, khoảng trắng, chấm phẩy mà không thay đổi logic.
-- `refactor`: Tái cấu trúc mã nguồn không làm thay đổi hành vi nghiệp vụ.
-- `test`: Bổ sung hoặc điều chỉnh các kịch bản kiểm thử.
-- `chore`: Tác vụ bảo trì, cấu hình repository hoặc cập nhật gói phụ thuộc.
-- `perf`: Cải thiện hiệu năng xử lý.
-- `ci`: Thay đổi cấu hình pipeline tích hợp và triển khai liên tục.
-- `build`: Thay đổi hệ thống build hoặc dependency monorepo.
+- `feat`: Introduces a new business capability or feature.
+- `fix`: Resolves a software bug or defect.
+- `docs`: Documentation additions or modifications.
+- `style`: Code formatting, whitespace, or punctuation changes without logic modifications.
+- `refactor`: Code reorganization that neither fixes bugs nor alters functional behavior.
+- `test`: Adds or modifies automated test suites.
+- `chore`: Toolchain, repository maintenance, or dependency package updates.
+- `perf`: Code optimizations improving computational or memory performance.
+- `ci`: Modifications to continuous integration and delivery pipelines.
+- `build`: Monorepo build system or external dependency changes.
 
-## 3. Quy Trình Merge Request (Merge Request Lifecycle)
+## 3. Merge Request Lifecycle
 
-Trước khi gửi Merge Request vào nhánh `dev`, kỹ sư thực hiện đầy đủ các bước kiểm tra cục bộ:
+Before submitting a Merge Request targeting the `dev` branch, run all local verification gates:
 
 ```bash
-# Kiểm tra định dạng mã nguồn
+# Verify formatting against Prettier
 npm run format:check
 
-# Kiểm tra quy chuẩn mã nguồn với ESLint
+# Run static analysis and linting with ESLint
 npm run lint
 
-# Kiểm tra quy trình build toàn bộ monorepo
+# Build the complete monorepo
 npx turbo run build
 
-# Chạy toàn bộ bộ kiểm thử đơn vị
+# Execute automated unit test suites
 npx turbo run test
 ```
 
-Sau khi toàn bộ kiểm tra cục bộ thành công:
+After local verification passes successfully:
 
-1. Đảm bảo nhánh làm việc đã được rebase mới nhất từ `origin/dev`.
-2. Đẩy nhánh lên máy chủ GitLab.
-3. Tạo Merge Request với đích đến là nhánh `dev` theo mẫu chuẩn tại `.gitlab/merge_request_templates/default.md`.
-4. Đảm bảo pipeline CI/CD trên GitLab vượt qua cả ba giai đoạn validate, build và test.
-5. Merge Request cần nhận được sự đồng thuận từ thành viên xét duyệt trước khi thực hiện hợp nhất.
+1. Rebase your working branch onto the latest `origin/dev`.
+2. Push the branch to the remote GitLab repository.
+3. Open a Merge Request targeting the `dev` branch using the template at `.gitlab/merge_request_templates/default.md`.
+4. Ensure the GitLab CI pipeline passes all validate, build, and test stages.
+5. Secure approval from designated code reviewers prior to merging.
 
-## 4. Hướng Dẫn Tùy Chọn Sử Dụng GitLab CLI (glab)
+## 4. GitLab CLI Automation (glab)
 
-Kỹ sư có thể sử dụng công cụ dòng lệnh chính thức `glab` để tự động hóa toàn bộ vòng đời phân nhánh và gửi Merge Request mà không cần thao tác qua giao diện web.
+Contributors can use the official `glab` command-line utility to automate branch management, Merge Request creation, and pipeline inspections without navigating the web portal.
 
-### Xác thực tài khoản với máy chủ GitLab nội bộ
+### Authenticate with the Internal GitLab Instance
 
 ```bash
 glab auth login --hostname github.com
 ```
 
-### Tạo Merge Request tự động từ nhánh hiện tại
+### Create a Merge Request from the Active Branch
 
 ```bash
-glab mr create --target-branch dev --title "feat(auction): implement real-time bidding terminal" --description "Mo ta chi tiet cac thay doi"
+glab mr create --target-branch dev --title "feat(auction): implement real-time bidding terminal" --description "Detailed summary of architectural and operational changes"
 ```
 
-### Xem trạng thái và kiểm tra kết quả CI của Merge Request
+### Inspect Pipeline Status and Merge Request Details
 
 ```bash
 glab mr view
 glab ci status
 ```
 
-### Thực hiện hợp nhất sau khi hoàn tất kiểm duyệt
+### Merge an Approved Merge Request
 
 ```bash
 glab mr merge <mr-id> --rebase --remove-source-branch
 ```
 
-## 5. Quy Chuẩn Kỹ Thuật Tham Chiếu
+## 5. Architectural Standards References
 
-Các tiêu chuẩn kỹ thuật chi tiết về giới hạn dòng lệnh, cấm comment dòng đơn vô nghĩa, bắt buộc khối tài liệu TSDoc và phong cách viết kỹ thuật được quy định chi tiết tại các tài liệu:
+Detailed requirements covering cyclomatic complexity limits, class length boundaries, docstring formatting, and system naming conventions are documented in:
 
-- [Quy Chuẩn Clean Code](docs/standards/CLEAN_CODE.md)
-- [Quy Chuẩn Văn Phong Kỹ Thuật](docs/standards/WRITING_STYLE.md)
-- [Quy Ước Đặt Tên Hệ Thống](docs/standards/NAMING_CONVENTIONS.md)
+- [Clean Code Standard](docs/standards/CLEAN_CODE.md)
+- [Technical Writing Style Guide](docs/standards/WRITING_STYLE.md)
+- [Naming Conventions](docs/standards/NAMING_CONVENTIONS.md)

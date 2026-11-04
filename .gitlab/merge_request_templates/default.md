@@ -1,36 +1,38 @@
-## 🎯 Summary of Changes
+## Summary of Changes
 
-<!-- Briefly describe the purpose of this Merge Request / Pull Request. What problem does it solve, or what feature does it introduce? -->
-
--
--
--
-
-## 🛠️ Key Changes
+<!-- Briefly describe the purpose of this Merge Request. What problem does it solve, or what capability does it introduce? -->
 
 -
 -
 -
 
-## 🧪 Testing
+## Key Changes
 
-<!-- Step-by-step instructions for reviewers to test and verify these changes locally -->
+-
+-
+-
 
-1. Start required services: `...`
-2. Trigger the action / endpoint: `...`
+## Verification and Testing
+
+<!-- Step-by-step instructions for reviewers to verify these changes locally -->
+
+1. Start required dependencies: `...`
+2. Trigger the endpoint or action: `...`
 3. Expected result: `...`
 
-## 📸 Screenshots
+## Visual Assets (UI Changes)
 
-<!-- Attach screenshots, screen recordings, or GIFs for UI/UX changes -->
+<!-- Attach screenshots, screen recordings, or animated graphics for user interface changes -->
 
-## ✅ Author checklist before requesting review
+## Author Checklist Before Requesting Review
 
-- [ ] Ran `npm run lint` with 0 errors.
-- [ ] Ran `npm run format:check` (or `npm run format`) to ensure code complies with Prettier.
-- [ ] Strictly no `any` type usage (`@typescript-eslint/no-explicit-any`).
-- [ ] Public methods and functions declare explicit return types.
+- [ ] Code complies with `docs/standards/CLEAN_CODE.md` and `docs/standards/WRITING_STYLE.md`.
+- [ ] Ran `npm run lint` with zero errors and zero warnings.
+- [ ] Ran `npm run format:check` to verify Prettier compliance.
+- [ ] Strictly no `any` type annotations (`@typescript-eslint/no-explicit-any`).
+- [ ] Functions and public methods declare explicit return types.
+- [ ] Strictly no stray or inline comments (`// ...`); documentation adheres to TSDoc or JSDoc format (`/** ... */`).
 - [ ] No leftover `console.log` statements in production logic.
-- [ ] Rebased or merged the latest changes from `dev` and resolved all conflicts locally.
-- [ ] PR/MR title follows Conventional Commits (`feat(...)`, `fix(...)`, etc.).
-- [ ] Assigned myself as Assignee and added at least 1 Reviewer / Mentor.
+- [ ] Rebased onto latest `origin/dev` with all merge conflicts resolved locally.
+- [ ] Merge Request title follows Conventional Commits specification (`feat(...)`, `fix(...)`, etc.).
+- [ ] Assigned author and designated at least one qualified reviewer.
