@@ -40,7 +40,10 @@ export class InventoryService {
   }
 
   /**
-   * Đảm bảo kho lưu trữ mặc định WH_001 tồn tại
+   * Ensures the existence of the default platform warehouse entity.
+   *
+   * @param tx - Optional transaction client
+   * @returns Default Warehouse entity
    */
   async ensureDefaultWarehouse(tx?: Prisma.TransactionClient) {
     const client = tx || this.prisma;
@@ -56,7 +59,13 @@ export class InventoryService {
   }
 
   /**
-   * Tạo số lượng tồn kho ban đầu khi Seller đăng bán sản phẩm mới
+   * Initializes product stock records and logs the initial balance ledger entry.
+   *
+   * @param tx - Active transaction client
+   * @param warehouseId - Target warehouse identifier
+   * @param productId - Target product identifier
+   * @param quantity - Initial stock quantity
+   * @returns Created Inventory entity
    */
   async createInitialStock(
     tx: Prisma.TransactionClient,
@@ -87,7 +96,12 @@ export class InventoryService {
   }
 
   /**
-   * Cập nhật số lượng tồn kho khi Seller chỉnh sửa sản phẩm
+   * Adjusts inventory stock levels when a seller updates product specifications.
+   *
+   * @param tx - Active transaction client
+   * @param productId - Target product identifier
+   * @param existingInventories - Existing inventory records
+   * @param newQuantity - Updated stock quantity
    */
   async updateProductStock(
     tx: Prisma.TransactionClient,
@@ -141,22 +155,34 @@ export class InventoryService {
   }
 
   /**
-   * Tính tổng lượng hàng khả dụng
+   * Sums available quantity across inventory locations.
+   *
+   * @param inventories - Array of inventory records
+   * @returns Total available units
    */
   calculateAvailable(inventories: Array<{ availableQty: number }>): number {
     return inventories.reduce((acc, curr) => acc + curr.availableQty, 0);
   }
 
   /**
-   * Tính tổng lượng tồn kho
+   * Sums total physical quantity across inventory locations.
+   *
+   * @param inventories - Array of inventory records
+   * @returns Total physical units
    */
   calculateTotal(inventories: Array<{ totalQty: number }>): number {
     return inventories.reduce((acc, curr) => acc + curr.totalQty, 0);
   }
 
   /**
-   * Khóa / Đặt chỗ tồn kho khi người mua đặt hàng (Order Checkout)
-   * Giảm availableQty, tăng reservedQty, tạo bản ghi InventoryReservation và InventoryLedger
+   * Reserves stock for checkout, locking available items and recording inventory reservation.
+   *
+   * @param tx - Active transaction client
+   * @param productId - Target product identifier
+   * @param quantity - Quantity to reserve
+   * @param orderId - Associated order identifier
+   * @returns Updated Inventory entity
+   * @throws BadRequestException when order quantity is invalid or available stock is insufficient
    */
   async reserveStock(
     tx: Prisma.TransactionClient,
@@ -168,7 +194,6 @@ export class InventoryService {
       throw new BadRequestException('Số lượng đặt hàng phải lớn hơn 0');
     }
 
-    // 1. Tìm bản ghi kho của sản phẩm
     let inventory = await tx.inventory.findFirst({
       where: { productId },
     });
@@ -192,7 +217,6 @@ export class InventoryService {
       );
     }
 
-    // 2. Cập nhật tồn kho khả dụng và số lượng tạm khóa
     const updated = await tx.inventory.update({
       where: { id: inventory.id },
       data: {
@@ -201,7 +225,6 @@ export class InventoryService {
       },
     });
 
-    // 3. Tạo bản ghi giữ chỗ tồn kho (hạn giữ chỗ 30 phút theo SRS)
     await tx.inventoryReservation.create({
       data: {
         inventoryId: inventory.id,
@@ -212,7 +235,6 @@ export class InventoryService {
       },
     });
 
-    // 4. Ghi sổ cái biến động kho
     await tx.inventoryLedger.create({
       data: {
         inventoryId: inventory.id,
@@ -227,8 +249,10 @@ export class InventoryService {
   }
 
   /**
-   * Xác nhận trừ kho vĩnh viễn khi đơn hàng thanh toán thành công (ORDER_PAID)
-   * Giảm totalQty, giảm reservedQty, chuyển trạng thái đặt chỗ sang COMMITTED
+   * Commits inventory reservations upon payment confirmation, deducting physical stock.
+   *
+   * @param tx - Active transaction client
+   * @param orderId - Associated order identifier
    */
   async commitReservation(tx: Prisma.TransactionClient, orderId: string) {
     const reservations = await tx.inventoryReservation.findMany({

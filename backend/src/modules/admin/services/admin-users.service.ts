@@ -21,7 +21,12 @@ export class AdminUsersService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // 1. Lấy danh sách người dùng (tự động loại trừ GUEST, hỗ trợ lọc BUYER, SELLER, SUPPORT_STAFF, ADMIN)
+  /**
+   * Retrieves paginated platform user accounts with role and status filtering.
+   *
+   * @param query - User query parameters including search, role, and pagination
+   * @returns Paginated list of user items with wallet balances
+   */
   async listUsers(query: QueryUsersDto): Promise<AdminUsersListResponse> {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, query.limit || 10);
@@ -67,7 +72,13 @@ export class AdminUsersService {
     };
   }
 
-  // 2. Xem chi tiết cá nhân người dùng (loại trừ GUEST)
+  /**
+   * Retrieves detailed user profile including order and dispute statistics.
+   *
+   * @param targetUserId - Unique identifier of the target user
+   * @returns Detailed user profile entity
+   * @throws NotFoundException when the user does not exist
+   */
   async getUserById(targetUserId: string): Promise<AdminUserDetailResponse> {
     const user = await this.prisma.user.findFirst({
       where: { id: targetUserId, role: { not: Role.GUEST } },
@@ -113,7 +124,16 @@ export class AdminUsersService {
     };
   }
 
-  // 3. Khóa tài khoản người dùng
+  /**
+   * Suspends a user account and revokes active refresh tokens.
+   *
+   * @param targetUserId - Unique identifier of the user to suspend
+   * @param adminId - Unique identifier of the acting administrator
+   * @param dto - Optional lock reason payload
+   * @returns Suspension confirmation and updated user record
+   * @throws NotFoundException when the user does not exist
+   * @throws BadRequestException when targeting an administrator or already suspended user
+   */
   async lockUser(
     targetUserId: string,
     adminId: string,
@@ -161,7 +181,6 @@ export class AdminUsersService {
       });
     }
 
-    // Thu hồi toàn bộ Refresh Token của user để buộc đăng xuất ngay lập tức
     await this.prisma.refreshToken.updateMany({
       where: { userId: targetUserId, isRevoked: false },
       data: { isRevoked: true },
@@ -178,7 +197,16 @@ export class AdminUsersService {
     };
   }
 
-  // 4. Mở khóa tài khoản người dùng
+  /**
+   * Restores an active reputation trust level for a suspended user account.
+   *
+   * @param targetUserId - Unique identifier of the user to unlock
+   * @param adminId - Unique identifier of the administrator
+   * @param dto - Optional unlock reason
+   * @returns Unlock confirmation and updated user record
+   * @throws NotFoundException when the user does not exist
+   * @throws BadRequestException when user is not suspended
+   */
   async unlockUser(
     targetUserId: string,
     adminId: string,
@@ -234,14 +262,30 @@ export class AdminUsersService {
     };
   }
 
-  // 5. Cập nhật trạng thái khóa/mở khóa qua DTO
+  /**
+   * Updates lock or unlock status using a unified DTO payload.
+   *
+   * @param targetUserId - Unique identifier of the target user
+   * @param adminId - Unique identifier of the administrator
+   * @param dto - Status payload containing lock flag and reason
+   * @returns Updated user status response
+   */
   async updateUserStatus(targetUserId: string, adminId: string, dto: UpdateUserStatusDto) {
     return dto.isLocked === false
       ? this.unlockUser(targetUserId, adminId, { reason: dto.reason })
       : this.lockUser(targetUserId, adminId, { reason: dto.reason });
   }
 
-  // 6. Cập nhật vai trò (Role) cho người dùng
+  /**
+   * Updates assigned role for a user and provisions staff email when applicable.
+   *
+   * @param targetUserId - Unique identifier of the target user
+   * @param adminId - Unique identifier of the administrator
+   * @param dto - Role update payload
+   * @returns Updated user item response
+   * @throws NotFoundException when the user does not exist
+   * @throws BadRequestException when an administrator attempts to demote self
+   */
   async updateUserRole(
     targetUserId: string,
     adminId: string,
@@ -285,7 +329,6 @@ export class AdminUsersService {
       include: { wallet: { select: { balance: true } } },
     });
 
-    // Thu hồi toàn bộ Refresh Token của user để đồng bộ role mới ngay lập tức
     await this.prisma.refreshToken.updateMany({
       where: { userId: targetUserId, isRevoked: false },
       data: { isRevoked: true },
@@ -300,7 +343,12 @@ export class AdminUsersService {
     };
   }
 
-  // Helper chuyển đổi User entity sang DTO response
+  /**
+   * Transforms raw user entity and wallet balance into admin API response item.
+   *
+   * @param u - User entity joined with optional wallet balance
+   * @returns Formatted admin user item
+   */
   private toUserItem(u: UserWithWallet): AdminUserItemResponse {
     const isLocked = u.trustLevel === ReputationTrustLevel.SUSPENDED;
     return {

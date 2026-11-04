@@ -16,12 +16,15 @@ export class AdminFinanceService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lấy hoặc tự động tạo ví hệ thống chính của Quản trị viên (Super Admin Wallet)
+   * Retrieves or automatically initializes the primary platform administrator wallet.
+   *
+   * @param txClient - Optional transactional client instance
+   * @returns Primary admin Wallet entity
+   * @throws NotFoundException when no administrator user exists
    */
   async getOrCreatePrimaryAdminWallet(txClient?: Prisma.TransactionClient): Promise<Wallet> {
     const client = txClient || this.prisma;
 
-    // Tìm tài khoản Admin đầu tiên của hệ thống
     let adminUser = await client.user.findFirst({
       where: { role: Role.ADMIN },
       orderBy: { createdAt: 'asc' },
@@ -29,7 +32,6 @@ export class AdminFinanceService {
     });
 
     if (!adminUser) {
-      // Fallback: tìm theo email admin@nexus.com
       adminUser = await client.user.findFirst({
         where: { email: 'admin@nexus.com' },
         include: { wallet: true },
@@ -59,10 +61,12 @@ export class AdminFinanceService {
   }
 
   /**
-   * Lấy thông tin ví Admin và tổng hợp số liệu hoa hồng sàn đã thu
+   * Retrieves administrator wallet balances and aggregate platform commission revenue.
+   *
+   * @param adminId - Unique identifier of the administrator
+   * @returns Wallet balances, commission aggregates, and transaction counts
    */
   async getAdminWallet(adminId: string) {
-    // Đảm bảo ví của Admin này (hoặc ví chính của hệ thống) đã tồn tại
     let wallet = await this.prisma.wallet.findUnique({
       where: { userId: adminId },
     });
@@ -71,7 +75,6 @@ export class AdminFinanceService {
       wallet = await this.getOrCreatePrimaryAdminWallet();
     }
 
-    // Tổng hợp số tiền % phí sàn đã thu từ các đơn hàng thành công
     const platformFeeAgg = await this.prisma.walletTransaction.aggregate({
       where: {
         walletId: wallet.id,
@@ -83,7 +86,6 @@ export class AdminFinanceService {
       },
     });
 
-    // Tổng hợp số tiền Admin đã nạp vào ví
     const depositAgg = await this.prisma.walletTransaction.aggregate({
       where: {
         walletId: wallet.id,
@@ -95,7 +97,6 @@ export class AdminFinanceService {
       },
     });
 
-    // Tổng số giao dịch
     const totalTransactions = await this.prisma.walletTransaction.count({
       where: { walletId: wallet.id },
     });
@@ -117,7 +118,11 @@ export class AdminFinanceService {
   }
 
   /**
-   * Xem lịch sử biến động số dư ví hệ thống của Admin (kèm phân trang và bộ lọc)
+   * Retrieves paginated administrator wallet transactions with date range and search filters.
+   *
+   * @param adminId - Unique identifier of the administrator
+   * @param query - Query filter and pagination parameters
+   * @returns Paginated wallet transactions with associated order details
    */
   async getAdminWalletTransactions(adminId: string, query: QueryAdminWalletTransactionsDto) {
     let wallet = await this.prisma.wallet.findUnique({
@@ -170,7 +175,6 @@ export class AdminFinanceService {
       }),
     ]);
 
-    // Trích xuất mã đơn hàng từ referenceId để tra cứu thông tin Buyer và Shop
     const orderIds = transactions
       .map((tx) => tx.referenceId)
       .filter((id): id is string => Boolean(id && id.trim()));
@@ -240,7 +244,12 @@ export class AdminFinanceService {
   }
 
   /**
-   * Admin nạp thêm tiền vào ví hệ thống (có lưu lịch sử giao dịch rõ ràng)
+   * Deposits funds into the administrator platform wallet with transactional audit logging.
+   *
+   * @param adminId - Unique identifier of the administrator
+   * @param dto - Deposit payload including amount and optional description
+   * @returns Deposit confirmation, updated balance, and transaction record
+   * @throws BadRequestException when amount is non-positive
    */
   async depositToAdminWallet(adminId: string, dto: DepositAdminWalletDto) {
     if (dto.amount <= 0) {
@@ -258,7 +267,6 @@ export class AdminFinanceService {
     const depositAmount = new Prisma.Decimal(dto.amount);
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Tăng số dư ví Admin
       const updatedWallet = await tx.wallet.update({
         where: { id: wallet.id },
         data: {
@@ -266,7 +274,6 @@ export class AdminFinanceService {
         },
       });
 
-      // 2. Tạo bản ghi giao dịch ví loại DEPOSIT
       const transaction = await tx.walletTransaction.create({
         data: {
           walletId: wallet.id,

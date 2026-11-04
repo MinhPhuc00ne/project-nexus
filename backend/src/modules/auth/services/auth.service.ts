@@ -62,7 +62,13 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
-  // ================= 1. ĐĂNG KÝ =================
+  /**
+   * Registers a new user account and dispatches an email verification OTP code.
+   *
+   * @param dto - User registration payload
+   * @returns Registration confirmation
+   * @throws BadRequestException when email is already registered or cooldown is active
+   */
   async register(dto: RegisterDto) {
     const { email, password, fullName } = dto;
 
@@ -71,7 +77,6 @@ export class AuthService {
       if (existingUser.isVerified) {
         throw new BadRequestException('Email này đã được đăng ký và xác thực.');
       }
-      // Kiểm tra thời gian chờ (cooldown 60 giây) nếu gửi lại OTP
       if (existingUser.codeExpiresAt) {
         const remainingMs = existingUser.codeExpiresAt.getTime() - Date.now();
         const cooldownMs = 60 * 1000;
@@ -134,7 +139,13 @@ export class AuthService {
     };
   }
 
-  // ================= 2. XÁC THỰC EMAIL =================
+  /**
+   * Verifies a user email using the provided 6-digit verification OTP.
+   *
+   * @param dto - Verification code and email payload
+   * @returns Verification confirmation message
+   * @throws BadRequestException when code is invalid or expired
+   */
   async verifyEmail(dto: VerifyEmailDto) {
     const { email, code } = dto;
 
@@ -173,7 +184,14 @@ export class AuthService {
     return { message: 'Xác thực tài khoản thành công! Bây giờ bạn có thể đăng nhập.' };
   }
 
-  // ================= 3. ĐĂNG NHẬP (THƯỜNG) =================
+  /**
+   * Authenticates user credentials and issues access and refresh JWTs.
+   *
+   * @param dto - Login credentials
+   * @returns Access and refresh tokens with user session metadata
+   * @throws UnauthorizedException on invalid credentials or unverified email
+   * @throws ForbiddenException when account is suspended
+   */
   async login(dto: LoginDto) {
     const { email, password } = dto;
     const normalizedEmail = email.trim();
@@ -246,7 +264,14 @@ export class AuthService {
     };
   }
 
-  // ================= 4. ĐĂNG NHẬP BẰNG GOOGLE =================
+  /**
+   * Authenticates or creates an account via Google OAuth and issues session tokens.
+   *
+   * @param user - Profile payload returned by Google strategy
+   * @returns Generated access and refresh tokens
+   * @throws BadRequestException when Google profile data is missing
+   * @throws ForbiddenException when account is suspended
+   */
   async googleLogin(user?: GoogleUser) {
     if (!user) {
       throw new BadRequestException('Không nhận được thông tin từ Google.');
@@ -319,8 +344,13 @@ export class AuthService {
     };
   }
 
-  // ================= 5. QUÊN MẬT KHẨU (GỬI OTP QUA GMAIL) =================
-  // Áp dụng cho tài khoản đăng ký bằng Gmail (đã xác thực) hoặc bằng Google (luôn isVerified).
+  /**
+   * Generates and emails a password reset OTP code to the verified user email.
+   *
+   * @param dto - Email payload for password reset
+   * @returns Reset code dispatch confirmation
+   * @throws BadRequestException on non-existent account, unverified email, or active cooldown
+   */
   async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; email: string }> {
     const { email } = dto;
 
@@ -341,7 +371,6 @@ export class AuthService {
       );
     }
 
-    // Kiểm tra thời gian chờ (cooldown 60 giây) giữa các lần yêu cầu gửi OTP
     if (user.codeExpiresAt) {
       const remainingMs = user.codeExpiresAt.getTime() - Date.now();
       const cooldownMs = 60 * 1000;
@@ -379,7 +408,13 @@ export class AuthService {
     };
   }
 
-  // ================= 6. ĐẶT LẠI MẬT KHẨU BẰNG OTP =================
+  /**
+   * Resets account password using a validated OTP verification code.
+   *
+   * @param dto - New password, email, and OTP verification code
+   * @returns Password reset confirmation
+   * @throws BadRequestException on invalid OTP, expired OTP, or identical previous password
+   */
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
     const { email, code, newPassword } = dto;
 
@@ -401,7 +436,6 @@ export class AuthService {
       throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.');
     }
 
-    // Kiểm tra mật khẩu mới không được trùng với mật khẩu hiện tại
     if (user.passwordHash) {
       const isSamePassword = await bcrypt.compare(newPassword, user.passwordHash);
       if (isSamePassword) {
@@ -430,7 +464,14 @@ export class AuthService {
     };
   }
 
-  // ================= 7. LÀM MỚI ACCESS TOKEN (REFRESH TOKEN) =================
+  /**
+   * Refreshes user session tokens with single-use refresh token rotation.
+   *
+   * @param dto - Refresh token payload
+   * @returns Newly generated access and refresh tokens
+   * @throws UnauthorizedException when token is expired, revoked, or invalid
+   * @throws ForbiddenException when account is suspended
+   */
   async refreshToken(dto: RefreshTokenDto) {
     const refreshSecret =
       this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
@@ -475,7 +516,6 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token không hợp lệ.');
     }
 
-    // Thu hồi refresh token cũ (Refresh Token Rotation)
     await this.prisma.refreshToken.update({
       where: { id: tokenRecord.id },
       data: { isRevoked: true },
@@ -495,7 +535,12 @@ export class AuthService {
     };
   }
 
-  // ================= 8. ĐĂNG XUẤT (THU HỒI REFRESH TOKEN) =================
+  /**
+   * Revokes refresh token to terminate the current authenticated session.
+   *
+   * @param dto - Refresh token payload
+   * @returns Logout confirmation message
+   */
   async logout(dto: RefreshTokenDto): Promise<{ message: string }> {
     const refreshSecret =
       this.configService.get<string>('REFRESH_TOKEN_SECRET') ||

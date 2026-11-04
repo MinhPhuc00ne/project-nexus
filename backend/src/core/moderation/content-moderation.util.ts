@@ -206,11 +206,11 @@ export function checkSensitiveContent(text?: string | null): {
  * @param fieldLabel - Human-readable field label for error messages
  * @throws BadRequestException when prohibited keywords match
  */
-export function assertCleanContent(text?: string | null, fieldLabel = 'Content'): void {
+export function assertCleanContent(text?: string | null, fieldLabel = 'Nội dung'): void {
   const result = checkSensitiveContent(text);
   if (result.hasSensitive) {
     throw new BadRequestException(
-      `${fieldLabel} contains prohibited terms violating platform content guidelines ("${result.matchedWord}").`,
+      `${fieldLabel} không hợp lệ vì chứa từ ngữ nhạy cảm hoặc vi phạm chính sách của sàn ("${result.matchedWord}").`,
     );
   }
 }

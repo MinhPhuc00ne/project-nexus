@@ -97,7 +97,7 @@ export class LightweightJwt {
   static parseDurationToSeconds(duration: string): number {
     const match = duration.match(/^(\d+)([smhd])$/);
     if (!match) {
-      return 3600; // default 1h
+      return 3600;
     }
     const val = parseInt(match[1], 10);
     const unit = match[2];

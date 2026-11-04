@@ -24,7 +24,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
           if (!req || !req.headers) return null;
           const authHeader = req.headers.authorization;
           if (!authHeader) return null;
-          // Tự động làm sạch các trường hợp dán thừa chữ "Bearer " hoặc dán raw token trên Swagger UI
           const cleanToken = authHeader.replace(/^(Bearer\s+)+/i, '').trim();
           return cleanToken || null;
         },

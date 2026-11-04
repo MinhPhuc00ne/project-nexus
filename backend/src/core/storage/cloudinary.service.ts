@@ -26,7 +26,6 @@ export class CloudinaryStorageService {
     const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
     const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
 
-    // Nếu chưa cấu hình Cloudinary trong .env, lưu vào thư mục static uploads để Admin có thể xem được URL
     if (!cloudName || !apiKey || !apiSecret) {
       this.logger.warn(
         'Chưa cấu hình thông tin Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) trong .env. Lưu tạm vào thư mục static server.',
@@ -54,7 +53,6 @@ export class CloudinaryStorageService {
     const boundary = '----WebKitFormBoundary' + crypto.randomBytes(16).toString('hex');
     const postData: Buffer[] = [];
 
-    // Helper to add form field
     const addField = (name: string, val: string): void => {
       postData.push(
         Buffer.from(
@@ -69,7 +67,6 @@ export class CloudinaryStorageService {
     addField('signature', signature);
     addField('folder', folder);
 
-    // Add file
     postData.push(
       Buffer.from(
         `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: application/octet-stream\r\n\r\n`,

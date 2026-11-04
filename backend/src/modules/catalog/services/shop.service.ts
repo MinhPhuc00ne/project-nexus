@@ -50,14 +50,16 @@ export class ShopService {
   ) {}
 
   /**
-   * Tìm kiếm & Lấy danh sách gian hàng (Shop/Seller)
+   * Searches and retrieves paginated marketplace merchant shops.
+   *
+   * @param query - Query filtering and pagination parameters
+   * @returns Paginated merchant shop profiles and product highlights
    */
   async getShops(query: QueryShopDto): Promise<PaginatedShopsResult> {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 12));
     const skip = (page - 1) * limit;
 
-    // Điều kiện cơ bản: Là SELLER hoặc có hồ sơ nâng cấp đã APPROVED
     const where: Prisma.UserWhereInput = {
       isShopSuspended: false,
       OR: [
@@ -72,7 +74,6 @@ export class ShopService {
 
     const andConditions: Prisma.UserWhereInput[] = [];
 
-    // Tìm kiếm theo từ khóa: tên gian hàng, mô tả gian hàng, họ tên chủ shop
     if (query.search) {
       assertCleanContent(query.search, 'Từ khóa tìm kiếm gian hàng');
       const searchKeyword = query.search.trim();
@@ -96,7 +97,6 @@ export class ShopService {
       });
     }
 
-    // Lọc theo tỉnh/thành phố
     if (query.city) {
       const cityKeyword = query.city.trim();
       andConditions.push({
@@ -113,7 +113,6 @@ export class ShopService {
       where.AND = andConditions;
     }
 
-    // Sắp xếp
     let orderBy: Prisma.UserOrderByWithRelationInput = { reputationScore: 'desc' };
     if (query.sortBy === 'newest') {
       orderBy = { createdAt: 'desc' };
@@ -223,7 +222,13 @@ export class ShopService {
   }
 
   /**
-   * Lấy thông tin chi tiết của 1 Shop và danh sách sản phẩm đang bán
+   * Retrieves detailed merchant profile and active catalog products.
+   *
+   * @param shopId - Unique identifier of the seller shop
+   * @param page - Target page index
+   * @param limit - Page size limit
+   * @returns Shop profile and paginated active inventory items
+   * @throws NotFoundException when shop does not exist, is suspended, or user lacks seller status
    */
   async getShopDetail(shopId: string, page = 1, limit = 12) {
     const pageNum = Math.max(1, Number(page) || 1);
