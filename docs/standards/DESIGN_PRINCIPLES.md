@@ -1,86 +1,73 @@
-# Project Nexus - Software Design Principles Specification
+# Software Design Principles Specification
 
-This document defines the architectural principles and engineering tenets upheld across **Project Nexus**. All engineers and code reviewers must treat this specification as the standard quality benchmark.
-
----
+This document defines the architectural principles and engineering tenets upheld across Project Nexus. All engineers and code reviewers treat this specification as the standard quality benchmark.
 
 ## 1. SOLID Principles
 
-Project Nexus combines Object-Oriented and Functional paradigms in TypeScript:
+Project Nexus combines Object-Oriented and Functional paradigms within a typed TypeScript environment:
 
-### 1.1 Single Responsibility Principle (SRP)
+### Single Responsibility Principle (SRP)
 
-- **Tenet:** Every class, module, or function must have one and only one reason to change.
-- **Application:**
-  - Controllers only handle HTTP parsing and response status codes; they never execute database queries or business algorithms.
-  - Large UI pages are decomposed into focused subcomponents: Header, Image Gallery, Info Tabs, Action Panels (e.g. `ProductDetailPage` decomposed into child components).
-  - Cross-cutting concerns (authentication deduplication) are centralized into `AuthContext.tsx`.
+Every class, module, or function must maintain one, and only one, reason to change. In our architecture:
 
-### 1.2 Open/Closed Principle (OCP)
+- Controllers handle HTTP parsing, status codes, and input dispatching; they never execute database queries or core business algorithms.
+- Large user interface pages are decomposed into focused subcomponents, separating headers, media galleries, information tabs, and transaction panels into dedicated units.
+- Cross-cutting concerns such as session lifecycle management are centralized inside dedicated context providers.
 
-- **Tenet:** Software entities must be open for extension, but closed for modification.
-- **Application:**
-  - Introducing a new payment gateway (e.g. MoMo) or carrier (e.g. ViettelPost) requires creating a new strategy class implementing `IPaymentStrategy` or `ILogisticsStrategy`, without altering existing checkout controllers.
+### Open/Closed Principle (OCP)
 
-### 1.3 Liskov Substitution Principle (LSP)
+Software entities must remain open for extension while closed for modification. In our architecture:
 
-- **Tenet:** Subtypes must be substitutable for their base types without altering system correctness.
-- **Application:**
-  - Any implementation of `IAuctionRepository` (e.g., `PrismaAuctionRepository`, test mock) honors the same return signatures, error models, and nullability invariants.
+- Introducing a new payment gateway or logistics carrier requires creating a strategy class implementing the corresponding domain interface, without modifying existing checkout controllers or order orchestration loops.
 
-### 1.4 Interface Segregation Principle (ISP)
+### Liskov Substitution Principle (LSP)
 
-- **Tenet:** Clients should not be forced to depend on interfaces they do not use.
-- **Application:**
-  - Segregate broad entity contracts into specialized DTOs: `UserSummaryDto` for public listings, `UserProfile` for authenticated accounts, avoiding leaky models.
+Subtypes must remain completely substitutable for their base abstractions without altering system correctness. In our architecture:
 
-### 1.5 Dependency Inversion Principle (DIP)
+- Any implementation of a repository interface, whether backed by PostgreSQL, Redis, or an in-memory testing stub, honors identical method signatures, return structures, and error models.
 
-- **Tenet:** High-level policy must not depend on low-level infrastructure details. Both must depend on abstractions.
-- **Application:**
-  - NestJS services inject abstract repository interfaces or tokens rather than instantiating direct Prisma database instances.
+### Interface Segregation Principle (ISP)
 
----
+Clients should never be forced to depend on interfaces containing methods they do not consume. In our architecture:
 
-## 2. KISS & YAGNI Principles
+- Broad entity contracts are segregated into specialized Data Transfer Objects, such as separating summary views for public catalogs from detailed profiles for authenticated accounts.
 
-### 2.1 KISS (Keep It Simple, Stupid)
+### Dependency Inversion Principle (DIP)
 
-- Choose the simplest clean solution over complex, speculative abstractions.
-- Favor standard React Context and custom hooks over heavy state management libraries when sharing session and cart states.
+High-level policy must not depend on low-level implementation details. Both must depend on abstractions. In our architecture:
 
-### 2.2 YAGNI (You Aren't Gonna Need It)
+- NestJS services inject abstract tokens and repository interfaces rather than instantiating direct database drivers or external client SDKs directly.
 
-- Do not build speculative features or preemptive abstractions for unconfirmed future requirements.
-- Follow the **Rule of Three**: Only introduce generic abstractions after identical logic appears in three distinct locations.
+## 2. Simplicity and Pragmatic Abstraction
 
----
+### Keep It Simple, Stupid (KISS)
 
-## 3. DRY (Don't Repeat Yourself) & Single Source of Truth
+Choose the simplest clean solution over complex, speculative abstractions. Favor standard React Context and custom hooks over heavy external state management libraries when coordinating local state and shopping cart collections.
 
-- **Single Contract Authority:** All DTOs, enums (`Role`, `OrderStatus`, `AuctionStatus`), and event payloads reside strictly in `@nexus/types`. Frontend and backend consume the exact same source definitions.
-- **Centralized Session State:** `AuthContext.tsx` is the sole authority for user profiles and tokens in the web portal.
+### You Aren't Gonna Need It (YAGNI)
 
----
+Avoid building speculative features or preemptive abstractions for unconfirmed future requirements. Follow the Rule of Three by introducing generic abstractions only after identical logic appears across three distinct functional domains.
 
-## 4. Twelve-Factor App Principles (Modular Monolith)
+## 3. Don't Repeat Yourself and Single Source of Truth
 
-1. **One Codebase:** Tracked in a single Monorepo, deployed across dev, staging, and production.
-2. **Explicit Dependencies:** Declared strictly via root and workspace `package.json` lockfiles.
-3. **Config in Environment:** Zero hardcoded secrets. All database URLs, JWT keys, and API tokens load via `.env` with strict startup validation.
-4. **Backing Services as Attached Resources:** PostgreSQL and Redis are treated as attached resources connected via environment URI.
-5. **Strict Build, Release, Run:** Clean separation between build artifacts (`npm run build:all`) and production runtime.
-6. **Stateless Processes:** Monolithic server instances are completely stateless; sessions persist via JWTs or Redis.
-7. **Port Binding:** Self-contained HTTP and WebSocket listeners on ports 3000 and 5173.
-8. **Concurrency:** Scale horizontally by replicating containerized backend instances behind an Nginx or cloud load balancer.
-9. **Disposability:** Graceful shutdown handling `SIGTERM` to close database connections and finish active WebSocket rooms.
-10. **Dev/Prod Parity:** Docker Compose provides identical local PostgreSQL 17 and Redis 7 environments matching production.
-11. **Logs as Event Streams:** Structured JSON logs written directly to standard output (`stdout`/`stderr`).
-12. **Admin Tasks as One-Off Scripts:** Database migrations (`prisma migrate`) run as discrete initialization steps.
+- Single Contract Authority: All Data Transfer Objects, status enums, and event payloads reside strictly within the `@nexus/types` package, ensuring that the backend and frontend consume identical schemas.
+- Centralized Session State: Authentication providers maintain exclusive authority over active user identity, token verification, and profile refresh lifecycles.
 
----
+## 4. Twelve-Factor App Principles for Modular Monoliths
 
-## 5. Fail-Fast & Defensive Programming
+1. One Codebase: Tracked within a unified monorepo and deployed across development, staging, and production environments.
+2. Explicit Dependencies: Declared strictly through root and workspace package lockfiles.
+3. Config in Environment: Zero hardcoded credentials; all database connection strings, secret keys, and service tokens load from environment variables validated upon boot.
+4. Backing Services as Attached Resources: PostgreSQL and Redis operate as attached resources addressed via environment URIs.
+5. Strict Build, Release, Run: Clean segregation between static compilation artifacts and runtime process execution.
+6. Stateless Processes: Server instances operate completely statelessly, persisting transient sessions across JWT tokens or Redis cache tiers.
+7. Port Binding: Self-contained HTTP and WebSocket services export port bindings on ports 3000 and 5173.
+8. Concurrency: Scale horizontally by running stateless backend instances behind a reverse proxy or cloud load balancer.
+9. Disposability: Clean process lifecycle handling graceful termination signals to release active database connection pools and finalize active WebSocket rooms.
+10. Dev and Production Parity: Docker Compose maintains parity by hosting identical local PostgreSQL 17 and Redis 7 services matching production baselines.
+11. Logs as Event Streams: Structured logging outputs write directly to standard output and standard error streams.
+12. Admin Tasks as One-Off Scripts: Database schema migrations and data seeds run as discrete, reproducible pipeline jobs.
 
-- All incoming network payloads are treated as untrusted and validated via `ValidationPipe` (with `whitelist: true` and `forbidNonWhitelisted: true`).
-- Preconditions (e.g., minimum reputation $\ge 40$, sufficient liquid wallet balance) are validated immediately; on failure, execution halts and throws strongly-typed domain exceptions.
+## 5. Fail-Fast and Defensive Programming
+
+All incoming network payloads are treated as untrusted and validated through NestJS validation pipes configured with strict property whitelisting. Business preconditions, including minimum reputation thresholds and sufficient liquid wallet balances, are evaluated at the earliest possible stage, immediately halting processing with strongly-typed domain exceptions upon violation.

@@ -1,41 +1,42 @@
-# Quy Chuẩn Mã Nguồn Sạch Và Tài Liệu Hóa (Clean Code Standards)
+# Clean Code and Documentation Standards
 
-Tài liệu này xác định các tiêu chuẩn bắt buộc về chất lượng mã nguồn, kiểm soát độ phức tạp, định dạng tự động và phương thức tài liệu hóa trên toàn bộ Project Nexus.
+This document specifies the engineering criteria for source code quality, complexity management, automated formatting, and technical documentation across Project Nexus.
 
-## 1. Giới Hạn Tệp Và Phân Tách Trách Nhiệm
+## 1. File Boundaries and Separation of Concerns
 
-### Hướng dẫn kiểm soát độ dài tệp
+### File Length Management Guidelines
 
-Mục tiêu cốt lõi của việc kiểm soát độ dài là đảm bảo tính gắn kết và khả năng bảo trì:
+The primary objective of file length boundaries is to maintain high cohesion and rapid maintainability:
 
-- Không trộn lẫn nhiều trách nhiệm: Tuyệt đối không gộp chung các luồng xử lý không liên quan, máy trạng thái, quy tắc tài chính và các khối giao diện khác biệt vào cùng một tệp.
-- Ngưỡng khuyến nghị xấp xỉ 300 dòng: Giữ kích thước tệp dưới 300 dòng là thước đo thực tế cho sự gắn kết lành mạnh. Khi một tệp đạt từ 250 đến 300 dòng, kỹ sư chủ động tái cấu trúc bằng cách tách component con, tách custom hook hoặc trích xuất hằng số cấu hình ra tệp riêng.
-- Tính linh hoạt theo trách nhiệm duy nhất: Ngưỡng 300 dòng là khuyến nghị kiến trúc chứ không áp đặt máy móc. Nếu một tệp vượt quá 300 dòng nhưng tuân thủ triệt để nguyên lý đơn nhiệm (Single Responsibility Principle) và việc chia nhỏ sẽ làm phân mảnh logic, cấu trúc đó hoàn toàn được chấp thuận.
+- Prevent mixed concerns: Never combine unrelated business processes, complex state machines, financial reconciliation rules, and distinct user interface blocks within a single file.
+- Recommended threshold of approximately 300 lines: Maintaining file sizes below 300 lines provides a practical metric for healthy architectural cohesion. When a file approaches 250 to 300 lines, engineers proactively evaluate refactoring opportunities, such as extracting subcomponents, custom hooks, or domain constants.
+- Flexibility aligned with the Single Responsibility Principle: The 300-line threshold serves as an architectural heuristic rather than an inflexible limit. If a file exceeds 300 lines while maintaining a single, unified responsibility, and splitting it would artificially fragment related logic, the larger file structure remains fully acceptable.
 
-## 2. Quy Định Bình Luận Và Tài Liệu Hóa Mã Nguồn
+## 2. Code Comments and Documentation Protocols
 
-### Cấm tuyệt đối comment dòng đơn vô nghĩa
+### Prohibition of Meaningless Inline Comments
 
-- Nghiêm cấm hoàn toàn việc viết comment dòng đơn (dạng `// ...`) để thuật lại cú pháp hoặc giải thích từng dòng mã nguồn hiển nhiên (ví dụ: `// bước 1`, `// gọi database`, `// kiểm tra id`).
-- Không sử dụng ký tự phân cách trang trí kiểu ASCII (ví dụ: `// ================== HELPER FUNCTIONS ==================`).
+- Strictly prohibit single-line comments (`// ...`) that merely narrate obvious programming syntax or explain self-evident code statements.
+- Avoid decorative ASCII separators and comment banners, such as divider lines surrounding utility functions.
+- Rely on descriptive identifiers and domain-driven naming conventions to render the source code inherently self-explanatory.
 
-### Bắt buộc chuẩn hóa khối tài liệu TSDoc và JSDoc
+### Standardization of TSDoc and JSDoc Documentation Blocks
 
-- Toàn bộ Class, Interface, Type, Service Method, Controller Endpoint, Helper Function và WebSocket Gateway phải được tài liệu hóa bằng khối cú pháp TSDoc hoặc JSDoc (`/** ... */`).
-- Khối tài liệu phải mô tả chức năng tổng quan, giải trình ý nghĩa tham số bằng `@param`, định nghĩa giá trị trả về bằng `@returns` và liệt kê các ngoại lệ phát sinh bằng `@throws`.
-- Đối với Prisma Schema: Sử dụng cú pháp ba dấu gạch chéo (`///`) phía trên các Model và Field quan trọng để phục vụ trích xuất tài liệu lược đồ cơ sở dữ liệu.
+- Every class, interface, type alias, service method, controller endpoint, helper function, and WebSocket gateway must feature a formal TSDoc or JSDoc documentation block (`/** ... */`).
+- Documentation blocks must summarize the core responsibility, explain parameter semantics with `@param`, state the return value with `@returns`, and list thrown exceptions with `@throws`.
+- For Prisma schema definitions, use triple-slash comments (`/// ...`) preceding models and significant columns to support automated database documentation pipelines.
 
-## 3. Tiêu Chuẩn Chất Lượng TypeScript
+## 3. TypeScript Quality Standards
 
-Dự án áp dụng chế độ kiểm tra nghiêm ngặt cấu hình từ `@nexus/config/tsconfig.base.json`:
+The monorepo enforces strict compilation rules inherited from `@nexus/config/tsconfig.base.json`:
 
-### Loại bỏ hoàn toàn kiểu any
+### Elimination of the any Type
 
 ```typescript
-// Không được phép:
+// Prohibited pattern:
 const handleEvent = (data: any) => { ... };
 
-// Bắt buộc sử dụng kiểu dữ liệu tường minh hoặc unknown kèm type guard:
+// Required pattern utilizing explicit contracts or unknown with type guards:
 const handleEvent = (data: OrderCreatedEventPayload) => { ... };
 const parsePayload = (raw: unknown): UserProfile => {
   if (isUserProfile(raw)) return raw;
@@ -43,42 +44,42 @@ const parsePayload = (raw: unknown): UserProfile => {
 };
 ```
 
-### Khai báo kiểu trả về tường minh
+### Explicit Return Type Declarations
 
-Toàn bộ service method, controller endpoint và hàm tiện ích công khai bắt buộc phải có kiểu trả về rõ ràng:
+All service methods, controller endpoints, and public utility functions must declare explicit return types:
 
 ```typescript
-// Tuân thủ:
+// Compliant declaration:
 async getSellerSession(): Promise<UserProfile> { ... }
 
-// Không tuân thủ:
+// Non-compliant declaration:
 async getSellerSession() { ... }
 ```
 
-### Xử lý giá trị null và undefined an toàn
+### Safe Handling of Null and Undefined Values
 
-- Ưu tiên toán tử optional chaining `?.` và toán tử nullish coalescing `??` thay vì kiểm tra truthy thủ công.
-- Tránh sử dụng toán tử non-null assertion `!` trừ trường hợp gắn root element tại `main.tsx`.
+- Prefer the optional chaining operator (`?.`) and the nullish coalescing operator (`??`) over manual truthiness evaluations.
+- Avoid the non-null assertion operator (`!`), restricting its usage strictly to DOM root element mounting in client entry points.
 
-## 4. Định Dạng Mã Nguồn Tự Động
+## 4. Automated Code Formatting
 
-Mã nguồn được tự động định dạng thông qua Prettier cấu hình tại `.prettierrc.json`:
+Source files undergo automated formatting through Prettier governed by `.prettierrc.json`:
 
-- Chạy `npm run format` để tự động chuẩn hóa toàn bộ tệp tin.
-- Chạy `npm run format:check` để xác minh định dạng trong pipeline kiểm thử và Git hook.
+- Execute `npm run format` to standardize all repository files automatically.
+- Execute `npm run format:check` to verify formatting compliance within test pipelines and Git pre-commit hooks.
 
-## 5. Quy Tắc Linting Với ESLint
+## 5. ESLint Static Analysis Protocols
 
-Hệ thống quy chuẩn ESLint phẳng (`eslint.config.mjs`) giám sát các lỗi phổ biến:
+The flat ESLint configuration (`eslint.config.mjs`) guards against common defects:
 
-- Cấm sử dụng `any` (@typescript-eslint/no-explicit-any đặt mức `error`).
-- Cấm câu lệnh `debugger` và từ khóa `var`.
-- Bắt buộc so sánh nghiêm ngặt bằng toán tử `===` (eqeqeq đặt mức `error`).
-- Không sử dụng `console.log` trong các dịch vụ sản xuất; chỉ cho phép ghi nhận qua NestJS `Logger` hoặc các mức `warn`, `error`, `info`.
-- Biến không sử dụng phải được xóa bỏ hoặc đặt tiền tố gạch dưới `_` nếu cố ý giữ lại.
+- Prohibits the `any` type by treating `@typescript-eslint/no-explicit-any` as an error.
+- Disallows `debugger` statements and the legacy `var` keyword.
+- Enforces strict equality comparisons using the `===` operator.
+- Prohibits `console.log` in production services, requiring NestJS `Logger` instances or designated logging levels.
+- Requires removing unused variables or prefixing intentionally retained parameters with an underscore (`_`).
 
-## 6. Thiết Kế Hàm Và Kiểm Soát Độ Phức Tạp
+## 6. Function Design and Complexity Management
 
-- Kích thước hàm: Khuyến nghị mỗi hàm không vượt quá 30 dòng.
-- Số lượng tham số: Giới hạn tối đa 3 tham số. Khi cần truyền nhiều dữ liệu, bắt buộc gom nhóm thành DTO hoặc object có định kiểu.
-- Áp dụng kỹ thuật Early Return: Triệt tiêu các cấu trúc điều kiện lồng nhau phức tạp để mã nguồn dễ theo dõi từ trên xuống dưới.
+- Function length: Keep functions focused, generally under 30 lines.
+- Parameter count: Restrict parameter lists to a maximum of three values. When additional parameters are required, encapsulate them within a typed Data Transfer Object or configuration interface.
+- Early return pattern: Use guard clauses and early returns to flatten nested conditional logic, ensuring a readable top-to-bottom flow.

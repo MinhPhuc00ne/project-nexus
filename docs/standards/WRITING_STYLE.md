@@ -1,67 +1,68 @@
-# Quy Chuẩn Văn Phong Kỹ Thuật (Technical Writing Style Guide)
+# Technical Writing Style Guide
 
-Tài liệu này xác định các tiêu chuẩn bắt buộc khi biên soạn tài liệu kỹ thuật, hướng dẫn đóng góp, mô tả cam kết và ghi chú mã nguồn trong toàn bộ dự án Project Nexus.
+This document establishes the mandatory standards for authoring technical documentation, engineering guides, commit messages, and source code annotations across Project Nexus.
 
-## 1. Nguyên Tắc Văn Phong Cốt Lõi
+## 1. Core Principles of Technical Writing
 
-### Giọng văn kỹ thuật trung lập và trực diện
+### Objective and Direct Technical Tone
 
-- Trình bày thông tin khách quan, chính xác và có thể kiểm chứng.
-- Tránh sử dụng từ ngữ hoa mỹ, khẩu hiệu tiếp thị hoặc đại từ nhân xưng không trang trọng.
-- Sử dụng câu chủ động, ngắn gọn và tập trung vào trách nhiệm kỹ thuật của từng thành phần.
+- Present information factually, objectively, and verifiably.
+- Avoid promotional language, marketing slogans, and informal personal pronouns.
+- Use the active voice, concise phrasing, and focus strictly on the technical responsibilities of each component.
 
-### Sử dụng liên từ chính thức
+### Formal Conjunctions and Terminology
 
-- Luôn viết rõ ràng từ "và" trong tiếng Việt hoặc "and" trong tiếng Anh thay cho ký tự "&".
-- Không viết tắt tùy tiện các thuật ngữ kỹ thuật khi chưa được định nghĩa trong ngữ cảnh tài liệu.
+- Always write the word "and" explicitly instead of using the ampersand character ("&").
+- Avoid arbitrary abbreviations or technical shorthand unless formally defined within the document context.
 
-### Quy định định dạng văn bản
+### Typography and Formatting Rules
 
-- Không in đậm giữa câu để nhấn mạnh cảm tính. Việc nhấn mạnh được thể hiện qua cấu trúc câu và vị trí thông tin.
-- Không sử dụng danh sách kiểu máy móc lặp lại thuật ngữ in đậm kèm dấu hai chấm ở đầu mỗi dòng. Thay vào đó, sử dụng câu văn hoàn chỉnh diễn giải rõ ràng ý nghĩa hoặc lập bảng đối chiếu khi cần so sánh nhiều thuộc tính.
+- Prohibit mid-sentence bolding for emotional emphasis. Emphasis must arise naturally from sentence structure and information hierarchy.
+- Prohibit robotic lists that prefix bullet items with a bold term followed by a colon. Instead, express thoughts using complete, fluent sentences or structured comparative tables.
 
-## 2. Quy Định Về Ghi Chú Mã Nguồn (Code Comments)
+## 2. Code Comments and Annotation Rules
 
-### Cấm tuyệt đối comment dòng đơn vô nghĩa
+### Absolute Prohibition of Meaningless Inline Comments
 
-- Nghiêm cấm hoàn toàn việc viết comment dòng đơn (dạng `// ...`) để giải thích lại cú pháp hoặc từng dòng mã nguồn hiển nhiên (ví dụ: `// bước 1`, `// gọi database`, `// kiểm tra id`).
-- Mã nguồn cần tự giải thích thông qua tên biến, hàm và lớp mang tính mô tả cao theo các nguyên tắc Clean Code.
+- Strictly forbid single-line inline comments (`// ...`) that narrate obvious syntax or reiterate line-by-line mechanics, such as step numbering, database invocation notes, or identifier checks.
+- Code must be self-documenting through expressive variable, function, interface, and class names adhering to clean code standards.
 
-### Bắt buộc chuẩn hóa khối tài liệu chính quy
+### Standardization of Formal Documentation Blocks
 
-- Đối với TypeScript và JavaScript: Bắt buộc sử dụng khối tài liệu TSDoc hoặc JSDoc (`/** ... */`) cho toàn bộ Class, Interface, Type, Service Method, Controller Endpoint, Helper Function và WebSocket Event.
-- Khối tài liệu phải mô tả đầy đủ chức năng, trách nhiệm, ý nghĩa tham số (`@param`), giá trị trả về (`@returns`) và các ngoại lệ có thể phát sinh (`@throws`).
-- Đối với Prisma Schema: Sử dụng cú pháp ghi chú tài liệu ba dấu gạch chéo (`/// ...`) phía trên các model hoặc field quan trọng để phục vụ tự sinh tài liệu cơ sở dữ liệu.
+- For TypeScript and JavaScript codebases, employ formal TSDoc or JSDoc documentation blocks (`/** ... */`) for classes, interfaces, types, service methods, controller endpoints, helper functions, and WebSocket event handlers.
+- Documentation blocks must detail component responsibilities, explain parameter semantics using `@param`, define return values with `@returns`, and document potential exceptions with `@throws`.
+- For Prisma schema definitions, use triple-slash documentation comments (`/// ...`) preceding models and significant fields to support automated schema documentation generation.
 
-## 3. Phân Định Trách Nhiệm Tài Liệu
+## 3. Documentation Scope and Boundaries
 
-### Tệp README.md
+### Root README.md
 
-Chỉ chứa các thông tin giới thiệu cấp cao nhất về dự án:
+The root README file serves strictly as the highest-level project overview and entry point:
 
-- Mục đích và phạm vi ứng dụng của Project Nexus.
-- Bảng tổng hợp công nghệ sử dụng trong monorepo.
-- Cấu trúc thư mục mức cao nhất.
-- Hướng dẫn cài đặt và khởi chạy môi trường phát triển cục bộ.
-- Không sao chép các tài liệu chi tiết về kiến trúc, mô hình dữ liệu hoặc đặc tả nghiệp vụ từ thư mục `docs/`.
+- Summarizes the purpose and application scope of Project Nexus.
+- Outlines the complete technology stack inventory across the monorepo.
+- Illustrates the symmetric top-level repository structure.
+- Provides standard quickstart instructions for local development workflows.
+- Hosts the complete documentation index referencing every technical specification markdown document in the repository.
+- Avoids duplicating deep architectural models, data schemas, or detailed business workflows found in the `docs/` hierarchy.
 
-### Tệp CONTRIBUTING.md
+### Root CONTRIBUTING.md
 
-Chỉ tập trung vào quy trình làm việc của kỹ sư:
+The contributing guidelines focus exclusively on developer contribution lifecycles:
 
-- Quy định đặt tên nhánh làm việc.
-- Quy chuẩn thông điệp commit theo Conventional Commits.
-- Quy trình tạo và kiểm duyệt Merge Request.
-- Hướng dẫn thao tác lệnh với công cụ `glab` CLI trên máy trạm.
-- Không sao chép nội dung kiến trúc hoặc hướng dẫn triển khai từ `README.md` và `docs/`.
+- Defines branch naming conventions and lifecycle workflows.
+- Enforces commit message standards using Conventional Commits.
+- Outlines Merge Request creation, review, and verification protocols.
+- Documents optional workstation workflows using the `glab` command-line utility.
+- Excludes architectural overviews and setup instructions covered in `README.md` and `docs/`.
 
-### Thư mục docs/
+### The docs/ Hierarchy
 
-Lưu trữ toàn bộ tài liệu kiến trúc chuyên sâu:
+The `docs/` directory stores all in-depth engineering specifications:
 
-- `docs/architecture/`: Kiến trúc tổng thể Modular Monolith, luật nghiệp vụ và mẫu thiết kế.
-- `docs/standards/`: Tiêu chuẩn Clean Code, nguyên tắc thiết kế, quy ước đặt tên và phong cách biên soạn tài liệu.
-- `docs/backend/`: Hướng dẫn phát triển dịch vụ phía máy chủ NestJS và Prisma ORM.
-- `docs/frontend/`: Hướng dẫn phát triển giao diện React và Vite.
-- `docs/api/`: Đặc tả chi tiết các nhóm giao tiếp REST API và WebSocket.
-- `docs/srs/`: Đặc tả yêu cầu phần mềm và luồng nghiệp vụ sàn thương mại điện tử kết hợp đấu giá.
+- `docs/architecture/`: Modular Monolith architectural models, domain boundaries, business rules, and design patterns.
+- `docs/standards/`: Clean code criteria, design principles, naming conventions, and technical writing style guidelines.
+- `docs/backend/`: Server-side architecture, domain modules, database orchestration, and NestJS service guides.
+- `docs/frontend/`: Client-side architecture, state orchestration, UI design systems, and component contracts.
+- `docs/api/`: REST API interface endpoints, payload schemas, and WebSocket gateway events.
+- `docs/srs/`: Software requirements specification, role-based access matrices, and escrow commerce workflows.
