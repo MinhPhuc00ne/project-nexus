@@ -78,7 +78,10 @@ export class AdminController {
     description:
       'Provisions a corporate staff account and sends a random temporary password to their personal email address.',
   })
-  @ApiResponse({ status: 201, description: 'Staff account successfully provisioned and invitation dispatched' })
+  @ApiResponse({
+    status: 201,
+    description: 'Staff account successfully provisioned and invitation dispatched',
+  })
   @ApiResponse({ status: 400, description: 'Email address already registered or invalid input' })
   @ApiResponse({ status: 403, description: 'Administrative role required' })
   async createStaff(@Body() dto: CreateStaffDto) {
@@ -195,7 +198,10 @@ export class AdminController {
       'Sets user trust level to SUSPENDED and revokes all refresh tokens to terminate active sessions.',
   })
   @ApiResponse({ status: 200, description: 'User account locked successfully' })
-  @ApiResponse({ status: 400, description: 'Cannot lock administrative accounts or already locked user' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot lock administrative accounts or already locked user',
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
   async lockUser(
     @Param('id') id: string,
@@ -209,8 +215,7 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Unlock a user account',
-    description:
-      'Restores user trust level to standard standing based on reputation score.',
+    description: 'Restores user trust level to standard standing based on reputation score.',
   })
   @ApiResponse({ status: 200, description: 'User account unlocked successfully' })
   @ApiResponse({ status: 400, description: 'User account is not currently locked' })
@@ -246,7 +251,10 @@ export class AdminController {
       'Assigns any platform role (BUYER, SELLER, SUPPORT_STAFF, ADMIN) to a user account.',
   })
   @ApiResponse({ status: 200, description: 'User role updated successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid role transition or attempting to self-demote administrator' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid role transition or attempting to self-demote administrator',
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateUserRole(
     @Param('id') id: string,
@@ -350,8 +358,7 @@ export class AdminController {
   @Get('shops/:id/orders')
   @ApiOperation({
     summary: 'List orders associated with a specific shop',
-    description:
-      'Supports pagination and filtering across order fulfillment statuses.',
+    description: 'Supports pagination and filtering across order fulfillment statuses.',
   })
   @ApiResponse({ status: 200, description: 'Shop orders retrieved successfully' })
   async getShopOrders(
@@ -537,7 +544,8 @@ export class AdminController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Create product catalog category',
-    description: 'Creates root level categories or nested subcategories up to three tiers deep using parentId.',
+    description:
+      'Creates root level categories or nested subcategories up to three tiers deep using parentId.',
   })
   @ApiResponse({ status: 201, description: 'Category created successfully' })
   @ApiResponse({ status: 400, description: 'Exceeds maximum taxonomy depth or invalid input' })
@@ -553,7 +561,10 @@ export class AdminController {
     description: 'Updates category name, slug, or moves category to a new parent node.',
   })
   @ApiResponse({ status: 200, description: 'Category updated successfully' })
-  @ApiResponse({ status: 400, description: 'Circular hierarchy detected or taxonomy depth exceeded' })
+  @ApiResponse({
+    status: 400,
+    description: 'Circular hierarchy detected or taxonomy depth exceeded',
+  })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
     return this.categoryService.updateCategory(id, dto);
@@ -563,10 +574,14 @@ export class AdminController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete catalog category',
-    description: 'Removes empty categories that possess no child categories and no associated products.',
+    description:
+      'Removes empty categories that possess no child categories and no associated products.',
   })
   @ApiResponse({ status: 200, description: 'Category deleted successfully' })
-  @ApiResponse({ status: 400, description: 'Category contains active child categories or linked products' })
+  @ApiResponse({
+    status: 400,
+    description: 'Category contains active child categories or linked products',
+  })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async deleteCategory(@Param('id') id: string) {
     return this.categoryService.deleteCategory(id);
