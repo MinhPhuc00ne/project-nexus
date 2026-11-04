@@ -36,7 +36,9 @@ export class AdminSettingsService {
   constructor(private readonly redisService: RedisService) {}
 
   /**
-   * Lấy cấu hình hệ thống hiện tại (từ Redis hoặc cache bộ nhớ)
+   * Retrieves active platform operational settings from Redis or local memory fallback.
+   *
+   * @returns Active system settings configuration object
    */
   async getSettings(): Promise<SystemSettings> {
     try {
@@ -54,7 +56,11 @@ export class AdminSettingsService {
   }
 
   /**
-   * Cập nhật các thông số vận hành sàn runtime
+   * Updates platform operational configuration parameters at runtime.
+   *
+   * @param adminId - Administrative actor identifier
+   * @param dto - Updated configuration values
+   * @returns Update confirmation with active settings
    */
   async updateSettings(
     adminId: string,
