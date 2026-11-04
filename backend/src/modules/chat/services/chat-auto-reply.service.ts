@@ -261,7 +261,16 @@ export class ChatAutoReplyService {
       throw new BadRequestException('Cấu hình KEYWORD cần từ khóa hợp lệ.');
   }
 
-  /** Ưu tiên từ khóa cụ thể, sau đó tới các fallback phù hợp ngữ cảnh. */
+  /**
+   * Evaluates incoming message content against active auto-reply triggers,
+   * prioritizing exact keyword matches followed by contextual fallbacks (offline, welcome, default).
+   *
+   * @param shopId - Target merchant shop identifier or null for system scope
+   * @param scope - Configuration scope (SHOP or SYSTEM)
+   * @param text - Candidate message text
+   * @param context - Additional contextual trigger flags
+   * @returns Matched reply content or null
+   */
   async findMatchingReply(
     shopId: string | null,
     scope: 'SHOP' | 'SYSTEM',
@@ -271,7 +280,6 @@ export class ChatAutoReplyService {
     if (scope === 'SHOP' && !shopId) return null;
     const normalized = normalizeChatText(text);
 
-    // 1. Kiểm tra trigger theo KEYWORD trước
     if (normalized) {
       const keywordReplies = await this.prisma.chatAutoReply.findMany({
         where: {
@@ -284,7 +292,6 @@ export class ChatAutoReplyService {
         },
       });
 
-      // Prefer specific phrases; deterministic order prevents overlapping triggers changing at random.
       keywordReplies.sort(
         (a, b) =>
           normalizeChatText(b.keyword ?? '').length - normalizeChatText(a.keyword ?? '').length ||

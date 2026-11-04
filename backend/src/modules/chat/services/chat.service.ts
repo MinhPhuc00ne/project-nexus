@@ -53,9 +53,14 @@ export class ChatService {
   }
 
   /**
-   * Tạo hoặc mở cuộc trò chuyện trực tiếp (chủ yếu là BUYER <-> SELLER)
-   * Chặn Staff tự tiện nhắn tin trực tiếp với khách nếu không có yêu cầu / tranh chấp.
-   * Đảm bảo mỗi tranh chấp (Dispute) chỉ tạo DUY NHẤT một hội thoại.
+   * Initializes or retrieves a direct conversation between participants.
+   *
+   * @param currentUserId - Initiator user identifier
+   * @param currentUserRole - Initiator role
+   * @param dto - Conversation creation parameters
+   * @returns Established Conversation entity
+   * @throws BadRequestException when partner ID is missing, self-chat is attempted, or target is Admin
+   * @throws ForbiddenException when Support Staff attempts unrequested outreach
    */
   async createOrGetConversation(
     currentUserId: string,
@@ -70,12 +75,10 @@ export class ChatService {
       throw new BadRequestException('Không thể tự tạo cuộc trò chuyện với chính mình.');
     }
 
-    // Đảm bảo mỗi tranh chấp chỉ tạo một hội thoại
     if (dto.contextType === 'DISPUTE' && dto.contextId) {
       return this.getOrCreateDisputeConversation(dto.contextId, currentUserId, currentUserRole);
     }
 
-    // Nhân viên không được tự ý spam chat với khách
     if (currentUserRole === 'SUPPORT_STAFF') {
       throw new ForbiddenException(
         'Nhân viên hỗ trợ chỉ có thể phản hồi yêu cầu hỗ trợ hoặc giải quyết tranh chấp do người dùng gửi lên.',
@@ -96,7 +99,6 @@ export class ChatService {
       );
     }
 
-    // Nếu người dùng nhắn cho Staff -> Chuyển sang luồng Hàng đợi Request Support
     if (partner.role === 'SUPPORT_STAFF') {
       return this.requestSupport(currentUserId, currentUserRole, {
         subject: dto.title,
@@ -152,10 +154,13 @@ export class ChatService {
   }
 
   /**
-   * Buyer / Seller gửi yêu cầu hỗ trợ lên Staff
-   * - Đưa vào hàng đợi với trạng thái OPEN
-   * - Tự động đẩy cho Staff nào đang ONLINE trước nhất (FIFO Staff)
-   * - Đảm bảo mỗi tranh chấp chỉ tạo 1 hội thoại
+   * Submits a customer support request, allocating it to the next available staff or the FIFO queue.
+   *
+   * @param userId - Requesting user identifier
+   * @param role - Requesting user role
+   * @param dto - Support request payload
+   * @returns Created support Conversation entity
+   * @throws BadRequestException when staff or admin attempts to submit, or when content is invalid
    */
   async requestSupport(userId: string, role: string, dto: RequestSupportDto) {
     if (role === 'SUPPORT_STAFF' || role === 'ADMIN') {
@@ -170,7 +175,6 @@ export class ChatService {
     }
     assertCleanContent(text, 'Nội dung yêu cầu hỗ trợ');
 
-    // Đảm bảo mỗi tranh chấp chỉ tạo duy nhất 1 hội thoại
     if (dto.contextType === 'DISPUTE' && dto.contextId) {
       const existingDisputeConv = await this.prisma.chatConversation.findFirst({
         where: { contextId: dto.contextId, contextType: 'DISPUTE' },
@@ -193,7 +197,6 @@ export class ChatService {
 
     const convType = role === 'SELLER' ? 'STAFF_SELLER' : 'STAFF_BUYER';
 
-    // Tìm Staff online sớm nhất chưa quá tải
     const availableStaffId = this.staffQueueService.getNextAvailableStaff();
 
     const conv = await this.prisma.chatConversation.create({
@@ -253,7 +256,14 @@ export class ChatService {
   }
 
   /**
-   * Lấy hoặc khởi tạo duy nhất một cuộc trò chuyện hỗ trợ cho một khiếu nại tranh chấp
+   * Retrieves or initializes a unique support conversation bound to a dispute.
+   *
+   * @param disputeId - Target dispute identifier
+   * @param userId - Requesting user identifier
+   * @param role - Requesting user role
+   * @returns Dispute conversation entity
+   * @throws NotFoundException when dispute does not exist
+   * @throws ForbiddenException when user is not a dispute party or authorized staff
    */
   async getOrCreateDisputeConversation(disputeId: string, userId: string, role: string) {
     const dispute = await this.prisma.dispute.findUnique({
@@ -294,8 +304,12 @@ export class ChatService {
   }
 
   /**
-   * Xem Hàng đợi yêu cầu hỗ trợ (FIFO Queue)
-   * Chỉ Staff hoặc Admin mới xem được danh sách này
+   * Retrieves paginated support queue tickets adhering to FIFO ordering.
+   *
+   * @param role - User role (must be SUPPORT_STAFF or ADMIN)
+   * @param query - Pagination and filtering options
+   * @returns Paginated queue tickets and waiting metrics
+   * @throws ForbiddenException when user lacks staff or admin privileges
    */
   async getQueue(role: string, query: QueryQueueDto) {
     if (role !== 'SUPPORT_STAFF' && role !== 'ADMIN') {
@@ -319,7 +333,7 @@ export class ChatService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'asc' }, // FIFO: ai gửi trước thì đứng đầu
+        orderBy: { createdAt: 'asc' },
         include: {
           participant1: {
             select: { id: true, fullName: true, avatarUrl: true, role: true, email: true },
@@ -351,7 +365,15 @@ export class ChatService {
   }
 
   /**
-   * Nhân viên chủ động tiếp nhận (Claim) một ticket từ hàng đợi
+   * Allows support staff to claim an unassigned support ticket from the FIFO queue.
+   *
+   * @param convId - Target conversation identifier
+   * @param staffId - Claiming staff user identifier
+   * @param role - Claiming user role
+   * @returns Updated Conversation entity
+   * @throws ForbiddenException when user lacks staff/admin role
+   * @throws NotFoundException when conversation does not exist
+   * @throws BadRequestException when conversation is not in OPEN status
    */
   async claimConversation(convId: string, staffId: string, role: string) {
     if (role !== 'SUPPORT_STAFF' && role !== 'ADMIN') {
@@ -395,7 +417,15 @@ export class ChatService {
   }
 
   /**
-   * Cập nhật trạng thái cuộc trò chuyện (OPEN, IN_PROGRESS, RESOLVED, CLOSED)
+   * Updates conversation lifecycle status (OPEN, IN_PROGRESS, RESOLVED, CLOSED).
+   *
+   * @param convId - Target conversation identifier
+   * @param userId - Acting user identifier
+   * @param role - Acting user role
+   * @param dto - Status update payload
+   * @returns Updated Conversation entity
+   * @throws NotFoundException when conversation does not exist
+   * @throws ForbiddenException when user lacks assignment or audit permission
    */
   async updateConversationStatus(
     convId: string,
@@ -431,7 +461,6 @@ export class ChatService {
     if (dto.status === 'RESOLVED' || dto.status === 'CLOSED') {
       if (conv.assignedStaffId) {
         this.staffQueueService.releaseAssignedTicket(conv.assignedStaffId, convId);
-        // Tự động kéo ticket tiếp theo trong hàng đợi về cho Staff này
         void this.processQueueForStaff(conv.assignedStaffId);
       }
     }
@@ -449,7 +478,9 @@ export class ChatService {
   }
 
   /**
-   * Tự động kéo ticket tiếp theo trong hàng đợi FIFO cho nhân viên rảnh việc
+   * Automatically allocates the next FIFO queue ticket to an idle support staff member.
+   *
+   * @param staffId - Target staff member identifier
    */
   async processQueueForStaff(staffId: string): Promise<void> {
     try {
@@ -461,7 +492,7 @@ export class ChatService {
           status: 'OPEN',
           assignedStaffId: null,
         },
-        orderBy: { createdAt: 'asc' }, // FIFO
+        orderBy: { createdAt: 'asc' },
       });
 
       if (!nextTicket) return;
@@ -475,11 +506,12 @@ export class ChatService {
   }
 
   /**
-   * Lấy danh sách cuộc trò chuyện:
-   * - BỎ HOÀN TOÀN CHAT CHUNG!
-   * - Staff CHỈ thấy cuộc trò chuyện của chính mình (assignedStaffId = userId)
-   * - Ẩn danh tên Staff với khách hàng thành "Nhân viên Hỗ trợ"
-   * - Chỉ Admin mới thấy đầy đủ tên thật Staff qua Audit
+   * Retrieves user conversations with role-based scoping and staff identity masking.
+   *
+   * @param userId - Requesting user identifier
+   * @param role - Requesting user role
+   * @param query - Query filter and pagination parameters
+   * @returns Paginated conversation summaries
    */
   async listUserConversations(userId: string, role: string, query: QueryConversationsDto) {
     const page = Number(query.page) || 1;
@@ -541,6 +573,16 @@ export class ChatService {
     };
   }
 
+  /**
+   * Retrieves conversation details with role-based masking and access validation.
+   *
+   * @param id - Conversation identifier
+   * @param userId - Requesting user identifier
+   * @param role - Requesting user role
+   * @returns Conversation details
+   * @throws NotFoundException when conversation does not exist
+   * @throws ForbiddenException when user lacks access permissions
+   */
   async getConversationById(id: string, userId: string, role: string) {
     const conv = await this.prisma.chatConversation.findUnique({
       where: { id },
@@ -574,6 +616,15 @@ export class ChatService {
     };
   }
 
+  /**
+   * Retrieves paginated messages for a conversation with cursor pagination.
+   *
+   * @param convId - Target conversation identifier
+   * @param userId - Requesting user identifier
+   * @param role - Requesting user role
+   * @param query - Cursor pagination parameters
+   * @returns Paginated messages with masked identities
+   */
   async listMessages(convId: string, userId: string, role: string, query: QueryMessagesDto) {
     await this.getConversationById(convId, userId, role);
     const limit = Number(query.limit) || 50;
@@ -611,6 +662,15 @@ export class ChatService {
     return { conversationId: convId, count: formatted.length, messages: formatted };
   }
 
+  /**
+   * Sends a message in a conversation, performing moderation checks and status progression.
+   *
+   * @param senderId - Sender user identifier
+   * @param senderRole - Sender user role
+   * @param dto - Message payload and attachments
+   * @returns Created ChatMessage entity
+   * @throws BadRequestException when message body is missing or violates content rules
+   */
   async sendMessage(senderId: string, senderRole: string, dto: SendMessageDto) {
     const text = (dto.content || dto.body || '').trim();
     const attachments = dto.attachments || [];
@@ -623,7 +683,6 @@ export class ChatService {
     if (!convId) throw new BadRequestException('Thiếu mã cuộc trò chuyện conversationId.');
     const conv = await this.getConversationById(convId, senderId, senderRole);
 
-    // Nếu hội thoại đang OPEN và Staff trả lời -> Tự động chuyển sang IN_PROGRESS và gán cho Staff này
     if (conv.status === 'OPEN' && senderRole === 'SUPPORT_STAFF') {
       await this.prisma.chatConversation.update({
         where: { id: convId },
@@ -757,6 +816,14 @@ export class ChatService {
     });
   }
 
+  /**
+   * Marks unread messages in a conversation as read for the current user.
+   *
+   * @param convId - Target conversation identifier
+   * @param userId - Requesting user identifier
+   * @param role - Requesting user role
+   * @returns Read confirmation status
+   */
   async markAsRead(convId: string, userId: string, role: string) {
     const conv = await this.getConversationById(convId, userId, role);
     await this.prisma.chatMessage.updateMany({
@@ -778,6 +845,12 @@ export class ChatService {
     };
   }
 
+  /**
+   * Aggregates total unread messages across all active user conversations.
+   *
+   * @param userId - Target user identifier
+   * @returns Total unread count
+   */
   async getTotalUnreadCount(userId: string) {
     const unreadCount = await this.prisma.chatMessage.count({
       where: {
@@ -789,6 +862,12 @@ export class ChatService {
     return { unreadCount };
   }
 
+  /**
+   * Uploads multiple media attachments associated with chat messages.
+   *
+   * @param files - Uploaded Multer files
+   * @returns Array of uploaded file URLs
+   */
   async uploadAttachments(files: Express.Multer.File[]): Promise<string[]> {
     if (!files || files.length === 0) return [];
     const uploadPromises = files.map(async (f) => {

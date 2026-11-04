@@ -9,7 +9,11 @@ export class NotificationsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lấy danh sách thông báo của người dùng kèm phân trang & lọc trạng thái đã đọc
+   * Retrieves paginated notifications for a user with read status filtering.
+   *
+   * @param userId - Target user identifier
+   * @param query - Query filter and pagination parameters
+   * @returns Paginated notification items, unread counters, and pagination metadata
    */
   async getUserNotifications(userId: string, query: QueryNotificationDto) {
     const page = Math.max(1, query.page || 1);
@@ -55,7 +59,10 @@ export class NotificationsService {
   }
 
   /**
-   * Đếm số lượng thông báo chưa đọc của người dùng (phục vụ biểu tượng quả chuông ở Header)
+   * Counts unread notifications for a user to display header badge indicators.
+   *
+   * @param userId - Target user identifier
+   * @returns Total unread notification count
    */
   async getUnreadCount(userId: string): Promise<{ unreadCount: number }> {
     const unreadCount = await this.prisma.notification.count({
@@ -69,7 +76,12 @@ export class NotificationsService {
   }
 
   /**
-   * Đánh dấu một thông báo cụ thể là đã đọc
+   * Marks a specific user notification as read.
+   *
+   * @param userId - Target user identifier
+   * @param notificationId - Target notification identifier
+   * @returns Confirmation result and updated Notification entity
+   * @throws NotFoundException when notification does not exist for the user
    */
   async markAsRead(userId: string, notificationId: string) {
     const notification = await this.prisma.notification.findFirst({
@@ -96,7 +108,10 @@ export class NotificationsService {
   }
 
   /**
-   * Đánh dấu toàn bộ thông báo của người dùng là đã đọc
+   * Marks all unread notifications for a user as read.
+   *
+   * @param userId - Target user identifier
+   * @returns Confirmation result and updated record count
    */
   async markAllAsRead(userId: string) {
     const result = await this.prisma.notification.updateMany({
@@ -115,7 +130,10 @@ export class NotificationsService {
   }
 
   /**
-   * Hàm tạo thông báo nội bộ cho các module khác dùng
+   * Internal helper to create a system or event notification for a user.
+   *
+   * @param params - Notification creation parameters
+   * @returns Created Notification entity
    */
   async createNotification(params: {
     userId: string;
@@ -136,7 +154,10 @@ export class NotificationsService {
   }
 
   /**
-   * Lấy danh sách tùy chọn nhận thông báo của người dùng (Email, Push, In-App)
+   * Retrieves channel preferences for a user across in-app, email, and push.
+   *
+   * @param userId - Target user identifier
+   * @returns User notification preferences per channel
    */
   async getPreferences(userId: string) {
     const preferences = await this.prisma.notificationPreference.findMany({
@@ -158,13 +179,17 @@ export class NotificationsService {
       userId,
       preferences: allChannels.map((channel) => ({
         channel,
-        isEnabled: prefMap.has(channel) ? prefMap.get(channel)! : true, // Mặc định là bật true
+        isEnabled: prefMap.has(channel) ? prefMap.get(channel)! : true,
       })),
     };
   }
 
   /**
-   * Cập nhật / Lưu tùy chọn nhận thông báo của người dùng
+   * Upserts notification preferences across channels for a user.
+   *
+   * @param userId - Target user identifier
+   * @param dto - Updated channel preference settings
+   * @returns Confirmation and refreshed preferences
    */
   async updatePreferences(userId: string, dto: UpdateNotificationPreferencesDto) {
     const operations = dto.preferences.map((item) =>

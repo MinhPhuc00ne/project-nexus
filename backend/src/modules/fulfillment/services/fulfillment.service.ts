@@ -125,7 +125,6 @@ export class FulfillmentService {
         distanceKm: route?.distanceKm ?? null,
         durationMinutes: route?.durationMinutes ?? null,
         actualWeightKg: quote.parcel.weightGrams / 1000,
-        // Legacy field: physical parcel weight, not a locally computed GHN billable weight.
         chargeableWeightKg: quote.parcel.weightGrams / 1000,
         calculationMethod: route?.method ?? null,
       },
@@ -136,7 +135,6 @@ export class FulfillmentService {
         r2sFee: quote.fee.r2sFee,
         ghnCarrierFee: quote.fee.total,
         finalShippingFee: quote.fee.total,
-        // Legacy response aliases; there is no distance-based tariff anymore.
         distanceTotalFee: quote.fee.total,
         distanceFee: 0,
         weightFee: 0,

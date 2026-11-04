@@ -149,7 +149,6 @@ export class ChatGateway
       if (user.role === 'SUPPORT_STAFF') {
         client.join('role:SUPPORT_STAFF');
         this.staffQueueService.registerOnlineStaff(userId, client.id);
-        // Tự động kiểm tra và phân phối ticket trong hàng đợi cho staff này nếu có
         void this.chatService.processQueueForStaff(userId);
       }
 
