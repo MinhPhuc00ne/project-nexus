@@ -10,7 +10,10 @@ export class AdminDisputesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lấy danh sách các khiếu nại đang chờ xử lý và toàn bộ khiếu nại trên toàn sàn
+   * Retrieves paginated platform disputes with search and status filtering.
+   *
+   * @param query - Dispute query parameters including pagination and filters
+   * @returns Paginated disputes and status summary metrics
    */
   async getDisputes(query: QueryAdminDisputesDto) {
     const page = Math.max(1, query.page || 1);

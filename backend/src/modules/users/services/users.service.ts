@@ -63,7 +63,13 @@ export class UsersService {
     };
   }
 
-  // 1. PROFILE.VIEW: Lấy thông tin cá nhân và số dư ví
+  /**
+   * Retrieves user profile details and associated wallet balances.
+   *
+   * @param userId - Unique identifier of the user
+   * @returns Formatted user profile
+   * @throws NotFoundException when user does not exist
+   */
   async getProfile(userId: string): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -73,6 +79,15 @@ export class UsersService {
     return this.formatProfile(user);
   }
 
+  /**
+   * Updates support staff profile details.
+   *
+   * @param userId - Unique identifier of the staff user
+   * @param dto - Updated staff profile payload
+   * @returns Formatted user profile
+   * @throws ForbiddenException when user is not support staff
+   * @throws BadRequestException when full name is invalid
+   */
   async updateStaffProfile(
     userId: string,
     dto: UpdateStaffProfileDto,
@@ -94,7 +109,17 @@ export class UsersService {
     return this.formatProfile(updated);
   }
 
-  // 2. PROFILE.UPDATE: Cập nhật thông tin cá nhân (chỉ Buyer & Seller; Seller yêu cầu xác minh lại mật khẩu gần đây)
+  /**
+   * Updates buyer or seller personal profile information with mandatory re-authentication checks.
+   *
+   * @param userId - Unique identifier of the user
+   * @param dto - Updated profile payload
+   * @param _callerRole - Optional caller role
+   * @param verificationToken - Optional re-authentication token
+   * @returns Formatted user profile
+   * @throws NotFoundException when user does not exist
+   * @throws ForbiddenException when role is not permitted to edit personal profile
+   */
   async updateProfile(
     userId: string,
     dto: UpdateBuyerProfileDto,
@@ -137,7 +162,14 @@ export class UsersService {
     return this.formatProfile(updated);
   }
 
-  // 3. Buyer nộp hồ sơ xin nâng cấp lên Seller (kèm thông tin cửa hàng, địa chỉ & file chứng minh)
+  /**
+   * Submits a merchant upgrade application including store identity, address, and verification documents.
+   *
+   * @param userId - Unique identifier of the buyer
+   * @param dto - Upgrade application parameters
+   * @param file - Optional uploaded proof document
+   * @returns Application submission confirmation and request identifier
+   */
   async applySellerUpgrade(
     userId: string,
     dto: ApplySellerUpgradeDto,
@@ -227,13 +259,24 @@ export class UsersService {
     };
   }
 
-  // Upload file/ảnh chứng minh lên Cloudinary / Storage
+  /**
+   * Uploads seller verification proof document to Cloudinary or local storage.
+   *
+   * @param fileBuffer - Buffer of the uploaded proof document
+   * @param fileName - Original file name
+   * @returns Public URL of the uploaded document
+   */
   async uploadProofDocument(fileBuffer: Buffer, fileName: string): Promise<{ url: string }> {
     const res = await this.storageService.uploadFile(fileBuffer, fileName, 'nexus/seller-proofs');
     return { url: res.url };
   }
 
-  // 4. Admin xem danh sách hồ sơ nâng cấp Seller
+  /**
+   * Retrieves merchant upgrade applications filtered by review status.
+   *
+   * @param status - Optional upgrade request status filter
+   * @returns List of upgrade requests with applicant user details
+   */
   async listSellerRequests(status?: SellerRequestStatus) {
     return this.prisma.sellerUpgradeRequest.findMany({
       where: status ? { status } : undefined,
@@ -252,7 +295,16 @@ export class UsersService {
     });
   }
 
-  // 5. Admin duyệt hồ sơ nâng cấp Seller (Chỉ Admin duyệt)
+  /**
+   * Reviews and approves or rejects a merchant upgrade application.
+   *
+   * @param requestId - Target upgrade request identifier
+   * @param adminId - Reviewing administrator identifier
+   * @param dto - Decision status and optional rejection reason
+   * @returns Review confirmation result
+   * @throws NotFoundException when request is not found
+   * @throws BadRequestException when request has already been processed
+   */
   async reviewSellerUpgrade(
     requestId: string,
     adminId: string,
@@ -288,7 +340,6 @@ export class UsersService {
           data: { role: Role.SELLER, isSellerActive: true, updatedAt: new Date() },
         });
 
-        // Tự động tạo địa chỉ kho/cửa hàng cho Seller nếu có thông tin địa chỉ
         if (request.street && request.city) {
           await tx.userAddress.create({
             data: {
@@ -346,7 +397,13 @@ export class UsersService {
     };
   }
 
-  // 7. Lấy thông tin hồ sơ gian hàng của Seller
+  /**
+   * Retrieves merchant shop profile, operating addresses, and reputation scores.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @returns Shop profile entity
+   * @throws NotFoundException when seller does not exist
+   */
   async getShopProfile(sellerId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: sellerId },
@@ -411,7 +468,15 @@ export class UsersService {
     };
   }
 
-  // 8. Cập nhật tên, mô tả, thông tin liên hệ và địa chỉ của gian hàng
+  /**
+   * Updates merchant shop profile including branding, description, contact details, and pickup address.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param dto - Shop update payload
+   * @returns Updated shop profile
+   * @throws NotFoundException when user is not found
+   * @throws ForbiddenException when user is not authorized or shop is suspended
+   */
   async updateShopProfile(sellerId: string, dto: UpdateShopProfileDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: sellerId },
@@ -461,7 +526,6 @@ export class UsersService {
         where: { userId: sellerId, status: SellerRequestStatus.APPROVED },
         orderBy: { updatedAt: 'desc' },
       });
-      // Store contact details belong to the shop request, not the seller's personal profile.
       if (dto.shopAvatarUrl !== undefined) {
         await tx.user.update({
           where: { id: sellerId },
@@ -469,7 +533,6 @@ export class UsersService {
         });
       }
 
-      // 2. Cập nhật hoặc tạo bản ghi SellerUpgradeRequest
       let updatedRequest;
       if (latestApproved) {
         updatedRequest = await tx.sellerUpgradeRequest.update({

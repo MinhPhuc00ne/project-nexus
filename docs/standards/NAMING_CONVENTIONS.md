@@ -1,68 +1,61 @@
-# Project Nexus - Naming Conventions Specification
+# Naming Conventions Specification
 
-This document establishes the universal naming conventions enforced across all files, classes, methods, variables, database schemas, and API routes in **Project Nexus**.
-
----
+This document establishes the universal naming conventions enforced across all files, classes, methods, variables, database schemas, and API routes throughout Project Nexus.
 
 ## 1. Summary of Standards
 
-| Code Element                      | Convention                        | Valid Example                                 | Invalid Example                                  |
-| :-------------------------------- | :-------------------------------- | :-------------------------------------------- | :----------------------------------------------- |
-| **Backend Files & Directories**   | `kebab-case`                      | `auction-engine.service.ts`, `auth-guard.ts`  | `AuctionEngine.ts`, `auth_guard.ts`              |
-| **React Components**              | `PascalCase`                      | `ProductImageGallery.tsx`, `StaffSidebar.tsx` | `productImageGallery.tsx`, `staff_sidebar.tsx`   |
-| **React Custom Hooks**            | `camelCase` (prefixed with `use`) | `useAuth.ts`, `useLiveAuction.ts`             | `authHook.ts`, `LiveAuctionHook.ts`              |
-| **Classes, Interfaces, Types**    | `PascalCase`                      | `UserProfile`, `OrderSummaryDto`, `Role`      | `userProfile`, `order_summary_dto`               |
-| **Functions & Methods**           | `camelCase`                       | `calculateEscrowFee()`, `refreshProfile()`    | `CalculateEscrowFee()`, `calculate_escrow_fee()` |
-| **Variables & Object Properties** | `camelCase`                       | `walletBalance`, `isSellerActive`             | `wallet_balance`, `IsSellerActive`               |
-| **Constants & Env Variables**     | `UPPER_SNAKE_CASE`                | `PLATFORM_FEE_PERCENTAGE`, `VITE_API_URL`     | `platformFeePercentage`, `vite_api_url`          |
-| **Database Tables & Columns**     | `snake_case`                      | `escrow_records`, `shipping_fee`              | `EscrowRecords`, `shippingFee`                   |
-| **REST Route Paths**              | `kebab-case` (lowercase)          | `/api/v1/users/toggle-seller`                 | `/api/v1/users/toggleSeller`                     |
-| **WebSocket Events**              | `domain:action` (colon-delimited) | `auction:bid:placed`, `auction:timer:sync`    | `bidPlaced`, `AUCTION_BID_PLACED`                |
-| **Domain Event Classes**          | `PascalCase` (ending in `Event`)  | `OrderCreatedEvent`, `AuctionEndedEvent`      | `orderCreated`, `OrderEvent`                     |
-| **DTO Classes / Interfaces**      | `PascalCase` (ending in `Dto`)    | `UserSummaryDto`, `ActivateStaffDto`          | `UserSummary`, `ActivateStaffData`               |
+| Code Element                        | Convention                        | Valid Example                                 | Invalid Example                                  |
+| :---------------------------------- | :-------------------------------- | :-------------------------------------------- | :----------------------------------------------- |
+| Backend Files and Directories       | `kebab-case`                      | `auction-engine.service.ts`, `auth-guard.ts`  | `AuctionEngine.ts`, `auth_guard.ts`              |
+| React Components                    | `PascalCase`                      | `ProductImageGallery.tsx`, `StaffSidebar.tsx` | `productImageGallery.tsx`, `staff_sidebar.tsx`   |
+| React Custom Hooks                  | `camelCase` (prefixed with `use`) | `useAuth.ts`, `useLiveAuction.ts`             | `authHook.ts`, `LiveAuctionHook.ts`              |
+| Classes, Interfaces, Types          | `PascalCase`                      | `UserProfile`, `OrderSummaryDto`, `Role`      | `userProfile`, `order_summary_dto`               |
+| Functions and Methods               | `camelCase`                       | `calculateEscrowFee()`, `refreshProfile()`    | `CalculateEscrowFee()`, `calculate_escrow_fee()` |
+| Variables and Object Properties     | `camelCase`                       | `walletBalance`, `isSellerActive`             | `wallet_balance`, `IsSellerActive`               |
+| Constants and Environment Variables | `UPPER_SNAKE_CASE`                | `PLATFORM_FEE_PERCENTAGE`, `VITE_API_URL`     | `platformFeePercentage`, `vite_api_url`          |
+| Database Tables and Columns         | `snake_case`                      | `escrow_records`, `shipping_fee`              | `EscrowRecords`, `shippingFee`                   |
+| REST Route Paths                    | `kebab-case` (lowercase)          | `/api/v1/users/toggle-seller`                 | `/api/v1/users/toggleSeller`                     |
+| WebSocket Events                    | `domain:action` (colon-delimited) | `auction:bid:placed`, `auction:timer:sync`    | `bidPlaced`, `AUCTION_BID_PLACED`                |
+| Domain Event Classes                | `PascalCase` (ending in `Event`)  | `OrderCreatedEvent`, `AuctionEndedEvent`      | `orderCreated`, `OrderEvent`                     |
+| DTO Classes and Interfaces          | `PascalCase` (ending in `Dto`)    | `UserSummaryDto`, `ActivateStaffDto`          | `UserSummary`, `ActivateStaffData`               |
 
----
+## 2. Expressive Semantics and Grammar
 
-## 2. Expressive Semantics & Grammar
+### Boolean Variable and Property Naming
 
-### 2.1 Boolean Variable & Property Naming
+Booleans must begin with an auxiliary verb to clearly communicate their conditional nature:
 
-Booleans must start with an auxiliary verb to indicate condition:
+- `is`: Indicates a current state, such as `isAuthenticated`, `isLoading`, `isExtended`, or `isVerified`.
+- `has`: Indicates possession or completion, such as `hasPermission` or `hasCompletedCheckout`.
+- `can`: Indicates capability or authorization, such as `canToggleSeller` or `canBid`.
+- `should`: Indicates recommended or impending action, such as `shouldRetry` or `shouldExtendCountdown`.
 
-- `is`: `isAuthenticated`, `isLoading`, `isExtended`, `isVerified`
-- `has`: `hasPermission`, `hasCompletedCheckout`
-- `can`: `canToggleSeller`, `canBid`
-- `should`: `shouldRetry`, `shouldExtendCountdown`
-
-Avoid negative booleans that lead to confusing double-negatives:
+Avoid negative boolean identifiers that produce convoluted double-negative logic:
 
 ```typescript
-// ❌ Confusing:
+// Confusing negative condition:
 const isNotSuspended = true;
 if (!isNotSuspended) { ... }
 
-// ✅ Clear:
+// Clear positive condition:
 const isSuspended = false;
 if (isSuspended) { ... }
 ```
 
-### 2.2 Domain Entities & DTOs
+### Domain Entities and Data Transfer Objects
 
-- **DTOs (Data Transfer Objects):** Always append the `Dto` suffix to differentiate external contracts from persistent entities (`ProductSummaryDto`, `CreateSellerRequestDto`).
-- **Interfaces for Ports / Repositories:** Prefix with `I` when describing abstract domain boundaries (`IPaymentStrategy`, `IOrderRepository`).
+Always append the `Dto` suffix to external boundary contracts to clearly distinguish them from database models (`ProductSummaryDto`, `CreateSellerRequestDto`). Prefix abstract domain boundary interfaces with the letter `I` when defining port abstractions (`IPaymentStrategy`, `IOrderRepository`).
 
-### 2.3 Event Names
+### Event Naming Conventions
 
-- **In-Process Domain Events:** Use past-tense descriptive verbs (`OrderCreatedEvent`, `AuctionEndedEvent`, `ReputationPenaltyAppliedEvent`).
-- **WebSocket Room Events:** Use lowercase hierarchical namespaces separated by colons:
-  - Client-to-Server: `auction:join`, `auction:leave`, `auction:bid:place`, `auction:3d:sync`
-  - Server-to-Client: `auction:bid:placed`, `auction:bid:rejected`, `auction:time_extended`, `auction:ended`
+- In-process domain events: Name events using descriptive past-tense verbs reflecting completed actions (`OrderCreatedEvent`, `AuctionEndedEvent`, `ReputationPenaltyAppliedEvent`).
+- WebSocket gateway events: Use lowercase hierarchical namespaces separated by colons:
+  - Client to server emissions: `auction:join`, `auction:leave`, `auction:bid:place`, `auction:3d:sync`.
+  - Server to client emissions: `auction:bid:placed`, `auction:bid:rejected`, `auction:time_extended`, `auction:ended`.
 
----
+## 3. Database Naming with Prisma ORM
 
-## 3. Database Naming (Prisma ORM)
-
-All Prisma models map PascalCase TypeScript entities to `snake_case` PostgreSQL tables and columns:
+Prisma models map PascalCase TypeScript entities to `snake_case` PostgreSQL tables and columns using explicit mapping annotations:
 
 ```prisma
 model EscrowRecord {

@@ -1,13 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
 
 /**
- * Danh sách các từ khóa nhạy cảm / cấm lưu hành trên nền tảng Project Nexus:
- * - Vũ khí quân dụng, chất nổ, vũ khí thô sơ
- * - Ma túy, tiền chất, chất hướng thần
- * - Cờ bạc, hàng giả, hóa chất độc hại
+ * Prohibited and sensitive keyword registry for the Project Nexus platform:
+ * - Military weapons, explosives, and combat ordnance
+ * - Controlled narcotics, precursor substances, and illicit psychotropics
+ * - Gambling operations, counterfeit currency, and toxic chemical hazards
  */
 export const SENSITIVE_KEYWORDS: readonly string[] = [
-  // Vũ khí, khí tài, chất nổ
   'súng',
   'sung',
   'đạn',
@@ -38,7 +37,6 @@ export const SENSITIVE_KEYWORDS: readonly string[] = [
   'sung ban tia',
   'sung luc',
 
-  // Ma túy, tiền chất ma túy, chất gây nghiện cấm
   'ma túy',
   'ma tuy',
   'cần sa',
@@ -59,7 +57,6 @@ export const SENSITIVE_KEYWORDS: readonly string[] = [
   'ma tuy da',
   'thuoc phien',
 
-  // Hóa chất độc hại, tiền giả, cờ bạc
   'tiền giả',
   'tien gia',
   'chất độc xyanua',
@@ -85,9 +82,13 @@ function escapeRegex(str: string): string {
 }
 
 /**
- * Kiểm tra xem từ khóa có xuất hiện trong chuỗi với ranh giới từ (word boundary) đầy đủ hay không.
- * Sử dụng Unicode property escape (?<=^|[^\p{L}\p{N}]) và (?=[^\p{L}\p{N}]|$) để phân tách chính xác
- * ranh giới chữ cái/số trong tiếng Việt và quốc tế, tránh nhận nhầm chuỗi con (như 'Samsung' dính 'sung', 'iPad mini' dính 'min').
+ * Evaluates whether a keyword appears within text using discrete word boundaries.
+ * Uses Unicode property escapes to distinguish lexical boundaries across
+ * multilingual texts without false positive substring matches.
+ *
+ * @param text - Candidate input text
+ * @param keyword - Prohibited target keyword
+ * @returns True when a discrete word boundary match is found
  */
 function testWordBoundary(text: string, keyword: string): boolean {
   const escaped = escapeRegex(keyword).replace(/\s+/g, '\\s+');
@@ -96,15 +97,15 @@ function testWordBoundary(text: string, keyword: string): boolean {
 }
 
 /**
- * Gom các ký tự bị cố tình chèn dấu ngắt nhịp (ví dụ: "s.ú.n.g", "đ-ạ-n", "m*ì*n")
- * hoặc viết cách từng chữ cái (ví dụ: "s u n g") để chống lách bộ lọc,
- * trong khi vẫn giữ nguyên cấu trúc phân tách từ của câu.
+ * Collapses deliberate punctuation breaks and inter-character spacing intended
+ * to evade content moderation filters while maintaining overall phrase structure.
+ *
+ * @param text - Input text containing potential evasion patterns
+ * @returns Collapsed string ready for lexical boundary matching
  */
 function collapseEvasion(text: string): string {
-  // 1. Bỏ ký tự ngắt nhịp nằm trực tiếp giữa các ký tự chữ/số
   let res = text.replace(/(?<=[\p{L}\p{N}])[._\-*~`!@#$%^&()+=]+(?=[\p{L}\p{N}])/gu, '');
 
-  // 2. Gom các ký tự đơn lẻ đứng rời rạc cạnh nhau: "s u n g" -> "sung"
   const cleanSpacedSingleLetters = (t: string) =>
     t.replace(
       /(?<=^|[^\p{L}\p{N}])(\p{L})[\s._\-*~`!@#$%^&()+=]+(?=\p{L}(?:[^\p{L}\p{N}]|$))/gu,
@@ -121,27 +122,30 @@ function collapseEvasion(text: string): string {
 }
 
 /**
- * Chuẩn hóa chuỗi văn bản tiếng Việt sang dạng không dấu, loại bỏ ký tự ngắt nhịp (dấu chấm, gạch ngang)
- * để phát hiện các hình thức lách từ (ví dụ: "s.ú.n.g", "đ-ạ-n", "c.ầ.n s.a")
+ * Normalizes text to unaccented lowercase characters and trims excess whitespace
+ * to detect obfuscation patterns across transliterated variations.
+ *
+ * @param rawText - Raw input text
+ * @returns Normalized lowercase string without diacritics
  */
 export function normalizeText(rawText: string): string {
   if (!rawText) return '';
 
-  return (
-    rawText
-      .normalize('NFD')
-      // Bỏ các ký tự dấu tổ hợp Unicode
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D')
-      .toLowerCase()
-      .replace(/\s+/g, ' ')
-      .trim()
-  );
+  return rawText
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
- * Kiểm tra xem chuỗi văn bản có chứa từ khóa nhạy cảm hay không
+ * Inspects a string against prohibited keywords and evasive formatting.
+ *
+ * @param text - Candidate text string to evaluate
+ * @returns Evaluation result object indicating moderation match status
  */
 export function checkSensitiveContent(text?: string | null): {
   hasSensitive: boolean;
@@ -151,14 +155,12 @@ export function checkSensitiveContent(text?: string | null): {
     return { hasSensitive: false };
   }
 
-  // 1. Kiểm tra trực tiếp trên văn bản gốc với ranh giới từ (word boundary)
   for (const keyword of SENSITIVE_KEYWORDS) {
     if (testWordBoundary(text, keyword)) {
       return { hasSensitive: true, matchedWord: keyword };
     }
   }
 
-  // 2. Chống lách từ qua dấu ngăn cách và tách chữ cái (ví dụ: "s.ú.n.g", "s u n g")
   const evasionCleaned = collapseEvasion(text);
   if (evasionCleaned !== text) {
     for (const keyword of SENSITIVE_KEYWORDS) {
@@ -168,8 +170,6 @@ export function checkSensitiveContent(text?: string | null): {
     }
   }
 
-  // 3. Kiểm tra các từ khóa không dấu đối với văn bản không dấu (ví dụ: "ban sung", "ban dan", "ban min")
-  // Đồng thời đảm bảo không bắt nhầm các từ có dấu hợp lệ khác (ví dụ: "Đàn guitar" không bị nhận nhầm thành "dan" -> "đạn")
   const normOriginal = normalizeText(text);
   const normEvasion = normalizeText(evasionCleaned);
 
@@ -200,7 +200,11 @@ export function checkSensitiveContent(text?: string | null): {
 }
 
 /**
- * Hàm kiểm duyệt nội dung ném BadRequestException nếu phát hiện từ khóa nhạy cảm
+ * Validates text content and throws BadRequestException when prohibited terms are detected.
+ *
+ * @param text - Text string to validate
+ * @param fieldLabel - Human-readable field label for error messages
+ * @throws BadRequestException when prohibited keywords match
  */
 export function assertCleanContent(text?: string | null, fieldLabel = 'Nội dung'): void {
   const result = checkSensitiveContent(text);

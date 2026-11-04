@@ -42,7 +42,7 @@ The actor, reason and subsequent transitions are recorded in event logs.
 
 Review uses `{ "decision": "APPROVE" | "REJECT", "reason": "..." }`.
 Receive uses `{ "reason": "inspection notes", "restock": true | false }`;
-`restock: true` means **all** returned items passed inspection and can be resold.
+`restock: true` means all returned items passed inspection and can be resold.
 Damaged items must not be restored to available inventory.
 
 ## GHN behavior
@@ -57,7 +57,7 @@ Damaged items must not be restored to available inventory.
 - A definitive return refusal reopens review; an uncertain approval remains
   `APPROVING` and cannot be concurrently rejected.
 - After successful delivery, GHN's switch-status return endpoint cannot collect
-  the parcel from the buyer. Arrange a **separate** buyer-to-shop GHN shipment with
+  the parcel from the buyer. Arrange a separate buyer-to-shop GHN shipment with
   the proper recipient address and `client_order_code = NX-RETURN-<order UUID>`.
   Bind its code using `{ "waybillCode": "..." }`. This API verifies it against GHN.
   It does not pretend the original outbound shipment has been reversed.

@@ -11,7 +11,10 @@ export class AdminProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lấy danh sách toàn bộ sản phẩm trên hệ thống có phân trang & bộ lọc kiểm duyệt
+   * Retrieves paginated platform products with moderation and seller filters.
+   *
+   * @param query - Product query parameters including status, seller, and pagination
+   * @returns Paginated products with stock aggregates and category metadata
    */
   async listProducts(query: QueryAdminProductsDto) {
     const page = Math.max(1, query.page || 1);
@@ -107,7 +110,11 @@ export class AdminProductsService {
   }
 
   /**
-   * Xem chi tiết sản phẩm dưới góc nhìn Admin kiểm duyệt
+   * Retrieves detailed product moderation information including inventory warehouses and 3D asset metadata.
+   *
+   * @param id - Unique identifier of the product
+   * @returns Detailed product entity with seller, category, and inventory summaries
+   * @throws NotFoundException when the product does not exist
    */
   async getProductById(id: string) {
     const product = await this.prisma.product.findUnique({
@@ -177,7 +184,14 @@ export class AdminProductsService {
   }
 
   /**
-   * Cập nhật trạng thái sản phẩm (Duyệt bán ACTIVE hoặc Khóa/Ẩn INACTIVE)
+   * Updates product publication status with shop suspension safeguards and seller notifications.
+   *
+   * @param id - Unique identifier of the product
+   * @param adminId - Unique identifier of the reviewing administrator
+   * @param dto - Status update payload including optional reason
+   * @returns Updated product confirmation
+   * @throws NotFoundException when the product does not exist
+   * @throws BadRequestException when activating a product from a suspended shop
    */
   async updateProductStatus(id: string, adminId: string, dto: UpdateProductStatusDto) {
     const product = await this.prisma.product.findUnique({
@@ -205,7 +219,6 @@ export class AdminProductsService {
     }
 
     const oldStatus = product.status;
-    // Gửi thông báo đến người bán nếu sản phẩm bị ẩn hoặc được duyệt
     const isHidden = dto.status === ProductStatus.INACTIVE;
     const actionText = isHidden ? 'đã bị tạm ẩn/khóa' : 'đã được chuyển sang trạng thái hoạt động';
 
@@ -251,7 +264,12 @@ export class AdminProductsService {
   }
 
   /**
-   * Xóa sản phẩm bởi Quản trị viên (kiểm tra an toàn đơn hàng)
+   * Deletes a product safely, converting to inactive when past orders exist.
+   *
+   * @param id - Unique identifier of the product
+   * @param adminId - Unique identifier of the administrator
+   * @returns Deletion or archival confirmation
+   * @throws NotFoundException when the product does not exist
    */
   async deleteProduct(id: string, adminId: string) {
     const product = await this.prisma.product.findUnique({
@@ -265,7 +283,6 @@ export class AdminProductsService {
       throw new NotFoundException('Không tìm thấy sản phẩm.');
     }
 
-    // Nếu sản phẩm đã từng phát sinh đơn hàng, chỉ cho phép chuyển sang INACTIVE thay vì xóa vật lý
     if (product.orderItems.length > 0) {
       await this.prisma.product.update({
         where: { id },
@@ -278,7 +295,6 @@ export class AdminProductsService {
       };
     }
 
-    // Xóa an toàn khi chưa có đơn hàng
     await this.prisma.$transaction(async (tx) => {
       await tx.productImage.deleteMany({ where: { productId: id } });
       await tx.cartItem.deleteMany({ where: { productId: id } });

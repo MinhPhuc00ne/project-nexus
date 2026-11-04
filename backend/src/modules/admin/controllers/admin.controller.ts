@@ -71,80 +71,77 @@ export class AdminController {
     private readonly categoryService: CategoryService,
   ) {}
 
-  // ================= 1. TẠO / MỜI TÀI KHOẢN CHO STAFF =================
   @Post('staff')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Tạo tài khoản / Mời nhân viên hỗ trợ (Support Staff)',
+    summary: 'Create or invite support staff member',
     description:
-      'Admin nhập Họ tên, email cá nhân, số điện thoại, phòng ban. Hệ thống cấp tài khoản @staff.com dùng ngay và gửi mật khẩu ngẫu nhiên về email cá nhân. Staff dùng Quên mật khẩu để đặt lại mật khẩu.',
+      'Provisions a corporate staff account and sends a random temporary password to their personal email address.',
   })
-  @ApiResponse({ status: 201, description: 'Gửi lời mời và cấp tài khoản @staff.com thành công' })
-  @ApiResponse({ status: 400, description: 'Email đã tồn tại hoặc không hợp lệ' })
-  @ApiResponse({ status: 403, description: 'Không có quyền Admin' })
+  @ApiResponse({
+    status: 201,
+    description: 'Staff account successfully provisioned and invitation dispatched',
+  })
+  @ApiResponse({ status: 400, description: 'Email address already registered or invalid input' })
+  @ApiResponse({ status: 403, description: 'Administrative role required' })
   async createStaff(@Body() dto: CreateStaffDto) {
     return this.adminService.createStaff(dto);
   }
 
-  // ================= 1b. GỬI LỜI MỜI CHO STAFF =================
   @Post('staff/invite')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Cấp tài khoản Staff dùng ngay và gửi mật khẩu ngẫu nhiên qua email cá nhân',
+    summary: 'Issue staff credentials and send temporary password via email',
     description:
-      'Backend tạo tài khoản @staff.com theo format cũ, gửi tài khoản và mật khẩu ngẫu nhiên qua email. Staff đăng nhập ngay và dùng Quên mật khẩu để đặt lại; không cần link kích hoạt. API không trả mật khẩu.',
+      'Creates a staff account and dispatches credentials to personal email. Does not expose the password in the response.',
   })
   @ApiResponse({
     status: 201,
-    description: 'Gửi lời mời thành công, trả về tài khoản @staff.com được cấp',
+    description: 'Invitation sent successfully and staff account provisioned',
   })
   async inviteStaff(@Body() dto: AdminInviteStaffDto) {
     return this.adminService.inviteStaff(dto);
   }
 
-  // ================= 2. DANH SÁCH TÀI KHOẢN STAFF =================
   @Get('staff')
   @ApiOperation({
-    summary: 'Lấy danh sách tất cả nhân viên hỗ trợ (Support Staff)',
+    summary: 'List support staff members',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách staff thành công' })
+  @ApiResponse({ status: 200, description: 'Staff members retrieved successfully' })
   async listStaff(@Query() query: QueryStaffDto) {
     return this.adminService.listStaff(query);
   }
 
-  // ================= 3. DANH SÁCH YÊU CẦU NÂNG CẤP LÊN SELLER =================
   @Get('seller-requests')
   @ApiOperation({
-    summary: 'Xem danh sách yêu cầu nâng cấp lên Seller của người mua',
-    description: 'Hỗ trợ lọc theo trạng thái PENDING, APPROVED, REJECTED và phân trang.',
+    summary: 'List buyer upgrade requests for seller status',
+    description: 'Supports filtering by PENDING, APPROVED, or REJECTED status with pagination.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu thành công' })
+  @ApiResponse({ status: 200, description: 'Seller requests retrieved successfully' })
   async getSellerRequests(@Query() query: QuerySellerRequestsDto) {
     return this.adminService.getSellerRequests(query);
   }
 
-  // ================= 4. CHI TIẾT YÊU CẦU NÂNG CẤP =================
   @Get('seller-requests/:id')
   @ApiOperation({
-    summary: 'Xem chi tiết một yêu cầu nâng cấp Seller',
+    summary: 'Retrieve seller upgrade application details',
   })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết yêu cầu thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu' })
+  @ApiResponse({ status: 200, description: 'Seller request details retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Seller request not found' })
   async getSellerRequestById(@Param('id') id: string) {
     return this.adminService.getSellerRequestById(id);
   }
 
-  // ================= 5. ADMIN DUYỆT YÊU CẦU NÂNG CẤP (APPROVE) =================
   @Patch('seller-requests/:id/approve')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin phê duyệt yêu cầu nâng cấp lên Seller',
+    summary: 'Approve seller upgrade application',
     description:
-      'Chuyển trạng thái yêu cầu sang APPROVED, nâng cấp role tài khoản thành SELLER và kích hoạt chế độ bán hàng (isSellerActive = true).',
+      'Updates request status to APPROVED, grants SELLER role to the account, and enables seller mode.',
   })
-  @ApiResponse({ status: 200, description: 'Phê duyệt thành công, tài khoản đã là Seller' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không ở trạng thái PENDING' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu' })
+  @ApiResponse({ status: 200, description: 'Seller request approved successfully' })
+  @ApiResponse({ status: 400, description: 'Request is not in PENDING status' })
+  @ApiResponse({ status: 404, description: 'Seller request not found' })
   async approveSellerRequest(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -152,17 +149,16 @@ export class AdminController {
     return this.adminService.approveSellerRequest(id, admin.id);
   }
 
-  // ================= 6. ADMIN TỪ CHỐI YÊU CẦU NÂNG CẤP (REJECT) =================
   @Patch('seller-requests/:id/reject')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin từ chối yêu cầu nâng cấp lên Seller',
+    summary: 'Reject seller upgrade application',
     description:
-      'Chuyển trạng thái yêu cầu sang REJECTED kèm lý do từ chối và thông báo đến người dùng.',
+      'Updates request status to REJECTED with rejection reasons and notifies the applicant.',
   })
-  @ApiResponse({ status: 200, description: 'Đã từ chối yêu cầu' })
-  @ApiResponse({ status: 400, description: 'Yêu cầu không ở trạng thái PENDING' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu' })
+  @ApiResponse({ status: 200, description: 'Seller request rejected successfully' })
+  @ApiResponse({ status: 400, description: 'Request is not in PENDING status' })
+  @ApiResponse({ status: 404, description: 'Seller request not found' })
   async rejectSellerRequest(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -171,42 +167,42 @@ export class AdminController {
     return this.adminService.rejectSellerRequest(id, admin.id, dto);
   }
 
-  // ================= 7. DANH SÁCH TOÀN BỘ NGƯỜI DÙNG =================
   @Get('users')
   @ApiOperation({
-    summary: 'Lấy toàn bộ danh sách người dùng (kèm phân trang, lọc vai trò và tìm kiếm)',
+    summary: 'List platform users with filtering and pagination',
     description:
-      'Admin xem danh sách người dùng trong hệ thống (tự động loại trừ GUEST). Hỗ trợ lọc theo vai trò (BUYER, SELLER, SUPPORT_STAFF, ADMIN), trạng thái khóa (ACTIVE/LOCKED), và tìm kiếm theo tên, email, sđt.',
+      'Retrieves platform accounts excluding guests. Supports role filtering, lock status filtering, and keyword search.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách người dùng thành công' })
+  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
   async listUsers(@Query() query: QueryUsersDto) {
     return this.adminUsersService.listUsers(query);
   }
 
-  // ================= 8. CHI TIẾT CÁ NHÂN NGƯỜI DÙNG =================
   @Get('users/:id')
   @ApiOperation({
-    summary: 'Admin xem chi tiết cá nhân một người dùng',
+    summary: 'Retrieve detailed user profile information',
     description:
-      'Xem đầy đủ thông tin cá nhân, ví tiền, sổ địa chỉ và thống kê đơn hàng/sản phẩm của người dùng.',
+      'Retrieves user profile, wallet balances, registered addresses, and historical order metrics.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin người dùng thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
+  @ApiResponse({ status: 200, description: 'User details retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async getUserById(@Param('id') id: string) {
     return this.adminUsersService.getUserById(id);
   }
 
-  // ================= 9. KHÓA TÀI KHOẢN NGƯỜI DÙNG =================
   @Patch('users/:id/lock')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin khóa tài khoản người dùng',
+    summary: 'Lock a user account',
     description:
-      'Chuyển trustLevel sang SUSPENDED và thu hồi toàn bộ Refresh Tokens của người dùng để đăng xuất ngay lập tức.',
+      'Sets user trust level to SUSPENDED and revokes all refresh tokens to terminate active sessions.',
   })
-  @ApiResponse({ status: 200, description: 'Khóa tài khoản thành công' })
-  @ApiResponse({ status: 400, description: 'Không thể khóa Admin hoặc tài khoản đã bị khóa' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản người dùng' })
+  @ApiResponse({ status: 200, description: 'User account locked successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Cannot lock administrative accounts or already locked user',
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async lockUser(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -215,17 +211,15 @@ export class AdminController {
     return this.adminUsersService.lockUser(id, admin.id, dto);
   }
 
-  // ================= 10. MỞ KHÓA TÀI KHOẢN NGƯỜI DÙNG =================
   @Patch('users/:id/unlock')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin mở khóa tài khoản người dùng',
-    description:
-      'Khôi phục trustLevel của người dùng về STANDARD/EXCELLENT dựa trên reputationScore.',
+    summary: 'Unlock a user account',
+    description: 'Restores user trust level to standard standing based on reputation score.',
   })
-  @ApiResponse({ status: 200, description: 'Mở khóa tài khoản thành công' })
-  @ApiResponse({ status: 400, description: 'Tài khoản không ở trạng thái bị khóa' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy tài khoản người dùng' })
+  @ApiResponse({ status: 200, description: 'User account unlocked successfully' })
+  @ApiResponse({ status: 400, description: 'User account is not currently locked' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async unlockUser(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -234,14 +228,13 @@ export class AdminController {
     return this.adminUsersService.unlockUser(id, admin.id, dto);
   }
 
-  // ================= 11. CẬP NHẬT TRẠNG THÁI KHÓA/MỞ KHÓA =================
   @Patch('users/:id/status')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin cập nhật trạng thái khóa/mở khóa tài khoản',
-    description: 'Bật hoặc tắt trạng thái khóa tài khoản thông qua trường isLocked boolean.',
+    summary: 'Update user account lock status',
+    description: 'Toggles account lock status using the isLocked boolean field.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật trạng thái thành công' })
+  @ApiResponse({ status: 200, description: 'User account status updated successfully' })
   async updateUserStatus(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -250,17 +243,19 @@ export class AdminController {
     return this.adminUsersService.updateUserStatus(id, admin.id, dto);
   }
 
-  // ================= 12. CẬP NHẬT VAI TRÒ (ROLE) CHO TÀI KHOẢN =================
   @Patch('users/:id/role')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin cấp/thay đổi vai trò (Role) cho người dùng',
+    summary: 'Assign or update account role',
     description:
-      'Admin có thể cấp mọi vai trò (BUYER, SELLER, SUPPORT_STAFF, ADMIN) cho bất kỳ tài khoản email nào trong hệ thống.',
+      'Assigns any platform role (BUYER, SELLER, SUPPORT_STAFF, ADMIN) to a user account.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật vai trò thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ hoặc hạ quyền chính mình' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy người dùng' })
+  @ApiResponse({ status: 200, description: 'User role updated successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid role transition or attempting to self-demote administrator',
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async updateUserRole(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -269,39 +264,36 @@ export class AdminController {
     return this.adminUsersService.updateUserRole(id, admin.id, dto);
   }
 
-  // ================= 13. DANH SÁCH SẢN PHẨM TOÀN SÀN =================
   @Get('products')
   @ApiOperation({
-    summary: 'Admin xem danh sách toàn bộ sản phẩm trên hệ thống',
+    summary: 'List platform-wide catalog products',
     description:
-      'Hỗ trợ tìm kiếm, lọc theo trạng thái (ACTIVE, INACTIVE, DRAFT), theo Seller hoặc theo Danh mục kèm phân trang.',
+      'Supports keyword search, status filtering (ACTIVE, INACTIVE, DRAFT), seller filtering, and category pagination.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách sản phẩm thành công' })
+  @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
   async listProducts(@Query() query: QueryAdminProductsDto) {
     return this.adminProductsService.listProducts(query);
   }
 
-  // ================= 14. CHI TIẾT SẢN PHẨM =================
   @Get('products/:id')
   @ApiOperation({
-    summary: 'Admin xem chi tiết một sản phẩm kèm thông tin tồn kho và shop',
+    summary: 'Retrieve product details with inventory breakdown and seller profile',
   })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết sản phẩm thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
+  @ApiResponse({ status: 200, description: 'Product details retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   async getProductById(@Param('id') id: string) {
     return this.adminProductsService.getProductById(id);
   }
 
-  // ================= 15. DUYỆT HOẶC ẨN/KHÓA SẢN PHẨM =================
   @Patch('products/:id/status')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin duyệt hoặc ẩn/khóa sản phẩm vi phạm',
+    summary: 'Update product publication status',
     description:
-      'Chuyển trạng thái sản phẩm sang ACTIVE (cho phép bán) hoặc INACTIVE (ẩn sản phẩm vi phạm, gửi thông báo lý do đến Seller).',
+      'Updates product status to ACTIVE (approved for sale) or INACTIVE (hidden due to policy violations).',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật trạng thái sản phẩm thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
+  @ApiResponse({ status: 200, description: 'Product status updated successfully' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   async updateProductStatus(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -310,42 +302,39 @@ export class AdminController {
     return this.adminProductsService.updateProductStatus(id, admin.id, dto);
   }
 
-  // ================= 16. XÓA SẢN PHẨM =================
   @Delete('products/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin xóa sản phẩm',
+    summary: 'Delete or archive product',
     description:
-      'Xóa an toàn sản phẩm nếu chưa phát sinh đơn hàng, hoặc tự động ẩn nếu đã có lịch sử đơn hàng.',
+      'Permanently deletes product if no orders exist, or deactivates it to retain historical order integrity.',
   })
-  @ApiResponse({ status: 200, description: 'Xóa hoặc ẩn sản phẩm thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
+  @ApiResponse({ status: 200, description: 'Product removed or archived successfully' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   async deleteProduct(@Param('id') id: string, @CurrentUser() admin: AuthenticatedUserPayload) {
     return this.adminProductsService.deleteProduct(id, admin.id);
   }
 
-  // ================= 17. DANH SÁCH GIAN HÀNG (SHOPS) =================
   @Get('shops')
   @ApiOperation({
-    summary: 'Admin xem danh sách toàn bộ gian hàng (Shop/Seller)',
+    summary: 'List registered seller shops',
     description:
-      'Hỗ trợ lọc gian hàng theo trạng thái ACTIVE (đang mở) hoặc SUSPENDED (đang bị đình chỉ), lọc theo Tỉnh/Thành và tìm kiếm.',
+      'Filters shops by status (ACTIVE or SUSPENDED), geographical location, or keyword search.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách gian hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Shops retrieved successfully' })
   async listShops(@Query() query: QueryAdminShopsDto) {
     return this.adminShopsService.listShops(query);
   }
 
-  // ================= 18. ĐÌNH CHỈ HOẶC MỞ LẠI GIAN HÀNG =================
   @Patch('shops/:id/status')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin đình chỉ hoặc mở lại gian hàng (Shop Suspension)',
+    summary: 'Suspend or restore shop operations',
     description:
-      'Tạm ngưng hoạt động bán hàng của một shop (ẩn toàn bộ sản phẩm của shop) mà không khóa tài khoản cá nhân (vẫn được mua hàng làm Buyer). Tự động ghi vết lịch sử quản trị.',
+      'Suspends selling capabilities and hides catalog items while retaining buyer capabilities on the account.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật trạng thái gian hàng thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  @ApiResponse({ status: 200, description: 'Shop status updated successfully' })
+  @ApiResponse({ status: 404, description: 'Shop not found' })
   async updateShopStatus(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -354,28 +343,24 @@ export class AdminController {
     return this.adminShopsService.updateShopStatus(id, admin.id, dto);
   }
 
-  // ================= 18b. XEM THÔNG TIN CHI TIẾT 1 GIAN HÀNG =================
   @Get('shops/:id')
   @ApiOperation({
-    summary:
-      'Admin xem chi tiết toàn diện 1 gian hàng (Thông tin, Sản phẩm, Vi phạm, Lịch sử quản trị)',
+    summary: 'Retrieve comprehensive shop audit profile',
     description:
-      'Trả về đầy đủ thông tin gian hàng: Tên, chủ shop, liên hệ, ngày mở, trạng thái; Thống kê sản phẩm (đang bán, hết hàng, bị ẩn/chờ duyệt); Hồ sơ vi phạm (báo cáo chờ duyệt, xác nhận, mức xử lý, bằng chứng); Lịch sử quản trị (ai cảnh cáo/đình chỉ/khôi phục, lúc nào, lý do gì).',
+      'Returns shop identity, inventory breakdown, violation record, and administrative action logs.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin chi tiết gian hàng thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  @ApiResponse({ status: 200, description: 'Shop audit profile retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Shop not found' })
   async getShopDetail(@Param('id') id: string) {
     return this.adminShopsService.getShopDetail(id);
   }
 
-  // ================= 18b-2. XEM DANH SÁCH ĐƠN HÀNG CỦA 1 GIAN HÀNG =================
   @Get('shops/:id/orders')
   @ApiOperation({
-    summary: 'Admin xem danh sách đơn hàng của một gian hàng (Shop)',
-    description:
-      'Hỗ trợ phân trang và lọc theo trạng thái (PENDING_PAYMENT, PAID, PREPARING, SHIPPING, DELIVERED, CONFIRMED, CANCELLED, REFUNDED).',
+    summary: 'List orders associated with a specific shop',
+    description: 'Supports pagination and filtering across order fulfillment statuses.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách đơn hàng của gian hàng thành công' })
+  @ApiResponse({ status: 200, description: 'Shop orders retrieved successfully' })
   async getShopOrders(
     @Param('id') id: string,
     @Query('status') status?: OrderStatus,
@@ -385,16 +370,15 @@ export class AdminController {
     return this.adminShopsService.getShopOrders(id, { status, page, limit });
   }
 
-  // ================= 18c. CẢNH CÁO GIAN HÀNG =================
   @Post('shops/:id/warn')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin gửi văn bản cảnh cáo gian hàng (Shop Warning)',
+    summary: 'Issue an administrative warning to a shop',
     description:
-      'Gửi cảnh cáo đến shop vi phạm, ghi vết vào lịch sử quản trị, gửi thông báo hệ thống và tùy chọn trừ điểm uy tín.',
+      'Records an administrative warning, notifies the seller, and optionally deducts reputation points.',
   })
-  @ApiResponse({ status: 200, description: 'Gửi cảnh cáo thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  @ApiResponse({ status: 200, description: 'Warning issued successfully' })
+  @ApiResponse({ status: 404, description: 'Shop not found' })
   async warnShop(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -403,16 +387,15 @@ export class AdminController {
     return this.adminShopsService.warnShop(id, admin.id, dto);
   }
 
-  // ================= 18d. LẬP BIÊN BẢN VI PHẠM CHO GIAN HÀNG =================
   @Post('shops/:id/violations')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Admin lập biên bản vi phạm cho gian hàng (Shop Violation)',
+    summary: 'Record an official violation penalty against a shop',
     description:
-      'Ghi nhận hành vi vi phạm, bằng chứng (URL tài liệu/hình ảnh), mức xử lý (WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN) và ghi chú giải quyết.',
+      'Documents shop violations, evidence references, penalty levels, and resolution remarks.',
   })
-  @ApiResponse({ status: 201, description: 'Lập hồ sơ vi phạm thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
+  @ApiResponse({ status: 201, description: 'Violation record created successfully' })
+  @ApiResponse({ status: 404, description: 'Shop not found' })
   async createShopViolation(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -421,35 +404,31 @@ export class AdminController {
     return this.adminShopsService.createShopViolation(id, admin.id, dto);
   }
 
-  // ================= 18e. DANH SÁCH VI PHẠM CỦA GIAN HÀNG =================
   @Get('shops/:id/violations')
   @ApiOperation({
-    summary: 'Admin xem danh sách các vi phạm của một gian hàng',
+    summary: 'List recorded violations for a specific shop',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách vi phạm thành công' })
+  @ApiResponse({ status: 200, description: 'Violations retrieved successfully' })
   async getShopViolations(@Param('id') id: string) {
     return this.adminShopsService.getShopViolations(id);
   }
 
-  // ================= 18f. LỊCH SỬ THAO TÁC QUẢN TRỊ TRÊN GIAN HÀNG =================
   @Get('shops/:id/action-logs')
   @ApiOperation({
-    summary:
-      'Admin xem lịch sử thao tác quản trị trên gian hàng (Ai cảnh cáo/đình chỉ/khôi phục, lúc nào, lý do gì)',
+    summary: 'List administrative audit logs for a shop',
   })
-  @ApiResponse({ status: 200, description: 'Lấy lịch sử thao tác thành công' })
+  @ApiResponse({ status: 200, description: 'Action logs retrieved successfully' })
   async getShopActionLogs(@Param('id') id: string) {
     return this.adminShopsService.getShopActionLogs(id);
   }
 
-  // ================= 18g. DANH SÁCH YÊU CẦU RÚT TIỀN CỦA SELLER =================
   @Get('withdrawals')
   @ApiOperation({
-    summary: 'Admin xem danh sách các yêu cầu rút tiền của Người bán (Sellers)',
+    summary: 'List seller withdrawal requests',
     description:
-      'Hỗ trợ lọc theo trạng thái (PENDING, APPROVED, REJECTED, COMPLETED) kèm phân trang.',
+      'Filters withdrawal applications by status (PENDING, APPROVED, REJECTED, COMPLETED) with pagination.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu rút tiền thành công' })
+  @ApiResponse({ status: 200, description: 'Withdrawal requests retrieved successfully' })
   async listWithdrawals(
     @Query('status') status?: WithdrawalStatus,
     @Query('page') page?: number,
@@ -458,17 +437,16 @@ export class AdminController {
     return this.adminService.listWithdrawalRequests(status, page, limit);
   }
 
-  // ================= 18h. XÉT DUYỆT YÊU CẦU RÚT TIỀN =================
   @Patch('withdrawals/:id/review')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin phê duyệt hoặc từ chối yêu cầu rút tiền của Người bán',
+    summary: 'Review and decide seller withdrawal request',
     description:
-      'Nếu REJECTED: Hoàn trả số dư bị khóa về ví của Seller. Nếu APPROVED / COMPLETED: Khấu trừ tiền ví thành công.',
+      'Releases locked funds back to wallet on rejection, or deducts locked balance upon approval.',
   })
-  @ApiResponse({ status: 200, description: 'Xét duyệt yêu cầu rút tiền thành công' })
-  @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ hoặc đã xử lý trước đó' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy yêu cầu rút tiền' })
+  @ApiResponse({ status: 200, description: 'Withdrawal request decision processed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid request data or request already settled' })
+  @ApiResponse({ status: 404, description: 'Withdrawal request not found' })
   async reviewWithdrawal(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
@@ -477,47 +455,43 @@ export class AdminController {
     return this.adminService.reviewWithdrawalRequest(id, admin.id, dto);
   }
 
-  // ================= 18h2. DANH SÁCH KHIẾU NẠI TRÊN TOÀN SÀN =================
   @Get('disputes')
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[ADMIN / STAFF] Lấy danh sách các khiếu nại đang chờ xử lý trên toàn sàn',
+    summary: 'List pending and historical order disputes across the platform',
     description:
-      'Hỗ trợ lọc theo trạng thái (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED), tìm kiếm theo mã đơn, mã khiếu nại, tên/email khách hàng hoặc lý do, kèm bộ đếm counters thống kê theo từng trạng thái.',
+      'Supports status filters, keyword search on order or user identifiers, and returns aggregated status counters.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách khiếu nại toàn sàn thành công' })
+  @ApiResponse({ status: 200, description: 'Disputes retrieved successfully' })
   async listDisputes(@Query() query: QueryAdminDisputesDto) {
     return this.adminDisputesService.getDisputes(query);
   }
 
-  // ================= 18i. THÔNG TIN VÍ HỆ THỐNG CỦA ADMIN =================
   @Get('wallet')
   @ApiOperation({
-    summary: 'Admin xem số dư ví hệ thống & tổng thu phí sàn hoa hồng',
+    summary: 'Retrieve administrative platform wallet balance and cumulative commission totals',
     description:
-      'Trả về số dư ví Admin, tổng tiền % phí sàn đã thu từ các đơn hàng thành công, và tổng tiền Admin đã nạp vào ví.',
+      'Returns current operational balance, collected platform transaction commissions, and cumulative manual deposits.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lấy thông tin ví hệ thống thành công',
+    description: 'Platform wallet details retrieved successfully',
     type: AdminWalletResponseDto,
   })
   async getAdminWallet(@CurrentUser('id') adminId: string) {
     return this.adminFinanceService.getAdminWallet(adminId);
   }
 
-  // ================= 18j. LỊCH SỬ BIẾN ĐỘNG SỐ DƯ VÍ ADMIN =================
   @Get('wallet/transactions')
   @ApiOperation({
-    summary:
-      'Admin xem lịch sử biến động số dư ví hệ thống (Ký quỹ, giải ngân, cước GHN, nạp tiền)',
+    summary: 'List administrative wallet transaction ledger',
     description:
-      'Lịch sử chi tiết: tạm giữ tiền khách trả, xuất tiền cho shop, trừ cước GHN, thu % hoa hồng kèm bóc tách thông tin buyer, shop, đơn hàng.',
+      'Details escrow hold transactions, shop disbursements, carrier postage debits, and platform commission earnings.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lấy lịch sử giao dịch thành công',
+    description: 'Wallet transactions retrieved successfully',
     type: AdminWalletTransactionsResponseDto,
   })
   async getAdminWalletTransactions(
@@ -527,41 +501,38 @@ export class AdminController {
     return this.adminFinanceService.getAdminWalletTransactions(adminId, query);
   }
 
-  // ================= 18k. ADMIN NẠP TIỀN VÀO VÍ HỆ THỐNG =================
   @Post('wallet/deposit')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin nạp thêm tiền vào ví hệ thống (có lưu lịch sử giao dịch)',
+    summary: 'Deposit operational funds into administrative wallet',
     description:
-      'Cho phép Admin nạp thêm vốn/tiền dự phòng vào ví nền tảng và tự động ghi nhận vào lịch sử giao dịch (DEPOSIT).',
+      'Allows administrators to inject operational working capital into the platform wallet with audit transaction records.',
   })
-  @ApiResponse({ status: 200, description: 'Nạp tiền vào ví thành công' })
-  @ApiResponse({ status: 400, description: 'Số tiền nạp không hợp lệ' })
+  @ApiResponse({ status: 200, description: 'Deposit processed successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid deposit amount' })
   async depositAdminWallet(@CurrentUser('id') adminId: string, @Body() dto: DepositAdminWalletDto) {
     return this.adminFinanceService.depositToAdminWallet(adminId, dto);
   }
 
-  // ================= 19. XEM CẤU HÌNH HỆ THỐNG SÀN =================
   @Get('settings')
   @ApiOperation({
-    summary: 'Admin xem các thông số cấu hình vận hành hệ thống sàn',
+    summary: 'Retrieve platform configuration parameters',
     description:
-      'Lấy các thông số như tỷ lệ phí sàn, thời gian giỏ hàng, thời gian giữ tồn kho khi checkout, giới hạn ảnh, giới hạn cấp danh mục.',
+      'Queries runtime configuration values including commission percentage rates, checkout reservation limits, and catalog bounds.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy cấu hình thành công' })
+  @ApiResponse({ status: 200, description: 'Settings retrieved successfully' })
   async getSettings() {
     return this.adminSettingsService.getSettings();
   }
 
-  // ================= 20. CẬP NHẬT CẤU HÌNH HỆ THỐNG SÀN =================
   @Patch('settings')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin cập nhật các thông số vận hành sàn runtime',
+    summary: 'Update platform runtime configuration parameters',
     description:
-      'Chỉnh sửa tỷ lệ phí sàn (%), thời hạn giỏ hàng (ngày), timeout checkout (phút)... mà không cần deploy lại code.',
+      'Modifies platform fee percentages, cart retention lifespans, and checkout hold limits without application redeployment.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật cấu hình thành công' })
+  @ApiResponse({ status: 200, description: 'Settings updated successfully' })
   async updateSettings(
     @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto: UpdateSystemSettingsDto,
@@ -569,44 +540,49 @@ export class AdminController {
     return this.adminSettingsService.updateSettings(admin.id, dto);
   }
 
-  // ================= 21. TẠO DANH MỤC HÀNG HÓA =================
   @Post('categories')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
-    summary: 'Admin tạo mới danh mục sản phẩm (tối đa 3 cấp)',
-    description: 'Tạo danh mục gốc (level 1) hoặc danh mục con cấp 2, 3 bằng cách truyền parentId.',
+    summary: 'Create product catalog category',
+    description:
+      'Creates root level categories or nested subcategories up to three tiers deep using parentId.',
   })
-  @ApiResponse({ status: 201, description: 'Tạo danh mục thành công' })
-  @ApiResponse({ status: 400, description: 'Vượt quá 3 cấp danh mục hoặc dữ liệu không hợp lệ' })
-  @ApiResponse({ status: 409, description: 'Tên danh mục đã tồn tại' })
+  @ApiResponse({ status: 201, description: 'Category created successfully' })
+  @ApiResponse({ status: 400, description: 'Exceeds maximum taxonomy depth or invalid input' })
+  @ApiResponse({ status: 409, description: 'Category name already exists' })
   async createCategory(@Body() dto: CreateCategoryDto) {
     return this.categoryService.createCategory(dto);
   }
 
-  // ================= 22. CẬP NHẬT DANH MỤC HÀNG HÓA =================
   @Patch('categories/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin cập nhật danh mục hoặc điều chuyển danh mục cha (re-parenting)',
-    description: 'Chỉnh sửa tên, slug hoặc dời danh mục sang danh mục cha mới (parentId).',
+    summary: 'Update catalog category attributes and hierarchy',
+    description: 'Updates category name, slug, or moves category to a new parent node.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật danh mục thành công' })
-  @ApiResponse({ status: 400, description: 'Không thể chuyển vì gây vòng lặp hoặc vượt quá 3 cấp' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
+  @ApiResponse({ status: 200, description: 'Category updated successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Circular hierarchy detected or taxonomy depth exceeded',
+  })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   async updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
     return this.categoryService.updateCategory(id, dto);
   }
 
-  // ================= 23. XÓA DANH MỤC HÀNG HÓA =================
   @Delete('categories/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin xóa danh mục sản phẩm',
-    description: 'Chỉ xóa được danh mục khi không có danh mục con và không có sản phẩm liên kết.',
+    summary: 'Delete catalog category',
+    description:
+      'Removes empty categories that possess no child categories and no associated products.',
   })
-  @ApiResponse({ status: 200, description: 'Xóa danh mục thành công' })
-  @ApiResponse({ status: 400, description: 'Danh mục đang có danh mục con hoặc có sản phẩm' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
+  @ApiResponse({ status: 200, description: 'Category deleted successfully' })
+  @ApiResponse({
+    status: 400,
+    description: 'Category contains active child categories or linked products',
+  })
+  @ApiResponse({ status: 404, description: 'Category not found' })
   async deleteCategory(@Param('id') id: string) {
     return this.categoryService.deleteCategory(id);
   }

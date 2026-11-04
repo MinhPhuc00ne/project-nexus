@@ -22,7 +22,10 @@ export class AdminShopsService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lấy danh sách toàn bộ các gian hàng (Shop/Seller) kèm phân trang & lọc trạng thái
+   * Retrieves paginated platform seller stores with operational metrics and search filters.
+   *
+   * @param query - Query filter and pagination parameters
+   * @returns Paginated list of store summaries with violation flags and revenue totals
    */
   async listShops(query: QueryAdminShopsDto) {
     const page = Math.max(1, query.page || 1);
@@ -131,11 +134,11 @@ export class AdminShopsService {
   }
 
   /**
-   * Xem chi tiết hồ sơ toàn diện 1 Shop dành riêng cho Admin:
-   * 1. Thông tin shop: Tên, chủ shop, liên hệ, ngày mở, trạng thái hoạt động
-   * 2. Sản phẩm: Danh sách sản phẩm, số đang hiển thị, hết hàng, bị ẩn/chờ duyệt
-   * 3. Vi phạm: Báo cáo đang chờ xử lý, vi phạm đã xác nhận, mức xử lý và bằng chứng
-   * 4. Lịch sử quản trị: Ai cảnh cáo/đình chỉ/khôi phục shop, lúc nào, lý do gì
+   * Retrieves comprehensive 360-degree store profile for administrator review.
+   *
+   * @param shopId - Unique identifier of the seller
+   * @returns Detailed seller store profile with products, orders, violations, and audit history
+   * @throws NotFoundException when the seller profile does not exist
    */
   async getShopDetail(shopId: string) {
     const seller = await this.prisma.user.findUnique({
@@ -183,7 +186,6 @@ export class AdminShopsService {
     const latestApprovedRequest = seller.sellerUpgradeRequests[0];
     const defaultAddress = seller.addresses[0];
 
-    // Thống kê phân loại sản phẩm (bán thường vs đấu giá) & đơn hàng & đánh giá
     const [allProducts, orders, reviews, disputes] = await Promise.all([
       this.prisma.product.findMany({
         where: { sellerId: shopId },
@@ -238,7 +240,6 @@ export class AdminShopsService {
       }
     }
 
-    // Vi phạm: báo cáo chờ xử lý vs vi phạm đã xác nhận
     const pendingViolations = seller.shopViolations.filter(
       (v) => v.status === ViolationStatus.PENDING || v.status === ViolationStatus.INVESTIGATING,
     );
@@ -246,7 +247,6 @@ export class AdminShopsService {
       (v) => v.status === ViolationStatus.CONFIRMED,
     );
 
-    // Kinh doanh: Giá trị đơn hoàn tất, số đơn hoàn tất, tiền hoàn trả, phí sàn thu được
     const completedOrders = orders.filter((o) => o.status === OrderStatus.CONFIRMED);
     const completedOrdersCount = completedOrders.length;
     const completedOrderValue = completedOrders.reduce((acc, o) => acc + Number(o.totalAmount), 0);
@@ -261,14 +261,12 @@ export class AdminShopsService {
       return acc;
     }, 0);
 
-    // Đơn hàng: Đang xử lý, đang giao, hoàn tất, đã hủy; bấm vào để xem danh sách
     const processingOrdersCount = orders.filter(
       (o) => o.status === OrderStatus.PAID || o.status === OrderStatus.PREPARING,
     ).length;
     const shippingOrdersCount = orders.filter((o) => o.status === OrderStatus.SHIPPING).length;
     const cancelledOrdersCount = orders.filter((o) => o.status === OrderStatus.CANCELLED).length;
 
-    // Chất lượng phục vụ: Điểm đánh giá và số lượt đánh giá, tỷ lệ hủy do shop, giao trễ, hoàn trả/tranh chấp
     const totalReviews = reviews.length;
     const ratingScore =
       totalReviews > 0
@@ -347,12 +345,12 @@ export class AdminShopsService {
       products: {
         breakdown: {
           total: allProducts.length,
-          active: activeCount, // Số đang hiển thị (ACTIVE và còn hàng)
-          outOfStock: outOfStockCount, // Hết hàng (ACTIVE nhưng tồn kho <= 0)
-          inactive: inactiveCount, // Bị ẩn / khóa do vi phạm (INACTIVE)
-          draft: draftCount, // Bản nháp / chờ duyệt (DRAFT)
-          regular: regularCount, // Phân biệt bán thường (giá cố định)
-          auction: auctionCount, // Phân biệt đấu giá
+          active: activeCount,
+          outOfStock: outOfStockCount,
+          inactive: inactiveCount,
+          draft: draftCount,
+          regular: regularCount,
+          auction: auctionCount,
         },
         sampleList: seller.products.map((p) => {
           const availableQty = p.inventories.reduce((acc, inv) => acc + inv.availableQty, 0);
@@ -437,7 +435,7 @@ export class AdminShopsService {
       },
       moderationHistory: seller.shopActionLogs.map((log) => ({
         id: log.id,
-        action: log.action, // WARN, SUSPEND, RESTORE
+        action: log.action,
         reason: log.reason,
         createdAt: log.createdAt,
         admin: {
@@ -450,7 +448,12 @@ export class AdminShopsService {
   }
 
   /**
-   * Lấy danh sách đơn hàng của một gian hàng (Shop) dành cho Admin xem chi tiết
+   * Retrieves paginated orders for a specific seller store for administrator inspection.
+   *
+   * @param shopId - Unique identifier of the seller
+   * @param query - Order status filter and pagination parameters
+   * @returns Paginated orders for the store
+   * @throws NotFoundException when the seller store does not exist
    */
   async getShopOrders(
     shopId: string,
@@ -551,8 +554,13 @@ export class AdminShopsService {
   }
 
   /**
-   * Đình chỉ hoặc Khôi phục hoạt động của một gian hàng (Shop Suspension)
-   * Đồng thời lưu nhật ký hành vi vào bảng shop_action_logs
+   * Suspends or restores store operations, toggling product visibility and logging admin audit entries.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param adminId - Unique identifier of the reviewing administrator
+   * @param dto - Shop status update payload
+   * @returns Updated shop status confirmation
+   * @throws NotFoundException when the seller does not exist
    */
   async updateShopStatus(sellerId: string, adminId: string, dto: UpdateShopStatusDto) {
     const seller = await this.prisma.user.findUnique({
@@ -579,7 +587,6 @@ export class AdminShopsService {
 
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${sellerId} FOR UPDATE`;
-      // 1. Cập nhật isShopSuspended, suspensionReason và isSellerActive
       const updatedUser = await tx.user.update({
         where: { id: sellerId },
         data: {
@@ -589,7 +596,6 @@ export class AdminShopsService {
         },
       });
 
-      // 2. Nếu đình chỉ gian hàng, tự động ẩn toàn bộ sản phẩm của gian hàng; khi khôi phục (unban) thì tự động hiển thị lại
       if (isSuspending) {
         await tx.product.updateMany({
           where: { sellerId, status: ProductStatus.ACTIVE },
@@ -602,7 +608,6 @@ export class AdminShopsService {
         });
       }
 
-      // 3. Ghi lịch sử quản trị (Audit Log)
       await tx.shopActionLog.create({
         data: {
           shopId: sellerId,
@@ -612,7 +617,6 @@ export class AdminShopsService {
         },
       });
 
-      // 4. Gửi thông báo đến người bán
       await tx.notification.create({
         data: {
           userId: sellerId,
@@ -654,7 +658,13 @@ export class AdminShopsService {
   }
 
   /**
-   * Cảnh cáo một gian hàng (Shop Warning)
+   * Issues a formal warning to a seller store, optionally deducting reputation points.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param adminId - Unique identifier of the administrator
+   * @param dto - Warning details including reason and penalty points
+   * @returns Created warning action log
+   * @throws NotFoundException when the seller store does not exist
    */
   async warnShop(sellerId: string, adminId: string, dto: WarnShopDto) {
     const seller = await this.prisma.user.findUnique({
@@ -675,7 +685,6 @@ export class AdminShopsService {
     const penaltyPoints = Math.max(0, dto.penaltyPoints || 0);
 
     const log = await this.prisma.$transaction(async (tx) => {
-      // 1. Trừ điểm uy tín nếu có chỉ định penaltyPoints
       if (penaltyPoints > 0) {
         const newScore = Math.max(0, seller.reputationScore - penaltyPoints);
         await tx.user.update({
@@ -693,7 +702,6 @@ export class AdminShopsService {
         });
       }
 
-      // 2. Ghi nhật ký quản trị
       const createdLog = await tx.shopActionLog.create({
         data: {
           shopId: sellerId,
@@ -706,7 +714,6 @@ export class AdminShopsService {
         },
       });
 
-      // 3. Gửi thông báo đến người bán
       await tx.notification.create({
         data: {
           userId: sellerId,
@@ -736,7 +743,13 @@ export class AdminShopsService {
   }
 
   /**
-   * Tạo bản ghi vi phạm của gian hàng (Shop Violation)
+   * Records a confirmed violation report for a seller store.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param adminId - Unique identifier of the reviewing administrator
+   * @param dto - Violation creation payload
+   * @returns Created violation record
+   * @throws NotFoundException when the seller store does not exist
    */
   async createShopViolation(sellerId: string, adminId: string, dto: CreateShopViolationDto) {
     const seller = await this.prisma.user.findUnique({
@@ -773,7 +786,6 @@ export class AdminShopsService {
         },
       });
 
-      // Gửi thông báo tới shop
       await tx.notification.create({
         data: {
           userId: sellerId,
@@ -796,7 +808,10 @@ export class AdminShopsService {
   }
 
   /**
-   * Lấy danh sách vi phạm của một gian hàng
+   * Retrieves violation records for a specific seller store.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @returns List of shop violations
    */
   async getShopViolations(sellerId: string) {
     const violations = await this.prisma.shopViolation.findMany({
@@ -815,7 +830,10 @@ export class AdminShopsService {
   }
 
   /**
-   * Lấy lịch sử quản trị (Action Logs) của một gian hàng
+   * Retrieves administrator action audit logs for a seller store.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @returns List of shop action logs
    */
   async getShopActionLogs(sellerId: string) {
     const logs = await this.prisma.shopActionLog.findMany({

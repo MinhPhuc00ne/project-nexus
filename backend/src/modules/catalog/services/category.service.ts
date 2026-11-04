@@ -22,7 +22,9 @@ export class CategoryService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Lấy cây phân cấp danh mục tối đa 3 cấp
+   * Retrieves the complete hierarchical category tree up to 3 tiers deep.
+   *
+   * @returns Array of root CategoryTreeItem elements with nested children
    */
   async getCategoryTree(): Promise<CategoryTreeItem[]> {
     const allCategories = await this.prisma.category.findMany({
@@ -64,12 +66,17 @@ export class CategoryService {
   }
 
   /**
-   * Tạo danh mục mới (hỗ trợ phân cấp tối đa 3 tầng)
+   * Creates a new category supporting parent-child hierarchy up to 3 tiers.
+   *
+   * @param dto - Category creation payload
+   * @returns Created category entity
+   * @throws ConflictException when name is duplicated
+   * @throws NotFoundException when parentId does not exist
+   * @throws BadRequestException when parent level exceeds 2
    */
   async createCategory(dto: CreateCategoryDto) {
     const name = dto.name.trim();
 
-    // Kiểm tra trùng tên
     const existingName = await this.prisma.category.findFirst({
       where: { name },
     });
@@ -77,7 +84,6 @@ export class CategoryService {
       throw new ConflictException(`Danh mục có tên "${name}" đã tồn tại.`);
     }
 
-    // Xác định cấp độ (level) và kiểm tra danh mục cha nếu có
     let level = 1;
     let parentId: string | null = null;
 
@@ -97,7 +103,6 @@ export class CategoryService {
       parentId = parent.id;
     }
 
-    // Sinh slug duy nhất
     const baseSlug = dto.slug?.trim() ? this.toSlug(dto.slug) : this.toSlug(name);
     const slug = await this.generateUniqueSlug(baseSlug);
 
@@ -114,7 +119,13 @@ export class CategoryService {
   }
 
   /**
-   * Cập nhật danh mục & điều chuyển danh mục cha (re-parenting)
+   * Updates category attributes and manages subtree re-parenting.
+   *
+   * @param id - Unique identifier of the category
+   * @param dto - Category update payload
+   * @returns Updated category entity
+   * @throws NotFoundException when category does not exist
+   * @throws BadRequestException on self-parenting or depth limit exceeded
    */
   async updateCategory(id: string, dto: UpdateCategoryDto) {
     const category = await this.prisma.category.findUnique({
@@ -151,7 +162,6 @@ export class CategoryService {
       data.slug = await this.generateUniqueSlug(baseSlug, id);
     }
 
-    // Xử lý điều chuyển danh mục cha (parentId)
     if (dto.parentId !== undefined) {
       if (dto.parentId === id) {
         throw new BadRequestException('Danh mục không thể làm cha của chính nó.');
@@ -168,7 +178,6 @@ export class CategoryService {
           throw new NotFoundException('Danh mục cha mới không tồn tại.');
         }
 
-        // Kiểm tra vòng lặp: danh mục cha mới không được là con/cháu của danh mục hiện tại
         await this.assertNotDescendant(id, dto.parentId);
 
         const newLevel = newParent.level + 1;
@@ -189,7 +198,6 @@ export class CategoryService {
       data,
     });
 
-    // Nếu level thay đổi, cập nhật lại level cho toàn bộ cây con bên dưới
     if (data.level && data.level !== category.level) {
       await this.updateSubtreeLevels(id, data.level);
     }
@@ -198,7 +206,12 @@ export class CategoryService {
   }
 
   /**
-   * Xóa danh mục (kèm ràng buộc kiểm tra an toàn)
+   * Deletes a category ensuring no child categories or associated products exist.
+   *
+   * @param id - Unique identifier of the category
+   * @returns Success response
+   * @throws NotFoundException when category does not exist
+   * @throws BadRequestException when category has children or linked products
    */
   async deleteCategory(id: string) {
     const category = await this.prisma.category.findUnique({
@@ -234,8 +247,6 @@ export class CategoryService {
       message: `Đã xóa danh mục "${category.name}" thành công.`,
     };
   }
-
-  // --- Helper Methods ---
 
   private toSlug(str: string): string {
     return str

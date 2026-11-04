@@ -27,7 +27,11 @@ export class SellerOrdersService {
   ) {}
 
   /**
-   * 1. Lấy danh sách đơn bán của Seller kèm phân trang, tìm kiếm và bộ lọc trạng thái
+   * Retrieves paginated seller orders with status filtering, keyword search, and counter metrics.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param query - Query filter and pagination parameters
+   * @returns Paginated orders, summary counters, and pagination metadata
    */
   async listOrders(sellerId: string, query: QuerySellerOrdersDto) {
     const page = Math.max(1, query.page || 1);
@@ -51,7 +55,6 @@ export class SellerOrdersService {
       ];
     }
 
-    // Lấy song song dữ liệu và tổng số đếm theo từng nhóm trạng thái (Counters)
     const [total, orders, allSellerOrders] = await Promise.all([
       this.prisma.order.count({ where }),
       this.prisma.order.findMany({
@@ -147,7 +150,13 @@ export class SellerOrdersService {
   }
 
   /**
-   * 2. Xem chi tiết 1 đơn hàng cụ thể của Seller
+   * Retrieves detailed order record for a merchant including buyer profile, items, shipment, and timeline.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param orderId - Unique identifier of the order
+   * @returns Comprehensive order details
+   * @throws NotFoundException when order does not exist
+   * @throws ForbiddenException when seller does not own the order
    */
   async getOrderDetail(sellerId: string, orderId: string) {
     const order = await this.prisma.order.findUnique({
@@ -252,7 +261,14 @@ export class SellerOrdersService {
   }
 
   /**
-   * 3. Seller xác nhận đơn hàng (Chuyển trạng thái PAID -> PREPARING)
+   * Confirms a paid or COD order, advancing lifecycle status to PREPARING and notifying the buyer.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param orderId - Unique identifier of the order
+   * @returns Confirmation result with updated status
+   * @throws NotFoundException when order is not found
+   * @throws ForbiddenException when seller is not authorized
+   * @throws BadRequestException when order status or after-sales state prevents confirmation
    */
   async confirmOrder(sellerId: string, orderId: string) {
     const order = await this.prisma.order.findUnique({
@@ -298,7 +314,6 @@ export class SellerOrdersService {
       throw new BadRequestException('Đơn đã thay đổi hoặc đang có yêu cầu hủy/trả hàng.');
     const updated = { id: orderId, status: OrderStatus.PREPARING };
 
-    // Thông báo cho Buyer
     await this.prisma.notification.create({
       data: {
         userId: order.buyerId,
@@ -318,14 +333,26 @@ export class SellerOrdersService {
   }
 
   /**
-   * 4. Seller tạo / bàn giao vận đơn GHN Express (Chuyển trạng thái PREPARING -> SHIPPING)
+   * Dispatches order package to GHN Express logistics carrier, advancing status to SHIPPING.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param orderId - Unique identifier of the order
+   * @param dto - Optional dispatch parameters
+   * @returns GHN dispatch response with tracking code
    */
   async dispatchGhn(sellerId: string, orderId: string, dto?: DispatchGhnOrderDto) {
     return this.dispatchService.dispatch(sellerId, orderId, dto);
   }
 
   /**
-   * 5. In phiếu giao hàng / Vận đơn GHN (Print Waybill)
+   * Generates printable waybill document data for GHN delivery parcel.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param orderId - Unique identifier of the order
+   * @returns Printable waybill information and barcode assets
+   * @throws NotFoundException when order or seller profile is missing
+   * @throws ForbiddenException when seller does not own the order
+   * @throws BadRequestException when order has not been dispatched to carrier
    */
   async printWaybill(sellerId: string, orderId: string) {
     const order = await this.prisma.order.findUnique({
@@ -413,7 +440,7 @@ export class SellerOrdersService {
       })),
       totalAmount: Number(order.totalAmount),
       shippingFee: Number(order.shippingFee),
-      codAmount: 0, // Đơn hàng thanh toán online sàn giữ Escrow
+      codAmount: 0,
       barcodeUrl: `https://barcode.tec-it.com/barcode.ashx?data=${waybillCode}&code=Code128&dpi=96`,
       note: 'Cho xem hàng, không cho thử. Hàng chuyển phát nhanh qua Project Nexus.',
     };

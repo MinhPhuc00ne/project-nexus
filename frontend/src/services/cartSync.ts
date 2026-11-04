@@ -83,7 +83,8 @@ export function saveStoredSelectedIds(ids: string[]): void {
 }
 
 export interface BackendCartItem {
-  id: string; // cartItemId
+  /** Cart item database identifier */
+  id: string;
   productId: string;
   name: string;
   thumbnail: string | null;
@@ -122,7 +123,7 @@ export function mapBackendItemToCartItem(
   const isSelected = selectedSet ? selectedSet.has(String(backendItem.id)) : true;
 
   return {
-    id: backendItem.id, // CartItem ID in database
+    id: backendItem.id,
     productId: backendItem.productId,
     name: backendItem.name,
     price: backendItem.currentPrice,
@@ -268,14 +269,11 @@ export async function synchronizeCart(scope: CartScope): Promise<void> {
       throw new Error('Máy chủ chưa xác nhận kết quả gộp giỏ hàng.');
     if (!isCurrent(mergingScope)) return;
     applyRemoteCart(response, mergingScope);
-    // Sau khi gộp thành công vào DB, toàn bộ hàng hóa đã nằm trong DB của user
-    // Xóa giỏ hàng tạm thời của Guest trong LocalStorage
     localStorage.removeItem(GUEST_CART_STORAGE_KEY);
     localStorage.removeItem('nexus:cart-items');
     emitCartChange();
   } catch (err) {
     console.error('[CartSync] Gộp giỏ hàng vào Database thất bại:', err);
-    // Giữ giỏ hàng guest để thử lại sau; tải lại giỏ hàng hiện tại trên server
     if (isCurrent(mergingScope)) await loadRemoteCart(scopeFor(scope.token));
   }
 }

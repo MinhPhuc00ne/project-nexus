@@ -1,19 +1,18 @@
-# Infrastructure & Docker Operations Guide
+# Infrastructure and Docker Operations Guide
 
-This guide establishes the standardized Docker operational procedures for both **Backend (BE)** and **Frontend (FE)** engineers working on **Project Nexus**.
+This guide establishes the standardized Docker operational procedures for engineers working on Project Nexus.
 
 ---
 
 ## 1. Local Infrastructure Architecture Overview
 
-In local development, Docker orchestrates the persistence and caching backing services, while Backend (NestJS) and Frontend (React/Vite) run directly on the host machine using Node.js to leverage instant Hot Module Replacement (HMR).
+In local development, Docker orchestrates the persistence and caching backing services, while Backend (NestJS) and Frontend (React and Vite) run directly on the host workstation to leverage instant Hot Module Replacement (HMR).
 
 ```mermaid
 flowchart LR
     subgraph HostOS["Host Machine (Local Dev)"]
         BE["NestJS Backend<br/>(Port 3000)"]
-        FE_Web["Web Client (Vite)<br/>(Port 5173)"]
-        FE_Admin["Admin Client (Vite)<br/>(Port 5174)"]
+        FE["Web Client (Vite)<br/>(Port 5173)"]
     end
 
     subgraph DockerContainers["Docker Compose Containers"]
@@ -23,20 +22,19 @@ flowchart LR
 
     BE -->|DATABASE_URL: localhost:5432| PG
     BE -->|REDIS_URL: localhost:6379| RD
-    FE_Web -->|REST / WebSocket| BE
-    FE_Admin -->|REST API| BE
+    FE -->|REST and WebSocket| BE
 ```
 
-### Container Port & Resource Mapping
+### Container Port and Resource Mapping
 
-| Container Name   | Service       | Image                | Host Port  | Container Port | Purpose                                                           |
-| :--------------- | :------------ | :------------------- | :--------- | :------------- | :---------------------------------------------------------------- |
-| `nexus-postgres` | PostgreSQL 17 | `postgres:17-alpine` | **`5432`** | `5432`         | System ACID persistence, relational schema, logical separation    |
-| `nexus-redis`    | Redis 7       | `redis:7-alpine`     | **`6379`** | `6379`         | Cache, Redlock distributed locking, atomic bidding queue, Pub/Sub |
+| Container Name   | Service       | Image                | Host Port | Container Port | Purpose                                                           |
+| :--------------- | :------------ | :------------------- | :-------- | :------------- | :---------------------------------------------------------------- |
+| `nexus-postgres` | PostgreSQL 17 | `postgres:17-alpine` | `5432`    | `5432`         | System ACID persistence, relational schema, logical separation    |
+| `nexus-redis`    | Redis 7       | `redis:7-alpine`     | `6379`    | `6379`         | Cache, Redlock distributed locking, atomic bidding queue, Pub/Sub |
 
 ---
 
-## 2. Backend Developer Workflow (BE)
+## 2. Backend Developer Workflow
 
 Backend engineers require the database and Redis instances to run migrations, build domain models, and test API endpoints.
 
@@ -50,7 +48,7 @@ npm run docker:up
 
 Starts `nexus-postgres` and `nexus-redis` in detached mode (`-d`).
 
-### Step 2: Apply Database Schema (Prisma Migration)
+### Step 2: Apply Database Schema Migrations
 
 Once the PostgreSQL container is healthy:
 
@@ -80,35 +78,34 @@ npm run dev:backend
 
 ---
 
-## 3. Frontend Developer Workflow (FE)
+## 3. Frontend Developer Workflow
 
-Frontend engineers do not need deep configuration of PostgreSQL or Redis. Running two commands is sufficient to have a fully operational backend API and WebSocket server.
+Frontend engineers run two commands to have a fully operational backend API and WebSocket server.
 
-### Fast 1-Minute Startup Routine
+### Quick Startup Routine
 
 ```bash
 # 1. Start database and Redis
 npm run docker:up
 
-# 2. Start the Backend API & WebSocket server
+# 2. Start the Backend API and WebSocket server
 npm run dev:backend
 
-# 3. In a separate terminal, launch the Web client
-npm run dev:web
+# 3. In a separate terminal, launch the Frontend client
+npm run dev:frontend
 ```
 
-- Web Client: `http://localhost:5173`
-- Admin Client: `http://localhost:5174` (via `npm run dev:admin`)
+Web Client address: `http://localhost:5173`
 
 ### Core API Endpoints for Frontend
 
-- **REST API Base URL:** `http://localhost:3000/api/v1`
-- **WebSocket Auction Room:** `ws://localhost:3000/ws/auctions`
-- **Swagger API Documentation:** `http://localhost:3000/api/docs`
+- REST API Base URL: `http://localhost:3000/api/v1`
+- WebSocket Auction Room: `ws://localhost:3000/ws/auctions`
+- Swagger API Documentation: `http://localhost:3000/api/docs`
 
 ---
 
-## 4. Teardown, Cleanup & Reset Operations
+## 4. Teardown, Cleanup, and Reset Operations
 
 ### Scenario 1: Standard Teardown (Preserve Data)
 
@@ -120,24 +117,24 @@ npm run docker:down
 
 Stops the containers while retaining data in Docker volumes for subsequent runs.
 
-### Scenario 2: Complete Reset (Wipe Volumes & Clean Slate)
+### Scenario 2: Complete Reset (Wipe Volumes and Clean Slate)
 
 When you need to completely wipe test products, auction records, and reset the database:
 
-1. **Stop containers and permanently delete volumes:**
+1. Stop containers and permanently delete volumes:
 
    ```bash
    npm run docker:clean
    # Equivalent to: docker compose down -v
    ```
 
-2. **Spin up fresh containers:**
+2. Spin up fresh containers:
 
    ```bash
    npm run docker:up
    ```
 
-3. **Re-apply database migrations from scratch:**
+3. Re-apply database migrations from scratch:
 
    ```bash
    npm run prisma:migrate
@@ -152,11 +149,11 @@ cd backend
 npx prisma migrate reset
 ```
 
-Drops the database, applies all migrations, and runs seed scripts in ~3 seconds without restarting Docker.
+Drops the database, applies all migrations, and runs seed scripts without restarting Docker.
 
 ---
 
-## 5. Direct Container Shell Access (CLI)
+## 5. Direct Container Shell Access
 
 ### Access PostgreSQL (`psql`)
 
@@ -187,14 +184,14 @@ Useful commands:
 
 ## 6. Command Quick Reference Cheat Sheet
 
-| Task                              | NPM Script (Recommended) | Equivalent Docker Command |
-| :-------------------------------- | :----------------------- | :------------------------ |
-| **Start Services Detached**       | `npm run docker:up`      | `docker compose up -d`    |
-| **Stop Services (Keep Data)**     | `npm run docker:down`    | `docker compose down`     |
-| **Reset Services (Wipe Volumes)** | `npm run docker:clean`   | `docker compose down -v`  |
-| **View Service Logs**             | `npm run docker:logs`    | `docker compose logs -f`  |
-| **Inspect Running Containers**    | -                        | `docker ps`               |
-| **Inspect Resource Usage**        | -                        | `docker stats`            |
+| Task                          | NPM Script (Recommended) | Equivalent Docker Command |
+| :---------------------------- | :----------------------- | :------------------------ |
+| Start Services Detached       | `npm run docker:up`      | `docker compose up -d`    |
+| Stop Services (Keep Data)     | `npm run docker:down`    | `docker compose down`     |
+| Reset Services (Wipe Volumes) | `npm run docker:clean`   | `docker compose down -v`  |
+| View Service Logs             | `npm run docker:logs`    | `docker compose logs -f`  |
+| Inspect Running Containers    | -                        | `docker ps`               |
+| Inspect Resource Usage        | -                        | `docker stats`            |
 
 ---
 
@@ -202,21 +199,21 @@ Useful commands:
 
 ### 1. `failed to connect to the docker API at npipe://...`
 
-- **Root Cause:** Docker Desktop is not running or the Linux engine has not finished starting.
-- **Resolution:** Launch **Docker Desktop** on Windows and wait until the engine indicator is green before running commands.
+Root Cause: Docker Desktop is not running or the Linux engine has not finished starting.
+Resolution: Launch Docker Desktop on Windows and wait until the engine indicator is green before running commands.
 
 ### 2. `port is already allocated` or Port Conflict
 
-- **Root Cause:** Another process is binding host port `5432` or `6379`.
-- **Resolution:** Inspect port bindings via PowerShell:
+Root Cause: Another process is binding host port `5432` or `6379`.
+Resolution: Inspect port bindings via PowerShell:
 
-  ```powershell
-  Get-NetTCPConnection -LocalPort 5432
-  ```
+```powershell
+Get-NetTCPConnection -LocalPort 5432
+```
 
-  Terminate conflicting background processes or run `docker compose down`.
+Terminate conflicting background processes or run `docker compose down`.
 
 ### 3. `Authentication failed against database server`
 
-- **Root Cause:** Password mismatch between `.env` and an existing persistent PostgreSQL volume.
-- **Resolution:** Run `npm run docker:clean` to purge the mismatched volume, then restart via `npm run docker:up`.
+Root Cause: Password mismatch between `.env` and an existing persistent PostgreSQL volume.
+Resolution: Run `npm run docker:clean` to purge the mismatched volume, then restart via `npm run docker:up`.

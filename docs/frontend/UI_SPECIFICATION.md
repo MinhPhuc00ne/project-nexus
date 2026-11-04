@@ -1,34 +1,34 @@
-# Đặc Tả Kiến Trúc Giao Diện Người Dùng (UI Specification)
+# User Interface Architecture Specification
 
-Tài liệu này xác định các tiêu chuẩn kiến trúc trình bày, hệ thống design tokens, cấu trúc layout phân tầng và phân rã component trên toàn bộ ứng dụng `frontend/`.
+This document specifies the presentation tier architecture, design token system, layered routing layouts, and component decomposition across the `frontend/` application.
 
-## 1. Hệ Thống Design Tokens Và Màu Sắc
+## 1. Design Token System and Color Palette
 
-Ứng dụng phía người dùng áp dụng React 19, Tailwind CSS v4, Lucide Icons và Ant Design Icons:
+The client application utilizes React 19, Tailwind CSS v4, Lucide Icons, and Ant Design Icons:
 
-### Mã màu thương hiệu và giao diện
+### Brand and Interface Color Tokens
 
-- Màu thương hiệu chính: `#1f5fe3` (Royal Blue) sử dụng cho nút hành động chính, chỉ báo điều hướng và liên kết nổi bật.
-- Màu nhấn mạnh: `#f24e1e` / `#ff5722` (Orange Red) sử dụng cho nút kêu gọi hành động trong phòng đấu giá, huy hiệu, số lượng giỏ hàng và cảnh báo quan trọng.
-- Bề mặt và nền:
-  - Nền trang tổng thể: `#f8f7fc` (Soft Slate)
-  - Thẻ chứa nội dung: `#ffffff` (Pure White) kết hợp đường viền `border border-slate-200`
-  - Vùng lấp đầy phụ: `#f1f5f9` (Slate 100)
-- Kiểu chữ và độ tương phản:
-  - Tiêu đề và văn bản chính: `#0f172a` (Slate 900)
-  - Văn bản nội dung: `#334155` (Slate 700)
-  - Văn bản mờ và chú thích: `#64748b` (Slate 500)
-  - Đường viền phân cách: `#e2e8f0` (Slate 200)
+- Primary Brand: `#1f5fe3` (Royal Blue) designated for primary call-to-action buttons, active navigation indicators, and prominent hyperlinks.
+- Accent Highlight: `#f24e1e` / `#ff5722` (Orange Red) designated for live auction call-to-action triggers, status badges, shopping cart counters, and critical alerts.
+- Surface and Canvas:
+  - Base page canvas: `#f8f7fc` (Soft Slate)
+  - Content containers: `#ffffff` (Pure White) with `border border-slate-200`
+  - Secondary surface fills: `#f1f5f9` (Slate 100)
+- Typography and Contrast:
+  - Headings and primary text: `#0f172a` (Slate 900)
+  - Body text: `#334155` (Slate 700)
+  - Muted labels and secondary annotations: `#64748b` (Slate 500)
+  - Structural divider lines: `#e2e8f0` (Slate 200)
 
-## 2. Cấu Trúc Phân Tầng Layout Và Cây Định Tuyến
+## 2. Layered Layout Architecture and Routing Hierarchy
 
-Giao diện được điều phối thông qua các lớp Layout lồng nhau đảm bảo phân quyền chặt chẽ:
+The user interface coordinates access control and visual structure through nested layout tiers:
 
 ```mermaid
 flowchart TD
     App["App.tsx (<AuthProvider>)"] --> AppRouter["AppRouter.tsx (<BrowserRouter>)"]
 
-    AppRouter --> NonAdminLayout["NonAdminLayout.tsx (Auth & Role Guard)"]
+    AppRouter --> NonAdminLayout["NonAdminLayout.tsx (Auth and Role Guard)"]
     AppRouter --> AdminLayout["AdminLayout.tsx (/admin/*)"]
 
     NonAdminLayout --> GuestLayout["GuestLayout.tsx (Header + Outlet + Footer)"]
@@ -42,44 +42,44 @@ flowchart TD
     GuestLayout --> AuctionPage["AuctionPage.tsx (/auction, /auction/:id)"]
 ```
 
-### Mô tả các tầng layout
+### Layout Tier Responsibilities
 
-1. `NonAdminLayout.tsx`: Lớp kiểm tra ngoại vi đầu tiên. Kiểm tra thông tin phiên từ `AuthContext`, nếu người dùng mang vai trò `ADMIN` sẽ chuyển hướng ngay về `/admin`.
-2. `GuestLayout.tsx`: Bố cục mua sắm tiêu chuẩn chứa header, vùng nội dung `<Outlet />` và footer chân trang. Nếu nhân viên hỗ trợ `SUPPORT_STAFF` truy cập trang chủ, hệ thống sẽ tự động điều hướng về `/staff/inbox`.
-3. `StaffLayout.tsx`: Lớp bảo vệ chuyên trách cho toàn bộ các tuyến đường `/staff/*`, xác thực quyền `SUPPORT_STAFF` hoặc `ADMIN` trước khi hiển thị dashboard làm việc.
-4. `AdminLayout.tsx`: Bố cục chuyên biệt dành cho quản trị viên với thanh bên điều hướng cố định và các bảng quản trị hệ thống.
+1. `NonAdminLayout.tsx`: The primary perimeter guard. It verifies active session data from `AuthContext` and immediately redirects authenticated administrators to `/admin`.
+2. `GuestLayout.tsx`: Standard retail shopping layout composed of the global header, content `<Outlet />`, and global footer. When support staff members access the home view, the router redirects them to `/staff/inbox`.
+3. `StaffLayout.tsx`: Dedicated security layout protecting all `/staff/*` routes, verifying `SUPPORT_STAFF` or `ADMIN` roles before mounting the staff operational dashboard.
+4. `AdminLayout.tsx`: Specialized administrative layout featuring fixed sidebar navigation and system management panels.
 
-## 3. Kiến Trúc Phân Rã Component
+## 3. Component Decomposition Architecture
 
-Tuân thủ nguyên tắc mã nguồn sạch và phân tách trách nhiệm, các trang giao diện lớn được chia nhỏ thành các component độc lập:
+Adhering to clean code standards and separation of concerns, complex views are structured into modular subcomponents:
 
-### Nhóm xác thực tài khoản (`frontend/src/pages/auth/`)
+### Authentication Suite (`frontend/src/pages/auth/`)
 
-- `Login.tsx`: Biểu mẫu đăng nhập chính, điều hướng theo vai trò và gửi yêu cầu xác thực.
-- `AuthHeroSection.tsx`: Banner trình chiếu hình ảnh thương hiệu phía bên trái.
-- `ForgotPasswordModal.tsx`: Hộp thoại độc lập xử lý xác thực mã OTP và đặt lại mật khẩu mới.
+- `Login.tsx`: Primary authentication form handling credential submission and role-based redirect resolution.
+- `AuthHeroSection.tsx`: Showcase banner presenting brand visuals on wide desktop viewports.
+- `ForgotPasswordModal.tsx`: Self-contained dialog handling OTP verification and password reset workflows.
 
-### Nhóm giỏ hàng và thanh toán (`frontend/src/pages/buyer/`)
+### Commerce and Checkout Suite (`frontend/src/pages/buyer/`)
 
-- `CartPage.tsx`: Bảng danh sách sản phẩm trong giỏ, tăng giảm số lượng và xóa sản phẩm.
-- `CartOrderSummary.tsx`: Thẻ tính toán tạm tính, ước tính phí vận chuyển và giảm giá.
-- `CheckoutPage.tsx`: Trang thanh toán toàn diện với lựa chọn địa chỉ giao nhận GHN và cổng thanh toán (PayOS, Ví NEXUS Pay hoặc COD).
+- `CartPage.tsx`: Interactive cart collection managing item lines, quantity updates, and item removal.
+- `CartOrderSummary.tsx`: Financial summary card calculating item subtotals, shipping estimates, and applied promotions.
+- `CheckoutPage.tsx`: Comprehensive checkout flow incorporating GHN shipping address selection and payment provider integration (PayOS, NEXUS Pay Wallet, or COD).
 
-### Nhóm danh mục và chi tiết sản phẩm (`frontend/src/pages/guest/`)
+### Catalog and Product Details (`frontend/src/pages/guest/`)
 
-- `ProductDetailPage.tsx`: Trang điều phối tải dữ liệu sản phẩm và đánh giá.
-- `ProductImageGallery.tsx`: Dải ảnh thu nhỏ, kính lúp phóng to và kích hoạt xem mô hình.
-- `ProductInfoTabs.tsx`: Bảng thông số kỹ thuật, hồ sơ người bán và đánh giá của khách hàng.
+- `ProductDetailPage.tsx`: Orchestrator view coordinating product data retrieval, seller identity, and review feeds.
+- `ProductImageGallery.tsx`: Thumbnail carousel, zoom view, and 3D preview entry point.
+- `ProductInfoTabs.tsx`: Tabular specifications, merchant shop profile, and verified customer reviews.
 
-### Nhóm phòng đấu giá trực tuyến (`frontend/src/pages/guest/`, `frontend/src/components/auction/`)
+### Live Auction Room Suite (`frontend/src/pages/guest/`, `frontend/src/components/auction/`)
 
-- `AuctionPage.tsx`: Trang phòng đấu giá thời gian thực hỗ trợ cả route `/auction` và `/auction/:id`.
-- `AuctionBidTerminal.tsx`: Bảng điều khiển trả giá tương tác, hiển thị đồng hồ đếm ngược và mức giá dẫn đầu.
-- `AuctionGallery.tsx`: Trưng bày hình ảnh vật phẩm đấu giá.
-- `AuctionDetailTabs.tsx`: Thông số kỹ thuật, chứng thư kiểm định và lịch sử trả giá công khai.
+- `AuctionPage.tsx`: Real-time live auction room orchestrator supporting both `/auction` and `/auction/:id` routes.
+- `AuctionBidTerminal.tsx`: Interactive bidding terminal displaying dynamic countdown clocks, minimum bid thresholds, and leading bidder status.
+- `AuctionGallery.tsx`: Visual gallery showcasing high-resolution item imagery.
+- `AuctionDetailTabs.tsx`: Item provenance, certificate documentation, and public bid history transcript.
 
-## 4. Phản Hồi Người Dùng Và Trạng Thái Tải Dữ Liệu
+## 4. User Feedback and Visual State Transitions
 
-- Thông báo Toast: Hiển thị nổi góc trên bên phải hoặc dưới bên phải, tự động đóng sau 3.0 đến 4.5 giây.
-- Hộp thoại Modal: Hỗ trợ phím Escape hoặc nhấp vùng nền mờ để đóng; tự động khóa thanh cuộn trang chính khi mở.
-- Trạng thái chờ: Sử dụng khung xương hiệu ứng tải dữ liệu (skeleton loader) nhằm tránh giật bố cục màn hình (CLS).
+- Toast notifications: Render in fixed screen corners and automatically dismiss after 3.0 to 4.5 seconds.
+- Modal dialogs: Support Escape key dismissal or backdrop clicks, automatically locking background canvas scrolling while open.
+- Loading states: Use skeleton placeholders during asynchronous network fetches to eliminate Cumulative Layout Shift (CLS).

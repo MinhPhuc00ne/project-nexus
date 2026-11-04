@@ -20,11 +20,16 @@ export interface GhnParcel {
   items: GhnParcelItem[];
 }
 
-/** Obsolete / merged administrative ward codes mapped to current GHN ward codes */
+/**
+ * Obsolete and merged administrative ward codes mapped to current GHN ward codes:
+ * - 20306: Ward 6, District 3 mapped to Ward Vo Thi Sau (90795)
+ * - 20307: Ward 7, District 3 mapped to Ward Vo Thi Sau (90795)
+ * - 20308: Ward 8, District 3 mapped to Ward Vo Thi Sau (90795)
+ */
 export const OBSOLETE_GHN_WARD_CODES: Record<string, string> = {
-  '20306': '90795', // Phường 6, Quận 3 -> Phường Võ Thị Sáu
-  '20307': '90795', // Phường 7, Quận 3 -> Phường Võ Thị Sáu
-  '20308': '90795', // Phường 8, Quận 3 -> Phường Võ Thị Sáu
+  '20306': '90795',
+  '20307': '90795',
+  '20308': '90795',
 };
 
 export function normalizeGhnWardCode(code: string): string;

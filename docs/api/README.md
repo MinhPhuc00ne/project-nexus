@@ -9,12 +9,12 @@ This directory contains specifications and endpoint definitions for the entire N
 ### 1.1 RESTful Conventions
 
 - All RESTful endpoints are versioned with the `/api/v1` prefix.
-- Plural nouns for resource identification (e.g., `/api/v1/auctions`, `/api/v1/products`).
+- Plural nouns for resource identification (for example, `/api/v1/auctions`, `/api/v1/products`).
 - HTTP Methods:
   - `GET`: Read resource representations.
   - `POST`: Create new resources or execute non-idempotent operations.
   - `PUT`: Full replacement of resource state.
-  - `PATCH`: Partial attribute updates (e.g., toggling seller mode).
+  - `PATCH`: Partial attribute updates (such as toggling seller mode).
   - `DELETE`: Soft or hard removal of resources.
 - Unified Response Schema:
 
@@ -28,48 +28,49 @@ This directory contains specifications and endpoint definitions for the entire N
   }
   ```
 
-### 1.2 OpenAPI / Swagger Documentation
+### 1.2 OpenAPI and Swagger Documentation
 
-- The monolithic NestJS backend generates live interactive Swagger UI documentation at:
-  - Local: `http://localhost:3000/api/docs`
+The modular NestJS backend generates live interactive Swagger UI documentation at:
+
+- Local workstation: `http://localhost:3000/api/docs`
 
 ---
 
 ## 2. Core REST Endpoint Matrix by Domain
 
-### 2.1 Auth & Users (`/api/v1/auth`, `/api/v1/users`)
+### 2.1 Auth and Users (`/api/v1/auth`, `/api/v1/users`)
 
-| Method  | Path                           | Description                                       | Access        |
-| :------ | :----------------------------- | :------------------------------------------------ | :------------ |
-| `POST`  | `/api/v1/auth/register`        | Register new Buyer account                        | Public        |
-| `POST`  | `/api/v1/auth/login`           | Authenticate credentials and issue JWT tokens     | Public        |
-| `POST`  | `/api/v1/auth/refresh`         | Rotate expired access token using refresh token   | Public        |
-| `GET`   | `/api/v1/users/me`             | Fetch authenticated user profile & wallet balance | Authenticated |
-| `PATCH` | `/api/v1/users/toggle-seller`  | Seamlessly switch between Buyer and Seller modes  | Authenticated |
-| `POST`  | `/api/v1/users/wallet/deposit` | Initiate wallet balance deposit                   | Authenticated |
-| `GET`   | `/api/v1/users/:id/reputation` | Inspect user reputation score and trust level     | Public        |
+| Method  | Path                           | Description                                         | Access        |
+| :------ | :----------------------------- | :-------------------------------------------------- | :------------ |
+| `POST`  | `/api/v1/auth/register`        | Register new Buyer account                          | Public        |
+| `POST`  | `/api/v1/auth/login`           | Authenticate credentials and issue JWT tokens       | Public        |
+| `POST`  | `/api/v1/auth/refresh`         | Rotate expired access token using refresh token     | Public        |
+| `GET`   | `/api/v1/users/me`             | Fetch authenticated user profile and wallet balance | Authenticated |
+| `PATCH` | `/api/v1/users/toggle-seller`  | Switch between Buyer and Seller modes               | Authenticated |
+| `POST`  | `/api/v1/users/wallet/deposit` | Initiate wallet balance deposit                     | Authenticated |
+| `GET`   | `/api/v1/users/:id/reputation` | Inspect user reputation score and trust level       | Public        |
 
 ### 2.2 Catalog (`/api/v1/catalog`)
 
-| Method | Path                           | Description                                | Access |
-| :----- | :----------------------------- | :----------------------------------------- | :----- |
-| `GET`  | `/api/v1/catalog/products`     | Search and filter products with pagination | Public |
-| `GET`  | `/api/v1/catalog/products/:id` | Fetch product details & 3D asset metadata  | Public |
-| `POST` | `/api/v1/catalog/products`     | Create product listing (Seller only)       | Seller |
-| `GET`  | `/api/v1/catalog/categories`   | Fetch 3-level category hierarchy           | Public |
+| Method | Path                           | Description                                 | Access |
+| :----- | :----------------------------- | :------------------------------------------ | :----- |
+| `GET`  | `/api/v1/catalog/products`     | Search and filter products with pagination  | Public |
+| `GET`  | `/api/v1/catalog/products/:id` | Fetch product details and 3D asset metadata | Public |
+| `POST` | `/api/v1/catalog/products`     | Create product listing (Seller only)        | Seller |
+| `GET`  | `/api/v1/catalog/categories`   | Fetch 3-level category hierarchy            | Public |
 
-### 2.3 Commerce & Orders (`/api/v1/commerce`)
+### 2.3 Commerce and Orders (`/api/v1/commerce`)
 
-| Method   | Path                              | Description                                          | Access   |
-| :------- | :-------------------------------- | :--------------------------------------------------- | :------- |
-| `GET`    | `/api/v1/commerce/cart`           | Get active user cart with revalidated pricing        | Buyer    |
-| `POST`   | `/api/v1/commerce/cart/items`     | Add or update cart item                              | Buyer    |
-| `DELETE` | `/api/v1/commerce/cart/items/:id` | Remove item from cart                                | Buyer    |
-| `POST`   | `/api/v1/commerce/checkout`       | Create order from cart with idempotency key          | Buyer    |
-| `POST`   | `/api/v1/commerce/orders/:id/pay` | Initialize PayOS / Wallet / COD payment registration | Buyer    |
-| `POST`   | `/api/v1/commerce/webhooks/payos` | PayOS VietQR payment confirmation webhook            | External |
+| Method   | Path                              | Description                                           | Access   |
+| :------- | :-------------------------------- | :---------------------------------------------------- | :------- |
+| `GET`    | `/api/v1/commerce/cart`           | Get active user cart with revalidated pricing         | Buyer    |
+| `POST`   | `/api/v1/commerce/cart/items`     | Add or update cart item                               | Buyer    |
+| `DELETE` | `/api/v1/commerce/cart/items/:id` | Remove item from cart                                 | Buyer    |
+| `POST`   | `/api/v1/commerce/checkout`       | Create order from cart with idempotency key           | Buyer    |
+| `POST`   | `/api/v1/commerce/orders/:id/pay` | Initialize PayOS, Wallet, or COD payment registration | Buyer    |
+| `POST`   | `/api/v1/commerce/webhooks/payos` | PayOS VietQR payment confirmation webhook             | External |
 
-### 2.4 Fulfillment & Logistics (`/api/v1/fulfillment`)
+### 2.4 Fulfillment and Logistics (`/api/v1/fulfillment`)
 
 | Method | Path                                     | Description                                  | Access        |
 | :----- | :--------------------------------------- | :------------------------------------------- | :------------ |
@@ -89,13 +90,13 @@ This directory contains specifications and endpoint definitions for the entire N
 | `POST` | `/api/v1/auctions/:id/bids` | Place competitive bid with wallet balance reservation | Buyer          |
 | `POST` | `/api/v1/auctions/:id/end`  | Finalize auction duration and settle winning bid      | Seller / Admin |
 
-### 2.6 Backoffice & Disputes (`/api/v1/backoffice`)
+### 2.6 Backoffice and Disputes (`/api/v1/backoffice`)
 
-| Method | Path                                      | Description                             | Access      |
-| :----- | :---------------------------------------- | :-------------------------------------- | :---------- |
-| `POST` | `/api/v1/backoffice/disputes`             | Open dispute against an escrow release  | Buyer       |
-| `GET`  | `/api/v1/backoffice/disputes`             | List active dispute cases               | Staff/Admin |
-| `POST` | `/api/v1/backoffice/disputes/:id/resolve` | Adjudicate dispute (refund or disburse) | Staff/Admin |
+| Method | Path                                      | Description                             | Access        |
+| :----- | :---------------------------------------- | :-------------------------------------- | :------------ |
+| `POST` | `/api/v1/backoffice/disputes`             | Open dispute against an escrow release  | Buyer         |
+| `GET`  | `/api/v1/backoffice/disputes`             | List active dispute cases               | Staff / Admin |
+| `POST` | `/api/v1/backoffice/disputes/:id/resolve` | Adjudicate dispute (refund or disburse) | Staff / Admin |
 
 ### 2.7 Notifications (`/api/v1/notifications`)
 
@@ -105,25 +106,25 @@ This directory contains specifications and endpoint definitions for the entire N
 | `PATCH` | `/api/v1/notifications/:id/read`    | Mark notification as read                 | Authenticated |
 | `GET`   | `/api/v1/notifications/preferences` | Inspect user channel delivery preferences | Authenticated |
 
-### 2.8 Staff Management & Onboarding (`/api/v1/admin/staff`, `/api/v1/staff`)
+### 2.8 Staff Management and Onboarding (`/api/v1/admin/staff`, `/api/v1/staff`)
 
-| Method | Path                            | Description                                                                                              | Access |
-| :----- | :------------------------------ | :------------------------------------------------------------------------------------------------------- | :----- |
-| `POST` | `/api/v1/admin/staff/invite`    | Admin nhập thông tin Staff (Họ tên, mail cá nhân, SĐT) -> Hệ thống cấp `@staff.com`, gửi email xác thực  | Admin  |
-| `GET`  | `/api/v1/staff/invitation-info` | Staff kiểm tra token từ email mời -> Xem thông tin Họ tên, SĐT, tài khoản `@staff.com` được cấp          | Public |
-| `POST` | `/api/v1/staff/activate`        | Staff xác nhận lại Họ tên, SĐT, tạo & xác nhận mật khẩu mới -> Kích hoạt tài khoản công tác `@staff.com` | Public |
-| `POST` | `/api/v1/auth/login`            | Staff đăng nhập bằng tài khoản `@staff.com` và mật khẩu mới tạo với vai trò `SUPPORT_STAFF`              | Public |
+| Method | Path                            | Description                                                                                           | Access |
+| :----- | :------------------------------ | :---------------------------------------------------------------------------------------------------- | :----- |
+| `POST` | `/api/v1/admin/staff/invite`    | Admin submits staff candidate details; system provisions `@staff.com` and dispatches invitation email | Admin  |
+| `GET`  | `/api/v1/staff/invitation-info` | Staff verifies invitation token; views candidate name, phone, and assigned corporate email            | Public |
+| `POST` | `/api/v1/staff/activate`        | Staff confirms personal information and sets account password to complete onboarding                  | Public |
+| `POST` | `/api/v1/auth/login`            | Staff logs in with `@staff.com` credentials under the `SUPPORT_STAFF` role                            | Public |
 
-### 2.9 Wallet & Withdrawal Management (`/api/v1/seller/finance`, `/api/v1/admin/withdrawals`)
+### 2.9 Wallet and Withdrawal Management (`/api/v1/seller/finance`, `/api/v1/admin/withdrawals`)
 
-| Method  | Path                                   | Description                                                                                       | Access        |
-| :------ | :------------------------------------- | :------------------------------------------------------------------------------------------------ | :------------ |
-| `GET`   | `/api/v1/seller/finance/revenue`       | Lấy tổng quan doanh thu, số dư ví khả dụng, tiền tạm khóa                                         | Seller, Admin |
-| `POST`  | `/api/v1/seller/finance/withdraw`      | Gửi yêu cầu rút tiền (khóa số dư khả dụng, gửi thông báo giải ngân 3-7 ngày làm việc)             | Seller, Admin |
-| `GET`   | `/api/v1/seller/finance/withdrawals`   | Xem lịch sử các yêu cầu rút tiền đã gửi và trạng thái xử lý                                       | Seller, Admin |
-| `GET`   | `/api/v1/seller/finance/transactions`  | Xem lịch sử biến động số dư ví (DEPOSIT, WITHDRAW, ESCROW...)                                     | Seller, Admin |
-| `GET`   | `/api/v1/admin/withdrawals`            | Admin xem danh sách các yêu cầu rút tiền (lọc theo status PENDING, APPROVED, REJECTED, COMPLETED) | Admin         |
-| `PATCH` | `/api/v1/admin/withdrawals/:id/review` | Admin phê duyệt (khấu trừ tiền khóa) hoặc từ chối (hoàn trả 100% về ví khả dụng kèm lý do)        | Admin         |
+| Method  | Path                                   | Description                                                                    | Access        |
+| :------ | :------------------------------------- | :----------------------------------------------------------------------------- | :------------ |
+| `GET`   | `/api/v1/seller/finance/revenue`       | Retrieve revenue overview, liquid wallet balance, and locked escrow funds      | Seller, Admin |
+| `POST`  | `/api/v1/seller/finance/withdraw`      | Submit withdrawal request; locks funds and schedules 3-to-7-day disbursement   | Seller, Admin |
+| `GET`   | `/api/v1/seller/finance/withdrawals`   | Inspect submitted withdrawal request history and status                        | Seller, Admin |
+| `GET`   | `/api/v1/seller/finance/transactions`  | View wallet balance transaction history (Deposit, Withdrawal, Escrow)          | Seller, Admin |
+| `GET`   | `/api/v1/admin/withdrawals`            | Admin lists withdrawal requests filtered by status                             | Admin         |
+| `PATCH` | `/api/v1/admin/withdrawals/:id/review` | Admin approves payout or rejects with a reason, refunding 100% of locked funds | Admin         |
 
 ---
 
@@ -147,6 +148,6 @@ Low-latency bi-directional communication operates via Socket.IO at `/ws/auctions
 | `auction:bid:placed`    | Entire Room       | Informs room of accepted highest bid and new minimum increment       |
 | `auction:bid:rejected`  | Requesting Socket | Informs bidder of failure (outbid, insufficient funds, lock timeout) |
 | `auction:timer:sync`    | Entire Room       | Synchronizes server clock and remaining auction duration             |
-| `auction:time_extended` | Entire Room       | Notifies clients of anti-sniping duration extension (+5 minutes)     |
+| `auction:time_extended` | Entire Room       | Notifies clients of anti-sniping duration extension (+2 minutes)     |
 | `auction:ended`         | Entire Room       | Notifies room that bidding has concluded and announces winner        |
 | `auction:3d:updated`    | Entire Room       | Synchronizes WebGL camera and rotation coordinates                   |

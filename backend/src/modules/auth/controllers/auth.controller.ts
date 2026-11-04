@@ -42,7 +42,6 @@ export class AuthController {
     private readonly authProfileService: AuthProfileService,
   ) {}
 
-  // ================= 1. ĐĂNG NHẬP =================
   @Post('login')
   @ApiOperation({ summary: 'Đăng nhập vào hệ thống' })
   @ApiResponse({ status: 200, description: 'Đăng nhập thành công' })
@@ -51,7 +50,6 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  // ================= 2. GOOGLE OAUTH =================
   @Get('google')
   @UseGuards(AuthGuard('google'))
   @ApiOperation({
@@ -81,7 +79,6 @@ export class AuthController {
     res.redirect(`${frontendUrl}/?${params.toString()}`);
   }
 
-  // ================= 3. ĐĂNG KÝ & XÁC THỰC =================
   @Post('register')
   @ApiOperation({ summary: 'Đăng ký tài khoản mới & gửi mã OTP về email' })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công, vui lòng check mail' })
@@ -96,7 +93,6 @@ export class AuthController {
     return this.authService.verifyEmail(dto);
   }
 
-  // ================= 4. QUÊN MẬT KHẨU =================
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Quên mật khẩu - gửi mã OTP đặt lại mật khẩu về Gmail' })
@@ -117,7 +113,6 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
-  // ================= 5. REFRESH TOKEN & ĐĂNG XUẤT =================
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Làm mới Access Token bằng Refresh Token' })
@@ -134,8 +129,6 @@ export class AuthController {
   async logout(@Body() dto: RefreshTokenDto): Promise<{ message: string }> {
     return this.authService.logout(dto);
   }
-
-  // --- Profile Management & Security ---
 
   @Get('me')
   @UseGuards(JwtAuthGuard)

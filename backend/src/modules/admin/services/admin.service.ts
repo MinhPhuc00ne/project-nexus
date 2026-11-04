@@ -26,15 +26,32 @@ export class AdminService {
     private readonly staffProvisioning: StaffProvisioningService,
   ) {}
 
+  /**
+   * Provisions a new support staff account.
+   *
+   * @param dto - Staff creation payload
+   * @returns Provisioned staff credentials and profile
+   */
   async createStaff(dto: CreateStaffDto): Promise<ProvisionedStaffResult> {
     return this.staffProvisioning.invite(dto);
   }
 
+  /**
+   * Invites a new support staff member.
+   *
+   * @param dto - Invitation input payload
+   * @returns Provisioned staff result
+   */
   async inviteStaff(dto: StaffInvitationInput): Promise<ProvisionedStaffResult> {
     return this.staffProvisioning.invite(dto);
   }
 
-  // ================= 2. DANH SÁCH TÀI KHOẢN STAFF =================
+  /**
+   * Retrieves paginated list of support staff accounts.
+   *
+   * @param query - Query filter and pagination parameters
+   * @returns Paginated staff list
+   */
   async listStaff(query: QueryStaffDto) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, query.limit || 10);
@@ -88,7 +105,12 @@ export class AdminService {
     };
   }
 
-  // ================= 3. LẤY DANH SÁCH YÊU CẦU NÂNG CẤP LÊN SELLER =================
+  /**
+   * Retrieves paginated seller upgrade applications.
+   *
+   * @param query - Query filter and pagination parameters
+   * @returns Paginated list of seller requests
+   */
   async getSellerRequests(query: QuerySellerRequestsDto) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, query.limit || 10);
@@ -140,7 +162,13 @@ export class AdminService {
     };
   }
 
-  // ================= 4. CHI TIẾT YÊU CẦU NÂNG CẤP =================
+  /**
+   * Retrieves detailed seller upgrade application by ID.
+   *
+   * @param id - Unique identifier of the upgrade request
+   * @returns Detailed seller upgrade request
+   * @throws NotFoundException when the request does not exist
+   */
   async getSellerRequestById(id: string) {
     const request = await this.prisma.sellerUpgradeRequest.findUnique({
       where: { id },
@@ -176,7 +204,15 @@ export class AdminService {
     return request;
   }
 
-  // ================= 5. ADMIN DUYỆT YÊU CẦU NÂNG CẤP (APPROVE) =================
+  /**
+   * Approves a seller upgrade request and provisions seller store defaults.
+   *
+   * @param id - Unique identifier of the upgrade request
+   * @param adminId - Unique identifier of the reviewing administrator
+   * @returns Approval confirmation and updated user record
+   * @throws NotFoundException when request does not exist
+   * @throws BadRequestException when request has already been processed
+   */
   async approveSellerRequest(id: string, adminId: string) {
     const request = await this.prisma.sellerUpgradeRequest.findUnique({
       where: { id },
@@ -194,7 +230,6 @@ export class AdminService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      // 1. Cập nhật trạng thái yêu cầu sang APPROVED
       const updatedRequest = await tx.sellerUpgradeRequest.update({
         where: { id },
         data: {
@@ -204,7 +239,6 @@ export class AdminService {
         },
       });
 
-      // 2. Nâng cấp quyền người dùng thành SELLER và kích hoạt chế độ bán hàng (isSellerActive = true)
       const updatedUser = await tx.user.update({
         where: { id: request.userId },
         data: {
@@ -213,7 +247,6 @@ export class AdminService {
         },
       });
 
-      // 2.1 Tự động tạo sổ địa chỉ mặc định cho Seller nếu có thông tin địa chỉ cửa hàng
       if (request.street && request.city) {
         await tx.userAddress.create({
           data: {
@@ -233,7 +266,6 @@ export class AdminService {
         });
       }
 
-      // 3. Gửi thông báo hệ thống cho người dùng
       await tx.notification.create({
         data: {
           userId: request.userId,
@@ -259,7 +291,16 @@ export class AdminService {
     };
   }
 
-  // ================= 6. ADMIN TỪ CHỐI YÊU CẦU NÂNG CẤP (REJECT) =================
+  /**
+   * Rejects a seller upgrade request with specified rejection reason.
+   *
+   * @param id - Unique identifier of the upgrade request
+   * @param adminId - Unique identifier of the reviewing administrator
+   * @param dto - Rejection payload
+   * @returns Rejection confirmation
+   * @throws NotFoundException when request does not exist
+   * @throws BadRequestException when request has already been processed
+   */
   async rejectSellerRequest(id: string, adminId: string, dto: RejectSellerRequestDto) {
     const request = await this.prisma.sellerUpgradeRequest.findUnique({
       where: { id },
@@ -277,7 +318,6 @@ export class AdminService {
     }
 
     const updatedRequest = await this.prisma.$transaction(async (tx) => {
-      // 1. Cập nhật yêu cầu sang REJECTED kèm lý do
       const rejected = await tx.sellerUpgradeRequest.update({
         where: { id },
         data: {
@@ -288,7 +328,6 @@ export class AdminService {
         },
       });
 
-      // 2. Gửi thông báo hệ thống giải thích lý do cho người dùng
       await tx.notification.create({
         data: {
           userId: request.userId,
@@ -307,7 +346,14 @@ export class AdminService {
     };
   }
 
-  // ================= 7. DANH SÁCH YÊU CẦU RÚT TIỀN CỦA SELLER =================
+  /**
+   * Retrieves paginated seller withdrawal requests.
+   *
+   * @param status - Optional status filter
+   * @param page - Page number
+   * @param limit - Page size
+   * @returns Paginated withdrawal requests
+   */
   async listWithdrawalRequests(status?: WithdrawalStatus, page = 1, limit = 10) {
     const p = Math.max(1, Number(page) || 1);
     const l = Math.max(1, Math.min(100, Number(limit) || 10));
@@ -367,7 +413,16 @@ export class AdminService {
     };
   }
 
-  // ================= 8. DUYỆT HOẶC TỪ CHỐI RÚT TIỀN =================
+  /**
+   * Reviews and approves or rejects a seller withdrawal request.
+   *
+   * @param id - Unique identifier of the withdrawal request
+   * @param adminId - Unique identifier of the reviewing administrator
+   * @param dto - Review status and reason
+   * @returns Review confirmation
+   * @throws NotFoundException when request does not exist
+   * @throws BadRequestException when request has already been processed or rejected without reason
+   */
   async reviewWithdrawalRequest(id: string, adminId: string, dto: ReviewWithdrawalDto) {
     const req = await this.prisma.withdrawalRequest.findUnique({
       where: { id },
@@ -401,7 +456,6 @@ export class AdminService {
           throw new BadRequestException('Vui lòng nhập lý do từ chối yêu cầu rút tiền.');
         }
 
-        // Trả lại tiền từ lockedBalance về balance
         await tx.wallet.update({
           where: { id: wallet.id },
           data: {
@@ -410,7 +464,6 @@ export class AdminService {
           },
         });
 
-        // Cập nhật WalletTransaction tương ứng sang FAILED
         await tx.walletTransaction.updateMany({
           where: { referenceId: req.id },
           data: {
@@ -419,7 +472,6 @@ export class AdminService {
           },
         });
       } else {
-        // APPROVED hoặc COMPLETED: Trừ hẳn lockedBalance
         await tx.wallet.update({
           where: { id: wallet.id },
           data: {
@@ -427,7 +479,6 @@ export class AdminService {
           },
         });
 
-        // Cập nhật WalletTransaction tương ứng sang SUCCESS
         await tx.walletTransaction.updateMany({
           where: { referenceId: req.id },
           data: {
@@ -437,7 +488,6 @@ export class AdminService {
         });
       }
 
-      // Cập nhật trạng thái WithdrawalRequest
       await tx.withdrawalRequest.update({
         where: { id },
         data: {
@@ -449,7 +499,6 @@ export class AdminService {
         },
       });
 
-      // Gửi thông báo đến Seller
       await tx.notification.create({
         data: {
           userId: req.userId,

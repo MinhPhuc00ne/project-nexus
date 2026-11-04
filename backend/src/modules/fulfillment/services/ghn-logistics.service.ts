@@ -48,12 +48,10 @@ export class GhnLogisticsService {
     this.shopId = this.configService.get<string>('GHN_SHOP_ID') || '';
     this.clientId = this.configService.get<string>('GHN_CLIENT_ID') || '';
 
-    // GHN sử dụng online-gateway hoặc dev-online-gateway
     const rawApiUrl =
       this.configService.get<string>('GHN_API_URL') ||
       'https://online-gateway.ghn.vn/shiip/public-api/v2';
 
-    // Master data endpoint (Tỉnh/Thành, Quận/Huyện) không có tiền tố /v2
     const normalizedUrl = rawApiUrl.trim().replace(/\/+$/, '');
     this.masterDataBaseUrl = normalizedUrl.replace(/\/v2$/, '');
     this.orderApiBaseUrl = `${this.masterDataBaseUrl}/v2`;
@@ -86,7 +84,9 @@ export class GhnLogisticsService {
   }
 
   /**
-   * Chẩn đoán token, shop ID, URL môi trường và kết nối GHN
+   * Diagnoses GHN token configuration, shop identifiers, environment URLs, and API connectivity.
+   *
+   * @returns Health metrics, latency, and status diagnostics
    */
   async getDiagnostic() {
     const tokenConfigured = Boolean(this.token && this.token.trim());
@@ -398,7 +398,6 @@ export class GhnLogisticsService {
     try {
       const url = `${this.orderApiBaseUrl}/shipping-order/fee`;
 
-      // Mặc định dịch vụ Chuẩn (service_type_id = 2)
       const serviceTypeId = req.serviceTypeId ?? (req.weightGrams >= 20000 ? 5 : 2);
       if (serviceTypeId === 5 && !req.items?.length) {
         throw new BadRequestException(

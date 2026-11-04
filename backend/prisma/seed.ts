@@ -440,7 +440,7 @@ async function main() {
         city: 'TP. Hồ Chí Minh',
       },
       pickup: {
-        name: 'Kho hàng Jos Tech & Gadgets',
+        name: 'Jos Tech & Gadgets',
         phone: '0901234005',
         city: 'TP. Hồ Chí Minh',
         district: 'Quận 1',
@@ -448,6 +448,8 @@ async function main() {
         street: '789 Nguyễn Huệ',
         districtId: 1442,
         wardCode: '20101',
+        ghnShopId: 235544,
+        ghnClientId: 2545858,
       },
     },
     {
@@ -461,19 +463,21 @@ async function main() {
       identityCardNumber: '001201009999',
       address: {
         street: '321 Hai Bà Trưng',
-        ward: 'Phường Võ Thị Sáu',
+        ward: 'Phường 8',
         district: 'Quận 3',
         city: 'TP. Hồ Chí Minh',
       },
       pickup: {
-        name: 'Kho hàng Huy Time & Accessories',
+        name: 'Huy Time & Accessories',
         phone: '0901234006',
         city: 'TP. Hồ Chí Minh',
         district: 'Quận 3',
-        ward: 'Phường Võ Thị Sáu',
+        ward: 'Phường 8',
         street: '321 Hai Bà Trưng',
         districtId: 1444,
-        wardCode: '90795',
+        wardCode: '20308',
+        ghnShopId: 235548,
+        ghnClientId: 2545858,
       },
     },
   ];
@@ -558,6 +562,8 @@ async function main() {
       });
     }
 
+    const carrierAddress = `${s.pickup.street}, ${s.pickup.ward}, ${s.pickup.district}, ${s.pickup.city}`;
+
     // Điểm lấy hàng fulfillment của Seller
     await prisma.sellerPickupPoint.upsert({
       where: {
@@ -575,7 +581,13 @@ async function main() {
         street: s.pickup.street,
         districtId: s.pickup.districtId,
         wardCode: s.pickup.wardCode,
-        status: 'PENDING',
+        status: 'VERIFIED',
+        ghnShopId: s.pickup.ghnShopId,
+        ghnClientId: s.pickup.ghnClientId,
+        carrierName: s.pickup.name,
+        carrierPhone: s.pickup.phone,
+        carrierAddress,
+        verifiedAt: new Date(),
       },
       create: {
         sellerId: sellerUser.id,
@@ -588,7 +600,13 @@ async function main() {
         street: s.pickup.street,
         districtId: s.pickup.districtId,
         wardCode: s.pickup.wardCode,
-        status: 'PENDING',
+        status: 'VERIFIED',
+        ghnShopId: s.pickup.ghnShopId,
+        ghnClientId: s.pickup.ghnClientId,
+        carrierName: s.pickup.name,
+        carrierPhone: s.pickup.phone,
+        carrierAddress,
+        verifiedAt: new Date(),
       },
     });
   }
@@ -1035,10 +1053,17 @@ async function main() {
   // =========================================================================
   // 10. HÀM SEED SẢN PHẨM & TỒN KHO AN TOÀN
   // =========================================================================
-  async function seedProductsForSeller(
-    sellerUser: { id: string },
-    products: Array<Record<string, unknown>>,
-  ) {
+  interface SeedProductItem {
+    title: string;
+    description: string;
+    basePrice: number;
+    categoryId: string;
+    status: ProductStatus;
+    quantity: number;
+    image: string;
+  }
+
+  async function seedProductsForSeller(sellerUser: { id: string }, products: SeedProductItem[]) {
     for (const item of products) {
       let product = await prisma.product.findFirst({
         where: {

@@ -21,7 +21,7 @@ const ALLOWED_EXTENSIONS = new Set([
   '.tiff',
 ]);
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 @Injectable()
 export class MediaService {
@@ -38,6 +38,14 @@ export class MediaService {
     }
   }
 
+  /**
+   * Uploads a single media file to local disk storage and optionally synchronizes to Cloudinary.
+   *
+   * @param file - Multer uploaded file object
+   * @param req - Express request object for local URL derivation
+   * @returns Metadata and URL of the uploaded media file
+   * @throws BadRequestException when file is missing, exceeds size limit, has unsupported format, or fails disk writing
+   */
   async uploadMedia(file?: Express.Multer.File, req?: Request): Promise<MediaUploadResponseDto> {
     if (!file || !file.buffer) {
       throw new BadRequestException('Vui lòng chọn file hình ảnh hợp lệ để tải lên.');
@@ -54,7 +62,6 @@ export class MediaService {
       );
     }
 
-    // 1. Lưu file vật lý vào thư mục uploads/media trên server
     const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
     const sanitizedFileName = `media-${uniqueSuffix}${ext}`;
     const localFilePath = path.join(this.mediaUploadDir, sanitizedFileName);
@@ -67,7 +74,6 @@ export class MediaService {
       throw new BadRequestException('Không thể lưu file lên máy chủ backend.');
     }
 
-    // 2. Xác định đường dẫn truy cập file cục bộ
     const port = this.configService.get<string>('PORT_BACKEND') || '3000';
     const hostHeader = req?.get('host') || `localhost:${port}`;
     const protocol = req?.protocol || 'http';
@@ -76,7 +82,6 @@ export class MediaService {
     let finalUrl = localUrl;
     let publicId = `local-${uniqueSuffix}`;
 
-    // 3. Nếu cấu hình Cloudinary được thiết lập, đồng bộ lên Cloudinary
     const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
     const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
     const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
@@ -110,7 +115,12 @@ export class MediaService {
   }
 
   /**
-   * Upload đồng thời một mảng nhiều file hình ảnh lên server / Cloudinary
+   * Uploads multiple media files concurrently to local storage and Cloudinary.
+   *
+   * @param files - Array of Multer uploaded file objects
+   * @param req - Express request object for local URL derivation
+   * @returns Batch upload response containing file URLs and metadata items
+   * @throws BadRequestException when file array is empty
    */
   async uploadMultipleMedia(
     files: Express.Multer.File[],

@@ -157,13 +157,12 @@ test('AdminDisputesService.getDisputes returns list of disputes, counters and pa
   assert.equal(result.page, 1);
   assert.equal(result.limit, 10);
   assert.equal(result.counters.all, 3);
-  assert.equal(result.counters.pendingReview, 2); // 1 OPEN + 1 UNDER_REVIEW
+  assert.equal(result.counters.pendingReview, 2);
   assert.equal(result.counters.open, 1);
   assert.equal(result.counters.underReview, 1);
   assert.equal(result.counters.resolvedBuyerFavor, 1);
   assert.equal(result.counters.resolvedSellerFavor, 0);
 
-  // Check item data
   const first = result.items[0];
   assert.equal(first.id, 'disp-1');
   assert.equal(first.openedBy.fullName, 'Nguyễn Văn A');
