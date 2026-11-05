@@ -1,13 +1,13 @@
 import { cn } from '../../lib/utils';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { ExternalLink as ExportOutlined } from 'lucide-react';
 import {
-  ExportOutlined,
-  RightOutlined,
-  DatabaseOutlined,
-  InboxOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
+  ChevronRight as RightOutlined,
+  Database as DatabaseOutlined,
+  Inbox as InboxOutlined,
+  ShieldCheck as SafetyCertificateOutlined,
+} from 'lucide-react';
 import { useSellerWorkspace } from './SellerWorkspace';
 export function SellerButton({
   children,

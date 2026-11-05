@@ -1,17 +1,17 @@
 import { cn } from '../../lib/utils';
 import { useState } from 'react';
+import { Box as CodeSandboxOutlined } from 'lucide-react';
 import {
-  CodeSandboxOutlined,
-  ClockCircleOutlined,
-  HistoryOutlined,
-  BuildOutlined,
-  PlusOutlined,
-  PlayCircleOutlined,
-  SearchOutlined,
-  SafetyCertificateOutlined,
-  FieldTimeOutlined,
-  VideoCameraOutlined,
-} from '@ant-design/icons';
+  Clock as ClockCircleOutlined,
+  History as HistoryOutlined,
+  Wrench as BuildOutlined,
+  Plus as PlusOutlined,
+  PlayCircle as PlayCircleOutlined,
+  Search as SearchOutlined,
+  ShieldCheck as SafetyCertificateOutlined,
+  Clock3 as FieldTimeOutlined,
+  Video as VideoCameraOutlined,
+} from 'lucide-react';
 import Popup from '../../components/Popup';
 import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
 import {

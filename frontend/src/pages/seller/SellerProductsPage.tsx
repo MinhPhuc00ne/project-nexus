@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Inbox as InboxOutlined } from 'lucide-react';
 import {
-  InboxOutlined,
-  PlusOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  ShopOutlined,
-  PictureOutlined,
-  EditOutlined,
-  StopOutlined,
-  ThunderboltOutlined,
-  TagOutlined,
-} from '@ant-design/icons';
+  Plus as PlusOutlined,
+  RefreshCw as ReloadOutlined,
+  Search as SearchOutlined,
+  Store as ShopOutlined,
+  Image as PictureOutlined,
+  Pencil as EditOutlined,
+  CircleStop as StopOutlined,
+  Zap as ThunderboltOutlined,
+  Tag as TagOutlined,
+} from 'lucide-react';
 import {
   Badge,
   EmptyState,

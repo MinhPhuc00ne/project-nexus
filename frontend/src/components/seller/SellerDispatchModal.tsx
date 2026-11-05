@@ -1,5 +1,6 @@
 import { useCallback, useState, type FormEvent, type ReactElement } from 'react';
-import { SendOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { Send as SendOutlined } from 'lucide-react';
+import { ShieldCheck as SafetyCertificateOutlined } from 'lucide-react';
 import Popup from '../Popup';
 import useProductResource from '../productDetail/useProductResource';
 import { useToast } from '../ToastNotification';

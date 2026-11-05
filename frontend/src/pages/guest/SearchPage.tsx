@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowLeftOutlined, SearchOutlined, CloseOutlined } from '@ant-design/icons';
+import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
+import { Search as SearchOutlined, X as CloseOutlined } from 'lucide-react';
 import CatalogListing from '../../components/products/CatalogListing';
 import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
 

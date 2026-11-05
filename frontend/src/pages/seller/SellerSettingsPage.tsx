@@ -1,11 +1,11 @@
 import { useState, type ReactElement } from 'react';
+import { Bell as BellOutlined } from 'lucide-react';
 import {
-  BellOutlined,
-  EnvironmentOutlined,
-  ReloadOutlined,
-  SafetyCertificateOutlined,
-  ShopOutlined,
-} from '@ant-design/icons';
+  MapPin as EnvironmentOutlined,
+  RefreshCw as ReloadOutlined,
+  ShieldCheck as SafetyCertificateOutlined,
+  Store as ShopOutlined,
+} from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerShopProfile } from '../../services/shops';
 import useProductResource from '../../components/productDetail/useProductResource';

@@ -1,5 +1,6 @@
 import { useRef, useState, type ChangeEvent, type FormEvent, type ReactElement } from 'react';
-import { DeleteOutlined, SendOutlined, UploadOutlined } from '@ant-design/icons';
+import { Trash2 as DeleteOutlined } from 'lucide-react';
+import { Send as SendOutlined, Upload as UploadOutlined } from 'lucide-react';
 import Popup from '../Popup';
 import { useToast } from '../ToastNotification';
 import {

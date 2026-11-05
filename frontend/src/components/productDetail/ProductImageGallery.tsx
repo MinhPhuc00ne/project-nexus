@@ -1,4 +1,4 @@
-﻿import { PictureOutlined } from '@ant-design/icons';
+﻿import { Image as PictureOutlined } from 'lucide-react';
 import type { ProductDetail } from '../../types/product.types';
 
 interface Props {

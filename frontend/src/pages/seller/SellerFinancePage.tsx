@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { BankOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Landmark as BankOutlined } from 'lucide-react';
+import { RefreshCw as ReloadOutlined } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerRevenue } from '../../services/sellerFinance';
 import useProductResource from '../../components/productDetail/useProductResource';

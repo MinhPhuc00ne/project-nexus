@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EyeInvisibleOutlined, EyeOutlined, LockOutlined, MailOutlined } from '@ant-design/icons';
+import { EyeOff as EyeInvisibleOutlined } from 'lucide-react';
+import { Eye as EyeOutlined, Lock as LockOutlined, Mail as MailOutlined } from 'lucide-react';
 import Popup from '../Popup';
 import { useAuth } from '../../contexts/AuthContext';
 import useChangePassword from './useChangePassword';

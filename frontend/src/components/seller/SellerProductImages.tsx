@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CloseOutlined, PictureOutlined, UploadOutlined } from '@ant-design/icons';
+import { X as CloseOutlined } from 'lucide-react';
+import { Image as PictureOutlined, Upload as UploadOutlined } from 'lucide-react';
 import { PRODUCT_IMAGE_LIMIT, validateProductImages } from '../../services/sellerProducts';
 
 export default function SellerProductImages({

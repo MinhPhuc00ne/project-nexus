@@ -1,4 +1,4 @@
-import { SafetyCertificateOutlined } from '@ant-design/icons';
+import { ShieldCheck as SafetyCertificateOutlined } from 'lucide-react';
 import { Badge, Panel } from './SellerUI';
 import { money, orderStatuses, type SellerOrder } from './sellerData';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCartOutlined } from '@ant-design/icons';
+import { ShoppingCart as ShoppingCartOutlined } from 'lucide-react';
 import { Star, Tag, Heart } from 'lucide-react';
 import type { ProductDetail } from '../../types/product.types';
 

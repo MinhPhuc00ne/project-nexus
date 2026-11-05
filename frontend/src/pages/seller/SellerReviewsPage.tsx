@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { MessageCircle as MessageOutlined } from 'lucide-react';
 import {
-  MessageOutlined,
-  SafetyCertificateOutlined,
-  StarFilled,
-  StarOutlined,
-} from '@ant-design/icons';
+  ShieldCheck as SafetyCertificateOutlined,
+  Star as StarFilled,
+  Star as StarOutlined,
+} from 'lucide-react';
 import { useSellerSession } from '../../components/seller/SellerSession';
 import { EmptyState, PageHeading, Panel } from '../../components/seller/SellerUI';
 import { trustLabels } from '../../components/seller/sellerData';
@@ -86,7 +86,7 @@ export default function SellerReviewsPage() {
               <div className="mt-2 flex justify-center gap-1 text-blue-600">
                 {[1, 2, 3, 4, 5].map((star) =>
                   star <= Math.round(averageRating) ? (
-                    <StarFilled key={star} />
+                    <StarFilled key={star} fill="currentColor" />
                   ) : (
                     <StarOutlined key={star} className="text-slate-300" />
                   ),

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
-import { ArrowLeftOutlined, CalculatorOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
+import { Calculator as CalculatorOutlined, MapPin as EnvironmentOutlined } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastNotification';
 import { useSellerSession } from '../../components/seller/SellerSession';

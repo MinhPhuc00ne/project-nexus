@@ -1,4 +1,8 @@
-import { BellOutlined, CheckOutlined, ReloadOutlined } from '@ant-design/icons';
+import {
+  Bell as BellOutlined,
+  Check as CheckOutlined,
+  RefreshCw as ReloadOutlined,
+} from 'lucide-react';
 import useSellerNotifications from './useSellerNotifications';
 
 export default function SellerNotifications({

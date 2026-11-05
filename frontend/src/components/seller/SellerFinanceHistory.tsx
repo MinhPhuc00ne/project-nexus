@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { LeftOutlined, RightOutlined, EyeOutlined } from '@ant-design/icons';
+import { ChevronLeft as LeftOutlined } from 'lucide-react';
+import { ChevronRight as RightOutlined, Eye as EyeOutlined } from 'lucide-react';
 import useProductResource from '../productDetail/useProductResource';
 import { getSellerTransactions, getSellerWithdrawals } from '../../services/sellerFinance';
 import type {

@@ -1,6 +1,6 @@
 ﻿import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { PictureOutlined } from '@ant-design/icons';
+import { Image as PictureOutlined } from 'lucide-react';
 import { getRelatedProducts } from '../../services/products.service';
 import useProductResource from './useProductResource';
 

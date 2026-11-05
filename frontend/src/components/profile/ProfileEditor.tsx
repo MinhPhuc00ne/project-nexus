@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
-import { LockOutlined, SaveOutlined, UserOutlined } from '@ant-design/icons';
+import { Lock as LockOutlined } from 'lucide-react';
+import { Save as SaveOutlined, User as UserOutlined } from 'lucide-react';
 import { Role } from '@nexus/types';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';

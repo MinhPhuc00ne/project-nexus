@@ -1,5 +1,6 @@
 import { useState, type ReactElement } from 'react';
-import { CheckOutlined, PrinterOutlined, TruckOutlined } from '@ant-design/icons';
+import { Check as CheckOutlined } from 'lucide-react';
+import { Printer as PrinterOutlined, Truck as TruckOutlined } from 'lucide-react';
 import type { SellerOrderStatus } from '../../types/order.types';
 import { confirmSellerOrder } from '../../services/sellerOrders';
 import Popup from '../Popup';
