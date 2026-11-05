@@ -56,20 +56,22 @@ function applyModeOverride(profile: UserProfile): UserProfile {
   let effectiveMode: 'SELLER' | 'BUYER';
   if (onSellerRoute) {
     effectiveMode = 'SELLER';
-    setStoredActiveMode(profile.id, 'SELLER');
   } else if (onBuyerRoute && storedMode === 'BUYER') {
     effectiveMode = 'BUYER';
   } else if (storedMode) {
     effectiveMode = storedMode;
   } else {
     effectiveMode = profile.isSellerActive ? 'SELLER' : 'BUYER';
-    setStoredActiveMode(profile.id, effectiveMode);
   }
+  setStoredActiveMode(profile.id, effectiveMode);
+
+  const isSellerActive = Boolean(profile.isSellerActive && !profile.isShopSuspended);
+  const currentMode = isSellerActive ? effectiveMode : 'BUYER';
 
   return {
     ...profile,
-    isSellerActive: effectiveMode === 'SELLER' && !profile.isShopSuspended,
-    currentMode: effectiveMode,
+    isSellerActive,
+    currentMode,
   };
 }
 
@@ -129,41 +131,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchActiveMode = useCallback(async (mode: 'SELLER' | 'BUYER'): Promise<void> => {
     const wantSeller = mode === 'SELLER';
-    let previousMode: 'SELLER' | 'BUYER' = 'BUYER';
-    setUserState((prev) => {
-      if (!prev) return prev;
-      previousMode = prev.currentMode === 'SELLER' ? 'SELLER' : 'BUYER';
-      setStoredActiveMode(prev.id, mode);
-      return {
-        ...prev,
-        isSellerActive: wantSeller && !prev.isShopSuspended,
-        currentMode: mode,
-      };
-    });
     try {
       const res = await toggleSellerMode(wantSeller);
       setUserState((prev) => {
         if (!prev) return prev;
-        const finalMode = wantSeller && !prev.isShopSuspended ? 'SELLER' : 'BUYER';
+        const finalActive = res?.isSellerActive ?? (wantSeller && !prev.isShopSuspended);
+        const finalMode = finalActive ? 'SELLER' : 'BUYER';
         setStoredActiveMode(prev.id, finalMode);
         return {
           ...prev,
-          isSellerActive: res?.isSellerActive ?? finalMode === 'SELLER',
+          isSellerActive: finalActive,
           currentMode: finalMode,
         };
       });
     } catch (error) {
-      setUserState((prev) => {
-        if (!prev) return prev;
-        setStoredActiveMode(prev.id, previousMode);
-        return {
-          ...prev,
-          isSellerActive: previousMode === 'SELLER' && !prev.isShopSuspended,
-          currentMode: previousMode,
-        };
-      });
       throw error;
-      // Giữ trạng thái mode trên FE ngay cả khi API BE gặp lỗi chuyển role
     }
   }, []);
 

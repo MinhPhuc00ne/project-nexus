@@ -217,6 +217,7 @@ export default function BuyerDashboardPage() {
               const title = firstItem?.product?.title || `Đơn hàng #${order.orderNumber}`;
               const img =
                 firstItem?.product?.thumbnail ||
+                firstItem?.product?.images?.[0]?.imageUrl ||
                 firstItem?.product?.images?.[0]?.url ||
                 '/images/watches/watch-1.png';
               const s = statusMap[order.status] ?? statusMap['PENDING_PAYMENT'];

@@ -22,6 +22,7 @@ export const ROUTES = {
   // Buyer
   CART: '/cart',
   CHECKOUT: '/checkout',
+  PAYMENT_SUCCESS: '/payment/success',
   BUYER: '/buyer',
   BUYER_ORDERS: '/buyer/orders',
   BUYER_ORDER_DETAIL: '/buyer/orders/:id',

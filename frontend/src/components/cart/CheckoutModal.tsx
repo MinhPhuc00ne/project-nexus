@@ -45,6 +45,7 @@ export default function CheckoutModal({
 
   const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethodType>('PAYOS');
   const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const [isPaid, setIsPaid] = useState(false);
   const [isProcessingOrder, setIsProcessingOrder] = useState(false);
   const [payosPayment, setPayosPayment] = useState<PayosPaymentInfo | null>(null);
   const [createdOrders, setCreatedOrders] = useState<BuyerOrder[]>([]);
@@ -189,6 +190,7 @@ export default function CheckoutModal({
 
   const handleClose = () => {
     setCheckoutSuccess(false);
+    setIsPaid(false);
     setSuccessGrandTotal(0);
     setDynamicShippingFee(null);
     onClose();
@@ -202,9 +204,11 @@ export default function CheckoutModal({
         checkoutSuccess
           ? paymentMethod === 'COD'
             ? 'Đặt Hàng COD Thành Công'
-            : payosPayment
-              ? 'Quét Mã PayOS Để Thanh Toán'
-              : 'Đặt Hàng Thành Công'
+            : isPaid
+              ? 'Thanh Toán Thành Công'
+              : payosPayment
+                ? 'Quét Mã PayOS Để Thanh Toán'
+                : 'Đặt Hàng Thành Công'
           : 'Xác Nhận Đặt Hàng & Thanh Toán'
       }
       size={checkoutSuccess ? 'lg' : 'xl'}
@@ -217,6 +221,7 @@ export default function CheckoutModal({
             payosPayment={payosPayment}
             grandTotal={successGrandTotal || computedGrandTotal}
             showToast={showToast}
+            onPaymentCompleted={() => setIsPaid(true)}
             primaryAction={
               <Link
                 to="/buyer/orders"

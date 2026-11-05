@@ -95,7 +95,10 @@ export default function BuyerDisputesPage() {
             orderId: o.id,
             orderNumber: o.orderNumber ?? '',
             productName: o?.items?.[0]?.product?.title || `Đơn hàng #${o?.orderNumber ?? ''}`,
-            img: o?.items?.[0]?.product?.thumbnail || '/images/watches/watch-1.png',
+            img:
+              o?.items?.[0]?.product?.thumbnail ||
+              o?.items?.[0]?.product?.images?.[0]?.imageUrl ||
+              '/images/watches/watch-1.png',
             amount: Number(o?.totalAmount ?? 0),
             reason: 'ITEM_DEFECTIVE',
             status: 'OPEN',

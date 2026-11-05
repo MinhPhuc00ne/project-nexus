@@ -14,7 +14,15 @@ import {
 } from 'lucide-react';
 
 export type TabStatus =
-  'ALL' | 'PENDING_PAYMENT' | 'PAID' | 'PREPARING' | 'SHIPPING' | 'COMPLETED' | 'CANCELLED';
+  | 'ALL'
+  | 'PENDING_PAYMENT'
+  | 'PAID'
+  | 'PREPARING'
+  | 'SHIPPING'
+  | 'DELIVERED'
+  | 'CONFIRMED'
+  | 'COMPLETED'
+  | 'CANCELLED';
 
 export const statusConfig: Record<
   Exclude<TabStatus, 'ALL'>,
@@ -43,6 +51,18 @@ export const statusConfig: Record<
     icon: <Truck size={11} />,
     cls: 'bg-blue-50 text-blue-700 border-blue-200',
     dot: 'bg-blue-500',
+  },
+  DELIVERED: {
+    label: 'Đã giao hàng',
+    icon: <CheckCircle size={11} />,
+    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  CONFIRMED: {
+    label: 'Hoàn thành',
+    icon: <CheckCircle size={11} />,
+    cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    dot: 'bg-emerald-500',
   },
   COMPLETED: {
     label: 'Hoàn thành',
@@ -76,9 +96,17 @@ interface OrderCardProps {
   order: DisplayOrder;
   isPaying: boolean;
   onPayNow: (orderId: string, e: React.MouseEvent) => void;
+  onConfirmDelivery?: (orderId: string, e: React.MouseEvent) => void;
+  isConfirming?: boolean;
 }
 
-export const OrderCard: React.FC<OrderCardProps> = ({ order, isPaying, onPayNow }) => {
+export const OrderCard: React.FC<OrderCardProps> = ({
+  order,
+  isPaying,
+  onPayNow,
+  onConfirmDelivery,
+  isConfirming,
+}) => {
   const s = statusConfig[order.status] || statusConfig.PENDING_PAYMENT;
 
   return (
@@ -119,7 +147,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, isPaying, onPayNow 
         </div>
       </Link>
 
-      <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/40 px-4 py-2.5">
+      <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/40 px-4 py-2.5">
         {order.status === 'PENDING_PAYMENT' &&
           (order.isCod ? (
             <span className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
@@ -147,6 +175,45 @@ export const OrderCard: React.FC<OrderCardProps> = ({ order, isPaying, onPayNow 
               )}
             </button>
           ))}
+
+        {order.status === 'DELIVERED' && (
+          <>
+            <Link
+              to={`/buyer/disputes?orderId=${order.id}`}
+              className="flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+            >
+              <span>Khiếu nại / Trả hàng</span>
+            </Link>
+            <button
+              type="button"
+              disabled={isConfirming}
+              onClick={(e) => onConfirmDelivery?.(order.id, e)}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {isConfirming ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" />
+                  <span>Đang xác nhận...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={12} />
+                  <span>Đã nhận được hàng</span>
+                </>
+              )}
+            </button>
+          </>
+        )}
+
+        {(order.status === 'CONFIRMED' || order.status === 'COMPLETED') && (
+          <Link
+            to={`/buyer/reviews?orderId=${order.id}`}
+            className="flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
+          >
+            <span>Đánh giá sản phẩm</span>
+          </Link>
+        )}
+
         <Link
           to={`/buyer/orders/${order.id}`}
           className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"

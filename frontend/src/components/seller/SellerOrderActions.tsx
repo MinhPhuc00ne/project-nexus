@@ -35,7 +35,7 @@ export default function SellerOrderActions({
             <CheckOutlined /> Xác nhận đơn
           </SellerButton>
         )}
-        {['PAID', 'PREPARING'].includes(status) && (
+        {['PAID', 'PREPARING'].includes(status) && !hasShipment && (
           <SellerButton secondary disabled={blocked} onClick={() => setModal('dispatch')}>
             <TruckOutlined /> Bàn giao GHN
           </SellerButton>

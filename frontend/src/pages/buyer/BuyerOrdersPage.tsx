@@ -1,7 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, Search, ShoppingBag, Loader2 } from 'lucide-react';
-import { getBuyerOrdersApi, payOrderApi, isCodOrder, type BuyerOrder } from '../../services/orders';
+import {
+  getBuyerOrdersApi,
+  payOrderApi,
+  confirmDeliveryOrderApi,
+  isCodOrder,
+  type BuyerOrder,
+} from '../../services/orders';
 import OrderCard, {
   type TabStatus,
   type DisplayOrder,
@@ -14,6 +20,7 @@ const tabs: { key: TabStatus; label: string }[] = [
   { key: 'PAID', label: 'Đã thanh toán' },
   { key: 'PREPARING', label: 'Chuẩn bị hàng' },
   { key: 'SHIPPING', label: 'Đang giao' },
+  { key: 'DELIVERED', label: 'Đã giao' },
   { key: 'COMPLETED', label: 'Hoàn thành' },
   { key: 'CANCELLED', label: 'Đã huỷ' },
 ];
@@ -24,6 +31,7 @@ export default function BuyerOrdersPage() {
   const [realOrders, setRealOrders] = useState<BuyerOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
+  const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -60,16 +68,43 @@ export default function BuyerOrdersPage() {
     }
   };
 
+  const handleConfirmDelivery = async (orderId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm('Bạn xác nhận đã nhận được kiện hàng này đầy đủ và nguyên vẹn?')) {
+      return;
+    }
+    setConfirmingOrderId(orderId);
+    try {
+      await confirmDeliveryOrderApi(orderId);
+      await fetchOrders();
+    } catch (err: unknown) {
+      console.error('Lỗi xác nhận nhận hàng:', err);
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      alert(msg || 'Không thể xác nhận nhận hàng lúc này. Vui lòng thử lại sau.');
+    } finally {
+      setConfirmingOrderId(null);
+    }
+  };
+
   const displayOrders: DisplayOrder[] = (Array.isArray(realOrders) ? realOrders : []).map((o) => {
     const firstItem = o?.items?.[0];
     const title = firstItem?.product?.title || `Đơn hàng #${o?.orderNumber ?? ''}`;
     const thumbnail =
       firstItem?.product?.thumbnail ||
+      firstItem?.product?.images?.[0]?.imageUrl ||
       firstItem?.product?.images?.[0]?.url ||
       '/images/watches/watch-1.png';
-    const rawStatus = (o?.status as TabStatus) || 'PENDING_PAYMENT';
+    const rawStatus = (o?.status as string) || 'PENDING_PAYMENT';
+    const mappedStatus = (rawStatus === 'CONFIRMED' ? 'COMPLETED' : rawStatus) as TabStatus;
     const validStatus: Exclude<TabStatus, 'ALL'> =
-      rawStatus in statusConfig ? (rawStatus as Exclude<TabStatus, 'ALL'>) : 'PENDING_PAYMENT';
+      mappedStatus in statusConfig
+        ? (mappedStatus as Exclude<TabStatus, 'ALL'>)
+        : 'PENDING_PAYMENT';
 
     return {
       id: o?.id ?? '',
@@ -185,6 +220,8 @@ export default function BuyerOrdersPage() {
               order={order}
               isPaying={payingOrderId === order.id}
               onPayNow={handlePayNow}
+              onConfirmDelivery={handleConfirmDelivery}
+              isConfirming={confirmingOrderId === order.id}
             />
           ))}
         </div>

@@ -26,12 +26,18 @@ export default function SellerSession({ children }: { children: ReactNode }) {
 
   // Tự động kích hoạt chế độ Seller khi người bán đang ở trong Dashboard Seller (/seller/*)
   useEffect(() => {
+    let cancelled = false;
     if (!needsSellerMode || modeError) return;
     void switchActiveMode('SELLER').catch((error: unknown) => {
-      setModeError(
-        error instanceof Error ? error.message : 'Không thể chuyển sang chế độ Người bán.',
-      );
+      if (!cancelled) {
+        setModeError(
+          error instanceof Error ? error.message : 'Không thể chuyển sang chế độ Người bán.',
+        );
+      }
     });
+    return () => {
+      cancelled = true;
+    };
   }, [modeError, needsSellerMode, switchActiveMode]);
 
   if (!token) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
@@ -79,7 +85,7 @@ export default function SellerSession({ children }: { children: ReactNode }) {
 
   const sellerUser: UserProfile = {
     ...user,
-    isSellerActive: !user.isShopSuspended,
+    isSellerActive: Boolean(user.isSellerActive && !user.isShopSuspended),
     currentMode: 'SELLER',
   };
 

@@ -15,6 +15,7 @@ import {
 import {
   getBuyerOrderDetailApi,
   payOrderApi,
+  confirmDeliveryOrderApi,
   isCodOrder,
   type BuyerOrder,
 } from '../../services/orders';
@@ -61,6 +62,13 @@ const statusMap: Record<
     border: 'border-emerald-200',
     icon: CheckCircle,
   },
+  CONFIRMED: {
+    label: 'Hoàn thành',
+    color: 'text-teal-800',
+    bg: 'bg-teal-50',
+    border: 'border-teal-200',
+    icon: CheckCircle,
+  },
   COMPLETED: {
     label: 'Hoàn thành',
     color: 'text-teal-800',
@@ -83,6 +91,7 @@ export default function BuyerOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const fetchOrderDetail = useCallback(async () => {
     if (!id) return;
@@ -115,6 +124,28 @@ export default function BuyerOrderDetailPage() {
       alert('Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.');
     } finally {
       setIsPaying(false);
+    }
+  };
+
+  const handleConfirmDelivery = async () => {
+    if (!order) return;
+    if (!window.confirm('Bạn xác nhận đã nhận được kiện hàng này đầy đủ và nguyên vẹn?')) {
+      return;
+    }
+    setIsConfirming(true);
+    try {
+      await confirmDeliveryOrderApi(order.id);
+      await fetchOrderDetail();
+    } catch (err: unknown) {
+      console.error('Lỗi xác nhận nhận hàng:', err);
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+      alert(msg || 'Không thể xác nhận nhận hàng lúc này. Vui lòng thử lại sau.');
+    } finally {
+      setIsConfirming(false);
     }
   };
 
@@ -163,7 +194,7 @@ export default function BuyerOrderDetailPage() {
             <ChevronLeft size={14} /> Quay lại danh sách đơn hàng
           </Link>
           <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <span>Chi tiết đơn hàng #{order.orderNumber}</span>
+            <span>Chi tiết đơn hàng #{order.orderNumber || order.id?.slice(0, 8)}</span>
             <span
               className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${statusConfig.color} ${statusConfig.bg} ${statusConfig.border}`}
             >
@@ -205,11 +236,81 @@ export default function BuyerOrderDetailPage() {
           ))}
       </div>
 
+      {/* Action Banner for Delivered / Completed */}
+      {order.status === 'DELIVERED' && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+              <CheckCircle size={22} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-emerald-950">
+                Đơn hàng đã được bưu tá GHN giao thành công
+              </h4>
+              <p className="text-xs text-emerald-700 mt-0.5">
+                Vui lòng kiểm tra sản phẩm. Nếu có vấn đề hãy bấm khiếu nại/trả hàng. Nếu hàng
+                nguyên vẹn, hãy bấm xác nhận nhận hàng.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              to={`/buyer/disputes?orderId=${order.id}`}
+              className="px-4 py-2 rounded-xl text-xs font-bold border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition shadow-sm"
+            >
+              Khiếu nại / Trả hàng
+            </Link>
+            <button
+              type="button"
+              disabled={isConfirming}
+              onClick={handleConfirmDelivery}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm disabled:opacity-50"
+            >
+              {isConfirming ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Đang xử lý...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={14} />
+                  <span>Đã nhận được hàng</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {(order.status === 'CONFIRMED' || order.status === 'COMPLETED') && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
+              <CheckCircle size={22} />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-blue-950">Đơn hàng đã hoàn thành</h4>
+              <p className="text-xs text-blue-700 mt-0.5">
+                Cảm ơn bạn đã mua sắm tại NEXUS! Bạn có thể đánh giá sản phẩm để chia sẻ trải
+                nghiệm.
+              </p>
+            </div>
+          </div>
+          <Link
+            to={`/buyer/reviews?orderId=${order.id}`}
+            className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
+          >
+            Đánh giá sản phẩm
+          </Link>
+        </div>
+      )}
+
       {/* Order Timeline */}
       <OrderTimeline
         status={order.status}
         createdAt={order.createdAt}
         updatedAt={order.updatedAt}
+        isCod={isCod}
       />
 
       {/* Main Details (2 Columns) */}
@@ -241,16 +342,29 @@ export default function BuyerOrderDetailPage() {
                     Tiền mặt khi nhận hàng (COD)
                   </span>
                 </div>
-                <div className="flex justify-between text-[11px] text-slate-500">
-                  <span>Cần trả shipper khi giao:</span>
-                  <span className="font-extrabold text-[#f24e1e]">
-                    {Number(order.totalAmount).toLocaleString('vi-VN')} ₫
-                  </span>
-                </div>
-                <div className="flex justify-between text-[11px] text-slate-500">
-                  <span>Trạng thái:</span>
-                  <span className="font-semibold text-amber-700">Chờ nhận hàng & thanh toán</span>
-                </div>
+                {['DELIVERED', 'CONFIRMED', 'COMPLETED'].includes(order.status) ? (
+                  <div className="flex justify-between text-[11px] text-slate-500">
+                    <span>Trạng thái:</span>
+                    <span className="font-semibold text-emerald-700">
+                      Đã thanh toán tiền mặt ({Number(order.totalAmount).toLocaleString('vi-VN')} ₫)
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Cần trả shipper khi giao:</span>
+                      <span className="font-extrabold text-[#f24e1e]">
+                        {Number(order.totalAmount).toLocaleString('vi-VN')} ₫
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[11px] text-slate-500">
+                      <span>Trạng thái:</span>
+                      <span className="font-semibold text-amber-700">
+                        Chờ nhận hàng & thanh toán
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <div className="space-y-1 rounded-xl bg-slate-50 p-3 text-xs">
@@ -260,7 +374,11 @@ export default function BuyerOrderDetailPage() {
                 </div>
                 <div className="flex justify-between text-[11px] text-slate-500">
                   <span>Trạng thái:</span>
-                  <span className="font-semibold text-slate-700">{statusConfig.label}</span>
+                  <span className="font-semibold text-slate-700">
+                    {order.status !== 'PENDING_PAYMENT'
+                      ? 'Đã thanh toán (PayOS VietQR)'
+                      : 'Chờ thanh toán'}
+                  </span>
                 </div>
               </div>
             )}

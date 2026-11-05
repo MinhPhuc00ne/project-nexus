@@ -872,6 +872,120 @@ export class OrderService {
   }
 
   /**
+   * Kiểm tra và tự động đồng bộ trạng thái thanh toán từ PayOS
+   */
+  async checkPayosPaymentStatus(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        payments: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
+    }
+
+    if (order.buyerId !== userId && order.sellerId !== userId) {
+      throw new ForbiddenException('Bạn không có quyền xem thông tin đơn hàng này');
+    }
+
+    if (order.status !== OrderStatus.PENDING_PAYMENT) {
+      return {
+        paid: order.status !== OrderStatus.CANCELLED,
+        status: order.status,
+        message: 'Đơn hàng đã được thanh toán hoặc đang xử lý.',
+      };
+    }
+
+    const payment = order.payments[0];
+    if (!payment || payment.provider !== PaymentProvider.PAYOS || !payment.transactionCode) {
+      return {
+        paid: false,
+        status: order.status,
+      };
+    }
+
+    try {
+      const orderCode = Number(payment.transactionCode);
+      const payosInfo = await this.payosService.getPaymentLink(orderCode);
+
+      if (
+        payosInfo &&
+        (payosInfo.status === 'PAID' || Number(payosInfo.amountPaid) >= Number(payment.amount))
+      ) {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT id FROM orders WHERE id = ${order.id} FOR UPDATE`;
+          const currentPayment = await tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
+          if (currentPayment.status === PaymentStatus.SUCCESS) return;
+          const payable = await tx.order.findUniqueOrThrow({ where: { id: order.id } });
+          if (payable.status !== OrderStatus.PENDING_PAYMENT) return;
+
+          const currentMetadata = (
+            payment.metadata && typeof payment.metadata === 'object' ? payment.metadata : {}
+          ) as Record<string, unknown>;
+
+          await tx.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: PaymentStatus.SUCCESS,
+              metadata: {
+                ...currentMetadata,
+                payosStatus: payosInfo.status,
+                verifiedDirectly: true,
+                paidAt: new Date().toISOString(),
+              } as Prisma.InputJsonValue,
+            },
+          });
+
+          const updatedOrder = await tx.order.update({
+            where: { id: order.id },
+            data: {
+              status: OrderStatus.PAID,
+            },
+            include: {
+              buyer: true,
+              seller: true,
+            },
+          });
+
+          if (this.inventoryService) {
+            await this.inventoryService.commitReservation(tx, order.id);
+          }
+
+          await this.escrow.hold(tx, updatedOrder);
+        });
+
+        this.logger.log(
+          `Đồng bộ trực tiếp: Đơn ${order.id} đã thanh toán PayOS; tiền được giữ ký quỹ.`,
+        );
+
+        return {
+          paid: true,
+          status: OrderStatus.PAID,
+          message: 'Thanh toán thành công qua PayOS VietQR.',
+        };
+      }
+
+      return {
+        paid: false,
+        status: order.status,
+        payosStatus: payosInfo?.status,
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Truy vấn trạng thái PayOS cho đơn ${order.id} thất bại: ${message}`);
+      return {
+        paid: false,
+        status: order.status,
+      };
+    }
+  }
+
+  /**
    * Xem chi tiết đơn hàng (kèm trạng thái Payment)
    */
   async getOrderById(orderId: string, userId: string) {

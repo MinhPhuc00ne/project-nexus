@@ -1,6 +1,10 @@
-import React from 'react';
-import { Truck, QrCode, Clock, Banknote, CreditCard } from 'lucide-react';
-import type { BuyerOrder, PayosPaymentInfo } from '../../services/orders';
+import React, { useState, useEffect } from 'react';
+import { Truck, QrCode, Clock, Banknote, CreditCard, CheckCircle2 } from 'lucide-react';
+import {
+  checkPaymentStatusApi,
+  type BuyerOrder,
+  type PayosPaymentInfo,
+} from '../../services/orders';
 import PayosQrModal from './PayosQrModal';
 
 export interface CheckoutSuccessCardProps {
@@ -11,6 +15,7 @@ export interface CheckoutSuccessCardProps {
   showToast: (msg: string) => void;
   primaryAction?: React.ReactNode;
   secondaryAction?: React.ReactNode;
+  onPaymentCompleted?: () => void;
 }
 
 export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
@@ -21,13 +26,51 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
   showToast,
   primaryAction,
   secondaryAction,
+  onPaymentCompleted,
 }) => {
+  const [isPaid, setIsPaid] = useState(false);
+  const targetOrderId = payosPayment?.orderId || orders[0]?.id;
+
+  useEffect(() => {
+    if (!targetOrderId || isCod || isPaid || !payosPayment) return;
+    let isCancelled = false;
+
+    const checkStatus = async () => {
+      try {
+        const res = await checkPaymentStatusApi(targetOrderId);
+        if (!isCancelled && res.paid) {
+          setIsPaid(true);
+          showToast('Thanh toán đơn hàng qua PayOS VietQR thành công!');
+          if (onPaymentCompleted) onPaymentCompleted();
+        }
+      } catch {
+        // Polling failure can be ignored silently to retry on next tick
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void checkStatus();
+    }, 2500);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [targetOrderId, isCod, isPaid, payosPayment, showToast, onPaymentCompleted]);
+
   const orderCodes = orders
     .map((o) => o.orderNumber)
     .filter(Boolean)
     .join(', ');
 
   const renderIcon = () => {
+    if (isPaid) {
+      return (
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-inner">
+          <CheckCircle2 size={36} className="text-emerald-600" />
+        </div>
+      );
+    }
     if (isCod) {
       return (
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-inner">
@@ -50,6 +93,20 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
   };
 
   const renderHeader = () => {
+    if (isPaid) {
+      return (
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
+            Thanh Toán Thành Công!
+          </h2>
+          <p className="mt-1 text-xs text-slate-500">
+            {orderCodes
+              ? `Mã đơn hàng: ${orderCodes} • Đã ghi nhận ký quỹ an toàn`
+              : 'Đơn hàng của bạn đã được thanh toán và lưu vào hệ thống ký quỹ NEXUS Escrow.'}
+          </p>
+        </div>
+      );
+    }
     if (isCod) {
       return (
         <div>
@@ -131,6 +188,33 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
                 khi thanh toán tiền mặt.
               </span>
             </div>
+          </div>
+        </div>
+      ) : isPaid ? (
+        <div className="space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 text-left text-xs">
+          <div className="flex items-center justify-between border-b border-emerald-200/80 pb-3">
+            <div className="flex items-center gap-2">
+              <CreditCard className="text-emerald-700" size={20} />
+              <span className="font-bold text-emerald-950">Phương thức: PayOS VietQR 24/7</span>
+            </div>
+            <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-0.5 text-[11px] font-extrabold text-emerald-800">
+              Đã thanh toán
+            </span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-600">Số tiền đã thanh toán:</span>
+            <span className="text-base font-black text-emerald-700">
+              {Number(grandTotal || 0).toLocaleString('vi-VN')} ₫
+            </span>
+          </div>
+          <div className="space-y-1.5 pt-1 text-[11px] leading-relaxed text-emerald-900">
+            <p>
+              • Tiền thanh toán của bạn đang được giữ ký quỹ an toàn tại{' '}
+              <strong>NEXUS Escrow</strong>.
+            </p>
+            <p>
+              • Người bán đã nhận được đơn hàng và đang tiến hành đóng gói để giao cho GHN Express.
+            </p>
           </div>
         </div>
       ) : payosPayment ? (

@@ -48,6 +48,7 @@ const PrivacyPage = lazy(() => import('../pages/guest/PrivacyPage'));
 const NotFoundPage = lazy(() => import('../pages/guest/NotFoundPage'));
 const CartPage = lazy(() => import('../pages/buyer/CartPage'));
 const CheckoutPage = lazy(() => import('../pages/buyer/CheckoutPage'));
+const PaymentSuccessPage = lazy(() => import('../pages/buyer/PaymentSuccessPage'));
 const BuyerDashboardPage = lazy(() => import('../pages/buyer/BuyerDashboardPage'));
 const BuyerOrdersPage = lazy(() => import('../pages/buyer/BuyerOrdersPage'));
 const BuyerOrderDetailPage = lazy(() => import('../pages/buyer/BuyerOrderDetailPage'));
@@ -120,6 +121,7 @@ function AppRouter() {
                 {/* Buyer routes requiring authentication */}
                 <Route element={<ProtectedRoute />}>
                   <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
+                  <Route path={ROUTES.PAYMENT_SUCCESS} element={<PaymentSuccessPage />} />
                   <Route element={<BuyerLayout />}>
                     <Route path={ROUTES.BUYER} element={<BuyerDashboardPage />} />
                     <Route path={ROUTES.BUYER_ORDERS} element={<BuyerOrdersPage />} />

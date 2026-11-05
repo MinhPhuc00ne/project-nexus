@@ -48,6 +48,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
           const title = item?.product?.title || 'Sản phẩm mua sắm';
           const thumbnail =
             item?.product?.thumbnail ||
+            item?.product?.images?.[0]?.imageUrl ||
             item?.product?.images?.[0]?.url ||
             '/images/watches/watch-1.png';
 

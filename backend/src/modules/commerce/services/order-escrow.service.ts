@@ -8,6 +8,8 @@ import {
   DisputeStatus,
   EscrowStatus,
   OrderStatus,
+  PaymentProvider,
+  PaymentStatus,
   Prisma,
   ReputationTrustLevel,
   WalletTransactionType,
@@ -126,16 +128,88 @@ export class OrderEscrowService {
     if (order.afterSales && !['REJECTED', 'COMPLETED'].includes(order.afterSales.status))
       throw new BadRequestException('Đơn đang có yêu cầu hủy/trả hàng.');
     const escrow = order.escrowRecord;
-    if (!escrow) throw new BadRequestException('Đơn chưa có tiền ký quỹ.');
-    if (order.status === OrderStatus.CONFIRMED && escrow.status === EscrowStatus.DISBURSED)
+    if (
+      order.status === OrderStatus.CONFIRMED &&
+      (!escrow || escrow.status === EscrowStatus.DISBURSED)
+    )
       return { success: true, alreadyProcessed: true };
+    const trackingStatus = String(
+      objectValue(objectValue(order.shipment?.metadata).tracking).status || '',
+    )
+      .trim()
+      .toLowerCase();
+    const isTrackingDelivered = [
+      'delivered',
+      'da_giao',
+      'giao_thanh_cong',
+      'cod_collected',
+      'money_collected',
+      'da_thu_tien',
+    ].includes(trackingStatus);
     if (
       !arbitration &&
       (order.status !== OrderStatus.DELIVERED ||
         order.shipment?.status !== 'DELIVERED' ||
-        objectValue(objectValue(order.shipment?.metadata).tracking).status !== 'delivered')
+        !isTrackingDelivered)
     ) {
       throw new BadRequestException('GHN chưa xác nhận giao hàng thành công.');
+    }
+    if (!escrow) {
+      // Đơn hàng COD (không ký quỹ qua ví hệ thống NEXUS)
+      await tx.order.update({ where: { id: order.id }, data: { status: OrderStatus.CONFIRMED } });
+      if (tx.payment) {
+        await tx.payment.updateMany({
+          where: {
+            orderId: order.id,
+            provider: PaymentProvider.COD,
+            status: PaymentStatus.PENDING,
+          },
+          data: { status: PaymentStatus.SUCCESS },
+        });
+      }
+      if (order.shipment?.status === 'DELIVERED') {
+        for (const userId of [order.buyerId, order.sellerId]) {
+          const user = await tx.user.update({
+            where: { id: userId },
+            data: { reputationScore: { increment: 2 } },
+          });
+          const score = user.reputationScore;
+          const trustLevel =
+            score >= 120
+              ? ReputationTrustLevel.EXCELLENT
+              : score >= 100
+                ? ReputationTrustLevel.GOOD
+                : score >= 80
+                  ? ReputationTrustLevel.STANDARD
+                  : score >= 40
+                    ? ReputationTrustLevel.PROBATION
+                    : ReputationTrustLevel.SUSPENDED;
+          await tx.user.update({ where: { id: userId }, data: { trustLevel } });
+          await tx.reputationLog.create({
+            data: {
+              userId,
+              deltaPoints: 2,
+              balanceAfter: score,
+              reason: 'Hoàn tất đơn hàng COD',
+              referenceId: order.id,
+            },
+          });
+        }
+      }
+      await tx.notification.create({
+        data: {
+          userId: order.sellerId,
+          type: 'ORDER',
+          channel: 'IN_APP',
+          title: 'Đơn hàng COD đã hoàn tất',
+          content: `Đơn hàng #${order.id.slice(0, 8)} đã được người mua xác nhận nhận hàng thành công.`,
+        },
+      });
+      return {
+        success: true,
+        orderStatus: OrderStatus.CONFIRMED,
+        escrowStatus: EscrowStatus.DISBURSED,
+      };
     }
     if (
       !arbitration &&

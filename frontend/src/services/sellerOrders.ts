@@ -92,7 +92,7 @@ export async function dispatchSellerOrder(
     );
     if (!result.success) throw new Error(result.message || 'Chưa bàn giao được đơn hàng.');
     const order = await getSellerOrderDetail(id, sellerId);
-    if (order.status !== 'SHIPPING' || !isVerifiedGhnShipment(order.shipment))
+    if (!['PREPARING', 'SHIPPING'].includes(order.status) || !isVerifiedGhnShipment(order.shipment))
       throw new GhnDispatchUnverifiedError();
     return order;
   } catch (cause) {

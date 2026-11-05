@@ -101,17 +101,59 @@ function OrdersWorkspace(): ReactElement {
         >
           {resource.data && (
             <>
-              <div className="mb-5 flex flex-wrap gap-2 text-xs text-blue-800">
+              <div className="mb-5 flex flex-wrap gap-2 text-xs">
                 {[
-                  ['Tất cả', resource.data.counters.all],
-                  ['Chờ xác nhận', resource.data.counters.paid],
-                  ['Chờ bàn giao', resource.data.counters.preparing],
-                  ['Đang giao', resource.data.counters.shipping],
-                ].map(([label, count]) => (
-                  <span className="rounded-lg bg-blue-50 px-3 py-2" key={label}>
-                    {label}: <b>{count}</b>
-                  </span>
-                ))}
+                  { key: '' as const, label: 'Tất cả', count: resource.data.counters.all },
+                  {
+                    key: 'PAID' as const,
+                    label: 'Chờ xác nhận',
+                    count: resource.data.counters.paid,
+                  },
+                  {
+                    key: 'PREPARING' as const,
+                    label: 'Chờ bàn giao',
+                    count: resource.data.counters.preparing,
+                  },
+                  {
+                    key: 'SHIPPING' as const,
+                    label: 'Đang giao',
+                    count: resource.data.counters.shipping,
+                  },
+                  {
+                    key: 'DELIVERED' as const,
+                    label: 'Đã giao',
+                    count: resource.data.counters.delivered,
+                  },
+                  {
+                    key: 'CONFIRMED' as const,
+                    label: 'Hoàn tất',
+                    count: resource.data.counters.confirmed,
+                  },
+                  {
+                    key: 'CANCELLED' as const,
+                    label: 'Đã hủy',
+                    count: resource.data.counters.cancelled,
+                  },
+                ].map((tab) => {
+                  const isActive = status === tab.key;
+                  return (
+                    <button
+                      type="button"
+                      key={tab.label}
+                      onClick={() => {
+                        setStatus(tab.key);
+                        setPage(1);
+                      }}
+                      className={`cursor-pointer rounded-lg px-3 py-2 transition-colors ${
+                        isActive
+                          ? 'bg-blue-600 font-semibold text-white shadow-sm'
+                          : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+                      }`}
+                    >
+                      {tab.label}: <b>{tab.count}</b>
+                    </button>
+                  );
+                })}
               </div>
               {resource.data.items.length ? (
                 <div className="overflow-x-auto">
@@ -180,7 +222,9 @@ function OrdersWorkspace(): ReactElement {
                                   ? 'gray'
                                   : order.status === 'PAID' || order.status === 'PREPARING'
                                     ? 'amber'
-                                    : 'blue'
+                                    : order.status === 'DELIVERED' || order.status === 'CONFIRMED'
+                                      ? 'green'
+                                      : 'blue'
                               }
                             >
                               {sellerOrderLabels[order.status] || order.status}
@@ -195,7 +239,7 @@ function OrdersWorkspace(): ReactElement {
                             <SellerOrderActions
                               id={order.id}
                               status={order.status}
-                              hasShipment={!!order.shipment}
+                              hasShipment={Boolean(order.shipment?.waybillCode)}
                               onChanged={refresh}
                             />
                             <Link

@@ -44,7 +44,7 @@ export interface OrderItemDetail {
     id: string;
     title: string;
     thumbnail?: string | null;
-    images?: Array<{ id: string; url: string }>;
+    images?: Array<{ id: string; url?: string; imageUrl?: string }>;
   };
 }
 
@@ -226,6 +226,36 @@ export async function confirmDeliveryOrderApi(orderId: string): Promise<unknown>
     `/commerce/orders/${encodeURIComponent(orderId)}/confirm-delivery`,
   );
   return response.data;
+}
+
+export interface PaymentStatusResponse {
+  paid: boolean;
+  status: string;
+  message?: string;
+  payosStatus?: string;
+}
+
+/**
+ * 7. Kiểm tra trạng thái thanh toán đơn hàng (hỗ trợ tự động đồng bộ PayOS)
+ */
+export async function checkPaymentStatusApi(orderId: string): Promise<PaymentStatusResponse> {
+  const response = await api.get<
+    | {
+        statusCode?: number;
+        message?: string;
+        data?: PaymentStatusResponse;
+      }
+    | PaymentStatusResponse
+  >(`/commerce/orders/${encodeURIComponent(orderId)}/payment-status`);
+
+  const payload = response?.data;
+  return (
+    payload && typeof payload === 'object' && 'paid' in payload
+      ? payload
+      : payload && typeof payload === 'object' && 'data' in payload
+        ? (payload as { data: PaymentStatusResponse }).data
+        : payload
+  ) as PaymentStatusResponse;
 }
 
 export const DEFAULT_SHIPPING_ADDRESS: ShippingAddressInput = {

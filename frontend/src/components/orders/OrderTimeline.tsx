@@ -12,9 +12,24 @@ interface OrderTimelineProps {
   status: string;
   createdAt: string;
   updatedAt?: string;
+  isCod?: boolean;
 }
 
-export const OrderTimeline: React.FC<OrderTimelineProps> = ({ status, createdAt, updatedAt }) => {
+export const OrderTimeline: React.FC<OrderTimelineProps> = ({
+  status,
+  createdAt,
+  updatedAt,
+  isCod = false,
+}) => {
+  const isDeliveredOrDone = ['DELIVERED', 'CONFIRMED', 'COMPLETED'].includes(status);
+  const isAllPreparingOrLater = [
+    'PREPARING',
+    'SHIPPING',
+    'DELIVERED',
+    'CONFIRMED',
+    'COMPLETED',
+  ].includes(status);
+
   const steps: TimelineStep[] = [
     {
       label: 'Đơn Hàng Đã Đặt',
@@ -23,12 +38,15 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({ status, createdAt,
         timeStyle: 'short',
       }),
       done: true,
-      active: status === 'PENDING_PAYMENT',
+      active: status === 'PENDING_PAYMENT' && !isCod,
     },
     {
-      label: 'Đã Thanh Toán',
-      time:
-        status !== 'PENDING_PAYMENT' && status !== 'CANCELLED'
+      label: isCod ? 'Thanh toán (COD)' : 'Đã Thanh Toán',
+      time: isCod
+        ? isDeliveredOrDone
+          ? 'Đã thu tiền khi giao'
+          : 'Thu tiền khi giao hàng'
+        : status !== 'PENDING_PAYMENT' && status !== 'CANCELLED'
           ? updatedAt
             ? new Date(updatedAt).toLocaleString('vi-VN', {
                 dateStyle: 'short',
@@ -36,23 +54,25 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({ status, createdAt,
               })
             : 'Hoàn tất'
           : undefined,
-      done: ['PAID', 'PREPARING', 'SHIPPING', 'DELIVERED', 'COMPLETED'].includes(status),
-      active: status === 'PAID',
+      done: isCod
+        ? isDeliveredOrDone
+        : ['PAID', 'PREPARING', 'SHIPPING', 'DELIVERED', 'CONFIRMED', 'COMPLETED'].includes(status),
+      active: !isCod && status === 'PAID',
     },
     {
       label: 'Đang Chuẩn Bị',
-      done: ['PREPARING', 'SHIPPING', 'DELIVERED', 'COMPLETED'].includes(status),
+      done: isAllPreparingOrLater,
       active: status === 'PREPARING',
     },
     {
       label: 'Đang Giao Hàng',
-      done: ['SHIPPING', 'DELIVERED', 'COMPLETED'].includes(status),
+      done: ['SHIPPING', 'DELIVERED', 'CONFIRMED', 'COMPLETED'].includes(status),
       active: status === 'SHIPPING',
     },
     {
-      label: 'Đã Giao Hàng',
-      done: ['DELIVERED', 'COMPLETED'].includes(status),
-      active: ['DELIVERED', 'COMPLETED'].includes(status),
+      label: ['CONFIRMED', 'COMPLETED'].includes(status) ? 'Hoàn Thành' : 'Đã Giao Hàng',
+      done: isDeliveredOrDone,
+      active: isDeliveredOrDone,
     },
   ];
 

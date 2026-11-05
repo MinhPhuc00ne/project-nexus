@@ -80,6 +80,20 @@ export class OrderController {
     return this.orderService.initializePayment(orderId, userId, dto);
   }
 
+  @Get('orders/:id/payment-status')
+  @HttpCode(HttpStatus.OK)
+  @RequirePrivilege('CHECKOUT.START')
+  @ApiOperation({
+    summary: '[BUYER] Kiểm tra và tự động đồng bộ trạng thái thanh toán PayOS',
+    description:
+      'Chủ động kiểm tra trạng thái đơn hàng từ cơ sở dữ liệu và truy vấn trực tiếp cổng PayOS nếu đang ở trạng thái chờ thanh toán.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy trạng thái thanh toán thành công' })
+  @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
+  async getPaymentStatus(@Param('id') orderId: string, @CurrentUser('id') userId: string) {
+    return this.orderService.checkPayosPaymentStatus(orderId, userId);
+  }
+
   @Get('wallet')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

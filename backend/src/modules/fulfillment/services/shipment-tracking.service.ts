@@ -193,7 +193,7 @@ export class ShipmentTrackingService {
       const status = mapped.order && canAdvance ? mapped.order : current.status;
       if (status !== current.status)
         await tx.order.update({ where: { id: orderId }, data: { status } });
-      if (detail.status === 'delivered' && tx.payment) {
+      if (mapped.shipment === 'DELIVERED' && tx.payment) {
         await tx.payment.updateMany({
           where: { orderId, provider: PaymentProvider.COD, status: PaymentStatus.PENDING },
           data: { status: PaymentStatus.SUCCESS },
@@ -206,7 +206,7 @@ export class ShipmentTrackingService {
             type: NotificationType.ORDER,
             channel: NotificationChannel.IN_APP,
             title:
-              detail.status === 'delivered'
+              mapped.shipment === 'DELIVERED'
                 ? 'GHN xác nhận đã giao hàng'
                 : 'Cập nhật vận chuyển GHN',
             content: `Đơn #${orderId.slice(0, 8)}: ${detail.status}. Mã vận đơn: ${waybill}.`,

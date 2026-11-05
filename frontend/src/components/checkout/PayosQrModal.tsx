@@ -1,5 +1,5 @@
 import React from 'react';
-import { QrCode, Copy, ExternalLink } from 'lucide-react';
+import { QrCode, Copy } from 'lucide-react';
 import type { PayosPaymentInfo } from '../../services/orders';
 
 interface PayosQrModalProps {
@@ -101,20 +101,13 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
         </div>
       </div>
 
-      {payment.checkoutUrl && (
-        <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-between gap-3">
-          <span className="text-xs text-slate-300">Hoặc mở trang thanh toán chính thức:</span>
-          <a
-            href={payment.checkoutUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-md transition"
-          >
-            <span>Mở Cổng PayOS</span>
-            <ExternalLink size={14} />
-          </a>
-        </div>
-      )}
+      <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-center gap-2.5 text-xs text-emerald-300">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+        </span>
+        <span>Hệ thống tự động kích hoạt ngay khi bạn hoàn tất chuyển khoản VietQR.</span>
+      </div>
     </div>
   );
 };

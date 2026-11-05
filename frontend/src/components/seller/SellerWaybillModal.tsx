@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Printer as PrinterOutlined } from 'lucide-react';
 import Popup from '../Popup';
 import useProductResource from '../productDetail/useProductResource';
+import { useToast } from '../ToastNotification';
 import { getSellerWaybill } from '../../services/sellerOrders';
 import type { SellerWaybill } from '../../types/order.types';
 import { useSellerSession } from './SellerSession';
@@ -23,13 +24,20 @@ export default function SellerWaybillModal({
   return (
     <Popup isOpen onClose={onClose} title="Xem trước phiếu giao hàng" size="lg">
       <SellerResourceState loading={resource.loading} error={resource.error} retry={resource.retry}>
-        {resource.data && <PrintableWaybill bill={resource.data} />}
+        {resource.data && <PrintableWaybill bill={resource.data} onClose={onClose} />}
       </SellerResourceState>
     </Popup>
   );
 }
 
-function PrintableWaybill({ bill }: { bill: SellerWaybill }): ReactElement {
+function PrintableWaybill({
+  bill,
+  onClose,
+}: {
+  bill: SellerWaybill;
+  onClose: () => void;
+}): ReactElement {
+  const toast = useToast();
   const printRef = useRef<HTMLDivElement>(null);
   const [barcodeReady, setBarcodeReady] = useState(false);
   const [barcodeFailed, setBarcodeFailed] = useState(false);
@@ -92,7 +100,13 @@ function PrintableWaybill({ bill }: { bill: SellerWaybill }): ReactElement {
             Tải lại mã vạch
           </SellerButton>
         )}
-        <SellerButton disabled={!barcodeReady} onClick={() => window.print()}>
+        <SellerButton
+          disabled={!barcodeReady}
+          onClick={() => {
+            toast.success(`Đã in phiếu giao hàng thành công (Mã vận đơn: ${copy.waybillCode})!`);
+            onClose();
+          }}
+        >
           <PrinterOutlined />
           {barcodeReady ? 'In phiếu giao hàng' : 'Đang tải mã vạch…'}
         </SellerButton>

@@ -31,13 +31,25 @@ export default function SellerLiveOrderDetail({ id }: { id: string }): ReactElem
           >
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <Badge>{sellerOrderLabels[order.status] || order.status}</Badge>
+                <Badge
+                  tone={
+                    order.status === 'CANCELLED' || order.status === 'REFUNDED'
+                      ? 'gray'
+                      : order.status === 'PAID' || order.status === 'PREPARING'
+                        ? 'amber'
+                        : order.status === 'DELIVERED' || order.status === 'CONFIRMED'
+                          ? 'green'
+                          : 'blue'
+                  }
+                >
+                  {sellerOrderLabels[order.status] || order.status}
+                </Badge>
                 <p className="mt-3 text-xs text-slate-500">{financeDate(order.createdAt)}</p>
               </div>
               <SellerOrderActions
                 id={order.id}
                 status={order.status}
-                hasShipment={!!order.shipment}
+                hasShipment={Boolean(order.shipment?.waybillCode)}
                 onChanged={resource.retry}
               />
             </div>
