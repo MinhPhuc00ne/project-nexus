@@ -95,6 +95,7 @@ export default function ChatConversationList({
         {conversations.map((c) => (
           <button
             key={c.id}
+            data-chat-conversation-id={c.id}
             onClick={() => onSelect(c)}
             className={`flex w-full gap-3 border-b border-slate-50 p-3 text-left hover:bg-blue-50 ${activeId === c.id ? 'bg-blue-50' : ''}`}
           >

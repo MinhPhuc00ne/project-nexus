@@ -546,6 +546,10 @@
   color: #94a3b8;
 }
 .support-message > p {
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
   margin: 0;
   border: 1px solid #e2e8f0;
   border-radius: 3px 14px 14px;
@@ -553,6 +557,7 @@
   color: #334155;
 }
 .support-message.is-agent > p {
+  margin-left: auto;
   background: #2563eb;
   color: white;
   border-color: #2563eb;

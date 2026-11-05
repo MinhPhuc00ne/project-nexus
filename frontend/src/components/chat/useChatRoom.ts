@@ -14,6 +14,7 @@ interface UseChatRoomOptions {
   userId: string;
   isOpen: boolean;
   onRevisionChange: () => void;
+  onRead?: (conversationId: string) => void;
 }
 
 export interface UseChatRoomResult {
@@ -37,6 +38,7 @@ export function useChatRoom({
   userId,
   isOpen,
   onRevisionChange,
+  onRead,
 }: UseChatRoomOptions): UseChatRoomResult {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -49,6 +51,8 @@ export function useChatRoom({
   const [typing, setTyping] = useState(false);
 
   const connection = useRef<ChatConnectionClient | null>(null);
+  const callbacks = useRef({ onRevisionChange, onRead });
+  callbacks.current = { onRevisionChange, onRead };
   const currentConversation = useRef(activeId);
   currentConversation.current = activeId;
 
@@ -66,11 +70,21 @@ export function useChatRoom({
     const client = createChatConnection();
     connection.current = client;
 
+    let reading = false;
     const read = (): void => {
+      if (cancelled || reading || document.visibilityState !== 'visible') return;
+      reading = true;
       void markChatAsRead(activeId)
-        .then(() => onRevisionChange())
+        .then(() => {
+          if (cancelled) return;
+          callbacks.current.onRead?.(activeId);
+          callbacks.current.onRevisionChange();
+        })
         .catch((err) => {
           if (!cancelled) setError(getChatErrorMessage(err));
+        })
+        .finally(() => {
+          reading = false;
         });
     };
 
@@ -79,6 +93,7 @@ export function useChatRoom({
       void getChatMessages(activeId)
         .then((result) => {
           if (!cancelled) setMessages((current) => mergeMessages(current, result.messages));
+          if (!cancelled) read();
         })
         .catch((err) => {
           if (!cancelled) setError(getChatErrorMessage(err));
@@ -110,6 +125,17 @@ export function useChatRoom({
 
     client.joinConversation(activeId);
     client.connect();
+    window.addEventListener('focus', read);
+    document.addEventListener('visibilitychange', read);
+    const handleInteraction = (event: Event): void => {
+      if (
+        (event.target as Element | null)
+          ?.closest('[data-chat-conversation-id]')
+          ?.getAttribute('data-chat-conversation-id') === activeId
+      )
+        read();
+    };
+    document.addEventListener('pointerdown', handleInteraction);
 
     void getChatMessages(activeId)
       .then((result) => {
@@ -127,6 +153,9 @@ export function useChatRoom({
 
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', read);
+      document.removeEventListener('visibilitychange', read);
+      document.removeEventListener('pointerdown', handleInteraction);
       client.setTyping(activeId, false);
       client.disconnect();
       connection.current = null;
