@@ -1,5 +1,5 @@
 import { useCallback, type ReactElement } from 'react';
-import { ReloadOutlined } from '@ant-design/icons';
+import { RefreshCw as ReloadOutlined } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerOrderDetail, isVerifiedGhnShipment } from '../../services/sellerOrders';
 import useProductResource from '../productDetail/useProductResource';

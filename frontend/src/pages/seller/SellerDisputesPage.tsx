@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactElement } from 'react';
-import { ReloadOutlined, FileTextOutlined } from '@ant-design/icons';
+import { RefreshCw as ReloadOutlined } from 'lucide-react';
+import { FileText as FileTextOutlined } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerDisputes } from '../../services/sellerDisputes';

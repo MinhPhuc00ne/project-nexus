@@ -1,15 +1,15 @@
 import { Link } from 'react-router-dom';
+import { ArrowRight as ArrowRightOutlined } from 'lucide-react';
 import {
-  ArrowRightOutlined,
-  ExportOutlined,
-  CodeSandboxOutlined,
-  CalendarOutlined,
-  ClockCircleOutlined,
-  SafetyCertificateOutlined,
-  ShopOutlined,
-  TruckOutlined,
-  WalletOutlined,
-} from '@ant-design/icons';
+  ExternalLink as ExportOutlined,
+  Box as CodeSandboxOutlined,
+  Calendar as CalendarOutlined,
+  Clock as ClockCircleOutlined,
+  ShieldCheck as SafetyCertificateOutlined,
+  Store as ShopOutlined,
+  Truck as TruckOutlined,
+  WalletCards as WalletOutlined,
+} from 'lucide-react';
 import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
 import { ModuleNotice, Panel, PolicyCards, SellerButton } from '../../components/seller/SellerUI';
 import {

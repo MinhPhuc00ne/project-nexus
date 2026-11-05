@@ -1,5 +1,5 @@
 import type { ReactElement, ReactNode } from 'react';
-import { ReloadOutlined } from '@ant-design/icons';
+import { RefreshCw as ReloadOutlined } from 'lucide-react';
 import { SellerButton } from './SellerUI';
 
 export const sellerInputClass =

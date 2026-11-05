@@ -1,12 +1,12 @@
 import { useState } from 'react';
+import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import {
-  ArrowLeftOutlined,
-  ShopOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-  TagOutlined,
-  ThunderboltOutlined,
-} from '@ant-design/icons';
+  Store as ShopOutlined,
+  Plus as PlusOutlined,
+  Trash2 as DeleteOutlined,
+  Tag as TagOutlined,
+  Zap as ThunderboltOutlined,
+} from 'lucide-react';
 import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/seller/SellerUI';
 import SellerProductImages from '../../components/seller/SellerProductImages';
 import useSellerProductForm from '../../components/seller/useSellerProductForm';

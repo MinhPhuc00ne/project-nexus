@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeftOutlined, ShoppingCartOutlined } from '@ant-design/icons';
+import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
+import { ShoppingCart as ShoppingCartOutlined } from 'lucide-react';
 import { Star, Tag, Heart, Flag, Zap, Check } from 'lucide-react';
 import { getProductByIdAsync } from '../../services/products.service';
 import type { ProductDetail } from '../../types/product.types';

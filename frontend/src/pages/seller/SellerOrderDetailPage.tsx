@@ -1,6 +1,6 @@
 import { type ReactElement } from 'react';
 import { useParams } from 'react-router-dom';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSellerSession } from '../../components/seller/SellerSession';
 import { PageHeading, SellerLink } from '../../components/seller/SellerUI';

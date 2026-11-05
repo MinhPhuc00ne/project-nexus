@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from 'react';
+import { Save as SaveOutlined } from 'lucide-react';
 import {
-  SaveOutlined,
-  EnvironmentOutlined,
-  UploadOutlined,
-  ShopOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+  MapPin as EnvironmentOutlined,
+  Upload as UploadOutlined,
+  Store as ShopOutlined,
+  Trash2 as DeleteOutlined,
+} from 'lucide-react';
 import type { SellerShopProfile } from '../../types/shop.types';
 import { VIETNAM_PROVINCES } from '../../constants/vietnamProvinces';
 import { updateSellerShopProfile, uploadShopAvatarFile } from '../../services/shops';

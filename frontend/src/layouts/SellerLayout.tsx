@@ -1,24 +1,24 @@
 import { cn } from '../lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeftRight as SwapOutlined } from 'lucide-react';
 import {
-  SwapOutlined,
-  CodeSandboxOutlined,
-  DownOutlined,
-  QuestionCircleOutlined,
-  DashboardOutlined,
-  LogoutOutlined,
-  MenuOutlined,
-  InboxOutlined,
-  SearchOutlined,
-  SettingOutlined,
-  SafetyCertificateOutlined,
-  StarOutlined,
-  ShopOutlined,
-  TruckOutlined,
-  WalletOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
+  Box as CodeSandboxOutlined,
+  ChevronDown as DownOutlined,
+  CircleHelp as QuestionCircleOutlined,
+  LayoutDashboard as DashboardOutlined,
+  LogOut as LogoutOutlined,
+  Menu as MenuOutlined,
+  Inbox as InboxOutlined,
+  Search as SearchOutlined,
+  Settings as SettingOutlined,
+  ShieldCheck as SafetyCertificateOutlined,
+  Star as StarOutlined,
+  Store as ShopOutlined,
+  Truck as TruckOutlined,
+  WalletCards as WalletOutlined,
+  User as UserOutlined,
+} from 'lucide-react';
 import { useSellerSession } from '../components/seller/SellerSession';
 import { useAuth } from '../contexts/AuthContext';
 import { clearAuthSession } from '../services/auth';

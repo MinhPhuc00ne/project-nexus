@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactElement } from 'react';
-import { BankOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { Landmark as BankOutlined } from 'lucide-react';
+import { ShieldCheck as SafetyCertificateOutlined } from 'lucide-react';
 import Popup from '../Popup';
 import { useToast } from '../ToastNotification';
 import { createSellerWithdrawal } from '../../services/sellerFinance';

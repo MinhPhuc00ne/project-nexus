@@ -1,5 +1,10 @@
 import { useState, type FormEvent, type ReactElement } from 'react';
-import { BellOutlined, MailOutlined, NotificationOutlined, SaveOutlined } from '@ant-design/icons';
+import { Bell as BellOutlined } from 'lucide-react';
+import {
+  Mail as MailOutlined,
+  BellRing as NotificationOutlined,
+  Save as SaveOutlined,
+} from 'lucide-react';
 import {
   getNotificationPreferences,
   saveNotificationPreferences,

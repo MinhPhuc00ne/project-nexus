@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { UploadOutlined, UserOutlined } from '@ant-design/icons';
+import { Upload as UploadOutlined } from 'lucide-react';
+import { User as UserOutlined } from 'lucide-react';
 import { validateAvatarFile } from '../../services/profile';
 
 interface AvatarPickerProps {

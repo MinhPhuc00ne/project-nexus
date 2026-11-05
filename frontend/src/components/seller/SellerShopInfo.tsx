@@ -1,4 +1,4 @@
-import { ReloadOutlined, ShopOutlined } from '@ant-design/icons';
+import { RefreshCw as ReloadOutlined, Store as ShopOutlined } from 'lucide-react';
 import { useSellerWorkspace } from './SellerWorkspace';
 import { Panel, SellerButton } from './SellerUI';
 

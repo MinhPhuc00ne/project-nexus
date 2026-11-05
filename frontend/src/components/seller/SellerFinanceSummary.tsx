@@ -1,5 +1,10 @@
 import type { ReactElement } from 'react';
-import { BankOutlined, LineChartOutlined, LockOutlined, WalletOutlined } from '@ant-design/icons';
+import {
+  Landmark as BankOutlined,
+  LineChart as LineChartOutlined,
+  Lock as LockOutlined,
+  WalletCards as WalletOutlined,
+} from 'lucide-react';
 import type { SellerRevenue } from '../../types/seller-finance.types';
 import { EmptyState, Panel, StatCard } from './SellerUI';
 import { financeMoney } from './financeFormat';

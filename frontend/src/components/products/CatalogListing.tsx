@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ReloadOutlined, ShopOutlined } from '@ant-design/icons';
+import { RefreshCw as ReloadOutlined } from 'lucide-react';
+import { Store as ShopOutlined } from 'lucide-react';
 import { getProductsPage, type CatalogQuery } from '../../services/products.service';
 import useProductResource from '../productDetail/useProductResource';
 import type { ProductDetail } from '../../types/product.types';

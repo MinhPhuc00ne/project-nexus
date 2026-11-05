@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { ChevronLeft as LeftOutlined, ChevronRight as RightOutlined } from 'lucide-react';
 import { SellerButton } from './SellerUI';
 
 export default function SellerPagination({

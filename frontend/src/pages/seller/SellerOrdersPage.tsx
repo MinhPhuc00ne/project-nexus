@@ -1,6 +1,7 @@
 import { useCallback, useState, type FormEvent, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
-import { ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { RefreshCw as ReloadOutlined } from 'lucide-react';
+import { Search as SearchOutlined } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerOrders } from '../../services/sellerOrders';
 import type { SellerOrderStatus } from '../../types/order.types';

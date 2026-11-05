@@ -1,6 +1,6 @@
 import React, { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { CloseOutlined } from '@ant-design/icons';
+import { X as CloseOutlined } from 'lucide-react';
 
 export type PopupSize = 'sm' | 'md' | 'lg' | 'xl';
 

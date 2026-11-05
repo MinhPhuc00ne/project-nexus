@@ -1,21 +1,21 @@
 import { cn } from '../../lib/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Download as DownloadOutlined } from 'lucide-react';
 import {
-  DownloadOutlined,
-  ArrowRightOutlined,
-  ExportOutlined,
-  CodeSandboxOutlined,
-  DollarOutlined,
-  LockOutlined,
-  PlusOutlined,
-  SafetyCertificateOutlined,
-  StarOutlined,
-  ShopOutlined,
-  RiseOutlined,
-  TruckOutlined,
-  WalletOutlined,
-} from '@ant-design/icons';
+  ArrowRight as ArrowRightOutlined,
+  ExternalLink as ExportOutlined,
+  Box as CodeSandboxOutlined,
+  CircleDollarSign as DollarOutlined,
+  Lock as LockOutlined,
+  Plus as PlusOutlined,
+  ShieldCheck as SafetyCertificateOutlined,
+  Star as StarOutlined,
+  Store as ShopOutlined,
+  TrendingUp as RiseOutlined,
+  Truck as TruckOutlined,
+  WalletCards as WalletOutlined,
+} from 'lucide-react';
 import { useSellerSession } from './SellerSession';
 import { useSellerWorkspace } from './SellerWorkspace';
 import { Badge, EmptyState, Panel, SellerLink, StatCard, exportCsv } from './SellerUI';

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { LayoutGrid as AppstoreOutlined } from 'lucide-react';
 import {
-  AppstoreOutlined,
-  ArrowRightOutlined,
-  SearchOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons';
+  ArrowRight as ArrowRightOutlined,
+  Search as SearchOutlined,
+  RefreshCw as ReloadOutlined,
+} from 'lucide-react';
 import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
 import { FALLBACK_CATEGORY_TREE, getCategoryImageUrl } from '../../mocks/categories.mock';
 import { ROUTES } from '../../routes/paths';

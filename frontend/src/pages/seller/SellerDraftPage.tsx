@@ -1,13 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import {
-  ArrowLeftOutlined,
-  CodeSandboxOutlined,
-  CheckOutlined,
-  FileTextOutlined,
-  PictureOutlined,
-  SafetyCertificateOutlined,
-} from '@ant-design/icons';
+  Box as CodeSandboxOutlined,
+  Check as CheckOutlined,
+  FileText as FileTextOutlined,
+  Image as PictureOutlined,
+  ShieldCheck as SafetyCertificateOutlined,
+} from 'lucide-react';
 import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
 import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/seller/SellerUI';
 import { type SellerDraft } from '../../components/seller/sellerData';

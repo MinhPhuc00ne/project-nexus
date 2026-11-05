@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
-import { PrinterOutlined } from '@ant-design/icons';
+import { Printer as PrinterOutlined } from 'lucide-react';
 import Popup from '../Popup';
 import useProductResource from '../productDetail/useProductResource';
 import { getSellerWaybill } from '../../services/sellerOrders';
