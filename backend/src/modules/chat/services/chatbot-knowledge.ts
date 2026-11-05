@@ -42,9 +42,25 @@ export const chatbotKnowledge = [
       'NEXUS hỗ trợ luồng thanh toán PayOS và ví theo lựa chọn tại checkout. Nếu đã trả tiền nhưng đơn chưa cập nhật, kiểm tra lại đơn và liên hệ nhân viên với mã giao dịch. Không gửi mật khẩu, OTP hoặc thông tin thẻ trong hội thoại; không thanh toán lại khi giao dịch cũ chưa được đối soát.',
   },
   {
+    id: 'CART',
+    title: 'Giỏ hàng',
+    keywords: ['gio hang', 'gio cua toi', 'cart'],
+    answer:
+      'Đăng nhập để xem giỏ hàng, số lượng, tiền hàng và cảnh báo giá/tồn kho. Chatbot chỉ tra cứu; thêm, xóa, đổi số lượng và đặt hàng được thực hiện trong luồng giỏ hàng của NEXUS.',
+  },
+  {
     id: 'ORDER',
     title: 'Tra cứu đơn hàng',
-    keywords: ['don hang', 'ma don', 'trang thai', 'don cua toi', 'hang den dau', 'order'],
+    keywords: [
+      'don hang',
+      'don mua',
+      'don ban',
+      'ma don',
+      'trang thai',
+      'don cua toi',
+      'hang den dau',
+      'order',
+    ],
     answer:
       'Vui lòng chọn mã đơn hàng cần tra cứu. Chatbot chỉ xem được đơn mà tài khoản đăng nhập là người mua hoặc người bán.',
   },

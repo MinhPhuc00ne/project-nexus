@@ -38,7 +38,8 @@ export class ChatbotController {
   @Post('messages')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Hỏi chatbot hoặc tra cứu đơn của tài khoản đăng nhập; tối đa 20 tin/phút',
+    summary:
+      'Hội thoại, lịch sử đặt hàng cho mọi role, đơn bán và giỏ hàng cá nhân; tối đa 20 tin/phút',
   })
   reply(@CurrentUser('id') userId: string, @Body() dto: ChatbotMessageDto): Promise<ChatbotReply> {
     return this.chatbot.reply(userId, dto);

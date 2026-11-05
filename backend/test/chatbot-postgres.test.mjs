@@ -16,6 +16,10 @@ tsNode.register({
 });
 const load = createRequire(import.meta.url);
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
+const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
+const { CommerceChatQueryService } = load(
+  '../src/modules/commerce/services/commerce-chat-query.service.ts',
+);
 const { ChatbotRateLimitService } = load(
   '../src/modules/chat/services/chatbot-rate-limit.service.ts',
 );
@@ -115,7 +119,15 @@ test(
               throw Error('Order details must never reach AI');
             },
           };
-          const bot = new ChatbotService(tx, ai, { check: async () => {} });
+          const facade = new Proxy(tx, {
+            get: (target, property) =>
+              property === '$transaction' ? (run) => run(tx) : target[property],
+          });
+          const bot = new ChatbotService(
+            new ChatbotCommerceService(new CommerceChatQueryService(facade)),
+            ai,
+            { check: async () => {} },
+          );
           for (const id of [buyer.id, seller.id]) {
             const reply = await bot.reply(id, { message: 'order', orderId: order.id });
             assert.equal(reply.order.id, order.id);
@@ -125,10 +137,42 @@ test(
             bot.reply(randomUUID(), { message: 'order', orderId: order.id }),
             (e) => e.getStatus() === 404,
           );
-          const facade = new Proxy(tx, {
-            get: (target, property) =>
-              property === '$transaction' ? (run) => run(tx) : target[property],
-          });
+          for (const role of ['BUYER', 'SELLER', 'SUPPORT_STAFF', 'ADMIN']) {
+            const owner = await tx.user.create({
+              data: {
+                email: `${marker}-${role}@example.invalid`,
+                fullName: marker,
+                passwordHash: 'test',
+                role,
+              },
+            });
+            const owned = await tx.order.create({
+              data: {
+                buyerId: owner.id,
+                sellerId: seller.id,
+                status: 'PAID',
+                subtotal: 100,
+                totalAmount: 100,
+                shippingAddressSnapshot: { privateAddress: 'must-not-return' },
+              },
+            });
+            const history = await bot.reply(owner.id, { message: 'Lịch sử đặt hàng' });
+            assert.equal(history.orders.total, 1);
+            assert.deepEqual(
+              history.orders.items.map((item) => item.id),
+              [owned.id],
+            );
+            assert.equal(JSON.stringify(history).includes('must-not-return'), false);
+            const cart = await bot.reply(owner.id, { message: 'Giỏ hàng của tôi' });
+            assert.equal(cart.cart.totalCount, 0);
+            assert.equal(await tx.cart.count({ where: { userId: owner.id } }), 0);
+          }
+          const sales = await bot.reply(seller.id, { message: 'Đơn bán của tôi', limit: 20 });
+          assert.equal(sales.orders.total, 5);
+          await assert.rejects(
+            bot.reply(buyer.id, { message: 'Đơn bán của tôi' }),
+            (error) => error.getStatus() === 403,
+          );
           await tx.chatAutoReply.create({
             data: {
               shopId: seller.id,
