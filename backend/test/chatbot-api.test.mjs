@@ -18,6 +18,10 @@ const { RedisService } = load('../src/core/redis/redis.service.ts');
 const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
 const { ChatbotController } = load('../src/modules/chat/controllers/chatbot.controller.ts');
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
+const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
+const { CommerceChatQueryService } = load(
+  '../src/modules/commerce/services/commerce-chat-query.service.ts',
+);
 const { ChatbotAiService } = load('../src/modules/chat/services/chatbot-ai.service.ts');
 const { ChatbotRateLimitService } = load(
   '../src/modules/chat/services/chatbot-rate-limit.service.ts',
@@ -32,6 +36,31 @@ test(
     let redisDown = false;
     let aiEnabled = false;
     const geminiCalls = [];
+    const historyRoles = {
+      owner: 'BUYER',
+      seller: 'SELLER',
+      staff: 'SUPPORT_STAFF',
+      admin: 'ADMIN',
+    };
+    const historyQueries = [];
+    const historyStore = {
+      order: {
+        count: async ({ where }) => {
+          historyQueries.push(where);
+          return 1;
+        },
+        findMany: async ({ where }) => [
+          {
+            id: `${where.buyerId ?? where.sellerId}-order`,
+            status: 'PAID',
+            totalAmount: 15000,
+            createdAt: new Date(),
+            shipment: null,
+            afterSales: null,
+          },
+        ],
+      },
+    };
     const originalFetch = globalThis.fetch;
     const fetchMock = mock.method(globalThis, 'fetch', async (url, options) => {
       if (!String(url).startsWith('https://generativelanguage.googleapis.com/'))
@@ -63,6 +92,8 @@ test(
       controllers: [ChatbotController],
       providers: [
         ChatbotService,
+        ChatbotCommerceService,
+        CommerceChatQueryService,
         ChatbotAiService,
         ChatbotRateLimitService,
         {
@@ -93,10 +124,12 @@ test(
         {
           provide: PrismaService,
           useValue: {
+            $transaction: async (run) => run(historyStore),
+            cart: { findUnique: async () => null },
             user: {
               findUnique: async ({ where }) => ({
                 id: where.id,
-                role: 'BUYER',
+                role: historyRoles[where.id] ?? 'BUYER',
                 email: 'test@example.test',
                 isSellerActive: false,
                 isShopSuspended: false,
@@ -153,6 +186,12 @@ test(
         { message: 'hi', history: [{ role: 'assistant', content: 'a'.repeat(2001) }] },
         { message: 'hi', history: [{ role: 'user', content: 'hi', orderId }] },
         { message: 'hi', history: [null] },
+        { message: 'hi', intent: 'ADMIN_ORDERS' },
+        { message: 'hi', intent: 'PURCHASES', page: 0 },
+        { message: 'hi', intent: 'PURCHASES', page: 100001 },
+        { message: 'hi', intent: 'PURCHASES', limit: 21 },
+        { message: 'hi', intent: 'PURCHASES', limit: 1.5 },
+        { message: 'hi', intent: 'PURCHASES', status: 'INVALID' },
       ]) {
         assert.equal((await post(body)).status, 400);
       }
@@ -187,6 +226,23 @@ test(
       const owner = await post({ message: 'order', orderId });
       assert.equal(owner.status, 200);
       assert.equal((await owner.json()).order.status, 'PAID');
+      for (const id of Object.keys(historyRoles)) {
+        const response = await post({ message: 'Xem lịch sử đặt hàng', limit: 1 }, id);
+        assert.equal(response.status, 200);
+        const body = await response.json();
+        assert.equal(body.orders.scope, 'PURCHASES');
+        assert.equal(body.orders.items[0].id, `${id}-order`);
+        assert.deepEqual(historyQueries.at(-1), { buyerId: id });
+      }
+      assert.equal((await post({ message: 'Đơn bán của tôi' })).status, 403);
+      const sales = await post({ message: 'Đơn bán của tôi' }, 'seller');
+      assert.equal(sales.status, 200);
+      assert.equal((await sales.json()).orders.scope, 'SALES');
+      assert.deepEqual(historyQueries.at(-1), { sellerId: 'seller' });
+      const cart = await post({ message: 'Giỏ hàng của tôi' }, 'staff');
+      assert.equal(cart.status, 200);
+      assert.equal((await cart.json()).cart.totalCount, 0);
+      assert.equal((await post({ message: 'Hi', orderId, intent: 'CART' })).status, 400);
       assert.equal((await post({ message: 'order', orderId }, 'outsider')).status, 404);
       const missing = '4d7df146-88d6-41b3-af22-f837ead9a2d1';
       assert.equal((await post({ message: 'order', orderId: missing }, 'outsider')).status, 404);
@@ -218,6 +274,8 @@ test(
         { message: 'hi', orderId },
         { message: 'hi', userId: 'owner' },
         { message: ' ' },
+        { message: 'Lịch sử đặt hàng', intent: 'PURCHASES' },
+        { message: 'Giỏ hàng', page: 1 },
       ]) {
         assert.equal((await guest(body)).status, 400);
       }

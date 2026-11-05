@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../../core/prisma/prisma.service';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { CommerceChatQueryService } from '../../commerce/services/commerce-chat-query.service';
+import { ChatbotCommerceService } from './chatbot-commerce.service';
+import { commerceIntent, messageOrderId } from './chatbot-commerce-intent';
 import {
   ChatbotHistoryMessageDto,
   ChatbotMessageDto,
@@ -16,10 +18,12 @@ import { ChatbotRateLimitService } from './chatbot-rate-limit.service';
 
 export interface ChatbotReply {
   reply: string;
-  engine: 'FAQ' | 'GEMINI' | 'ORDER';
+  engine: 'FAQ' | 'GEMINI' | 'ORDER' | 'CART';
   topic: ChatbotTopic | 'WELCOME' | 'UNKNOWN';
   sources: { id: string; title: string }[];
   actions: { type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN'; endpoint?: string }[];
+  orders?: Awaited<ReturnType<CommerceChatQueryService['orders']>>;
+  cart?: Awaited<ReturnType<CommerceChatQueryService['cart']>>;
   order?: {
     id: string;
     status: string;
@@ -29,21 +33,10 @@ export interface ChatbotReply {
   };
 }
 
-const orderLabels: Record<string, string> = {
-  PENDING_PAYMENT: 'Chờ thanh toán',
-  PAID: 'Đã thanh toán',
-  PREPARING: 'Đang chuẩn bị hàng',
-  SHIPPING: 'Đang giao hàng',
-  DELIVERED: 'Đã giao hàng',
-  CONFIRMED: 'Đã xác nhận nhận hàng',
-  CANCELLED: 'Đã hủy',
-  REFUNDED: 'Đã hoàn tiền',
-};
-
 @Injectable()
 export class ChatbotService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly commerce: ChatbotCommerceService,
     private readonly ai: ChatbotAiService,
     private readonly rateLimit: ChatbotRateLimitService,
   ) {}
@@ -57,12 +50,27 @@ export class ChatbotService {
 
   async reply(userId: string, dto: ChatbotMessageDto): Promise<ChatbotReply> {
     await this.rateLimit.check(userId);
-    if (dto.orderId) return this.orderReply(userId, dto.orderId);
+    const orderId = dto.orderId ?? messageOrderId(dto.message);
+    if (orderId && (dto.intent || dto.status || dto.page || dto.limit))
+      throw new BadRequestException('Tra cứu một đơn không kết hợp truy vấn danh sách hoặc giỏ.');
+    if (orderId) return this.commerce.order(userId, orderId);
+    const result = await this.commerce.answer(userId, dto);
+    if (result) return result;
+    if (dto.status || dto.page || dto.limit)
+      throw new BadRequestException('Hãy chọn truy vấn đơn mua, đơn bán hoặc giỏ hàng.');
     return this.answer(dto.message, true, dto.history ?? []);
   }
 
   async replyGuest(identity: string, dto: GuestChatbotMessageDto): Promise<ChatbotReply> {
     await this.rateLimit.check(`guest:${identity}`);
+    if (commerceIntent(dto.message) || messageOrderId(dto.message))
+      return {
+        reply: 'Vui lòng đăng nhập để tra cứu đơn hàng hoặc giỏ hàng của bạn.',
+        engine: 'FAQ',
+        topic: 'ORDER',
+        sources: [],
+        actions: [{ type: 'LOGIN' }],
+      };
     const response = await this.answer(dto.message, false, dto.history ?? []);
     if (response.topic === 'WELCOME' && response.engine === 'FAQ') {
       response.reply =
@@ -137,33 +145,6 @@ export class ChatbotService {
         entry.id === 'ORDER'
           ? [{ type: 'SELECT_ORDER' }]
           : [{ type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' }],
-    };
-  }
-
-  private async orderReply(userId: string, orderId: string): Promise<ChatbotReply> {
-    const order = await this.prisma.order.findFirst({
-      where: { id: orderId, OR: [{ buyerId: userId }, { sellerId: userId }] },
-      select: {
-        id: true,
-        status: true,
-        shipment: { select: { status: true, waybillCode: true } },
-        afterSales: { select: { status: true } },
-      },
-    });
-    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng của bạn.');
-    return {
-      reply: `Đơn ${order.id}: ${orderLabels[order.status] ?? order.status}.${order.afterSales ? ` Yêu cầu hậu mãi: ${order.afterSales.status}.` : ''} Đây là trạng thái đã lưu trên NEXUS; chatbot không tự thay đổi trạng thái hoặc xác nhận hoàn tiền.`,
-      engine: 'ORDER',
-      topic: 'ORDER',
-      sources: [{ id: 'ORDER_DATABASE', title: 'Dữ liệu đơn hàng NEXUS' }],
-      actions: [{ type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' }],
-      order: {
-        id: order.id,
-        status: order.status,
-        shipmentStatus: order.shipment?.status ?? null,
-        waybillCode: order.shipment?.waybillCode ?? null,
-        afterSalesStatus: order.afterSales?.status ?? null,
-      },
     };
   }
 }

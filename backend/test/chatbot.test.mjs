@@ -10,6 +10,10 @@ tsNode.register({
 });
 const load = createRequire(import.meta.url);
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
+const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
+const { CommerceChatQueryService } = load(
+  '../src/modules/commerce/services/commerce-chat-query.service.ts',
+);
 const { ChatbotAiService } = load('../src/modules/chat/services/chatbot-ai.service.ts');
 const { ChatbotRateLimitService } = load(
   '../src/modules/chat/services/chatbot-rate-limit.service.ts',
@@ -22,7 +26,8 @@ function fixture(order = null) {
   const prisma = { order: { findFirst: mock.fn(async () => order) } };
   const ai = { isConfigured: () => false, answer: mock.fn(async () => null) };
   const limit = { check: mock.fn(async () => {}) };
-  return { prisma, ai, limit, bot: new ChatbotService(prisma, ai, limit) };
+  const commerce = new ChatbotCommerceService(new CommerceChatQueryService(prisma));
+  return { prisma, ai, limit, bot: new ChatbotService(commerce, ai, limit) };
 }
 
 test('guest fallback never reads orders and offers login for protected actions', async () => {
