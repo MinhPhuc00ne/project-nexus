@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import api, { API_BASE_URL } from './api';
+import api, { API_BASE_URL, apiRequest } from './api';
 import { getStoredToken } from './auth';
 import type { AuctionStatus, BidStatus } from '@nexus/types';
 import {
@@ -86,6 +86,46 @@ export interface CreateAuctionInput {
 
 export interface PlaceBidInput {
   bidAmount: number;
+}
+
+export interface AdminCreateAuctionInput {
+  title: string;
+  description?: string;
+  startTime: string;
+  endTime: string;
+  minBuyerReputation: number;
+  minSellerReputation: number;
+}
+
+export interface AdminAuctionEntity extends AdminCreateAuctionInput {
+  id: string;
+  status: AuctionStatus;
+  createdByAdmin?: AuctionSeller | null;
+  seller?: AuctionSeller | null;
+  totalBidsCount: number;
+}
+
+export interface AdminAuctionListResponse {
+  items: AdminAuctionEntity[];
+  pagination: AuctionListResponse['pagination'];
+}
+
+export function getAdminAuctionsApi(
+  query: AuctionQueryInput = {},
+): Promise<AdminAuctionListResponse> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== '') params.set(key, String(value));
+  }
+  return apiRequest<AdminAuctionListResponse>(`/auctions?${params}`, { requireAuth: true });
+}
+
+export function adminCreateAuctionApi(data: AdminCreateAuctionInput): Promise<AdminAuctionEntity> {
+  return apiRequest<AdminAuctionEntity>('/auctions/admin', {
+    method: 'POST',
+    body: data,
+    requireAuth: true,
+  });
 }
 
 export interface PlaceBidResponse {

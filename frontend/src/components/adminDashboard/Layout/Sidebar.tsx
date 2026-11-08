@@ -32,7 +32,7 @@ export const adminNavigation: {
       { id: 'overview', label: 'Tổng quan', icon: LayoutDashboard },
       { id: 'products', label: 'Quản lý sản phẩm', icon: Package },
       { id: 'orders', label: 'Quản lý đơn hàng', icon: ShoppingBag },
-      { id: 'auctions', label: 'Quản lý đấu giá 3D', icon: Gavel },
+      { id: 'auctions', label: 'Quản lí đấu giá', icon: Gavel },
       // Mở trang quản lý danh mục tại /admin/categories.
       { id: 'categories', label: 'Quản lý danh mục', icon: Layers },
       { id: 'studio', label: 'Studio phát trực tiếp', icon: Radio },
