@@ -3,6 +3,7 @@ import { PrismaModule } from '../../core/prisma/prisma.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
 import { AdminModule } from '../admin/admin.module';
 import { CatalogModule } from '../catalog/catalog.module';
+import { UsersModule } from '../users/users.module';
 import { CartService } from './services/cart.service';
 import { PayosService } from './services/payos.service';
 import { OrderService } from './services/order.service';
@@ -27,7 +28,7 @@ import { OrderReturnService } from './services/order-return.service';
 import { RefundService } from './services/refund.service';
 
 @Module({
-  imports: [PrismaModule, FulfillmentModule, CatalogModule, AdminModule],
+  imports: [PrismaModule, FulfillmentModule, CatalogModule, AdminModule, UsersModule],
   controllers: [
     AfterSalesController,
     FeedbackController,

@@ -650,12 +650,22 @@ export class OrderService {
       // Keep funds in escrow until verified delivery and buyer confirmation.
       const settlement = await this.escrow.hold(tx, updatedOrder);
 
-      // 7. Gửi thông báo cho người mua
+      // 7. Gửi thông báo cho người mua và người bán
       await tx.notification.create({
         data: {
           userId: buyerId,
           title: 'Thanh toán đơn hàng thành công ✅',
           content: `Đơn hàng #${order.id.slice(0, 8).toUpperCase()} trị giá ${orderAmount.toLocaleString('vi-VN')} VND đã được thanh toán thành công bằng ví NEXUS Pay. Số dư còn lại: ${Number(updatedBuyerWallet.balance).toLocaleString('vi-VN')} VND.`,
+          type: NotificationType.ORDER,
+          channel: NotificationChannel.IN_APP,
+        },
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: order.sellerId,
+          title: 'Đơn hàng mới đã được thanh toán 🛒',
+          content: `Đơn hàng #${order.id.slice(0, 8).toUpperCase()} đã được thanh toán thành công và chuyển sang trạng thái chuẩn bị. Vui lòng đóng gói và bàn giao cho đơn vị vận chuyển GHN.`,
           type: NotificationType.ORDER,
           channel: NotificationChannel.IN_APP,
         },
@@ -860,6 +870,28 @@ export class OrderService {
 
         // Never disburse funds merely because the payment succeeded.
         await this.escrow.hold(tx, updatedOrder);
+
+        if (tx.notification?.create) {
+          await tx.notification.create({
+            data: {
+              userId: updatedOrder.buyerId,
+              title: 'Thanh toán PayOS thành công ✅',
+              content: `Đơn hàng #${updatedOrder.id.slice(0, 8).toUpperCase()} trị giá ${Number(payment.amount).toLocaleString('vi-VN')} VND đã được thanh toán thành công qua PayOS (VietQR). Tiền được giữ ký quỹ an toàn tại NEXUS Escrow.`,
+              type: NotificationType.PAYMENT,
+              channel: NotificationChannel.IN_APP,
+            },
+          });
+
+          await tx.notification.create({
+            data: {
+              userId: updatedOrder.sellerId,
+              title: 'Đơn hàng mới đã được thanh toán qua PayOS 🛒',
+              content: `Đơn hàng #${updatedOrder.id.slice(0, 8).toUpperCase()} trị giá ${Number(payment.amount).toLocaleString('vi-VN')} VND đã được thanh toán qua VietQR. Vui lòng chuẩn bị và bàn giao cho đơn vị vận chuyển GHN.`,
+              type: NotificationType.ORDER,
+              channel: NotificationChannel.IN_APP,
+            },
+          });
+        }
       });
 
       this.logger.log(`Đơn ${payment.orderId} đã thanh toán PayOS; tiền được giữ ký quỹ.`);

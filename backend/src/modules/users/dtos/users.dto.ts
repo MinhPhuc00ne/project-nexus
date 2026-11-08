@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsOptional, IsEmail, IsEnum, IsNumber } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEmail,
+  IsEnum,
+  IsNumber,
+  Matches,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SellerRequestStatus } from '@prisma/client';
@@ -34,9 +42,15 @@ export class UpdateBuyerProfileDto {
   @IsOptional()
   fullName?: string;
 
-  @ApiPropertyOptional({ example: '0901234567', description: 'Updated phone number' })
+  @ApiPropertyOptional({
+    example: '0901234567',
+    description: 'Updated 10-digit Vietnamese phone number',
+  })
   @IsString()
   @IsOptional()
+  @Matches(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/, {
+    message: 'Số điện thoại không hợp lệ (yêu cầu định dạng 10 chữ số của Việt Nam).',
+  })
   phoneNumber?: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/avatar.png', description: 'Avatar URL' })

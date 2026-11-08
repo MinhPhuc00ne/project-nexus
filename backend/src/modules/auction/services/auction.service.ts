@@ -10,6 +10,8 @@ import {
   AuctionItemStatus,
   AuctionStatus,
   BidStatus,
+  NotificationChannel,
+  NotificationType,
   Prisma,
   ReputationTrustLevel,
   WalletTransactionStatus,
@@ -611,6 +613,16 @@ export class AuctionService {
         });
       }
 
+      await this.prisma.notification.create({
+        data: {
+          userId: item.sellerId,
+          title: 'Sản phẩm ký gửi đấu giá đã được duyệt!',
+          content: `Món hàng "${item.title}" của bạn đã được Admin phê duyệt thẩm định và đưa vào phiên đấu giá "${item.auction.title}".`,
+          type: NotificationType.AUCTION,
+          channel: NotificationChannel.IN_APP,
+        },
+      });
+
       return {
         success: true,
         message: 'Đã phê duyệt món hàng vào phiên đấu giá thành công.',
@@ -628,6 +640,16 @@ export class AuctionService {
           rejectionReason: dto.rejectionReason.trim(),
           reviewedByAdminId: adminId,
           reviewedAt: new Date(),
+        },
+      });
+
+      await this.prisma.notification.create({
+        data: {
+          userId: item.sellerId,
+          title: 'Sản phẩm ký gửi đấu giá bị từ chối ⚠️',
+          content: `Món hàng "${item.title}" của bạn đã bị từ chối đưa vào phiên đấu giá "${item.auction.title}". Lý do: ${dto.rejectionReason.trim()}.`,
+          type: NotificationType.AUCTION,
+          channel: NotificationChannel.IN_APP,
         },
       });
 
@@ -878,6 +900,16 @@ export class AuctionService {
               description: `Hoàn cọc đấu giá #${auction.id.slice(0, 8)} do có người trả giá cao hơn`,
             },
           });
+
+          await tx.notification.create({
+            data: {
+              userId: previousBidderId,
+              title: 'Bạn đã bị vượt giá đấu!',
+              content: `Có người vừa trả mức giá cao hơn (${bidAmount.toLocaleString('vi-VN')} VND) cho phiên "${auction.title}". Số tiền đặt cọc (${currentHighest.toLocaleString('vi-VN')} VND) đã được hoàn lại vào ví của bạn.`,
+              type: NotificationType.AUCTION,
+              channel: NotificationChannel.IN_APP,
+            },
+          });
         }
 
         await tx.bid.updateMany({
@@ -1015,6 +1047,28 @@ export class AuctionService {
           where: { id: auction.id },
           data: { status: AuctionStatus.ENDED },
         });
+
+        await tx.notification.create({
+          data: {
+            userId: winningBid.bidderId,
+            title: 'Chúc mừng! Bạn đã thắng phiên đấu giá',
+            content: `Bạn đã chiến thắng phiên đấu giá "${auction.title}" với mức giá ${Number(winningBid.bidAmount).toLocaleString('vi-VN')} VND. Vui lòng hoàn tất nhận hàng và thanh toán trong vòng 24 giờ!`,
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+          },
+        });
+
+        if (auction.sellerId) {
+          await tx.notification.create({
+            data: {
+              userId: auction.sellerId,
+              title: 'Phiên đấu giá của bạn đã kết thúc thành công!',
+              content: `Phiên đấu giá "${auction.title}" đã kết thúc với người thắng trả mức giá ${Number(winningBid.bidAmount).toLocaleString('vi-VN')} VND.`,
+              type: NotificationType.AUCTION,
+              channel: NotificationChannel.IN_APP,
+            },
+          });
+        }
       });
 
       this.auctionGateway.broadcastAuctionEnded({

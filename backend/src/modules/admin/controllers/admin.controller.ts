@@ -35,6 +35,7 @@ import { QueryAdminShopsDto } from '../dtos/query-admin-shops.dto';
 import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
 import { WarnShopDto } from '../dtos/warn-shop.dto';
 import { CreateShopViolationDto } from '../dtos/create-shop-violation.dto';
+import { ResolveShopAppealDto } from '../dtos/resolve-shop-appeal.dto';
 import { ReviewWithdrawalDto } from '../dtos/review-withdrawal.dto';
 import { UpdateSystemSettingsDto } from '../dtos/update-system-settings.dto';
 import {
@@ -385,6 +386,26 @@ export class AdminController {
     @Body() dto: WarnShopDto,
   ) {
     return this.adminShopsService.warnShop(id, admin.id, dto);
+  }
+
+  @Post('shops/:id/resolve-appeal')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Approve shop appeal, restore reputation standing, and reactivate products',
+    description:
+      'Accepts an appeal from a suspended or penalized store, restores normalized reputation score, reactivates listing catalog, and dispatches in-app confirmation notification.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Store appeal approved and access restored successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Shop not found' })
+  async resolveShopAppeal(
+    @Param('id') id: string,
+    @CurrentUser() admin: AuthenticatedUserPayload,
+    @Body() dto: ResolveShopAppealDto,
+  ) {
+    return this.adminShopsService.resolveShopAppeal(id, admin.id, dto);
   }
 
   @Post('shops/:id/violations')
