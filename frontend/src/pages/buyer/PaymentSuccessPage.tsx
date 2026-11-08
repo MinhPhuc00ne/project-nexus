@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type JSX } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { checkPaymentStatusApi } from '../../services/orders';

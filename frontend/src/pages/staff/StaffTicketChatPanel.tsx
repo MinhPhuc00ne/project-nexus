@@ -21,15 +21,29 @@ import type { ChatConversation, SupportConversationStatus } from '../../types/ch
 export type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
 export type { SupportTicket, TicketStatus };
 
+const timeFormatter = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' });
+const dateFormatter = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' });
+
+function formatConversationTime(value?: string | null, includeTimeForOlderDates = false): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const isToday = date.toDateString() === new Date().toDateString();
+  if (isToday) return timeFormatter.format(date);
+  return includeTimeForOlderDates
+    ? `${dateFormatter.format(date)} · ${timeFormatter.format(date)}`
+    : dateFormatter.format(date);
+}
+
 interface StaffTicketChatPanelProps {
   searchText: string;
-  onSearchChange: (text: string) => void;
+  onSearchChange?: (text: string) => void;
   notify: (message: string) => void;
 }
 
 export default function StaffTicketChatPanel({
   searchText,
-  onSearchChange,
+  onSearchChange = () => {},
   notify,
 }: StaffTicketChatPanelProps): JSX.Element {
   const { storedUser } = useAuth();
@@ -120,12 +134,7 @@ export default function StaffTicketChatPanel({
           : c.status === 'RESOLVED' || c.status === 'CLOSED'
             ? 'resolved'
             : 'chatting',
-      time: c.lastMessageAt
-        ? new Date(c.lastMessageAt).toLocaleTimeString('vi-VN', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : '',
+      time: formatConversationTime(c.lastMessageAt),
       preview: c.lastMessage ?? '',
       messages:
         c.id === activeTicketId && !room.loading
@@ -137,10 +146,7 @@ export default function StaffTicketChatPanel({
               attachments: m.attachments,
               isAgent: m.isMe,
               isRead: m.isRead,
-              time: new Date(m.createdAt).toLocaleTimeString('vi-VN', {
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
+              time: formatConversationTime(m.createdAt, true),
             }))
           : [],
     })) ?? null;
@@ -217,27 +223,42 @@ export default function StaffTicketChatPanel({
 
   return (
     <div className="staff-support-chat">
+      {/* Top Streamlined Toolbar */}
       <div className="support-toolbar">
-        <span>
-          Không gian hỗ trợ <span className="support-toolbar-dot" />{' '}
-          {room.connected ? 'Đã kết nối trực tuyến' : 'Đang kết nối trực tuyến…'}
-        </span>
-        <button type="button" onClick={refresh} className="support-refresh">
-          <RefreshCw size={14} /> Làm mới
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="support-status-chip">
+            <span className={`support-status-dot ${room.connected ? '' : 'offline'}`} />
+            <span>{room.connected ? 'Đã kết nối trực tuyến' : 'Đang kết nối…'}</span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <StaffMetricCards
+            chattingCount={chattingCount}
+            waitingCount={waitingCount}
+            hasTickets={tickets !== null}
+            resolvedCount={ticketList.filter((ticket) => ticket.status === 'resolved').length}
+          />
+
+          <button
+            type="button"
+            onClick={refresh}
+            className="support-refresh-btn"
+            title="Làm mới dữ liệu"
+          >
+            <RefreshCw size={13} />
+            <span>Làm mới</span>
+          </button>
+        </div>
       </div>
+
       {(listError || room.error) && (
-        <p role="alert" className="my-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <p role="alert" className="mb-2 shrink-0 rounded-lg bg-red-50 p-2.5 text-xs text-red-700">
           {listError || room.error}
         </p>
       )}
-      <StaffMetricCards
-        chattingCount={chattingCount}
-        waitingCount={waitingCount}
-        hasTickets={tickets !== null}
-        resolvedCount={ticketList.filter((ticket) => ticket.status === 'resolved').length}
-      />
 
+      {/* 3-Column Ergonomic Workspace */}
       <section className="support-workspace">
         {/* Left Column: Tickets Queue List */}
         <StaffTicketQueueSidebar

@@ -1,8 +1,19 @@
-﻿import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
-import { MessageCircle, Paperclip, Send, ShieldCheck, Check, CheckCheck, X } from 'lucide-react';
+import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import {
+  MessageCircle,
+  Paperclip,
+  Send,
+  ShieldCheck,
+  Check,
+  CheckCheck,
+  X,
+  Copy,
+  Sparkles,
+} from 'lucide-react';
 import { uploadChatAttachments } from '../../services/chat';
 import ChatAvatar from '../../components/chat/ChatAvatar';
 import ChatMessageContent from '../../components/chat/ChatMessageContent';
+
 export interface ChatMessage {
   avatarUrl?: string | null;
   id: number | string;
@@ -13,7 +24,9 @@ export interface ChatMessage {
   isRead?: boolean;
   attachments?: string[];
 }
+
 export type TicketStatus = 'chatting' | 'waiting' | 'resolved';
+
 export interface SupportTicket {
   avatarUrl?: string | null;
   id: string;
@@ -32,6 +45,17 @@ export interface SupportTicket {
   preview: string;
   messages: ChatMessage[];
 }
+
+const quickCannedTemplates = [
+  { label: '👋 Chào khách', text: 'Chào bạn! Tôi có thể hỗ trợ gì cho bạn ạ?' },
+  { label: '📦 Hỏi mã đơn', text: 'Vui lòng cung cấp mã đơn hàng để tôi kiểm tra giúp bạn nhé.' },
+  {
+    label: '⏳ Đang kiểm tra',
+    text: 'Tôi đang kiểm tra thông tin vận chuyển, bạn chờ trong giây lát nhé.',
+  },
+  { label: '✅ Đã giải quyết', text: 'Yêu cầu của bạn đã được xử lý hoàn tất rồi nhé!' },
+];
+
 interface Props {
   activeTicket?: SupportTicket;
   reply: string;
@@ -48,6 +72,7 @@ interface Props {
   loadingOlder?: boolean;
   onLoadOlder?: () => void;
 }
+
 export default function StaffTicketConversationView({
   activeTicket,
   reply,
@@ -70,15 +95,19 @@ export default function StaffTicketConversationView({
   const [uploading, setUploading] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [copiedId, setCopiedId] = useState(false);
   const currentTicketId = useRef(activeTicket?.id);
   currentTicketId.current = activeTicket?.id;
   const lastId = activeTicket?.messages[activeTicket.messages.length - 1]?.id;
+
   useEffect(() => {
     const area = scrollArea.current;
     if (area && lastId !== previousLast.current) area.scrollTop = area.scrollHeight;
     previousLast.current = lastId;
   }, [lastId, typing]);
+
   const disabled = sending || uploading || updatingStatus || submitting;
+
   async function submit() {
     if (disabled || (!reply.trim() && !attachments.length)) return;
     setSubmitting(true);
@@ -88,6 +117,7 @@ export default function StaffTicketConversationView({
       setSubmitting(false);
     }
   }
+
   async function attach(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []).slice(0, 5 - attachments.length);
     if (!files.length) return;
@@ -105,151 +135,266 @@ export default function StaffTicketConversationView({
       if (fileInput.current) fileInput.current.value = '';
     }
   }
+
   function keyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       void submit();
     }
   }
-  if (!activeTicket)
+
+  function handleCopyTicketId() {
+    if (!activeTicket) return;
+    void navigator.clipboard.writeText(activeTicket.id);
+    setCopiedId(true);
+    notify('Đã sao chép mã ticket!');
+    setTimeout(() => setCopiedId(false), 2000);
+  }
+
+  function insertQuickReply(text: string) {
+    onReplyChange(reply ? `${reply} ${text}` : text);
+  }
+
+  if (!activeTicket) {
     return (
-      <div className="support-conversation">
-        <div className="support-empty support-conversation-empty">
-          <MessageCircle size={40} />
-          <strong>Chọn một hội thoại</strong>
-          <p>Tiếp nhận và phản hồi khách hàng từ danh sách bên trái.</p>
+      <div className="flex h-full min-h-0 flex-col items-center justify-center rounded-2xl border border-slate-200/90 bg-white p-8 text-center shadow-xs">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 mb-3">
+          <MessageCircle size={28} />
         </div>
+        <strong className="text-base font-bold text-slate-800">Chọn một hội thoại</strong>
+        <p className="mt-1 max-w-xs text-xs text-slate-500">
+          Tiếp nhận và phản hồi khách hàng từ danh sách hàng đợi bên trái.
+        </p>
       </div>
     );
+  }
+
   return (
-    <div className="support-conversation" data-chat-conversation-id={activeTicket.id}>
-      <div className="support-conversation-header">
-        <div className="support-person">
-          <ChatAvatar src={activeTicket.avatarUrl} name={activeTicket.customer} />
-          <div>
-            <b>{activeTicket.customer}</b>
-            <small>{activeTicket.subject || 'Hỗ trợ trực tuyến'}</small>
+    <div
+      className="support-conversation-panel flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs"
+      data-chat-conversation-id={activeTicket.id}
+    >
+      {/* Header */}
+      <div className="support-conversation-header flex items-center justify-between border-b border-slate-100 bg-white px-4 py-2.5">
+        {/* Left: Customer Info */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="relative shrink-0">
+            <ChatAvatar src={activeTicket.avatarUrl} name={activeTicket.customer} size={36} />
+            <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <b className="truncate text-[13px] font-bold text-slate-900">
+                {activeTicket.customer}
+              </b>
+              <button
+                type="button"
+                onClick={handleCopyTicketId}
+                title={copiedId ? 'Đã sao chép mã hội thoại' : 'Sao chép mã hội thoại'}
+                aria-label={copiedId ? 'Đã sao chép mã hội thoại' : 'Sao chép mã hội thoại'}
+                className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+              >
+                {copiedId ? <Check size={10} className="text-emerald-600" /> : <Copy size={10} />}
+                <span>#{activeTicket.id.slice(0, 8)}</span>
+              </button>
+            </div>
+            <small className="block truncate text-[11px] text-slate-500">
+              {activeTicket.subject || 'Hỗ trợ trực tuyến'}
+            </small>
           </div>
         </div>
-        {activeTicket.status === 'waiting' && (
-          <button className="support-action" disabled={updatingStatus} onClick={onClaim}>
-            {updatingStatus ? 'Đang nhận…' : 'Nhận xử lý'}
-          </button>
-        )}
-        {activeTicket.status === 'chatting' && (
-          <button
-            className="support-action complete"
-            disabled={updatingStatus || uploading || sending}
-            onClick={onResolve}
-          >
-            <CheckCheck size={16} />
-            {updatingStatus ? 'Đang lưu…' : 'Hoàn tất'}
-          </button>
-        )}
-        {activeTicket.status === 'resolved' && (
-          <span className="support-resolved">
-            <CheckCheck size={16} />
-            Đã hoàn tất
-          </span>
-        )}
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {activeTicket.status === 'waiting' && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+              disabled={updatingStatus}
+              onClick={onClaim}
+            >
+              {updatingStatus ? 'Đang nhận…' : 'Nhận xử lý'}
+            </button>
+          )}
+
+          {activeTicket.status === 'chatting' && (
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs transition-all hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+              disabled={updatingStatus || uploading || sending}
+              onClick={onResolve}
+            >
+              <CheckCheck size={14} />
+              {updatingStatus ? 'Đang lưu…' : 'Hoàn tất'}
+            </button>
+          )}
+
+          {activeTicket.status === 'resolved' && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+              <CheckCheck size={13} />
+              Đã hoàn tất
+            </span>
+          )}
+        </div>
       </div>
-      <div className="support-ticket-id" title={activeTicket.id}>
-        MÃ TICKET: #{activeTicket.id.slice(0, 8)}
-      </div>
+
+      {/* Messages Stream */}
       <div
-        className="support-messages"
+        className="support-message-stream custom-scrollbar flex-1 min-h-0 overflow-y-auto bg-slate-50/60 p-4 space-y-1.5"
         ref={scrollArea}
         role="log"
         aria-label="Tin nhắn hội thoại"
         aria-busy={loading}
       >
         {hasOlder && (
-          <button className="support-load-older" disabled={loadingOlder} onClick={onLoadOlder}>
-            {loadingOlder ? 'Đang tải…' : 'Xem tin nhắn cũ hơn'}
-          </button>
+          <div className="flex justify-center pb-1">
+            <button
+              type="button"
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-medium text-blue-600 shadow-xs hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer"
+              disabled={loadingOlder}
+              onClick={onLoadOlder}
+            >
+              {loadingOlder ? 'Đang tải tin cũ…' : 'Xem tin nhắn cũ hơn'}
+            </button>
+          </div>
         )}
+
         {loading ? (
-          <div className="support-empty" role="status">
+          <div className="flex justify-center py-12 text-xs text-slate-400" role="status">
             Đang tải tin nhắn…
           </div>
         ) : (
           !activeTicket.messages.length && (
-            <div className="support-empty">
-              <MessageCircle size={30} />
-              <p>Chưa có tin nhắn.</p>
+            <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+              <MessageCircle size={28} className="text-slate-300 mb-2" />
+              <p className="text-xs">Chưa có tin nhắn trong phiên này.</p>
             </div>
           )
         )}
-        {activeTicket.messages.map((message) => (
-          <article
-            key={message.id}
-            className={`support-message ${message.isAgent ? 'is-agent' : ''}`}
-          >
-            <div>
-              <ChatAvatar
-                src={message.avatarUrl}
-                name={message.author || (message.isAgent ? 'Bạn' : activeTicket.customer)}
-                size={26}
-              />
-              <b>{message.author || (message.isAgent ? 'Bạn' : activeTicket.customer)}</b>
-              <time>{message.time}</time>
-              {message.isAgent && <ShieldCheck size={13} />}
-            </div>
-            <ChatMessageContent body={message.body} attachments={message.attachments} />
-            {message.isAgent && (
-              <small
-                className={`mt-1 flex items-center justify-end gap-1 text-[11px] ${message.isRead ? 'text-blue-600' : 'text-slate-400'}`}
+
+        {/* Message Grouping: Eliminate redundant sender labels on consecutive messages */}
+        {activeTicket.messages.map((message, index) => {
+          const isAgent = message.isAgent;
+          const prevMessage = index > 0 ? activeTicket.messages[index - 1] : null;
+          const nextMessage =
+            index < activeTicket.messages.length - 1 ? activeTicket.messages[index + 1] : null;
+          const isFirstInGroup =
+            !prevMessage ||
+            prevMessage.isAgent !== isAgent ||
+            prevMessage.author !== message.author;
+          const isLastInGroup =
+            !nextMessage ||
+            nextMessage.isAgent !== isAgent ||
+            nextMessage.author !== message.author;
+
+          return (
+            <article
+              key={message.id}
+              className={`support-message-item flex flex-col max-w-[80%] min-w-0 ${
+                isAgent ? 'is-agent ml-auto items-end' : 'mr-auto items-start'
+              } ${isFirstInGroup ? 'pt-2' : 'pt-0.5'}`}
+            >
+              {/* Header inside bubble / Author & Time (only for first message in group) */}
+              {isFirstInGroup && (
+                <div
+                  className={`flex items-center gap-1.5 mb-1 text-[10.5px] text-slate-400 ${
+                    isAgent ? 'flex-row-reverse' : ''
+                  }`}
+                >
+                  <span className="font-semibold text-slate-700">
+                    {message.author || (isAgent ? 'Bạn' : activeTicket.customer)}
+                  </span>
+                  <time>{message.time}</time>
+                  {isAgent && <ShieldCheck size={12} className="text-blue-600" />}
+                </div>
+              )}
+
+              {/* Message Bubble with connected radii */}
+              <div
+                className={`support-message-bubble px-3.5 py-2.5 text-[13px] leading-relaxed break-words shadow-xs min-w-[50px] ${
+                  isAgent
+                    ? `bg-gradient-to-r from-blue-600 to-indigo-600 text-white ${
+                        isFirstInGroup && isLastInGroup
+                          ? 'rounded-2xl rounded-tr-xs'
+                          : isFirstInGroup
+                            ? 'rounded-2xl rounded-tr-xs rounded-br-sm'
+                            : isLastInGroup
+                              ? 'rounded-2xl rounded-r-sm rounded-br-xs'
+                              : 'rounded-2xl rounded-r-sm'
+                      }`
+                    : `bg-white border border-slate-200/90 text-slate-800 ${
+                        isFirstInGroup && isLastInGroup
+                          ? 'rounded-2xl rounded-tl-xs'
+                          : isFirstInGroup
+                            ? 'rounded-2xl rounded-tl-xs rounded-bl-sm'
+                            : isLastInGroup
+                              ? 'rounded-2xl rounded-l-sm rounded-bl-xs'
+                              : 'rounded-2xl rounded-l-sm'
+                      }`
+                }`}
               >
-                {message.isRead ? (
-                  <CheckCheck size={13} aria-hidden="true" />
-                ) : (
-                  <Check size={13} aria-hidden="true" />
-                )}
-                {message.isRead ? 'Đã đọc' : 'Đã gửi'}
-              </small>
-            )}
-          </article>
-        ))}
+                <ChatMessageContent body={message.body} attachments={message.attachments} />
+              </div>
+
+              {/* Read receipt for Agent (only on last message in consecutive group) */}
+              {isAgent && isLastInGroup && (
+                <div
+                  className={`mt-1 flex items-center gap-1 text-[10px] ${
+                    message.isRead ? 'text-blue-600 font-medium' : 'text-slate-400'
+                  }`}
+                >
+                  {message.isRead ? <CheckCheck size={12} /> : <Check size={12} />}
+                  <span>{message.isRead ? 'Đã đọc' : 'Đã gửi'}</span>
+                </div>
+              )}
+            </article>
+          );
+        })}
+
         {typing && (
-          <p className="support-typing" role="status">
-            Khách hàng đang nhập…
-          </p>
+          <div className="flex items-center gap-2 text-xs italic text-slate-400">
+            <span className="inline-flex gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce" />
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0.2s]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0.4s]" />
+            </span>
+            <span>Khách hàng đang nhập…</span>
+          </div>
         )}
       </div>
-      <div className="support-composer">
-        <div className="support-composer-tools">
-          <button
-            aria-label="Đính kèm ảnh"
-            title="Đính kèm ảnh"
-            disabled={disabled || attachments.length >= 5}
-            onClick={() => fileInput.current?.click()}
-          >
-            <Paperclip size={18} />
-          </button>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            ref={fileInput}
-            onChange={(event) => void attach(event)}
-          />
-          <span>
-            {activeTicket.status === 'waiting'
-              ? 'Nhận xử lý để trả lời'
-              : activeTicket.status === 'resolved'
-                ? 'Hội thoại đã hoàn tất'
-                : 'Enter để gửi · Shift + Enter xuống dòng'}
+
+      {/* Composer (Input Area) */}
+      <div className="border-t border-slate-100 bg-white p-3 shrink-0">
+        {/* Quick Canned Replies in a neat single row */}
+        <div className="flex items-center gap-2 pb-2 min-w-0">
+          <span className="flex items-center gap-1 text-[10.5px] font-semibold text-slate-400 shrink-0">
+            <Sparkles size={12} className="text-amber-500" /> Nhanh:
           </span>
+          <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-nowrap py-0.5 custom-scrollbar">
+            {quickCannedTemplates.map(({ label, text }) => (
+              <button
+                key={label}
+                type="button"
+                disabled={disabled}
+                onClick={() => insertQuickReply(text)}
+                title={text}
+                className="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10.5px] font-medium text-slate-600 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors cursor-pointer"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Attachment Previews */}
         {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2 pb-3" aria-label="Ảnh chờ gửi">
+          <div className="flex flex-wrap gap-2 pb-2" aria-label="Ảnh chờ gửi">
             {attachments.map((url) => (
-              <div key={url} className="relative">
+              <div key={url} className="relative group">
                 <img
                   src={url}
                   alt="Ảnh chờ gửi"
-                  className="h-20 w-20 rounded-lg border border-slate-200 object-cover"
+                  className="h-14 w-14 rounded-lg border border-slate-200 object-cover"
                 />
                 <button
                   type="button"
@@ -258,42 +403,72 @@ export default function StaffTicketConversationView({
                   onClick={() =>
                     setAttachments((current) => current.filter((item) => item !== url))
                   }
-                  className="absolute -right-1 -top-1 rounded-full bg-slate-700 p-1 text-white"
+                  className="absolute -right-1 -top-1 rounded-full bg-slate-800 p-0.5 text-white opacity-90 hover:opacity-100 transition-opacity"
                 >
-                  <X size={12} />
+                  <X size={11} />
                 </button>
               </div>
             ))}
           </div>
         )}
+
+        {/* Text Area */}
         <textarea
           aria-label="Nội dung phản hồi"
           disabled={disabled}
           value={reply}
           onChange={(event) => onReplyChange(event.target.value)}
           onKeyDown={keyDown}
-          rows={3}
+          rows={2}
           placeholder={
             activeTicket.status === 'resolved'
               ? 'Hội thoại đã hoàn tất'
               : 'Nhập nội dung phản hồi khách hàng…'
           }
+          className="w-full rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-[13px] text-slate-800 placeholder-slate-400 outline-none transition-all resize-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/15 disabled:opacity-50"
         />
-        <div className="support-composer-footer">
-          <span>
-            <ShieldCheck size={14} />
-            Nhân viên hỗ trợ
-          </span>
+
+        {/* Footer Actions */}
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Đính kèm ảnh"
+              title="Đính kèm tối đa 5 ảnh"
+              disabled={disabled || attachments.length >= 5}
+              onClick={() => fileInput.current?.click()}
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors disabled:opacity-40 cursor-pointer"
+            >
+              <Paperclip size={16} />
+            </button>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              ref={fileInput}
+              onChange={(event) => void attach(event)}
+            />
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+              <ShieldCheck size={13} className="text-blue-600" />
+              Nhân viên hỗ trợ
+            </span>
+          </div>
+
           <button
+            type="button"
             disabled={disabled || (!reply.trim() && !attachments.length)}
             onClick={() => void submit()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-all disabled:opacity-40 cursor-pointer"
           >
-            {uploading
-              ? 'Đang tải ảnh…'
-              : sending && activeTicket.status === 'chatting'
-                ? 'Đang gửi…'
-                : 'Gửi phản hồi'}
-            <Send size={16} />
+            <span>
+              {uploading
+                ? 'Đang tải ảnh…'
+                : sending && activeTicket.status === 'chatting'
+                  ? 'Đang gửi…'
+                  : 'Gửi phản hồi'}
+            </span>
+            <Send size={13} />
           </button>
         </div>
       </div>
