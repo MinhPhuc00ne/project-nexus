@@ -7,22 +7,22 @@ import { Type } from 'class-transformer';
  */
 export class AdminUpdateAuctionDto {
   @ApiPropertyOptional({
-    description: 'Tiêu đề phiên đấu giá',
-    example: 'Phiên đấu giá Đồ hiệu & Đồng hồ Thụy Sĩ (Đã cập nhật)',
+    description: 'Updated title of the auction session',
+    example: 'Audemars Piguet & Swiss Luxury Watches Session (Updated)',
   })
   @IsString()
   @IsOptional()
   title?: string;
 
   @ApiPropertyOptional({
-    description: 'Mô tả chi tiết thể lệ của phiên',
+    description: 'Updated session rules and description',
   })
   @IsString()
   @IsOptional()
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Thời gian bắt đầu (ISO 8601 string)',
+    description: 'Updated start timestamp in ISO 8601 format',
     example: '2026-11-08T20:30:00.000Z',
   })
   @IsDateString()
@@ -30,7 +30,7 @@ export class AdminUpdateAuctionDto {
   startTime?: string;
 
   @ApiPropertyOptional({
-    description: 'Thời gian kết thúc (ISO 8601 string)',
+    description: 'Updated conclusion timestamp in ISO 8601 format',
     example: '2026-11-08T23:00:00.000Z',
   })
   @IsDateString()
@@ -38,7 +38,7 @@ export class AdminUpdateAuctionDto {
   endTime?: string;
 
   @ApiPropertyOptional({
-    description: 'Điểm uy tín tối thiểu của Buyer',
+    description: 'Updated minimum buyer reputation score required to place bids',
     example: 100,
   })
   @Type(() => Number)
@@ -48,7 +48,7 @@ export class AdminUpdateAuctionDto {
   minBuyerReputation?: number;
 
   @ApiPropertyOptional({
-    description: 'Điểm uy tín tối thiểu của Seller',
+    description: 'Updated minimum seller reputation score required to consign items',
     example: 80,
   })
   @Type(() => Number)

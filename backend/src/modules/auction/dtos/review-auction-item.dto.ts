@@ -21,7 +21,7 @@ export enum ReviewAction {
  */
 export class ReviewAuctionItemDto {
   @ApiProperty({
-    description: 'Hành động duyệt: APPROVE (Phê duyệt) hoặc REJECT (Từ chối)',
+    description: 'Review decision action: APPROVE or REJECT',
     enum: ReviewAction,
     example: ReviewAction.APPROVE,
   })
@@ -30,16 +30,17 @@ export class ReviewAuctionItemDto {
   action: ReviewAction;
 
   @ApiPropertyOptional({
-    description: 'Lý do từ chối (bắt buộc nếu action là REJECT)',
-    example: 'Giấy chứng nhận giám định mờ, số serial không trùng khớp với sản phẩm.',
+    description: 'Mandatory rejection rationale (required when action is REJECT)',
+    example:
+      'Appraisal certificate number cannot be verified in the national registry, and serial numbers do not match physical engravings.',
   })
   @ValidateIf((o: ReviewAuctionItemDto) => o.action === ReviewAction.REJECT)
   @IsString()
-  @IsNotEmpty({ message: 'rejectionReason không được để trống khi từ chối món hàng' })
+  @IsNotEmpty({ message: 'rejectionReason must not be empty when rejecting an item' })
   rejectionReason?: string;
 
   @ApiPropertyOptional({
-    description: 'Số thứ tự Lô hàng trong phiên đấu giá (nếu duyệt)',
+    description: 'Assigned sequential lot number within the auction session (when approved)',
     example: 1,
   })
   @Type(() => Number)
@@ -50,7 +51,7 @@ export class ReviewAuctionItemDto {
 
   @ApiPropertyOptional({
     description:
-      'Giá khởi điểm chính thức (Admin có thể điều chỉnh hoặc để trống dùng giá đề xuất)',
+      'Official starting bid price confirmed by admin (optional; defaults to proposed starting price)',
     example: 150000000,
   })
   @Type(() => Number)
@@ -59,7 +60,7 @@ export class ReviewAuctionItemDto {
   startingPrice?: number;
 
   @ApiPropertyOptional({
-    description: 'Giá bảo lưu chính thức',
+    description: 'Official minimum reserve price confirmed by admin',
     example: 180000000,
   })
   @Type(() => Number)
@@ -68,7 +69,7 @@ export class ReviewAuctionItemDto {
   reservePrice?: number;
 
   @ApiPropertyOptional({
-    description: 'Bước giá chính thức',
+    description: 'Official price increment per bid step confirmed by admin',
     example: 2000000,
   })
   @Type(() => Number)

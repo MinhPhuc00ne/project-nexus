@@ -16,23 +16,24 @@ import { Type } from 'class-transformer';
  */
 export class RegisterAuctionItemDto {
   @ApiProperty({
-    description: 'Tên món hàng ký gửi đấu giá',
-    example: 'Đồng hồ Patek Philippe Nautilus 5711/1R-001 Vàng hồng 18K',
+    description: 'Consigned item public title',
+    example: 'Patek Philippe Nautilus 5711/1R-001 Rose Gold 18K',
   })
   @IsString()
   @IsNotEmpty()
   title: string;
 
   @ApiProperty({
-    description: 'Mô tả chi tiết nguồn gốc, tình trạng thực tế của món hàng',
-    example: 'Đồng hồ nguyên bản 99%, đầy đủ hộp sổ thẻ mua tại đại lý chính hãng năm 2024.',
+    description: 'Detailed description, provenance, and physical condition of the consigned item',
+    example:
+      'Pristine condition 99%, complete original box, papers and international warranty certificate dated 2024.',
   })
   @IsString()
   @IsNotEmpty()
   description: string;
 
   @ApiProperty({
-    description: 'Danh sách URL ảnh chụp đa góc cạnh sản phẩm',
+    description: 'List of high-resolution product image URLs from multiple angles',
     example: ['https://example.com/patek1.jpg', 'https://example.com/patek2.jpg'],
     type: [String],
   })
@@ -42,7 +43,7 @@ export class RegisterAuctionItemDto {
   images: string[];
 
   @ApiPropertyOptional({
-    description: 'Khóa định danh mô hình 3D (nếu có)',
+    description: 'Storage key for the interactive 3D inspection model (if available)',
     example: 'models/patek-5711.glb',
   })
   @IsString()
@@ -50,7 +51,7 @@ export class RegisterAuctionItemDto {
   threeModelKey?: string;
 
   @ApiProperty({
-    description: 'Giá khởi điểm đề xuất (VND)',
+    description: 'Proposed starting bid price in VND currency',
     example: 150000000,
     minimum: 10000,
   })
@@ -60,7 +61,7 @@ export class RegisterAuctionItemDto {
   proposedStartingPrice: number;
 
   @ApiPropertyOptional({
-    description: 'Giá bảo lưu đề xuất (VND) - mức giá sàn tối thiểu người bán chấp nhận bán',
+    description: 'Proposed minimum reserve price in VND currency (minimum acceptable sale price)',
     example: 180000000,
   })
   @Type(() => Number)
@@ -69,7 +70,7 @@ export class RegisterAuctionItemDto {
   proposedReservePrice?: number;
 
   @ApiPropertyOptional({
-    description: 'Bước giá đề xuất (VND)',
+    description: 'Proposed minimum price increment per bid step in VND currency',
     example: 2000000,
     default: 100000,
   })
@@ -80,7 +81,7 @@ export class RegisterAuctionItemDto {
   proposedBidIncrement?: number = 100000;
 
   @ApiPropertyOptional({
-    description: 'Số hiệu chứng thư / giấy giám định kiểm định',
+    description: 'Appraisal / authentication certificate identifier number',
     example: 'GIA-2026-PP-998822',
   })
   @IsString()
@@ -88,15 +89,16 @@ export class RegisterAuctionItemDto {
   appraisalCertificateNumber?: string;
 
   @ApiPropertyOptional({
-    description: 'Tên đơn vị thẩm định / tổ chức cấp chứng thư',
-    example: 'Viện Giám định Đá quý & Đồng hồ Quốc tế (GIA)',
+    description: 'Name of the appraisal authority or certifying laboratory',
+    example: 'Gemological Institute of America (GIA)',
   })
   @IsString()
   @IsOptional()
   appraisalAgency?: string;
 
   @ApiProperty({
-    description: 'Danh sách URL ảnh chụp chứng thư giám định, hóa đơn gốc, thẻ bảo hành online',
+    description:
+      'List of online appraisal certificate scan images, purchase invoices, and warranty cards',
     example: [
       'https://example.com/cert-patek-front.jpg',
       'https://example.com/cert-patek-back.jpg',
@@ -109,7 +111,7 @@ export class RegisterAuctionItemDto {
   certificateImages: string[];
 
   @ApiPropertyOptional({
-    description: 'Ngày cấp chứng thư kiểm định (ISO 8601)',
+    description: 'Certificate issue date in ISO 8601 format',
     example: '2026-05-15T00:00:00.000Z',
   })
   @IsDateString()

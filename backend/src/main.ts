@@ -52,52 +52,64 @@ async function bootstrap(): Promise<void> {
   const config = new DocumentBuilder()
     .setTitle('Project Nexus Backend API')
     .setDescription(
-      'RESTful API specifications for Project Nexus: Authentication, RBAC, Profiles, and Seller Management',
+      'RESTful API specifications for Project Nexus: Authentication, RBAC, Profiles, Catalog, Commerce, Fulfillment, and Real-Time Auctions',
     )
     .setVersion('1.0.0')
     .addTag(
       '1. AUTH',
-      'Xác thực hệ thống: Đăng ký, Đăng nhập, Xác thực OTP, Quên mật khẩu, Google OAuth',
+      'Authentication & Authorization: Registration, login, OTP verification, password recovery, and Google OAuth',
     )
     .addTag(
       '2. BUYER',
-      'Chức năng Người mua: Xem hồ sơ cá nhân, số dư ví, nộp hồ sơ xin lên Seller và chuyển đổi chế độ',
+      'Buyer Portal: Personal profile, wallet balance, seller upgrade application, and mode switching',
     )
-    .addTag('3. SELLER', 'Chức năng Người bán: Quản lý hồ sơ người bán, chuyển đổi chế độ bán hàng')
+    .addTag(
+      '3. SELLER',
+      'Seller Portal: Merchant profile management and seller operational mode switching',
+    )
     .addTag(
       '4. STAFF',
-      'Chức năng Staff: Kích hoạt tài khoản, quản lý mật khẩu, xem hồ sơ nhân viên',
+      'Staff Portal: Account activation, credential lifecycle, and staff profiles',
     )
     .addTag(
       '5. ADMIN',
-      'Chức năng Admin: Quản lý nhân viên, duyệt Seller, quản lý người dùng, kiểm duyệt sản phẩm, quản lý gian hàng, danh mục, cấu hình sàn và quản lý ví hệ thống (thu phí sàn, nạp tiền)',
+      'Admin Backoffice: Staff provisioning, seller KYC reviews, user moderation, product curation, shop audits, platform settings, and administrative wallet',
     )
-    .addTag('6. MEDIA', 'Chức năng Media: Tải lên hình ảnh, tài liệu lưu trữ máy chủ & Cloudinary')
+    .addTag(
+      '6. MEDIA',
+      'Media Assets: Image and document uploads stored via local server or Cloudinary',
+    )
     .addTag(
       '7. CATALOG',
-      'Danh mục sản phẩm, Đăng bán sản phẩm, Quản lý tồn kho & Tìm kiếm sản phẩm',
+      'Product Catalog: Categories, product listings, inventory management, and search',
     )
     .addTag(
       '8. COMMERCE - CART',
-      'Quản lý giỏ hàng Buyer, Price Revalidation, Merge giỏ hàng Guest',
+      'Shopping Cart: Buyer cart lifecycle, price revalidation, and guest cart merging',
     )
     .addTag(
       '8. COMMERCE - ORDERS & PAYMENTS',
-      'Đặt hàng, thanh toán qua PayOS VietQR hoặc Ví NEXUS Pay, xem đơn hàng và quản lý ví cá nhân',
+      'Orders & Payments: Checkout with PayOS VietQR or NEXUS Pay wallet, order lifecycle tracking, and escrow holding',
     )
     .addTag(
       '8. COMMERCE - SELLER FINANCE',
-      'Tài chính người bán: Quản lý số dư, xem doanh thu ròng, yêu cầu rút tiền và lịch sử giao dịch',
+      'Seller Finance: Balance tracking, net revenue, payout withdrawal requests, and financial ledger',
     )
     .addTag(
       '8. COMMERCE - SELLER ORDERS',
-      'Quản lý đơn hàng người bán: Xem danh sách, chi tiết, xác nhận và bàn giao đơn GHN',
+      'Seller Fulfillment: Order queue management, details, fulfillment status, and GHN logistics handover',
     )
-    .addTag('9. NOTIFICATIONS', 'Thông báo người dùng, danh sách thông báo và đánh dấu đã đọc')
-    .addTag('10. FULFILLMENT & SHIPPING', 'Vận chuyển, tính cước giao hàng GHN và cự ly bản đồ')
     .addTag(
-      '11. AUCTIONS - ĐẤU GIÁ TRỰC TUYẾN',
-      'Đấu giá trực tuyến: Admin quản lý phiên, Seller đăng ký ký gửi hàng kèm giấy tờ kiểm định online, Buyer theo dõi & kiểm tra điều kiện uy tín',
+      '9. NOTIFICATIONS',
+      'Notifications: Real-time user alert dispatch, preferences, and read tracking',
+    )
+    .addTag(
+      '10. FULFILLMENT & SHIPPING',
+      'Logistics & Shipping: GHN carrier integration, parcel shipping quote calculation, and route distance tracking',
+    )
+    .addTag(
+      '11. AUCTIONS',
+      'Real-Time Auctions & Bidding: Admin auction sessions, seller consignment with online appraisal certificates, and reputation-based eligibility checks',
     )
     .addBearerAuth()
     .build();

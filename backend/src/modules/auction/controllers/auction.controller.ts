@@ -30,9 +30,9 @@ import { ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
 
 /**
  * Controller exposing REST endpoints for central auction events, seller consignment
- * with online appraisals, reputation evaluations, and bidding lifecycle.
+ * with online appraisal documentation, reputation checks, and live bidding lifecycle.
  */
-@ApiTags('11. AUCTIONS - ĐẤU GIÁ TRỰC TUYẾN')
+@ApiTags('11. AUCTIONS')
 @Controller('auctions')
 export class AuctionController {
   constructor(private readonly auctionService: AuctionService) {}
@@ -47,11 +47,11 @@ export class AuctionController {
   @Public()
   @Get()
   @ApiOperation({
-    summary: 'Lấy danh sách các phiên đấu giá công khai',
+    summary: 'List public auction sessions',
     description:
-      'Trả về danh sách các phiên đấu giá (SCHEDULED, ACTIVE, ENDED...) kèm số lượng món hàng đã duyệt.',
+      'Retrieves public paginated auction listings (SCHEDULED, ACTIVE, ENDED) with approved item counts and scheduled timeframes.',
   })
-  @ApiResponse({ status: 200, description: 'Danh sách phiên đấu giá phân trang thành công.' })
+  @ApiResponse({ status: 200, description: 'Paginated auction listings retrieved successfully.' })
   async getAuctions(@Query() query: AuctionQueryDto) {
     return this.auctionService.getAuctions(query);
   }
@@ -63,11 +63,14 @@ export class AuctionController {
   @UseGuards(JwtAuthGuard)
   @Get(':id/eligibility')
   @ApiOperation({
-    summary: 'Kiểm tra quyền tham gia của Buyer (Đủ điểm uy tín hay chỉ được Xem/View-Only)',
+    summary: 'Check buyer participation eligibility',
     description:
-      'Đánh giá điểm uy tín và tiền sử cảnh báo/phạt của Người mua so với yêu cầu minBuyerReputation của phiên.',
+      'Evaluates the authenticated buyer reputation score and prior penalty/probation records against the session minBuyerReputation threshold.',
   })
-  @ApiResponse({ status: 200, description: 'Kết quả kiểm tra tư cách tham gia của Buyer.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Buyer participation eligibility assessment returned successfully.',
+  })
   async checkBuyerEligibility(@Param('id') id: string, @CurrentUser('id') buyerId: string) {
     return this.auctionService.checkBuyerEligibility(id, buyerId);
   }
@@ -78,8 +81,8 @@ export class AuctionController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('my-bids')
-  @ApiOperation({ summary: 'Lấy lịch sử trả giá của tài khoản hiện tại' })
-  @ApiResponse({ status: 200, description: 'Lịch sử tham gia đấu giá của Buyer.' })
+  @ApiOperation({ summary: 'Retrieve current user bidding history' })
+  @ApiResponse({ status: 200, description: 'User bidding history retrieved successfully.' })
   async getMyBids(@CurrentUser('id') userId: string) {
     return this.auctionService.getMyBids(userId);
   }
@@ -90,11 +93,11 @@ export class AuctionController {
   @Public()
   @Get(':id')
   @ApiOperation({
-    summary: 'Xem chi tiết phòng/phiên đấu giá theo mã định danh',
+    summary: 'Get auction details by ID',
     description:
-      'Hiển thị thông tin phiên, danh sách các món hàng đã duyệt kèm giấy tờ kiểm định online, lịch sử đặt giá.',
+      'Retrieves comprehensive auction room details, approved consignment items with online appraisal certificates, and bid logs.',
   })
-  @ApiResponse({ status: 200, description: 'Chi tiết phiên đấu giá.' })
+  @ApiResponse({ status: 200, description: 'Auction details retrieved successfully.' })
   async getAuctionDetail(@Param('id') id: string, @CurrentUser('id') userId?: string) {
     return this.auctionService.getAuctionDetail(id, userId);
   }
@@ -111,11 +114,11 @@ export class AuctionController {
   @Roles(Role.ADMIN)
   @Post('admin')
   @ApiOperation({
-    summary: '[Admin] Tạo phiên đấu giá mới',
+    summary: '[Admin] Create a new auction session',
     description:
-      'Admin thiết lập Tên phiên, Ngày giờ, Thể lệ và cấu hình Số điểm uy tín tối thiểu cho Buyer và Seller.',
+      'Admin creates and schedules a central auction event, configuring title, timeframe, and minimum reputation score thresholds for buyers and sellers.',
   })
-  @ApiResponse({ status: 201, description: 'Tạo phiên đấu giá thành công.' })
+  @ApiResponse({ status: 201, description: 'Auction session created successfully.' })
   async adminCreateAuction(@CurrentUser('id') adminId: string, @Body() dto: AdminCreateAuctionDto) {
     return this.auctionService.adminCreateAuction(adminId, dto);
   }
@@ -128,11 +131,11 @@ export class AuctionController {
   @Roles(Role.ADMIN)
   @Patch('admin/:id')
   @ApiOperation({
-    summary: '[Admin] Sửa thông tin phiên đấu giá',
+    summary: '[Admin] Update an upcoming auction session',
     description:
-      'Chỉ được sửa khi phiên ở trạng thái SCHEDULED/DRAFT. Tuyệt đối chặn sửa khi phiên đang diễn ra (ACTIVE/EXTENDED).',
+      'Allowed only when auction is in SCHEDULED or DRAFT state. Strictly prohibited when the session is currently ACTIVE or EXTENDED.',
   })
-  @ApiResponse({ status: 200, description: 'Cập nhật phiên đấu giá thành công.' })
+  @ApiResponse({ status: 200, description: 'Auction session updated successfully.' })
   async adminUpdateAuction(@Param('id') id: string, @Body() dto: AdminUpdateAuctionDto) {
     return this.auctionService.adminUpdateAuction(id, dto);
   }
@@ -145,11 +148,11 @@ export class AuctionController {
   @Roles(Role.ADMIN)
   @Delete('admin/:id')
   @ApiOperation({
-    summary: '[Admin] Xóa hoặc hủy phiên đấu giá',
+    summary: '[Admin] Delete or cancel an auction session',
     description:
-      'Chỉ cho phép xóa khi phiên chưa diễn ra. Tuyệt đối không cho phép xóa khi phiên đang chạy (ACTIVE/EXTENDED).',
+      'Permits deletion only before the session begins. Deletes empty sessions or cancels sessions with existing consignments. Strictly prohibited when ACTIVE or EXTENDED.',
   })
-  @ApiResponse({ status: 200, description: 'Xóa hoặc hủy phiên đấu giá thành công.' })
+  @ApiResponse({ status: 200, description: 'Auction session deleted or cancelled successfully.' })
   async adminDeleteAuction(@Param('id') id: string) {
     return this.auctionService.adminDeleteAuction(id);
   }
@@ -162,11 +165,14 @@ export class AuctionController {
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Get('admin/:id/items')
   @ApiOperation({
-    summary: '[Admin] Xem danh sách Seller đăng ký gửi hàng vào phiên',
+    summary: '[Admin] List registered seller consignment items for an auction',
     description:
-      'Hiển thị toàn bộ các món hàng ký gửi, ảnh chụp giấy tờ kiểm định online, cờ cảnh báo (Flag) nếu Seller từng có tiền sử bị phạt.',
+      'Lists all submitted consignment items, online appraisal certificate proofs, and warning flags if a seller has prior probation/penalty history.',
   })
-  @ApiResponse({ status: 200, description: 'Danh sách hàng ký gửi và hồ sơ kiểm định.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Consigned items and appraisal documentation retrieved successfully.',
+  })
   async adminGetAuctionItems(@Param('id') id: string) {
     return this.auctionService.adminGetAuctionItems(id);
   }
@@ -179,11 +185,14 @@ export class AuctionController {
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Post('admin/items/:itemId/review')
   @ApiOperation({
-    summary: '[Admin] Phê duyệt hoặc Từ chối món hàng ký gửi',
+    summary: '[Admin] Review (approve or reject) a consigned auction item',
     description:
-      'Admin xem xét giấy tờ kiểm định: Phê duyệt (gán số thứ tự Lô) hoặc Từ chối kèm lý do cụ thể.',
+      'Admin reviews online appraisal certificates: approves with assigned lot number and official starting price, or rejects with mandatory rationale.',
   })
-  @ApiResponse({ status: 200, description: 'Kết quả xử lý thẩm định món hàng.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Consignment review decision executed successfully.',
+  })
   async adminReviewAuctionItem(
     @Param('itemId') itemId: string,
     @CurrentUser('id') adminId: string,
@@ -204,11 +213,14 @@ export class AuctionController {
   @Roles(Role.SELLER, Role.ADMIN)
   @Post(':id/register-item')
   @ApiOperation({
-    summary: '[Seller] Đăng ký gửi đồ đấu giá kèm giấy tờ kiểm định online',
+    summary: '[Seller] Consign item for auction with online appraisal documents',
     description:
-      'Người bán nộp thông tin món hàng, mức giá đề xuất và đính kèm ảnh giấy chứng nhận kiểm định online. Hệ thống tự động kiểm tra điểm uy tín và gắn cờ nếu có tiền sử cảnh báo.',
+      'Seller submits product specifications, proposed pricing, and online appraisal certificate proofs. System validates seller reputation and flags prior probation/penalty history.',
   })
-  @ApiResponse({ status: 201, description: 'Nộp hồ sơ gửi hàng thành công, chờ Admin duyệt.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Consignment item registered successfully, pending admin review.',
+  })
   async registerAuctionItem(
     @Param('id') id: string,
     @CurrentUser('id') sellerId: string,
@@ -225,11 +237,14 @@ export class AuctionController {
   @Roles(Role.SELLER, Role.ADMIN)
   @Get('seller/my-items')
   @ApiOperation({
-    summary: '[Seller] Xem danh sách các món đồ mình đã gửi đi đấu giá',
+    summary: '[Seller] List my consigned auction items across all sessions',
     description:
-      'Hiển thị trạng thái duyệt (PENDING_REVIEW, APPROVED, REJECTED) và lý do từ chối (nếu có).',
+      'Retrieves review status (PENDING_REVIEW, APPROVED, REJECTED) and rejection rationale if applicable.',
   })
-  @ApiResponse({ status: 200, description: 'Danh sách đồ ký gửi của người bán.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Seller consignment items retrieved successfully.',
+  })
   async getSellerConsignments(@CurrentUser('id') sellerId: string) {
     return this.auctionService.getSellerConsignments(sellerId);
   }
@@ -241,7 +256,7 @@ export class AuctionController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN)
   @Get('my')
-  @ApiOperation({ summary: 'Lấy danh sách các phiên đấu giá do người bán tạo (Tương thích cũ)' })
+  @ApiOperation({ summary: 'List auctions created by current seller (Legacy compatibility)' })
   async getMyAuctions(@CurrentUser('id') sellerId: string, @Query() query: AuctionQueryDto) {
     return this.auctionService.getMyAuctions(sellerId, query);
   }
@@ -253,7 +268,7 @@ export class AuctionController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN)
   @Post()
-  @ApiOperation({ summary: 'Tạo phiên đấu giá trực tiếp từ sản phẩm (Tương thích cũ)' })
+  @ApiOperation({ summary: 'Create auction listing from product (Legacy compatibility)' })
   async createAuction(@CurrentUser('id') sellerId: string, @Body() dto: CreateAuctionDto) {
     return this.auctionService.createAuction(sellerId, dto);
   }
@@ -269,8 +284,9 @@ export class AuctionController {
   @UseGuards(JwtAuthGuard)
   @Post(':id/bids')
   @ApiOperation({
-    summary: 'Tham gia trả giá trong phòng đấu giá (Khóa cọc ví NEXUS Pay)',
-    description: 'Kiểm tra điểm uy tín của Buyer trước khi cho phép đặt cọc và đẩy giá.',
+    summary: 'Submit competitive bid with wallet escrow lock',
+    description:
+      'Verifies bidder reputation requirements, locks bid deposit in NEXUS Pay wallet, refunds superseded bidders, and triggers anti-sniping extension.',
   })
   async placeBid(
     @Param('id') id: string,
@@ -287,7 +303,7 @@ export class AuctionController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER, Role.ADMIN, Role.SUPPORT_STAFF)
   @Post(':id/end')
-  @ApiOperation({ summary: 'Kết thúc và chốt kết quả phiên đấu giá' })
+  @ApiOperation({ summary: 'Conclude and finalize auction session' })
   async endAuction(@Param('id') id: string, @CurrentUser() user: AuthenticatedUserPayload) {
     return this.auctionService.endAuction(id, user.id, user.role);
   }
