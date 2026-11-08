@@ -36,6 +36,12 @@ enum AuctionStatus {
   FAILED
 }
 
+enum AuctionItemStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 enum EscrowStatus {
   HELD
   DISBURSED
@@ -201,7 +207,10 @@ model User {
   products                   Product[]
   ordersAsBuyer              Order[]                  @relation("BuyerOrders")
   ordersAsSeller             Order[]                  @relation("SellerOrders")
-  auctions                   Auction[]
+  auctions                   Auction[]                @relation("SellerAuctions")
+  createdAuctions            Auction[]                @relation("AdminCreatedAuctions")
+  submittedAuctionItems      AuctionItem[]            @relation("SellerAuctionItems")
+  reviewedAuctionItems       AuctionItem[]            @relation("AdminReviewedAuctionItems")
   bids                       Bid[]
   cart                       Cart?
   reputationLogs             ReputationLog[]
@@ -633,29 +642,78 @@ model OrderRefund {
 
 model Auction {
   id                     String        @id @default(uuid())
-  productId              String        @map("product_id")
-  sellerId               String        @map("seller_id")
+  productId              String?       @map("product_id")
+  sellerId               String?       @map("seller_id")
   title                  String
-  startingPrice          Decimal       @map("starting_price") @db.Decimal(14, 2)
+  description            String?       @db.Text
+  startingPrice          Decimal       @default(0) @map("starting_price") @db.Decimal(14, 2)
   reservePrice           Decimal?      @map("reserve_price") @db.Decimal(14, 2)
   currentHighestBid      Decimal       @default(0) @map("current_highest_bid") @db.Decimal(14, 2)
   currentHighestBidderId String?       @map("current_highest_bidder_id")
-  bidIncrement           Decimal       @default(10.0) @map("bid_increment") @db.Decimal(14, 2)
+  bidIncrement           Decimal       @default(100000.0) @map("bid_increment") @db.Decimal(14, 2)
   status                 AuctionStatus @default(SCHEDULED)
   startTime              DateTime      @map("start_time")
   endTime                DateTime      @map("end_time")
   originalEndTime        DateTime      @map("original_end_time")
   isExtended             Boolean       @default(false) @map("is_extended")
   totalBidsCount         Int           @default(0) @map("total_bids_count")
+
+  minBuyerReputation     Int           @default(100) @map("min_buyer_reputation")
+  minSellerReputation    Int           @default(80)  @map("min_seller_reputation")
+  createdByAdminId       String?       @map("created_by_admin_id")
+
   createdAt              DateTime      @default(now()) @map("created_at")
   updatedAt              DateTime      @updatedAt @map("updated_at")
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-  seller  User    @relation(fields: [sellerId], references: [id], onDelete: Restrict)
-  bids    Bid[]
+  product        Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  seller         User?         @relation("SellerAuctions", fields: [sellerId], references: [id], onDelete: SetNull)
+  createdByAdmin User?         @relation("AdminCreatedAuctions", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  bids           Bid[]
+  items          AuctionItem[]
 
   @@index([status, endTime])
   @@map("auctions")
+}
+
+model AuctionItem {
+  id                         String            @id @default(uuid())
+  auctionId                  String            @map("auction_id")
+  sellerId                   String            @map("seller_id")
+  title                      String
+  description                String            @db.Text
+  images                     String[]
+  threeModelKey              String?           @map("three_model_key")
+  proposedStartingPrice      Decimal           @map("proposed_starting_price") @db.Decimal(14, 2)
+  proposedReservePrice       Decimal?          @map("proposed_reserve_price") @db.Decimal(14, 2)
+  proposedBidIncrement       Decimal           @default(100000) @map("proposed_bid_increment") @db.Decimal(14, 2)
+
+  appraisalCertificateNumber String?           @map("appraisal_certificate_number")
+  appraisalAgency            String?           @map("appraisal_agency")
+  certificateImages          String[]          @map("certificate_images")
+  certificateIssueDate       DateTime?         @map("certificate_issue_date")
+
+  status                     AuctionItemStatus @default(PENDING_REVIEW)
+  isSellerFlagged            Boolean           @default(false) @map("is_seller_flagged")
+  flagReason                 String?           @map("flag_reason")
+  rejectionReason            String?           @map("rejection_reason") @db.Text
+  lotNumber                  Int?              @map("lot_number")
+  startingPrice              Decimal?          @map("starting_price") @db.Decimal(14, 2)
+  reservePrice               Decimal?          @map("reserve_price") @db.Decimal(14, 2)
+  bidIncrement               Decimal?          @map("bid_increment") @db.Decimal(14, 2)
+
+  reviewedByAdminId          String?           @map("reviewed_by_admin_id")
+  reviewedAt                 DateTime?         @map("reviewed_at")
+
+  createdAt                  DateTime          @default(now()) @map("created_at")
+  updatedAt                  DateTime          @updatedAt @map("updated_at")
+
+  auction                    Auction           @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  seller                     User              @relation("SellerAuctionItems", fields: [sellerId], references: [id], onDelete: Restrict)
+  reviewedByAdmin            User?             @relation("AdminReviewedAuctionItems", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([auctionId, status])
+  @@index([sellerId])
+  @@map("auction_items")
 }
 
 model Bid {

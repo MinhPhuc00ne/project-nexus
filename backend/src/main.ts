@@ -95,6 +95,10 @@ async function bootstrap(): Promise<void> {
     )
     .addTag('9. NOTIFICATIONS', 'Thông báo người dùng, danh sách thông báo và đánh dấu đã đọc')
     .addTag('10. FULFILLMENT & SHIPPING', 'Vận chuyển, tính cước giao hàng GHN và cự ly bản đồ')
+    .addTag(
+      '11. AUCTIONS - ĐẤU GIÁ TRỰC TUYẾN',
+      'Đấu giá trực tuyến: Admin quản lý phiên, Seller đăng ký ký gửi hàng kèm giấy tờ kiểm định online, Buyer theo dõi & kiểm tra điều kiện uy tín',
+    )
     .addBearerAuth()
     .build();
 
