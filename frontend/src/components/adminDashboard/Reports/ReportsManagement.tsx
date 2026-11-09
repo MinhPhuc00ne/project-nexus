@@ -4,6 +4,7 @@ import Popup from '../../Popup';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
 import { listAdminDisputes } from '../../../services/admin';
+import DisputeResolution from './DisputeResolution';
 import type {
   AdminDispute,
   AdminDisputePage,
@@ -47,6 +48,7 @@ export default function ReportsManagement() {
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
   const [detail, setDetail] = useState<AdminDispute | null>(null);
+  const [resolving, setResolving] = useState(false);
   const evidenceUrls = Array.isArray(detail?.evidenceUrls)
     ? detail.evidenceUrls.filter((url): url is string => typeof url === 'string')
     : [];
@@ -230,7 +232,14 @@ export default function ReportsManagement() {
           </>
         )}
       </Panel>
-      <Popup isOpen={!!detail} onClose={() => setDetail(null)} title="Chi tiết khiếu nại" size="lg">
+      <Popup
+        isOpen={!!detail}
+        onClose={() => {
+          if (!resolving) setDetail(null);
+        }}
+        title="Chi tiết khiếu nại"
+        size="lg"
+      >
         {detail && (
           <div className="space-y-5">
             <DetailFields
@@ -285,6 +294,17 @@ export default function ReportsManagement() {
                 <p className="text-sm text-slate-500">Chưa có bằng chứng đính kèm.</p>
               )}
             </section>
+            {(detail.status === 'OPEN' || detail.status === 'UNDER_REVIEW') && (
+              <DisputeResolution
+                key={detail.id}
+                orderId={detail.orderId}
+                onBusyChange={setResolving}
+                onResolved={() => {
+                  setDetail(null);
+                  setRefresh((value) => value + 1);
+                }}
+              />
+            )}
           </div>
         )}
       </Popup>

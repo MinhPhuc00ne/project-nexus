@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getStoredToken, getStoredUser } from '../../../services/auth';
 import {
+  getNotificationUnreadCount,
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -34,43 +35,59 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
 
   useEffect(() => {
     if (!token) return;
-    const refresh = () => {
-      if (!lock.current && document.visibilityState !== 'hidden')
-        setRevision((current) => current + 1);
-    };
-    const timer = window.setInterval(refresh, 30000);
-    window.addEventListener('focus', refresh);
-    document.addEventListener('visibilitychange', refresh);
-    return () => {
-      window.clearInterval(timer);
-      window.removeEventListener('focus', refresh);
-      document.removeEventListener('visibilitychange', refresh);
-    };
-  }, [token, userId]);
-
-  useEffect(() => {
-    if (!token) return;
     let active = true;
-    const version = mutationVersion.current;
-    setLoading(true);
-    setError('');
-    void getNotifications({ page, limit: 10 }).then(
-      (result) => {
-        if (active && isCurrentSession() && version === mutationVersion.current) {
-          setData(result);
-          setUnreadCount(result.unreadCount);
-          setLoading(false);
+    let fetching = false;
+    let timer: number | undefined;
+
+    // Badge cập nhật cả khi đóng chuông; chỉ lấy danh sách khi đang mở.
+    // Lên lịch sau khi request kết thúc để không chồng request lúc mạng chậm.
+    async function sync(showLoading = false) {
+      if (!active || fetching) return;
+      window.clearTimeout(timer);
+      if (lock.current || document.visibilityState === 'hidden') {
+        timer = window.setTimeout(() => void sync(), 5000);
+        return;
+      }
+      fetching = true;
+      const version = mutationVersion.current;
+      const canApply = () => active && isCurrentSession() && version === mutationVersion.current;
+      if (showLoading && isOpen) setLoading(true);
+      try {
+        if (isOpen) {
+          const result = await getNotifications({ page, limit: 10 });
+          if (canApply()) {
+            const lastPage = Math.max(1, result.totalPages);
+            if (page > lastPage) setPage(lastPage);
+            else setData(result);
+            setUnreadCount(result.unreadCount);
+            setError('');
+          }
+        } else {
+          const result = await getNotificationUnreadCount();
+          if (canApply()) {
+            setUnreadCount(result.unreadCount);
+            setError('');
+          }
         }
-      },
-      (cause: unknown) => {
-        if (active && isCurrentSession() && version === mutationVersion.current) {
+      } catch (cause) {
+        if (canApply())
           setError(cause instanceof Error ? cause.message : 'Không thể tải thông báo.');
-          setLoading(false);
-        }
-      },
-    );
+      } finally {
+        fetching = false;
+        if (canApply()) setLoading(false);
+        if (active) timer = window.setTimeout(() => void sync(), 5000);
+      }
+    }
+
+    const refreshVisible = () => void sync();
+    void sync(true);
+    window.addEventListener('focus', refreshVisible);
+    document.addEventListener('visibilitychange', refreshVisible);
     return () => {
       active = false;
+      window.clearTimeout(timer);
+      window.removeEventListener('focus', refreshVisible);
+      document.removeEventListener('visibilitychange', refreshVisible);
     };
   }, [isOpen, page, revision, token, userId]);
 
@@ -85,7 +102,17 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       if (!isCurrentSession()) return;
       toast.success(result.message);
       setUnreadCount((current) => (id ? (current === null ? null : Math.max(0, current - 1)) : 0));
-      setLoading(true);
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              unreadCount: id ? Math.max(0, current.unreadCount - 1) : 0,
+              items: current.items.map((item) =>
+                !id || item.id === id ? { ...item, isRead: true } : item,
+              ),
+            }
+          : current,
+      );
       setRevision((current) => current + 1);
     } catch (cause) {
       if (isCurrentSession()) {
