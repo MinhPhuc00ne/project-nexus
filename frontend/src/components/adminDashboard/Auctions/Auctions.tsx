@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Gavel, Play, Plus, RefreshCw, Square } from 'lucide-react';
-import type { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getAdminAuctionsApi,
@@ -42,10 +42,10 @@ export default function AdminAuctionsPage() {
             items: current.items.map((item) => {
               if (item.id !== id) return item;
               if (item.status === 'DRAFT' || item.status === 'SCHEDULED') {
-                return { ...item, status: 'ACTIVE' };
+                return { ...item, status: AuctionStatus.ACTIVE };
               }
               if (item.status === 'ACTIVE' || item.status === 'EXTENDED') {
-                return { ...item, status: 'ENDED' };
+                return { ...item, status: AuctionStatus.ENDED };
               }
               return item;
             }),
@@ -214,7 +214,7 @@ export default function AdminAuctionsPage() {
                       </td>
                       <td className="p-4">
                         <Button variant="secondary" onClick={() => setSelectedAuction(item)}>
-                          Xem / thêm ({item._count?.items ?? 0})
+                          Xem sản phẩm ({item._count?.items ?? 0})
                         </Button>
                       </td>
                       <td className="p-4">

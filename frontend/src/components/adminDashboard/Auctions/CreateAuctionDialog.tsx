@@ -172,7 +172,7 @@ export default function CreateAuctionDialog({
             Hủy
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Đang tạo…' : 'Tạo phiên & thêm sản phẩm'}
+            {saving ? 'Đang tạo…' : 'Tạo phiên đấu giá'}
           </Button>
         </div>
       </form>
