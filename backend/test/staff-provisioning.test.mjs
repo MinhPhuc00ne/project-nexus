@@ -14,6 +14,8 @@ test('invitation provisions an active staff account, wallet and old-format usern
   assert.equal(result.staff.role, 'SUPPORT_STAFF');
   assert.equal(result.staff.isVerified, true);
   assert.equal(f.state.wallets.length, 1);
+  assert.equal(f.state.users[0].reputationScore, 50);
+  assert.equal(f.state.users[0].trustLevel, 'PROBATION');
   assert.equal(f.state.invitations[0].isAccepted, true);
   assert.equal(f.emails[0].to, 'personal@example.test');
   assert.equal(f.emails[0].requireDelivery, true);
