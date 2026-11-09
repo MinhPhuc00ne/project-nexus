@@ -29,6 +29,7 @@ export default function AdminBannersPage() {
         onRefresh={management.refresh}
         onEdit={management.openEditor}
         onToggle={management.toggle}
+        onReorder={management.reorder}
       />
     </div>
   );

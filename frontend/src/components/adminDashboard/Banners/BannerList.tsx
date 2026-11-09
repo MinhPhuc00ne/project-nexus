@@ -1,4 +1,6 @@
-import { Image, Pencil, Plus, Power, RefreshCw, Search } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { GripVertical, Image, Pencil, Plus, Power, RefreshCw, Search } from 'lucide-react';
+import { useCategoryDragScroll } from '../Categories/useCategoryDragScroll';
 import { bannerLink, bannerStatus, type Banner } from '../../../services/banners';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { Input } from '../../ui/input';
@@ -17,6 +19,7 @@ interface BannerListProps {
   onRefresh: () => void;
   onEdit: (banner?: Banner) => void;
   onToggle: (banner: Banner) => Promise<void>;
+  onReorder: (sourceId: string, targetId: string) => Promise<void>;
 }
 
 export default function BannerList({
@@ -30,7 +33,13 @@ export default function BannerList({
   onRefresh,
   onEdit,
   onToggle,
+  onReorder,
 }: BannerListProps) {
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropId, setDropId] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  useCategoryDragScroll(!!draggedId, containerRef);
+  const canReorder = !loading && !saving && !editing && !search.trim() && banners.length > 1;
   const filteredBanners = banners.filter((banner) =>
     banner.title.toLocaleLowerCase('vi').includes(search.toLocaleLowerCase('vi')),
   );
@@ -61,6 +70,13 @@ export default function BannerList({
           onChange={(event) => setSearch(event.target.value)}
         />
       </label>
+      <p className="mb-4 text-xs text-slate-500" role="status">
+        {saving
+          ? 'Đang lưu thay đổi…'
+          : search.trim()
+            ? 'Xóa từ khóa tìm kiếm để kéo thả sắp xếp banner.'
+            : 'Kéo biểu tượng ⋮⋮ để đổi thứ tự banner. Thứ tự được tự động lưu; banner trên cùng hiển thị trước.'}
+      </p>
       {loading ? (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
           Đang tải banner…
@@ -78,10 +94,13 @@ export default function BannerList({
           }
         />
       ) : (
-        <div className="overflow-x-auto">
+        <div ref={containerRef} className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="border-b border-slate-200 text-slate-500">
               <tr>
+                <th className="w-12 p-3">
+                  <span className="sr-only">Sắp xếp</span>
+                </th>
                 <th className="p-3">Banner</th>
                 <th className="p-3">Lịch hiển thị</th>
                 <th className="p-3">Ưu tiên</th>
@@ -93,7 +112,54 @@ export default function BannerList({
               {filteredBanners.map((banner) => {
                 const status = bannerStatus(banner);
                 return (
-                  <tr key={banner.id} className="border-b border-slate-100 align-top">
+                  <tr
+                    key={banner.id}
+                    onDragOver={(event) => {
+                      if (!canReorder || !draggedId || draggedId === banner.id) return;
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = 'move';
+                      setDropId(banner.id);
+                    }}
+                    onDragLeave={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                        setDropId((current) => (current === banner.id ? null : current));
+                      }
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const sourceId = draggedId;
+                      setDraggedId(null);
+                      setDropId(null);
+                      if (canReorder && sourceId) void onReorder(sourceId, banner.id);
+                    }}
+                    className={`border-b border-slate-100 align-top ${draggedId === banner.id ? 'opacity-50' : ''} ${dropId === banner.id ? 'bg-blue-50 ring-2 ring-inset ring-blue-400' : ''}`}
+                  >
+                    <td className="p-3">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        draggable={canReorder}
+                        disabled={!canReorder}
+                        aria-label={`Kéo để sắp xếp banner ${banner.title}`}
+                        title="Kéo để đổi thứ tự banner"
+                        className="cursor-grab active:cursor-grabbing"
+                        onDragStart={(event) => {
+                          if (!canReorder) {
+                            event.preventDefault();
+                            return;
+                          }
+                          event.dataTransfer.setData('text/plain', banner.id);
+                          event.dataTransfer.effectAllowed = 'move';
+                          setDraggedId(banner.id);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedId(null);
+                          setDropId(null);
+                        }}
+                      >
+                        <GripVertical size={16} aria-hidden="true" />
+                      </Button>
+                    </td>
                     <td className="p-3">
                       <img
                         src={banner.imageUrl}
