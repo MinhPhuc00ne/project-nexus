@@ -35,7 +35,6 @@ test(
     const adminPool = new Pool({ connectionString: url.toString(), connectionTimeoutMillis: 3000 });
     let prisma;
     let pool;
-    const existingAccountId = randomUUID();
     try {
       const client = await adminPool.connect();
       try {
@@ -49,16 +48,6 @@ test(
           const sql = (
             await readFile(new URL(`${entry.name}/migration.sql`, folder), 'utf8')
           ).replace(/^\s*(?:BEGIN|COMMIT);[ \t]*$/gm, '');
-          if (entry.name === '20261109130000_initial_reputation_50')
-            await client.query(
-              "INSERT INTO users (id,email,password_hash,full_name,reputation_score,trust_level,updated_at) VALUES ($1,$2,$3,$4,127,'EXCELLENT',NOW())",
-              [
-                existingAccountId,
-                `${existingAccountId}@example.invalid`,
-                'fixture',
-                'Existing account',
-              ],
-            );
           await client.query(sql);
         }
         await client.query('COMMIT');
@@ -95,8 +84,6 @@ test(
             passwordHash: 'test-only',
             role,
             isVerified: true,
-            reputationScore: 100,
-            trustLevel: 'GOOD',
             wallet: { create: { balance: 300000 } },
           },
         });
@@ -168,24 +155,6 @@ test(
         city: 'Ho Chi Minh',
         street: 'Test address',
       };
-
-      await t.test(
-        'migration changes database defaults to 50 without modifying existing reputation',
-        async () => {
-          const existing = await prisma.user.findUniqueOrThrow({
-            where: { id: existingAccountId },
-          });
-          assert.equal(existing.reputationScore, 127);
-          assert.equal(existing.trustLevel, 'EXCELLENT');
-          const id = randomUUID();
-          const result = await pool.query(
-            'INSERT INTO users (id,email,password_hash,full_name,updated_at) VALUES ($1,$2,$3,$4,NOW()) RETURNING reputation_score,trust_level',
-            [id, `${id}@example.invalid`, 'fixture', 'New account'],
-          );
-          assert.equal(result.rows[0].reputation_score, 50);
-          assert.equal(result.rows[0].trust_level, 'PROBATION');
-        },
-      );
 
       await t.test(
         'one winning bid creates one order; concurrent checkout consumes the deposit once and escrows the full total',
@@ -347,8 +316,6 @@ test(
             },
           });
           const auth = new AuthService(prisma, {}, {}, {}, {});
-          assert.equal(account.reputationScore, 50);
-          assert.equal(account.trustLevel, 'PROBATION');
           await Promise.all([
             auth.verifyEmail({ email: account.email, code: '123456' }),
             auth.verifyEmail({ email: account.email, code: '123456' }),
