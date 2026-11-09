@@ -1,5 +1,4 @@
 import {
-  Bell,
   ChevronDown,
   Languages,
   Menu,
@@ -13,17 +12,17 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { clearAuthSession } from '../../../services/auth';
 import type { UserProfile } from '../../../services/users';
+import AdminNotifications from './AdminNotifications';
 
 // Header nhận tài khoản đã được AdminLayout xác minh qua /users/me; không tự gọi API lần nữa.
-// onMenu mở sidebar mobile; pendingCount do trang cha tính từ các hồ sơ đang chờ.
+// onMenu mở sidebar mobile; thông báo lấy từ API theo tài khoản hiện tại.
 export default function AdminHeader({
   onMenu,
-  pendingCount,
   user,
 }: {
   onMenu: () => void;
-  pendingCount: number;
   user: UserProfile;
+  pendingCount?: number;
 }) {
   // State cục bộ chỉ để mở/đóng danh sách thông báo, không sửa dữ liệu nghiệp vụ.
   const [showNotifications, setShowNotifications] = useState(false);
@@ -107,26 +106,15 @@ export default function AdminHeader({
           VIE
         </span>
         <div ref={notificationRef} className="relative">
-          <button
-            aria-label="Thông báo"
-            aria-expanded={showNotifications}
-            onClick={() => {
+          <AdminNotifications
+            key={user.id}
+            userId={user.id}
+            isOpen={showNotifications}
+            onToggle={() => {
               setShowNotifications(!showNotifications);
               setShowUserMenu(false);
             }}
-            className="relative rounded-lg p-2 text-slate-500 hover:bg-blue-50"
-          >
-            <Bell size={19} />
-            <span className="absolute right-2 top-1.5 size-1.5 rounded-full bg-primary" />
-          </button>
-          {showNotifications && (
-            <div className="absolute right-0 top-12 w-64 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
-              <p className="text-sm font-bold text-primary">Thông báo quản trị</p>
-              <p className="mt-2 text-xs leading-6 text-slate-500">
-                Có {pendingCount} yêu cầu đang chờ quyết định. Mở các tab phê duyệt để xem chi tiết.
-              </p>
-            </div>
-          )}
+          />
         </div>
         {/* Tài khoản: bấm tên/avatar mở bảng thông tin, điều hướng và đăng xuất. */}
         <div
