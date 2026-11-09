@@ -1,5 +1,5 @@
 import { cn } from '../../lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box as CodeSandboxOutlined } from 'lucide-react';
 import {
   Clock as ClockCircleOutlined,
@@ -24,12 +24,8 @@ import {
   SellerLink,
   StatCard,
 } from '../../components/seller/SellerUI';
-import {
-  auctionStatuses,
-  money,
-  previewAuctions,
-  type SellerAuction,
-} from '../../components/seller/sellerData';
+import { auctionStatuses, money, type SellerAuction } from '../../components/seller/sellerData';
+import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
 
 const rotationClasses: Record<number, string> = {
   '0': 'rotate-[0deg]',
@@ -41,18 +37,79 @@ const rotationClasses: Record<number, string> = {
   '-10': 'rotate-[-10deg]',
 };
 
+/**
+ * Maps a public auction session entity to the seller auction presentation model.
+ *
+ * @param auction - The public auction session entity returned from the API.
+ * @returns Formatted seller auction item with Vietnamese status mapping and thumbnail URL.
+ */
+function toSellerAuction(auction: AuctionEntity): SellerAuction {
+  const status: SellerAuction['status'] =
+    auction.status === 'ACTIVE' || auction.status === 'EXTENDED'
+      ? 'live'
+      : auction.status === 'SCHEDULED'
+        ? 'scheduled'
+        : auction.status === 'DRAFT'
+          ? 'pending'
+          : 'ended';
+  const image =
+    auction.product?.images?.find((item) => item.isThumbnail)?.imageUrl ??
+    auction.product?.images?.[0]?.imageUrl ??
+    '';
+
+  return {
+    id: auction.id,
+    title: auction.title || auction.product?.title || 'Phiên đấu giá',
+    description:
+      status === 'scheduled'
+        ? `Mở phiên: ${new Date(auction.startTime).toLocaleString('vi-VN')}`
+        : `Kết thúc: ${new Date(auction.endTime).toLocaleString('vi-VN')}`,
+    image,
+    price: Number(auction.currentHighestBid || auction.startingPrice || 0),
+    bids: auction.totalBidsCount ?? 0,
+    status,
+    model: auction.product?.threeModelKey ? '3D' : 'Sản phẩm',
+  };
+}
+
 export default function SellerAuctionsPage() {
-  const { preview, drafts, notify } = useSellerWorkspace();
+  const { drafts, notify } = useSellerWorkspace();
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
   const [detail, setDetail] = useState<SellerAuction | null>(null);
   const [rotation, setRotation] = useState(0);
-  const rows = (preview ? previewAuctions : []).filter(
+  const [auctions, setAuctions] = useState<SellerAuction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void getAuctionsApi({ limit: 100 })
+      .then((response) => {
+        if (active) setAuctions(response.items.map(toSellerAuction));
+      })
+      .catch((error: unknown) => {
+        if (active) {
+          setLoadError(error instanceof Error ? error.message : 'Không thể tải các phiên đấu giá.');
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const rows = auctions.filter(
     (auction) =>
       (tab === 'all' || auction.status === tab) &&
       `${auction.title} ${auction.id}`.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
   );
   const auctionDrafts = drafts.filter((draft) => draft.kind === 'auction');
+  const activeCount = auctions.filter((auction) => auction.status === 'live').length;
+  const pendingCount = auctions.filter((auction) => auction.status === 'pending').length;
+  const scheduledCount = auctions.filter((auction) => auction.status === 'scheduled').length;
   return (
     <div
       className="flex flex-col gap-5.5 min-w-0 [&>[data-seller~=page-stack]]:gap-4 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 max-[540px]:gap-[17px]"
@@ -81,19 +138,19 @@ export default function SellerAuctionsPage() {
       >
         <StatCard
           label="Phiên đang diễn ra"
-          value={preview ? '02' : '—'}
+          value={isLoading ? '…' : activeCount.toString().padStart(2, '0')}
           detail="Phòng đấu giá trực tiếp"
           icon={<PlayCircleOutlined className="text-[20px]" aria-hidden="true" />}
         />
         <StatCard
           label="Chờ thẩm định"
-          value={preview ? '01' : '—'}
+          value={isLoading ? '…' : pendingCount.toString().padStart(2, '0')}
           detail="Vật phẩm & mô hình GLB"
           icon={<BuildOutlined className="text-[20px]" aria-hidden="true" />}
         />
         <StatCard
           label="Phiên sắp diễn ra"
-          value={preview ? '01' : '—'}
+          value={isLoading ? '…' : scheduledCount.toString().padStart(2, '0')}
           detail="Theo dõi lịch mở phiên"
           icon={<ClockCircleOutlined className="text-[20px]" aria-hidden="true" />}
         />
@@ -135,7 +192,17 @@ export default function SellerAuctionsPage() {
           />
         </label>
       </div>
-      {rows.length ? (
+      {isLoading ? (
+        <Panel title="Các phiên đấu giá">
+          <p className="py-8 text-center text-sm text-slate-500">Đang tải các phiên đấu giá…</p>
+        </Panel>
+      ) : loadError ? (
+        <Panel title="Các phiên đấu giá">
+          <div role="alert" className="py-8 text-center text-sm text-red-600">
+            {loadError}
+          </div>
+        </Panel>
+      ) : rows.length ? (
         <div
           className="grid [grid-template-columns:repeat(2,_minmax(0,_1fr))] gap-5 max-[1050px]:[grid-template-columns:1fr]"
           data-seller="auction-grid"
@@ -237,11 +304,11 @@ export default function SellerAuctionsPage() {
       ) : (
         <Panel title="Các phiên đấu giá">
           <EmptyState
-            title={preview ? 'Không có phiên phù hợp' : 'Bắt đầu phiên đấu giá đầu tiên'}
+            title={auctions.length ? 'Không có phiên phù hợp' : 'Chưa có phiên đấu giá nào'}
             description={
-              preview
+              auctions.length
                 ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.'
-                : 'Chuẩn bị vật phẩm, giá khởi điểm và thời gian để lưu bản nháp phiên.'
+                : 'Hiện chưa có phiên đấu giá được mở. Bạn có thể gửi vật phẩm để chờ phiên phù hợp.'
             }
             action={
               <SellerLink to="/seller/auctions/new">
