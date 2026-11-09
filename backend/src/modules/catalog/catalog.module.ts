@@ -13,6 +13,7 @@ import { BannerController } from './controllers/banner.controller';
 import { RecommendationsController } from './controllers/recommendations.controller';
 import { BannerService } from './services/banner.service';
 import { RecommendationsService } from './services/recommendations.service';
+import { AuctionStockService } from './services/auction-stock.service';
 
 @Module({
   imports: [PrismaModule],
@@ -24,6 +25,7 @@ import { RecommendationsService } from './services/recommendations.service';
     RecommendationsController,
   ],
   providers: [
+    AuctionStockService,
     CategoryService,
     ProductService,
     InventoryService,
@@ -33,6 +35,6 @@ import { RecommendationsService } from './services/recommendations.service';
     BannerService,
     RecommendationsService,
   ],
-  exports: [CategoryService, ProductService, InventoryService, ShopService],
+  exports: [CategoryService, ProductService, InventoryService, ShopService, AuctionStockService],
 })
 export class CatalogModule {}

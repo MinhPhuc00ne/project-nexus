@@ -25,6 +25,7 @@ export class ReviewsService {
   ): Promise<unknown> {
     try {
       return await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
         const order = await tx.order.findFirst({
           where: {
             id: orderId,
@@ -72,27 +73,23 @@ export class ReviewsService {
         }
 
         if (kind !== 'customer') {
-          if (dto.rating === 5) {
+          const bonusReference = `REVIEW_BONUS:${order.id}`;
+          if (
+            dto.rating === 5 &&
+            !(await tx.reputationLog.findFirst({
+              where: { userId: order.sellerId, referenceId: bonusReference },
+            }))
+          ) {
             await this.reputationService.adjustScore(
               {
                 userId: order.sellerId,
                 deltaPoints: 1,
                 reason: `Đơn hàng #${order.id.slice(0, 8)} nhận được đánh giá 5 sao từ người mua`,
-                referenceId: order.id,
+                referenceId: bonusReference,
               },
               tx,
             );
           } else if (dto.rating === 1) {
-            await this.reputationService.adjustScore(
-              {
-                userId: order.sellerId,
-                deltaPoints: -15,
-                reason: `Đơn hàng #${order.id.slice(0, 8)} bị người mua đánh giá 1 sao`,
-                referenceId: order.id,
-              },
-              tx,
-            );
-
             const admins = await tx.user.findMany({
               where: { role: 'ADMIN' },
               select: { id: true },
@@ -102,7 +99,7 @@ export class ReviewsService {
                 data: {
                   userId: admin.id,
                   title: `[CẢNH BÁO SHOP] Đơn hàng #${order.id.slice(0, 8)} nhận đánh giá 1 sao`,
-                  content: `Người mua đã đánh giá 1 sao cho Shop ${order.sellerId} tại đơn hàng #${order.id.slice(0, 8)}. Nhận xét: "${dto.comment || 'Không có bình luận'}". Hệ thống đã tự động trừ -15 điểm uy tín và chuyển thông tin đến Ban Quản Trị giám sát.`,
+                  content: `Người mua đã đánh giá 1 sao cho Shop ${order.sellerId} tại đơn hàng #${order.id.slice(0, 8)}. Nhận xét: "${dto.comment || 'Không có bình luận'}". Vui lòng kiểm tra bằng chứng và xử lý qua luồng báo cáo vi phạm.`,
                   type: 'DISPUTE',
                   channel: 'IN_APP',
                 },

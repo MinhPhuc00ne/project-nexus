@@ -85,14 +85,19 @@ test('review creation requires ownership, completion and purchased product, and 
     $queryRaw: async () => [],
     order: { findFirst: async () => order },
     productReview: { create: mock.fn(async ({ data }) => data) },
+    reputationLog: { findFirst: async () => null },
     product: { update: mock.fn(async () => ({ ratingSum: 9, reviewCount: 2 })) },
   };
-  const service = new ReviewsService({ $transaction: (fn) => fn(tx) });
+  const service = new ReviewsService(
+    { $transaction: (fn) => fn(tx) },
+    { adjustScore: mock.fn(async () => ({})) },
+  );
   await assert.rejects(
     service.create('buyer', 'order', { rating: 5 }, 'product', 'p1'),
     /đơn hàng/,
   );
   order = {
+    id: 'order',
     status: 'DELIVERED',
     buyerId: 'buyer',
     sellerId: 'seller',

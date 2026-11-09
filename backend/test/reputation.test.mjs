@@ -82,6 +82,14 @@ function createReputationFixture(initialUser = {}) {
     },
   };
 
+  prisma.$queryRaw = async () => [];
+  let queue = Promise.resolve();
+  prisma.$transaction = (run) => {
+    const pending = queue.then(() => run(prisma));
+    queue = pending.catch(() => {});
+    return pending;
+  };
+
   const notificationsService = {
     createNotification: mock.fn(async (params) => prisma.notification.create({ data: params })),
   };
@@ -94,19 +102,22 @@ function createReputationFixture(initialUser = {}) {
 test('ReputationService.calculateTrustLevel maps thresholds according to project business rules', () => {
   const { service } = createReputationFixture();
 
-  assert.equal(service.calculateTrustLevel(100), 'EXCELLENT');
-  assert.equal(service.calculateTrustLevel(90), 'EXCELLENT');
-  assert.equal(service.calculateTrustLevel(89), 'GOOD');
-  assert.equal(service.calculateTrustLevel(80), 'GOOD');
-  assert.equal(service.calculateTrustLevel(79), 'STANDARD');
-  assert.equal(service.calculateTrustLevel(30), 'STANDARD');
-  assert.equal(service.calculateTrustLevel(29), 'PROBATION');
-  assert.equal(service.calculateTrustLevel(20), 'PROBATION');
-  assert.equal(service.calculateTrustLevel(19), 'SUSPENDED');
-  assert.equal(service.calculateTrustLevel(0), 'SUSPENDED');
+  for (const [score, tier] of [
+    [120, 'EXCELLENT'],
+    [119, 'GOOD'],
+    [100, 'GOOD'],
+    [99, 'STANDARD'],
+    [80, 'STANDARD'],
+    [79, 'PROBATION'],
+    [40, 'PROBATION'],
+    [39, 'SUSPENDED'],
+    [0, 'SUSPENDED'],
+  ]) {
+    assert.equal(service.calculateTrustLevel(score), tier);
+  }
 });
 
-test('ReputationService.adjustScore increments score, clamps to 100, logs audit trail and dispatches notification', async () => {
+test('ReputationService.adjustScore increments score without a 100-point cap, logs audit trail and dispatches notification', async () => {
   const f = createReputationFixture({ reputationScore: 88 });
 
   const result = await f.service.adjustScore({
@@ -117,7 +128,7 @@ test('ReputationService.adjustScore increments score, clamps to 100, logs audit 
   });
 
   assert.equal(result.score, 93);
-  assert.equal(result.trustLevel, 'EXCELLENT');
+  assert.equal(result.trustLevel, 'STANDARD');
   assert.equal(f.user.reputationScore, 93);
   assert.equal(f.logs.length, 1);
   assert.equal(f.logs[0].deltaPoints, 5);
@@ -142,7 +153,7 @@ test('ReputationService.adjustScore decrements score and clamps to 0 minimum wit
   assert.equal(f.logs[0].balanceAfter, 0);
 });
 
-test('ReputationService.adjustScore automatically suspends seller shop and hides active listings when score drops below 20', async () => {
+test('ReputationService.adjustScore automatically suspends seller shop and hides active listings when score drops below 40', async () => {
   const f = createReputationFixture({ reputationScore: 25, role: 'SELLER' });
 
   await f.service.adjustScore({
@@ -206,11 +217,11 @@ test('ReputationService.awardProfileCompletion awards points once and enforces i
   assert.equal(f.logs.length, 1);
 });
 
-test('ReputationService.getReputationSummary provides verified shop status for scores >= 80', async () => {
-  const f = createReputationFixture({ reputationScore: 82 });
+test('ReputationService.getReputationSummary provides premium shop status for scores >= 120', async () => {
+  const f = createReputationFixture({ reputationScore: 122 });
 
   const summary = await f.service.getReputationSummary(f.user.id);
-  assert.equal(summary.score, 82);
+  assert.equal(summary.score, 122);
   assert.equal(summary.isVerifiedShop, true);
   assert.equal(summary.canSell, true);
 });

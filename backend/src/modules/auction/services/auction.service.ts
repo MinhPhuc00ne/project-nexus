@@ -26,6 +26,9 @@ import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
 import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
 import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
 import { ReviewAction, ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
+import { AuctionStockService } from '../../catalog/services/auction-stock.service';
+import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
+import { trustLevelFor } from '../../users/services/reputation-policy';
 
 /**
  * Service orchestrating admin auction session lifecycle, seller consignment with online appraisal,
@@ -38,7 +41,50 @@ export class AuctionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auctionGateway: AuctionGateway,
+    private readonly stock: AuctionStockService,
+    private readonly checkout: AuctionCheckoutService,
   ) {}
+
+  /**
+   * Links a session's sole approved consignment to a catalog product before bids exist.
+   * @param auctionId Auction session identifier.
+   * @param productId Fulfillable catalog item selected by the administrator.
+   * @returns Updated auction with exactly one unit reserved.
+   * @throws BadRequestException when the session is closed, ambiguous, or already has bids.
+   */
+  async bindProduct(
+    auctionId: string,
+    productId: string,
+  ): Promise<Prisma.AuctionGetPayload<object>> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
+      const auction = await tx.auction.findUnique({ where: { id: auctionId } });
+      if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+      if (!['DRAFT', 'SCHEDULED', 'ACTIVE'].includes(auction.status) || auction.totalBidsCount > 0)
+        throw new BadRequestException('Chỉ gắn sản phẩm trước khi nhận giá.');
+      if (auction.productId && auction.productId !== productId)
+        await this.stock.release(tx, auction.id);
+      const product = await this.stock.reserve(tx, {
+        productId,
+        referenceId: auction.id,
+        expiresAt: new Date(auction.endTime.getTime() + 86400000),
+      });
+      if (auction.createdByAdminId) {
+        const approved = await tx.auctionItem.findMany({
+          where: { auctionId, status: 'APPROVED' },
+          select: { sellerId: true },
+        });
+        if (approved.length !== 1 || approved[0].sellerId !== product.sellerId)
+          throw new BadRequestException(
+            'Mỗi phòng nhận giá cần đúng một lô đã duyệt, cùng người bán với sản phẩm.',
+          );
+      }
+      return tx.auction.update({
+        where: { id: auctionId },
+        data: { productId, sellerId: product.sellerId },
+      });
+    });
+  }
 
   /**
    * Retrieves paginated auction listings with optional status, seller and search filters.
@@ -246,8 +292,13 @@ export class AuctionService {
     const startTime = new Date(dto.startTime);
     const endTime = new Date(dto.endTime);
 
-    if (endTime <= startTime) {
-      throw new BadRequestException('Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.');
+    if (
+      !Number.isFinite(endTime.getTime()) ||
+      !Number.isFinite(startTime.getTime()) ||
+      endTime.getTime() - startTime.getTime() < 3600000 ||
+      endTime.getTime() - startTime.getTime() > 7 * 86400000
+    ) {
+      throw new BadRequestException('Phiên đấu giá phải kéo dài từ 60 phút đến 7 ngày.');
     }
 
     const now = new Date();
@@ -260,8 +311,8 @@ export class AuctionService {
         startTime,
         endTime,
         originalEndTime: endTime,
-        minBuyerReputation: dto.minBuyerReputation ?? 100,
-        minSellerReputation: dto.minSellerReputation ?? 80,
+        minBuyerReputation: dto.minBuyerReputation ?? 40,
+        minSellerReputation: dto.minSellerReputation ?? 50,
         createdByAdminId: adminId,
         status,
         startingPrice: 0,
@@ -323,8 +374,11 @@ export class AuctionService {
     const newStart = dto.startTime ? new Date(dto.startTime) : auction.startTime;
     const newEnd = dto.endTime ? new Date(dto.endTime) : auction.endTime;
 
-    if (newEnd <= newStart) {
-      throw new BadRequestException('Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.');
+    if (
+      newEnd.getTime() - newStart.getTime() < 3600000 ||
+      newEnd.getTime() - newStart.getTime() > 7 * 86400000
+    ) {
+      throw new BadRequestException('Phiên đấu giá phải kéo dài từ 60 phút đến 7 ngày.');
     }
 
     if (dto.startTime) {
@@ -355,44 +409,52 @@ export class AuctionService {
    * Strict Rule: Prohibits deletion when auction is ACTIVE or EXTENDED.
    */
   async adminDeleteAuction(auctionId: string) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-      include: {
-        _count: {
-          select: { items: true, bids: true },
-        },
-      },
-    });
-
-    if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
-    }
-
-    if (auction.status === AuctionStatus.ACTIVE || auction.status === AuctionStatus.EXTENDED) {
-      throw new BadRequestException(
-        'Phiên đấu giá đang diễn ra, tuyệt đối không được phép xóa phiên!',
-      );
-    }
-
-    if (auction._count.items > 0 || auction._count.bids > 0) {
-      await this.prisma.auction.update({
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
+      const auction = await tx.auction.findUnique({
         where: { id: auctionId },
-        data: { status: AuctionStatus.CANCELLED },
+        include: {
+          _count: {
+            select: { items: true, bids: true },
+          },
+        },
       });
+
+      if (!auction) {
+        throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+      }
+
+      if (auction.status === AuctionStatus.ACTIVE || auction.status === AuctionStatus.EXTENDED) {
+        throw new BadRequestException(
+          'Phiên đấu giá đang diễn ra, tuyệt đối không được phép xóa phiên!',
+        );
+      }
+
+      if (auction._count.bids > 0 || ['ENDED', 'SETTLED', 'FAILED'].includes(auction.status))
+        throw new BadRequestException('Không được hủy hoặc xóa lịch sử phiên đã nhận giá.');
+      await this.stock.release(tx, auctionId);
+
+      if (auction._count.items > 0 || auction._count.bids > 0) {
+        await tx.auction.update({
+          where: { id: auctionId },
+          data: { status: AuctionStatus.CANCELLED },
+        });
+        return {
+          success: true,
+          message:
+            'Phiên đấu giá đã có hàng ký gửi hoặc lịch sử, hệ thống đã chuyển sang CANCELLED.',
+        };
+      }
+
+      await tx.auction.delete({
+        where: { id: auctionId },
+      });
+
       return {
         success: true,
-        message: 'Phiên đấu giá đã có hàng ký gửi hoặc lịch sử, hệ thống đã chuyển sang CANCELLED.',
+        message: 'Đã xóa phiên đấu giá thành công.',
       };
-    }
-
-    await this.prisma.auction.delete({
-      where: { id: auctionId },
     });
-
-    return {
-      success: true,
-      message: 'Đã xóa phiên đấu giá thành công.',
-    };
   }
 
   // ==========================================
@@ -456,7 +518,9 @@ export class AuctionService {
     let flagReason: string | null = null;
 
     const hasPenalties = seller.reputationLogs.length > 0;
-    const isProbation = seller.trustLevel === ReputationTrustLevel.PROBATION;
+    const isProbation =
+      seller.trustLevel === ReputationTrustLevel.PROBATION ||
+      trustLevelFor(seller.reputationScore) === ReputationTrustLevel.PROBATION;
 
     if (hasPenalties || isProbation) {
       isSellerFlagged = true;
@@ -715,7 +779,7 @@ export class AuctionService {
       throw new NotFoundException('Không tìm thấy tài khoản người mua.');
     }
 
-    const requiredScore = auction.minBuyerReputation;
+    const requiredScore = Math.max(40, auction.minBuyerReputation ?? 40);
     const currentScore = buyer.reputationScore;
 
     if (currentScore < requiredScore) {
@@ -728,17 +792,13 @@ export class AuctionService {
       };
     }
 
-    const hasPenalties = buyer.reputationLogs.length > 0;
-    const isProbation = buyer.trustLevel === ReputationTrustLevel.PROBATION;
-
-    if (hasPenalties || isProbation) {
+    if (!['BUYER', 'SELLER'].includes(buyer.role) || buyer.trustLevel === 'SUSPENDED') {
       return {
         isEligible: false,
         isFlaggedViewOnly: true,
         currentScore,
         requiredScore,
-        reason:
-          'Tài khoản của bạn từng có lịch sử cảnh báo vi phạm thanh toán / đang trong diện thử thách. Phiên này chỉ mở quyền xem (View-Only) để bảo vệ tính công bằng.',
+        reason: 'Tài khoản không có quyền trả giá.',
       };
     }
 
@@ -793,6 +853,17 @@ export class AuctionService {
       }
 
       const now = new Date();
+
+      if (!auction.productId || !auction.sellerId)
+        throw new BadRequestException('Phiên chưa gắn sản phẩm catalog để giao hàng.');
+      const currentBuyer = await tx.user.findUnique({ where: { id: bidderId } });
+      if (
+        !currentBuyer ||
+        !['BUYER', 'SELLER'].includes(currentBuyer.role) ||
+        currentBuyer.trustLevel === 'SUSPENDED' ||
+        currentBuyer.reputationScore < Math.max(40, auction.minBuyerReputation ?? 40)
+      )
+        throw new BadRequestException('Tài khoản không còn đủ điều kiện trả giá.');
 
       if (auction.sellerId === bidderId) {
         throw new BadRequestException('Người bán không được phép tham gia trả giá phiên của mình.');
@@ -992,151 +1063,131 @@ export class AuctionService {
   /**
    * Concludes an auction room and settles the winning bidder or failures.
    */
-  async endAuction(auctionId: string, callerId?: string, callerRole?: string) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-      include: {
-        bids: {
-          where: { status: BidStatus.ACCEPTED },
-          orderBy: { bidAmount: 'desc' },
-          take: 1,
+  async endAuction(
+    auctionId: string,
+    callerId?: string,
+    callerRole?: string,
+  ): Promise<{
+    id: string;
+    status: AuctionStatus;
+    winningBidderId: string | null;
+    winningPrice: number;
+    awardId?: string;
+  }> {
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
+      const auction = await tx.auction.findUnique({
+        where: { id: auctionId },
+        include: {
+          bids: { where: { status: BidStatus.ACCEPTED }, orderBy: { bidAmount: 'desc' }, take: 1 },
         },
-      },
-    });
-
-    if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
-    }
-
-    if (
-      auction.status === AuctionStatus.ENDED ||
-      auction.status === AuctionStatus.FAILED ||
-      auction.status === AuctionStatus.CANCELLED
-    ) {
-      throw new BadRequestException(
-        `Phiên đấu giá đã kết thúc trước đó ở trạng thái ${auction.status}.`,
-      );
-    }
-
-    if (callerId && callerRole) {
-      const isPrivileged = callerRole === Role.ADMIN || callerRole === Role.SUPPORT_STAFF;
-      if (!isPrivileged && auction.sellerId !== callerId) {
-        throw new ForbiddenException(
-          'Bạn không có quyền kết thúc phiên đấu giá của người bán khác.',
-        );
-      }
-      const now = new Date();
-      if (!isPrivileged && now < auction.endTime) {
-        throw new BadRequestException('Phiên đấu giá chưa kết thúc thời gian thi đấu.');
-      }
-    }
-
-    const winningBid = auction.bids[0];
-    const hasMetReserve =
-      !auction.reservePrice ||
-      (winningBid && Number(winningBid.bidAmount) >= Number(auction.reservePrice));
-
-    if (winningBid && hasMetReserve) {
-      await this.prisma.$transaction(async (tx) => {
-        await tx.bid.update({
-          where: { id: winningBid.id },
-          data: { status: BidStatus.WINNING },
+      });
+      if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+      const privileged = callerRole === Role.ADMIN || callerRole === Role.SUPPORT_STAFF;
+      if (callerId && !privileged && auction.sellerId !== callerId)
+        throw new ForbiddenException('Bạn không có quyền kết thúc phiên của người khác.');
+      if (['ENDED', 'SETTLED', 'FAILED', 'CANCELLED'].includes(auction.status)) {
+        const award = await tx.auctionAward.findFirst({
+          where: { auctionId },
+          orderBy: { expiresAt: 'desc' },
         });
-
-        await tx.auction.update({
-          where: { id: auction.id },
-          data: { status: AuctionStatus.ENDED },
+        return {
+          id: auction.id,
+          status: auction.status,
+          winningBidderId: auction.currentHighestBidderId,
+          winningPrice: Number(auction.currentHighestBid),
+          awardId: award?.id,
+          changed: false,
+        };
+      }
+      if (!privileged && Date.now() < auction.endTime.getTime())
+        throw new BadRequestException('Phiên đấu giá chưa kết thúc.');
+      const winner = auction.bids[0];
+      const meetsReserve =
+        winner && (!auction.reservePrice || winner.bidAmount.gte(auction.reservePrice));
+      if (meetsReserve) {
+        if (!auction.productId || !auction.sellerId)
+          throw new BadRequestException('Cần đối soát sản phẩm ký gửi trước khi tạo đơn.');
+        const award = await this.checkout.createAward(tx, {
+          auctionId,
+          bidId: winner.id,
+          buyerId: winner.bidderId,
+          sellerId: auction.sellerId,
+          productId: auction.productId,
+          amount: winner.bidAmount,
+          depositAmount: winner.bidAmount,
+          stockReference: auctionId,
         });
-
+        await tx.bid.update({ where: { id: winner.id }, data: { status: 'WINNING' } });
+        await tx.auction.update({ where: { id: auctionId }, data: { status: 'ENDED' } });
         await tx.notification.create({
           data: {
-            userId: winningBid.bidderId,
+            userId: winner.bidderId,
             title: 'Chúc mừng! Bạn đã thắng phiên đấu giá',
-            content: `Bạn đã chiến thắng phiên đấu giá "${auction.title}" với mức giá ${Number(winningBid.bidAmount).toLocaleString('vi-VN')} VND. Vui lòng hoàn tất nhận hàng và thanh toán trong vòng 24 giờ!`,
-            type: NotificationType.AUCTION,
-            channel: NotificationChannel.IN_APP,
+            content: `Bạn đã chiến thắng phiên đấu giá "${auction.title}" với mức giá ${Number(winner.bidAmount).toLocaleString('vi-VN')} VND. Vui lòng hoàn tất nhận hàng và thanh toán trong vòng 24 giờ!`,
+            type: 'AUCTION',
+            channel: 'IN_APP',
           },
         });
-
-        if (auction.sellerId) {
-          await tx.notification.create({
-            data: {
-              userId: auction.sellerId,
-              title: 'Phiên đấu giá của bạn đã kết thúc thành công!',
-              content: `Phiên đấu giá "${auction.title}" đã kết thúc với người thắng trả mức giá ${Number(winningBid.bidAmount).toLocaleString('vi-VN')} VND.`,
-              type: NotificationType.AUCTION,
-              channel: NotificationChannel.IN_APP,
-            },
-          });
-        }
-      });
-
-      this.auctionGateway.broadcastAuctionEnded({
-        auctionId: auction.id,
-        winningBidderId: winningBid.bidderId,
-        winningPrice: Number(winningBid.bidAmount),
-      });
-
-      return {
-        id: auction.id,
-        status: AuctionStatus.ENDED,
-        winningBidderId: winningBid.bidderId,
-        winningPrice: Number(winningBid.bidAmount),
-      };
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      if (winningBid) {
-        const bidderWallet = await tx.wallet.findUnique({
-          where: { userId: winningBid.bidderId },
+        await tx.notification.create({
+          data: {
+            userId: auction.sellerId,
+            title: 'Phiên đấu giá của bạn đã kết thúc thành công!',
+            content: `Phiên đấu giá "${auction.title}" đã kết thúc với người thắng trả mức giá ${Number(winner.bidAmount).toLocaleString('vi-VN')} VND.`,
+            type: 'AUCTION',
+            channel: 'IN_APP',
+          },
         });
-
-        if (bidderWallet) {
-          const refundAmount = Number(winningBid.bidAmount);
-          await tx.wallet.update({
-            where: { id: bidderWallet.id },
-            data: {
-              lockedBalance: { decrement: refundAmount },
-              balance: { increment: refundAmount },
-            },
-          });
-
-          await tx.walletTransaction.create({
-            data: {
-              walletId: bidderWallet.id,
-              amount: refundAmount,
-              type: WalletTransactionType.AUCTION_BID_REFUND,
-              status: WalletTransactionStatus.SUCCESS,
-              referenceId: auction.id,
-              description: `Hoàn cọc do phiên đấu giá #${auction.id.slice(0, 8)} không đạt mức giá bảo lưu`,
-            },
-          });
-        }
-
-        await tx.bid.update({
-          where: { id: winningBid.id },
-          data: { status: BidStatus.REJECTED },
-        });
+        return {
+          id: auctionId,
+          status: AuctionStatus.ENDED,
+          winningBidderId: winner.bidderId,
+          winningPrice: Number(winner.bidAmount),
+          awardId: award.id,
+          changed: true,
+        };
       }
-
-      await tx.auction.update({
-        where: { id: auction.id },
-        data: { status: AuctionStatus.FAILED },
+      if (winner) {
+        const wallet = await tx.wallet.findUniqueOrThrow({ where: { userId: winner.bidderId } });
+        const refunded = await tx.wallet.updateMany({
+          where: { id: wallet.id, lockedBalance: { gte: winner.bidAmount } },
+          data: {
+            lockedBalance: { decrement: winner.bidAmount },
+            balance: { increment: winner.bidAmount },
+          },
+        });
+        if (refunded.count !== 1)
+          throw new BadRequestException('Tiền cọc đấu giá cần được đối soát.');
+        await tx.walletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            amount: winner.bidAmount,
+            type: 'AUCTION_BID_REFUND',
+            status: 'SUCCESS',
+            referenceId: auctionId,
+            description: 'Hoàn cọc do không đạt giá bảo lưu',
+          },
+        });
+        await tx.bid.update({ where: { id: winner.id }, data: { status: 'REJECTED' } });
+      }
+      await this.stock.release(tx, auctionId);
+      await tx.auction.update({ where: { id: auctionId }, data: { status: 'FAILED' } });
+      return {
+        id: auctionId,
+        status: AuctionStatus.FAILED,
+        winningBidderId: null,
+        winningPrice: 0,
+        changed: true,
+      };
+    });
+    if (result.changed)
+      this.auctionGateway.broadcastAuctionEnded({
+        auctionId,
+        winningBidderId: result.winningBidderId,
+        winningPrice: result.winningPrice,
       });
-    });
-
-    this.auctionGateway.broadcastAuctionEnded({
-      auctionId: auction.id,
-      winningBidderId: null,
-      winningPrice: 0,
-    });
-
-    return {
-      id: auction.id,
-      status: AuctionStatus.FAILED,
-      winningBidderId: null,
-      winningPrice: 0,
-    };
+    const { changed: _changed, ...response } = result;
+    return response;
   }
 
   /**
@@ -1166,31 +1217,54 @@ export class AuctionService {
     const endTime = new Date(dto.endTime);
     const now = new Date();
 
-    if (endTime <= startTime) {
-      throw new BadRequestException('Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.');
+    if (
+      !Number.isFinite(endTime.getTime()) ||
+      !Number.isFinite(startTime.getTime()) ||
+      endTime.getTime() - startTime.getTime() < 3600000 ||
+      endTime.getTime() - startTime.getTime() > 7 * 86400000
+    ) {
+      throw new BadRequestException('Phiên đấu giá phải kéo dài từ 60 phút đến 7 ngày.');
     }
+
+    const seller = await this.prisma.user.findUnique({ where: { id: sellerId } });
+    if (
+      !seller ||
+      seller.isShopSuspended ||
+      seller.reputationScore < 50 ||
+      trustLevelFor(seller.reputationScore) === ReputationTrustLevel.PROBATION ||
+      ['PROBATION', 'SUSPENDED'].includes(seller.trustLevel)
+    )
+      throw new BadRequestException('Người bán chưa đủ điều kiện tạo phiên đấu giá.');
 
     const status = startTime <= now ? AuctionStatus.ACTIVE : AuctionStatus.SCHEDULED;
 
-    return this.prisma.auction.create({
-      data: {
+    return this.prisma.$transaction(async (tx) => {
+      const auction = await tx.auction.create({
+        data: {
+          productId: dto.productId,
+          sellerId,
+          title: dto.title.trim(),
+          startingPrice: dto.startingPrice,
+          reservePrice: dto.reservePrice ?? null,
+          currentHighestBid: 0,
+          bidIncrement: dto.bidIncrement ?? 100000,
+          status,
+          startTime,
+          endTime,
+          originalEndTime: endTime,
+          isExtended: false,
+          totalBidsCount: 0,
+        },
+        include: {
+          product: true,
+        },
+      });
+      await this.stock.reserve(tx, {
         productId: dto.productId,
-        sellerId,
-        title: dto.title.trim(),
-        startingPrice: dto.startingPrice,
-        reservePrice: dto.reservePrice ?? null,
-        currentHighestBid: 0,
-        bidIncrement: dto.bidIncrement ?? 100000,
-        status,
-        startTime,
-        endTime,
-        originalEndTime: endTime,
-        isExtended: false,
-        totalBidsCount: 0,
-      },
-      include: {
-        product: true,
-      },
+        referenceId: auction.id,
+        expiresAt: new Date(endTime.getTime() + 86400000),
+      });
+      return auction;
     });
   }
 

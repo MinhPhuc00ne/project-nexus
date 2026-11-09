@@ -4,11 +4,11 @@ CREATE TYPE "AuctionItemStatus" AS ENUM ('PENDING_REVIEW', 'APPROVED', 'REJECTED
 -- AlterEnum
 BEGIN;
 CREATE TYPE "CarrierName_new" AS ENUM ('GHN');
-ALTER TABLE "public"."shipments" ALTER COLUMN "carrier" DROP DEFAULT;
+ALTER TABLE "shipments" ALTER COLUMN "carrier" DROP DEFAULT;
 ALTER TABLE "shipments" ALTER COLUMN "carrier" TYPE "CarrierName_new" USING ("carrier"::text::"CarrierName_new");
 ALTER TYPE "CarrierName" RENAME TO "CarrierName_old";
 ALTER TYPE "CarrierName_new" RENAME TO "CarrierName";
-DROP TYPE "public"."CarrierName_old";
+DROP TYPE "CarrierName_old";
 ALTER TABLE "shipments" ALTER COLUMN "carrier" SET DEFAULT 'GHN';
 COMMIT;
 
@@ -18,7 +18,7 @@ CREATE TYPE "PaymentProvider_new" AS ENUM ('PAYOS', 'WALLET', 'COD');
 ALTER TABLE "payments" ALTER COLUMN "provider" TYPE "PaymentProvider_new" USING ("provider"::text::"PaymentProvider_new");
 ALTER TYPE "PaymentProvider" RENAME TO "PaymentProvider_old";
 ALTER TYPE "PaymentProvider_new" RENAME TO "PaymentProvider";
-DROP TYPE "public"."PaymentProvider_old";
+DROP TYPE "PaymentProvider_old";
 COMMIT;
 
 -- AlterEnum
@@ -26,31 +26,31 @@ ALTER TYPE "WalletTransactionType" ADD VALUE 'AUCTION_BID_LOCK';
 ALTER TYPE "WalletTransactionType" ADD VALUE 'AUCTION_BID_REFUND';
 
 -- DropForeignKey
-ALTER TABLE "auctions" DROP CONSTRAINT "auctions_product_id_fkey";
+ALTER TABLE "auctions" DROP CONSTRAINT IF EXISTS "auctions_product_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "auctions" DROP CONSTRAINT "auctions_seller_id_fkey";
+ALTER TABLE "auctions" DROP CONSTRAINT IF EXISTS "auctions_seller_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "chat_auto_replies" DROP CONSTRAINT "chat_auto_replies_cancelled_by_fkey";
+ALTER TABLE "chat_auto_replies" DROP CONSTRAINT IF EXISTS "chat_auto_replies_cancelled_by_fkey";
 
 -- DropForeignKey
-ALTER TABLE "chat_auto_replies" DROP CONSTRAINT "chat_auto_replies_shop_id_fkey";
+ALTER TABLE "chat_auto_replies" DROP CONSTRAINT IF EXISTS "chat_auto_replies_shop_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "chat_conversations" DROP CONSTRAINT "chat_conversations_assigned_staff_id_fkey";
+ALTER TABLE "chat_conversations" DROP CONSTRAINT IF EXISTS "chat_conversations_assigned_staff_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "chat_conversations" DROP CONSTRAINT "chat_conversations_participant1_id_fkey";
+ALTER TABLE "chat_conversations" DROP CONSTRAINT IF EXISTS "chat_conversations_participant1_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "chat_conversations" DROP CONSTRAINT "chat_conversations_participant2_id_fkey";
+ALTER TABLE "chat_conversations" DROP CONSTRAINT IF EXISTS "chat_conversations_participant2_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "chat_messages" DROP CONSTRAINT "chat_messages_conversation_id_fkey";
+ALTER TABLE "chat_messages" DROP CONSTRAINT IF EXISTS "chat_messages_conversation_id_fkey";
 
 -- DropForeignKey
-ALTER TABLE "chat_messages" DROP CONSTRAINT "chat_messages_sender_id_fkey";
+ALTER TABLE "chat_messages" DROP CONSTRAINT IF EXISTS "chat_messages_sender_id_fkey";
 
 -- DropIndex
 DROP INDEX IF EXISTS "chat_conversations_participant1_idx";
@@ -72,7 +72,8 @@ ALTER COLUMN "bid_increment" SET DEFAULT 100000.0;
 ALTER TABLE "chat_auto_replies" ALTER COLUMN "updated_at" DROP DEFAULT;
 
 -- AlterTable
-ALTER TABLE "chat_conversations" ALTER COLUMN "status" SET DEFAULT 'OPEN',
+ALTER TABLE "chat_conversations" ADD COLUMN IF NOT EXISTS "assigned_staff_id" TEXT,
+ALTER COLUMN "status" SET DEFAULT 'OPEN',
 ALTER COLUMN "updated_at" DROP DEFAULT;
 
 -- CreateTable
@@ -108,16 +109,16 @@ CREATE TABLE "auction_items" (
 );
 
 -- CreateIndex
-CREATE INDEX "auction_items_auction_id_status_idx" ON "auction_items"("auction_id", "status");
+CREATE INDEX IF NOT EXISTS "auction_items_auction_id_status_idx" ON "auction_items"("auction_id", "status");
 
 -- CreateIndex
-CREATE INDEX "auction_items_seller_id_idx" ON "auction_items"("seller_id");
+CREATE INDEX IF NOT EXISTS "auction_items_seller_id_idx" ON "auction_items"("seller_id");
 
 -- CreateIndex
-CREATE INDEX "chat_conversations_participant1_id_participant2_id_idx" ON "chat_conversations"("participant1_id", "participant2_id");
+CREATE INDEX IF NOT EXISTS "chat_conversations_participant1_id_participant2_id_idx" ON "chat_conversations"("participant1_id", "participant2_id");
 
 -- CreateIndex
-CREATE INDEX "chat_conversations_context_id_context_type_idx" ON "chat_conversations"("context_id", "context_type");
+CREATE INDEX IF NOT EXISTS "chat_conversations_context_id_context_type_idx" ON "chat_conversations"("context_id", "context_type");
 
 -- AddForeignKey
 ALTER TABLE "auctions" ADD CONSTRAINT "auctions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -159,10 +160,10 @@ ALTER TABLE "chat_auto_replies" ADD CONSTRAINT "chat_auto_replies_shop_id_fkey" 
 ALTER TABLE "chat_auto_replies" ADD CONSTRAINT "chat_auto_replies_cancelled_by_fkey" FOREIGN KEY ("cancelled_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- RenameIndex
-ALTER INDEX "chat_conversations_context_idx" RENAME TO "chat_conversations_context_id_idx";
+ALTER INDEX IF EXISTS "chat_conversations_context_idx" RENAME TO "chat_conversations_context_id_idx";
 
 -- RenameIndex
-ALTER INDEX "chat_messages_conv_created_idx" RENAME TO "chat_messages_conversation_id_created_at_idx";
+ALTER INDEX IF EXISTS "chat_messages_conv_created_idx" RENAME TO "chat_messages_conversation_id_created_at_idx";
 
 -- RenameIndex
-ALTER INDEX "chat_messages_sender_idx" RENAME TO "chat_messages_sender_id_idx";
+ALTER INDEX IF EXISTS "chat_messages_sender_idx" RENAME TO "chat_messages_sender_id_idx";

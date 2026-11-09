@@ -27,6 +27,7 @@ import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
 import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
 import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
 import { ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
+import { BindAuctionProductDto } from '../dtos/bind-auction-product.dto';
 
 /**
  * Controller exposing REST endpoints for central auction events, seller consignment
@@ -36,6 +37,19 @@ import { ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
 @Controller('auctions')
 export class AuctionController {
   constructor(private readonly auctionService: AuctionService) {}
+
+  /** Binds a fulfillable catalog item before the first bid. @returns Auction with reserved stock. */
+  @Post('admin/:id/product')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Gắn sản phẩm cho một lô đấu giá và giữ tồn kho trước khi nhận giá' })
+  bindProduct(
+    @Param('id') id: string,
+    @Body() dto: BindAuctionProductDto,
+  ): ReturnType<AuctionService['bindProduct']> {
+    return this.auctionService.bindProduct(id, dto.productId);
+  }
 
   // ==========================================
   // PUBLIC & BUYER BROWSING ENDPOINTS

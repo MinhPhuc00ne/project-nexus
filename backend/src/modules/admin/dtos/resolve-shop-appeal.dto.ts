@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
 
 /**
  * Data transfer object for approving an administrative store appeal and restoring account standing.
@@ -14,14 +14,13 @@ export class ResolveShopAppealDto {
   reason!: string;
 
   @ApiPropertyOptional({
-    description:
-      'Target baseline reputation score to restore (defaults to 50 - STANDARD tier if omitted)',
+    description: 'Target reputation score to restore (defaults to 100, GOOD tier)',
     example: 60,
-    default: 50,
+    default: 100,
   })
   @IsOptional()
-  @IsNumber()
-  @Min(20)
-  @Max(100)
+  @IsInt()
+  @Min(50)
+  @Max(2147483647)
   restoredScore?: number;
 }

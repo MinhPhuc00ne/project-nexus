@@ -39,7 +39,7 @@ export class AdminUpdateAuctionDto {
 
   @ApiPropertyOptional({
     description: 'Updated minimum buyer reputation score required to place bids',
-    example: 100,
+    example: 40,
   })
   @Type(() => Number)
   @IsInt()
@@ -49,7 +49,7 @@ export class AdminUpdateAuctionDto {
 
   @ApiPropertyOptional({
     description: 'Updated minimum seller reputation score required to consign items',
-    example: 80,
+    example: 50,
   })
   @Type(() => Number)
   @IsInt()

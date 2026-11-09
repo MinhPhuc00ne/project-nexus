@@ -26,10 +26,16 @@ import { AfterSalesStoreService } from './services/after-sales-store.service';
 import { OrderCancellationService } from './services/order-cancellation.service';
 import { OrderReturnService } from './services/order-return.service';
 import { RefundService } from './services/refund.service';
+import { ReportModerationController } from './controllers/report-moderation.controller';
+import { ReportModerationService } from './services/report-moderation.service';
+import { AuctionCheckoutController } from './controllers/auction-checkout.controller';
+import { AuctionCheckoutService } from './services/auction-checkout.service';
 
 @Module({
   imports: [PrismaModule, FulfillmentModule, CatalogModule, AdminModule, UsersModule],
   controllers: [
+    AuctionCheckoutController,
+    ReportModerationController,
     AfterSalesController,
     FeedbackController,
     CartController,
@@ -41,6 +47,8 @@ import { RefundService } from './services/refund.service';
     OrderLifecycleController,
   ],
   providers: [
+    AuctionCheckoutService,
+    ReportModerationService,
     AfterSalesStoreService,
     OrderCancellationService,
     OrderReturnService,
@@ -56,6 +64,7 @@ import { RefundService } from './services/refund.service';
     OrderEscrowService,
   ],
   exports: [
+    AuctionCheckoutService,
     CartService,
     PayosService,
     OrderService,

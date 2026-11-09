@@ -204,7 +204,7 @@ export class UsersController {
   @ApiOperation({
     summary: 'Retrieve user reputation summary, trust tier, and operational badges',
     description:
-      'Returns normalized reputation score (0-100), trust classification tier, verified merchant badge state, and selling permissions.',
+      'Returns reputation points, documented trust thresholds, excellent reputation badge, and selling permissions.',
   })
   @ApiResponse({
     status: 200,
