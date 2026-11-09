@@ -16,6 +16,7 @@ import {
   getProductsCatalog,
   type RecommendedProduct,
 } from '../../services/products.service';
+import { AuctionStatus } from '@nexus/types';
 import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
 import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
 
@@ -74,16 +75,23 @@ function HomePage() {
         if (isMounted) setIsLoadingRecs(false);
       });
 
-    // Gọi API lấy các phiên đấu giá trực tiếp thời gian thực từ database
-    void getAuctionsApi({ limit: 4 })
-      .then((res) => {
+    // Ưu tiên tải các phiên đấu giá đang diễn ra (ACTIVE).
+    // Nếu chưa có phiên ACTIVE nào, tải các phiên đã lên lịch (SCHEDULED) để người mua theo dõi lịch khởi tranh.
+    void (async () => {
+      try {
+        const res = await getAuctionsApi({ limit: 4, status: AuctionStatus.ACTIVE });
         if (isMounted && res?.items && res.items.length > 0) {
           setLiveAuctions(res.items);
+          return;
         }
-      })
-      .catch((err) => {
+        const schedRes = await getAuctionsApi({ limit: 4, status: AuctionStatus.SCHEDULED });
+        if (isMounted && schedRes?.items && schedRes.items.length > 0) {
+          setLiveAuctions(schedRes.items);
+        }
+      } catch (err: unknown) {
         console.warn('Không thể tải danh sách phiên đấu giá từ API:', err);
-      });
+      }
+    })();
 
     // Lấy sản phẩm thật từ database cho mục Flash Sale thay vì dữ liệu mẫu
     void getProductsCatalog({ limit: 4, sortBy: 'newest' })

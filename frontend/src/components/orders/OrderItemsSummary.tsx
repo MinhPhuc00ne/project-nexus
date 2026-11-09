@@ -50,7 +50,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
             item?.product?.thumbnail ||
             item?.product?.images?.[0]?.imageUrl ||
             item?.product?.images?.[0]?.url ||
-            '/images/watches/watch-1.png';
+            'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
 
           return (
             <div key={item?.id} className="py-4 flex items-center justify-between gap-4 text-xs">
@@ -59,6 +59,10 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                   src={thumbnail}
                   alt={title}
                   className="w-14 h-14 object-contain rounded-xl border border-slate-100 bg-slate-50 shrink-0"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
+                  }}
                 />
                 <div className="min-w-0 flex-1">
                   {item?.product?.id ? (

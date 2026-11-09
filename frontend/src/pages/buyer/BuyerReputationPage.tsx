@@ -27,39 +27,39 @@ const TRUST_LEVEL_CONFIG: Record<
   { label: string; badgeCls: string; colorCls: string; icon: string; desc: string }
 > = {
   EXCELLENT: {
-    label: 'Kim Cương (Tối Thượng)',
+    label: 'Kim Cương (≥ 120 điểm)',
     badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     colorCls: 'text-indigo-600',
     icon: '💎',
-    desc: 'Cấp bậc tin cậy cao nhất trên sàn NEXUS. Hưởng trọn vẹn đặc quyền VIP và ưu tiên xử lý tranh chấp.',
+    desc: 'Cấp bậc tin cậy cao nhất trên sàn NEXUS. Hưởng trọn vẹn đặc quyền VIP, ưu tiên tham gia mọi phòng đấu giá cao cấp và ưu tiên xử lý tranh chấp.',
   },
-  VERY_GOOD: {
-    label: 'Bạch Kim (Xuất Sắc)',
+  GOOD: {
+    label: 'Bạch Kim (100 - 119 điểm)',
     badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     colorCls: 'text-emerald-600',
     icon: '🛡️',
-    desc: 'Tài khoản hoạt động rất uy tín, không có vi phạm, lịch sử thanh toán chuẩn xác.',
-  },
-  GOOD: {
-    label: 'Hoàng Gia (Rất Tốt)',
-    badgeCls: 'bg-blue-50 text-blue-700 border-blue-200',
-    colorCls: 'text-blue-600',
-    icon: '👑',
-    desc: 'Hoàn thành các đơn hàng ổn định, đủ điều kiện mở gian hàng và tham gia đấu giá.',
+    desc: 'Tài khoản hoạt động rất uy tín, hoàn tất đơn hàng chuẩn xác, đủ điều kiện mở gian hàng Seller và tham gia toàn bộ các phiên đấu giá.',
   },
   STANDARD: {
-    label: 'Tiêu Chuẩn (Bình Thường)',
-    badgeCls: 'bg-slate-100 text-slate-700 border-slate-200',
-    colorCls: 'text-slate-600',
+    label: 'Tiêu Chuẩn (80 - 99 điểm)',
+    badgeCls: 'bg-blue-50 text-blue-700 border-blue-200',
+    colorCls: 'text-blue-600',
     icon: '🥈',
-    desc: 'Tài khoản ở mức an toàn cơ bản. Cần tiếp tục duy trì giao dịch tốt để nâng bậc.',
+    desc: 'Tài khoản ở mức an toàn tiêu chuẩn. Đủ điều kiện tham gia đấu giá phổ thông và mua sắm thương mại điện tử bảo chứng Escrow.',
   },
-  POOR: {
-    label: 'Cảnh Báo (Nguy Cơ Khóa)',
+  PROBATION: {
+    label: 'Cảnh Báo (40 - 79 điểm)',
+    badgeCls: 'bg-amber-50 text-amber-700 border-amber-200',
+    colorCls: 'text-amber-600',
+    icon: '⚠️',
+    desc: 'Tài khoản đang trong diện theo dõi do có vi phạm giao dịch hoặc hủy đơn. Một số phiên đấu giá cao cấp có thể chuyển sang chế độ Chỉ Xem (View-Only).',
+  },
+  SUSPENDED: {
+    label: 'Đình Chỉ (< 40 điểm)',
     badgeCls: 'bg-rose-50 text-rose-700 border-rose-200',
     colorCls: 'text-rose-600',
-    icon: '⚠️',
-    desc: 'Điểm uy tín dưới ngưỡng an toàn do có vi phạm đơn hàng. Một số quyền có thể bị hạn chế.',
+    icon: '🚫',
+    desc: 'Điểm uy tín dưới ngưỡng an toàn tối thiểu (dưới 40 điểm). Tài khoản bị khóa quyền đặt giá đấu giá và mở gian hàng. Vui lòng liên hệ BQT để được hỗ trợ.',
   },
 };
 
@@ -98,8 +98,8 @@ export default function BuyerReputationPage() {
   }, [fetchReputationData]);
 
   const score = summary?.score ?? 100;
-  const trustLevelKey = (summary?.trustLevel || 'EXCELLENT') as ReputationTrustLevel;
-  const config = TRUST_LEVEL_CONFIG[trustLevelKey] || TRUST_LEVEL_CONFIG.EXCELLENT;
+  const trustLevelKey = (summary?.trustLevel || 'GOOD') as ReputationTrustLevel;
+  const config = TRUST_LEVEL_CONFIG[trustLevelKey] || TRUST_LEVEL_CONFIG.GOOD;
   const totalPages = Math.ceil(totalLogs / limit) || 1;
 
   return (

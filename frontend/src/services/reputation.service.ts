@@ -1,6 +1,6 @@
 import { apiRequest } from './api';
 
-export type ReputationTrustLevel = 'EXCELLENT' | 'VERY_GOOD' | 'GOOD' | 'STANDARD' | 'POOR';
+export type ReputationTrustLevel = 'EXCELLENT' | 'GOOD' | 'STANDARD' | 'PROBATION' | 'SUSPENDED';
 
 export interface ReputationSummary {
   userId: string;

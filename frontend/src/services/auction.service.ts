@@ -9,6 +9,29 @@ import {
   type WsTimerSyncPayload,
 } from '@nexus/types';
 
+/**
+ * Chuẩn hóa URL hình ảnh từ API database hoặc uploads server
+ */
+export function formatAuctionImage(url?: string | null): string {
+  if (!url || typeof url !== 'string' || !url.trim()) return '';
+  const trimmed = url.trim();
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:')
+  ) {
+    return trimmed;
+  }
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1').replace(
+    /\/$/,
+    '',
+  );
+  const backendOrigin = apiBase.replace(/\/api\/v1$/, '');
+  return `${backendOrigin}${cleanPath}`;
+}
+
 export interface AuctionProduct {
   id: string;
   title: string;

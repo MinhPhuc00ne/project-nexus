@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Heart, Share2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Heart, Share2, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
 import { BidStatus } from '@nexus/types';
 import type { AuctionViewerMode, AuctionTabKey, SimilarWatch } from '../../types';
 import AuctionGallery from '../../components/auction/AuctionGallery';
@@ -13,6 +13,7 @@ import {
   placeBidApi,
   createAuctionSocket,
   checkBuyerEligibilityApi,
+  formatAuctionImage,
   type AuctionEntity,
   type BuyerEligibilityResponse,
   type AuctionBidItem,
@@ -27,6 +28,7 @@ export const AuctionPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AuctionTabKey>('certs');
   const [viewerMode, setViewerMode] = useState<AuctionViewerMode>('photo');
   const [selectedThumb, setSelectedThumb] = useState(0);
+  const [selectedLotIndex, setSelectedLotIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [likedSimilar, setLikedSimilar] = useState<Record<string, boolean>>({});
 
@@ -76,9 +78,13 @@ export const AuctionPage: React.FC = () => {
           } else {
             setLeadingBidder('Chưa có lượt trả giá');
           }
+          const isScheduled =
+            auctionData.status === 'SCHEDULED' ||
+            new Date(auctionData.startTime).getTime() > Date.now();
+          const targetDateStr = isScheduled ? auctionData.startTime : auctionData.endTime;
           const remaining = Math.max(
             0,
-            Math.floor((new Date(auctionData.endTime).getTime() - Date.now()) / 1000),
+            Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000),
           );
           setTimeLeft(remaining);
 
@@ -137,7 +143,12 @@ export const AuctionPage: React.FC = () => {
           if (otherAuctions.length > 0) {
             const mapped: SimilarWatch[] = otherAuctions.map((a) => {
               const isLive = a.status === 'ACTIVE' || a.status === 'EXTENDED';
-              const img = a.product?.images?.[0]?.imageUrl || '/images/watches/watch5_clean.png';
+              const img =
+                (a.items?.[0]?.images?.[0] ? formatAuctionImage(a.items[0].images[0]) : null) ||
+                (a.product?.images?.[0]?.imageUrl
+                  ? formatAuctionImage(a.product.images[0].imageUrl)
+                  : null) ||
+                'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80';
               const currentBid = Number(a.currentHighestBid) || Number(a.startingPrice) || 0;
               return {
                 id: a.id,
@@ -284,25 +295,55 @@ export const AuctionPage: React.FC = () => {
     );
   }
 
-  const itemImages = activeAuction.items?.[0]?.images || [];
-  const productImages = activeAuction.product?.images || [];
-  const dynamicThumbnails =
-    productImages.length > 0
-      ? productImages.map((img, i) => ({
-          label: img.isThumbnail ? 'Ảnh đại diện' : `Góc máy ${i + 1}`,
-          src: img.imageUrl,
-        }))
-      : itemImages.length > 0
-        ? itemImages.map((url, i) => ({
-            label: i === 0 ? 'Hiện vật giám định' : `Góc máy ${i + 1}`,
-            src: url,
-          }))
-        : [
-            {
-              label: activeAuction.title,
-              src: '/images/watches/watch5_clean.png',
-            },
-          ];
+  const REAL_PHOTOS_COLLECTION = [
+    {
+      label: 'Mặt số sapphire & Kim chỉ giờ',
+      src: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80',
+    },
+    {
+      label: 'Bộ máy cơ học Skeleton',
+      src: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=1200&q=80',
+    },
+    {
+      label: 'Cận cảnh vỏ thép nguyên khối',
+      src: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=80',
+    },
+    {
+      label: 'Góc nghiêng 45° hoàn thiện thủ công',
+      src: 'https://images.unsplash.com/photo-1547996160-71dfabb1d355?auto=format&fit=crop&w=1200&q=80',
+    },
+  ];
+
+  const currentLot = activeAuction.items?.[selectedLotIndex] || activeAuction.items?.[0];
+  const lotImages = (currentLot?.images || [])
+    .filter((u) => Boolean(u && typeof u === 'string' && u.trim().length > 0))
+    .map((u) => formatAuctionImage(u));
+
+  const productImages = (activeAuction.product?.images || [])
+    .filter((img) => Boolean(img?.imageUrl && img.imageUrl.trim().length > 0))
+    .map((img) => ({
+      ...img,
+      imageUrl: formatAuctionImage(img.imageUrl),
+    }));
+
+  let rawThumbnails: Array<{ label: string; src: string }> = [];
+
+  if (lotImages.length > 0) {
+    rawThumbnails = lotImages.map((url, i) => ({
+      label:
+        i === 0
+          ? `Lô #${currentLot?.lotNumber ?? selectedLotIndex + 1} - Ảnh chính thực tế`
+          : `Góc chụp thực tế ${i + 1}`,
+      src: url,
+    }));
+  } else if (productImages.length > 0) {
+    rawThumbnails = productImages.map((img, i) => ({
+      label: img.isThumbnail ? 'Ảnh sản phẩm chính thức' : `Góc chụp thực tế ${i + 1}`,
+      src: img.imageUrl,
+    }));
+  }
+
+  const dynamicThumbnails = rawThumbnails.length > 0 ? rawThumbnails : REAL_PHOTOS_COLLECTION;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -334,7 +375,7 @@ export const AuctionPage: React.FC = () => {
             </Link>
             <span className="text-slate-300">/</span>
             <span className="text-slate-900 font-semibold truncate max-w-xs sm:max-w-md">
-              {activeAuction.title}
+              {currentLot?.title || activeAuction.title}
             </span>
           </nav>
 
@@ -363,6 +404,84 @@ export const AuctionPage: React.FC = () => {
           </div>
         </div>
 
+        {/* MULTI-LOT SELECTION STRIP (Nhiều sản phẩm trong 1 phiên) */}
+        {activeAuction.items && activeAuction.items.length > 1 && (
+          <div className="mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                  <Layers size={17} />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 m-0">
+                    Danh Sách Lô Hàng Trong Phiên Này ({activeAuction.items.length} sản phẩm)
+                  </h3>
+                  <p className="text-[11px] text-slate-500 m-0">
+                    Bấm chọn từng lô hàng để xem mô hình 3D, giấy kiểm định và thông tin chi tiết
+                  </p>
+                </div>
+              </div>
+              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
+                Đang xem: Lô #{currentLot?.lotNumber ?? selectedLotIndex + 1}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 overflow-x-auto pb-1 pt-1">
+              {activeAuction.items.map((lot, idx) => {
+                const isSelected = selectedLotIndex === idx;
+                const thumb = lot.images?.[0]
+                  ? formatAuctionImage(lot.images[0])
+                  : 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80';
+                return (
+                  <button
+                    key={lot.id || idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedLotIndex(idx);
+                      setSelectedThumb(0);
+                    }}
+                    className={`flex items-center gap-3 p-2.5 px-3.5 rounded-xl border text-left cursor-pointer transition shrink-0 max-w-xs ${
+                      isSelected
+                        ? 'border-blue-600 bg-blue-50/70 shadow-sm ring-2 ring-blue-600/30'
+                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    }`}
+                  >
+                    <img
+                      src={thumb}
+                      alt={lot.title}
+                      className="w-12 h-12 rounded-lg object-cover bg-slate-100 shrink-0 border border-slate-100"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src =
+                          'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80';
+                      }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                          LÔ #{lot.lotNumber ?? idx + 1}
+                        </span>
+                        {lot.threeModelKey && (
+                          <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-sky-100 text-sky-700">
+                            3D
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs font-bold text-slate-900 truncate mt-1 max-w-[150px]">
+                        {lot.title}
+                      </p>
+                      <p className="text-[11px] font-extrabold text-blue-600 mt-0.5">
+                        {lot.startingPrice
+                          ? `${Number(lot.startingPrice).toLocaleString('vi-VN')} đ`
+                          : 'Chờ định giá'}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* TOP SECTION: 2 COLUMNS (GALLERY & TERMINAL) */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] gap-8 mb-10">
           {/* LEFT: GALLERY & 3D VIEWER */}
@@ -380,6 +499,7 @@ export const AuctionPage: React.FC = () => {
           {/* RIGHT: BID TERMINAL */}
           <AuctionBidTerminal
             auction={activeAuction}
+            selectedItem={currentLot}
             timeLeft={timeLeft}
             currentPrice={currentPrice}
             leadingBidder={leadingBidder}
@@ -388,6 +508,10 @@ export const AuctionPage: React.FC = () => {
             eligibilityReason={eligibility?.reason}
             isFlaggedViewOnly={eligibility?.isFlaggedViewOnly ?? false}
             totalBidsCount={activeAuction.bids?.length ?? activeAuction.totalBidsCount ?? 0}
+            buyerReputationScore={eligibility?.currentScore}
+            requiredReputationScore={
+              eligibility?.requiredScore ?? activeAuction.minBuyerReputation ?? 40
+            }
           />
         </div>
 
@@ -396,6 +520,7 @@ export const AuctionPage: React.FC = () => {
           activeTab={activeTab}
           setActiveTab={setActiveTab}
           auction={activeAuction}
+          selectedItem={currentLot}
         />
 
         {/* SIMILAR AUCTIONS SECTION */}

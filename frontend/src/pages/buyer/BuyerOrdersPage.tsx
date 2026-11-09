@@ -98,7 +98,7 @@ export default function BuyerOrdersPage() {
       firstItem?.product?.thumbnail ||
       firstItem?.product?.images?.[0]?.imageUrl ||
       firstItem?.product?.images?.[0]?.url ||
-      '/images/watches/watch-1.png';
+      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
     const rawStatus = (o?.status as string) || 'PENDING_PAYMENT';
     const mappedStatus = (rawStatus === 'CONFIRMED' ? 'COMPLETED' : rawStatus) as TabStatus;
     const validStatus: Exclude<TabStatus, 'ALL'> =

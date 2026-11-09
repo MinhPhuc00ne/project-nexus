@@ -70,7 +70,10 @@ export const ShopDetailPage: React.FC = () => {
           name: product.title,
           price: product.basePrice,
           formattedPrice: `${product.basePrice.toLocaleString('vi-VN')} ₫`,
-          img: product.thumbnail || product.images[0] || '/images/watches/watch-1.png',
+          img:
+            product.thumbnail ||
+            product.images[0] ||
+            'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
           shopName: shop?.name || 'Nexus Store',
           brand: 'NEXUS LUXURY',
         },

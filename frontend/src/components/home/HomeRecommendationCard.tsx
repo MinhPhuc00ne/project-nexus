@@ -22,7 +22,9 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
         formattedPrice: product.price
           ? `${product.price.toLocaleString('vi-VN')} ₫`
           : '18.500.000 ₫',
-        img: product.image || '/images/watches/watch-1.png',
+        img:
+          product.image ||
+          'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
         shopName: 'NEXUS Official Store',
       },
       1,
@@ -40,6 +42,10 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
             src={product.image}
             alt={product.name}
             className="h-full w-full object-cover hover:scale-105 transition duration-300"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
+            }}
           />
         ) : (
           <span className="text-xs text-slate-400">Chưa có hình ảnh</span>

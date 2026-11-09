@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HomeCountdown } from './HomeCountdown';
 import { HomeAuctionCard } from './HomeAuctionCard';
-import type { AuctionEntity } from '../../services/auction.service';
+import { formatAuctionImage, type AuctionEntity } from '../../services/auction.service';
 
 export interface HomeLiveAuctionProps {
   auctions?: AuctionEntity[];
@@ -12,12 +12,39 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
   if (!auctions || auctions.length === 0) return null;
 
   const featuredAuction = auctions[0];
+  const isUpcoming =
+    featuredAuction.status === 'SCHEDULED' ||
+    (Boolean(featuredAuction.startTime) &&
+      new Date(featuredAuction.startTime).getTime() > Date.now());
 
   const featuredTitle =
-    featuredAuction.title || featuredAuction.product?.title || 'Phòng Đấu Giá Trực Tiếp';
+    featuredAuction.title ||
+    featuredAuction.product?.title ||
+    featuredAuction.items?.[0]?.title ||
+    'Phòng Đấu Giá Trực Tiếp';
 
-  const featuredImage =
-    featuredAuction.product?.images?.[0]?.imageUrl || '/images/watches/watch5_clean.png';
+  const resolveRealImage = (auc: AuctionEntity): string => {
+    if (auc.items && auc.items.length > 0) {
+      for (const item of auc.items) {
+        if (item.images && item.images.length > 0) {
+          const valid = item.images.find((u) => typeof u === 'string' && u.trim().length > 0);
+          if (valid) return formatAuctionImage(valid);
+        }
+      }
+    }
+    if (auc.product && Array.isArray(auc.product.images) && auc.product.images.length > 0) {
+      for (const img of auc.product.images) {
+        if (img?.imageUrl && img.imageUrl.trim().length > 0) {
+          return formatAuctionImage(img.imageUrl);
+        }
+      }
+    }
+    return 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
+  };
+
+  const featuredImage = resolveRealImage(featuredAuction);
+
+  const itemsCount = featuredAuction.items?.length || 0;
 
   const featuredPrice = Number(
     featuredAuction.currentHighestBid || featuredAuction.startingPrice || 0,
@@ -27,27 +54,23 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
 
   const targetUrl = `/auction/${featuredAuction.id}`;
 
+  const targetDateStr = isUpcoming ? featuredAuction.startTime : featuredAuction.endTime;
+
   const [timeLeft, setTimeLeft] = useState<number>(() => {
-    if (!featuredAuction?.endTime) return 0;
-    return Math.max(
-      0,
-      Math.floor((new Date(featuredAuction.endTime).getTime() - Date.now()) / 1000),
-    );
+    if (!targetDateStr) return 0;
+    return Math.max(0, Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000));
   });
 
   useEffect(() => {
-    if (!featuredAuction?.endTime) return;
+    if (!targetDateStr) return;
     const update = () => {
-      const diff = Math.max(
-        0,
-        Math.floor((new Date(featuredAuction.endTime).getTime() - Date.now()) / 1000),
-      );
+      const diff = Math.max(0, Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000));
       setTimeLeft(diff);
     };
     update();
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
-  }, [featuredAuction?.endTime]);
+  }, [targetDateStr]);
 
   const h = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
   const m = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
@@ -83,11 +106,24 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
             src={featuredImage}
             alt={featuredTitle}
             className="absolute inset-0 h-full w-full object-cover"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
+            }}
           />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-            <span className="rounded bg-red-500 px-2.5 py-1 text-[10px] font-bold text-white">
-              LIVE ADMIN
+            <span
+              className={`rounded px-2.5 py-1 text-[10px] font-bold text-white shadow-xs ${
+                isUpcoming ? 'bg-amber-500' : 'bg-red-500'
+              }`}
+            >
+              {isUpcoming ? 'SẮP DIỄN RA' : 'LIVE TRỰC TIẾP'}
             </span>
+            {itemsCount > 1 && (
+              <span className="rounded bg-indigo-600 px-2.5 py-1 text-[10px] font-bold text-white shadow-xs">
+                {itemsCount} LÔ SẢN PHẨM
+              </span>
+            )}
             <span className="rounded border border-sky-200 bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-sky-600">
               Màn hình 3D 360°
             </span>
@@ -119,9 +155,11 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
         <div className="rounded-[18px] border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-              {featuredAuction
-                ? `LOT #${featuredAuction.id.slice(0, 8).toUpperCase()}`
-                : 'Lô đặc biệt #01'}
+              {featuredAuction.items?.[0]?.lotNumber
+                ? `LÔ #${featuredAuction.items[0].lotNumber}`
+                : featuredAuction.id
+                  ? `LOT #${featuredAuction.id.slice(0, 8).toUpperCase()}`
+                  : 'Lô đặc biệt #01'}
             </span>
 
             <span className="rounded bg-green-50 px-2 py-1 text-[10px] font-semibold text-green-500">
@@ -134,13 +172,15 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
           </h3>
 
           <p className="mt-2 text-sm text-slate-500">
-            Mẫu đang được người mua theo dõi ngay trong phòng đấu giá tương tác 3D.
+            {isUpcoming
+              ? 'Phiên đấu giá đã được lên lịch. Người mua có thể xem trước sản phẩm, hồ sơ kiểm định và đặt lịch.'
+              : 'Mẫu đang được người mua theo dõi ngay trong phòng đấu giá tương tác 3D.'}
           </p>
 
           <div className="mt-5 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                Giá Hiện Tại
+                {isUpcoming ? 'Giá Khởi Điểm' : 'Giá Hiện Tại'}
               </p>
               <p className="mt-2 text-[24px] font-extrabold text-sky-600">
                 {featuredPrice.toLocaleString('vi-VN')} đ
@@ -152,21 +192,27 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
 
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                Đếm Ngược Kết Thúc
+                {isUpcoming ? 'Khởi Tranh Sau' : 'Đếm Ngược Kết Thúc'}
               </p>
               <div className="mt-2 flex justify-end">
                 <HomeCountdown values={[h, m, s]} />
               </div>
-              <p className="mt-2 text-[11px] text-red-500">Anti-Sniping: Active</p>
+              <p className="mt-2 text-[11px] text-red-500">
+                {isUpcoming ? 'Trạng Thái: Đã Lên Lịch' : 'Anti-Sniping: Active'}
+              </p>
             </div>
           </div>
 
           <div className="mt-4 flex gap-3">
             <Link
               to={targetUrl}
-              className="flex-1 rounded-xl bg-[#1a8bff] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-sky-200 hover:bg-[#1277eb] transition"
+              className={`flex-1 rounded-xl px-5 py-3 text-center text-sm font-bold text-white shadow-lg transition ${
+                isUpcoming
+                  ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-200'
+                  : 'bg-[#1a8bff] hover:bg-[#1277eb] shadow-sky-200'
+              }`}
             >
-              Đặt Giá Ngay
+              {isUpcoming ? 'Xem Chi Tiết & Đặt Lịch' : 'Đặt Giá Ngay'}
             </Link>
 
             <Link
