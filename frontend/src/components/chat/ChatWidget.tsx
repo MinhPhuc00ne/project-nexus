@@ -32,7 +32,7 @@ export default function ChatWidget(): JSX.Element | null {
 function GuestChatbotWidget(): JSX.Element {
   const [open, setOpen] = useState(false);
   return (
-    <div className="fixed bottom-5 right-5 z-[100] font-sans max-sm:bottom-3 max-sm:right-3">
+    <div className="fixed bottom-4 right-4 z-[1300] font-sans max-sm:bottom-3 max-sm:right-3">
       <button
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
@@ -43,7 +43,7 @@ function GuestChatbotWidget(): JSX.Element {
       </button>
       <section
         aria-label="Chatbot NEXUS"
-        className={`${open ? 'flex' : 'hidden'} mt-3 h-[min(600px,calc(100dvh-100px))] w-[min(460px,calc(100vw-40px))] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
+        className={`${open ? 'flex' : 'hidden'} mt-3 h-[min(560px,calc(100dvh-32px))] w-[min(460px,calc(100vw-32px))] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
       >
         <ChatbotPanel guest />
       </section>
@@ -245,7 +245,7 @@ function ChatPanel({
   }
 
   return (
-    <div className="fixed bottom-5 right-5 z-[100] font-sans max-sm:bottom-3 max-sm:right-3">
+    <div className="fixed bottom-4 right-4 z-[1300] font-sans max-sm:bottom-3 max-sm:right-3">
       {!open ? (
         <button
           onClick={() => setOpen(true)}
@@ -258,7 +258,7 @@ function ChatPanel({
       ) : (
         <section
           aria-label="Hộp tin nhắn"
-          className="flex h-[min(640px,calc(100dvh-40px))] w-[min(760px,calc(100vw-40px))] max-sm:h-[min(640px,calc(100dvh-24px))] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl"
+          className="flex h-[min(560px,calc(100dvh-32px))] w-[min(560px,calc(100vw-32px))] max-sm:h-[calc(100dvh-24px)] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl"
         >
           <header className="flex shrink-0 items-center justify-between gap-2 bg-blue-600 px-5 py-4 text-white">
             <div className="flex items-center gap-3">
