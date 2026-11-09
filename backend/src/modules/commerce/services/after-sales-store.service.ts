@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { AfterSalesRequest, OrderRefund, Prisma } from '@prisma/client';
 import { QueryAfterSalesDto, QueryRefundsDto } from '../dtos/after-sales.dto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { ReputationService } from '../../users/services/reputation.service';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
 
 export const afterSalesInclude = {
@@ -17,7 +18,10 @@ export const isStaff = (actor: ShipmentActor): boolean =>
 
 @Injectable()
 export class AfterSalesStoreService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reputation: ReputationService,
+  ) {}
 
   async lock(tx: Prisma.TransactionClient, orderId: string): Promise<AfterSalesOrder> {
     await tx.$queryRaw`SELECT id FROM orders WHERE id = ${orderId} FOR UPDATE`;
@@ -123,30 +127,15 @@ export class AfterSalesStoreService {
     sellerId: string,
     orderId: string,
   ): Promise<void> {
-    const seller = await tx.user.update({
-      where: { id: sellerId },
-      data: { reputationScore: { decrement: 10 } },
-    });
-    const score = seller.reputationScore;
-    const trustLevel =
-      score >= 120
-        ? 'EXCELLENT'
-        : score >= 100
-          ? 'GOOD'
-          : score >= 80
-            ? 'STANDARD'
-            : score >= 40
-              ? 'PROBATION'
-              : 'SUSPENDED';
-    await tx.user.update({ where: { id: sellerId }, data: { trustLevel } });
-    await tx.reputationLog.create({
-      data: {
+    await this.reputation.adjustScore(
+      {
         userId: sellerId,
         deltaPoints: -10,
-        balanceAfter: score,
+        penaltyType: 'ORDER_CANCELLATION',
         reason: 'Hủy đơn do lỗi người bán',
         referenceId: orderId,
       },
-    });
+      tx,
+    );
   }
 }

@@ -8,24 +8,24 @@ import { Type } from 'class-transformer';
  */
 export class AdminCreateAuctionDto {
   @ApiProperty({
-    description: 'Tiêu đề của phiên đấu giá',
-    example: 'Phiên đấu giá Đồ hiệu & Đồng hồ Thụy Sĩ Tháng 11',
+    description: 'Public title of the auction session',
+    example: 'Audemars Piguet & Swiss Luxury Watches November Session',
   })
   @IsString()
   @IsNotEmpty()
   title: string;
 
   @ApiPropertyOptional({
-    description: 'Mô tả chi tiết, thể lệ của phiên đấu giá',
+    description: 'Detailed description, guidelines, and rules of the auction session',
     example:
-      'Phiên đấu giá đặc biệt dành cho các sản phẩm trang sức và đồng hồ cao cấp đã qua thẩm định chứng thư.',
+      'Curated auction event for certified luxury timepieces and fine jewelry with authenticated certificates.',
   })
   @IsString()
   @IsOptional()
   description?: string;
 
   @ApiProperty({
-    description: 'Thời gian bắt đầu phiên đấu giá (ISO 8601 string)',
+    description: 'Scheduled start timestamp in ISO 8601 format',
     example: '2026-11-08T20:00:00.000Z',
   })
   @IsDateString()
@@ -33,7 +33,7 @@ export class AdminCreateAuctionDto {
   startTime: string;
 
   @ApiProperty({
-    description: 'Thời gian kết thúc phiên đấu giá (ISO 8601 string)',
+    description: 'Scheduled conclusion timestamp in ISO 8601 format',
     example: '2026-11-08T22:00:00.000Z',
   })
   @IsDateString()
@@ -41,7 +41,7 @@ export class AdminCreateAuctionDto {
   endTime: string;
 
   @ApiPropertyOptional({
-    description: 'Số điểm uy tín tối thiểu của Người mua (Buyer) để tham gia trả giá',
+    description: 'Minimum buyer reputation score required to place bids',
     example: 100,
     default: 100,
   })
@@ -52,7 +52,7 @@ export class AdminCreateAuctionDto {
   minBuyerReputation?: number = 100;
 
   @ApiPropertyOptional({
-    description: 'Số điểm uy tín tối thiểu của Người bán (Seller) để gửi đồ vào phiên',
+    description: 'Minimum seller reputation score required to consign items',
     example: 80,
     default: 80,
   })

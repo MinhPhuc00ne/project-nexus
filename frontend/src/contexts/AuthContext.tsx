@@ -236,7 +236,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(accessToken || getStoredToken());
       setStoredUser(authUser);
       await refreshProfile();
-      await mergeGuestCartAfterLogin();
+      if (authUser.role !== Role.SUPPORT_STAFF && authUser.role !== Role.ADMIN) {
+        await mergeGuestCartAfterLogin();
+      }
     },
     [refreshProfile],
   );

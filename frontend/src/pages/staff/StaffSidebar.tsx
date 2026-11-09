@@ -22,7 +22,7 @@ export default function StaffSidebar({
   return (
     <>
       <aside
-        className={`[border-right:1px_solid_var(--staff-line)] max-[760px]:fixed max-[760px]:[inset:0_auto_0_0] max-[760px]:[width:min(290px,_84vw)] max-[760px]:h-dvh max-[760px]:[transform:translateX(-105%)] max-[760px]:[transition:transform_0.2s_ease] max-[760px]:[box-shadow:14px_0_40px_rgb(25_35_55_/_12%)] max-[760px]:[&.staff-sidebar--open]:[transform:translateX(0)] sticky top-0 z-30 flex h-screen min-h-[650px] flex-col border-r border-slate-200 bg-white ${isSidebarOpen ? 'staff-sidebar--open' : ''}`}
+        className={`[border-right:1px_solid_var(--staff-line)] max-[760px]:fixed max-[760px]:[inset:0_auto_0_0] max-[760px]:[width:min(290px,_84vw)] max-[760px]:h-dvh max-[760px]:[transform:translateX(-105%)] max-[760px]:[transition:transform_0.2s_ease] max-[760px]:[box-shadow:14px_0_40px_rgb(25_35_55_/_12%)] max-[760px]:[&.staff-sidebar--open]:[transform:translateX(0)] sticky top-0 z-30 flex h-screen min-h-0 flex-col border-r border-slate-200 bg-white overflow-y-auto custom-scrollbar ${isSidebarOpen ? 'staff-sidebar--open' : ''}`}
       >
         <div className="flex items-center gap-2.5 [min-height:70px] [padding:12px_18px] [border-bottom:1px_solid_#f0f1f6]">
           <img

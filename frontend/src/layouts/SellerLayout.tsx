@@ -375,6 +375,7 @@ function SellerWorkspace() {
                       data-seller="logout"
                       onClick={() => {
                         clearAuthSession();
+                        toast.success('Đăng xuất thành công.');
                         navigate('/login', { replace: true });
                       }}
                     >

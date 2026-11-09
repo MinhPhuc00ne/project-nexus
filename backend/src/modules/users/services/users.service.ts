@@ -27,6 +27,8 @@ import { CreateSellerRequestDto } from '../dtos/create-seller-request.dto';
 import { ToggleSellerDto } from '../dtos/toggle-seller.dto';
 import { UpdateStaffProfileDto } from '../../auth/dtos/update-staff-profile.dto';
 
+import { ReputationService } from './reputation.service';
+
 export type { UserProfileResponse };
 
 @Injectable()
@@ -38,6 +40,7 @@ export class UsersService {
     private readonly storageService: CloudinaryStorageService,
     private readonly profileReauth: ProfileReauthService,
     private readonly pickup: SellerPickupService,
+    private readonly reputationService: ReputationService,
   ) {}
 
   private formatProfile(user: User & { wallet: Wallet | null }): UserProfileResponse {
@@ -159,6 +162,46 @@ export class UsersService {
       },
       include: { wallet: true },
     });
+
+    if (dto.fullName && !user.fullName) {
+      await this.reputationService.awardProfileCompletion({
+        userId,
+        fieldKey: 'FULL_NAME',
+        points: 5,
+        reason: 'Cập nhật họ và tên đầy đủ',
+      });
+    }
+
+    if (dto.avatarUrl && !user.avatarUrl) {
+      await this.reputationService.awardProfileCompletion({
+        userId,
+        fieldKey: 'AVATAR',
+        points: 5,
+        reason: 'Cập nhật ảnh đại diện',
+      });
+    }
+
+    if (dto.phoneNumber && !user.phoneNumber) {
+      await this.reputationService.awardProfileCompletion({
+        userId,
+        fieldKey: 'PHONE',
+        points: 10,
+        reason: 'Cập nhật số điện thoại liên hệ hợp lệ',
+      });
+    }
+
+    if (
+      (dto.bankName || dto.accountNumber || dto.accountHolderName) &&
+      (!user.bankName || !user.accountNumber)
+    ) {
+      await this.reputationService.awardProfileCompletion({
+        userId,
+        fieldKey: 'BANK',
+        points: 10,
+        reason: 'Cập nhật thông tin tài khoản ngân hàng',
+      });
+    }
+
     return this.formatProfile(updated);
   }
 
@@ -252,6 +295,14 @@ export class UsersService {
     });
 
     this.logger.log(`Seller upgrade application submitted by user ${userId} (${newRequest.id})`);
+
+    await this.reputationService.awardProfileCompletion({
+      userId,
+      fieldKey: 'KYC_SELLER',
+      points: 10,
+      reason: 'Hoàn tất hồ sơ đăng ký nâng cấp Người Bán & Định danh KYC',
+    });
+
     return {
       success: true,
       message: 'Seller upgrade application submitted successfully. Awaiting Admin approval.',

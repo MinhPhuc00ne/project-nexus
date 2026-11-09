@@ -64,7 +64,7 @@ export default function StaffDashboard({
   }
 
   return (
-    <div className="[--staff-ink:#17233d] [--staff-line:#e7eaf3] [--staff-primary:#1f5fe3] [--staff-primary-soft:#eaf1ff] [--staff-primary-strong:#1849b7] [--staff-accent:#1f5fe3] [--staff-accent-strong:#1849b7] grid [grid-template-columns:280px_minmax(0,_1fr)] min-h-screen [background:#f8f7fc] [color:var(--staff-ink)] [font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_sans-serif] text-[13px] max-[1100px]:[grid-template-columns:240px_minmax(0,_1fr)] max-[760px]:block min-h-screen bg-[#f8f7fc] text-slate-800">
+    <div className="[--staff-ink:#17233d] [--staff-line:#e7eaf3] [--staff-primary:#1f5fe3] [--staff-primary-soft:#eaf1ff] [--staff-primary-strong:#1849b7] [--staff-accent:#1f5fe3] [--staff-accent-strong:#1849b7] grid [grid-template-columns:250px_minmax(0,_1fr)] max-[1200px]:[grid-template-columns:220px_minmax(0,_1fr)] max-[768px]:block h-screen overflow-hidden bg-[#f8f7fc] [color:var(--staff-ink)] [font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_sans-serif] text-[13px] text-slate-800">
       <StaffSidebar
         activeNavigation={activeNavigation}
         onSelectNavigation={setActiveNavigation}
@@ -73,7 +73,7 @@ export default function StaffDashboard({
         onCloseSidebar={() => setIsSidebarOpen(false)}
       />
 
-      <div className="[grid-column:2] min-w-0 max-[760px]:[grid-column:auto]">
+      <div className="[grid-column:2] min-w-0 flex flex-col h-screen overflow-hidden max-[768px]:[grid-column:auto] max-[768px]:h-auto max-[768px]:overflow-visible">
         <StaffHeader
           account={account}
           searchText={searchText}
@@ -81,26 +81,50 @@ export default function StaffDashboard({
           onOpenSidebar={() => setIsSidebarOpen(true)}
         />
 
-        <main className="w-full [max-width:none] [padding:12px_18px_22px] max-[420px]:px-3 mx-auto max-w-[1800px] px-5 pb-6 pt-4">
-          <div className="staff-breadcrumb flex items-center gap-1.5 text-[10px] text-slate-400">
-            <span>Kênh Nhân Viên</span>
-            <ChevronRight size={13} />
-            <b className="font-semibold text-slate-600">{content.title}</b>
-          </div>
-          <div className="[&_h1]:[max-width:500px] [&_h1]:[line-height:1.16] [&_p]:mb-0 max-[760px]:flex-col mt-2.5 flex items-start justify-between gap-4">
-            <div>
-              <h1 className="m-0 text-[clamp(20px,2vw,27px)] font-black tracking-[-0.035em] text-slate-900">
-                {content.title}
-              </h1>
-              <p className="mt-1.5 text-[11px] text-slate-500">{content.description}</p>
-            </div>
-            <div className="max-[760px]:w-full max-[760px]:flex-wrap max-[420px]:[&_>_*]:[flex:1_1_auto] flex items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 [padding:7px_9px] [border:1px_solid_#e8eaf3] [border-radius:8px] [color:#33405a] [background:white] [font-size:9px] leading-tight text-left cursor-pointer [&_>_svg]:[color:var(--staff-primary)] [&_b]:[color:var(--staff-primary)]">
-                <Headphones size={16} />
-                <span>Phiên làm việc</span>
+        <main
+          className={`w-full min-w-0 flex-1 min-h-0 flex flex-col ${
+            activeNavigation === 'Hộp Thư Trực Tuyến'
+              ? 'overflow-hidden max-[768px]:overflow-visible px-3 pt-2 pb-3 lg:px-4 lg:pt-2.5 lg:pb-3.5 max-w-full'
+              : 'overflow-y-auto px-5 pb-6 pt-4 max-w-[1800px] mx-auto custom-scrollbar'
+          }`}
+        >
+          {activeNavigation === 'Hộp Thư Trực Tuyến' ? (
+            <div className="flex items-center justify-between pb-2 shrink-0">
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                <span>Kênh Nhân Viên</span>
+                <ChevronRight size={12} />
+                <b className="font-semibold text-slate-700">{content.title}</b>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-xs">
+                  <Headphones size={13} className="text-blue-600" />
+                  <span>Phiên làm việc Staff</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <>
+              <div className="staff-breadcrumb flex items-center gap-1.5 text-[10px] text-slate-400">
+                <span>Kênh Nhân Viên</span>
+                <ChevronRight size={13} />
+                <b className="font-semibold text-slate-600">{content.title}</b>
+              </div>
+              <div className="[&_h1]:[max-width:500px] [&_h1]:[line-height:1.16] [&_p]:mb-0 max-[760px]:flex-col mt-2.5 flex items-start justify-between gap-4">
+                <div>
+                  <h1 className="m-0 text-[clamp(20px,2vw,27px)] font-black tracking-[-0.035em] text-slate-900">
+                    {content.title}
+                  </h1>
+                  <p className="mt-1.5 text-[11px] text-slate-500">{content.description}</p>
+                </div>
+                <div className="max-[760px]:w-full max-[760px]:flex-wrap max-[420px]:[&_>_*]:[flex:1_1_auto] flex items-center gap-2">
+                  <div className="inline-flex items-center gap-1.5 [padding:7px_9px] [border:1px_solid_#e8eaf3] [border-radius:8px] [color:#33405a] [background:white] [font-size:9px] leading-tight text-left cursor-pointer [&_>_svg]:[color:var(--staff-primary)] [&_b]:[color:var(--staff-primary)]">
+                    <Headphones size={16} />
+                    <span>Phiên làm việc</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           {activeNavigation === 'Quản Lý Nhân Viên' ? (
             <StaffTeamManagementPanel notify={notify} />
@@ -143,11 +167,7 @@ export default function StaffDashboard({
               )}
             </section>
           ) : (
-            <StaffTicketChatPanel
-              searchText={searchText}
-              onSearchChange={setSearchText}
-              notify={notify}
-            />
+            <StaffTicketChatPanel searchText={searchText} notify={notify} />
           )}
         </main>
       </div>

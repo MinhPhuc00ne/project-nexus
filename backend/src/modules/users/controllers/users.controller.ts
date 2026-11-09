@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -29,7 +30,9 @@ import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
 import { CreateSellerRequestDto } from '../dtos/create-seller-request.dto';
 import { ToggleSellerDto } from '../dtos/toggle-seller.dto';
+import { QueryReputationLogsDto, ReputationSummaryResponse } from '../dtos/reputation.dto';
 import { UsersService } from '../services/users.service';
+import { ReputationService } from '../services/reputation.service';
 import { sellerProofFileFilter, sellerProofStorage } from '../utils/seller-proof-upload.util';
 
 @ApiTags('2. BUYER')
@@ -37,7 +40,10 @@ import { sellerProofFileFilter, sellerProofStorage } from '../utils/seller-proof
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly reputationService: ReputationService,
+  ) {}
 
   // ================= 1. XEM THÔNG TIN CÁ NHÂN =================
   @Get('me')
@@ -191,5 +197,40 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'Lấy danh sách yêu cầu thành công' })
   async getMySellerRequests(@CurrentUser() user: AuthenticatedUserPayload) {
     return this.usersService.getMySellerRequests(user.id);
+  }
+
+  // ================= 4. REPUTATION SUMMARY & AUDIT LOGS =================
+  @Get('reputation/summary')
+  @ApiOperation({
+    summary: 'Retrieve user reputation summary, trust tier, and operational badges',
+    description:
+      'Returns normalized reputation score (0-100), trust classification tier, verified merchant badge state, and selling permissions.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Reputation summary metrics retrieved successfully',
+    type: ReputationSummaryResponse,
+  })
+  async getReputationSummary(
+    @CurrentUser('id') userId: string,
+  ): Promise<ReputationSummaryResponse> {
+    return this.reputationService.getReputationSummary(userId);
+  }
+
+  @Get('reputation/logs')
+  @ApiOperation({
+    summary: 'Retrieve chronological reputation audit logs for current user',
+    description:
+      'Provides paginated history of point deductions, milestone awards, and audit trail records associated with transactions.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Reputation audit log history retrieved successfully',
+  })
+  async getReputationLogs(
+    @CurrentUser('id') userId: string,
+    @Query() query: QueryReputationLogsDto,
+  ) {
+    return this.reputationService.getReputationLogs(userId, query.page, query.limit);
   }
 }

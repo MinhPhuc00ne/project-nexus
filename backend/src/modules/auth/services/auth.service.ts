@@ -181,6 +181,37 @@ export class AuthService {
       },
     });
 
+    // Award initial reputation: 50 base + 10 email verification = 60 points
+    const startingScore = 50;
+    const newScore = startingScore + 10;
+    await this.prisma.user.update({
+      where: { id: updatedUser.id },
+      data: {
+        reputationScore: newScore,
+        trustLevel: 'STANDARD',
+      },
+    });
+
+    await this.prisma.reputationLog.create({
+      data: {
+        userId: updatedUser.id,
+        deltaPoints: 10,
+        balanceAfter: newScore,
+        reason: 'Xác thực Email thành công khi đăng ký tài khoản (+10đ khởi tạo)',
+        referenceId: 'REGISTRATION_EMAIL',
+      },
+    });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: updatedUser.id,
+        title: 'Chào mừng bạn đến với NEXUS!',
+        content: `Tài khoản của bạn đã kích hoạt thành công qua Email. Điểm uy tín khởi đầu: ${newScore}/100 (STANDARD).`,
+        type: 'SYSTEM',
+        channel: 'IN_APP',
+      },
+    });
+
     return { message: 'Xác thực tài khoản thành công! Bây giờ bạn có thể đăng nhập.' };
   }
 

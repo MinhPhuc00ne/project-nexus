@@ -4,6 +4,7 @@ import {
   OrderStatus,
   Prisma,
   ProductStatus,
+  ReputationTrustLevel,
   Role,
   SellerRequestStatus,
   ShopActionType,
@@ -14,6 +15,7 @@ import { QueryAdminShopsDto } from '../dtos/query-admin-shops.dto';
 import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
 import { WarnShopDto } from '../dtos/warn-shop.dto';
 import { CreateShopViolationDto } from '../dtos/create-shop-violation.dto';
+import { ResolveShopAppealDto } from '../dtos/resolve-shop-appeal.dto';
 
 @Injectable()
 export class AdminShopsService {
@@ -847,6 +849,110 @@ export class AdminShopsService {
     return {
       total: logs.length,
       items: logs,
+    };
+  }
+
+  /**
+   * Approves an appeal for a suspended or penalized seller store, restores reputation standing,
+   * reactivates catalog products, and records an administrative audit log.
+   *
+   * @param sellerId - Unique identifier of the seller
+   * @param adminId - Unique identifier of the acting administrator
+   * @param dto - Appeal resolution details
+   * @returns Resolution confirmation and updated store status
+   * @throws NotFoundException when the seller store does not exist
+   */
+  async resolveShopAppeal(sellerId: string, adminId: string, dto: ResolveShopAppealDto) {
+    const seller = await this.prisma.user.findUnique({
+      where: { id: sellerId },
+      include: {
+        sellerUpgradeRequests: {
+          where: { status: SellerRequestStatus.APPROVED },
+          take: 1,
+        },
+      },
+    });
+
+    if (!seller || seller.role !== Role.SELLER) {
+      throw new NotFoundException('Không tìm thấy gian hàng của người bán này.');
+    }
+
+    const storeName = seller.sellerUpgradeRequests[0]?.storeName || seller.fullName;
+    const targetScore = Math.max(20, Math.min(100, dto.restoredScore ?? 50));
+    const deltaPoints = targetScore - seller.reputationScore;
+
+    const newTrustLevel =
+      targetScore >= 90
+        ? ReputationTrustLevel.EXCELLENT
+        : targetScore >= 80
+          ? ReputationTrustLevel.GOOD
+          : ReputationTrustLevel.STANDARD;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updatedUser = await tx.user.update({
+        where: { id: sellerId },
+        data: {
+          reputationScore: targetScore,
+          trustLevel: newTrustLevel,
+          isShopSuspended: false,
+          suspensionReason: null,
+          isSellerActive: true,
+        },
+      });
+
+      await tx.product.updateMany({
+        where: { sellerId, status: ProductStatus.INACTIVE },
+        data: { status: ProductStatus.ACTIVE },
+      });
+
+      await tx.reputationLog.create({
+        data: {
+          userId: sellerId,
+          deltaPoints,
+          balanceAfter: targetScore,
+          reason: `Chấp thuận giải trình kháng cáo gian hàng: ${dto.reason.trim()}`,
+        },
+      });
+
+      const actionLog = await tx.shopActionLog.create({
+        data: {
+          shopId: sellerId,
+          adminId,
+          action: ShopActionType.RESTORE,
+          reason: dto.reason.trim(),
+        },
+        include: {
+          admin: { select: { id: true, fullName: true, email: true } },
+        },
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: sellerId,
+          title: 'Tài khoản gian hàng đã được khôi phục!',
+          content: `Giải trình của bạn đã được Ban Quản Trị chấp thuận. Gian hàng "${storeName}" đã được mở khóa và khôi phục điểm uy tín lên ${targetScore}/100 (${newTrustLevel}). Danh sách sản phẩm của bạn đã hoạt động trở lại.`,
+          type: NotificationType.SYSTEM,
+        },
+      });
+
+      return { updatedUser, actionLog };
+    });
+
+    this.logger.log(
+      `Admin (${adminId}) approved appeal for store '${storeName}' (${sellerId}). Restored score: ${targetScore}, Trust: ${newTrustLevel}.`,
+    );
+
+    return {
+      success: true,
+      message: `Đã chấp thuận giải trình và khôi phục hoạt động cho gian hàng "${storeName}".`,
+      shop: {
+        id: seller.id,
+        storeName,
+        reputationScore: targetScore,
+        trustLevel: newTrustLevel,
+        isShopSuspended: false,
+        restoredByAdmin: result.actionLog.admin,
+      },
     };
   }
 }

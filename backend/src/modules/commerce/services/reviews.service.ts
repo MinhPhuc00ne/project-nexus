@@ -6,11 +6,15 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { ReputationService } from '../../users/services/reputation.service';
 import { FeedbackPageDto, ReviewDto } from '../dtos/feedback.dto';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reputationService: ReputationService,
+  ) {}
 
   async create(
     userId: string,
@@ -32,12 +36,13 @@ export class ReviewsService {
         if (order.status !== 'CONFIRMED')
           throw new BadRequestException('Chỉ đánh giá sau khi đơn hàng đã hoàn tất.');
         const values = { orderId, rating: dto.rating, comment: dto.comment?.trim() || null };
-        if (kind === 'customer')
-          return tx.customerReview.create({
+        let createdReview: unknown;
+        if (kind === 'customer') {
+          createdReview = await tx.customerReview.create({
             data: { ...values, sellerId: userId, buyerId: order.buyerId },
           });
-        if (kind === 'shop')
-          return tx.review.create({
+        } else if (kind === 'shop') {
+          createdReview = await tx.review.create({
             data: {
               ...values,
               reviewerId: userId,
@@ -45,25 +50,68 @@ export class ReviewsService {
               isShopReview: true,
             },
           });
-        if (!productId || !order.items.some((item) => item.productId === productId)) {
-          throw new BadRequestException('Sản phẩm không thuộc đơn hàng này.');
+        } else {
+          if (!productId || !order.items.some((item) => item.productId === productId)) {
+            throw new BadRequestException('Sản phẩm không thuộc đơn hàng này.');
+          }
+          await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
+          createdReview = await tx.productReview.create({
+            data: { ...values, reviewerId: userId, productId },
+          });
+          const product = await tx.product.update({
+            where: { id: productId },
+            data: {
+              ratingSum: { increment: dto.rating },
+              reviewCount: { increment: 1 },
+            },
+          });
+          await tx.product.update({
+            where: { id: productId },
+            data: { averageRating: product.ratingSum / product.reviewCount },
+          });
         }
-        await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
-        const review = await tx.productReview.create({
-          data: { ...values, reviewerId: userId, productId },
-        });
-        const product = await tx.product.update({
-          where: { id: productId },
-          data: {
-            ratingSum: { increment: dto.rating },
-            reviewCount: { increment: 1 },
-          },
-        });
-        await tx.product.update({
-          where: { id: productId },
-          data: { averageRating: product.ratingSum / product.reviewCount },
-        });
-        return review;
+
+        if (kind !== 'customer') {
+          if (dto.rating === 5) {
+            await this.reputationService.adjustScore(
+              {
+                userId: order.sellerId,
+                deltaPoints: 1,
+                reason: `Đơn hàng #${order.id.slice(0, 8)} nhận được đánh giá 5 sao từ người mua`,
+                referenceId: order.id,
+              },
+              tx,
+            );
+          } else if (dto.rating === 1) {
+            await this.reputationService.adjustScore(
+              {
+                userId: order.sellerId,
+                deltaPoints: -15,
+                reason: `Đơn hàng #${order.id.slice(0, 8)} bị người mua đánh giá 1 sao`,
+                referenceId: order.id,
+              },
+              tx,
+            );
+
+            const admins = await tx.user.findMany({
+              where: { role: 'ADMIN' },
+              select: { id: true },
+            });
+            for (const admin of admins) {
+              await tx.notification.create({
+                data: {
+                  userId: admin.id,
+                  title: `[CẢNH BÁO SHOP] Đơn hàng #${order.id.slice(0, 8)} nhận đánh giá 1 sao`,
+                  content: `Người mua đã đánh giá 1 sao cho Shop ${order.sellerId} tại đơn hàng #${order.id.slice(0, 8)}. Nhận xét: "${dto.comment || 'Không có bình luận'}". Hệ thống đã tự động trừ -15 điểm uy tín và chuyển thông tin đến Ban Quản Trị giám sát.`,
+                  type: 'DISPUTE',
+                  channel: 'IN_APP',
+                },
+              });
+            }
+          }
+        }
+
+        return createdReview;
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {

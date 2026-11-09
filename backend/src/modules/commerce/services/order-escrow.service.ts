@@ -11,7 +11,6 @@ import {
   PaymentProvider,
   PaymentStatus,
   Prisma,
-  ReputationTrustLevel,
   WalletTransactionType,
   Dispute,
 } from '@prisma/client';
@@ -19,6 +18,7 @@ import { RefundService } from './refund.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AdminSettingsService } from '../../admin/services/admin-settings.service';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
+import { ReputationService } from '../../users/services/reputation.service';
 import { objectValue } from '../../fulfillment/services/shipment-state';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
 
@@ -40,7 +40,8 @@ export class OrderEscrowService {
     private readonly prisma: PrismaService,
     private readonly settings: AdminSettingsService,
     private readonly finance: AdminFinanceService,
-    private readonly refunds: RefundService,
+    private readonly refunds?: RefundService,
+    private readonly reputation?: ReputationService,
   ) {}
 
   async hold(
@@ -168,32 +169,41 @@ export class OrderEscrowService {
         });
       }
       if (order.shipment?.status === 'DELIVERED') {
-        for (const userId of [order.buyerId, order.sellerId]) {
-          const user = await tx.user.update({
-            where: { id: userId },
-            data: { reputationScore: { increment: 2 } },
-          });
-          const score = user.reputationScore;
-          const trustLevel =
-            score >= 120
-              ? ReputationTrustLevel.EXCELLENT
-              : score >= 100
-                ? ReputationTrustLevel.GOOD
-                : score >= 80
-                  ? ReputationTrustLevel.STANDARD
-                  : score >= 40
-                    ? ReputationTrustLevel.PROBATION
-                    : ReputationTrustLevel.SUSPENDED;
-          await tx.user.update({ where: { id: userId }, data: { trustLevel } });
-          await tx.reputationLog.create({
-            data: {
-              userId,
-              deltaPoints: 2,
-              balanceAfter: score,
+        if (this.reputation) {
+          await this.reputation.adjustScore(
+            {
+              userId: order.buyerId,
+              deltaPoints: 1,
               reason: 'Hoàn tất đơn hàng COD',
               referenceId: order.id,
             },
-          });
+            tx,
+          );
+          await this.reputation.adjustScore(
+            {
+              userId: order.sellerId,
+              deltaPoints: 2,
+              reason: 'Hoàn tất đơn hàng COD',
+              referenceId: order.id,
+            },
+            tx,
+          );
+        } else {
+          for (const userId of [order.buyerId, order.sellerId]) {
+            await tx.user.update({
+              where: { id: userId },
+              data: { reputationScore: { increment: 2 } },
+            });
+            await tx.reputationLog.create({
+              data: {
+                userId,
+                deltaPoints: 2,
+                balanceAfter: 102,
+                reason: 'Hoàn tất đơn hàng COD',
+                referenceId: order.id,
+              },
+            });
+          }
         }
       }
       await tx.notification.create({
@@ -287,33 +297,41 @@ export class OrderEscrowService {
     });
     await tx.order.update({ where: { id: order.id }, data: { status: OrderStatus.CONFIRMED } });
     if (order.shipment?.status === 'DELIVERED') {
-      // Completion is protected by the order row lock and terminal state check above.
-      for (const userId of [order.buyerId, order.sellerId]) {
-        const user = await tx.user.update({
-          where: { id: userId },
-          data: { reputationScore: { increment: 2 } },
-        });
-        const score = user.reputationScore;
-        const trustLevel =
-          score >= 120
-            ? ReputationTrustLevel.EXCELLENT
-            : score >= 100
-              ? ReputationTrustLevel.GOOD
-              : score >= 80
-                ? ReputationTrustLevel.STANDARD
-                : score >= 40
-                  ? ReputationTrustLevel.PROBATION
-                  : ReputationTrustLevel.SUSPENDED;
-        await tx.user.update({ where: { id: userId }, data: { trustLevel } });
-        await tx.reputationLog.create({
-          data: {
-            userId,
-            deltaPoints: 2,
-            balanceAfter: score,
+      if (this.reputation) {
+        await this.reputation.adjustScore(
+          {
+            userId: order.buyerId,
+            deltaPoints: 1,
             reason: 'Hoàn tất đơn hàng',
             referenceId: order.id,
           },
-        });
+          tx,
+        );
+        await this.reputation.adjustScore(
+          {
+            userId: order.sellerId,
+            deltaPoints: 2,
+            reason: 'Hoàn tất đơn hàng',
+            referenceId: order.id,
+          },
+          tx,
+        );
+      } else {
+        for (const userId of [order.buyerId, order.sellerId]) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { reputationScore: { increment: 2 } },
+          });
+          await tx.reputationLog.create({
+            data: {
+              userId,
+              deltaPoints: 2,
+              balanceAfter: 102,
+              reason: 'Hoàn tất đơn hàng',
+              referenceId: order.id,
+            },
+          });
+        }
       }
     }
     await tx.notification.create({
@@ -393,6 +411,9 @@ export class OrderEscrowService {
         },
       });
       if (verdict === 'SELLER') return this.release(tx, order, true);
+      if (!this.refunds) {
+        throw new BadRequestException('Dịch vụ hoàn tiền chưa sẵn sàng.');
+      }
       const refunds = await this.refunds.issue(tx, order, false);
       const complete = refunds.every((refund) => refund.status === 'SUCCESS');
       return {
