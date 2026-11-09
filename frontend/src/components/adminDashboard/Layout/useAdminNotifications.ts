@@ -22,7 +22,7 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
   const [revision, setRevision] = useState(0);
   const lock = useRef(false);
   const mounted = useRef(false);
-  const loadedList = useRef(false);
+  const mutationVersion = useRef(0);
   const isCurrentSession = () =>
     mounted.current && getStoredToken() === token && getStoredUser()?.id === userId;
 
@@ -35,24 +35,43 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
 
   useEffect(() => {
     let active = true;
-    if (token) {
-      void getNotificationUnreadCount().then(
-        (result) => {
-          if (active && isCurrentSession() && !loadedList.current)
-            setUnreadCount(result.unreadCount);
-        },
-        (cause: unknown) => {
-          if (active && isCurrentSession() && !loadedList.current)
-            setError(
-              cause instanceof Error ? cause.message : 'Không thể tải số thông báo chưa đọc.',
-            );
-        },
-      );
+    let fetching = false;
+    if (!token) return;
+
+    async function refreshNotifications(): Promise<void> {
+      if (!active || fetching || lock.current || document.visibilityState === 'hidden') return;
+      if (isOpen) {
+        setRevision((current) => current + 1);
+        return;
+      }
+      fetching = true;
+      const version = mutationVersion.current;
+      try {
+        const result = await getNotificationUnreadCount();
+        if (active && isCurrentSession() && version === mutationVersion.current)
+          setUnreadCount(result.unreadCount);
+      } catch (cause) {
+        if (active && isCurrentSession() && version === mutationVersion.current)
+          setError(cause instanceof Error ? cause.message : 'Không thể tải số thông báo chưa đọc.');
+      } finally {
+        fetching = false;
+      }
     }
+
+    if (!isOpen) void refreshNotifications();
+    const refresh = () => {
+      void refreshNotifications();
+    };
+    const timer = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
     return () => {
       active = false;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
     };
-  }, [token, userId]);
+  }, [token, userId, isOpen]);
 
   useEffect(() => {
     if (!isOpen || !token) return;
@@ -63,7 +82,6 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
     void getNotifications({ page, limit: 10 }).then(
       (result) => {
         if (active && isCurrentSession()) {
-          loadedList.current = true;
           setData(result);
           setUnreadCount(result.unreadCount);
           setLoading(false);
@@ -84,6 +102,7 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
   async function markRead(id?: string): Promise<void> {
     if (lock.current || loading || !isCurrentSession()) return;
     lock.current = true;
+    mutationVersion.current += 1;
     setPending(id ?? 'all');
     setError('');
     try {

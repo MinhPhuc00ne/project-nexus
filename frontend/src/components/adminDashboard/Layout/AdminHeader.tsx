@@ -15,15 +15,14 @@ import type { UserProfile } from '../../../services/users';
 import AdminNotifications from './AdminNotifications';
 
 // Header nhận tài khoản đã được AdminLayout xác minh qua /users/me; không tự gọi API lần nữa.
-// onMenu mở sidebar mobile; pendingCount do trang cha tính từ các hồ sơ đang chờ.
+// onMenu mở sidebar mobile; thông báo lấy từ API theo tài khoản hiện tại.
 export default function AdminHeader({
   onMenu,
-  pendingCount,
   user,
 }: {
   onMenu: () => void;
-  pendingCount: number;
   user: UserProfile;
+  pendingCount?: number;
 }) {
   // State cục bộ chỉ để mở/đóng danh sách thông báo, không sửa dữ liệu nghiệp vụ.
   const [showNotifications, setShowNotifications] = useState(false);
@@ -110,7 +109,6 @@ export default function AdminHeader({
           <AdminNotifications
             key={user.id}
             userId={user.id}
-            pendingCount={pendingCount}
             isOpen={showNotifications}
             onToggle={() => {
               setShowNotifications(!showNotifications);
