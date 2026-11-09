@@ -13,12 +13,14 @@ export default function ReviewAuctionItemForm({
   busy: boolean;
   onReview: (itemId: string, data: ReviewAuctionItemInput) => Promise<void>;
 }) {
-  const [editing, setEditing] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [error, setError] = useState('');
   const money = (value: number | string) => `${Number(value).toLocaleString('vi-VN')} ₫`;
 
-  async function submit(event: FormEvent<HTMLFormElement>, action: 'APPROVE' | 'REJECT') {
+  async function submit(
+    event: FormEvent<HTMLFormElement>,
+    action: 'APPROVE' | 'REJECT',
+  ): Promise<void> {
     event.preventDefault();
     if (busy) return;
     setError('');
@@ -29,39 +31,12 @@ export default function ReviewAuctionItemForm({
         const reason = String(values.get('reason') || '').trim();
         if (!reason) throw new Error('Vui lòng nhập lý do từ chối.');
         payload = { action, rejectionReason: reason };
-      } else if (!editing) {
-        payload = { action };
       } else {
-        const optionalNumber = (name: string, minimum: number, integer = false) => {
-          const text = String(values.get(name) || '').trim();
-          if (!text) return undefined;
-          const value = Number(text);
-          if (
-            !Number.isFinite(value) ||
-            value < minimum ||
-            (integer && !Number.isSafeInteger(value))
-          )
-            throw new Error('Vui lòng kiểm tra số lô và các mức giá.');
-          return value;
-        };
-        const startingPrice = optionalNumber('price', 10000);
-        const reservePrice = optionalNumber('reserve', 0);
-        const effectiveReserve =
-          reservePrice ??
-          (item.proposedReservePrice === null ? undefined : Number(item.proposedReservePrice));
-        if (
-          effectiveReserve !== undefined &&
-          effectiveReserve > 0 &&
-          effectiveReserve < (startingPrice ?? Number(item.proposedStartingPrice))
-        )
-          throw new Error('Giá bảo lưu phải lớn hơn hoặc bằng giá khởi điểm.');
-        payload = {
-          action,
-          startingPrice,
-          reservePrice,
-          lotNumber: optionalNumber('lot', 1, true),
-          bidIncrement: optionalNumber('increment', 1000),
-        };
+        const lot = String(values.get('lot') || '').trim();
+        const lotNumber = lot ? Number(lot) : undefined;
+        if (lotNumber !== undefined && (!Number.isSafeInteger(lotNumber) || lotNumber < 1))
+          throw new Error('Số lô phải là số nguyên lớn hơn hoặc bằng 1.');
+        payload = lotNumber === undefined ? { action } : { action, lotNumber };
       }
       await onReview(item.id, payload);
     } catch (cause) {
@@ -71,20 +46,7 @@ export default function ReviewAuctionItemForm({
 
   return (
     <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold text-slate-600">Đề xuất của seller</p>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={busy}
-          onClick={() => {
-            setEditing(!editing);
-            setError('');
-          }}
-        >
-          {editing ? 'Hủy chỉnh sửa' : 'Chỉnh sửa'}
-        </Button>
-      </div>
+      <p className="text-xs font-semibold text-slate-600">Đề xuất của seller</p>
       <dl className="grid gap-3 text-xs sm:grid-cols-2">
         <div>
           <dt className="text-slate-500">Giá khởi điểm</dt>
@@ -107,52 +69,17 @@ export default function ReviewAuctionItemForm({
       </dl>
       <form onSubmit={(event) => void submit(event, 'APPROVE')}>
         <fieldset disabled={busy} className="space-y-3 disabled:opacity-60">
-          {editing && (
-            <>
-              <p className="text-xs text-slate-500">
-                Điều chỉnh của admin được áp dụng khi phê duyệt.
-              </p>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="text-xs">
-                  Số lô (để trống để tự gán)
-                  <input name="lot" type="number" min="1" step="1" className={inputClass} />
-                </label>
-                <label className="text-xs">
-                  Giá khởi điểm (₫)
-                  <input
-                    name="price"
-                    type="number"
-                    min="10000"
-                    step="1"
-                    defaultValue={item.proposedStartingPrice}
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-xs">
-                  Giá bảo lưu (₫)
-                  <input
-                    name="reserve"
-                    type="number"
-                    min="0"
-                    step="1"
-                    defaultValue={item.proposedReservePrice ?? ''}
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-xs">
-                  Bước giá (₫)
-                  <input
-                    name="increment"
-                    type="number"
-                    min="1000"
-                    step="1"
-                    defaultValue={item.proposedBidIncrement}
-                    className={inputClass}
-                  />
-                </label>
-              </div>
-            </>
-          )}
+          <label className="block text-xs">
+            Số lô
+            <input
+              name="lot"
+              type="number"
+              min="1"
+              step="1"
+              defaultValue={item.lotNumber ?? ''}
+              className={inputClass}
+            />
+          </label>
           <div className="flex gap-3">
             <Button type="submit">{busy ? 'Đang xử lý…' : 'Phê duyệt'}</Button>
             <Button
