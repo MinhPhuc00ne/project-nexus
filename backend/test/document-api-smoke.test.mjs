@@ -26,6 +26,10 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
     source('modules/auth/controllers/auth.controller').AuthController,
   ];
   const providers = [
+    {
+      provide: source('modules/users/services/reputation.service').ReputationService,
+      useValue: {},
+    },
     source('modules/catalog/services/product.service').ProductService,
     source('modules/catalog/services/product-sale.service').ProductSaleService,
     source('modules/catalog/services/product-search.service').ProductSearchService,

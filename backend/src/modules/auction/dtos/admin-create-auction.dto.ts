@@ -42,23 +42,23 @@ export class AdminCreateAuctionDto {
 
   @ApiPropertyOptional({
     description: 'Minimum buyer reputation score required to place bids',
-    example: 100,
-    default: 100,
+    example: 40,
+    default: 40,
   })
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @IsOptional()
-  minBuyerReputation?: number = 100;
+  minBuyerReputation?: number = 40;
 
   @ApiPropertyOptional({
     description: 'Minimum seller reputation score required to consign items',
-    example: 80,
-    default: 80,
+    example: 50,
+    default: 50,
   })
   @Type(() => Number)
   @IsInt()
   @Min(0)
   @IsOptional()
-  minSellerReputation?: number = 80;
+  minSellerReputation?: number = 50;
 }

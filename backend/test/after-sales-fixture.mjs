@@ -18,6 +18,7 @@ const { OrderCancellationService } = load(
 );
 const { OrderReturnService } = load('../src/modules/commerce/services/order-return.service.ts');
 const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
+const { ReputationService } = load('../src/modules/users/services/reputation.service.ts');
 export const buyer = { id: 'buyer', role: 'BUYER' };
 export const seller = { id: 'seller', role: 'SELLER' };
 export const admin = { id: 'admin', role: 'ADMIN' };
@@ -217,8 +218,17 @@ export function fixture() {
     notification: { create: async ({ data }) => state.notifications.push(copy(data)) },
     eventLog: { create: async ({ data }) => state.events.push(copy(data)) },
     user: {
+      findUnique: async () => ({
+        id: 'seller',
+        role: 'SELLER',
+        reputationScore: state.reputation,
+        trustLevel: 'GOOD',
+        isShopSuspended: false,
+      }),
       update: async ({ data }) => {
-        if (data.reputationScore) state.reputation -= data.reputationScore.decrement;
+        if (typeof data.reputationScore === 'number') state.reputation = data.reputationScore;
+        else if (data.reputationScore?.decrement)
+          state.reputation -= data.reputationScore.decrement;
         return { reputationScore: state.reputation };
       },
     },
@@ -241,7 +251,7 @@ export function fixture() {
       return next;
     },
   };
-  const store = new AfterSalesStoreService(prisma);
+  const store = new AfterSalesStoreService(prisma, new ReputationService(prisma, {}));
   const finance = { getOrCreatePrimaryAdminWallet: async () => copy(state.wallets[0]) };
   const refunds = new RefundService(prisma, finance, store);
   const inventory = new InventoryService(prisma);

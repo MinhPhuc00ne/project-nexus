@@ -189,7 +189,7 @@ model User {
   isShopSuspended   Boolean              @default(false) @map("is_shop_suspended")
   suspensionReason  String?              @map("suspension_reason") @db.Text
   reputationScore   Int                  @default(100) @map("reputation_score")
-  trustLevel        ReputationTrustLevel @default(EXCELLENT) @map("trust_level")
+  trustLevel        ReputationTrustLevel @default(GOOD) @map("trust_level")
   isVerified        Boolean              @default(false) @map("is_verified")
   verificationCode  String?              @map("verification_code")
   codeExpiresAt     DateTime?            @map("code_expires_at")
@@ -540,6 +540,7 @@ model Order {
   shippingFee             Decimal     @default(0) @map("shipping_fee") @db.Decimal(14, 2)
   totalAmount             Decimal     @map("total_amount") @db.Decimal(14, 2)
   status                  OrderStatus @default(PENDING_PAYMENT)
+  isAuction               Boolean     @default(false) @map("is_auction")
   cancellationActor       String?     @map("cancellation_actor")
   shippingAddressSnapshot Json        @map("shipping_address_snapshot")
   idempotencyKey          String?     @unique @map("idempotency_key")
@@ -558,6 +559,7 @@ model Order {
   customerReview CustomerReview?
   afterSales     AfterSalesRequest?
   refunds        OrderRefund[]
+  auctionAward   AuctionAward?
 
   @@map("orders")
 }
@@ -658,8 +660,8 @@ model Auction {
   isExtended             Boolean       @default(false) @map("is_extended")
   totalBidsCount         Int           @default(0) @map("total_bids_count")
 
-  minBuyerReputation     Int           @default(100) @map("min_buyer_reputation")
-  minSellerReputation    Int           @default(80)  @map("min_seller_reputation")
+  minBuyerReputation     Int           @default(40) @map("min_buyer_reputation")
+  minSellerReputation    Int           @default(50) @map("min_seller_reputation")
   createdByAdminId       String?       @map("created_by_admin_id")
 
   createdAt              DateTime      @default(now()) @map("created_at")
@@ -670,6 +672,7 @@ model Auction {
   createdByAdmin User?         @relation("AdminCreatedAuctions", fields: [createdByAdminId], references: [id], onDelete: SetNull)
   bids           Bid[]
   items          AuctionItem[]
+  awards         AuctionAward[]
 
   @@index([status, endTime])
   @@map("auctions")
@@ -725,10 +728,29 @@ model Bid {
   placedAt  DateTime  @default(now()) @map("placed_at")
 
   auction Auction @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  award AuctionAward?
   bidder  User    @relation(fields: [bidderId], references: [id], onDelete: Restrict)
 
   @@index([auctionId, placedAt])
   @@map("bids")
+}
+
+/// A single winning offer and its order, with a durable checkout deadline and deposit ownership.
+model AuctionAward {
+  id            String   @id @default(uuid())
+  auctionId     String   @map("auction_id")
+  bidId         String   @unique @map("bid_id")
+  orderId       String   @unique @map("order_id")
+  depositAmount Decimal  @map("deposit_amount") @db.Decimal(14, 2)
+  status        String   @default("AWAITING_CHECKOUT")
+  expiresAt     DateTime @map("expires_at")
+  completedAt   DateTime? @map("completed_at")
+  auction       Auction  @relation(fields: [auctionId], references: [id], onDelete: Restrict)
+  bid           Bid      @relation(fields: [bidId], references: [id], onDelete: Restrict)
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([status, expiresAt])
+  @@map("auction_awards")
 }
 
 model EscrowRecord {

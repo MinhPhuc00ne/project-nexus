@@ -38,6 +38,8 @@ export class OrderCancellationService {
     const order = await this.prisma.$transaction(async (tx) => {
       const current = await this.store.lock(tx, orderId);
       this.store.authorize(current, actor);
+      if (current.isAuction && current.status === 'PENDING_PAYMENT')
+        throw new BadRequestException('Dùng chức năng từ chối quyền mua đấu giá để hoàn tiền cọc.');
       if (current.status === 'CANCELLED') return current;
       if (!['PENDING_PAYMENT', 'PAID', 'PREPARING'].includes(current.status))
         throw new BadRequestException(

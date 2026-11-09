@@ -146,73 +146,52 @@ export class AuthService {
    * @returns Verification confirmation message
    * @throws BadRequestException when code is invalid or expired
    */
-  async verifyEmail(dto: VerifyEmailDto) {
-    const { email, code } = dto;
-
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      throw new BadRequestException('Không tìm thấy tài khoản với email này.');
-    }
-    if (user.isVerified) {
-      return { message: 'Tài khoản này đã được xác thực trước đó rồi.' };
-    }
-    if (user.verificationCode !== code) {
-      throw new BadRequestException('Mã OTP không chính xác.');
-    }
-    if (user.codeExpiresAt && new Date() > user.codeExpiresAt) {
-      throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng đăng ký lại để nhận mã mới.');
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: { email },
-      data: {
-        isVerified: true,
-        verificationCode: null,
-        codeExpiresAt: null,
-      },
+  async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE email = ${dto.email} FOR UPDATE`;
+      const user = await tx.user.findUnique({ where: { email: dto.email } });
+      if (!user) throw new BadRequestException('Không tìm thấy tài khoản với email này.');
+      if (user.isVerified) return { message: 'Tài khoản này đã được xác thực trước đó rồi.' };
+      if (user.verificationCode !== dto.code)
+        throw new BadRequestException('Mã OTP không chính xác.');
+      if (!user.codeExpiresAt || user.codeExpiresAt.getTime() <= Date.now())
+        throw new BadRequestException('Mã OTP đã hết hạn.');
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          isVerified: true,
+          verificationCode: null,
+          codeExpiresAt: null,
+          reputationScore: 100,
+          trustLevel: 'GOOD',
+        },
+      });
+      await tx.wallet.upsert({
+        where: { userId: user.id },
+        update: {},
+        create: { userId: user.id, balance: 0 },
+      });
+      await tx.reputationLog.create({
+        data: {
+          userId: user.id,
+          deltaPoints: 0,
+          balanceAfter: 100,
+          reason: 'Khởi tạo 100 điểm uy tín khi xác thực tài khoản',
+          referenceId: 'REGISTRATION_EMAIL',
+        },
+      });
+      await tx.notification.create({
+        data: {
+          userId: user.id,
+          title: 'Chào mừng bạn đến với NEXUS!',
+          content:
+            'Tài khoản của bạn đã kích hoạt thành công qua Email. Điểm uy tín khởi đầu: 100 (GOOD).',
+          type: 'SYSTEM',
+          channel: 'IN_APP',
+        },
+      });
+      return { message: 'Xác thực tài khoản thành công! Bây giờ bạn có thể đăng nhập.' };
     });
-
-    await this.prisma.wallet.upsert({
-      where: { userId: updatedUser.id },
-      update: {},
-      create: {
-        userId: updatedUser.id,
-        balance: 0,
-      },
-    });
-
-    // Award initial reputation: 50 base + 10 email verification = 60 points
-    const startingScore = 50;
-    const newScore = startingScore + 10;
-    await this.prisma.user.update({
-      where: { id: updatedUser.id },
-      data: {
-        reputationScore: newScore,
-        trustLevel: 'STANDARD',
-      },
-    });
-
-    await this.prisma.reputationLog.create({
-      data: {
-        userId: updatedUser.id,
-        deltaPoints: 10,
-        balanceAfter: newScore,
-        reason: 'Xác thực Email thành công khi đăng ký tài khoản (+10đ khởi tạo)',
-        referenceId: 'REGISTRATION_EMAIL',
-      },
-    });
-
-    await this.prisma.notification.create({
-      data: {
-        userId: updatedUser.id,
-        title: 'Chào mừng bạn đến với NEXUS!',
-        content: `Tài khoản của bạn đã kích hoạt thành công qua Email. Điểm uy tín khởi đầu: ${newScore}/100 (STANDARD).`,
-        type: 'SYSTEM',
-        channel: 'IN_APP',
-      },
-    });
-
-    return { message: 'Xác thực tài khoản thành công! Bây giờ bạn có thể đăng nhập.' };
   }
 
   /**

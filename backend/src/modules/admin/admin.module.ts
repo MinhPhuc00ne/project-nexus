@@ -12,10 +12,17 @@ import { AuthModule } from '../auth/auth.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { AdminOrdersController } from './controllers/admin-orders.controller';
 import { AdminOrdersService } from './services/admin-orders.service';
+import { ReputationModule } from '../users/reputation.module';
+import { AdminReputationController } from './controllers/admin-reputation.controller';
 
 @Module({
-  imports: [AuthModule, CatalogModule],
-  controllers: [AdminController, BackofficeDisputesController, AdminOrdersController],
+  imports: [AuthModule, CatalogModule, ReputationModule],
+  controllers: [
+    AdminController,
+    BackofficeDisputesController,
+    AdminOrdersController,
+    AdminReputationController,
+  ],
   providers: [
     AdminOrdersService,
     AdminService,

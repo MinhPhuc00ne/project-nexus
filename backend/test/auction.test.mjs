@@ -12,6 +12,49 @@ tsNode.register({
 const load = createRequire(import.meta.url);
 const { AuctionService } = load('../src/modules/auction/services/auction.service.ts');
 
+const { Prisma } = load('@prisma/client');
+function auctionFixture(prisma, gateway) {
+  prisma.user ??= {
+    findUnique: async () => ({
+      id: 'seller-1',
+      role: 'SELLER',
+      reputationScore: 100,
+      trustLevel: 'GOOD',
+    }),
+  };
+  const original = prisma.$transaction?.bind(prisma) ?? ((run) => run(prisma));
+  prisma.$transaction = (run) =>
+    original((tx) => {
+      tx.$queryRaw ??= async () => [];
+      tx.user ??= {
+        findUnique: async () => ({
+          id: 'buyer',
+          role: 'BUYER',
+          reputationScore: 100,
+          trustLevel: 'GOOD',
+        }),
+      };
+      tx.notification ??= { create: async () => ({}) };
+      tx.auctionAward ??= { findFirst: async () => null };
+      if (tx.wallet) {
+        tx.wallet.findUniqueOrThrow ??= tx.wallet.findUnique;
+        tx.wallet.updateMany ??= async (input) => {
+          await tx.wallet.update(input);
+          return { count: 1 };
+        };
+      }
+      return run(tx);
+    });
+  const service = new AuctionService(
+    prisma,
+    gateway,
+    { reserve: mock.fn(async () => ({})), release: mock.fn(async () => {}) },
+    { createAward: mock.fn(async () => ({ id: 'award-1' })) },
+  );
+  service.checkBuyerEligibility = mock.fn(async () => ({ isEligible: true }));
+  return service;
+}
+
 function createMockGateway() {
   return {
     broadcastBidPlaced: mock.fn(),
@@ -34,13 +77,14 @@ test('AuctionService.createAuction validates seller ownership and persists sched
       findFirst: mock.fn(async () => null),
       create: mock.fn(async ({ data }) => ({
         id: 'auc-1',
+        productId: 'product-1',
         ...data,
       })),
     },
   };
 
   const gatewayMock = createMockGateway();
-  const service = new AuctionService(prismaMock, gatewayMock);
+  const service = auctionFixture(prismaMock, gatewayMock);
 
   const result = await service.createAuction('seller-1', {
     productId: 'prod-1',
@@ -64,6 +108,7 @@ test('AuctionService.placeBid rejects seller bidding on their own product', asyn
         auction: {
           findUnique: mock.fn(async () => ({
             id: 'auc-1',
+            productId: 'product-1',
             sellerId: 'user-seller',
             status: 'ACTIVE',
             startTime: new Date(Date.now() - 3600000),
@@ -80,7 +125,7 @@ test('AuctionService.placeBid rejects seller bidding on their own product', asyn
     }),
   };
 
-  const service = new AuctionService(prismaMock, createMockGateway());
+  const service = auctionFixture(prismaMock, createMockGateway());
 
   await assert.rejects(
     async () => {
@@ -97,6 +142,7 @@ test('AuctionService.placeBid rejects bid amount below starting price or minimum
         auction: {
           findUnique: mock.fn(async () => ({
             id: 'auc-1',
+            productId: 'product-1',
             sellerId: 'user-seller',
             status: 'ACTIVE',
             startTime: new Date(Date.now() - 3600000),
@@ -113,7 +159,7 @@ test('AuctionService.placeBid rejects bid amount below starting price or minimum
     }),
   };
 
-  const service = new AuctionService(prismaMock, createMockGateway());
+  const service = auctionFixture(prismaMock, createMockGateway());
 
   await assert.rejects(
     async () => {
@@ -131,6 +177,7 @@ test('AuctionService.placeBid rejects when buyer wallet balance is insufficient'
         auction: {
           findUnique: mock.fn(async () => ({
             id: 'auc-1',
+            productId: 'product-1',
             sellerId: 'user-seller',
             status: 'ACTIVE',
             startTime: new Date(Date.now() - 3600000),
@@ -155,7 +202,7 @@ test('AuctionService.placeBid rejects when buyer wallet balance is insufficient'
     }),
   };
 
-  const service = new AuctionService(prismaMock, createMockGateway());
+  const service = auctionFixture(prismaMock, createMockGateway());
 
   await assert.rejects(
     async () => {
@@ -191,6 +238,7 @@ test('AuctionService.placeBid triggers anti-sniping extension when placed within
         auction: {
           findUnique: mock.fn(async () => ({
             id: 'auc-1',
+            productId: 'product-1',
             sellerId: 'user-seller',
             status: 'ACTIVE',
             startTime: new Date(Date.now() - 3600000),
@@ -204,6 +252,7 @@ test('AuctionService.placeBid triggers anti-sniping extension when placed within
           })),
           update: mock.fn(async ({ data }) => ({
             id: 'auc-1',
+            productId: 'product-1',
             ...data,
           })),
         },
@@ -237,7 +286,7 @@ test('AuctionService.placeBid triggers anti-sniping extension when placed within
   };
 
   const gatewayMock = createMockGateway();
-  const service = new AuctionService(prismaMock, gatewayMock);
+  const service = auctionFixture(prismaMock, gatewayMock);
 
   const result = await service.placeBid('auc-1', 'buyer-2', { bidAmount: 55000000 });
 
@@ -275,6 +324,7 @@ test('AuctionService.endAuction marks auction ENDED and bid WINNING when reserve
     auction: {
       findUnique: mock.fn(async () => ({
         id: 'auc-1',
+        productId: 'product-1',
         sellerId: 'seller-1',
         status: 'ACTIVE',
         endTime: new Date(Date.now() - 1000),
@@ -283,7 +333,7 @@ test('AuctionService.endAuction marks auction ENDED and bid WINNING when reserve
           {
             id: 'bid-1',
             bidderId: 'buyer-1',
-            bidAmount: 60000000,
+            bidAmount: new Prisma.Decimal(60000000),
             status: 'ACCEPTED',
           },
         ],
@@ -303,7 +353,7 @@ test('AuctionService.endAuction marks auction ENDED and bid WINNING when reserve
   };
 
   const gatewayMock = createMockGateway();
-  const service = new AuctionService(prismaMock, gatewayMock);
+  const service = auctionFixture(prismaMock, gatewayMock);
 
   const result = await service.endAuction('auc-1', 'seller-1', 'SELLER');
 
@@ -325,6 +375,7 @@ test('AuctionService.endAuction marks FAILED and unlocks deposit when reserve is
     auction: {
       findUnique: mock.fn(async () => ({
         id: 'auc-1',
+        productId: 'product-1',
         sellerId: 'seller-1',
         status: 'ACTIVE',
         endTime: new Date(Date.now() - 1000),
@@ -333,7 +384,7 @@ test('AuctionService.endAuction marks FAILED and unlocks deposit when reserve is
           {
             id: 'bid-1',
             bidderId: 'buyer-1',
-            bidAmount: 60000000,
+            bidAmount: new Prisma.Decimal(60000000),
             status: 'ACCEPTED',
           },
         ],
@@ -369,7 +420,7 @@ test('AuctionService.endAuction marks FAILED and unlocks deposit when reserve is
   };
 
   const gatewayMock = createMockGateway();
-  const service = new AuctionService(prismaMock, gatewayMock);
+  const service = auctionFixture(prismaMock, gatewayMock);
 
   const result = await service.endAuction('auc-1', 'admin-1', 'ADMIN');
 
@@ -378,11 +429,11 @@ test('AuctionService.endAuction marks FAILED and unlocks deposit when reserve is
   assert.equal(updatedAuctionStatus, 'FAILED');
   assert.equal(updatedBidStatus, 'REJECTED');
   assert.deepEqual(walletRefunded, {
-    lockedBalance: { decrement: 60000000 },
-    balance: { increment: 60000000 },
+    lockedBalance: { decrement: new Prisma.Decimal(60000000) },
+    balance: { increment: new Prisma.Decimal(60000000) },
   });
   assert.equal(refundTxCreated.type, 'AUCTION_BID_REFUND');
-  assert.equal(refundTxCreated.amount, 60000000);
+  assert.equal(Number(refundTxCreated.amount), 60000000);
 });
 
 test('AuctionService.endAuction rejects unauthorized callers and premature termination', async () => {
@@ -390,6 +441,7 @@ test('AuctionService.endAuction rejects unauthorized callers and premature termi
     auction: {
       findUnique: mock.fn(async () => ({
         id: 'auc-1',
+        productId: 'product-1',
         sellerId: 'seller-1',
         status: 'ACTIVE',
         endTime: new Date(Date.now() + 600000),
@@ -398,19 +450,19 @@ test('AuctionService.endAuction rejects unauthorized callers and premature termi
     },
   };
 
-  const service = new AuctionService(prismaMock, createMockGateway());
+  const service = auctionFixture(prismaMock, createMockGateway());
 
   await assert.rejects(
     async () => {
       await service.endAuction('auc-1', 'seller-other', 'SELLER');
     },
-    { message: /Bạn không có quyền kết thúc phiên đấu giá của người bán khác/ },
+    { message: /Bạn không có quyền kết thúc phiên/ },
   );
 
   await assert.rejects(
     async () => {
       await service.endAuction('auc-1', 'seller-1', 'SELLER');
     },
-    { message: /Phiên đấu giá chưa kết thúc thời gian thi đấu/ },
+    { message: /Phiên đấu giá chưa kết thúc/ },
   );
 });

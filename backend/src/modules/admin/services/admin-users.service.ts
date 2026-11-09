@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { Prisma, ProductStatus, ReputationTrustLevel, Role, User } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { generateStaffBaseEmail } from '../../auth/utils/staff-email.util';
+import { trustLevelFor } from '../../users/services/reputation-policy';
 import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
 import { QueryUsersDto, UserStatusFilter } from '../dtos/query-users.dto';
 import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';
@@ -225,19 +226,20 @@ export class AdminUsersService {
       throw new BadRequestException('Tài khoản này hiện không ở trạng thái bị khóa.');
     }
 
-    const targetTrustLevel =
-      user.reputationScore >= 100 ? ReputationTrustLevel.EXCELLENT : ReputationTrustLevel.STANDARD;
+    const targetTrustLevel = trustLevelFor(user.reputationScore);
+    if (targetTrustLevel === 'SUSPENDED')
+      throw new BadRequestException('Cần điều chỉnh điểm uy tín lên ít nhất 40 trước khi mở khóa.');
     const isSeller = user.role === Role.SELLER;
 
     const updated = await this.prisma.user.update({
       where: { id: targetUserId },
       data: {
         trustLevel: targetTrustLevel,
+        isShopSuspended: false,
+        suspensionReason: null,
         ...(isSeller
           ? {
-              isShopSuspended: false,
               isSellerActive: true,
-              suspensionReason: null,
             }
           : {}),
       },

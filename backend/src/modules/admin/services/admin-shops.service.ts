@@ -1,10 +1,11 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { trustLevelFor } from '../../users/services/reputation-policy';
+import { ReputationService } from '../../users/services/reputation.service';
 import {
   NotificationType,
   OrderStatus,
   Prisma,
   ProductStatus,
-  ReputationTrustLevel,
   Role,
   SellerRequestStatus,
   ShopActionType,
@@ -21,7 +22,10 @@ import { ResolveShopAppealDto } from '../dtos/resolve-shop-appeal.dto';
 export class AdminShopsService {
   private readonly logger = new Logger(AdminShopsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly reputation: ReputationService,
+  ) {}
 
   /**
    * Retrieves paginated platform seller stores with operational metrics and search filters.
@@ -688,20 +692,15 @@ export class AdminShopsService {
 
     const log = await this.prisma.$transaction(async (tx) => {
       if (penaltyPoints > 0) {
-        const newScore = Math.max(0, seller.reputationScore - penaltyPoints);
-        await tx.user.update({
-          where: { id: sellerId },
-          data: { reputationScore: newScore },
-        });
-
-        await tx.reputationLog.create({
-          data: {
+        await this.reputation.adjustScore(
+          {
             userId: sellerId,
             deltaPoints: -penaltyPoints,
-            balanceAfter: newScore,
             reason: `Cảnh cáo vi phạm gian hàng: ${dto.reason.trim()}`,
+            skipNotification: true,
           },
-        });
+          tx,
+        );
       }
 
       const createdLog = await tx.shopActionLog.create({
@@ -878,15 +877,10 @@ export class AdminShopsService {
     }
 
     const storeName = seller.sellerUpgradeRequests[0]?.storeName || seller.fullName;
-    const targetScore = Math.max(20, Math.min(100, dto.restoredScore ?? 50));
+    const targetScore = Math.max(50, Math.min(2147483647, dto.restoredScore ?? 100));
     const deltaPoints = targetScore - seller.reputationScore;
 
-    const newTrustLevel =
-      targetScore >= 90
-        ? ReputationTrustLevel.EXCELLENT
-        : targetScore >= 80
-          ? ReputationTrustLevel.GOOD
-          : ReputationTrustLevel.STANDARD;
+    const newTrustLevel = trustLevelFor(targetScore);
 
     const result = await this.prisma.$transaction(async (tx) => {
       const updatedUser = await tx.user.update({
@@ -930,7 +924,7 @@ export class AdminShopsService {
         data: {
           userId: sellerId,
           title: 'Tài khoản gian hàng đã được khôi phục!',
-          content: `Giải trình của bạn đã được Ban Quản Trị chấp thuận. Gian hàng "${storeName}" đã được mở khóa và khôi phục điểm uy tín lên ${targetScore}/100 (${newTrustLevel}). Danh sách sản phẩm của bạn đã hoạt động trở lại.`,
+          content: `Giải trình của bạn đã được Ban Quản Trị chấp thuận. Gian hàng "${storeName}" đã được mở khóa và khôi phục điểm uy tín lên ${targetScore} (${newTrustLevel}). Danh sách sản phẩm của bạn đã hoạt động trở lại.`,
           type: NotificationType.SYSTEM,
         },
       });

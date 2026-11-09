@@ -10,6 +10,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { NotificationsService } from '../../notifications/services/notifications.service';
+import { trustLevelFor } from './reputation-policy';
 import {
   AdjustReputationDto,
   AwardProfileCompletionDto,
@@ -32,20 +33,16 @@ export class ReputationService {
   /**
    * Determines the corresponding trust tier based on a normalized reputation score.
    *
-   * @param score - Numerical reputation score within the interval [0, 100]
+   * @param score Nonnegative reputation score governed by the documented trust thresholds.
    * @returns Computed ReputationTrustLevel classification
    */
   calculateTrustLevel(score: number): ReputationTrustLevel {
-    if (score >= 90) return ReputationTrustLevel.EXCELLENT;
-    if (score >= 80) return ReputationTrustLevel.GOOD;
-    if (score >= 30) return ReputationTrustLevel.STANDARD;
-    if (score >= 20) return ReputationTrustLevel.PROBATION;
-    return ReputationTrustLevel.SUSPENDED;
+    return trustLevelFor(score);
   }
 
   /**
    * Adjusts a user's reputation score by a signed delta, updates trust tier status,
-   * enforces automated shop suspension when score falls below 20, and persists an audit log.
+   * enforces automated shop suspension below 40, and persists an audit log atomically.
    *
    * @param dto - Reputation adjustment payload
    * @param tx - Optional active Prisma database transaction client
@@ -56,7 +53,9 @@ export class ReputationService {
     dto: AdjustReputationDto,
     tx?: Prisma.TransactionClient,
   ): Promise<ReputationSummaryResponse | null> {
-    const prismaClient = tx || this.prisma;
+    if (!tx) return this.prisma.$transaction((transaction) => this.adjustScore(dto, transaction));
+    const prismaClient = tx;
+    await prismaClient.$queryRaw`SELECT id FROM users WHERE id = ${dto.userId} FOR UPDATE`;
 
     const user = await prismaClient.user.findUnique({
       where: { id: dto.userId },
@@ -81,8 +80,11 @@ export class ReputationService {
     }
 
     const previousScore = user.reputationScore;
-    const newScore = Math.min(100, Math.max(0, previousScore + dto.deltaPoints));
-    const newTrustLevel = this.calculateTrustLevel(newScore);
+    const newScore = Math.min(2147483647, Math.max(0, previousScore + dto.deltaPoints));
+    const appliedDelta = newScore - previousScore;
+    const scoreTrustLevel = this.calculateTrustLevel(newScore);
+    const newTrustLevel =
+      user.trustLevel === ReputationTrustLevel.SUSPENDED ? user.trustLevel : scoreTrustLevel;
     const isSuspended = newTrustLevel === ReputationTrustLevel.SUSPENDED;
 
     await prismaClient.user.update({
@@ -90,10 +92,10 @@ export class ReputationService {
       data: {
         reputationScore: newScore,
         trustLevel: newTrustLevel,
-        ...(isSuspended
+        ...(scoreTrustLevel === ReputationTrustLevel.SUSPENDED
           ? {
               isShopSuspended: true,
-              suspensionReason: 'Điểm uy tín dưới 20 (SUSPENDED)',
+              suspensionReason: 'Điểm uy tín dưới 40 (SUSPENDED)',
             }
           : {}),
       },
@@ -112,7 +114,7 @@ export class ReputationService {
     await prismaClient.reputationLog.create({
       data: {
         userId: dto.userId,
-        deltaPoints: dto.deltaPoints,
+        deltaPoints: appliedDelta,
         balanceAfter: newScore,
         reason: dto.reason.trim(),
         penaltyType: dto.penaltyType ?? null,
@@ -124,10 +126,10 @@ export class ReputationService {
       `Reputation updated for User '${dto.userId}': ${previousScore} -> ${newScore} (${dto.deltaPoints >= 0 ? '+' : ''}${dto.deltaPoints}). Trust: ${newTrustLevel}`,
     );
 
-    if (!dto.skipNotification) {
+    if (!dto.skipNotification && appliedDelta !== 0) {
       await this.dispatchReputationNotification(
         dto.userId,
-        dto.deltaPoints,
+        appliedDelta,
         newScore,
         newTrustLevel,
         dto.reason,
@@ -140,8 +142,8 @@ export class ReputationService {
       score: newScore,
       trustLevel: newTrustLevel,
       isSuspended: isSuspended || user.isShopSuspended,
-      canSell: !isSuspended && newScore >= 20,
-      isVerifiedShop: newScore >= 80,
+      canSell: !isSuspended && !user.isShopSuspended && newScore >= 50,
+      isVerifiedShop: newScore >= 120,
     };
   }
 
@@ -156,7 +158,12 @@ export class ReputationService {
     dto: AwardProfileCompletionDto,
     tx?: Prisma.TransactionClient,
   ): Promise<boolean> {
-    const prismaClient = tx || this.prisma;
+    if (!tx)
+      return this.prisma.$transaction((transaction) =>
+        this.awardProfileCompletion(dto, transaction),
+      );
+    const prismaClient = tx;
+    await prismaClient.$queryRaw`SELECT id FROM users WHERE id = ${dto.userId} FOR UPDATE`;
     const refKey = `PROFILE_${dto.fieldKey}`;
 
     const alreadyAwarded = await prismaClient.reputationLog.findFirst({
@@ -173,7 +180,7 @@ export class ReputationService {
       return false;
     }
 
-    await this.adjustScore(
+    const result = await this.adjustScore(
       {
         userId: dto.userId,
         deltaPoints: dto.points,
@@ -183,7 +190,7 @@ export class ReputationService {
       prismaClient,
     );
 
-    return true;
+    return result !== null;
   }
 
   /**
@@ -211,11 +218,47 @@ export class ReputationService {
     return {
       userId: user.id,
       score: user.reputationScore,
-      trustLevel: user.trustLevel,
-      isSuspended: user.isShopSuspended,
-      canSell: !user.isShopSuspended && user.reputationScore >= 20,
-      isVerifiedShop: user.reputationScore >= 80,
+      trustLevel:
+        user.isShopSuspended || user.trustLevel === 'SUSPENDED'
+          ? 'SUSPENDED'
+          : trustLevelFor(user.reputationScore),
+      isSuspended:
+        user.isShopSuspended || user.trustLevel === 'SUSPENDED' || user.reputationScore < 40,
+      canSell:
+        !user.isShopSuspended && user.trustLevel !== 'SUSPENDED' && user.reputationScore >= 50,
+      isVerifiedShop: user.reputationScore >= 120,
     };
+  }
+
+  /**
+   * Records an administrator's manual adjustment and operator audit atomically.
+   * @param userId Target account.
+   * @param adminId Authenticated administrator.
+   * @param input Explicit signed adjustment and rationale.
+   * @returns Updated standing or null for a non-rated staff account.
+   */
+  async adjustByAdmin(
+    userId: string,
+    adminId: string,
+    input: Pick<AdjustReputationDto, 'deltaPoints' | 'reason' | 'penaltyType'>,
+  ): Promise<ReputationSummaryResponse | null> {
+    return this.prisma.$transaction(async (tx) => {
+      const result = await this.adjustScore({ ...input, userId }, tx);
+      if (result)
+        await tx.eventLog.create({
+          data: {
+            eventName: 'ReputationAdjusted',
+            operatorId: adminId,
+            payload: {
+              userId,
+              deltaPoints: input.deltaPoints,
+              reason: input.reason,
+              balanceAfter: result.score,
+            },
+          },
+        });
+      return result;
+    });
   }
 
   /**
@@ -269,17 +312,17 @@ export class ReputationService {
 
     if (delta > 0) {
       title = `Điểm uy tín tăng (+${delta})`;
-      content = `Bạn vừa được cộng +${delta} điểm uy tín. Lý do: ${reason}. Điểm hiện tại: ${newScore}/100 (${trustLevel}).`;
+      content = `Bạn vừa được cộng +${delta} điểm uy tín. Lý do: ${reason}. Điểm hiện tại: ${newScore} (${trustLevel}).`;
     } else {
       title = `Cảnh báo: Điểm uy tín bị trừ (${delta})`;
-      content = `Bạn vừa bị trừ ${delta} điểm uy tín. Lý do: ${reason}. Điểm hiện tại: ${newScore}/100 (${trustLevel}).`;
+      content = `Bạn vừa bị trừ ${Math.abs(delta)} điểm uy tín. Lý do: ${reason}. Điểm hiện tại: ${newScore} (${trustLevel}).`;
 
       if (trustLevel === ReputationTrustLevel.PROBATION) {
         content +=
-          ' Cảnh báo: Tài khoản đang ở mức PROBATION (20-29 điểm) và bị hạn chế tham gia đấu giá VIP.';
+          ' Cảnh báo: Tài khoản đang ở mức PROBATION (40-79 điểm) và không được tạo phiên đấu giá.';
       } else if (trustLevel === ReputationTrustLevel.SUSPENDED) {
         content +=
-          ' Khẩn cấp: Gian hàng đã bị tạm khóa do điểm uy tín rớt xuống dưới 20. Vui lòng gửi đơn giải trình lên Ban Quản Trị để được hỗ trợ.';
+          ' Khẩn cấp: Gian hàng đã bị tạm khóa do điểm uy tín dưới 40. Vui lòng liên hệ Ban Quản Trị để được hỗ trợ.';
       }
     }
 

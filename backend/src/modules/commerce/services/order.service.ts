@@ -438,6 +438,11 @@ export class OrderService {
       throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
     }
 
+    if (order.isAuction)
+      throw new BadRequestException(
+        'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
+      );
+
     if (order.buyerId !== buyerId) {
       throw new ForbiddenException('Bạn không có quyền thanh toán cho đơn hàng này');
     }
@@ -548,6 +553,11 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
     }
+
+    if (order.isAuction)
+      throw new BadRequestException(
+        'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
+      );
 
     if (order.buyerId !== buyerId) {
       throw new ForbiddenException('Bạn không có quyền thanh toán cho đơn hàng này');
@@ -718,6 +728,11 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException('Không tìm thấy đơn hàng tương ứng');
     }
+
+    if (order.isAuction)
+      throw new BadRequestException(
+        'Đơn đấu giá phải thanh toán qua quyền mua, để sử dụng đúng tiền cọc.',
+      );
 
     if (order.buyerId !== buyerId) {
       throw new ForbiddenException('Bạn không có quyền thao tác trên đơn hàng này');

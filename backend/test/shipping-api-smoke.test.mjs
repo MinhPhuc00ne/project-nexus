@@ -53,6 +53,10 @@ test('shipping dependencies and routes initialize without live infrastructure', 
   Module({
     controllers,
     providers: [
+      {
+        provide: source('modules/users/services/reputation.service').ReputationService,
+        useValue: {},
+      },
       source('modules/catalog/services/inventory.service').InventoryService,
       source('modules/commerce/services/after-sales-store.service').AfterSalesStoreService,
       source('modules/commerce/services/refund.service').RefundService,

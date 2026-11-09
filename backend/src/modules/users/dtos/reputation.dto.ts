@@ -1,6 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PenaltyType, ReputationTrustLevel } from '@prisma/client';
-import { IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 /**
  * Data transfer object for adjusting a user's reputation score.
@@ -14,7 +24,9 @@ export class AdjustReputationDto {
     description: 'Score delta to increment (positive) or decrement (negative)',
     example: 2,
   })
-  @IsNumber()
+  @IsInt()
+  @Min(-2147483648)
+  @Max(2147483647)
   deltaPoints!: number;
 
   @ApiProperty({
@@ -46,6 +58,7 @@ export class AdjustReputationDto {
     example: false,
   })
   @IsOptional()
+  @IsBoolean()
   skipNotification?: boolean;
 }
 
@@ -67,7 +80,7 @@ export class AwardProfileCompletionDto {
     example: 'PHONE',
     enum: ['FULL_NAME', 'AVATAR', 'PHONE', 'BANK', 'KYC_SELLER'],
   })
-  @IsString()
+  @IsIn(['FULL_NAME', 'AVATAR', 'PHONE', 'BANK', 'KYC_SELLER'])
   fieldKey!: ProfileCompletionField;
 
   @ApiProperty({ description: 'Points awarded for completing this milestone', example: 10 })
@@ -91,7 +104,7 @@ export class ReputationSummaryResponse {
   @ApiProperty({ description: 'Target user unique identifier', example: 'usr_abc123' })
   userId!: string;
 
-  @ApiProperty({ description: 'Current normalized reputation score (0 - 100)', example: 85 })
+  @ApiProperty({ description: 'Current nonnegative reputation score', example: 100 })
   score!: number;
 
   @ApiProperty({
@@ -109,13 +122,13 @@ export class ReputationSummaryResponse {
 
   @ApiProperty({
     description:
-      'Whether the user possesses active selling permissions (score >= 20 and not suspended)',
+      'Whether the user possesses active selling permissions (score >= 50 and not suspended)',
     example: true,
   })
   canSell!: boolean;
 
   @ApiProperty({
-    description: 'Whether the shop possesses the trusted merchant verified badge (score >= 80)',
+    description: 'Whether the shop possesses the excellent reputation badge (score >= 120)',
     example: true,
   })
   isVerifiedShop!: boolean;
