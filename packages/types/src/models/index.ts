@@ -52,6 +52,7 @@ export interface AuctionSummaryDto {
   startTime: string;
   endTime: string;
   threeModelKey?: string | null;
+  imageUrl?: string | null;
   totalBidsCount: number;
 }
 

@@ -310,6 +310,7 @@ export class AuctionService {
       data: {
         title: dto.title.trim(),
         description: dto.description?.trim(),
+        imageUrl: dto.imageUrl?.trim() || null,
         startTime,
         endTime,
         originalEndTime: endTime,
@@ -368,6 +369,9 @@ export class AuctionService {
 
     if (dto.title !== undefined) updateData.title = dto.title.trim();
     if (dto.description !== undefined) updateData.description = dto.description.trim();
+    if (dto.imageUrl !== undefined) {
+      updateData.imageUrl = dto.imageUrl ? dto.imageUrl.trim() : null;
+    }
     if (dto.minBuyerReputation !== undefined)
       updateData.minBuyerReputation = dto.minBuyerReputation;
     if (dto.minSellerReputation !== undefined)

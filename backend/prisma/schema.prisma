@@ -649,6 +649,7 @@ model Auction {
   sellerId               String?       @map("seller_id")
   title                  String
   description            String?       @db.Text
+  imageUrl               String?       @map("image_url")
   startingPrice          Decimal       @default(0) @map("starting_price") @db.Decimal(14, 2)
   reservePrice           Decimal?      @map("reserve_price") @db.Decimal(14, 2)
   currentHighestBid      Decimal       @default(0) @map("current_highest_bid") @db.Decimal(14, 2)

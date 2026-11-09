@@ -22,6 +22,15 @@ export class AdminUpdateAuctionDto {
   description?: string;
 
   @ApiPropertyOptional({
+    description: 'Updated public banner or avatar image URL of the auction session',
+    example:
+      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1200&q=80',
+  })
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
+  @ApiPropertyOptional({
     description: 'Updated start timestamp in ISO 8601 format',
     example: '2026-11-08T20:30:00.000Z',
   })
