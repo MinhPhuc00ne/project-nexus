@@ -12,6 +12,7 @@ import { ShopController } from './controllers/shop.controller';
 import { BannerController } from './controllers/banner.controller';
 import { RecommendationsController } from './controllers/recommendations.controller';
 import { BannerService } from './services/banner.service';
+import { BannerHistoryService } from './services/banner-history.service';
 import { RecommendationsService } from './services/recommendations.service';
 import { AuctionStockService } from './services/auction-stock.service';
 
@@ -33,6 +34,7 @@ import { AuctionStockService } from './services/auction-stock.service';
     ProductSaleService,
     ProductSearchService,
     BannerService,
+    BannerHistoryService,
     RecommendationsService,
   ],
   exports: [CategoryService, ProductService, InventoryService, ShopService, AuctionStockService],

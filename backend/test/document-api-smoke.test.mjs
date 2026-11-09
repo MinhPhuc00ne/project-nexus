@@ -35,6 +35,7 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
     source('modules/catalog/services/product-search.service').ProductSearchService,
     source('modules/catalog/services/inventory.service').InventoryService,
     source('modules/catalog/services/banner.service').BannerService,
+    source('modules/catalog/services/banner-history.service').BannerHistoryService,
     source('modules/catalog/services/recommendations.service').RecommendationsService,
     source('modules/commerce/services/reviews.service').ReviewsService,
     source('modules/commerce/services/reports.service').ReportsService,

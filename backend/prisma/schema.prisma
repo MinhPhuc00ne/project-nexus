@@ -240,6 +240,7 @@ model User {
   customerReviewsGiven       CustomerReview[]         @relation("CustomerReviewer")
   customerReviewsReceived    CustomerReview[]         @relation("CustomerReviewee")
   eventBanners               EventBanner[]
+  bannerDisableActions       BannerDisableHistory[]
 
   @@map("users")
 }
@@ -673,6 +674,7 @@ model Auction {
   bids           Bid[]
   items          AuctionItem[]
   awards         AuctionAward[]
+  banners        EventBanner[]
 
   @@index([status, endTime])
   @@map("auctions")
@@ -859,6 +861,12 @@ model CustomerReview {
   @@map("customer_reviews")
 }
 
+/// Creator ordering is immutable after a banner is created.
+enum BannerCreatorRole {
+  ADMIN
+  STAFF
+}
+
 model EventBanner {
   id        String    @id @default(uuid())
   title     String
@@ -869,12 +877,41 @@ model EventBanner {
   isActive  Boolean   @default(true) @map("is_active")
   priority  Int       @default(0)
   creatorId String    @map("creator_id")
+  creatorRole BannerCreatorRole @map("creator_role")
+  auctionId String? @map("auction_id")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   creator   User      @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  auction Auction? @relation(fields: [auctionId], references: [id], onDelete: SetNull)
+  disableHistory BannerDisableHistory[]
 
   @@index([isActive, startsAt, endsAt])
+  @@index([creatorRole, createdAt, id])
   @@map("event_banners")
+}
+
+/// Append-only attribution of a completed banner deactivation, including historical identity snapshots.
+model BannerDisableHistory {
+  id String @id @default(uuid())
+  bannerId String @map("banner_id")
+  bannerTitle String @map("banner_title")
+  creatorId String @map("creator_id")
+  creatorName String @map("creator_name")
+  creatorRole BannerCreatorRole @map("creator_role")
+  actorId String @map("actor_id")
+  actorName String @map("actor_name")
+  actorRole Role @map("actor_role")
+  source String
+  wasActive Boolean @default(true) @map("was_active")
+  isActive Boolean @default(false) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  banner EventBanner @relation(fields: [bannerId], references: [id], onDelete: Restrict)
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([bannerId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([createdAt, id])
+  @@map("banner_disable_history")
 }
 
 model EventLog {
@@ -890,6 +927,9 @@ model EventLog {
 }
 
 model Notification {
+  /// Optional destination for auction notifications; legacy notifications remain readable.
+  auctionId String? @map("auction_id")
+  targetUrl String? @map("target_url")
   id        String              @id @default(uuid())
   userId    String              @map("user_id")
   title     String

@@ -63,7 +63,7 @@ export class AuctionController {
   @ApiOperation({
     summary: 'List public auction sessions',
     description:
-      'Retrieves public paginated auction listings (SCHEDULED, ACTIVE, ENDED) with approved item counts and scheduled timeframes.',
+      'Retrieves public paginated auction listings (SCHEDULED, ACTIVE, ENDED) with approved item counts and scheduled timeframes. Manual browsing uses this list and GET /auctions/:id. Each item includes targetUrl=/auction/:id, the same destination returned by linked banners and auction notifications.',
   })
   @ApiResponse({ status: 200, description: 'Paginated auction listings retrieved successfully.' })
   async getAuctions(@Query() query: AuctionQueryDto) {
