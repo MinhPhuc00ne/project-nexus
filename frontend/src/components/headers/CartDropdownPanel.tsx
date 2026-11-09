@@ -26,39 +26,61 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
 
       <div className="max-h-72 overflow-y-auto">
         {cartItems.length > 0 ? (
-          cartItems.map((item) => (
-            <Link
-              key={item.id}
-              to={`/product/${item.id}`}
-              className="flex gap-3 border-b border-slate-100 px-4 py-3 hover:bg-slate-50 transition"
-              onClick={onClose}
-            >
-              {item.img && (
-                <img
-                  src={item.img}
-                  alt={item.name}
-                  className="h-[52px] w-[52px] shrink-0 rounded-md border border-slate-200 object-cover p-0.5 bg-white"
-                />
-              )}
+          cartItems.map((item) => {
+            const match = item.name.match(/\s*\((.*?)\)$/);
+            const cleanTitle = match ? item.name.replace(/\s*\([^)]*\)$/, '').trim() : item.name;
+            const effectiveSelections: Record<string, string> = { ...(item.selections || {}) };
+            if (Object.keys(effectiveSelections).length === 0 && match && match[1]) {
+              const parts = match[1].split(/,\s*/);
+              for (const part of parts) {
+                const [k, v] = part.split(/:\s*/);
+                if (k && v) effectiveSelections[k.trim()] = v.trim();
+              }
+            }
+            const hasSelections = Object.keys(effectiveSelections).length > 0;
 
-              <div className="min-w-0 flex-1">
-                <h5 className="mb-1 line-clamp-2 text-[13px] font-semibold text-slate-800 hover:text-[#f24e1e]">
-                  {item.name}
-                </h5>
+            return (
+              <Link
+                key={item.id}
+                to={`/product/${item.id}`}
+                className="flex gap-3 border-b border-slate-100 px-4 py-3 hover:bg-slate-50 transition"
+                onClick={onClose}
+              >
+                {item.img && (
+                  <img
+                    src={item.img}
+                    alt={item.name}
+                    className="h-[52px] w-[52px] shrink-0 rounded-md border border-slate-200 object-cover p-0.5 bg-white"
+                  />
+                )}
 
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-bold text-[#f24e1e]">
-                    {typeof item.price === 'number'
-                      ? `${item.price.toLocaleString('vi-VN')} ₫`
-                      : item.price}
-                  </span>
-                  {item.qty && (
-                    <span className="text-xs text-slate-400 font-medium">x{item.qty}</span>
+                <div className="min-w-0 flex-1">
+                  <h5 className="mb-0.5 line-clamp-2 text-[13px] font-semibold text-slate-800 hover:text-[#f24e1e]">
+                    {cleanTitle}
+                  </h5>
+
+                  {hasSelections && (
+                    <p className="text-[11px] text-slate-400 truncate mb-1">
+                      {Object.entries(effectiveSelections)
+                        .map(([k, v]) => `${k}: ${v}`)
+                        .join(' • ')}
+                    </p>
                   )}
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] font-bold text-[#f24e1e]">
+                      {typeof item.price === 'number'
+                        ? `${item.price.toLocaleString('vi-VN')} ₫`
+                        : item.price}
+                    </span>
+                    {item.qty && (
+                      <span className="text-xs text-slate-400 font-medium">x{item.qty}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))
+              </Link>
+            );
+          })
         ) : (
           <div className="p-6 text-center text-[13px] text-slate-400">
             Chưa có sản phẩm trong giỏ hàng

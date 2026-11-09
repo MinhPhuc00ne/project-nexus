@@ -1,4 +1,5 @@
 import api, { apiRequest } from './api';
+import { getStoredToken } from './auth';
 import type { ProductDetail, ProductItem } from '../types/product.types';
 import { computeEffectiveSale, saleConfigFromApi } from './productExtras';
 
@@ -55,6 +56,9 @@ export interface CatalogQuery {
   page?: number;
   limit?: number;
   sortBy?: 'newest' | 'price_asc' | 'price_desc';
+  city?: string;
+  minRating?: number;
+  inStock?: 'true' | 'false';
 }
 
 export interface SearchProductsResult {
@@ -121,6 +125,9 @@ export async function searchProductsApi(query: CatalogQuery = {}): Promise<Searc
     params: {
       search: query.search || undefined,
       categoryId: query.categoryId || undefined,
+      city: query.city || undefined,
+      minRating: query.minRating || undefined,
+      inStock: query.inStock || undefined,
       minPrice: query.minPrice || undefined,
       maxPrice: query.maxPrice || undefined,
       page: query.page || 1,
@@ -320,5 +327,55 @@ export async function getShopDetailApi(
       limit: data?.products?.limit ?? 12,
       totalPages: data?.products?.totalPages ?? 1,
     },
+  };
+}
+
+export interface RecommendedProduct extends CatalogProduct {
+  recommendationReason?: 'CATEGORY_INTEREST' | 'POPULAR_OR_RECENT';
+}
+
+export interface RecommendationsResult {
+  items: RecommendedProduct[];
+  personalized: boolean;
+}
+
+export async function getRecommendationsApi(limit = 12): Promise<RecommendationsResult> {
+  const token = getStoredToken();
+  if (token) {
+    try {
+      const res = await apiRequest<{ items: RecommendedProduct[]; personalized: boolean }>(
+        `/catalog/recommendations?page=1&limit=${encodeURIComponent(String(limit))}`,
+        { requireAuth: true },
+      );
+      if (res && Array.isArray(res.items) && res.items.length > 0) {
+        return res;
+      }
+    } catch {
+      // Fallback nếu token hết hạn hoặc lỗi mạng
+    }
+  }
+
+  // Fallback danh sách sản phẩm phổ biến cho khách vãng lai hoặc chưa có lịch sử mua hàng
+  const fallback = await getProductsCatalog({ limit, page: 1 });
+  return {
+    items: fallback.map((p) => ({
+      id: p.id,
+      title: p.name,
+      description: p.description,
+      basePrice: p.price,
+      salePrice: p.originalPrice && p.price < p.originalPrice ? p.price : null,
+      availableQty: p.stock ?? 10,
+      images: p.images || [],
+      thumbnail: p.images?.[0] || null,
+      threeModelKey: null,
+      category: p.category
+        ? { id: p.category.id, name: p.category.name, slug: p.category.slug }
+        : null,
+      seller: p.shop?.id ? { id: p.shop.id, fullName: p.shop.name } : null,
+      averageRating: p.rating ?? 5,
+      reviewCount: p.reviewsCount ?? 0,
+      recommendationReason: 'POPULAR_OR_RECENT' as const,
+    })),
+    personalized: false,
   };
 }

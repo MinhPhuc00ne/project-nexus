@@ -43,6 +43,24 @@ export const CartItemList: React.FC<CartItemListProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 shadow-sm overflow-hidden">
         {items.map((item) => {
           const targetUrl = item.productId ? `/product/${item.productId}` : `/product/${item.id}`;
+
+          // Parse parenthesized options if present in item.name
+          const match = item.name.match(/\s*\((.*?)\)$/);
+          const cleanTitle = match ? item.name.replace(/\s*\([^)]*\)$/, '').trim() : item.name;
+
+          const effectiveSelections: Record<string, string> = { ...(item.selections || {}) };
+          if (Object.keys(effectiveSelections).length === 0 && match && match[1]) {
+            const parts = match[1].split(/,\s*/);
+            for (const part of parts) {
+              const [k, v] = part.split(/:\s*/);
+              if (k && v) {
+                effectiveSelections[k.trim()] = v.trim();
+              }
+            }
+          }
+          const selectionEntries = Object.entries(effectiveSelections);
+          const hasSelections = selectionEntries.length > 0;
+
           return (
             <div
               key={item.id}
@@ -75,9 +93,9 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                       to={targetUrl}
                       className="text-xs font-bold text-slate-900 hover:text-[#f24e1e] transition line-clamp-2"
                     >
-                      {item.name}
+                      {cleanTitle}
                     </Link>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="mt-1">
                       {item.isOutOfStock ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">
                           Hết hàng
@@ -86,10 +104,36 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
                           Chỉ còn lại {item.availableQty} sản phẩm
                         </span>
+                      ) : hasSelections ? (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11px] font-semibold text-slate-500">
+                            Phân loại:
+                          </span>
+                          {selectionEntries.map(([key, val]) => (
+                            <span
+                              key={key}
+                              className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] text-slate-700"
+                            >
+                              <span className="text-slate-400 mr-1">{key}:</span>
+                              <span className="font-bold text-slate-900">{val}</span>
+                            </span>
+                          ))}
+                          <span className="text-[11px] text-emerald-600 font-medium ml-1">
+                            • Bảo chứng Escrow
+                          </span>
+                        </div>
                       ) : (
-                        <span className="text-[11px] text-slate-400">
-                          Phân loại: Bản Tiêu Chuẩn • Bảo chứng Escrow
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] text-slate-400">
+                            Phân loại: Bản Tiêu Chuẩn • Bảo chứng Escrow
+                          </span>
+                          <Link
+                            to={targetUrl}
+                            className="text-[11px] text-[#f24e1e] hover:underline font-semibold"
+                          >
+                            (Chọn màu sắc/kích cỡ)
+                          </Link>
+                        </div>
                       )}
                     </div>
                   </div>

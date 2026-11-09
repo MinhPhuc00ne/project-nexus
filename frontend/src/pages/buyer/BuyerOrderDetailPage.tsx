@@ -22,6 +22,7 @@ import {
 import OrderTimeline from '../../components/orders/OrderTimeline';
 import OrderAddressCard from '../../components/orders/OrderAddressCard';
 import OrderItemsSummary from '../../components/orders/OrderItemsSummary';
+import OrderReviewModal from '../../components/orders/OrderReviewModal';
 
 const statusMap: Record<
   string,
@@ -92,6 +93,7 @@ export default function BuyerOrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const fetchOrderDetail = useCallback(async () => {
     if (!id) return;
@@ -296,13 +298,23 @@ export default function BuyerOrderDetailPage() {
               </p>
             </div>
           </div>
-          <Link
-            to={`/buyer/reviews?orderId=${order.id}`}
-            className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm"
+          <button
+            type="button"
+            onClick={() => setShowReviewModal(true)}
+            className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
           >
             Đánh giá sản phẩm
-          </Link>
+          </button>
         </div>
+      )}
+
+      {order && (
+        <OrderReviewModal
+          isOpen={showReviewModal}
+          onClose={() => setShowReviewModal(false)}
+          order={order}
+          onSuccess={() => void fetchOrderDetail()}
+        />
       )}
 
       {/* Order Timeline */}

@@ -21,6 +21,7 @@ export interface HomeCategory {
 }
 
 export interface HomeHeroSlide {
+  id?: string | number;
   badge?: string;
   title?: string;
   accent?: string;

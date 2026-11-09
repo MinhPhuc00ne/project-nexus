@@ -1,15 +1,57 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { HomeCountdown } from './HomeCountdown';
 import { HomeAuctionCard } from './HomeAuctionCard';
-import type { HomeProduct } from './home.types';
+import type { AuctionEntity } from '../../services/auction.service';
 
 export interface HomeLiveAuctionProps {
-  products: HomeProduct[];
+  auctions?: AuctionEntity[];
 }
 
-export function HomeLiveAuction({ products }: HomeLiveAuctionProps) {
-  const featured = products[0];
+export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
+  if (!auctions || auctions.length === 0) return null;
 
-  if (!featured) return null;
+  const featuredAuction = auctions[0];
+
+  const featuredTitle =
+    featuredAuction.title || featuredAuction.product?.title || 'Phòng Đấu Giá Trực Tiếp';
+
+  const featuredImage =
+    featuredAuction.product?.images?.[0]?.imageUrl || '/images/watches/watch5_clean.png';
+
+  const featuredPrice = Number(
+    featuredAuction.currentHighestBid || featuredAuction.startingPrice || 0,
+  );
+
+  const depositVal = Math.round(Number(featuredAuction.startingPrice || 0) * 0.1);
+
+  const targetUrl = `/auction/${featuredAuction.id}`;
+
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    if (!featuredAuction?.endTime) return 0;
+    return Math.max(
+      0,
+      Math.floor((new Date(featuredAuction.endTime).getTime() - Date.now()) / 1000),
+    );
+  });
+
+  useEffect(() => {
+    if (!featuredAuction?.endTime) return;
+    const update = () => {
+      const diff = Math.max(
+        0,
+        Math.floor((new Date(featuredAuction.endTime).getTime() - Date.now()) / 1000),
+      );
+      setTimeLeft(diff);
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [featuredAuction?.endTime]);
+
+  const h = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
+  const m = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
+  const s = String(timeLeft % 60).padStart(2, '0');
 
   return (
     <section className="mt-5 rounded-[18px] border border-slate-200 bg-white p-4 sm:p-5">
@@ -38,8 +80,8 @@ export function HomeLiveAuction({ products }: HomeLiveAuctionProps) {
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <div className="relative aspect-video overflow-hidden rounded-[18px] border border-slate-300 bg-slate-950">
           <img
-            src={featured.image}
-            alt={featured.name}
+            src={featuredImage}
+            alt={featuredTitle}
             className="absolute inset-0 h-full w-full object-cover"
           />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
@@ -58,12 +100,18 @@ export function HomeLiveAuction({ products }: HomeLiveAuctionProps) {
               Góc máy: Hero Perspective 45°
             </span>
             <div className="flex gap-2">
-              <button className="rounded border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700">
+              <Link
+                to={targetUrl}
+                className="rounded border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
                 Xoay 3D
-              </button>
-              <button className="rounded border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700">
+              </Link>
+              <Link
+                to={targetUrl}
+                className="rounded border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
                 Ảnh Thực Tế
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -71,7 +119,9 @@ export function HomeLiveAuction({ products }: HomeLiveAuctionProps) {
         <div className="rounded-[18px] border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-              Lô đặc biệt #01
+              {featuredAuction
+                ? `LOT #${featuredAuction.id.slice(0, 8).toUpperCase()}`
+                : 'Lô đặc biệt #01'}
             </span>
 
             <span className="rounded bg-green-50 px-2 py-1 text-[10px] font-semibold text-green-500">
@@ -79,7 +129,9 @@ export function HomeLiveAuction({ products }: HomeLiveAuctionProps) {
             </span>
           </div>
 
-          <h3 className="mt-4 text-[22px] font-extrabold text-slate-800">{featured.name}</h3>
+          <h3 className="mt-4 text-[22px] font-extrabold text-slate-800 line-clamp-2">
+            {featuredTitle}
+          </h3>
 
           <p className="mt-2 text-sm text-slate-500">
             Mẫu đang được người mua theo dõi ngay trong phòng đấu giá tương tác 3D.
@@ -91,9 +143,11 @@ export function HomeLiveAuction({ products }: HomeLiveAuctionProps) {
                 Giá Hiện Tại
               </p>
               <p className="mt-2 text-[24px] font-extrabold text-sky-600">
-                {featured.price?.toLocaleString()} đ
+                {featuredPrice.toLocaleString('vi-VN')} đ
               </p>
-              <p className="text-[11px] text-slate-400">Tiền cọc: 25.000.000 đ</p>
+              <p className="text-[11px] text-slate-400">
+                Tiền cọc: {depositVal.toLocaleString('vi-VN')} đ
+              </p>
             </div>
 
             <div className="text-right">
@@ -101,29 +155,37 @@ export function HomeLiveAuction({ products }: HomeLiveAuctionProps) {
                 Đếm Ngược Kết Thúc
               </p>
               <div className="mt-2 flex justify-end">
-                <HomeCountdown values={['00', '04', '31']} />
+                <HomeCountdown values={[h, m, s]} />
               </div>
               <p className="mt-2 text-[11px] text-red-500">Anti-Sniping: Active</p>
             </div>
           </div>
 
           <div className="mt-4 flex gap-3">
-            <button className="flex-1 rounded-xl bg-[#1a8bff] px-5 py-3 text-sm font-bold text-white shadow-lg shadow-sky-200 hover:bg-[#1277eb]">
-              Đặt Giá
-            </button>
+            <Link
+              to={targetUrl}
+              className="flex-1 rounded-xl bg-[#1a8bff] px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-sky-200 hover:bg-[#1277eb] transition"
+            >
+              Đặt Giá Ngay
+            </Link>
 
-            <button className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-              Chi Tiết
-            </button>
+            <Link
+              to={targetUrl}
+              className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+            >
+              Chi Tiết Phòng
+            </Link>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-3">
-        {products.slice(1).map((product) => (
-          <HomeAuctionCard key={product.id} product={product} />
-        ))}
-      </div>
+      {auctions.length > 1 && (
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {auctions.slice(1, 4).map((auction) => (
+            <HomeAuctionCard key={auction.id} auction={auction} />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

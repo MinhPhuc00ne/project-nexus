@@ -71,6 +71,20 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                   ) : (
                     <span className="font-bold text-slate-900 line-clamp-1">{title}</span>
                   )}
+                  {(() => {
+                    const selections = (
+                      item as unknown as { selections?: Record<string, string | number> }
+                    ).selections;
+                    if (!selections || Object.keys(selections).length === 0) return null;
+                    return (
+                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        Phân loại:{' '}
+                        {Object.entries(selections)
+                          .map(([k, v]) => `${k}: ${v}`)
+                          .join(' • ')}
+                      </p>
+                    );
+                  })()}
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     Số lượng: x{item?.quantity ?? 1}
                   </p>

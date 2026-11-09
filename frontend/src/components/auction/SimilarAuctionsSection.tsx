@@ -14,6 +14,10 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
   likedSimilar,
   onToggleLike,
 }) => {
+  if (!watches || watches.length === 0) {
+    return null;
+  }
+
   return (
     <section className="mt-12 [margin-bottom:3.5rem]">
       <div className="flex items-end justify-between mb-6">
@@ -30,7 +34,7 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
           to="/search?floor=Sàn+Đấu+Giá+Live"
           className="text-[13px] font-bold text-blue-600 no-underline inline-flex items-center gap-1 [transition:gap_0.15s_ease] hover:gap-2 hover:underline"
         >
-          <span>Xem tất cả 42 lot</span>
+          <span>Xem tất cả {watches.length} phiên</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
@@ -39,13 +43,20 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
         {watches.map((item) => {
           const liked = likedSimilar[item.id] || false;
           return (
-            <div
+            <Link
               key={item.id}
-              className="bg-white [border:1px_solid_#e2e8f0] [border-radius:0.875rem] overflow-hidden flex flex-col [transition:all_0.2s_ease] relative [box-shadow:0_1px_3px_rgba(0,_0,_0,_0.04)] hover:[transform:translateY(-3px)] hover:border-slate-300 hover:[box-shadow:0_10px_20px_rgba(0,_0,_0,_0.08)] hover:[&_.watch-card-img]:[transform:scale(1.05)]"
+              to={`/auction/${item.id}`}
+              className="bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col transition relative shadow-xs hover:-translate-y-1 hover:border-slate-300 hover:shadow-lg no-underline group"
             >
               {/* Top Badge */}
               <span
-                className={`absolute top-2.5 left-2.5 text-[10px] font-extrabold [padding:0.2rem_0.5rem] rounded [letter-spacing:0.04em] [z-index:2] [&.live]:bg-red-500 [&.live]:text-white [&.upcoming]:bg-blue-600 [&.upcoming]:text-white [&.buy-now]:bg-slate-600 [&.buy-now]:text-white ${item.badge.type}`}
+                className={`absolute top-2.5 left-2.5 text-[10px] font-extrabold px-2 py-0.5 rounded tracking-wide z-10 ${
+                  item.badge.type === 'live'
+                    ? 'bg-red-500 text-white'
+                    : item.badge.type === 'upcoming'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-600 text-white'
+                }`}
               >
                 {item.badge.text}
               </span>
@@ -53,21 +64,31 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
               {/* Favorite Button */}
               <button
                 type="button"
-                className={`absolute top-2.5 right-2.5 [width:28px] [height:28px] rounded-full [background:rgba(255,_255,_255,_0.9)] [backdrop-filter:blur(4px)] [border:1px_solid_#e2e8f0] flex items-center justify-center text-slate-500 cursor-pointer [z-index:2] [transition:all_0.15s_ease] hover:text-red-500 hover:[background:#ffffff] [&.liked]:text-red-500 [&.liked]:[fill:#ef4444] ${liked ? 'liked' : ''}`}
-                onClick={() => onToggleLike(item.id)}
+                className={`absolute top-2.5 right-2.5 w-7 h-7 rounded-full bg-white/90 backdrop-blur-xs border border-slate-200 flex items-center justify-center text-slate-500 cursor-pointer z-10 transition hover:text-red-500 hover:bg-white ${
+                  liked ? 'text-red-500 fill-red-500' : ''
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleLike(item.id);
+                }}
                 aria-label="Thêm vào yêu thích"
               >
-                <Heart className="w-3.5 h-3.5" />
+                <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
               </button>
 
               {/* Image with 3D tag */}
-              <div className="relative w-full aspect-square bg-slate-50 overflow-hidden flex items-center justify-center">
+              <div className="relative w-full aspect-square bg-slate-50 overflow-hidden flex items-center justify-center p-3">
                 <img
                   src={item.image}
                   alt={item.title}
-                  className="[width:82%] [height:82%] object-contain [transition:transform_0.25s_ease]"
+                  className="w-4/5 h-4/5 object-contain transition duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
+                  }}
                 />
-                <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 [background:rgba(255,_255,_255,_0.92)] [backdrop-filter:blur(4px)] [border:1px_solid_#e2e8f0] [padding:0.2rem_0.45rem] rounded [font-size:10.5px] font-bold [color:#1e3a8a]">
+                <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 bg-white/95 backdrop-blur-xs border border-slate-200 px-2 py-0.5 rounded text-[10.5px] font-bold text-blue-900 shadow-xs">
                   <Scan className="w-3 h-3 text-blue-600" />
                   <span>3D Có sẵn</span>
                 </span>
@@ -105,7 +126,7 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>

@@ -58,6 +58,8 @@ const BuyerWalletPage = lazy(() => import('../pages/buyer/BuyerWalletPage'));
 const BuyerBidsPage = lazy(() => import('../pages/buyer/BuyerBidsPage'));
 const BuyerDisputesPage = lazy(() => import('../pages/buyer/BuyerDisputesPage'));
 const BuyerAddressesPage = lazy(() => import('../pages/buyer/BuyerAddressesPage'));
+const BuyerReputationPage = lazy(() => import('../pages/buyer/BuyerReputationPage'));
+const BuyerNotificationsPage = lazy(() => import('../pages/buyer/BuyerNotificationsPage'));
 const StaffSellerApprovalPage = lazy(() => import('../pages/staff/StaffSellerApprovalPage'));
 const StaffManagementPage = lazy(() => import('../pages/staff/StaffManagementPage'));
 const StaffInboxPage = lazy(() => import('../pages/staff/StaffInboxPage'));
@@ -132,6 +134,8 @@ function AppRouter() {
                     <Route path={ROUTES.BUYER_BIDS} element={<BuyerBidsPage />} />
                     <Route path={ROUTES.BUYER_DISPUTES} element={<BuyerDisputesPage />} />
                     <Route path={ROUTES.BUYER_ADDRESSES} element={<BuyerAddressesPage />} />
+                    <Route path={ROUTES.BUYER_REPUTATION} element={<BuyerReputationPage />} />
+                    <Route path={ROUTES.BUYER_NOTIFICATIONS} element={<BuyerNotificationsPage />} />
                   </Route>
                 </Route>
               </Route>

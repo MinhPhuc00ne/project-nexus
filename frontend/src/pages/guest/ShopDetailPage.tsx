@@ -17,6 +17,7 @@ import {
 import { addToCart } from '../../services/cart';
 import ShopHeader from '../../components/shop/ShopHeader';
 import ShopProductGrid from '../../components/shop/ShopProductGrid';
+import ShopReviewsSection from '../../components/shop/ShopReviewsSection';
 import { useAuth } from '../../contexts/AuthContext';
 import { openChatWithUser } from '../../components/chat/chatEvents';
 
@@ -34,6 +35,7 @@ export const ShopDetailPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState<number>(1);
   const [totalProducts, setTotalProducts] = useState<number>(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'products' | 'reviews'>('products');
 
   const fetchShopData = useCallback(async () => {
     if (!id) return;
@@ -125,6 +127,10 @@ export const ShopDetailPage: React.FC = () => {
           setToastMessage('Đã sao chép liên kết gian hàng!');
           setTimeout(() => setToastMessage(null), 3000);
         }}
+        onReported={(msg) => {
+          setToastMessage(msg);
+          setTimeout(() => setToastMessage(null), 3500);
+        }}
         onContact={() => {
           if (!token || !storedUser) {
             navigate('/login', { state: { from: `${location.pathname}${location.search}` } });
@@ -147,45 +153,73 @@ export const ShopDetailPage: React.FC = () => {
         }}
       />
 
-      {/* STATS STRIP */}
+      {/* STATS STRIP & TABS */}
       <section className="bg-white border-b border-slate-200">
-        <div className="max-w-screen-2xl mx-auto px-6 py-4 flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-8 text-sm">
-            <div className="flex items-center gap-2">
-              <Package className="w-4 h-4 text-blue-600" />
-              <span className="text-slate-500 text-xs">Tổng sản phẩm:</span>
-              <span className="font-bold text-slate-900">{totalProducts}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Store className="w-4 h-4 text-emerald-600" />
-              <span className="text-slate-500 text-xs">Xác thực:</span>
-              <span className="font-bold text-emerald-600">Đã kiểm duyệt</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span className="text-slate-500 text-xs">Bảo đảm:</span>
-              <span className="font-bold text-slate-900">Nexus Escrow 100%</span>
-            </div>
+        <div className="max-w-screen-2xl mx-auto px-6 py-3.5 flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('products')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                activeTab === 'products'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'
+              }`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              <span>Sản phẩm của Shop ({totalProducts})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('reviews')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                activeTab === 'reviews'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span>Đánh giá & Uy tín Shop</span>
+            </button>
           </div>
 
-          <Link
-            to="/search"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Xem tất cả sản phẩm chợ</span>
-          </Link>
+          <div className="flex items-center gap-6 text-xs">
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <Store className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Xác thực:</span>
+              <strong className="text-emerald-700">Đã kiểm duyệt</strong>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-slate-500">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Bảo đảm:</span>
+              <strong className="text-blue-700">Nexus Escrow 100%</strong>
+            </div>
+
+            <Link
+              to="/search"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition ml-2"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Xem chợ sản phẩm</span>
+            </Link>
+          </div>
         </div>
       </section>
 
-      <ShopProductGrid
-        products={products}
-        totalProducts={totalProducts}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-        onAddToCart={handleAddToCart}
-      />
+      {activeTab === 'products' ? (
+        <ShopProductGrid
+          products={products}
+          totalProducts={totalProducts}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          onAddToCart={handleAddToCart}
+        />
+      ) : (
+        <ShopReviewsSection shop={shop} />
+      )}
     </div>
   );
 };

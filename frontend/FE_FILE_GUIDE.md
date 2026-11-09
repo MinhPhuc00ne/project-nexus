@@ -122,13 +122,12 @@ All paths are relative to the `frontend` directory.
 
 ### 3.6. Mock and Sample Data
 
-| File                                                 | Purpose and Behavior                                                                                                                      |
-| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| [mocks/config.ts](src/mocks/config.ts)               | Evaluates `VITE_USE_MOCK`. Mock data defaults to enabled unless the variable strictly equals `'false'`. Includes simulated network delay. |
-| [mocks/home.mock.ts](src/mocks/home.mock.ts)         | Sample banners, category cards, and product collections for home screen presentation.                                                     |
-| [mocks/products.mock.ts](src/mocks/products.mock.ts) | Legacy mock product catalog records. Active product services use real API endpoints instead.                                              |
-| [mocks/tickets.mock.ts](src/mocks/tickets.mock.ts)   | Sample support tickets, user profiles, and chat conversations for staff dashboard testing.                                                |
-| [mocks/index.ts](src/mocks/index.ts)                 | Central export barrel for mock fixtures and runtime mock configuration flags.                                                             |
+| File                                                     | Purpose and Behavior                                                                                                                      |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| [mocks/config.ts](src/mocks/config.ts)                   | Evaluates `VITE_USE_MOCK`. Mock data defaults to enabled unless the variable strictly equals `'false'`. Includes simulated network delay. |
+| [mocks/home.mock.ts](src/mocks/home.mock.ts)             | Sample category cards and flash sale/auction product collections for home screen presentation.                                            |
+| [mocks/categories.mock.ts](src/mocks/categories.mock.ts) | Fallback category tree and image resolution helpers for category navigation.                                                              |
+| [mocks/index.ts](src/mocks/index.ts)                     | Central export barrel for mock fixtures and runtime mock configuration flags.                                                             |
 
 ## 4. Guest, Auth, and Shopping Interfaces
 
@@ -187,17 +186,14 @@ All paths are relative to the `frontend` directory.
 
 ### 4.5. Search and Product Detail Components
 
-| File                                                                                                           | Purpose and Data Origin                                                                                                           |
-| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| [components/search/SearchFilterSidebar.tsx](src/components/search/SearchFilterSidebar.tsx)                     | Filter controls for transaction type, product condition, brand selection, shipping options, and price ranges. Updates page state. |
-| [components/search/SearchResultCard.tsx](src/components/search/SearchResultCard.tsx)                           | Product search card rendering status badges, pricing, preview modal trigger, and link to `/product/:id`.                          |
-| [components/search/SearchPreviewModal.tsx](src/components/search/SearchPreviewModal.tsx)                       | Quick preview modal displaying asset images and item specifications.                                                              |
-| [components/search/mockData.ts](src/components/search/mockData.ts)                                             | Mock query suggestions and sample product generation fixtures.                                                                    |
-| [components/search/types.ts](src/components/search/types.ts)                                                   | Type definitions for search filters, sorting options, and result item structures.                                                 |
-| [components/productDetail/ProductImageGallery.tsx](src/components/productDetail/ProductImageGallery.tsx)       | Image gallery component handling thumbnail switching, active preview, and fallback placeholders.                                  |
-| [components/productDetail/ProductInfoTabs.tsx](src/components/productDetail/ProductInfoTabs.tsx)               | Tabbed interface presenting description markdown, technical specifications, and review summaries.                                 |
-| [components/productDetail/RelatedProductsSection.tsx](src/components/productDetail/RelatedProductsSection.tsx) | Fetches current catalog page, filters out the active item, and renders up to four related product cards.                          |
-| [components/productDetail/useProductResource.ts](src/components/productDetail/useProductResource.ts)           | Hook managing resource loading states, error boundaries, retry triggers, and stale response cancellation across route changes.    |
+| File                                                                                                           | Purpose and Data Origin                                                                                                        |
+| -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [components/products/SearchFilterSidebar.tsx](src/components/products/SearchFilterSidebar.tsx)                 | Filter controls for categories, 63 provinces (with inline search), price ranges, ratings, and stock.                           |
+| [components/products/CatalogListing.tsx](src/components/products/CatalogListing.tsx)                           | Product grid listing with sorting bar, pagination, 3D badges, freeship tags, and deep filtering.                               |
+| [components/productDetail/ProductImageGallery.tsx](src/components/productDetail/ProductImageGallery.tsx)       | Image gallery component handling thumbnail switching, active preview, and fallback placeholders.                               |
+| [components/productDetail/ProductInfoTabs.tsx](src/components/productDetail/ProductInfoTabs.tsx)               | Tabbed interface presenting description markdown, technical specifications, and review summaries.                              |
+| [components/productDetail/RelatedProductsSection.tsx](src/components/productDetail/RelatedProductsSection.tsx) | Fetches current catalog page, filters out the active item, and renders up to four related product cards.                       |
+| [components/productDetail/useProductResource.ts](src/components/productDetail/useProductResource.ts)           | Hook managing resource loading states, error boundaries, retry triggers, and stale response cancellation across route changes. |
 
 ### 4.6. Public Auction Components
 

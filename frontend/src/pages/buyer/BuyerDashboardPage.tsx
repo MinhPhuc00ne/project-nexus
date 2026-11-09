@@ -16,6 +16,7 @@ import {
   Truck,
   AlertCircle,
   Loader2,
+  Award,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getBuyerOrdersApi, type BuyerOrder } from '../../services/orders';
@@ -55,6 +56,7 @@ const statusMap: Record<string, { label: string; icon: React.ReactNode; cls: str
 };
 
 const quickLinks = [
+  { to: '/buyer/reputation', icon: Award, label: 'Điểm uy tín', color: 'text-indigo-600' },
   { to: '/buyer/addresses', icon: MapPin, label: 'Sổ địa chỉ', color: 'text-blue-600' },
   { to: '/buyer/disputes', icon: ShieldAlert, label: 'Khiếu nại', color: 'text-blue-600' },
   { to: '/buyer/bids', icon: Gavel, label: 'Đấu giá', color: 'text-blue-600' },
@@ -151,14 +153,25 @@ export default function BuyerDashboardPage() {
             Theo dõi đơn hàng, quản lý ví NEXUS Pay và khám phá sản phẩm chính hãng.
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
-            <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 px-3 py-1 rounded-md">
-              <Star size={12} className="text-blue-200" />
-              Điểm uy tín: {user?.reputationScore ?? 100}
-            </span>
-            <span className="flex items-center gap-1.5 bg-white/15 border border-white/20 px-3 py-1 rounded-md">
-              <TrendingUp size={12} className="text-blue-200" />
-              Hạng: {user?.trustLevel ?? 'STANDARD'}
-            </span>
+            <Link
+              to="/buyer/reputation"
+              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition border border-white/20 px-3 py-1 rounded-md text-white cursor-pointer"
+            >
+              <Star size={12} className="text-amber-300 fill-amber-300" />
+              <span>
+                Điểm uy tín: <strong>{user?.reputationScore ?? 100}</strong>
+              </span>
+              <span className="text-[10px] text-blue-200 ml-1">Xem chi tiết →</span>
+            </Link>
+            <Link
+              to="/buyer/reputation"
+              className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition border border-white/20 px-3 py-1 rounded-md text-white cursor-pointer"
+            >
+              <TrendingUp size={12} className="text-emerald-300" />
+              <span>
+                Hạng: <strong>{user?.trustLevel ?? 'EXCELLENT'}</strong>
+              </span>
+            </Link>
           </div>
         </div>
       </div>

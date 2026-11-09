@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import type { HomeProduct } from './home.types';
 
 export interface HomeFlashSaleCardProps {
@@ -6,17 +7,19 @@ export interface HomeFlashSaleCardProps {
 
 export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
   const prodId =
-    product.id === 1
-      ? 'ap-tourbillon'
-      : product.id === 2
-        ? 'patek-celestial'
-        : product.id === 3
-          ? 'hublot-unico'
-          : 'rolex-daytona';
+    typeof product.id === 'string' && product.id.length > 5
+      ? product.id
+      : product.id === 1
+        ? 'ap-tourbillon'
+        : product.id === 2
+          ? 'patek-celestial'
+          : product.id === 3
+            ? 'hublot-unico'
+            : 'rolex-daytona';
 
   return (
-    <a
-      href={`/product/${prodId}`}
+    <Link
+      to={`/product/${prodId}`}
       className="block overflow-hidden rounded-xl border border-slate-200 bg-white p-2 transition-[transform,box-shadow,border-color] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgb(28_57_115_/_10%)] motion-reduce:transition-none motion-reduce:hover:transform-none"
     >
       <div className="relative aspect-square overflow-hidden rounded-lg border border-slate-300 bg-slate-900 p-1">
@@ -62,6 +65,6 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
           </span>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }

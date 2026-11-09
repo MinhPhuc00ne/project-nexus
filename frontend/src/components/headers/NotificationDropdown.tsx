@@ -1,53 +1,268 @@
-import React from 'react';
-import { Bell } from 'lucide-react';
-import type { NotificationItem } from './HomeHeader';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Bell,
+  CheckCheck,
+  Settings,
+  ArrowRight,
+  Loader2,
+  Clock,
+  Sparkles,
+  ShoppingBag,
+  Gavel,
+  ShieldAlert,
+} from 'lucide-react';
+import {
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '../../services/notifications';
+import { getStoredToken } from '../../services/auth';
+import type { UserNotification } from '../../types/notification.types';
+import NotificationPreferencesModal from '../notifications/NotificationPreferencesModal';
 
 interface NotificationDropdownProps {
   isOpen: boolean;
-  notifications: NotificationItem[];
+  onClose?: () => void;
+  onCountChange?: (count: number) => void;
 }
 
 export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   isOpen,
-  notifications,
+  onClose,
+  onCountChange,
 }) => {
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showPrefsModal, setShowPrefsModal] = useState(false);
+  const token = getStoredToken();
+
+  const loadNotifications = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await getNotifications({ page: 1, limit: 10 });
+      if (res && Array.isArray(res.items)) {
+        setNotifications(res.items);
+        if (onCountChange && typeof res.unreadCount === 'number') {
+          onCountChange(res.unreadCount);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load notifications dropdown:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen && token) {
+      void loadNotifications();
+    }
+  }, [isOpen, token]);
+
   if (!isOpen) return null;
 
-  return (
-    <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+6px)] z-[1100] w-[360px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
-      <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-        <h4 className="m-0 text-sm font-bold text-slate-800">Thông báo</h4>
+  const handleMarkOne = async (item: UserNotification) => {
+    if (item.isRead) return;
+    try {
+      await markNotificationRead(item.id);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === item.id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n,
+        ),
+      );
+      if (onCountChange) {
+        onCountChange(
+          Math.max(0, notifications.filter((n) => !n.isRead && n.id !== item.id).length),
+        );
+      }
+    } catch (err) {
+      console.warn('Failed to mark read:', err);
+    }
+  };
+
+  const handleMarkAll = async () => {
+    try {
+      await markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      if (onCountChange) onCountChange(0);
+    } catch (err) {
+      console.warn('Failed to mark all read:', err);
+    }
+  };
+
+  const getIconForType = (type: string) => {
+    const t = (type || '').toUpperCase();
+    if (t.includes('AUCTION') || t.includes('BID')) {
+      return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600">
+          <Gavel size={14} />
+        </div>
+      );
+    }
+    if (t.includes('ORDER')) {
+      return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+          <ShoppingBag size={14} />
+        </div>
+      );
+    }
+    if (t.includes('REPUTATION') || t.includes('TRUST')) {
+      return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+          <Sparkles size={14} />
+        </div>
+      );
+    }
+    if (t.includes('DISPUTE') || t.includes('REPORT')) {
+      return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+          <ShieldAlert size={14} />
+        </div>
+      );
+    }
+    return (
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+        <Bell size={14} />
       </div>
+    );
+  };
 
-      <div className="max-h-[280px] overflow-y-auto">
-        {notifications.length > 0 ? (
-          notifications.map((item) => (
-            <div
-              key={item.id}
-              className={`flex gap-3 border-b border-slate-100 px-4 py-3 transition-colors hover:bg-slate-50 ${
-                item.unread ? 'bg-orange-50/60' : ''
-              }`}
+  const formatTime = (timeStr: string) => {
+    try {
+      const d = new Date(timeStr);
+      return (
+        d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+        ' ' +
+        d.toLocaleDateString('vi-VN')
+      );
+    } catch {
+      return timeStr;
+    }
+  };
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  return (
+    <>
+      <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+8px)] z-[1100] w-[370px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <h4 className="m-0 text-sm font-bold text-slate-800">Thông báo</h4>
+            {unreadCount > 0 && (
+              <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                {unreadCount} mới
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAll}
+                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                title="Đánh dấu tất cả là đã đọc"
+              >
+                <CheckCheck size={13} />
+                <span>Đã đọc hết</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowPrefsModal(true)}
+              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition cursor-pointer"
+              title="Tùy chọn nhận thông báo (Email, Push, In-App)"
             >
-              <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[#1c3973]">
-                <Bell size={16} />
-              </div>
+              <Settings size={15} />
+            </button>
+          </div>
+        </div>
 
-              <div>
-                <h5 className="mb-1 text-[13px] font-semibold text-slate-800">{item.title}</h5>
-
-                {item.desc && (
-                  <p className="mb-1 text-xs leading-[1.4] text-slate-500">{item.desc}</p>
-                )}
-
-                {item.time && <span className="text-[11px] text-slate-400">{item.time}</span>}
-              </div>
+        {/* Content */}
+        <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-100">
+          {!token ? (
+            <div className="p-6 text-center text-xs text-slate-500">
+              <p className="mb-3 font-semibold text-slate-700">Đăng nhập để xem thông báo</p>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-xl transition"
+              >
+                Đăng nhập ngay
+              </Link>
             </div>
-          ))
-        ) : (
-          <div className="p-5 text-center text-[13px] text-slate-400">Không có thông báo mới</div>
+          ) : loading ? (
+            <div className="py-10 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-2">
+              <Loader2 size={18} className="animate-spin text-blue-600" />
+              <span>Đang tải thông báo…</span>
+            </div>
+          ) : notifications.length > 0 ? (
+            notifications.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleMarkOne(item)}
+                className={`flex gap-3 px-4 py-3 transition-colors hover:bg-slate-50/80 cursor-pointer ${
+                  !item.isRead ? 'bg-orange-50/40' : ''
+                }`}
+              >
+                {getIconForType(item.type)}
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1 mb-0.5">
+                    <h5
+                      className={`text-xs truncate ${
+                        !item.isRead ? 'font-bold text-slate-900' : 'font-medium text-slate-700'
+                      }`}
+                    >
+                      {item.title}
+                    </h5>
+                    {!item.isRead && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
+                    )}
+                  </div>
+
+                  <p className="text-[11px] leading-relaxed text-slate-500 line-clamp-2 mb-1">
+                    {item.content}
+                  </p>
+
+                  <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                    <Clock size={10} />
+                    <span>{formatTime(item.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="py-10 text-center text-xs text-slate-400">
+              <Bell size={24} className="mx-auto mb-2 text-slate-300 opacity-60" />
+              <span>Chưa có thông báo nào</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        {token && (
+          <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-center">
+            <Link
+              to="/buyer/notifications"
+              onClick={onClose}
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition"
+            >
+              <span>Xem tất cả thông báo & Cài đặt</span>
+              <ArrowRight size={13} />
+            </Link>
+          </div>
         )}
       </div>
-    </div>
+
+      <NotificationPreferencesModal
+        isOpen={showPrefsModal}
+        onClose={() => setShowPrefsModal(false)}
+      />
+    </>
   );
 };
 

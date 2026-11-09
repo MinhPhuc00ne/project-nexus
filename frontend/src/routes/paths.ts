@@ -32,6 +32,8 @@ export const ROUTES = {
   BUYER_BIDS: '/buyer/bids',
   BUYER_DISPUTES: '/buyer/disputes',
   BUYER_ADDRESSES: '/buyer/addresses',
+  BUYER_REPUTATION: '/buyer/reputation',
+  BUYER_NOTIFICATIONS: '/buyer/notifications',
 
   // Seller
   SELLER: '/seller',
