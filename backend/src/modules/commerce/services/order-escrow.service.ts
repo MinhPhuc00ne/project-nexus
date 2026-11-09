@@ -411,6 +411,9 @@ export class OrderEscrowService {
         },
       });
       if (verdict === 'SELLER') return this.release(tx, order, true);
+      if (!this.refunds) {
+        throw new BadRequestException('Dịch vụ hoàn tiền chưa sẵn sàng.');
+      }
       const refunds = await this.refunds.issue(tx, order, false);
       const complete = refunds.every((refund) => refund.status === 'SUCCESS');
       return {
