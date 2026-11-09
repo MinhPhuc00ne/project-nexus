@@ -7,6 +7,7 @@ import { useSellerSession } from '../../components/seller/SellerSession';
 import useProductResource from '../../components/productDetail/useProductResource';
 import GhnLocationPicker, { emptyGhnLocation } from '../../components/seller/GhnLocationPicker';
 import SellerShippingResult from '../../components/seller/SellerShippingResult';
+import SellerPickupPointPanel from '../../components/seller/SellerPickupPointPanel';
 import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/seller/SellerUI';
 import { getMyProducts } from '../../services/sellerProducts';
 import { getStoredToken } from '../../services/auth';
@@ -283,6 +284,7 @@ function ShippingCalculator(): ReactElement {
           </div>
         </Panel>
       )}
+      <SellerPickupPointPanel />
       <SellerShippingResult quote={quote} distance={distance} />
     </div>
   );

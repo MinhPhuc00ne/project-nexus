@@ -6,6 +6,7 @@
   "description": "Project Nexus - Buyer & Seller Frontend Portal",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm run build --workspace=@nexus/types",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -69,7 +69,7 @@ export default function SellerAuctionsPage() {
             </SellerButton>
             <SellerLink to="/seller/auctions/new">
               <PlusOutlined className="text-[16px]" aria-hidden="true" />
-              Tạo phiên mới
+              Gửi vật phẩm đấu giá
             </SellerLink>
           </>
         }
@@ -246,7 +246,7 @@ export default function SellerAuctionsPage() {
             action={
               <SellerLink to="/seller/auctions/new">
                 <PlusOutlined className="text-[15px]" aria-hidden="true" />
-                Tạo bản nháp phiên
+                Gửi vật phẩm đấu giá
               </SellerLink>
             }
           />

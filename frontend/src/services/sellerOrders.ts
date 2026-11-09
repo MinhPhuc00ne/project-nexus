@@ -114,3 +114,54 @@ export async function getSellerWaybill(id: string, sellerId: string): Promise<Se
     throw new Error('Mã vận đơn không khớp với đơn hàng. Vui lòng tải lại.');
   return bill;
 }
+
+/**
+ * Response payload describing printable shipping label URLs returned by GHN carrier.
+ */
+export interface SellerGhnLabel {
+  url?: string;
+  labelUrl?: string;
+  printUrl?: string;
+  [key: string]: unknown;
+}
+
+/**
+ * Retrieves official carrier printable waybill label metadata for a confirmed seller order.
+ *
+ * @param id - Unique order identifier.
+ * @returns Resolves with printable label URLs from GHN.
+ */
+export function getOfficialGhnLabel(id: string): Promise<SellerGhnLabel> {
+  return getSellerResource(`${base}/${encodeURIComponent(id)}/ghn-label`);
+}
+
+/**
+ * Calculates a live shipping price quotation for dispatching a seller order via GHN.
+ *
+ * @param id - Unique order identifier.
+ * @param body - Parcel dimensions, weight, and dispatch options.
+ * @returns Resolves with carrier shipping quotation and seller fee calculation.
+ */
+export function getSellerOrderShippingQuote(
+  id: string,
+  body: DispatchGhnRequest,
+): Promise<{ shippingFee?: number; sellerFee?: number; [key: string]: unknown }> {
+  return apiRequest(`${base}/${encodeURIComponent(id)}/shipping-quote`, {
+    method: 'POST',
+    body,
+    requireAuth: true,
+  });
+}
+
+/**
+ * Reconciles carrier tracking state, weight, and delivery status with official GHN records.
+ *
+ * @param id - Unique order identifier.
+ * @returns Resolves with updated seller order detail after carrier reconciliation.
+ */
+export function reconcileSellerGhnOrder(id: string): Promise<SellerOrderDetail> {
+  return apiRequest(`${base}/${encodeURIComponent(id)}/reconcile-ghn`, {
+    method: 'POST',
+    requireAuth: true,
+  });
+}

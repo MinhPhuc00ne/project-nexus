@@ -164,7 +164,17 @@ export function getAdminAuctionItemsApi(id: string): Promise<AdminAuctionItemsRe
   });
 }
 
-export function registerAuctionItemApi(id: string, data: RegisterAuctionItemInput) {
+/**
+ * Registers an appraisal item into a specific auction room for administrative review.
+ *
+ * @param id - Target auction session identifier.
+ * @param data - Consignment specifications and appraisal proof.
+ * @returns Resolves with registration confirmation and review payload.
+ */
+export function registerAuctionItemApi(
+  id: string,
+  data: RegisterAuctionItemInput,
+): Promise<{ success: boolean; message: string; item: AdminAuctionItem }> {
   return apiRequest<{ success: boolean; message: string; item: AdminAuctionItem }>(
     `/auctions/${id}/register-item`,
     { method: 'POST', body: data, requireAuth: true },
@@ -222,6 +232,50 @@ export interface PlaceBidResponse {
 }
 
 /**
+ * Lifecycle review state of a seller auction consignment item.
+ */
+export type AuctionConsignmentStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+
+/**
+ * Consigned auction item entity with review status and parent auction details.
+ */
+export interface SellerAuctionConsignment {
+  id: string;
+  auctionId: string;
+  title: string;
+  description: string;
+  images: string[];
+  proposedStartingPrice: number;
+  proposedReservePrice?: number | null;
+  proposedBidIncrement: number;
+  appraisalCertificateNumber?: string | null;
+  appraisalAgency?: string | null;
+  certificateImages: string[];
+  certificateIssueDate?: string | null;
+  status: AuctionConsignmentStatus;
+  rejectionReason?: string | null;
+  lotNumber?: number | null;
+  createdAt: string;
+  auction: {
+    id: string;
+    title: string;
+    status: AuctionStatus;
+    startTime: string;
+    endTime: string;
+    minSellerReputation: number;
+  };
+}
+
+/**
+ * Response payload returned after submitting an item for auction appraisal.
+ */
+export interface RegisterAuctionItemResponse {
+  success: boolean;
+  message: string;
+  item: SellerAuctionConsignment;
+}
+
+/**
  * Retrieves public auction listings with optional status filters and pagination.
  */
 export async function getAuctionsApi(query?: AuctionQueryInput): Promise<AuctionListResponse> {
@@ -252,6 +306,19 @@ export async function createAuctionApi(data: CreateAuctionInput): Promise<Auctio
   return (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as AuctionEntity;
+}
+
+/**
+ * Retrieves the authenticated seller's submitted auction items and their review status.
+ *
+ * @returns Resolves with list of consigned auction items for current seller.
+ */
+export async function getSellerAuctionConsignmentsApi(): Promise<SellerAuctionConsignment[]> {
+  const response = await api.get<{ data: SellerAuctionConsignment[] }>('/auctions/seller/my-items');
+  const payload = response?.data;
+  return (
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
+  ) as SellerAuctionConsignment[];
 }
 
 /**
