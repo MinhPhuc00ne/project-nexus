@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactElement } from 'react';
-import { FileImage, ImagePlus, LoaderCircle, Send } from 'lucide-react';
+import { FileImage, ImagePlus, LoaderCircle, Send, X } from 'lucide-react';
 import { registerAuctionItemApi, type AuctionEntity } from '../../services/auction.service';
 import {
   formatConsignmentDate,
@@ -34,7 +34,25 @@ export default function SellerConsignmentForm({
   const [form, setForm] = useState<ConsignmentFormState>(initialConsignmentForm);
   const [itemImages, setItemImages] = useState<File[]>([]);
   const [certificateImages, setCertificateImages] = useState<File[]>([]);
+  const [itemPreviews, setItemPreviews] = useState<string[]>([]);
+  const [certPreviews, setCertPreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const urls = itemImages.map((file) => URL.createObjectURL(file));
+    setItemPreviews(urls);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [itemImages]);
+
+  useEffect(() => {
+    const urls = certificateImages.map((file) => URL.createObjectURL(file));
+    setCertPreviews(urls);
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [certificateImages]);
 
   useEffect(() => {
     if (
@@ -56,6 +74,7 @@ export default function SellerConsignmentForm({
 
   const selectFiles = (
     event: ChangeEvent<HTMLInputElement>,
+    currentFiles: File[],
     setFiles: (files: File[]) => void,
   ): void => {
     const selected = Array.from(event.target.files ?? []);
@@ -65,12 +84,22 @@ export default function SellerConsignmentForm({
       event.target.value = '';
       return;
     }
-    if (selected.length > 5) {
+    const merged = [...currentFiles, ...selected];
+    if (merged.length > 5) {
       notify('Mỗi nhóm chỉ được tải tối đa 5 ảnh.', 'error');
       event.target.value = '';
       return;
     }
-    setFiles(selected);
+    setFiles(merged);
+    event.target.value = '';
+  };
+
+  const removeItemImage = (index: number): void => {
+    setItemImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeCertificateImage = (index: number): void => {
+    setCertificateImages((prev) => prev.filter((_, i) => i !== index));
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
@@ -84,17 +113,9 @@ export default function SellerConsignmentForm({
       return;
     }
     const startingPrice = Number(form.proposedStartingPrice);
-    const reservePrice = form.proposedReservePrice ? Number(form.proposedReservePrice) : undefined;
     const bidIncrement = Number(form.proposedBidIncrement);
     if (!Number.isFinite(startingPrice) || startingPrice < 10000) {
       notify('Giá khởi điểm phải từ 10.000 ₫.', 'error');
-      return;
-    }
-    if (
-      reservePrice !== undefined &&
-      (!Number.isFinite(reservePrice) || reservePrice < startingPrice)
-    ) {
-      notify('Giá giữ lại phải lớn hơn hoặc bằng giá khởi điểm.', 'error');
       return;
     }
     if (!Number.isFinite(bidIncrement) || bidIncrement < 1000) {
@@ -112,9 +133,7 @@ export default function SellerConsignmentForm({
         title: form.title.trim(),
         description: form.description.trim(),
         images,
-        ...(form.threeModelKey.trim() ? { threeModelKey: form.threeModelKey.trim() } : {}),
         proposedStartingPrice: startingPrice,
-        ...(reservePrice !== undefined ? { proposedReservePrice: reservePrice } : {}),
         proposedBidIncrement: bidIncrement,
         ...(form.appraisalCertificateNumber.trim()
           ? { appraisalCertificateNumber: form.appraisalCertificateNumber.trim() }
@@ -200,16 +219,6 @@ export default function SellerConsignmentForm({
             />
           </label>
           <label>
-            Giá giữ lại (₫)
-            <input
-              min="10000"
-              type="number"
-              value={form.proposedReservePrice}
-              onChange={(event) => updateForm('proposedReservePrice', event.target.value)}
-              placeholder="Không bắt buộc"
-            />
-          </label>
-          <label>
             Bước giá (₫) *
             <input
               required
@@ -217,14 +226,6 @@ export default function SellerConsignmentForm({
               type="number"
               value={form.proposedBidIncrement}
               onChange={(event) => updateForm('proposedBidIncrement', event.target.value)}
-            />
-          </label>
-          <label>
-            Mã mô hình 3D
-            <input
-              value={form.threeModelKey}
-              onChange={(event) => updateForm('threeModelKey', event.target.value)}
-              placeholder="models/vat-pham.glb"
             />
           </label>
         </div>
@@ -240,11 +241,43 @@ export default function SellerConsignmentForm({
             type="file"
             accept="image/*"
             multiple
-            onChange={(event) => selectFiles(event, setItemImages)}
+            onChange={(event) => selectFiles(event, itemImages, setItemImages)}
           />
         </label>
-        {itemImages.length > 0 && (
-          <p className="mt-3 text-sm text-emerald-700">Đã chọn {itemImages.length} ảnh vật phẩm.</p>
+        {itemPreviews.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <p className="text-xs font-semibold text-slate-600">
+              Đã chọn {itemPreviews.length}/5 ảnh vật phẩm (ảnh đầu tiên là ảnh đại diện):
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+              {itemPreviews.map((url, index) => (
+                <div
+                  key={url}
+                  className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-xs"
+                >
+                  <img
+                    src={url}
+                    alt={`Ảnh vật phẩm ${index + 1}`}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                  {index === 0 && (
+                    <span className="absolute left-1.5 top-1.5 rounded-md bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-xs">
+                      Ảnh chính
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeItemImage(index)}
+                    aria-label={`Xóa ảnh ${index + 1}`}
+                    title="Xóa ảnh"
+                    className="absolute right-1.5 top-1.5 rounded-full bg-slate-900/70 p-1 text-white shadow-xs transition-colors hover:bg-red-600 cursor-pointer"
+                  >
+                    <X size={13} aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </Panel>
 
@@ -290,15 +323,40 @@ export default function SellerConsignmentForm({
                 type="file"
                 accept="image/*"
                 multiple
-                onChange={(event) => selectFiles(event, setCertificateImages)}
+                onChange={(event) => selectFiles(event, certificateImages, setCertificateImages)}
               />
             </span>
           </label>
         </div>
-        {certificateImages.length > 0 && (
-          <p className="mt-3 text-sm text-emerald-700">
-            Đã chọn {certificateImages.length} ảnh chứng thư.
-          </p>
+        {certPreviews.length > 0 && (
+          <div className="mt-4 space-y-2">
+            <p className="text-xs font-semibold text-slate-600">
+              Đã chọn {certPreviews.length}/5 ảnh chứng thư:
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+              {certPreviews.map((url, index) => (
+                <div
+                  key={url}
+                  className="group relative aspect-square overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-xs"
+                >
+                  <img
+                    src={url}
+                    alt={`Ảnh chứng thư ${index + 1}`}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeCertificateImage(index)}
+                    aria-label={`Xóa ảnh chứng thư ${index + 1}`}
+                    title="Xóa ảnh"
+                    className="absolute right-1.5 top-1.5 rounded-full bg-slate-900/70 p-1 text-white shadow-xs transition-colors hover:bg-red-600 cursor-pointer"
+                  >
+                    <X size={13} aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </Panel>
 

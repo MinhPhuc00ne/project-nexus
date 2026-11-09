@@ -4,6 +4,7 @@ import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getAdminAuctionsApi,
+  resolveAuctionImageUrl,
   type AdminAuctionListResponse,
   type AdminAuctionEntity,
 } from '../../../services/auction.service';
@@ -174,10 +175,22 @@ export default function AdminAuctionsPage() {
                   {data.items.map((item) => (
                     <tr key={item.id}>
                       <td className="max-w-72 p-4">
-                        <p className="break-words font-semibold text-slate-900">{item.title}</p>
-                        <p className="mt-1 text-slate-500">
-                          Người tạo: {item.createdByAdmin?.fullName || item.seller?.fullName || '—'}
-                        </p>
+                        <div className="flex items-start gap-3">
+                          {item.imageUrl && (
+                            <img
+                              src={resolveAuctionImageUrl(item.imageUrl)}
+                              alt={item.title}
+                              className="h-11 w-11 shrink-0 rounded-lg border border-slate-200 object-cover"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <p className="break-words font-semibold text-slate-900">{item.title}</p>
+                            <p className="mt-1 text-slate-500">
+                              Người tạo:{' '}
+                              {item.createdByAdmin?.fullName || item.seller?.fullName || '—'}
+                            </p>
+                          </div>
+                        </div>
                         {item.product && (
                           <div className="mt-3 space-y-1 rounded-lg bg-blue-50 p-3">
                             <p className="font-medium text-slate-800">

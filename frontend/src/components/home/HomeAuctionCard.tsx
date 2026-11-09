@@ -26,6 +26,9 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
     'Chưa có dữ liệu';
 
   const resolveRealImage = (): string => {
+    if (auction?.imageUrl && auction.imageUrl.trim().length > 0) {
+      return formatAuctionImage(auction.imageUrl);
+    }
     if (auction?.items && auction.items.length > 0) {
       for (const item of auction.items) {
         if (item.images && item.images.length > 0) {

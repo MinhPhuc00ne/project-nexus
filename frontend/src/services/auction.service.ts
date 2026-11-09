@@ -32,6 +32,8 @@ export function formatAuctionImage(url?: string | null): string {
   return `${backendOrigin}${cleanPath}`;
 }
 
+export const resolveAuctionImageUrl = formatAuctionImage;
+
 export interface AuctionProduct {
   id: string;
   title: string;
@@ -117,6 +119,7 @@ export interface AuctionEntity {
   sellerId: string;
   title: string;
   description?: string;
+  imageUrl?: string | null;
   startingPrice: number;
   reservePrice?: number | null;
   currentHighestBid: number;
@@ -172,6 +175,7 @@ export interface PlaceBidInput {
 export interface AdminCreateAuctionInput {
   title: string;
   description?: string;
+  imageUrl?: string | null;
   startTime: string;
   endTime: string;
   minBuyerReputation: number;

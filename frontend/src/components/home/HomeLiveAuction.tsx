@@ -24,6 +24,9 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
     'Phòng Đấu Giá Trực Tiếp';
 
   const resolveRealImage = (auc: AuctionEntity): string => {
+    if (auc.imageUrl && auc.imageUrl.trim().length > 0) {
+      return formatAuctionImage(auc.imageUrl);
+    }
     if (auc.items && auc.items.length > 0) {
       for (const item of auc.items) {
         if (item.images && item.images.length > 0) {

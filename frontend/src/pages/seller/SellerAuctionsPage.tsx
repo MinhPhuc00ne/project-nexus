@@ -23,7 +23,11 @@ import {
   StatCard,
 } from '../../components/seller/SellerUI';
 import { auctionStatuses, money, type SellerAuction } from '../../components/seller/sellerData';
-import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
+import {
+  getAuctionsApi,
+  resolveAuctionImageUrl,
+  type AuctionEntity,
+} from '../../services/auction.service';
 
 function toSellerAuction(auction: AuctionEntity): SellerAuction {
   const status: SellerAuction['status'] =
@@ -35,7 +39,8 @@ function toSellerAuction(auction: AuctionEntity): SellerAuction {
           ? 'pending'
           : 'ended';
   const image =
-    auction.product?.images?.find((item) => item.isThumbnail)?.imageUrl ??
+    ((auction.imageUrl ? resolveAuctionImageUrl(auction.imageUrl) : '') ||
+      auction.product?.images?.find((item) => item.isThumbnail)?.imageUrl) ??
     auction.product?.images?.[0]?.imageUrl ??
     '';
 
