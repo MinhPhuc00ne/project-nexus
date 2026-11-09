@@ -4,6 +4,7 @@ import { bannerLink, type BannerInput } from '../../../services/banners';
 import { uploadBannerImage } from '../../../services/banners.service';
 import { Button, Panel } from '../shared/AdminUI';
 import { Input } from '../../ui/input';
+import { minEndDateTime } from '../../../utils/date-time';
 
 const localDate = (value: string | null) => {
   if (!value) return '';
@@ -96,13 +97,19 @@ export default function BannerForm({
                 <Input
                   type="datetime-local"
                   value={localDate(value.startsAt)}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const startsAt = event.target.value
+                      ? new Date(event.target.value).toISOString()
+                      : null;
                     update({
-                      startsAt: event.target.value
-                        ? new Date(event.target.value).toISOString()
-                        : null,
-                    })
-                  }
+                      startsAt,
+                      ...(startsAt &&
+                      value.endsAt &&
+                      Date.parse(value.endsAt) <= Date.parse(startsAt)
+                        ? { endsAt: null }
+                        : {}),
+                    });
+                  }}
                 />
               </label>
               <label className="block space-y-2 text-xs font-semibold">
@@ -110,6 +117,7 @@ export default function BannerForm({
                 <Input
                   type="datetime-local"
                   value={localDate(value.endsAt)}
+                  min={minEndDateTime(value.startsAt)}
                   onChange={(event) =>
                     update({
                       endsAt: event.target.value

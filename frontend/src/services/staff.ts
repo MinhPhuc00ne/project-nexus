@@ -1,5 +1,6 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import api, { ApiRequestError, apiRequest } from './api';
+import { getApiErrorMessage } from '../lib/apiErrors';
 
 export interface StaffInvitationInfo {
   valid: boolean;
@@ -126,9 +127,10 @@ async function staffRequest<T>(config: AxiosRequestConfig): Promise<T> {
   } catch (error) {
     if (axios.isAxiosError<{ errors?: string[]; message?: string }>(error)) {
       throw new ApiRequestError(
-        error.response?.data.errors?.join(' · ') ||
-          error.response?.data.message ||
+        getApiErrorMessage(
+          error.response?.data,
           'Không thể kết nối tới máy chủ. Vui lòng thử lại.',
+        ),
         error.response?.status ?? 0,
       );
     }

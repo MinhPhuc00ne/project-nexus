@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getStoredToken, getStoredUser } from '../../../services/auth';
 import {
-  getNotificationUnreadCount,
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -34,61 +33,37 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
   }, []);
 
   useEffect(() => {
-    let active = true;
-    let fetching = false;
     if (!token) return;
-
-    async function refreshNotifications(): Promise<void> {
-      if (!active || fetching || lock.current || document.visibilityState === 'hidden') return;
-      if (isOpen) {
-        setRevision((current) => current + 1);
-        return;
-      }
-      fetching = true;
-      const version = mutationVersion.current;
-      try {
-        const result = await getNotificationUnreadCount();
-        if (active && isCurrentSession() && version === mutationVersion.current)
-          setUnreadCount(result.unreadCount);
-      } catch (cause) {
-        if (active && isCurrentSession() && version === mutationVersion.current)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải số thông báo chưa đọc.');
-      } finally {
-        fetching = false;
-      }
-    }
-
-    if (!isOpen) void refreshNotifications();
     const refresh = () => {
-      void refreshNotifications();
+      if (!lock.current && document.visibilityState !== 'hidden')
+        setRevision((current) => current + 1);
     };
     const timer = window.setInterval(refresh, 30000);
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
     return () => {
-      active = false;
       window.clearInterval(timer);
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [token, userId, isOpen]);
+  }, [token, userId]);
 
   useEffect(() => {
-    if (!isOpen || !token) return;
+    if (!token) return;
     let active = true;
+    const version = mutationVersion.current;
     setLoading(true);
     setError('');
-    setData(null);
     void getNotifications({ page, limit: 10 }).then(
       (result) => {
-        if (active && isCurrentSession()) {
+        if (active && isCurrentSession() && version === mutationVersion.current) {
           setData(result);
           setUnreadCount(result.unreadCount);
           setLoading(false);
         }
       },
       (cause: unknown) => {
-        if (active && isCurrentSession()) {
+        if (active && isCurrentSession() && version === mutationVersion.current) {
           setError(cause instanceof Error ? cause.message : 'Không thể tải thông báo.');
           setLoading(false);
         }

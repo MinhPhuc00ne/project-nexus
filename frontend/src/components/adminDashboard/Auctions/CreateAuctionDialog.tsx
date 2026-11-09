@@ -6,6 +6,7 @@ import { getStoredToken } from '../../../services/auth';
 import { useToast } from '../../ToastNotification';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
+import { minEndDateTime } from '../../../utils/date-time';
 
 export default function CreateAuctionDialog({
   onClose,
@@ -52,10 +53,6 @@ export default function CreateAuctionDialog({
       setError('Vui lòng nhập tên phiên đấu giá.');
       return;
     }
-    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
-      setError('Thời gian kết thúc phải sau thời gian bắt đầu.');
-      return;
-    }
     if (
       ![buyerScore, sellerScore].every(
         (value) => value.trim() && Number.isSafeInteger(Number(value)) && Number(value) >= 0,
@@ -78,8 +75,10 @@ export default function CreateAuctionDialog({
           const result = await apiRequest<{ url: string }>('/media/upload', {
             method: 'POST',
             body,
+            isFormData: true,
             requireAuth: true,
           });
+          if (!result?.url) throw new Error('Máy chủ chưa trả về đường dẫn ảnh hợp lệ.');
           uploadedImageUrl = result.url;
         } catch (uploadError) {
           setError(
@@ -184,18 +183,23 @@ export default function CreateAuctionDialog({
                 <span className="text-[11px] text-slate-500">PNG, JPG, WEBP · tối đa 5MB</span>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png,image/jpeg,image/webp"
                   className="sr-only"
                   onChange={(event) => {
                     const file = event.target.files?.[0];
                     if (!file) return;
-                    if (!file.type.startsWith('image/')) {
-                      setError('Vui lòng chọn tệp hình ảnh hợp lệ.');
+                    event.target.value = '';
+                    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+                      setError('Vui lòng chọn ảnh PNG, JPG hoặc WEBP.');
                       return;
                     }
+                    if (file.size > 5 * 1024 * 1024) {
+                      setError('Ảnh đại diện không được vượt quá 5MB.');
+                      return;
+                    }
+                    setError('');
                     setImageFile(file);
                     setImagePreview(URL.createObjectURL(file));
-                    event.target.value = '';
                   }}
                 />
               </label>
@@ -224,7 +228,11 @@ export default function CreateAuctionDialog({
                 required
                 type="datetime-local"
                 value={startTime}
-                onChange={(event) => setStartTime(event.target.value)}
+                onChange={(event) => {
+                  const start = event.target.value;
+                  setStartTime(start);
+                  if (start && endTime && new Date(endTime) <= new Date(start)) setEndTime('');
+                }}
                 className={inputClass}
               />
             </label>
@@ -234,6 +242,7 @@ export default function CreateAuctionDialog({
                 required
                 type="datetime-local"
                 value={endTime}
+                min={minEndDateTime(startTime)}
                 onChange={(event) => setEndTime(event.target.value)}
                 className={inputClass}
               />

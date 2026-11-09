@@ -4,6 +4,7 @@ import {
   RefreshCw as ReloadOutlined,
 } from 'lucide-react';
 import useAdminNotifications from './useAdminNotifications';
+import { Link } from 'react-router-dom';
 
 export default function AdminNotifications({
   userId,
@@ -115,6 +116,18 @@ export default function AdminNotifications({
                           >
                             {new Date(item.createdAt).toLocaleString('vi-VN')}
                           </time>
+                          {item.targetUrl?.startsWith('/') && !item.targetUrl.startsWith('//') && (
+                            <Link
+                              to={item.targetUrl}
+                              onClick={() => {
+                                if (!item.isRead) void state.markRead(item.id);
+                                onToggle();
+                              }}
+                              className="block text-xs font-medium text-blue-600 hover:underline"
+                            >
+                              Xem chi tiết
+                            </Link>
+                          )}
                           {!item.isRead && (
                             <button
                               type="button"

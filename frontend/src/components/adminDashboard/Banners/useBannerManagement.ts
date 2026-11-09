@@ -70,10 +70,6 @@ export function useBannerManagement() {
     event.preventDefault();
     if (!editor || saving) return;
     const value = editor.value;
-    if (value.startsAt && value.endsAt && Date.parse(value.startsAt) >= Date.parse(value.endsAt)) {
-      setFormError('Thời gian kết thúc phải sau thời gian bắt đầu.');
-      return;
-    }
     setSaving(true);
     setFormError('');
     try {
