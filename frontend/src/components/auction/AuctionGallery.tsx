@@ -69,7 +69,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
   const currentImage =
     thumbnails[selectedThumb]?.src ||
     thumbnails[0]?.src ||
-    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
+    'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
 
   const sellerName =
     auction?.seller?.fullName || auction?.product?.category?.name || 'NEXUS Luxury Horology';
@@ -151,7 +151,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
             }}
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
+                'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
             }}
           />
         </div>
@@ -275,7 +275,11 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
             <img
               src={item.src}
               alt={item.label}
-              className="w-full h-full object-contain hover:scale-105 transition"
+              className="w-full h-full object-cover rounded-lg hover:scale-105 transition"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src =
+                  'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80';
+              }}
             />
           </button>
         ))}

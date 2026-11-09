@@ -232,7 +232,7 @@ export default function BuyerDashboardPage() {
                 firstItem?.product?.thumbnail ||
                 firstItem?.product?.images?.[0]?.imageUrl ||
                 firstItem?.product?.images?.[0]?.url ||
-                '/images/watches/watch-1.png';
+                'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
               const s = statusMap[order.status] ?? statusMap['PENDING_PAYMENT'];
 
               return (
@@ -242,7 +242,15 @@ export default function BuyerDashboardPage() {
                   className="flex items-center gap-4 px-5 py-3.5 hover:bg-blue-50/40 transition group"
                 >
                   <div className="h-11 w-11 shrink-0 rounded-md border border-slate-200 bg-slate-50 overflow-hidden flex items-center justify-center">
-                    <img src={img} alt={title} className="h-full w-full object-contain" />
+                    <img
+                      src={img}
+                      alt={title}
+                      className="h-full w-full object-contain"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src =
+                          'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
+                      }}
+                    />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition">

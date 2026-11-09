@@ -10,19 +10,21 @@ import {
   Star,
 } from 'lucide-react';
 import type { AuctionTabKey } from './types';
-import type { AuctionEntity } from '../../services/auction.service';
+import type { AuctionEntity, AuctionConsignmentItem } from '../../services/auction.service';
 import { getShopReviewsApi, type ShopReviewItem } from '../../services/reviews.service';
 
 interface AuctionDetailTabsProps {
   activeTab: AuctionTabKey;
   setActiveTab: (tab: AuctionTabKey) => void;
   auction?: AuctionEntity | null;
+  selectedItem?: AuctionConsignmentItem | null;
 }
 
 export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
   activeTab,
   setActiveTab,
   auction,
+  selectedItem,
 }) => {
   const bidsCount = auction?.bids?.length || auction?.totalBidsCount || 0;
   const [reviews, setReviews] = useState<ShopReviewItem[]>([]);
@@ -105,12 +107,12 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
         {/* TAB 1: CERTS & INFO */}
         {activeTab === 'certs' &&
           (() => {
-            const primaryItem = auction?.items?.[0];
+            const activeItem = selectedItem || auction?.items?.[0];
             const certNumber =
-              primaryItem?.appraisalCertificateNumber ||
+              activeItem?.appraisalCertificateNumber ||
               (auction?.id ? `NX-3D-${auction.id.slice(0, 8).toUpperCase()}` : 'NX-3D-AP2025X');
             const appraisalAgency =
-              primaryItem?.appraisalAgency || 'Trung tâm Giám định Độc lập & Thẩm duyệt Sàn NEXUS';
+              activeItem?.appraisalAgency || 'Trung tâm Giám định Độc lập & Thẩm duyệt Sàn NEXUS';
 
             return (
               <div className="space-y-6">
@@ -135,13 +137,13 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                   </span>
                 </div>
 
-                {primaryItem && (
+                {activeItem && (
                   <div className="bg-sky-50/50 border border-sky-100 rounded-xl p-4 text-xs">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-slate-700">
                       <div>
                         <span className="text-slate-400 block text-[11px]">Hồ sơ ký gửi:</span>
                         <strong className="text-slate-900">
-                          Lô #{primaryItem.lotNumber ?? 1}: {primaryItem.title}
+                          Lô #{activeItem.lotNumber ?? 1}: {activeItem.title}
                         </strong>
                       </div>
                       <div>
@@ -153,20 +155,20 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                           Trạng thái số hóa 3D:
                         </span>
                         <span className="text-emerald-600 font-bold">
-                          {primaryItem.threeModelKey
+                          {activeItem.threeModelKey
                             ? '✓ Sẵn sàng mô hình LiDAR 3D'
                             : '✓ Đồng bộ dữ liệu 360°'}
                         </span>
                       </div>
                     </div>
 
-                    {primaryItem.certificateImages && primaryItem.certificateImages.length > 0 && (
+                    {activeItem.certificateImages && activeItem.certificateImages.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-sky-100">
                         <span className="text-slate-500 block text-[11px] mb-2 font-semibold">
                           Tài liệu chứng nhận đính kèm:
                         </span>
                         <div className="flex items-center gap-2 flex-wrap">
-                          {primaryItem.certificateImages.map((cImg, idx) => (
+                          {activeItem.certificateImages.map((cImg, idx) => (
                             <a
                               key={idx}
                               href={cImg}
@@ -230,86 +232,118 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
           })()}
 
         {/* TAB 2: SPECS */}
-        {activeTab === 'specs' && (
-          <table className="w-full text-xs divide-y divide-slate-100">
-            <tbody className="divide-y divide-slate-100">
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500 w-1/3">Tiêu đề phiên</td>
-                <td className="py-2.5 text-slate-900 font-semibold">
-                  {auction?.title || 'Phiên đấu giá công khai'}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Mã định danh (Auction ID)</td>
-                <td className="py-2.5 font-mono text-slate-700">
-                  {auction?.id || 'Đang cập nhật'}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Giá khởi điểm</td>
-                <td className="py-2.5 text-slate-900 font-bold">
-                  {auction?.startingPrice
-                    ? `${Number(auction.startingPrice).toLocaleString('vi-VN')} đ`
-                    : 'Chưa thiết lập'}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Bước giá tối thiểu (+Increment)</td>
-                <td className="py-2.5 text-blue-600 font-bold">
-                  {auction?.bidIncrement
-                    ? `+${Number(auction.bidIncrement).toLocaleString('vi-VN')} đ`
-                    : '+1.000.000 đ'}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Điểm uy tín Buyer tối thiểu</td>
-                <td className="py-2.5 text-slate-900 font-bold">
-                  {auction?.minBuyerReputation ?? 40} điểm uy tín
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Điểm uy tín Seller tối thiểu</td>
-                <td className="py-2.5 text-slate-900 font-bold">
-                  {auction?.minSellerReputation ?? 50} điểm uy tín
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Cơ chế cọc ví & Hoàn tiền</td>
-                <td className="py-2.5 text-slate-800">
-                  <span className="font-semibold text-emerald-700">AUCTION_BID_LOCK</span> (Khóa
-                  cọc) & <span className="font-semibold text-blue-700">AUCTION_BID_REFUND</span>{' '}
-                  (Hoàn cọc tự động khi có người trả giá cao hơn)
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Thời gian bắt đầu</td>
-                <td className="py-2.5 text-slate-700">
-                  {auction?.startTime
-                    ? new Date(auction.startTime).toLocaleString('vi-VN')
-                    : 'Đang diễn ra'}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Thời gian kết thúc dự kiến</td>
-                <td className="py-2.5 text-slate-700">
-                  {auction?.endTime
-                    ? new Date(auction.endTime).toLocaleString('vi-VN')
-                    : 'Chưa ấn định'}
-                </td>
-              </tr>
-              <tr>
-                <td className="py-2.5 font-bold text-slate-500">Trạng thái gia hạn Anti-Sniping</td>
-                <td className="py-2.5">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[11px] font-bold ${auction?.isExtended ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-50 text-slate-600'}`}
-                  >
-                    {auction?.isExtended ? 'ĐÃ KÍCH HOẠT GIA HẠN (+120s)' : 'SẴN SÀNG KÍCH HOẠT'}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        )}
+        {activeTab === 'specs' &&
+          (() => {
+            const activeItem = selectedItem || auction?.items?.[0];
+            return (
+              <table className="w-full text-xs divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100">
+                  {activeItem && (
+                    <tr className="bg-blue-50/50">
+                      <td className="py-2.5 px-2 font-bold text-blue-900 w-1/3">
+                        Lô hàng đang chọn
+                      </td>
+                      <td className="py-2.5 px-2 text-blue-950 font-bold">
+                        Lô #{activeItem.lotNumber ?? 1}: {activeItem.title}
+                      </td>
+                    </tr>
+                  )}
+                  {activeItem?.description && (
+                    <tr>
+                      <td className="py-2.5 font-bold text-slate-500">Mô tả hiện vật</td>
+                      <td className="py-2.5 text-slate-700 leading-relaxed">
+                        {activeItem.description}
+                      </td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500 w-1/3">Tiêu đề phiên</td>
+                    <td className="py-2.5 text-slate-900 font-semibold">
+                      {auction?.title || 'Phiên đấu giá công khai'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">Mã định danh (Auction ID)</td>
+                    <td className="py-2.5 font-mono text-slate-700">
+                      {auction?.id || 'Đang cập nhật'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">Giá khởi điểm</td>
+                    <td className="py-2.5 text-slate-900 font-bold">
+                      {activeItem?.startingPrice
+                        ? `${Number(activeItem.startingPrice).toLocaleString('vi-VN')} đ`
+                        : auction?.startingPrice
+                          ? `${Number(auction.startingPrice).toLocaleString('vi-VN')} đ`
+                          : 'Chưa thiết lập'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">
+                      Bước giá tối thiểu (+Increment)
+                    </td>
+                    <td className="py-2.5 text-blue-600 font-bold">
+                      {auction?.bidIncrement
+                        ? `+${Number(auction.bidIncrement).toLocaleString('vi-VN')} đ`
+                        : '+1.000.000 đ'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">Điểm uy tín Buyer tối thiểu</td>
+                    <td className="py-2.5 text-slate-900 font-bold">
+                      {auction?.minBuyerReputation ?? 40} điểm uy tín
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">
+                      Điểm uy tín Seller tối thiểu
+                    </td>
+                    <td className="py-2.5 text-slate-900 font-bold">
+                      {auction?.minSellerReputation ?? 50} điểm uy tín
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">Cơ chế cọc ví & Hoàn tiền</td>
+                    <td className="py-2.5 text-slate-800">
+                      <span className="font-semibold text-emerald-700">AUCTION_BID_LOCK</span> (Khóa
+                      cọc) & <span className="font-semibold text-blue-700">AUCTION_BID_REFUND</span>{' '}
+                      (Hoàn cọc tự động khi có người trả giá cao hơn)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">Thời gian bắt đầu</td>
+                    <td className="py-2.5 text-slate-700">
+                      {auction?.startTime
+                        ? new Date(auction.startTime).toLocaleString('vi-VN')
+                        : 'Đang diễn ra'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">Thời gian kết thúc dự kiến</td>
+                    <td className="py-2.5 text-slate-700">
+                      {auction?.endTime
+                        ? new Date(auction.endTime).toLocaleString('vi-VN')
+                        : 'Chưa ấn định'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 font-bold text-slate-500">
+                      Trạng thái gia hạn Anti-Sniping
+                    </td>
+                    <td className="py-2.5">
+                      <span
+                        className={`px-2 py-0.5 rounded text-[11px] font-bold ${auction?.isExtended ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-50 text-slate-600'}`}
+                      >
+                        {auction?.isExtended
+                          ? 'ĐÃ KÍCH HOẠT GIA HẠN (+120s)'
+                          : 'SẴN SÀNG KÍCH HOẠT'}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            );
+          })()}
 
         {/* TAB 3: BID HISTORY */}
         {activeTab === 'history' && (

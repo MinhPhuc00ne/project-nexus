@@ -57,9 +57,17 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
             >
               <div className="relative aspect-[4/3] bg-slate-100 overflow-hidden">
                 <img
-                  src={product.thumbnail || product.images[0] || '/images/watches/watch-1.png'}
+                  src={
+                    product.thumbnail ||
+                    product.images[0] ||
+                    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80'
+                  }
                   alt={product.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src =
+                      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80';
+                  }}
                 />
                 {product.threeModelKey && (
                   <span className="absolute top-3 left-3 bg-blue-600/90 backdrop-blur-sm text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">

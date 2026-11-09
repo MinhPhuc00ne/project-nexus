@@ -20,6 +20,7 @@ import {
   getMyBidsApi,
   getMyAuctionAwardsApi,
   declineAuctionAwardApi,
+  formatAuctionImage,
   type AuctionAwardItem,
 } from '../../services/auction.service';
 
@@ -117,9 +118,13 @@ export default function BuyerBidsPage() {
               status = 'ACTIVE';
             }
 
-            const firstImg =
+            const rawImg =
               b.auction.product?.images?.[0]?.imageUrl ||
-              'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
+              (b.auction as unknown as { items?: Array<{ images?: string[] }> })?.items?.[0]
+                ?.images?.[0];
+            const firstImg = rawImg
+              ? formatAuctionImage(rawImg)
+              : 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80';
 
             return {
               id: b.id,

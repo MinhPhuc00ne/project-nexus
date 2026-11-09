@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Gavel, Truck, ShieldCheck, X, AlertTriangle } from 'lucide-react';
-import type { AuctionEntity } from '../../services/auction.service';
+import {
+  Gavel,
+  Truck,
+  ShieldCheck,
+  X,
+  AlertTriangle,
+  Clock,
+  Award,
+  CheckCircle2,
+} from 'lucide-react';
+import type { AuctionEntity, AuctionConsignmentItem } from '../../services/auction.service';
 
 interface AuctionBidTerminalProps {
   auction?: AuctionEntity | null;
+  selectedItem?: AuctionConsignmentItem | null;
   timeLeft: number;
   currentPrice: number;
   leadingBidder: string;
@@ -12,10 +22,13 @@ interface AuctionBidTerminalProps {
   eligibilityReason?: string;
   isFlaggedViewOnly?: boolean;
   totalBidsCount?: number;
+  buyerReputationScore?: number;
+  requiredReputationScore?: number;
 }
 
 export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
   auction,
+  selectedItem,
   timeLeft,
   currentPrice,
   leadingBidder,
@@ -24,6 +37,8 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
   eligibilityReason,
   isFlaggedViewOnly = false,
   totalBidsCount,
+  buyerReputationScore,
+  requiredReputationScore,
 }) => {
   const minIncrement = auction?.bidIncrement ? Number(auction.bidIncrement) : 1000000;
   const [customBidAmount, setCustomBidAmount] = useState(currentPrice + minIncrement);
@@ -58,14 +73,36 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
     setShowBidModal(false);
   };
 
+  const isScheduled =
+    auction?.status === 'SCHEDULED' ||
+    (Boolean(auction?.startTime) && new Date(auction!.startTime).getTime() > Date.now());
+
+  const isEnded =
+    auction?.status === 'ENDED' ||
+    auction?.status === 'SETTLED' ||
+    auction?.status === 'CANCELLED' ||
+    (Boolean(auction?.endTime) &&
+      new Date(auction!.endTime).getTime() <= Date.now() &&
+      !isScheduled);
+
   const displayTitle =
+    selectedItem?.title ||
     auction?.product?.title ||
     auction?.title ||
     'Audemars Piguet Royal Oak Chronograph 41mm Selfwinding';
-  const lotNumber = auction?.id
-    ? `LOT #${auction.id.slice(0, 8).toUpperCase()}`
-    : 'LOT #AP-2025-X09';
-  const startPriceVal = auction?.startingPrice ? Number(auction.startingPrice) : 95000000;
+
+  const lotNumber = selectedItem?.lotNumber
+    ? `LÔ #${selectedItem.lotNumber}`
+    : auction?.id
+      ? `LOT #${auction.id.slice(0, 8).toUpperCase()}`
+      : 'LOT #01';
+
+  const startPriceVal = selectedItem?.startingPrice
+    ? Number(selectedItem.startingPrice)
+    : auction?.startingPrice
+      ? Number(auction.startingPrice)
+      : 95000000;
+
   const quickIncrements = [minIncrement, minIncrement * 2, minIncrement * 5, minIncrement * 10];
   const bidsCount = totalBidsCount ?? auction?.totalBidsCount ?? (auction?.bids?.length || 0);
 
@@ -88,20 +125,36 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
       </div>
 
       {/* Countdown Banner */}
-      <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-800 text-white rounded-xl p-4 sm:p-5 flex items-center justify-between shadow-lg">
+      <div
+        className={`rounded-xl p-4 sm:p-5 flex items-center justify-between shadow-lg text-white ${
+          isScheduled
+            ? 'bg-gradient-to-br from-amber-950 via-slate-900 to-amber-900 border border-amber-600/30'
+            : 'bg-gradient-to-br from-slate-900 via-slate-850 to-slate-800'
+        }`}
+      >
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-            Thời Gian Còn Lại:
+            {isScheduled ? 'Sắp Khởi Tranh Sau:' : 'Thời Gian Còn Lại:'}
           </span>
-          <span className="font-mono text-2xl sm:text-3xl font-extrabold text-rose-400 tracking-wider">
-            {timeLeft > 0 ? formatTimer(timeLeft) : 'ĐÃ KẾT THÚC'}
+          <span
+            className={`font-mono text-2xl sm:text-3xl font-extrabold tracking-wider ${
+              isScheduled ? 'text-amber-400' : 'text-rose-400'
+            }`}
+          >
+            {timeLeft > 0 ? formatTimer(timeLeft) : isScheduled ? 'CHUẨN BỊ MỞ' : 'ĐÃ KẾT THÚC'}
           </span>
         </div>
         <div className="text-right flex flex-col gap-1">
-          <span className="text-sm font-bold text-white">{bidsCount} lượt trả giá</span>
+          <span className="text-sm font-bold text-white">
+            {isScheduled ? 'Chưa mở trả giá' : `${bidsCount} lượt trả giá`}
+          </span>
           <span className="text-[11px] text-sky-400 flex items-center gap-1.5 justify-end">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            Trực tiếp 3D
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isScheduled ? 'bg-amber-400' : 'bg-cyan-400 animate-ping'
+              }`}
+            />
+            {isScheduled ? 'Sắp mở 3D' : 'Trực tiếp 3D'}
           </span>
         </div>
       </div>
@@ -130,10 +183,37 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
         </div>
 
         {/* Leading Bidder */}
-        <div className="bg-slate-50 rounded-lg p-2.5 text-xs text-slate-600 flex items-center justify-between mb-5 border-l-3 border-emerald-500">
+        <div className="bg-slate-50 rounded-lg p-2.5 text-xs text-slate-600 flex items-center justify-between mb-4 border-l-3 border-emerald-500">
           <span>Người đang giữ giá:</span>
           <span className="font-bold text-slate-900">{leadingBidder} 👑</span>
         </div>
+
+        {/* Buyer Reputation & Eligibility Badge */}
+        {buyerReputationScore !== undefined && (
+          <div className="flex items-center justify-between bg-slate-50/90 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs mb-4">
+            <div className="flex items-center gap-2">
+              <Award className="w-4 h-4 text-amber-500 shrink-0" />
+              <div>
+                <span className="text-slate-600">Uy tín của bạn: </span>
+                <strong className="text-slate-900 font-extrabold">
+                  {buyerReputationScore} điểm
+                </strong>
+                <span className="text-[11px] text-slate-400 font-mono ml-1.5">
+                  (Yêu cầu: ≥ {requiredReputationScore ?? 40})
+                </span>
+              </div>
+            </div>
+            {buyerReputationScore >= (requiredReputationScore ?? 40) && !isFlaggedViewOnly ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đủ điều kiện
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                <AlertTriangle className="w-3 h-3 text-amber-600" /> View-Only
+              </span>
+            )}
+          </div>
+        )}
 
         {/* View-only eligibility warning */}
         {isFlaggedViewOnly && (
@@ -149,6 +229,26 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           </div>
         )}
 
+        {/* Scheduled notice for upcoming auctions */}
+        {isScheduled && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3.5 text-xs flex items-start gap-2.5">
+            <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Phiên Đấu Giá Chưa Mở</p>
+              <p className="text-[11px] text-amber-700 mt-0.5">
+                Phiên đấu giá được lên lịch mở lúc{' '}
+                <strong>
+                  {auction?.startTime
+                    ? new Date(auction.startTime).toLocaleString('vi-VN')
+                    : 'thời gian sắp tới'}
+                </strong>
+                . Quý khách có thể xem trước hình ảnh, mô hình 3D và hồ sơ kiểm định của từng lô
+                hàng.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Quick Bid Increment Buttons */}
         <div className="flex flex-col gap-3">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -158,7 +258,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                 <button
                   key={idx}
                   type="button"
-                  disabled={isFlaggedViewOnly || timeLeft <= 0}
+                  disabled={isScheduled || isEnded || isFlaggedViewOnly || timeLeft <= 0}
                   className={`p-2.5 rounded-xl cursor-pointer transition text-center flex flex-col items-center justify-center gap-0.5 border ${
                     isSelected
                       ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
@@ -184,7 +284,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
             <div className="relative flex-1">
               <input
                 type="text"
-                disabled={isFlaggedViewOnly || timeLeft <= 0}
+                disabled={isScheduled || isEnded || isFlaggedViewOnly || timeLeft <= 0}
                 className="w-full py-2.5 px-3 rounded-xl border border-slate-300 text-base font-extrabold text-slate-900 bg-slate-50 focus:bg-white focus:border-rose-500 focus:outline-none disabled:opacity-50"
                 value={formatVND(customBidAmount)}
                 onChange={(e) => {
@@ -199,12 +299,26 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
 
             <button
               type="button"
-              disabled={isFlaggedViewOnly || timeLeft <= 0 || customBidAmount <= currentPrice}
+              disabled={
+                isScheduled ||
+                isEnded ||
+                isFlaggedViewOnly ||
+                timeLeft <= 0 ||
+                customBidAmount <= currentPrice
+              }
               className="py-2.5 px-5 bg-gradient-to-r from-orange-500 to-rose-600 text-white font-extrabold text-sm rounded-xl shadow-md transition hover:opacity-95 active:scale-95 whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
               onClick={() => setShowBidModal(true)}
             >
               <Gavel className="w-4 h-4" />
-              <span>{isFlaggedViewOnly ? 'Chỉ Xem' : 'Đặt Giá Ngay'}</span>
+              <span>
+                {isScheduled
+                  ? 'Phiên Chưa Mở'
+                  : isEnded
+                    ? 'Phiên Đã Kết Thúc'
+                    : isFlaggedViewOnly
+                      ? 'Chỉ Xem'
+                      : 'Đặt Giá Ngay'}
+              </span>
             </button>
           </div>
 

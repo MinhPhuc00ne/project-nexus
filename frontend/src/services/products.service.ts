@@ -90,7 +90,10 @@ export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
     id: p.id,
     brand: brandName,
     title: p.title,
-    image: p.thumbnail || p.images[0] || '/images/watches/watch-1.png',
+    image:
+      p.thumbnail ||
+      p.images[0] ||
+      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
     type: sale.isOnSale ? 'flash_sale' : 'mall',
     primaryBadge: sale.isOnSale
       ? { text: `${sale.label} -${sale.discountPercent}%`, type: 'flash' }

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { HomeProduct } from './home.types';
-import type { AuctionEntity } from '../../services/auction.service';
+import { formatAuctionImage, type AuctionEntity } from '../../services/auction.service';
 
 export interface HomeAuctionCardProps {
   product?: HomeProduct;
@@ -8,16 +8,50 @@ export interface HomeAuctionCardProps {
 }
 
 export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
+  const isUpcoming =
+    auction?.status === 'SCHEDULED' ||
+    (Boolean(auction?.startTime) && new Date(auction!.startTime).getTime() > Date.now());
+
   const targetUrl = auction
     ? `/auction/${auction.id}`
     : product?.id
       ? `/product/${product.id}`
       : '/auction';
 
-  const title = auction?.title || auction?.product?.title || product?.name || 'Chưa có dữ liệu';
+  const title =
+    auction?.title ||
+    auction?.product?.title ||
+    auction?.items?.[0]?.title ||
+    product?.name ||
+    'Chưa có dữ liệu';
 
-  const image =
-    auction?.product?.images?.[0]?.imageUrl || product?.image || '/images/watches/watch-1.png';
+  const resolveRealImage = (): string => {
+    if (auction?.items && auction.items.length > 0) {
+      for (const item of auction.items) {
+        if (item.images && item.images.length > 0) {
+          const valid = item.images.find((u) => typeof u === 'string' && u.trim().length > 0);
+          if (valid) return formatAuctionImage(valid);
+        }
+      }
+    }
+    if (
+      auction?.product &&
+      Array.isArray(auction.product.images) &&
+      auction.product.images.length > 0
+    ) {
+      for (const img of auction.product.images) {
+        if (img?.imageUrl && img.imageUrl.trim().length > 0) {
+          return formatAuctionImage(img.imageUrl);
+        }
+      }
+    }
+    if (product?.image && product.image.trim().length > 0) {
+      return formatAuctionImage(product.image);
+    }
+    return 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80';
+  };
+
+  const image = resolveRealImage();
 
   const currentPrice = auction
     ? Number(auction.currentHighestBid || auction.startingPrice)
@@ -37,12 +71,20 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
             src={image}
             alt={title}
             className="h-full w-full rounded-lg object-cover hover:scale-105 transition duration-300"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80';
+            }}
           />
         ) : (
           <span className="text-xs text-slate-400">Chưa có hình ảnh</span>
         )}
-        <span className="absolute left-2 top-2 rounded bg-sky-500 px-2 py-1 text-[10px] font-bold text-white">
-          3D MODEL
+        <span
+          className={`absolute left-2 top-2 rounded px-2 py-1 text-[10px] font-bold text-white shadow-xs ${
+            isUpcoming ? 'bg-amber-500' : 'bg-sky-500'
+          }`}
+        >
+          {isUpcoming ? 'SẮP MỞ' : '3D MODEL'}
         </span>
         <button
           type="button"
@@ -71,7 +113,11 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
           </span>
 
           <span className="text-[10px] text-slate-400">
-            {bidsCount ? `${bidsCount} lượt bid` : 'Sắp mở'}
+            {isUpcoming
+              ? `Mở ${new Date(auction!.startTime).toLocaleDateString('vi-VN')}`
+              : bidsCount
+                ? `${bidsCount} lượt bid`
+                : 'Mới mở'}
           </span>
         </div>
       </div>

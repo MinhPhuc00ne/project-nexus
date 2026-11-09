@@ -98,7 +98,7 @@ export default function BuyerDisputesPage() {
             img:
               o?.items?.[0]?.product?.thumbnail ||
               o?.items?.[0]?.product?.images?.[0]?.imageUrl ||
-              '/images/watches/watch-1.png',
+              'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80',
             amount: Number(o?.totalAmount ?? 0),
             reason: 'ITEM_DEFECTIVE',
             status: 'OPEN',
