@@ -25,7 +25,9 @@ const SellerProductsPage = lazy(() => import('../pages/seller/SellerProductsPage
 const SellerFinancePage = lazy(() => import('../pages/seller/SellerFinancePage'));
 const SellerDisputesPage = lazy(() => import('../pages/seller/SellerDisputesPage'));
 const SellerSettingsPage = lazy(() => import('../pages/seller/SellerSettingsPage'));
-const SellerDraftPage = lazy(() => import('../pages/seller/SellerDraftPage'));
+const SellerAuctionConsignmentPage = lazy(
+  () => import('../pages/seller/SellerAuctionConsignmentPage'),
+);
 const SellerReviewsPage = lazy(() => import('../pages/seller/SellerReviewsPage'));
 const SellerCreateProductPage = lazy(() => import('../pages/seller/SellerCreateProductPage'));
 const StaffActivationPage = lazy(() => import('../pages/staff/StaffActivationPage'));
@@ -164,7 +166,7 @@ function AppRouter() {
                   <Route path="orders/:id" element={<SellerOrderDetailPage />} />
                   <Route path="shipping" element={<SellerShippingPage />} />
                   <Route path="auctions" element={<SellerAuctionsPage />} />
-                  <Route path="auctions/new" element={<SellerDraftPage auction />} />
+                  <Route path="auctions/new" element={<SellerAuctionConsignmentPage />} />
                   <Route path="finance" element={<SellerFinancePage />} />
                   <Route path="inventory" element={<SellerProductsPage inventory />} />
                   <Route path="reviews" element={<SellerReviewsPage />} />
