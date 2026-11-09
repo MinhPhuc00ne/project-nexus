@@ -5,9 +5,11 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   getAdminAuctionsApi,
   type AdminAuctionListResponse,
+  type AdminAuctionEntity,
 } from '../../../services/auction.service';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import CreateAuctionDialog from './CreateAuctionDialog';
+import AuctionItemsDialog from './AuctionItemsDialog';
 
 const statuses = [
   ['SCHEDULED', 'Đã lên lịch'],
@@ -30,6 +32,7 @@ export default function AdminAuctionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
+  const [selectedAuction, setSelectedAuction] = useState<AdminAuctionEntity | null>(null);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -138,6 +141,7 @@ export default function AdminAuctionsPage() {
                       'Điểm uy tín tối thiểu',
                       'Lượt trả giá',
                       'Trạng thái',
+                      'Sản phẩm',
                     ].map((label) => (
                       <th key={label} className="p-4 font-semibold">
                         {label}
@@ -153,6 +157,17 @@ export default function AdminAuctionsPage() {
                         <p className="mt-1 text-slate-500">
                           Người tạo: {item.createdByAdmin?.fullName || item.seller?.fullName || '—'}
                         </p>
+                        {item.product && (
+                          <div className="mt-3 space-y-1 rounded-lg bg-blue-50 p-3">
+                            <p className="font-medium text-slate-800">
+                              Sản phẩm: {item.product.title}
+                            </p>
+                            <p className="text-slate-500">Seller: {item.seller?.fullName || '—'}</p>
+                            <p className="text-primary">
+                              Khởi điểm: {Number(item.startingPrice).toLocaleString('vi-VN')} ₫
+                            </p>
+                          </div>
+                        )}
                       </td>
                       <td className="whitespace-nowrap p-4">
                         {new Date(item.startTime).toLocaleString('vi-VN')}
@@ -175,6 +190,11 @@ export default function AdminAuctionsPage() {
                         >
                           {statuses.find(([value]) => value === item.status)?.[1] || item.status}
                         </Badge>
+                      </td>
+                      <td className="p-4">
+                        <Button variant="secondary" onClick={() => setSelectedAuction(item)}>
+                          Xem / thêm ({item._count?.items ?? 0})
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -211,14 +231,23 @@ export default function AdminAuctionsPage() {
         <CreateAuctionDialog
           key={token}
           onClose={() => setCreating(false)}
-          onCreated={() => {
+          onCreated={(auction) => {
             setCreating(false);
+            setSelectedAuction(auction);
             setStatus('');
             setSearch('');
             setKeyword('');
             setPage(1);
             setRevision((value) => value + 1);
           }}
+        />
+      )}
+      {selectedAuction && (
+        <AuctionItemsDialog
+          key={`${token}:${selectedAuction.id}`}
+          auction={selectedAuction}
+          onClose={() => setSelectedAuction(null)}
+          onChanged={() => setRevision((value) => value + 1)}
         />
       )}
     </Panel>

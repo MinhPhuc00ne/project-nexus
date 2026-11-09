@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { adminCreateAuctionApi } from '../../../services/auction.service';
+import { adminCreateAuctionApi, type AdminAuctionEntity } from '../../../services/auction.service';
 import { getStoredToken } from '../../../services/auth';
 import { useToast } from '../../ToastNotification';
 import Popup from '../../Popup';
@@ -10,7 +10,7 @@ export default function CreateAuctionDialog({
   onCreated,
 }: {
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (auction: AdminAuctionEntity) => void;
 }) {
   const toast = useToast();
   const [title, setTitle] = useState('');
@@ -56,7 +56,7 @@ export default function CreateAuctionDialog({
     setSaving(true);
     const token = getStoredToken();
     try {
-      await adminCreateAuctionApi({
+      const auction = await adminCreateAuctionApi({
         title: title.trim(),
         description: description.trim() || undefined,
         startTime: start.toISOString(),
@@ -66,7 +66,7 @@ export default function CreateAuctionDialog({
       });
       if (active.current && token === getStoredToken()) {
         toast.success('Đã tạo phiên đấu giá.');
-        onCreated();
+        onCreated(auction);
       }
     } catch (cause) {
       if (active.current && token === getStoredToken())
@@ -172,7 +172,7 @@ export default function CreateAuctionDialog({
             Hủy
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Đang tạo…' : 'Tạo phiên đấu giá'}
+            {saving ? 'Đang tạo…' : 'Tạo phiên & thêm sản phẩm'}
           </Button>
         </div>
       </form>

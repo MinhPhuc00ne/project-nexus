@@ -103,6 +103,89 @@ export interface AdminAuctionEntity extends AdminCreateAuctionInput {
   createdByAdmin?: AuctionSeller | null;
   seller?: AuctionSeller | null;
   totalBidsCount: number;
+  product?: AuctionProduct | null;
+  startingPrice: number | string;
+  _count?: { items: number; bids: number };
+}
+
+export interface RegisterAuctionItemInput {
+  title: string;
+  description: string;
+  images: string[];
+  proposedStartingPrice: number;
+  proposedReservePrice?: number;
+  proposedBidIncrement?: number;
+  threeModelKey?: string;
+  appraisalCertificateNumber?: string;
+  appraisalAgency?: string;
+  certificateImages: string[];
+  certificateIssueDate?: string;
+}
+
+export interface AdminAuctionItem extends Omit<
+  RegisterAuctionItemInput,
+  'proposedStartingPrice' | 'proposedReservePrice' | 'proposedBidIncrement'
+> {
+  id: string;
+  status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+  proposedStartingPrice: number | string;
+  proposedReservePrice: number | string | null;
+  proposedBidIncrement: number | string;
+  seller: AuctionSeller & {
+    platformEmail?: string;
+    shopAvatarUrl?: string | null;
+    reputationScore?: number;
+    trustLevel?: string;
+    isShopSuspended?: boolean;
+  };
+  startingPrice: number | string | null;
+  reservePrice?: number | string | null;
+  bidIncrement?: number | string | null;
+  createdAt?: string;
+  reviewedAt?: string | null;
+  reviewedByAdmin?: { id: string; fullName: string } | null;
+  rejectionReason?: string | null;
+  lotNumber?: number | null;
+  isSellerFlagged: boolean;
+  flagReason?: string | null;
+}
+
+export interface AdminAuctionItemsResponse {
+  auctionId: string;
+  auctionTitle: string;
+  auctionStatus: AuctionStatus;
+  totalCount: number;
+  items: AdminAuctionItem[];
+}
+
+export function getAdminAuctionItemsApi(id: string): Promise<AdminAuctionItemsResponse> {
+  return apiRequest<AdminAuctionItemsResponse>(`/auctions/admin/${id}/items`, {
+    requireAuth: true,
+  });
+}
+
+export function registerAuctionItemApi(id: string, data: RegisterAuctionItemInput) {
+  return apiRequest<{ success: boolean; message: string; item: AdminAuctionItem }>(
+    `/auctions/${id}/register-item`,
+    { method: 'POST', body: data, requireAuth: true },
+  );
+}
+
+export type ReviewAuctionItemInput =
+  | {
+      action: 'APPROVE';
+      lotNumber?: number;
+      startingPrice?: number;
+      reservePrice?: number;
+      bidIncrement?: number;
+    }
+  | { action: 'REJECT'; rejectionReason: string };
+
+export function reviewAuctionItemApi(itemId: string, data: ReviewAuctionItemInput) {
+  return apiRequest<{ success: boolean; message: string }>(
+    `/auctions/admin/items/${itemId}/review`,
+    { method: 'POST', body: data, requireAuth: true },
+  );
 }
 
 export interface AdminAuctionListResponse {
