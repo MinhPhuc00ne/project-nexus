@@ -98,6 +98,7 @@ export interface StaffBanner {
   title: string;
   imageUrl: string;
   targetUrl: string | null;
+  auctionId?: string | null;
   startsAt: string | null;
   endsAt: string | null;
   isActive: boolean;
@@ -110,6 +111,7 @@ export interface StaffBannerPayload {
   title: string;
   imageUrl: string;
   targetUrl?: string | null;
+  auctionId?: string | null;
   startsAt?: string | null;
   endsAt?: string | null;
   isActive?: boolean;
@@ -233,5 +235,44 @@ export function saveStaffBanner(payload: StaffBannerPayload, id?: string): Promi
 }
 
 export function deactivateStaffBanner(id: string): Promise<{ success: boolean }> {
-  return staffRequest({ url: `/staff/banners/${encodeURIComponent(id)}`, method: 'DELETE' });
+  return staffRequest({
+    url: `/staff/banners/${encodeURIComponent(id)}/disable`,
+    method: 'PATCH',
+  });
+}
+
+export interface StaffBannerDisableHistoryItem {
+  id: string;
+  bannerId: string;
+  bannerTitle: string;
+  creatorId: string;
+  creatorName: string;
+  creatorRole: string;
+  actorId: string;
+  actorName: string;
+  actorRole: string;
+  source: 'UPDATE' | 'DELETE' | 'DISABLE';
+  wasActive: boolean;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface StaffBannerDisableHistoryPage {
+  items: StaffBannerDisableHistoryItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export function getStaffBannerDisableHistory(
+  params: {
+    bannerId?: string;
+    actorId?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    limit?: number;
+  } = {},
+): Promise<StaffBannerDisableHistoryPage> {
+  return staffRequest({ url: '/staff/banner-disable-history', method: 'GET', params });
 }

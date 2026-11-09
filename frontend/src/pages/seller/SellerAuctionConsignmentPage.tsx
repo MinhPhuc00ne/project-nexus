@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import { ApiRequestError } from '../../services/api';
 import {
@@ -24,6 +25,7 @@ function getErrorMessage(error: unknown): string {
  */
 export default function SellerAuctionConsignmentPage(): ReactElement {
   const { notify } = useSellerWorkspace();
+  const [searchParams] = useSearchParams();
   const [auctions, setAuctions] = useState<AuctionEntity[]>([]);
   const [consignments, setConsignments] = useState<SellerAuctionConsignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +95,7 @@ export default function SellerAuctionConsignmentPage(): ReactElement {
           eligibleAuctions={eligibleAuctions}
           isLoading={isLoading}
           onSuccess={loadData}
+          preselectedAuctionId={searchParams.get('auctionId') ?? undefined}
         />
         <SellerConsignmentHistoryPanel
           consignments={consignments}
