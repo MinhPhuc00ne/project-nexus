@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent, type ReactElement } from 'react';
+import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactElement } from 'react';
 import { FileImage, ImagePlus, LoaderCircle, Send } from 'lucide-react';
 import { registerAuctionItemApi, type AuctionEntity } from '../../services/auction.service';
 import {
@@ -15,6 +15,7 @@ export interface SellerConsignmentFormProps {
   eligibleAuctions: AuctionEntity[];
   isLoading: boolean;
   onSuccess: () => Promise<void> | void;
+  preselectedAuctionId?: string;
 }
 
 /**
@@ -27,12 +28,27 @@ export default function SellerConsignmentForm({
   eligibleAuctions,
   isLoading,
   onSuccess,
+  preselectedAuctionId,
 }: SellerConsignmentFormProps): ReactElement {
   const { notify } = useSellerWorkspace();
   const [form, setForm] = useState<ConsignmentFormState>(initialConsignmentForm);
   const [itemImages, setItemImages] = useState<File[]>([]);
   const [certificateImages, setCertificateImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (
+      !preselectedAuctionId ||
+      !eligibleAuctions.some((auction) => auction.id === preselectedAuctionId)
+    ) {
+      return;
+    }
+    setForm((current) =>
+      current.auctionId === preselectedAuctionId
+        ? current
+        : { ...current, auctionId: preselectedAuctionId },
+    );
+  }, [eligibleAuctions, preselectedAuctionId]);
 
   const updateForm = (key: keyof ConsignmentFormState, value: string): void => {
     setForm((current) => ({ ...current, [key]: value }));

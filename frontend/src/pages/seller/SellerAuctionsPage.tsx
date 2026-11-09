@@ -10,9 +10,7 @@ import {
   Search as SearchOutlined,
   ShieldCheck as SafetyCertificateOutlined,
   Clock3 as FieldTimeOutlined,
-  Video as VideoCameraOutlined,
 } from 'lucide-react';
-import Popup from '../../components/Popup';
 import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
 import {
   Badge,
@@ -27,22 +25,6 @@ import {
 import { auctionStatuses, money, type SellerAuction } from '../../components/seller/sellerData';
 import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
 
-const rotationClasses: Record<number, string> = {
-  '0': 'rotate-[0deg]',
-  '10': 'rotate-[10deg]',
-  '20': 'rotate-[20deg]',
-  '30': 'rotate-[30deg]',
-  '-30': 'rotate-[-30deg]',
-  '-20': 'rotate-[-20deg]',
-  '-10': 'rotate-[-10deg]',
-};
-
-/**
- * Maps a public auction session entity to the seller auction presentation model.
- *
- * @param auction - The public auction session entity returned from the API.
- * @returns Formatted seller auction item with Vietnamese status mapping and thumbnail URL.
- */
 function toSellerAuction(auction: AuctionEntity): SellerAuction {
   const status: SellerAuction['status'] =
     auction.status === 'ACTIVE' || auction.status === 'EXTENDED'
@@ -67,17 +49,16 @@ function toSellerAuction(auction: AuctionEntity): SellerAuction {
     image,
     price: Number(auction.currentHighestBid || auction.startingPrice || 0),
     bids: auction.totalBidsCount ?? 0,
+    itemCount: auction.items?.length ?? (auction.product ? 1 : 0),
     status,
     model: auction.product?.threeModelKey ? '3D' : 'Sản phẩm',
   };
 }
 
 export default function SellerAuctionsPage() {
-  const { drafts, notify } = useSellerWorkspace();
+  const { drafts } = useSellerWorkspace();
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
-  const [detail, setDetail] = useState<SellerAuction | null>(null);
-  const [rotation, setRotation] = useState(0);
   const [auctions, setAuctions] = useState<SellerAuction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
@@ -191,6 +172,12 @@ export default function SellerAuctionsPage() {
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
+        <div className="ml-auto whitespace-nowrap">
+          <SellerLink to="/seller/auctions/new">
+            <PlusOutlined className="text-[15px]" aria-hidden="true" />
+            Gửi vật phẩm đấu giá
+          </SellerLink>
+        </div>
       </div>
       {isLoading ? (
         <Panel title="Các phiên đấu giá">
@@ -244,7 +231,14 @@ export default function SellerAuctionsPage() {
                   className="w-[140px] h-[170px] shrink-0 [background:linear-gradient(135deg,_#eef3fb,_#e6edf9)] rounded-[9px] overflow-hidden relative grid [place-items:center] [&_img]:w-[95%] [&_img]:h-[90%] [&_img]:object-contain [&_img]:mix-blend-multiply [&_img]:[transition:transform_0.3s] [&>span:not(.anticon)]:absolute [&>span:not(.anticon)]:bottom-2.5 [&>span:not(.anticon)]:text-[7px] [&>span:not(.anticon)]:tracking-[2px] [&>span:not(.anticon)]:text-[#8fa4ca] min-[1600px]:w-[175px] min-[1600px]:h-[190px] max-[1250px]:w-[110px] max-[1250px]:h-[145px] max-[1050px]:w-[160px] max-[1050px]:h-[175px] max-[540px]:w-[100px] max-[540px]:h-[145px]"
                   data-seller="auction-image"
                 >
-                  <img src={auction.image} alt={auction.title} />
+                  {auction.image ? (
+                    <img src={auction.image} alt={auction.title} />
+                  ) : (
+                    <CodeSandboxOutlined
+                      className="text-[34px] text-[#8fa4ca]"
+                      aria-hidden="true"
+                    />
+                  )}
                   <span>3D COLLECTION</span>
                 </div>
                 <div>
@@ -274,9 +268,9 @@ export default function SellerAuctionsPage() {
               >
                 <SafetyCertificateOutlined className="text-[16px]" aria-hidden="true" />
                 <span>
-                  {auction.status === 'pending'
-                    ? 'Mô hình đang chờ thẩm định trong bản minh họa.'
-                    : 'Phiên minh họa · chưa có kết nối phòng đấu giá thật.'}
+                  {auction.itemCount
+                    ? `${auction.itemCount} vật phẩm đã được duyệt trong phiên.`
+                    : 'Chưa có vật phẩm được duyệt trong phiên. Bạn có thể gửi sản phẩm để Admin thẩm định.'}
                 </span>
               </div>
               <div
@@ -285,18 +279,18 @@ export default function SellerAuctionsPage() {
               >
                 <span>
                   <FieldTimeOutlined className="text-[14px]" aria-hidden="true" />
-                  {auction.status === 'live' ? 'Phiên live minh họa' : 'Thông tin vật phẩm'}
+                  {auction.itemCount
+                    ? 'Danh sách vật phẩm của phiên'
+                    : 'Đang chờ Seller gửi vật phẩm'}
                 </span>
-                <SellerButton
-                  secondary
-                  onClick={() => {
-                    setDetail(auction);
-                    setRotation(0);
-                  }}
-                >
-                  <VideoCameraOutlined className="text-[15px]" aria-hidden="true" />
-                  Xem vật phẩm
-                </SellerButton>
+                {(auction.status === 'live' || auction.status === 'scheduled') && (
+                  <SellerLink
+                    to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}
+                  >
+                    <PlusOutlined className="text-[15px]" aria-hidden="true" />
+                    Thêm sản phẩm
+                  </SellerLink>
+                )}
               </div>
             </article>
           ))}
@@ -377,50 +371,6 @@ export default function SellerAuctionsPage() {
           <p>Lựa chọn mô hình phù hợp, thông tin vật phẩm rõ ràng và hình ảnh có chất lượng.</p>
         </div>
       </div>
-      <Popup isOpen={!!detail} onClose={() => setDetail(null)} title="Xem trước vật phẩm" size="lg">
-        {detail && (
-          <div
-            className="flex flex-col gap-5 text-[#566b8c] text-[13px] [&_h3]:font-[650] [&_h3]:text-[17px] [&_h3]:text-[#1e355b] [&_h3]:m-0 [&_p]:leading-[1.9] [&_p]:m-0 [&_p]:text-[#8192ac]"
-            data-seller="detail-content"
-          >
-            <Badge tone="amber">Ảnh vật phẩm minh họa · không phải phòng live</Badge>
-            <div
-              className="grid [place-items:center] [background:radial-gradient(ellipse,_#edf3ff,_#f8faff)] [border:1px_solid_#e6edf9] rounded-[14px] overflow-hidden h-[300px] [&>img]:max-w-[80%] [&>img]:max-h-[260px] [&>img]:object-contain [&>img]:mix-blend-multiply [&>img]:[transition:transform_0.15s] max-[540px]:h-[220px] max-[540px]:[&>img]:max-h-[200px]"
-              data-seller="object-viewer"
-            >
-              <img src={detail.image} className={rotationClasses[rotation]} alt={detail.title} />
-            </div>
-            <label
-              className="text-[11px] text-[#8096ba] flex items-center gap-[15px] [&_input]:flex-1 [&_input]:[accent-color:#315eea]"
-              data-seller="slider-label"
-            >
-              Xoay ảnh vật phẩm
-              <input
-                type="range"
-                min="-30"
-                step="10"
-                max="30"
-                value={rotation}
-                onChange={(event) => setRotation(Number(event.target.value))}
-              />
-            </label>
-            <h3>{detail.title}</h3>
-            <p>{detail.description}</p>
-            <strong>{money(detail.price)}</strong>
-            <SellerButton
-              onClick={() =>
-                notify(
-                  'Phòng đấu giá trực tiếp chưa được kết nối. Không có phiên thật được mở.',
-                  'error',
-                )
-              }
-            >
-              <PlayCircleOutlined className="text-[15px]" aria-hidden="true" />
-              Thông tin phòng đấu giá
-            </SellerButton>
-          </div>
-        )}
-      </Popup>
     </div>
   );
 }

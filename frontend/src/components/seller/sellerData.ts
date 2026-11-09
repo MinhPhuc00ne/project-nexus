@@ -87,6 +87,7 @@ export interface SellerAuction {
   image: string;
   price: number;
   bids: number;
+  itemCount?: number;
   status: 'live' | 'pending' | 'scheduled' | 'ended';
   model: string;
 }

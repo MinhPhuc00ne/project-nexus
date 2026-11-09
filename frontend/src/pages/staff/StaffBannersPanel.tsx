@@ -9,6 +9,7 @@ import {
   Eye,
   EyeOff,
   Flame,
+  History,
   Image as ImageIcon,
   Link2,
   Plus,
@@ -18,10 +19,13 @@ import {
 } from 'lucide-react';
 import {
   deactivateStaffBanner,
+  getStaffBannerDisableHistory,
   getStaffBanners,
   saveStaffBanner,
+  type StaffBannerDisableHistoryItem,
   type StaffBanner,
 } from '../../services/staff';
+import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
 
 function toLocalDateTime(value: string | null): string {
   if (!value) return '';
@@ -71,6 +75,11 @@ export default function StaffBannersPanel(): JSX.Element {
   const [imageError, setImageError] = useState(false);
   const [filterTab, setFilterTab] = useState<'all' | 'active' | 'inactive'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [auctionOptions, setAuctionOptions] = useState<AuctionEntity[]>([]);
+  const [selectedAuctionId, setSelectedAuctionId] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyItems, setHistoryItems] = useState<StaffBannerDisableHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,7 +97,25 @@ export default function StaffBannersPanel(): JSX.Element {
     void load();
   }, [load]);
 
-  function openCreateModal() {
+  useEffect(() => {
+    void getAuctionsApi({ limit: 100 })
+      .then((response) => setAuctionOptions(response.items))
+      .catch(() => setAuctionOptions([]));
+  }, []);
+
+  async function loadHistory(): Promise<void> {
+    setHistoryLoading(true);
+    try {
+      const response = await getStaffBannerDisableHistory({ limit: 20 });
+      setHistoryItems(response.items);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Không thể tải lịch sử tắt banner.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  function openCreateModal(): void {
     setEditingId(null);
     setTitle('');
     setImageUrl('');
@@ -98,10 +125,11 @@ export default function StaffBannersPanel(): JSX.Element {
     setPriority(0);
     setIsActive(true);
     setImageError(false);
+    setSelectedAuctionId('');
     setIsModalOpen(true);
   }
 
-  function editBanner(item: StaffBanner) {
+  function editBanner(item: StaffBanner): void {
     setEditingId(item.id);
     setTitle(item.title);
     setImageUrl(item.imageUrl);
@@ -111,15 +139,16 @@ export default function StaffBannersPanel(): JSX.Element {
     setPriority(item.priority);
     setIsActive(item.isActive);
     setImageError(false);
+    setSelectedAuctionId(item.auctionId ?? '');
     setIsModalOpen(true);
   }
 
-  function closeModal() {
+  function closeModal(): void {
     setIsModalOpen(false);
     setEditingId(null);
   }
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (saving) return;
     setSaving(true);
@@ -129,7 +158,8 @@ export default function StaffBannersPanel(): JSX.Element {
         {
           title: title.trim(),
           imageUrl: imageUrl.trim(),
-          targetUrl: targetUrl.trim() || null,
+          targetUrl: selectedAuctionId ? null : targetUrl.trim() || null,
+          auctionId: selectedAuctionId || null,
           startsAt: toIsoDateTime(startsAt),
           endsAt: toIsoDateTime(endsAt),
           isActive,
@@ -146,12 +176,13 @@ export default function StaffBannersPanel(): JSX.Element {
     }
   }
 
-  async function deactivate(item: StaffBanner) {
+  async function deactivate(item: StaffBanner): Promise<void> {
     if (!window.confirm(`Ngừng hiển thị banner “${item.title}”?`)) return;
     setError('');
     try {
       await deactivateStaffBanner(item.id);
       await load();
+      if (showHistory) await loadHistory();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Không thể ngừng hiển thị banner.');
     }
@@ -219,16 +250,75 @@ export default function StaffBannersPanel(): JSX.Element {
           </div>
         </div>
 
-        {/* Primary Action Button */}
-        <button
-          type="button"
-          onClick={openCreateModal}
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer"
-        >
-          <Plus size={16} />
-          <span>Tạo banner mới</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const next = !showHistory;
+              setShowHistory(next);
+              if (next) void loadHistory();
+            }}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all cursor-pointer"
+          >
+            <History size={16} />
+            <span>Lịch sử tắt</span>
+          </button>
+          <button
+            type="button"
+            onClick={openCreateModal}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all cursor-pointer"
+          >
+            <Plus size={16} />
+            <span>Tạo banner mới</span>
+          </button>
+        </div>
       </div>
+
+      {showHistory && (
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xs">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <div>
+              <h3 className="m-0 text-sm font-bold text-slate-800">Lịch sử tắt banner</h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Lưu vết các thao tác tắt banner gần đây.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadHistory()}
+              disabled={historyLoading}
+              className="rounded-lg p-2 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+              aria-label="Tải lại lịch sử banner"
+            >
+              <RotateCcw size={15} className={historyLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+          {historyLoading ? (
+            <p className="p-5 text-center text-xs text-slate-500">Đang tải lịch sử…</p>
+          ) : historyItems.length === 0 ? (
+            <p className="p-5 text-center text-xs text-slate-500">Chưa có lịch sử tắt banner.</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 p-0">
+              {historyItems.map((entry) => (
+                <li
+                  key={entry.id}
+                  className="flex items-start justify-between gap-4 px-4 py-3 text-xs"
+                >
+                  <div>
+                    <p className="m-0 font-semibold text-slate-800">{entry.bannerTitle}</p>
+                    <p className="mt-1 text-slate-500">
+                      {entry.actorName} ({entry.actorRole}) · {entry.source}
+                    </p>
+                  </div>
+                  <time className="shrink-0 text-slate-400">
+                    {new Date(entry.createdAt).toLocaleString('vi-VN')}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/* Banner Gallery Grid / Empty State */}
       {loading ? (
@@ -474,6 +564,27 @@ export default function StaffBannersPanel(): JSX.Element {
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Liên kết phiên đấu giá (tùy chọn)
+                  </label>
+                  <select
+                    value={selectedAuctionId}
+                    onChange={(event) => setSelectedAuctionId(event.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2 text-xs text-slate-800 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
+                  >
+                    <option value="">Không liên kết phiên đấu giá</option>
+                    {auctionOptions.map((auction) => (
+                      <option key={auction.id} value={auction.id}>
+                        {auction.title} · {auction.status}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mb-0 mt-1 text-[10.5px] text-slate-500">
+                    Khi chọn phiên, hệ thống tự tạo đường dẫn đến trang đấu giá.
+                  </p>
+                </div>
+
                 {/* Field: Link đích (Target URL) */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -485,8 +596,9 @@ export default function StaffBannersPanel(): JSX.Element {
                       type="url"
                       value={targetUrl}
                       onChange={(event) => setTargetUrl(event.target.value)}
+                      disabled={Boolean(selectedAuctionId)}
                       placeholder="https://... hoặc đường dẫn sự kiện trên sàn"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                     />
                   </div>
                 </div>
