@@ -23,16 +23,39 @@ export const CheckoutItemsSummary: React.FC<CheckoutItemsSummaryProps> = ({
         <span>Thành tiền</span>
       </div>
       <div className="max-h-36 divide-y divide-slate-100 overflow-y-auto">
-        {items.map((item) => (
-          <div key={item.id} className="flex items-center justify-between gap-3 py-2">
-            <span className="line-clamp-1 flex-1 font-medium text-slate-700">
-              {item.name} <span className="text-slate-400">x{item.qty}</span>
-            </span>
-            <span className="shrink-0 font-bold text-slate-900">
-              {(Number(item.price) * item.qty).toLocaleString('vi-VN')} ₫
-            </span>
-          </div>
-        ))}
+        {items.map((item) => {
+          const match = item.name.match(/\s*\((.*?)\)$/);
+          const cleanTitle = match ? item.name.replace(/\s*\([^)]*\)$/, '').trim() : item.name;
+          const effectiveSelections: Record<string, string> = { ...(item.selections || {}) };
+          if (Object.keys(effectiveSelections).length === 0 && match && match[1]) {
+            const parts = match[1].split(/,\s*/);
+            for (const part of parts) {
+              const [k, v] = part.split(/:\s*/);
+              if (k && v) effectiveSelections[k.trim()] = v.trim();
+            }
+          }
+          const hasSelections = Object.keys(effectiveSelections).length > 0;
+
+          return (
+            <div key={item.id} className="flex items-center justify-between gap-3 py-2">
+              <div className="flex-1 min-w-0">
+                <span className="line-clamp-1 font-medium text-slate-700">
+                  {cleanTitle} <span className="text-slate-400">x{item.qty}</span>
+                </span>
+                {hasSelections && (
+                  <span className="text-[10px] text-slate-400 block truncate">
+                    {Object.entries(effectiveSelections)
+                      .map(([k, v]) => `${k}: ${v}`)
+                      .join(' • ')}
+                  </span>
+                )}
+              </div>
+              <span className="shrink-0 font-bold text-slate-900">
+                {(Number(item.price) * item.qty).toLocaleString('vi-VN')} ₫
+              </span>
+            </div>
+          );
+        })}
       </div>
       <div className="space-y-1 border-t border-slate-200 pt-2 text-slate-600">
         <div className="flex justify-between">

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { getCartItems } from '../../services/cart';
 import { useAuth } from '../../contexts/AuthContext';
+import { getNotificationUnreadCount } from '../../services/notifications';
 import type { CartItem as StoredCartItem, NotificationItem } from '../../types';
 import NotificationDropdown from './NotificationDropdown';
 import CartDropdownPanel from './CartDropdownPanel';
@@ -75,6 +76,31 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     refreshProfile,
   } = useAuth();
   const [storedCart, setStoredCart] = useState<StoredCartItem[]>(() => getCartItems());
+  const [realUnreadCount, setRealUnreadCount] = useState<number>(0);
+
+  useEffect(() => {
+    if (!authIsLoggedIn) {
+      setRealUnreadCount(0);
+      return;
+    }
+    let isMounted = true;
+    const fetchUnread = async () => {
+      try {
+        const res = await getNotificationUnreadCount();
+        if (isMounted && typeof res?.unreadCount === 'number') {
+          setRealUnreadCount(res.unreadCount);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch notification unread count:', err);
+      }
+    };
+    void fetchUnread();
+    const interval = setInterval(fetchUnread, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [authIsLoggedIn]);
 
   useEffect(() => {
     const syncCart = () => setStoredCart(getCartItems());
@@ -97,6 +123,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           price: i.formattedPrice,
           img: i.img,
           qty: i.qty,
+          selections: i.selections,
         }));
 
   const effectiveLoggedIn = isLoggedIn ?? authIsLoggedIn;
@@ -340,21 +367,27 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+                className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer"
                 onClick={() => setShowNotifMenu(!showNotifMenu)}
               >
                 <div className="relative inline-flex">
                   <Bell size={14} />
 
-                  {notifications.some((n) => n.unread) && (
-                    <span className="absolute -right-1 -top-0.5 h-[7px] w-[7px] animate-pulse rounded-full border border-slate-50 bg-[#f24e1e]" />
+                  {(realUnreadCount > 0 || notifications.some((n) => n.unread)) && (
+                    <span className="absolute -right-1.5 -top-1 h-3.5 min-w-[14px] px-0.5 text-[9px] font-bold text-white bg-[#f24e1e] rounded-full flex items-center justify-center">
+                      {realUnreadCount > 99 ? '99+' : realUnreadCount > 0 ? realUnreadCount : ''}
+                    </span>
                   )}
                 </div>
 
                 <span>Thông Báo</span>
               </button>
 
-              <NotificationDropdown isOpen={showNotifMenu} notifications={notifications} />
+              <NotificationDropdown
+                isOpen={showNotifMenu}
+                onClose={() => setShowNotifMenu(false)}
+                onCountChange={(cnt) => setRealUnreadCount(cnt)}
+              />
             </div>
 
             <span className="text-xs text-slate-200">|</span>

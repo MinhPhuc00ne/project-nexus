@@ -1,29 +1,41 @@
+import { Link } from 'react-router-dom';
 import type { HomeProduct } from './home.types';
+import type { AuctionEntity } from '../../services/auction.service';
 
 export interface HomeAuctionCardProps {
-  product: HomeProduct;
+  product?: HomeProduct;
+  auction?: AuctionEntity;
 }
 
-export function HomeAuctionCard({ product }: HomeAuctionCardProps) {
-  const prodId =
-    product.id === 1
-      ? 'ap-tourbillon'
-      : product.id === 2
-        ? 'rolex-daytona'
-        : product.id === 3
-          ? 'hublot-unico'
-          : 'patek-celestial';
+export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
+  const targetUrl = auction
+    ? `/auction/${auction.id}`
+    : product?.id
+      ? `/product/${product.id}`
+      : '/auction';
+
+  const title = auction?.title || auction?.product?.title || product?.name || 'Chưa có dữ liệu';
+
+  const image =
+    auction?.product?.images?.[0]?.imageUrl || product?.image || '/images/watches/watch-1.png';
+
+  const currentPrice = auction
+    ? Number(auction.currentHighestBid || auction.startingPrice)
+    : product?.price || 0;
+
+  const bidsCount =
+    auction?.totalBidsCount ?? (auction?.bids?.length || (product?.sold ? product.sold : 0));
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-white p-2 transition-[transform,box-shadow,border-color] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgb(28_57_115_/_10%)] motion-reduce:transition-none motion-reduce:hover:transform-none">
-      <a
-        href={`/product/${prodId}`}
+      <Link
+        to={targetUrl}
         className="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-slate-100 block"
       >
-        {product.image ? (
+        {image ? (
           <img
-            src={product.image}
-            alt={product.name}
+            src={image}
+            alt={title}
             className="h-full w-full rounded-lg object-cover hover:scale-105 transition duration-300"
           />
         ) : (
@@ -34,32 +46,32 @@ export function HomeAuctionCard({ product }: HomeAuctionCardProps) {
         </span>
         <button
           type="button"
-          aria-label={`Xem mô hình ${product.name}`}
+          aria-label={`Xem mô hình ${title}`}
           className="absolute bottom-2 right-2 rounded-md border border-white/70 bg-slate-900/70 px-2.5 py-1.5 text-[10px] font-semibold text-white transition hover:bg-slate-900 cursor-pointer"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            window.location.href = '/auction';
+            window.location.href = targetUrl;
           }}
         >
           Xem 3D
         </button>
-      </a>
+      </Link>
 
       <div className="p-2">
-        <a href={`/product/${prodId}`}>
-          <h3 className="text-xs font-bold text-slate-700 hover:text-[#f24e1e] transition">
-            {product.name || 'Chưa có dữ liệu'}
+        <Link to={targetUrl}>
+          <h3 className="text-xs font-bold text-slate-700 hover:text-[#f24e1e] transition line-clamp-1">
+            {title}
           </h3>
-        </a>
+        </Link>
 
         <div className="mt-2 flex items-center justify-between">
           <span className="text-xs font-extrabold text-sky-500">
-            {product.price ? `${product.price.toLocaleString()} đ` : '--'}
+            {currentPrice ? `${currentPrice.toLocaleString('vi-VN')} đ` : '--'}
           </span>
 
           <span className="text-[10px] text-slate-400">
-            {product.sold ? `${product.sold} lượt bid` : '-- lượt bid'}
+            {bidsCount ? `${bidsCount} lượt bid` : 'Sắp mở'}
           </span>
         </div>
       </div>

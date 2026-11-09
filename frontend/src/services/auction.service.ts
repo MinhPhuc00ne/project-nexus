@@ -14,6 +14,7 @@ export interface AuctionProduct {
   title: string;
   threeModelKey?: string | null;
   basePrice: number;
+  category?: { id: string; name: string; slug?: string };
   images?: Array<{ id: string; imageUrl: string; isThumbnail: boolean }>;
 }
 
@@ -35,16 +36,71 @@ export interface AuctionBidItem {
   };
 }
 
+export interface AuctionConsignmentItem {
+  id: string;
+  title: string;
+  description?: string;
+  images?: string[];
+  threeModelKey?: string | null;
+  appraisalCertificateNumber?: string | null;
+  appraisalAgency?: string | null;
+  certificateImages?: string[];
+  certificateIssueDate?: string | null;
+  status?: string;
+  lotNumber?: number | null;
+  startingPrice?: number | null;
+  reservePrice?: number | null;
+  bidIncrement?: number | null;
+  seller?: {
+    id: string;
+    fullName: string;
+    avatarUrl?: string | null;
+    shopAvatarUrl?: string | null;
+  };
+}
+
+export interface BuyerEligibilityResponse {
+  isEligible: boolean;
+  isFlaggedViewOnly: boolean;
+  currentScore?: number;
+  requiredScore: number;
+  reason?: string;
+}
+
+export interface MyBidItem {
+  id: string;
+  bidAmount: number;
+  status: BidStatus;
+  placedAt: string;
+  auction: {
+    id: string;
+    title: string;
+    status: AuctionStatus;
+    endTime: string;
+    currentHighestBid: number;
+    isLeading: boolean;
+    product?: {
+      id: string;
+      title: string;
+      images?: Array<{ id: string; imageUrl: string; isThumbnail?: boolean }>;
+      basePrice: number;
+    };
+  };
+}
+
 export interface AuctionEntity {
   id: string;
   productId: string;
   sellerId: string;
   title: string;
+  description?: string;
   startingPrice: number;
   reservePrice?: number | null;
   currentHighestBid: number;
   currentHighestBidderId?: string | null;
   bidIncrement: number;
+  minBuyerReputation?: number;
+  minSellerReputation?: number;
   status: AuctionStatus;
   startTime: string;
   endTime: string;
@@ -54,6 +110,8 @@ export interface AuctionEntity {
   product?: AuctionProduct;
   seller?: AuctionSeller;
   bids?: AuctionBidItem[];
+  items?: AuctionConsignmentItem[];
+  buyerEligibility?: BuyerEligibilityResponse;
 }
 
 export interface AuctionQueryInput {
@@ -295,6 +353,92 @@ export async function getAuctionDetailApi(id: string): Promise<AuctionEntity> {
   return (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as AuctionEntity;
+}
+
+/**
+ * Retrieves bidding history for the current authenticated buyer.
+ */
+export async function getMyBidsApi(): Promise<MyBidItem[]> {
+  const response = await api.get<MyBidItem[] | { data: MyBidItem[] }>('/auctions/my-bids');
+  const payload = response?.data;
+  if (Array.isArray(payload)) return payload;
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    Array.isArray((payload as { data?: MyBidItem[] }).data)
+  ) {
+    return (payload as { data: MyBidItem[] }).data;
+  }
+  return [];
+}
+
+export interface AuctionAwardItem {
+  id: string;
+  auctionId: string;
+  bidId: string;
+  orderId: string;
+  depositAmount: number | string;
+  status: string;
+  expiresAt: string;
+  completedAt?: string | null;
+  order?: {
+    id: string;
+    subtotal: number | string;
+    totalAmount: number | string;
+    status: string;
+    shippingFee: number | string;
+  };
+  auction?: {
+    id: string;
+    title: string;
+  };
+}
+
+export async function getMyAuctionAwardsApi(): Promise<AuctionAwardItem[]> {
+  const token = getStoredToken();
+  if (!token) return [];
+  try {
+    const res = await api.get('/commerce/auction-awards');
+    return Array.isArray(res.data) ? res.data : [];
+  } catch (err) {
+    console.error('Failed to fetch auction awards:', err);
+    return [];
+  }
+}
+
+export async function checkoutAuctionAwardApi(
+  awardId: string,
+  shippingAddress: {
+    recipientName: string;
+    phoneNumber: string;
+    province: string;
+    district: string;
+    ward: string;
+    detailAddress: string;
+  },
+) {
+  const res = await api.post(`/commerce/auction-awards/${awardId}/checkout`, shippingAddress);
+  return res.data;
+}
+
+export async function declineAuctionAwardApi(awardId: string) {
+  const res = await api.post(`/commerce/auction-awards/${awardId}/decline`);
+  return res.data;
+}
+
+/**
+ * Checks whether the current buyer is eligible to place bids in a given auction.
+ */
+export async function checkBuyerEligibilityApi(
+  auctionId: string,
+): Promise<BuyerEligibilityResponse> {
+  const response = await api.get<{ data: BuyerEligibilityResponse }>(
+    `/auctions/${auctionId}/eligibility`,
+  );
+  const payload = response?.data;
+  return (
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
+  ) as BuyerEligibilityResponse;
 }
 
 /**

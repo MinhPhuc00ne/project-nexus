@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, Zap, Gavel, ShieldCheck, Tag, WalletCards, Gift } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import CatalogListing from '../../components/products/CatalogListing';
+import { Truck, Zap, Gavel, ShieldCheck, Tag, WalletCards } from 'lucide-react';
 import {
   HomeBenefit,
   HomeCountdown,
@@ -9,29 +7,108 @@ import {
   HomeHeroBanner,
   HomeLiveAuction,
   HomeCategoriesSection,
+  HomeRecommendationsSection,
 } from '../../components/home';
-import { flashSaleProducts, auctionProducts, heroSlides } from '../../mocks/home.mock';
+import { flashSaleProducts } from '../../mocks/home.mock';
 import { getEventBannersApi } from '../../services/banners.service';
-import type { HomeHeroSlide } from '../../components/home/home.types';
+import {
+  getRecommendationsApi,
+  getProductsCatalog,
+  type RecommendedProduct,
+} from '../../services/products.service';
+import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
+import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
 
 function HomePage() {
-  const [banners, setBanners] = useState<HomeHeroSlide[]>(heroSlides);
+  const [banners, setBanners] = useState<HomeHeroSlide[]>([]);
+  const [isLoadingBanners, setIsLoadingBanners] = useState(true);
+
+  const [recommendations, setRecommendations] = useState<RecommendedProduct[]>([]);
+  const [isPersonalized, setIsPersonalized] = useState(false);
+  const [isLoadingRecs, setIsLoadingRecs] = useState(true);
+
+  const [liveAuctions, setLiveAuctions] = useState<AuctionEntity[]>([]);
+  const [flashProducts, setFlashProducts] = useState<HomeProduct[]>([]);
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoadingBanners(true);
     void getEventBannersApi()
       .then((data) => {
         if (isMounted && Array.isArray(data) && data.length > 0) {
           const apiSlides: HomeHeroSlide[] = data.map((b) => ({
+            id: b.id,
             title: b.title,
             image: b.imageUrl,
             targetUrl: b.targetUrl || '/search',
             isFullBanner: true,
           }));
           setBanners(apiSlides);
+        } else if (isMounted) {
+          setBanners([]);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (isMounted) setBanners([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingBanners(false);
+      });
+
+    // Gọi API đề xuất sản phẩm cá nhân hóa theo giỏ hàng & lịch sử mua hàng của Buyer
+    setIsLoadingRecs(true);
+    void getRecommendationsApi(12)
+      .then((res) => {
+        if (isMounted) {
+          setRecommendations(res.items || []);
+          setIsPersonalized(Boolean(res.personalized));
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setRecommendations([]);
+          setIsPersonalized(false);
+        }
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingRecs(false);
+      });
+
+    // Gọi API lấy các phiên đấu giá trực tiếp thời gian thực từ database
+    void getAuctionsApi({ limit: 4 })
+      .then((res) => {
+        if (isMounted && res?.items && res.items.length > 0) {
+          setLiveAuctions(res.items);
+        }
+      })
+      .catch((err) => {
+        console.warn('Không thể tải danh sách phiên đấu giá từ API:', err);
+      });
+
+    // Lấy sản phẩm thật từ database cho mục Flash Sale thay vì dữ liệu mẫu
+    void getProductsCatalog({ limit: 4, sortBy: 'newest' })
+      .then((items) => {
+        if (isMounted && items && items.length > 0) {
+          const mapped: HomeProduct[] = items.map((p, idx) => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            oldPrice: p.originalPrice || Math.round(p.price * 1.15),
+            image: p.images?.[0] || '',
+            discount: p.discount || 12,
+            rating: p.rating || 5,
+            sold: p.soldCount || (idx + 1) * 7,
+            saleSold: (p.soldCount || 10) + idx * 5,
+          }));
+          setFlashProducts(mapped);
+        } else if (isMounted) {
+          setFlashProducts(flashSaleProducts);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setFlashProducts(flashSaleProducts);
+      });
+
     return () => {
       isMounted = false;
     };
@@ -39,7 +116,7 @@ function HomePage() {
 
   return (
     <main className="mx-auto max-w-[1280px] px-4 py-4">
-      <HomeHeroBanner slides={banners} />
+      <HomeHeroBanner slides={banners} loading={isLoadingBanners} />
 
       <section className="mt-4 grid gap-4 md:grid-cols-2">
         <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
@@ -108,34 +185,20 @@ function HomePage() {
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {flashSaleProducts.map((product) => (
+          {(flashProducts.length > 0 ? flashProducts : flashSaleProducts).map((product) => (
             <HomeFlashSaleCard key={product.id} product={product} />
           ))}
         </div>
       </section>
 
-      <HomeLiveAuction products={auctionProducts} />
+      <HomeLiveAuction auctions={liveAuctions} />
 
-      <section className="mt-5 rounded-[18px] border border-slate-200 bg-white p-4 sm:p-5">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sky-500">
-              <Gift size={18} />
-            </span>
-            <h2 className="text-[15px] font-extrabold uppercase tracking-[0.08em] text-slate-800">
-              Gợi Ý Hôm Nay
-            </h2>
-          </div>
-
-          <Link to="/search" className="text-xs font-semibold text-blue-600">
-            Xem tất cả →
-          </Link>
-        </div>
-
-        <div className="mt-4">
-          <CatalogListing preview />
-        </div>
-      </section>
+      {/* TÍNH NĂNG ĐỀ XUẤT SẢN PHẨM CÁ NHÂN HÓA (AI RECOMMENDATIONS) */}
+      <HomeRecommendationsSection
+        products={recommendations}
+        isPersonalized={isPersonalized}
+        isLoading={isLoadingRecs}
+      />
     </main>
   );
 }

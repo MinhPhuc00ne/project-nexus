@@ -2,6 +2,7 @@ import { type FormEvent } from 'react';
 import { AlertCircle } from 'lucide-react';
 import Popup from '../Popup';
 import type { UserAddress } from '../../services/address';
+import AdministrativeAddressSelect from './AdministrativeAddressSelect';
 
 export interface AddressFormData {
   recipientName: string;
@@ -79,43 +80,12 @@ export default function AddressFormModal({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
-              Tỉnh / Thành phố <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-              placeholder="TP. Hồ Chí Minh"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Quận / Huyện</label>
-            <input
-              type="text"
-              value={form.district}
-              onChange={(e) => setForm({ ...form, district: e.target.value })}
-              placeholder="Quận Bình Thạnh"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Phường / Xã</label>
-            <input
-              type="text"
-              value={form.ward}
-              onChange={(e) => setForm({ ...form, ward: e.target.value })}
-              placeholder="Phường 22"
-              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
-        </div>
+        <AdministrativeAddressSelect
+          city={form.city}
+          district={form.district}
+          ward={form.ward}
+          onChange={({ city, district, ward }) => setForm({ ...form, city, district, ward })}
+        />
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">

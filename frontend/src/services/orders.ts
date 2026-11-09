@@ -37,6 +37,7 @@ export interface OrderItemDetail {
   id: string;
   orderId: string;
   productId: string;
+  selections?: Record<string, string> | null;
   quantity: number;
   unitPrice: number;
   subtotal: number;

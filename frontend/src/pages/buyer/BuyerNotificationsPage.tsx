@@ -1,0 +1,519 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Bell,
+  CheckCheck,
+  Filter,
+  Mail,
+  BellRing,
+  Save,
+  Loader2,
+  Clock,
+  Sparkles,
+  ShoppingBag,
+  Gavel,
+  ShieldAlert,
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  Settings,
+} from 'lucide-react';
+import {
+  getNotifications,
+  getNotificationPreferences,
+  saveNotificationPreferences,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '../../services/notifications';
+import type {
+  UserNotification,
+  NotificationPreference,
+  NotificationChannel,
+} from '../../types/notification.types';
+
+export const BuyerNotificationsPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'list' | 'preferences'>('list');
+  const [filterRead, setFilterRead] = useState<'ALL' | 'UNREAD'>('ALL');
+  const [notifications, setNotifications] = useState<UserNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Preferences state
+  const [preferences, setPreferences] = useState<NotificationPreference[]>([
+    { channel: 'IN_APP', isEnabled: true },
+    { channel: 'EMAIL', isEnabled: true },
+    { channel: 'PUSH', isEnabled: false },
+  ]);
+  const [savingPrefs, setSavingPrefs] = useState<boolean>(false);
+  const [loadingPrefs, setLoadingPrefs] = useState<boolean>(false);
+
+  const fetchNotificationsList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await getNotifications({
+        page,
+        limit: 10,
+        isRead: filterRead === 'UNREAD' ? false : undefined,
+      });
+      if (res) {
+        setNotifications(res.items || []);
+        setTotalPages(res.totalPages || 1);
+        setUnreadCount(res.unreadCount || 0);
+      }
+    } catch (err) {
+      console.warn('Failed to fetch notifications:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, filterRead]);
+
+  const fetchPrefs = useCallback(async () => {
+    setLoadingPrefs(true);
+    try {
+      const res = await getNotificationPreferences();
+      if (res?.preferences && Array.isArray(res.preferences)) {
+        setPreferences(res.preferences);
+      }
+    } catch (err) {
+      console.warn('Failed to load preferences:', err);
+    } finally {
+      setLoadingPrefs(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'list') {
+      void fetchNotificationsList();
+    } else {
+      void fetchPrefs();
+    }
+  }, [activeTab, fetchNotificationsList, fetchPrefs]);
+
+  const handleMarkOne = async (id: string) => {
+    try {
+      await markNotificationRead(id);
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, isRead: true, readAt: new Date().toISOString() } : n,
+        ),
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.warn('Failed to mark as read:', err);
+    }
+  };
+
+  const handleMarkAll = async () => {
+    try {
+      await markAllNotificationsRead();
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+      setToastMessage('Đã đánh dấu tất cả thông báo là đã đọc!');
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err) {
+      console.warn('Failed to mark all as read:', err);
+    }
+  };
+
+  const handleTogglePref = (channel: NotificationChannel) => {
+    setPreferences((prev) =>
+      prev.map((p) => (p.channel === channel ? { ...p, isEnabled: !p.isEnabled } : p)),
+    );
+  };
+
+  const handleSavePreferences = async () => {
+    setSavingPrefs(true);
+    try {
+      const res = await saveNotificationPreferences(preferences);
+      setToastMessage(res.message || 'Đã lưu tùy chọn nhận thông báo!');
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (err) {
+      setToastMessage(err instanceof Error ? err.message : 'Lỗi khi lưu cài đặt.');
+      setTimeout(() => setToastMessage(null), 3000);
+    } finally {
+      setSavingPrefs(false);
+    }
+  };
+
+  const getIconForType = (type: string) => {
+    const t = (type || '').toUpperCase();
+    if (t.includes('AUCTION') || t.includes('BID')) {
+      return (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+          <Gavel size={18} />
+        </div>
+      );
+    }
+    if (t.includes('ORDER')) {
+      return (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+          <ShoppingBag size={18} />
+        </div>
+      );
+    }
+    if (t.includes('REPUTATION') || t.includes('TRUST')) {
+      return (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+          <Sparkles size={18} />
+        </div>
+      );
+    }
+    if (t.includes('DISPUTE') || t.includes('REPORT')) {
+      return (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+          <ShieldAlert size={18} />
+        </div>
+      );
+    }
+    return (
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+        <Bell size={18} />
+      </div>
+    );
+  };
+
+  const formatTime = (timeStr: string) => {
+    try {
+      const d = new Date(timeStr);
+      return (
+        d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+        ' ngày ' +
+        d.toLocaleDateString('vi-VN')
+      );
+    } catch {
+      return timeStr;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-4">
+          <Check size={16} className="text-emerald-400" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-lg font-black text-slate-900 flex items-center gap-2">
+            <Bell size={20} className="text-blue-600" />
+            Trung Tâm Thông Báo & Tùy Chọn
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Theo dõi cảnh báo đơn hàng, diễn biến đấu giá và quản lý kênh nhận thông báo cá nhân
+          </p>
+        </div>
+
+        {activeTab === 'list' && unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={handleMarkAll}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition cursor-pointer"
+          >
+            <CheckCheck size={14} />
+            <span>Đánh dấu tất cả là đã đọc ({unreadCount})</span>
+          </button>
+        )}
+      </div>
+
+      {/* Tab switch */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+        <button
+          type="button"
+          onClick={() => setActiveTab('list')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+            activeTab === 'list'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Bell size={14} />
+          <span>Danh sách thông báo</span>
+          {unreadCount > 0 && (
+            <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+              {unreadCount}
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('preferences')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+            activeTab === 'preferences'
+              ? 'bg-blue-600 text-white shadow-xs'
+              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Settings size={14} />
+          <span>Tùy chọn nhận tin (Email, Push, In-App)</span>
+        </button>
+      </div>
+
+      {/* TAB 1: NOTIFICATIONS LIST */}
+      {activeTab === 'list' && (
+        <div className="space-y-4">
+          {/* Subfilter */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-400 font-semibold flex items-center gap-1">
+                <Filter size={12} /> Bộ lọc:
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterRead('ALL');
+                  setPage(1);
+                }}
+                className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  filterRead === 'ALL'
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Tất cả
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterRead('UNREAD');
+                  setPage(1);
+                }}
+                className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                  filterRead === 'UNREAD'
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Chưa đọc ({unreadCount})
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-slate-200">
+              <Loader2 size={24} className="animate-spin text-blue-600" />
+              <span>Đang tải thông báo của bạn…</span>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
+              <Bell size={36} className="mx-auto mb-3 text-slate-300" />
+              <h3 className="text-sm font-bold text-slate-800 mb-1">
+                {filterRead === 'UNREAD'
+                  ? 'Tuyệt vời! Bạn không có thông báo nào chưa đọc'
+                  : 'Hộp thư thông báo đang trống'}
+              </h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                Khi có đơn hàng mới, cập nhật phiên đấu giá hoặc thay đổi điểm uy tín, thông báo sẽ
+                hiển thị tại đây.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-xs">
+              {notifications.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleMarkOne(item.id)}
+                  className={`flex items-start gap-4 p-4.5 transition hover:bg-slate-50/80 cursor-pointer ${
+                    !item.isRead ? 'bg-orange-50/30' : ''
+                  }`}
+                >
+                  {getIconForType(item.type)}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-3 mb-1">
+                      <h4
+                        className={`text-xs ${
+                          !item.isRead ? 'font-bold text-slate-900' : 'font-medium text-slate-700'
+                        }`}
+                      >
+                        {item.title}
+                      </h4>
+                      {!item.isRead && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                          Chưa đọc
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-slate-600 leading-relaxed mb-2">{item.content}</p>
+
+                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Clock size={11} /> {formatTime(item.createdAt)}
+                      </span>
+                      {item.channel && (
+                        <span className="bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-mono text-[10px]">
+                          Kênh: {item.channel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-2 pt-2">
+              <span className="text-xs text-slate-500">
+                Trang {page} / {totalPages}
+              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: PREFERENCES */}
+      {activeTab === 'preferences' && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs max-w-2xl">
+          <h3 className="text-sm font-bold text-slate-900 mb-1">Cài Đặt Kênh Nhận Thông Báo</h3>
+          <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+            Chọn các kênh truyền dẫn bạn đồng ý cho hệ thống NEXUS gửi cập nhật tức thì (In-App,
+            Email, Web Push).
+          </p>
+
+          {loadingPrefs ? (
+            <div className="py-12 flex flex-col items-center justify-center text-slate-400 text-xs gap-2">
+              <Loader2 size={20} className="animate-spin text-blue-600" />
+              <span>Đang tải tùy chọn…</span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* In App */}
+              <div
+                onClick={() => handleTogglePref('IN_APP')}
+                className="flex items-start justify-between gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/20 transition cursor-pointer select-none"
+              >
+                <div className="flex items-start gap-3.5">
+                  <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl shrink-0 mt-0.5">
+                    <Bell size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 m-0">
+                      Thông Báo Trong Ứng Dụng (In-App)
+                    </h4>
+                    <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
+                      Hiển thị trực tiếp trên thanh công cụ quả chuông khi đăng nhập vào hệ thống
+                      NEXUS.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative inline-flex items-center shrink-0 mt-1">
+                  <input
+                    type="checkbox"
+                    checked={preferences.find((p) => p.channel === 'IN_APP')?.isEnabled ?? true}
+                    onChange={() => {}}
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div
+                onClick={() => handleTogglePref('EMAIL')}
+                className="flex items-start justify-between gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/20 transition cursor-pointer select-none"
+              >
+                <div className="flex items-start gap-3.5">
+                  <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl shrink-0 mt-0.5">
+                    <Mail size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 m-0">Thông Báo Qua Email</h4>
+                    <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
+                      Gửi email thông báo đơn hàng thành công, biến động giá đấu và mã OTP bảo mật.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative inline-flex items-center shrink-0 mt-1">
+                  <input
+                    type="checkbox"
+                    checked={preferences.find((p) => p.channel === 'EMAIL')?.isEnabled ?? true}
+                    onChange={() => {}}
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </div>
+              </div>
+
+              {/* Push */}
+              <div
+                onClick={() => handleTogglePref('PUSH')}
+                className="flex items-start justify-between gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/20 transition cursor-pointer select-none"
+              >
+                <div className="flex items-start gap-3.5">
+                  <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl shrink-0 mt-0.5">
+                    <BellRing size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 m-0">
+                      Thông Báo Đẩy Trình Duyệt (Web Push)
+                    </h4>
+                    <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
+                      Cảnh báo tức thì trên màn hình khi bạn bị vượt giá đấu hoặc có tin nhắn hỗ trợ
+                      khẩn cấp.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative inline-flex items-center shrink-0 mt-1">
+                  <input
+                    type="checkbox"
+                    checked={preferences.find((p) => p.channel === 'PUSH')?.isEnabled ?? false}
+                    onChange={() => {}}
+                    className="sr-only peer"
+                  />
+                  <div className="w-10 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </div>
+              </div>
+
+              <div className="pt-4 flex justify-end">
+                <button
+                  type="button"
+                  disabled={savingPrefs}
+                  onClick={handleSavePreferences}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
+                >
+                  {savingPrefs ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <Save size={16} />
+                  )}
+                  <span>{savingPrefs ? 'Đang lưu…' : 'Lưu Tùy Chọn Cài Đặt'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default BuyerNotificationsPage;

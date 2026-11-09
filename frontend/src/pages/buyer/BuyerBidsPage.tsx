@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Gavel,
   Clock,
@@ -12,8 +12,16 @@ import {
   Flame,
   ShoppingBag,
   Loader2,
+  Sparkles,
+  CreditCard,
+  Ban,
 } from 'lucide-react';
-import api from '../../services/api';
+import {
+  getMyBidsApi,
+  getMyAuctionAwardsApi,
+  declineAuctionAwardApi,
+  type AuctionAwardItem,
+} from '../../services/auction.service';
 
 export type BuyerBidStatus = 'ALL' | 'WINNING' | 'ACTIVE' | 'OUTBID' | 'WON' | 'LOST' | 'ENDED';
 
@@ -83,37 +91,84 @@ const tabs: { key: BuyerBidStatus; label: string }[] = [
 ];
 
 export default function BuyerBidsPage() {
+  const navigate = useNavigate();
   const [bids, setBids] = useState<BuyerBidItem[]>([]);
+  const [awards, setAwards] = useState<AuctionAwardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<BuyerBidStatus>('ALL');
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
-    async function loadBids() {
+    async function loadData() {
       setLoading(true);
       try {
-        const response = await api.get<{
-          statusCode: number;
-          data: BuyerBidItem[];
-        }>('/auctions/bids/me');
-        const payload = response?.data;
-        const items = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.data)
-            ? payload.data
-            : [];
-        if (isMounted) setBids(items);
+        const [bidsData, awardsData] = await Promise.all([getMyBidsApi(), getMyAuctionAwardsApi()]);
+
+        if (isMounted) {
+          setAwards(Array.isArray(awardsData) ? awardsData : []);
+          const mapped: BuyerBidItem[] = (Array.isArray(bidsData) ? bidsData : []).map((b) => {
+            let status: Exclude<BuyerBidStatus, 'ALL'> = 'ACTIVE';
+            if (b.auction.status === 'ENDED' || b.auction.status === 'CANCELLED') {
+              status = b.auction.isLeading || b.status === 'WINNING' ? 'WON' : 'LOST';
+            } else if (b.auction.status === 'ACTIVE' || b.auction.status === 'EXTENDED') {
+              status = b.auction.isLeading || b.status === 'WINNING' ? 'WINNING' : 'OUTBID';
+            } else {
+              status = 'ACTIVE';
+            }
+
+            const firstImg =
+              b.auction.product?.images?.[0]?.imageUrl ||
+              'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
+
+            return {
+              id: b.id,
+              auctionId: b.auction.id,
+              productName: b.auction.product?.title || b.auction.title,
+              img: firstImg,
+              myBid: Number(b.bidAmount),
+              currentBid: Number(b.auction.currentHighestBid) || Number(b.bidAmount),
+              startPrice: Number(b.auction.product?.basePrice || 0),
+              status,
+              endTime: b.auction.endTime,
+              totalBids: 0,
+              shopName: 'NEXUS Official Live Auction',
+            };
+          });
+          setBids(mapped);
+        }
       } catch {
-        if (isMounted) setBids([]);
+        if (isMounted) {
+          setBids([]);
+          setAwards([]);
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
     }
-    void loadBids();
+    void loadData();
     return () => {
       isMounted = false;
     };
   }, []);
+
+  const handleDeclineAward = async (awardId: string) => {
+    if (
+      !window.confirm(
+        'Bạn có chắc chắn muốn từ chối quyền mua giải thưởng này? Bạn sẽ bị trừ 10 điểm uy tín theo quy định sàn.',
+      )
+    ) {
+      return;
+    }
+    try {
+      await declineAuctionAwardApi(awardId);
+      setAwards((prev) => prev.filter((a) => a.id !== awardId));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Không thể từ chối quyền mua.';
+      setActionError(msg);
+      setTimeout(() => setActionError(null), 4000);
+    }
+  };
 
   const safeBids = Array.isArray(bids) ? bids : [];
   const filtered = safeBids.filter((b) => activeTab === 'ALL' || b?.status === activeTab);
@@ -158,6 +213,79 @@ export default function BuyerBidsPage() {
           <p className="text-xl font-extrabold text-emerald-800">{wonCount}</p>
         </div>
       </div>
+
+      {actionError && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-700 text-xs p-3 rounded-xl">
+          {actionError}
+        </div>
+      )}
+
+      {/* WON AWARDS WAITING FOR CHECKOUT */}
+      {awards.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 shadow-xs space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500 text-white font-bold">
+              <Sparkles size={16} />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 m-0">
+                Quyền Mua Thắng Đấu Giá Của Bạn ({awards.length})
+              </h2>
+              <p className="text-[11px] text-slate-500 m-0">
+                Tiền cọc đã được khấu trừ tự động. Vui lòng xác nhận địa chỉ và hoàn tất trong vòng
+                24 giờ.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {awards.map((award) => (
+              <div
+                key={award.id}
+                className="bg-white border border-amber-200/80 rounded-xl p-3.5 flex flex-col justify-between shadow-xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-[11px] font-bold text-amber-700 bg-amber-100/60 px-2 py-0.5 rounded-md">
+                      Hạn chót: {new Date(award.expiresAt).toLocaleTimeString('vi-VN')}{' '}
+                      {new Date(award.expiresAt).toLocaleDateString('vi-VN')}
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Đã trừ cọc {Number(award.depositAmount).toLocaleString('vi-VN')} ₫
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900 line-clamp-1 mb-1">
+                    {award.auction?.title || 'Hiện vật đấu giá số hóa 3D'}
+                  </h4>
+                  <p className="text-[11px] text-slate-600">
+                    Tổng giá trúng thầu:{' '}
+                    <strong className="text-slate-900">
+                      {Number(award.order?.totalAmount || 0).toLocaleString('vi-VN')} ₫
+                    </strong>
+                  </p>
+                </div>
+
+                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDeclineAward(award.id)}
+                    className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition flex items-center gap-1 cursor-pointer"
+                  >
+                    <Ban size={12} /> Từ chối
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/buyer/orders/${award.orderId}`)}
+                    className="px-3 py-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <CreditCard size={12} /> Thanh toán nhận hàng
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-3">
         {tabs.map((tab) => {

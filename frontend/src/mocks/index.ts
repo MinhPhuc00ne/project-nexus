@@ -1,5 +1,3 @@
 export * from './config';
-export * from './products.mock';
-export * from './tickets.mock';
 export * from './home.mock';
-export * from './buyer.mock';
+export * from './categories.mock';

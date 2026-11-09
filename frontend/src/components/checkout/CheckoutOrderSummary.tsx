@@ -26,29 +26,51 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
       </h3>
 
       <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4">
-        {items.map((it) => (
-          <div key={it.id} className="py-3 flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <img
-                src={it.img}
-                alt={it.name}
-                className="w-12 h-12 object-contain rounded-lg border border-slate-100 shrink-0"
-              />
-              <div className="min-w-0 flex-1">
-                <span className="font-bold text-slate-900 line-clamp-1">{it.name}</span>
-                {it.shopName && (
-                  <span className="text-[10px] text-blue-600 font-semibold block">
-                    Shop: {it.shopName}
-                  </span>
-                )}
-                <span className="text-slate-400 text-[11px]">Số lượng: x{it.qty}</span>
+        {items.map((it) => {
+          const match = it.name.match(/\s*\((.*?)\)$/);
+          const cleanTitle = match ? it.name.replace(/\s*\([^)]*\)$/, '').trim() : it.name;
+          const effectiveSelections: Record<string, string> = { ...(it.selections || {}) };
+          if (Object.keys(effectiveSelections).length === 0 && match && match[1]) {
+            const parts = match[1].split(/,\s*/);
+            for (const part of parts) {
+              const [k, v] = part.split(/:\s*/);
+              if (k && v) effectiveSelections[k.trim()] = v.trim();
+            }
+          }
+          const hasSelections = Object.keys(effectiveSelections).length > 0;
+
+          return (
+            <div key={it.id} className="py-3 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <img
+                  src={it.img}
+                  alt={it.name}
+                  className="w-12 h-12 object-contain rounded-lg border border-slate-100 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <span className="font-bold text-slate-900 line-clamp-1">{cleanTitle}</span>
+                  {hasSelections && (
+                    <span className="text-[10px] text-slate-500 font-medium block truncate mt-0.5">
+                      Phân loại:{' '}
+                      {Object.entries(effectiveSelections)
+                        .map(([k, v]) => `${k}: ${v}`)
+                        .join(' • ')}
+                    </span>
+                  )}
+                  {it.shopName && (
+                    <span className="text-[10px] text-blue-600 font-semibold block">
+                      Shop: {it.shopName}
+                    </span>
+                  )}
+                  <span className="text-slate-400 text-[11px]">Số lượng: x{it.qty}</span>
+                </div>
               </div>
+              <span className="font-extrabold text-slate-900 shrink-0">
+                {Number(it.price * it.qty).toLocaleString('vi-VN')} ₫
+              </span>
             </div>
-            <span className="font-extrabold text-slate-900 shrink-0">
-              {Number(it.price * it.qty).toLocaleString('vi-VN')} ₫
-            </span>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-600">

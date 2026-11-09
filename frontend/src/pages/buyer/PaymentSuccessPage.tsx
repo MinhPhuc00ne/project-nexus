@@ -1,9 +1,9 @@
-import { useEffect, useState, type JSX } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { checkPaymentStatusApi } from '../../services/orders';
 
-export default function PaymentSuccessPage(): JSX.Element {
+export default function PaymentSuccessPage(): ReactNode {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId');
   const orderCode = searchParams.get('orderCode');
@@ -56,15 +56,15 @@ export default function PaymentSuccessPage(): JSX.Element {
 
         <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <Link
-            to="/buyer/orders"
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800 transition"
+            to={orderId ? `/buyer/orders/${encodeURIComponent(orderId)}` : '/buyer/orders'}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition cursor-pointer"
           >
-            <span>Xem đơn hàng</span>
+            <span>{orderId ? 'Xem chi tiết đơn này' : 'Danh sách đơn hàng'}</span>
             <ArrowRight size={14} />
           </Link>
           <Link
             to="/"
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
           >
             <ShoppingBag size={14} />
             <span>Tiếp tục mua sắm</span>

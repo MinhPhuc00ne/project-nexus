@@ -28,4 +28,5 @@ export interface CartDropdownItem {
   price: string | number;
   qty?: number;
   img?: string;
+  selections?: Record<string, string>;
 }

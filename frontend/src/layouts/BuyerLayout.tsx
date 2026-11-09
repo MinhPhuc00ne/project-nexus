@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Award,
   ArrowRight,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UpgradeSellerModal } from '../components/headers/UpgradeSellerModal';
@@ -61,6 +62,16 @@ const navItems: NavItem[] = [
     to: '/buyer/bids',
     label: 'Phiên đấu giá',
     icon: <Gavel size={17} />,
+  },
+  {
+    to: '/buyer/reputation',
+    label: 'Điểm uy tín & Xếp hạng',
+    icon: <Award size={17} />,
+  },
+  {
+    to: '/buyer/notifications',
+    label: 'Thông báo & Tùy chọn',
+    icon: <Bell size={17} />,
   },
   {
     to: '/buyer/disputes',
