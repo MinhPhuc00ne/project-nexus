@@ -118,41 +118,6 @@ export function adminLockConsignmentApi(
   });
 }
 
-export type AuctionConsignmentStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
-
-export interface SellerAuctionConsignment {
-  id: string;
-  auctionId: string;
-  title: string;
-  description: string;
-  images: string[];
-  proposedStartingPrice: number;
-  proposedReservePrice?: number | null;
-  proposedBidIncrement: number;
-  appraisalCertificateNumber?: string | null;
-  appraisalAgency?: string | null;
-  certificateImages: string[];
-  certificateIssueDate?: string | null;
-  status: AuctionConsignmentStatus;
-  rejectionReason?: string | null;
-  lotNumber?: number | null;
-  createdAt: string;
-  auction: {
-    id: string;
-    title: string;
-    status: AuctionStatus;
-    startTime: string;
-    endTime: string;
-    minSellerReputation: number;
-  };
-}
-
-export interface RegisterAuctionItemResponse {
-  success: boolean;
-  message: string;
-  item: SellerAuctionConsignment;
-}
-
 /**
  * Retrieves public auction listings with optional status filters and pagination.
  */
@@ -263,15 +228,6 @@ export async function createAuctionApi(data: CreateAuctionInput): Promise<Auctio
   return (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as AuctionEntity;
-}
-
-/** Retrieves the authenticated seller's submitted auction items and their review status. */
-export async function getSellerAuctionConsignmentsApi(): Promise<SellerAuctionConsignment[]> {
-  const response = await api.get<{ data: SellerAuctionConsignment[] }>('/auctions/seller/my-items');
-  const payload = response?.data;
-  return (
-    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
-  ) as SellerAuctionConsignment[];
 }
 
 /**
