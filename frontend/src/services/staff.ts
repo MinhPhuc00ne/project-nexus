@@ -1,5 +1,5 @@
 import axios, { type AxiosRequestConfig } from 'axios';
-import api, { ApiRequestError } from './api';
+import api, { ApiRequestError, apiRequest } from './api';
 
 export interface StaffInvitationInfo {
   valid: boolean;
@@ -153,7 +153,44 @@ export function getStaffProfile(): Promise<StaffProfile> {
 export function updateStaffProfile(
   data: Partial<Pick<StaffProfile, 'fullName' | 'phoneNumber' | 'avatarUrl'>>,
 ): Promise<StaffProfile> {
-  return staffRequest({ url: '/staff/profile', method: 'PATCH', data });
+  const payload = { ...data };
+  if (payload.avatarUrl && typeof payload.avatarUrl === 'string') {
+    payload.avatarUrl = payload.avatarUrl.trim().replace('://localhost', '://127.0.0.1');
+    if (!payload.avatarUrl) {
+      delete payload.avatarUrl;
+    }
+  }
+  return staffRequest({ url: '/staff/profile', method: 'PATCH', data: payload });
+}
+
+export async function uploadStaffAvatarFile(file: File): Promise<string> {
+  const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (!validTypes.includes(file.type)) {
+    throw new Error('Chỉ hỗ trợ file ảnh định dạng JPG, PNG, WEBP hoặc GIF.');
+  }
+  if (file.size <= 0 || file.size > 10 * 1024 * 1024) {
+    throw new Error('Kích thước ảnh đại diện không được vượt quá 10 MB.');
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  const uploaded = await apiRequest<{ url: string }>('/media/upload', {
+    method: 'POST',
+    body: formData,
+    isFormData: true,
+    requireAuth: true,
+  });
+  if (!uploaded?.url) throw new Error('Máy chủ chưa trả về URL ảnh đại diện hợp lệ.');
+
+  let url = uploaded.url.trim();
+  if (url.startsWith('/')) {
+    const origin = (window.location.origin || 'http://127.0.0.1:3000').replace(
+      'localhost',
+      '127.0.0.1',
+    );
+    url = `${origin}${url}`;
+  }
+  // Chuẩn hóa localhost thành 127.0.0.1 để vượt qua kiểm tra @IsUrl() của backend (validator.js yêu cầu TLD hoặc IP hợp lệ)
+  return url.replace('://localhost', '://127.0.0.1');
 }
 
 export function changeStaffPassword(

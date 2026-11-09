@@ -5,6 +5,7 @@ import { login, startGoogleLogin } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { clearPasswordChangedNotice, hasPasswordChangedNotice } from '../../services/authNotice';
 import { ROUTES } from '../../routes/paths';
+import { useToast } from '../../components/ToastNotification';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import AuthHeroSection from './AuthHeroSection';
 import { ArrowLeft, Lock, Eye, EyeOff, Gift, Shield, User } from 'lucide-react';
@@ -16,6 +17,7 @@ const Login: React.FC = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
+  const toast = useToast();
   const [email, setEmail] = useState(() => {
     try {
       const verifiedEmail = sessionStorage.getItem('nexus:verified-email') || '';
@@ -71,24 +73,33 @@ const Login: React.FC = () => {
     setFailed(false);
     try {
       const result = await login(email.trim(), password);
-      await establishSession(result.user, result.accessToken, result.refreshToken);
-      setFeedback(result.message + ' Xin chào ' + result.user.fullName + '.');
 
+      // Lưu session & nạp thông tin user
+      const sessionPromise = establishSession(result.user, result.accessToken, result.refreshToken);
+
+      // Hiển thị thông báo Toast thành công ngay lập tức
+      toast.success(`Đăng nhập thành công! Xin chào ${result.user.fullName || result.user.email}.`);
+
+      // Xác định ngay trang đích trực tiếp không qua redirect trung gian
       const redirectPath = (location.state as { from?: string })?.from;
-      if (redirectPath) {
-        navigate(redirectPath);
+      let target: string = ROUTES.HOME;
+      if (redirectPath && redirectPath !== '/login') {
+        target = redirectPath;
       } else if (result.user.role === 'ADMIN') {
-        navigate(ROUTES.ADMIN);
+        target = '/admin/overview';
       } else if (result.user.role === 'SUPPORT_STAFF') {
-        navigate(ROUTES.STAFF);
+        target = ROUTES.STAFF_INBOX;
       } else if (result.user.role === 'SELLER') {
-        navigate(ROUTES.SELLER);
-      } else {
-        navigate(ROUTES.HOME);
+        target = ROUTES.SELLER;
       }
+
+      await sessionPromise;
+      navigate(target, { replace: true });
     } catch (error: unknown) {
       setFailed(true);
-      setFeedback(error instanceof Error ? error.message : 'Đăng nhập thất bại.');
+      const msg = error instanceof Error ? error.message : 'Đăng nhập thất bại.';
+      setFeedback(msg);
+      toast.error(msg);
     } finally {
       requestInFlight.current = false;
       setPending(false);
