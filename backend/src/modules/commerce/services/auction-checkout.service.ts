@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { AuctionAward, Order, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { GhnShippingService } from '../../fulfillment/services/ghn-shipping.service';
 import { ReputationService } from '../../users/services/reputation.service';
@@ -89,6 +90,19 @@ export class AuctionCheckoutService {
         payload: { auctionId: input.auctionId, orderId: order.id, awardId: award.id },
       },
     });
+    if (input.depositAmount.isZero())
+      await tx.notification.create({
+        data: {
+          userId: input.buyerId,
+          type: 'AUCTION',
+          channel: 'IN_APP',
+          auctionId: input.auctionId,
+          targetUrl: auctionTargetUrl(input.auctionId),
+          title: 'Bạn được mời mua sản phẩm đấu giá',
+          content:
+            'Bạn có quyền mua sản phẩm đấu giá trong 24 giờ. Vui lòng vào phiên để xem thông tin; hệ thống chưa trừ tiền trong ví của bạn.',
+        },
+      });
     return award;
   }
 

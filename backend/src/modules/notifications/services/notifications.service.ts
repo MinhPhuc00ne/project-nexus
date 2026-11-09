@@ -1,8 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { QueryNotificationDto } from '../dtos/query-notification.dto';
 import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
+import { NotificationPageDto } from '../dtos/notification-response.dto';
 
 @Injectable()
 export class NotificationsService {
@@ -15,7 +17,10 @@ export class NotificationsService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated notification items, unread counters, and pagination metadata
    */
-  async getUserNotifications(userId: string, query: QueryNotificationDto) {
+  async getUserNotifications(
+    userId: string,
+    query: QueryNotificationDto,
+  ): Promise<NotificationPageDto> {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(50, query.limit || 10));
     const skip = (page - 1) * limit;
@@ -43,6 +48,8 @@ export class NotificationsService {
       items: items.map((n) => ({
         id: n.id,
         title: n.title,
+        auctionId: n.auctionId,
+        targetUrl: n.targetUrl,
         content: n.content,
         type: n.type,
         channel: n.channel,
@@ -141,10 +148,14 @@ export class NotificationsService {
     content: string;
     type?: NotificationType;
     channel?: NotificationChannel;
+    auctionId?: string;
+    targetUrl?: string;
   }) {
     return this.prisma.notification.create({
       data: {
         userId: params.userId,
+        auctionId: params.auctionId,
+        targetUrl: params.auctionId ? auctionTargetUrl(params.auctionId) : params.targetUrl,
         title: params.title,
         content: params.content,
         type: params.type || NotificationType.SYSTEM,

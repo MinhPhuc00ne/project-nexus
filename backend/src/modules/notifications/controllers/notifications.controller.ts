@@ -16,6 +16,7 @@ import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { QueryNotificationDto } from '../dtos/query-notification.dto';
 import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
 import { NotificationsService } from '../services/notifications.service';
+import { NotificationPageDto } from '../dtos/notification-response.dto';
 
 @ApiTags('9. NOTIFICATIONS')
 @ApiBearerAuth()
@@ -31,11 +32,16 @@ export class NotificationsController {
     description:
       'Hỗ trợ phân trang và lọc theo trạng thái đã đọc (isRead = true/false), sắp xếp thông báo mới nhất lên đầu.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách thông báo thành công' })
+  @ApiResponse({
+    status: 200,
+    type: NotificationPageDto,
+    description:
+      'Lấy danh sách thông báo thành công. Thông báo đấu giá mới có auctionId và targetUrl=/auction/:id để chuyển tới cùng trang như banner và truy cập thủ công.',
+  })
   async getMyNotifications(
     @CurrentUser('id') userId: string,
     @Query() query: QueryNotificationDto,
-  ) {
+  ): Promise<NotificationPageDto> {
     return this.notificationsService.getUserNotifications(userId, query);
   }
 
