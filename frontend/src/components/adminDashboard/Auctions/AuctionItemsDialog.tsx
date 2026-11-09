@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   getAdminAuctionItemsApi,
-  registerAuctionItemApi,
   reviewAuctionItemApi,
   type ReviewAuctionItemInput,
   type AdminAuctionEntity,
@@ -18,28 +17,6 @@ const itemStatuses: Record<string, string> = {
   APPROVED: 'Đã duyệt',
   REJECTED: 'Từ chối',
 };
-const inputClass =
-  'mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500';
-
-function imageUrls(value: FormDataEntryValue | null): string[] {
-  const urls = String(value || '')
-    .split(/\r?\n/)
-    .map((url) => url.trim())
-    .filter(Boolean);
-  if (
-    !urls.length ||
-    urls.some((url) => {
-      try {
-        return !['http:', 'https:'].includes(new URL(url).protocol);
-      } catch {
-        return true;
-      }
-    })
-  )
-    throw new Error('Vui lòng nhập URL ảnh hợp lệ (http/https), mỗi dòng một ảnh.');
-  return urls;
-}
-
 export default function AuctionItemsDialog({
   auction,
   onClose,
@@ -53,7 +30,6 @@ export default function AuctionItemsDialog({
   const [data, setData] = useState<AdminAuctionItemsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [revision, setRevision] = useState(0);
   const [detail, setDetail] = useState<{ id: string; view: 'item' | 'shop' } | null>(null);
@@ -85,7 +61,6 @@ export default function AuctionItemsDialog({
     };
   }, [auction.id, revision]);
 
-  const canAdd = !!data && ['DRAFT', 'SCHEDULED', 'ACTIVE'].includes(data.auctionStatus);
   const detailItem = data?.items.find((item) => item.id === detail?.id);
 
   async function review(itemId: string, payload: ReviewAuctionItemInput) {
@@ -120,60 +95,6 @@ export default function AuctionItemsDialog({
       toast.success(result.message);
       setRevision((value) => value + 1);
       onChanged();
-    } finally {
-      lock.current = false;
-      if (active.current) setSaving(false);
-    }
-  }
-
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (lock.current || !canAdd) return;
-    const form = event.currentTarget;
-    const values = new FormData(form);
-    const text = (name: string) => String(values.get(name) || '').trim();
-    setError('');
-    try {
-      if (!text('title') || !text('description'))
-        throw new Error('Vui lòng nhập tên và mô tả sản phẩm.');
-      const price = Number(text('price'));
-      const increment = Number(text('increment'));
-      const reserve = text('reserve') ? Number(text('reserve')) : undefined;
-      if (
-        !Number.isFinite(price) ||
-        price < 10000 ||
-        !Number.isFinite(increment) ||
-        increment < 1000
-      )
-        throw new Error('Giá khởi điểm tối thiểu 10.000 ₫, bước giá tối thiểu 1.000 ₫.');
-      if (reserve !== undefined && (!Number.isFinite(reserve) || reserve < price))
-        throw new Error('Giá bảo lưu phải lớn hơn hoặc bằng giá khởi điểm.');
-      const payload = {
-        title: text('title'),
-        description: text('description'),
-        images: imageUrls(values.get('images')),
-        certificateImages: imageUrls(values.get('certificates')),
-        proposedStartingPrice: price,
-        proposedBidIncrement: increment,
-        proposedReservePrice: reserve,
-        appraisalAgency: text('agency') || undefined,
-        appraisalCertificateNumber: text('certificateNumber') || undefined,
-        certificateIssueDate: text('issueDate')
-          ? new Date(text('issueDate')).toISOString()
-          : undefined,
-        threeModelKey: text('model') || undefined,
-      };
-      lock.current = true;
-      setSaving(true);
-      const result = await registerAuctionItemApi(auction.id, payload);
-      if (!active.current) return;
-      form.reset();
-      toast.success(result.message);
-      setRevision((value) => value + 1);
-      onChanged();
-    } catch (cause) {
-      if (active.current)
-        setError(cause instanceof Error ? cause.message : 'Không thể thêm sản phẩm.');
     } finally {
       lock.current = false;
       if (active.current) setSaving(false);
@@ -299,106 +220,6 @@ export default function AuctionItemsDialog({
                 </article>
               ))}
           </section>
-          {canAdd && (
-            <form
-              onSubmit={(event) => void submit(event)}
-              className="space-y-4 border-t border-slate-200 pt-5"
-            >
-              <h3 className="font-semibold">Thêm sản phẩm vào phiên</h3>
-              <p className="text-xs text-slate-500">
-                Sản phẩm được đăng ký dưới tài khoản hiện tại, cần đáp ứng điểm uy tín Seller của
-                phiên và sẽ chờ duyệt. Ảnh sản phẩm và ảnh chứng thư kiểm định là bắt buộc.
-              </p>
-              <fieldset
-                disabled={saving || loading || !!loadError}
-                className="grid gap-4 sm:grid-cols-2 disabled:opacity-60"
-              >
-                <label className="text-xs font-medium sm:col-span-2">
-                  Tên sản phẩm *<input name="title" required className={inputClass} />
-                </label>
-                <label className="text-xs font-medium sm:col-span-2">
-                  Mô tả nguồn gốc, tình trạng *
-                  <textarea name="description" required rows={3} className={inputClass} />
-                </label>
-                <label className="text-xs font-medium">
-                  Giá khởi điểm (₫) *
-                  <input
-                    name="price"
-                    type="number"
-                    required
-                    min="10000"
-                    step="1"
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-xs font-medium">
-                  Bước giá (₫) *
-                  <input
-                    name="increment"
-                    type="number"
-                    required
-                    min="1000"
-                    step="1"
-                    defaultValue="100000"
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-xs font-medium">
-                  Giá bảo lưu (₫)
-                  <input name="reserve" type="number" min="10000" step="1" className={inputClass} />
-                </label>
-                <label className="text-xs font-medium">
-                  Khóa mô hình 3D
-                  <input name="model" className={inputClass} />
-                </label>
-                <label className="text-xs font-medium">
-                  URL ảnh sản phẩm * (mỗi dòng một ảnh)
-                  <textarea
-                    name="images"
-                    required
-                    rows={3}
-                    placeholder="https://…"
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-xs font-medium">
-                  URL ảnh chứng thư * (mỗi dòng một ảnh)
-                  <textarea
-                    name="certificates"
-                    required
-                    rows={3}
-                    placeholder="https://…"
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-xs font-medium">
-                  Đơn vị thẩm định
-                  <input name="agency" className={inputClass} />
-                </label>
-                <label className="text-xs font-medium">
-                  Số chứng thư
-                  <input name="certificateNumber" className={inputClass} />
-                </label>
-                <label className="text-xs font-medium">
-                  Ngày cấp chứng thư
-                  <input name="issueDate" type="date" className={inputClass} />
-                </label>
-              </fieldset>
-              {error && (
-                <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                  {error}
-                </p>
-              )}
-              <div className="flex justify-end gap-3">
-                <Button type="submit" disabled={saving || loading || !!loadError}>
-                  {saving ? 'Đang thêm…' : 'Thêm sản phẩm'}
-                </Button>
-              </div>
-            </form>
-          )}
-          {data && !canAdd && (
-            <p className="text-sm text-slate-500">Phiên hiện không nhận đăng ký sản phẩm.</p>
-          )}
           <div className="flex justify-end">
             <Button variant="secondary" disabled={saving} onClick={onClose}>
               Đóng

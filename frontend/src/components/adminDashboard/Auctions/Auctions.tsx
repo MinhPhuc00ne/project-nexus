@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Gavel, Plus, RefreshCw } from 'lucide-react';
-import type { AuctionStatus } from '@nexus/types';
+import { Gavel, Play, Plus, RefreshCw, Square } from 'lucide-react';
+import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   getAdminAuctionsApi,
@@ -33,6 +33,26 @@ export default function AdminAuctionsPage() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState<AdminAuctionEntity | null>(null);
+
+  function advanceAuction(id: string) {
+    setData((current) =>
+      current
+        ? {
+            ...current,
+            items: current.items.map((item) => {
+              if (item.id !== id) return item;
+              if (item.status === 'DRAFT' || item.status === 'SCHEDULED') {
+                return { ...item, status: AuctionStatus.ACTIVE };
+              }
+              if (item.status === 'ACTIVE' || item.status === 'EXTENDED') {
+                return { ...item, status: AuctionStatus.ENDED };
+              }
+              return item;
+            }),
+          }
+        : current,
+    );
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -142,6 +162,7 @@ export default function AdminAuctionsPage() {
                       'Lượt trả giá',
                       'Trạng thái',
                       'Sản phẩm',
+                      'Thao tác',
                     ].map((label) => (
                       <th key={label} className="p-4 font-semibold">
                         {label}
@@ -193,8 +214,27 @@ export default function AdminAuctionsPage() {
                       </td>
                       <td className="p-4">
                         <Button variant="secondary" onClick={() => setSelectedAuction(item)}>
-                          Xem / thêm ({item._count?.items ?? 0})
+                          Xem sản phẩm ({item._count?.items ?? 0})
                         </Button>
+                      </td>
+                      <td className="p-4">
+                        {['DRAFT', 'SCHEDULED'].includes(item.status) ? (
+                          <Button onClick={() => advanceAuction(item.id)}>
+                            <Play size={14} />
+                            Bắt đầu
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            disabled={!['ACTIVE', 'EXTENDED'].includes(item.status)}
+                            onClick={() => advanceAuction(item.id)}
+                          >
+                            <Square size={14} />
+                            {['ACTIVE', 'EXTENDED'].includes(item.status)
+                              ? 'Kết thúc'
+                              : 'Đã đóng phiên'}
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -1,32 +1,6 @@
-import { apiRequest } from './api';
+import type { BannerInput } from './banners.service';
 
-export interface BannerInput {
-  title: string;
-  imageUrl: string;
-  targetUrl: string | null;
-  startsAt: string | null;
-  endsAt: string | null;
-  isActive: boolean;
-  priority: number;
-}
-
-export interface Banner extends BannerInput {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export const listBanners = (publicOnly = false) =>
-  apiRequest<Banner[]>(publicOnly ? '/catalog/banners' : '/staff/banners', {
-    requireAuth: !publicOnly,
-  });
-
-export const saveBanner = (body: BannerInput, id?: string) =>
-  apiRequest<Banner>(id ? `/staff/banners/${encodeURIComponent(id)}` : '/staff/banners', {
-    method: id ? 'PUT' : 'POST',
-    body,
-    requireAuth: true,
-  });
+export { listBanners, saveBanner, type Banner, type BannerInput } from './banners.service';
 
 export function bannerStatus(banner: BannerInput, now = Date.now()) {
   if (!banner.isActive) return 'Đã tắt';

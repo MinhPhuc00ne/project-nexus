@@ -1,6 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useToast } from '../../ToastNotification';
-import { listBanners, saveBanner, type Banner, type BannerInput } from '../../../services/banners';
+import {
+  listBanners,
+  saveBanner,
+  saveBannerOrder,
+  type Banner,
+  type BannerInput,
+} from '../../../services/banners.service';
 
 const blank: BannerInput = {
   title: '',
@@ -9,7 +15,7 @@ const blank: BannerInput = {
   startsAt: null,
   endsAt: null,
   isActive: true,
-  priority: 0,
+  priority: 1,
 };
 const message = (error: unknown) =>
   error instanceof Error ? error.message : 'Không thể cập nhật banner.';
@@ -45,7 +51,15 @@ export function useBannerManagement() {
 
   const openEditor = (banner?: Banner) => {
     setFormError('');
-    setEditor({ id: banner?.id, value: banner ? { ...banner } : { ...blank } });
+    setEditor({
+      id: banner?.id,
+      value: banner
+        ? { ...banner, priority: Math.max(1, banner.priority) }
+        : {
+            ...blank,
+            priority: Math.min(1000, Math.max(0, ...banners.map((item) => item.priority)) + 1),
+          },
+    });
   };
   const update = (patch: Partial<BannerInput>) => {
     setEditor((current) =>
@@ -108,6 +122,27 @@ export function useBannerManagement() {
     }
   };
 
+  const reorder = async (sourceId: string, targetId: string) => {
+    if (saving || loading || editor || search.trim() || sourceId === targetId) return;
+    const from = banners.findIndex((banner) => banner.id === sourceId);
+    const to = banners.findIndex((banner) => banner.id === targetId);
+    if (from < 0 || to < 0) return;
+    const ordered = [...banners];
+    const [moved] = ordered.splice(from, 1);
+    ordered.splice(to, 0, moved);
+    setSaving(true);
+    setBanners(ordered);
+    try {
+      setBanners(await saveBannerOrder(ordered));
+      toast.success('Đã lưu thứ tự banner.');
+    } catch (cause) {
+      toast.error(`Chưa lưu xong thứ tự banner: ${message(cause)} Danh sách sẽ được tải lại.`);
+    } finally {
+      setSaving(false);
+      setRevision((current) => current + 1);
+    }
+  };
+
   return {
     banners,
     loading,
@@ -121,6 +156,7 @@ export function useBannerManagement() {
     update,
     submit,
     toggle,
+    reorder,
     closeEditor: () => setEditor(null),
     refresh: () => setRevision((current) => current + 1),
   };
