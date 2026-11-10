@@ -565,7 +565,7 @@ async function main() {
     const carrierAddress = `${s.pickup.street}, ${s.pickup.ward}, ${s.pickup.district}, ${s.pickup.city}`;
 
     // Điểm lấy hàng fulfillment của Seller
-    await prisma.sellerPickupPoint.upsert({
+    await prisma.sellerGhnAccount.upsert({
       where: {
         sellerId_environment: {
           sellerId: sellerUser.id,
@@ -573,12 +573,6 @@ async function main() {
         },
       },
       update: {
-        name: s.pickup.name,
-        phone: s.pickup.phone,
-        city: s.pickup.city,
-        district: s.pickup.district,
-        ward: s.pickup.ward,
-        street: s.pickup.street,
         districtId: s.pickup.districtId,
         wardCode: s.pickup.wardCode,
         status: 'VERIFIED',
@@ -592,12 +586,6 @@ async function main() {
       create: {
         sellerId: sellerUser.id,
         environment: 'SANDBOX',
-        name: s.pickup.name,
-        phone: s.pickup.phone,
-        city: s.pickup.city,
-        district: s.pickup.district,
-        ward: s.pickup.ward,
-        street: s.pickup.street,
         districtId: s.pickup.districtId,
         wardCode: s.pickup.wardCode,
         status: 'VERIFIED',

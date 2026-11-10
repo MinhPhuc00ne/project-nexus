@@ -11,7 +11,7 @@ import { BannerDto } from '../dtos/banner.dto';
 import { BannerResponseDto } from '../dtos/banner-response.dto';
 import { BannerActor, BannerHistoryService } from './banner-history.service';
 
-/** Owns banner content, immutable creator ordering, and atomic deactivation workflows. */
+/** Owns banner content, display ordering, and atomic deactivation workflows. */
 @Injectable()
 export class BannerService {
   constructor(
@@ -20,7 +20,7 @@ export class BannerService {
   ) {}
 
   /**
-   * Returns administrator-created banners first, newest first within each creator group.
+   * Returns banners by priority, then creator group and creation time for ties.
    * @param publicOnly Restrict results to active banners inside their publication window.
    * @returns Up to one hundred banners after ordering in the database.
    */
@@ -37,7 +37,12 @@ export class BannerService {
           }
         : {},
       take: 100,
-      orderBy: [{ creatorRole: 'asc' }, { createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [
+        { priority: 'desc' },
+        { creatorRole: 'asc' },
+        { createdAt: 'desc' },
+        { id: 'desc' },
+      ],
       select: {
         id: true,
         title: true,
@@ -60,6 +65,32 @@ export class BannerService {
   }
 
   /**
+   * Atomically places selected banners first and resets all other priorities.
+   * @param actorId Authenticated administrator or staff identifier.
+   * @param bannerIds Unique banner identifiers in the requested display order.
+   * @returns Confirmation after all priorities have been persisted.
+   * @throws BadRequestException for an empty, duplicate, or oversized selection.
+   * @throws NotFoundException if any selected banner no longer exists.
+   */
+  async reorder(actorId: string, bannerIds: string[]): Promise<{ success: true }> {
+    if (!bannerIds.length || bannerIds.length > 100 || new Set(bannerIds).size !== bannerIds.length)
+      throw new BadRequestException('Cần từ 1 đến 100 banner không trùng nhau.');
+    return this.prisma.$transaction(async (tx) => {
+      await this.getActor(tx, actorId);
+      await tx.$executeRaw`LOCK TABLE event_banners IN SHARE ROW EXCLUSIVE MODE`;
+      const count = await tx.eventBanner.count({ where: { id: { in: bannerIds } } });
+      if (count !== bannerIds.length) throw new NotFoundException('Có banner không còn tồn tại.');
+      await tx.eventBanner.updateMany({ data: { priority: 0 } });
+      for (const [index, id] of bannerIds.entries())
+        await tx.eventBanner.update({
+          where: { id },
+          data: { priority: bannerIds.length - index },
+        });
+      return { success: true };
+    });
+  }
+
+  /**
    * Creates or edits content without changing the original creator group or creation timestamp.
    * @param actorId Authenticated editor identifier, never supplied in the body.
    * @param dto Validated publication content and optional auction association.
@@ -75,6 +106,7 @@ export class BannerService {
     if (startsAt && endsAt && startsAt >= endsAt)
       throw new BadRequestException('Thời gian kết thúc phải sau thời gian bắt đầu.');
     return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`LOCK TABLE event_banners IN SHARE ROW EXCLUSIVE MODE`;
       if (id) await tx.$queryRaw`SELECT id FROM event_banners WHERE id = ${id} FOR UPDATE`;
       const current = id
         ? await tx.eventBanner.findUnique({
@@ -134,6 +166,7 @@ export class BannerService {
     source: 'DELETE' | 'DISABLE' = 'DELETE',
   ): Promise<{ success: true }> {
     return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`LOCK TABLE event_banners IN SHARE ROW EXCLUSIVE MODE`;
       await tx.$queryRaw`SELECT id FROM event_banners WHERE id = ${id} FOR UPDATE`;
       const banner = await tx.eventBanner.findUnique({
         where: { id },

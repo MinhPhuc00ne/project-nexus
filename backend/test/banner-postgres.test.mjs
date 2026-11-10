@@ -60,7 +60,7 @@ test(
                 [id, `${id}@example.invalid`, 'test-only', 'Migration fixture', role],
               );
               await client.query(
-                'INSERT INTO event_banners (id,title,image_url,creator_id,updated_at) VALUES ($1,$2,$3,$4,NOW())',
+                "INSERT INTO event_banners (id,title,image_url,creator_id,created_at,updated_at) VALUES ($1,$2,$3,$4,'2025-01-01',NOW())",
                 [
                   randomUUID(),
                   'Before migration ' + (role === 'ADMIN' ? 'admin' : 'staff'),
@@ -133,10 +133,10 @@ test(
       await t.test(
         'admin banners precede even newer staff banners, with newest first inside each group',
         async () => {
-          adminOld = await make(admin, 'Admin old', { priority: -1000 });
-          adminNew = await make(admin, 'Admin new', { priority: -1000 });
-          staffOld = await make(staff, 'Staff old', { priority: 1000 });
-          staffNew = await make(staff, 'Staff new', { priority: 1000 });
+          adminOld = await make(admin, 'Admin old', { priority: 0 });
+          adminNew = await make(admin, 'Admin new', { priority: 0 });
+          staffOld = await make(staff, 'Staff old', { priority: 0 });
+          staffNew = await make(staff, 'Staff new', { priority: 0 });
           const fixture = [
             [adminOld, '2026-01-01'],
             [adminNew, '2026-01-02'],
@@ -308,7 +308,7 @@ test(
             data: Array.from({ length: 105 }, (_, index) => ({
               ...creator,
               title: `Large staff fixture ${index}`,
-              priority: 1000,
+              priority: 0,
             })),
           });
           const adminBanner = await make(admin, 'Admin outranks the entire staff limit');

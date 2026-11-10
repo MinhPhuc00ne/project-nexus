@@ -68,8 +68,8 @@ export class BannerDto {
     default: 0,
     minimum: -1000,
     maximum: 1000,
-    deprecated: true,
-    description: 'Retained for compatibility. Ordering uses creator group and creation time.',
+    description:
+      'Higher priorities appear first. Equal priorities use creator group and creation time.',
   })
   @IsOptional()
   @IsInt()

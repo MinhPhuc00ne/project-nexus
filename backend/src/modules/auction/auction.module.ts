@@ -6,6 +6,8 @@ import { AuctionGateway } from './gateways/auction.gateway';
 import { CatalogModule } from '../catalog/catalog.module';
 import { CommerceModule } from '../commerce/commerce.module';
 import { AuctionLifecycleService } from './services/auction-lifecycle.service';
+import { AuctionImageController } from './controllers/auction-image.controller';
+import { AuctionImageService } from './services/auction-image.service';
 
 /**
  * AuctionModule encapsulates the live 3D bidding room lifecycle, anti-sniping protection,
@@ -13,8 +15,8 @@ import { AuctionLifecycleService } from './services/auction-lifecycle.service';
  */
 @Module({
   imports: [PrismaModule, CatalogModule, CommerceModule],
-  controllers: [AuctionController],
-  providers: [AuctionService, AuctionGateway, AuctionLifecycleService],
+  controllers: [AuctionController, AuctionImageController],
+  providers: [AuctionService, AuctionGateway, AuctionLifecycleService, AuctionImageService],
   exports: [AuctionService, AuctionGateway],
 })
 export class AuctionModule {}

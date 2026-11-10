@@ -34,6 +34,10 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
     auctionId = randomUUID();
   const services = {
     list: async () => [],
+    reorder: async (actorId, bannerIds) => {
+      calls.push({ actorId, bannerIds });
+      return { success: true };
+    },
     save: async (actorId, dto, id) => {
       calls.push({ actorId, dto, id });
       return { id: id ?? bannerId, ...dto };
@@ -172,6 +176,48 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
       (await request('/staff/banner-disable-history', 'ADMIN', { method: 'DELETE' })).status,
       404,
     );
+    for (const role of ['ADMIN', 'SUPPORT_STAFF']) {
+      const response = await request('/staff/banners/order', role, {
+        method: 'PATCH',
+        body: JSON.stringify({ bannerIds: [bannerId] }),
+      });
+      assert.equal(response.status, 200);
+      assert.deepEqual(calls.at(-1), { actorId: accounts.get(role), bannerIds: [bannerId] });
+    }
+    for (const bannerIds of [
+      [],
+      [bannerId, bannerId],
+      ['invalid'],
+      Array.from({ length: 101 }, () => randomUUID()),
+    ]) {
+      assert.equal(
+        (
+          await request('/staff/banners/order', 'ADMIN', {
+            method: 'PATCH',
+            body: JSON.stringify({ bannerIds }),
+          })
+        ).status,
+        400,
+      );
+    }
+    assert.equal(
+      (
+        await request('/staff/banners/order', 'BUYER', {
+          method: 'PATCH',
+          body: JSON.stringify({ bannerIds: [bannerId] }),
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (
+        await request('/staff/banners/order', undefined, {
+          method: 'PATCH',
+          body: JSON.stringify({ bannerIds: [bannerId] }),
+        })
+      ).status,
+      401,
+    );
     const document = SwaggerModule.createDocument(
       app,
       new DocumentBuilder().setTitle('Banner API').setVersion('1').build(),
@@ -191,7 +237,7 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
       assert.ok(document.components.schemas[schema], schema);
     assert.ok(document.components.schemas.NotificationResponseDto.properties.targetUrl);
     assert.ok(document.components.schemas.BannerDisableHistoryDto.properties.creatorRole);
-    assert.equal(document.components.schemas.BannerDto.properties.priority.deprecated, true);
+    assert.equal(document.components.schemas.BannerDto.properties.priority.deprecated, undefined);
   } finally {
     await app.close();
   }

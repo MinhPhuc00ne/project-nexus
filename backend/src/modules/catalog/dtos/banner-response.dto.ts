@@ -22,13 +22,13 @@ export class BannerResponseDto {
   @ApiProperty({ type: String, nullable: true, format: 'uuid' }) auctionId!: string | null;
   @ApiProperty({
     enum: BannerCreatorRole,
-    description: 'Immutable role group at creation; ADMIN precedes STAFF',
+    description: 'Immutable role group at creation; ADMIN precedes STAFF when priorities match',
   })
   creatorRole!: BannerCreatorRole;
   @ApiProperty({ type: String, nullable: true, format: 'date-time' }) startsAt!: Date | null;
   @ApiProperty({ type: String, nullable: true, format: 'date-time' }) endsAt!: Date | null;
   @ApiProperty() isActive!: boolean;
-  @ApiProperty({ deprecated: true }) priority!: number;
+  @ApiProperty({ description: 'Higher priorities appear first' }) priority!: number;
   @ApiProperty({ type: String, format: 'date-time' }) createdAt!: Date;
   @ApiProperty({ type: String, format: 'date-time' }) updatedAt!: Date;
   @ApiPropertyOptional({ format: 'uuid' }) creatorId?: string;

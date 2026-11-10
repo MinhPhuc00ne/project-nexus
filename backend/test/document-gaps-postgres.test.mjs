@@ -83,6 +83,8 @@ test(
             fullName: 'Isolated fixture',
             passwordHash: 'test-only',
             role,
+            reputationScore: 100,
+            trustLevel: 'GOOD',
             isVerified: true,
             wallet: { create: { balance: 300000 } },
           },
