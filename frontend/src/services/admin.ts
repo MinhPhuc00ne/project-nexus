@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig } from 'axios';
+import type { AdminOverviewAnalytics } from '../types/admin-analytics.types';
 import type {
   AdminOrderAfterSales,
   AdminOrderDetail,
@@ -112,6 +113,10 @@ export function cancelAdminOrder(id: string, reason: string): Promise<AdminOrder
     method: 'POST',
     data: { reason },
   });
+}
+
+export function getAdminOverviewAnalytics(signal?: AbortSignal): Promise<AdminOverviewAnalytics> {
+  return adminRequest({ url: '/admin/analytics/overview', method: 'GET', signal });
 }
 
 // Không gửi mật khẩu: nhân viên tự đặt mật khẩu qua link gửi đến email cá nhân.

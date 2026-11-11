@@ -1,18 +1,9 @@
-import {
-  BadgeDollarSign,
-  ChartNoAxesCombined,
-  CircleDollarSign,
-  Gavel,
-  Radio,
-  RefreshCw,
-  ShieldCheck,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
+import { BadgeDollarSign, Gavel, Radio, RefreshCw, ShieldCheck, Users } from 'lucide-react';
 import { Badge, Button, Panel } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';
 import { useAdminContext } from '../shared/useAdminContext';
 import useOverviewData from './useOverviewData';
+import OverviewCharts from './OverviewCharts';
 
 const roleLabels = {
   BUYER: 'Buyer',
@@ -24,6 +15,9 @@ const roleLabels = {
 export default function AdminDashboardPage() {
   const { actions } = useAdminContext();
   const { data, loading, errors, refresh } = useOverviewData();
+  const monthlyRevenue = data.analytics?.revenuePeriods.find(
+    (period) => period.unit === 'tháng này',
+  );
   return (
     <div className="space-y-5">
       <section className="flex flex-col justify-between gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:flex-row xl:items-center">
@@ -64,15 +58,11 @@ export default function AdminDashboardPage() {
         aria-busy={loading}
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 [&>section]:p-4 [&>section_h2]:text-sm"
       >
-        <Panel
-          title="Doanh thu phí sàn"
-          subtitle="TỔNG PHÍ ĐÃ THU"
-          icon={<BadgeDollarSign size={19} />}
-        >
+        <Panel title="Doanh thu phí sàn" subtitle="THÁNG NÀY" icon={<BadgeDollarSign size={19} />}>
           <p className="break-words text-2xl font-bold tracking-tight">
-            {formatMoney(data.wallet?.totalPlatformFeeCollected ?? 0)}
+            {formatMoney(monthlyRevenue?.total ?? 0)}
           </p>
-          <p className="mt-2 text-[10px] text-slate-500">Lũy kế toàn thời gian</p>
+          <p className="mt-2 text-[10px] text-slate-500">Phí đơn thường và đấu giá 3D</p>
           <div className="mt-5 flex justify-between gap-2 rounded-lg bg-blue-50/80 p-3 text-[11px]">
             <span className="text-slate-500">Tỷ lệ phí sàn</span>
             <b className="text-primary">
@@ -150,28 +140,7 @@ export default function AdminDashboardPage() {
           </div>
         </Panel>
       </section>
-      <div className="grid items-start gap-5 xl:grid-cols-[2fr_1fr]">
-        <Panel
-          title="Xu hướng doanh thu phí sàn"
-          subtitle="THEO THỜI GIAN"
-          icon={<ChartNoAxesCombined size={19} />}
-        >
-          <p className="text-2xl font-bold">0 ₫</p>
-          <div className="mt-5 flex min-h-60 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50 text-xs text-slate-400">
-            Chưa có dữ liệu
-          </div>
-        </Panel>
-        <div className="space-y-5">
-          <Panel title="Cơ cấu nguồn thu phí sàn" icon={<CircleDollarSign size={19} />}>
-            <p className="text-2xl font-bold">0 ₫</p>
-            <p className="mt-3 text-xs text-slate-400">Chưa có dữ liệu</p>
-          </Panel>
-          <Panel title="Tần suất trả giá theo giờ" icon={<TrendingUp size={19} />}>
-            <p className="text-2xl font-bold">0 lượt</p>
-            <p className="mt-3 text-xs text-slate-400">Chưa có dữ liệu</p>
-          </Panel>
-        </div>
-      </div>
+      <OverviewCharts data={data.analytics} loading={loading} />
     </div>
   );
 }

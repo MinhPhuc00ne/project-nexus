@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Film, Gavel, Play, Plus, RefreshCw, Square } from 'lucide-react';
+import { Film, Gavel, LockKeyhole, Play, Plus, RefreshCw, Square } from 'lucide-react';
 import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   adminStartAuctionApi,
+  adminLockConsignmentApi,
   endAuctionApi,
   getAdminAuctionItemsApi,
   getAdminAuctionsApi,
@@ -13,6 +14,7 @@ import {
   type AuctionConsignmentItem,
 } from '../../../services/auction.service';
 import { useToast } from '../../ToastNotification';
+import Popup from '../../Popup';
 import { AuctionShowcaseHUD } from '../../auction/showcase/AuctionShowcaseHUD';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import CreateAuctionDialog from './CreateAuctionDialog';
@@ -42,6 +44,9 @@ export default function AdminAuctionsPage() {
   const [creating, setCreating] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState<AdminAuctionEntity | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
+  const [lockingAuction, setLockingAuction] = useState<AdminAuctionEntity | null>(null);
+  const [locking, setLocking] = useState(false);
+  const [lockError, setLockError] = useState('');
   const [showcaseState, setShowcaseState] = useState<{
     auctionId: string;
     title: string;
@@ -117,6 +122,31 @@ export default function AdminAuctionsPage() {
         items: [],
         playbackMode: 'admin-replay',
       });
+    }
+  }
+
+  async function handleLockConsignment() {
+    if (!lockingAuction || locking || startingId) return;
+    setLocking(true);
+    setLockError('');
+    try {
+      const updated = await adminLockConsignmentApi(lockingAuction.id);
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              items: current.items.map((row) =>
+                row.id === updated.id ? { ...row, ...updated } : row,
+              ),
+            }
+          : current,
+      );
+      setLockingAuction(null);
+      toast.success('Đã chốt ký gửi phiên đấu giá.');
+    } catch (cause: unknown) {
+      setLockError(cause instanceof Error ? cause.message : 'Không thể chốt ký gửi.');
+    } finally {
+      setLocking(false);
     }
   }
 
@@ -285,13 +315,26 @@ export default function AdminAuctionsPage() {
                     <tr key={item.id}>
                       <td className="max-w-72 p-4">
                         <div className="flex items-start gap-3">
-                          {item.imageUrl && (
-                            <img
-                              src={resolveAuctionImageUrl(item.imageUrl)}
-                              alt={item.title}
-                              className="h-11 w-11 shrink-0 rounded-lg border border-slate-200 object-cover"
-                            />
-                          )}
+                          <button
+                            type="button"
+                            aria-label={`Xem video 3D phiên ${item.title}`}
+                            title="Xem video 3D"
+                            onClick={() => void openShowcaseForAuction(item)}
+                            className="group relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-blue-50 text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                          >
+                            {item.imageUrl ? (
+                              <img
+                                src={resolveAuctionImageUrl(item.imageUrl)}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <Gavel size={20} aria-hidden="true" />
+                            )}
+                            <span className="absolute inset-0 flex items-center justify-center bg-slate-900/60 text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                              <Film size={22} aria-hidden="true" />
+                            </span>
+                          </button>
                           <div className="min-w-0">
                             <p className="break-words font-semibold text-slate-900">{item.title}</p>
                             <p className="mt-1 text-slate-500">
@@ -323,7 +366,7 @@ export default function AdminAuctionsPage() {
                         <p className="mt-1">Seller: {item.minSellerReputation}</p>
                       </td>
                       <td className="p-4">{item.totalBidsCount}</td>
-                      <td className="p-4">
+                      <td className="w-px whitespace-nowrap p-4 align-middle [&>span]:w-max [&>span]:leading-none">
                         <Badge
                           tone={
                             item.status === 'ACTIVE' || item.status === 'EXTENDED'
@@ -340,15 +383,35 @@ export default function AdminAuctionsPage() {
                         </Button>
                       </td>
                       <td className="p-4">
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex w-32 flex-col items-stretch gap-2 [&>button]:whitespace-nowrap">
                           {['DRAFT', 'SCHEDULED'].includes(item.status) ? (
-                            <Button
-                              disabled={startingId === item.id}
-                              onClick={() => void handleStartAuction(item)}
-                            >
-                              <Play size={14} />
-                              {startingId === item.id ? 'Đang mở…' : 'Bắt đầu'}
-                            </Button>
+                            <>
+                              {!item.isConsignmentLocked && (
+                                <Button
+                                  variant="secondary"
+                                  disabled={!!startingId || locking}
+                                  onClick={() => {
+                                    setLockError('');
+                                    setLockingAuction(item);
+                                  }}
+                                >
+                                  <LockKeyhole size={14} />
+                                  Chốt ký gửi
+                                </Button>
+                              )}
+                              <Button
+                                disabled={!!startingId || locking || !item.isConsignmentLocked}
+                                title={
+                                  !item.isConsignmentLocked
+                                    ? 'Chốt ký gửi trước khi bắt đầu phiên'
+                                    : undefined
+                                }
+                                onClick={() => void handleStartAuction(item)}
+                              >
+                                <Play size={14} />
+                                {startingId === item.id ? 'Đang mở…' : 'Bắt đầu'}
+                              </Button>
+                            </>
                           ) : (
                             <Button
                               variant="secondary"
@@ -361,17 +424,9 @@ export default function AdminAuctionsPage() {
                               <Square size={14} />
                               {['ACTIVE', 'EXTENDED'].includes(item.status)
                                 ? 'Kết thúc'
-                                : 'Đã đóng phiên'}
+                                : 'Đã đóng'}
                             </Button>
                           )}
-                          <Button
-                            variant="secondary"
-                            title="Phát lại video 3D bảo tàng giới thiệu phiên đấu giá"
-                            onClick={() => void openShowcaseForAuction(item)}
-                          >
-                            <Film size={14} />
-                            Video 3D
-                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -405,6 +460,36 @@ export default function AdminAuctionsPage() {
         ) : (
           <EmptyState text="Chưa có phiên đấu giá phù hợp." />
         ))}
+      <Popup
+        isOpen={!!lockingAuction}
+        title="Xác nhận chốt ký gửi"
+        onClose={() => {
+          if (!locking) setLockingAuction(null);
+        }}
+        closeOnOverlay={!locking}
+        closeOnEsc={!locking}
+        showCloseButton={!locking}
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" disabled={locking} onClick={() => setLockingAuction(null)}>
+              Hủy
+            </Button>
+            <Button disabled={locking || !!startingId} onClick={() => void handleLockConsignment()}>
+              {locking ? 'Đang chốt…' : 'Xác nhận chốt ký gửi'}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm leading-relaxed text-slate-600">
+          Bạn muốn chốt ký gửi phiên <strong>{lockingAuction?.title}</strong>? Sau khi chốt, seller
+          sẽ không thể gửi thêm sản phẩm vào phiên. Phiên chỉ bắt đầu khi bạn bấm “Bắt đầu”.
+        </p>
+        {lockError && (
+          <p role="alert" className="mt-3 text-sm text-red-600">
+            {lockError}
+          </p>
+        )}
+      </Popup>
       {creating && (
         <CreateAuctionDialog
           key={token}

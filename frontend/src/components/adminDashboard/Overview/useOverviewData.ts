@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getAdminSettings, getAdminWallet, listUsers } from '../../../services/admin';
+import { getAdminSettings, getAdminOverviewAnalytics, listUsers } from '../../../services/admin';
 import { getAdminAuctionsApi } from '../../../services/auction.service';
 import { getAdminNotificationSummary } from '../../../services/notifications';
 import { apiRequest } from '../../../services/api';
 import type { AdminNotificationSummary } from '../../../types/notification.types';
-import type { AdminWalletSummary } from '../../../types/admin-wallet.types';
+import type { AdminOverviewAnalytics } from '../../../types/admin-analytics.types';
 import type { SystemSettings } from '../../../types/admin-settings.types';
 import type { GhnDiagnostic } from '../../../types/order.types';
 import type { AdminUserRole } from '../../../types/user.types';
@@ -14,7 +14,7 @@ import type { AdminUserRole } from '../../../types/user.types';
 const roles: AdminUserRole[] = ['BUYER', 'SELLER', 'SUPPORT_STAFF', 'ADMIN'];
 interface OverviewData {
   queues?: AdminNotificationSummary;
-  wallet?: AdminWalletSummary;
+  analytics?: AdminOverviewAnalytics;
   settings?: SystemSettings;
   ghn?: GhnDiagnostic;
   live?: number;
@@ -52,7 +52,7 @@ export default function useOverviewData() {
     }
     void Promise.allSettled([
       load('Yêu cầu chờ xử lý', 'queues', getAdminNotificationSummary()),
-      load('Ví nền tảng', 'wallet', getAdminWallet(controller.signal)),
+      load('Thống kê tổng quan', 'analytics', getAdminOverviewAnalytics(controller.signal)),
       load('Cấu hình', 'settings', getAdminSettings(controller.signal)),
       load('Kết nối GHN', 'ghn', apiRequest<GhnDiagnostic>('/fulfillment/shipping/diagnostic')),
       load(

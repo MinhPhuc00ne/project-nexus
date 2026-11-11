@@ -195,6 +195,8 @@ export interface AdminCreateAuctionInput {
 export interface AdminAuctionEntity extends AdminCreateAuctionInput {
   id: string;
   status: AuctionStatus;
+  isConsignmentLocked: boolean;
+  consignmentLockedAt?: string | null;
   createdByAdmin?: AuctionSeller | null;
   seller?: AuctionSeller | null;
   totalBidsCount: number;
@@ -321,6 +323,17 @@ export function adminCreateAuctionApi(data: AdminCreateAuctionInput): Promise<Ad
  */
 export function adminStartAuctionApi(id: string): Promise<AuctionEntity> {
   return apiRequest<AuctionEntity>(`/auctions/admin/${id}/start`, {
+    method: 'POST',
+    requireAuth: true,
+  });
+}
+
+export function adminLockConsignmentApi(
+  id: string,
+): Promise<
+  Pick<AdminAuctionEntity, 'id' | 'status' | 'isConsignmentLocked' | 'consignmentLockedAt'>
+> {
+  return apiRequest(`/auctions/admin/${id}/lock-consignment`, {
     method: 'POST',
     requireAuth: true,
   });
