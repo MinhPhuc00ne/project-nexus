@@ -11,6 +11,21 @@ export interface UserNotification {
   targetUrl?: string | null;
 }
 
+export interface AdminNotificationSummary {
+  unreadCount: number;
+  totalPendingActions: number;
+  pendingQueues: {
+    sellerUpgradeRequests: number;
+    auctionConsignments: number;
+    withdrawalRequests: number;
+    openDisputes: number;
+    violationReports: number;
+    pendingRefunds: number;
+    pendingPickupPoints: number;
+  };
+  recentNotifications: UserNotification[];
+}
+
 export interface NotificationsPage {
   items: UserNotification[];
   total: number;

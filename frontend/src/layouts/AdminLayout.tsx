@@ -14,7 +14,7 @@ import { applyCommerceChange } from '../components/adminDashboard/shared/commerc
 import type { AdminActions, AdminData } from '../components/adminDashboard/shared/adminTypes';
 import { Role, type UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { listAdminDisputes } from '../services/admin';
+import { listAdminDisputes, listAdminReports } from '../services/admin';
 
 // Every admin route uses the profile verified by AuthContext; no separate /me call.
 export default function AdminLayout() {
@@ -87,11 +87,22 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   // Lấy tên trang từ URL, ví dụ /admin/users -> users, để chọn tiêu đề tương ứng.
   const tab = pathname.split('/')[2] ?? 'overview';
   const [reportCount, setReportCount] = useState(0);
+  const [refundCount, setRefundCount] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     listAdminDisputes({ limit: 1 }, controller.signal)
       .then((result) => {
-        if (!controller.signal.aborted) setReportCount(result.counters.pendingReview);
+        if (!controller.signal.aborted) setRefundCount(result.counters.pendingReview);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setRefundCount(0);
+      });
+    Promise.all([
+      listAdminReports({ limit: 1, status: 'PENDING' }, controller.signal),
+      listAdminReports({ limit: 1, status: 'INVESTIGATING' }, controller.signal),
+    ])
+      .then(([pending, investigating]) => {
+        if (!controller.signal.aborted) setReportCount(pending.total + investigating.total);
       })
       .catch(() => {
         if (!controller.signal.aborted) setReportCount(0);
@@ -108,18 +119,11 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { success: notify } = useToast();
   const [detail, setDetail] = useState<{ title: string; content: string } | null>(null);
-  // execute giữ thao tác cần chạy, chỉ được gọi khi người dùng bấm "Xác nhận".
-  const [confirmation, setConfirmation] = useState<{
-    title: string;
-    content: string;
-    execute: () => void;
-  } | null>(null);
   // Đổi tab thì cuộn lên đầu và đóng hộp thoại của tab trước đó.
   useEffect(() => {
     contentRef.current?.scrollTo(0, 0);
     setSidebarOpen(false);
     setDetail(null);
-    setConfirmation(null);
   }, [pathname]);
   // Các tab nhận một bộ callback chung thay vì tự sửa dữ liệu riêng.
   // Khi nối API: gửi yêu cầu tại các action, chỉ cập nhật state sau khi server thành công.
@@ -131,36 +135,12 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
     navigate: (target) => navigate(`/admin/${target}`),
     notify,
     showDetail: (title, content) => setDetail({ title, content }),
-    // Quyết định hoàn tiền ở đây chỉ đổi trạng thái demo, chưa gọi cổng thanh toán.
-    reviewRefund: (id, status) =>
-      setConfirmation({
-        title: status === 'approved' ? 'Chấp thuận hoàn tiền?' : 'Bác bỏ khiếu nại?',
-        content: `Đơn #${id}. Đây là thao tác demo, không thực hiện chuyển tiền.`,
-        execute: () => {
-          setData((current) => ({
-            ...current,
-            refunds: current.refunds.map((item) => (item.id === id ? { ...item, status } : item)),
-          }));
-          notify('Đã cập nhật quyết định trong bản demo.');
-        },
-      }),
-    // Chờ duyệt → đã lên lịch. Phiên được duyệt sẽ xuất hiện trong lựa chọn của Studio.
-    approveAuction: (id) => {
-      setData((current) => ({
-        ...current,
-        auctions: current.auctions.map((item) =>
-          item.id === id ? { ...item, status: 'scheduled' } : item,
-        ),
-      }));
-      notify('Đã duyệt lịch đấu giá trong bản demo.');
-    },
   };
   const title =
     adminNavigation.flatMap((group) => group.items).find((item) => item.id === tab)?.label ??
     (tab === 'categories' ? 'Danh mục hàng hóa' : 'Admin');
   // Tính số đếm từ dữ liệu hiện tại; duyệt hồ sơ xong badge sẽ tự giảm sau lần render tiếp.
   const sellerCount = sellerRequests.pendingTotal;
-  const refundCount = data.refunds.filter((item) => item.status === 'pending').length;
   const productCount = data.products.filter((item) => item.status === 'pending').length;
   return (
     <div className="h-dvh overflow-hidden bg-[#f5f7fb] text-slate-800 selection:bg-blue-100">
@@ -191,30 +171,13 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         {/* Đây là vùng nội dung cuộn của trang; sidebar và header vẫn giữ nguyên vị trí. */}
         <main ref={contentRef} className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1720px] px-4 py-5 sm:px-7 sm:py-6">
-            {/* Thanh đường dẫn: Quản trị > tên trang hiện tại, kèm nhãn nguồn dữ liệu. */}
+            {/* Thanh đường dẫn: Quản trị > tên trang hiện tại. */}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                 <span>Quản trị</span>
                 <ChevronRight size={12} />
                 <span className="font-medium text-slate-600">{title}</span>
               </div>
-              <span className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] text-primary">
-                {tab === 'banners'
-                  ? 'Banner từ hệ thống'
-                  : tab === 'reports'
-                    ? 'Khiếu nại từ hệ thống'
-                    : tab === 'categories'
-                      ? 'Danh mục từ hệ thống'
-                      : tab === 'products'
-                        ? 'Sản phẩm từ hệ thống'
-                        : tab === 'users'
-                          ? 'Người dùng từ hệ thống'
-                          : tab === 'stores'
-                            ? 'Cửa hàng từ hệ thống'
-                            : tab === 'sellers'
-                              ? 'Hồ sơ Seller từ hệ thống'
-                              : 'Người dùng, danh mục và hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
-              </span>
             </div>
             {/* Tiêu đề trang con; trang overview có tiêu đề riêng nên không hiển thị ở đây. */}
             {tab !== 'overview' && (
@@ -222,7 +185,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
             )}
             {/* Gắn trang con tại đây: /admin/users hiện trang Users, /admin/sellers hiện trang Sellers...
                 Router chọn page theo URL; page đọc dữ liệu và thao tác chung qua useAdminContext. */}
-            <Outlet context={{ data, actions }} />
+            <Outlet context={{ data, actions, pendingRefundCount: refundCount }} />
           </div>
         </main>
         {/* Đây là footer dùng chung ở cuối khung admin. */}
@@ -231,50 +194,8 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
           <span>3D Auction & Commerce Platform</span>
         </footer>
       </div>
-      {/* Hộp thoại thông tin chỉ để xem; hộp thoại confirmation bên dưới dành cho thao tác. */}
+      {/* Hộp thoại thông tin chỉ để xem. */}
       {detail && <DetailDialog {...detail} onClose={() => setDetail(null)} />}
-      {/* Đây là hộp xác nhận: chỉ chạy thao tác đã lưu khi bấm "Xác nhận". */}
-      {confirmation && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-          onClick={() => setConfirmation(null)}
-        >
-          {/* Click trong hộp thoại được chặn lan ra lớp nền; click nền sẽ đóng hộp thoại. */}
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-label={confirmation.title}
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') setConfirmation(null);
-            }}
-          >
-            <h2 className="text-lg font-bold text-primary">{confirmation.title}</h2>
-            <p className="my-4 whitespace-pre-line text-sm leading-6 text-slate-500">
-              {confirmation.content}
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                autoFocus
-                onClick={() => setConfirmation(null)}
-                className="rounded-lg bg-slate-100 px-4 py-2.5 text-xs font-semibold"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={() => {
-                  confirmation.execute();
-                  setConfirmation(null);
-                }}
-                className="rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-white"
-              >
-                Xác nhận
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
     </div>
   );
 }

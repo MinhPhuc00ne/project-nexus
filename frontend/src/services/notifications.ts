@@ -1,6 +1,7 @@
 import { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import type {
+  AdminNotificationSummary,
   NotificationQuery,
   NotificationsPage,
   ReadAllNotificationsResult,
@@ -11,6 +12,10 @@ import type {
 } from '../types/notification.types';
 
 const pending = new Map<string, Promise<unknown>>();
+
+export function getAdminNotificationSummary(): Promise<AdminNotificationSummary> {
+  return getNotificationResource('/notifications/admin/summary');
+}
 
 function getNotificationResource<T>(path: string): Promise<T> {
   const token = getStoredToken();

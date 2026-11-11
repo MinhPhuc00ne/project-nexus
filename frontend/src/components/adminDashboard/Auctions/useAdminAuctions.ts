@@ -1,0 +1,244 @@
+import { useEffect, useState } from 'react';
+import { AuctionStatus } from '@nexus/types';
+import { useAuth } from '../../../contexts/AuthContext';
+import {
+  adminStartAuctionApi,
+  adminLockConsignmentApi,
+  endAuctionApi,
+  getAdminAuctionItemsApi,
+  getAdminAuctionsApi,
+  type AdminAuctionListResponse,
+  type AdminAuctionEntity,
+  type AuctionConsignmentItem,
+} from '../../../services/auction.service';
+import { useToast } from '../../ToastNotification';
+
+export function useAdminAuctions() {
+  const { token } = useAuth();
+  const toast = useToast();
+  const [data, setData] = useState<AdminAuctionListResponse | null>(null);
+  const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [page, setPage] = useState(1);
+  const [revision, setRevision] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [selectedAuction, setSelectedAuction] = useState<AdminAuctionEntity | null>(null);
+  const [startingId, setStartingId] = useState<string | null>(null);
+  const [lockingAuction, setLockingAuction] = useState<AdminAuctionEntity | null>(null);
+  const [locking, setLocking] = useState(false);
+  const [lockError, setLockError] = useState('');
+  const [showcaseState, setShowcaseState] = useState<{
+    auctionId: string;
+    title: string;
+    description?: string;
+    items: AuctionConsignmentItem[];
+    playbackMode: 'live' | 'admin-replay';
+  } | null>(null);
+
+  async function openShowcaseForAuction(item: AdminAuctionEntity) {
+    try {
+      const itemsRes = await getAdminAuctionItemsApi(item.id);
+      const approvedItems: AuctionConsignmentItem[] = itemsRes.items
+        .filter((lot) => lot.status === 'APPROVED')
+        .sort((a, b) => (a.lotNumber ?? 999) - (b.lotNumber ?? 999))
+        .map((lot) => ({
+          id: lot.id,
+          title: lot.title,
+          description: lot.description,
+          images: lot.images,
+          threeModelKey: lot.threeModelKey,
+          appraisalCertificateNumber: lot.appraisalCertificateNumber,
+          appraisalAgency: lot.appraisalAgency,
+          certificateImages: lot.certificateImages,
+          certificateIssueDate: lot.certificateIssueDate,
+          status: lot.status,
+          lotNumber: lot.lotNumber,
+          startingPrice: lot.startingPrice
+            ? Number(lot.startingPrice)
+            : Number(lot.proposedStartingPrice),
+          proposedStartingPrice: Number(lot.proposedStartingPrice),
+          reservePrice: lot.reservePrice
+            ? Number(lot.reservePrice)
+            : lot.proposedReservePrice
+              ? Number(lot.proposedReservePrice)
+              : null,
+          proposedReservePrice: lot.proposedReservePrice ? Number(lot.proposedReservePrice) : null,
+          bidIncrement: lot.bidIncrement
+            ? Number(lot.bidIncrement)
+            : Number(lot.proposedBidIncrement),
+          proposedBidIncrement: Number(lot.proposedBidIncrement),
+          seller: lot.seller,
+        }));
+
+      const legacyProductFallback: AuctionConsignmentItem[] =
+        approvedItems.length === 0 && item.product
+          ? [
+              {
+                id: item.product.id,
+                title: item.product.title,
+                description: item.description,
+                images: item.imageUrl ? [item.imageUrl] : [],
+                threeModelKey: item.product.threeModelKey,
+                lotNumber: 1,
+                startingPrice: Number(item.startingPrice ?? 0),
+                bidIncrement: 0,
+                seller: item.seller ?? undefined,
+              },
+            ]
+          : approvedItems;
+
+      setShowcaseState({
+        auctionId: item.id,
+        title: item.title,
+        description: item.description,
+        items: legacyProductFallback,
+        playbackMode: 'admin-replay',
+      });
+    } catch {
+      setShowcaseState({
+        auctionId: item.id,
+        title: item.title,
+        description: item.description,
+        items: [],
+        playbackMode: 'admin-replay',
+      });
+    }
+  }
+
+  async function handleLockConsignment() {
+    if (!lockingAuction || locking || startingId) return;
+    setLocking(true);
+    setLockError('');
+    try {
+      const updated = await adminLockConsignmentApi(lockingAuction.id);
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              items: current.items.map((row) =>
+                row.id === updated.id ? { ...row, ...updated } : row,
+              ),
+            }
+          : current,
+      );
+      setLockingAuction(null);
+      toast.success('Đã chốt ký gửi phiên đấu giá.');
+    } catch (cause: unknown) {
+      setLockError(cause instanceof Error ? cause.message : 'Không thể chốt ký gửi.');
+    } finally {
+      setLocking(false);
+    }
+  }
+
+  async function handleStartAuction(item: AdminAuctionEntity) {
+    if (startingId) return;
+    setStartingId(item.id);
+    try {
+      const started = await adminStartAuctionApi(item.id);
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              items: current.items.map((row) =>
+                row.id === item.id ? { ...row, status: AuctionStatus.ACTIVE } : row,
+              ),
+            }
+          : current,
+      );
+      toast.success(`Đã mở phiên "${item.title}" & phát sóng video giới thiệu trực tiếp!`);
+      setShowcaseState({
+        auctionId: started.id,
+        title: started.title,
+        description: started.description,
+        items: started.items ?? [],
+        playbackMode: 'live',
+      });
+    } catch (cause: unknown) {
+      toast.error(cause instanceof Error ? cause.message : 'Không thể bắt đầu phiên đấu giá.');
+    } finally {
+      setStartingId(null);
+    }
+  }
+
+  async function handleEndAuction(id: string) {
+    if (startingId) return;
+    setStartingId(id);
+    try {
+      await endAuctionApi(id);
+      toast.success('Đã kết thúc phiên đấu giá.');
+      setRevision((value) => value + 1);
+    } catch (cause: unknown) {
+      toast.error(cause instanceof Error ? cause.message : 'Không thể kết thúc phiên đấu giá.');
+    } finally {
+      setStartingId(null);
+    }
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setKeyword(search.trim());
+      setPage(1);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    setData(null);
+    void getAdminAuctionsApi({
+      page,
+      limit: 10,
+      search: keyword,
+      status: (status || undefined) as AuctionStatus | undefined,
+    })
+      .then((result) => {
+        if (active) setData(result);
+      })
+      .catch((cause: unknown) => {
+        if (active)
+          setError(cause instanceof Error ? cause.message : 'Không thể tải phiên đấu giá.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [token, page, keyword, status, revision]);
+
+  return {
+    token,
+    data,
+    status,
+    setStatus,
+    search,
+    setSearch,
+    setKeyword,
+    page,
+    setPage,
+    setRevision,
+    loading,
+    error,
+    creating,
+    setCreating,
+    selectedAuction,
+    setSelectedAuction,
+    startingId,
+    lockingAuction,
+    setLockingAuction,
+    locking,
+    lockError,
+    setLockError,
+    showcaseState,
+    setShowcaseState,
+    openShowcaseForAuction,
+    handleLockConsignment,
+    handleStartAuction,
+    handleEndAuction,
+  };
+}

@@ -5,6 +5,8 @@ import { getUserById } from '../../../services/admin';
 import type { AdminUserDetail, AdminUserRole } from '../../../types/user.types';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';
+import ShopDetail from '../Stores/ShopDetail';
+import UserShopSummary from './UserShopSummary';
 
 const roleLabels: Record<AdminUserRole, string> = {
   BUYER: 'Buyer',
@@ -45,6 +47,7 @@ export default function UserAccountDetail({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
+  const [viewingShopId, setViewingShopId] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -65,6 +68,10 @@ export default function UserAccountDetail({
       });
     return () => controller.abort();
   }, [userId, token, revision]);
+
+  if (viewingShopId === userId && user?.role === 'SELLER') {
+    return <ShopDetail shopId={userId} onClose={() => setViewingShopId(null)} />;
+  }
 
   return (
     <Popup
@@ -181,18 +188,25 @@ export default function UserAccountDetail({
             </dl>
           </section>
 
+          {user.role === 'SELLER' && (
+            <UserShopSummary userId={user.id} onView={() => setViewingShopId(user.id)} />
+          )}
+
           <section aria-label="Sổ địa chỉ" className="border-t border-slate-100 pt-5">
             <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
               <MapPin size={17} aria-hidden="true" /> Sổ địa chỉ ({user.addresses.length})
             </h3>
             {user.addresses.length ? (
               <ul className="space-y-3">
-                {user.addresses.map((address) => (
+                {user.addresses.map((address, index) => (
                   <li key={address.id} className="rounded-xl border border-slate-200 p-4 text-sm">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="break-words font-semibold">{address.recipientName}</span>
+                      <span className="font-semibold">Địa chỉ {index + 1}</span>
                       {address.isDefault && <Badge tone="green">Mặc định</Badge>}
                     </div>
+                    <p className="mt-2 break-words text-slate-600">
+                      Người nhận / liên hệ: {address.recipientName}
+                    </p>
                     <p className="mt-1 text-slate-500">{address.phone}</p>
                     <p className="mt-2 break-words text-slate-600">
                       {[

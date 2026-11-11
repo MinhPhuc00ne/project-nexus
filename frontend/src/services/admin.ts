@@ -1,14 +1,10 @@
-import axios, { type AxiosRequestConfig } from 'axios';
+import type { AdminOverviewAnalytics } from '../types/admin-analytics.types';
 import type {
-  AdminProduct,
-  AdminProductDetail,
-  AdminProductMutationResult,
-  QueryAdminProductsParams,
-  UpdateProductStatusDto,
-  UpdateProductStatusResult,
-} from '../types/admin-product.types';
-import api, { ApiRequestError } from './api';
-import { getStoredToken } from './auth';
+  AdminOrderAfterSales,
+  AdminOrderDetail,
+  AdminOrderPage,
+  QueryAdminOrders,
+} from '../types/admin-order.types';
 import type { AdminDisputePage, QueryAdminDisputes } from '../types/admin-dispute.types';
 import type {
   AdminReport,
@@ -29,12 +25,6 @@ import type {
   UserStatusResult,
 } from '../types/user.types';
 import type {
-  CategoryTreeItem,
-  CreateCategoryDto,
-  DeleteCategoryResult,
-  UpdateCategoryDto,
-} from '../types/category.types';
-import type {
   CreateStaffDto,
   CreateStaffResult,
   InviteStaffDto,
@@ -44,49 +34,30 @@ import type {
   SellerRequestReviewResult,
   StaffInvitationResult,
   StaffUser,
-  AdminShop,
-  AdminShopDetail,
-  QueryAdminShopsParams,
-  UpdateShopStatusDto,
-  UpdateShopStatusResult,
-  WarnAdminShopDto,
-  WarnAdminShopResult,
 } from '../types/admin.types';
-import type {
-  AdminWalletSummary,
-  AdminWalletTransactionPage,
-  AdminWalletTransactionQueryDto,
-  DepositAdminWalletDto,
-  DepositAdminWalletResult,
-} from '../types/admin-wallet.types';
+import { adminRequest } from './adminRequest';
 
-// Các API admin dùng chung Axios client, token phiên hiện tại và định dạng lỗi.
-async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
-  const token = getStoredToken();
-  if (!token) throw new Error('Vui lòng đăng nhập để thực hiện thao tác này.');
+export function listAdminOrders(
+  params: QueryAdminOrders,
+  signal?: AbortSignal,
+): Promise<AdminOrderPage> {
+  return adminRequest({ url: '/admin/orders', method: 'GET', params, signal });
+}
 
-  try {
-    const response = await api.request<T | { data: T }>({
-      ...config,
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const payload = response.data;
-    return payload && typeof payload === 'object' && 'data' in payload
-      ? payload.data
-      : (payload as T);
-  } catch (error) {
-    if (axios.isAxiosError<{ errors?: string[]; message?: string }>(error)) {
-      if (!error.response) {
-        throw new Error('Không thể kết nối tới máy chủ backend. Vui lòng thử lại.');
-      }
-      const payload = error.response.data;
-      throw new ApiRequestError(
-        payload?.errors?.join(' · ') || payload?.message || 'Yêu cầu thất bại.',
-        error.response.status,
-      );
-    }
-    throw error;
-  }
+export function getAdminOrderById(id: string, signal?: AbortSignal): Promise<AdminOrderDetail> {
+  return adminRequest({ url: `/admin/orders/${encodeURIComponent(id)}`, method: 'GET', signal });
+}
+
+export function cancelAdminOrder(id: string, reason: string): Promise<AdminOrderAfterSales> {
+  return adminRequest({
+    url: `/commerce/orders/${encodeURIComponent(id)}/cancel`,
+    method: 'POST',
+    data: { reason },
+  });
+}
+
+export function getAdminOverviewAnalytics(signal?: AbortSignal): Promise<AdminOverviewAnalytics> {
+  return adminRequest({ url: '/admin/analytics/overview', method: 'GET', signal });
 }
 
 // Không gửi mật khẩu: nhân viên tự đặt mật khẩu qua link gửi đến email cá nhân.
@@ -158,143 +129,6 @@ export function getUserById(id: string, signal?: AbortSignal): Promise<AdminUser
     url: `/admin/users/${encodeURIComponent(id)}`,
     method: 'GET',
     signal,
-  });
-}
-
-export function getCategoryTree(signal?: AbortSignal): Promise<CategoryTreeItem[]> {
-  return adminRequest<CategoryTreeItem[]>({
-    url: '/catalog/categories',
-    method: 'GET',
-    signal,
-  });
-}
-
-export function createCategory(dto: CreateCategoryDto): Promise<CategoryTreeItem> {
-  return adminRequest<CategoryTreeItem>({
-    url: '/admin/categories',
-    method: 'POST',
-    data: dto,
-  });
-}
-
-export function updateCategory(id: string, dto: UpdateCategoryDto): Promise<CategoryTreeItem> {
-  return adminRequest<CategoryTreeItem>({
-    url: `/admin/categories/${encodeURIComponent(id)}`,
-    method: 'PATCH',
-    data: dto,
-  });
-}
-
-export function deleteCategory(id: string): Promise<DeleteCategoryResult> {
-  return adminRequest<DeleteCategoryResult>({
-    url: `/admin/categories/${encodeURIComponent(id)}`,
-    method: 'DELETE',
-  });
-}
-
-export function listAdminProducts(
-  params: QueryAdminProductsParams,
-  signal?: AbortSignal,
-): Promise<PaginatedResult<AdminProduct>> {
-  return adminRequest<PaginatedResult<AdminProduct>>({
-    url: '/admin/products',
-    method: 'GET',
-    params,
-    signal,
-  });
-}
-
-export function getAdminProductById(id: string, signal?: AbortSignal): Promise<AdminProductDetail> {
-  return adminRequest<AdminProductDetail>({
-    url: `/admin/products/${encodeURIComponent(id)}`,
-    method: 'GET',
-    signal,
-  });
-}
-
-export function updateAdminProductStatus(
-  id: string,
-  dto: UpdateProductStatusDto,
-): Promise<UpdateProductStatusResult> {
-  return adminRequest<UpdateProductStatusResult>({
-    url: `/admin/products/${encodeURIComponent(id)}/status`,
-    method: 'PATCH',
-    data: dto,
-  });
-}
-
-export function deleteAdminProduct(id: string): Promise<AdminProductMutationResult> {
-  return adminRequest<AdminProductMutationResult>({
-    url: `/admin/products/${encodeURIComponent(id)}`,
-    method: 'DELETE',
-  });
-}
-
-export function listAdminShops(
-  params: QueryAdminShopsParams,
-  signal?: AbortSignal,
-): Promise<PaginatedResult<AdminShop>> {
-  return adminRequest<PaginatedResult<AdminShop>>({
-    url: '/admin/shops',
-    method: 'GET',
-    params,
-    signal,
-  });
-}
-
-export function updateAdminShopStatus(
-  sellerId: string,
-  dto: UpdateShopStatusDto,
-): Promise<UpdateShopStatusResult> {
-  return adminRequest<UpdateShopStatusResult>({
-    url: `/admin/shops/${encodeURIComponent(sellerId)}/status`,
-    method: 'PATCH',
-    data: dto,
-  });
-}
-
-export function warnAdminShop(
-  sellerId: string,
-  dto: WarnAdminShopDto,
-): Promise<WarnAdminShopResult> {
-  return adminRequest<WarnAdminShopResult>({
-    url: `/admin/shops/${encodeURIComponent(sellerId)}/warn`,
-    method: 'POST',
-    data: dto,
-  });
-}
-
-export function getAdminShopById(id: string, signal?: AbortSignal): Promise<AdminShopDetail> {
-  return adminRequest<AdminShopDetail>({
-    url: `/admin/shops/${encodeURIComponent(id)}`,
-    method: 'GET',
-    signal,
-  });
-}
-
-export function getAdminWallet(signal?: AbortSignal): Promise<AdminWalletSummary> {
-  return adminRequest<AdminWalletSummary>({ url: '/admin/wallet', method: 'GET', signal });
-}
-
-export function getAdminWalletTransactions(
-  params: AdminWalletTransactionQueryDto,
-  signal?: AbortSignal,
-): Promise<AdminWalletTransactionPage> {
-  return adminRequest<AdminWalletTransactionPage>({
-    url: '/admin/wallet/transactions',
-    method: 'GET',
-    params,
-    signal,
-  });
-}
-
-export function depositToAdminWallet(
-  dto: DepositAdminWalletDto,
-): Promise<DepositAdminWalletResult> {
-  return adminRequest<DepositAdminWalletResult>({
-    url: '/admin/wallet/deposit',
-    method: 'POST',
-    data: dto,
   });
 }
 
@@ -382,3 +216,5 @@ export function rejectSellerRequest(
     data: { rejectionReason },
   });
 }
+
+export * from './adminCommerce';

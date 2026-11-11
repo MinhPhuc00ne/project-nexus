@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import { io } from 'socket.io-client';
+import {
+  WS_NOTIFICATION_EVENTS,
+  type WsNotificationConnectedPayload,
+  type WsNotificationNewPayload,
+  type WsNotificationUnreadCountPayload,
+} from '@nexus/types';
+import { API_BASE_URL } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getStoredToken, getStoredUser } from '../../../services/auth';
 import {
-  getNotificationUnreadCount,
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -17,6 +24,8 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
   const [data, setData] = useState<NotificationsPage | null>(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const syncRef = useRef<(() => void) | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
@@ -34,40 +43,33 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
   }, []);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token || !isOpen) return;
     let active = true;
     let fetching = false;
-    let timer: number | undefined;
+    let queued = false;
 
-    // Badge cập nhật cả khi đóng chuông; chỉ lấy danh sách khi đang mở.
-    // Lên lịch sau khi request kết thúc để không chồng request lúc mạng chậm.
+    // Only fetch the open list; badge counts arrive through the socket.
+    // Preserve changes arriving while a previous HTTP request is in flight.
     async function sync(showLoading = false) {
-      if (!active || fetching) return;
-      window.clearTimeout(timer);
+      if (!active) return;
+      queued = true;
+      if (fetching) return;
       if (lock.current || document.visibilityState === 'hidden') {
-        timer = window.setTimeout(() => void sync(), 5000);
         return;
       }
+      queued = false;
       fetching = true;
       const version = mutationVersion.current;
       const canApply = () => active && isCurrentSession() && version === mutationVersion.current;
-      if (showLoading && isOpen) setLoading(true);
+      if (showLoading) setLoading(true);
       try {
-        if (isOpen) {
-          const result = await getNotifications({ page, limit: 10 });
-          if (canApply()) {
-            const lastPage = Math.max(1, result.totalPages);
-            if (page > lastPage) setPage(lastPage);
-            else setData(result);
-            setUnreadCount(result.unreadCount);
-            setError('');
-          }
-        } else {
-          const result = await getNotificationUnreadCount();
-          if (canApply()) {
-            setUnreadCount(result.unreadCount);
-            setError('');
-          }
+        const result = await getNotifications({ page, limit: 10 });
+        if (canApply()) {
+          const lastPage = Math.max(1, result.totalPages);
+          if (page > lastPage) setPage(lastPage);
+          else setData(result);
+          setUnreadCount(result.unreadCount);
+          setError('');
         }
       } catch (cause) {
         if (canApply())
@@ -75,21 +77,77 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       } finally {
         fetching = false;
         if (canApply()) setLoading(false);
-        if (active) timer = window.setTimeout(() => void sync(), 5000);
+        if (active && queued) void sync();
       }
     }
 
     const refreshVisible = () => void sync();
+    syncRef.current = refreshVisible;
     void sync(true);
     window.addEventListener('focus', refreshVisible);
     document.addEventListener('visibilitychange', refreshVisible);
     return () => {
       active = false;
-      window.clearTimeout(timer);
+      if (syncRef.current === refreshVisible) syncRef.current = null;
       window.removeEventListener('focus', refreshVisible);
       document.removeEventListener('visibilitychange', refreshVisible);
     };
   }, [isOpen, page, revision, token, userId]);
+
+  // This connection remains mounted even when the notification dropdown is closed.
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    const backend = new URL(API_BASE_URL, window.location.origin);
+    const socket = io(`${backend.origin}/ws/notifications`, {
+      autoConnect: false,
+      transports: ['websocket'],
+      auth: (callback) => callback({ token: getStoredToken() }),
+    });
+    const seen = new Set<string>();
+    const currentSession = () =>
+      active && getStoredToken() === token && getStoredUser()?.id === userId;
+    const applyCount = (payload: { userId: string; unreadCount?: number }) => {
+      if (!currentSession() || payload.userId !== userId) return;
+      mutationVersion.current += 1;
+      if (typeof payload.unreadCount === 'number') setUnreadCount(payload.unreadCount);
+      syncRef.current?.();
+    };
+    socket.on(
+      WS_NOTIFICATION_EVENTS.SERVER.CONNECTED,
+      (payload: WsNotificationConnectedPayload) => {
+        if (!currentSession() || payload.userId !== userId) return;
+        setConnected(true);
+        applyCount(payload);
+      },
+    );
+    socket.on(WS_NOTIFICATION_EVENTS.SERVER.NEW, (payload: WsNotificationNewPayload) => {
+      if (!currentSession() || payload.userId !== userId || seen.has(payload.id)) return;
+      seen.add(payload.id);
+      if (seen.size > 1000) seen.delete(seen.values().next().value!);
+      // Prefer the server total to avoid adding twice when UNREAD_COUNT also arrives.
+      if (typeof payload.unreadCount !== 'number' && !payload.isRead)
+        setUnreadCount((current) => (current ?? 0) + 1);
+      applyCount(payload);
+    });
+    socket.on(
+      WS_NOTIFICATION_EVENTS.SERVER.UNREAD_COUNT,
+      (payload: WsNotificationUnreadCountPayload) => applyCount(payload),
+    );
+    const disconnected = () => {
+      if (active) setConnected(false);
+    };
+    socket.on('disconnect', disconnected);
+    socket.on('connect_error', disconnected);
+    socket.on(WS_NOTIFICATION_EVENTS.SERVER.ERROR, disconnected);
+    socket.connect();
+    return () => {
+      active = false;
+      socket.disconnect();
+      socket.removeAllListeners();
+      setConnected(false);
+    };
+  }, [token, userId]);
 
   async function markRead(id?: string): Promise<void> {
     if (lock.current || loading || !isCurrentSession()) return;
@@ -101,19 +159,7 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       const result = id ? await markNotificationRead(id) : await markAllNotificationsRead();
       if (!isCurrentSession()) return;
       toast.success(result.message);
-      setUnreadCount((current) => (id ? (current === null ? null : Math.max(0, current - 1)) : 0));
-      setData((current) =>
-        current
-          ? {
-              ...current,
-              unreadCount: id ? Math.max(0, current.unreadCount - 1) : 0,
-              items: current.items.map((item) =>
-                !id || item.id === id ? { ...item, isRead: true } : item,
-              ),
-            }
-          : current,
-      );
-      setRevision((current) => current + 1);
+      // The backend broadcasts the authoritative count to every connected session.
     } catch (cause) {
       if (isCurrentSession()) {
         const message = cause instanceof Error ? cause.message : 'Không thể cập nhật thông báo.';
@@ -122,12 +168,16 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       }
     } finally {
       lock.current = false;
-      if (isCurrentSession()) setPending(null);
+      if (isCurrentSession()) {
+        setPending(null);
+        setRevision((current) => current + 1);
+      }
     }
   }
 
   return {
     unreadCount,
+    connected,
     data,
     loading,
     error,

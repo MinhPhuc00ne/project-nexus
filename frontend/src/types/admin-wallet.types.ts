@@ -30,6 +30,20 @@ export interface AdminWalletTransaction {
   referenceId: string | null;
   description: string | null;
   createdAt: string;
+  orderDetails?: {
+    orderId: string;
+    buyerName?: string;
+    buyerEmail?: string;
+    shopName?: string;
+    sellerEmail?: string;
+    subtotal: number;
+    shippingFee: number;
+    totalAmount: number;
+    platformFee: number;
+    sellerPayout: number;
+    waybillCode?: string;
+    carrier?: string;
+  } | null;
 }
 
 export interface AdminWalletTransactionQueryDto {
@@ -37,6 +51,8 @@ export interface AdminWalletTransactionQueryDto {
   limit?: number;
   type?: AdminWalletTransactionType;
   search?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export interface AdminWalletTransactionPage {
