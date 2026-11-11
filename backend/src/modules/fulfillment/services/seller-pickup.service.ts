@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, SellerPickupPoint } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ShopShippingProfileService } from '../../users/services/shop-shipping-profile.service';
 import { SellerPickupDto } from '../dtos/seller-pickup.dto';
@@ -13,8 +13,14 @@ import { GhnLogisticsService } from './ghn-logistics.service';
 import { GhnShopApiService } from './ghn-shop-api.service';
 import { ghnEnvironment, GhnEnvironment } from './ghn-context';
 
-const phoneKey = (value: string): string => value.replace(/[\s.-]/g, '').replace(/^\+?84/, '0');
+import {
+  phoneKey,
+  pickupFingerprint,
+  pickupView,
+  SellerPickupView,
+} from './seller-ghn-account.util';
 
+/** Synchronizes carrier accounts using shop profiles as the only pickup address source. */
 @Injectable()
 export class SellerPickupService {
   constructor(
@@ -25,35 +31,56 @@ export class SellerPickupService {
     private readonly profiles: ShopShippingProfileService,
   ) {}
 
+  /** Reads the carrier environment. @returns Sandbox or production. */
   environment(): GhnEnvironment {
     return ghnEnvironment(this.config);
   }
 
-  async mine(sellerId: string): Promise<SellerPickupPoint | null> {
+  /** Synchronizes the current shop. @param sellerId Shop owner. @returns Current pickup view. */
+  async mine(sellerId: string): Promise<SellerPickupView | null> {
     return this.synchronize(sellerId);
   }
 
-  async pending(): Promise<SellerPickupPoint[]> {
-    return this.prisma.sellerPickupPoint.findMany({
+  /** Lists carrier accounts awaiting verification. @returns Current profiles and carrier metadata. */
+  async pending(): Promise<SellerPickupView[]> {
+    const accounts = await this.prisma.sellerGhnAccount.findMany({
       where: { environment: ghnEnvironment(this.config), status: 'PENDING' },
       orderBy: { updatedAt: 'asc' },
       take: 100,
     });
+    return Promise.all(
+      accounts.map(async (account) =>
+        pickupView(account, await this.profiles.read(account.sellerId, this.prisma, true)),
+      ),
+    );
   }
 
-  async propose(sellerId: string, dto: SellerPickupDto): Promise<SellerPickupPoint> {
+  /** Reconnects a matching profile. @param sellerId Shop owner. @param dto Expected profile. @returns Verified view. */
+  async propose(sellerId: string, dto: SellerPickupDto): Promise<SellerPickupView> {
     return this.synchronize(sellerId, dto);
   }
 
+  /** Invalidates both environments atomically. @param tx Profile transaction. @param sellerId Shop owner. @returns Completion. */
   async invalidate(tx: Prisma.TransactionClient, sellerId: string): Promise<void> {
-    // Invalidate both environments atomically with the profile change.
-    await tx.sellerPickupPoint.updateMany({
+    await tx.sellerGhnAccount.updateMany({
       where: { sellerId },
-      data: { status: 'PENDING', verifiedAt: null, version: { increment: 1 } },
+      data: {
+        status: 'PENDING',
+        verifiedAt: null,
+        profileFingerprint: null,
+        version: { increment: 1 },
+      },
     });
   }
 
-  async synchronize(sellerId: string, expected?: SellerPickupDto): Promise<SellerPickupPoint> {
+  /**
+   * Serializes carrier registration with shop profile changes.
+   * @param sellerId Shop owner.
+   * @param expected Optional expected profile supplied by the caller.
+   * @returns Verified carrier account and current shop address.
+   * @throws BadRequestException for invalid profiles or carrier responses.
+   */
+  async synchronize(sellerId: string, expected?: SellerPickupDto): Promise<SellerPickupView> {
     return this.prisma.$transaction(
       async (tx) => {
         // Profile saves and GHN setup share the same lock and always read fresh data.
@@ -92,14 +119,7 @@ export class SellerPickupService {
           throw new BadRequestException('GHN không xác định được địa chỉ lấy hàng.');
         const environment = ghnEnvironment(this.config);
         const data = {
-          name: dto.name.trim(),
-          phone: phoneKey(dto.phone),
-          city: dto.city.trim(),
-          district: dto.district.trim(),
-          ward: dto.ward.trim(),
-          street: dto.street.trim(),
-          latitude: dto.latitude ?? null,
-          longitude: dto.longitude ?? null,
+          profileFingerprint: pickupFingerprint(dto),
           districtId: location.districtId,
           wardCode: location.wardCode,
           status: 'PENDING',
@@ -113,21 +133,15 @@ export class SellerPickupService {
         };
         // Upsert locks this seller/environment row until commit. Concurrent saves
         // wait, then observe the completed binding instead of registering twice.
-        const point = await tx.sellerPickupPoint.upsert({
+        const point = await tx.sellerGhnAccount.upsert({
           where: { sellerId_environment: { sellerId, environment } },
           create: { sellerId, environment, ...data },
           update: { version: { increment: 1 } },
         });
-        const sameAddress = [
-          'name',
-          'phone',
-          'city',
-          'district',
-          'ward',
-          'street',
-          'districtId',
-          'wardCode',
-        ].every((key) => point[key as keyof typeof point] === data[key as keyof typeof data]);
+        const sameAddress =
+          point.profileFingerprint === data.profileFingerprint &&
+          point.districtId === data.districtId &&
+          point.wardCode === data.wardCode;
         if (
           sameAddress &&
           point.status === 'VERIFIED' &&
@@ -136,20 +150,17 @@ export class SellerPickupService {
           point.carrierAddress &&
           point.carrierPhone
         ) {
-          return tx.sellerPickupPoint.update({
-            where: { id: point.id },
-            data: { latitude: data.latitude, longitude: data.longitude },
-          });
+          return pickupView(point, dto);
         }
-        const assigned = await tx.sellerPickupPoint.findMany({
+        const assigned = await tx.sellerGhnAccount.findMany({
           where: { environment, sellerId: { not: sellerId }, ghnShopId: { not: null } },
           select: { ghnShopId: true },
         });
         const shop = await this.shops.ensure(
           {
-            name: data.name,
-            phone: data.phone,
-            address: `${data.street}, ${data.ward}, ${data.district}, ${data.city}`,
+            name: dto.name.trim(),
+            phone: phoneKey(dto.phone),
+            address: `${dto.street}, ${dto.ward}, ${dto.district}, ${dto.city}`,
             districtId: data.districtId,
             wardCode: data.wardCode,
           },
@@ -159,11 +170,11 @@ export class SellerPickupService {
           !shop.active ||
           shop.districtId !== data.districtId ||
           shop.wardCode !== data.wardCode ||
-          phoneKey(shop.phone) !== data.phone
+          phoneKey(shop.phone) !== phoneKey(dto.phone)
         ) {
           throw new BadRequestException('GHN trả điểm lấy hàng không khớp địa chỉ đã lưu.');
         }
-        return tx.sellerPickupPoint.update({
+        const updated = await tx.sellerGhnAccount.update({
           where: { id: point.id },
           data: {
             ...data,
@@ -177,15 +188,35 @@ export class SellerPickupService {
             verifiedAt: new Date(),
           },
         });
+        return pickupView(updated, dto);
       },
       { timeout: 60000, maxWait: 10000 },
     );
   }
 
-  async verify(pointId: string, shopId: number, adminId: string): Promise<SellerPickupPoint> {
-    const point = await this.prisma.sellerPickupPoint.findUnique({ where: { id: pointId } });
-    if (!point || point.environment !== ghnEnvironment(this.config))
+  /**
+   * Manually verifies carrier metadata against the current profile.
+   * @param pointId Stable account identifier retained from the former pickup record.
+   * @param shopId Carrier shop identifier.
+   * @param adminId Reviewing administrator.
+   * @returns Verified account and current profile.
+   * @throws ConflictException for concurrent profile changes or duplicate carrier ownership.
+   * @throws BadRequestException for a mismatched carrier address.
+   * @throws NotFoundException for a missing account in this environment.
+   */
+  async verify(pointId: string, shopId: number, adminId: string): Promise<SellerPickupView> {
+    const account = await this.prisma.sellerGhnAccount.findUnique({ where: { id: pointId } });
+    if (!account || account.environment !== ghnEnvironment(this.config))
       throw new NotFoundException('Không tìm thấy điểm lấy hàng trong môi trường hiện tại.');
+    const point = pickupView(account, await this.profiles.read(account.sellerId));
+    const expectedFingerprint = pickupFingerprint(point);
+    const location = await this.logistics.resolveDistrictAndWard(
+      point.city,
+      point.district,
+      point.ward,
+    );
+    if (!location?.districtId || !location.wardCode)
+      throw new BadRequestException('GHN không xác định được địa chỉ lấy hàng.');
     const shop = await this.shops.find(shopId);
     const addressKey = (value: string): string =>
       value
@@ -198,8 +229,8 @@ export class SellerPickupService {
         .trim();
     if (
       !shop.active ||
-      shop.districtId !== point.districtId ||
-      shop.wardCode !== point.wardCode ||
+      shop.districtId !== location?.districtId ||
+      shop.wardCode !== location?.wardCode ||
       phoneKey(shop.phone) !== phoneKey(point.phone)
     ) {
       throw new BadRequestException(
@@ -215,19 +246,15 @@ export class SellerPickupService {
       return await this.prisma.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM users WHERE id = ${point.sellerId} FOR UPDATE`;
         const profile = await this.profiles.read(point.sellerId, tx);
-        if (
-          phoneKey(profile.phone) !== phoneKey(point.phone) ||
-          ['name', 'city', 'district', 'ward', 'street'].some(
-            (key) =>
-              String(profile[key as keyof typeof profile] ?? '') !==
-              String(point[key as keyof typeof point] ?? ''),
-          )
-        )
+        if (pickupFingerprint(profile) !== expectedFingerprint)
           throw new ConflictException('Điểm lấy hàng không còn khớp hồ sơ gian hàng.');
-        const updated = await tx.sellerPickupPoint.updateMany({
+        const updated = await tx.sellerGhnAccount.updateMany({
           where: { id: pointId, version: point.version },
           data: {
             status: 'VERIFIED',
+            profileFingerprint: expectedFingerprint,
+            districtId: location.districtId,
+            wardCode: location.wardCode,
             ghnShopId: shop.id,
             ghnClientId: shop.clientId,
             carrierName: shop.name,
@@ -240,7 +267,10 @@ export class SellerPickupService {
         });
         if (updated.count !== 1)
           throw new ConflictException('Seller vừa thay đổi điểm lấy hàng. Hãy kiểm tra lại.');
-        return tx.sellerPickupPoint.findUniqueOrThrow({ where: { id: pointId } });
+        return pickupView(
+          await tx.sellerGhnAccount.findUniqueOrThrow({ where: { id: pointId } }),
+          profile,
+        );
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
@@ -252,7 +282,8 @@ export class SellerPickupService {
     }
   }
 
-  async requireVerified(sellerId: string): Promise<SellerPickupPoint> {
+  /** Requires a current carrier registration. @param sellerId Shop owner. @returns Verified pickup view. @throws BadRequestException for incomplete registration. */
+  async requireVerified(sellerId: string): Promise<SellerPickupView> {
     const point = await this.synchronize(sellerId);
     if (
       !point ||

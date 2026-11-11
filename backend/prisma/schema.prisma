@@ -188,8 +188,8 @@ model User {
   isSellerActive    Boolean              @default(false) @map("is_seller_active")
   isShopSuspended   Boolean              @default(false) @map("is_shop_suspended")
   suspensionReason  String?              @map("suspension_reason") @db.Text
-  reputationScore   Int                  @default(100) @map("reputation_score")
-  trustLevel        ReputationTrustLevel @default(GOOD) @map("trust_level")
+  reputationScore   Int                  @default(50) @map("reputation_score")
+  trustLevel        ReputationTrustLevel @default(PROBATION) @map("trust_level")
   isVerified        Boolean              @default(false) @map("is_verified")
   verificationCode  String?              @map("verification_code")
   codeExpiresAt     DateTime?            @map("code_expires_at")
@@ -235,7 +235,7 @@ model User {
   chatMessagesSent           ChatMessage[]            @relation("ChatSender")
   shopAutoReplies            ChatAutoReply[]          @relation("ShopAutoReplies")
   cancelledAutoReplies       ChatAutoReply[]          @relation("AdminCancelledReplies")
-  pickupPoints               SellerPickupPoint[]
+  ghnAccounts                SellerGhnAccount[]
   productReviews             ProductReview[]
   customerReviewsGiven       CustomerReview[]         @relation("CustomerReviewer")
   customerReviewsReceived    CustomerReview[]         @relation("CustomerReviewee")
@@ -420,38 +420,32 @@ model Warehouse {
   @@map("warehouses")
 }
 
-model SellerPickupPoint {
-  id             String    @id @default(uuid())
-  sellerId       String    @map("seller_id")
-  environment    String
-  name           String
-  phone          String
-  city           String
-  district       String
-  ward           String
-  street         String
-  latitude       Decimal?  @db.Decimal(10, 8)
-  longitude      Decimal?  @db.Decimal(11, 8)
-  districtId     Int       @map("district_id")
-  wardCode       String    @map("ward_code")
-  status         String    @default("PENDING")
-  version        Int       @default(1)
-  ghnShopId      Int?      @map("ghn_shop_id")
-  ghnClientId    Int?      @map("ghn_client_id")
-  carrierName    String?   @map("carrier_name")
-  carrierPhone   String?   @map("carrier_phone")
-  carrierAddress String?   @map("carrier_address")
-  verifiedBy     String?   @map("verified_by")
-  verifiedAt     DateTime? @map("verified_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+/// Carrier registration metadata; the pickup address comes from the current shop profile.
+model SellerGhnAccount {
+  id                 String    @id @default(uuid())
+  sellerId           String    @map("seller_id")
+  environment        String
+  profileFingerprint String?   @map("profile_fingerprint")
+  districtId         Int       @map("district_id")
+  wardCode           String    @map("ward_code")
+  status             String    @default("PENDING")
+  version            Int       @default(1)
+  ghnShopId          Int?      @map("ghn_shop_id")
+  ghnClientId        Int?      @map("ghn_client_id")
+  carrierName        String?   @map("carrier_name")
+  carrierPhone       String?   @map("carrier_phone")
+  carrierAddress     String?   @map("carrier_address")
+  verifiedBy         String?   @map("verified_by")
+  verifiedAt         DateTime? @map("verified_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   seller User @relation(fields: [sellerId], references: [id], onDelete: Restrict)
 
   @@unique([sellerId, environment])
   @@unique([environment, ghnShopId])
   @@index([environment, status])
-  @@map("seller_pickup_points")
+  @@map("seller_ghn_accounts")
 }
 
 model Inventory {

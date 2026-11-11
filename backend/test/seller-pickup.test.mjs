@@ -71,7 +71,7 @@ function fixture() {
   const prisma = {
     $queryRaw: async () => [],
     user: { findUnique: async () => ({ role: 'SELLER' }) },
-    sellerPickupPoint: {
+    sellerGhnAccount: {
       findUnique: mock.fn(async () => point),
       findUniqueOrThrow: async () => point,
       findMany: async () => [],
@@ -124,9 +124,9 @@ test('saving the same verified address reuses the binding', async () => {
   const f = fixture();
   await f.service.propose('seller-a', dto);
   Object.assign(f.profile, { latitude: 10, longitude: 106 });
-  await f.service.synchronize('seller-a');
+  const current = await f.service.synchronize('seller-a');
   assert.equal(f.shops.ensure.mock.callCount(), 1);
-  assert.equal(f.point.latitude, 10);
+  assert.equal(current.latitude, 10);
 });
 
 test('changing pickup address automatically establishes a new GHN binding', async () => {
@@ -183,7 +183,7 @@ for (const [label, change] of [
       f.service.verify('pickup-a', 101, 'admin'),
       (error) => error.getStatus() === 400,
     );
-    assert.equal(f.prisma.sellerPickupPoint.updateMany.mock.callCount(), 0);
+    assert.equal(f.prisma.sellerGhnAccount.updateMany.mock.callCount(), 0);
   });
 }
 
@@ -194,7 +194,7 @@ test('a concurrent seller edit prevents verification of the previous address', a
     return f.shop;
   };
   // Real Prisma returns a detached read, not a mutable reference to a row.
-  f.prisma.sellerPickupPoint.findUnique = async () => ({ ...f.point });
+  f.prisma.sellerGhnAccount.findUnique = async () => ({ ...f.point });
   await assert.rejects(
     f.service.verify('pickup-a', 101, 'admin'),
     (error) => error.getStatus() === 409,
@@ -204,7 +204,7 @@ test('a concurrent seller edit prevents verification of the previous address', a
 
 test('a GHN shop already assigned to another seller fails with a clear conflict', async () => {
   const f = fixture();
-  f.prisma.sellerPickupPoint.updateMany = async () => {
+  f.prisma.sellerGhnAccount.updateMany = async () => {
     throw new Prisma.PrismaClientKnownRequestError('duplicate binding', {
       code: 'P2002',
       clientVersion: '7.10.0',
@@ -598,9 +598,40 @@ test('admin cannot verify a pickup address that differs from the current profile
   f.profile.street = 'New profile address';
   await assert.rejects(
     f.service.verify('pickup-a', 101, 'admin'),
+    (error) => error.getStatus() === 400,
+  );
+  assert.equal(f.prisma.sellerGhnAccount.updateMany.mock.callCount(), 0);
+});
+
+test('a profile change during GHN lookup cannot verify the old address', async () => {
+  const f = fixture();
+  f.shops.find = async () => {
+    f.profile.street = 'Changed during verification';
+    return f.shop;
+  };
+  await assert.rejects(
+    f.service.verify('pickup-a', 101, 'admin'),
     (error) => error.getStatus() === 409,
   );
-  assert.equal(f.prisma.sellerPickupPoint.updateMany.mock.callCount(), 0);
+  assert.equal(f.prisma.sellerGhnAccount.updateMany.mock.callCount(), 0);
+});
+
+test('pickup persistence stores carrier metadata without copying the shop address', async () => {
+  const f = fixture();
+  await f.service.synchronize('seller-a');
+  const data = f.prisma.sellerGhnAccount.update.mock.calls[0].arguments[0].data;
+  for (const key of [
+    'name',
+    'phone',
+    'street',
+    'city',
+    'district',
+    'ward',
+    'latitude',
+    'longitude',
+  ])
+    assert.equal(Object.hasOwn(data, key), false, key);
+  assert.match(data.profileFingerprint, /^[a-f0-9]{64}$/);
 });
 
 test('profile invalidation affects both environments in the profile transaction', async () => {
@@ -608,7 +639,7 @@ test('profile invalidation affects both environments in the profile transaction'
   let mutation;
   await f.service.invalidate(
     {
-      sellerPickupPoint: {
+      sellerGhnAccount: {
         updateMany: async (input) => {
           mutation = input;
           return { count: 2 };

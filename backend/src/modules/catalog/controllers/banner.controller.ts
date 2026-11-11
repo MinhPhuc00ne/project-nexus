@@ -27,6 +27,7 @@ import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorat
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { BannerDto } from '../dtos/banner.dto';
+import { ReorderBannersDto } from '../dtos/reorder-banners.dto';
 import { BannerDisabledDto, BannerResponseDto } from '../dtos/banner-response.dto';
 import { BannerHistoryPageDto, QueryBannerHistoryDto } from '../dtos/banner-history.dto';
 import { BannerService } from '../services/banner.service';
@@ -41,13 +42,13 @@ export class BannerController {
     private readonly history: BannerHistoryService,
   ) {}
 
-  /** Returns currently published banners. @returns Admin group first, newest first within each group. */
+  /** Returns currently published banners. @returns Priority order with creator and date tie breakers. */
   @Get('catalog/banners')
   @Public()
   @ApiOperation({
     summary: 'Published banners',
     description:
-      'Admin-created banners always precede staff-created banners. Each group is newest first. Linked auctions use auctionId and targetUrl=/auction/:id. Expired or inactive banners are excluded.',
+      'Higher priorities appear first, then admin-created banners before staff-created banners, newest first within tied groups. Linked auctions use auctionId and targetUrl=/auction/:id. Expired or inactive banners are excluded.',
   })
   @ApiOkResponse({ type: [BannerResponseDto] })
   listPublic(): Promise<BannerResponseDto[]> {
@@ -62,13 +63,31 @@ export class BannerController {
   @ApiOperation({
     summary: 'Manage all banners',
     description:
-      'Uses the same immutable creator-group and newest-first ordering as the public list. Includes creator identity and inactive banners.',
+      'Uses the same priority ordering as the public list. Includes creator identity and inactive banners.',
   })
   @ApiOkResponse({ type: [BannerResponseDto] })
   @ApiUnauthorizedResponse({ description: 'Authentication required' })
   @ApiForbiddenResponse({ description: 'ADMIN or SUPPORT_STAFF only' })
   listAll(): Promise<BannerResponseDto[]> {
     return this.banners.list(false);
+  }
+
+  /** Reorders published and inactive banners. @returns Atomic ordering confirmation. */
+  @Patch('staff/banners/order')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPPORT_STAFF, Role.ADMIN)
+  @ApiOperation({
+    summary: 'Set banner display order',
+    description:
+      'Selected IDs appear first in the supplied order. Omitted banners follow with priority zero.',
+  })
+  @ApiOkResponse({ type: BannerDisabledDto })
+  reorder(
+    @CurrentUser('id') actorId: string,
+    @Body() dto: ReorderBannersDto,
+  ): Promise<{ success: true }> {
+    return this.banners.reorder(actorId, dto.bannerIds);
   }
 
   /** Creates attributed content. @returns Banner with server-owned creator group and optional auction route. */
@@ -79,7 +98,7 @@ export class BannerController {
   @ApiOperation({
     summary: 'Create a banner',
     description:
-      'Set auctionId to link an existing public auction. The server derives targetUrl. Role at creation is immutable; priority no longer affects ordering.',
+      'Set auctionId to link an existing public auction. The server derives targetUrl. Role at creation is immutable; higher priority displays first.',
   })
   @ApiCreatedResponse({ type: BannerResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid content, dates, or nonpublic auction' })
