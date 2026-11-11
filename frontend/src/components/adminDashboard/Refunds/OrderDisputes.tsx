@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { Flag } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import Popup from '../../Popup';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
@@ -38,9 +39,11 @@ function DisputeBadge({ status }: { status: AdminDisputeStatus }) {
   );
 }
 
-export default function ReportsManagement() {
-  const [search, setSearch] = useState('');
-  const [term, setTerm] = useState('');
+export default function OrderDisputes() {
+  const [params] = useSearchParams();
+  const orderId = params.get('order') ?? '';
+  const [search, setSearch] = useState(orderId);
+  const [term, setTerm] = useState(orderId);
   const [status, setStatus] = useState<AdminDisputeStatus | ''>('');
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<AdminDisputePage | null>(null);
@@ -53,6 +56,10 @@ export default function ReportsManagement() {
   const evidenceUrls = Array.isArray(detail?.evidenceUrls)
     ? detail.evidenceUrls.filter((url): url is string => typeof url === 'string')
     : [];
+
+  useEffect(() => {
+    setSearch(orderId);
+  }, [orderId]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

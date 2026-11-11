@@ -18,17 +18,6 @@ export type AdminTab =
   | 'system'
   | 'settings';
 
-/** Refund request dispute summary for administrator review. */
-export interface RefundRequest {
-  id: string;
-  product: string;
-  amount: number;
-  gateway: string;
-  report: string;
-  recommendation: string;
-  status: 'pending' | 'approved' | 'rejected';
-}
-
 /** Auction listing item representing pending, scheduled, or live bidding events. */
 export interface AuctionItem {
   id: string;
@@ -47,7 +36,6 @@ export interface AuctionItem {
 
 /** Shared dashboard state owned by AdminLayout and distributed down to tab panels. */
 export interface AdminData extends AdminCommerceData {
-  refunds: RefundRequest[];
   auctions: AuctionItem[];
 }
 
@@ -55,14 +43,13 @@ export interface AdminData extends AdminCommerceData {
 export interface AdminActions {
   updateCommerce: (change: CommerceChange) => void;
   navigate: (tab: AdminTab) => void;
-  reviewRefund: (id: string, status: 'approved' | 'rejected') => void;
-  approveAuction: (id: string) => void;
   showDetail: (title: string, content: string) => void;
   notify: (message: string) => void;
 }
 
 // Props chung: data dùng để đọc/hiển thị, actions dùng để báo thao tác về trang cha.
 export interface AdminTabProps {
+  pendingRefundCount?: number;
   data: AdminData;
   actions: AdminActions;
 }

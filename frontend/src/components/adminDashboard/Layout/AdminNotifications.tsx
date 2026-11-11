@@ -120,7 +120,13 @@ export default function AdminNotifications({
                           </time>
                           {item.targetUrl?.startsWith('/') && !item.targetUrl.startsWith('//') && (
                             <Link
-                              to={item.targetUrl}
+                              to={
+                                item.type === 'DISPUTE' &&
+                                item.title.startsWith('Khiếu nại đơn hàng') &&
+                                item.targetUrl === '/admin/reports'
+                                  ? '/admin/refunds'
+                                  : item.targetUrl
+                              }
                               onClick={() => {
                                 if (!item.isRead) void state.markRead(item.id);
                                 onToggle();

@@ -3,10 +3,8 @@ import { Button } from '../shared/AdminUI';
 import { RevenueChart, RevenueComposition } from './RevenueChart';
 import TransactionHistory from './TransactionHistory';
 import AdminWallet from './AdminWallet';
-import { useAdminContext } from '../shared/useAdminContext';
 
 export default function AdminFinancePage() {
-  const context = useAdminContext();
   const [tab, setTab] = useState<'transactions' | 'overview' | 'wallet'>('transactions');
   return (
     <div className="space-y-5">
@@ -34,7 +32,7 @@ export default function AdminFinancePage() {
         </Button>
       </div>
       {tab === 'transactions' ? (
-        <TransactionHistory {...context} />
+        <TransactionHistory />
       ) : tab === 'overview' ? (
         <div className="grid items-start gap-5 xl:grid-cols-[2fr_1fr]">
           <RevenueChart />

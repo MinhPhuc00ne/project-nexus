@@ -3,65 +3,6 @@ import { initialCommerceData } from './commerce';
 
 export const initialAdminData: AdminData = {
   ...initialCommerceData,
-  refunds: [
-    {
-      id: 'NX-ORD-991204',
-      product: 'Lư hương đồng triều Nguyễn thế kỷ 19',
-      amount: 48500000,
-      gateway: 'PAYOS ESCROW',
-      report:
-        'Buyer đã quay video unboxing còn seal GHN. Đế lư hương nứt vỡ 4cm, đúng quy trình khiếu nại trong 48 giờ.',
-      recommendation: 'Chấp thuận hoàn tiền 100% về ví Buyer; trả hàng Seller chịu cước.',
-      status: 'pending',
-    },
-    {
-      id: 'NX-ORD-887410',
-      product: 'Đồng hồ Thụy Sĩ Omega Seamaster 300M',
-      amount: 112000000,
-      gateway: 'PAYOS VIETQR',
-      report:
-        'Buyer khiếu nại sai số dây đeo kim loại không nguyên bản. Seller phản bác có giấy kiểm định.',
-      recommendation: 'Yêu cầu giám định bên thứ ba hoặc hòa giải hoàn 10% phí phục hồi.',
-      status: 'pending',
-    },
-    {
-      id: 'NX-ORD-887411',
-      product: 'Tranh sơn dầu Phố cổ',
-      amount: 18000000,
-      gateway: 'PAYOS ESCROW',
-      report:
-        'Khung tranh bị hỏng trong quá trình giao hàng. Đã nhận hình ảnh từ Buyer và biên bản giao nhận.',
-      recommendation: 'Hoàn tiền sau khi xác minh tình trạng hàng trả.',
-      status: 'pending',
-    },
-    {
-      id: 'NX-ORD-887412',
-      product: 'Bình gốm men lam',
-      amount: 12500000,
-      gateway: 'PAYOS ESCROW',
-      report: 'Sản phẩm nhận được không đúng mô tả kích thước.',
-      recommendation: 'Đối chiếu mô tả sản phẩm và hồ sơ Seller.',
-      status: 'pending',
-    },
-    {
-      id: 'NX-ORD-887413',
-      product: 'Mô hình xe cổ',
-      amount: 8500000,
-      gateway: 'PAYOS VIETQR',
-      report: 'Thiếu phụ kiện đi kèm theo mô tả.',
-      recommendation: 'Yêu cầu Seller bổ sung phụ kiện hoặc hoàn tiền một phần.',
-      status: 'pending',
-    },
-    {
-      id: 'NX-ORD-887414',
-      product: 'Hộp sơn mài khảm trai',
-      amount: 32000000,
-      gateway: 'PAYOS ESCROW',
-      report: 'Buyer báo hàng có vết trầy trên nắp hộp.',
-      recommendation: 'Kiểm tra video unboxing và bằng chứng đóng gói.',
-      status: 'pending',
-    },
-  ],
   auctions: [
     {
       id: 'AUCT-109',
