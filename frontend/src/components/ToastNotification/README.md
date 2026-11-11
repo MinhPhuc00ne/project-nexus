@@ -13,7 +13,7 @@ toast.error('Unable to save changes. Please try again.');
 
 ## Behavior and Guidelines
 
-- Success notifications display in green; failure notifications display in red. Both share identical layout styling in the lower-right corner.
+- Success notifications display in green; failure notifications display in red. Both share identical layout styling in the upper-right corner.
 - Notifications dismiss automatically after 4 seconds; each notification maintains an independent timer and close button.
 - A maximum of 3 notifications display simultaneously; incoming notifications replace the oldest entry when the queue is full.
 - Override default display duration via configuration: `toast.success('Saved.', { duration: 3000 })` (in milliseconds).

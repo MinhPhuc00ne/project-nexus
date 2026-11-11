@@ -38,7 +38,7 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
         <div
           role="region"
           aria-label="Thông báo"
-          className="pointer-events-none fixed right-4 bottom-4 z-[1100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:right-6 sm:bottom-6"
+          className="pointer-events-none fixed top-4 right-4 z-[1100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:top-6 sm:right-6"
         >
           {toasts.map(({ variant, ...toast }) =>
             variant === 'success' ? (
