@@ -17,9 +17,10 @@ const { NotificationsService } = load(
 const { NotificationsGateway } = load(
   '../src/modules/notifications/gateways/notifications.gateway.ts',
 );
-const { publishCreatedNotifications } = load(
+const { publishCreatedNotifications, subscribeNotificationRealtime } = load(
   '../src/core/notifications/notification-realtime.bus.ts',
 );
+const { PrismaService, wrapNotificationDelegate } = load('../src/core/prisma/prisma.service.ts');
 const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
 const { ReportsService } = load('../src/modules/commerce/services/reports.service.ts');
 
@@ -242,4 +243,63 @@ test('NotificationsGateway rejects missing JWT handshake cleanly', async () => {
 
   assert.equal(clientEmits[0].event, 'notification:error');
   assert.equal(disconnect.mock.callCount(), 1);
+});
+
+test('wrapNotificationDelegate intercepts create, createMany and createManyAndReturn to emit realtime records', async () => {
+  const emitted = [];
+  const delegateMock = {
+    create: async ({ data }) => ({ id: 'created-id-1', ...data }),
+    createMany: async ({ data }) => ({ count: Array.isArray(data) ? data.length : 1 }),
+    createManyAndReturn: async ({ data }) => (Array.isArray(data) ? data : [data]),
+  };
+
+  const wrapped = wrapNotificationDelegate(delegateMock, (records) => {
+    emitted.push(...records);
+  });
+
+  await wrapped.create({
+    data: {
+      userId: 'user-1',
+      title: 'Đơn hàng mới',
+      content: 'Nội dung',
+      type: 'ORDER',
+      channel: 'IN_APP',
+    },
+  });
+
+  assert.equal(emitted.length, 1);
+  assert.equal(emitted[0].userId, 'user-1');
+  assert.equal(emitted[0].title, 'Đơn hàng mới');
+
+  await wrapped.createMany({
+    data: [
+      {
+        userId: 'admin-1',
+        title: 'Yêu cầu nâng cấp Seller mới',
+        content: 'Gian hàng X gửi hồ sơ.',
+        type: 'SYSTEM',
+        channel: 'IN_APP',
+        targetUrl: '/admin/sellers',
+      },
+    ],
+  });
+
+  assert.equal(emitted.length, 2);
+  assert.equal(emitted[1].userId, 'admin-1');
+  assert.equal(emitted[1].targetUrl, '/admin/sellers');
+  assert.ok(emitted[1].id, 'Should assign random id to createMany realtime payload');
+});
+
+test('PrismaService initializes wrapped notification delegate on instance', async () => {
+  const configServiceMock = { get: () => 'postgresql://localhost:5432/nexus_test' };
+  const prisma = new PrismaService(configServiceMock);
+
+  assert.ok(prisma.notification, 'PrismaService must expose wrapped notification delegate');
+  assert.equal(
+    prisma.notification,
+    prisma.wrappedNotificationDelegate,
+    'prisma.notification must return the wrapped delegate instance',
+  );
+
+  await prisma.onModuleDestroy();
 });
