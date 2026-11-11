@@ -171,32 +171,13 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         {/* Đây là vùng nội dung cuộn của trang; sidebar và header vẫn giữ nguyên vị trí. */}
         <main ref={contentRef} className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[1720px] px-4 py-5 sm:px-7 sm:py-6">
-            {/* Thanh đường dẫn: Quản trị > tên trang hiện tại, kèm nhãn nguồn dữ liệu. */}
+            {/* Thanh đường dẫn: Quản trị > tên trang hiện tại. */}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                 <span>Quản trị</span>
                 <ChevronRight size={12} />
                 <span className="font-medium text-slate-600">{title}</span>
               </div>
-              <span className="rounded-md border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] text-primary">
-                {tab === 'banners'
-                  ? 'Banner từ hệ thống'
-                  : tab === 'reports'
-                    ? 'Báo cáo từ hệ thống'
-                    : tab === 'refunds'
-                      ? 'Khiếu nại từ hệ thống'
-                      : tab === 'categories'
-                        ? 'Danh mục từ hệ thống'
-                        : tab === 'products'
-                          ? 'Sản phẩm từ hệ thống'
-                          : tab === 'users'
-                            ? 'Người dùng từ hệ thống'
-                            : tab === 'stores'
-                              ? 'Cửa hàng từ hệ thống'
-                              : tab === 'sellers'
-                                ? 'Hồ sơ Seller từ hệ thống'
-                                : 'Người dùng, danh mục và hồ sơ Seller từ hệ thống • Các mục khác dùng dữ liệu mẫu'}
-              </span>
             </div>
             {/* Tiêu đề trang con; trang overview có tiêu đề riêng nên không hiển thị ở đây. */}
             {tab !== 'overview' && (
