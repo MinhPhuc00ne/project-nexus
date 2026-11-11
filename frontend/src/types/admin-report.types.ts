@@ -5,6 +5,13 @@ export interface AdminReport {
   shopId: string;
   productId: string | null;
   reporterId: string | null;
+  shopName?: string | null;
+  productTitle?: string | null;
+  productName?: string | null;
+  reporterName?: string | null;
+  shop?: { id: string; storeName: string; fullName: string } | null;
+  product?: { id: string; title: string; status: string } | null;
+  reporter?: { id: string; fullName: string; email: string } | null;
   title: string;
   description: string;
   evidenceUrls: unknown;

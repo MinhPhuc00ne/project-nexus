@@ -16,6 +16,20 @@ const labels: Record<AdminReportStatus, string> = {
   DISMISSED: 'Đã bác bỏ',
 };
 
+const shopName = (report: AdminReport) =>
+  report.shopName || report.shop?.storeName || report.shop?.fullName || 'Chưa có tên gian hàng';
+const productName = (report: AdminReport) =>
+  report.productTitle || report.productName || report.product?.title || 'Chưa có tên sản phẩm';
+
+function ReportIdentity({ name, id }: { name: string; id: string | null }) {
+  return (
+    <div>
+      <p className="font-medium">{name}</p>
+      {id && <p className="mt-1 break-all text-xs text-slate-500">Mã: {id}</p>}
+    </div>
+  );
+}
+
 export default function ReportQueue() {
   const [status, setStatus] = useState<AdminReportStatus | ''>('');
   const [page, setPage] = useState(1);
@@ -135,7 +149,16 @@ export default function ReportQueue() {
                       </p>
                     </td>
                     <td className="max-w-56 break-words p-3">
-                      {item.productId ? `Sản phẩm: ${item.productId}` : `Gian hàng: ${item.shopId}`}
+                      <p className="mb-1 text-xs text-slate-500">
+                        {item.productId ? 'Sản phẩm' : 'Gian hàng'}
+                      </p>
+                      <ReportIdentity
+                        name={item.productId ? productName(item) : shopName(item)}
+                        id={item.productId || item.shopId}
+                      />
+                      {item.productId && (
+                        <p className="mt-2 text-xs text-slate-500">Gian hàng: {shopName(item)}</p>
+                      )}
                     </td>
                     <td className="p-3">
                       <Badge
@@ -217,9 +240,27 @@ export default function ReportQueue() {
                 ['Mã báo cáo', detail.id],
                 ['Tiêu đề', detail.title],
                 ['Nội dung', detail.description],
-                ['Gian hàng', detail.shopId],
-                ['Sản phẩm', detail.productId],
-                ['Người báo cáo', detail.reporterId],
+                ['Loại báo cáo', detail.productId ? 'Báo cáo sản phẩm' : 'Báo cáo gian hàng'],
+                ['Gian hàng', <ReportIdentity name={shopName(detail)} id={detail.shopId} />],
+                ...(detail.productId
+                  ? [
+                      [
+                        'Sản phẩm',
+                        <ReportIdentity name={productName(detail)} id={detail.productId} />,
+                      ] satisfies [string, React.ReactNode],
+                    ]
+                  : []),
+                [
+                  'Người báo cáo',
+                  <ReportIdentity
+                    name={
+                      detail.reporterName ||
+                      detail.reporter?.fullName ||
+                      'Chưa có tên người báo cáo'
+                    }
+                    id={detail.reporterId}
+                  />,
+                ],
                 ['Trạng thái', labels[detail.status]],
                 ['Kết luận / ghi chú', detail.resolutionNotes],
                 ['Người xử lý', detail.handledByAdminId],
