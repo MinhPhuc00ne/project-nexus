@@ -8,9 +8,11 @@ export interface HomeAuctionCardProps {
 }
 
 export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
+  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
   const isUpcoming =
-    auction?.status === 'SCHEDULED' ||
-    (Boolean(auction?.startTime) && new Date(auction!.startTime).getTime() > Date.now());
+    !isLive &&
+    (auction?.status === 'SCHEDULED' ||
+      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
 
   const targetUrl = auction
     ? `/auction/${auction.id}`

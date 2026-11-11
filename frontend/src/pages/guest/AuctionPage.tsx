@@ -92,9 +92,12 @@ export const AuctionPage: React.FC = () => {
           } else {
             setLeadingBidder('Chưa có lượt trả giá');
           }
+          const isLiveSession =
+            auctionData.status === 'ACTIVE' || auctionData.status === 'EXTENDED';
           const isScheduled =
-            auctionData.status === 'SCHEDULED' ||
-            new Date(auctionData.startTime).getTime() > Date.now();
+            !isLiveSession &&
+            (auctionData.status === 'SCHEDULED' ||
+              new Date(auctionData.startTime).getTime() > Date.now());
           const targetDateStr = isScheduled ? auctionData.startTime : auctionData.endTime;
           const remaining = Math.max(
             0,
@@ -144,6 +147,13 @@ export const AuctionPage: React.FC = () => {
               setBidSuccessToast(
                 `🔔 Phiên đấu giá "${payload.title}" đã bắt đầu! Đang phát sóng video giới thiệu trực tiếp...`,
               );
+              if (auctionData.endTime) {
+                const remaining = Math.max(
+                  0,
+                  Math.floor((new Date(auctionData.endTime).getTime() - Date.now()) / 1000),
+                );
+                setTimeLeft(remaining);
+              }
               setTimeout(() => setBidSuccessToast(null), 5000);
 
               // Tự động chiếu video trực tiếp lên màn hình Buyer ngay lập tức mà không cần click!
@@ -406,7 +416,7 @@ export const AuctionPage: React.FC = () => {
   // Không dùng ảnh giả lập, chỉ dùng ảnh thật từ dữ liệu
   const dynamicThumbnails = rawThumbnails;
   const hasLots = Boolean(activeAuction.items && activeAuction.items.length > 0);
-  const hasItems = hasLots;
+  const hasItems = hasLots || Boolean(activeAuction.product);
   const hasBanner = Boolean(activeAuction.imageUrl && activeAuction.imageUrl.trim().length > 0);
   const hasVideo = Boolean(activeAuction.videoUrl && activeAuction.videoUrl.trim().length > 0);
 

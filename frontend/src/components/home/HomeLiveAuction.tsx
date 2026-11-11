@@ -12,10 +12,13 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
   if (!auctions || auctions.length === 0) return null;
 
   const featuredAuction = auctions[0];
+  const isLive = featuredAuction.status === 'ACTIVE' || featuredAuction.status === 'EXTENDED';
   const isUpcoming =
-    featuredAuction.status === 'SCHEDULED' ||
-    (Boolean(featuredAuction.startTime) &&
-      new Date(featuredAuction.startTime).getTime() > Date.now());
+    !isLive &&
+    (featuredAuction.status === 'SCHEDULED' ||
+      (featuredAuction.startTime
+        ? new Date(featuredAuction.startTime).getTime() > Date.now()
+        : false));
 
   const featuredTitle =
     featuredAuction.title ||
@@ -105,15 +108,21 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <div className="relative aspect-video overflow-hidden rounded-[18px] border border-slate-300 bg-slate-950">
-          <img
-            src={featuredImage}
-            alt={featuredTitle}
-            className="absolute inset-0 h-full w-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
-            }}
-          />
+          {featuredImage ? (
+            <img
+              src={featuredImage}
+              alt={featuredTitle}
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src =
+                  'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
+              }}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-xs text-slate-400">
+              Chưa có hình ảnh
+            </div>
+          )}
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
             <span
               className={`rounded px-2.5 py-1 text-[10px] font-bold text-white shadow-xs ${

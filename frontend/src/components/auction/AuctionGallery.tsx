@@ -85,19 +85,20 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
   // Phiên chưa có hàng và Admin cũng không tải banner
   const isSessionEmpty = !hasItems && !hasBanner && (!thumbnails || thumbnails.length === 0);
 
-  const isScheduled =
-    auction?.status === 'SCHEDULED' ||
-    (Boolean(auction?.startTime) && new Date(auction!.startTime).getTime() > Date.now());
+  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
 
-  const isLive = (auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED') && !isScheduled;
+  const isScheduled =
+    !isLive &&
+    (auction?.status === 'SCHEDULED' ||
+      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
 
   const isEnded =
     auction?.status === 'ENDED' ||
     auction?.status === 'SETTLED' ||
     auction?.status === 'CANCELLED' ||
-    (Boolean(auction?.endTime) &&
-      new Date(auction!.endTime).getTime() <= Date.now() &&
-      !isScheduled);
+    (!isLive &&
+      !isScheduled &&
+      (auction?.endTime ? new Date(auction.endTime).getTime() <= Date.now() : false));
 
   // Chỉ lấy video thật từ DB, format URL nếu là đường dẫn uploads nội bộ
   const rawVideoUrl = auction?.videoUrl

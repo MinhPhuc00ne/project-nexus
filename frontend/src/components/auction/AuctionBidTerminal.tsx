@@ -79,17 +79,20 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
     setShowBidModal(false);
   };
 
+  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
+
   const isScheduled =
-    auction?.status === 'SCHEDULED' ||
-    (Boolean(auction?.startTime) && new Date(auction!.startTime).getTime() > Date.now());
+    !isLive &&
+    (auction?.status === 'SCHEDULED' ||
+      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
 
   const isEnded =
     auction?.status === 'ENDED' ||
     auction?.status === 'SETTLED' ||
     auction?.status === 'CANCELLED' ||
-    (Boolean(auction?.endTime) &&
-      new Date(auction!.endTime).getTime() <= Date.now() &&
-      !isScheduled);
+    (!isLive &&
+      !isScheduled &&
+      (auction?.endTime ? new Date(auction.endTime).getTime() <= Date.now() : false));
 
   const hasItems =
     _hasItems ??
