@@ -170,7 +170,7 @@ function HomePage() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
           <HomeBenefit icon={<Truck />} title="Freeship Đơn Đầu" />
           <HomeBenefit icon={<Zap />} title="Flash Sale Giá Vàng" />
-          <HomeBenefit icon={<Gavel />} title="Đấu Giá 3D Trực Tiếp" />
+          <HomeBenefit icon={<Gavel />} title="Đấu Giá Trực Tiếp" />
           <HomeBenefit icon={<ShieldCheck />} title="Chính Hãng Mall" />
           <HomeBenefit icon={<Tag />} title="Khách Hàng Thân Thiết" />
           <HomeBenefit icon={<WalletCards />} title="Hoàn Tiền PayOS" />

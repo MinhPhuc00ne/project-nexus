@@ -67,6 +67,7 @@ export interface AuctionConsignmentItem {
   title: string;
   description?: string;
   images?: string[];
+  videoUrl?: string | null;
   threeModelKey?: string | null;
   appraisalCertificateNumber?: string | null;
   appraisalAgency?: string | null;
@@ -124,6 +125,7 @@ export interface AuctionEntity {
   title: string;
   description?: string;
   imageUrl?: string | null;
+  videoUrl?: string | null;
   startingPrice: number;
   reservePrice?: number | null;
   currentHighestBid: number;

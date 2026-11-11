@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Heart, Share2, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
-import { BidStatus } from '@nexus/types';
+import { BidStatus, AuctionStatus } from '@nexus/types';
 import type { AuctionViewerMode, AuctionTabKey, SimilarWatch } from '../../types';
 import AuctionGallery from '../../components/auction/AuctionGallery';
 import AuctionBidTerminal from '../../components/auction/AuctionBidTerminal';
 import AuctionDetailTabs from '../../components/auction/AuctionDetailTabs';
 import SimilarAuctionsSection from '../../components/auction/SimilarAuctionsSection';
+import { CinematicAuctionIntro } from '../../components/auction/CinematicAuctionIntro';
+import { AuctionShowcaseHUD } from '../../components/auction/showcase/AuctionShowcaseHUD';
 import {
   getAuctionsApi,
   getAuctionDetailApi,
+  getAuctionIntroShowcaseApi,
   placeBidApi,
   createAuctionSocket,
   checkBuyerEligibilityApi,
   formatAuctionImage,
   type AuctionEntity,
+  type AuctionConsignmentItem,
   type BuyerEligibilityResponse,
   type AuctionBidItem,
 } from '../../services/auction.service';
@@ -31,6 +35,11 @@ export const AuctionPage: React.FC = () => {
   const [selectedLotIndex, setSelectedLotIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [likedSimilar, setLikedSimilar] = useState<Record<string, boolean>>({});
+  const [showCinematicIntro, setShowCinematicIntro] = useState<boolean>(false);
+  const [show3DShowcase, setShow3DShowcase] = useState<boolean>(false);
+  const [playbackMode, setPlaybackMode] = useState<'live' | 'admin-replay'>('live');
+  const [initialElapsedMs, setInitialElapsedMs] = useState<number>(0);
+  const [videoPlaybackTime, setVideoPlaybackTime] = useState<number>(0);
 
   const [currentPrice, setCurrentPrice] = useState(0);
   const [leadingBidder, setLeadingBidder] = useState('Chưa có lượt trả giá');
@@ -70,6 +79,11 @@ export const AuctionPage: React.FC = () => {
 
         if (auctionData) {
           setActiveAuction(auctionData);
+          if (auctionData.videoUrl && auctionData.videoUrl.trim().length > 0) {
+            setShowCinematicIntro(true);
+          } else {
+            setShowCinematicIntro(false);
+          }
           const price =
             Number(auctionData.currentHighestBid) || Number(auctionData.startingPrice) || 0;
           setCurrentPrice(price);
@@ -97,7 +111,52 @@ export const AuctionPage: React.FC = () => {
               .catch(() => {});
           }
 
+          // Kiểm tra nếu phiên này đang trong thời gian chiếu video 3D giới thiệu trực tiếp
+          try {
+            const showcase = await getAuctionIntroShowcaseApi(auctionData.id);
+            if (isMounted && showcase?.isIntroActive) {
+              setPlaybackMode('live');
+              setInitialElapsedMs(showcase.elapsedMs || 0);
+              setShow3DShowcase(true);
+            }
+          } catch {
+            // Phiên không có showcase telemetry
+          }
+
           socketClient = createAuctionSocket(auctionData.id);
+
+          // LẮNG NGHE SỰ KIỆN ADMIN BẮT ĐẦU PHIÊN ĐẤU GIÁ VÀ PHÁT SÓNG VIDEO TRỰC TIẾP TỚI BUYER
+          socketClient.onAuctionStarted((payload) => {
+            if (!isMounted) return;
+            if (payload.auctionId === auctionData.id) {
+              setActiveAuction((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      status: AuctionStatus.ACTIVE,
+                      items:
+                        payload.items && payload.items.length > 0
+                          ? (payload.items as unknown as AuctionConsignmentItem[])
+                          : prev.items,
+                    }
+                  : prev,
+              );
+              setBidSuccessToast(
+                `🔔 Phiên đấu giá "${payload.title}" đã bắt đầu! Đang phát sóng video giới thiệu trực tiếp...`,
+              );
+              setTimeout(() => setBidSuccessToast(null), 5000);
+
+              // Tự động chiếu video trực tiếp lên màn hình Buyer ngay lập tức mà không cần click!
+              if (payload.items && payload.items.length > 0) {
+                setPlaybackMode('live');
+                setInitialElapsedMs(0);
+                setShow3DShowcase(true);
+              } else if (auctionData.videoUrl) {
+                setShowCinematicIntro(true);
+              }
+            }
+          });
+
           socketClient.onBidPlaced((payload) => {
             if (!isMounted) return;
             setCurrentPrice(payload.bidAmount);
@@ -143,12 +202,17 @@ export const AuctionPage: React.FC = () => {
           if (otherAuctions.length > 0) {
             const mapped: SimilarWatch[] = otherAuctions.map((a) => {
               const isLive = a.status === 'ACTIVE' || a.status === 'EXTENDED';
+              const aHasItems = Boolean(a.items && a.items.length > 0) || Boolean(a.product);
+              // ƯU TIÊN 1: Banner chính thức do Admin tạo cho phiên (imageUrl)
               const img =
+                (a.imageUrl && a.imageUrl.trim().length > 0
+                  ? formatAuctionImage(a.imageUrl)
+                  : null) ||
                 (a.items?.[0]?.images?.[0] ? formatAuctionImage(a.items[0].images[0]) : null) ||
                 (a.product?.images?.[0]?.imageUrl
                   ? formatAuctionImage(a.product.images[0].imageUrl)
                   : null) ||
-                'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80';
+                '';
               const currentBid = Number(a.currentHighestBid) || Number(a.startingPrice) || 0;
               return {
                 id: a.id,
@@ -160,7 +224,7 @@ export const AuctionPage: React.FC = () => {
                       : 'ĐÃ KẾT THÚC',
                   type: isLive ? 'live' : a.status === 'SCHEDULED' ? 'upcoming' : 'buy-now',
                 },
-                brand: a.product?.category?.name || 'NEXUS AUCTION',
+                brand: a.product?.category?.name || 'PHIÊN ĐẤU GIÁ',
                 title: a.title,
                 image: img,
                 priceLabel: isLive ? 'Giá hiện tại:' : 'Khởi điểm:',
@@ -173,6 +237,8 @@ export const AuctionPage: React.FC = () => {
                     ? 'Sắp mở'
                     : 'Đã kết thúc',
                 statusType: isLive ? 'blue' : 'green',
+                hasItems: aHasItems,
+                hasVideo: Boolean(a.videoUrl && a.videoUrl.trim().length > 0),
               };
             });
             setSimilarList(mapped);
@@ -208,6 +274,11 @@ export const AuctionPage: React.FC = () => {
   const formatVND = (amount: number) => {
     return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
   };
+
+  const handleCloseShowcase = useCallback(() => {
+    setShow3DShowcase(false);
+    setPlaybackMode('admin-replay');
+  }, []);
 
   const handleBidSuccess = async (amount: number) => {
     if (!activeAuction?.id) return;
@@ -281,8 +352,8 @@ export const AuctionPage: React.FC = () => {
             Hiện chưa có phiên đấu giá nào được mở
           </h2>
           <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">
-            Các phiên đấu giá 3D thẩm định trực tiếp sẽ được mở theo lịch trình kiểm định thực tế
-            của sàn.
+            Các phiên đấu giá thẩm định trực tiếp sẽ được mở theo lịch trình kiểm định thực tế của
+            sàn.
           </p>
           <Link
             to="/"
@@ -294,25 +365,6 @@ export const AuctionPage: React.FC = () => {
       </div>
     );
   }
-
-  const REAL_PHOTOS_COLLECTION = [
-    {
-      label: 'Mặt số sapphire & Kim chỉ giờ',
-      src: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80',
-    },
-    {
-      label: 'Bộ máy cơ học Skeleton',
-      src: 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=1200&q=80',
-    },
-    {
-      label: 'Cận cảnh vỏ thép nguyên khối',
-      src: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=1200&q=80',
-    },
-    {
-      label: 'Góc nghiêng 45° hoàn thiện thủ công',
-      src: 'https://images.unsplash.com/photo-1547996160-71dfabb1d355?auto=format&fit=crop&w=1200&q=80',
-    },
-  ];
 
   const currentLot = activeAuction.items?.[selectedLotIndex] || activeAuction.items?.[0];
   const lotImages = (currentLot?.images || [])
@@ -336,6 +388,14 @@ export const AuctionPage: React.FC = () => {
           : `Góc chụp thực tế ${i + 1}`,
       src: url,
     }));
+  } else if (activeAuction.imageUrl && activeAuction.imageUrl.trim().length > 0) {
+    // ƯU TIÊN 1: Khi Seller chưa đưa lô hàng lên, hiển thị chính xác Banner phiên do Admin tạo!
+    rawThumbnails = [
+      {
+        label: 'Banner đại diện phiên đấu giá (Admin khởi tạo)',
+        src: formatAuctionImage(activeAuction.imageUrl),
+      },
+    ];
   } else if (productImages.length > 0) {
     rawThumbnails = productImages.map((img, i) => ({
       label: img.isThumbnail ? 'Ảnh sản phẩm chính thức' : `Góc chụp thực tế ${i + 1}`,
@@ -343,7 +403,12 @@ export const AuctionPage: React.FC = () => {
     }));
   }
 
-  const dynamicThumbnails = rawThumbnails.length > 0 ? rawThumbnails : REAL_PHOTOS_COLLECTION;
+  // Không dùng ảnh giả lập, chỉ dùng ảnh thật từ dữ liệu
+  const dynamicThumbnails = rawThumbnails;
+  const hasLots = Boolean(activeAuction.items && activeAuction.items.length > 0);
+  const hasItems = hasLots;
+  const hasBanner = Boolean(activeAuction.imageUrl && activeAuction.imageUrl.trim().length > 0);
+  const hasVideo = Boolean(activeAuction.videoUrl && activeAuction.videoUrl.trim().length > 0);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -362,6 +427,34 @@ export const AuctionPage: React.FC = () => {
         </div>
       )}
 
+      {/* MÀN HÌNH RẠP CHIẾU 3D SHOWCASE TRIỂN LÃM BẢO TÀNG */}
+      {show3DShowcase && activeAuction && (
+        <AuctionShowcaseHUD
+          auctionTitle={activeAuction.title}
+          auctionDescription={activeAuction.description ?? undefined}
+          items={activeAuction.items ?? []}
+          playbackMode={playbackMode}
+          initialElapsedMs={initialElapsedMs}
+          onComplete={handleCloseShowcase}
+          onCancel={handleCloseShowcase}
+        />
+      )}
+
+      {/* PHƯƠNG ÁN KẾT HỢP A & B: MÀN HÌNH RẠP CHIẾU CINEMATIC INTRO TỰ ĐỘNG MỞ KHI VÀO SÀN HOẶC KHI BẤM PHÓNG TO */}
+      <CinematicAuctionIntro
+        isOpen={showCinematicIntro}
+        onClose={() => setShowCinematicIntro(false)}
+        auction={activeAuction}
+        currentLot={currentLot}
+        selectedLotIndex={selectedLotIndex}
+        onSelectLot={(idx) => {
+          setSelectedLotIndex(idx);
+          setSelectedThumb(0);
+        }}
+        initialTime={videoPlaybackTime}
+        onTimeSync={(t) => setVideoPlaybackTime(t)}
+      />
+
       <main className="max-w-7xl mx-auto px-4 py-5 pb-14">
         {/* Breadcrumb Navigation */}
         <div className="flex items-center justify-between mb-5 text-[13px] text-slate-500">
@@ -371,7 +464,7 @@ export const AuctionPage: React.FC = () => {
             </Link>
             <span className="text-slate-300">/</span>
             <Link to="/auction" className="text-slate-500 hover:text-rose-500 transition">
-              Sàn Đấu Giá Live 3D
+              Sàn Đấu Giá Trực Tuyến
             </Link>
             <span className="text-slate-300">/</span>
             <span className="text-slate-900 font-semibold truncate max-w-xs sm:max-w-md">
@@ -417,7 +510,8 @@ export const AuctionPage: React.FC = () => {
                     Danh Sách Lô Hàng Trong Phiên Này ({activeAuction.items.length} sản phẩm)
                   </h3>
                   <p className="text-[11px] text-slate-500 m-0">
-                    Bấm chọn từng lô hàng để xem mô hình 3D, giấy kiểm định và thông tin chi tiết
+                    Bấm chọn từng lô hàng để xem hình ảnh thực tế, giấy kiểm định và thông tin chi
+                    tiết
                   </p>
                 </div>
               </div>
@@ -482,11 +576,29 @@ export const AuctionPage: React.FC = () => {
           </div>
         )}
 
+        {/* THÔNG BÁO NẾU PHIÊN CHƯA CÓ SẢN PHẨM / LÔ HÀNG KÝ GỬI */}
+        {(!activeAuction.items || activeAuction.items.length === 0) && !activeAuction.product && (
+          <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-amber-900 flex items-center gap-3.5 shadow-xs">
+            <AlertCircle className="w-5 h-5 shrink-0 text-amber-600" />
+            <div className="text-xs">
+              <p className="font-bold text-amber-900 text-sm">
+                Phiên đấu giá đang mở tiếp nhận sản phẩm (Chờ người bán ký gửi)
+              </p>
+              <p className="text-amber-700 mt-0.5">
+                Admin đã khởi tạo phiên đấu giá. Ảnh hiển thị hiện tại là ảnh bìa đại diện của
+                phiên. Người bán (Seller) có thể vào mục <b>Ký Gửi Đấu Giá</b> để đăng ký niêm yết
+                sản phẩm thật lên phiên này.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* TOP SECTION: 2 COLUMNS (GALLERY & TERMINAL) */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] gap-8 mb-10">
-          {/* LEFT: GALLERY & 3D VIEWER */}
+          {/* LEFT: GALLERY & INTEGRATED VIDEO STAGE (PHƯƠNG ÁN B KẾT HỢP) */}
           <AuctionGallery
             auction={activeAuction}
+            currentLot={currentLot}
             viewerMode={viewerMode}
             setViewerMode={setViewerMode}
             selectedThumb={selectedThumb}
@@ -494,6 +606,12 @@ export const AuctionPage: React.FC = () => {
             rotationAngle={rotationAngle}
             setRotationAngle={setRotationAngle}
             thumbnails={dynamicThumbnails}
+            videoTime={videoPlaybackTime}
+            onTimeUpdate={(t) => setVideoPlaybackTime(t)}
+            onOpenCinematic={() => setShowCinematicIntro(true)}
+            hasItems={hasItems}
+            hasBanner={hasBanner}
+            hasVideo={hasVideo}
           />
 
           {/* RIGHT: BID TERMINAL */}
@@ -512,6 +630,7 @@ export const AuctionPage: React.FC = () => {
             requiredReputationScore={
               eligibility?.requiredScore ?? activeAuction.minBuyerReputation ?? 40
             }
+            hasItems={hasItems}
           />
         </div>
 
@@ -521,6 +640,7 @@ export const AuctionPage: React.FC = () => {
           setActiveTab={setActiveTab}
           auction={activeAuction}
           selectedItem={currentLot}
+          hasItems={hasItems}
         />
 
         {/* SIMILAR AUCTIONS SECTION */}

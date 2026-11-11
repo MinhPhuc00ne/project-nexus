@@ -80,7 +80,6 @@ export interface CategoryNode {
 
 export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
   const brandName = p.category?.name ? `${p.category.name.toUpperCase()} • LUXURY` : 'NEXUS LUXURY';
-  const has3D = Boolean(p.threeModelKey);
   const sale = computeEffectiveSale(
     p.basePrice,
     saleConfigFromApi(p.basePrice, p.salePrice, p.saleStartsAt, p.saleEndsAt),
@@ -98,10 +97,10 @@ export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
     primaryBadge: sale.isOnSale
       ? { text: `${sale.label} -${sale.discountPercent}%`, type: 'flash' }
       : { text: 'NEXUS MALL', type: 'mall' },
-    subBadge: has3D ? { text: '3D Model Verified', icon: '3d' } : { text: 'Chính Hãng 100%' },
+    subBadge: { text: 'Chính Hãng 100%' },
     imageOverlay: {
-      leftText: has3D ? 'Chạm xoay 360°' : '',
-      leftIcon: has3D ? 'rotate' : undefined,
+      leftText: '',
+      leftIcon: undefined,
       rightText: sale.isOnSale ? `-${sale.discountPercent}%` : '',
       isDiscount: sale.isOnSale,
       discountText: sale.isOnSale ? `-${sale.discountPercent}%` : undefined,
