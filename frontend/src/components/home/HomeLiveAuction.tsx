@@ -12,10 +12,13 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
   if (!auctions || auctions.length === 0) return null;
 
   const featuredAuction = auctions[0];
+  const isLive = featuredAuction.status === 'ACTIVE' || featuredAuction.status === 'EXTENDED';
   const isUpcoming =
-    featuredAuction.status === 'SCHEDULED' ||
-    (Boolean(featuredAuction.startTime) &&
-      new Date(featuredAuction.startTime).getTime() > Date.now());
+    !isLive &&
+    (featuredAuction.status === 'SCHEDULED' ||
+      (featuredAuction.startTime
+        ? new Date(featuredAuction.startTime).getTime() > Date.now()
+        : false));
 
   const featuredTitle =
     featuredAuction.title ||
@@ -42,7 +45,7 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
         }
       }
     }
-    return 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
+    return '';
   };
 
   const featuredImage = resolveRealImage(featuredAuction);
@@ -96,24 +99,30 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
 
       <div className="mt-4">
         <h2 className="text-[15px] font-extrabold uppercase tracking-[0.04em] text-slate-800">
-          NEXUS LIVE AUCTION - Phòng Đấu Giá 3D Trực Tiếp
+          NEXUS LIVE AUCTION - Phòng Đấu Giá Trực Tiếp
         </h2>
         <p className="mt-2 text-sm text-slate-500">
-          Mô phỏng 3D góc xoay 360°, bảo vệ Anti-Sniping và hàng đợi Atomic Queue.
+          Bảo vệ Anti-Sniping, hàng đợi Atomic Queue và ký quỹ minh bạch.
         </p>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <div className="relative aspect-video overflow-hidden rounded-[18px] border border-slate-300 bg-slate-950">
-          <img
-            src={featuredImage}
-            alt={featuredTitle}
-            className="absolute inset-0 h-full w-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
-            }}
-          />
+          {featuredImage ? (
+            <img
+              src={featuredImage}
+              alt={featuredTitle}
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src =
+                  'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
+              }}
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-xs text-slate-400">
+              Chưa có hình ảnh
+            </div>
+          )}
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
             <span
               className={`rounded px-2.5 py-1 text-[10px] font-bold text-white shadow-xs ${
@@ -128,7 +137,7 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
               </span>
             )}
             <span className="rounded border border-sky-200 bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-sky-600">
-              Màn hình 3D 360°
+              Thẩm Định Thực Tế
             </span>
           </div>
           <span className="absolute right-3 top-3 rounded bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700">
@@ -136,20 +145,14 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
           </span>
           <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/70 bg-white/90 p-2 backdrop-blur-sm">
             <span className="text-[10px] font-medium text-slate-600">
-              Góc máy: Hero Perspective 45°
+              Chế độ xem: Ảnh Studio & Hồ sơ thẩm định
             </span>
             <div className="flex gap-2">
               <Link
                 to={targetUrl}
                 className="rounded border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
-                Xoay 3D
-              </Link>
-              <Link
-                to={targetUrl}
-                className="rounded border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-              >
-                Ảnh Thực Tế
+                Vào Phòng Đấu Giá
               </Link>
             </div>
           </div>

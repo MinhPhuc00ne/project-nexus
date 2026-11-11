@@ -18,6 +18,7 @@ interface AuctionDetailTabsProps {
   setActiveTab: (tab: AuctionTabKey) => void;
   auction?: AuctionEntity | null;
   selectedItem?: AuctionConsignmentItem | null;
+  hasItems?: boolean;
 }
 
 export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
@@ -25,7 +26,11 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
   setActiveTab,
   auction,
   selectedItem,
+  hasItems: _hasItems,
 }) => {
+  const hasItems =
+    _hasItems ??
+    Boolean(selectedItem || auction?.product || (auction?.items && auction.items.length > 0));
   const bidsCount = auction?.bids?.length || auction?.totalBidsCount || 0;
   const [reviews, setReviews] = useState<ShopReviewItem[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
@@ -107,6 +112,22 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
         {/* TAB 1: CERTS & INFO */}
         {activeTab === 'certs' &&
           (() => {
+            if (!hasItems) {
+              return (
+                <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80">
+                  <ShieldCheck className="w-12 h-12 text-slate-400 mb-3" />
+                  <h4 className="text-sm font-bold text-slate-800 mb-1">
+                    Chưa Có Chứng Thư Kiểm Định
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-md leading-relaxed m-0">
+                    Phiên đấu giá đang mở tiếp nhận sản phẩm. Khi các Người Bán (Seller) gửi hồ sơ
+                    ký gửi, Hội đồng Giám định Độc lập của NEXUS sẽ tiến hành kiểm định nguồn gốc và
+                    cấp mã chứng thư niêm yết công khai tại đây.
+                  </p>
+                </div>
+              );
+            }
+
             const activeItem = selectedItem || auction?.items?.[0];
             const certNumber =
               activeItem?.appraisalCertificateNumber ||
@@ -123,7 +144,7 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-slate-900 m-0">
-                        Chứng Thư Giám Định Vật Phẩm Số Hóa 3D
+                        Chứng Thư Giám Định & Thẩm Định Vật Phẩm
                       </h4>
                       <p className="text-xs text-slate-500 m-0 mt-0.5">
                         Mã kiểm định:{' '}
@@ -152,13 +173,9 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                       </div>
                       <div>
                         <span className="text-slate-400 block text-[11px]">
-                          Trạng thái số hóa 3D:
+                          Tình trạng thẩm định:
                         </span>
-                        <span className="text-emerald-600 font-bold">
-                          {activeItem.threeModelKey
-                            ? '✓ Sẵn sàng mô hình LiDAR 3D'
-                            : '✓ Đồng bộ dữ liệu 360°'}
-                        </span>
+                        <span className="text-emerald-600 font-bold">✓ Đã kiểm định nguồn gốc</span>
                       </div>
                     </div>
 
@@ -199,11 +216,11 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-4 rounded-xl border border-slate-200 bg-white">
                     <div className="flex items-center gap-2 text-cyan-600 text-xs font-bold mb-1">
-                      <Scan size={14} /> Quét Mô Hình 3D
+                      <Scan size={14} /> Thẩm Định Chi Tiết
                     </div>
                     <p className="text-xs text-slate-600">
-                      Vật phẩm được quét tương tác thực tế, cho phép xoay 360° quan sát mọi góc cạnh
-                      chi tiết.
+                      Vật phẩm được chụp cận cảnh độ phân giải cao, bảo đảm hiển thị trung thực từng
+                      chi tiết và giấy tờ kiểm định.
                     </p>
                   </div>
 
@@ -234,6 +251,21 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
         {/* TAB 2: SPECS */}
         {activeTab === 'specs' &&
           (() => {
+            if (!hasItems) {
+              return (
+                <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80">
+                  <Sliders className="w-12 h-12 text-slate-400 mb-3" />
+                  <h4 className="text-sm font-bold text-slate-800 mb-1">
+                    Thông Số Kỹ Thuật Đang Chờ Cập Nhật
+                  </h4>
+                  <p className="text-xs text-slate-500 max-w-md leading-relaxed m-0">
+                    Thông số chi tiết của hiện vật sẽ được niêm yết theo từng lô hàng ngay khi
+                    Seller hoàn tất thủ tục bàn giao hiện vật cho phiên đấu giá này.
+                  </p>
+                </div>
+              );
+            }
+
             const activeItem = selectedItem || auction?.items?.[0];
             return (
               <table className="w-full text-xs divide-y divide-slate-100">

@@ -1,4 +1,4 @@
-import { Box, CheckCircle2, ShieldCheck, ShieldHalf, Truck } from 'lucide-react';
+import { Film, CheckCircle2, ShieldCheck, ShieldHalf, Truck } from 'lucide-react';
 
 const commitments = [
   {
@@ -12,12 +12,16 @@ const commitments = [
     description: 'Bảo mật PayOS, Ví NEXUS & COD',
   },
   { icon: Truck, title: 'Đồng Kiểm Tận Nơi', description: 'Vận hành GHN Express an toàn' },
-  { icon: Box, title: 'Mô Phỏng 3D Thực', description: 'Kiểm định micro-mesh & vật lý số' },
+  {
+    icon: Film,
+    title: 'Video Thẩm Định Thực Tế',
+    description: 'Showcase chi tiết chất lượng 4K',
+  },
 ];
 
 const customerCareLinks = [
   { label: 'Trung Tâm Trợ Giúp 24/7', href: '/help' },
-  { label: 'Hướng Dẫn Đấu Giá 3D', href: '/guide' },
+  { label: 'Hướng Dẫn Đấu Giá Trực Tuyến', href: '/guide' },
   { label: 'Quy Trình Hoàn Tiền & Trả Hàng', href: '/refund-policy' },
   { label: 'Bảo Hiểm Hàng Hóa Giá Trị Cao', href: '/insurance' },
   { label: 'Chính Sách Bảo Hành NEXUS CARE', href: '/warranty' },

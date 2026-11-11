@@ -8,9 +8,11 @@ export interface HomeAuctionCardProps {
 }
 
 export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
+  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
   const isUpcoming =
-    auction?.status === 'SCHEDULED' ||
-    (Boolean(auction?.startTime) && new Date(auction!.startTime).getTime() > Date.now());
+    !isLive &&
+    (auction?.status === 'SCHEDULED' ||
+      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
 
   const targetUrl = auction
     ? `/auction/${auction.id}`
@@ -51,7 +53,7 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
     if (product?.image && product.image.trim().length > 0) {
       return formatAuctionImage(product.image);
     }
-    return 'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=80';
+    return '';
   };
 
   const image = resolveRealImage();
@@ -87,11 +89,11 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
             isUpcoming ? 'bg-amber-500' : 'bg-sky-500'
           }`}
         >
-          {isUpcoming ? 'SẮP MỞ' : '3D MODEL'}
+          {isUpcoming ? 'SẮP MỞ' : 'TRỰC TIẾP'}
         </span>
         <button
           type="button"
-          aria-label={`Xem mô hình ${title}`}
+          aria-label={`Xem chi tiết ${title}`}
           className="absolute bottom-2 right-2 rounded-md border border-white/70 bg-slate-900/70 px-2.5 py-1.5 text-[10px] font-semibold text-white transition hover:bg-slate-900 cursor-pointer"
           onClick={(e) => {
             e.preventDefault();
@@ -99,7 +101,7 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
             window.location.href = targetUrl;
           }}
         >
-          Xem 3D
+          Chi Tiết
         </button>
       </Link>
 

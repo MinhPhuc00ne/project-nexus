@@ -39,7 +39,7 @@ function toRealtimeRecord(row: NotificationCreateInputRow): RealtimeNotification
   };
 }
 
-function wrapNotificationDelegate<TDelegate extends object>(
+export function wrapNotificationDelegate<TDelegate extends object>(
   delegate: TDelegate,
   onEmitted: (records: RealtimeNotificationRecord[]) => void,
 ): TDelegate {
@@ -53,7 +53,7 @@ function wrapNotificationDelegate<TDelegate extends object>(
             value as (...a: unknown[]) => Promise<RealtimeNotificationRecord>
           ).apply(target, [args])) as RealtimeNotificationRecord;
           if (created && typeof created.userId === 'string') {
-            onEmitted([created]);
+            onEmitted([toRealtimeRecord(created)]);
           }
           return created;
         };
@@ -77,6 +77,32 @@ function wrapNotificationDelegate<TDelegate extends object>(
             nextArgs,
           ]);
           if (enriched.length > 0) {
+            onEmitted(enriched.map(toRealtimeRecord));
+          }
+          return result;
+        };
+      }
+
+      if (prop === 'createManyAndReturn' && typeof value === 'function') {
+        return async (args: {
+          data: NotificationCreateInputRow | NotificationCreateInputRow[];
+          [key: string]: unknown;
+        }) => {
+          const rows = Array.isArray(args?.data) ? args.data : args?.data ? [args.data] : [];
+          const enriched = rows.map((row) => ({
+            ...row,
+            id: row.id ?? randomUUID(),
+            createdAt: row.createdAt ?? new Date(),
+          }));
+          const nextArgs = Array.isArray(args?.data)
+            ? { ...args, data: enriched }
+            : { ...args, data: enriched[0] };
+          const result = (await (value as (...a: unknown[]) => Promise<unknown>).apply(target, [
+            nextArgs,
+          ])) as NotificationCreateInputRow[];
+          if (Array.isArray(result) && result.length > 0) {
+            onEmitted(result.map(toRealtimeRecord));
+          } else if (enriched.length > 0) {
             onEmitted(enriched.map(toRealtimeRecord));
           }
           return result;
@@ -111,16 +137,24 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.pool = pool;
 
     // Bọc delegate notification trực tiếp (ngoài transaction) để tự phát sự kiện real-time
-    const baseNotification = super.notification;
+    const baseNotification = this.notification;
     if (baseNotification) {
       this.wrappedNotificationDelegate = wrapNotificationDelegate(baseNotification, (records) => {
         publishCreatedNotifications(records);
+      });
+      Object.defineProperty(this, 'notification', {
+        get: () => this.wrappedNotificationDelegate ?? baseNotification,
+        configurable: true,
+        enumerable: true,
       });
     }
   }
 
   override get notification(): Prisma.NotificationDelegate {
-    return this.wrappedNotificationDelegate ?? super.notification;
+    return (
+      this.wrappedNotificationDelegate ??
+      (super.notification as unknown as Prisma.NotificationDelegate)
+    );
   }
 
   override $transaction<R>(

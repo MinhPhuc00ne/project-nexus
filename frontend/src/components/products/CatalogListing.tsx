@@ -329,7 +329,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
           </span>
           {product.is3d && (
             <span className="rounded-md bg-blue-600/90 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold uppercase text-white shadow-xs">
-              3D 360°
+              THẨM ĐỊNH
             </span>
           )}
         </div>
