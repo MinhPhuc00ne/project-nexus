@@ -406,6 +406,7 @@ export class OrderEscrowService {
       const escrow = order.escrowRecord;
       if (!escrow || escrow.status !== EscrowStatus.DISPUTED)
         throw new BadRequestException('Không có tiền ký quỹ đang bị tranh chấp.');
+
       await tx.dispute.update({
         where: { orderId },
         data: {
@@ -418,6 +419,29 @@ export class OrderEscrowService {
           resolvedAt: new Date(),
         },
       });
+
+      // BẮN NOTI CHO NGƯỜI MUA (BUYER)
+      await tx.notification.create({
+        data: {
+          userId: order.buyerId,
+          title: 'Kết quả phân xử khiếu nại ⚖️',
+          content: `Khiếu nại cho đơn hàng #${orderId.slice(0, 8)} đã được Admin xử lý. Quyết định: ${verdict === 'BUYER' ? 'Hoàn tiền cho bạn' : 'Phần thắng thuộc về Người bán'}. Chi tiết: ${reason.trim()}`,
+          type: NotificationType.DISPUTE,
+          channel: 'IN_APP',
+        },
+      });
+
+      // BẮN NOTI CHO NGƯỜI BÁN (SELLER)
+      await tx.notification.create({
+        data: {
+          userId: order.sellerId,
+          title: 'Kết quả phân xử khiếu nại ⚖️',
+          content: `Khiếu nại của đơn hàng #${orderId.slice(0, 8)} đã được Admin xử lý. Quyết định: ${verdict === 'SELLER' ? 'Giải ngân tiền hàng cho bạn' : 'Phần thắng thuộc về Người mua (Hoàn tiền)'}. Chi tiết: ${reason.trim()}`,
+          type: NotificationType.DISPUTE,
+          channel: 'IN_APP',
+        },
+      });
+
       if (verdict === 'SELLER') return this.release(tx, order, true);
       if (!this.refunds) {
         throw new BadRequestException('Dịch vụ hoàn tiền chưa sẵn sàng.');
