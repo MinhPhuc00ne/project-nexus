@@ -4,8 +4,8 @@ import RegisterForm from '../../components/register/registerForm';
 const benefits = [
   {
     icon: Scan,
-    title: 'Đấu Giá 3D Tương Tác',
-    description: 'Chiêm ngưỡng và tương tác 360° với vật phẩm trước khi gõ búa.',
+    title: 'Đấu Giá Trực Tuyến 4K',
+    description: 'Thước phim thẩm định thực tế chuẩn 4K trước khi gõ búa.',
   },
   {
     icon: ShieldCheck,

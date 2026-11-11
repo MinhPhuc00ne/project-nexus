@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Scan,
   Eye,
-  Box,
-  RotateCw,
-  RotateCcw,
   Sparkles,
   Maximize2,
   ZoomIn,
@@ -12,9 +10,23 @@ import {
   MessageCircle,
   ShieldCheck,
   CheckCircle2,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  RotateCcw,
+  Film,
+  Package,
+  Clock,
+  Layers,
+  AlertCircle,
 } from 'lucide-react';
 import type { AuctionViewerMode } from './types';
-import type { AuctionEntity } from '../../services/auction.service';
+import {
+  formatAuctionImage,
+  type AuctionEntity,
+  type AuctionConsignmentItem,
+} from '../../services/auction.service';
 import { openChatWithUser } from '../chat/chatEvents';
 
 interface ThumbnailItem {
@@ -31,6 +43,13 @@ interface AuctionGalleryProps {
   setRotationAngle: React.Dispatch<React.SetStateAction<number>>;
   thumbnails: ThumbnailItem[];
   auction?: AuctionEntity | null;
+  currentLot?: AuctionConsignmentItem | null;
+  videoTime?: number;
+  onTimeUpdate?: (time: number) => void;
+  onOpenCinematic?: () => void;
+  hasItems?: boolean;
+  hasBanner?: boolean;
+  hasVideo?: boolean;
 }
 
 export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
@@ -38,183 +57,465 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
   setViewerMode,
   selectedThumb,
   setSelectedThumb,
-  rotationAngle,
-  setRotationAngle,
+  rotationAngle: _rotationAngle,
+  setRotationAngle: _setRotationAngle,
   thumbnails,
   auction,
+  currentLot,
+  videoTime = 0,
+  onTimeUpdate,
+  onOpenCinematic,
+  hasItems: _hasItems,
+  hasBanner: _hasBanner,
+  hasVideo: _hasVideo,
 }) => {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [dragStartX, setDragStartX] = useState<number>(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
+  const [isVideoMuted, setIsVideoMuted] = useState<boolean>(true);
+  const [videoProgress, setVideoProgress] = useState<number>(0);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
+  const [currentVideoTime, setCurrentVideoTime] = useState<number>(videoTime);
+  const [videoError, setVideoError] = useState<boolean>(false);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (viewerMode !== '3d') return;
-    setIsDragging(true);
-    setDragStartX(e.clientX);
-  };
+  const hasItems =
+    _hasItems ?? Boolean((auction?.items && auction.items.length > 0) || auction?.product);
+  const hasBanner = _hasBanner ?? Boolean(auction?.imageUrl && auction.imageUrl.trim().length > 0);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || viewerMode !== '3d') return;
-    const diff = e.clientX - dragStartX;
-    if (Math.abs(diff) > 8) {
-      setRotationAngle((prev) => (prev + (diff > 0 ? 15 : -15)) % 360);
-      setDragStartX(e.clientX);
+  // Phiên chưa có hàng và Admin cũng không tải banner
+  const isSessionEmpty = !hasItems && !hasBanner && (!thumbnails || thumbnails.length === 0);
+
+  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
+
+  const isScheduled =
+    !isLive &&
+    (auction?.status === 'SCHEDULED' ||
+      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
+
+  const isEnded =
+    auction?.status === 'ENDED' ||
+    auction?.status === 'SETTLED' ||
+    auction?.status === 'CANCELLED' ||
+    (!isLive &&
+      !isScheduled &&
+      (auction?.endTime ? new Date(auction.endTime).getTime() <= Date.now() : false));
+
+  // Chỉ lấy video thật từ DB, format URL nếu là đường dẫn uploads nội bộ
+  const rawVideoUrl = auction?.videoUrl
+    ? formatAuctionImage(auction.videoUrl)
+    : currentLot?.videoUrl
+      ? formatAuctionImage(currentLot.videoUrl)
+      : '';
+
+  const ytMatch = rawVideoUrl.match(
+    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/,
+  );
+  const isYouTube = Boolean(ytMatch);
+  const ytEmbedUrl = ytMatch
+    ? `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&enablejsapi=1`
+    : '';
+
+  // Đồng bộ thời gian từ prop videoTime khi chuyển sang video mode
+  useEffect(() => {
+    if (viewerMode === 'video' && videoRef.current && rawVideoUrl) {
+      if (Math.abs(videoRef.current.currentTime - videoTime) > 1) {
+        videoRef.current.currentTime = videoTime;
+      }
+      void videoRef.current
+        .play()
+        .then(() => setIsVideoPlaying(true))
+        .catch(() => {});
+    }
+  }, [viewerMode, videoTime, rawVideoUrl]);
+
+  const handleVideoTimeUpdate = () => {
+    if (videoRef.current) {
+      const cur = videoRef.current.currentTime;
+      const dur = videoRef.current.duration || 1;
+      setCurrentVideoTime(cur);
+      setVideoProgress((cur / dur) * 100);
+      if (onTimeUpdate) {
+        onTimeUpdate(cur);
+      }
     }
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPercent = parseFloat(e.target.value);
+    setVideoProgress(newPercent);
+    if (videoRef.current && videoDuration > 0) {
+      const newTime = (newPercent / 100) * videoDuration;
+      videoRef.current.currentTime = newTime;
+      setCurrentVideoTime(newTime);
+      if (onTimeUpdate) onTimeUpdate(newTime);
+    }
+  };
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      void videoRef.current.play();
+      setIsVideoPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsVideoPlaying(false);
+    }
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsVideoMuted(videoRef.current.muted);
+  };
+
+  const handleRestart = () => {
+    if (!videoRef.current) return;
+    videoRef.current.currentTime = 0;
+    void videoRef.current.play();
+    setIsVideoPlaying(true);
+  };
+
+  const handleLaunchCinematic = () => {
+    if (videoRef.current && onTimeUpdate) {
+      onTimeUpdate(videoRef.current.currentTime);
+    }
+    if (onOpenCinematic) {
+      onOpenCinematic();
+    }
+  };
+
+  const formatSecs = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   const currentImage =
     thumbnails[selectedThumb]?.src ||
     thumbnails[0]?.src ||
-    'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
+    (auction?.imageUrl ? formatAuctionImage(auction.imageUrl) : '') ||
+    '';
 
   const sellerName =
-    auction?.seller?.fullName || auction?.product?.category?.name || 'NEXUS Luxury Horology';
+    auction?.seller?.fullName || auction?.product?.category?.name || 'Ban Quản Trị NEXUS';
 
   const sellerAvatar = auction?.seller?.avatarUrl;
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 3D / HD Viewer Main Stage */}
-      <div
-        className="relative aspect-square w-full rounded-3xl overflow-hidden flex items-center justify-center bg-radial from-slate-850 via-slate-900 to-slate-950 border border-slate-800 shadow-2xl select-none group cursor-grab active:cursor-grabbing"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
+      {/* Studio / HD Viewer / Video Main Stage */}
+      <div className="relative aspect-square w-full rounded-3xl overflow-hidden flex items-center justify-center bg-radial from-slate-850 via-slate-900 to-slate-950 border border-slate-800 shadow-2xl select-none group">
         {/* Ambient Studio Spotlight Glow */}
         <div className="absolute inset-0 bg-radial from-sky-500/10 via-transparent to-transparent pointer-events-none" />
 
         {/* Floating Top Indicators */}
         <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
-          <div className="inline-flex items-center gap-2 bg-rose-600/90 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-rose-900/40 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-            <span>LIVE 3D ĐANG DIỄN RA</span>
-          </div>
+          {isSessionEmpty ? (
+            <div className="inline-flex items-center gap-1.5 bg-amber-500/90 text-slate-950 text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-amber-900/40 backdrop-blur-md">
+              <Clock className="w-3.5 h-3.5" />
+              <span>CHỜ NIÊM YẾT HIỆN VẬT</span>
+            </div>
+          ) : isLive ? (
+            <div className="inline-flex items-center gap-2 bg-rose-600/90 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-rose-900/40 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+              <span>LIVE: ĐANG DIỄN RA</span>
+            </div>
+          ) : isScheduled ? (
+            <div className="inline-flex items-center gap-1.5 bg-blue-600/90 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-blue-900/40 backdrop-blur-md">
+              <Clock className="w-3.5 h-3.5" />
+              <span>SẮP DIỄN RA • ĐÃ LÊN LỊCH</span>
+            </div>
+          ) : isEnded ? (
+            <div className="inline-flex items-center gap-1.5 bg-slate-700/90 text-slate-200 text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg backdrop-blur-md">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>ĐÃ KẾT THÚC</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 bg-blue-600/90 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-blue-900/40 backdrop-blur-md">
+              <Clock className="w-3.5 h-3.5" />
+              <span>SẮP DIỄN RA</span>
+            </div>
+          )}
 
-          <div className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 text-[11px] font-medium px-3 py-1 rounded-full w-fit">
-            <Scan className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Độ phân giải 4K Ultra-HD</span>
-          </div>
+          {!isSessionEmpty && (
+            <div className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 text-[11px] font-medium px-3 py-1 rounded-full w-fit">
+              <Scan className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Độ phân giải 4K Ultra-HD</span>
+            </div>
+          )}
         </div>
 
-        {/* Floating Top Right Quick Actions */}
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-xl p-1 text-slate-300">
-          <button
-            type="button"
-            title="Thu nhỏ"
-            disabled={zoomLevel <= 0.8}
-            onClick={() => setZoomLevel((prev) => Math.max(0.8, prev - 0.2))}
-            className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition disabled:opacity-30 cursor-pointer"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <span className="text-[10px] font-mono font-bold px-1 text-slate-400">
-            {Math.round(zoomLevel * 100)}%
-          </span>
-          <button
-            type="button"
-            title="Phóng to"
-            disabled={zoomLevel >= 2.2}
-            onClick={() => setZoomLevel((prev) => Math.min(2.2, prev + 0.2))}
-            className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition disabled:opacity-30 cursor-pointer"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            title="Mở toàn màn hình"
-            onClick={() => window.open(currentImage, '_blank')}
-            className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-        </div>
+        {/* Floating Top Right Quick Actions (Chỉ hiện khi có nội dung) */}
+        {!isSessionEmpty && (
+          <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-xl p-1 text-slate-300">
+            <button
+              type="button"
+              title="Thu nhỏ"
+              disabled={zoomLevel <= 0.8}
+              onClick={() => setZoomLevel((prev) => Math.max(0.8, prev - 0.2))}
+              className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition disabled:opacity-30 cursor-pointer"
+            >
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <span className="text-[10px] font-mono font-bold px-1 text-slate-400">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button
+              type="button"
+              title="Phóng to"
+              disabled={zoomLevel >= 2.2}
+              onClick={() => setZoomLevel((prev) => Math.min(2.2, prev + 0.2))}
+              className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition disabled:opacity-30 cursor-pointer"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
+            {currentImage && (
+              <button
+                type="button"
+                title="Mở toàn màn hình"
+                onClick={() => window.open(currentImage, '_blank')}
+                className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        )}
 
-        {/* Main Product Image with simulated 3D rotation & Zoom */}
-        <div
-          className="relative w-full h-full flex items-center justify-center p-8 transition-transform duration-300 ease-out"
-          style={{
-            transform: `scale(${zoomLevel})`,
-          }}
-        >
-          <img
-            src={currentImage}
-            alt={thumbnails[selectedThumb]?.label || 'Auction Product'}
-            className="max-w-[85%] max-h-[85%] object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.65)] transition-transform duration-200"
+        {/* TRƯỜNG HỢP 1: PHIÊN CHƯA CÓ HÀNG VÀ CHƯA CÓ BANNER (WAITING VAULT STAGE) */}
+        {isSessionEmpty && viewerMode !== 'video' ? (
+          <div className="relative w-full h-full flex flex-col items-center justify-center p-6 text-center select-none z-10">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-amber-500/20 via-orange-500/10 to-transparent border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_60px_rgba(245,158,11,0.25)] mb-4 animate-pulse">
+              <Package className="w-12 h-12 text-amber-400" />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold mb-2">
+              <Clock className="w-3.5 h-3.5" />
+              <span>Chưa Có Hiện Vật Niêm Yết</span>
+            </div>
+
+            <h3 className="text-base sm:text-lg font-black text-white m-0 max-w-sm">
+              Khung Trưng Bày Đang Chờ Ký Gửi
+            </h3>
+
+            <p className="text-xs text-slate-400 max-w-md mt-2 mb-5 leading-relaxed">
+              Ban Quản Trị NEXUS đã khởi tạo phòng đấu giá. Hiện tại chưa có hình ảnh và sản phẩm
+              nào được niêm yết chính thức. Các Người Bán (Seller) được kiểm duyệt đang chuẩn bị ký
+              gửi hiện vật.
+            </p>
+
+            <div className="flex items-center gap-3 flex-wrap justify-center">
+              <Link
+                to="/seller/auctions/consignments"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold text-xs shadow-lg shadow-orange-600/30 transition hover:scale-105 active:scale-95"
+              >
+                <Package className="w-4 h-4" />
+                <span>Ký Gửi Hiện Vật Vào Phiên Này</span>
+              </Link>
+            </div>
+          </div>
+        ) : viewerMode === 'video' ? (
+          /* TRƯỜNG HỢP 2: VIDEO PLAYER STAGE */
+          <div className="relative w-full h-full flex flex-col justify-between bg-black">
+            {!rawVideoUrl || videoError ? (
+              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center select-none">
+                <Film className="w-12 h-12 text-slate-700 mb-3" />
+                <h4 className="text-sm font-bold text-white mb-1">
+                  {videoError
+                    ? 'Không thể phát video giới thiệu'
+                    : 'Phiên này chưa có video giới thiệu'}
+                </h4>
+                <p className="text-xs text-slate-400 max-w-xs mb-4">
+                  {videoError
+                    ? 'Định dạng video không được hỗ trợ hoặc đường dẫn video bị gián đoạn.'
+                    : 'Admin chưa đăng tải video trailer cho phiên đấu giá này.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVideoError(false);
+                    setViewerMode('photo');
+                  }}
+                  className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
+                >
+                  Quay lại xem ảnh
+                </button>
+              </div>
+            ) : isYouTube ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <iframe
+                  src={ytEmbedUrl}
+                  title="YouTube video player"
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+                <video
+                  ref={videoRef}
+                  src={rawVideoUrl}
+                  className="w-full h-full object-contain cursor-pointer"
+                  playsInline
+                  autoPlay
+                  muted={isVideoMuted}
+                  loop
+                  onTimeUpdate={handleVideoTimeUpdate}
+                  onLoadedMetadata={(e) => {
+                    const dur = (e.target as HTMLVideoElement).duration;
+                    setVideoDuration(dur);
+                  }}
+                  onError={() => setVideoError(true)}
+                  onClick={togglePlay}
+                />
+
+                {/* Unmute Prompt Overlay (nếu đang muted) */}
+                {isVideoMuted && (
+                  <button
+                    type="button"
+                    onClick={toggleMute}
+                    className="absolute top-16 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 text-amber-300 border border-amber-500/40 text-xs font-semibold backdrop-blur-md shadow-lg hover:bg-slate-800 cursor-pointer transition animate-pulse"
+                  >
+                    <VolumeX className="w-3.5 h-3.5" />
+                    <span>Bấm để bật âm thanh</span>
+                  </button>
+                )}
+
+                {/* Big Center Play Indicator when paused */}
+                {!isVideoPlaying && (
+                  <button
+                    type="button"
+                    onClick={togglePlay}
+                    className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-xs transition cursor-pointer"
+                  >
+                    <div className="w-16 h-16 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-2xl pl-1 hover:scale-110 transition">
+                      <Play className="w-8 h-8 fill-white" />
+                    </div>
+                  </button>
+                )}
+
+                {/* Integrated Video Controller Bar */}
+                <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/95 via-black/70 to-transparent flex flex-col gap-2 z-20">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value={videoProgress}
+                    onChange={handleSeek}
+                    className="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-rose-500 hover:h-1.5 transition-all"
+                  />
+
+                  <div className="flex items-center justify-between text-white text-xs">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={togglePlay}
+                        className="p-1 hover:text-rose-400 transition cursor-pointer"
+                        title={isVideoPlaying ? 'Tạm dừng' : 'Phát tiếp'}
+                      >
+                        {isVideoPlaying ? (
+                          <Pause className="w-4 h-4" />
+                        ) : (
+                          <Play className="w-4 h-4 fill-white" />
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleRestart}
+                        className="p-1 hover:text-slate-300 transition cursor-pointer"
+                        title="Phát lại từ đầu"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={toggleMute}
+                        className="p-1 hover:text-slate-300 transition cursor-pointer"
+                        title={isVideoMuted ? 'Bật tiếng' : 'Tắt tiếng'}
+                      >
+                        {isVideoMuted ? (
+                          <VolumeX className="w-4 h-4 text-amber-400" />
+                        ) : (
+                          <Volume2 className="w-4 h-4" />
+                        )}
+                      </button>
+
+                      <span className="font-mono text-[11px] text-slate-300 ml-1">
+                        {formatSecs(currentVideoTime)} / {formatSecs(videoDuration || 30)}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleLaunchCinematic}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600/90 hover:bg-rose-600 text-white font-bold text-[11px] shadow-md transition cursor-pointer"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      <span>Rạp Chiếu Fullscreen</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* TRƯỜNG HỢP 3: MAIN PRODUCT IMAGE WITH ZOOM (KHI CÓ ẢNH THẬT) */
+          <div
+            className="relative w-full h-full flex items-center justify-center p-8 transition-transform duration-300 ease-out"
             style={{
-              transform: `rotate(${rotationAngle}deg)`,
+              transform: `scale(${zoomLevel})`,
             }}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=1200&q=80';
-            }}
-          />
-        </div>
+          >
+            {currentImage ? (
+              <img
+                src={currentImage}
+                alt={thumbnails[selectedThumb]?.label || 'Auction Product'}
+                className="max-w-[85%] max-h-[85%] object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.65)] transition-transform duration-200"
+              />
+            ) : null}
+          </div>
+        )}
 
         {/* LiDAR Holographic Overlay (if mode = lidar) */}
         {viewerMode === 'lidar' &&
           (() => {
-            const firstItem = auction?.items?.[0];
+            const firstItem = currentLot || auction?.items?.[0];
             const certCode =
               firstItem?.appraisalCertificateNumber ||
-              (auction?.id ? `NX-3D-${auction.id.slice(0, 8).toUpperCase()}` : 'PASS');
+              (auction?.id ? `NX-CERT-${auction.id.slice(0, 8).toUpperCase()}` : null);
 
             return (
               <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(6,182,212,0.15)_1px,transparent_1px),linear-gradient(90deg,rgba(6,182,212,0.15)_1px,transparent_1px)] bg-[size:24px_24px]">
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_20px_#06b6d4] animate-pulse" />
                 <div className="absolute bottom-4 left-4 bg-slate-950/90 backdrop-blur-md text-cyan-400 font-mono text-xs px-3.5 py-1.5 rounded-xl border border-cyan-500/40 flex items-center gap-2 shadow-xl">
-                  <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
-                  <span>QUÉT LIDAR 3D: KHỚP 100% CẤU TRÚC GỐC [{certCode}]</span>
+                  {certCode ? (
+                    <>
+                      <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
+                      <span>HỒ SƠ THẨM ĐỊNH: XÁC THỰC 100% HIỆN VẬT [{certCode}]</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-4 h-4 text-amber-400" />
+                      <span className="text-amber-300 font-sans font-bold">
+                        CHƯA CÓ HỒ SƠ THẨM ĐỊNH (CHỜ SELLER KÝ GỬI HIỆN VẬT)
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
             );
           })()}
-
-        {/* 3D Interactive Floating Compass / Rotation Bar */}
-        {viewerMode === '3d' && (
-          <div className="absolute bottom-4 inset-x-4 z-20 flex items-center justify-between bg-slate-900/90 backdrop-blur-md border border-slate-700/70 p-2 px-3 rounded-2xl shadow-xl">
-            <div className="flex items-center gap-2 text-xs text-sky-400 font-mono font-semibold">
-              <RotateCw className="w-4 h-4 text-sky-400 animate-spin" />
-              <span>Góc xoay: {Math.abs(rotationAngle % 360)}°</span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setRotationAngle((prev) => (prev - 45) % 360)}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" /> -45°
-              </button>
-              <button
-                type="button"
-                onClick={() => setRotationAngle(0)}
-                className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition cursor-pointer"
-              >
-                Gốc 0°
-              </button>
-              <button
-                type="button"
-                onClick={() => setRotationAngle((prev) => (prev + 45) % 360)}
-                className="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer shadow-sm"
-              >
-                +45° <RotateCw className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Viewer Mode Switcher */}
-      <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200">
+      {/* Viewer Mode Switcher: 2 Chế Độ Giám Định Hiện Vật (Ảnh HD & Hồ Sơ Thẩm Định) */}
+      <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200">
         <button
           type="button"
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 text-xs font-bold rounded-xl transition cursor-pointer ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-2 text-xs font-bold rounded-xl transition cursor-pointer ${
             viewerMode === 'photo'
               ? 'bg-white text-slate-900 shadow-md border border-slate-200/80'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -225,28 +526,12 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           }}
         >
           <Eye className="w-4 h-4 text-slate-700" />
-          <span>Ảnh Studio HD</span>
+          <span className="truncate">Ảnh Hiện Vật HD</span>
         </button>
 
         <button
           type="button"
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 text-xs font-bold rounded-xl transition cursor-pointer ${
-            viewerMode === '3d'
-              ? 'bg-sky-600 text-white shadow-md shadow-sky-600/30'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-          }`}
-          onClick={() => {
-            setViewerMode('3d');
-            setRotationAngle((prev) => (prev + 45) % 360);
-          }}
-        >
-          <Box className={`w-4 h-4 ${viewerMode === '3d' ? 'text-white' : 'text-sky-600'}`} />
-          <span>Xoay 360° 3D</span>
-        </button>
-
-        <button
-          type="button"
-          className={`flex items-center justify-center gap-2 py-2.5 px-3 text-xs font-bold rounded-xl transition cursor-pointer ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-2 text-xs font-bold rounded-xl transition cursor-pointer ${
             viewerMode === 'lidar'
               ? 'bg-slate-900 text-cyan-400 shadow-md border border-cyan-500/40'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
@@ -254,39 +539,52 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           onClick={() => setViewerMode('lidar')}
         >
           <Scan className="w-4 h-4 text-cyan-500" />
-          <span>Quét Hologram</span>
+          <span className="truncate">Hồ Sơ Thẩm Định</span>
         </button>
       </div>
 
-      {/* Gallery Thumbnails */}
-      <div className="grid grid-cols-5 gap-2.5">
-        {thumbnails.map((item, idx) => (
-          <button
-            key={idx}
-            type="button"
-            className={`aspect-square bg-white rounded-xl p-1.5 cursor-pointer overflow-hidden flex items-center justify-center border-2 transition ${
-              selectedThumb === idx
-                ? 'border-sky-600 shadow-md bg-sky-50/40 ring-2 ring-sky-200'
-                : 'border-slate-200 hover:border-slate-300'
-            }`}
-            onClick={() => setSelectedThumb(idx)}
-            title={item.label}
-          >
-            <img
-              src={item.src}
-              alt={item.label}
-              className="w-full h-full object-cover rounded-lg hover:scale-105 transition"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).src =
-                  'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80';
+      {/* Gallery Thumbnails: Nếu rỗng thì hiện thanh thông báo sạch sẽ */}
+      {thumbnails.length > 0 ? (
+        <div className="grid grid-cols-5 gap-2.5">
+          {thumbnails.map((item, idx) => (
+            <button
+              key={idx}
+              type="button"
+              className={`aspect-square bg-white rounded-xl p-1.5 cursor-pointer overflow-hidden flex items-center justify-center border-2 transition ${
+                selectedThumb === idx && viewerMode === 'photo'
+                  ? 'border-sky-600 shadow-md bg-sky-50/40 ring-2 ring-sky-200'
+                  : 'border-slate-200 hover:border-slate-300'
+              }`}
+              onClick={() => {
+                setSelectedThumb(idx);
+                if (viewerMode === 'video') {
+                  setViewerMode('photo');
+                }
               }}
-            />
-          </button>
-        ))}
-      </div>
+              title={item.label}
+            >
+              <img
+                src={item.src}
+                alt={item.label}
+                className="w-full h-full object-cover rounded-lg hover:scale-105 transition"
+              />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="p-3.5 bg-slate-100/80 border border-slate-200 rounded-2xl flex items-center justify-between text-xs text-slate-500 shadow-2xs">
+          <span className="flex items-center gap-2 font-medium">
+            <Layers className="w-4 h-4 text-slate-400" />
+            <span>Chưa có hình ảnh hiện vật nào được tải lên (Chờ Seller niêm yết)</span>
+          </span>
+          <span className="text-[11px] font-bold text-slate-400 bg-slate-200/60 px-2.5 py-0.5 rounded-md">
+            0 Ảnh
+          </span>
+        </div>
+      )}
 
       {/* Real Seller & Vault Guarantee Card */}
-      <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between gap-4 shadow-sm">
+      <div className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between gap-4 shadow-xs">
         <div className="flex items-center gap-3.5 min-w-0">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-blue-700 to-indigo-900 text-white flex items-center justify-center font-black text-base shrink-0 overflow-hidden shadow-inner">
             {sellerAvatar ? (

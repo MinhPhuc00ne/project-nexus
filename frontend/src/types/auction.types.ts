@@ -13,7 +13,9 @@ export interface SimilarWatch {
   statusLabel: string;
   statusVal: string;
   statusType: 'blue' | 'green';
+  hasItems?: boolean;
+  hasVideo?: boolean;
 }
 
-export type AuctionViewerMode = 'photo' | '3d' | 'lidar';
+export type AuctionViewerMode = 'video' | 'photo' | '3d' | 'lidar';
 export type AuctionTabKey = 'certs' | 'specs' | 'history' | 'reviews';

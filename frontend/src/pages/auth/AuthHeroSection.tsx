@@ -12,11 +12,11 @@ export default function AuthHeroSection() {
         </div>
         <h2 className="[font-size:2.75rem] font-black text-slate-900 [line-height:1.15] mb-4 max-[768px]:[font-size:2rem]">
           Trải Nghiệm Mua Sắm &<br />
-          <span className="[color:#3b5bdb]">Đấu Giá 3D Đỉnh Cao</span>
+          <span className="[color:#3b5bdb]">Đấu Giá Trực Tuyến Đỉnh Cao</span>
         </h2>
         <p className="text-slate-500 text-base [max-width:36rem] leading-relaxed">
-          Môi trường giao dịch tài sản số & thương mại cao cấp với tương tác mô hình không gian ba
-          chiều, chốt phiên thời gian thực minh bạch tuyệt đối.
+          Môi trường giao dịch tài sản số & thương mại cao cấp, chốt phiên thời gian thực minh bạch
+          tuyệt đối.
         </p>
       </div>
 
@@ -26,7 +26,7 @@ export default function AuthHeroSection() {
 
           <div className="relative z-10 w-full flex justify-between items-center">
             <span className="[background-color:rgba(0,_0,_0,_0.45)] [backdrop-filter:blur(8px)] [border:1px_solid_rgba(255,_255,_255,_0.15)] text-white text-[10px] font-semibold [padding:0.25rem_0.625rem] rounded-full flex items-center gap-1">
-              <Rotate3d className="w-3 h-3 [color:#22d3ee]" /> XOAY 360°
+              TRỰC TIẾP
             </span>
             <span className="[background-color:rgba(16,_185,_129,_0.15)] [color:#34d399] [border:1px_solid_rgba(16,_185,_129,_0.3)] text-[10px] font-bold [padding:0.125rem_0.5rem] rounded-full flex items-center gap-1.5">
               <div className="w-1.5 h-1.5 rounded-full [background-color:#34d399] [animation:pulse-glow_2s_cubic-bezier(0.4,_0,_0.6,_1)_infinite]"></div>{' '}
@@ -107,9 +107,9 @@ export default function AuthHeroSection() {
           <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3 [&.blue]:bg-blue-50 [&.blue]:text-blue-600 [&.red]:bg-red-50 [&.red]:text-red-500 [&.green]:bg-green-50 [&.green]:text-green-600 [&_svg]:w-4 [&_svg]:h-4 blue">
             <Rotate3d />
           </div>
-          <h4 className="font-bold text-sm text-slate-900 mb-1">Mô Hình 3D Xoay 360°</h4>
+          <h4 className="font-bold text-sm text-slate-900 mb-1">Thẩm Định Thực Tế</h4>
           <p className="text-xs text-slate-500 leading-normal">
-            Khảo sát chi tiết góc cạnh chuẩn thực tế.
+            Khảo sát chi tiết hồ sơ & chứng thư kiểm định chuẩn xác.
           </p>
         </div>
         <div className="bg-white p-4 rounded-xl [border:1px_solid_#e2e8f0] shadow-sm">

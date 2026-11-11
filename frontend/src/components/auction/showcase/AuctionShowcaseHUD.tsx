@@ -147,6 +147,23 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
   } | null>(null);
 
   const audioRef = useRef<AuctionAudioEngine | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+  const initialElapsedRef = useRef(initialElapsedMs);
+
+  // Hỗ trợ phím Escape để bỏ qua video hoặc đóng xem lại
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (onCancelRef.current) onCancelRef.current();
+        else onCompleteRef.current?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Chuẩn hóa danh sách lô hàng đã duyệt để trình chiếu
   const showcaseLots = useMemo(() => {
@@ -197,16 +214,16 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
         : manualJumpTrigger.targetPhase === 'lot'
           ? HALL_DURATION_MS + (manualJumpTrigger.lotIdx ?? 0) * LOT_DURATION_MS
           : HALL_DURATION_MS + resolvedLots.length * LOT_DURATION_MS
-      : Math.max(0, Math.min(totalDurationMs, initialElapsedMs));
+      : Math.max(0, Math.min(totalDurationMs, initialElapsedRef.current));
 
     const timer = window.setInterval(() => {
       const elapsed = baseOffset + (performance.now() - startClock);
       setProgressPct(Math.min(100, Math.max(0, (elapsed / totalDurationMs) * 100)));
     }, 80);
     return () => window.clearInterval(timer);
-  }, [initialElapsedMs, manualJumpTrigger, resolvedLots.length, totalDurationMs]);
+  }, [manualJumpTrigger, resolvedLots.length, totalDurationMs]);
 
-  // Kịch bản đạo diễn bất đồng bộ (Async Timeline Sequencer — không cho phép dừng ngang ở luồng live)
+  // Kịch bản đạo diễn bất đồng bộ (Async Timeline Sequencer — không bị hủy khi component cha re-render)
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
@@ -217,15 +234,16 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
         let startLotIdx = 0;
         let offsetInPhaseMs = 0;
 
+        const currentElapsed = initialElapsedRef.current;
         if (manualJumpTrigger && isAdminReplay) {
           startPhase = manualJumpTrigger.targetPhase;
           startLotIdx = manualJumpTrigger.lotIdx ?? 0;
-        } else if (initialElapsedMs > 0) {
-          if (initialElapsedMs < HALL_DURATION_MS) {
+        } else if (currentElapsed > 0) {
+          if (currentElapsed < HALL_DURATION_MS) {
             startPhase = 'hall';
-            offsetInPhaseMs = initialElapsedMs;
-          } else if (initialElapsedMs < HALL_DURATION_MS + resolvedLots.length * LOT_DURATION_MS) {
-            const intoLots = initialElapsedMs - HALL_DURATION_MS;
+            offsetInPhaseMs = currentElapsed;
+          } else if (currentElapsed < HALL_DURATION_MS + resolvedLots.length * LOT_DURATION_MS) {
+            const intoLots = currentElapsed - HALL_DURATION_MS;
             startPhase = 'lot';
             startLotIdx = Math.min(resolvedLots.length - 1, Math.floor(intoLots / LOT_DURATION_MS));
             offsetInPhaseMs = intoLots % LOT_DURATION_MS;
@@ -233,7 +251,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
             startPhase = 'climax';
             offsetInPhaseMs = Math.max(
               0,
-              initialElapsedMs - (HALL_DURATION_MS + resolvedLots.length * LOT_DURATION_MS),
+              currentElapsed - (HALL_DURATION_MS + resolvedLots.length * LOT_DURATION_MS),
             );
           }
         }
@@ -323,16 +341,16 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
         audioRef.current?.playCountdownTone(true);
         await waitMs(850, signal);
 
-        onComplete();
+        onCompleteRef.current?.();
       } catch (err: unknown) {
         if ((err as { name?: string })?.name === 'AbortError') return;
-        onComplete();
+        onCompleteRef.current?.();
       }
     }
 
     void runSequence();
     return () => controller.abort();
-  }, [initialElapsedMs, isAdminReplay, manualJumpTrigger, onComplete, resolvedLots.length]);
+  }, [isAdminReplay, manualJumpTrigger, resolvedLots.length]);
 
   const activeEntry = resolvedLots[currentLotIdx] || resolvedLots[0];
   const activeVisual = activeEntry.visual;
@@ -408,16 +426,15 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
             <span className="hidden sm:inline">{isMuted ? 'Đang tắt tiếng' : 'Âm thanh'}</span>
           </button>
 
-          {isAdminReplay && (
-            <button
-              type="button"
-              onClick={onCancel ?? onComplete}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-amber-400/50 bg-amber-500/20 px-3.5 py-1.5 text-xs font-bold text-amber-100 transition hover:bg-amber-500/35"
-            >
-              <X className="h-3.5 w-3.5" />
-              <span>Đóng xem lại</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onCancel ?? onComplete}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-amber-400/50 bg-amber-500/20 px-3.5 py-1.5 text-xs font-bold text-amber-100 transition hover:bg-amber-500/35 hover:scale-105 active:scale-95"
+            title={isAdminReplay ? 'Đóng xem lại' : 'Bỏ qua video và vào sàn đặt giá ngay'}
+          >
+            <X className="h-3.5 w-3.5" />
+            <span>{isAdminReplay ? 'Đóng xem lại' : 'Bỏ qua video ⏩'}</span>
+          </button>
         </div>
       </header>
 

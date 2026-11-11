@@ -8,6 +8,9 @@ import {
   Clock,
   Award,
   CheckCircle2,
+  Lock,
+  Bell,
+  AlertCircle,
 } from 'lucide-react';
 import type { AuctionEntity, AuctionConsignmentItem } from '../../services/auction.service';
 
@@ -24,6 +27,7 @@ interface AuctionBidTerminalProps {
   totalBidsCount?: number;
   buyerReputationScore?: number;
   requiredReputationScore?: number;
+  hasItems?: boolean;
 }
 
 export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
@@ -39,10 +43,12 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
   totalBidsCount,
   buyerReputationScore,
   requiredReputationScore,
+  hasItems: _hasItems,
 }) => {
   const minIncrement = auction?.bidIncrement ? Number(auction.bidIncrement) : 1000000;
   const [customBidAmount, setCustomBidAmount] = useState(currentPrice + minIncrement);
   const [showBidModal, setShowBidModal] = useState(false);
+  const [isReminderSet, setIsReminderSet] = useState(false);
 
   useEffect(() => {
     setCustomBidAmount(currentPrice + minIncrement);
@@ -73,35 +79,42 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
     setShowBidModal(false);
   };
 
+  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
+
   const isScheduled =
-    auction?.status === 'SCHEDULED' ||
-    (Boolean(auction?.startTime) && new Date(auction!.startTime).getTime() > Date.now());
+    !isLive &&
+    (auction?.status === 'SCHEDULED' ||
+      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
 
   const isEnded =
     auction?.status === 'ENDED' ||
     auction?.status === 'SETTLED' ||
     auction?.status === 'CANCELLED' ||
-    (Boolean(auction?.endTime) &&
-      new Date(auction!.endTime).getTime() <= Date.now() &&
-      !isScheduled);
+    (!isLive &&
+      !isScheduled &&
+      (auction?.endTime ? new Date(auction.endTime).getTime() <= Date.now() : false));
+
+  const hasItems =
+    _hasItems ??
+    Boolean(selectedItem || auction?.product || (auction?.items && auction.items.length > 0));
 
   const displayTitle =
     selectedItem?.title ||
     auction?.product?.title ||
     auction?.title ||
-    'Audemars Piguet Royal Oak Chronograph 41mm Selfwinding';
+    'Phiên Đấu Giá Mới Khởi Tạo';
 
   const lotNumber = selectedItem?.lotNumber
     ? `LÔ #${selectedItem.lotNumber}`
     : auction?.id
-      ? `LOT #${auction.id.slice(0, 8).toUpperCase()}`
-      : 'LOT #01';
+      ? `PHÂN ĐỢT #${auction.id.slice(0, 8).toUpperCase()}`
+      : 'CHỜ NIÊM YẾT';
 
   const startPriceVal = selectedItem?.startingPrice
     ? Number(selectedItem.startingPrice)
     : auction?.startingPrice
       ? Number(auction.startingPrice)
-      : 95000000;
+      : 0;
 
   const quickIncrements = [minIncrement, minIncrement * 2, minIncrement * 5, minIncrement * 10];
   const bidsCount = totalBidsCount ?? auction?.totalBidsCount ?? (auction?.bids?.length || 0);
@@ -154,180 +167,243 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                 isScheduled ? 'bg-amber-400' : 'bg-cyan-400 animate-ping'
               }`}
             />
-            {isScheduled ? 'Sắp mở 3D' : 'Trực tiếp 3D'}
+            {isScheduled ? 'Sắp Diễn Ra' : 'Trực Tiếp'}
           </span>
         </div>
       </div>
 
       {/* Price & Terminal Box */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[13px] font-semibold text-slate-600">
-            Giá Đặt Hiện Tại (Leading Bid):
-          </span>
-          <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-            Live FX: $1 ≈ 24.000đ
-          </span>
-        </div>
-
-        <div className="flex items-baseline gap-3 flex-wrap mb-3">
-          <span className="text-3xl sm:text-4xl font-black text-rose-600 leading-none">
-            {formatVND(currentPrice)}
-          </span>
-          <span className="text-[15px] font-bold text-blue-600">{formatUSD(currentPrice)}</span>
-        </div>
-
-        <div className="text-xs text-slate-500 mb-4">
-          Khởi điểm: <strong>{formatVND(startPriceVal)}</strong> • Bước giá tối thiểu:{' '}
-          <strong>+{formatVND(minIncrement)}</strong>
-        </div>
-
-        {/* Leading Bidder */}
-        <div className="bg-slate-50 rounded-lg p-2.5 text-xs text-slate-600 flex items-center justify-between mb-4 border-l-3 border-emerald-500">
-          <span>Người đang giữ giá:</span>
-          <span className="font-bold text-slate-900">{leadingBidder} 👑</span>
-        </div>
-
-        {/* Buyer Reputation & Eligibility Badge */}
-        {buyerReputationScore !== undefined && (
-          <div className="flex items-center justify-between bg-slate-50/90 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs mb-4">
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-amber-500 shrink-0" />
-              <div>
-                <span className="text-slate-600">Uy tín của bạn: </span>
-                <strong className="text-slate-900 font-extrabold">
-                  {buyerReputationScore} điểm
-                </strong>
-                <span className="text-[11px] text-slate-400 font-mono ml-1.5">
-                  (Yêu cầu: ≥ {requiredReputationScore ?? 40})
-                </span>
-              </div>
-            </div>
-            {buyerReputationScore >= (requiredReputationScore ?? 40) && !isFlaggedViewOnly ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đủ điều kiện
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                <AlertTriangle className="w-3 h-3 text-amber-600" /> View-Only
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* View-only eligibility warning */}
-        {isFlaggedViewOnly && (
-          <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-xs flex items-start gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold">Chế độ Chỉ Xem (View-Only)</p>
-              <p className="text-[11px] text-amber-700 mt-0.5">
-                {eligibilityReason ||
-                  'Điểm uy tín tài khoản của bạn chưa đáp ứng yêu cầu tối thiểu của phiên này.'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Scheduled notice for upcoming auctions */}
-        {isScheduled && (
-          <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3.5 text-xs flex items-start gap-2.5">
-            <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold">Phiên Đấu Giá Chưa Mở</p>
-              <p className="text-[11px] text-amber-700 mt-0.5">
-                Phiên đấu giá được lên lịch mở lúc{' '}
-                <strong>
-                  {auction?.startTime
-                    ? new Date(auction.startTime).toLocaleString('vi-VN')
-                    : 'thời gian sắp tới'}
-                </strong>
-                . Quý khách có thể xem trước hình ảnh, mô hình 3D và hồ sơ kiểm định của từng lô
-                hàng.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Bid Increment Buttons */}
-        <div className="flex flex-col gap-3">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {quickIncrements.map((incVal, idx) => {
-              const isSelected = customBidAmount === currentPrice + incVal;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  disabled={isScheduled || isEnded || isFlaggedViewOnly || timeLeft <= 0}
-                  className={`p-2.5 rounded-xl cursor-pointer transition text-center flex flex-col items-center justify-center gap-0.5 border ${
-                    isSelected
-                      ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
-                      : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-blue-50 hover:border-blue-300'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                  onClick={() => handleQuickIncrement(incVal)}
-                >
-                  <span className="font-extrabold text-xs">+{formatVND(incVal)}</span>
-                  <span
-                    className={`text-[10px] font-medium ${
-                      isSelected ? 'text-white/80' : 'text-slate-400'
-                    }`}
-                  >
-                    = {formatVND(currentPrice + incVal)}
-                  </span>
-                </button>
-              );
-            })}
+      {!hasItems ? (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[13px] font-semibold text-slate-600">Trạng Thái Phiên:</span>
+            <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+              Chờ Niêm Yết Hiện Vật
+            </span>
           </div>
 
-          {/* Custom Bid Input & Action */}
-          <div className="flex items-center gap-2 mt-2">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                disabled={isScheduled || isEnded || isFlaggedViewOnly || timeLeft <= 0}
-                className="w-full py-2.5 px-3 rounded-xl border border-slate-300 text-base font-extrabold text-slate-900 bg-slate-50 focus:bg-white focus:border-rose-500 focus:outline-none disabled:opacity-50"
-                value={formatVND(customBidAmount)}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/\D/g, '');
-                  setCustomBidAmount(Number(raw) || 0);
-                }}
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                VNĐ
-              </span>
-            </div>
+          <div className="mb-3">
+            <span className="text-2xl sm:text-3xl font-black text-slate-700 leading-none">
+              Chưa Có Sản Phẩm
+            </span>
+            <p className="text-xs text-slate-500 mt-2 m-0">
+              {startPriceVal > 0 ? (
+                <>
+                  Giá khởi điểm dự kiến của phiên:{' '}
+                  <strong className="text-slate-800">{formatVND(startPriceVal)}</strong>
+                </>
+              ) : (
+                <>Mức giá khởi điểm sẽ được công bố khi có hồ sơ ký gửi sản phẩm từ Seller.</>
+              )}
+            </p>
+          </div>
+
+          <div className="bg-slate-50 rounded-xl p-3 text-xs text-slate-600 flex items-center gap-2 mb-4 border border-slate-200/80">
+            <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>Phiên này chưa có sản phẩm nào được niêm yết. Chức năng đặt giá chưa mở.</span>
+          </div>
+
+          <div className="flex flex-col gap-2.5 mt-4">
+            <button
+              type="button"
+              disabled
+              className="w-full py-3 px-5 bg-slate-200 text-slate-500 font-extrabold text-sm rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Chưa Có Sản Phẩm Để Đặt Giá</span>
+            </button>
 
             <button
               type="button"
-              disabled={
-                isScheduled ||
-                isEnded ||
-                isFlaggedViewOnly ||
-                timeLeft <= 0 ||
-                customBidAmount <= currentPrice
-              }
-              className="py-2.5 px-5 bg-gradient-to-r from-orange-500 to-rose-600 text-white font-extrabold text-sm rounded-xl shadow-md transition hover:opacity-95 active:scale-95 whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-              onClick={() => setShowBidModal(true)}
+              onClick={() => setIsReminderSet(!isReminderSet)}
+              className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer border ${
+                isReminderSet
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-2xs'
+                  : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+              }`}
             >
-              <Gavel className="w-4 h-4" />
+              <Bell
+                className={`w-4 h-4 ${
+                  isReminderSet ? 'fill-emerald-600 text-emerald-600' : 'text-slate-500'
+                }`}
+              />
               <span>
-                {isScheduled
-                  ? 'Phiên Chưa Mở'
-                  : isEnded
-                    ? 'Phiên Đã Kết Thúc'
-                    : isFlaggedViewOnly
-                      ? 'Chỉ Xem'
-                      : 'Đặt Giá Ngay'}
+                {isReminderSet
+                  ? '✓ Đã Bật Nhắc Nhở Khi Có Hàng'
+                  : 'Nhắc Tôi Khi Có Sản Phẩm Niêm Yết'}
               </span>
             </button>
           </div>
-
-          <p className="text-[11px] text-slate-500 m-0 text-center">
-            🔒 Ký quỹ an toàn qua ví (AUCTION_BID_LOCK) • Tự động hoàn tiền 100%
-            (AUCTION_BID_REFUND) khi có người trả giá cao hơn.
-          </p>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[13px] font-semibold text-slate-600">
+              Giá Đặt Hiện Tại (Leading Bid):
+            </span>
+            <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+              Live FX: $1 ≈ 24.000đ
+            </span>
+          </div>
+
+          <div className="flex items-baseline gap-3 flex-wrap mb-3">
+            <span className="text-3xl sm:text-4xl font-black text-rose-600 leading-none">
+              {formatVND(currentPrice)}
+            </span>
+            <span className="text-[15px] font-bold text-blue-600">{formatUSD(currentPrice)}</span>
+          </div>
+
+          <div className="text-xs text-slate-500 mb-4">
+            Khởi điểm: <strong>{formatVND(startPriceVal)}</strong> • Bước giá tối thiểu:{' '}
+            <strong>+{formatVND(minIncrement)}</strong>
+          </div>
+
+          {/* Leading Bidder */}
+          <div className="bg-slate-50 rounded-lg p-2.5 text-xs text-slate-600 flex items-center justify-between mb-4 border-l-3 border-emerald-500">
+            <span>Người đang giữ giá:</span>
+            <span className="font-bold text-slate-900">{leadingBidder} 👑</span>
+          </div>
+
+          {/* Buyer Reputation & Eligibility Badge */}
+          {buyerReputationScore !== undefined && (
+            <div className="flex items-center justify-between bg-slate-50/90 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs mb-4">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-amber-500 shrink-0" />
+                <div>
+                  <span className="text-slate-600">Uy tín của bạn: </span>
+                  <strong className="text-slate-900 font-extrabold">
+                    {buyerReputationScore} điểm
+                  </strong>
+                  <span className="text-[11px] text-slate-400 font-mono ml-1.5">
+                    (Yêu cầu: ≥ {requiredReputationScore ?? 40})
+                  </span>
+                </div>
+              </div>
+              {buyerReputationScore >= (requiredReputationScore ?? 40) && !isFlaggedViewOnly ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đủ điều kiện
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                  <AlertTriangle className="w-3 h-3 text-amber-600" /> View-Only
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* View-only eligibility warning */}
+          {isFlaggedViewOnly && (
+            <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-xs flex items-start gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Chế độ Chỉ Xem (View-Only)</p>
+                <p className="text-[11px] text-amber-700 mt-0.5">
+                  {eligibilityReason ||
+                    'Điểm uy tín tài khoản của bạn chưa đáp ứng yêu cầu tối thiểu của phiên này.'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Scheduled notice for upcoming auctions */}
+          {isScheduled && (
+            <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3.5 text-xs flex items-start gap-2.5">
+              <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Phiên Đấu Giá Chưa Mở</p>
+                <p className="text-[11px] text-amber-700 mt-0.5">
+                  Phiên đấu giá được lên lịch mở lúc{' '}
+                  <strong>
+                    {auction?.startTime
+                      ? new Date(auction.startTime).toLocaleString('vi-VN')
+                      : 'thời gian sắp tới'}
+                  </strong>
+                  . Quý khách có thể xem trước hình ảnh thực tế và hồ sơ kiểm định của từng lô hàng.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Bid Increment Buttons */}
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {quickIncrements.map((incVal, idx) => {
+                const isSelected = customBidAmount === currentPrice + incVal;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    disabled={isScheduled || isEnded || isFlaggedViewOnly || timeLeft <= 0}
+                    className={`p-2.5 rounded-xl cursor-pointer transition text-center flex flex-col items-center justify-center gap-0.5 border ${
+                      isSelected
+                        ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
+                        : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-blue-50 hover:border-blue-300'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    onClick={() => handleQuickIncrement(incVal)}
+                  >
+                    <span className="font-extrabold text-xs">+{formatVND(incVal)}</span>
+                    <span
+                      className={`text-[10px] font-medium ${
+                        isSelected ? 'text-white/80' : 'text-slate-400'
+                      }`}
+                    >
+                      = {formatVND(currentPrice + incVal)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom Bid Input & Action */}
+            <div className="flex items-center gap-2 mt-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  disabled={isScheduled || isEnded || isFlaggedViewOnly || timeLeft <= 0}
+                  className="w-full py-2.5 px-3 rounded-xl border border-slate-300 text-base font-extrabold text-slate-900 bg-slate-50 focus:bg-white focus:border-rose-500 focus:outline-none disabled:opacity-50"
+                  value={formatVND(customBidAmount)}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '');
+                    setCustomBidAmount(Number(raw) || 0);
+                  }}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+                  VNĐ
+                </span>
+              </div>
+
+              <button
+                type="button"
+                disabled={
+                  isScheduled ||
+                  isEnded ||
+                  isFlaggedViewOnly ||
+                  timeLeft <= 0 ||
+                  customBidAmount <= currentPrice
+                }
+                className="py-2.5 px-5 bg-gradient-to-r from-orange-500 to-rose-600 text-white font-extrabold text-sm rounded-xl shadow-md transition hover:opacity-95 active:scale-95 whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                onClick={() => setShowBidModal(true)}
+              >
+                <Gavel className="w-4 h-4" />
+                <span>
+                  {isScheduled
+                    ? 'Phiên Chưa Mở'
+                    : isEnded
+                      ? 'Phiên Đã Kết Thúc'
+                      : isFlaggedViewOnly
+                        ? 'Chỉ Xem'
+                        : 'Đặt Giá Ngay'}
+                </span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-500 m-0 text-center">
+              🔒 Ký quỹ an toàn qua ví (AUCTION_BID_LOCK) • Tự động hoàn tiền 100%
+              (AUCTION_BID_REFUND) khi có người trả giá cao hơn.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Shipping & Policies */}
       <div className="flex flex-col gap-3">
@@ -374,7 +450,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           >
             <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
               <h3 className="text-base font-extrabold text-slate-900 m-0">
-                Xác Nhận Đặt Giá Đấu Giá 3D
+                Xác Nhận Đặt Giá Đấu Giá
               </h3>
               <button
                 type="button"

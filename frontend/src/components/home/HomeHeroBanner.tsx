@@ -12,9 +12,9 @@ const FALLBACK_PLATFORM_SLIDES: HomeHeroSlide[] = [
   {
     badge: 'NEXUS OFFICIAL PLATFORM',
     title: 'Sàn Thương Mại Điện Tử &',
-    accent: 'Đấu Giá 3D Tương Tác 360°',
+    accent: 'Đấu Giá Trực Tuyến Độc Bản',
     description:
-      'Mua sắm sản phẩm công nghệ, gear, phụ kiện cao cấp. Trải nghiệm tương tác 3D độc bản, thanh toán bảo chứng PayOS Escrow và giao vận hỏa tốc GHN.',
+      'Mua sắm sản phẩm công nghệ, gear, phụ kiện cao cấp. Trải nghiệm tương tác đa chiều, thanh toán bảo chứng PayOS Escrow và giao vận hỏa tốc GHN.',
     image:
       'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1400&q=80',
     targetUrl: '/search',
@@ -53,7 +53,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
   if (loading) {
     return (
       <section className="rounded-[18px] border border-slate-200 bg-slate-100/60 p-3 sm:p-4">
-        <div className="relative h-[360px] sm:h-[400px] lg:h-[380px] w-full overflow-hidden rounded-[22px] border border-slate-200/80 bg-gradient-to-r from-slate-100 via-slate-200/70 to-slate-100 animate-pulse shadow-sm flex items-center justify-center">
+        <div className="relative h-[300px] sm:h-[380px] lg:h-[440px] w-full overflow-hidden rounded-[22px] border border-slate-200/80 bg-gradient-to-r from-slate-100 via-slate-200/70 to-slate-100 animate-pulse shadow-sm flex items-center justify-center">
           <div className="text-center space-y-3">
             <div className="h-6 w-44 sm:w-64 bg-slate-300/60 rounded-full mx-auto" />
             <div className="h-4 w-60 sm:w-96 bg-slate-300/40 rounded-full mx-auto" />
@@ -68,26 +68,34 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
   return (
     <section className="rounded-[18px] border border-slate-200 bg-slate-100/60 p-3 sm:p-4">
       <div
-        className="relative h-[360px] sm:h-[400px] lg:h-[380px] w-full overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-sky-50 via-sky-100/50 to-white shadow-[0_16px_40px_rgb(28_57_115_/_8%)]"
+        className="relative h-[300px] sm:h-[380px] lg:h-[440px] w-full overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-sky-50 via-sky-100/50 to-white shadow-[0_16px_40px_rgb(28_57_115_/_8%)]"
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
         {currentSlide.isFullBanner || !currentSlide.description ? (
           <Link
             to={currentSlide.targetUrl || '/search'}
-            className="group relative block h-full w-full overflow-hidden"
+            className="group relative flex h-full w-full items-center justify-center overflow-hidden bg-slate-950"
           >
+            {/* Lớp nền ambient blur lấy màu ảnh lấp đầy khung hình tự nhiên, tránh viền trống */}
+            <img
+              src={currentSlide.image}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none select-none"
+            />
+            {/* Ảnh banner chính hiển thị trọn vẹn 100% theo chiều dọc, không bị crop mất chi tiết */}
             <img
               src={currentSlide.image}
               alt={currentSlide.title || 'Event Banner'}
-              className="h-full w-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+              className="relative z-10 h-full w-full object-contain object-center transition-transform duration-700 group-hover:scale-[1.02]"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src =
                   'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1400&q=80';
               }}
             />
             {currentSlide.title && (
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-900/85 via-slate-900/40 to-transparent px-8 py-5 sm:px-14 sm:py-7 text-white">
+              <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent px-8 py-5 sm:px-14 sm:py-7 text-white">
                 <h2 className="text-lg font-bold tracking-tight drop-shadow sm:text-2xl">
                   {currentSlide.title}
                 </h2>
@@ -133,7 +141,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
                     to="/auction"
                     className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white/90 px-6 py-3 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-white hover:border-slate-400 active:scale-95"
                   >
-                    Xem Phòng Đấu Giá 3D
+                    Xem Phòng Đấu Giá
                   </Link>
                 </div>
               </div>
