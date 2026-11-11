@@ -8,6 +8,7 @@ import NonAdminLayout from '../layouts/NonAdminLayout';
 import AuthLayout from '../layouts/AuthLayout';
 import GuestLayout from '../layouts/GuestLayout';
 import SellerSession from '../components/seller/SellerSession';
+import AuctionLifecycleNotifier from '../components/auction/AuctionLifecycleNotifier';
 import RouteErrorBoundary from './RouteErrorBoundary';
 import { ROUTES } from './paths';
 export { ROUTES } from './paths';
@@ -21,6 +22,7 @@ const SellerOrdersPage = lazy(() => import('../pages/seller/SellerOrdersPage'));
 const SellerOrderDetailPage = lazy(() => import('../pages/seller/SellerOrderDetailPage'));
 const SellerShippingPage = lazy(() => import('../pages/seller/SellerShippingPage'));
 const SellerAuctionsPage = lazy(() => import('../pages/seller/SellerAuctionsPage'));
+const SellerAuctionDetailPage = lazy(() => import('../pages/seller/SellerAuctionDetailPage'));
 const SellerProductsPage = lazy(() => import('../pages/seller/SellerProductsPage'));
 const SellerFinancePage = lazy(() => import('../pages/seller/SellerFinancePage'));
 const SellerDisputesPage = lazy(() => import('../pages/seller/SellerDisputesPage'));
@@ -91,6 +93,7 @@ function AppRouter() {
   return (
     <BrowserRouter>
       <ScrollToTop />
+      <AuctionLifecycleNotifier />
       <RouteErrorBoundary>
         <Suspense
           fallback={
@@ -170,6 +173,7 @@ function AppRouter() {
                   <Route path="orders/:id" element={<SellerOrderDetailPage />} />
                   <Route path="shipping" element={<SellerShippingPage />} />
                   <Route path="auctions" element={<SellerAuctionsPage />} />
+                  <Route path="auctions/:id" element={<SellerAuctionDetailPage />} />
                   <Route path="auctions/new" element={<SellerAuctionConsignmentPage />} />
                   <Route path="finance" element={<SellerFinancePage />} />
                   <Route path="inventory" element={<SellerProductsPage inventory />} />

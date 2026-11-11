@@ -173,7 +173,7 @@ ALTER TABLE "chat_messages" ADD CONSTRAINT "chat_messages_sender_id_fkey" FOREIG
 -- AddForeignKey
 ALTER TABLE "chat_auto_replies" ADD CONSTRAINT "chat_auto_replies_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
+-- AddForeignKey  
 ALTER TABLE "chat_auto_replies" ADD CONSTRAINT "chat_auto_replies_cancelled_by_fkey" FOREIGN KEY ("cancelled_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- RenameIndex

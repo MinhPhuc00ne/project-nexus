@@ -32,7 +32,7 @@ const links = [
   { to: '/seller', label: 'Trung tâm người bán', icon: ShopOutlined },
   { to: '/seller/overview', label: 'Tổng quan', icon: DashboardOutlined },
   { to: '/seller/orders', label: 'Đơn hàng & GHN', icon: TruckOutlined },
-  { to: '/seller/auctions', label: 'Đấu giá 3D', icon: CodeSandboxOutlined },
+  { to: '/seller/auctions', label: 'Đấu giá', icon: CodeSandboxOutlined },
   { to: '/seller/products', label: 'Kho & Sản phẩm', icon: InboxOutlined },
   { to: '/seller/finance', label: 'Tài chính & Ví Escrow', icon: WalletOutlined },
   { to: '/seller/reviews', label: 'Đánh giá & Khách hàng', icon: StarOutlined },
@@ -224,14 +224,6 @@ function SellerWorkspace() {
               >
                 <Icon className="text-[19px]" aria-hidden="true" />
                 <span>{label}</span>
-                {to === '/seller/auctions' && (
-                  <span
-                    className="ml-auto text-[9px] bg-[#e8f5f2] text-[#159876] py-[1px] px-[5px] rounded-[4px]"
-                    data-seller="nav-tag"
-                  >
-                    3D
-                  </span>
-                )}
               </NavLink>
             ))}
           </nav>
@@ -250,7 +242,7 @@ function SellerWorkspace() {
               </div>
               <p>Một không gian. Toàn bộ hoạt động kinh doanh của bạn.</p>
               <Link to="/seller/auctions">
-                Khám phá đấu giá 3D <DownOutlined className="text-[13px]" aria-hidden="true" />
+                Khám phá đấu giá <DownOutlined className="text-[13px]" aria-hidden="true" />
               </Link>
             </div>
             <button
