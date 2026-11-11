@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@nexus/types';
+import { Role, type WsAuctionIntroItemPayload } from '@nexus/types';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import {
   AuctionItemStatus,
@@ -19,6 +19,7 @@ import {
   WalletTransactionType,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import { AuctionQueryDto } from '../dtos/auction-query.dto';
 import { CreateAuctionDto } from '../dtos/create-auction.dto';
@@ -38,6 +39,9 @@ import { trustLevelFor } from '../../users/services/reputation-policy';
 @Injectable()
 export class AuctionService {
   private readonly logger = new Logger(AuctionService.name);
+  private static readonly INTRO_HALL_DURATION_MS = 3800;
+  private static readonly INTRO_LOT_DURATION_MS = 4800;
+  private static readonly INTRO_CLIMAX_DURATION_MS = 3500;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -45,6 +49,81 @@ export class AuctionService {
     private readonly stock: AuctionStockService,
     private readonly checkout: AuctionCheckoutService,
   ) {}
+
+  /**
+   * Computes deterministic live intro broadcast duration so backend and all connected viewers stay synchronized.
+   */
+  public computeIntroDurationMs(approvedItemCount: number): number {
+    const lotCount = Math.max(1, approvedItemCount);
+    return (
+      AuctionService.INTRO_HALL_DURATION_MS +
+      lotCount * AuctionService.INTRO_LOT_DURATION_MS +
+      AuctionService.INTRO_CLIMAX_DURATION_MS
+    );
+  }
+
+  /**
+   * Maps an approved Prisma AuctionItem record into a synchronized showcase payload preserving seller-submitted prices and appraisal docs.
+   */
+  private serializeShowcaseItem(item: {
+    id: string;
+    title: string;
+    description: string;
+    images: string[];
+    threeModelKey: string | null;
+    lotNumber: number | null;
+    startingPrice: Prisma.Decimal | number | null;
+    proposedStartingPrice: Prisma.Decimal | number;
+    reservePrice: Prisma.Decimal | number | null;
+    proposedReservePrice: Prisma.Decimal | number | null;
+    bidIncrement: Prisma.Decimal | number | null;
+    proposedBidIncrement: Prisma.Decimal | number;
+    appraisalCertificateNumber: string | null;
+    appraisalAgency: string | null;
+    certificateImages: string[];
+    certificateIssueDate: Date | null;
+    seller?: {
+      id: string;
+      fullName: string;
+      avatarUrl?: string | null;
+      shopAvatarUrl?: string | null;
+    };
+  }): WsAuctionIntroItemPayload {
+    const proposedStartingPrice = Number(item.proposedStartingPrice ?? 0);
+    const startingPrice = Number(item.startingPrice ?? proposedStartingPrice);
+    const proposedBidIncrement = Number(item.proposedBidIncrement ?? 0);
+    const bidIncrement = Number(item.bidIncrement ?? proposedBidIncrement);
+    const proposedReservePrice =
+      item.proposedReservePrice !== null && item.proposedReservePrice !== undefined
+        ? Number(item.proposedReservePrice)
+        : null;
+    const reservePrice =
+      item.reservePrice !== null && item.reservePrice !== undefined
+        ? Number(item.reservePrice)
+        : proposedReservePrice;
+
+    return {
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      images: item.images ?? [],
+      threeModelKey: item.threeModelKey,
+      lotNumber: item.lotNumber,
+      startingPrice,
+      proposedStartingPrice,
+      reservePrice,
+      proposedReservePrice,
+      bidIncrement,
+      proposedBidIncrement,
+      appraisalCertificateNumber: item.appraisalCertificateNumber,
+      appraisalAgency: item.appraisalAgency,
+      certificateImages: item.certificateImages ?? [],
+      certificateIssueDate: item.certificateIssueDate
+        ? item.certificateIssueDate.toISOString()
+        : null,
+      seller: item.seller,
+    };
+  }
 
   /**
    * Links a session's sole approved consignment to a catalog product before bids exist.
@@ -264,9 +343,23 @@ export class AuctionService {
       buyerEligibility = eligibility;
     }
 
+    const serializedItems = auction.items.map((item) => this.serializeShowcaseItem(item));
+    const introDurationMs = this.computeIntroDurationMs(serializedItems.length);
+    const serverTime = new Date();
+    const isActiveLike =
+      auction.status === AuctionStatus.ACTIVE || auction.status === AuctionStatus.EXTENDED;
+    const rawElapsed = isActiveLike ? serverTime.getTime() - auction.startTime.getTime() : 0;
+    const elapsedMs = Math.max(0, Math.min(introDurationMs, rawElapsed));
+    const isIntroActive = isActiveLike && rawElapsed >= 0 && rawElapsed < introDurationMs;
+
     return {
       ...auction,
+      items: serializedItems,
       targetUrl: auctionTargetUrl(auction.id),
+      serverTime: serverTime.toISOString(),
+      introDurationMs,
+      elapsedMs,
+      isIntroActive,
       buyerEligibility,
       bids: auction.bids.map((bid) => ({
         id: bid.id,
@@ -279,6 +372,99 @@ export class AuctionService {
           avatarUrl: bid.bidder.avatarUrl,
         },
       })),
+    };
+  }
+
+  /**
+   * Returns synchronized intro showcase payload and server clock offsets for late-joining viewers.
+   */
+  async getAuctionIntroShowcase(auctionId: string) {
+    const auction = await this.prisma.auction.findUnique({
+      where: { id: auctionId },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            fullName: true,
+            avatarUrl: true,
+            shopAvatarUrl: true,
+          },
+        },
+        product: {
+          include: {
+            images: true,
+          },
+        },
+        items: {
+          where: { status: AuctionItemStatus.APPROVED },
+          orderBy: { lotNumber: 'asc' },
+          include: {
+            seller: {
+              select: {
+                id: true,
+                fullName: true,
+                avatarUrl: true,
+                shopAvatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!auction) {
+      throw new NotFoundException('Không tìm thấy phiên đấu giá tương ứng.');
+    }
+
+    const serializedItems: WsAuctionIntroItemPayload[] =
+      auction.items.length > 0
+        ? auction.items.map((item) => this.serializeShowcaseItem(item))
+        : auction.product
+          ? [
+              {
+                id: auction.product.id,
+                title: auction.product.title,
+                description: auction.description ?? '',
+                images:
+                  auction.product.images?.map((img) => img.imageUrl) ??
+                  (auction.imageUrl ? [auction.imageUrl] : []),
+                threeModelKey: auction.product.threeModelKey,
+                lotNumber: 1,
+                startingPrice: Number(auction.startingPrice ?? 0),
+                proposedStartingPrice: Number(auction.startingPrice ?? 0),
+                reservePrice: auction.reservePrice ? Number(auction.reservePrice) : null,
+                proposedReservePrice: auction.reservePrice ? Number(auction.reservePrice) : null,
+                bidIncrement: Number(auction.bidIncrement ?? 0),
+                proposedBidIncrement: Number(auction.bidIncrement ?? 0),
+                appraisalCertificateNumber: null,
+                appraisalAgency: null,
+                certificateImages: [],
+                certificateIssueDate: null,
+                seller: auction.seller ?? undefined,
+              },
+            ]
+          : [];
+
+    const serverTime = new Date();
+    const introDurationMs = this.computeIntroDurationMs(serializedItems.length);
+    const isActiveLike =
+      auction.status === AuctionStatus.ACTIVE || auction.status === AuctionStatus.EXTENDED;
+    const rawElapsed = isActiveLike ? serverTime.getTime() - auction.startTime.getTime() : 0;
+    const elapsedMs = Math.max(0, Math.min(introDurationMs, rawElapsed));
+    const isIntroActive = isActiveLike && rawElapsed >= 0 && rawElapsed < introDurationMs;
+
+    return {
+      auctionId: auction.id,
+      title: auction.title,
+      description: auction.description,
+      status: auction.status,
+      startedAt: auction.startTime.toISOString(),
+      endTime: auction.endTime.toISOString(),
+      serverTime: serverTime.toISOString(),
+      introDurationMs,
+      isIntroActive,
+      elapsedMs,
+      items: serializedItems,
     };
   }
 
@@ -408,6 +594,116 @@ export class AuctionService {
         },
       },
     });
+  }
+
+  /**
+   * Admin immediately starts a DRAFT or SCHEDULED auction session and broadcasts the start event.
+   */
+  async adminStartAuction(auctionId: string) {
+    const auction = await this.prisma.auction.findUnique({
+      where: { id: auctionId },
+      include: {
+        items: {
+          where: { status: AuctionItemStatus.APPROVED },
+          orderBy: { lotNumber: 'asc' },
+          include: {
+            seller: {
+              select: {
+                id: true,
+                fullName: true,
+                avatarUrl: true,
+                shopAvatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!auction) {
+      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+    }
+
+    if (
+      auction.status !== AuctionStatus.DRAFT &&
+      auction.status !== AuctionStatus.SCHEDULED &&
+      auction.status !== AuctionStatus.ACTIVE
+    ) {
+      throw new BadRequestException(
+        `Không thể bắt đầu phiên đấu giá ở trạng thái ${auction.status}.`,
+      );
+    }
+
+    const now = new Date();
+    const minDurationMs = Math.max(
+      auction.endTime.getTime() - auction.startTime.getTime(),
+      3600000,
+    );
+    const nextEndTime =
+      auction.endTime.getTime() <= now.getTime()
+        ? new Date(now.getTime() + minDurationMs)
+        : auction.endTime;
+
+    const updated = await this.prisma.auction.update({
+      where: { id: auctionId },
+      data: {
+        status: AuctionStatus.ACTIVE,
+        startTime: auction.status === AuctionStatus.ACTIVE ? auction.startTime : now,
+        endTime: nextEndTime,
+      },
+      include: {
+        createdByAdmin: {
+          select: {
+            id: true,
+            fullName: true,
+            avatarUrl: true,
+          },
+        },
+        seller: {
+          select: {
+            id: true,
+            fullName: true,
+            avatarUrl: true,
+          },
+        },
+        items: {
+          where: { status: AuctionItemStatus.APPROVED },
+          orderBy: { lotNumber: 'asc' },
+          include: {
+            seller: {
+              select: {
+                id: true,
+                fullName: true,
+                avatarUrl: true,
+                shopAvatarUrl: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const serializedItems = updated.items.map((item) => this.serializeShowcaseItem(item));
+    const introDurationMs = this.computeIntroDurationMs(serializedItems.length);
+    const serverTime = new Date().toISOString();
+
+    this.auctionGateway.broadcastAuctionStarted({
+      auctionId: updated.id,
+      title: updated.title,
+      description: updated.description,
+      startedAt: updated.startTime.toISOString(),
+      endTime: updated.endTime.toISOString(),
+      serverTime,
+      introDurationMs,
+      items: serializedItems,
+    });
+
+    return {
+      ...updated,
+      items: serializedItems,
+      serverTime,
+      introDurationMs,
+    };
   }
 
   /**
@@ -573,6 +869,14 @@ export class AuctionService {
           },
         },
       },
+    });
+
+    await notifyAllAdmins(this.prisma, {
+      title: isSellerFlagged ? 'Ký gửi đấu giá mới (Cần lưu ý ⚠️)' : 'Sản phẩm ký gửi đấu giá mới',
+      content: `Seller ${seller.fullName} vừa gửi "${createdItem.title}" vào phiên "${auction.title}" chờ thẩm định.${isSellerFlagged && flagReason ? ` Cảnh báo: ${flagReason}.` : ''}`,
+      type: NotificationType.AUCTION,
+      auctionId: auction.id,
+      targetUrl: '/admin/auctions',
     });
 
     return {

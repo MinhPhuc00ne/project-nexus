@@ -17,6 +17,7 @@ import {
   WsBidPlacedPayload,
   WsTimerSyncPayload,
   WsTimeExtendedPayload,
+  WsAuctionStartedPayload,
   Ws3dSyncPayload,
 } from '@nexus/types';
 import { LightweightJwt } from '../../../core/security/jwt.util';
@@ -26,6 +27,7 @@ import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator
  * Interface contract defining broadcasting capabilities for live auctions.
  */
 export interface AuctionSocketBroadcaster {
+  broadcastAuctionStarted(payload: WsAuctionStartedPayload): void;
   broadcastBidPlaced(payload: WsBidPlacedPayload): void;
   broadcastTimerSync(payload: WsTimerSyncPayload): void;
   broadcastTimeExtended(payload: WsTimeExtendedPayload): void;
@@ -148,6 +150,20 @@ export class AuctionGateway
   ): void {
     if (data?.auctionId) {
       client.to(`auction:${data.auctionId}`).emit(WS_AUCTION_EVENTS.SERVER.VIEWPORT_UPDATED, data);
+    }
+  }
+
+  /**
+   * Broadcasts auction start event so connected roles immediately play the 3D showcase intro.
+   *
+   * @param payload Auction start telemetry
+   */
+  broadcastAuctionStarted(payload: WsAuctionStartedPayload): void {
+    try {
+      this.server?.emit(WS_AUCTION_EVENTS.SERVER.AUCTION_STARTED, payload);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to broadcast auction start: ${message}`);
     }
   }
 

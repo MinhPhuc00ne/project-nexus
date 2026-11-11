@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
-import { OrderRefund, Prisma } from '@prisma/client';
+import { NotificationType, OrderRefund, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
 import { AfterSalesOrder, AfterSalesStoreService } from './after-sales-store.service';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
@@ -159,6 +160,14 @@ export class RefundService {
         content: `Đơn #${input.orderId.slice(0, 8)}: ${input.amount.toString()} VND. ${input.toWallet ? 'Đã ghi có ví NEXUS.' : 'Khoản hoàn đang chờ xác nhận chuyển tiền, chưa hoàn tất.'}`,
       },
     });
+    if (!input.toWallet) {
+      await notifyAllAdmins(tx, {
+        title: 'Khoản hoàn tiền ngoại sàn chờ Admin xác nhận',
+        content: `Đơn #${input.orderId.slice(0, 8)} cần Admin đối soát & xác nhận hoàn ${input.amount.toString()} VND về nguồn thanh toán gốc.`,
+        type: NotificationType.PAYMENT,
+        targetUrl: '/admin/refunds',
+      });
+    }
     return refund;
   }
 

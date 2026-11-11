@@ -11,12 +11,17 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from '../../../core/security/roles.decorator';
+import { Role } from '@nexus/types';
+import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
+import { RolesGuard } from '../../../core/security/roles.guard';
 import { QueryNotificationDto } from '../dtos/query-notification.dto';
 import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
 import { NotificationsService } from '../services/notifications.service';
-import { NotificationPageDto } from '../dtos/notification-response.dto';
+import {
+  AdminNotificationSummaryDto,
+  NotificationPageDto,
+} from '../dtos/notification-response.dto';
 
 @ApiTags('9. NOTIFICATIONS')
 @ApiBearerAuth()
@@ -28,15 +33,15 @@ export class NotificationsController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Lấy danh sách thông báo của tài khoản hiện tại',
+    summary: 'List paginated notifications for the authenticated account',
     description:
-      'Hỗ trợ phân trang và lọc theo trạng thái đã đọc (isRead = true/false), sắp xếp thông báo mới nhất lên đầu.',
+      'Retrieves paginated in-app notifications sorted newest first, supporting filters by read status (isRead) and category (type). Works for all roles including Admin, Staff, Seller, and Buyer.',
   })
   @ApiResponse({
     status: 200,
     type: NotificationPageDto,
     description:
-      'Lấy danh sách thông báo thành công. Thông báo đấu giá mới có auctionId và targetUrl=/auction/:id để chuyển tới cùng trang như banner và truy cập thủ công.',
+      'Notifications retrieved successfully. Actionable Admin notifications include targetUrl routes such as /admin/sellers, /admin/auctions, /admin/finance, /admin/reports, /admin/refunds, /admin/products, /admin/stores, and /admin/banners.',
   })
   async getMyNotifications(
     @CurrentUser('id') userId: string,
@@ -45,13 +50,32 @@ export class NotificationsController {
     return this.notificationsService.getUserNotifications(userId, query);
   }
 
+  @Get('admin/summary')
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[Admin] Get notification summary and pending moderation queue counters',
+    description:
+      'Aggregates unread notification count, latest 10 Admin notifications, and live pending item counts across seller upgrades, auction consignments, withdrawals, order disputes, violation reports, pending refunds, and GHN pickup verifications.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AdminNotificationSummaryDto,
+    description: 'Admin notification summary and pending queue counts retrieved successfully.',
+  })
+  @ApiResponse({ status: 403, description: 'Administrative role required.' })
+  async getAdminSummary(@CurrentUser('id') adminId: string): Promise<AdminNotificationSummaryDto> {
+    return this.notificationsService.getAdminNotificationSummary(adminId);
+  }
+
   @Get('preferences')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Lấy tùy chọn nhận thông báo của người dùng (Email, Push, In-App)',
-    description: 'Trả về trạng thái bật/tắt nhận thông báo theo từng kênh truyền dẫn.',
+    summary: 'Get user notification channel preferences (In-App, Email, Push)',
+    description: 'Returns enabled/disabled flags for each notification delivery channel.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy tùy chọn thành công' })
+  @ApiResponse({ status: 200, description: 'Notification preferences retrieved successfully.' })
   async getPreferences(@CurrentUser('id') userId: string) {
     return this.notificationsService.getPreferences(userId);
   }
@@ -59,11 +83,10 @@ export class NotificationsController {
   @Put('preferences')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Lưu / Cập nhật tùy chọn nhận thông báo (Email, Push, In-App)',
-    description:
-      'Cho phép người dùng hoặc Seller tùy chọn bật/tắt nhận thông báo qua Email, Web Push hoặc In-App.',
+    summary: 'Update user notification channel preferences (In-App, Email, Push)',
+    description: 'Persists opt-in or opt-out preferences for Email, Web Push, and In-App channels.',
   })
-  @ApiResponse({ status: 200, description: 'Lưu tùy chọn thành công' })
+  @ApiResponse({ status: 200, description: 'Notification preferences updated successfully.' })
   async updatePreferences(
     @CurrentUser('id') userId: string,
     @Body() dto: UpdateNotificationPreferencesDto,
@@ -74,11 +97,10 @@ export class NotificationsController {
   @Get('unread-count')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Lấy số lượng thông báo chưa đọc',
-    description:
-      'Trả về số lượng thông báo chưa đọc để hiển thị chấm đỏ trên biểu tượng quả chuông ở Header.',
+    summary: 'Get unread notification count for header badge indicator',
+    description: 'Returns the number of unread notifications for the authenticated user.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy số lượng thông báo chưa đọc thành công' })
+  @ApiResponse({ status: 200, description: 'Unread notification count retrieved successfully.' })
   async getUnreadCount(@CurrentUser('id') userId: string) {
     return this.notificationsService.getUnreadCount(userId);
   }
@@ -86,10 +108,10 @@ export class NotificationsController {
   @Patch(':id/read')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Đánh dấu một thông báo cụ thể là đã đọc',
+    summary: 'Mark a specific notification as read',
   })
-  @ApiResponse({ status: 200, description: 'Đã đánh dấu thông báo là đã đọc' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy thông báo' })
+  @ApiResponse({ status: 200, description: 'Notification marked as read successfully.' })
+  @ApiResponse({ status: 404, description: 'Notification not found for current user.' })
   async markAsRead(@CurrentUser('id') userId: string, @Param('id') notificationId: string) {
     return this.notificationsService.markAsRead(userId, notificationId);
   }
@@ -97,9 +119,9 @@ export class NotificationsController {
   @Patch('read-all')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Đánh dấu tất cả thông báo của tài khoản là đã đọc',
+    summary: 'Mark all unread notifications for the current account as read',
   })
-  @ApiResponse({ status: 200, description: 'Đã đánh dấu tất cả thông báo là đã đọc' })
+  @ApiResponse({ status: 200, description: 'All unread notifications marked as read.' })
   async markAllAsRead(@CurrentUser('id') userId: string) {
     return this.notificationsService.markAllAsRead(userId);
   }

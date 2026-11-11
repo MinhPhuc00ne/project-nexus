@@ -57,6 +57,7 @@ function auctionFixture(prisma, gateway) {
 
 function createMockGateway() {
   return {
+    broadcastAuctionStarted: mock.fn(),
     broadcastBidPlaced: mock.fn(),
     broadcastTimerSync: mock.fn(),
     broadcastTimeExtended: mock.fn(),
@@ -465,4 +466,142 @@ test('AuctionService.endAuction rejects unauthorized callers and premature termi
     },
     { message: /Phiên đấu giá chưa kết thúc/ },
   );
+});
+
+test('AuctionService.adminStartAuction broadcasts synchronized intro payload with seller pricing and appraisal docs', async () => {
+  const startTime = new Date(Date.now() + 600000);
+  const endTime = new Date(Date.now() + 7200000);
+  const issueDate = new Date('2026-04-15T00:00:00.000Z');
+  const approvedLot = {
+    id: 'lot-1',
+    title: 'Nhẫn Kim Cương 2.1ct',
+    description: 'Kiểm định GIA quốc tế',
+    images: ['https://cdn.example.com/ring.jpg'],
+    threeModelKey: 'preset_diamond_ring',
+    lotNumber: 1,
+    startingPrice: null,
+    proposedStartingPrice: new Prisma.Decimal(125000000),
+    reservePrice: null,
+    proposedReservePrice: new Prisma.Decimal(160000000),
+    bidIncrement: null,
+    proposedBidIncrement: new Prisma.Decimal(2500000),
+    appraisalCertificateNumber: 'GIA123',
+    appraisalAgency: 'GIA',
+    certificateImages: ['https://cdn.example.com/gia123.jpg'],
+    certificateIssueDate: issueDate,
+    seller: { id: 'seller-1', fullName: 'Huy Gems', avatarUrl: null, shopAvatarUrl: null },
+  };
+
+  const prismaMock = {
+    auction: {
+      findUnique: mock.fn(async () => ({
+        id: 'auc-live-1',
+        title: 'Phiên Đá Quý 2026',
+        description: 'Mô tả phiên',
+        status: 'SCHEDULED',
+        startTime,
+        endTime,
+        items: [approvedLot],
+      })),
+      update: mock.fn(async ({ data }) => ({
+        id: 'auc-live-1',
+        title: 'Phiên Đá Quý 2026',
+        description: 'Mô tả phiên',
+        status: data.status,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        createdByAdmin: { id: 'admin-1', fullName: 'Admin', avatarUrl: null },
+        seller: null,
+        items: [approvedLot],
+      })),
+    },
+  };
+
+  const gatewayMock = createMockGateway();
+  const service = auctionFixture(prismaMock, gatewayMock);
+
+  const result = await service.adminStartAuction('auc-live-1');
+
+  assert.equal(result.status, 'ACTIVE');
+  assert.equal(result.introDurationMs, 3800 + 4800 + 3500);
+  assert.equal(result.items[0].startingPrice, 125000000);
+  assert.equal(result.items[0].bidIncrement, 2500000);
+  assert.equal(result.items[0].appraisalCertificateNumber, 'GIA123');
+  assert.equal(result.items[0].appraisalAgency, 'GIA');
+  assert.deepEqual(result.items[0].certificateImages, ['https://cdn.example.com/gia123.jpg']);
+
+  assert.equal(gatewayMock.broadcastAuctionStarted.mock.callCount(), 1);
+  const wsPayload = gatewayMock.broadcastAuctionStarted.mock.calls[0].arguments[0];
+  assert.equal(wsPayload.auctionId, 'auc-live-1');
+  assert.equal(wsPayload.introDurationMs, 12100);
+  assert.equal(wsPayload.items.length, 1);
+  assert.equal(wsPayload.items[0].proposedStartingPrice, 125000000);
+});
+
+test('AuctionService.getAuctionIntroShowcase tracks live elapsedMs and reports false once intro concludes', async () => {
+  const twoLots = [
+    {
+      id: 'lot-1',
+      title: 'Lot 1',
+      description: 'Desc 1',
+      images: [],
+      threeModelKey: null,
+      lotNumber: 1,
+      startingPrice: new Prisma.Decimal(1000000),
+      proposedStartingPrice: new Prisma.Decimal(1000000),
+      reservePrice: null,
+      proposedReservePrice: null,
+      bidIncrement: new Prisma.Decimal(50000),
+      proposedBidIncrement: new Prisma.Decimal(50000),
+      appraisalCertificateNumber: null,
+      appraisalAgency: null,
+      certificateImages: [],
+      certificateIssueDate: null,
+      seller: { id: 's1', fullName: 'Seller 1', avatarUrl: null, shopAvatarUrl: null },
+    },
+  ];
+
+  // Started 4 seconds ago -> within 12100ms intro window
+  const prismaLive = {
+    auction: {
+      findUnique: mock.fn(async () => ({
+        id: 'auc-live-2',
+        title: 'Live Sync Check',
+        description: null,
+        status: 'ACTIVE',
+        startTime: new Date(Date.now() - 4000),
+        endTime: new Date(Date.now() + 3600000),
+        seller: null,
+        product: null,
+        items: twoLots,
+      })),
+    },
+  };
+
+  const liveService = auctionFixture(prismaLive, createMockGateway());
+  const liveIntro = await liveService.getAuctionIntroShowcase('auc-live-2');
+  assert.equal(liveIntro.isIntroActive, true);
+  assert.ok(liveIntro.elapsedMs >= 3500 && liveIntro.elapsedMs < liveIntro.introDurationMs);
+
+  // Started 60 seconds ago -> intro broadcast has finished
+  const prismaEndedIntro = {
+    auction: {
+      findUnique: mock.fn(async () => ({
+        id: 'auc-live-2',
+        title: 'Live Sync Check',
+        description: null,
+        status: 'ACTIVE',
+        startTime: new Date(Date.now() - 60000),
+        endTime: new Date(Date.now() + 3600000),
+        seller: null,
+        product: null,
+        items: twoLots,
+      })),
+    },
+  };
+
+  const endedIntroService = auctionFixture(prismaEndedIntro, createMockGateway());
+  const finishedIntro = await endedIntroService.getAuctionIntroShowcase('auc-live-2');
+  assert.equal(finishedIntro.isIntroActive, false);
+  assert.equal(finishedIntro.elapsedMs, finishedIntro.introDurationMs);
 });

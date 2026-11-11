@@ -1,10 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { NotificationChannel, NotificationType, Prisma } from '@prisma/client';
+import {
+  AuctionItemStatus,
+  DisputeStatus,
+  NotificationChannel,
+  NotificationType,
+  Prisma,
+  SellerRequestStatus,
+  ViolationStatus,
+  WithdrawalStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { QueryNotificationDto } from '../dtos/query-notification.dto';
 import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
-import { NotificationPageDto } from '../dtos/notification-response.dto';
+import {
+  AdminNotificationSummaryDto,
+  NotificationPageDto,
+} from '../dtos/notification-response.dto';
 
 @Injectable()
 export class NotificationsService {
@@ -31,6 +43,10 @@ export class NotificationsService {
 
     if (query.isRead !== undefined) {
       where.isRead = query.isRead;
+    }
+
+    if (query.type !== undefined) {
+      where.type = query.type;
     }
 
     const [total, unreadCount, items] = await Promise.all([
@@ -80,6 +96,91 @@ export class NotificationsService {
     });
 
     return { unreadCount };
+  }
+
+  /**
+   * Aggregates unread Admin notifications alongside live pending operational queue counts.
+   */
+  async getAdminNotificationSummary(adminUserId: string): Promise<AdminNotificationSummaryDto> {
+    const [
+      unreadCount,
+      recentNotifications,
+      sellerUpgradeRequests,
+      auctionConsignments,
+      withdrawalRequests,
+      openDisputes,
+      violationReports,
+      pendingAfterSales,
+      pendingExternalRefunds,
+      pendingPickupPoints,
+    ] = await Promise.all([
+      this.prisma.notification.count({ where: { userId: adminUserId, isRead: false } }),
+      this.prisma.notification.findMany({
+        where: { userId: adminUserId },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      this.prisma.sellerUpgradeRequest.count({
+        where: { status: SellerRequestStatus.PENDING },
+      }),
+      this.prisma.auctionItem.count({
+        where: { status: AuctionItemStatus.PENDING_REVIEW },
+      }),
+      this.prisma.withdrawalRequest.count({
+        where: { status: WithdrawalStatus.PENDING },
+      }),
+      this.prisma.dispute.count({
+        where: { status: { in: [DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW] } },
+      }),
+      this.prisma.shopViolation.count({
+        where: { status: { in: [ViolationStatus.PENDING, ViolationStatus.INVESTIGATING] } },
+      }),
+      this.prisma.afterSalesRequest.count({
+        where: { status: { in: ['REQUESTED', 'APPROVING'] } },
+      }),
+      this.prisma.orderRefund.count({
+        where: { status: 'PENDING' },
+      }),
+      this.prisma.sellerGhnAccount.count({
+        where: { status: 'PENDING' },
+      }),
+    ]);
+
+    const pendingRefunds = pendingAfterSales + pendingExternalRefunds;
+    const totalPendingActions =
+      sellerUpgradeRequests +
+      auctionConsignments +
+      withdrawalRequests +
+      openDisputes +
+      violationReports +
+      pendingRefunds +
+      pendingPickupPoints;
+
+    return {
+      unreadCount,
+      totalPendingActions,
+      pendingQueues: {
+        sellerUpgradeRequests,
+        auctionConsignments,
+        withdrawalRequests,
+        openDisputes,
+        violationReports,
+        pendingRefunds,
+        pendingPickupPoints,
+      },
+      recentNotifications: recentNotifications.map((n) => ({
+        id: n.id,
+        title: n.title,
+        auctionId: n.auctionId,
+        targetUrl: n.targetUrl,
+        content: n.content,
+        type: n.type,
+        channel: n.channel,
+        isRead: n.isRead,
+        readAt: n.readAt,
+        createdAt: n.createdAt,
+      })),
+    };
   }
 
   /**

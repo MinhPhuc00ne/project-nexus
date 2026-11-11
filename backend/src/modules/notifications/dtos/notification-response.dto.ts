@@ -31,3 +31,63 @@ export class NotificationPageDto {
   @ApiProperty() limit!: number;
   @ApiProperty() totalPages!: number;
 }
+
+/** Pending administrative task counts mapped directly to Admin Dashboard modules. */
+export class AdminPendingQueuesDto {
+  @ApiProperty({
+    example: 2,
+    description: 'Pending buyer-to-seller upgrade requests (/admin/sellers)',
+  })
+  sellerUpgradeRequests!: number;
+
+  @ApiProperty({
+    example: 3,
+    description: 'Pending auction consignment items awaiting review (/admin/auctions)',
+  })
+  auctionConsignments!: number;
+
+  @ApiProperty({ example: 1, description: 'Pending seller withdrawal requests (/admin/finance)' })
+  withdrawalRequests!: number;
+
+  @ApiProperty({ example: 1, description: 'Open or under-review order disputes (/admin/reports)' })
+  openDisputes!: number;
+
+  @ApiProperty({
+    example: 2,
+    description: 'Pending or investigating shop/product violation reports (/admin/reports)',
+  })
+  violationReports!: number;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Pending after-sales requests and external refunds (/admin/refunds)',
+  })
+  pendingRefunds!: number;
+
+  @ApiProperty({
+    example: 0,
+    description: 'Pending GHN seller pickup point verifications (/admin/stores)',
+  })
+  pendingPickupPoints!: number;
+}
+
+/** Aggregated Admin notification bell + live pending moderation queue counters. */
+export class AdminNotificationSummaryDto {
+  @ApiProperty({
+    example: 5,
+    description: 'Total unread in-app notifications for current Admin user',
+  })
+  unreadCount!: number;
+
+  @ApiProperty({
+    example: 10,
+    description: 'Sum of all pending operational tasks across Admin queues',
+  })
+  totalPendingActions!: number;
+
+  @ApiProperty({ type: AdminPendingQueuesDto })
+  pendingQueues!: AdminPendingQueuesDto;
+
+  @ApiProperty({ type: [NotificationResponseDto], description: 'Latest 10 Admin notifications' })
+  recentNotifications!: NotificationResponseDto[];
+}

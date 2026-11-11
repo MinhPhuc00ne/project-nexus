@@ -1,11 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { NotificationType } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsOptional, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, Min } from 'class-validator';
 
 export class QueryNotificationDto {
   @ApiPropertyOptional({
     example: 1,
-    description: 'Số trang (mặc định 1)',
+    description: 'Page number (default: 1)',
   })
   @IsOptional()
   @Type(() => Number)
@@ -15,7 +16,7 @@ export class QueryNotificationDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Số lượng thông báo mỗi trang (mặc định 10)',
+    description: 'Number of notifications per page (default: 10, max: 50)',
   })
   @IsOptional()
   @Type(() => Number)
@@ -25,7 +26,7 @@ export class QueryNotificationDto {
 
   @ApiPropertyOptional({
     example: false,
-    description: 'Lọc theo trạng thái đã đọc (true) hoặc chưa đọc (false)',
+    description: 'Filter by read status (true = read, false = unread)',
   })
   @IsOptional()
   @Transform(({ value }) => {
@@ -35,4 +36,13 @@ export class QueryNotificationDto {
   })
   @IsBoolean()
   isRead?: boolean;
+
+  @ApiPropertyOptional({
+    enum: NotificationType,
+    description:
+      'Optional filter by notification category (SYSTEM, AUCTION, PAYMENT, DISPUTE, ORDER)',
+  })
+  @IsOptional()
+  @IsEnum(NotificationType)
+  type?: NotificationType;
 }

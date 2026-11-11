@@ -16,6 +16,7 @@ import {
   WithdrawalStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { CreateWithdrawalDto } from '../dtos/create-withdrawal.dto';
 import { QueryFinanceDto } from '../dtos/query-finance.dto';
 
@@ -291,6 +292,13 @@ export class SellerFinanceService {
           )} VND về ${finalBankName} (${finalAccountNumber}) đã được tiếp nhận. Hệ thống sẽ thẩm định và giải ngân trong vòng 3-7 ngày làm việc. Số dư ví khả dụng đã được tạm giữ an toàn.`,
           type: NotificationType.PAYMENT,
         },
+      });
+
+      await notifyAllAdmins(tx, {
+        title: 'Yêu cầu rút tiền Seller mới',
+        content: `Gian hàng ${storeName} gửi yêu cầu rút ${withdrawAmount.toLocaleString('vi-VN')} VND về ${finalBankName} (${finalAccountNumber}).`,
+        type: NotificationType.PAYMENT,
+        targetUrl: '/admin/finance',
       });
 
       return { req, transaction, updatedWallet };

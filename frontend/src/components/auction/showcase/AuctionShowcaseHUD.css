@@ -1,0 +1,425 @@
+/* ============================================================================
+ * AuctionShowcaseHUD.css
+ * Không gian Bảo Tàng Triển Lãm 3D + Hiệu ứng Hologram/Laser & Chuyển cảnh
+ * ============================================================================ */
+
+.museum-showcase-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 25%, #161d31 0%, #090d16 55%, #03050a 100%);
+  color: #f8fafc;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  user-select: none;
+}
+
+/* Sàn đá cẩm thạch & Lưới không gian 3D */
+.museum-floor-grid {
+  position: absolute;
+  left: -30%;
+  right: -30%;
+  bottom: -22%;
+  height: 62%;
+  background-image:
+    linear-gradient(to right, rgba(245, 158, 11, 0.14) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.14) 1px, transparent 1px);
+  background-size: 64px 64px;
+  transform: perspective(650px) rotateX(68deg);
+  transform-origin: center bottom;
+  mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.9) 25%, transparent 100%);
+  pointer-events: none;
+  animation: museumFloorMove 14s linear infinite;
+}
+
+@keyframes museumFloorMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 64px;
+  }
+}
+
+/* Cột hành lang bảo tàng bên trái & phải */
+.museum-pillar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 90px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.92) 0%,
+    rgba(30, 41, 59, 0.45) 50%,
+    rgba(245, 158, 11, 0.12) 100%
+  );
+  border-right: 1px solid rgba(245, 158, 11, 0.18);
+  pointer-events: none;
+}
+
+.museum-pillar-right {
+  right: 0;
+  left: auto;
+  transform: scaleX(-1);
+}
+
+/* Đèn Spotlight rọi từ trần bảo tàng */
+.museum-spotlight-beam {
+  position: absolute;
+  top: -8%;
+  left: 50%;
+  width: 560px;
+  height: 92%;
+  transform: translateX(-50%);
+  background: conic-gradient(
+    from 180deg at 50% 0%,
+    transparent 148deg,
+    rgba(251, 191, 36, 0.13) 174deg,
+    rgba(56, 189, 248, 0.11) 180deg,
+    rgba(251, 191, 36, 0.13) 186deg,
+    transparent 212deg
+  );
+  filter: blur(8px);
+  pointer-events: none;
+  animation: spotlightBreath 4s ease-in-out infinite;
+}
+
+@keyframes spotlightBreath {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Cánh cửa đại sảnh bảo tàng (Scene 1) */
+.museum-door {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background:
+    radial-gradient(circle at center, rgba(245, 158, 11, 0.14), transparent 70%),
+    linear-gradient(180deg, #0b1120 0%, #050811 100%);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  z-index: 40;
+  transition:
+    transform 1.2s cubic-bezier(0.77, 0, 0.175, 1),
+    opacity 0.9s ease;
+}
+
+.museum-door-left {
+  left: 0;
+  border-right: 2px solid rgba(245, 158, 11, 0.45);
+}
+
+.museum-door-right {
+  right: 0;
+  border-left: 2px solid rgba(245, 158, 11, 0.45);
+}
+
+.museum-door-open-left {
+  transform: translateX(-102%);
+  opacity: 0;
+}
+
+.museum-door-open-right {
+  transform: translateX(102%);
+  opacity: 0;
+}
+
+/* Khung SVG Neon Glow bảo tàng */
+.hud-svg-frame {
+  filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.45))
+    drop-shadow(0 0 24px rgba(56, 189, 248, 0.25));
+}
+
+/* Tia laser quét thẩm định */
+.hud-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #22d3ee, #fbbf24, #22d3ee, transparent);
+  box-shadow:
+    0 0 16px #22d3ee,
+    0 0 28px rgba(251, 191, 36, 0.7);
+  z-index: 30;
+  animation: laserSweep 2.4s ease-in-out infinite;
+}
+
+@keyframes laserSweep {
+  0% {
+    top: 4%;
+    opacity: 0.2;
+  }
+  15% {
+    opacity: 1;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 4%;
+    opacity: 0.2;
+  }
+}
+
+/* Hiệu ứng Khung Tranh 3D cho sản phẩm ngoài danh sách 10 model */
+.museum-frame-stage {
+  perspective: 1200px;
+  transform-style: preserve-3d;
+}
+
+.museum-frame-center {
+  transform-style: preserve-3d;
+  animation: frameFloat3D 5.5s ease-in-out infinite;
+}
+
+@keyframes frameFloat3D {
+  0%,
+  100% {
+    transform: rotateY(-9deg) rotateX(3deg) translateY(0px);
+  }
+  50% {
+    transform: rotateY(9deg) rotateX(-2deg) translateY(-6px);
+  }
+}
+
+.museum-frame-wing {
+  position: absolute;
+  width: 145px;
+  height: 175px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(245, 158, 11, 0.55);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75);
+  opacity: 0.78;
+  transition: all 0.5s ease;
+}
+
+.museum-frame-wing-left {
+  left: 6px;
+  transform: translateZ(-70px) rotateY(28deg) scale(0.9);
+}
+
+.museum-frame-wing-right {
+  right: 6px;
+  transform: translateZ(-70px) rotateY(-28deg) scale(0.9);
+}
+
+.museum-frame-glass-glare {
+  background: linear-gradient(
+    115deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.14) 38%,
+    rgba(255, 255, 255, 0.04) 44%,
+    transparent 62%
+  );
+  animation: glassGlareMove 4s ease-in-out infinite;
+}
+
+@keyframes glassGlareMove {
+  0%,
+  100% {
+    transform: translateX(-35%);
+  }
+  50% {
+    transform: translateX(35%);
+  }
+}
+
+/* Slide-in Panels thông số HUD từ cạnh phải */
+@keyframes slideInRightTech {
+  0% {
+    opacity: 0;
+    transform: translateX(48px) skewX(-3deg);
+    filter: brightness(2);
+  }
+  65% {
+    opacity: 1;
+    transform: translateX(-4px) skewX(0deg);
+    filter: brightness(1.3);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) skewX(0deg);
+    filter: brightness(1);
+  }
+}
+
+.hud-panel-slide {
+  animation: slideInRightTech 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Chuyển cảnh Camera lướt qua từng bục bảo tàng */
+@keyframes pedestalEnter {
+  0% {
+    opacity: 0;
+    transform: scale(0.84) translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.museum-pedestal-enter {
+  animation: pedestalEnter 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hiệu ứng Typography phóng to Climax */
+@keyframes climaxZoom {
+  0% {
+    opacity: 0;
+    transform: scale(0.75);
+    letter-spacing: 0.35em;
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    letter-spacing: 0.12em;
+  }
+}
+
+.climax-title-anim {
+  animation: climaxZoom 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ============================================================================
+ * ĐIỆN ẢNH CAO CẤP (CINEMATIC WOW UPGRADE)
+ * ============================================================================ */
+
+/* Dải Letterbox anamorphic trên & dưới khung hình */
+.cinema-letterbox-bar {
+  height: 14px;
+  background: linear-gradient(180deg, #000000 0%, rgba(2, 6, 23, 0.92) 100%);
+}
+
+/* Luồng ánh sáng Bokeh & Hạt vàng chuyển động nền */
+.cinema-bokeh-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(2px 2px at 14% 22%, rgba(251, 191, 36, 0.45), transparent),
+    radial-gradient(2.5px 2.5px at 32% 68%, rgba(56, 189, 248, 0.35), transparent),
+    radial-gradient(2px 2px at 58% 18%, rgba(254, 240, 138, 0.4), transparent),
+    radial-gradient(3px 3px at 78% 54%, rgba(245, 158, 11, 0.3), transparent),
+    radial-gradient(2px 2px at 89% 28%, rgba(125, 211, 252, 0.38), transparent),
+    radial-gradient(2.5px 2.5px at 42% 84%, rgba(251, 191, 36, 0.35), transparent);
+  animation: cinemaBokehDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes cinemaBokehDrift {
+  0% {
+    transform: translate3d(-1.5%, -1%, 0) scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate3d(1.5%, 1.5%, 0) scale(1.06);
+    opacity: 0.9;
+  }
+}
+
+/* Hiệu ứng tia sáng lóe ống kính anamorphic mỗi khi chuyển phân cảnh */
+.cinema-flare-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(251, 191, 36, 0.08) 35%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(56, 189, 248, 0.08) 65%,
+    transparent 100%
+  );
+  transform: skewX(-18deg);
+  pointer-events: none;
+  animation: anamorphicFlare 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes anamorphicFlare {
+  0% {
+    left: -55%;
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    left: 120%;
+    opacity: 0;
+  }
+}
+
+/* Hiệu ứng Ken Burns: zoom chậm kết hợp lia góc máy cho ảnh Seller */
+.ken-burns-pan {
+  animation: kenBurnsCinema 8s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes kenBurnsCinema {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  100% {
+    transform: scale(1.09) translate3d(-1.5%, -1%, 0);
+  }
+}
+
+/* Đường kẻ vàng chuyển động kiểu truyền hình cao cấp */
+.broadcast-hairline {
+  height: 2px;
+  background: linear-gradient(90deg, #f59e0b, #fde047, #38bdf8, transparent);
+  animation: hairlineExpand 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes hairlineExpand {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left;
+    opacity: 0;
+  }
+  100% {
+    transform: scaleX(1);
+    transform-origin: left;
+    opacity: 1;
+  }
+}
+
+/* Sóng ánh sáng cộng hưởng ở màn đếm ngược mở sàn */
+.climax-shockwave {
+  position: absolute;
+  inset: -18px;
+  border-radius: 9999px;
+  border: 2px solid rgba(251, 191, 36, 0.5);
+  animation: shockwavePulse 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+@keyframes shockwavePulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
