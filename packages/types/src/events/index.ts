@@ -122,6 +122,48 @@ export interface Ws3dSyncPayload {
 }
 
 /**
+ * Realtime WebSocket event contracts for account notifications (/ws/notifications).
+ */
+export const WS_NOTIFICATION_EVENTS = {
+  CLIENT: {
+    PING: 'notification:ping',
+  },
+  SERVER: {
+    CONNECTED: 'notification:connected',
+    NEW: 'notification:new',
+    UNREAD_COUNT: 'notification:unread_count',
+    ERROR: 'notification:error',
+  },
+} as const;
+
+export interface WsNotificationNewPayload {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  type: string;
+  channel: string;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+  auctionId: string | null;
+  targetUrl: string | null;
+  unreadCount?: number;
+}
+
+export interface WsNotificationConnectedPayload {
+  userId: string;
+  role: string;
+  unreadCount: number;
+  timestamp: string;
+}
+
+export interface WsNotificationUnreadCountPayload {
+  userId: string;
+  unreadCount: number;
+}
+
+/**
  * Internal domain event payload dispatched upon order placement.
  */
 export interface OrderCreatedEventPayload {

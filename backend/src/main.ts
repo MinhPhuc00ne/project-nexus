@@ -101,7 +101,7 @@ async function bootstrap(): Promise<void> {
     )
     .addTag(
       '9. NOTIFICATIONS',
-      'Notifications: Real-time user alert dispatch, preferences, and read tracking',
+      'Notifications: Real-time WebSocket delivery (/ws/notifications events: notification:connected, notification:new, notification:unread_count), REST listing, preferences, and read tracking',
     )
     .addTag(
       '10. FULFILLMENT & SHIPPING',
