@@ -1,5 +1,11 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import type {
+  AdminOrderAfterSales,
+  AdminOrderDetail,
+  AdminOrderPage,
+  QueryAdminOrders,
+} from '../types/admin-order.types';
+import type {
   AdminProduct,
   AdminProductDetail,
   AdminProductMutationResult,
@@ -87,6 +93,25 @@ async function adminRequest<T>(config: AxiosRequestConfig): Promise<T> {
     }
     throw error;
   }
+}
+
+export function listAdminOrders(
+  params: QueryAdminOrders,
+  signal?: AbortSignal,
+): Promise<AdminOrderPage> {
+  return adminRequest({ url: '/admin/orders', method: 'GET', params, signal });
+}
+
+export function getAdminOrderById(id: string, signal?: AbortSignal): Promise<AdminOrderDetail> {
+  return adminRequest({ url: `/admin/orders/${encodeURIComponent(id)}`, method: 'GET', signal });
+}
+
+export function cancelAdminOrder(id: string, reason: string): Promise<AdminOrderAfterSales> {
+  return adminRequest({
+    url: `/commerce/orders/${encodeURIComponent(id)}/cancel`,
+    method: 'POST',
+    data: { reason },
+  });
 }
 
 // Không gửi mật khẩu: nhân viên tự đặt mật khẩu qua link gửi đến email cá nhân.
