@@ -39,6 +39,15 @@ export class AdminUpdateAuctionDto {
   startTime?: string;
 
   @ApiPropertyOptional({
+    description:
+      'Updated consignment deadline timestamp in ISO 8601 format when seller product submissions close. Must be after startTime and before endTime.',
+    example: '2026-11-08T21:15:00.000Z',
+  })
+  @IsDateString()
+  @IsOptional()
+  consignmentDeadline?: string;
+
+  @ApiPropertyOptional({
     description: 'Updated conclusion timestamp in ISO 8601 format',
     example: '2026-11-08T23:00:00.000Z',
   })

@@ -6,7 +6,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Role, type WsAuctionIntroItemPayload } from '@nexus/types';
-import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
+import {
+  auctionTargetUrl,
+  auctionTargetUrlForRole,
+} from '../../../core/navigation/auction-navigation';
 import {
   AuctionItemStatus,
   AuctionStatus,
@@ -318,7 +321,11 @@ export class AuctionService {
     }
 
     const now = new Date();
-    if (auction.status === AuctionStatus.SCHEDULED && now >= auction.startTime) {
+    if (
+      auction.status === AuctionStatus.SCHEDULED &&
+      auction.isConsignmentLocked &&
+      now >= auction.startTime
+    ) {
       await this.prisma.auction.update({
         where: { id: auction.id },
         data: { status: AuctionStatus.ACTIVE },
@@ -474,36 +481,64 @@ export class AuctionService {
 
   /**
    * Admin creates and schedules a new central auction session/event.
-   * Real date constraint is not enforced strictly per demo requirements.
+   * Enforces strict date and time sequencing: startTime < consignmentDeadline < endTime.
+   * Dispatches tailored notifications: Staff & Sellers receive full schedule, Buyers receive public bidding timeframe.
    */
   async adminCreateAuction(adminId: string, dto: AdminCreateAuctionDto) {
     const startTime = new Date(dto.startTime);
     const endTime = new Date(dto.endTime);
+    let consignmentDeadline: Date;
+
+    if (dto.consignmentDeadline) {
+      consignmentDeadline = new Date(dto.consignmentDeadline);
+    } else {
+      const midMs = startTime.getTime() + (endTime.getTime() - startTime.getTime()) / 2;
+      consignmentDeadline = new Date(midMs);
+    }
 
     if (
       !Number.isFinite(endTime.getTime()) ||
       !Number.isFinite(startTime.getTime()) ||
+      !Number.isFinite(consignmentDeadline.getTime())
+    ) {
+      throw new BadRequestException(
+        'Thời gian bắt đầu, hạn chót nhận ký gửi và kết thúc không hợp lệ.',
+      );
+    }
+
+    if (startTime.getTime() >= consignmentDeadline.getTime()) {
+      throw new BadRequestException(
+        'Hạn chót nhận ký gửi phải diễn ra sau thời gian bắt đầu mở nhận ký gửi.',
+      );
+    }
+
+    if (consignmentDeadline.getTime() >= endTime.getTime()) {
+      throw new BadRequestException(
+        'Thời gian kết thúc phiên phải diễn ra sau hạn chót nhận ký gửi.',
+      );
+    }
+
+    if (
       endTime.getTime() - startTime.getTime() < 3600000 ||
       endTime.getTime() - startTime.getTime() > 7 * 86400000
     ) {
       throw new BadRequestException('Phiên đấu giá phải kéo dài từ 60 phút đến 7 ngày.');
     }
 
-    const now = new Date();
-    const status = startTime <= now ? AuctionStatus.ACTIVE : AuctionStatus.SCHEDULED;
-
-    return this.prisma.auction.create({
+    const auction = await this.prisma.auction.create({
       data: {
         title: dto.title.trim(),
         description: dto.description?.trim(),
         imageUrl: dto.imageUrl?.trim() || null,
         startTime,
+        consignmentDeadline,
         endTime,
         originalEndTime: endTime,
         minBuyerReputation: dto.minBuyerReputation ?? 40,
         minSellerReputation: dto.minSellerReputation ?? 50,
         createdByAdminId: adminId,
-        status,
+        status: AuctionStatus.SCHEDULED,
+        isConsignmentLocked: false,
         startingPrice: 0,
         currentHighestBid: 0,
         bidIncrement: 100000,
@@ -520,6 +555,70 @@ export class AuctionService {
         },
       },
     });
+
+    try {
+      if (
+        typeof this.prisma.user?.findMany === 'function' &&
+        typeof this.prisma.notification?.createMany === 'function'
+      ) {
+        const recipients = await this.prisma.user.findMany({
+          where: {
+            role: { not: Role.ADMIN },
+          },
+          select: {
+            id: true,
+            role: true,
+            isSellerActive: true,
+          },
+        });
+
+        if (recipients.length > 0) {
+          const formatVnDateTime = (date: Date) =>
+            new Intl.DateTimeFormat('vi-VN', {
+              dateStyle: 'short',
+              timeStyle: 'short',
+              timeZone: 'Asia/Ho_Chi_Minh',
+            }).format(date);
+
+          const notifications = recipients.map((user) => {
+            const isStaffOrSeller =
+              user.role === Role.SUPPORT_STAFF || user.role === Role.SELLER || user.isSellerActive;
+
+            if (isStaffOrSeller) {
+              return {
+                userId: user.id,
+                title: `Phiên đấu giá mới đã mở tiếp nhận ký gửi: "${auction.title}"`,
+                content: `Phiên đấu giá "${auction.title}" đã được tạo. Thời gian mở tiếp nhận ký gửi: ${formatVnDateTime(startTime)}, hạn chót nhận ký gửi: ${formatVnDateTime(consignmentDeadline)}, thời gian kết thúc: ${formatVnDateTime(endTime)}.`,
+                auctionId: auction.id,
+                targetUrl: auctionTargetUrlForRole(auction.id, user.role, user.isSellerActive),
+                type: NotificationType.AUCTION,
+                channel: NotificationChannel.IN_APP,
+              };
+            }
+
+            return {
+              userId: user.id,
+              title: `Phiên đấu giá sắp diễn ra: "${auction.title}"`,
+              content: `Phiên đấu giá "${auction.title}" sắp mở sàn. Thời gian bắt đầu: ${formatVnDateTime(consignmentDeadline)}, thời gian kết thúc: ${formatVnDateTime(endTime)}.`,
+              auctionId: auction.id,
+              targetUrl: auctionTargetUrl(auction.id),
+              type: NotificationType.AUCTION,
+              channel: NotificationChannel.IN_APP,
+            };
+          });
+
+          await this.prisma.notification.createMany({
+            data: notifications,
+          });
+        }
+      }
+    } catch (notifyError) {
+      this.logger.warn(
+        `Failed to dispatch auction creation notifications: ${notifyError instanceof Error ? notifyError.message : String(notifyError)}`,
+      );
+    }
+
+    return auction;
   }
 
   /**
@@ -565,6 +664,32 @@ export class AuctionService {
 
     const newStart = dto.startTime ? new Date(dto.startTime) : auction.startTime;
     const newEnd = dto.endTime ? new Date(dto.endTime) : auction.endTime;
+    const newDeadline = dto.consignmentDeadline
+      ? new Date(dto.consignmentDeadline)
+      : (auction.consignmentDeadline ??
+        new Date(newStart.getTime() + (newEnd.getTime() - newStart.getTime()) / 2));
+
+    if (
+      !Number.isFinite(newStart.getTime()) ||
+      !Number.isFinite(newDeadline.getTime()) ||
+      !Number.isFinite(newEnd.getTime())
+    ) {
+      throw new BadRequestException(
+        'Thời gian bắt đầu, hạn chót nhận ký gửi và kết thúc không hợp lệ.',
+      );
+    }
+
+    if (newStart.getTime() >= newDeadline.getTime()) {
+      throw new BadRequestException(
+        'Hạn chót nhận ký gửi phải diễn ra sau thời gian bắt đầu mở nhận ký gửi.',
+      );
+    }
+
+    if (newDeadline.getTime() >= newEnd.getTime()) {
+      throw new BadRequestException(
+        'Thời gian kết thúc phiên phải diễn ra sau hạn chót nhận ký gửi.',
+      );
+    }
 
     if (
       newEnd.getTime() - newStart.getTime() < 3600000 ||
@@ -575,6 +700,9 @@ export class AuctionService {
 
     if (dto.startTime) {
       updateData.startTime = newStart;
+    }
+    if (dto.consignmentDeadline) {
+      updateData.consignmentDeadline = newDeadline;
     }
     if (dto.endTime) {
       updateData.endTime = newEnd;
@@ -594,6 +722,73 @@ export class AuctionService {
         },
       },
     });
+  }
+
+  /**
+   * Admin manually locks seller consignment registration for an auction session.
+   * Prohibits further seller item submissions immediately and dispatches notifications to all active sellers.
+   */
+  async adminLockConsignment(auctionId: string) {
+    const auction = await this.prisma.auction.findUnique({
+      where: { id: auctionId },
+    });
+
+    if (!auction) {
+      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+    }
+
+    if (auction.status !== AuctionStatus.SCHEDULED && auction.status !== AuctionStatus.DRAFT) {
+      throw new BadRequestException(
+        `Chỉ có thể chốt sổ nhận ký gửi cho phiên đang lên lịch hoặc bản nháp (trạng thái hiện tại: ${auction.status}).`,
+      );
+    }
+
+    if (auction.isConsignmentLocked) {
+      return auction;
+    }
+
+    const lockedAt = new Date();
+    const updated = await this.prisma.auction.update({
+      where: { id: auctionId },
+      data: {
+        isConsignmentLocked: true,
+        consignmentLockedAt: lockedAt,
+      },
+    });
+
+    try {
+      if (
+        typeof this.prisma.user?.findMany === 'function' &&
+        typeof this.prisma.notification?.createMany === 'function'
+      ) {
+        const sellers = await this.prisma.user.findMany({
+          where: {
+            OR: [{ role: Role.SELLER }, { isSellerActive: true }],
+          },
+          select: { id: true, role: true, isSellerActive: true },
+        });
+
+        if (sellers.length > 0) {
+          await this.prisma.notification.createMany({
+            data: sellers.map((seller) => ({
+              userId: seller.id,
+              title: `Đã chốt sổ nhận ký gửi phiên "${auction.title}"`,
+              content: `Phiên đấu giá "${auction.title}" đã chính thức ngừng tiếp nhận sản phẩm ký gửi. Chuẩn bị bước vào phiên đấu giá.`,
+              auctionId: auction.id,
+              targetUrl: auctionTargetUrlForRole(auction.id, seller.role, seller.isSellerActive),
+              type: NotificationType.AUCTION,
+              channel: NotificationChannel.IN_APP,
+            })),
+          });
+        }
+      }
+    } catch (notifyError) {
+      this.logger.warn(
+        `Failed to dispatch consignment lock notifications: ${notifyError instanceof Error ? notifyError.message : String(notifyError)}`,
+      );
+    }
+
+    return updated;
   }
 
   /**
@@ -631,6 +826,12 @@ export class AuctionService {
     ) {
       throw new BadRequestException(
         `Không thể bắt đầu phiên đấu giá ở trạng thái ${auction.status}.`,
+      );
+    }
+
+    if (auction.status !== AuctionStatus.ACTIVE && !auction.isConsignmentLocked) {
+      throw new BadRequestException(
+        'Vui lòng bấm chốt sổ nhận ký gửi trước khi bắt đầu phiên đấu giá.',
       );
     }
 
@@ -777,12 +978,12 @@ export class AuctionService {
     }
 
     if (
-      auction.status !== AuctionStatus.SCHEDULED &&
-      auction.status !== AuctionStatus.DRAFT &&
-      auction.status !== AuctionStatus.ACTIVE
+      auction.isConsignmentLocked ||
+      (auction.consignmentDeadline && new Date() >= auction.consignmentDeadline) ||
+      (auction.status !== AuctionStatus.SCHEDULED && auction.status !== AuctionStatus.DRAFT)
     ) {
       throw new BadRequestException(
-        `Phiên đấu giá hiện không ở trạng thái nhận đăng ký đồ (${auction.status}).`,
+        'Phiên đấu giá đã chốt sổ nhận ký gửi, yêu cầu đăng ký sản phẩm bị hủy.',
       );
     }
 
@@ -1184,6 +1385,9 @@ export class AuctionService {
       }
 
       if (auction.status === AuctionStatus.SCHEDULED) {
+        if (!auction.isConsignmentLocked) {
+          throw new BadRequestException('Phiên đấu giá chưa chốt sổ nhận ký gửi và chưa bắt đầu.');
+        }
         if (now < auction.startTime) {
           throw new BadRequestException('Phiên đấu giá chưa đến giờ bắt đầu.');
         }
@@ -1402,6 +1606,14 @@ export class AuctionService {
       const privileged = callerRole === Role.ADMIN || callerRole === Role.SUPPORT_STAFF;
       if (callerId && !privileged && auction.sellerId !== callerId)
         throw new ForbiddenException('Bạn không có quyền kết thúc phiên của người khác.');
+      if (auction.status === AuctionStatus.SCHEDULED || auction.status === AuctionStatus.DRAFT) {
+        if (!auction.isConsignmentLocked) {
+          throw new BadRequestException(
+            'Vui lòng chốt sổ nhận ký gửi trước khi thao tác kết thúc phiên đấu giá.',
+          );
+        }
+        throw new BadRequestException('Chỉ có thể kết thúc phiên đấu giá đang diễn ra.');
+      }
       if (['ENDED', 'SETTLED', 'FAILED', 'CANCELLED'].includes(auction.status)) {
         const award = await tx.auctionAward.findFirst({
           where: { auctionId },
