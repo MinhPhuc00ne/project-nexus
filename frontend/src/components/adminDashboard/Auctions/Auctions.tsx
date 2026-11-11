@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Gavel, Play, Plus, RefreshCw, Square } from 'lucide-react';
+import { Film, Gavel, Play, Plus, RefreshCw, Square } from 'lucide-react';
 import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
+  adminStartAuctionApi,
+  endAuctionApi,
+  getAdminAuctionItemsApi,
   getAdminAuctionsApi,
   resolveAuctionImageUrl,
   type AdminAuctionListResponse,
   type AdminAuctionEntity,
+  type AuctionConsignmentItem,
 } from '../../../services/auction.service';
+import { useToast } from '../../ToastNotification';
+import { AuctionShowcaseHUD } from '../../auction/showcase/AuctionShowcaseHUD';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import CreateAuctionDialog from './CreateAuctionDialog';
 import AuctionItemsDialog from './AuctionItemsDialog';
@@ -24,6 +30,7 @@ const statuses = [
 
 export default function AdminAuctionsPage() {
   const { token } = useAuth();
+  const toast = useToast();
   const [data, setData] = useState<AdminAuctionListResponse | null>(null);
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
@@ -34,25 +41,127 @@ export default function AdminAuctionsPage() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState<AdminAuctionEntity | null>(null);
+  const [startingId, setStartingId] = useState<string | null>(null);
+  const [showcaseState, setShowcaseState] = useState<{
+    auctionId: string;
+    title: string;
+    description?: string;
+    items: AuctionConsignmentItem[];
+    playbackMode: 'live' | 'admin-replay';
+  } | null>(null);
 
-  function advanceAuction(id: string) {
-    setData((current) =>
-      current
-        ? {
-            ...current,
-            items: current.items.map((item) => {
-              if (item.id !== id) return item;
-              if (item.status === 'DRAFT' || item.status === 'SCHEDULED') {
-                return { ...item, status: AuctionStatus.ACTIVE };
-              }
-              if (item.status === 'ACTIVE' || item.status === 'EXTENDED') {
-                return { ...item, status: AuctionStatus.ENDED };
-              }
-              return item;
-            }),
-          }
-        : current,
-    );
+  async function openShowcaseForAuction(item: AdminAuctionEntity) {
+    try {
+      const itemsRes = await getAdminAuctionItemsApi(item.id);
+      const approvedItems: AuctionConsignmentItem[] = itemsRes.items
+        .filter((lot) => lot.status === 'APPROVED')
+        .sort((a, b) => (a.lotNumber ?? 999) - (b.lotNumber ?? 999))
+        .map((lot) => ({
+          id: lot.id,
+          title: lot.title,
+          description: lot.description,
+          images: lot.images,
+          threeModelKey: lot.threeModelKey,
+          appraisalCertificateNumber: lot.appraisalCertificateNumber,
+          appraisalAgency: lot.appraisalAgency,
+          certificateImages: lot.certificateImages,
+          certificateIssueDate: lot.certificateIssueDate,
+          status: lot.status,
+          lotNumber: lot.lotNumber,
+          startingPrice: lot.startingPrice
+            ? Number(lot.startingPrice)
+            : Number(lot.proposedStartingPrice),
+          proposedStartingPrice: Number(lot.proposedStartingPrice),
+          reservePrice: lot.reservePrice
+            ? Number(lot.reservePrice)
+            : lot.proposedReservePrice
+              ? Number(lot.proposedReservePrice)
+              : null,
+          proposedReservePrice: lot.proposedReservePrice ? Number(lot.proposedReservePrice) : null,
+          bidIncrement: lot.bidIncrement
+            ? Number(lot.bidIncrement)
+            : Number(lot.proposedBidIncrement),
+          proposedBidIncrement: Number(lot.proposedBidIncrement),
+          seller: lot.seller,
+        }));
+
+      const legacyProductFallback: AuctionConsignmentItem[] =
+        approvedItems.length === 0 && item.product
+          ? [
+              {
+                id: item.product.id,
+                title: item.product.title,
+                description: item.description,
+                images: item.imageUrl ? [item.imageUrl] : [],
+                threeModelKey: item.product.threeModelKey,
+                lotNumber: 1,
+                startingPrice: Number(item.startingPrice ?? 0),
+                bidIncrement: 0,
+                seller: item.seller ?? undefined,
+              },
+            ]
+          : approvedItems;
+
+      setShowcaseState({
+        auctionId: item.id,
+        title: item.title,
+        description: item.description,
+        items: legacyProductFallback,
+        playbackMode: 'admin-replay',
+      });
+    } catch {
+      setShowcaseState({
+        auctionId: item.id,
+        title: item.title,
+        description: item.description,
+        items: [],
+        playbackMode: 'admin-replay',
+      });
+    }
+  }
+
+  async function handleStartAuction(item: AdminAuctionEntity) {
+    if (startingId) return;
+    setStartingId(item.id);
+    try {
+      const started = await adminStartAuctionApi(item.id);
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              items: current.items.map((row) =>
+                row.id === item.id ? { ...row, status: AuctionStatus.ACTIVE } : row,
+              ),
+            }
+          : current,
+      );
+      toast.success(`Đã mở phiên "${item.title}" & phát sóng video giới thiệu trực tiếp!`);
+      setShowcaseState({
+        auctionId: started.id,
+        title: started.title,
+        description: started.description,
+        items: started.items ?? [],
+        playbackMode: 'live',
+      });
+    } catch (cause: unknown) {
+      toast.error(cause instanceof Error ? cause.message : 'Không thể bắt đầu phiên đấu giá.');
+    } finally {
+      setStartingId(null);
+    }
+  }
+
+  async function handleEndAuction(id: string) {
+    if (startingId) return;
+    setStartingId(id);
+    try {
+      await endAuctionApi(id);
+      toast.success('Đã kết thúc phiên đấu giá.');
+      setRevision((value) => value + 1);
+    } catch (cause: unknown) {
+      toast.error(cause instanceof Error ? cause.message : 'Không thể kết thúc phiên đấu giá.');
+    } finally {
+      setStartingId(null);
+    }
   }
 
   useEffect(() => {
@@ -231,23 +340,39 @@ export default function AdminAuctionsPage() {
                         </Button>
                       </td>
                       <td className="p-4">
-                        {['DRAFT', 'SCHEDULED'].includes(item.status) ? (
-                          <Button onClick={() => advanceAuction(item.id)}>
-                            <Play size={14} />
-                            Bắt đầu
-                          </Button>
-                        ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {['DRAFT', 'SCHEDULED'].includes(item.status) ? (
+                            <Button
+                              disabled={startingId === item.id}
+                              onClick={() => void handleStartAuction(item)}
+                            >
+                              <Play size={14} />
+                              {startingId === item.id ? 'Đang mở…' : 'Bắt đầu'}
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="secondary"
+                              disabled={
+                                !['ACTIVE', 'EXTENDED'].includes(item.status) ||
+                                startingId === item.id
+                              }
+                              onClick={() => void handleEndAuction(item.id)}
+                            >
+                              <Square size={14} />
+                              {['ACTIVE', 'EXTENDED'].includes(item.status)
+                                ? 'Kết thúc'
+                                : 'Đã đóng phiên'}
+                            </Button>
+                          )}
                           <Button
                             variant="secondary"
-                            disabled={!['ACTIVE', 'EXTENDED'].includes(item.status)}
-                            onClick={() => advanceAuction(item.id)}
+                            title="Phát lại video 3D bảo tàng giới thiệu phiên đấu giá"
+                            onClick={() => void openShowcaseForAuction(item)}
                           >
-                            <Square size={14} />
-                            {['ACTIVE', 'EXTENDED'].includes(item.status)
-                              ? 'Kết thúc'
-                              : 'Đã đóng phiên'}
+                            <Film size={14} />
+                            Video 3D
                           </Button>
-                        )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -301,6 +426,21 @@ export default function AdminAuctionsPage() {
           auction={selectedAuction}
           onClose={() => setSelectedAuction(null)}
           onChanged={() => setRevision((value) => value + 1)}
+        />
+      )}
+      {showcaseState && (
+        <AuctionShowcaseHUD
+          auctionTitle={showcaseState.title}
+          auctionDescription={showcaseState.description}
+          items={showcaseState.items}
+          playbackMode={showcaseState.playbackMode}
+          onComplete={() => {
+            setShowcaseState(null);
+            setRevision((value) => value + 1);
+          }}
+          onCancel={
+            showcaseState.playbackMode === 'admin-replay' ? () => setShowcaseState(null) : undefined
+          }
         />
       )}
     </Panel>

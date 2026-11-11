@@ -4,8 +4,9 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { AfterSalesRequest } from '@prisma/client';
+import { AfterSalesRequest, NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
 import { GhnOrderApiService } from '../../fulfillment/services/ghn-order-api.service';
 import {
@@ -80,6 +81,14 @@ export class OrderCancellationService {
         },
       });
       await this.store.audit(tx, current, actor, 'cancellation-requested', { reason: dto.reason });
+      if (actor.id === current.buyerId && current.status === 'PREPARING') {
+        await notifyAllAdmins(tx, {
+          title: 'Yêu cầu hủy đơn hàng đang chuẩn bị ⚠️',
+          content: `Đơn #${orderId.slice(0, 8)} đã được người mua gửi yêu cầu hủy khi đang chuẩn bị giao, cần Admin xác nhận.`,
+          type: NotificationType.ORDER,
+          targetUrl: '/admin/refunds',
+        });
+      }
       return current;
     });
     if (order.status === 'CANCELLED')

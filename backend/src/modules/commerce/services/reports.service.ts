@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { ReportDto } from '../dtos/feedback.dto';
 
 @Injectable()
@@ -57,6 +59,13 @@ export class ReportsService {
           evidenceUrls: dto.evidenceUrls ?? [],
         },
         select: { id: true, shopId: true, productId: true, status: true, createdAt: true },
+      });
+      await notifyAllAdmins(tx, {
+        title:
+          kind === 'product' ? 'Báo cáo vi phạm sản phẩm mới' : 'Báo cáo vi phạm gian hàng mới',
+        content: `Tiêu đề: ${dto.title.trim()} (${kind === 'product' ? 'Sản phẩm' : 'Shop'} #${targetId.slice(0, 8)}).`,
+        type: NotificationType.DISPUTE,
+        targetUrl: '/admin/reports',
       });
       return report;
     });

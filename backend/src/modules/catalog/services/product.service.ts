@@ -5,12 +5,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
 import { QueryProductDto } from '../dtos/query-product.dto';
 import { InventoryService } from './inventory.service';
-import { ProductStatus, Prisma, Role } from '@prisma/client';
+import { NotificationType, ProductStatus, Prisma, Role } from '@prisma/client';
 import { PaginatedResult, formatProductDetail } from '../utils/product.util';
 import { normalizeOptions } from '../utils/product-options';
 import { priceView } from '../utils/product-price';
@@ -86,6 +87,12 @@ export class ProductService {
         product.id,
         dto.quantity,
       );
+      await notifyAllAdmins(tx, {
+        title: 'Sản phẩm mới vừa được đăng bán',
+        content: `Sản phẩm "${product.title}" vừa được đăng tải với giá ${Number(dto.basePrice).toLocaleString('vi-VN')} VND.`,
+        type: NotificationType.SYSTEM,
+        targetUrl: '/admin/products',
+      });
       return {
         ...product,
         basePrice: Number(product.basePrice),

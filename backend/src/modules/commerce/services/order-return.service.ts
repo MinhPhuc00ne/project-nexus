@@ -4,8 +4,9 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { AfterSalesRequest } from '@prisma/client';
+import { AfterSalesRequest, NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
 import { GhnOrderApiService } from '../../fulfillment/services/ghn-order-api.service';
 import {
@@ -84,6 +85,12 @@ export class OrderReturnService {
       if (order.escrowRecord.status === 'HELD')
         await tx.escrowRecord.update({ where: { orderId }, data: { status: 'DISPUTED' } });
       await this.store.audit(tx, order, actor, 'return-requested');
+      await notifyAllAdmins(tx, {
+        title: 'Yêu cầu trả hàng / hoàn tiền mới',
+        content: `Đơn #${orderId.slice(0, 8)} có yêu cầu trả hàng từ người mua: ${dto.reason}.`,
+        type: NotificationType.ORDER,
+        targetUrl: '/admin/refunds',
+      });
       return request;
     });
   }

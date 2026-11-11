@@ -28,6 +28,7 @@ import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
 import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
 import { ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
 import { BindAuctionProductDto } from '../dtos/bind-auction-product.dto';
+import { AuctionIntroShowcaseResponseDto } from '../dtos/auction-showcase-response.dto';
 
 /**
  * Controller exposing REST endpoints for central auction events, seller consignment
@@ -43,7 +44,15 @@ export class AuctionController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Gắn sản phẩm cho một lô đấu giá và giữ tồn kho trước khi nhận giá' })
+  @ApiOperation({
+    summary: '[Admin] Bind catalog product and reserve inventory for an auction',
+    description:
+      'Binds a fulfillable catalog product to a scheduled auction room and holds inventory stock prior to receiving bids.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Product bound to auction and stock reserved successfully.',
+  })
   bindProduct(
     @Param('id') id: string,
     @Body() dto: BindAuctionProductDto,
@@ -102,16 +111,40 @@ export class AuctionController {
   }
 
   /**
+   * Retrieves synchronized live intro showcase telemetry for an auction session.
+   */
+  @Public()
+  @Get(':id/intro-showcase')
+  @ApiOperation({
+    summary: 'Get synchronized live intro showcase data and playback offset (All Roles)',
+    description:
+      'Publicly accessible by Guest, Buyer, Seller, Support Staff, and Admin. Returns approved auction lots (with seller-submitted prices and appraisal certificate records) alongside serverTime, startedAt, introDurationMs, isIntroActive, and elapsedMs. Viewers joining mid-broadcast use elapsedMs to sync seamlessly into the ongoing live showcase, while real-time triggers arrive via WebSocket namespace /ws/auctions event "auction:started".',
+  })
+  @ApiResponse({
+    status: 200,
+    type: AuctionIntroShowcaseResponseDto,
+    description:
+      'Synchronized intro showcase payload including server clock offset and approved seller lots.',
+  })
+  async getAuctionIntroShowcase(@Param('id') id: string) {
+    return this.auctionService.getAuctionIntroShowcase(id);
+  }
+
+  /**
    * Retrieves single auction details including product specifications, approved items, and bid logs.
    */
   @Public()
   @Get(':id')
   @ApiOperation({
-    summary: 'Get auction details by ID',
+    summary: 'Get auction details and live intro synchronization telemetry by ID',
     description:
-      'Retrieves comprehensive auction room details, approved consignment items with online appraisal certificates, and bid logs.',
+      'Retrieves comprehensive auction room details, approved consignment items with seller pricing and appraisal certificates, bid logs, plus serverTime, introDurationMs, elapsedMs, and isIntroActive for live intro playback synchronization.',
   })
-  @ApiResponse({ status: 200, description: 'Auction details retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Auction details retrieved successfully, including approved consignment items and live intro sync metadata.',
+  })
   async getAuctionDetail(@Param('id') id: string, @CurrentUser('id') userId?: string) {
     return this.auctionService.getAuctionDetail(id, userId);
   }
@@ -152,6 +185,27 @@ export class AuctionController {
   @ApiResponse({ status: 200, description: 'Auction session updated successfully.' })
   async adminUpdateAuction(@Param('id') id: string, @Body() dto: AdminUpdateAuctionDto) {
     return this.auctionService.adminUpdateAuction(id, dto);
+  }
+
+  /**
+   * Admin starts a scheduled/draft auction session immediately and broadcasts the 3D intro showcase.
+   */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('admin/:id/start')
+  @ApiOperation({
+    summary: '[Admin] Start auction session and broadcast live intro showcase via WebSocket',
+    description:
+      'Transitions a DRAFT or SCHEDULED auction session into ACTIVE state, records startedAt, computes deterministic introDurationMs, emits WebSocket event "auction:started" on namespace /ws/auctions (carrying auctionId, title, startedAt, endTime, serverTime, introDurationMs, and full approved items), and returns the started session payload. Admin-only local replays never emit pause or skip socket events to viewer roles.',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Auction session transitioned to ACTIVE, live intro showcase broadcast via WebSocket "auction:started", and full approved lots returned.',
+  })
+  async adminStartAuction(@Param('id') id: string) {
+    return this.auctionService.adminStartAuction(id);
   }
 
   /**

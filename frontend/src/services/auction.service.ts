@@ -4,6 +4,7 @@ import { getStoredToken } from './auth';
 import type { AuctionStatus, BidStatus } from '@nexus/types';
 import {
   WS_AUCTION_EVENTS,
+  type WsAuctionStartedPayload,
   type WsBidPlacedPayload,
   type WsTimeExtendedPayload,
   type WsTimerSyncPayload,
@@ -73,9 +74,12 @@ export interface AuctionConsignmentItem {
   certificateIssueDate?: string | null;
   status?: string;
   lotNumber?: number | null;
-  startingPrice?: number | null;
-  reservePrice?: number | null;
-  bidIncrement?: number | null;
+  startingPrice?: number | string | null;
+  proposedStartingPrice?: number | string | null;
+  reservePrice?: number | string | null;
+  proposedReservePrice?: number | string | null;
+  bidIncrement?: number | string | null;
+  proposedBidIncrement?: number | string | null;
   seller?: {
     id: string;
     fullName: string;
@@ -138,6 +142,10 @@ export interface AuctionEntity {
   bids?: AuctionBidItem[];
   items?: AuctionConsignmentItem[];
   buyerEligibility?: BuyerEligibilityResponse;
+  serverTime?: string;
+  introDurationMs?: number;
+  elapsedMs?: number;
+  isIntroActive?: boolean;
 }
 
 export interface AuctionQueryInput {
@@ -306,6 +314,16 @@ export function adminCreateAuctionApi(data: AdminCreateAuctionInput): Promise<Ad
   });
 }
 
+/**
+ * Transitions a scheduled/draft auction session into ACTIVE state and broadcasts the 3D showcase start event.
+ */
+export function adminStartAuctionApi(id: string): Promise<AuctionEntity> {
+  return apiRequest<AuctionEntity>(`/auctions/admin/${id}/start`, {
+    method: 'POST',
+    requireAuth: true,
+  });
+}
+
 export interface PlaceBidResponse {
   success: boolean;
   bidId: string;
@@ -369,6 +387,35 @@ export async function getAuctionsApi(query?: AuctionQueryInput): Promise<Auction
   return (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as AuctionListResponse;
+}
+
+export interface AuctionIntroShowcaseResponse {
+  auctionId: string;
+  title: string;
+  description?: string | null;
+  status: AuctionStatus;
+  startedAt: string;
+  endTime: string;
+  serverTime: string;
+  introDurationMs: number;
+  isIntroActive: boolean;
+  elapsedMs: number;
+  items: AuctionConsignmentItem[];
+}
+
+/**
+ * Retrieves synchronized live intro showcase payload and server elapsed offset for an auction room.
+ */
+export async function getAuctionIntroShowcaseApi(
+  id: string,
+): Promise<AuctionIntroShowcaseResponse> {
+  const response = await api.get<{ data: AuctionIntroShowcaseResponse }>(
+    `/auctions/${id}/intro-showcase`,
+  );
+  const payload = response?.data;
+  return (
+    payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
+  ) as AuctionIntroShowcaseResponse;
 }
 
 /**
@@ -526,6 +573,7 @@ export interface AuctionSocketClient {
     rotation: { x: number; y: number; z: number },
     zoom: number,
   ) => void;
+  onAuctionStarted: (handler: (payload: WsAuctionStartedPayload) => void) => void;
   onBidPlaced: (handler: (payload: WsBidPlacedPayload) => void) => void;
   onTimeExtended: (handler: (payload: WsTimeExtendedPayload) => void) => void;
   onTimerSync: (handler: (payload: WsTimerSyncPayload) => void) => void;
@@ -558,6 +606,9 @@ export function createAuctionSocket(auctionId?: string): AuctionSocketClient {
     },
     syncViewport: (id: string, rotation: { x: number; y: number; z: number }, zoom: number) => {
       socket.emit(WS_AUCTION_EVENTS.CLIENT.SYNC_VIEWPORT, { auctionId: id, rotation, zoom });
+    },
+    onAuctionStarted: (handler) => {
+      socket.on(WS_AUCTION_EVENTS.SERVER.AUCTION_STARTED, handler);
     },
     onBidPlaced: (handler) => {
       socket.on(WS_AUCTION_EVENTS.SERVER.BID_PLACED, handler);

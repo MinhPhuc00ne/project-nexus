@@ -8,10 +8,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Role } from '@nexus/types';
-import { SellerRequestStatus, User, Wallet } from '@prisma/client';
+import { SellerRequestStatus, NotificationType, User, Wallet } from '@prisma/client';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
 import { ProfileReauthService } from '../../../core/security/profile-reauth.service';
 import { toggleSellerState, userMode } from '../../../core/security/user-mode';
@@ -295,6 +296,13 @@ export class UsersService {
     });
 
     this.logger.log(`Seller upgrade application submitted by user ${userId} (${newRequest.id})`);
+
+    await notifyAllAdmins(this.prisma, {
+      title: 'Yêu cầu nâng cấp Seller mới',
+      content: `Gian hàng "${dto.storeName.trim()}" vừa gửi hồ sơ đăng ký nâng cấp lên Seller chờ phê duyệt.`,
+      type: NotificationType.SYSTEM,
+      targetUrl: '/admin/sellers',
+    });
 
     await this.reputationService.awardProfileCompletion({
       userId,
@@ -667,6 +675,12 @@ export class UsersService {
       this.logger.warn(
         `GHN pickup sync pending for seller ${sellerId}; retry on next shipping request.`,
       );
+      await notifyAllAdmins(this.prisma, {
+        title: 'Điểm lấy hàng Seller chờ xác minh GHN',
+        content: `Gian hàng "${result.storeName}" vừa thay đổi thông tin lấy hàng và đang chờ xác minh GHN.`,
+        type: NotificationType.SYSTEM,
+        targetUrl: '/admin/stores',
+      });
     }
 
     this.logger.log(`Seller ${sellerId} updated shop profile: ${result.storeName}`);
@@ -875,6 +889,13 @@ export class UsersService {
         placeId: dto.placeId?.trim() || null,
         status: SellerRequestStatus.PENDING,
       },
+    });
+
+    await notifyAllAdmins(this.prisma, {
+      title: 'Yêu cầu nâng cấp Seller mới',
+      content: `Gian hàng "${dto.storeName.trim()}" vừa gửi hồ sơ đăng ký nâng cấp lên Seller chờ phê duyệt.`,
+      type: NotificationType.SYSTEM,
+      targetUrl: '/admin/sellers',
     });
 
     return {

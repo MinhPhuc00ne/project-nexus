@@ -12,6 +12,7 @@ export const WS_AUCTION_EVENTS = {
   },
   SERVER: {
     ROOM_JOINED: 'auction:room_joined',
+    AUCTION_STARTED: 'auction:started',
     BID_PLACED: 'auction:bid:placed',
     BID_REJECTED: 'auction:bid:rejected',
     TIMER_SYNC: 'auction:timer:sync',
@@ -74,6 +75,44 @@ export interface WsTimeExtendedPayload {
   extendedBySeconds: number;
   newEndTime: string;
   reason: 'ANTI_SNIPING';
+}
+
+export interface WsAuctionIntroSellerPayload {
+  id: string;
+  fullName: string;
+  avatarUrl?: string | null;
+  shopAvatarUrl?: string | null;
+}
+
+export interface WsAuctionIntroItemPayload {
+  id: string;
+  title: string;
+  description: string;
+  images: string[];
+  threeModelKey?: string | null;
+  lotNumber?: number | null;
+  startingPrice: number;
+  proposedStartingPrice: number;
+  reservePrice?: number | null;
+  proposedReservePrice?: number | null;
+  bidIncrement: number;
+  proposedBidIncrement: number;
+  appraisalCertificateNumber?: string | null;
+  appraisalAgency?: string | null;
+  certificateImages: string[];
+  certificateIssueDate?: string | null;
+  seller?: WsAuctionIntroSellerPayload;
+}
+
+export interface WsAuctionStartedPayload {
+  auctionId: string;
+  title: string;
+  description?: string | null;
+  startedAt: string;
+  endTime: string;
+  serverTime: string;
+  introDurationMs: number;
+  items: WsAuctionIntroItemPayload[];
 }
 
 export interface Ws3dSyncPayload {
