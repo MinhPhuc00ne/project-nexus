@@ -49,6 +49,7 @@ export default function ReportsManagement() {
   const [refresh, setRefresh] = useState(0);
   const [detail, setDetail] = useState<AdminDispute | null>(null);
   const [resolving, setResolving] = useState(false);
+  const [decision, setDecision] = useState<'BUYER' | 'SELLER' | null>(null);
   const evidenceUrls = Array.isArray(detail?.evidenceUrls)
     ? detail.evidenceUrls.filter((url): url is string => typeof url === 'string')
     : [];
@@ -199,7 +200,13 @@ export default function ReportsManagement() {
                         <DisputeBadge status={item.status} />
                       </td>
                       <td className="px-3 py-4">
-                        <Button variant="secondary" onClick={() => setDetail(item)}>
+                        <Button
+                          variant="secondary"
+                          onClick={() => {
+                            setDetail(item);
+                            setDecision(null);
+                          }}
+                        >
                           Xem chi tiết
                         </Button>
                       </td>
@@ -235,72 +242,92 @@ export default function ReportsManagement() {
       <Popup
         isOpen={!!detail}
         onClose={() => {
-          if (!resolving) setDetail(null);
+          if (resolving) return;
+          if (decision) setDecision(null);
+          else setDetail(null);
         }}
-        title="Chi tiết khiếu nại"
+        title={
+          decision
+            ? decision === 'BUYER'
+              ? 'Xác nhận khiếu nại'
+              : 'Bác bỏ khiếu nại'
+            : 'Chi tiết khiếu nại'
+        }
         size="lg"
+        closeOnEsc={!resolving}
+        closeOnOverlay={!resolving}
+        showCloseButton={!resolving}
       >
         {detail && (
           <div className="space-y-5">
-            <DetailFields
-              fields={[
-                ['Mã khiếu nại', detail.id],
-                ['Mã đơn hàng', detail.orderId],
-                ['Người mở', `${detail.openedBy.fullName} (${detail.openedBy.email})`],
-                ['Bên mua', `${detail.order.buyer.fullName} (${detail.order.buyer.email})`],
-                ['Bên bán', `${detail.order.seller.fullName} (${detail.order.seller.email})`],
-                ['Trạng thái', labels[detail.status]],
-                ['Ngày mở', date(detail.createdAt)],
-                ['Tổng tiền đơn hàng', money(detail.order.totalAmount)],
-                [
-                  'Tiền ký quỹ',
-                  detail.order.escrowRecord ? money(detail.order.escrowRecord.totalAmount) : '—',
-                ],
-                ['Lý do khiếu nại', detail.reason],
-                ['Kết luận / ghi chú', detail.resolutionNotes],
-                ['Người xử lý', detail.resolvedBy?.fullName],
-                ['Ngày xử lý', detail.resolvedAt ? date(detail.resolvedAt) : '—'],
-              ]}
-            />
-            <section>
-              <h3 className="mb-2 text-sm font-semibold">Sản phẩm trong đơn</h3>
-              {detail.order.items.map((item) => (
-                <p key={item.id} className="py-1 text-sm text-slate-600">
-                  {item.title} × {item.quantity} — {money(item.totalPrice)}
-                </p>
-              ))}
-            </section>
-            <section>
-              <h3 className="mb-2 text-sm font-semibold">Bằng chứng</h3>
-              {evidenceUrls.length ? (
-                evidenceUrls.map((url, index) =>
-                  /^https?:\/\//i.test(url) ? (
-                    <a
-                      key={`${index}-${url}`}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mb-2 block break-all text-sm text-primary underline"
-                    >
-                      Bằng chứng {index + 1}
-                    </a>
-                  ) : (
-                    <p key={`${index}-${url}`} className="break-all text-sm text-slate-500">
-                      {url}
+            {!decision && (
+              <>
+                <DetailFields
+                  fields={[
+                    ['Mã khiếu nại', detail.id],
+                    ['Mã đơn hàng', detail.orderId],
+                    ['Người mở', `${detail.openedBy.fullName} (${detail.openedBy.email})`],
+                    ['Bên mua', `${detail.order.buyer.fullName} (${detail.order.buyer.email})`],
+                    ['Bên bán', `${detail.order.seller.fullName} (${detail.order.seller.email})`],
+                    ['Trạng thái', labels[detail.status]],
+                    ['Ngày mở', date(detail.createdAt)],
+                    ['Tổng tiền đơn hàng', money(detail.order.totalAmount)],
+                    [
+                      'Tiền ký quỹ',
+                      detail.order.escrowRecord
+                        ? money(detail.order.escrowRecord.totalAmount)
+                        : '—',
+                    ],
+                    ['Lý do khiếu nại', detail.reason],
+                    ['Kết luận / ghi chú', detail.resolutionNotes],
+                    ['Người xử lý', detail.resolvedBy?.fullName],
+                    ['Ngày xử lý', detail.resolvedAt ? date(detail.resolvedAt) : '—'],
+                  ]}
+                />
+                <section>
+                  <h3 className="mb-2 text-sm font-semibold">Sản phẩm trong đơn</h3>
+                  {detail.order.items.map((item) => (
+                    <p key={item.id} className="py-1 text-sm text-slate-600">
+                      {item.title} × {item.quantity} — {money(item.totalPrice)}
                     </p>
-                  ),
-                )
-              ) : (
-                <p className="text-sm text-slate-500">Chưa có bằng chứng đính kèm.</p>
-              )}
-            </section>
+                  ))}
+                </section>
+                <section>
+                  <h3 className="mb-2 text-sm font-semibold">Bằng chứng</h3>
+                  {evidenceUrls.length ? (
+                    evidenceUrls.map((url, index) =>
+                      /^https?:\/\//i.test(url) ? (
+                        <a
+                          key={`${index}-${url}`}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mb-2 block break-all text-sm text-primary underline"
+                        >
+                          Bằng chứng {index + 1}
+                        </a>
+                      ) : (
+                        <p key={`${index}-${url}`} className="break-all text-sm text-slate-500">
+                          {url}
+                        </p>
+                      ),
+                    )
+                  ) : (
+                    <p className="text-sm text-slate-500">Chưa có bằng chứng đính kèm.</p>
+                  )}
+                </section>
+              </>
+            )}
             {(detail.status === 'OPEN' || detail.status === 'UNDER_REVIEW') && (
               <DisputeResolution
                 key={detail.id}
                 orderId={detail.orderId}
+                decision={decision}
+                onDecisionChange={setDecision}
                 onBusyChange={setResolving}
                 onResolved={() => {
                   setDetail(null);
+                  setDecision(null);
                   setRefresh((value) => value + 1);
                 }}
               />

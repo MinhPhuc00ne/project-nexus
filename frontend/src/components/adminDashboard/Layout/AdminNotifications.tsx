@@ -54,7 +54,9 @@ export default function AdminNotifications({
             </button>
           </div>
           <p className="border-b border-slate-100 px-4 py-3 text-xs leading-6 text-slate-500">
-            Thông báo gửi đến tài khoản quản trị hiện tại, tự cập nhật mỗi 5 giây.
+            {state.connected
+              ? 'Thông báo cập nhật trực tiếp khi có yêu cầu mới.'
+              : 'Chưa kết nối thông báo trực tiếp. Bạn có thể bấm làm mới để tải danh sách.'}
           </p>
           {state.error && (
             <div role="alert" className="m-3 rounded-lg bg-red-50 p-3 text-xs text-red-700">
