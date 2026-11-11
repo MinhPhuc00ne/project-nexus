@@ -10,6 +10,7 @@ import {
   WithdrawalStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { publishUnreadCountSync } from '../../../core/notifications/notification-realtime.bus';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { QueryNotificationDto } from '../dtos/query-notification.dto';
 import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
@@ -208,6 +209,9 @@ export class NotificationsService {
       data: { isRead: true, readAt: new Date() },
     });
 
+    const { unreadCount } = await this.getUnreadCount(userId);
+    publishUnreadCountSync(userId, unreadCount);
+
     return {
       success: true,
       message: 'Đã đánh dấu thông báo là đã đọc.',
@@ -229,6 +233,8 @@ export class NotificationsService {
       },
       data: { isRead: true, readAt: new Date() },
     });
+
+    publishUnreadCountSync(userId, 0);
 
     return {
       success: true,

@@ -35,7 +35,7 @@ export class NotificationsController {
   @ApiOperation({
     summary: 'List paginated notifications for the authenticated account',
     description:
-      'Retrieves paginated in-app notifications sorted newest first, supporting filters by read status (isRead) and category (type). Works for all roles including Admin, Staff, Seller, and Buyer.',
+      'Retrieves paginated in-app notifications sorted newest first, supporting filters by read status (isRead) and category (type). For instant 0-second delivery across Admin, Staff, Seller, and Buyer, connect Socket.IO to namespace /ws/notifications with handshake auth { token: "<JWT>" } and listen to "notification:new" and "notification:unread_count".',
   })
   @ApiResponse({
     status: 200,

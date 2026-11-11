@@ -14,6 +14,13 @@ const { notifyAllAdmins } = load('../src/core/notifications/admin-notification.u
 const { NotificationsService } = load(
   '../src/modules/notifications/services/notifications.service.ts',
 );
+const { NotificationsGateway } = load(
+  '../src/modules/notifications/gateways/notifications.gateway.ts',
+);
+const { publishCreatedNotifications } = load(
+  '../src/core/notifications/notification-realtime.bus.ts',
+);
+const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
 const { ReportsService } = load('../src/modules/commerce/services/reports.service.ts');
 
 test('notifyAllAdmins fans out in-app notification with targetUrl to all Admin accounts', async () => {
@@ -145,4 +152,94 @@ test('NotificationsService.getAdminNotificationSummary aggregates unread count, 
   assert.equal(summary.totalPendingActions, 13);
   assert.equal(summary.recentNotifications.length, 1);
   assert.equal(summary.recentNotifications[0].targetUrl, '/admin/finance');
+});
+
+test('NotificationsGateway authenticates JWT handshake, emits connected payload, and pushes realtime notifications', async () => {
+  const secret = 'test-secret-notif-ws';
+  const token = LightweightJwt.sign(
+    { id: 'admin-99', role: 'ADMIN' },
+    { secret, expiresInSeconds: 3600 },
+  );
+  const configMock = { get: () => secret };
+  const notifServiceMock = {
+    getUnreadCount: mock.fn(async () => ({ unreadCount: 3 })),
+    markAllAsRead: mock.fn(),
+  };
+
+  const gateway = new NotificationsGateway(configMock, notifServiceMock);
+  const roomEmits = [];
+  gateway.server = {
+    to: (room) => ({
+      emit: (event, payload) => {
+        roomEmits.push({ room, event, payload });
+      },
+    }),
+  };
+  gateway.afterInit();
+
+  const joined = [];
+  const clientEmits = [];
+  const mockClient = {
+    id: 'sock-1',
+    handshake: { auth: { token }, headers: {} },
+    data: {},
+    join: async (room) => {
+      joined.push(room);
+    },
+    emit: (event, payload) => {
+      clientEmits.push({ event, payload });
+    },
+    disconnect: mock.fn(),
+  };
+
+  await gateway.handleConnection(mockClient);
+
+  assert.deepEqual(joined, ['user:admin-99', 'role:ADMIN']);
+  assert.equal(clientEmits[0].event, 'notification:connected');
+  assert.equal(clientEmits[0].payload.unreadCount, 3);
+
+  publishCreatedNotifications([
+    {
+      id: 'n-live-1',
+      userId: 'admin-99',
+      title: 'Yêu cầu nâng cấp Seller mới',
+      content: 'Shop Demo vừa nộp hồ sơ.',
+      type: 'SYSTEM',
+      channel: 'IN_APP',
+      isRead: false,
+      readAt: null,
+      createdAt: new Date('2026-11-11T09:50:00.000Z'),
+      auctionId: null,
+      targetUrl: '/admin/sellers',
+    },
+  ]);
+
+  await new Promise((resolve) => setTimeout(resolve, 25));
+
+  const newEvent = roomEmits.find((e) => e.event === 'notification:new');
+  assert.ok(newEvent);
+  assert.equal(newEvent.room, 'user:admin-99');
+  assert.equal(newEvent.payload.id, 'n-live-1');
+  assert.equal(newEvent.payload.targetUrl, '/admin/sellers');
+  assert.equal(newEvent.payload.unreadCount, 3);
+
+  gateway.onModuleDestroy();
+});
+
+test('NotificationsGateway rejects missing JWT handshake cleanly', async () => {
+  const gateway = new NotificationsGateway(
+    { get: () => 'secret' },
+    { getUnreadCount: mock.fn(async () => ({ unreadCount: 0 })) },
+  );
+  const clientEmits = [];
+  const disconnect = mock.fn();
+  await gateway.handleConnection({
+    id: 'sock-anon',
+    handshake: { auth: {}, headers: {} },
+    emit: (event, payload) => clientEmits.push({ event, payload }),
+    disconnect,
+  });
+
+  assert.equal(clientEmits[0].event, 'notification:error');
+  assert.equal(disconnect.mock.callCount(), 1);
 });
