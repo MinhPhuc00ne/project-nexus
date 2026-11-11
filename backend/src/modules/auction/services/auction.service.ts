@@ -899,12 +899,115 @@ export class AuctionService {
       items: serializedItems,
     });
 
+    await this.dispatchAuctionStartNotifications(updated);
+
     return {
       ...updated,
       items: serializedItems,
       serverTime,
       introDurationMs,
     };
+  }
+
+  /**
+   * Dispatches tailored in-app notifications to Support Staff, participating Sellers, other Sellers, and Buyers upon auction activation.
+   * @param auction Activated auction session with approved lots and seller attribution.
+   */
+  private async dispatchAuctionStartNotifications(auction: {
+    id: string;
+    title: string;
+    sellerId?: string | null;
+    items?: Array<{ seller?: { id: string } | null }>;
+  }): Promise<void> {
+    try {
+      if (
+        typeof this.prisma.user?.findMany !== 'function' ||
+        typeof this.prisma.notification?.createMany !== 'function'
+      ) {
+        return;
+      }
+
+      const recipients = await this.prisma.user.findMany({
+        where: {
+          role: { not: Role.ADMIN },
+        },
+        select: {
+          id: true,
+          role: true,
+          isSellerActive: true,
+        },
+      });
+
+      if (!recipients.length) {
+        return;
+      }
+
+      const participatingSellerIds = new Set<string>();
+      if (auction.sellerId) {
+        participatingSellerIds.add(auction.sellerId);
+      }
+      for (const item of auction.items ?? []) {
+        if (item.seller?.id) {
+          participatingSellerIds.add(item.seller.id);
+        }
+      }
+
+      const notifications = recipients.map((user) => {
+        if (participatingSellerIds.has(user.id)) {
+          return {
+            userId: user.id,
+            title: `Phiên đấu giá có sản phẩm của bạn đã bắt đầu: "${auction.title}"`,
+            content: `Phiên đấu giá "${auction.title}" có sản phẩm của bạn đã chính thức mở sàn trực tiếp. Hãy theo dõi phiên để cập nhật diễn biến giá đấu!`,
+            auctionId: auction.id,
+            targetUrl: auctionTargetUrlForRole(auction.id, user.role, user.isSellerActive),
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+          };
+        }
+
+        if (user.role === Role.SUPPORT_STAFF) {
+          return {
+            userId: user.id,
+            title: `Phiên đấu giá đã chính thức mở sàn: "${auction.title}"`,
+            content: `Phiên đấu giá "${auction.title}" đã bắt đầu diễn ra trực tiếp. Bộ phận hỗ trợ vui lòng theo dõi và hỗ trợ vận hành phiên.`,
+            auctionId: auction.id,
+            targetUrl: auctionTargetUrlForRole(auction.id, user.role, user.isSellerActive),
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+          };
+        }
+
+        if (user.role === Role.SELLER || user.isSellerActive) {
+          return {
+            userId: user.id,
+            title: `Phiên đấu giá đã bắt đầu live: "${auction.title}"`,
+            content: `Phiên đấu giá "${auction.title}" đã chính thức bắt đầu diễn ra trực tiếp. Theo dõi ngay để nắm bắt diễn biến thị trường!`,
+            auctionId: auction.id,
+            targetUrl: auctionTargetUrlForRole(auction.id, user.role, user.isSellerActive),
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+          };
+        }
+
+        return {
+          userId: user.id,
+          title: `Phiên đấu giá đã bắt đầu: "${auction.title}"`,
+          content: `Phiên đấu giá "${auction.title}" đã chính thức mở sàn đấu giá trực tiếp. Tham gia đặt giá ngay!`,
+          auctionId: auction.id,
+          targetUrl: auctionTargetUrl(auction.id),
+          type: NotificationType.AUCTION,
+          channel: NotificationChannel.IN_APP,
+        };
+      });
+
+      await this.prisma.notification.createMany({
+        data: notifications,
+      });
+    } catch (notifyError) {
+      this.logger.warn(
+        `Failed to dispatch auction start notifications: ${notifyError instanceof Error ? notifyError.message : String(notifyError)}`,
+      );
+    }
   }
 
   /**

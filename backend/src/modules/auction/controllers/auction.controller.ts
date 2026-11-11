@@ -208,23 +208,28 @@ export class AuctionController {
   }
 
   /**
-   * Admin starts a scheduled/draft auction session immediately and broadcasts the 3D intro showcase.
+   * Admin starts a scheduled or draft auction session, dispatches live notifications across roles, and broadcasts the 3D intro showcase.
+   * @param id Persistent auction session identifier.
+   * @returns Activated auction session with serialized lots and showcase telemetry.
    */
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Post('admin/:id/start')
   @ApiOperation({
-    summary: '[Admin] Start auction session and broadcast live intro showcase via WebSocket',
+    summary:
+      '[Admin] Start auction session, dispatch live notifications across roles, and broadcast showcase',
     description:
-      'Transitions a DRAFT or SCHEDULED auction session into ACTIVE state, records startedAt, computes deterministic introDurationMs, emits WebSocket event "auction:started" on namespace /ws/auctions (carrying auctionId, title, startedAt, endTime, serverTime, introDurationMs, and full approved items), and returns the started session payload. Admin-only local replays never emit pause or skip socket events to viewer roles.',
+      'Transitions a DRAFT or SCHEDULED auction session into ACTIVE state, dispatches in-app notifications to Support Staff, participating Sellers, other Sellers, and Buyers, emits WebSocket event "auction:started" on namespace /ws/auctions (with auctionId, title, startedAt, endTime, serverTime, introDurationMs, and full approved lots), and returns the active session payload.',
   })
   @ApiResponse({
     status: 200,
     description:
-      'Auction session transitioned to ACTIVE, live intro showcase broadcast via WebSocket "auction:started", and full approved lots returned.',
+      'Auction session transitioned to ACTIVE, in-app notifications fanned out across Staff, Sellers, and Buyers, live intro showcase broadcast via WebSocket "auction:started", and full approved lots returned.',
   })
-  async adminStartAuction(@Param('id') id: string) {
+  async adminStartAuction(
+    @Param('id') id: string,
+  ): ReturnType<AuctionService['adminStartAuction']> {
     return this.auctionService.adminStartAuction(id);
   }
 

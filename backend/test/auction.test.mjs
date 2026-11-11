@@ -723,6 +723,98 @@ test('adminCreateAuction fans out role-differentiated notifications excluding Ad
   assert.ok(buyerNotif.targetUrl.startsWith('/auction/auc-notif-1'));
 });
 
+test('adminStartAuction fans out role-differentiated live notifications to Staff, Sellers, and Buyers', async () => {
+  let createdNotifications = [];
+  const approvedLot = {
+    id: 'lot-live-1',
+    title: 'Tranh Sơn Mài Cổ',
+    description: 'Thẩm định bảo tàng',
+    images: ['https://cdn.example.com/painting.jpg'],
+    threeModelKey: 'preset_painting',
+    lotNumber: 1,
+    startingPrice: null,
+    proposedStartingPrice: new Prisma.Decimal(50000000),
+    reservePrice: null,
+    proposedReservePrice: new Prisma.Decimal(70000000),
+    bidIncrement: null,
+    proposedBidIncrement: new Prisma.Decimal(1000000),
+    appraisalCertificateNumber: 'CERT-01',
+    appraisalAgency: 'National Museum',
+    certificateImages: ['https://cdn.example.com/cert.jpg'],
+    certificateIssueDate: new Date('2026-01-01T00:00:00.000Z'),
+    seller: {
+      id: 'seller-consigned',
+      fullName: 'Art Collector',
+      avatarUrl: null,
+      shopAvatarUrl: null,
+    },
+  };
+
+  const prismaMock = {
+    auction: {
+      findUnique: mock.fn(async () => ({
+        id: 'auc-live-notif',
+        title: 'Phiên Cổ Vật Mùa Xuân',
+        description: 'Mô tả cổ vật',
+        status: 'SCHEDULED',
+        isConsignmentLocked: true,
+        startTime: new Date(Date.now() - 1000),
+        endTime: new Date(Date.now() + 7200000),
+        items: [approvedLot],
+      })),
+      update: mock.fn(async ({ data }) => ({
+        id: 'auc-live-notif',
+        title: 'Phiên Cổ Vật Mùa Xuân',
+        description: 'Mô tả cổ vật',
+        status: data.status,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        createdByAdmin: { id: 'admin-1', fullName: 'Admin', avatarUrl: null },
+        seller: null,
+        items: [approvedLot],
+      })),
+    },
+    user: {
+      findMany: mock.fn(async () => [
+        { id: 'staff-1', role: 'SUPPORT_STAFF', isSellerActive: false },
+        { id: 'seller-consigned', role: 'SELLER', isSellerActive: true },
+        { id: 'seller-other', role: 'SELLER', isSellerActive: true },
+        { id: 'buyer-1', role: 'BUYER', isSellerActive: false },
+      ]),
+    },
+    notification: {
+      createMany: mock.fn(async ({ data }) => {
+        createdNotifications = data;
+        return { count: data.length };
+      }),
+    },
+  };
+
+  const service = auctionFixture(prismaMock, createMockGateway());
+  await service.adminStartAuction('auc-live-notif');
+
+  assert.equal(createdNotifications.length, 4);
+
+  const participatingSellerNotif = createdNotifications.find(
+    (n) => n.userId === 'seller-consigned',
+  );
+  assert.ok(participatingSellerNotif.title.includes('có sản phẩm của bạn'));
+  assert.ok(participatingSellerNotif.targetUrl.startsWith('/seller/auctions/auc-live-notif'));
+  assert.equal(participatingSellerNotif.type, 'AUCTION');
+
+  const staffNotif = createdNotifications.find((n) => n.userId === 'staff-1');
+  assert.ok(staffNotif.content.includes('hỗ trợ vận hành'));
+  assert.ok(staffNotif.targetUrl.startsWith('/staff/auction-support'));
+
+  const otherSellerNotif = createdNotifications.find((n) => n.userId === 'seller-other');
+  assert.ok(otherSellerNotif.title.includes('đã bắt đầu live'));
+  assert.ok(otherSellerNotif.targetUrl.startsWith('/seller/auctions/auc-live-notif'));
+
+  const buyerNotif = createdNotifications.find((n) => n.userId === 'buyer-1');
+  assert.ok(buyerNotif.title.includes('đã bắt đầu'));
+  assert.ok(buyerNotif.targetUrl.startsWith('/auction/auc-live-notif'));
+});
+
 test('adminLockConsignment locks consignment and cancels subsequent seller item registrations', async () => {
   let auctionState = {
     id: 'auc-lock-test',
