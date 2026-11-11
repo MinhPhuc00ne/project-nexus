@@ -107,6 +107,35 @@ export class BannerController {
     return this.banners.save(id, dto);
   }
 
+  /**
+   * Creates a banner directly from an existing auction without reentering its content.
+   * @param actorId Authenticated administrator or staff identifier.
+   * @param auctionId Source auction identifier.
+   * @returns Published banner with the auction title, image and canonical destination.
+   * @throws BadRequestException when the auction is nonpublic or has no image.
+   * @throws NotFoundException when the auction does not exist.
+   */
+  @Post('staff/banners/from-auction/:auctionId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPPORT_STAFF, Role.ADMIN)
+  @ApiOperation({
+    summary: 'Create a banner directly from an auction',
+    description:
+      'Copies the auction title and image, derives /auction/:id and publishes immediately. No request body is required. Add an auction image first; draft and cancelled auctions cannot be promoted.',
+  })
+  @ApiCreatedResponse({ type: BannerResponseDto })
+  @ApiBadRequestResponse({
+    description: 'Invalid UUID, nonpublic auction or missing auction image',
+  })
+  @ApiNotFoundResponse({ description: 'Auction not found' })
+  createFromAuction(
+    @CurrentUser('id') actorId: string,
+    @Param('auctionId', new ParseUUIDPipe()) auctionId: string,
+  ): Promise<BannerResponseDto> {
+    return this.banners.createFromAuction(actorId, auctionId);
+  }
+
   /** Updates content without changing creator attribution. @returns Persisted content after any audited deactivation. */
   @Put('staff/banners/:id')
   @ApiBearerAuth()

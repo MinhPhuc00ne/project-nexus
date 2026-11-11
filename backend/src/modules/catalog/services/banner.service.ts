@@ -153,6 +153,33 @@ export class BannerService {
   }
 
   /**
+   * Creates a published banner using an auction's existing title and image.
+   * @param actorId Authenticated administrator or staff identifier.
+   * @param auctionId Auction whose content and destination will be used.
+   * @returns Created banner available immediately without a publication date restriction.
+   * @throws NotFoundException when the auction does not exist.
+   * @throws BadRequestException when the auction is nonpublic or has no image.
+   * @throws ForbiddenException when the operator lacks banner management privileges.
+   */
+  async createFromAuction(actorId: string, auctionId: string): Promise<EventBanner> {
+    const auction = await this.prisma.auction.findUnique({
+      where: { id: auctionId },
+      select: { title: true, imageUrl: true, status: true },
+    });
+    if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+    if (['DRAFT', 'CANCELLED'].includes(auction.status))
+      throw new BadRequestException('Banner chỉ được dẫn tới phiên đấu giá công khai.');
+    if (!auction.imageUrl?.trim())
+      throw new BadRequestException('Vui lòng thêm ảnh cho phiên đấu giá trước khi tạo banner.');
+    return this.save(actorId, {
+      title: auction.title.trim().slice(0, 150),
+      imageUrl: auction.imageUrl.trim(),
+      auctionId,
+      isActive: true,
+    });
+  }
+
+  /**
    * Immediately deactivates any creator's banner and records an actual transition once.
    * @param id Banner identifier.
    * @param actorId Authenticated operator identifier.

@@ -34,6 +34,10 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
     auctionId = randomUUID();
   const services = {
     list: async () => [],
+    createFromAuction: async (actorId, sourceAuctionId) => {
+      calls.push({ actorId, sourceAuctionId });
+      return { id: bannerId, auctionId: sourceAuctionId };
+    },
     reorder: async (actorId, bannerIds) => {
       calls.push({ actorId, bannerIds });
       return { success: true };
@@ -106,6 +110,28 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
       targetUrl: `/auction/${auctionId}`,
     };
     assert.equal((await request('/catalog/banners')).status, 200);
+    for (const role of ['ADMIN', 'SUPPORT_STAFF']) {
+      const response = await request(`/staff/banners/from-auction/${auctionId}`, role, {
+        method: 'POST',
+      });
+      assert.equal(response.status, 201);
+      assert.equal((await response.json()).auctionId, auctionId);
+      assert.deepEqual(calls.at(-1), { actorId: accounts.get(role), sourceAuctionId: auctionId });
+    }
+    for (const [role, expected] of [
+      ['BUYER', 403],
+      [undefined, 401],
+    ]) {
+      assert.equal(
+        (await request(`/staff/banners/from-auction/${auctionId}`, role, { method: 'POST' }))
+          .status,
+        expected,
+      );
+    }
+    assert.equal(
+      (await request('/staff/banners/from-auction/invalid', 'ADMIN', { method: 'POST' })).status,
+      400,
+    );
     assert.equal((await request('/staff/banner-disable-history')).status, 401);
     assert.equal((await request('/staff/banner-disable-history', 'BUYER')).status, 403);
     for (const role of ['ADMIN', 'SUPPORT_STAFF']) {
