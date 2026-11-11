@@ -4,9 +4,9 @@ import { getStoredToken } from './auth';
 import { getMe } from './users';
 
 export interface ProfileChanges {
-  fullName: string;
-  phoneNumber: string;
-  avatarUrl: string;
+  fullName?: string;
+  phoneNumber?: string;
+  avatarUrl?: string;
 }
 
 export function validateAvatarFile(file: File): void {

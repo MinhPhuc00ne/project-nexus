@@ -288,14 +288,22 @@ export default function SellerAuctionsPage() {
                     ? 'Danh sách vật phẩm của phiên'
                     : 'Đang chờ Seller gửi vật phẩm'}
                 </span>
-                {(auction.status === 'live' || auction.status === 'scheduled') && (
-                  <SellerLink
-                    to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}
-                  >
-                    <PlusOutlined className="text-[15px]" aria-hidden="true" />
-                    Thêm sản phẩm
-                  </SellerLink>
-                )}
+                <div className="ml-auto flex items-center gap-2">
+                  {auction.status === 'live' && (
+                    <SellerLink to={`/auction/${encodeURIComponent(auction.id)}`}>
+                      <PlayCircleOutlined className="text-[15px]" aria-hidden="true" />
+                      Xem live showcase
+                    </SellerLink>
+                  )}
+                  {(auction.status === 'live' || auction.status === 'scheduled') && (
+                    <SellerLink
+                      to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}
+                    >
+                      <PlusOutlined className="text-[15px]" aria-hidden="true" />
+                      Thêm sản phẩm
+                    </SellerLink>
+                  )}
+                </div>
               </div>
             </article>
           ))}

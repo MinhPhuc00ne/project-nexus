@@ -18,6 +18,7 @@ export interface CatalogProduct {
     fullName: string;
     reputationScore?: number;
     avatarUrl?: string | null;
+    shopAvatarUrl?: string | null;
     trustLevel?: string;
     isSellerActive?: boolean;
   } | null;
@@ -218,7 +219,7 @@ function mapProduct(product: CatalogProduct): ProductDetail {
       name: product?.seller?.fullName ?? 'Chưa có thông tin người bán',
       verified: Boolean(product?.seller?.reputationScore && product.seller.reputationScore >= 80),
       // Tách riêng hoàn toàn Avatar của Shop và Avatar của Seller
-      avatarUrl: product?.seller?.avatarUrl ?? undefined,
+      avatarUrl: product?.seller?.shopAvatarUrl ?? undefined,
       trustScore: product?.seller?.reputationScore,
       trustLevel: product?.seller?.trustLevel,
       isSellerActive: product?.seller?.isSellerActive,

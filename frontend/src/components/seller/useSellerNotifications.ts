@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getStoredToken, getStoredUser } from '../../services/auth';
 import {
+  createNotificationConnection,
+  type NotificationSocket,
+} from '../../services/notificationSocket';
+import {
   getNotificationUnreadCount,
   getNotifications,
   markAllNotificationsRead,
@@ -32,6 +36,52 @@ export default function useSellerNotifications(userId: string, isOpen: boolean) 
       mounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!token || !userId) return;
+
+    let socket: NotificationSocket;
+    let disconnect: (() => void) | undefined;
+    try {
+      const connection = createNotificationConnection();
+      socket = connection.socket;
+      disconnect = connection.disconnect;
+    } catch {
+      // REST remains available when Socket.IO cannot be initialized.
+      return;
+    }
+
+    const updateUnreadCount = (nextUnreadCount: number): void => {
+      if (!isCurrentSession()) return;
+      setUnreadCount(nextUnreadCount);
+      setData((current) => (current ? { ...current, unreadCount: nextUnreadCount } : current));
+    };
+
+    socket.on('notification:connected', (event) => updateUnreadCount(event.unreadCount));
+    socket.on('notification:unread_count', (event) => updateUnreadCount(event.unreadCount));
+    socket.on('notification:new', (notification) => {
+      if (!isCurrentSession() || notification.userId !== userId) return;
+      if (typeof notification.unreadCount === 'number') updateUnreadCount(notification.unreadCount);
+      setData((current) => {
+        if (
+          !current ||
+          current.page !== 1 ||
+          current.items.some((item) => item.id === notification.id)
+        ) {
+          return current;
+        }
+        const { unreadCount: _unreadCount, ...item } = notification;
+        return {
+          ...current,
+          items: [item, ...current.items].slice(0, current.limit),
+          total: current.total + 1,
+        };
+      });
+    });
+    socket.connect();
+
+    return () => disconnect?.();
+  }, [token, userId]);
 
   useEffect(() => {
     let active = true;
