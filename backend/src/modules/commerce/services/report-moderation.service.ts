@@ -16,6 +16,40 @@ export interface ReportModerator {
   role: string;
 }
 
+/** Summarized shop identity projected for display in moderation queues. */
+export interface ReportShopSummary {
+  id: string;
+  fullName: string;
+  email: string;
+  shopAvatarUrl: string | null;
+  storeName: string;
+}
+
+/** Summarized product identity projected for display in moderation queues. */
+export interface ReportProductSummary {
+  id: string;
+  title: string;
+  status: string;
+}
+
+/** Summarized reporter identity projected for display in moderation queues. */
+export interface ReportReporterSummary {
+  id: string;
+  fullName: string;
+  email: string;
+}
+
+/** Extended violation record including display names and related entity summaries for UI presentation. */
+export interface ReportListItem extends ShopViolation {
+  shopName: string | null;
+  productTitle: string | null;
+  productName: string | null;
+  reporterName: string | null;
+  shop: ReportShopSummary | null;
+  product: ReportProductSummary | null;
+  reporter: ReportReporterSummary | null;
+}
+
 /** Provides report ownership, queue access, terminal decisions, and single-application sanctions. */
 @Injectable()
 export class ReportModerationService {
@@ -25,28 +59,94 @@ export class ReportModerationService {
   ) {}
 
   /**
-   * Retrieves a bounded report queue or a reporter's own submissions.
+   * Retrieves a bounded report queue or a reporter's own submissions with enriched display names.
    * @param query Validated filters.
    * @param reporterId Optional ownership constraint for the public authenticated route.
-   * @returns Report records and pagination metadata.
+   * @returns Enriched report records and pagination metadata.
    */
   async list(
     query: QueryReportsDto,
     reporterId?: string,
-  ): Promise<{ items: ShopViolation[]; total: number; page: number; limit: number }> {
+  ): Promise<{ items: ReportListItem[]; total: number; page: number; limit: number }> {
     const where: Prisma.ShopViolationWhereInput = {
       ...(reporterId ? { reporterId } : {}),
       ...(query.status ? { status: query.status } : {}),
     };
-    const [items, total] = await Promise.all([
+    const [rawItems, total] = await Promise.all([
       this.prisma.shopViolation.findMany({
         where,
         skip: (query.page - 1) * query.limit,
         take: query.limit,
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+        include: {
+          shop: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              shopAvatarUrl: true,
+              sellerUpgradeRequests: {
+                where: { status: 'APPROVED' },
+                orderBy: { reviewedAt: 'desc' },
+                take: 1,
+                select: { storeName: true },
+              },
+            },
+          },
+          product: {
+            select: {
+              id: true,
+              title: true,
+              status: true,
+            },
+          },
+          reporter: {
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+            },
+          },
+        },
       }),
       this.prisma.shopViolation.count({ where }),
     ]);
+
+    const items: ReportListItem[] = rawItems.map((raw) => {
+      const { shop, product, reporter, ...violation } = raw;
+      const storeName = shop?.sellerUpgradeRequests?.[0]?.storeName || shop?.fullName || null;
+      return {
+        ...violation,
+        shopName: storeName,
+        productTitle: product?.title ?? null,
+        productName: product?.title ?? null,
+        reporterName: reporter?.fullName ?? null,
+        shop: shop
+          ? {
+              id: shop.id,
+              fullName: shop.fullName,
+              email: shop.email,
+              shopAvatarUrl: shop.shopAvatarUrl,
+              storeName: storeName ?? shop.fullName,
+            }
+          : null,
+        product: product
+          ? {
+              id: product.id,
+              title: product.title,
+              status: product.status,
+            }
+          : null,
+        reporter: reporter
+          ? {
+              id: reporter.id,
+              fullName: reporter.fullName,
+              email: reporter.email,
+            }
+          : null,
+      };
+    });
+
     return { items, total, page: query.page, limit: query.limit };
   }
 
