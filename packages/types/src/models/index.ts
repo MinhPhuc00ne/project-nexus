@@ -50,6 +50,9 @@ export interface AuctionSummaryDto {
   bidIncrement: number;
   status: AuctionStatus;
   startTime: string;
+  consignmentDeadline?: string | null;
+  isConsignmentLocked?: boolean;
+  consignmentLockedAt?: string | null;
   endTime: string;
   threeModelKey?: string | null;
   imageUrl?: string | null;

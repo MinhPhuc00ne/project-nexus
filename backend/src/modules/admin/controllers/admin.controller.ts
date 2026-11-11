@@ -489,6 +489,34 @@ export class AdminController {
     return this.adminDisputesService.getDisputes(query);
   }
 
+  @Get('analytics/overview')
+  @ApiOperation({
+    summary: '[Admin] Get operational analytics for dashboard overview charts',
+    description:
+      'Aggregates platform fee revenue trend periods (7d, 30d, month, year) split into normal orders vs 3D auctions, revenue composition breakdown by source and category, and hourly bid frequency distribution for live dashboard charts.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dashboard overview analytics retrieved successfully',
+  })
+  async getDashboardAnalytics() {
+    return this.adminFinanceService.getDashboardAnalytics();
+  }
+
+  @Get('finance/analytics')
+  @ApiOperation({
+    summary: '[Admin] Get financial fee revenue and auction bid analytics',
+    description:
+      'Alternative endpoint providing platform fee trend periods, revenue composition items, and hourly bid frequency metrics for financial reporting.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Finance analytics retrieved successfully',
+  })
+  async getFinanceAnalytics() {
+    return this.adminFinanceService.getDashboardAnalytics();
+  }
+
   @Get('wallet')
   @ApiOperation({
     summary: 'Retrieve administrative platform wallet balance and cumulative commission totals',

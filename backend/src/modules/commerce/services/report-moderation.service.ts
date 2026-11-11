@@ -5,7 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, ShopViolation } from '@prisma/client';
+import { NotificationChannel, NotificationType, Prisma, ShopViolation } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import { QueryReportsDto, ReviewReportDto } from '../dtos/report-moderation.dto';
@@ -117,6 +117,20 @@ export class ReportModerationService {
           penaltyLevel: dto.penaltyType ?? null,
         },
       });
+      if (dto.status === 'CONFIRMED' || dto.status === 'DISMISSED') {
+        const isConfirmed = dto.status === 'CONFIRMED';
+        if (report.reporterId) {
+          await tx.notification.create({
+            data: {
+              userId: report.reporterId,
+              title: 'Báo cáo vi phạm đã được xử lý 🛡️',
+              content: `Báo cáo của bạn về ${report.productId ? 'sản phẩm' : 'gian hàng'} đã được Admin xử lý. Kết quả: ${isConfirmed ? 'Xác nhận có vi phạm và đã áp dụng chế tài' : 'Không phát hiện vi phạm'}. Cảm ơn bạn đã góp phần bảo vệ cộng đồng!`,
+              type: NotificationType.SYSTEM,
+              channel: NotificationChannel.IN_APP,
+            },
+          });
+        }
+      }
       await tx.eventLog.create({
         data: {
           eventName: 'ReportReviewed',

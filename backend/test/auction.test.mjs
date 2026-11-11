@@ -499,6 +499,7 @@ test('AuctionService.adminStartAuction broadcasts synchronized intro payload wit
         title: 'Phiên Đá Quý 2026',
         description: 'Mô tả phiên',
         status: 'SCHEDULED',
+        isConsignmentLocked: true,
         startTime,
         endTime,
         items: [approvedLot],
@@ -604,4 +605,250 @@ test('AuctionService.getAuctionIntroShowcase tracks live elapsedMs and reports f
   const finishedIntro = await endedIntroService.getAuctionIntroShowcase('auc-live-2');
   assert.equal(finishedIntro.isIntroActive, false);
   assert.equal(finishedIntro.elapsedMs, finishedIntro.introDurationMs);
+});
+
+test('adminCreateAuction validates startTime < consignmentDeadline < endTime down to hours and minutes', async () => {
+  const prismaMock = {
+    auction: {
+      create: mock.fn(async ({ data }) => ({
+        id: 'auc-timed',
+        ...data,
+      })),
+    },
+    user: {
+      findMany: mock.fn(async () => []),
+    },
+    notification: {
+      createMany: mock.fn(async () => ({ count: 0 })),
+    },
+  };
+  const service = auctionFixture(prismaMock, createMockGateway());
+
+  const base = Date.now() + 86400000;
+  const start = new Date(base).toISOString();
+  const deadlineInvalid = new Date(base - 1000).toISOString();
+  const deadlineValid = new Date(base + 7200000).toISOString();
+  const end = new Date(base + 14400000).toISOString();
+
+  // Rejects when consignmentDeadline is earlier than or equal to startTime
+  await assert.rejects(
+    async () => {
+      await service.adminCreateAuction('admin-1', {
+        title: 'Timed Auction',
+        startTime: start,
+        consignmentDeadline: deadlineInvalid,
+        endTime: end,
+      });
+    },
+    { message: /Hạn chót nhận ký gửi phải diễn ra sau thời gian bắt đầu mở nhận ký gửi/ },
+  );
+
+  // Rejects when consignmentDeadline is later than or equal to endTime
+  await assert.rejects(
+    async () => {
+      await service.adminCreateAuction('admin-1', {
+        title: 'Timed Auction',
+        startTime: start,
+        consignmentDeadline: new Date(base + 20000000).toISOString(),
+        endTime: end,
+      });
+    },
+    { message: /Thời gian kết thúc phiên phải diễn ra sau hạn chót nhận ký gửi/ },
+  );
+
+  // Succeeds when startTime < consignmentDeadline < endTime
+  const created = await service.adminCreateAuction('admin-1', {
+    title: 'Timed Auction Valid',
+    startTime: start,
+    consignmentDeadline: deadlineValid,
+    endTime: end,
+  });
+  assert.equal(created.id, 'auc-timed');
+  assert.equal(created.status, 'SCHEDULED');
+  assert.equal(created.isConsignmentLocked, false);
+});
+
+test('adminCreateAuction fans out role-differentiated notifications excluding Admin', async () => {
+  let createdNotifications = [];
+  const prismaMock = {
+    auction: {
+      create: mock.fn(async ({ data }) => ({
+        id: 'auc-notif-1',
+        title: data.title,
+        ...data,
+      })),
+    },
+    user: {
+      findMany: mock.fn(async () => [
+        { id: 'staff-1', role: 'SUPPORT_STAFF', isSellerActive: false },
+        { id: 'seller-1', role: 'SELLER', isSellerActive: true },
+        { id: 'buyer-1', role: 'BUYER', isSellerActive: false },
+      ]),
+    },
+    notification: {
+      createMany: mock.fn(async ({ data }) => {
+        createdNotifications = data;
+        return { count: data.length };
+      }),
+    },
+  };
+
+  const service = auctionFixture(prismaMock, createMockGateway());
+  const start = new Date(Date.now() + 3600000).toISOString();
+  const deadline = new Date(Date.now() + 7200000).toISOString();
+  const end = new Date(Date.now() + 14400000).toISOString();
+
+  await service.adminCreateAuction('admin-1', {
+    title: 'Showcase Session',
+    startTime: start,
+    consignmentDeadline: deadline,
+    endTime: end,
+  });
+
+  assert.equal(createdNotifications.length, 3);
+
+  // Staff notification: includes 3 timestamps and staff targetUrl
+  const staffNotif = createdNotifications.find((n) => n.userId === 'staff-1');
+  assert.ok(staffNotif.content.includes('hạn chót nhận ký gửi'));
+  assert.ok(staffNotif.targetUrl.startsWith('/staff/auction-support'));
+
+  // Seller notification: includes 3 timestamps and seller targetUrl
+  const sellerNotif = createdNotifications.find((n) => n.userId === 'seller-1');
+  assert.ok(sellerNotif.content.includes('hạn chót nhận ký gửi'));
+  assert.ok(sellerNotif.targetUrl.startsWith('/seller/auctions/'));
+
+  // Buyer notification: starts with consignmentDeadline, does not expose internal consignment phase
+  const buyerNotif = createdNotifications.find((n) => n.userId === 'buyer-1');
+  assert.ok(buyerNotif.title.includes('sắp diễn ra'));
+  assert.ok(buyerNotif.targetUrl.startsWith('/auction/auc-notif-1'));
+});
+
+test('adminLockConsignment locks consignment and cancels subsequent seller item registrations', async () => {
+  let auctionState = {
+    id: 'auc-lock-test',
+    title: 'Lock Test Auction',
+    status: 'SCHEDULED',
+    isConsignmentLocked: false,
+    consignmentLockedAt: null,
+    minSellerReputation: 50,
+  };
+
+  let sellerNotifications = [];
+
+  const prismaMock = {
+    auction: {
+      findUnique: mock.fn(async () => auctionState),
+      update: mock.fn(async ({ data }) => {
+        auctionState = { ...auctionState, ...data };
+        return auctionState;
+      }),
+    },
+    user: {
+      findMany: mock.fn(async () => [{ id: 'seller-1', role: 'SELLER', isSellerActive: true }]),
+      findUnique: mock.fn(async () => ({
+        id: 'seller-1',
+        role: 'SELLER',
+        isSellerActive: true,
+        reputationScore: 80,
+        isShopSuspended: false,
+        reputationLogs: [],
+      })),
+    },
+    notification: {
+      createMany: mock.fn(async ({ data }) => {
+        sellerNotifications = data;
+        return { count: data.length };
+      }),
+    },
+  };
+
+  const service = auctionFixture(prismaMock, createMockGateway());
+
+  // Lock consignment
+  const locked = await service.adminLockConsignment('auc-lock-test');
+  assert.equal(locked.isConsignmentLocked, true);
+  assert.ok(locked.consignmentLockedAt instanceof Date);
+  assert.equal(sellerNotifications.length, 1);
+  assert.ok(sellerNotifications[0].title.includes('Đã chốt sổ nhận ký gửi'));
+
+  // Attempt to register item after consignment is locked -> immediately rejected/cancelled
+  await assert.rejects(
+    async () => {
+      await service.registerAuctionItem('auc-lock-test', 'seller-1', {
+        title: 'New Item After Lock',
+        description: 'Should be rejected',
+        images: ['https://example.com/img.jpg'],
+        proposedStartingPrice: 1000000,
+        proposedBidIncrement: 50000,
+      });
+    },
+    { message: /Phiên đấu giá đã chốt sổ nhận ký gửi, yêu cầu đăng ký sản phẩm bị hủy/ },
+  );
+});
+
+test('adminStartAuction rejects if consignment is not locked first', async () => {
+  const prismaMock = {
+    auction: {
+      findUnique: mock.fn(async () => ({
+        id: 'auc-gate-1',
+        title: 'Gate Test',
+        status: 'SCHEDULED',
+        isConsignmentLocked: false,
+        startTime: new Date(Date.now() - 1000),
+        endTime: new Date(Date.now() + 3600000),
+        items: [],
+      })),
+    },
+  };
+
+  const service = auctionFixture(prismaMock, createMockGateway());
+
+  await assert.rejects(
+    async () => {
+      await service.adminStartAuction('auc-gate-1');
+    },
+    { message: /Vui lòng bấm chốt sổ nhận ký gửi trước khi bắt đầu phiên đấu giá/ },
+  );
+});
+
+test('endAuction rejects if auction is still SCHEDULED and consignment is not locked', async () => {
+  const prismaMock = {
+    auction: {
+      findUnique: mock.fn(async () => ({
+        id: 'auc-gate-end',
+        title: 'Gate End Test',
+        status: 'SCHEDULED',
+        isConsignmentLocked: false,
+        startTime: new Date(Date.now() + 3600000),
+        endTime: new Date(Date.now() + 7200000),
+        bids: [],
+      })),
+    },
+    $transaction: mock.fn(async (cb) => {
+      const tx = {
+        $queryRaw: async () => [],
+        auction: {
+          findUnique: mock.fn(async () => ({
+            id: 'auc-gate-end',
+            title: 'Gate End Test',
+            status: 'SCHEDULED',
+            isConsignmentLocked: false,
+            startTime: new Date(Date.now() + 3600000),
+            endTime: new Date(Date.now() + 7200000),
+            bids: [],
+          })),
+        },
+      };
+      return cb(tx);
+    }),
+  };
+
+  const service = auctionFixture(prismaMock, createMockGateway());
+
+  await assert.rejects(
+    async () => {
+      await service.endAuction('auc-gate-end', 'admin-1', 'ADMIN');
+    },
+    { message: /Vui lòng chốt sổ nhận ký gửi trước khi thao tác kết thúc phiên đấu giá/ },
+  );
 });

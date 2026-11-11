@@ -188,6 +188,26 @@ export class AuctionController {
   }
 
   /**
+   * Admin manually locks seller consignment registration for an auction session.
+   */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @Post('admin/:id/lock-consignment')
+  @ApiOperation({
+    summary: '[Admin] Manually lock seller consignment registration',
+    description:
+      'Manually closes seller product consignment registration for an auction session before start. Blocks subsequent seller item submissions immediately and dispatches consignment closure notifications to all active sellers.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Auction consignment locked successfully and sellers notified.',
+  })
+  async adminLockConsignment(@Param('id') id: string) {
+    return this.auctionService.adminLockConsignment(id);
+  }
+
+  /**
    * Admin starts a scheduled/draft auction session immediately and broadcasts the 3D intro showcase.
    */
   @ApiBearerAuth()
