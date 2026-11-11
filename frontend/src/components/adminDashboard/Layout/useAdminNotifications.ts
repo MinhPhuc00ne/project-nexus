@@ -34,68 +34,60 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
   }, []);
 
   useEffect(() => {
+    if (!token) return;
     let active = true;
     let fetching = false;
-    if (!token) return;
+    let timer: number | undefined;
 
-    async function refreshNotifications(): Promise<void> {
-      if (!active || fetching || lock.current || document.visibilityState === 'hidden') return;
-      if (isOpen) {
-        setRevision((current) => current + 1);
+    // Badge cập nhật cả khi đóng chuông; chỉ lấy danh sách khi đang mở.
+    // Lên lịch sau khi request kết thúc để không chồng request lúc mạng chậm.
+    async function sync(showLoading = false) {
+      if (!active || fetching) return;
+      window.clearTimeout(timer);
+      if (lock.current || document.visibilityState === 'hidden') {
+        timer = window.setTimeout(() => void sync(), 5000);
         return;
       }
       fetching = true;
       const version = mutationVersion.current;
+      const canApply = () => active && isCurrentSession() && version === mutationVersion.current;
+      if (showLoading && isOpen) setLoading(true);
       try {
-        const result = await getNotificationUnreadCount();
-        if (active && isCurrentSession() && version === mutationVersion.current)
-          setUnreadCount(result.unreadCount);
+        if (isOpen) {
+          const result = await getNotifications({ page, limit: 10 });
+          if (canApply()) {
+            const lastPage = Math.max(1, result.totalPages);
+            if (page > lastPage) setPage(lastPage);
+            else setData(result);
+            setUnreadCount(result.unreadCount);
+            setError('');
+          }
+        } else {
+          const result = await getNotificationUnreadCount();
+          if (canApply()) {
+            setUnreadCount(result.unreadCount);
+            setError('');
+          }
+        }
       } catch (cause) {
-        if (active && isCurrentSession() && version === mutationVersion.current)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải số thông báo chưa đọc.');
+        if (canApply())
+          setError(cause instanceof Error ? cause.message : 'Không thể tải thông báo.');
       } finally {
         fetching = false;
+        if (canApply()) setLoading(false);
+        if (active) timer = window.setTimeout(() => void sync(), 5000);
       }
     }
 
-    if (!isOpen) void refreshNotifications();
-    const refresh = () => {
-      void refreshNotifications();
-    };
-    const timer = window.setInterval(refresh, 30000);
-    window.addEventListener('focus', refresh);
-    document.addEventListener('visibilitychange', refresh);
+    const refreshVisible = () => void sync();
+    void sync(true);
+    window.addEventListener('focus', refreshVisible);
+    document.addEventListener('visibilitychange', refreshVisible);
     return () => {
       active = false;
-      window.clearInterval(timer);
-      window.removeEventListener('focus', refresh);
-      document.removeEventListener('visibilitychange', refresh);
-    };
-  }, [token, userId, isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || !token) return;
-    let active = true;
-    setLoading(true);
-    setError('');
-    setData(null);
-    void getNotifications({ page, limit: 10 }).then(
-      (result) => {
-        if (active && isCurrentSession()) {
-          setData(result);
-          setUnreadCount(result.unreadCount);
-          setLoading(false);
-        }
-      },
-      (cause: unknown) => {
-        if (active && isCurrentSession()) {
-          setError(cause instanceof Error ? cause.message : 'Không thể tải thông báo.');
-          setLoading(false);
-        }
-      },
-    );
-    return () => {
-      active = false;
+      window.clearTimeout(timer);
+      window.removeEventListener('focus', refreshVisible);
+      document.removeEventListener('visibilitychange', refreshVisible);
     };
   }, [isOpen, page, revision, token, userId]);
 
@@ -110,7 +102,17 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       if (!isCurrentSession()) return;
       toast.success(result.message);
       setUnreadCount((current) => (id ? (current === null ? null : Math.max(0, current - 1)) : 0));
-      setLoading(true);
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              unreadCount: id ? Math.max(0, current.unreadCount - 1) : 0,
+              items: current.items.map((item) =>
+                !id || item.id === id ? { ...item, isRead: true } : item,
+              ),
+            }
+          : current,
+      );
       setRevision((current) => current + 1);
     } catch (cause) {
       if (isCurrentSession()) {

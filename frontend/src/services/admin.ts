@@ -11,6 +11,12 @@ import api, { ApiRequestError } from './api';
 import { getStoredToken } from './auth';
 import type { AdminDisputePage, QueryAdminDisputes } from '../types/admin-dispute.types';
 import type {
+  AdminReport,
+  AdminReportPage,
+  AdminReportStatus,
+  ReviewAdminReport,
+} from '../types/admin-report.types';
+import type {
   SystemSettings,
   UpdateSystemSettingsDto,
   UpdateSystemSettingsResult,
@@ -97,6 +103,29 @@ export function listAdminDisputes(
   signal?: AbortSignal,
 ): Promise<AdminDisputePage> {
   return adminRequest<AdminDisputePage>({ url: '/admin/disputes', method: 'GET', params, signal });
+}
+
+export function resolveAdminDispute(orderId: string, verdict: 'BUYER' | 'SELLER', reason: string) {
+  return adminRequest<{ success: boolean; alreadyProcessed?: boolean }>({
+    url: `/commerce/orders/${encodeURIComponent(orderId)}/resolve-dispute`,
+    method: 'POST',
+    data: { verdict, reason },
+  });
+}
+
+export function listAdminReports(
+  params: { page?: number; limit?: number; status?: AdminReportStatus },
+  signal?: AbortSignal,
+): Promise<AdminReportPage> {
+  return adminRequest({ url: '/admin/reports', method: 'GET', params, signal });
+}
+
+export function reviewAdminReport(id: string, data: ReviewAdminReport): Promise<AdminReport> {
+  return adminRequest({
+    url: `/admin/reports/${encodeURIComponent(id)}/review`,
+    method: 'PATCH',
+    data,
+  });
 }
 
 export function getAdminSettings(signal?: AbortSignal): Promise<SystemSettings> {

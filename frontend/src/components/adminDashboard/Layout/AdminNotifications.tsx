@@ -4,6 +4,7 @@ import {
   RefreshCw as ReloadOutlined,
 } from 'lucide-react';
 import useAdminNotifications from './useAdminNotifications';
+import { Link } from 'react-router-dom';
 
 export default function AdminNotifications({
   userId,
@@ -53,7 +54,7 @@ export default function AdminNotifications({
             </button>
           </div>
           <p className="border-b border-slate-100 px-4 py-3 text-xs leading-6 text-slate-500">
-            Thông báo gửi đến tài khoản quản trị hiện tại, tự cập nhật mỗi 30 giây.
+            Thông báo gửi đến tài khoản quản trị hiện tại, tự cập nhật mỗi 5 giây.
           </p>
           {state.error && (
             <div role="alert" className="m-3 rounded-lg bg-red-50 p-3 text-xs text-red-700">
@@ -115,6 +116,18 @@ export default function AdminNotifications({
                           >
                             {new Date(item.createdAt).toLocaleString('vi-VN')}
                           </time>
+                          {item.targetUrl?.startsWith('/') && !item.targetUrl.startsWith('//') && (
+                            <Link
+                              to={item.targetUrl}
+                              onClick={() => {
+                                if (!item.isRead) void state.markRead(item.id);
+                                onToggle();
+                              }}
+                              className="block text-xs font-medium text-blue-600 hover:underline"
+                            >
+                              Xem chi tiết
+                            </Link>
+                          )}
                           {!item.isRead && (
                             <button
                               type="button"

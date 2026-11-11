@@ -7,6 +7,8 @@ export interface UserNotification {
   isRead: boolean;
   readAt: string | null;
   createdAt: string;
+  auctionId?: string | null;
+  targetUrl?: string | null;
 }
 
 export interface NotificationsPage {
