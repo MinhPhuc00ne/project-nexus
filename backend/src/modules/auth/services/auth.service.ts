@@ -22,6 +22,10 @@ import { RefreshTokenDto } from '../dtos/refresh-token.dto';
 import { RegisterDto } from '../dtos/register.dto';
 import { ResetPasswordDto } from '../dtos/reset-password.dto';
 import { VerifyEmailDto } from '../dtos/verify-email.dto';
+import {
+  INITIAL_REPUTATION_SCORE,
+  INITIAL_REPUTATION_TRUST_LEVEL,
+} from '../../users/services/reputation-policy';
 export type { UserProfileResponse } from './auth-profile.service';
 
 interface RefreshJwtPayload {
@@ -109,6 +113,8 @@ export class AuthService {
         email,
         passwordHash,
         fullName,
+        reputationScore: INITIAL_REPUTATION_SCORE,
+        trustLevel: INITIAL_REPUTATION_TRUST_LEVEL,
         verificationCode,
         codeExpiresAt,
         isVerified: false,
@@ -162,8 +168,8 @@ export class AuthService {
           isVerified: true,
           verificationCode: null,
           codeExpiresAt: null,
-          reputationScore: 100,
-          trustLevel: 'GOOD',
+          reputationScore: INITIAL_REPUTATION_SCORE,
+          trustLevel: INITIAL_REPUTATION_TRUST_LEVEL,
         },
       });
       await tx.wallet.upsert({
@@ -175,8 +181,8 @@ export class AuthService {
         data: {
           userId: user.id,
           deltaPoints: 0,
-          balanceAfter: 100,
-          reason: 'Khởi tạo 100 điểm uy tín khi xác thực tài khoản',
+          balanceAfter: INITIAL_REPUTATION_SCORE,
+          reason: `Khởi tạo ${INITIAL_REPUTATION_SCORE} điểm uy tín khi xác thực tài khoản`,
           referenceId: 'REGISTRATION_EMAIL',
         },
       });
@@ -184,8 +190,7 @@ export class AuthService {
         data: {
           userId: user.id,
           title: 'Chào mừng bạn đến với NEXUS!',
-          content:
-            'Tài khoản của bạn đã kích hoạt thành công qua Email. Điểm uy tín khởi đầu: 100 (GOOD).',
+          content: `Tài khoản của bạn đã kích hoạt thành công qua Email. Điểm uy tín khởi đầu: ${INITIAL_REPUTATION_SCORE} (${INITIAL_REPUTATION_TRUST_LEVEL}).`,
           type: 'SYSTEM',
           channel: 'IN_APP',
         },
@@ -302,6 +307,8 @@ export class AuthService {
         avatarUrl: picture,
         passwordHash: '',
         isVerified: true,
+        reputationScore: INITIAL_REPUTATION_SCORE,
+        trustLevel: INITIAL_REPUTATION_TRUST_LEVEL,
       },
     });
 

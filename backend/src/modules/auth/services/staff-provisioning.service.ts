@@ -5,12 +5,16 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, Role, ReputationTrustLevel } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'node:crypto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { MailService } from '../../../core/mail/mail.service';
 import { generateStaffBaseEmail } from '../utils/staff-email.util';
+import {
+  INITIAL_REPUTATION_SCORE,
+  INITIAL_REPUTATION_TRUST_LEVEL,
+} from '../../users/services/reputation-policy';
 
 export interface StaffInvitationInput {
   fullName: string;
@@ -113,8 +117,8 @@ export class StaffProvisioningService {
               role: Role.SUPPORT_STAFF,
               isVerified: true,
               isSellerActive: false,
-              reputationScore: 100,
-              trustLevel: ReputationTrustLevel.GOOD,
+              reputationScore: INITIAL_REPUTATION_SCORE,
+              trustLevel: INITIAL_REPUTATION_TRUST_LEVEL,
             },
           });
           await tx.wallet.create({

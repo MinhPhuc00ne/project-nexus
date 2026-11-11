@@ -304,7 +304,7 @@ test(
       );
 
       await t.test(
-        'verification initializes 100 GOOD points once, including concurrent OTP replay',
+        'verification initializes 50 PROBATION points once, including concurrent OTP replay',
         async () => {
           const account = await prisma.user.create({
             data: {
@@ -321,8 +321,8 @@ test(
             auth.verifyEmail({ email: account.email, code: '123456' }),
           ]);
           const verified = await prisma.user.findUniqueOrThrow({ where: { id: account.id } });
-          assert.equal(verified.reputationScore, 100);
-          assert.equal(verified.trustLevel, 'GOOD');
+          assert.equal(verified.reputationScore, 50);
+          assert.equal(verified.trustLevel, 'PROBATION');
           assert.equal(
             await prisma.reputationLog.count({
               where: { userId: account.id, referenceId: 'REGISTRATION_EMAIL' },
