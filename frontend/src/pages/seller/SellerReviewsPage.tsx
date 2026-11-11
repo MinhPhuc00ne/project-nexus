@@ -8,9 +8,15 @@ import {
 import { useSellerSession } from '../../components/seller/SellerSession';
 import { EmptyState, PageHeading, Panel } from '../../components/seller/SellerUI';
 import { trustLabels } from '../../components/seller/sellerData';
-import { getSellerProductReviewsApi, type ProductReviewItem } from '../../services/reviews.service';
+import {
+  getSellerProductReviewsApi,
+  getSellerShopReviewsApi,
+  type ProductReviewItem,
+  type ShopReviewItem,
+} from '../../services/reviews.service';
 
 type ReviewTab = 'all' | 'positive' | 'improve';
+type SellerReview = (ProductReviewItem | ShopReviewItem) & { kind: 'PRODUCT' | 'SHOP' };
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleString('vi-VN');
@@ -19,15 +25,29 @@ function formatDate(value: string): string {
 export default function SellerReviewsPage() {
   const user = useSellerSession();
   const [tab, setTab] = useState<ReviewTab>('all');
-  const [reviews, setReviews] = useState<ProductReviewItem[]>([]);
+  const [reviews, setReviews] = useState<SellerReview[]>([]);
+  const [reviewCounts, setReviewCounts] = useState({ product: 0, shop: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    void getSellerProductReviewsApi()
-      .then((response) => {
-        if (active) setReviews(Array.isArray(response.items) ? response.items : []);
+    void Promise.all([getSellerProductReviewsApi(), getSellerShopReviewsApi()])
+      .then(([productResponse, shopResponse]) => {
+        if (!active) return;
+        const productReviews: SellerReview[] = Array.isArray(productResponse.items)
+          ? productResponse.items.map((review) => ({ ...review, kind: 'PRODUCT' as const }))
+          : [];
+        const shopReviews: SellerReview[] = Array.isArray(shopResponse.items)
+          ? shopResponse.items.map((review) => ({ ...review, kind: 'SHOP' as const }))
+          : [];
+        setReviews(
+          [...productReviews, ...shopReviews].sort(
+            (first, second) =>
+              new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
+          ),
+        );
+        setReviewCounts({ product: productResponse.total ?? 0, shop: shopResponse.total ?? 0 });
       })
       .catch((requestError: unknown) => {
         if (!active) return;
@@ -131,9 +151,18 @@ export default function SellerReviewsPage() {
               {trustLabels[user.trustLevel] || user.trustLevel}
             </p>
           </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <p className="text-slate-500">Đánh giá sản phẩm</p>
+              <strong className="mt-1 block text-lg text-blue-700">{reviewCounts.product}</strong>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <p className="text-slate-500">Đánh giá gian hàng</p>
+              <strong className="mt-1 block text-lg text-blue-700">{reviewCounts.shop}</strong>
+            </div>
+          </div>
           <p className="mt-4 text-xs leading-6 text-slate-500">
-            API hiện chỉ hỗ trợ nhận đánh giá sản phẩm. Chức năng phản hồi đánh giá sẽ được mở khi
-            Backend bổ sung endpoint tương ứng.
+            Dữ liệu được đồng bộ từ đánh giá sản phẩm và đánh giá gian hàng của khách mua.
           </p>
         </Panel>
       </div>
@@ -174,6 +203,15 @@ export default function SellerReviewsPage() {
                     <MessageOutlined className="text-blue-600" />
                     {review.reviewer.fullName}
                   </strong>
+                  <span
+                    className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+                      review.kind === 'SHOP'
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {review.kind === 'SHOP' ? 'Đánh giá gian hàng' : 'Đánh giá sản phẩm'}
+                  </span>
                   <span className="text-sm font-semibold text-blue-700">
                     {'★'.repeat(review.rating)}
                     {'☆'.repeat(5 - review.rating)}

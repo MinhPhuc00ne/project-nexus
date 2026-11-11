@@ -80,7 +80,7 @@ export function StoreIdentity() {
       <div className="flex items-center gap-[9px] flex-wrap" data-seller="actions">
         <SellerLink to="/seller/auctions/new" secondary>
           <CodeSandboxOutlined className="text-[16px]" aria-hidden="true" />
-          Tạo phiên đấu giá
+          Gửi vật phẩm đấu giá
         </SellerLink>
         <SellerLink to="/seller/products/new">
           <PlusOutlined className="text-[17px]" aria-hidden="true" />
@@ -137,7 +137,7 @@ export function SellerStats() {
         }
       />
       <StatCard
-        label="Đấu giá 3D đang diễn ra"
+        label="Phiên đấu giá đang diễn ra"
         value={preview ? '02' : '—'}
         icon={<CodeSandboxOutlined className="text-[20px]" aria-hidden="true" />}
         detail={
@@ -219,7 +219,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
     >
       <Panel
         title="Tăng trưởng dòng tiền & doanh số"
-        subtitle="So sánh doanh thu đấu giá 3D và bán lẻ trực tiếp"
+        subtitle="So sánh doanh thu đấu giá và bán lẻ trực tiếp"
         action={
           <span className="text-[9px] text-[#8c9bb4] whitespace-nowrap" data-seller="unit">
             VND triệu
@@ -290,7 +290,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
         >
           <span>
             <i />
-            Đấu giá 3D <b>{preview ? '218,2 triệu' : '—'}</b>
+            Đấu giá <b>{preview ? '218,2 triệu' : '—'}</b>
           </span>
           <span>
             <i />
@@ -305,7 +305,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
               preview
                 ? exportCsv('doanh-thu-minh-hoa.csv', [
                     ['Dữ liệu minh họa', period],
-                    ['Đấu giá 3D', 218200000],
+                    ['Đấu giá', 218200000],
                     ['Bán lẻ', 130400000],
                   ])
                 : notify('Chưa có dữ liệu để xuất báo cáo.', 'error')
@@ -340,7 +340,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           <div>
             <span>
               <i />
-              Đấu giá tương tác 3D
+              Đấu giá
             </span>
             <b>{preview ? '62,6%' : '—'}</b>
           </div>
@@ -423,7 +423,7 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
   const { preview } = useSellerWorkspace();
   return (
     <Panel
-      title="Không gian đấu giá 3D"
+      title="Không gian đấu giá"
       subtitle="Quản lý phiên và vật phẩm sưu tầm của gian hàng"
       action={
         <Link
@@ -462,7 +462,7 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
                 >
                   <img src={auction.image} alt={auction.title} />
                   <Badge tone={auction.status === 'live' ? 'green' : 'gray'}>
-                    {auction.status === 'live' ? '● LIVE 3D' : 'Đã kết thúc'}
+                    {auction.status === 'live' ? '● ĐANG DIỄN RA' : 'Đã kết thúc'}
                   </Badge>
                 </div>
               ) : (
@@ -490,7 +490,7 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
       ) : (
         <EmptyState
           title="Sẵn sàng cho phiên đấu giá đầu tiên?"
-          description="Chuẩn bị thông tin vật phẩm và mô hình 3D của bạn."
+          description="Chuẩn bị thông tin và hình ảnh vật phẩm của bạn."
           action={
             <SellerLink to="/seller/auctions/new" secondary>
               <PlusOutlined className="text-[15px]" aria-hidden="true" />

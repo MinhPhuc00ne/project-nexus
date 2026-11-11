@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
   CheckCheck,
@@ -17,7 +17,8 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
 } from '../../services/notifications';
-import { getStoredToken } from '../../services/auth';
+import { getStoredToken, getStoredUser } from '../../services/auth';
+import { createNotificationConnection } from '../../services/notificationSocket';
 import type { UserNotification } from '../../types/notification.types';
 import NotificationPreferencesModal from '../notifications/NotificationPreferencesModal';
 
@@ -32,10 +33,16 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   onClose,
   onCountChange,
 }) => {
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const [showPrefsModal, setShowPrefsModal] = useState(false);
   const token = getStoredToken();
+  const onCountChangeRef = useRef(onCountChange);
+
+  useEffect(() => {
+    onCountChangeRef.current = onCountChange;
+  }, [onCountChange]);
 
   const loadNotifications = async () => {
     if (!token) return;
@@ -60,6 +67,32 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       void loadNotifications();
     }
   }, [isOpen, token]);
+
+  useEffect(() => {
+    const userId = getStoredUser()?.id;
+    if (!token || !userId) return;
+
+    const connection = createNotificationConnection();
+    const appliesToCurrentUser = (eventUserId: string) => eventUserId === userId;
+
+    connection.socket.on('notification:connected', (event) => {
+      if (appliesToCurrentUser(event.userId)) onCountChangeRef.current?.(event.unreadCount);
+    });
+    connection.socket.on('notification:unread_count', (event) => {
+      if (appliesToCurrentUser(event.userId)) onCountChangeRef.current?.(event.unreadCount);
+    });
+    connection.socket.on('notification:new', (notification) => {
+      if (!appliesToCurrentUser(notification.userId)) return;
+      setNotifications((current) =>
+        [notification, ...current.filter((item) => item.id !== notification.id)].slice(0, 10),
+      );
+      if (typeof notification.unreadCount === 'number') {
+        onCountChangeRef.current?.(notification.unreadCount);
+      }
+    });
+    connection.connect();
+    return () => connection.disconnect();
+  }, [token]);
 
   if (!isOpen) return null;
 
@@ -89,6 +122,14 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       if (onCountChange) onCountChange(0);
     } catch (err) {
       console.warn('Failed to mark all read:', err);
+    }
+  };
+
+  const handleNotificationClick = (item: UserNotification) => {
+    void handleMarkOne(item);
+    if (item.targetUrl?.startsWith('/') && !item.targetUrl.startsWith('//')) {
+      navigate(item.targetUrl);
+      onClose?.();
     }
   };
 
@@ -203,7 +244,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             notifications.map((item) => (
               <div
                 key={item.id}
-                onClick={() => handleMarkOne(item)}
+                onClick={() => handleNotificationClick(item)}
                 className={`flex gap-3 px-4 py-3 transition-colors hover:bg-slate-50/80 cursor-pointer ${
                   !item.isRead ? 'bg-orange-50/40' : ''
                 }`}

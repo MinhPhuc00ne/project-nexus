@@ -56,7 +56,7 @@ function toSellerAuction(auction: AuctionEntity): SellerAuction {
     bids: auction.totalBidsCount ?? 0,
     itemCount: auction.items?.length ?? (auction.product ? 1 : 0),
     status,
-    model: auction.product?.threeModelKey ? '3D' : 'Sản phẩm',
+    model: 'Sản phẩm',
   };
 }
 
@@ -102,7 +102,7 @@ export default function SellerAuctionsPage() {
       data-seller="page-stack"
     >
       <PageHeading
-        title="Quản trị đấu giá 3D"
+        title="Quản trị đấu giá"
         description="Một không gian cho vật phẩm độc bản và những phiên đấu giá của bạn."
         actions={
           <>
@@ -117,7 +117,7 @@ export default function SellerAuctionsPage() {
           </>
         }
       />
-      <ModuleNotice label="Phiên đấu giá và phòng 3D" />
+      <ModuleNotice label="Phiên đấu giá" />
       <div
         className="grid [grid-template-columns:repeat(4,_minmax(0,_1fr))] gap-4 min-[1600px]:gap-5 max-[1250px]:gap-3 max-[1050px]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] max-[540px]:gap-2.5"
         data-seller="stats-grid"
@@ -225,7 +225,7 @@ export default function SellerAuctionsPage() {
                 </Badge>
                 <span>
                   <CodeSandboxOutlined className="text-[13px]" aria-hidden="true" />
-                  Mô hình {auction.model}
+                  {auction.model}
                 </span>
               </div>
               <div
@@ -244,7 +244,7 @@ export default function SellerAuctionsPage() {
                       aria-hidden="true"
                     />
                   )}
-                  <span>3D COLLECTION</span>
+                  <span>BỘ SƯU TẬP ĐẤU GIÁ</span>
                 </div>
                 <div>
                   <small>LÔ #{auction.id}</small>
@@ -288,14 +288,20 @@ export default function SellerAuctionsPage() {
                     ? 'Danh sách vật phẩm của phiên'
                     : 'Đang chờ Seller gửi vật phẩm'}
                 </span>
-                {(auction.status === 'live' || auction.status === 'scheduled') && (
-                  <SellerLink
-                    to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}
-                  >
-                    <PlusOutlined className="text-[15px]" aria-hidden="true" />
-                    Thêm sản phẩm
+                <div className="ml-auto flex items-center gap-2">
+                  <SellerLink secondary to={`/seller/auctions/${encodeURIComponent(auction.id)}`}>
+                    <PlayCircleOutlined className="text-[15px]" aria-hidden="true" />
+                    Xem phiên
                   </SellerLink>
-                )}
+                  {(auction.status === 'live' || auction.status === 'scheduled') && (
+                    <SellerLink
+                      to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}
+                    >
+                      <PlusOutlined className="text-[15px]" aria-hidden="true" />
+                      Thêm sản phẩm
+                    </SellerLink>
+                  )}
+                </div>
               </div>
             </article>
           ))}
@@ -372,8 +378,10 @@ export default function SellerAuctionsPage() {
           data-seller="policy"
         >
           <CodeSandboxOutlined className="text-[22px]" aria-hidden="true" />
-          <h3>Chuẩn bị mô hình 3D</h3>
-          <p>Lựa chọn mô hình phù hợp, thông tin vật phẩm rõ ràng và hình ảnh có chất lượng.</p>
+          <h3>Chuẩn bị vật phẩm</h3>
+          <p>
+            Chuẩn bị thông tin vật phẩm rõ ràng và hình ảnh có chất lượng trước khi gửi thẩm định.
+          </p>
         </div>
       </div>
     </div>

@@ -62,7 +62,7 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
         >
           {[
             ['/seller/orders', TruckOutlined, 'Quản lý đơn hàng', 'Đóng gói & vận chuyển'],
-            ['/seller/auctions', CodeSandboxOutlined, 'Đấu giá 3D', 'Vật phẩm & phiên live'],
+            ['/seller/auctions', CodeSandboxOutlined, 'Đấu giá', 'Vật phẩm & phiên đấu giá'],
             ['/seller/products', ShopOutlined, 'Kho & Sản phẩm', 'Danh mục & tồn kho'],
             ['/seller/finance', WalletOutlined, 'Ví & Tài chính', 'Số dư & ký quỹ'],
           ].map(([to, Icon, title, text]) => {

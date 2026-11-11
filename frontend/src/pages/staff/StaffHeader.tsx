@@ -20,7 +20,8 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { clearAuthSession, type AuthUser } from '../../services/auth';
+import { clearAuthSession, getStoredToken, type AuthUser } from '../../services/auth';
+import { createNotificationConnection } from '../../services/notificationSocket';
 import { useToast } from '../../components/ToastNotification';
 import {
   getNotifications,
@@ -117,6 +118,29 @@ export default function StaffHeader({
     return () => {
       cancelled = true;
     };
+  }, [account?.id]);
+
+  useEffect(() => {
+    const userId = account?.id;
+    if (!userId || !getStoredToken()) return;
+
+    const connection = createNotificationConnection();
+    const isForCurrentUser = (eventUserId: string) => eventUserId === userId;
+    connection.socket.on('notification:connected', (event) => {
+      if (isForCurrentUser(event.userId)) setUnreadCount(event.unreadCount);
+    });
+    connection.socket.on('notification:unread_count', (event) => {
+      if (isForCurrentUser(event.userId)) setUnreadCount(event.unreadCount);
+    });
+    connection.socket.on('notification:new', (notification) => {
+      if (!isForCurrentUser(notification.userId)) return;
+      setNotifications((items) =>
+        [notification, ...items.filter((item) => item.id !== notification.id)].slice(0, 6),
+      );
+      if (typeof notification.unreadCount === 'number') setUnreadCount(notification.unreadCount);
+    });
+    connection.connect();
+    return () => connection.disconnect();
   }, [account?.id]);
 
   useEffect(() => {
@@ -378,6 +402,10 @@ export default function StaffHeader({
                                 : 'Không cập nhật được thông báo.',
                             );
                           }
+                        }
+                        if (item.targetUrl?.startsWith('/') && !item.targetUrl.startsWith('//')) {
+                          navigate(item.targetUrl);
+                          setIsNotificationsOpen(false);
                         }
                       }}
                       className={`block w-full border-b border-slate-50 px-4 py-3 text-left hover:bg-slate-50 ${item.isRead ? 'bg-white' : 'bg-blue-50/50'}`}

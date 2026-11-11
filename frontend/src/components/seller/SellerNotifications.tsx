@@ -3,6 +3,7 @@ import {
   Check as CheckOutlined,
   RefreshCw as ReloadOutlined,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useSellerNotifications from './useSellerNotifications';
 
 export default function SellerNotifications({
@@ -14,8 +15,15 @@ export default function SellerNotifications({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const navigate = useNavigate();
   const state = useSellerNotifications(userId, isOpen);
   const busy = state.loading || Boolean(state.pending);
+
+  const openDispute = (notificationId: string, targetUrl?: string | null): void => {
+    void state.markRead(notificationId);
+    navigate(targetUrl?.startsWith('/seller/') ? targetUrl : '/seller/disputes');
+  };
+
   return (
     <>
       <button
@@ -112,6 +120,15 @@ export default function SellerNotifications({
                           >
                             {new Date(item.createdAt).toLocaleString('vi-VN')}
                           </time>
+                          {item.type === 'DISPUTE' && (
+                            <button
+                              type="button"
+                              onClick={() => openDispute(item.id, item.targetUrl)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
+                            >
+                              Xem khiếu nại
+                            </button>
+                          )}
                           {!item.isRead && (
                             <button
                               type="button"

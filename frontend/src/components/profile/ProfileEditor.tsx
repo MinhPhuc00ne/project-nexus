@@ -13,16 +13,19 @@ import { useToast } from '../ToastNotification';
 const inputClass =
   'mt-1.5 w-full rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-500';
 
+type ProfileForm = Required<ProfileChanges>;
+
 export default function ProfileEditor({ profile }: { profile: UserProfile }) {
   const { refreshProfile, setProfile } = useAuth();
   const location = useLocation();
   const toast = useToast();
-  const initial = (): ProfileChanges => ({
+  const initial = (): ProfileForm => ({
     fullName: profile.fullName,
     phoneNumber: profile.phoneNumber || '',
     avatarUrl: profile.avatarUrl || '',
   });
-  const [form, setForm] = useState(initial);
+  const [form, setForm] = useState<ProfileForm>(initial);
+  const [savedForm, setSavedForm] = useState<ProfileForm>(initial);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
@@ -41,25 +44,39 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
   async function save(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (!canEdit || locked.current) return;
-    const changes = {
+    const normalizedForm: ProfileForm = {
       fullName: form.fullName.trim(),
       phoneNumber: form.phoneNumber.trim(),
       avatarUrl: form.avatarUrl.trim(),
     };
     setError('');
-    if (changes.fullName.length < 2 || changes.fullName.length > 100) {
+    if (normalizedForm.fullName.length < 2 || normalizedForm.fullName.length > 100) {
       setError('Họ tên cần từ 2 đến 100 ký tự.');
       return;
     }
-    if (changes.phoneNumber && !/^\+?[0-9]{9,15}$/.test(changes.phoneNumber)) {
+    if (normalizedForm.phoneNumber && !/^\+?[0-9]{9,15}$/.test(normalizedForm.phoneNumber)) {
       setError('Số điện thoại cần từ 9 đến 15 chữ số.');
       return;
     }
+    const changes: ProfileChanges = {};
+    if (normalizedForm.fullName !== savedForm.fullName) changes.fullName = normalizedForm.fullName;
+    if (normalizedForm.phoneNumber !== savedForm.phoneNumber)
+      changes.phoneNumber = normalizedForm.phoneNumber;
+    if (avatarFile || normalizedForm.avatarUrl !== savedForm.avatarUrl)
+      changes.avatarUrl = normalizedForm.avatarUrl;
+
+    if (Object.keys(changes).length === 0) {
+      setError('Chưa có thông tin nào thay đổi.');
+      return;
+    }
+
     locked.current = true;
     setPending(true);
     try {
       const saved = await updateMyProfile(changes, password, avatarFile);
-      setForm(saved);
+      const nextForm = { ...normalizedForm, ...saved };
+      setForm(nextForm);
+      setSavedForm(nextForm);
       setAvatarFile(null);
       setProfile((current) => (current?.id === profile.id ? { ...current, ...saved } : current));
       await refreshProfile();

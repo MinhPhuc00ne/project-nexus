@@ -31,6 +31,15 @@ export interface ShopReviewsResponse {
   limit: number;
 }
 
+export interface SellerShopReviewsResponse extends ShopReviewsResponse {
+  stats: {
+    averageRating: number;
+    totalReviews: number;
+    distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+  };
+  totalPages: number;
+}
+
 function pageQuery(page: number, limit: number): string {
   return `?page=${encodeURIComponent(String(page))}&limit=${encodeURIComponent(String(limit))}`;
 }
@@ -57,6 +66,13 @@ export function getShopReviewsApi(
 
 export function getSellerProductReviewsApi(page = 1, limit = 50): Promise<ProductReviewsResponse> {
   return apiRequest<ProductReviewsResponse>(`/seller/product-reviews${pageQuery(page, limit)}`, {
+    requireAuth: true,
+  });
+}
+
+/** Shop reviews received by the currently authenticated seller. */
+export function getSellerShopReviewsApi(page = 1, limit = 50): Promise<SellerShopReviewsResponse> {
+  return apiRequest<SellerShopReviewsResponse>(`/seller/reviews${pageQuery(page, limit)}`, {
     requireAuth: true,
   });
 }

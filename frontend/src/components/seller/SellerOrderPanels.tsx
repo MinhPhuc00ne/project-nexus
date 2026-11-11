@@ -40,7 +40,7 @@ export function OrderDetail({ order }: { order: SellerOrder }) {
         </div>
         <div>
           <small>HÌNH THỨC</small>
-          <strong>{order.type === 'auction' ? 'Đấu giá 3D' : 'Mua ngay'}</strong>
+          <strong>{order.type === 'auction' ? 'Đấu giá' : 'Mua ngay'}</strong>
         </div>
       </div>
       <div
