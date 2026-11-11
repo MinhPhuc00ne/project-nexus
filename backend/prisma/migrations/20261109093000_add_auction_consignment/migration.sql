@@ -3,35 +3,26 @@ CREATE TYPE "AuctionItemStatus" AS ENUM ('PENDING_REVIEW', 'APPROVED', 'REJECTED
 
 -- AlterEnum
 BEGIN;
-
 CREATE TYPE "CarrierName_new" AS ENUM ('GHN');
 ALTER TABLE "shipments" ALTER COLUMN "carrier" DROP DEFAULT;
 ALTER TABLE "shipments" ALTER COLUMN "carrier" TYPE "CarrierName_new" USING ("carrier"::text::"CarrierName_new");
-
 ALTER TYPE "CarrierName" RENAME TO "CarrierName_old";
-
 ALTER TYPE "CarrierName_new" RENAME TO "CarrierName";
 DROP TYPE "CarrierName_old";
 ALTER TABLE "shipments" ALTER COLUMN "carrier" SET DEFAULT 'GHN';
-
 COMMIT;
 
 -- AlterEnum
 BEGIN;
-
 CREATE TYPE "PaymentProvider_new" AS ENUM ('PAYOS', 'WALLET', 'COD');
-
 ALTER TABLE "payments" ALTER COLUMN "provider" TYPE "PaymentProvider_new" USING ("provider"::text::"PaymentProvider_new");
-
 ALTER TYPE "PaymentProvider" RENAME TO "PaymentProvider_old";
-
 ALTER TYPE "PaymentProvider_new" RENAME TO "PaymentProvider";
 DROP TYPE "PaymentProvider_old";
 COMMIT;
 
 -- AlterEnum
 ALTER TYPE "WalletTransactionType" ADD VALUE 'AUCTION_BID_LOCK';
-
 ALTER TYPE "WalletTransactionType" ADD VALUE 'AUCTION_BID_REFUND';
 
 -- DropForeignKey
@@ -86,8 +77,6 @@ ALTER COLUMN "status" SET DEFAULT 'OPEN',
 ALTER COLUMN "updated_at" DROP DEFAULT;
 
 -- CreateTable
-
-
 CREATE TABLE "auction_items" (
     "id" TEXT NOT NULL,
     "auction_id" TEXT NOT NULL,
@@ -132,28 +121,22 @@ CREATE INDEX IF NOT EXISTS "chat_conversations_participant1_id_participant2_id_i
 CREATE INDEX IF NOT EXISTS "chat_conversations_context_id_context_type_idx" ON "chat_conversations"("context_id", "context_type");
 
 -- AddForeignKey
-ALTER TABLE "auctions"
-ADD CONSTRAINT "auctions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "auctions" ADD CONSTRAINT "auctions_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auctions"
-ADD CONSTRAINT "auctions_seller_id_fkey" FOREIGN KEY ("seller_id") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "auctions" ADD CONSTRAINT "auctions_seller_id_fkey" FOREIGN KEY ("seller_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auctions"
-ADD CONSTRAINT "auctions_created_by_admin_id_fkey" FOREIGN KEY ("created_by_admin_id") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "auctions" ADD CONSTRAINT "auctions_created_by_admin_id_fkey" FOREIGN KEY ("created_by_admin_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auction_items"
-ADD CONSTRAINT "auction_items_auction_id_fkey" FOREIGN KEY ("auction_id") REFERENCES "auctions" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "auction_items" ADD CONSTRAINT "auction_items_auction_id_fkey" FOREIGN KEY ("auction_id") REFERENCES "auctions"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auction_items"
-ADD CONSTRAINT "auction_items_seller_id_fkey" FOREIGN KEY ("seller_id") REFERENCES "users" ("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "auction_items" ADD CONSTRAINT "auction_items_seller_id_fkey" FOREIGN KEY ("seller_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "auction_items"
-ADD CONSTRAINT "auction_items_reviewed_by_admin_id_fkey" FOREIGN KEY ("reviewed_by_admin_id") REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "auction_items" ADD CONSTRAINT "auction_items_reviewed_by_admin_id_fkey" FOREIGN KEY ("reviewed_by_admin_id") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "chat_conversations" ADD CONSTRAINT "chat_conversations_participant1_id_fkey" FOREIGN KEY ("participant1_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -173,7 +156,7 @@ ALTER TABLE "chat_messages" ADD CONSTRAINT "chat_messages_sender_id_fkey" FOREIG
 -- AddForeignKey
 ALTER TABLE "chat_auto_replies" ADD CONSTRAINT "chat_auto_replies_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey  
+-- AddForeignKey
 ALTER TABLE "chat_auto_replies" ADD CONSTRAINT "chat_auto_replies_cancelled_by_fkey" FOREIGN KEY ("cancelled_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- RenameIndex
