@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Wallet } from 'lucide-react';
-import Popup from '../../Popup';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
-import { DetailFields } from '../shared/CommerceUI';
 import { formatMoney } from '../shared/adminData';
 import { getAdminWalletTransactions } from '../../../services/admin';
 import type {
@@ -11,52 +9,9 @@ import type {
   AdminWalletTransactionPage,
   AdminWalletTransactionType,
 } from '../../../types/admin-wallet.types';
-
-const typeLabels: Record<AdminWalletTransactionType, string> = {
-  DEPOSIT: 'Nạp tiền',
-  WITHDRAW: 'Rút tiền',
-  ESCROW_LOCK: 'Giữ ký quỹ',
-  ESCROW_PAYOUT: 'Giải ngân ký quỹ',
-  ESCROW_REFUND: 'Hoàn ký quỹ',
-  ORDER_PAYMENT: 'Thanh toán đơn hàng',
-  PLATFORM_FEE: 'Phí sàn',
-};
-const statusLabels = { PENDING: 'Đang xử lý', SUCCESS: 'Thành công', FAILED: 'Thất bại' };
-const date = (value: string) => new Date(value).toLocaleString('vi-VN');
-
-export function buildTransactionCsv(rows: AdminWalletTransaction[]): string {
-  const cell = (value: string | number) => {
-    let text = String(value);
-    if (typeof value === 'string' && /^[=+\-@\t\r\n]/.test(text)) text = `'${text}`;
-    return `"${text.replace(/"/g, '""')}"`;
-  };
-  const header = [
-    'Mã giao dịch',
-    'Mã tham chiếu',
-    'Loại giao dịch',
-    'Số tiền',
-    'Thời gian',
-    'Trạng thái',
-    'Mô tả',
-  ];
-  return (
-    '\uFEFF' +
-    [
-      header,
-      ...rows.map((row) => [
-        row.id,
-        row.referenceId ?? '',
-        typeLabels[row.type] ?? row.type,
-        row.amount,
-        date(row.createdAt),
-        statusLabels[row.status] ?? row.status,
-        row.description ?? '',
-      ]),
-    ]
-      .map((row) => row.map(cell).join(','))
-      .join('\r\n')
-  );
-}
+import { typeLabels, statusLabels, date } from './transactionPresentation';
+import { buildTransactionCsv } from './transactionCsv';
+import TransactionDetailDialog from './TransactionDetailDialog';
 
 export default function TransactionHistory() {
   const [params, setParams] = useSearchParams();
@@ -345,58 +300,9 @@ export default function TransactionHistory() {
           )
         )}
       </Panel>
-      <Popup isOpen={!!detail} onClose={() => setDetail(null)} title="Chi tiết giao dịch" size="lg">
-        {detail && (
-          <div className="space-y-5">
-            <DetailFields
-              fields={[
-                ['Mã giao dịch', detail.id],
-                ['Mã ví', detail.walletId],
-                ['Mã tham chiếu', detail.referenceId],
-                ['Loại giao dịch', typeLabels[detail.type] ?? detail.type],
-                ['Số tiền', formatMoney(detail.amount)],
-                ['Trạng thái giao dịch', statusLabels[detail.status] ?? detail.status],
-                ['Thời gian', date(detail.createdAt)],
-                ['Mô tả', detail.description],
-              ]}
-            />
-            {detail.orderDetails && (
-              <>
-                <DetailFields
-                  fields={[
-                    ['Mã đơn hàng', detail.orderDetails.orderId],
-                    [
-                      'Người mua',
-                      [detail.orderDetails.buyerName, detail.orderDetails.buyerEmail]
-                        .filter(Boolean)
-                        .join(' · '),
-                    ],
-                    [
-                      'Người bán',
-                      [detail.orderDetails.shopName, detail.orderDetails.sellerEmail]
-                        .filter(Boolean)
-                        .join(' · '),
-                    ],
-                    ['Tiền hàng', formatMoney(detail.orderDetails.subtotal)],
-                    ['Phí vận chuyển', formatMoney(detail.orderDetails.shippingFee)],
-                    ['Tổng tiền đơn', formatMoney(detail.orderDetails.totalAmount)],
-                    ['Phí sàn của đơn', formatMoney(detail.orderDetails.platformFee)],
-                    ['Tiền giải ngân người bán', formatMoney(detail.orderDetails.sellerPayout)],
-                    ['Đơn vị vận chuyển', detail.orderDetails.carrier],
-                    ['Mã vận đơn', detail.orderDetails.waybillCode],
-                  ]}
-                />
-                <Link
-                  className="text-sm font-semibold text-primary underline"
-                  to={`/admin/orders?order=${encodeURIComponent(detail.orderDetails.orderId)}`}
-                >
-                  Xem đơn hàng liên quan
-                </Link>
-              </>
-            )}
-          </div>
-        )}
-      </Popup>
+      <TransactionDetailDialog detail={detail} onClose={() => setDetail(null)} />
     </div>
   );
 }
+
+export { buildTransactionCsv } from './transactionCsv';
