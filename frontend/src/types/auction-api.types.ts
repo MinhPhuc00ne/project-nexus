@@ -53,6 +53,17 @@ export interface AuctionConsignmentItem {
   proposedReservePrice?: number | string | null;
   bidIncrement?: number | string | null;
   proposedBidIncrement?: number | string | null;
+  currentHighestBid?: number | string | null;
+  totalBidsCount?: number;
+  lotStatus?: AuctionStatus;
+  startTime?: string | null;
+  endTime?: string | null;
+  originalEndTime?: string;
+  isExtended?: boolean;
+  weightGrams?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
   seller?: {
     id: string;
     fullName: string;
@@ -92,8 +103,8 @@ export interface MyBidItem {
 
 export interface AuctionEntity {
   id: string;
-  productId: string;
-  sellerId: string;
+  productId?: string | null;
+  sellerId?: string | null;
   title: string;
   description?: string;
   imageUrl?: string | null;
@@ -111,6 +122,9 @@ export interface AuctionEntity {
   originalEndTime: string;
   isExtended: boolean;
   totalBidsCount: number;
+  consignmentDeadline?: string | null;
+  isConsignmentLocked?: boolean;
+  consignmentLockedAt?: string | null;
   product?: AuctionProduct;
   seller?: AuctionSeller;
   bids?: AuctionBidItem[];
@@ -189,6 +203,10 @@ export interface RegisterAuctionItemInput {
   appraisalAgency?: string;
   certificateImages: string[];
   certificateIssueDate?: string;
+  weightGrams?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
 }
 
 export interface AdminAuctionItem extends Omit<
@@ -269,6 +287,10 @@ export interface SellerAuctionConsignment {
   proposedStartingPrice: number;
   proposedReservePrice?: number | null;
   proposedBidIncrement: number;
+  weightGrams?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
   appraisalCertificateNumber?: string | null;
   appraisalAgency?: string | null;
   certificateImages: string[];
@@ -284,6 +306,8 @@ export interface SellerAuctionConsignment {
     startTime: string;
     endTime: string;
     minSellerReputation: number;
+    consignmentDeadline?: string | null;
+    isConsignmentLocked?: boolean;
   };
 }
 

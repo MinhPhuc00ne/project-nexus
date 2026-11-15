@@ -57,7 +57,17 @@ function toSellerAuction(auction: AuctionEntity): SellerAuction {
     itemCount: auction.items?.length ?? (auction.product ? 1 : 0),
     status,
     model: 'Sản phẩm',
+    consignmentDeadline: auction.consignmentDeadline,
+    isConsignmentLocked: auction.isConsignmentLocked,
   };
+}
+
+function canSubmitConsignment(auction: SellerAuction): boolean {
+  return (
+    auction.status === 'scheduled' &&
+    !auction.isConsignmentLocked &&
+    (!auction.consignmentDeadline || new Date(auction.consignmentDeadline).getTime() > Date.now())
+  );
 }
 
 export default function SellerAuctionsPage() {
@@ -293,7 +303,7 @@ export default function SellerAuctionsPage() {
                     <PlayCircleOutlined className="text-[15px]" aria-hidden="true" />
                     Xem phiên
                   </SellerLink>
-                  {(auction.status === 'live' || auction.status === 'scheduled') && (
+                  {canSubmitConsignment(auction) && (
                     <SellerLink
                       to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}
                     >

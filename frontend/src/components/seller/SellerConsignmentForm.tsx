@@ -114,12 +114,43 @@ export default function SellerConsignmentForm({
     }
     const startingPrice = Number(form.proposedStartingPrice);
     const bidIncrement = Number(form.proposedBidIncrement);
+    const reservePrice = form.proposedReservePrice.trim()
+      ? Number(form.proposedReservePrice)
+      : undefined;
+    const weightGrams = Number(form.weightGrams);
+    const lengthCm = Number(form.lengthCm);
+    const widthCm = Number(form.widthCm);
+    const heightCm = Number(form.heightCm);
     if (!Number.isFinite(startingPrice) || startingPrice < 10000) {
       notify('Giá khởi điểm phải từ 10.000 ₫.', 'error');
       return;
     }
     if (!Number.isFinite(bidIncrement) || bidIncrement < 1000) {
       notify('Bước giá tối thiểu là 1.000 ₫.', 'error');
+      return;
+    }
+    if (
+      reservePrice !== undefined &&
+      (!Number.isFinite(reservePrice) || reservePrice > startingPrice)
+    ) {
+      notify('Giá sàn phải nhỏ hơn hoặc bằng giá khởi điểm.', 'error');
+      return;
+    }
+    if (
+      !Number.isInteger(weightGrams) ||
+      weightGrams < 1 ||
+      weightGrams > 50000 ||
+      !Number.isInteger(lengthCm) ||
+      lengthCm < 1 ||
+      lengthCm > 200 ||
+      !Number.isInteger(widthCm) ||
+      widthCm < 1 ||
+      widthCm > 200 ||
+      !Number.isInteger(heightCm) ||
+      heightCm < 1 ||
+      heightCm > 200
+    ) {
+      notify('Kích thước kiện hàng phải là số nguyên trong giới hạn cho phép.', 'error');
       return;
     }
 
@@ -134,7 +165,13 @@ export default function SellerConsignmentForm({
         description: form.description.trim(),
         images,
         proposedStartingPrice: startingPrice,
+        ...(reservePrice !== undefined ? { proposedReservePrice: reservePrice } : {}),
         proposedBidIncrement: bidIncrement,
+        weightGrams,
+        lengthCm,
+        widthCm,
+        heightCm,
+        ...(form.threeModelKey.trim() ? { threeModelKey: form.threeModelKey.trim() } : {}),
         ...(form.appraisalCertificateNumber.trim()
           ? { appraisalCertificateNumber: form.appraisalCertificateNumber.trim() }
           : {}),
@@ -176,7 +213,7 @@ export default function SellerConsignmentForm({
               </option>
               {eligibleAuctions.map((auction) => (
                 <option key={auction.id} value={auction.id}>
-                  {auction.title} · {formatConsignmentDate(auction.startTime)}
+                  {auction.title} · Bắt đầu {formatConsignmentDate(auction.startTime)}
                 </option>
               ))}
             </select>
@@ -185,6 +222,17 @@ export default function SellerConsignmentForm({
                 Hiện chưa có phiên ở trạng thái nhận ký gửi. Hãy chờ Admin mở phiên mới.
               </small>
             )}
+            {form.auctionId &&
+              (() => {
+                const selectedAuction = eligibleAuctions.find(
+                  (auction) => auction.id === form.auctionId,
+                );
+                return selectedAuction?.consignmentDeadline ? (
+                  <small className="mt-1 block font-normal text-slate-500">
+                    Hạn nhận ký gửi: {formatConsignmentDate(selectedAuction.consignmentDeadline)}
+                  </small>
+                ) : null;
+              })()}
           </label>
           <label className="md:col-span-2">
             Tên vật phẩm *
@@ -226,6 +274,72 @@ export default function SellerConsignmentForm({
               type="number"
               value={form.proposedBidIncrement}
               onChange={(event) => updateForm('proposedBidIncrement', event.target.value)}
+            />
+          </label>
+          <label>
+            Giá sàn (₫)
+            <input
+              min="10000"
+              type="number"
+              value={form.proposedReservePrice}
+              onChange={(event) => updateForm('proposedReservePrice', event.target.value)}
+              placeholder="Không bắt buộc"
+            />
+          </label>
+          <label>
+            Mã mô hình 3D (GLB)
+            <input
+              value={form.threeModelKey}
+              onChange={(event) => updateForm('threeModelKey', event.target.value)}
+              placeholder="models/ten-vat-pham.glb"
+            />
+          </label>
+        </div>
+      </Panel>
+
+      <Panel
+        title="Kích thước đóng gói"
+        subtitle="Dùng để tính phí vận chuyển khi vật phẩm được bán."
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 [&_label]:space-y-1.5 [&_label]:text-sm [&_label]:font-medium [&_label]:text-slate-700 [&_input]:w-full [&_input]:rounded-lg [&_input]:border [&_input]:border-slate-200 [&_input]:bg-white [&_input]:px-3 [&_input]:py-2.5 [&_input]:text-sm">
+          <label>
+            Khối lượng (gram) *
+            <input
+              min="1"
+              max="50000"
+              type="number"
+              value={form.weightGrams}
+              onChange={(event) => updateForm('weightGrams', event.target.value)}
+            />
+          </label>
+          <label>
+            Dài (cm) *
+            <input
+              min="1"
+              max="200"
+              type="number"
+              value={form.lengthCm}
+              onChange={(event) => updateForm('lengthCm', event.target.value)}
+            />
+          </label>
+          <label>
+            Rộng (cm) *
+            <input
+              min="1"
+              max="200"
+              type="number"
+              value={form.widthCm}
+              onChange={(event) => updateForm('widthCm', event.target.value)}
+            />
+          </label>
+          <label>
+            Cao (cm) *
+            <input
+              min="1"
+              max="200"
+              type="number"
+              value={form.heightCm}
+              onChange={(event) => updateForm('heightCm', event.target.value)}
             />
           </label>
         </div>

@@ -33,7 +33,13 @@ export default function SellerAuctionConsignmentPage(): ReactElement {
 
   const eligibleAuctions = useMemo(
     () =>
-      auctions.filter((auction) => auction.status === 'SCHEDULED' || auction.status === 'ACTIVE'),
+      auctions.filter(
+        (auction) =>
+          auction.status === 'SCHEDULED' &&
+          !auction.isConsignmentLocked &&
+          (!auction.consignmentDeadline ||
+            new Date(auction.consignmentDeadline).getTime() > Date.now()),
+      ),
     [auctions],
   );
 

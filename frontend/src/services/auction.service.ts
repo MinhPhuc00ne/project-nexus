@@ -49,6 +49,29 @@ export function formatAuctionImage(url?: string | null): string {
 
 export const resolveAuctionImageUrl = formatAuctionImage;
 
+type RawAuctionListResponse =
+  | AuctionListResponse
+  | {
+      items: AuctionEntity[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+
+function normalizeAuctionListResponse(payload: RawAuctionListResponse): AuctionListResponse {
+  if (payload && 'pagination' in payload) return payload;
+  return {
+    items: payload?.items ?? [],
+    pagination: {
+      total: payload?.total ?? 0,
+      page: payload?.page ?? 1,
+      limit: payload?.limit ?? payload?.items?.length ?? 0,
+      totalPages: payload?.totalPages ?? 0,
+    },
+  };
+}
+
 export function getAdminAuctionItemsApi(id: string): Promise<AdminAuctionItemsResponse> {
   return apiRequest<AdminAuctionItemsResponse>(`/auctions/admin/${id}/items`, {
     requireAuth: true,
@@ -86,7 +109,9 @@ export function getAdminAuctionsApi(
   for (const [key, value] of Object.entries(query)) {
     if (value !== undefined && value !== '') params.set(key, String(value));
   }
-  return apiRequest<AdminAuctionListResponse>(`/auctions?${params}`, { requireAuth: true });
+  return apiRequest<RawAuctionListResponse>(`/auctions?${params}`, { requireAuth: true }).then(
+    (response) => normalizeAuctionListResponse(response) as AdminAuctionListResponse,
+  );
 }
 
 export function adminCreateAuctionApi(data: AdminCreateAuctionInput): Promise<AdminAuctionEntity> {
@@ -124,9 +149,10 @@ export function adminLockConsignmentApi(
 export async function getAuctionsApi(query?: AuctionQueryInput): Promise<AuctionListResponse> {
   const response = await api.get<{ data: AuctionListResponse }>('/auctions', { params: query });
   const payload = response?.data;
-  return (
+  const raw = (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
-  ) as AuctionListResponse;
+  ) as RawAuctionListResponse;
+  return normalizeAuctionListResponse(raw);
 }
 
 /**

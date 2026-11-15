@@ -14,6 +14,10 @@ export type ConsignmentFormState = {
   appraisalCertificateNumber: string;
   appraisalAgency: string;
   certificateIssueDate: string;
+  weightGrams: string;
+  lengthCm: string;
+  widthCm: string;
+  heightCm: string;
 };
 
 /**
@@ -30,6 +34,10 @@ export const initialConsignmentForm: ConsignmentFormState = {
   appraisalCertificateNumber: '',
   appraisalAgency: '',
   certificateIssueDate: '',
+  weightGrams: '500',
+  lengthCm: '20',
+  widthCm: '15',
+  heightCm: '10',
 };
 
 /**

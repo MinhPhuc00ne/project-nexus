@@ -61,6 +61,14 @@ function itemImage(item: AuctionConsignmentItem): string {
   return formatAuctionImage(item.images?.[0]);
 }
 
+function canSubmitConsignment(auction: AuctionEntity): boolean {
+  return (
+    auction.status === 'SCHEDULED' &&
+    !auction.isConsignmentLocked &&
+    (!auction.consignmentDeadline || new Date(auction.consignmentDeadline).getTime() > Date.now())
+  );
+}
+
 /** Shows a Seller-facing read-only view of an auction and the seller's submitted lots. */
 export default function SellerAuctionDetailPage(): ReactElement {
   const { id } = useParams<{ id: string }>();
@@ -184,7 +192,7 @@ export default function SellerAuctionDetailPage(): ReactElement {
               <ArrowLeft size={15} aria-hidden="true" />
               Danh sách phiên
             </SellerLink>
-            {(auction.status === 'SCHEDULED' || isLive) && (
+            {canSubmitConsignment(auction) && (
               <SellerLink to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}>
                 <PackageCheck size={15} aria-hidden="true" />
                 Thêm sản phẩm
@@ -362,7 +370,7 @@ export default function SellerAuctionDetailPage(): ReactElement {
             title="Chưa có vật phẩm được duyệt"
             description="Bạn có thể gửi sản phẩm để Admin thẩm định khi phiên còn nhận ký gửi."
             action={
-              (auction.status === 'SCHEDULED' || isLive) && (
+              canSubmitConsignment(auction) && (
                 <SellerLink to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}>
                   <PackageCheck size={15} aria-hidden="true" />
                   Gửi sản phẩm vào phiên
@@ -416,7 +424,7 @@ export default function SellerAuctionDetailPage(): ReactElement {
             title="Bạn chưa gửi sản phẩm vào phiên này"
             description="Tạo hồ sơ ký gửi để Admin kiểm định và phê duyệt trước khi lên sóng."
             action={
-              (auction.status === 'SCHEDULED' || isLive) && (
+              canSubmitConsignment(auction) && (
                 <SellerLink to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}>
                   <PackageCheck size={15} aria-hidden="true" />
                   Thêm sản phẩm
