@@ -15,6 +15,8 @@ import { statuses } from '../../components/adminDashboard/Auctions/auctionStatus
 
 export default function AdminAuctionsPage() {
   const {
+    now,
+    lockDisabledReason,
     token,
     data,
     status,
@@ -42,7 +44,6 @@ export default function AdminAuctionsPage() {
     openShowcaseForAuction,
     handleLockConsignment,
     handleStartAuction,
-    handleEndAuction,
   } = useAdminAuctions();
   return (
     <Panel
@@ -129,6 +130,7 @@ export default function AdminAuctionsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {data.items.map((item) => (
                     <AuctionRow
+                      now={now}
                       key={item.id}
                       item={item}
                       setSelectedAuction={setSelectedAuction}
@@ -138,7 +140,6 @@ export default function AdminAuctionsPage() {
                       setLockError={setLockError}
                       openShowcaseForAuction={openShowcaseForAuction}
                       handleStartAuction={handleStartAuction}
-                      handleEndAuction={handleEndAuction}
                     />
                   ))}
                 </tbody>
@@ -184,7 +185,10 @@ export default function AdminAuctionsPage() {
             <Button variant="secondary" disabled={locking} onClick={() => setLockingAuction(null)}>
               Hủy
             </Button>
-            <Button disabled={locking || !!startingId} onClick={() => void handleLockConsignment()}>
+            <Button
+              disabled={locking || !!startingId || !!lockDisabledReason}
+              onClick={() => void handleLockConsignment()}
+            >
               {locking ? 'Đang chốt…' : 'Xác nhận chốt ký gửi'}
             </Button>
           </div>
@@ -194,9 +198,9 @@ export default function AdminAuctionsPage() {
           Bạn muốn chốt ký gửi phiên <strong>{lockingAuction?.title}</strong>? Sau khi chốt, seller
           sẽ không thể gửi thêm sản phẩm vào phiên. Phiên chỉ bắt đầu khi bạn bấm “Bắt đầu”.
         </p>
-        {lockError && (
+        {(lockError || lockDisabledReason) && (
           <p role="alert" className="mt-3 text-sm text-red-600">
-            {lockError}
+            {lockError || lockDisabledReason}
           </p>
         )}
       </Popup>

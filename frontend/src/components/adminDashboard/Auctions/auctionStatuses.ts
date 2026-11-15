@@ -3,6 +3,7 @@ export const statuses = [
   ['ACTIVE', 'Đang diễn ra'],
   ['EXTENDED', 'Đang gia hạn'],
   ['ENDED', 'Đã kết thúc'],
+  ['SETTLED', 'Đã quyết toán'],
   ['FAILED', 'Không thành công'],
   ['CANCELLED', 'Đã hủy'],
   ['DRAFT', 'Bản nháp'],

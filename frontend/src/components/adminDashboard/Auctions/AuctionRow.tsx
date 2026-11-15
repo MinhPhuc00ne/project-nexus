@@ -1,8 +1,10 @@
-import { Film, Gavel, LockKeyhole, Play, Square } from 'lucide-react';
+import { Film, Gavel, LockKeyhole, Play } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { resolveAuctionImageUrl, type AdminAuctionEntity } from '../../../services/auction.service';
 import { Badge, Button } from '../shared/AdminUI';
 import type { useAdminAuctions } from './useAdminAuctions';
 import { statuses } from './auctionStatuses';
+import { consignmentLockReason } from './consignmentAvailability';
 
 type Props = Pick<
   ReturnType<typeof useAdminAuctions>,
@@ -13,7 +15,7 @@ type Props = Pick<
   | 'setLockError'
   | 'openShowcaseForAuction'
   | 'handleStartAuction'
-  | 'handleEndAuction'
+  | 'now'
 > & { item: AdminAuctionEntity };
 
 export default function AuctionRow({
@@ -25,8 +27,12 @@ export default function AuctionRow({
   setLockError,
   openShowcaseForAuction,
   handleStartAuction,
-  handleEndAuction,
+  now,
 }: Props) {
+  const lockReason = consignmentLockReason(item, now);
+  const deadlinePassed =
+    !!item.consignmentDeadline && new Date(item.consignmentDeadline).getTime() <= now;
+  const ended = new Date(item.endTime).getTime() <= now;
   return (
     <tr>
       <td className="max-w-72 p-4">
@@ -81,31 +87,46 @@ export default function AuctionRow({
         </Badge>
       </td>
       <td className="p-4">
-        <Button variant="secondary" onClick={() => setSelectedAuction(item)}>
-          Xem sản phẩm ({item._count?.items ?? 0})
-        </Button>
+        <div className="flex flex-col items-start gap-2">
+          <Button variant="secondary" onClick={() => setSelectedAuction(item)}>
+            Xem sản phẩm ({item._count?.items ?? 0})
+          </Button>
+          <Link
+            to={`/admin/auctions/${item.id}/lots`}
+            className="inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-primary-dark"
+          >
+            <Gavel size={14} /> Điều hành lô
+          </Link>
+        </div>
       </td>
       <td className="p-4">
         <div className="flex w-32 flex-col items-stretch gap-2 [&>button]:whitespace-nowrap">
+          <Button
+            variant="secondary"
+            disabled={!!lockReason || !!startingId || locking}
+            title={lockReason || 'Khóa nhận ký gửi cho phiên'}
+            className="disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100"
+            onClick={() => {
+              if (consignmentLockReason(item, Date.now())) return;
+              setLockError('');
+              setLockingAuction(item);
+            }}
+          >
+            <LockKeyhole size={14} />
+            {item.isConsignmentLocked ? 'Đã chốt ký gửi' : 'Chốt ký gửi'}
+          </Button>
           {['DRAFT', 'SCHEDULED'].includes(item.status) ? (
             <>
-              {!item.isConsignmentLocked && (
-                <Button
-                  variant="secondary"
-                  disabled={!!startingId || locking}
-                  onClick={() => {
-                    setLockError('');
-                    setLockingAuction(item);
-                  }}
-                >
-                  <LockKeyhole size={14} />
-                  Chốt ký gửi
-                </Button>
-              )}
               <Button
-                disabled={!!startingId || locking || !item.isConsignmentLocked}
+                disabled={
+                  !!startingId || locking || ended || (!item.isConsignmentLocked && !deadlinePassed)
+                }
                 title={
-                  !item.isConsignmentLocked ? 'Chốt ký gửi trước khi bắt đầu phiên' : undefined
+                  ended
+                    ? 'Đã quá thời gian kết thúc phiên.'
+                    : !item.isConsignmentLocked && !deadlinePassed
+                      ? 'Chốt ký gửi trước khi bắt đầu phiên'
+                      : undefined
                 }
                 onClick={() => void handleStartAuction(item)}
               >
@@ -113,16 +134,7 @@ export default function AuctionRow({
                 {startingId === item.id ? 'Đang mở…' : 'Bắt đầu'}
               </Button>
             </>
-          ) : (
-            <Button
-              variant="secondary"
-              disabled={!['ACTIVE', 'EXTENDED'].includes(item.status) || startingId === item.id}
-              onClick={() => void handleEndAuction(item.id)}
-            >
-              <Square size={14} />
-              {['ACTIVE', 'EXTENDED'].includes(item.status) ? 'Kết thúc' : 'Đã đóng'}
-            </Button>
-          )}
+          ) : null}
         </div>
       </td>
     </tr>

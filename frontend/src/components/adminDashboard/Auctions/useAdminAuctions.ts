@@ -4,7 +4,6 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   adminStartAuctionApi,
   adminLockConsignmentApi,
-  endAuctionApi,
   getAdminAuctionItemsApi,
   getAdminAuctionsApi,
   type AdminAuctionListResponse,
@@ -12,8 +11,14 @@ import {
   type AuctionConsignmentItem,
 } from '../../../services/auction.service';
 import { useToast } from '../../ToastNotification';
+import { consignmentLockReason } from './consignmentAvailability';
 
 export function useAdminAuctions() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const { token } = useAuth();
   const toast = useToast();
   const [data, setData] = useState<AdminAuctionListResponse | null>(null);
@@ -110,6 +115,11 @@ export function useAdminAuctions() {
 
   async function handleLockConsignment() {
     if (!lockingAuction || locking || startingId) return;
+    const reason = consignmentLockReason(lockingAuction, Date.now());
+    if (reason) {
+      setLockError(reason);
+      return;
+    }
     setLocking(true);
     setLockError('');
     try {
@@ -163,20 +173,6 @@ export function useAdminAuctions() {
     }
   }
 
-  async function handleEndAuction(id: string) {
-    if (startingId) return;
-    setStartingId(id);
-    try {
-      await endAuctionApi(id);
-      toast.success('Đã kết thúc phiên đấu giá.');
-      setRevision((value) => value + 1);
-    } catch (cause: unknown) {
-      toast.error(cause instanceof Error ? cause.message : 'Không thể kết thúc phiên đấu giá.');
-    } finally {
-      setStartingId(null);
-    }
-  }
-
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setKeyword(search.trim());
@@ -212,6 +208,8 @@ export function useAdminAuctions() {
   }, [token, page, keyword, status, revision]);
 
   return {
+    now,
+    lockDisabledReason: lockingAuction ? consignmentLockReason(lockingAuction, now) : '',
     token,
     data,
     status,
@@ -239,6 +237,5 @@ export function useAdminAuctions() {
     openShowcaseForAuction,
     handleLockConsignment,
     handleStartAuction,
-    handleEndAuction,
   };
 }

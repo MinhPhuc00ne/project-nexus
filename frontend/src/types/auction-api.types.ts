@@ -122,6 +122,40 @@ export interface AuctionEntity {
   isIntroActive?: boolean;
 }
 
+export interface AdminAuctionLot extends AuctionConsignmentItem {
+  staffNote?: string | null;
+  hasReservePrice?: boolean;
+  reserveMet?: boolean;
+  minimumNextBid?: number;
+  lotStatus: AuctionStatus;
+  currentHighestBid: number;
+  currentHighestBidderId: string | null;
+  totalBidsCount: number;
+  startTime: string;
+  endTime: string;
+  isExtended: boolean;
+  bids: AuctionBidItem[];
+  activeAward?: {
+    id: string;
+    status: string;
+    offerAmount: number;
+    buyer: { id: string; fullName: string } | null;
+  } | null;
+}
+
+export interface AdminAuctionLotsResponse {
+  id: string;
+  title: string;
+  status: AuctionStatus;
+  startTime: string;
+  endTime: string;
+  serverTime?: string;
+  introDurationMs?: number;
+  elapsedMs?: number;
+  isIntroActive?: boolean;
+  lots: AdminAuctionLot[];
+}
+
 export interface AuctionQueryInput {
   status?: AuctionStatus;
   sellerId?: string;
@@ -160,6 +194,7 @@ export interface AdminCreateAuctionInput {
   imageUrl?: string | null;
   startTime: string;
   endTime: string;
+  consignmentDeadline?: string;
   minBuyerReputation: number;
   minSellerReputation: number;
 }
@@ -217,6 +252,8 @@ export interface AdminAuctionItem extends Omit<
   lotNumber?: number | null;
   isSellerFlagged: boolean;
   flagReason?: string | null;
+  staffNote?: string | null;
+  awards?: NonNullable<AdminAuctionLot['activeAward']>[];
 }
 
 export interface AdminAuctionItemsResponse {
