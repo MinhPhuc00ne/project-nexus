@@ -22,7 +22,13 @@ export class RecommendationsService {
         select: { product: { select: { categoryId: true } } },
       }),
     ]);
-    const categories = [...new Set([...cart, ...purchases].map((item) => item.product.categoryId))];
+    const categories = [
+      ...new Set(
+        [...cart, ...purchases]
+          .map((item) => item.product?.categoryId)
+          .filter((categoryId): categoryId is string => Boolean(categoryId)),
+      ),
+    ];
     const visible = {
       status: 'ACTIVE' as const,
       sellerId: { not: userId },

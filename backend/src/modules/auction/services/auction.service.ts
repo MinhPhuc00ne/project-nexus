@@ -1,197 +1,126 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
+  OnModuleInit,
+  Optional,
 } from '@nestjs/common';
-import { Role, type WsAuctionIntroItemPayload } from '@nexus/types';
-import {
-  auctionTargetUrl,
-  auctionTargetUrlForRole,
-} from '../../../core/navigation/auction-navigation';
 import {
   AuctionItemStatus,
   AuctionStatus,
-  BidStatus,
   NotificationChannel,
   NotificationType,
   Prisma,
   ReputationTrustLevel,
+  Role,
   WalletTransactionStatus,
   WalletTransactionType,
 } from '@prisma/client';
+import type {
+  AuctionStatus as NexusAuctionStatus,
+  WsAuctionIntroItemPayload,
+  WsLotEndedPayload,
+} from '@nexus/types';
+import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
-import { AuctionGateway } from '../gateways/auction.gateway';
-import { AuctionQueryDto } from '../dtos/auction-query.dto';
-import { CreateAuctionDto } from '../dtos/create-auction.dto';
-import { PlaceBidDto } from '../dtos/place-bid.dto';
-import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
-import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
-import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
-import { ReviewAction, ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
+import { ChatService } from '../../chat/services/chat.service';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
-import { trustLevelFor } from '../../users/services/reputation-policy';
+import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
+import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
+import { AuctionQueryDto } from '../dtos/auction-query.dto';
+import { AuctionIntroShowcaseResponseDto } from '../dtos/auction-showcase-response.dto';
+import { PlaceBidDto } from '../dtos/place-bid.dto';
+import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
+import { ReviewAction, ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
+import { StaffAuctionNoteDto } from '../dtos/staff-auction-note.dto';
+import { AuctionGateway } from '../gateways/auction.gateway';
+
+const ANTI_SNIPING_WINDOW_MS = 120_000;
+const ANTI_SNIPING_EXTENSION_MS = 120_000;
+const MIN_AUCTION_DURATION_MS = 30 * 60 * 1000;
+
+const BUYER_VISIBLE_AWARD_STATUSES = [
+  'AWAITING_ACCEPTANCE',
+  'AWAITING_DEPOSIT',
+  'AWAITING_CHECKOUT',
+  'PAID',
+];
+
+function formatVnd(amount: number): string {
+  return `${Math.round(amount).toLocaleString('vi-VN')} ₫`;
+}
+
+function roundCurrency(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+function lotDisplayTitle(lotNumber: number | null | undefined, title: string): string {
+  return lotNumber ? `Lô #${lotNumber}: ${title}` : title;
+}
 
 /**
- * Service orchestrating admin auction session lifecycle, seller consignment with online appraisal,
- * reputation-based eligibility checks, and live bidding room operations.
+ * Orchestrates multi-lot auction rooms, seller consignments, admin lifecycle controls,
+ * per-lot real-time bidding with 100% wallet holds and +120s anti-sniping, and staff 3D support.
  */
 @Injectable()
-export class AuctionService {
+export class AuctionService implements OnModuleInit {
   private readonly logger = new Logger(AuctionService.name);
-  private static readonly INTRO_HALL_DURATION_MS = 3800;
-  private static readonly INTRO_LOT_DURATION_MS = 4800;
-  private static readonly INTRO_CLIMAX_DURATION_MS = 3500;
+  static readonly INTRO_HALL_DURATION_MS = 3800;
+  static readonly INTRO_LOT_DURATION_MS = 4800;
+  static readonly INTRO_CLIMAX_DURATION_MS = 3500;
+
+  static getIntroDurationMs(lotCount: number): number {
+    return (
+      AuctionService.INTRO_HALL_DURATION_MS +
+      Math.max(1, lotCount) * AuctionService.INTRO_LOT_DURATION_MS +
+      AuctionService.INTRO_CLIMAX_DURATION_MS
+    );
+  }
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly auctionGateway: AuctionGateway,
     private readonly stock: AuctionStockService,
     private readonly checkout: AuctionCheckoutService,
+    @Optional() private readonly chatService?: ChatService,
   ) {}
 
-  /**
-   * Computes deterministic live intro broadcast duration so backend and all connected viewers stay synchronized.
-   */
-  public computeIntroDurationMs(approvedItemCount: number): number {
-    const lotCount = Math.max(1, approvedItemCount);
-    return (
-      AuctionService.INTRO_HALL_DURATION_MS +
-      lotCount * AuctionService.INTRO_LOT_DURATION_MS +
-      AuctionService.INTRO_CLIMAX_DURATION_MS
+  /** Registers the real-time WebSocket bidding handler once the module boots. */
+  onModuleInit(): void {
+    this.auctionGateway.registerPlaceBidHandler((auctionId, auctionItemId, bidderId, bidAmount) =>
+      this.placeBid(auctionId, bidderId, { auctionItemId, bidAmount }),
     );
   }
 
   /**
-   * Maps an approved Prisma AuctionItem record into a synchronized showcase payload preserving seller-submitted prices and appraisal docs.
-   */
-  private serializeShowcaseItem(item: {
-    id: string;
-    title: string;
-    description: string;
-    images: string[];
-    threeModelKey: string | null;
-    lotNumber: number | null;
-    startingPrice: Prisma.Decimal | number | null;
-    proposedStartingPrice: Prisma.Decimal | number;
-    reservePrice: Prisma.Decimal | number | null;
-    proposedReservePrice: Prisma.Decimal | number | null;
-    bidIncrement: Prisma.Decimal | number | null;
-    proposedBidIncrement: Prisma.Decimal | number;
-    appraisalCertificateNumber: string | null;
-    appraisalAgency: string | null;
-    certificateImages: string[];
-    certificateIssueDate: Date | null;
-    seller?: {
-      id: string;
-      fullName: string;
-      avatarUrl?: string | null;
-      shopAvatarUrl?: string | null;
-    };
-  }): WsAuctionIntroItemPayload {
-    const proposedStartingPrice = Number(item.proposedStartingPrice ?? 0);
-    const startingPrice = Number(item.startingPrice ?? proposedStartingPrice);
-    const proposedBidIncrement = Number(item.proposedBidIncrement ?? 0);
-    const bidIncrement = Number(item.bidIncrement ?? proposedBidIncrement);
-    const proposedReservePrice =
-      item.proposedReservePrice !== null && item.proposedReservePrice !== undefined
-        ? Number(item.proposedReservePrice)
-        : null;
-    const reservePrice =
-      item.reservePrice !== null && item.reservePrice !== undefined
-        ? Number(item.reservePrice)
-        : proposedReservePrice;
-
-    return {
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      images: item.images ?? [],
-      threeModelKey: item.threeModelKey,
-      lotNumber: item.lotNumber,
-      startingPrice,
-      proposedStartingPrice,
-      reservePrice,
-      proposedReservePrice,
-      bidIncrement,
-      proposedBidIncrement,
-      appraisalCertificateNumber: item.appraisalCertificateNumber,
-      appraisalAgency: item.appraisalAgency,
-      certificateImages: item.certificateImages ?? [],
-      certificateIssueDate: item.certificateIssueDate
-        ? item.certificateIssueDate.toISOString()
-        : null,
-      seller: item.seller,
-    };
-  }
-
-  /**
-   * Links a session's sole approved consignment to a catalog product before bids exist.
-   * @param auctionId Auction session identifier.
-   * @param productId Fulfillable catalog item selected by the administrator.
-   * @returns Updated auction with exactly one unit reserved.
-   * @throws BadRequestException when the session is closed, ambiguous, or already has bids.
-   */
-  async bindProduct(
-    auctionId: string,
-    productId: string,
-  ): Promise<Prisma.AuctionGetPayload<object>> {
-    return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
-      const auction = await tx.auction.findUnique({ where: { id: auctionId } });
-      if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
-      if (!['DRAFT', 'SCHEDULED', 'ACTIVE'].includes(auction.status) || auction.totalBidsCount > 0)
-        throw new BadRequestException('Chỉ gắn sản phẩm trước khi nhận giá.');
-      if (auction.productId && auction.productId !== productId)
-        await this.stock.release(tx, auction.id);
-      const product = await this.stock.reserve(tx, {
-        productId,
-        referenceId: auction.id,
-        expiresAt: new Date(auction.endTime.getTime() + 86400000),
-      });
-      if (auction.createdByAdminId) {
-        const approved = await tx.auctionItem.findMany({
-          where: { auctionId, status: 'APPROVED' },
-          select: { sellerId: true },
-        });
-        if (approved.length !== 1 || approved[0].sellerId !== product.sellerId)
-          throw new BadRequestException(
-            'Mỗi phòng nhận giá cần đúng một lô đã duyệt, cùng người bán với sản phẩm.',
-          );
-      }
-      return tx.auction.update({
-        where: { id: auctionId },
-        data: { productId, sellerId: product.sellerId },
-      });
-    });
-  }
-
-  /**
-   * Retrieves paginated auction listings with optional status, seller and search filters.
+   * Lists public and filterable auction rooms with paginated approved lots preview.
    */
   async getAuctions(query: AuctionQueryDto) {
-    const page = Math.max(1, query.page || 1);
-    const limit = Math.min(50, Math.max(1, query.limit || 20));
+    const page = Math.max(1, Number(query.page || 1));
+    const limit = Math.max(1, Math.min(50, Number(query.limit || 20)));
     const skip = (page - 1) * limit;
 
     const where: Prisma.AuctionWhereInput = {};
-
     if (query.status) {
       where.status = query.status;
     }
-
     if (query.sellerId) {
-      where.sellerId = query.sellerId;
+      where.OR = [{ sellerId: query.sellerId }, { items: { some: { sellerId: query.sellerId } } }];
     }
-
     if (query.search?.trim()) {
-      where.OR = [
-        { title: { contains: query.search.trim(), mode: 'insensitive' } },
-        { description: { contains: query.search.trim(), mode: 'insensitive' } },
-        { product: { title: { contains: query.search.trim(), mode: 'insensitive' } } },
+      const term = query.search.trim();
+      where.AND = [
+        {
+          OR: [
+            { title: { contains: term, mode: 'insensitive' } },
+            { description: { contains: term, mode: 'insensitive' } },
+            { items: { some: { title: { contains: term, mode: 'insensitive' } } } },
+          ],
+        },
       ];
     }
 
@@ -201,13 +130,82 @@ export class AuctionService {
         where,
         skip,
         take: limit,
-        orderBy: [{ status: 'asc' }, { startTime: 'asc' }],
+        orderBy: [{ createdAt: 'desc' }],
         include: {
-          createdByAdmin: {
+          items: {
+            where: { status: AuctionItemStatus.APPROVED },
+            orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
             select: {
               id: true,
-              fullName: true,
-              avatarUrl: true,
+              title: true,
+              images: true,
+              threeModelKey: true,
+              lotNumber: true,
+              lotStatus: true,
+              startingPrice: true,
+              proposedStartingPrice: true,
+              bidIncrement: true,
+              proposedBidIncrement: true,
+              currentHighestBid: true,
+              totalBidsCount: true,
+              endTime: true,
+            },
+          },
+          _count: {
+            select: { bids: true, items: true },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      items: items.map((auction) => {
+        const introState = this.computeIntroState(
+          auction.status,
+          auction.startTime,
+          auction.items.length,
+        );
+        return {
+          ...auction,
+          startingPrice: Number(auction.startingPrice),
+          reservePrice: auction.reservePrice ? Number(auction.reservePrice) : null,
+          currentHighestBid: Number(auction.currentHighestBid),
+          bidIncrement: Number(auction.bidIncrement),
+          ...introState,
+          items: auction.items.map((lot) => ({
+            ...lot,
+            startingPrice: Number(lot.startingPrice ?? lot.proposedStartingPrice),
+            bidIncrement: Number(lot.bidIncrement ?? lot.proposedBidIncrement),
+            currentHighestBid: Number(lot.currentHighestBid),
+          })),
+        };
+      }),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Returns complete multi-lot room telemetry, recent bids per lot, intro timing,
+   * and role-scoped visibility for reserve prices and active awards.
+   */
+  async getAuctionDetail(id: string, currentUserId?: string) {
+    const [auction, currentUser] = await Promise.all([
+      this.prisma.auction.findUnique({
+        where: { id },
+        include: {
+          product: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              basePrice: true,
+              images: { orderBy: { sortOrder: 'asc' } },
+              seller: {
+                select: { id: true, fullName: true, avatarUrl: true, shopAvatarUrl: true },
+              },
             },
           },
           seller: {
@@ -215,250 +213,195 @@ export class AuctionService {
               id: true,
               fullName: true,
               avatarUrl: true,
-            },
-          },
-          product: {
-            select: {
-              id: true,
-              title: true,
-              threeModelKey: true,
-              images: true,
-              basePrice: true,
-            },
-          },
-          _count: {
-            select: {
-              items: true,
-              bids: true,
+              shopAvatarUrl: true,
+              reputationScore: true,
             },
           },
           items: {
             where: { status: AuctionItemStatus.APPROVED },
-            take: 4,
-            select: {
-              id: true,
-              title: true,
-              images: true,
-              lotNumber: true,
-              startingPrice: true,
-              appraisalAgency: true,
+            orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
+            include: {
+              seller: {
+                select: { id: true, fullName: true, avatarUrl: true, shopAvatarUrl: true },
+              },
+              bids: {
+                orderBy: { placedAt: 'desc' },
+                take: 20,
+                include: {
+                  bidder: {
+                    select: { id: true, fullName: true, avatarUrl: true },
+                  },
+                },
+              },
+              awards: {
+                orderBy: { createdAt: 'desc' },
+                take: 3,
+                include: {
+                  buyer: {
+                    select: { id: true, fullName: true, email: true, reputationScore: true },
+                  },
+                },
+              },
+            },
+          },
+          bids: {
+            orderBy: { placedAt: 'desc' },
+            take: 30,
+            include: {
+              bidder: {
+                select: { id: true, fullName: true, avatarUrl: true },
+              },
             },
           },
         },
       }),
+      currentUserId
+        ? this.prisma.user.findUnique({
+            where: { id: currentUserId },
+            select: { id: true, role: true, isSellerActive: true },
+          })
+        : Promise.resolve(null),
     ]);
 
-    return {
-      items: items.map((item) => ({ ...item, targetUrl: auctionTargetUrl(item.id) })),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  /**
-   * Retrieves single auction details including approved items, certificates, and eligibility telemetry.
-   */
-  async getAuctionDetail(id: string, currentUserId?: string) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id },
-      include: {
-        createdByAdmin: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-          },
-        },
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-          },
-        },
-        product: {
-          include: {
-            category: true,
-            images: true,
-          },
-        },
-        items: {
-          where: { status: AuctionItemStatus.APPROVED },
-          orderBy: { lotNumber: 'asc' },
-          include: {
-            seller: {
-              select: {
-                id: true,
-                fullName: true,
-                avatarUrl: true,
-                shopAvatarUrl: true,
-              },
-            },
-          },
-        },
-        bids: {
-          take: 25,
-          orderBy: { placedAt: 'desc' },
-          include: {
-            bidder: {
-              select: {
-                id: true,
-                fullName: true,
-                avatarUrl: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá tương ứng.');
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
     }
 
-    const now = new Date();
-    if (
-      auction.status === AuctionStatus.SCHEDULED &&
-      auction.isConsignmentLocked &&
-      now >= auction.startTime
-    ) {
-      await this.prisma.auction.update({
-        where: { id: auction.id },
-        data: { status: AuctionStatus.ACTIVE },
+    const isPrivilegedViewer =
+      currentUser?.role === Role.ADMIN || currentUser?.role === Role.SUPPORT_STAFF;
+    const introState = this.computeIntroState(
+      auction.status,
+      auction.startTime,
+      auction.items.length,
+    );
+
+    const lots = auction.items.map((lot) => {
+      const canSeeSecretReserve = isPrivilegedViewer || lot.sellerId === currentUserId;
+      const startingPrice = Number(lot.startingPrice ?? lot.proposedStartingPrice);
+      const reservePrice = lot.reservePrice
+        ? Number(lot.reservePrice)
+        : lot.proposedReservePrice
+          ? Number(lot.proposedReservePrice)
+          : null;
+      const bidIncrement = Number(lot.bidIncrement ?? lot.proposedBidIncrement);
+      const currentHighestBid = Number(lot.currentHighestBid);
+      const minimumNextBid =
+        lot.totalBidsCount === 0
+          ? Math.max(startingPrice, reservePrice ?? 0)
+          : currentHighestBid + bidIncrement;
+      const reserveMet = reservePrice === null ? true : currentHighestBid >= reservePrice;
+
+      const visibleAward = lot.awards.find((award) => {
+        if (isPrivilegedViewer || lot.sellerId === currentUserId) return true;
+        return (
+          award.buyerId === currentUserId && BUYER_VISIBLE_AWARD_STATUSES.includes(award.status)
+        );
       });
-      auction.status = AuctionStatus.ACTIVE;
-    }
 
-    let buyerEligibility: {
-      isEligible: boolean;
-      isFlaggedViewOnly: boolean;
-      reason?: string;
-      currentScore?: number;
-      requiredScore: number;
-    } = {
-      isEligible: true,
-      isFlaggedViewOnly: false,
-      requiredScore: auction.minBuyerReputation,
-    };
-
-    if (currentUserId) {
-      const eligibility = await this.checkBuyerEligibility(auction.id, currentUserId);
-      buyerEligibility = eligibility;
-    }
-
-    const serializedItems = auction.items.map((item) => this.serializeShowcaseItem(item));
-    const introDurationMs = this.computeIntroDurationMs(serializedItems.length);
-    const serverTime = new Date();
-    const isActiveLike =
-      auction.status === AuctionStatus.ACTIVE || auction.status === AuctionStatus.EXTENDED;
-    const rawElapsed = isActiveLike ? serverTime.getTime() - auction.startTime.getTime() : 0;
-    const elapsedMs = Math.max(0, Math.min(introDurationMs, rawElapsed));
-    const isIntroActive = isActiveLike && rawElapsed >= 0 && rawElapsed < introDurationMs;
+      return {
+        id: lot.id,
+        auctionId: lot.auctionId,
+        sellerId: lot.sellerId,
+        title: lot.title,
+        description: lot.description,
+        images: lot.images,
+        threeModelKey: lot.threeModelKey,
+        weightGrams: lot.weightGrams,
+        lengthCm: lot.lengthCm,
+        widthCm: lot.widthCm,
+        heightCm: lot.heightCm,
+        appraisalCertificateNumber: lot.appraisalCertificateNumber,
+        appraisalAgency: lot.appraisalAgency,
+        certificateImages: lot.certificateImages,
+        certificateIssueDate: lot.certificateIssueDate,
+        status: lot.status,
+        lotStatus: lot.lotStatus,
+        lotNumber: lot.lotNumber,
+        startingPrice,
+        bidIncrement,
+        currentHighestBid,
+        currentHighestBidderId: lot.currentHighestBidderId,
+        totalBidsCount: lot.totalBidsCount,
+        minimumNextBid,
+        hasReservePrice: reservePrice !== null,
+        reserveMet,
+        ...(canSeeSecretReserve ? { reservePrice, staffNote: lot.staffNote } : {}),
+        startTime: lot.startTime ?? auction.startTime,
+        endTime: lot.endTime ?? auction.endTime,
+        originalEndTime: lot.originalEndTime ?? auction.originalEndTime,
+        isExtended: lot.isExtended,
+        seller: lot.seller,
+        bids: lot.bids.map((bid) => ({
+          ...bid,
+          bidAmount: Number(bid.bidAmount),
+        })),
+        activeAward: visibleAward
+          ? {
+              ...visibleAward,
+              offerAmount: Number(visibleAward.offerAmount),
+              depositAmount: Number(visibleAward.depositAmount),
+              remainingProductAmount: roundCurrency(
+                Number(visibleAward.offerAmount) - Number(visibleAward.depositAmount),
+              ),
+            }
+          : null,
+      };
+    });
 
     return {
       ...auction,
-      items: serializedItems,
-      targetUrl: auctionTargetUrl(auction.id),
-      serverTime: serverTime.toISOString(),
-      introDurationMs,
-      elapsedMs,
-      isIntroActive,
-      buyerEligibility,
+      startingPrice: Number(auction.startingPrice),
+      currentHighestBid: Number(auction.currentHighestBid),
+      bidIncrement: Number(auction.bidIncrement),
+      reservePrice:
+        isPrivilegedViewer && auction.reservePrice ? Number(auction.reservePrice) : null,
+      ...introState,
+      viewerMode: currentUser
+        ? {
+            role: currentUser.role,
+            isSellerActive: currentUser.isSellerActive,
+            canPlaceBidInCurrentMode:
+              currentUser.role !== Role.ADMIN &&
+              currentUser.role !== Role.SUPPORT_STAFF &&
+              !currentUser.isSellerActive,
+          }
+        : null,
+      items: lots,
+      lots,
       bids: auction.bids.map((bid) => ({
-        id: bid.id,
+        ...bid,
         bidAmount: Number(bid.bidAmount),
-        status: bid.status,
-        placedAt: bid.placedAt,
-        bidder: {
-          id: bid.bidder.id,
-          fullName: this.maskName(bid.bidder.fullName),
-          avatarUrl: bid.bidder.avatarUrl,
-        },
       })),
     };
   }
 
   /**
-   * Returns synchronized intro showcase payload and server clock offsets for late-joining viewers.
+   * Returns synchronized intro showcase data and lot live metadata for late joiners.
    */
-  async getAuctionIntroShowcase(auctionId: string) {
+  async getAuctionIntroShowcase(auctionId: string): Promise<AuctionIntroShowcaseResponseDto> {
     const auction = await this.prisma.auction.findUnique({
       where: { id: auctionId },
       include: {
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-            shopAvatarUrl: true,
-          },
-        },
-        product: {
-          include: {
-            images: true,
-          },
-        },
         items: {
           where: { status: AuctionItemStatus.APPROVED },
-          orderBy: { lotNumber: 'asc' },
+          orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
           include: {
             seller: {
-              select: {
-                id: true,
-                fullName: true,
-                avatarUrl: true,
-                shopAvatarUrl: true,
-              },
+              select: { id: true, fullName: true, avatarUrl: true, shopAvatarUrl: true },
             },
           },
         },
       },
     });
-
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá tương ứng.');
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
     }
 
-    const serializedItems: WsAuctionIntroItemPayload[] =
-      auction.items.length > 0
-        ? auction.items.map((item) => this.serializeShowcaseItem(item))
-        : auction.product
-          ? [
-              {
-                id: auction.product.id,
-                title: auction.product.title,
-                description: auction.description ?? '',
-                images:
-                  auction.product.images?.map((img) => img.imageUrl) ??
-                  (auction.imageUrl ? [auction.imageUrl] : []),
-                threeModelKey: auction.product.threeModelKey,
-                lotNumber: 1,
-                startingPrice: Number(auction.startingPrice ?? 0),
-                proposedStartingPrice: Number(auction.startingPrice ?? 0),
-                reservePrice: auction.reservePrice ? Number(auction.reservePrice) : null,
-                proposedReservePrice: auction.reservePrice ? Number(auction.reservePrice) : null,
-                bidIncrement: Number(auction.bidIncrement ?? 0),
-                proposedBidIncrement: Number(auction.bidIncrement ?? 0),
-                appraisalCertificateNumber: null,
-                appraisalAgency: null,
-                certificateImages: [],
-                certificateIssueDate: null,
-                seller: auction.seller ?? undefined,
-              },
-            ]
-          : [];
-
-    const serverTime = new Date();
-    const introDurationMs = this.computeIntroDurationMs(serializedItems.length);
-    const isActiveLike =
-      auction.status === AuctionStatus.ACTIVE || auction.status === AuctionStatus.EXTENDED;
-    const rawElapsed = isActiveLike ? serverTime.getTime() - auction.startTime.getTime() : 0;
-    const elapsedMs = Math.max(0, Math.min(introDurationMs, rawElapsed));
-    const isIntroActive = isActiveLike && rawElapsed >= 0 && rawElapsed < introDurationMs;
+    const introState = this.computeIntroState(
+      auction.status,
+      auction.startTime,
+      auction.items.length,
+    );
 
     return {
       auctionId: auction.id,
@@ -467,683 +410,391 @@ export class AuctionService {
       status: auction.status,
       startedAt: auction.startTime.toISOString(),
       endTime: auction.endTime.toISOString(),
-      serverTime: serverTime.toISOString(),
-      introDurationMs,
-      isIntroActive,
-      elapsedMs,
-      items: serializedItems,
+      serverTime: new Date().toISOString(),
+      introDurationMs: introState.introDurationMs,
+      isIntroActive: introState.isIntroActive,
+      elapsedMs: introState.elapsedMs,
+      items: auction.items.map((item) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        images: item.images,
+        threeModelKey: item.threeModelKey,
+        lotNumber: item.lotNumber,
+        startingPrice: Number(item.startingPrice ?? item.proposedStartingPrice),
+        proposedStartingPrice: Number(item.proposedStartingPrice),
+        reservePrice: item.reservePrice ? Number(item.reservePrice) : null,
+        proposedReservePrice: item.proposedReservePrice ? Number(item.proposedReservePrice) : null,
+        bidIncrement: Number(item.bidIncrement ?? item.proposedBidIncrement),
+        proposedBidIncrement: Number(item.proposedBidIncrement),
+        appraisalCertificateNumber: item.appraisalCertificateNumber,
+        appraisalAgency: item.appraisalAgency,
+        certificateImages: item.certificateImages,
+        certificateIssueDate: item.certificateIssueDate?.toISOString() ?? null,
+        lotStatus: item.lotStatus,
+        currentHighestBid: Number(item.currentHighestBid),
+        currentHighestBidderId: item.currentHighestBidderId,
+        totalBidsCount: item.totalBidsCount,
+        startTime: item.startTime?.toISOString() ?? null,
+        endTime: item.endTime?.toISOString() ?? null,
+        seller: item.seller,
+      })),
     };
   }
 
-  // ==========================================
-  // ADMIN AUCTION LIFECYCLE MANAGEMENT
-  // ==========================================
-
   /**
-   * Admin creates and schedules a new central auction session/event.
-   * Enforces strict date and time sequencing: startTime < consignmentDeadline < endTime.
-   * Dispatches tailored notifications: Staff & Sellers receive full schedule, Buyers receive public bidding timeframe.
+   * Admin creates a multi-lot auction room and notifies eligible Sellers using the room creation time
+   * so they can consign items before the consignment deadline.
    */
   async adminCreateAuction(adminId: string, dto: AdminCreateAuctionDto) {
     const startTime = new Date(dto.startTime);
     const endTime = new Date(dto.endTime);
-    let consignmentDeadline: Date;
+    if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+      throw new BadRequestException('Thời gian bắt đầu hoặc kết thúc không hợp lệ.');
+    }
+    if (endTime.getTime() <= startTime.getTime()) {
+      throw new BadRequestException('Thời gian kết thúc phải sau thời gian bắt đầu.');
+    }
 
+    let consignmentDeadline: Date | null = null;
     if (dto.consignmentDeadline) {
       consignmentDeadline = new Date(dto.consignmentDeadline);
-    } else {
-      const midMs = startTime.getTime() + (endTime.getTime() - startTime.getTime()) / 2;
-      consignmentDeadline = new Date(midMs);
-    }
-
-    if (
-      !Number.isFinite(endTime.getTime()) ||
-      !Number.isFinite(startTime.getTime()) ||
-      !Number.isFinite(consignmentDeadline.getTime())
-    ) {
-      throw new BadRequestException(
-        'Thời gian bắt đầu, hạn chót nhận ký gửi và kết thúc không hợp lệ.',
-      );
-    }
-
-    if (startTime.getTime() >= consignmentDeadline.getTime()) {
-      throw new BadRequestException(
-        'Hạn chót nhận ký gửi phải diễn ra sau thời gian bắt đầu mở nhận ký gửi.',
-      );
-    }
-
-    if (consignmentDeadline.getTime() >= endTime.getTime()) {
-      throw new BadRequestException(
-        'Thời gian kết thúc phiên phải diễn ra sau hạn chót nhận ký gửi.',
-      );
-    }
-
-    if (
-      endTime.getTime() - startTime.getTime() < 3600000 ||
-      endTime.getTime() - startTime.getTime() > 7 * 86400000
-    ) {
-      throw new BadRequestException('Phiên đấu giá phải kéo dài từ 60 phút đến 7 ngày.');
-    }
-
-    const auction = await this.prisma.auction.create({
-      data: {
-        title: dto.title.trim(),
-        description: dto.description?.trim(),
-        imageUrl: dto.imageUrl?.trim() || null,
-        startTime,
-        consignmentDeadline,
-        endTime,
-        originalEndTime: endTime,
-        minBuyerReputation: dto.minBuyerReputation ?? 40,
-        minSellerReputation: dto.minSellerReputation ?? 50,
-        createdByAdminId: adminId,
-        status: AuctionStatus.SCHEDULED,
-        isConsignmentLocked: false,
-        startingPrice: 0,
-        currentHighestBid: 0,
-        bidIncrement: 100000,
-        totalBidsCount: 0,
-        isExtended: false,
-      },
-      include: {
-        createdByAdmin: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-          },
-        },
-      },
-    });
-
-    try {
-      if (
-        typeof this.prisma.user?.findMany === 'function' &&
-        typeof this.prisma.notification?.createMany === 'function'
-      ) {
-        const recipients = await this.prisma.user.findMany({
-          where: {
-            role: { not: Role.ADMIN },
-          },
-          select: {
-            id: true,
-            role: true,
-            isSellerActive: true,
-          },
-        });
-
-        if (recipients.length > 0) {
-          const formatVnDateTime = (date: Date) =>
-            new Intl.DateTimeFormat('vi-VN', {
-              dateStyle: 'short',
-              timeStyle: 'short',
-              timeZone: 'Asia/Ho_Chi_Minh',
-            }).format(date);
-
-          const notifications = recipients.map((user) => {
-            const isStaffOrSeller =
-              user.role === Role.SUPPORT_STAFF || user.role === Role.SELLER || user.isSellerActive;
-
-            if (isStaffOrSeller) {
-              return {
-                userId: user.id,
-                title: `Phiên đấu giá mới đã mở tiếp nhận ký gửi: "${auction.title}"`,
-                content: `Phiên đấu giá "${auction.title}" đã được tạo. Thời gian mở tiếp nhận ký gửi: ${formatVnDateTime(startTime)}, hạn chót nhận ký gửi: ${formatVnDateTime(consignmentDeadline)}, thời gian kết thúc: ${formatVnDateTime(endTime)}.`,
-                auctionId: auction.id,
-                targetUrl: auctionTargetUrlForRole(auction.id, user.role, user.isSellerActive),
-                type: NotificationType.AUCTION,
-                channel: NotificationChannel.IN_APP,
-              };
-            }
-
-            return {
-              userId: user.id,
-              title: `Phiên đấu giá sắp diễn ra: "${auction.title}"`,
-              content: `Phiên đấu giá "${auction.title}" sắp mở sàn. Thời gian bắt đầu: ${formatVnDateTime(consignmentDeadline)}, thời gian kết thúc: ${formatVnDateTime(endTime)}.`,
-              auctionId: auction.id,
-              targetUrl: auctionTargetUrl(auction.id),
-              type: NotificationType.AUCTION,
-              channel: NotificationChannel.IN_APP,
-            };
-          });
-
-          await this.prisma.notification.createMany({
-            data: notifications,
-          });
-        }
+      if (Number.isNaN(consignmentDeadline.getTime())) {
+        throw new BadRequestException('Hạn chót ký gửi sản phẩm không hợp lệ.');
       }
-    } catch (notifyError) {
-      this.logger.warn(
-        `Failed to dispatch auction creation notifications: ${notifyError instanceof Error ? notifyError.message : String(notifyError)}`,
-      );
+      if (
+        consignmentDeadline.getTime() <= startTime.getTime() ||
+        consignmentDeadline.getTime() >= endTime.getTime()
+      ) {
+        throw new BadRequestException(
+          'Hạn chót ký gửi phải nằm sau thời điểm mở phiên và trước thời điểm kết thúc phiên.',
+        );
+      }
     }
 
-    return auction;
+    const minBuyerReputation = dto.minBuyerReputation ?? 40;
+    const minSellerReputation = dto.minSellerReputation ?? 50;
+
+    return this.prisma.$transaction(async (tx) => {
+      const created = await tx.auction.create({
+        data: {
+          title: dto.title.trim(),
+          description: dto.description?.trim() || null,
+          imageUrl: dto.imageUrl?.trim() || null,
+          createdByAdminId: adminId,
+          status: AuctionStatus.SCHEDULED,
+          startTime,
+          endTime,
+          originalEndTime: endTime,
+          consignmentDeadline,
+          minBuyerReputation,
+          minSellerReputation,
+          startingPrice: 0,
+          bidIncrement: 100000,
+        },
+      });
+
+      const eligibleSellers = await tx.user.findMany({
+        where: {
+          id: { not: adminId },
+          role: Role.SELLER,
+          isShopSuspended: false,
+          reputationScore: { gte: minSellerReputation },
+        },
+        select: { id: true },
+      });
+
+      if (eligibleSellers.length > 0) {
+        const createdAtLabel = created.createdAt.toLocaleString('vi-VN', {
+          timeZone: 'Asia/Ho_Chi_Minh',
+        });
+        const deadlineLabel = consignmentDeadline
+          ? consignmentDeadline.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+          : startTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        await tx.notification.createMany({
+          data: eligibleSellers.map((seller) => ({
+            userId: seller.id,
+            auctionId: created.id,
+            targetUrl: auctionTargetUrl(created.id),
+            title: `Phiên đấu giá mới vừa mở ký gửi: ${created.title}`,
+            content: `Phòng đấu giá được Admin tạo lúc ${createdAtLabel}. Người bán đủ điều kiện có thể gửi vật phẩm ký gửi trước ${deadlineLabel}.`,
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+            metadata: {
+              actionType: 'AUCTION_CONSIGNMENT_OPENED',
+              auctionId: created.id,
+              createdAt: created.createdAt.toISOString(),
+              consignmentDeadline: consignmentDeadline?.toISOString() ?? null,
+            },
+          })),
+        });
+      }
+
+      return created;
+    });
   }
 
   /**
-   * Admin updates an upcoming auction.
-   * Strict Rule: Prohibits editing when auction is ACTIVE or EXTENDED.
+   * Admin updates a SCHEDULED auction room configuration.
    */
   async adminUpdateAuction(auctionId: string, dto: AdminUpdateAuctionDto) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-    });
-
-    if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+    const existing = await this.prisma.auction.findUnique({ where: { id: auctionId } });
+    if (!existing) {
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+    }
+    if (existing.status !== AuctionStatus.SCHEDULED && existing.status !== AuctionStatus.DRAFT) {
+      throw new BadRequestException('Chỉ có thể chỉnh sửa phòng đấu giá khi chưa bắt đầu.');
     }
 
-    if (auction.status === AuctionStatus.ACTIVE || auction.status === AuctionStatus.EXTENDED) {
-      throw new BadRequestException(
-        'Phiên đấu giá đang diễn ra, tuyệt đối không được phép chỉnh sửa!',
-      );
-    }
+    const startTime = dto.startTime ? new Date(dto.startTime) : existing.startTime;
+    const endTime = dto.endTime ? new Date(dto.endTime) : existing.endTime;
+    const consignmentDeadline =
+      dto.consignmentDeadline !== undefined
+        ? dto.consignmentDeadline
+          ? new Date(dto.consignmentDeadline)
+          : null
+        : existing.consignmentDeadline;
 
+    if (endTime.getTime() <= startTime.getTime()) {
+      throw new BadRequestException('Thời gian kết thúc phải sau thời gian bắt đầu.');
+    }
     if (
-      auction.status === AuctionStatus.ENDED ||
-      auction.status === AuctionStatus.FAILED ||
-      auction.status === AuctionStatus.CANCELLED
+      consignmentDeadline &&
+      (consignmentDeadline.getTime() <= startTime.getTime() ||
+        consignmentDeadline.getTime() >= endTime.getTime())
     ) {
       throw new BadRequestException(
-        `Phiên đấu giá đã kết thúc hoặc bị hủy (${auction.status}), không thể chỉnh sửa.`,
+        'Hạn chót ký gửi phải nằm sau thời gian bắt đầu và trước thời gian kết thúc.',
       );
-    }
-
-    const updateData: Prisma.AuctionUpdateInput = {};
-
-    if (dto.title !== undefined) updateData.title = dto.title.trim();
-    if (dto.description !== undefined) updateData.description = dto.description.trim();
-    if (dto.imageUrl !== undefined) {
-      updateData.imageUrl = dto.imageUrl ? dto.imageUrl.trim() : null;
-    }
-    if (dto.minBuyerReputation !== undefined)
-      updateData.minBuyerReputation = dto.minBuyerReputation;
-    if (dto.minSellerReputation !== undefined)
-      updateData.minSellerReputation = dto.minSellerReputation;
-
-    const newStart = dto.startTime ? new Date(dto.startTime) : auction.startTime;
-    const newEnd = dto.endTime ? new Date(dto.endTime) : auction.endTime;
-    const newDeadline = dto.consignmentDeadline
-      ? new Date(dto.consignmentDeadline)
-      : (auction.consignmentDeadline ??
-        new Date(newStart.getTime() + (newEnd.getTime() - newStart.getTime()) / 2));
-
-    if (
-      !Number.isFinite(newStart.getTime()) ||
-      !Number.isFinite(newDeadline.getTime()) ||
-      !Number.isFinite(newEnd.getTime())
-    ) {
-      throw new BadRequestException(
-        'Thời gian bắt đầu, hạn chót nhận ký gửi và kết thúc không hợp lệ.',
-      );
-    }
-
-    if (newStart.getTime() >= newDeadline.getTime()) {
-      throw new BadRequestException(
-        'Hạn chót nhận ký gửi phải diễn ra sau thời gian bắt đầu mở nhận ký gửi.',
-      );
-    }
-
-    if (newDeadline.getTime() >= newEnd.getTime()) {
-      throw new BadRequestException(
-        'Thời gian kết thúc phiên phải diễn ra sau hạn chót nhận ký gửi.',
-      );
-    }
-
-    if (
-      newEnd.getTime() - newStart.getTime() < 3600000 ||
-      newEnd.getTime() - newStart.getTime() > 7 * 86400000
-    ) {
-      throw new BadRequestException('Phiên đấu giá phải kéo dài từ 60 phút đến 7 ngày.');
-    }
-
-    if (dto.startTime) {
-      updateData.startTime = newStart;
-    }
-    if (dto.consignmentDeadline) {
-      updateData.consignmentDeadline = newDeadline;
-    }
-    if (dto.endTime) {
-      updateData.endTime = newEnd;
-      updateData.originalEndTime = newEnd;
     }
 
     return this.prisma.auction.update({
       where: { id: auctionId },
-      data: updateData,
-      include: {
-        createdByAdmin: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-          },
-        },
+      data: {
+        ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
+        ...(dto.description !== undefined ? { description: dto.description?.trim() || null } : {}),
+        ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl?.trim() || null } : {}),
+        startTime,
+        endTime,
+        originalEndTime: endTime,
+        consignmentDeadline,
+        ...(dto.minBuyerReputation !== undefined
+          ? { minBuyerReputation: dto.minBuyerReputation }
+          : {}),
+        ...(dto.minSellerReputation !== undefined
+          ? { minSellerReputation: dto.minSellerReputation }
+          : {}),
       },
     });
   }
 
   /**
-   * Admin manually locks seller consignment registration for an auction session.
-   * Prohibits further seller item submissions immediately and dispatches notifications to all active sellers.
+   * Admin locks consignment early so sellers can no longer submit new items to the room.
    */
   async adminLockConsignment(auctionId: string) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-    });
-
-    if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+    const existing = await this.prisma.auction.findUnique({ where: { id: auctionId } });
+    if (!existing) {
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+    }
+    if (existing.isConsignmentLocked) {
+      return existing;
     }
 
-    if (auction.status !== AuctionStatus.SCHEDULED && auction.status !== AuctionStatus.DRAFT) {
-      throw new BadRequestException(
-        `Chỉ có thể chốt sổ nhận ký gửi cho phiên đang lên lịch hoặc bản nháp (trạng thái hiện tại: ${auction.status}).`,
-      );
-    }
-
-    if (auction.isConsignmentLocked) {
-      return auction;
-    }
-
-    const lockedAt = new Date();
-    const updated = await this.prisma.auction.update({
+    return this.prisma.auction.update({
       where: { id: auctionId },
       data: {
         isConsignmentLocked: true,
-        consignmentLockedAt: lockedAt,
+        consignmentLockedAt: new Date(),
       },
     });
-
-    try {
-      if (
-        typeof this.prisma.user?.findMany === 'function' &&
-        typeof this.prisma.notification?.createMany === 'function'
-      ) {
-        const sellers = await this.prisma.user.findMany({
-          where: {
-            OR: [{ role: Role.SELLER }, { isSellerActive: true }],
-          },
-          select: { id: true, role: true, isSellerActive: true },
-        });
-
-        if (sellers.length > 0) {
-          await this.prisma.notification.createMany({
-            data: sellers.map((seller) => ({
-              userId: seller.id,
-              title: `Đã chốt sổ nhận ký gửi phiên "${auction.title}"`,
-              content: `Phiên đấu giá "${auction.title}" đã chính thức ngừng tiếp nhận sản phẩm ký gửi. Chuẩn bị bước vào phiên đấu giá.`,
-              auctionId: auction.id,
-              targetUrl: auctionTargetUrlForRole(auction.id, seller.role, seller.isSellerActive),
-              type: NotificationType.AUCTION,
-              channel: NotificationChannel.IN_APP,
-            })),
-          });
-        }
-      }
-    } catch (notifyError) {
-      this.logger.warn(
-        `Failed to dispatch consignment lock notifications: ${notifyError instanceof Error ? notifyError.message : String(notifyError)}`,
-      );
-    }
-
-    return updated;
   }
 
   /**
-   * Admin immediately starts a DRAFT or SCHEDULED auction session and broadcasts the start event.
+   * Admin starts a scheduled multi-lot auction session manually:
+   * locks consignment, activates all approved lots simultaneously, broadcasts WebSocket `AUCTION_STARTED`,
+   * and notifies Buyers that live viewing and bidding has opened.
    */
   async adminStartAuction(auctionId: string) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-      include: {
-        items: {
-          where: { status: AuctionItemStatus.APPROVED },
-          orderBy: { lotNumber: 'asc' },
-          include: {
-            seller: {
-              select: {
-                id: true,
-                fullName: true,
-                avatarUrl: true,
-                shopAvatarUrl: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
-    }
-
-    if (
-      auction.status !== AuctionStatus.DRAFT &&
-      auction.status !== AuctionStatus.SCHEDULED &&
-      auction.status !== AuctionStatus.ACTIVE
-    ) {
-      throw new BadRequestException(
-        `Không thể bắt đầu phiên đấu giá ở trạng thái ${auction.status}.`,
-      );
-    }
-
-    if (auction.status !== AuctionStatus.ACTIVE && !auction.isConsignmentLocked) {
-      throw new BadRequestException(
-        'Vui lòng bấm chốt sổ nhận ký gửi trước khi bắt đầu phiên đấu giá.',
-      );
-    }
-
     const now = new Date();
-    const minDurationMs = Math.max(
-      auction.endTime.getTime() - auction.startTime.getTime(),
-      3600000,
-    );
-    const nextEndTime =
-      auction.endTime.getTime() <= now.getTime()
-        ? new Date(now.getTime() + minDurationMs)
-        : auction.endTime;
-
-    const updated = await this.prisma.auction.update({
-      where: { id: auctionId },
-      data: {
-        status: AuctionStatus.ACTIVE,
-        startTime: auction.status === AuctionStatus.ACTIVE ? auction.startTime : now,
-        endTime: nextEndTime,
-      },
-      include: {
-        createdByAdmin: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-          },
-        },
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-            avatarUrl: true,
-          },
-        },
-        items: {
-          where: { status: AuctionItemStatus.APPROVED },
-          orderBy: { lotNumber: 'asc' },
-          include: {
-            seller: {
-              select: {
-                id: true,
-                fullName: true,
-                avatarUrl: true,
-                shopAvatarUrl: true,
+    const { updated, approvedLots } = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
+      const existing = await tx.auction.findUnique({
+        where: { id: auctionId },
+        include: {
+          items: {
+            where: { status: AuctionItemStatus.APPROVED },
+            orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
+            include: {
+              seller: {
+                select: { id: true, fullName: true, avatarUrl: true, shopAvatarUrl: true },
               },
             },
           },
         },
-      },
+      });
+      if (!existing) {
+        throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      }
+      if (existing.status !== AuctionStatus.SCHEDULED) {
+        throw new BadRequestException('Chỉ có thể bắt đầu phiên đấu giá đang ở trạng thái chờ.');
+      }
+      if (existing.items.length === 0) {
+        throw new BadRequestException(
+          'Phiên đấu giá chưa có vật phẩm nào được duyệt (APPROVED) để bắt đầu.',
+        );
+      }
+
+      const plannedDuration = existing.endTime.getTime() - existing.startTime.getTime();
+      const targetEndTime =
+        existing.endTime.getTime() > now.getTime() + 60_000
+          ? existing.endTime
+          : new Date(now.getTime() + Math.max(MIN_AUCTION_DURATION_MS, plannedDuration));
+
+      await tx.auctionItem.updateMany({
+        where: { auctionId, status: AuctionItemStatus.APPROVED },
+        data: {
+          lotStatus: AuctionStatus.ACTIVE,
+          startTime: now,
+          endTime: targetEndTime,
+          originalEndTime: targetEndTime,
+          isExtended: false,
+        },
+      });
+
+      const updatedAuction = await tx.auction.update({
+        where: { id: auctionId },
+        data: {
+          status: AuctionStatus.ACTIVE,
+          isConsignmentLocked: true,
+          consignmentLockedAt: existing.consignmentLockedAt ?? now,
+          startTime: now,
+          endTime: targetEndTime,
+          originalEndTime: targetEndTime,
+        },
+      });
+
+      return { updated: updatedAuction, approvedLots: existing.items };
     });
 
-    const serializedItems = updated.items.map((item) => this.serializeShowcaseItem(item));
-    const introDurationMs = this.computeIntroDurationMs(serializedItems.length);
-    const serverTime = new Date().toISOString();
+    const introDurationMs = AuctionService.getIntroDurationMs(approvedLots.length);
+    const introItems: WsAuctionIntroItemPayload[] = approvedLots.map((item) => ({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      images: item.images,
+      threeModelKey: item.threeModelKey,
+      lotNumber: item.lotNumber,
+      startingPrice: Number(item.startingPrice ?? item.proposedStartingPrice),
+      proposedStartingPrice: Number(item.proposedStartingPrice),
+      reservePrice: item.reservePrice ? Number(item.reservePrice) : null,
+      proposedReservePrice: item.proposedReservePrice ? Number(item.proposedReservePrice) : null,
+      bidIncrement: Number(item.bidIncrement ?? item.proposedBidIncrement),
+      proposedBidIncrement: Number(item.proposedBidIncrement),
+      appraisalCertificateNumber: item.appraisalCertificateNumber,
+      appraisalAgency: item.appraisalAgency,
+      certificateImages: item.certificateImages,
+      certificateIssueDate: item.certificateIssueDate?.toISOString() ?? null,
+      lotStatus: AuctionStatus.ACTIVE as unknown as NexusAuctionStatus,
+      currentHighestBid: 0,
+      currentHighestBidderId: null,
+      totalBidsCount: 0,
+      startTime: now.toISOString(),
+      endTime: updated.endTime.toISOString(),
+      seller: item.seller,
+    }));
 
     this.auctionGateway.broadcastAuctionStarted({
       auctionId: updated.id,
       title: updated.title,
       description: updated.description,
-      startedAt: updated.startTime.toISOString(),
+      startedAt: now.toISOString(),
       endTime: updated.endTime.toISOString(),
-      serverTime,
+      serverTime: new Date().toISOString(),
       introDurationMs,
-      items: serializedItems,
+      items: introItems,
     });
 
-    await this.dispatchAuctionStartNotifications(updated);
+    await this.dispatchAuctionStartNotifications(
+      updated,
+      approvedLots.map((item) => item.sellerId),
+    );
 
     return {
       ...updated,
-      items: serializedItems,
-      serverTime,
+      startingPrice: Number(updated.startingPrice),
+      bidIncrement: Number(updated.bidIncrement),
       introDurationMs,
+      approvedLotsCount: approvedLots.length,
     };
   }
 
   /**
-   * Dispatches tailored in-app notifications to Support Staff, participating Sellers, other Sellers, and Buyers upon auction activation.
-   * @param auction Activated auction session with approved lots and seller attribution.
-   */
-  private async dispatchAuctionStartNotifications(auction: {
-    id: string;
-    title: string;
-    sellerId?: string | null;
-    items?: Array<{ seller?: { id: string } | null }>;
-  }): Promise<void> {
-    try {
-      if (
-        typeof this.prisma.user?.findMany !== 'function' ||
-        typeof this.prisma.notification?.createMany !== 'function'
-      ) {
-        return;
-      }
-
-      const recipients = await this.prisma.user.findMany({
-        where: {
-          role: { not: Role.ADMIN },
-        },
-        select: {
-          id: true,
-          role: true,
-          isSellerActive: true,
-        },
-      });
-
-      if (!recipients.length) {
-        return;
-      }
-
-      const participatingSellerIds = new Set<string>();
-      if (auction.sellerId) {
-        participatingSellerIds.add(auction.sellerId);
-      }
-      for (const item of auction.items ?? []) {
-        if (item.seller?.id) {
-          participatingSellerIds.add(item.seller.id);
-        }
-      }
-
-      const notifications = recipients.map((user) => {
-        if (participatingSellerIds.has(user.id)) {
-          return {
-            userId: user.id,
-            title: `Phiên đấu giá có sản phẩm của bạn đã bắt đầu: "${auction.title}"`,
-            content: `Phiên đấu giá "${auction.title}" có sản phẩm của bạn đã chính thức mở sàn trực tiếp. Hãy theo dõi phiên để cập nhật diễn biến giá đấu!`,
-            auctionId: auction.id,
-            targetUrl: auctionTargetUrlForRole(auction.id, user.role, user.isSellerActive),
-            type: NotificationType.AUCTION,
-            channel: NotificationChannel.IN_APP,
-          };
-        }
-
-        if (user.role === Role.SUPPORT_STAFF) {
-          return {
-            userId: user.id,
-            title: `Phiên đấu giá đã chính thức mở sàn: "${auction.title}"`,
-            content: `Phiên đấu giá "${auction.title}" đã bắt đầu diễn ra trực tiếp. Bộ phận hỗ trợ vui lòng theo dõi và hỗ trợ vận hành phiên.`,
-            auctionId: auction.id,
-            targetUrl: auctionTargetUrlForRole(auction.id, user.role, user.isSellerActive),
-            type: NotificationType.AUCTION,
-            channel: NotificationChannel.IN_APP,
-          };
-        }
-
-        if (user.role === Role.SELLER || user.isSellerActive) {
-          return {
-            userId: user.id,
-            title: `Phiên đấu giá đã bắt đầu live: "${auction.title}"`,
-            content: `Phiên đấu giá "${auction.title}" đã chính thức bắt đầu diễn ra trực tiếp. Theo dõi ngay để nắm bắt diễn biến thị trường!`,
-            auctionId: auction.id,
-            targetUrl: auctionTargetUrlForRole(auction.id, user.role, user.isSellerActive),
-            type: NotificationType.AUCTION,
-            channel: NotificationChannel.IN_APP,
-          };
-        }
-
-        return {
-          userId: user.id,
-          title: `Phiên đấu giá đã bắt đầu: "${auction.title}"`,
-          content: `Phiên đấu giá "${auction.title}" đã chính thức mở sàn đấu giá trực tiếp. Tham gia đặt giá ngay!`,
-          auctionId: auction.id,
-          targetUrl: auctionTargetUrl(auction.id),
-          type: NotificationType.AUCTION,
-          channel: NotificationChannel.IN_APP,
-        };
-      });
-
-      await this.prisma.notification.createMany({
-        data: notifications,
-      });
-    } catch (notifyError) {
-      this.logger.warn(
-        `Failed to dispatch auction start notifications: ${notifyError instanceof Error ? notifyError.message : String(notifyError)}`,
-      );
-    }
-  }
-
-  /**
-   * Admin deletes an auction room.
-   * Strict Rule: Prohibits deletion when auction is ACTIVE or EXTENDED.
+   * Admin deletes a non-active auction room that has no bids or awards.
    */
   async adminDeleteAuction(auctionId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
-      const auction = await tx.auction.findUnique({
-        where: { id: auctionId },
-        include: {
-          _count: {
-            select: { items: true, bids: true },
-          },
-        },
-      });
-
-      if (!auction) {
-        throw new NotFoundException('Không tìm thấy phiên đấu giá.');
-      }
-
-      if (auction.status === AuctionStatus.ACTIVE || auction.status === AuctionStatus.EXTENDED) {
-        throw new BadRequestException(
-          'Phiên đấu giá đang diễn ra, tuyệt đối không được phép xóa phiên!',
-        );
-      }
-
-      if (auction._count.bids > 0 || ['ENDED', 'SETTLED', 'FAILED'].includes(auction.status))
-        throw new BadRequestException('Không được hủy hoặc xóa lịch sử phiên đã nhận giá.');
-      await this.stock.release(tx, auctionId);
-
-      if (auction._count.items > 0 || auction._count.bids > 0) {
-        await tx.auction.update({
-          where: { id: auctionId },
-          data: { status: AuctionStatus.CANCELLED },
-        });
-        return {
-          success: true,
-          message:
-            'Phiên đấu giá đã có hàng ký gửi hoặc lịch sử, hệ thống đã chuyển sang CANCELLED.',
-        };
-      }
-
-      await tx.auction.delete({
-        where: { id: auctionId },
-      });
-
-      return {
-        success: true,
-        message: 'Đã xóa phiên đấu giá thành công.',
-      };
+    const existing = await this.prisma.auction.findUnique({
+      where: { id: auctionId },
+      include: { _count: { select: { bids: true, awards: true } } },
     });
+    if (!existing) {
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+    }
+    if (existing.status === AuctionStatus.ACTIVE || existing.status === AuctionStatus.EXTENDED) {
+      throw new BadRequestException('Không thể xóa phòng đấu giá đang diễn ra.');
+    }
+    if (existing._count.bids > 0 || existing._count.awards > 0) {
+      throw new BadRequestException('Không thể xóa phòng đấu giá đã phát sinh lượt đặt giá.');
+    }
+
+    await this.prisma.auction.delete({ where: { id: auctionId } });
+    return { success: true, deletedId: auctionId };
   }
 
-  // ==========================================
-  // SELLER CONSIGNMENT & ONLINE APPRAISAL
-  // ==========================================
-
   /**
-   * Seller submits an item with online appraisal certificates into a scheduled auction.
-   * Evaluates seller reputation requirement and flags prior probation/penalty history.
+   * Seller consigns an independent auction item (not linked to retail catalog/inventory) into a scheduled room.
    */
   async registerAuctionItem(auctionId: string, sellerId: string, dto: RegisterAuctionItemDto) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-    });
+    const [auction, seller] = await Promise.all([
+      this.prisma.auction.findUnique({ where: { id: auctionId } }),
+      this.prisma.user.findUnique({
+        where: { id: sellerId },
+        select: { id: true, role: true, reputationScore: true, isShopSuspended: true },
+      }),
+    ]);
 
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+    }
+    if (!seller || seller.role !== Role.SELLER) {
+      throw new ForbiddenException('Chỉ tài khoản Người bán mới được gửi vật phẩm ký gửi đấu giá.');
+    }
+    if (seller.isShopSuspended) {
+      throw new ForbiddenException(
+        'Gian hàng của bạn đang bị tạm khóa, không thể ký gửi vật phẩm.',
+      );
+    }
+    if (seller.reputationScore < auction.minSellerReputation) {
+      throw new ForbiddenException(
+        `Điểm uy tín tối thiểu để ký gửi vào phiên này là ${auction.minSellerReputation}.`,
+      );
+    }
+    if (auction.status !== AuctionStatus.SCHEDULED || auction.isConsignmentLocked) {
+      throw new BadRequestException('Phiên đấu giá đã khóa nhận ký gửi hoặc đã bắt đầu.');
+    }
+    if (auction.consignmentDeadline && Date.now() > auction.consignmentDeadline.getTime()) {
+      throw new BadRequestException('Đã quá hạn chót đăng ký vật phẩm ký gửi cho phiên này.');
     }
 
     if (
-      auction.isConsignmentLocked ||
-      (auction.consignmentDeadline && new Date() >= auction.consignmentDeadline) ||
-      (auction.status !== AuctionStatus.SCHEDULED && auction.status !== AuctionStatus.DRAFT)
+      dto.proposedReservePrice !== undefined &&
+      dto.proposedStartingPrice < dto.proposedReservePrice
     ) {
       throw new BadRequestException(
-        'Phiên đấu giá đã chốt sổ nhận ký gửi, yêu cầu đăng ký sản phẩm bị hủy.',
+        'Giá khởi điểm đề xuất phải lớn hơn hoặc bằng giá sàn (reserve price).',
       );
     }
 
-    const seller = await this.prisma.user.findUnique({
-      where: { id: sellerId },
-      include: {
-        reputationLogs: {
-          where: { penaltyType: { not: null } },
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-        },
-      },
-    });
-
-    if (!seller) {
-      throw new NotFoundException('Không tìm thấy tài khoản người bán.');
-    }
-
-    if (seller.isShopSuspended) {
-      throw new ForbiddenException(
-        'Gian hàng của bạn hiện đang bị đình chỉ, không thể gửi hàng tham gia đấu giá.',
-      );
-    }
-
-    // Kiểm tra điểm uy tín tối thiểu của Seller
-    const requiredSellerReputation = auction.minSellerReputation;
-    if (seller.reputationScore < requiredSellerReputation) {
-      throw new BadRequestException(
-        `Điểm uy tín của bạn là ${seller.reputationScore}, không đạt mức tối thiểu ${requiredSellerReputation} điểm yêu cầu của phiên đấu giá này.`,
-      );
-    }
-
-    // Kiểm tra tiền sử vi phạm: Đủ điểm nhưng từng bị phạt hoặc đang ở mức PROBATION
-    let isSellerFlagged = false;
-    let flagReason: string | null = null;
-
-    const hasPenalties = seller.reputationLogs.length > 0;
-    const isProbation =
-      seller.trustLevel === ReputationTrustLevel.PROBATION ||
-      trustLevelFor(seller.reputationScore) === ReputationTrustLevel.PROBATION;
-
-    if (hasPenalties || isProbation) {
-      isSellerFlagged = true;
-      const reasons: string[] = [];
-      if (hasPenalties) {
-        reasons.push(`Từng có ${seller.reputationLogs.length} lần bị xử phạt/trừ điểm uy tín`);
-      }
-      if (isProbation) {
-        reasons.push('Tài khoản hiện đang trong diện thử thách (PROBATION)');
-      }
-      flagReason = reasons.join('; ');
-      this.logger.warn(
-        `Seller ${seller.id} (${seller.fullName}) registered item with warning flag: ${flagReason}`,
-      );
-    }
-
-    const createdItem = await this.prisma.auctionItem.create({
+    return this.prisma.auctionItem.create({
       data: {
         auctionId,
         sellerId,
@@ -1154,166 +805,81 @@ export class AuctionService {
         proposedStartingPrice: dto.proposedStartingPrice,
         proposedReservePrice: dto.proposedReservePrice ?? null,
         proposedBidIncrement: dto.proposedBidIncrement ?? 100000,
+        weightGrams: dto.weightGrams ?? 500,
+        lengthCm: dto.lengthCm ?? 20,
+        widthCm: dto.widthCm ?? 15,
+        heightCm: dto.heightCm ?? 10,
         appraisalCertificateNumber: dto.appraisalCertificateNumber?.trim() || null,
         appraisalAgency: dto.appraisalAgency?.trim() || null,
         certificateImages: dto.certificateImages,
         certificateIssueDate: dto.certificateIssueDate ? new Date(dto.certificateIssueDate) : null,
         status: AuctionItemStatus.PENDING_REVIEW,
-        isSellerFlagged,
-        flagReason,
-      },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            fullName: true,
-            shopAvatarUrl: true,
-            reputationScore: true,
-            trustLevel: true,
-          },
-        },
+        lotStatus: AuctionStatus.SCHEDULED,
       },
     });
-
-    await notifyAllAdmins(this.prisma, {
-      title: isSellerFlagged ? 'Ký gửi đấu giá mới (Cần lưu ý ⚠️)' : 'Sản phẩm ký gửi đấu giá mới',
-      content: `Seller ${seller.fullName} vừa gửi "${createdItem.title}" vào phiên "${auction.title}" chờ thẩm định.${isSellerFlagged && flagReason ? ` Cảnh báo: ${flagReason}.` : ''}`,
-      type: NotificationType.AUCTION,
-      auctionId: auction.id,
-      targetUrl: '/admin/auctions',
-    });
-
-    return {
-      success: true,
-      message: isSellerFlagged
-        ? 'Đã nộp hồ sơ gửi hàng thành công. Lưu ý: Hồ sơ của bạn đã được gắn cờ lưu ý gửi Admin do có tiền sử cảnh báo.'
-        : 'Đã nộp hồ sơ gửi hàng đấu giá thành công. Vui lòng chờ Admin thẩm định chứng thư kiểm định.',
-      item: createdItem,
-    };
   }
 
   /**
-   * Admin retrieves all registered items for a specific auction to review certificates and approval states.
+   * Admin and Support Staff inspect all consigned items in an auction room (including pending/rejected).
    */
   async adminGetAuctionItems(auctionId: string) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-    });
-
+    const auction = await this.prisma.auction.findUnique({ where: { id: auctionId } });
     if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
     }
 
-    const items = await this.prisma.auctionItem.findMany({
+    return this.prisma.auctionItem.findMany({
       where: { auctionId },
-      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
       include: {
         seller: {
           select: {
             id: true,
             fullName: true,
-            platformEmail: true,
-            shopAvatarUrl: true,
-            avatarUrl: true,
+            email: true,
             reputationScore: true,
             trustLevel: true,
-            isShopSuspended: true,
           },
         },
-        reviewedByAdmin: {
-          select: {
-            id: true,
-            fullName: true,
+        reviewedByAdmin: { select: { id: true, fullName: true } },
+        awards: {
+          orderBy: { createdAt: 'desc' },
+          include: {
+            buyer: { select: { id: true, fullName: true, email: true, reputationScore: true } },
           },
         },
+        _count: { select: { bids: true, complaints: true } },
       },
     });
-
-    return {
-      auctionId,
-      auctionTitle: auction.title,
-      auctionStatus: auction.status,
-      totalCount: items.length,
-      items,
-    };
   }
 
   /**
-   * Admin reviews (approves/rejects) a consigned auction item.
+   * Admin approves or rejects a consigned auction item.
+   * When approved, enforces startingPrice >= reservePrice (if reservePrice is set) and assigns lot pricing.
    */
   async adminReviewAuctionItem(itemId: string, adminId: string, dto: ReviewAuctionItemDto) {
     const item = await this.prisma.auctionItem.findUnique({
       where: { id: itemId },
       include: { auction: true },
     });
-
     if (!item) {
-      throw new NotFoundException('Không tìm thấy món hàng ký gửi.');
+      throw new NotFoundException('Không tìm thấy vật phẩm ký gửi.');
     }
-
-    if (item.status !== AuctionItemStatus.PENDING_REVIEW) {
+    if (
+      item.auction.status !== AuctionStatus.SCHEDULED &&
+      item.auction.status !== AuctionStatus.DRAFT
+    ) {
       throw new BadRequestException(
-        `Món hàng này đã được xử lý trước đó ở trạng thái: ${item.status}.`,
+        'Không thể xét duyệt vật phẩm sau khi phiên đấu giá đã bắt đầu.',
       );
     }
 
-    if (dto.action === ReviewAction.APPROVE) {
-      const startingPrice = dto.startingPrice ?? item.proposedStartingPrice;
-      const reservePrice = dto.reservePrice ?? item.proposedReservePrice;
-      const bidIncrement = dto.bidIncrement ?? item.proposedBidIncrement;
-
-      const currentApprovedCount = await this.prisma.auctionItem.count({
-        where: { auctionId: item.auctionId, status: AuctionItemStatus.APPROVED },
-      });
-
-      const updated = await this.prisma.auctionItem.update({
-        where: { id: itemId },
-        data: {
-          status: AuctionItemStatus.APPROVED,
-          lotNumber: dto.lotNumber ?? currentApprovedCount + 1,
-          startingPrice,
-          reservePrice,
-          bidIncrement,
-          reviewedByAdminId: adminId,
-          reviewedAt: new Date(),
-        },
-      });
-
-      // Update parent auction starting price and increment if not configured
-      if (Number(item.auction.startingPrice) === 0) {
-        await this.prisma.auction.update({
-          where: { id: item.auctionId },
-          data: {
-            startingPrice,
-            reservePrice,
-            bidIncrement,
-          },
-        });
-      }
-
-      await this.prisma.notification.create({
-        data: {
-          userId: item.sellerId,
-          title: 'Sản phẩm ký gửi đấu giá đã được duyệt!',
-          content: `Món hàng "${item.title}" của bạn đã được Admin phê duyệt thẩm định và đưa vào phiên đấu giá "${item.auction.title}".`,
-          auctionId: item.auctionId,
-          targetUrl: auctionTargetUrl(item.auctionId),
-          type: NotificationType.AUCTION,
-          channel: NotificationChannel.IN_APP,
-        },
-      });
-
-      return {
-        success: true,
-        message: 'Đã phê duyệt món hàng vào phiên đấu giá thành công.',
-        item: updated,
-      };
-    } else {
+    if (dto.action === ReviewAction.REJECT) {
       if (!dto.rejectionReason?.trim()) {
-        throw new BadRequestException('Vui lòng nhập lý do từ chối món hàng.');
+        throw new BadRequestException('Vui lòng nhập lý do từ chối vật phẩm.');
       }
 
-      const updated = await this.prisma.auctionItem.update({
+      const rejected = await this.prisma.auctionItem.update({
         where: { id: itemId },
         data: {
           status: AuctionItemStatus.REJECTED,
@@ -1326,28 +892,77 @@ export class AuctionService {
       await this.prisma.notification.create({
         data: {
           userId: item.sellerId,
-          title: 'Sản phẩm ký gửi đấu giá bị từ chối ⚠️',
-          content: `Món hàng "${item.title}" của bạn đã bị từ chối đưa vào phiên đấu giá "${item.auction.title}". Lý do: ${dto.rejectionReason.trim()}.`,
           auctionId: item.auctionId,
-          targetUrl: auctionTargetUrl(item.auctionId),
+          targetUrl: `/seller/auctions`,
+          title: `Vật phẩm "${item.title}" chưa được duyệt đấu giá`,
+          content: `Admin đã từ chối vật phẩm "${item.title}" cho phiên "${item.auction.title}". Lý do: ${dto.rejectionReason.trim()}`,
           type: NotificationType.AUCTION,
           channel: NotificationChannel.IN_APP,
         },
       });
 
-      return {
-        success: true,
-        message: 'Đã từ chối món hàng.',
-        item: updated,
-      };
+      return rejected;
     }
+
+    const effectiveStartingPrice = dto.startingPrice ?? Number(item.proposedStartingPrice);
+    const effectiveReservePrice =
+      dto.reservePrice !== undefined
+        ? dto.reservePrice
+        : item.proposedReservePrice !== null
+          ? Number(item.proposedReservePrice)
+          : null;
+    const effectiveBidIncrement = dto.bidIncrement ?? Number(item.proposedBidIncrement);
+
+    if (effectiveReservePrice !== null && effectiveStartingPrice < effectiveReservePrice) {
+      throw new BadRequestException(
+        'Giá khởi điểm chính thức không được thấp hơn giá sàn (reserve price) để đảm bảo ngay cả người đặt đầu tiên vẫn đạt giá sàn.',
+      );
+    }
+
+    let lotNumber = dto.lotNumber ?? item.lotNumber;
+    if (!lotNumber) {
+      const maxLot = await this.prisma.auctionItem.aggregate({
+        where: { auctionId: item.auctionId, status: AuctionItemStatus.APPROVED },
+        _max: { lotNumber: true },
+      });
+      lotNumber = (maxLot._max.lotNumber ?? 0) + 1;
+    }
+
+    const approved = await this.prisma.auctionItem.update({
+      where: { id: itemId },
+      data: {
+        status: AuctionItemStatus.APPROVED,
+        lotStatus: AuctionStatus.SCHEDULED,
+        rejectionReason: null,
+        lotNumber,
+        startingPrice: effectiveStartingPrice,
+        reservePrice: effectiveReservePrice,
+        bidIncrement: effectiveBidIncrement,
+        reviewedByAdminId: adminId,
+        reviewedAt: new Date(),
+      },
+    });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: item.sellerId,
+        auctionId: item.auctionId,
+        targetUrl: auctionTargetUrl(item.auctionId),
+        title: `Vật phẩm "${item.title}" đã được duyệt (Lô #${lotNumber})`,
+        content: `Admin đã duyệt "${item.title}" vào Lô #${lotNumber} của phiên "${item.auction.title}" với giá khởi điểm ${formatVnd(effectiveStartingPrice)}.`,
+        type: NotificationType.AUCTION,
+        channel: NotificationChannel.IN_APP,
+      },
+    });
+
+    return approved;
   }
 
   /**
-   * Retrieves consignments submitted by the authenticated seller across all auctions.
+   * Lists consigned items owned by the authenticated seller across all auction sessions.
    */
   async getSellerConsignments(sellerId: string) {
-    const items = await this.prisma.auctionItem.findMany({
+    return this.prisma.auctionItem.findMany({
       where: { sellerId },
       orderBy: { createdAt: 'desc' },
       include: {
@@ -1358,601 +973,898 @@ export class AuctionService {
             status: true,
             startTime: true,
             endTime: true,
-            minSellerReputation: true,
+            consignmentDeadline: true,
+          },
+        },
+        awards: {
+          orderBy: { createdAt: 'desc' },
+          take: 2,
+          select: {
+            id: true,
+            tier: true,
+            status: true,
+            offerAmount: true,
+            depositAmount: true,
+            expiresAt: true,
           },
         },
       },
     });
-
-    return items;
   }
 
-  // ==========================================
-  // BUYER ELIGIBILITY TELEMETRY
-  // ==========================================
-
   /**
-   * Checks whether an authenticated buyer is eligible to bid or view-only in an auction.
+   * Checks whether an authenticated account is eligible to bid in the room
+   * (validates Buyer mode, suspension status, reputation threshold, and wallet availability).
    */
   async checkBuyerEligibility(auctionId: string, buyerId: string) {
-    const auction = await this.prisma.auction.findUnique({
-      where: { id: auctionId },
-    });
-
-    if (!auction) {
-      throw new NotFoundException('Không tìm thấy phiên đấu giá.');
-    }
-
-    const buyer = await this.prisma.user.findUnique({
-      where: { id: buyerId },
-      include: {
-        reputationLogs: {
-          where: { penaltyType: { not: null } },
-          take: 3,
-        },
-      },
-    });
-
-    if (!buyer) {
-      throw new NotFoundException('Không tìm thấy tài khoản người mua.');
-    }
-
-    const requiredScore = Math.max(40, auction.minBuyerReputation ?? 40);
-    const currentScore = buyer.reputationScore;
-
-    if (currentScore < requiredScore) {
-      return {
-        isEligible: false,
-        isFlaggedViewOnly: true,
-        currentScore,
-        requiredScore,
-        reason: `Điểm uy tín hiện tại của bạn (${currentScore}) thấp hơn yêu cầu tối thiểu của phiên (${requiredScore}). Bạn chỉ có thể theo dõi phòng đấu giá (View-Only).`,
-      };
-    }
-
-    if (!['BUYER', 'SELLER'].includes(buyer.role) || buyer.trustLevel === 'SUSPENDED') {
-      return {
-        isEligible: false,
-        isFlaggedViewOnly: true,
-        currentScore,
-        requiredScore,
-        reason: 'Tài khoản không có quyền trả giá.',
-      };
-    }
-
-    return {
-      isEligible: true,
-      isFlaggedViewOnly: false,
-      currentScore,
-      requiredScore,
-      reason: 'Tài khoản đủ điều kiện tham gia trả giá.',
-    };
-  }
-
-  // ==========================================
-  // BIDDING & FINALIZATION (COMPATIBILITY)
-  // ==========================================
-
-  /**
-   * Submits a competitive bid with wallet balance locking, reputation verification, and anti-sniping.
-   */
-  async placeBid(auctionId: string, bidderId: string, dto: PlaceBidDto) {
-    const bidAmount = dto.bidAmount;
-
-    // Check buyer eligibility before proceeding
-    const eligibility = await this.checkBuyerEligibility(auctionId, bidderId);
-    if (!eligibility.isEligible) {
-      throw new BadRequestException(eligibility.reason);
-    }
-
-    const result = await this.prisma.$transaction(async (tx) => {
-      if (typeof (tx as unknown as { $queryRaw: unknown }).$queryRaw === 'function') {
-        await (
-          tx as unknown as {
-            $queryRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
-          }
-        ).$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
-        await (
-          tx as unknown as {
-            $queryRaw: (strings: TemplateStringsArray, ...values: unknown[]) => Promise<unknown>;
-          }
-        ).$queryRaw`SELECT id FROM wallets WHERE user_id = ${bidderId} FOR UPDATE`;
-      }
-
-      const auction = await tx.auction.findUnique({
+    const [auction, user, wallet] = await Promise.all([
+      this.prisma.auction.findUnique({
         where: { id: auctionId },
         include: {
-          seller: { select: { id: true, fullName: true } },
-        },
-      });
-
-      if (!auction) {
-        throw new NotFoundException('Không tìm thấy phiên đấu giá.');
-      }
-
-      const now = new Date();
-
-      if (!auction.productId || !auction.sellerId)
-        throw new BadRequestException('Phiên chưa gắn sản phẩm catalog để giao hàng.');
-      const currentBuyer = await tx.user.findUnique({ where: { id: bidderId } });
-      if (
-        !currentBuyer ||
-        !['BUYER', 'SELLER'].includes(currentBuyer.role) ||
-        currentBuyer.trustLevel === 'SUSPENDED' ||
-        currentBuyer.reputationScore < Math.max(40, auction.minBuyerReputation ?? 40)
-      )
-        throw new BadRequestException('Tài khoản không còn đủ điều kiện trả giá.');
-
-      if (auction.sellerId === bidderId) {
-        throw new BadRequestException('Người bán không được phép tham gia trả giá phiên của mình.');
-      }
-
-      if (auction.status === AuctionStatus.SCHEDULED) {
-        if (!auction.isConsignmentLocked) {
-          throw new BadRequestException('Phiên đấu giá chưa chốt sổ nhận ký gửi và chưa bắt đầu.');
-        }
-        if (now < auction.startTime) {
-          throw new BadRequestException('Phiên đấu giá chưa đến giờ bắt đầu.');
-        }
-        await tx.auction.update({
-          where: { id: auction.id },
-          data: { status: AuctionStatus.ACTIVE },
-        });
-        auction.status = AuctionStatus.ACTIVE;
-      }
-
-      if (auction.status !== AuctionStatus.ACTIVE && auction.status !== AuctionStatus.EXTENDED) {
-        throw new BadRequestException(
-          `Phiên đấu giá hiện không ở trạng thái nhận giá (${auction.status}).`,
-        );
-      }
-
-      if (now >= auction.endTime) {
-        throw new BadRequestException('Phiên đấu giá đã kết thúc.');
-      }
-
-      if (auction.currentHighestBidderId === bidderId) {
-        throw new BadRequestException('Bạn đang là người trả giá cao nhất hiện tại.');
-      }
-
-      const currentHighest = Number(auction.currentHighestBid);
-      const increment = Number(auction.bidIncrement);
-      const startingPrice = Number(auction.startingPrice);
-
-      const requiredMin = auction.totalBidsCount === 0 ? startingPrice : currentHighest + increment;
-
-      if (bidAmount < requiredMin) {
-        throw new BadRequestException(
-          `Mức giá trả tối thiểu hợp lệ là ${requiredMin.toLocaleString('vi-VN')} VND.`,
-        );
-      }
-
-      const bidderWallet = await tx.wallet.findUnique({
-        where: { userId: bidderId },
-      });
-
-      if (!bidderWallet || Number(bidderWallet.balance) < bidAmount) {
-        throw new BadRequestException(
-          `Số dư khả dụng trong ví NEXUS Pay không đủ (${Number(bidderWallet?.balance || 0).toLocaleString('vi-VN')} VND). Cần tối thiểu ${bidAmount.toLocaleString('vi-VN')} VND để đặt cọc.`,
-        );
-      }
-
-      let isExtended = auction.isExtended;
-      let newEndTime = auction.endTime;
-      let extendedSeconds = 0;
-      const remainingMs = auction.endTime.getTime() - now.getTime();
-
-      if (remainingMs <= 120000) {
-        extendedSeconds = 120;
-        newEndTime = new Date(auction.endTime.getTime() + 120000);
-        isExtended = true;
-      }
-
-      await tx.wallet.update({
-        where: { id: bidderWallet.id },
-        data: {
-          balance: { decrement: bidAmount },
-          lockedBalance: { increment: bidAmount },
-        },
-      });
-
-      await tx.walletTransaction.create({
-        data: {
-          walletId: bidderWallet.id,
-          amount: bidAmount,
-          type: WalletTransactionType.AUCTION_BID_LOCK,
-          status: WalletTransactionStatus.SUCCESS,
-          referenceId: auction.id,
-          description: `Khóa cọc tham gia đấu giá #${auction.id.slice(0, 8)}`,
-        },
-      });
-
-      const previousBidderId = auction.currentHighestBidderId;
-      if (previousBidderId && previousBidderId !== bidderId && currentHighest > 0) {
-        const prevWallet = await tx.wallet.findUnique({
-          where: { userId: previousBidderId },
-        });
-
-        if (prevWallet) {
-          await tx.wallet.update({
-            where: { id: prevWallet.id },
-            data: {
-              lockedBalance: { decrement: currentHighest },
-              balance: { increment: currentHighest },
+          items: {
+            where: { status: AuctionItemStatus.APPROVED },
+            select: {
+              id: true,
+              lotNumber: true,
+              title: true,
+              startingPrice: true,
+              reservePrice: true,
+              lotStatus: true,
             },
-          });
-
-          await tx.walletTransaction.create({
-            data: {
-              walletId: prevWallet.id,
-              amount: currentHighest,
-              type: WalletTransactionType.AUCTION_BID_REFUND,
-              status: WalletTransactionStatus.SUCCESS,
-              referenceId: auction.id,
-              description: `Hoàn cọc đấu giá #${auction.id.slice(0, 8)} do có người trả giá cao hơn`,
-            },
-          });
-
-          await tx.notification.create({
-            data: {
-              userId: previousBidderId,
-              title: 'Bạn đã bị vượt giá đấu!',
-              content: `Có người vừa trả mức giá cao hơn (${bidAmount.toLocaleString('vi-VN')} VND) cho phiên "${auction.title}". Số tiền đặt cọc (${currentHighest.toLocaleString('vi-VN')} VND) đã được hoàn lại vào ví của bạn.`,
-              auctionId: auction.id,
-              targetUrl: auctionTargetUrl(auction.id),
-              type: NotificationType.AUCTION,
-              channel: NotificationChannel.IN_APP,
-            },
-          });
-        }
-
-        await tx.bid.updateMany({
-          where: {
-            auctionId: auction.id,
-            status: BidStatus.ACCEPTED,
-          },
-          data: {
-            status: BidStatus.SUPERSEDED,
-          },
-        });
-      }
-
-      const createdBid = await tx.bid.create({
-        data: {
-          auctionId: auction.id,
-          bidderId,
-          bidAmount,
-          status: BidStatus.ACCEPTED,
-        },
-        include: {
-          bidder: {
-            select: { id: true, fullName: true, avatarUrl: true },
           },
         },
-      });
-
-      const nextStatus = isExtended ? AuctionStatus.EXTENDED : auction.status;
-
-      const updatedAuction = await tx.auction.update({
-        where: { id: auction.id },
-        data: {
-          currentHighestBid: bidAmount,
-          currentHighestBidderId: bidderId,
-          totalBidsCount: { increment: 1 },
-          endTime: newEndTime,
-          isExtended,
-          status: nextStatus,
+      }),
+      this.prisma.user.findUnique({
+        where: { id: buyerId },
+        select: {
+          id: true,
+          role: true,
+          isSellerActive: true,
+          isShopSuspended: true,
+          reputationScore: true,
+          trustLevel: true,
         },
-      });
+      }),
+      this.prisma.wallet.findUnique({ where: { userId: buyerId } }),
+    ]);
 
-      return {
-        bid: createdBid,
-        auction: updatedAuction,
-        extendedSeconds,
-        newEndTime,
-      };
-    });
+    if (!auction) {
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+    }
+    if (!user) {
+      throw new NotFoundException('Không tìm thấy tài khoản.');
+    }
 
-    this.auctionGateway.broadcastBidPlaced({
-      auctionId: result.auction.id,
-      bidId: result.bid.id,
-      bidderId: result.bid.bidder.id,
-      bidderName: this.maskName(result.bid.bidder.fullName),
-      bidAmount: Number(result.bid.bidAmount),
-      placedAt: result.bid.placedAt.toISOString(),
-      newMinimumBid: Number(result.auction.currentHighestBid) + Number(result.auction.bidIncrement),
-    });
+    const introState = this.computeIntroState(
+      auction.status,
+      auction.startTime,
+      auction.items.length,
+    );
+    const reasons: string[] = [];
 
-    if (result.extendedSeconds > 0) {
-      this.auctionGateway.broadcastTimeExtended({
-        auctionId: result.auction.id,
-        extendedBySeconds: result.extendedSeconds,
-        newEndTime: result.newEndTime.toISOString(),
-        reason: 'ANTI_SNIPING',
-      });
+    if (user.role === Role.ADMIN || user.role === Role.SUPPORT_STAFF) {
+      reasons.push('Tài khoản Admin / Nhân viên hỗ trợ chỉ có quyền quản lý và quan sát.');
+    }
+    if (user.isSellerActive) {
+      reasons.push(
+        'Tài khoản đang ở chế độ Người bán chỉ được xem. Vui lòng chuyển sang chế độ Người mua để đặt giá.',
+      );
+    }
+    if (user.isShopSuspended || user.trustLevel === ReputationTrustLevel.SUSPENDED) {
+      reasons.push('Tài khoản đang bị tạm khóa hoặc bị hạn chế quyền giao dịch.');
+    }
+    if (user.reputationScore < auction.minBuyerReputation) {
+      reasons.push(
+        `Điểm uy tín hiện tại (${user.reputationScore}) thấp hơn mức tối thiểu (${auction.minBuyerReputation}).`,
+      );
+    }
+    if (!wallet) {
+      reasons.push('Bạn chưa khởi tạo ví nền tảng để khóa 100% tiền giữ chỗ khi đặt giá.');
     }
 
     return {
-      success: true,
-      bidId: result.bid.id,
-      bidAmount: Number(result.bid.bidAmount),
-      currentHighestBid: Number(result.auction.currentHighestBid),
-      endTime: result.auction.endTime,
-      isExtended: result.auction.isExtended,
-      status: result.auction.status,
+      eligible: reasons.length === 0,
+      reasons,
+      reputationScore: user.reputationScore,
+      minBuyerReputation: auction.minBuyerReputation,
+      availableBalance: Number(wallet?.balance ?? 0),
+      lockedBalance: Number(wallet?.lockedBalance ?? 0),
+      isSellerActive: user.isSellerActive,
+      introActive: introState.isIntroActive,
+      approvedLotsCount: auction.items.length,
     };
   }
 
   /**
-   * Concludes an auction room and settles the winning bidder or failures.
+   * Places a competitive bid on a specific lot inside an active auction room.
+   * Locks 100% of bidAmount in buyer's wallet, refunds 100% to any outbid buyer deterministically,
+   * validates reserve price on single-bidder lots, and extends that lot's timer by +120s on late bids.
    */
-  async endAuction(
-    auctionId: string,
-    callerId?: string,
-    callerRole?: string,
-  ): Promise<{
-    id: string;
-    status: AuctionStatus;
-    winningBidderId: string | null;
-    winningPrice: number;
-    awardId?: string;
-  }> {
+  async placeBid(auctionId: string, bidderId: string, dto: PlaceBidDto) {
+    const bidder = await this.prisma.user.findUnique({
+      where: { id: bidderId },
+      select: {
+        id: true,
+        role: true,
+        fullName: true,
+        isSellerActive: true,
+        isShopSuspended: true,
+        reputationScore: true,
+        trustLevel: true,
+      },
+    });
+    if (!bidder) {
+      throw new NotFoundException('Không tìm thấy tài khoản đặt giá.');
+    }
+    if (bidder.role === Role.ADMIN || bidder.role === Role.SUPPORT_STAFF) {
+      throw new ForbiddenException('Admin và Nhân viên hỗ trợ không thể tham gia đặt giá.');
+    }
+    if (bidder.isSellerActive) {
+      throw new ForbiddenException(
+        'Bạn đang ở chế độ Người bán nên chỉ có thể xem phòng đấu giá. Vui lòng chuyển về chế độ Người mua để đặt giá.',
+      );
+    }
+    if (bidder.isShopSuspended || bidder.trustLevel === ReputationTrustLevel.SUSPENDED) {
+      throw new ForbiddenException('Tài khoản đang bị hạn chế quyền tham gia đấu giá.');
+    }
+
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM auctions WHERE id = ${auctionId} FOR UPDATE`;
       const auction = await tx.auction.findUnique({
         where: { id: auctionId },
         include: {
-          bids: { where: { status: BidStatus.ACCEPTED }, orderBy: { bidAmount: 'desc' }, take: 1 },
+          items: {
+            where: { status: AuctionItemStatus.APPROVED },
+            orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
+            select: { id: true },
+          },
         },
       });
-      if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
-      const privileged = callerRole === Role.ADMIN || callerRole === Role.SUPPORT_STAFF;
-      if (callerId && !privileged && auction.sellerId !== callerId)
-        throw new ForbiddenException('Bạn không có quyền kết thúc phiên của người khác.');
-      if (auction.status === AuctionStatus.SCHEDULED || auction.status === AuctionStatus.DRAFT) {
-        if (!auction.isConsignmentLocked) {
+      if (!auction) {
+        throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+      }
+      if (auction.status !== AuctionStatus.ACTIVE && auction.status !== AuctionStatus.EXTENDED) {
+        throw new BadRequestException('Phòng đấu giá hiện không trong trạng thái mở đặt giá.');
+      }
+
+      const introState = this.computeIntroState(
+        auction.status,
+        auction.startTime,
+        auction.items.length,
+      );
+      if (introState.isIntroActive) {
+        throw new BadRequestException(
+          'Phòng đấu giá đang phát đoạn giới thiệu 3D, nút đặt giá sẽ mở sau khi giới thiệu kết thúc.',
+        );
+      }
+
+      if (bidder.reputationScore < auction.minBuyerReputation) {
+        throw new ForbiddenException(
+          `Điểm uy tín tối thiểu để tham gia đấu giá là ${auction.minBuyerReputation}.`,
+        );
+      }
+
+      let targetItemId = dto.auctionItemId;
+      if (!targetItemId) {
+        if (auction.items.length === 1) {
+          targetItemId = auction.items[0].id;
+        } else {
           throw new BadRequestException(
-            'Vui lòng chốt sổ nhận ký gửi trước khi thao tác kết thúc phiên đấu giá.',
+            'Phòng đấu giá có nhiều lô hàng. Vui lòng chọn đúng lô muốn đặt giá (auctionItemId).',
           );
         }
-        throw new BadRequestException('Chỉ có thể kết thúc phiên đấu giá đang diễn ra.');
       }
-      if (['ENDED', 'SETTLED', 'FAILED', 'CANCELLED'].includes(auction.status)) {
-        const award = await tx.auctionAward.findFirst({
-          where: { auctionId },
-          orderBy: { expiresAt: 'desc' },
+
+      await tx.$queryRaw`SELECT id FROM auction_items WHERE id = ${targetItemId} FOR UPDATE`;
+      const lot = await tx.auctionItem.findFirst({
+        where: { id: targetItemId, auctionId, status: AuctionItemStatus.APPROVED },
+      });
+      if (!lot) {
+        throw new NotFoundException('Không tìm thấy lô hàng hợp lệ trong phòng đấu giá này.');
+      }
+      if (lot.sellerId === bidderId) {
+        throw new ForbiddenException('Người bán không thể tự đặt giá cho vật phẩm của chính mình.');
+      }
+      if (lot.lotStatus !== AuctionStatus.ACTIVE && lot.lotStatus !== AuctionStatus.EXTENDED) {
+        throw new BadRequestException('Lô hàng này đã kết thúc nhận lượt đặt giá.');
+      }
+
+      const now = new Date();
+      const effectiveLotEndTime = lot.endTime ?? auction.endTime;
+      if (effectiveLotEndTime.getTime() <= now.getTime()) {
+        throw new BadRequestException('Lô hàng này đã hết thời gian đặt giá.');
+      }
+
+      const startingPrice = Number(lot.startingPrice ?? lot.proposedStartingPrice);
+      const reservePrice =
+        lot.reservePrice !== null
+          ? Number(lot.reservePrice)
+          : lot.proposedReservePrice !== null
+            ? Number(lot.proposedReservePrice)
+            : null;
+      const bidIncrement = Number(
+        lot.bidIncrement ?? lot.proposedBidIncrement ?? auction.bidIncrement,
+      );
+      const currentHighestBid = Number(lot.currentHighestBid);
+      const previousBidderId = lot.currentHighestBidderId;
+
+      if (previousBidderId === bidderId) {
+        throw new BadRequestException(
+          'Bạn đang là người trả giá cao nhất hiện tại cho lô hàng này.',
+        );
+      }
+
+      const requiredMinimum =
+        lot.totalBidsCount === 0
+          ? Math.max(startingPrice, reservePrice ?? 0)
+          : currentHighestBid + bidIncrement;
+
+      if (dto.bidAmount < requiredMinimum) {
+        throw new BadRequestException(
+          lot.totalBidsCount === 0 && reservePrice && reservePrice > startingPrice
+            ? `Mức giá đặt đầu tiên phải đạt tối thiểu giá sàn (${formatVnd(requiredMinimum)}).`
+            : `Giá đặt tối thiểu cho lượt tiếp theo là ${formatVnd(requiredMinimum)}.`,
+        );
+      }
+
+      const walletOwners = [
+        ...new Set([bidderId, previousBidderId].filter(Boolean) as string[]),
+      ].sort();
+      for (const ownerId of walletOwners) {
+        await tx.$queryRaw`SELECT id FROM wallets WHERE user_id = ${ownerId} FOR UPDATE`;
+      }
+
+      const bidderWallet = await tx.wallet.findUnique({ where: { userId: bidderId } });
+      if (!bidderWallet || Number(bidderWallet.balance) < dto.bidAmount) {
+        throw new BadRequestException(
+          `Số dư ví khả dụng không đủ để giữ chỗ 100% mức giá đặt (${formatVnd(dto.bidAmount)}).`,
+        );
+      }
+
+      await tx.wallet.update({
+        where: { id: bidderWallet.id },
+        data: {
+          balance: { decrement: dto.bidAmount },
+          lockedBalance: { increment: dto.bidAmount },
+        },
+      });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: bidderWallet.id,
+          type: WalletTransactionType.AUCTION_BID_LOCK,
+          amount: -dto.bidAmount,
+          status: WalletTransactionStatus.SUCCESS,
+          referenceId: auctionId,
+          description: `Giữ chỗ 100% giá đặt (${formatVnd(dto.bidAmount)}) cho ${lotDisplayTitle(lot.lotNumber, lot.title)}.`,
+        },
+      });
+
+      if (previousBidderId && currentHighestBid > 0) {
+        const prevWallet = await tx.wallet.findUnique({ where: { userId: previousBidderId } });
+        if (prevWallet && Number(prevWallet.lockedBalance) >= currentHighestBid) {
+          await tx.wallet.update({
+            where: { id: prevWallet.id },
+            data: {
+              balance: { increment: currentHighestBid },
+              lockedBalance: { decrement: currentHighestBid },
+            },
+          });
+          await tx.walletTransaction.create({
+            data: {
+              walletId: prevWallet.id,
+              type: WalletTransactionType.AUCTION_BID_REFUND,
+              amount: currentHighestBid,
+              status: WalletTransactionStatus.SUCCESS,
+              referenceId: auctionId,
+              description: `Hoàn 100% tiền giữ chỗ (${formatVnd(currentHighestBid)}) do có người trả giá cao hơn tại ${lotDisplayTitle(lot.lotNumber, lot.title)}.`,
+            },
+          });
+        }
+
+        await tx.notification.create({
+          data: {
+            userId: previousBidderId,
+            auctionId,
+            targetUrl: auctionTargetUrl(auctionId),
+            title: `Bạn đã bị vượt giá tại ${lotDisplayTitle(lot.lotNumber, lot.title)}`,
+            content: `Đã có người trả giá ${formatVnd(dto.bidAmount)} cho ${lotDisplayTitle(lot.lotNumber, lot.title)}. Toàn bộ ${formatVnd(currentHighestBid)} giữ chỗ của bạn đã được mở khóa về ví.`,
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+            metadata: {
+              actionType: 'AUCTION_OUTBID',
+              auctionId,
+              auctionItemId: lot.id,
+              newHighestBid: dto.bidAmount,
+            },
+          },
         });
-        return {
-          id: auction.id,
-          status: auction.status,
-          winningBidderId: auction.currentHighestBidderId,
-          winningPrice: Number(auction.currentHighestBid),
-          awardId: award?.id,
-          changed: false,
-        };
       }
-      if (!privileged && Date.now() < auction.endTime.getTime())
-        throw new BadRequestException('Phiên đấu giá chưa kết thúc.');
-      const winner = auction.bids[0];
-      const meetsReserve =
-        winner && (!auction.reservePrice || winner.bidAmount.gte(auction.reservePrice));
-      if (meetsReserve) {
-        if (!auction.productId || !auction.sellerId)
-          throw new BadRequestException('Cần đối soát sản phẩm ký gửi trước khi tạo đơn.');
-        const award = await this.checkout.createAward(tx, {
+
+      const bid = await tx.bid.create({
+        data: {
           auctionId,
-          bidId: winner.id,
-          buyerId: winner.bidderId,
-          sellerId: auction.sellerId,
-          productId: auction.productId,
-          amount: winner.bidAmount,
-          depositAmount: winner.bidAmount,
-          stockReference: auctionId,
-        });
-        await tx.bid.update({ where: { id: winner.id }, data: { status: 'WINNING' } });
-        await tx.auction.update({ where: { id: auctionId }, data: { status: 'ENDED' } });
-        await tx.notification.create({
-          data: {
-            userId: winner.bidderId,
-            title: 'Chúc mừng! Bạn đã thắng phiên đấu giá',
-            content: `Bạn đã chiến thắng phiên đấu giá "${auction.title}" với mức giá ${Number(winner.bidAmount).toLocaleString('vi-VN')} VND. Vui lòng hoàn tất nhận hàng và thanh toán trong vòng 24 giờ!`,
-            auctionId: auction.id,
-            targetUrl: auctionTargetUrl(auction.id),
-            type: 'AUCTION',
-            channel: 'IN_APP',
-          },
-        });
-        await tx.notification.create({
-          data: {
-            userId: auction.sellerId,
-            title: 'Phiên đấu giá của bạn đã kết thúc thành công!',
-            content: `Phiên đấu giá "${auction.title}" đã kết thúc với người thắng trả mức giá ${Number(winner.bidAmount).toLocaleString('vi-VN')} VND.`,
-            auctionId: auction.id,
-            targetUrl: auctionTargetUrl(auction.id),
-            type: 'AUCTION',
-            channel: 'IN_APP',
-          },
-        });
-        return {
-          id: auctionId,
-          status: AuctionStatus.ENDED,
-          winningBidderId: winner.bidderId,
-          winningPrice: Number(winner.bidAmount),
-          awardId: award.id,
-          changed: true,
-        };
-      }
-      if (winner) {
-        const wallet = await tx.wallet.findUniqueOrThrow({ where: { userId: winner.bidderId } });
-        const refunded = await tx.wallet.updateMany({
-          where: { id: wallet.id, lockedBalance: { gte: winner.bidAmount } },
-          data: {
-            lockedBalance: { decrement: winner.bidAmount },
-            balance: { increment: winner.bidAmount },
-          },
-        });
-        if (refunded.count !== 1)
-          throw new BadRequestException('Tiền cọc đấu giá cần được đối soát.');
-        await tx.walletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            amount: winner.bidAmount,
-            type: 'AUCTION_BID_REFUND',
-            status: 'SUCCESS',
-            referenceId: auctionId,
-            description: 'Hoàn cọc do không đạt giá bảo lưu',
-          },
-        });
-        await tx.bid.update({ where: { id: winner.id }, data: { status: 'REJECTED' } });
-      }
-      await this.stock.release(tx, auctionId);
-      await tx.auction.update({ where: { id: auctionId }, data: { status: 'FAILED' } });
+          auctionItemId: lot.id,
+          bidderId,
+          bidAmount: dto.bidAmount,
+          placedAt: now,
+        },
+      });
+
+      const remainingMs = effectiveLotEndTime.getTime() - now.getTime();
+      const shouldExtend = remainingMs <= ANTI_SNIPING_WINDOW_MS;
+      const updatedLotEndTime = shouldExtend
+        ? new Date(effectiveLotEndTime.getTime() + ANTI_SNIPING_EXTENSION_MS)
+        : effectiveLotEndTime;
+      const updatedLotStatus = shouldExtend ? AuctionStatus.EXTENDED : lot.lotStatus;
+
+      const updatedLot = await tx.auctionItem.update({
+        where: { id: lot.id },
+        data: {
+          currentHighestBid: dto.bidAmount,
+          currentHighestBidderId: bidderId,
+          totalBidsCount: { increment: 1 },
+          endTime: updatedLotEndTime,
+          ...(shouldExtend ? { isExtended: true, lotStatus: AuctionStatus.EXTENDED } : {}),
+        },
+      });
+
+      const updatedAuction = await tx.auction.update({
+        where: { id: auctionId },
+        data: {
+          totalBidsCount: { increment: 1 },
+          ...(Number(dto.bidAmount) > Number(auction.currentHighestBid)
+            ? { currentHighestBid: dto.bidAmount, currentHighestBidderId: bidderId }
+            : {}),
+          ...(updatedLotEndTime.getTime() > auction.endTime.getTime()
+            ? { endTime: updatedLotEndTime, isExtended: true, status: AuctionStatus.EXTENDED }
+            : shouldExtend
+              ? { isExtended: true, status: AuctionStatus.EXTENDED }
+              : {}),
+        },
+      });
+
       return {
-        id: auctionId,
-        status: AuctionStatus.FAILED,
-        winningBidderId: null,
-        winningPrice: 0,
-        changed: true,
+        bid,
+        updatedLot,
+        updatedAuction,
+        bidIncrement,
+        shouldExtend,
+        updatedLotEndTime,
+        updatedLotStatus,
       };
     });
-    if (result.changed)
-      this.auctionGateway.broadcastAuctionEnded({
+
+    this.auctionGateway.broadcastBidPlaced({
+      auctionId,
+      auctionItemId: result.updatedLot.id,
+      lotNumber: result.updatedLot.lotNumber,
+      bidId: result.bid.id,
+      bidderId,
+      bidderName: bidder.fullName,
+      bidAmount: Number(result.bid.bidAmount),
+      placedAt: result.bid.placedAt.toISOString(),
+      newMinimumBid: Number(result.bid.bidAmount) + result.bidIncrement,
+      totalBidsCount: result.updatedLot.totalBidsCount,
+    });
+
+    if (result.shouldExtend) {
+      this.auctionGateway.broadcastTimeExtended({
         auctionId,
-        winningBidderId: result.winningBidderId,
-        winningPrice: result.winningPrice,
+        auctionItemId: result.updatedLot.id,
+        newEndTime: result.updatedLotEndTime.toISOString(),
+        extendedBySeconds: ANTI_SNIPING_EXTENSION_MS / 1000,
+        reason: 'ANTI_SNIPING',
       });
-    const { changed: _changed, ...response } = result;
-    return response;
+    }
+
+    return {
+      bidId: result.bid.id,
+      auctionId,
+      auctionItemId: result.updatedLot.id,
+      bidAmount: Number(result.bid.bidAmount),
+      nextMinimumBid: Number(result.bid.bidAmount) + result.bidIncrement,
+      totalBidsCount: result.updatedLot.totalBidsCount,
+      lotStatus: result.updatedLotStatus,
+      endTime: result.updatedLotEndTime,
+      extended: result.shouldExtend,
+    };
   }
 
   /**
-   * Retrieves single seller auction listings (legacy compatibility).
+   * Admin manually concludes an individual lot for demo or operational completion.
+   * Support Staff are explicitly restricted from terminating lots or rooms early.
    */
-  async getMyAuctions(sellerId: string, query: AuctionQueryDto) {
-    return this.getAuctions({ ...query, sellerId });
-  }
-
-  /**
-   * Legacy method for seller creating individual auction (retained for backward compatibility).
-   */
-  async createAuction(sellerId: string, dto: CreateAuctionDto) {
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId },
+  async adminEndLot(auctionId: string, itemId: string, adminId: string) {
+    const lot = await this.prisma.auctionItem.findFirst({
+      where: { id: itemId, auctionId, status: AuctionItemStatus.APPROVED },
     });
-
-    if (!product) {
-      throw new NotFoundException('Không tìm thấy sản phẩm chỉ định để đấu giá.');
+    if (!lot) {
+      throw new NotFoundException('Không tìm thấy lô hàng đã duyệt trong phòng đấu giá này.');
+    }
+    if (lot.lotStatus !== AuctionStatus.ACTIVE && lot.lotStatus !== AuctionStatus.EXTENDED) {
+      throw new BadRequestException('Lô hàng này chưa bắt đầu hoặc đã kết thúc trước đó.');
     }
 
-    if (product.sellerId !== sellerId) {
-      throw new ForbiddenException('Bạn không sở hữu sản phẩm này để đưa vào đấu giá.');
-    }
+    return this.endLotInternal(itemId, adminId);
+  }
 
-    const startTime = new Date(dto.startTime);
-    const endTime = new Date(dto.endTime);
+  /**
+   * Finalizes all due active/extended lots whose countdown reached zero, plus any legacy rooms.
+   */
+  async endDueLots(): Promise<void> {
     const now = new Date();
+    const dueLots = await this.prisma.auctionItem.findMany({
+      where: {
+        status: AuctionItemStatus.APPROVED,
+        lotStatus: { in: [AuctionStatus.ACTIVE, AuctionStatus.EXTENDED] },
+        OR: [{ endTime: { lte: now } }, { endTime: null, auction: { endTime: { lte: now } } }],
+      },
+      take: 25,
+      orderBy: { endTime: 'asc' },
+      select: { id: true },
+    });
 
-    if (
-      !Number.isFinite(endTime.getTime()) ||
-      !Number.isFinite(startTime.getTime()) ||
-      endTime.getTime() - startTime.getTime() < 3600000 ||
-      endTime.getTime() - startTime.getTime() > 7 * 86400000
-    ) {
-      throw new BadRequestException('Phiên đấu giá phải kéo dài từ 60 phút đến 7 ngày.');
+    for (const lot of dueLots) {
+      await this.endLotInternal(lot.id, null).catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Retry lot end for ${lot.id}: ${message}`);
+      });
     }
 
-    const seller = await this.prisma.user.findUnique({ where: { id: sellerId } });
-    if (
-      !seller ||
-      seller.isShopSuspended ||
-      seller.reputationScore < 50 ||
-      trustLevelFor(seller.reputationScore) === ReputationTrustLevel.PROBATION ||
-      ['PROBATION', 'SUSPENDED'].includes(seller.trustLevel)
-    )
-      throw new BadRequestException('Người bán chưa đủ điều kiện tạo phiên đấu giá.');
-
-    const status = startTime <= now ? AuctionStatus.ACTIVE : AuctionStatus.SCHEDULED;
-
-    return this.prisma.$transaction(async (tx) => {
-      const auction = await tx.auction.create({
-        data: {
-          productId: dto.productId,
-          sellerId,
-          title: dto.title.trim(),
-          startingPrice: dto.startingPrice,
-          reservePrice: dto.reservePrice ?? null,
-          currentHighestBid: 0,
-          bidIncrement: dto.bidIncrement ?? 100000,
-          status,
-          startTime,
-          endTime,
-          originalEndTime: endTime,
-          isExtended: false,
-          totalBidsCount: 0,
-        },
-        include: {
-          product: true,
-        },
-      });
-      await this.stock.reserve(tx, {
-        productId: dto.productId,
-        referenceId: auction.id,
-        expiresAt: new Date(endTime.getTime() + 86400000),
-      });
-      return auction;
+    const legacyDueRooms = await this.prisma.auction.findMany({
+      where: {
+        status: { in: [AuctionStatus.ACTIVE, AuctionStatus.EXTENDED] },
+        endTime: { lte: now },
+        items: { none: { status: AuctionItemStatus.APPROVED } },
+      },
+      take: 20,
+      select: { id: true },
     });
+
+    for (const room of legacyDueRooms) {
+      await this.prisma.auction
+        .updateMany({
+          where: { id: room.id, status: { in: [AuctionStatus.ACTIVE, AuctionStatus.EXTENDED] } },
+          data: { status: AuctionStatus.ENDED },
+        })
+        .catch(() => undefined);
+    }
   }
 
   /**
-   * Retrieves bid history submitted by an individual buyer.
+   * Transitions a single lot from ACTIVE/EXTENDED to ENDED or FAILED, settles primary winner's
+   * 70% refund / 30% escrow deposit via AuctionCheckoutService, and broadcasts WS events.
+   */
+  async endLotInternal(itemId: string, endedByAdminId: string | null) {
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM auction_items WHERE id = ${itemId} FOR UPDATE`;
+      const lot = await tx.auctionItem.findUnique({
+        where: { id: itemId },
+        include: {
+          auction: true,
+        },
+      });
+      if (!lot) {
+        throw new NotFoundException('Không tìm thấy lô hàng đấu giá.');
+      }
+
+      if (lot.lotStatus !== AuctionStatus.ACTIVE && lot.lotStatus !== AuctionStatus.EXTENDED) {
+        return {
+          alreadyClosed: true,
+          lot,
+          awardId: null as string | null,
+          winningBid: null,
+          roomClosed: false,
+        };
+      }
+
+      const now = new Date();
+      const highestBid = await tx.bid.findFirst({
+        where: { auctionId: lot.auctionId, auctionItemId: lot.id, status: 'ACCEPTED' },
+        orderBy: [{ bidAmount: 'desc' }, { placedAt: 'asc' }],
+      });
+
+      const reservePrice =
+        lot.reservePrice !== null
+          ? Number(lot.reservePrice)
+          : lot.proposedReservePrice !== null
+            ? Number(lot.proposedReservePrice)
+            : null;
+      const reserveMet =
+        Boolean(highestBid) &&
+        (reservePrice === null || Number(highestBid!.bidAmount) >= reservePrice);
+
+      let awardId: string | null = null;
+      let targetLotStatus: AuctionStatus = AuctionStatus.FAILED;
+
+      if (highestBid && reserveMet) {
+        targetLotStatus = AuctionStatus.ENDED;
+        const award = await this.checkout.createPrimaryAward(tx, {
+          auctionId: lot.auctionId,
+          auctionItemId: lot.id,
+          bidId: highestBid.id,
+          buyerId: highestBid.bidderId,
+          sellerId: lot.sellerId,
+          title: lot.title,
+          lotNumber: lot.lotNumber,
+          offerAmount: Number(highestBid.bidAmount),
+          productId: lot.auction.productId,
+        });
+        awardId = award.id;
+
+        await tx.notification.create({
+          data: {
+            userId: lot.sellerId,
+            auctionId: lot.auctionId,
+            targetUrl: auctionTargetUrl(lot.auctionId),
+            title: `${lotDisplayTitle(lot.lotNumber, lot.title)} đã kết thúc`,
+            content: `${lotDisplayTitle(lot.lotNumber, lot.title)} đã có người thắng với giá ${formatVnd(Number(highestBid.bidAmount))}. Người thắng có 24 giờ để hoàn tất thanh toán 70% còn lại và phí vận chuyển.`,
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+            metadata: {
+              actionType: 'LOT_ENDED_WITH_WINNER',
+              auctionId: lot.auctionId,
+              auctionItemId: lot.id,
+              awardId: award.id,
+              winningPrice: Number(highestBid.bidAmount),
+            },
+          },
+        });
+      } else {
+        if (highestBid) {
+          const amount = Number(highestBid.bidAmount);
+          await tx.$queryRaw`SELECT id FROM wallets WHERE user_id = ${highestBid.bidderId} FOR UPDATE`;
+          const wallet = await tx.wallet.findUnique({ where: { userId: highestBid.bidderId } });
+          if (wallet && Number(wallet.lockedBalance) >= amount) {
+            await tx.wallet.update({
+              where: { id: wallet.id },
+              data: {
+                balance: { increment: amount },
+                lockedBalance: { decrement: amount },
+              },
+            });
+            await tx.walletTransaction.create({
+              data: {
+                walletId: wallet.id,
+                type: WalletTransactionType.AUCTION_BID_REFUND,
+                amount,
+                status: WalletTransactionStatus.SUCCESS,
+                referenceId: lot.auctionId,
+                description: `Hoàn 100% tiền giữ chỗ do ${lotDisplayTitle(lot.lotNumber, lot.title)} chưa đạt giá sàn.`,
+              },
+            });
+          }
+        }
+
+        await tx.notification.create({
+          data: {
+            userId: lot.sellerId,
+            auctionId: lot.auctionId,
+            targetUrl: '/seller/auctions',
+            title: `${lotDisplayTitle(lot.lotNumber, lot.title)} kết thúc không có người mua`,
+            content: `${lotDisplayTitle(lot.lotNumber, lot.title)} đã kết thúc mà không có lượt đặt giá đạt giá sàn. Luồng đấu giá cho món hàng này đã đóng.`,
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+          },
+        });
+      }
+
+      const updatedLot = await tx.auctionItem.update({
+        where: { id: lot.id },
+        data: {
+          lotStatus: targetLotStatus,
+          endTime: now,
+        },
+      });
+
+      await this.checkout.syncAuctionCompletionStatusTx(tx, lot.auctionId);
+      const refreshedAuction = await tx.auction.findUnique({
+        where: { id: lot.auctionId },
+        select: { status: true },
+      });
+
+      return {
+        alreadyClosed: false,
+        lot: updatedLot,
+        awardId,
+        winningBid: highestBid && reserveMet ? highestBid : null,
+        endedByAdminId,
+        roomClosed:
+          refreshedAuction?.status === AuctionStatus.ENDED ||
+          refreshedAuction?.status === AuctionStatus.SETTLED ||
+          refreshedAuction?.status === AuctionStatus.FAILED,
+      };
+    });
+
+    if (!outcome.alreadyClosed) {
+      const lotPayload: WsLotEndedPayload = {
+        auctionId: outcome.lot.auctionId,
+        auctionItemId: outcome.lot.id,
+        lotNumber: outcome.lot.lotNumber,
+        status: outcome.lot.lotStatus as unknown as NexusAuctionStatus,
+        winningBidderId: outcome.winningBid?.bidderId ?? null,
+        winningPrice: outcome.winningBid ? Number(outcome.winningBid.bidAmount) : 0,
+      };
+      this.auctionGateway.broadcastLotEnded(lotPayload);
+
+      if (outcome.roomClosed) {
+        this.auctionGateway.broadcastAuctionEnded({
+          auctionId: outcome.lot.auctionId,
+          winningBidderId: outcome.winningBid?.bidderId ?? null,
+          winningPrice: outcome.winningBid ? Number(outcome.winningBid.bidAmount) : 0,
+        });
+      }
+    }
+
+    return {
+      auctionId: outcome.lot.auctionId,
+      auctionItemId: outcome.lot.id,
+      lotNumber: outcome.lot.lotNumber,
+      lotStatus: outcome.lot.lotStatus,
+      awardId: outcome.awardId,
+      winningBidderId: outcome.winningBid?.bidderId ?? null,
+      winningPrice: outcome.winningBid ? Number(outcome.winningBid.bidAmount) : 0,
+      endedByAdminId: outcome.endedByAdminId,
+    };
+  }
+
+  /**
+   * Lists the bidder's recent bids across multi-lot rooms along with active post-auction offers.
    */
   async getMyBids(bidderId: string) {
     const bids = await this.prisma.bid.findMany({
       where: { bidderId },
       orderBy: { placedAt: 'desc' },
-      take: 50,
+      take: 100,
       include: {
         auction: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                title: true,
-                images: true,
-                basePrice: true,
-              },
-            },
+          select: { id: true, title: true, status: true, startTime: true, endTime: true },
+        },
+        auctionItem: {
+          select: {
+            id: true,
+            title: true,
+            images: true,
+            lotNumber: true,
+            lotStatus: true,
+            currentHighestBid: true,
+            currentHighestBidderId: true,
+            endTime: true,
+          },
+        },
+        award: {
+          select: {
+            id: true,
+            tier: true,
+            status: true,
+            offerAmount: true,
+            depositAmount: true,
+            expiresAt: true,
+            orderId: true,
           },
         },
       },
     });
 
-    return bids.map((b) => ({
-      id: b.id,
-      bidAmount: Number(b.bidAmount),
-      status: b.status,
-      placedAt: b.placedAt,
-      auction: {
-        id: b.auction.id,
-        title: b.auction.title,
-        status: b.auction.status,
-        endTime: b.auction.endTime,
-        currentHighestBid: Number(b.auction.currentHighestBid),
-        isLeading: b.auction.currentHighestBidderId === bidderId,
-        product: b.auction.product,
-      },
+    return bids.map((bid) => ({
+      ...bid,
+      bidAmount: Number(bid.bidAmount),
+      auctionItem: bid.auctionItem
+        ? {
+            ...bid.auctionItem,
+            currentHighestBid: Number(bid.auctionItem.currentHighestBid),
+          }
+        : null,
+      award:
+        bid.award && BUYER_VISIBLE_AWARD_STATUSES.includes(bid.award.status)
+          ? {
+              ...bid.award,
+              offerAmount: Number(bid.award.offerAmount),
+              depositAmount: Number(bid.award.depositAmount),
+            }
+          : null,
     }));
   }
 
   /**
-   * Anonymizes user full name for privacy compliance in public auction transcripts.
+   * Support Staff operational overview for "Hỗ Trợ Đấu Giá 3D":
+   * active/scheduled rooms, lots awaiting review or closing, open complaints, and auction support chats.
    */
-  private maskName(name: string): string {
-    if (!name || name.length <= 2) return 'Người dùng ***';
-    const parts = name.trim().split(' ');
-    if (parts.length === 1) {
-      return `${parts[0].slice(0, 2)}***`;
+  async getStaffOverview() {
+    const [auctions, openComplaints, pendingAwards, auctionSupportChats] = await Promise.all([
+      this.prisma.auction.findMany({
+        where: {
+          status: {
+            in: [
+              AuctionStatus.SCHEDULED,
+              AuctionStatus.ACTIVE,
+              AuctionStatus.EXTENDED,
+              AuctionStatus.ENDED,
+            ],
+          },
+        },
+        orderBy: [{ status: 'asc' }, { endTime: 'asc' }],
+        take: 30,
+        include: {
+          items: {
+            orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
+            include: {
+              seller: { select: { id: true, fullName: true, email: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.auctionComplaint.findMany({
+        where: { status: 'OPEN' },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: {
+          auction: { select: { id: true, title: true } },
+          auctionItem: { select: { id: true, title: true, lotNumber: true } },
+          reporter: { select: { id: true, fullName: true, role: true } },
+        },
+      }),
+      this.prisma.auctionAward.findMany({
+        where: {
+          status: { in: ['AWAITING_ACCEPTANCE', 'AWAITING_DEPOSIT', 'AWAITING_CHECKOUT'] },
+        },
+        orderBy: { expiresAt: 'asc' },
+        take: 50,
+        include: {
+          auction: { select: { id: true, title: true } },
+          auctionItem: { select: { id: true, title: true, lotNumber: true } },
+          buyer: { select: { id: true, fullName: true, email: true } },
+        },
+      }),
+      this.prisma.chatConversation.findMany({
+        where: { contextType: 'AUCTION', status: { in: ['OPEN', 'IN_PROGRESS'] } },
+        orderBy: { lastMessageAt: 'desc' },
+        take: 30,
+        include: {
+          participant1: { select: { id: true, fullName: true, role: true } },
+          assignedStaff: { select: { id: true, fullName: true } },
+        },
+      }),
+    ]);
+
+    return {
+      auctions,
+      openComplaints,
+      pendingAwards: pendingAwards.map((award) => ({
+        ...award,
+        offerAmount: Number(award.offerAmount),
+        depositAmount: Number(award.depositAmount),
+      })),
+      auctionSupportChats,
+    };
+  }
+
+  /**
+   * Support Staff attaches an internal verification or live-room support note to an auction lot
+   * to assist Admin during pre-approval or post-auction handling.
+   */
+  async staffAddItemNote(itemId: string, staffId: string, dto: StaffAuctionNoteDto) {
+    const item = await this.prisma.auctionItem.findUnique({ where: { id: itemId } });
+    if (!item) {
+      throw new NotFoundException('Không tìm thấy vật phẩm đấu giá.');
     }
-    return `${parts[0]} *** ${parts[parts.length - 1]}`;
+    const noteText = dto.staffNote?.trim() || null;
+    this.logger.log(`Support Staff ${staffId} updated note on auction item ${itemId}`);
+
+    return this.prisma.auctionItem.update({
+      where: { id: itemId },
+      data: { staffNote: noteText },
+    });
+  }
+
+  /**
+   * Opens or routes a dedicated auction support conversation between a Buyer or Seller
+   * and an online Support Staff agent via StaffQueueService.
+   */
+  async requestAuctionSupportChat(
+    auctionId: string,
+    userId: string,
+    userRole: Role,
+    message: string,
+  ) {
+    const auction = await this.prisma.auction.findUnique({
+      where: { id: auctionId },
+      select: { id: true, title: true },
+    });
+    if (!auction) {
+      throw new NotFoundException('Không tìm thấy phòng đấu giá.');
+    }
+    if (!this.chatService) {
+      throw new ConflictException('Dịch vụ trò chuyện hỗ trợ hiện chưa khả dụng.');
+    }
+
+    return this.chatService.requestSupport(userId, userRole, {
+      contextType: 'AUCTION',
+      contextId: auctionId,
+      subject: `Hỗ trợ phòng đấu giá: ${auction.title}`,
+      message,
+    });
+  }
+
+  private computeIntroState(
+    status: AuctionStatus,
+    startTime: Date,
+    lotCount: number,
+  ): { introDurationMs: number; isIntroActive: boolean; elapsedMs: number } {
+    const introDurationMs = AuctionService.getIntroDurationMs(lotCount);
+    const isLive = status === AuctionStatus.ACTIVE || status === AuctionStatus.EXTENDED;
+    if (!isLive) {
+      return { introDurationMs, isIntroActive: false, elapsedMs: 0 };
+    }
+    const rawElapsed = Date.now() - startTime.getTime();
+    const elapsedMs = Math.max(0, Math.min(introDurationMs, rawElapsed));
+    return {
+      introDurationMs,
+      isIntroActive: rawElapsed < introDurationMs,
+      elapsedMs,
+    };
+  }
+
+  private async dispatchAuctionStartNotifications(
+    auction: {
+      id: string;
+      title: string;
+      startTime: Date;
+      endTime: Date;
+      minBuyerReputation: number;
+    },
+    consignedSellerIds: string[],
+  ): Promise<void> {
+    const buyerUsers = await this.prisma.user.findMany({
+      where: {
+        role: Role.BUYER,
+        isShopSuspended: false,
+        reputationScore: { gte: auction.minBuyerReputation },
+      },
+      select: { id: true },
+    });
+
+    const uniqueBuyerIds = buyerUsers.map((u) => u.id);
+    const uniqueSellerIds = [...new Set(consignedSellerIds)];
+
+    const notifications: Prisma.NotificationCreateManyInput[] = [];
+
+    for (const userId of uniqueBuyerIds) {
+      notifications.push({
+        userId,
+        auctionId: auction.id,
+        targetUrl: auctionTargetUrl(auction.id),
+        title: `Phiên đấu giá "${auction.title}" đã bắt đầu!`,
+        content: `Phiên đấu giá đã chính thức mở cửa xem trực tiếp 3D và đặt giá ngay bây giờ.`,
+        type: NotificationType.AUCTION,
+        channel: NotificationChannel.IN_APP,
+        metadata: {
+          actionType: 'AUCTION_STARTED_BUYER',
+          auctionId: auction.id,
+          startedAt: auction.startTime.toISOString(),
+          endTime: auction.endTime.toISOString(),
+        },
+      });
+    }
+
+    for (const sellerId of uniqueSellerIds) {
+      notifications.push({
+        userId: sellerId,
+        auctionId: auction.id,
+        targetUrl: auctionTargetUrl(auction.id),
+        title: `Phiên "${auction.title}" có vật phẩm của bạn đã bắt đầu!`,
+        content: `Phiên đấu giá chứa lô hàng ký gửi của bạn đã chính thức lên sóng. Bạn có thể theo dõi diễn biến trong phòng đấu giá.`,
+        type: NotificationType.AUCTION,
+        channel: NotificationChannel.IN_APP,
+        metadata: {
+          actionType: 'AUCTION_STARTED_SELLER',
+          auctionId: auction.id,
+        },
+      });
+    }
+
+    if (notifications.length > 0) {
+      await this.prisma.notification.createMany({ data: notifications });
+    }
   }
 }

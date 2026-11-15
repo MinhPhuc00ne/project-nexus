@@ -35,6 +35,7 @@ import {
   GhnShippingQuote,
 } from '../../fulfillment/services/ghn-shipping.service';
 import { InventoryService } from '../../catalog/services/inventory.service';
+import { AuctionCheckoutService } from './auction-checkout.service';
 
 export interface PayosPaymentResponse {
   orderId: string;
@@ -80,6 +81,7 @@ export class OrderService {
     @Optional() private readonly inventoryService?: InventoryService,
     private readonly refunds?: RefundService,
     private readonly finance?: AdminFinanceService,
+    @Optional() private readonly auctionCheckout?: AuctionCheckoutService,
   ) {}
 
   /**
@@ -477,7 +479,7 @@ export class OrderService {
 
     // Chuẩn bị danh sách sản phẩm hiển thị trên PayOS checkout
     const items = order.items.map((item) => ({
-      name: item.product.title.slice(0, 50),
+      name: (item.product?.title ?? item.titleSnapshot ?? 'Sản phẩm đấu giá').slice(0, 50),
       quantity: item.quantity,
       price: Math.round(Number(item.unitPrice)),
     }));
@@ -1176,7 +1178,7 @@ export class OrderService {
     const depositAmount = new Prisma.Decimal(dto.amount);
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const updatedWallet = await tx.wallet.update({
+      await tx.wallet.update({
         where: { id: wallet.id },
         data: {
           balance: { increment: depositAmount },
@@ -1192,6 +1194,9 @@ export class OrderService {
           description: dto.description?.trim() || 'Nạp tiền vào ví cá nhân',
         },
       });
+
+      await this.auctionCheckout?.processPendingDepositsForUser(tx, userId);
+      const updatedWallet = await tx.wallet.findUniqueOrThrow({ where: { id: wallet.id } });
 
       return { updatedWallet, transaction };
     });

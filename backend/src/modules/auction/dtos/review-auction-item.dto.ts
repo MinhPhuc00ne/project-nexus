@@ -56,6 +56,7 @@ export class ReviewAuctionItemDto {
   })
   @Type(() => Number)
   @IsNumber()
+  @Min(1000)
   @IsOptional()
   startingPrice?: number;
 
@@ -65,6 +66,7 @@ export class ReviewAuctionItemDto {
   })
   @Type(() => Number)
   @IsNumber()
+  @Min(1000)
   @IsOptional()
   reservePrice?: number;
 
@@ -74,6 +76,7 @@ export class ReviewAuctionItemDto {
   })
   @Type(() => Number)
   @IsNumber()
+  @Min(1000)
   @IsOptional()
   bidIncrement?: number;
 }

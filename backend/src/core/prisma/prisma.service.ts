@@ -21,6 +21,7 @@ interface NotificationCreateInputRow {
   createdAt?: Date | string;
   auctionId?: string | null;
   targetUrl?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 function toRealtimeRecord(row: NotificationCreateInputRow): RealtimeNotificationRecord {
@@ -36,6 +37,7 @@ function toRealtimeRecord(row: NotificationCreateInputRow): RealtimeNotification
     createdAt: row.createdAt ?? new Date(),
     auctionId: row.auctionId ?? null,
     targetUrl: row.targetUrl ?? null,
+    metadata: row.metadata ?? null,
   };
 }
 

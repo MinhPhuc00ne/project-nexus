@@ -17,6 +17,7 @@ export const WS_AUCTION_EVENTS = {
     BID_REJECTED: 'auction:bid:rejected',
     TIMER_SYNC: 'auction:timer:sync',
     TIME_EXTENDED: 'auction:time_extended',
+    LOT_ENDED: 'auction:lot:ended',
     AUCTION_ENDED: 'auction:ended',
     VIEWPORT_UPDATED: 'auction:3d:updated',
     ERROR: 'auction:error',
@@ -49,32 +50,63 @@ export interface WsJoinRoomDto {
 
 export interface WsPlaceBidDto {
   auctionId: string;
+  auctionItemId?: string;
   bidAmount: number;
 }
 
 export interface WsBidPlacedPayload {
   auctionId: string;
+  auctionItemId: string;
+  lotNumber?: number | null;
   bidId: string;
   bidderId: string;
   bidderName: string;
   bidAmount: number;
   placedAt: string;
   newMinimumBid: number;
+  totalBidsCount?: number;
 }
 
-export interface WsTimerSyncPayload {
+export interface WsBidRejectedPayload {
   auctionId: string;
+  auctionItemId?: string;
+  message: string;
+  code?: string;
+}
+
+export interface WsLotTimerSyncItem {
+  auctionItemId: string;
   remainingSeconds: number;
   endTime: string;
   status: AuctionStatus;
   isExtended: boolean;
 }
 
+export interface WsTimerSyncPayload {
+  auctionId: string;
+  auctionItemId?: string;
+  remainingSeconds: number;
+  endTime: string;
+  status: AuctionStatus;
+  isExtended: boolean;
+  lotTimers?: WsLotTimerSyncItem[];
+}
+
 export interface WsTimeExtendedPayload {
   auctionId: string;
+  auctionItemId: string;
   extendedBySeconds: number;
   newEndTime: string;
   reason: 'ANTI_SNIPING';
+}
+
+export interface WsLotEndedPayload {
+  auctionId: string;
+  auctionItemId: string;
+  lotNumber?: number | null;
+  status: AuctionStatus;
+  winningBidderId?: string | null;
+  winningPrice?: number;
 }
 
 export interface WsAuctionIntroSellerPayload {
@@ -101,6 +133,16 @@ export interface WsAuctionIntroItemPayload {
   appraisalAgency?: string | null;
   certificateImages: string[];
   certificateIssueDate?: string | null;
+  lotStatus?: AuctionStatus;
+  currentHighestBid?: number;
+  currentHighestBidderId?: string | null;
+  totalBidsCount?: number;
+  endTime?: string | null;
+  isExtended?: boolean;
+  weightGrams?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
   seller?: WsAuctionIntroSellerPayload;
 }
 
@@ -148,6 +190,7 @@ export interface WsNotificationNewPayload {
   createdAt: string;
   auctionId: string | null;
   targetUrl: string | null;
+  metadata?: Record<string, unknown> | null;
   unreadCount?: number;
 }
 

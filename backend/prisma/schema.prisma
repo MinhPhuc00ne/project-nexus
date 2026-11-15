@@ -42,6 +42,28 @@ enum AuctionItemStatus {
   REJECTED
 }
 
+enum AuctionAwardTier {
+  PRIMARY_WINNER
+  SECOND_CHANCE
+}
+
+enum AuctionAwardStatus {
+  AWAITING_ACCEPTANCE
+  AWAITING_DEPOSIT
+  AWAITING_CHECKOUT
+  PAID
+  PAYMENT_DEFAULT
+  DECLINED
+  BUYER_WITHDRAWN
+  EXPIRED
+}
+
+enum AuctionComplaintStatus {
+  OPEN
+  ACCEPTED
+  REJECTED
+}
+
 enum EscrowStatus {
   HELD
   DISBURSED
@@ -123,6 +145,8 @@ enum WalletTransactionType {
   PLATFORM_FEE
   AUCTION_BID_LOCK
   AUCTION_BID_REFUND
+  AUCTION_DEPOSIT_FORFEIT
+  AUCTION_DEPOSIT_COMPENSATION
 }
 
 enum WalletTransactionStatus {
@@ -212,6 +236,9 @@ model User {
   submittedAuctionItems      AuctionItem[]            @relation("SellerAuctionItems")
   reviewedAuctionItems       AuctionItem[]            @relation("AdminReviewedAuctionItems")
   bids                       Bid[]
+  auctionAwards              AuctionAward[]     @relation("BuyerAuctionAwards")
+  auctionComplaints          AuctionComplaint[] @relation("AuctionComplaintReporter")
+  handledAuctionComplaints   AuctionComplaint[] @relation("AuctionComplaintAdmin")
   cart                       Cart?
   reputationLogs             ReputationLog[]
   notifications              Notification[]
@@ -560,17 +587,20 @@ model Order {
 }
 
 model OrderItem {
-  id         String   @id @default(uuid())
-  orderId    String   @map("order_id")
-  productId  String   @map("product_id")
-  selections Json?
-  quantity   Int      @default(1)
-  unitPrice  Decimal  @map("unit_price") @db.Decimal(14, 2)
-  totalPrice Decimal  @map("total_price") @db.Decimal(14, 2)
-  createdAt  DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid())
+  orderId       String   @map("order_id")
+  productId     String?  @map("product_id")
+  auctionItemId String?  @map("auction_item_id")
+  titleSnapshot String?  @map("title_snapshot")
+  selections    Json?
+  quantity      Int      @default(1)
+  unitPrice     Decimal  @map("unit_price") @db.Decimal(14, 2)
+  totalPrice    Decimal  @map("total_price") @db.Decimal(14, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product?     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  auctionItem AuctionItem? @relation(fields: [auctionItemId], references: [id], onDelete: Restrict)
 
   @@map("order_items")
 }
@@ -672,6 +702,7 @@ model Auction {
   bids           Bid[]
   items          AuctionItem[]
   awards         AuctionAward[]
+  complaints     AuctionComplaint[]
   banners        EventBanner[]
 
   @@index([status, endTime])
@@ -689,6 +720,10 @@ model AuctionItem {
   proposedStartingPrice      Decimal           @map("proposed_starting_price") @db.Decimal(14, 2)
   proposedReservePrice       Decimal?          @map("proposed_reserve_price") @db.Decimal(14, 2)
   proposedBidIncrement       Decimal           @default(100000) @map("proposed_bid_increment") @db.Decimal(14, 2)
+  weightGrams                Int               @default(500) @map("weight_grams")
+  lengthCm                   Int               @default(20) @map("length_cm")
+  widthCm                    Int               @default(15) @map("width_cm")
+  heightCm                   Int               @default(10) @map("height_cm")
 
   appraisalCertificateNumber String?           @map("appraisal_certificate_number")
   appraisalAgency            String?           @map("appraisal_agency")
@@ -696,13 +731,22 @@ model AuctionItem {
   certificateIssueDate       DateTime?         @map("certificate_issue_date")
 
   status                     AuctionItemStatus @default(PENDING_REVIEW)
+  lotStatus                  AuctionStatus     @default(SCHEDULED) @map("lot_status")
   isSellerFlagged            Boolean           @default(false) @map("is_seller_flagged")
   flagReason                 String?           @map("flag_reason")
   rejectionReason            String?           @map("rejection_reason") @db.Text
+  staffNote                  String?           @map("staff_note") @db.Text
   lotNumber                  Int?              @map("lot_number")
   startingPrice              Decimal?          @map("starting_price") @db.Decimal(14, 2)
   reservePrice               Decimal?          @map("reserve_price") @db.Decimal(14, 2)
   bidIncrement               Decimal?          @map("bid_increment") @db.Decimal(14, 2)
+  currentHighestBid          Decimal           @default(0) @map("current_highest_bid") @db.Decimal(14, 2)
+  currentHighestBidderId     String?           @map("current_highest_bidder_id")
+  totalBidsCount             Int               @default(0) @map("total_bids_count")
+  startTime                  DateTime?         @map("start_time")
+  endTime                    DateTime?         @map("end_time")
+  originalEndTime            DateTime?         @map("original_end_time")
+  isExtended                 Boolean           @default(false) @map("is_extended")
 
   reviewedByAdminId          String?           @map("reviewed_by_admin_id")
   reviewedAt                 DateTime?         @map("reviewed_at")
@@ -713,44 +757,90 @@ model AuctionItem {
   auction                    Auction           @relation(fields: [auctionId], references: [id], onDelete: Cascade)
   seller                     User              @relation("SellerAuctionItems", fields: [sellerId], references: [id], onDelete: Restrict)
   reviewedByAdmin            User?             @relation("AdminReviewedAuctionItems", fields: [reviewedByAdminId], references: [id], onDelete: SetNull)
+  bids                       Bid[]
+  awards                     AuctionAward[]
+  orderItems                 OrderItem[]
+  complaints                 AuctionComplaint[]
 
   @@index([auctionId, status])
+  @@index([auctionId, lotStatus, endTime])
   @@index([sellerId])
   @@map("auction_items")
 }
 
 model Bid {
-  id        String    @id @default(uuid())
-  auctionId String    @map("auction_id")
-  bidderId  String    @map("bidder_id")
-  bidAmount Decimal   @map("bid_amount") @db.Decimal(14, 2)
-  status    BidStatus @default(ACCEPTED)
-  placedAt  DateTime  @default(now()) @map("placed_at")
+  id            String    @id @default(uuid())
+  auctionId     String    @map("auction_id")
+  auctionItemId String?   @map("auction_item_id")
+  bidderId      String    @map("bidder_id")
+  bidAmount     Decimal   @map("bid_amount") @db.Decimal(14, 2)
+  status        BidStatus @default(ACCEPTED)
+  placedAt      DateTime  @default(now()) @map("placed_at")
 
-  auction Auction @relation(fields: [auctionId], references: [id], onDelete: Cascade)
-  award AuctionAward?
-  bidder  User    @relation(fields: [bidderId], references: [id], onDelete: Restrict)
+  auction     Auction      @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  auctionItem AuctionItem? @relation(fields: [auctionItemId], references: [id], onDelete: Cascade)
+  award       AuctionAward?
+  bidder      User         @relation(fields: [bidderId], references: [id], onDelete: Restrict)
 
   @@index([auctionId, placedAt])
+  @@index([auctionItemId, placedAt])
   @@map("bids")
 }
 
-/// A single winning offer and its order, with a durable checkout deadline and deposit ownership.
+/// A single winning or second-chance offer per auction lot, with durable deadline and deposit ownership.
 model AuctionAward {
-  id            String   @id @default(uuid())
-  auctionId     String   @map("auction_id")
-  bidId         String   @unique @map("bid_id")
-  orderId       String   @unique @map("order_id")
-  depositAmount Decimal  @map("deposit_amount") @db.Decimal(14, 2)
-  status        String   @default("AWAITING_CHECKOUT")
-  expiresAt     DateTime @map("expires_at")
-  completedAt   DateTime? @map("completed_at")
-  auction       Auction  @relation(fields: [auctionId], references: [id], onDelete: Restrict)
-  bid           Bid      @relation(fields: [bidId], references: [id], onDelete: Restrict)
-  order         Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id             String             @id @default(uuid())
+  auctionId      String             @map("auction_id")
+  auctionItemId  String?            @map("auction_item_id")
+  bidId          String             @unique @map("bid_id")
+  buyerId        String?            @map("buyer_id")
+  orderId        String?            @unique @map("order_id")
+  tier           AuctionAwardTier   @default(PRIMARY_WINNER)
+  offerAmount    Decimal            @default(0) @map("offer_amount") @db.Decimal(14, 2)
+  depositAmount  Decimal            @map("deposit_amount") @db.Decimal(14, 2)
+  status         AuctionAwardStatus @default(AWAITING_CHECKOUT)
+  expiresAt      DateTime           @map("expires_at")
+  confirmedAt    DateTime?          @map("confirmed_at")
+  completedAt    DateTime?          @map("completed_at")
+  resolutionNote String?            @map("resolution_note") @db.Text
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  auction     Auction      @relation(fields: [auctionId], references: [id], onDelete: Restrict)
+  auctionItem AuctionItem? @relation(fields: [auctionItemId], references: [id], onDelete: Restrict)
+  bid         Bid          @relation(fields: [bidId], references: [id], onDelete: Restrict)
+  buyer       User?        @relation("BuyerAuctionAwards", fields: [buyerId], references: [id], onDelete: Restrict)
+  order       Order?       @relation(fields: [orderId], references: [id], onDelete: Restrict)
 
   @@index([status, expiresAt])
+  @@index([auctionItemId, status])
+  @@index([buyerId, status])
   @@map("auction_awards")
+}
+
+model AuctionComplaint {
+  id            String                 @id @default(uuid())
+  auctionId     String                 @map("auction_id")
+  auctionItemId String?                @map("auction_item_id")
+  reporterId    String                 @map("reporter_id")
+  reporterRole  Role                   @map("reporter_role")
+  reason        String                 @db.Text
+  evidenceUrls  String[]               @map("evidence_urls")
+  status        AuctionComplaintStatus @default(OPEN)
+  adminNote     String?                @map("admin_note") @db.Text
+  handledById   String?                @map("handled_by_id")
+  handledAt     DateTime?              @map("handled_at")
+  createdAt     DateTime               @default(now()) @map("created_at")
+  updatedAt     DateTime               @updatedAt @map("updated_at")
+
+  auction     Auction      @relation(fields: [auctionId], references: [id], onDelete: Cascade)
+  auctionItem AuctionItem? @relation(fields: [auctionItemId], references: [id], onDelete: Cascade)
+  reporter    User         @relation("AuctionComplaintReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+  handledBy   User?        @relation("AuctionComplaintAdmin", fields: [handledById], references: [id], onDelete: SetNull)
+
+  @@index([auctionId, status])
+  @@index([reporterId, createdAt])
+  @@map("auction_complaints")
 }
 
 model EscrowRecord {
@@ -926,8 +1016,9 @@ model EventLog {
 
 model Notification {
   /// Optional destination for auction notifications; legacy notifications remain readable.
-  auctionId String? @map("auction_id")
-  targetUrl String? @map("target_url")
+  auctionId String?             @map("auction_id")
+  targetUrl String?             @map("target_url")
+  metadata  Json?
   id        String              @id @default(uuid())
   userId    String              @map("user_id")
   title     String

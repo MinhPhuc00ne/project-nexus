@@ -402,8 +402,13 @@ async function main() {
       isSellerActive: false,
     });
 
-    // Ví 30.000 VNĐ
-    await ensureDemoWallet(prisma, buyerUser.id, 30000);
+    // Cung cấp số dư ví cho Buyer (đặc biệt là Liên có 1.000.000.000 VNĐ để demo đấu giá)
+    const demoBalance = b.fullName === 'Liên' ? 1000000000 : 30000;
+    await ensureDemoWallet(prisma, buyerUser.id, demoBalance);
+    await prisma.user.update({
+      where: { id: buyerUser.id },
+      data: { reputationScore: 95, isVerified: true },
+    });
 
     // Địa chỉ giao hàng mặc định
     const existingAddr = await prisma.userAddress.findFirst({ where: { userId: buyerUser.id } });
@@ -499,8 +504,13 @@ async function main() {
 
     sellerEntities[s.fullName] = sellerUser;
 
-    // Ví 30.000 VNĐ
-    await ensureDemoWallet(prisma, sellerUser.id, 30000);
+    // Ví 500.000.000 VNĐ cho Jos để demo thuận tiện
+    const sellerBalance = s.fullName === 'Jos' ? 500000000 : 30000;
+    await ensureDemoWallet(prisma, sellerUser.id, sellerBalance);
+    await prisma.user.update({
+      where: { id: sellerUser.id },
+      data: { reputationScore: 98, isVerified: true },
+    });
 
     // Địa chỉ shop
     const existingAddr = await prisma.userAddress.findFirst({ where: { userId: sellerUser.id } });
@@ -1138,7 +1148,7 @@ async function main() {
   // =========================================================================
   const huyProduct = await prisma.product.findFirst({
     where: {
-      sellerId: sellerEntities['Huy'].id,
+      sellerId: sellerEntities['Jos'].id,
       title: 'Đồng hồ nam phong cách Classic mặt tròn dây da nâu',
     },
   });
@@ -1171,7 +1181,7 @@ async function main() {
       where: { id: adminShowcaseAuction.id },
       data: {
         createdByAdminId: admin.id,
-        sellerId: sellerEntities['Huy'].id,
+        sellerId: sellerEntities['Jos'].id,
         productId: huyProduct?.id ?? null,
         description:
           'Phiên đấu giá đặc biệt quy tụ 5 vật phẩm đã qua thẩm định nghiêm ngặt từ các nhà sưu tầm và gian hàng uy tín trên NEXUS.',
@@ -1188,13 +1198,16 @@ async function main() {
         endTime: scheduledEnd,
         originalEndTime: scheduledEnd,
         isExtended: false,
+        isConsignmentLocked: true,
+        consignmentLockedAt: new Date(now.getTime() - 3600 * 1000),
+        consignmentDeadline: new Date(now.getTime() - 7200 * 1000),
       },
     });
   } else {
     adminShowcaseAuction = await prisma.auction.create({
       data: {
         createdByAdminId: admin.id,
-        sellerId: sellerEntities['Huy'].id,
+        sellerId: sellerEntities['Jos'].id,
         productId: huyProduct?.id ?? null,
         title: showcaseAuctionTitle,
         description:
@@ -1213,6 +1226,9 @@ async function main() {
         originalEndTime: scheduledEnd,
         isExtended: false,
         totalBidsCount: 0,
+        isConsignmentLocked: true,
+        consignmentLockedAt: new Date(now.getTime() - 3600 * 1000),
+        consignmentDeadline: new Date(now.getTime() - 7200 * 1000),
       },
     });
   }
@@ -1226,7 +1242,7 @@ async function main() {
     {
       // [1/3 THUỘC 10 MODEL 3D] -> Đồng hồ
       lotNumber: 1,
-      sellerId: sellerEntities['Huy'].id,
+      sellerId: sellerEntities['Jos'].id,
       title: 'Đồng hồ cơ Patek Philippe Calatrava Skeleton 18K',
       description:
         'Tình trạng: Like New 99% Fullbox. Bộ máy cơ lộ cơ hoàn thiện thủ công tại Geneva, Thụy Sĩ. Đã kiểm định chuẩn xác thực 100%.',
@@ -1289,7 +1305,7 @@ async function main() {
     {
       // [1/2 KHÔNG THUỘC 10 MODEL 3D] -> Tự động đóng gói Khung Tranh 3D từ ảnh Seller
       lotNumber: 4,
-      sellerId: sellerEntities['Huy'].id,
+      sellerId: sellerEntities['Jos'].id,
       title: 'Vòng tay hạt trầm hương tự nhiên Khánh Hòa mix charm bạc',
       description:
         'Tình trạng: Mới 100%. Trầm hương tốc kiến tự nhiên Khánh Hòa 18 năm tích trầm, kết hợp charm bạc S925 chế tác thủ công.',
@@ -1403,7 +1419,7 @@ async function main() {
       lots: [
         {
           lotNumber: 1,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Viên Kim Cương Tự Nhiên GIA Nước D 5.2 Carat',
           description:
             'Giác cắt Brilliant hoàn mỹ, độ tinh khiết Flawless (FL), đi kèm hồ sơ kiểm định GIA khắc laser trên vành.',
@@ -1423,7 +1439,7 @@ async function main() {
         },
         {
           lotNumber: 2,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Nhẫn Kim Cương Solitaire Bạch Kim PT950 2.5 Carat',
           description:
             'Chế tác thủ công trên nền bạch kim PT950 nguyên khối cùng chấu 6 cạnh cổ điển.',
@@ -1461,7 +1477,7 @@ async function main() {
         },
         {
           lotNumber: 4,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Dây Chuyền Ngọc Trai Akoya Nhật Bản Khóa Vàng 18K',
           description:
             'Tuyển chọn 45 viên ngọc trai biển Akoya ánh hồng tự nhiên kích thước 8.5–9mm đồng đều.',
@@ -1513,7 +1529,7 @@ async function main() {
       lots: [
         {
           lotNumber: 1,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Siêu Xe Porsche 911 GT3 RS Weissach Carbon Edition',
           description:
             'Odo 1.200km, gói nâng cấp sợi carbon Weissach, phanh gốm PCCB, đầy đủ lịch sử bảo dưỡng hãng.',
@@ -1553,7 +1569,7 @@ async function main() {
         },
         {
           lotNumber: 3,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Đồng Hồ Cơ Rolex Cosmograph Daytona Vàng Khối 18K',
           description:
             'Mặt số Meteorite thiên thạch cực hiếm, tình trạng nguyên zin 99% kèm thẻ bảo hành quốc tế.',
@@ -1661,7 +1677,7 @@ async function main() {
         },
         {
           lotNumber: 4,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Máy Ảnh Leica M11 Monochrom Kèm Ống Kính Summilux 50mm',
           description:
             'Cảm biến B&W 60MP nguyên bản Đức, số shot 150 tấm, fullbox kèm chứng chỉ xuất xưởng Wetzlar.',
@@ -1694,7 +1710,7 @@ async function main() {
       lots: [
         {
           lotNumber: 1,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Bức Tranh Sơn Dầu Hoàng Hôn Sông Hồng Thế Kỷ XX',
           description:
             'Kích thước 120x90cm trên toan bố cổ, khung gỗ gụ chạm khắc tay, có chữ ký họa sĩ và giấy giám định bảo tàng.',
@@ -1733,7 +1749,7 @@ async function main() {
         },
         {
           lotNumber: 3,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Tượng Đồng Phong Thủy Rồng Thời Lý Dát Vàng 9999',
           description:
             'Đúc thủ công nguyên khối theo mẫu cổ vật Hoàng Thành, dát vàng lá 24K, kèm đế gỗ trắc.',
@@ -1803,7 +1819,7 @@ async function main() {
         },
         {
           lotNumber: 2,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Mô Hình Siêu Xe Ferrari 250 GTO Tỷ Lệ 1:8 Amalgam',
           description:
             'Hoàn thiện thủ công hơn 3.000 giờ bởi nghệ nhân Amalgam Collection, có chứng thư bản giới hạn.',
@@ -1822,7 +1838,7 @@ async function main() {
         },
         {
           lotNumber: 3,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Kính Mát Cartier Panthère Gọng Vàng Đúc 18K',
           description:
             'Kính thời trang cao cấp gọng vàng đặc 18K khắc họa tiết báo gấm, hộp gỗ sơn mài nguyên bản.',
@@ -1874,7 +1890,7 @@ async function main() {
         where: { id: seededAuction.id },
         data: {
           createdByAdminId: admin.id,
-          sellerId: session.lots[0]?.sellerId ?? sellerEntities['Huy'].id,
+          sellerId: session.lots[0]?.sellerId ?? sellerEntities['Jos'].id,
           description: session.description,
           imageUrl: session.imageUrl,
           startingPrice: session.startingPrice,
@@ -1888,13 +1904,16 @@ async function main() {
           endTime: sessEnd,
           originalEndTime: sessEnd,
           isExtended: false,
+          isConsignmentLocked: true,
+          consignmentLockedAt: new Date(now.getTime() - 3600 * 1000),
+          consignmentDeadline: new Date(now.getTime() - 7200 * 1000),
         },
       });
     } else {
       seededAuction = await prisma.auction.create({
         data: {
           createdByAdminId: admin.id,
-          sellerId: session.lots[0]?.sellerId ?? sellerEntities['Huy'].id,
+          sellerId: session.lots[0]?.sellerId ?? sellerEntities['Jos'].id,
           title: session.title,
           description: session.description,
           imageUrl: session.imageUrl,
@@ -1910,6 +1929,9 @@ async function main() {
           originalEndTime: sessEnd,
           isExtended: false,
           totalBidsCount: 0,
+          isConsignmentLocked: true,
+          consignmentLockedAt: new Date(now.getTime() - 3600 * 1000),
+          consignmentDeadline: new Date(now.getTime() - 7200 * 1000),
         },
       });
     }
@@ -1969,7 +1991,7 @@ async function main() {
         data: {
           createdByAdminId: admin.id,
           productId: huyProduct.id,
-          sellerId: sellerEntities['Huy'].id,
+          sellerId: sellerEntities['Jos'].id,
           title: 'Audemars Piguet Royal Oak Chronograph 41mm Selfwinding',
           startingPrice: 100000000,
           reservePrice: 120000000,

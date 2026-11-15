@@ -12,6 +12,7 @@ export interface RealtimeNotificationRecord {
   createdAt: Date | string;
   auctionId: string | null;
   targetUrl: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface NotificationRealtimeHandlers {

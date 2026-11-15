@@ -1,11 +1,19 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
- * Data transfer object for submitting a bid in an active auction.
+ * Data transfer object for submitting a bid on a specific auction lot.
  */
 export class PlaceBidDto {
+  @ApiPropertyOptional({
+    description: 'Target auction lot identifier (AuctionItem ID)',
+    format: 'uuid',
+  })
+  @IsUUID()
+  @IsOptional()
+  auctionItemId?: string;
+
   @ApiProperty({
     description: 'Submitted bid amount in VND currency',
     example: 125000000,
@@ -14,5 +22,5 @@ export class PlaceBidDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1000)
-  bidAmount: number;
+  bidAmount!: number;
 }
