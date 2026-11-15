@@ -1,403 +1,345 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  HttpCode,
+  Optional,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { AuctionComplaintStatus, Role as PrismaRole } from '@prisma/client';
 import { Role } from '@nexus/types';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
-import { RolesGuard } from '../../../core/security/roles.guard';
 import {
   AuthenticatedUserPayload,
   CurrentUser,
   Public,
   Roles,
 } from '../../../core/security/roles.decorator';
-import { AuctionService } from '../services/auction.service';
-import { AuctionQueryDto } from '../dtos/auction-query.dto';
-import { CreateAuctionDto } from '../dtos/create-auction.dto';
-import { PlaceBidDto } from '../dtos/place-bid.dto';
+import { RolesGuard } from '../../../core/security/roles.guard';
+import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
+import { AdminAwardActionDto } from '../dtos/admin-award-action.dto';
 import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
 import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
+import {
+  CreateAuctionComplaintDto,
+  ResolveAuctionComplaintDto,
+} from '../dtos/auction-complaint.dto';
+import { AuctionQueryDto } from '../dtos/auction-query.dto';
+import { AuctionIntroShowcaseResponseDto } from '../dtos/auction-showcase-response.dto';
+import { AuctionSupportChatDto } from '../dtos/auction-support-chat.dto';
+import { PlaceBidDto } from '../dtos/place-bid.dto';
 import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
 import { ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
-import { BindAuctionProductDto } from '../dtos/bind-auction-product.dto';
-import { AuctionIntroShowcaseResponseDto } from '../dtos/auction-showcase-response.dto';
+import { StaffAuctionNoteDto } from '../dtos/staff-auction-note.dto';
+import { AuctionComplaintService } from '../services/auction-complaint.service';
+import { AuctionService } from '../services/auction.service';
 
-/**
- * Controller exposing REST endpoints for central auction events, seller consignment
- * with online appraisal documentation, reputation checks, and live bidding lifecycle.
- */
-@ApiTags('11. AUCTIONS')
+@ApiTags('Auctions')
 @Controller('auctions')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@ApiBearerAuth()
 export class AuctionController {
-  constructor(private readonly auctionService: AuctionService) {}
+  constructor(
+    private readonly auctionService: AuctionService,
+    @Optional() private readonly complaintService?: AuctionComplaintService,
+    @Optional() private readonly checkoutService?: AuctionCheckoutService,
+  ) {}
 
-  /** Binds a fulfillable catalog item before the first bid. @returns Auction with reserved stock. */
-  @Post('admin/:id/product')
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiOperation({
-    summary: '[Admin] Bind catalog product and reserve inventory for an auction',
-    description:
-      'Binds a fulfillable catalog product to a scheduled auction room and holds inventory stock prior to receiving bids.',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Product bound to auction and stock reserved successfully.',
-  })
-  bindProduct(
-    @Param('id') id: string,
-    @Body() dto: BindAuctionProductDto,
-  ): ReturnType<AuctionService['bindProduct']> {
-    return this.auctionService.bindProduct(id, dto.productId);
-  }
-
-  // ==========================================
-  // PUBLIC & BUYER BROWSING ENDPOINTS
-  // ==========================================
-
-  /**
-   * Retrieves public paginated auction listings.
-   */
   @Public()
   @Get()
-  @ApiOperation({
-    summary: 'List public auction sessions',
-    description:
-      'Retrieves public paginated auction listings (SCHEDULED, ACTIVE, ENDED) with approved item counts and scheduled timeframes. Manual browsing uses this list and GET /auctions/:id. Each item includes targetUrl=/auction/:id, the same destination returned by linked banners and auction notifications.',
-  })
-  @ApiResponse({ status: 200, description: 'Paginated auction listings retrieved successfully.' })
-  async getAuctions(@Query() query: AuctionQueryDto) {
+  @ApiOperation({ summary: 'Danh sách phiên đấu giá công khai (hỗ trợ phân trang & lọc)' })
+  getAuctions(@Query() query: AuctionQueryDto) {
     return this.auctionService.getAuctions(query);
   }
 
-  /**
-   * Checks whether the current authenticated buyer is eligible to bid or view-only in an auction.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Get(':id/eligibility')
-  @ApiOperation({
-    summary: 'Check buyer participation eligibility',
-    description:
-      'Evaluates the authenticated buyer reputation score and prior penalty/probation records against the session minBuyerReputation threshold.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Buyer participation eligibility assessment returned successfully.',
-  })
-  async checkBuyerEligibility(@Param('id') id: string, @CurrentUser('id') buyerId: string) {
-    return this.auctionService.checkBuyerEligibility(id, buyerId);
-  }
-
-  /**
-   * Retrieves bidding history for the current authenticated buyer.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @Get('my-bids')
-  @ApiOperation({ summary: 'Retrieve current user bidding history' })
-  @ApiResponse({ status: 200, description: 'User bidding history retrieved successfully.' })
-  async getMyBids(@CurrentUser('id') userId: string) {
+  @ApiOperation({ summary: 'Lịch sử đặt giá và trạng thái quyền mua của tôi' })
+  getMyBids(@CurrentUser('id') userId: string) {
     return this.auctionService.getMyBids(userId);
   }
 
-  /**
-   * Retrieves synchronized live intro showcase telemetry for an auction session.
-   */
-  @Public()
-  @Get(':id/intro-showcase')
-  @ApiOperation({
-    summary: 'Get synchronized live intro showcase data and playback offset (All Roles)',
-    description:
-      'Publicly accessible by Guest, Buyer, Seller, Support Staff, and Admin. Returns approved auction lots (with seller-submitted prices and appraisal certificate records) alongside serverTime, startedAt, introDurationMs, isIntroActive, and elapsedMs. Viewers joining mid-broadcast use elapsedMs to sync seamlessly into the ongoing live showcase, while real-time triggers arrive via WebSocket namespace /ws/auctions event "auction:started".',
-  })
-  @ApiResponse({
-    status: 200,
-    type: AuctionIntroShowcaseResponseDto,
-    description:
-      'Synchronized intro showcase payload including server clock offset and approved seller lots.',
-  })
-  async getAuctionIntroShowcase(@Param('id') id: string) {
-    return this.auctionService.getAuctionIntroShowcase(id);
+  @Roles(Role.SELLER, Role.ADMIN)
+  @Get('seller/my-items')
+  @ApiOperation({ summary: 'Danh sách vật phẩm đã ký gửi vào các phiên đấu giá của Người bán' })
+  getSellerConsignments(@CurrentUser('id') sellerId: string) {
+    return this.auctionService.getSellerConsignments(sellerId);
   }
 
-  /**
-   * Retrieves single auction details including product specifications, approved items, and bid logs.
-   */
-  @Public()
-  @Get(':id')
-  @ApiOperation({
-    summary: 'Get auction details and live intro synchronization telemetry by ID',
-    description:
-      'Retrieves comprehensive auction room details, approved consignment items with seller pricing and appraisal certificates, bid logs, plus serverTime, introDurationMs, elapsedMs, and isIntroActive for live intro playback synchronization.',
-  })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Auction details retrieved successfully, including approved consignment items and live intro sync metadata.',
-  })
-  async getAuctionDetail(@Param('id') id: string, @CurrentUser('id') userId?: string) {
-    return this.auctionService.getAuctionDetail(id, userId);
+  @Roles(Role.SUPPORT_STAFF, Role.ADMIN)
+  @Get('staff/overview')
+  @ApiOperation({ summary: 'Bảng theo dõi hỗ trợ đấu giá 3D dành cho Nhân viên hỗ trợ & Admin' })
+  getStaffOverview() {
+    return this.auctionService.getStaffOverview();
   }
 
-  // ==========================================
-  // ADMIN AUCTION LIFECYCLE MANAGEMENT
-  // ==========================================
+  @Roles(Role.SUPPORT_STAFF, Role.ADMIN)
+  @Patch('staff/items/:itemId/note')
+  @ApiOperation({ summary: 'Nhân viên hỗ trợ cập nhật ghi chú kiểm tra / hỗ trợ trên lô hàng' })
+  staffAddItemNote(
+    @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @CurrentUser('id') staffId: string,
+    @Body() dto: StaffAuctionNoteDto,
+  ) {
+    return this.auctionService.staffAddItemNote(itemId, staffId, dto);
+  }
 
-  /**
-   * Admin creates and schedules a new central auction session/event.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER, Role.SUPPORT_STAFF, Role.ADMIN)
+  @Get('complaints')
+  @ApiOperation({
+    summary: 'Danh sách khiếu nại đấu giá (Admin/Staff xem toàn bộ, người dùng xem đơn của mình)',
+  })
+  listComplaints(
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @Query('auctionId') auctionId?: string,
+    @Query('status') status?: AuctionComplaintStatus,
+  ) {
+    return this.complaintService!.listComplaints(user.id, user.role as unknown as PrismaRole, {
+      auctionId,
+      status,
+    });
+  }
+
+  @Roles(Role.ADMIN)
+  @Patch('complaints/:complaintId/resolve')
+  @ApiOperation({ summary: 'Admin tiếp nhận (chấp thuận) hoặc từ chối khiếu nại đấu giá' })
+  resolveComplaint(
+    @Param('complaintId', new ParseUUIDPipe()) complaintId: string,
+    @CurrentUser('id') adminId: string,
+    @Body() dto: ResolveAuctionComplaintDto,
+  ) {
+    return this.complaintService!.resolveComplaint(complaintId, adminId, dto);
+  }
+
   @Roles(Role.ADMIN)
   @Post('admin')
   @ApiOperation({
-    summary: '[Admin] Create a new auction session',
-    description:
-      'Admin creates and schedules a central auction event, configuring title, timeframe, and minimum reputation score thresholds for buyers and sellers.',
+    summary: 'Admin tạo mới phòng đấu giá đa lô (gửi thông báo tới Người bán để ký gửi)',
   })
-  @ApiResponse({ status: 201, description: 'Auction session created successfully.' })
-  async adminCreateAuction(@CurrentUser('id') adminId: string, @Body() dto: AdminCreateAuctionDto) {
+  adminCreateAuction(@CurrentUser('id') adminId: string, @Body() dto: AdminCreateAuctionDto) {
     return this.auctionService.adminCreateAuction(adminId, dto);
   }
 
-  /**
-   * Admin updates an upcoming auction. Prohibits editing when auction is ACTIVE or EXTENDED.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Patch('admin/:id')
-  @ApiOperation({
-    summary: '[Admin] Update an upcoming auction session',
-    description:
-      'Allowed only when auction is in SCHEDULED or DRAFT state. Strictly prohibited when the session is currently ACTIVE or EXTENDED.',
-  })
-  @ApiResponse({ status: 200, description: 'Auction session updated successfully.' })
-  async adminUpdateAuction(@Param('id') id: string, @Body() dto: AdminUpdateAuctionDto) {
+  @ApiOperation({ summary: 'Admin cập nhật thông tin phiên đấu giá trước khi bắt đầu' })
+  adminUpdateAuction(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: AdminUpdateAuctionDto,
+  ) {
     return this.auctionService.adminUpdateAuction(id, dto);
   }
 
-  /**
-   * Admin manually locks seller consignment registration for an auction session.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Post('admin/:id/lock-consignment')
-  @ApiOperation({
-    summary: '[Admin] Manually lock seller consignment registration',
-    description:
-      'Manually closes seller product consignment registration for an auction session before start. Blocks subsequent seller item submissions immediately and dispatches consignment closure notifications to all active sellers.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Auction consignment locked successfully and sellers notified.',
-  })
-  async adminLockConsignment(@Param('id') id: string) {
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Admin khóa đăng ký ký gửi vật phẩm sớm cho phiên đấu giá' })
+  adminLockConsignment(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.auctionService.adminLockConsignment(id);
   }
 
-  /**
-   * Admin starts a scheduled or draft auction session, dispatches live notifications across roles, and broadcasts the 3D intro showcase.
-   * @param id Persistent auction session identifier.
-   * @returns Activated auction session with serialized lots and showcase telemetry.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Post('admin/:id/start')
+  @HttpCode(200)
   @ApiOperation({
-    summary:
-      '[Admin] Start auction session, dispatch live notifications across roles, and broadcast showcase',
-    description:
-      'Transitions a DRAFT or SCHEDULED auction session into ACTIVE state, dispatches in-app notifications to Support Staff, participating Sellers, other Sellers, and Buyers, emits WebSocket event "auction:started" on namespace /ws/auctions (with auctionId, title, startedAt, endTime, serverTime, introDurationMs, and full approved lots), and returns the active session payload.',
+    summary: 'Admin bấm bắt đầu phiên đấu giá thủ công và gửi thông báo tới Người mua',
   })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Auction session transitioned to ACTIVE, in-app notifications fanned out across Staff, Sellers, and Buyers, live intro showcase broadcast via WebSocket "auction:started", and full approved lots returned.',
-  })
-  async adminStartAuction(
-    @Param('id') id: string,
-  ): ReturnType<AuctionService['adminStartAuction']> {
+  adminStartAuction(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.auctionService.adminStartAuction(id);
   }
 
-  /**
-   * Admin deletes or cancels an auction. Prohibits deletion when auction is ACTIVE or EXTENDED.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @Delete('admin/:id')
-  @ApiOperation({
-    summary: '[Admin] Delete or cancel an auction session',
-    description:
-      'Permits deletion only before the session begins. Deletes empty sessions or cancels sessions with existing consignments. Strictly prohibited when ACTIVE or EXTENDED.',
-  })
-  @ApiResponse({ status: 200, description: 'Auction session deleted or cancelled successfully.' })
-  async adminDeleteAuction(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Admin xóa phòng đấu giá chưa diễn ra và chưa có lượt đặt giá' })
+  adminDeleteAuction(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.auctionService.adminDeleteAuction(id);
   }
 
-  /**
-   * Admin views all items submitted by sellers to a specific auction room.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Get('admin/:id/items')
   @ApiOperation({
-    summary: '[Admin] List registered seller consignment items for an auction',
-    description:
-      'Lists all submitted consignment items, online appraisal certificate proofs, and warning flags if a seller has prior probation/penalty history.',
+    summary: 'Admin & Nhân viên hỗ trợ xem danh sách toàn bộ vật phẩm ký gửi trong phiên',
   })
-  @ApiResponse({
-    status: 200,
-    description: 'Consigned items and appraisal documentation retrieved successfully.',
-  })
-  async adminGetAuctionItems(@Param('id') id: string) {
+  adminGetAuctionItems(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.auctionService.adminGetAuctionItems(id);
   }
 
-  /**
-   * Admin approves or rejects a consigned auction item.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @Roles(Role.ADMIN)
   @Post('admin/items/:itemId/review')
-  @ApiOperation({
-    summary: '[Admin] Review (approve or reject) a consigned auction item',
-    description:
-      'Admin reviews online appraisal certificates: approves with assigned lot number and official starting price, or rejects with mandatory rationale.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Consignment review decision executed successfully.',
-  })
-  async adminReviewAuctionItem(
-    @Param('itemId') itemId: string,
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Admin duyệt hoặc từ chối vật phẩm ký gửi của Người bán' })
+  adminReviewAuctionItem(
+    @Param('itemId', new ParseUUIDPipe()) itemId: string,
     @CurrentUser('id') adminId: string,
     @Body() dto: ReviewAuctionItemDto,
   ) {
     return this.auctionService.adminReviewAuctionItem(itemId, adminId, dto);
   }
 
-  // ==========================================
-  // SELLER CONSIGNMENT ENDPOINTS
-  // ==========================================
+  @Roles(Role.ADMIN)
+  @Post('admin/:id/items/:itemId/end')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Admin kết thúc riêng từng lô đấu giá (không áp dụng cho Nhân viên hỗ trợ)',
+  })
+  adminEndLot(
+    @Param('id', new ParseUUIDPipe()) auctionId: string,
+    @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @CurrentUser('id') adminId: string,
+  ) {
+    return this.auctionService.adminEndLot(auctionId, itemId, adminId);
+  }
 
-  /**
-   * Seller submits an item with online appraisal certificates into an auction.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @Get('admin/awards')
+  @ApiOperation({ summary: 'Danh sách quyền mua sau đấu giá cho Admin & Nhân viên hỗ trợ' })
+  listAdminAwards(@Query('auctionId') auctionId?: string) {
+    return this.checkoutService!.listAwardsForAdmin(auctionId);
+  }
+
+  @Roles(Role.ADMIN)
+  @Post('admin/awards/:awardId/payment-default')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Admin xác nhận người mua quá hạn thanh toán 24h (mất 30% cọc, trừ 10đ uy tín, chuyển người thứ 2)',
+  })
+  confirmPaymentDefault(
+    @Param('awardId', new ParseUUIDPipe()) awardId: string,
+    @CurrentUser('id') adminId: string,
+    @Body() dto: AdminAwardActionDto,
+  ) {
+    if (!dto.confirmed) {
+      throw new BadRequestException('Cần xác nhận chắc chắn trước khi chốt quá hạn thanh toán.');
+    }
+    return this.checkoutService!.markPaymentDefault(awardId, adminId, dto.note);
+  }
+
+  @Roles(Role.ADMIN)
+  @Post('admin/awards/:awardId/not-buying')
+  @HttpCode(200)
+  @ApiOperation({
+    summary:
+      'Admin xác nhận khách hàng thứ hai không mua nữa (hoàn cọc 30% nếu đã đóng và đóng lô hàng)',
+  })
+  confirmSecondChanceNotBuying(
+    @Param('awardId', new ParseUUIDPipe()) awardId: string,
+    @CurrentUser('id') adminId: string,
+    @Body() dto: AdminAwardActionDto,
+  ) {
+    if (!dto.confirmed) {
+      throw new BadRequestException('Cần xác nhận chắc chắn trước khi chốt khách không mua nữa.');
+    }
+    return this.checkoutService!.withdrawSecondChanceByAdmin(awardId, adminId, dto.note);
+  }
+
+  @Get(':id/eligibility')
+  @ApiOperation({ summary: 'Kiểm tra điều kiện uy tín, ví và chế độ Người mua trước khi đặt giá' })
+  checkBuyerEligibility(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser('id') buyerId: string,
+  ) {
+    return this.auctionService.checkBuyerEligibility(id, buyerId);
+  }
+
+  @Public()
+  @Get(':id/intro-showcase')
+  @ApiOperation({ summary: 'Lấy dữ liệu đồng bộ màn giới thiệu 3D khi vào phòng đấu giá' })
+  @ApiResponse({ status: 200, type: AuctionIntroShowcaseResponseDto })
+  getAuctionIntroShowcase(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.auctionService.getAuctionIntroShowcase(id);
+  }
+
+  @Public()
+  @Get(':id')
+  @ApiOperation({ summary: 'Chi tiết phòng đấu giá đa lô theo từng lô hàng và lịch sử trả giá' })
+  getAuctionDetail(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUser() user?: AuthenticatedUserPayload,
+  ) {
+    return this.auctionService.getAuctionDetail(id, user?.id);
+  }
+
   @Roles(Role.SELLER, Role.ADMIN)
   @Post(':id/register-item')
   @ApiOperation({
-    summary: '[Seller] Consign item for auction with online appraisal documents',
-    description:
-      'Seller submits product specifications, proposed pricing, and online appraisal certificate proofs. System validates seller reputation and flags prior probation/penalty history.',
+    summary: 'Người bán ký gửi vật phẩm đấu giá (kèm kích thước đóng gói GHN & chứng thư)',
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Consignment item registered successfully, pending admin review.',
-  })
-  async registerAuctionItem(
-    @Param('id') id: string,
+  registerAuctionItem(
+    @Param('id', new ParseUUIDPipe()) auctionId: string,
     @CurrentUser('id') sellerId: string,
     @Body() dto: RegisterAuctionItemDto,
   ) {
-    return this.auctionService.registerAuctionItem(id, sellerId, dto);
+    return this.auctionService.registerAuctionItem(auctionId, sellerId, dto);
   }
 
-  /**
-   * Seller retrieves all items they have consigned across all auctions.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SELLER, Role.ADMIN)
-  @Get('seller/my-items')
-  @ApiOperation({
-    summary: '[Seller] List my consigned auction items across all sessions',
-    description:
-      'Retrieves review status (PENDING_REVIEW, APPROVED, REJECTED) and rejection rationale if applicable.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Seller consignment items retrieved successfully.',
-  })
-  async getSellerConsignments(@CurrentUser('id') sellerId: string) {
-    return this.auctionService.getSellerConsignments(sellerId);
-  }
-
-  /**
-   * Retrieves auctions owned by the authenticated seller (legacy compatibility).
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SELLER, Role.ADMIN)
-  @Get('my')
-  @ApiOperation({ summary: 'List auctions created by current seller (Legacy compatibility)' })
-  async getMyAuctions(@CurrentUser('id') sellerId: string, @Query() query: AuctionQueryDto) {
-    return this.auctionService.getMyAuctions(sellerId, query);
-  }
-
-  /**
-   * Initiates a new auction for an owned catalog product (legacy compatibility).
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SELLER, Role.ADMIN)
-  @Post()
-  @ApiOperation({ summary: 'Create auction listing from product (Legacy compatibility)' })
-  async createAuction(@CurrentUser('id') sellerId: string, @Body() dto: CreateAuctionDto) {
-    return this.auctionService.createAuction(sellerId, dto);
-  }
-
-  // ==========================================
-  // BIDDING & FINALIZATION ENDPOINTS
-  // ==========================================
-
-  /**
-   * Submits a competitive bid with wallet balance locking and automated anti-sniping extension.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @Roles(Role.BUYER, Role.SELLER)
   @Post(':id/bids')
+  @HttpCode(200)
   @ApiOperation({
-    summary: 'Submit competitive bid with wallet escrow lock',
-    description:
-      'Verifies bidder reputation requirements, locks bid deposit in NEXUS Pay wallet, refunds superseded bidders, and triggers anti-sniping extension.',
+    summary: 'Người mua đặt giá cho một lô hàng trong phòng đấu giá (chế độ Người bán chỉ xem)',
   })
-  async placeBid(
-    @Param('id') id: string,
+  placeBid(
+    @Param('id', new ParseUUIDPipe()) auctionId: string,
     @CurrentUser('id') userId: string,
     @Body() dto: PlaceBidDto,
   ) {
-    return this.auctionService.placeBid(id, userId, dto);
+    return this.auctionService.placeBid(auctionId, userId, dto);
   }
 
-  /**
-   * Finalizes an auction when scheduled duration concludes.
-   */
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SELLER, Role.ADMIN, Role.SUPPORT_STAFF)
-  @Post(':id/end')
-  @ApiOperation({ summary: 'Conclude and finalize auction session' })
-  async endAuction(@Param('id') id: string, @CurrentUser() user: AuthenticatedUserPayload) {
-    return this.auctionService.endAuction(id, user.id, user.role);
+  @Roles(Role.BUYER, Role.SELLER)
+  @Post(':id/items/:itemId/bids')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Người mua đặt giá trực tiếp theo ID lô hàng trong phòng đấu giá' })
+  placeLotBid(
+    @Param('id', new ParseUUIDPipe()) auctionId: string,
+    @Param('itemId', new ParseUUIDPipe()) itemId: string,
+    @CurrentUser('id') userId: string,
+    @Body() dto: PlaceBidDto,
+  ) {
+    return this.auctionService.placeBid(auctionId, userId, { ...dto, auctionItemId: itemId });
+  }
+
+  @Roles(Role.BUYER, Role.SELLER)
+  @Post(':id/complaints')
+  @ApiOperation({
+    summary: 'Người bán hoặc Người mua gửi yêu cầu khiếu nại liên quan đến phiên đấu giá',
+  })
+  createComplaint(
+    @Param('id', new ParseUUIDPipe()) auctionId: string,
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @Body() dto: CreateAuctionComplaintDto,
+  ) {
+    return this.complaintService!.createComplaint(
+      auctionId,
+      user.id,
+      user.role as unknown as PrismaRole,
+      dto,
+    );
+  }
+
+  @Roles(Role.BUYER, Role.SELLER)
+  @Post(':id/support-chat')
+  @ApiOperation({
+    summary: 'Mở cuộc trò chuyện hỗ trợ trực tiếp với Nhân viên hỗ trợ cho phòng đấu giá',
+  })
+  requestSupportChat(
+    @Param('id', new ParseUUIDPipe()) auctionId: string,
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @Body() dto: AuctionSupportChatDto,
+  ) {
+    return this.auctionService.requestAuctionSupportChat(
+      auctionId,
+      user.id,
+      user.role as unknown as PrismaRole,
+      dto.message,
+    );
   }
 }

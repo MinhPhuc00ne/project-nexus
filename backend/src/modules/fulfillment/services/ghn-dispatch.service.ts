@@ -28,7 +28,11 @@ import { GhnParcelItem } from './ghn-parcel';
 import { objectValue } from './shipment-state';
 
 type DispatchOrder = Prisma.OrderGetPayload<{
-  include: { items: { include: { product: true } }; shipment: true; payments: true };
+  include: {
+    items: { include: { product: true; auctionItem: true } };
+    shipment: true;
+    payments: true;
+  };
 }>;
 
 export interface GhnDispatchResult {
@@ -85,7 +89,11 @@ export class GhnDispatchService {
   private async load(sellerId: string, orderId: string): Promise<DispatchOrder> {
     const order = await this.prisma.order.findUnique({
       where: { id: orderId },
-      include: { items: { include: { product: true } }, shipment: true, payments: true },
+      include: {
+        items: { include: { product: true, auctionItem: true } },
+        shipment: true,
+        payments: true,
+      },
     });
     if (!order) throw new NotFoundException('Không tìm thấy đơn hàng.');
     if (order.sellerId !== sellerId)
@@ -100,15 +108,20 @@ export class GhnDispatchService {
     const request = objectValue(frozen.request);
     const items: GhnParcelItem[] = Array.isArray(frozenParcel.items)
       ? (frozenParcel.items as GhnParcelItem[])
-      : order.items.map(({ product, quantity, unitPrice, selections }) => ({
-          name: productChoiceLabel(product.title, selections),
-          quantity,
-          weight: product.weightGrams,
-          length: product.lengthCm,
-          width: product.widthCm,
-          height: product.heightCm,
-          price: Number(unitPrice),
-        }));
+      : order.items.map(
+          ({ product, auctionItem, titleSnapshot, quantity, unitPrice, selections }) => ({
+            name: productChoiceLabel(
+              product?.title ?? auctionItem?.title ?? titleSnapshot ?? 'Vật phẩm đấu giá',
+              selections,
+            ),
+            quantity,
+            weight: product?.weightGrams ?? auctionItem?.weightGrams ?? 500,
+            length: product?.lengthCm ?? auctionItem?.lengthCm ?? 20,
+            width: product?.widthCm ?? auctionItem?.widthCm ?? 15,
+            height: product?.heightCm ?? auctionItem?.heightCm ?? 10,
+            price: Number(unitPrice),
+          }),
+        );
     return this.shipping.quote(order.sellerId, address as GhnAddress, items, {
       fromDistrictId: request.fromDistrictId as number | undefined,
       fromWardCode: request.fromWardCode as string | undefined,

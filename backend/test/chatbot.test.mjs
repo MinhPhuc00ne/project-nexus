@@ -96,7 +96,10 @@ test('FAQ understands Vietnamese accents, cancellation precedence and whole word
   const reply = await f.bot.reply('buyer', { message: 'HỦY ĐƠN đã xác nhận được không?' });
   assert.match(reply.reply, /Admin duyệt/);
   assert.equal(reply.engine, 'FAQ');
-  assert.equal(f.ai.answer.mock.callCount(), 1);
+  const paymentReply = await f.bot.reply('buyer', { message: 'Các phương thức thanh toán là gì?' });
+  assert.equal(paymentReply.topic, 'PAYMENT');
+  assert.match(paymentReply.reply, /COD/);
+  assert.equal(f.ai.answer.mock.callCount(), 2);
   assert.equal(f.prisma.order.findFirst.mock.callCount(), 0);
   assert.equal((await f.bot.reply('buyer', { message: 'Xin chào' })).topic, 'WELCOME');
 });
@@ -286,6 +289,40 @@ test('credential-bearing history is redacted before follow-up reaches AI', async
   assert.equal(JSON.stringify(f.ai.answer.mock.calls[0].arguments).includes('123456'), false);
 });
 
+test('credential formats and English security labels never reach AI for members or guests', async () => {
+  const messages = [
+    'My password is example-only',
+    'My API key is example-only',
+    'Thông tin thẻ 4111 1111 1111 1111',
+    '4111-1111-1111-1111',
+    'Bearer example-only',
+    'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.signature',
+    'AIzaExampleOnlyNotARealKey123456789',
+    'sk-example-only-not-a-real-key',
+    'ghp_exampleOnlyNotARealGitHubToken123456',
+    'xoxb-example-only-slack-token',
+    'ya29.exampleOnlyNotARealOAuthToken123456',
+    '-----BEGIN PRIVATE KEY-----',
+  ];
+  for (const message of messages) {
+    const f = fixture();
+    const member = await f.bot.reply('buyer', { message, orderId: 'order-1', intent: 'CART' });
+    assert.equal(member.topic, 'SECURITY', message);
+    assert.equal((await f.bot.replyGuest('peer', { message })).topic, 'SECURITY', message);
+    assert.equal(f.ai.answer.mock.callCount(), 0);
+    assert.equal(f.prisma.order.findFirst.mock.callCount(), 0);
+    await f.bot.reply('buyer', {
+      message: 'Tôi cần làm gì tiếp?',
+      history: [
+        { role: 'user', content: message },
+        { role: 'assistant', content: message },
+      ],
+    });
+    const passedHistory = f.ai.answer.mock.calls[0].arguments[1];
+    assert.ok(passedHistory.every((turn) => turn.content === '[Nội dung bảo mật đã được ẩn.]'));
+  }
+});
+
 test('shop keyword replies are scoped, accent-insensitive, specific and do not fire on fragments', async () => {
   const replies = [
     { id: 'b', keyword: 'bảo hành', content: 'Warranty' },
@@ -420,4 +457,30 @@ test('seller acting as customer receives shop replies; shop replies to buyer nev
   assert.equal(calls.length, 1);
   await service.triggerAutoReply({ ...conv, status: 'CLOSED' }, 'customer', 'BUYER', 'ship');
   assert.equal(calls.length, 1);
+});
+
+test('all knowledge topics including auction, wallet, reputation, seller and security title resolve cleanly', async () => {
+  const f = fixture();
+  const { topics } = f.bot.capabilities();
+  for (const { id, title } of topics) {
+    assert.equal(matchChatbotTopic(title), id, `topic title should match ${id}`);
+  }
+  const auction = await f.bot.reply('buyer', { message: 'Luật đấu giá 3D và anti sniping?' });
+  assert.equal(auction.topic, 'AUCTION');
+  assert.match(auction.reply, /40/);
+  assert.match(auction.reply, /2 phút/);
+  const wallet = await f.bot.reply('buyer', {
+    message: 'Ký quỹ và rút tiền ví NEXUS Pay thế nào?',
+  });
+  assert.equal(wallet.topic, 'WALLET');
+  assert.match(wallet.reply, /7%/);
+  const reputation = await f.bot.reply('buyer', { message: 'Điểm uy tín tính thế nào?' });
+  assert.equal(reputation.topic, 'REPUTATION');
+  assert.match(reputation.reply, /100 điểm/);
+  const seller = await f.bot.reply('buyer', { message: 'Cách bật chế độ người bán?' });
+  assert.equal(seller.topic, 'SELLER');
+  assert.match(seller.reply, /50 điểm/);
+  const securityTopic = await f.bot.reply('buyer', { message: 'Bảo mật tài khoản' });
+  assert.equal(securityTopic.topic, 'SECURITY');
+  assert.equal(securityTopic.engine, 'FAQ');
 });

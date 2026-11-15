@@ -103,11 +103,8 @@ test(
       const inventory = new InventoryService(prisma);
       const stock = new AuctionStockService(inventory);
       const reputation = new ReputationService(prisma, {});
-      const escrow = new OrderEscrowService(
-        prisma,
-        { getSettings: async () => ({ platformFeePercentage: 7 }) },
-        finance,
-      );
+      const adminSettings = { getSettings: async () => ({ platformFeePercentage: 7 }) };
+      const escrow = new OrderEscrowService(prisma, adminSettings, finance);
       let shippingCalls = 0;
       const shipping = {
         quote: async () => {
@@ -115,41 +112,51 @@ test(
           return { fee: { total: 30000 }, origin: {}, parcel: {}, request: {} };
         },
       };
-      const checkout = new AuctionCheckoutService(prisma, stock, shipping, escrow, reputation);
+      const checkout = new AuctionCheckoutService(
+        prisma,
+        shipping,
+        escrow,
+        reputation,
+        adminSettings,
+        finance,
+        stock,
+      );
       const gateway = {
         broadcastBidPlaced() {},
         broadcastTimeExtended() {},
-        broadcastAuctionEnded() {},
+        broadcastLotEnded() {},
+        broadcastTimerSync() {},
       };
       const auctions = new AuctionService(prisma, gateway, stock, checkout);
       const category = await prisma.category.create({
         data: { name: 'Fixture', slug: randomUUID() },
       });
       const warehouse = await inventory.ensureDefaultWarehouse();
-      async function createAuction() {
-        const product = await prisma.product.create({
-          data: {
-            sellerId: seller.id,
-            categoryId: category.id,
-            title: 'Fixture item',
-            description: 'Test item',
-            basePrice: 100000,
-            weightGrams: 500,
-            lengthCm: 10,
-            widthCm: 10,
-            heightCm: 10,
-          },
-        });
-        await inventory.createInitialStock(prisma, warehouse.id, product.id, 1);
-        const auction = await auctions.createAuction(seller.id, {
-          productId: product.id,
+      async function createAuction(targetSeller = seller) {
+        const room = await auctions.adminCreateAuction(admin.id, {
           title: 'Fixture auction',
-          startingPrice: 100000,
-          bidIncrement: 10000,
-          startTime: new Date(Date.now() - 3600000).toISOString(),
+          startTime: new Date(Date.now() + 60000).toISOString(),
           endTime: new Date(Date.now() + 3600000).toISOString(),
         });
-        return { product, auction };
+        const lot = await auctions.registerAuctionItem(room.id, targetSeller.id, {
+          title: 'Fixture item',
+          description: 'Test item',
+          images: ['https://example.invalid/fixture.jpg'],
+          certificateImages: ['https://example.invalid/cert.jpg'],
+          proposedStartingPrice: 100000,
+          proposedBidIncrement: 10000,
+          weightGrams: 500,
+          lengthCm: 10,
+          widthCm: 10,
+          heightCm: 10,
+        });
+        await auctions.adminReviewAuctionItem(lot.id, admin.id, { action: 'APPROVE' });
+        await auctions.adminStartAuction(room.id);
+        await prisma.auction.update({
+          where: { id: room.id },
+          data: { startTime: new Date(Date.now() - 120000) },
+        });
+        return { auction: room, lot };
       }
       const address = {
         recipientName: 'Fixture',
@@ -159,19 +166,23 @@ test(
       };
 
       await t.test(
-        'one winning bid creates one order; concurrent checkout consumes the deposit once and escrows the full total',
+        'one winning bid creates one order; concurrent checkout consumes the 30% deposit once and escrows the full total',
         async () => {
-          const { auction, product } = await createAuction();
-          await auctions.placeBid(auction.id, buyer.id, { bidAmount: 100000 });
+          const { auction, lot } = await createAuction();
+          await auctions.placeBid(auction.id, buyer.id, {
+            auctionItemId: lot.id,
+            bidAmount: 100000,
+          });
           const results = await Promise.all([
-            auctions.endAuction(auction.id, admin.id, 'ADMIN'),
-            auctions.endAuction(auction.id, admin.id, 'ADMIN'),
+            auctions.adminEndLot(auction.id, lot.id, admin.id),
+            auctions.adminEndLot(auction.id, lot.id, admin.id),
           ]);
           assert.equal(results[0].awardId, results[1].awardId);
-          assert.equal(await prisma.auctionAward.count({ where: { auctionId: auction.id } }), 1);
+          assert.equal(await prisma.auctionAward.count({ where: { auctionItemId: lot.id } }), 1);
           const offer = await prisma.auctionAward.findUniqueOrThrow({
             where: { id: results[0].awardId },
           });
+          assert.equal(Number(offer.depositAmount), 30000);
           const retail = new OrderService(prisma, {}, {}, shipping, escrow, inventory);
           await assert.rejects(retail.payOrderByWallet(offer.orderId, buyer.id), /quyền mua/);
           await assert.rejects(
@@ -194,11 +205,6 @@ test(
           assert.equal(Number(held.totalAmount), 130000);
           assert.equal(Number(held.platformFee), 7000);
           assert.equal(Number(held.sellerPayout), 93000);
-          const remaining = await prisma.inventory.findFirstOrThrow({
-            where: { productId: product.id },
-          });
-          assert.equal(remaining.totalQty, 0);
-          assert.equal(remaining.reservedQty, 0);
           const calls = shippingCalls;
           await checkout.checkout(offer.id, buyer.id, address);
           assert.equal(shippingCalls, calls);
@@ -207,10 +213,7 @@ test(
             data: { status: 'CONFIRMED' },
           });
           const reviews = new ReviewsService(prisma, reputation);
-          await Promise.all([
-            reviews.create(buyer.id, offer.orderId, { rating: 5 }, 'shop'),
-            reviews.create(buyer.id, offer.orderId, { rating: 5 }, 'product', product.id),
-          ]);
+          await reviews.create(buyer.id, offer.orderId, { rating: 5 }, 'shop');
           assert.equal(
             await prisma.reputationLog.count({
               where: { userId: seller.id, referenceId: `REVIEW_BONUS:${offer.orderId}` },
@@ -221,21 +224,30 @@ test(
       );
 
       await t.test(
-        'expiry refunds and penalizes the original winner once, offers the next bidder without debiting them, and moves stock',
+        'default forfeits 30% deposit with 7% platform fee, penalizes primary winner once, and invites second-chance buyer',
         async () => {
-          const { auction, product } = await createAuction();
-          await auctions.placeBid(auction.id, buyer.id, { bidAmount: 100000 });
-          await auctions.placeBid(auction.id, runner.id, { bidAmount: 120000 });
-          const ended = await auctions.endAuction(auction.id, admin.id, 'ADMIN');
+          const { auction, lot } = await createAuction();
+          await auctions.placeBid(auction.id, buyer.id, {
+            auctionItemId: lot.id,
+            bidAmount: 100000,
+          });
+          await auctions.placeBid(auction.id, runner.id, {
+            auctionItemId: lot.id,
+            bidAmount: 120000,
+          });
+          const ended = await auctions.adminEndLot(auction.id, lot.id, admin.id);
           await prisma.auctionAward.update({
             where: { id: ended.awardId },
             data: { expiresAt: new Date(Date.now() - 1000) },
           });
-          await Promise.all([checkout.expire(ended.awardId), checkout.expire(ended.awardId)]);
+          await Promise.all([
+            checkout.markPaymentDefault(ended.awardId, admin.id),
+            checkout.markPaymentDefault(ended.awardId, admin.id),
+          ]);
           const winnerWallet = await prisma.wallet.findUniqueOrThrow({
             where: { userId: runner.id },
           });
-          assert.equal(Number(winnerWallet.balance), 300000);
+          assert.equal(Number(winnerWallet.balance), 264000);
           assert.equal(Number(winnerWallet.lockedBalance), 0);
           assert.equal(
             await prisma.reputationLog.count({
@@ -244,19 +256,13 @@ test(
             1,
           );
           const next = await prisma.auctionAward.findFirstOrThrow({
-            where: { auctionId: auction.id, status: 'AWAITING_CHECKOUT' },
-            include: { order: true },
+            where: { auctionItemId: lot.id, status: 'AWAITING_ACCEPTANCE' },
           });
-          assert.equal(next.order.buyerId, buyer.id);
+          assert.equal(next.buyerId, buyer.id);
+          assert.equal(Number(next.offerAmount), 100000);
           assert.equal(Number(next.depositAmount), 0);
-          const before = await prisma.wallet.findUniqueOrThrow({ where: { userId: buyer.id } });
-          assert.equal(Number(before.balance), 170000);
-          await assert.rejects(
-            checkout.expire(next.id, runner.id),
-            (error) => error.getStatus() === 403,
-          );
-          await checkout.expire(next.id, buyer.id);
-          await checkout.expire(next.id, buyer.id);
+          await checkout.respondToSecondChance(next.id, buyer.id, { action: 'ACCEPT' });
+          await checkout.withdrawSecondChanceByAdmin(next.id, admin.id);
           assert.equal(
             await prisma.reputationLog.count({
               where: { userId: buyer.id, penaltyType: 'AUCTION_DEFAULT' },
@@ -264,12 +270,7 @@ test(
             0,
           );
           assert.equal(
-            (await prisma.inventory.findFirstOrThrow({ where: { productId: product.id } }))
-              .availableQty,
-            1,
-          );
-          assert.equal(
-            (await prisma.auction.findUniqueOrThrow({ where: { id: auction.id } })).status,
+            (await prisma.auctionItem.findUniqueOrThrow({ where: { id: lot.id } })).lotStatus,
             'FAILED',
           );
         },
@@ -335,16 +336,19 @@ test(
       );
 
       await t.test(
-        'insufficient funds preserve the deposit, order, inventory and payment records',
+        'insufficient funds preserve the 30% deposit, order, and payment records',
         async () => {
           const lowBalanceBuyer = await user('BUYER');
           await prisma.wallet.update({
             where: { userId: lowBalanceBuyer.id },
             data: { balance: 110000 },
           });
-          const { auction, product } = await createAuction();
-          await auctions.placeBid(auction.id, lowBalanceBuyer.id, { bidAmount: 100000 });
-          const result = await auctions.endAuction(auction.id, admin.id, 'ADMIN');
+          const { auction, lot } = await createAuction();
+          await auctions.placeBid(auction.id, lowBalanceBuyer.id, {
+            auctionItemId: lot.id,
+            bidAmount: 100000,
+          });
+          const result = await auctions.adminEndLot(auction.id, lot.id, admin.id);
           const award = await prisma.auctionAward.findUniqueOrThrow({
             where: { id: result.awardId },
           });
@@ -365,35 +369,23 @@ test(
             'PENDING_PAYMENT',
           );
           assert.equal(await prisma.payment.count({ where: { orderId: award.orderId } }), 0);
-          assert.equal(
-            (await prisma.inventory.findFirstOrThrow({ where: { productId: product.id } }))
-              .reservedQty,
-            1,
-          );
-          await checkout.expire(award.id, lowBalanceBuyer.id);
         },
       );
 
-      await t.test(
-        'deadline recovery closes due rooms without bids and returns reserved stock',
-        async () => {
-          const { auction, product } = await createAuction();
-          await prisma.auction.update({
-            where: { id: auction.id },
-            data: { endTime: new Date(Date.now() - 1000) },
-          });
-          const lifecycle = new AuctionLifecycleService(prisma, auctions, checkout);
-          await lifecycle.tick();
-          await lifecycle.tick();
-          assert.equal(
-            (await prisma.auction.findUniqueOrThrow({ where: { id: auction.id } })).status,
-            'FAILED',
-          );
-          const row = await prisma.inventory.findFirstOrThrow({ where: { productId: product.id } });
-          assert.equal(row.availableQty, 1);
-          assert.equal(row.reservedQty, 0);
-        },
-      );
+      await t.test('deadline recovery closes due lots without bids cleanly', async () => {
+        const { lot } = await createAuction();
+        await prisma.auctionItem.update({
+          where: { id: lot.id },
+          data: { endTime: new Date(Date.now() - 1000) },
+        });
+        const lifecycle = new AuctionLifecycleService(prisma, auctions, checkout, gateway);
+        await lifecycle.tick();
+        await lifecycle.tick();
+        assert.equal(
+          (await prisma.auctionItem.findUniqueOrThrow({ where: { id: lot.id } })).lotStatus,
+          'FAILED',
+        );
+      });
 
       await t.test(
         'shop warnings apply the same suspension thresholds as other reputation changes',
@@ -419,26 +411,37 @@ test(
             where: { id: legacySeller.id },
             data: { reputationScore: 70, trustLevel: 'EXCELLENT' },
           });
+          const room = await auctions.adminCreateAuction(admin.id, {
+            title: 'Probation room',
+            startTime: new Date(Date.now() + 60000).toISOString(),
+            endTime: new Date(Date.now() + 3600000).toISOString(),
+          });
+          await assert.rejects(
+            auctions.registerAuctionItem(room.id, legacySeller.id, {
+              title: 'Legacy item',
+              description: 'Fixture',
+              images: ['https://example.invalid/item.jpg'],
+              certificateImages: ['https://example.invalid/cert.jpg'],
+              proposedStartingPrice: 100000,
+              proposedBidIncrement: 10000,
+              weightGrams: 500,
+              lengthCm: 10,
+              widthCm: 10,
+              heightCm: 10,
+            }),
+            (error) => error.getStatus() === 400,
+          );
+          assert.equal(await prisma.auctionItem.count({ where: { sellerId: legacySeller.id } }), 0);
           const product = await prisma.product.create({
             data: {
               sellerId: legacySeller.id,
               categoryId: category.id,
-              title: 'Legacy item',
+              title: 'Legacy stock fixture',
               description: 'Fixture',
               basePrice: 100000,
             },
           });
           await inventory.createInitialStock(prisma, warehouse.id, product.id, 1);
-          await assert.rejects(
-            auctions.createAuction(legacySeller.id, {
-              productId: product.id,
-              title: 'Restricted session',
-              startingPrice: 100000,
-              startTime: new Date().toISOString(),
-              endTime: new Date(Date.now() + 7200000).toISOString(),
-            }),
-            (error) => error.getStatus() === 400,
-          );
           await assert.rejects(
             prisma.$transaction((tx) =>
               stock.reserve(tx, {
@@ -449,7 +452,6 @@ test(
             ),
             (error) => error.getStatus() === 400,
           );
-          assert.equal(await prisma.auction.count({ where: { sellerId: legacySeller.id } }), 0);
           assert.equal(
             (await prisma.inventory.findFirstOrThrow({ where: { productId: product.id } }))
               .availableQty,

@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@prisma/client';
 
 /**
  * Seller metadata exposed on approved auction showcase items.
@@ -78,6 +78,24 @@ export class AuctionShowcaseItemDto {
 
   @ApiPropertyOptional({ type: AuctionShowcaseSellerDto })
   seller?: AuctionShowcaseSellerDto;
+
+  @ApiPropertyOptional({ enum: AuctionStatus })
+  lotStatus?: AuctionStatus;
+
+  @ApiPropertyOptional({ example: 355000000 })
+  currentHighestBid?: number;
+
+  @ApiPropertyOptional({ nullable: true })
+  currentHighestBidderId?: string | null;
+
+  @ApiPropertyOptional({ example: 4 })
+  totalBidsCount?: number;
+
+  @ApiPropertyOptional({ nullable: true })
+  startTime?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  endTime?: string | null;
 }
 
 /**

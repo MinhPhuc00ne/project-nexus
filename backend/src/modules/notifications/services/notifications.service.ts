@@ -67,6 +67,7 @@ export class NotificationsService {
         title: n.title,
         auctionId: n.auctionId,
         targetUrl: n.targetUrl,
+        metadata: (n.metadata as Record<string, unknown> | null) ?? null,
         content: n.content,
         type: n.type,
         channel: n.channel,
@@ -174,6 +175,7 @@ export class NotificationsService {
         title: n.title,
         auctionId: n.auctionId,
         targetUrl: n.targetUrl,
+        metadata: (n.metadata as Record<string, unknown> | null) ?? null,
         content: n.content,
         type: n.type,
         channel: n.channel,
@@ -257,12 +259,14 @@ export class NotificationsService {
     channel?: NotificationChannel;
     auctionId?: string;
     targetUrl?: string;
+    metadata?: Record<string, unknown>;
   }) {
     return this.prisma.notification.create({
       data: {
         userId: params.userId,
         auctionId: params.auctionId,
         targetUrl: params.auctionId ? auctionTargetUrl(params.auctionId) : params.targetUrl,
+        metadata: params.metadata as Prisma.InputJsonValue | undefined,
         title: params.title,
         content: params.content,
         type: params.type || NotificationType.SYSTEM,

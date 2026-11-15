@@ -10,18 +10,29 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { Role } from '@prisma/client';
 import { Server, Socket } from 'socket.io';
 import {
   WS_AUCTION_EVENTS,
-  WsJoinRoomDto,
-  WsBidPlacedPayload,
-  WsTimerSyncPayload,
-  WsTimeExtendedPayload,
-  WsAuctionStartedPayload,
   Ws3dSyncPayload,
+  WsAuctionStartedPayload,
+  WsBidPlacedPayload,
+  WsBidRejectedPayload,
+  WsJoinRoomDto,
+  WsLotEndedPayload,
+  WsPlaceBidDto,
+  WsTimeExtendedPayload,
+  WsTimerSyncPayload,
 } from '@nexus/types';
 import { LightweightJwt } from '../../../core/security/jwt.util';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
+
+export type PlaceBidSocketHandler = (
+  auctionId: string,
+  auctionItemId: string | undefined,
+  bidderId: string,
+  bidAmount: number,
+) => Promise<unknown>;
 
 /**
  * Interface contract defining broadcasting capabilities for live auctions.
@@ -31,6 +42,7 @@ export interface AuctionSocketBroadcaster {
   broadcastBidPlaced(payload: WsBidPlacedPayload): void;
   broadcastTimerSync(payload: WsTimerSyncPayload): void;
   broadcastTimeExtended(payload: WsTimeExtendedPayload): void;
+  broadcastLotEnded(payload: WsLotEndedPayload): void;
   broadcastAuctionEnded(payload: {
     auctionId: string;
     winningBidderId?: string | null;
@@ -55,8 +67,16 @@ export class AuctionGateway
   server: Server;
 
   private readonly logger = new Logger(AuctionGateway.name);
+  private placeBidHandler: PlaceBidSocketHandler | null = null;
 
   constructor(private readonly configService: ConfigService) {}
+
+  /**
+   * Registers the domain bid placement handler called when a client submits `auction:place_bid`.
+   */
+  registerPlaceBidHandler(handler: PlaceBidSocketHandler): void {
+    this.placeBidHandler = handler;
+  }
 
   /**
    * Lifecycle hook executed after the gateway initializes.
@@ -138,7 +158,68 @@ export class AuctionGateway
   }
 
   /**
-   * Synchronizes viewport manipulation for interactive 3D inspection models.
+   * Handles real-time bid submissions over WebSocket, delegating validation and escrow locks
+   * to the registered AuctionService handler and returning rejection feedback directly to caller.
+   */
+  @SubscribeMessage(WS_AUCTION_EVENTS.CLIENT.PLACE_BID)
+  async handlePlaceBid(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: WsPlaceBidDto,
+  ): Promise<{ ok: boolean; data?: unknown; error?: string }> {
+    const user = (client.data as { user?: AuthenticatedUserPayload }).user;
+    if (!user?.id) {
+      const rejection: WsBidRejectedPayload = {
+        auctionId: data?.auctionId ?? '',
+        auctionItemId: data?.auctionItemId,
+        message: 'Vui lòng đăng nhập để tham gia đặt giá.',
+      };
+      client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
+      return { ok: false, error: rejection.message };
+    }
+
+    if (!this.placeBidHandler) {
+      const rejection: WsBidRejectedPayload = {
+        auctionId: data?.auctionId ?? '',
+        auctionItemId: data?.auctionItemId,
+        message: 'Hệ thống đặt giá trực tuyến đang khởi tạo, vui lòng thử lại.',
+      };
+      client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
+      return { ok: false, error: rejection.message };
+    }
+
+    const amount = Number(data?.bidAmount);
+    if (!data?.auctionId || !Number.isFinite(amount) || amount <= 0) {
+      const rejection: WsBidRejectedPayload = {
+        auctionId: data?.auctionId ?? '',
+        auctionItemId: data?.auctionItemId,
+        message: 'Thông tin phòng đấu giá hoặc mức giá không hợp lệ.',
+      };
+      client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
+      return { ok: false, error: rejection.message };
+    }
+
+    try {
+      const result = await this.placeBidHandler(
+        data.auctionId,
+        data.auctionItemId,
+        user.id,
+        amount,
+      );
+      return { ok: true, data: result };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Đặt giá không thành công.';
+      const rejection: WsBidRejectedPayload = {
+        auctionId: data.auctionId,
+        auctionItemId: data.auctionItemId,
+        message,
+      };
+      client.emit(WS_AUCTION_EVENTS.SERVER.BID_REJECTED, rejection);
+      return { ok: false, error: message };
+    }
+  }
+
+  /**
+   * Synchronizes viewport manipulation for interactive 3D inspection models (Admin only).
    *
    * @param client Originating socket connection
    * @param data 3D camera rotation and zoom coordinates
@@ -148,6 +229,13 @@ export class AuctionGateway
     @ConnectedSocket() client: Socket,
     @MessageBody() data: Ws3dSyncPayload,
   ): void {
+    const user = (client.data as { user?: AuthenticatedUserPayload }).user;
+    if (user?.role !== Role.ADMIN) {
+      client.emit(WS_AUCTION_EVENTS.SERVER.ERROR, {
+        message: 'Chỉ Admin mới có quyền điều khiển đồng bộ góc nhìn 3D.',
+      });
+      return;
+    }
     if (data?.auctionId) {
       client.to(`auction:${data.auctionId}`).emit(WS_AUCTION_EVENTS.SERVER.VIEWPORT_UPDATED, data);
     }
@@ -212,6 +300,22 @@ export class AuctionGateway
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.warn(`Failed to broadcast anti-sniping extension: ${message}`);
+    }
+  }
+
+  /**
+   * Broadcasts lot completion event when Admin ends a single lot or its timer expires.
+   *
+   * @param payload Lot conclusion telemetry
+   */
+  broadcastLotEnded(payload: WsLotEndedPayload): void {
+    try {
+      this.server
+        ?.to(`auction:${payload.auctionId}`)
+        .emit(WS_AUCTION_EVENTS.SERVER.LOT_ENDED, payload);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to broadcast lot ending: ${message}`);
     }
   }
 

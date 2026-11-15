@@ -172,6 +172,7 @@ export class NotificationsGateway
           createdAt: new Date(rec.createdAt).toISOString(),
           auctionId: rec.auctionId ?? null,
           targetUrl: rec.targetUrl ?? null,
+          metadata: rec.metadata ?? null,
           unreadCount,
         };
         this.server.to(`user:${userId}`).emit(WS_NOTIFICATION_EVENTS.SERVER.NEW, payload);

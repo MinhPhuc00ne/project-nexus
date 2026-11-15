@@ -38,6 +38,46 @@ export enum AuctionStatus {
 }
 
 /**
+ * Appraisal review states of an auction consignment item (lot).
+ */
+export enum AuctionItemStatus {
+  PENDING_REVIEW = 'PENDING_REVIEW',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+/**
+ * Resolution tier of a post-auction purchase offer.
+ */
+export enum AuctionAwardTier {
+  PRIMARY_WINNER = 'PRIMARY_WINNER',
+  SECOND_CHANCE = 'SECOND_CHANCE',
+}
+
+/**
+ * Lifecycle states of a post-auction purchase offer.
+ */
+export enum AuctionAwardStatus {
+  AWAITING_ACCEPTANCE = 'AWAITING_ACCEPTANCE',
+  AWAITING_DEPOSIT = 'AWAITING_DEPOSIT',
+  AWAITING_CHECKOUT = 'AWAITING_CHECKOUT',
+  PAID = 'PAID',
+  PAYMENT_DEFAULT = 'PAYMENT_DEFAULT',
+  BUYER_WITHDRAWN = 'BUYER_WITHDRAWN',
+  DECLINED = 'DECLINED',
+  EXPIRED = 'EXPIRED',
+}
+
+/**
+ * Status of an auction-related complaint submitted to Admin.
+ */
+export enum AuctionComplaintStatus {
+  PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
+  REJECTED = 'REJECTED',
+}
+
+/**
  * Verification state of an individual bid placed in an auction.
  */
 export enum BidStatus {
@@ -150,6 +190,8 @@ export enum WalletTransactionType {
   PLATFORM_FEE = 'PLATFORM_FEE',
   AUCTION_BID_LOCK = 'AUCTION_BID_LOCK',
   AUCTION_BID_REFUND = 'AUCTION_BID_REFUND',
+  AUCTION_DEPOSIT_FORFEIT = 'AUCTION_DEPOSIT_FORFEIT',
+  AUCTION_DEPOSIT_COMPENSATION = 'AUCTION_DEPOSIT_COMPENSATION',
 }
 
 /**

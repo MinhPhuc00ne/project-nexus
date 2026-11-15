@@ -3,10 +3,12 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsDateString,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -117,4 +119,52 @@ export class RegisterAuctionItemDto {
   @IsDateString()
   @IsOptional()
   certificateIssueDate?: string;
+
+  @ApiPropertyOptional({
+    description: 'Parcel weight in grams for GHN shipping calculation',
+    example: 800,
+    default: 500,
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50000)
+  @IsOptional()
+  weightGrams?: number;
+
+  @ApiPropertyOptional({
+    description: 'Parcel length in cm for GHN shipping calculation',
+    example: 25,
+    default: 20,
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  @IsOptional()
+  lengthCm?: number;
+
+  @ApiPropertyOptional({
+    description: 'Parcel width in cm for GHN shipping calculation',
+    example: 20,
+    default: 15,
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  @IsOptional()
+  widthCm?: number;
+
+  @ApiPropertyOptional({
+    description: 'Parcel height in cm for GHN shipping calculation',
+    example: 15,
+    default: 10,
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  @IsOptional()
+  heightCm?: number;
 }

@@ -20,6 +20,8 @@ export class NotificationResponseDto {
       'Frontend destination. New auction notifications use the same route as auction banners and manual browsing. Legacy notifications may have no destination.',
   })
   targetUrl!: string | null;
+  @ApiProperty({ type: Object, nullable: true, required: false })
+  metadata?: Record<string, unknown> | null;
 }
 
 /** Paginated notifications belonging exclusively to the authenticated account. */
