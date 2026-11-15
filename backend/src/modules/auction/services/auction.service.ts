@@ -867,7 +867,7 @@ export class AuctionService implements OnModuleInit {
       throw new NotFoundException('Không tìm thấy phòng đấu giá.');
     }
 
-    return this.prisma.auctionItem.findMany({
+    const items = await this.prisma.auctionItem.findMany({
       where: { auctionId },
       orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
       include: {
@@ -876,8 +876,12 @@ export class AuctionService implements OnModuleInit {
             id: true,
             fullName: true,
             email: true,
+            platformEmail: true,
+            avatarUrl: true,
+            shopAvatarUrl: true,
             reputationScore: true,
             trustLevel: true,
+            isShopSuspended: true,
           },
         },
         reviewedByAdmin: { select: { id: true, fullName: true } },
@@ -890,6 +894,14 @@ export class AuctionService implements OnModuleInit {
         _count: { select: { bids: true, complaints: true } },
       },
     });
+
+    return {
+      auctionId: auction.id,
+      auctionTitle: auction.title,
+      auctionStatus: auction.status,
+      totalCount: items.length,
+      items,
+    };
   }
 
   /**

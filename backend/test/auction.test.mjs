@@ -362,15 +362,26 @@ function createHarness(overrides = {}) {
         }
         return null;
       },
-      findMany: async ({ where } = {}) => {
-        return [...auctionItems.values()].filter((lot) => {
-          if (!where) return true;
-          if (where.auctionId && lot.auctionId !== where.auctionId) return false;
-          if (where.status && lot.status !== where.status) return false;
-          if (where.sellerId && lot.sellerId !== where.sellerId) return false;
-          if (where.lotStatus?.in && !where.lotStatus.in.includes(lot.lotStatus)) return false;
-          return true;
-        });
+      findMany: async ({ where, include } = {}) => {
+        return [...auctionItems.values()]
+          .filter((lot) => {
+            if (!where) return true;
+            if (where.auctionId && lot.auctionId !== where.auctionId) return false;
+            if (where.status && lot.status !== where.status) return false;
+            if (where.sellerId && lot.sellerId !== where.sellerId) return false;
+            if (where.lotStatus?.in && !where.lotStatus.in.includes(lot.lotStatus)) return false;
+            return true;
+          })
+          .map((lot) => {
+            if (!include) return { ...lot };
+            return {
+              ...lot,
+              seller: lot.sellerId ? (users.get(lot.sellerId) ?? null) : null,
+              reviewedByAdmin: lot.reviewedByAdminId
+                ? (users.get(lot.reviewedByAdminId) ?? null)
+                : null,
+            };
+          });
       },
       aggregate: async ({ where }) => {
         let maxLot = null;
@@ -1194,4 +1205,23 @@ test('getAuctions returns pagination metadata, targetUrl, and room summary relat
 
   const detail = await auctionService.getAuctionDetail(created.id, 'admin-1');
   assert.equal(detail.targetUrl, `/auction/${created.id}`);
+
+  const emptyItems = await auctionService.adminGetAuctionItems(created.id);
+  assert.equal(emptyItems.auctionId, created.id);
+  assert.equal(emptyItems.auctionTitle, 'Heritage Auction 2026');
+  assert.equal(emptyItems.auctionStatus, created.status);
+  assert.equal(emptyItems.totalCount, 0);
+  assert.deepEqual(emptyItems.items, []);
+
+  await auctionService.registerAuctionItem(created.id, 'seller-1', {
+    title: 'Vintage Chronograph',
+    description: 'Authenticated 18K timepiece',
+    images: ['https://example.com/watch.jpg'],
+    proposedStartingPrice: 1_000_000,
+    certificateImages: ['https://example.com/cert.jpg'],
+  });
+  const populatedItems = await auctionService.adminGetAuctionItems(created.id);
+  assert.equal(populatedItems.totalCount, 1);
+  assert.equal(populatedItems.items.length, 1);
+  assert.equal(populatedItems.items[0].seller?.id, 'seller-1');
 });
