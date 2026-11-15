@@ -284,7 +284,29 @@ function createHarness(overrides = {}) {
           bids: bids.filter((b) => b.auctionId === row.id),
         };
       },
-      findMany: async () => [...auctions.values()],
+      count: async () => auctions.size,
+      findMany: async ({ include } = {}) =>
+        [...auctions.values()].map((row) => {
+          if (!include) return { ...row };
+          const items = [...auctionItems.values()].filter((item) => {
+            if (item.auctionId !== row.id) return false;
+            if (include.items?.where?.status && item.status !== include.items.where.status) {
+              return false;
+            }
+            return true;
+          });
+          return {
+            ...row,
+            createdByAdmin: row.createdByAdminId ? (users.get(row.createdByAdminId) ?? null) : null,
+            seller: row.sellerId ? (users.get(row.sellerId) ?? null) : null,
+            product: row.product ?? null,
+            items,
+            _count: {
+              bids: bids.filter((b) => b.auctionId === row.id).length,
+              items: [...auctionItems.values()].filter((item) => item.auctionId === row.id).length,
+            },
+          };
+        }),
       update: async ({ where, data }) => {
         const row = auctions.get(where.id);
         applyNumericOps(row, data);
@@ -1147,4 +1169,29 @@ test('AuctionGateway enforces ADMIN-only 3D sync and emits BID_REJECTED on unaut
   });
   assert.equal(okRes.ok, true);
   assert.equal(okRes.data.bidId, 'bid-ws-1');
+});
+
+test('getAuctions returns pagination metadata, targetUrl, and room summary relations for Admin UI', async () => {
+  const { auctionService } = createHarness();
+  const created = await auctionService.adminCreateAuction('admin-1', {
+    title: 'Heritage Auction 2026',
+    description: 'Curated luxury lots',
+    startTime: new Date(Date.now() + 3600_000).toISOString(),
+    endTime: new Date(Date.now() + 7200_000).toISOString(),
+    minBuyerReputation: 40,
+    minSellerReputation: 50,
+  });
+
+  const list = await auctionService.getAuctions({ page: 1, limit: 10 });
+  assert.deepEqual(list.pagination, { page: 1, limit: 10, total: 1, totalPages: 1 });
+  assert.equal(list.total, 1);
+  assert.equal(list.page, 1);
+  assert.equal(list.limit, 10);
+  assert.equal(list.totalPages, 1);
+  assert.equal(list.items.length, 1);
+  assert.equal(list.items[0].targetUrl, `/auction/${created.id}`);
+  assert.equal(list.items[0].createdByAdmin?.id, 'admin-1');
+
+  const detail = await auctionService.getAuctionDetail(created.id, 'admin-1');
+  assert.equal(detail.targetUrl, `/auction/${created.id}`);
 });

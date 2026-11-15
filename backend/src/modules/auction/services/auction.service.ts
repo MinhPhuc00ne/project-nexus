@@ -132,6 +132,30 @@ export class AuctionService implements OnModuleInit {
         take: limit,
         orderBy: [{ createdAt: 'desc' }],
         include: {
+          createdByAdmin: {
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+            },
+          },
+          seller: {
+            select: {
+              id: true,
+              fullName: true,
+              avatarUrl: true,
+            },
+          },
+          product: {
+            select: {
+              id: true,
+              title: true,
+              threeModelKey: true,
+              basePrice: true,
+              images: { orderBy: { sortOrder: 'asc' } },
+              category: { select: { id: true, name: true, slug: true } },
+            },
+          },
           items: {
             where: { status: AuctionItemStatus.APPROVED },
             orderBy: [{ lotNumber: 'asc' }, { createdAt: 'asc' }],
@@ -158,6 +182,7 @@ export class AuctionService implements OnModuleInit {
       }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
     return {
       items: items.map((auction) => {
         const introState = this.computeIntroState(
@@ -167,10 +192,17 @@ export class AuctionService implements OnModuleInit {
         );
         return {
           ...auction,
+          targetUrl: auctionTargetUrl(auction.id),
           startingPrice: Number(auction.startingPrice),
           reservePrice: auction.reservePrice ? Number(auction.reservePrice) : null,
           currentHighestBid: Number(auction.currentHighestBid),
           bidIncrement: Number(auction.bidIncrement),
+          product: auction.product
+            ? {
+                ...auction.product,
+                basePrice: Number(auction.product.basePrice),
+              }
+            : auction.product,
           ...introState,
           items: auction.items.map((lot) => ({
             ...lot,
@@ -180,10 +212,16 @@ export class AuctionService implements OnModuleInit {
           })),
         };
       }),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages,
     };
   }
 
@@ -350,6 +388,7 @@ export class AuctionService implements OnModuleInit {
 
     return {
       ...auction,
+      targetUrl: auctionTargetUrl(auction.id),
       startingPrice: Number(auction.startingPrice),
       currentHighestBid: Number(auction.currentHighestBid),
       bidIncrement: Number(auction.bidIncrement),
