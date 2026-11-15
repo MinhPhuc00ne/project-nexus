@@ -1,5 +1,10 @@
 import { chatbotKnowledge } from './chatbot-knowledge';
 
+/**
+ * Builds the system instruction passed to Gemini, embedding verified NEXUS knowledge boundaries.
+ * @param authenticated Whether the caller is logged into a NEXUS account.
+ * @returns System prompt string constraining model scope and output format.
+ */
 export function chatbotSystemPrompt(authenticated: boolean): string {
   return `Bạn là trợ lý AI hội thoại của sàn thương mại NEXUS.
 Giao tiếp tự nhiên, thân thiện, ngắn gọn bằng ngôn ngữ người dùng (mặc định tiếng Việt).

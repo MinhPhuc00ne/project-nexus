@@ -13,12 +13,38 @@ export interface CommerceChatQuery {
 const orderSelect = {
   id: true,
   status: true,
+  totalAmount: true,
+  createdAt: true,
   shipment: { select: { status: true, waybillCode: true } },
   afterSales: { select: { status: true } },
+  items: {
+    select: {
+      quantity: true,
+      selections: true,
+      product: { select: { title: true } },
+    },
+  },
 } satisfies Prisma.OrderSelect;
 
+type RawOrderPayload = Prisma.OrderGetPayload<{ select: typeof orderSelect }>;
+
+/** Purchased or sold line summary safe to show in chatbot order responses. */
+export interface CommerceChatOrderItem {
+  name: string;
+  quantity: number;
+  selections: Record<string, string>;
+}
+
 /** Minimal order state that excludes addresses and payment credentials. */
-export type CommerceChatOrder = Prisma.OrderGetPayload<{ select: typeof orderSelect }>;
+export interface CommerceChatOrder {
+  id: string;
+  status: OrderStatus;
+  shipment: RawOrderPayload['shipment'];
+  afterSales: RawOrderPayload['afterSales'];
+  items: CommerceChatOrderItem[];
+  totalAmount?: number | null;
+  createdAt?: Date | null;
+}
 
 /** A deterministic page and the total matching orders in the same snapshot. */
 export interface CommerceChatOrders {
@@ -28,6 +54,27 @@ export interface CommerceChatOrders {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+/**
+ * Normalizes order item relations and variant selections for safe display.
+ * @param items Optional raw Prisma order item rows.
+ * @returns Sanitized product summaries without internal seller or pricing metadata.
+ */
+function formatOrderItems(items?: RawOrderPayload['items']): CommerceChatOrderItem[] {
+  return (items ?? []).map((item) => {
+    const rawSelections =
+      item.selections && typeof item.selections === 'object' && !Array.isArray(item.selections)
+        ? Object.entries(item.selections as Record<string, unknown>).filter(
+            (entry): entry is [string, string] => typeof entry[1] === 'string',
+          )
+        : [];
+    return {
+      name: item.product?.title ?? 'Sản phẩm',
+      quantity: item.quantity,
+      selections: Object.fromEntries(rawSelections),
+    };
+  });
 }
 
 /** Product information safe to return in the owner's chatbot response. */
@@ -79,7 +126,17 @@ export class CommerceChatQueryService {
       select: orderSelect,
     });
     if (!order) throw new NotFoundException('Không tìm thấy đơn hàng của bạn.');
-    return order;
+    const rawTotal = (order as { totalAmount?: Prisma.Decimal | number | null }).totalAmount;
+    const rawCreatedAt = (order as { createdAt?: Date | null }).createdAt;
+    return {
+      id: order.id,
+      status: order.status,
+      shipment: order.shipment,
+      afterSales: order.afterSales,
+      items: formatOrderItems(order.items),
+      totalAmount: rawTotal !== undefined && rawTotal !== null ? Number(rawTotal) : null,
+      createdAt: rawCreatedAt ?? null,
+    };
   }
 
   /**
@@ -120,7 +177,15 @@ export class CommerceChatQueryService {
         });
         return {
           scope,
-          items: rows.map((row) => ({ ...row, totalAmount: Number(row.totalAmount) })),
+          items: rows.map((row) => ({
+            id: row.id,
+            status: row.status,
+            shipment: row.shipment,
+            afterSales: row.afterSales,
+            items: formatOrderItems(row.items),
+            totalAmount: Number(row.totalAmount),
+            createdAt: row.createdAt,
+          })),
           total,
           page,
           limit,
