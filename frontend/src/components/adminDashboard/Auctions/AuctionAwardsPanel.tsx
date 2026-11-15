@@ -11,26 +11,41 @@ import {
 } from '../../../types/admin-auction-operations.types';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { useAuctionOperationResource } from './useAuctionOperationResource';
+import AuctionAwardActionDialog from './AuctionAwardActionDialog';
 
 const money = (value: number) => `${Number(value).toLocaleString('vi-VN')} ₫`;
 export default function AuctionAwardsPanel({
   auctionId,
-  now,
   refreshKey,
+  realtimeConnected,
+  lotId,
+  onLotChange,
 }: {
   auctionId: string;
-  now: number;
   refreshKey: number;
+  realtimeConnected: boolean;
+  lotId: string;
+  onLotChange: (lotId: string) => void;
 }) {
   const load = useCallback(() => listAdminAuctionAwardsApi(auctionId), [auctionId]);
-  const resource = useAuctionOperationResource(load, refreshKey);
+  const resource = useAuctionOperationResource(load, refreshKey, realtimeConnected);
   const [status, setStatus] = useState('');
   const [selection, setSelection] = useState<{ id: string; action: AwardAction } | null>(null);
-  const visible = resource.rows.filter((row) => !status || row.status === status);
+  const selectedAward = resource.rows.find((row) => row.id === selection?.id);
+  const visible = resource.rows.filter(
+    (row) => (!status || row.status === status) && (!lotId || row.auctionItemId === lotId),
+  );
+  const lotOptions = [
+    ...new Map(
+      resource.rows
+        .filter((row) => row.auctionItem)
+        .map((row) => [row.auctionItem!.id, row.auctionItem!]),
+    ).values(),
+  ];
   return (
     <Panel
-      title="Quyền mua sau đấu giá"
-      subtitle="Theo dõi người thắng, tiền cọc và hạn thanh toán của từng lô."
+      title="Quyền mua & thanh toán"
+      subtitle="Theo dõi quyền mua, tiền cọc, hạn thanh toán và xử lý sau đấu giá."
       action={
         <Button
           variant="secondary"
@@ -41,20 +56,80 @@ export default function AuctionAwardsPanel({
         </Button>
       }
     >
-      <select
-        aria-label="Lọc trạng thái quyền mua"
-        value={status}
-        disabled={resource.pending}
-        onChange={(event) => setStatus(event.target.value)}
-        className="mb-4 rounded-lg border border-slate-200 p-3 text-xs"
-      >
-        <option value="">Tất cả trạng thái</option>
-        {Object.entries(awardLabels).map(([value, label]) => (
-          <option key={value} value={value}>
-            {label}
-          </option>
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          ['Tổng quyền mua', resource.rows.length],
+          [
+            'Đang chờ xử lý',
+            resource.rows.filter((row) =>
+              ['AWAITING_ACCEPTANCE', 'AWAITING_DEPOSIT', 'AWAITING_CHECKOUT'].includes(row.status),
+            ).length,
+          ],
+          [
+            'Đã xử phạt quá hạn',
+            resource.rows.filter((row) => row.status === 'PAYMENT_DEFAULT').length,
+          ],
+          ['Đã thanh toán', resource.rows.filter((row) => row.status === 'PAID').length],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-xl bg-slate-50 p-4">
+            <p className="text-xs text-slate-500">{label}</p>
+            <p className="mt-2 text-2xl font-bold text-primary">
+              {resource.loading && !resource.rows.length ? '—' : value}
+            </p>
+          </div>
         ))}
-      </select>
+      </div>
+      <div className="mb-4 flex flex-wrap gap-3">
+        <select
+          aria-label="Lọc quyền mua theo lô"
+          value={lotId}
+          disabled={resource.pending}
+          onChange={(event) => {
+            onLotChange(event.target.value);
+            setSelection(null);
+          }}
+          className="max-w-full rounded-lg border border-slate-200 p-3 text-xs"
+        >
+          <option value="">Tất cả lô</option>
+          {lotId && !lotOptions.some((lot) => lot.id === lotId) && (
+            <option value={lotId}>Lô đang chọn</option>
+          )}
+          {lotOptions.map((lot) => (
+            <option key={lot.id} value={lot.id}>
+              Lô {lot.lotNumber ?? '—'} · {lot.title}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Lọc trạng thái quyền mua"
+          value={status}
+          disabled={resource.pending}
+          onChange={(event) => {
+            setStatus(event.target.value);
+            setSelection(null);
+          }}
+          className="rounded-lg border border-slate-200 p-3 text-xs"
+        >
+          <option value="">Tất cả trạng thái</option>
+          {Object.entries(awardLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        {lotId && (
+          <Button
+            variant="secondary"
+            disabled={resource.pending}
+            onClick={() => {
+              onLotChange('');
+              setSelection(null);
+            }}
+          >
+            Xem tất cả lô
+          </Button>
+        )}
+      </div>
       {resource.loading && (
         <p role="status" className="mb-3 text-sm text-slate-500">
           Đang cập nhật quyền mua…
@@ -71,13 +146,18 @@ export default function AuctionAwardsPanel({
         </p>
       )}
       {!resource.loading && !resource.error && !visible.length && (
-        <EmptyState text="Chưa có quyền mua phù hợp trong phiên." />
+        <EmptyState
+          text={
+            lotId
+              ? 'Lô này chưa có quyền mua phù hợp. Quyền mua được tạo khi lô kết thúc và có người thắng hợp lệ.'
+              : 'Chưa có quyền mua phù hợp. Khi lô kết thúc và có người thắng hợp lệ, kết quả sẽ xuất hiện tại đây.'
+          }
+        />
       )}
       <div className="space-y-4">
         {visible.map((award) => {
-          const selected = selection?.id === award.id;
-          const overdue =
-            award.status === 'AWAITING_CHECKOUT' && new Date(award.expiresAt).getTime() <= now;
+          const canPenalize = canConfirmAwardAction(award, 'payment-default');
+          const canWithdraw = canConfirmAwardAction(award, 'not-buying');
           return (
             <article key={award.id} className="space-y-4 rounded-xl border border-slate-200 p-4">
               <div className="flex flex-wrap justify-between gap-3">
@@ -92,8 +172,16 @@ export default function AuctionAwardsPanel({
                   <p className="text-xs text-slate-500">{award.buyer?.email}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge tone={award.status === 'PAID' ? 'green' : overdue ? 'red' : 'amber'}>
-                    {awardLabels[award.status]}
+                  <Badge
+                    tone={
+                      award.status === 'PAID'
+                        ? 'green'
+                        : award.status === 'PAYMENT_DEFAULT'
+                          ? 'red'
+                          : 'amber'
+                    }
+                  >
+                    {awardLabels[award.status] ?? award.status}
                   </Badge>
                   <Badge tone="gray">
                     {award.tier === 'PRIMARY_WINNER' ? 'Người thắng' : 'Người mua thứ hai'}
@@ -126,93 +214,56 @@ export default function AuctionAwardsPanel({
                 </p>
               )}
               <div className="flex flex-wrap gap-2">
-                {award.canConfirmPaymentDefault && (
-                  <Button
-                    variant="danger"
-                    disabled={
-                      resource.pending ||
-                      resource.loading ||
-                      !!resource.error ||
-                      !canConfirmAwardAction(award, 'payment-default', now)
-                    }
-                    title={!overdue ? 'Chỉ xác nhận khi đã hết hạn thanh toán.' : undefined}
-                    onClick={() => setSelection({ id: award.id, action: 'payment-default' })}
-                  >
-                    Xác nhận quá hạn thanh toán
-                  </Button>
-                )}
-                {award.canMarkNotBuying && (
-                  <Button
-                    variant="secondary"
-                    disabled={resource.pending || resource.loading || !!resource.error}
-                    onClick={() => setSelection({ id: award.id, action: 'not-buying' })}
-                  >
-                    Khách không mua nữa
-                  </Button>
-                )}
-              </div>
-              {selected && selection && (
-                <form
-                  className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    if (!canConfirmAwardAction(award, selection.action, now)) return;
-                    const values = new FormData(event.currentTarget);
-                    const note = String(values.get('note') ?? '');
-                    void resource
-                      .run(() => confirmAdminAuctionAwardApi(award.id, selection.action, note))
-                      .then((success) => {
-                        if (success) setSelection(null);
-                      });
+                <Button
+                  variant="danger"
+                  className="disabled:opacity-40"
+                  disabled={
+                    resource.pending || resource.loading || !!resource.error || !canPenalize
+                  }
+                  title={!canPenalize ? 'Máy chủ chưa cho phép xử phạt quyền mua này.' : undefined}
+                  onClick={() => {
+                    if (canPenalize) setSelection({ id: award.id, action: 'payment-default' });
                   }}
                 >
-                  <p className="text-sm font-semibold">
-                    {selection.action === 'payment-default'
-                      ? 'Người mua sẽ mất 30% cọc, bị trừ 10 điểm uy tín. Với người thắng đầu tiên, hệ thống sẽ mời người mua thứ hai nếu đủ điều kiện.'
-                      : 'Hoàn 30% cọc nếu đã đóng và đóng lô hàng. Chỉ áp dụng cho người mua thứ hai.'}
-                  </p>
-                  <label className="block text-xs">
-                    Ghi chú
-                    <textarea
-                      name="note"
-                      maxLength={1000}
-                      disabled={resource.pending}
-                      className="mt-1 w-full rounded-lg border border-slate-200 p-3"
-                      rows={3}
-                    />
-                  </label>
-                  <label className="flex items-center gap-2 text-xs">
-                    <input type="checkbox" required disabled={resource.pending} />
-                    Tôi xác nhận thực hiện thao tác này.
-                  </label>
-                  <div className="flex gap-2">
-                    <Button
-                      type="submit"
-                      variant="danger"
-                      disabled={
-                        resource.pending ||
-                        resource.loading ||
-                        !!resource.error ||
-                        !canConfirmAwardAction(award, selection.action, now)
-                      }
-                    >
-                      {resource.pending ? 'Đang xử lý…' : 'Xác nhận'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={resource.pending}
-                      onClick={() => setSelection(null)}
-                    >
-                      Hủy
-                    </Button>
-                  </div>
-                </form>
-              )}
+                  Xử phạt quá hạn thanh toán
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="disabled:opacity-40"
+                  disabled={
+                    resource.pending || resource.loading || !!resource.error || !canWithdraw
+                  }
+                  title={!canWithdraw ? 'Máy chủ chưa cho phép thao tác này.' : undefined}
+                  onClick={() => {
+                    if (canWithdraw) setSelection({ id: award.id, action: 'not-buying' });
+                  }}
+                >
+                  Khách không mua nữa
+                </Button>
+              </div>
             </article>
           );
         })}
       </div>
+      {selection && selectedAward && (
+        <AuctionAwardActionDialog
+          key={`${selection.id}:${selection.action}`}
+          award={selectedAward}
+          action={selection.action}
+          pending={resource.pending}
+          blocked={resource.loading || !!resource.error}
+          error={resource.actionError || resource.error}
+          onClose={() => setSelection(null)}
+          onConfirm={(note) => {
+            if (!canConfirmAwardAction(selectedAward, selection.action)) return;
+            void resource
+              .run(() => confirmAdminAuctionAwardApi(selectedAward.id, selection.action, note))
+              .then((success) => {
+                if (success) setSelection(null);
+              });
+          }}
+        />
+      )}
     </Panel>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { WS_AUCTION_EVENTS, type WsTimerSyncPayload } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { canEndAuctionLot } from '../../../types/admin-auction-operations.types';
+import { adminNotificationIsConnected, subscribeAdminAuctionUpdates } from './adminAuctionRealtime';
 import {
   adminEndAuctionLotApi,
   createAuctionSocket,
@@ -17,6 +18,8 @@ export function useAdminAuctionLots(auctionId: string) {
   const [actionError, setActionError] = useState('');
   const [notice, setNotice] = useState('');
   const [revision, setRevision] = useState(0);
+  const [operationsRevision, setOperationsRevision] = useState(0);
+  const [notificationConnected, setNotificationConnected] = useState(adminNotificationIsConnected);
   const [connected, setConnected] = useState(false);
   const [realtimeError, setRealtimeError] = useState('');
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -69,18 +72,26 @@ export function useAdminAuctionLots(auctionId: string) {
     let active = true;
     let joined = false;
     let refreshTimer: ReturnType<typeof setTimeout> | undefined;
-    const refresh = (event: { auctionId: string }) => {
-      if (event.auctionId !== auctionId || refreshTimer) return;
+    let refreshOperations = false;
+    const refresh = (event: { auctionId: string }, operations = false) => {
+      if (event.auctionId !== auctionId) return;
+      refreshOperations ||= operations;
+      if (refreshTimer) return;
       refreshTimer = setTimeout(() => {
         refreshTimer = undefined;
-        if (active) setRevision((value) => value + 1);
+        if (active) {
+          setRevision((value) => value + 1);
+          if (refreshOperations) setOperationsRevision((value) => value + 1);
+        }
+        refreshOperations = false;
       }, 400);
     };
+    const onOperationUpdate = (event: { auctionId: string }) => refresh(event, true);
     const onConnect = () => {
       joined = false;
       setRealtimeError('');
       connection.joinRoom(auctionId);
-      refresh({ auctionId });
+      refresh({ auctionId }, true);
     };
     const onJoined = (event: { auctionId: string }) => {
       if (event.auctionId === auctionId) {
@@ -132,10 +143,22 @@ export function useAdminAuctionLots(auctionId: string) {
     socket.on(WS_AUCTION_EVENTS.SERVER.BID_PLACED, refresh);
     socket.on(WS_AUCTION_EVENTS.SERVER.TIME_EXTENDED, refresh);
     socket.on(WS_AUCTION_EVENTS.SERVER.AUCTION_STARTED, refresh);
-    socket.on(WS_AUCTION_EVENTS.SERVER.LOT_ENDED, refresh);
-    socket.on(WS_AUCTION_EVENTS.SERVER.AUCTION_ENDED, refresh);
+    socket.on(WS_AUCTION_EVENTS.SERVER.LOT_ENDED, onOperationUpdate);
+    socket.on(WS_AUCTION_EVENTS.SERVER.AUCTION_ENDED, onOperationUpdate);
     socket.on(WS_AUCTION_EVENTS.SERVER.TIMER_SYNC, onTimer);
     if (socket.connected) onConnect();
+    setNotificationConnected(adminNotificationIsConnected());
+    const unsubscribeNotifications = subscribeAdminAuctionUpdates((event) => {
+      if (event.kind === 'connection') {
+        setNotificationConnected(event.connected);
+        if (event.connected) onOperationUpdate({ auctionId });
+      } else onOperationUpdate(event);
+    });
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') onOperationUpdate({ auctionId });
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
     // Keep the page usable while the realtime connection is unavailable.
     const fallback = setInterval(() => {
       if (!joined) refresh({ auctionId });
@@ -144,6 +167,9 @@ export function useAdminAuctionLots(auctionId: string) {
       active = false;
       clearInterval(fallback);
       clearTimeout(refreshTimer);
+      unsubscribeNotifications();
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
       socket.removeAllListeners();
       connection.disconnect();
     };
@@ -166,6 +192,7 @@ export function useAdminAuctionLots(auctionId: string) {
       if (!current.active) return false;
       setNotice('Đã kết thúc lô. Đang cập nhật kết quả từ máy chủ.');
       setRevision((value) => value + 1);
+      setOperationsRevision((value) => value + 1);
       return true;
     } catch (cause) {
       if (current.active) {
@@ -173,6 +200,7 @@ export function useAdminAuctionLots(auctionId: string) {
           `${cause instanceof Error ? cause.message : 'Không thể kết thúc lô.'} Hãy làm mới để kiểm tra trạng thái trước khi thử lại.`,
         );
         setRevision((value) => value + 1);
+        setOperationsRevision((value) => value + 1);
       }
       return false;
     } finally {
@@ -189,10 +217,14 @@ export function useAdminAuctionLots(auctionId: string) {
     notice,
     connected,
     realtimeError,
-    refreshKey: revision,
+    refreshKey: operationsRevision,
+    operationsConnected: connected && notificationConnected,
     pendingId,
     clockOffset,
     endLot,
-    refresh: () => setRevision((value) => value + 1),
+    refresh: () => {
+      setRevision((value) => value + 1);
+      setOperationsRevision((value) => value + 1);
+    },
   };
 }

@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 
-export function useAuctionOperationResource<T>(load: () => Promise<T[]>, refreshKey: number) {
+export function useAuctionOperationResource<T>(
+  load: () => Promise<T[]>,
+  refreshKey: number,
+  realtimeConnected = false,
+) {
   const { token } = useAuth();
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -12,6 +16,7 @@ export function useAuctionOperationResource<T>(load: () => Promise<T[]>, refresh
   const [revision, setRevision] = useState(0);
   const busy = useRef(false);
   const mounted = useRef(false);
+  const loadedScope = useRef<{ load: typeof load; token: typeof token } | null>(null);
   useEffect(() => {
     mounted.current = true;
     return () => {
@@ -20,12 +25,18 @@ export function useAuctionOperationResource<T>(load: () => Promise<T[]>, refresh
   }, []);
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError('');
+    const initialLoad = loadedScope.current?.load !== load || loadedScope.current?.token !== token;
+    // Background updates keep the current content and controls in place.
+    setLoading(initialLoad);
+    if (initialLoad) setError('');
     void load()
       .then((result) => {
         if (!Array.isArray(result)) throw new Error('Dữ liệu trả về không hợp lệ.');
-        if (active) setRows(result);
+        if (active) {
+          loadedScope.current = { load, token };
+          setRows(result);
+          setError('');
+        }
       })
       .catch((cause: unknown) => {
         if (active) setError(cause instanceof Error ? cause.message : 'Không thể tải dữ liệu.');
@@ -38,11 +49,12 @@ export function useAuctionOperationResource<T>(load: () => Promise<T[]>, refresh
     };
   }, [load, refreshKey, revision, token]);
   useEffect(() => {
+    if (realtimeConnected) return;
     const timer = setInterval(() => {
       if (!busy.current) setRevision((value) => value + 1);
     }, 15_000);
     return () => clearInterval(timer);
-  }, []);
+  }, [realtimeConnected]);
 
   async function run(action: () => Promise<unknown>) {
     if (busy.current) return false;

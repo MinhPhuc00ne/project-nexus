@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Gavel, RefreshCw } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, Gavel, MessageSquare, RefreshCw, Trophy } from 'lucide-react';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import AuctionLotCard from '../../components/adminDashboard/Auctions/AuctionLotCard';
 import { useAdminAuctionLots } from '../../components/adminDashboard/Auctions/useAdminAuctionLots';
 import { statuses } from '../../components/adminDashboard/Auctions/auctionStatuses';
@@ -31,13 +31,29 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
     connected,
     realtimeError,
     refreshKey,
+    operationsConnected,
     pendingId,
     clockOffset,
     endLot,
     refresh,
   } = useAdminAuctionLots(auctionId);
   const [search, setSearch] = useState('');
-  const [tab, setTab] = useState<'lots' | 'awards' | 'complaints'>('lots');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const tab =
+    requestedTab === 'settlement'
+      ? 'awards'
+      : requestedTab === 'awards' || requestedTab === 'complaints'
+        ? requestedTab
+        : 'lots';
+  const awardLotId = searchParams.get('lotId') ?? '';
+  const changeTab = (value: 'lots' | 'awards' | 'complaints', lotId = '') => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', value);
+    if (value === 'awards' && lotId) next.set('lotId', lotId);
+    else next.delete('lotId');
+    setSearchParams(next);
+  };
   const [status, setStatus] = useState('');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -68,12 +84,19 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
 
   return (
     <div className="space-y-5">
-      <Link
-        to="/admin/auctions"
-        className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
-      >
-        <ArrowLeft size={16} /> Danh sách phiên đấu giá
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          to="/admin/auctions"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+        >
+          <ArrowLeft size={16} /> Danh sách phiên đấu giá
+        </Link>
+        {tab !== 'awards' && (
+          <Button disabled={!!pendingId} onClick={() => changeTab('awards')}>
+            <Trophy size={16} /> Quyền mua & thanh toán <ArrowRight size={15} />
+          </Button>
+        )}
+      </div>
       <Panel
         title={data?.title ?? 'Điều hành đấu giá từng lô'}
         subtitle="Theo dõi giá, thời gian và chốt kết quả riêng cho từng lô đã được duyệt."
@@ -113,25 +136,30 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
           </div>
         )}
       </Panel>
-      <div role="group" aria-label="Nội dung quản trị phiên" className="flex flex-wrap gap-2">
+      <nav
+        aria-label="Nội dung quản trị phiên"
+        className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1.5"
+      >
         {(
           [
-            ['lots', 'Điều hành lô'],
-            ['awards', 'Quyền mua & thanh toán'],
-            ['complaints', 'Khiếu nại'],
+            ['lots', 'Điều hành lô', Gavel],
+            ['awards', 'Quyền mua & thanh toán', Trophy],
+            ['complaints', 'Khiếu nại', MessageSquare],
           ] as const
-        ).map(([value, label]) => (
-          <Button
+        ).map(([value, label, Icon]) => (
+          <button
+            type="button"
             key={value}
-            variant={tab === value ? 'primary' : 'secondary'}
-            aria-pressed={tab === value}
+            aria-current={tab === value ? 'page' : undefined}
+            className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-semibold transition-colors disabled:opacity-50 ${tab === value ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-primary'}`}
             disabled={!!pendingId}
-            onClick={() => setTab(value)}
+            onClick={() => changeTab(value)}
           >
+            <Icon size={16} aria-hidden="true" />
             {label}
-          </Button>
+          </button>
         ))}
-      </div>
+      </nav>
       {introRemaining > 0 && (
         <p role="status" className="rounded-xl bg-blue-50 p-4 text-sm text-primary">
           Đang trình chiếu giới thiệu 3D · Còn {introRemaining} giây trước khi mở đặt giá.
@@ -169,10 +197,21 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
         </p>
       )}
       {data && tab === 'awards' && (
-        <AuctionAwardsPanel auctionId={auctionId} now={now + clockOffset} refreshKey={refreshKey} />
+        <AuctionAwardsPanel
+          key={tab}
+          auctionId={auctionId}
+          refreshKey={refreshKey}
+          realtimeConnected={operationsConnected}
+          lotId={awardLotId}
+          onLotChange={(lotId) => changeTab(tab, lotId)}
+        />
       )}
       {data && tab === 'complaints' && (
-        <AuctionComplaintsPanel auctionId={auctionId} refreshKey={refreshKey} />
+        <AuctionComplaintsPanel
+          auctionId={auctionId}
+          refreshKey={refreshKey}
+          realtimeConnected={operationsConnected}
+        />
       )}
       {data && tab === 'lots' && (
         <>
@@ -220,6 +259,7 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
                     });
                   }}
                   onRefresh={refresh}
+                  onViewAwards={() => changeTab('awards', lot.id)}
                 />
               ))}
             </div>

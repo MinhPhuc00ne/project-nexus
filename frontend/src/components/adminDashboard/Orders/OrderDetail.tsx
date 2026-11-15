@@ -85,7 +85,9 @@ export default function OrderDetail({ id }: { id: string }) {
         <h3 className="text-sm font-semibold">Sản phẩm</h3>
         {detail.items.map((item) => (
           <div key={item.id} className="rounded-lg border border-slate-200 p-3 text-sm">
-            <p className="font-medium">{item.product.title}</p>
+            <p className="font-medium">
+              {item.titleSnapshot ?? item.product?.title ?? 'Vật phẩm trong đơn'}
+            </p>
             <p className="mt-1 text-slate-500">
               {item.quantity} × {money(item.unitPrice)} = {money(item.totalPrice)}
             </p>

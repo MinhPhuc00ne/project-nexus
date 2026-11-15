@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { Ellipsis, Gavel, Timer } from 'lucide-react';
+import { ArrowRight, Ellipsis, Gavel, Timer, Trophy } from 'lucide-react';
 import { resolveAuctionImageUrl, type AdminAuctionLot } from '../../../services/auction.service';
 import { Badge, Button } from '../shared/AdminUI';
 import { statuses } from './auctionStatuses';
@@ -18,6 +18,7 @@ type Props = {
   onCancel: () => void;
   onEnd: () => void;
   onRefresh: () => void;
+  onViewAwards: () => void;
 };
 
 const money = (value: number | string | null | undefined) =>
@@ -34,6 +35,7 @@ export default function AuctionLotCard({
   onCancel,
   onEnd,
   onRefresh,
+  onViewAwards,
 }: Props) {
   const [showBids, setShowBids] = useState(false);
   const bidsPanelId = useId();
@@ -169,6 +171,9 @@ export default function AuctionLotCard({
         {lot.lotStatus === 'FAILED' && (
           <p className="text-xs text-slate-500">Lô không có người thắng hợp lệ.</p>
         )}
+        <Button variant="secondary" disabled={busy} onClick={onViewAwards}>
+          <Trophy size={15} /> Xem quyền mua của lô <ArrowRight size={14} />
+        </Button>
         <AuctionLotNote itemId={lot.id} note={lot.staffNote} onSaved={onRefresh} />
         {live &&
           (confirming ? (

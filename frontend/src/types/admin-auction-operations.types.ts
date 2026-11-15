@@ -47,7 +47,7 @@ export const awardLabels: Record<AuctionAwardState, string> = {
   AWAITING_DEPOSIT: 'Chờ nạp đủ tiền cọc',
   AWAITING_CHECKOUT: 'Chờ thanh toán',
   PAID: 'Đã thanh toán',
-  PAYMENT_DEFAULT: 'Quá hạn thanh toán',
+  PAYMENT_DEFAULT: 'Đã xử phạt quá hạn thanh toán',
   DECLINED: 'Đã từ chối mua',
   BUYER_WITHDRAWN: 'Khách không mua nữa',
   EXPIRED: 'Đã hết hạn',
@@ -57,18 +57,10 @@ export const complaintLabels: Record<AuctionComplaintState, string> = {
   ACCEPTED: 'Đã chấp thuận',
   REJECTED: 'Đã từ chối',
 };
-export function canConfirmAwardAction(award: AdminAuctionAward, action: AwardAction, now: number) {
-  if (action === 'payment-default')
-    return (
-      award.canConfirmPaymentDefault &&
-      award.status === 'AWAITING_CHECKOUT' &&
-      new Date(award.expiresAt).getTime() <= now
-    );
-  return (
-    award.canMarkNotBuying &&
-    award.tier === 'SECOND_CHANCE' &&
-    ['AWAITING_ACCEPTANCE', 'AWAITING_DEPOSIT', 'AWAITING_CHECKOUT'].includes(award.status)
-  );
+export function canConfirmAwardAction(award: AdminAuctionAward, action: AwardAction) {
+  return action === 'payment-default'
+    ? award.canConfirmPaymentDefault === true
+    : award.canMarkNotBuying === true;
 }
 export function canEndAuctionLot(lot: AdminAuctionLot) {
   return lot.lotStatus === 'ACTIVE' || lot.lotStatus === 'EXTENDED';
