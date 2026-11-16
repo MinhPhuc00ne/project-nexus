@@ -165,6 +165,10 @@ export interface RegisterAuctionItemInput {
   appraisalAgency?: string;
   certificateImages: string[];
   certificateIssueDate?: string;
+  weightGrams?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
 }
 
 /**

@@ -24,10 +24,73 @@ const money = (value?: number | string | null): string =>
   `${Number(value ?? 0).toLocaleString('vi-VN')} đ`;
 
 function statusTone(status: string): 'blue' | 'green' | 'amber' | 'gray' | 'red' {
-  if (status === 'ACTIVE' || status === 'EXTENDED' || status === 'APPROVED') return 'green';
-  if (status === 'SCHEDULED' || status === 'PENDING_REVIEW') return 'amber';
-  if (status === 'REJECTED' || status === 'CANCELLED' || status === 'FAILED') return 'red';
+  if (
+    status === 'ACTIVE' ||
+    status === 'EXTENDED' ||
+    status === 'APPROVED' ||
+    status === 'PAID' ||
+    status === 'SETTLED'
+  ) {
+    return 'green';
+  }
+  if (
+    status === 'SCHEDULED' ||
+    status === 'PENDING_REVIEW' ||
+    status === 'AWAITING_ACCEPTANCE' ||
+    status === 'AWAITING_DEPOSIT' ||
+    status === 'AWAITING_CHECKOUT'
+  ) {
+    return 'amber';
+  }
+  if (
+    status === 'REJECTED' ||
+    status === 'CANCELLED' ||
+    status === 'FAILED' ||
+    status === 'PAYMENT_DEFAULT' ||
+    status === 'BUYER_WITHDRAWN' ||
+    status === 'DECLINED' ||
+    status === 'EXPIRED'
+  ) {
+    return 'red';
+  }
   return 'gray';
+}
+
+function lotStatusLabel(status?: string): string {
+  const labels: Record<string, string> = {
+    SCHEDULED: 'Chờ mở phiên',
+    ACTIVE: 'Đang đấu',
+    EXTENDED: 'Đang gia hạn',
+    ENDED: 'Đã kết thúc',
+    SETTLED: 'Đã thanh toán',
+    CANCELLED: 'Đã hủy',
+    FAILED: 'Chưa bán được',
+  };
+  return status ? (labels[status] ?? status) : 'Chưa bắt đầu';
+}
+
+function awardStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    AWAITING_ACCEPTANCE: 'Chờ người kế tiếp phản hồi',
+    AWAITING_DEPOSIT: 'Chờ người kế tiếp nạp đủ 30% cọc',
+    AWAITING_CHECKOUT: 'Chờ thanh toán 70% còn lại + ship',
+    PAID: 'Đã thanh toán đầy đủ',
+    PAYMENT_DEFAULT: 'Quá hạn thanh toán (đã tịch thu 30% cọc)',
+    BUYER_WITHDRAWN: 'Khách không tiếp tục mua',
+    DECLINED: 'Người kế tiếp đã từ chối',
+    EXPIRED: 'Đã hết hạn xử lý',
+  };
+  return labels[status] ?? status.replace(/_/g, ' ');
+}
+
+function formatDeadlineCountdown(expiresAt: string): string {
+  const diffMs = new Date(expiresAt).getTime() - Date.now();
+  if (!Number.isFinite(diffMs)) return '';
+  if (diffMs <= 0) return 'Đã quá hạn';
+  const totalMinutes = Math.ceil(diffMs / 60_000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours > 0 ? `Còn ${hours}g ${minutes}p` : `Còn ${minutes} phút`;
 }
 
 /**
@@ -88,34 +151,57 @@ export default function SellerAuctionItemsPanels({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
                     <h3 className="truncate text-sm font-semibold text-slate-800">{item.title}</h3>
-                    {item.lotNumber && <Badge tone="blue">Lô {item.lotNumber}</Badge>}
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {item.isExtended && <Badge tone="amber">Gia hạn +2p</Badge>}
+                      {item.lotNumber && <Badge tone="blue">Lô {item.lotNumber}</Badge>}
+                    </div>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">
-                    Khởi điểm: {money(item.startingPrice)}
+                    Khởi điểm: {money(item.startingPrice)} · Bước giá: {money(item.bidIncrement)}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Bước giá: {money(item.bidIncrement)}
-                  </p>
+                  {item.endTime && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Kết thúc lô: {new Date(item.endTime).toLocaleString('vi-VN')}
+                    </p>
+                  )}
                   <p className="mt-1 text-xs font-semibold text-slate-700">
                     {item.lotStatus === 'ACTIVE' || item.lotStatus === 'EXTENDED'
-                      ? `Đang đấu · Giá hiện tại ${money(item.currentHighestBid || item.startingPrice)} · ${item.totalBidsCount ?? 0} lượt trả giá`
+                      ? `${lotStatusLabel(item.lotStatus)} · Giá hiện tại ${money(item.currentHighestBid || item.startingPrice)} · ${item.totalBidsCount ?? 0} lượt trả giá`
                       : item.lotStatus === 'ENDED' || item.lotStatus === 'SETTLED'
-                        ? `Đã kết thúc · Giá cuối ${money(item.currentHighestBid || item.startingPrice)}`
-                        : `Trạng thái: ${item.lotStatus ?? 'Chưa bắt đầu'}`}
+                        ? `${lotStatusLabel(item.lotStatus)} · Giá cuối ${money(item.currentHighestBid || item.startingPrice)}`
+                        : `Trạng thái: ${lotStatusLabel(item.lotStatus)}`}
                   </p>
+                  {item.staffNote && (
+                    <p className="mt-2 rounded-md bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600">
+                      Ghi chú hỗ trợ: {item.staffNote}
+                    </p>
+                  )}
                   {item.activeAward && (
-                    <div className="mt-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900">
+                    <div className="mt-2 space-y-1 rounded-md bg-amber-50 p-2.5 text-xs text-amber-900">
                       <p className="font-semibold">
                         {item.activeAward.tier === 'SECOND_CHANCE'
-                          ? 'Lượt mua kế tiếp'
-                          : 'Người thắng'}
+                          ? 'Người mua kế tiếp'
+                          : 'Người thắng chính'}
                         : {item.activeAward.buyer?.fullName ?? 'Đang xử lý'}
                       </p>
                       <p>
-                        Cọc 30%: {money(item.activeAward.depositAmount)} · Hạn xử lý:{' '}
-                        {new Date(item.activeAward.expiresAt).toLocaleString('vi-VN')}
+                        Đã giữ 30% cọc: {money(item.activeAward.depositAmount)} · Còn lại 70%:{' '}
+                        {money(
+                          item.activeAward.remainingProductAmount ??
+                            Math.max(
+                              0,
+                              Number(item.activeAward.offerAmount || 0) -
+                                Number(item.activeAward.depositAmount || 0),
+                            ),
+                        )}
                       </p>
-                      <Badge tone="amber">{item.activeAward.status.replace(/_/g, ' ')}</Badge>
+                      <p>
+                        Hạn 24h: {new Date(item.activeAward.expiresAt).toLocaleString('vi-VN')} (
+                        {formatDeadlineCountdown(item.activeAward.expiresAt)})
+                      </p>
+                      <Badge tone={statusTone(item.activeAward.status)}>
+                        {awardStatusLabel(item.activeAward.status)}
+                      </Badge>
                     </div>
                   )}
                 </div>

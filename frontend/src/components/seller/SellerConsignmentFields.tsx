@@ -120,10 +120,61 @@ export default function SellerConsignmentFields({
           </label>
         </div>
       </Panel>
-      <p className="text-xs text-slate-500">
-        Thông số đóng gói để tính cước GHN được hệ thống đặt mặc định (500 g, 20 × 15 × 10 cm); bạn
-        không cần nhập tay.
-      </p>
+      <Panel
+        title="Kích thước đóng gói & vận chuyển GHN"
+        subtitle="Nhập cân nặng và kích thước kiện hàng thực tế để tính cước Giao Hàng Nhanh chính xác khi bàn giao."
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 [&_label]:space-y-1.5 [&_label]:text-sm [&_label]:font-medium [&_label]:text-slate-700 [&_input]:w-full [&_input]:rounded-lg [&_input]:border [&_input]:border-slate-200 [&_input]:bg-white [&_input]:px-3 [&_input]:py-2.5 [&_input]:text-sm">
+          <label>
+            Cân nặng (gram) *
+            <input
+              required
+              min="1"
+              max="50000"
+              step="1"
+              type="number"
+              value={form.weightGrams}
+              onChange={(event) => updateForm('weightGrams', event.target.value)}
+            />
+          </label>
+          <label>
+            Dài (cm) *
+            <input
+              required
+              min="1"
+              max="200"
+              step="1"
+              type="number"
+              value={form.lengthCm}
+              onChange={(event) => updateForm('lengthCm', event.target.value)}
+            />
+          </label>
+          <label>
+            Rộng (cm) *
+            <input
+              required
+              min="1"
+              max="200"
+              step="1"
+              type="number"
+              value={form.widthCm}
+              onChange={(event) => updateForm('widthCm', event.target.value)}
+            />
+          </label>
+          <label>
+            Cao (cm) *
+            <input
+              required
+              min="1"
+              max="200"
+              step="1"
+              type="number"
+              value={form.heightCm}
+              onChange={(event) => updateForm('heightCm', event.target.value)}
+            />
+          </label>
+        </div>
+      </Panel>
     </>
   );
 }

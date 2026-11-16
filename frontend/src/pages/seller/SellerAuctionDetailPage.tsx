@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useParams } from 'react-router-dom';
+import { AuctionStatus } from '@nexus/types';
 import {
   ArrowLeft,
   Clock3,
@@ -14,6 +15,7 @@ import {
   getAuctionDetailApi,
   getAuctionIntroShowcaseApi,
   getSellerAuctionConsignmentsApi,
+  type AuctionConsignmentItem,
   type AuctionEntity,
   type AuctionIntroShowcaseResponse,
   type SellerAuctionConsignment,
@@ -73,39 +75,74 @@ export default function SellerAuctionDetailPage(): ReactElement {
 
   // GET /auctions/:id only returns approved lots. The serialized live payload intentionally
   // omits the internal review status, so filtering by item.status here would remove every lot.
-  const approvedItems = useMemo(() => auction?.items ?? [], [auction]);
-  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
+  const approvedItems = useMemo(() => auction?.items ?? auction?.lots ?? [], [auction]);
+  const shouldConnectSocket =
+    auction?.status === AuctionStatus.SCHEDULED ||
+    auction?.status === AuctionStatus.ACTIVE ||
+    auction?.status === AuctionStatus.EXTENDED;
 
   useEffect(() => {
-    if (!auction?.id || !isLive) return undefined;
+    if (!auction?.id || !shouldConnectSocket) return undefined;
+
+    const mapLotUpdate = (
+      lots: AuctionConsignmentItem[] | undefined,
+      lotId: string,
+      updater: (lot: AuctionConsignmentItem) => AuctionConsignmentItem,
+    ): AuctionConsignmentItem[] =>
+      (lots ?? []).map((lot) => (lot.id === lotId ? updater(lot) : lot));
 
     const socket = createAuctionSocket(auction.id);
     socket.onBidPlaced((payload) => {
       if (payload.auctionId !== auction.id) return;
-      setAuction((current) =>
-        current
-          ? {
-              ...current,
-              currentHighestBid: payload.bidAmount,
-              totalBidsCount: current.totalBidsCount + 1,
-              items: (current.items ?? []).map((lot) =>
-                lot.id === payload.auctionItemId
-                  ? {
-                      ...lot,
-                      currentHighestBid: payload.bidAmount,
-                      totalBidsCount: payload.totalBidsCount ?? (lot.totalBidsCount ?? 0) + 1,
-                    }
-                  : lot,
-              ),
-            }
-          : current,
-      );
+      setAuction((current) => {
+        if (!current) return current;
+        const updater = (lot: AuctionConsignmentItem): AuctionConsignmentItem => ({
+          ...lot,
+          currentHighestBid: payload.bidAmount,
+          totalBidsCount: payload.totalBidsCount ?? (lot.totalBidsCount ?? 0) + 1,
+        });
+        const nextItems = mapLotUpdate(
+          current.items ?? current.lots,
+          payload.auctionItemId,
+          updater,
+        );
+        return {
+          ...current,
+          currentHighestBid: Math.max(Number(current.currentHighestBid || 0), payload.bidAmount),
+          totalBidsCount: current.totalBidsCount + 1,
+          items: nextItems,
+          lots: nextItems,
+        };
+      });
     });
     socket.onTimeExtended((payload) => {
       if (payload.auctionId !== auction.id) return;
-      setAuction((current) =>
-        current ? { ...current, endTime: payload.newEndTime, isExtended: true } : current,
-      );
+      setAuction((current) => {
+        if (!current) return current;
+        const updater = (lot: AuctionConsignmentItem): AuctionConsignmentItem => ({
+          ...lot,
+          endTime: payload.newEndTime,
+          isExtended: true,
+          lotStatus: AuctionStatus.EXTENDED,
+        });
+        const nextItems = mapLotUpdate(
+          current.items ?? current.lots,
+          payload.auctionItemId,
+          updater,
+        );
+        const currentRoomEndMs = new Date(current.endTime).getTime();
+        const nextLotEndMs = new Date(payload.newEndTime).getTime();
+        return {
+          ...current,
+          endTime:
+            Number.isFinite(nextLotEndMs) && nextLotEndMs > currentRoomEndMs
+              ? payload.newEndTime
+              : current.endTime,
+          isExtended: true,
+          items: nextItems,
+          lots: nextItems,
+        };
+      });
     });
     socket.onAuctionStarted((payload) => {
       if (payload.auctionId === auction.id) {
@@ -117,7 +154,7 @@ export default function SellerAuctionDetailPage(): ReactElement {
       if (payload.auctionId !== auction.id) return;
       setAuction((current) => {
         if (!current) return current;
-        const lots = current.items ?? [];
+        const lots = current.items ?? current.lots ?? [];
         const updatedLots = lots.map((lot) => {
           const timer = payload.lotTimers?.find((entry) => entry.auctionItemId === lot.id);
           return timer
@@ -145,7 +182,7 @@ export default function SellerAuctionDetailPage(): ReactElement {
     });
 
     return () => socket.disconnect();
-  }, [auction?.id, isLive, load]);
+  }, [auction?.id, shouldConnectSocket, load]);
 
   useEffect(() => {
     if (liveLotIndex >= approvedItems.length) setLiveLotIndex(0);

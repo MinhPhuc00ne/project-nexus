@@ -4,6 +4,7 @@ import { registerAuctionItemApi, type AuctionEntity } from '../../services/aucti
 import {
   getConsignmentErrorMessage,
   initialConsignmentForm,
+  parseConsignmentParcel,
   uploadConsignmentFiles,
   type ConsignmentFormState,
 } from './sellerConsignmentHelpers';
@@ -86,6 +87,11 @@ export default function SellerConsignmentForm({
       notify('Giá sàn phải từ 10.000 ₫ và nhỏ hơn hoặc bằng giá khởi điểm.', 'error');
       return;
     }
+    const parcelCheck = parseConsignmentParcel(form);
+    if (!parcelCheck.ok) {
+      notify(parcelCheck.message, 'error');
+      return;
+    }
     setIsSubmitting(true);
     try {
       notify('Đang tải ảnh vật phẩm…');
@@ -99,6 +105,10 @@ export default function SellerConsignmentForm({
         proposedStartingPrice: startingPrice,
         ...(reservePrice !== undefined ? { proposedReservePrice: reservePrice } : {}),
         proposedBidIncrement: bidIncrement,
+        weightGrams: parcelCheck.parcel.weightGrams,
+        lengthCm: parcelCheck.parcel.lengthCm,
+        widthCm: parcelCheck.parcel.widthCm,
+        heightCm: parcelCheck.parcel.heightCm,
         ...(form.appraisalCertificateNumber.trim()
           ? { appraisalCertificateNumber: form.appraisalCertificateNumber.trim() }
           : {}),

@@ -60,6 +60,13 @@ export default function SellerAuctionLivePanel({
   const [showLiveShowcase, setShowLiveShowcase] = useState(false);
   const isLive = auction.status === 'ACTIVE' || auction.status === 'EXTENDED';
   const activeLiveLot = approvedItems[liveLotIndex] ?? approvedItems[0];
+  const activeLotHighestBid =
+    activeLiveLot !== undefined
+      ? Number(activeLiveLot.currentHighestBid || activeLiveLot.startingPrice || 0)
+      : Number(auction.currentHighestBid || auction.startingPrice || 0);
+  const activeLotBidsCount = activeLiveLot?.totalBidsCount ?? auction.totalBidsCount;
+  const activeLotEndTime = activeLiveLot?.endTime ?? auction.endTime;
+  const activeLotExtended = activeLiveLot?.isExtended ?? auction.isExtended;
 
   useEffect(() => {
     if (showcase?.isIntroActive) setShowLiveShowcase(true);
@@ -149,14 +156,18 @@ export default function SellerAuctionLivePanel({
               </div>
               <aside className="space-y-4 bg-slate-900 p-5 text-white">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-300">
-                    Giá cao nhất
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-300">
+                      {activeLiveLot ? 'Giá cao nhất lô đang chọn' : 'Giá cao nhất'}
+                    </p>
+                    {activeLotExtended && <Badge tone="amber">Gia hạn +2p</Badge>}
+                  </div>
                   <p className="mt-1 text-3xl font-bold text-amber-300">
-                    {money(auction.currentHighestBid || auction.startingPrice)}
+                    {money(activeLotHighestBid)}
                   </p>
                   <p className="mt-2 text-xs text-slate-300">
-                    Kết thúc: {new Date(auction.endTime).toLocaleString('vi-VN')}
+                    {activeLotBidsCount} lượt trả giá · Kết thúc:{' '}
+                    {new Date(activeLotEndTime).toLocaleString('vi-VN')}
                   </p>
                 </div>
                 <div className="border-t border-slate-700 pt-4">
@@ -168,7 +179,8 @@ export default function SellerAuctionLivePanel({
                   </p>
                   {activeLiveLot && (
                     <p className="mt-1 text-xs text-slate-300">
-                      Lô #{activeLiveLot.lotNumber ?? liveLotIndex + 1} · Khởi điểm{' '}
+                      Lô #{activeLiveLot.lotNumber ?? liveLotIndex + 1} ·{' '}
+                      {auctionStatusLabel(activeLiveLot.lotStatus ?? auction.status)} · Khởi điểm{' '}
                       {money(activeLiveLot.startingPrice)}
                     </p>
                   )}

@@ -35,6 +35,10 @@ export type ConsignmentFormState = {
   proposedStartingPrice: string;
   proposedReservePrice: string;
   proposedBidIncrement: string;
+  weightGrams: string;
+  lengthCm: string;
+  widthCm: string;
+  heightCm: string;
   appraisalCertificateNumber: string;
   appraisalAgency: string;
   certificateIssueDate: string;
@@ -50,10 +54,47 @@ export const initialConsignmentForm: ConsignmentFormState = {
   proposedStartingPrice: '',
   proposedReservePrice: '',
   proposedBidIncrement: '100000',
+  weightGrams: '500',
+  lengthCm: '20',
+  widthCm: '15',
+  heightCm: '10',
   appraisalCertificateNumber: '',
   appraisalAgency: '',
   certificateIssueDate: '',
 };
+
+/**
+ * Validates and converts consignment parcel sizing inputs for GHN shipping quotes.
+ *
+ * @param form - Current consignment form state.
+ * @returns Validated integer parcel values or a localized validation error message.
+ */
+export function parseConsignmentParcel(
+  form: Pick<ConsignmentFormState, 'weightGrams' | 'lengthCm' | 'widthCm' | 'heightCm'>,
+):
+  | {
+      ok: true;
+      parcel: { weightGrams: number; lengthCm: number; widthCm: number; heightCm: number };
+    }
+  | { ok: false; message: string } {
+  const weightGrams = Number(form.weightGrams);
+  const lengthCm = Number(form.lengthCm);
+  const widthCm = Number(form.widthCm);
+  const heightCm = Number(form.heightCm);
+  if (!Number.isInteger(weightGrams) || weightGrams < 1 || weightGrams > 50000) {
+    return { ok: false, message: 'Cân nặng đóng gói phải là số nguyên từ 1 đến 50.000 gram.' };
+  }
+  const dimensionsValid = [lengthCm, widthCm, heightCm].every(
+    (value) => Number.isInteger(value) && value >= 1 && value <= 200,
+  );
+  if (!dimensionsValid) {
+    return {
+      ok: false,
+      message: 'Kích thước Dài, Rộng, Cao phải là số nguyên từ 1 đến 200 cm.',
+    };
+  }
+  return { ok: true, parcel: { weightGrams, lengthCm, widthCm, heightCm } };
+}
 
 /**
  * Formats ISO date-time string into Vietnamese regional medium date and short time format.
