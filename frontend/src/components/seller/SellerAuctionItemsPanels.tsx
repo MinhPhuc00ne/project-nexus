@@ -17,6 +17,7 @@ export interface SellerAuctionItemsPanelsProps {
   isConsignmentLocked?: boolean;
   approvedItems: AuctionConsignmentItem[];
   consignments: SellerAuctionConsignment[];
+  liveItems?: AuctionConsignmentItem[];
 }
 
 const money = (value?: number | string | null): string =>
@@ -42,7 +43,9 @@ export default function SellerAuctionItemsPanels({
   isConsignmentLocked,
   approvedItems,
   consignments,
+  liveItems,
 }: SellerAuctionItemsPanelsProps) {
+  const displayItems = liveItems ?? approvedItems;
   const canSubmit = canSubmitConsignment({
     status: auctionStatus,
     consignmentDeadline,
@@ -54,7 +57,7 @@ export default function SellerAuctionItemsPanels({
         title="Vật phẩm trong phiên"
         subtitle="Danh sách vật phẩm đã được Admin phê duyệt để hiển thị trong phiên đấu giá."
       >
-        {approvedItems.length === 0 ? (
+        {displayItems.length === 0 ? (
           <EmptyState
             title="Chưa có vật phẩm được duyệt"
             description="Bạn có thể gửi sản phẩm để Admin thẩm định khi phiên còn nhận ký gửi."
@@ -69,7 +72,7 @@ export default function SellerAuctionItemsPanels({
           />
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
-            {approvedItems.map((item) => (
+            {displayItems.map((item) => (
               <article key={item.id} className="flex gap-3 rounded-lg border border-slate-200 p-3">
                 <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-md bg-slate-50">
                   {item.images?.[0] ? (
@@ -93,6 +96,28 @@ export default function SellerAuctionItemsPanels({
                   <p className="mt-1 text-xs text-slate-500">
                     Bước giá: {money(item.bidIncrement)}
                   </p>
+                  <p className="mt-1 text-xs font-semibold text-slate-700">
+                    {item.lotStatus === 'ACTIVE' || item.lotStatus === 'EXTENDED'
+                      ? `Đang đấu · Giá hiện tại ${money(item.currentHighestBid || item.startingPrice)} · ${item.totalBidsCount ?? 0} lượt trả giá`
+                      : item.lotStatus === 'ENDED' || item.lotStatus === 'SETTLED'
+                        ? `Đã kết thúc · Giá cuối ${money(item.currentHighestBid || item.startingPrice)}`
+                        : `Trạng thái: ${item.lotStatus ?? 'Chưa bắt đầu'}`}
+                  </p>
+                  {item.activeAward && (
+                    <div className="mt-2 rounded-md bg-amber-50 p-2 text-xs text-amber-900">
+                      <p className="font-semibold">
+                        {item.activeAward.tier === 'SECOND_CHANCE'
+                          ? 'Lượt mua kế tiếp'
+                          : 'Người thắng'}
+                        : {item.activeAward.buyer?.fullName ?? 'Đang xử lý'}
+                      </p>
+                      <p>
+                        Cọc 30%: {money(item.activeAward.depositAmount)} · Hạn xử lý:{' '}
+                        {new Date(item.activeAward.expiresAt).toLocaleString('vi-VN')}
+                      </p>
+                      <Badge tone="amber">{item.activeAward.status.replace(/_/g, ' ')}</Badge>
+                    </div>
+                  )}
                 </div>
               </article>
             ))}

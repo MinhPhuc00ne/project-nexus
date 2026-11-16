@@ -29,6 +29,7 @@ export function createAuctionSocket(auctionId?: string): AuctionSocketClient {
     onBidPlaced: (handler) => socket.on(WS_AUCTION_EVENTS.SERVER.BID_PLACED, handler),
     onTimeExtended: (handler) => socket.on(WS_AUCTION_EVENTS.SERVER.TIME_EXTENDED, handler),
     onTimerSync: (handler) => socket.on(WS_AUCTION_EVENTS.SERVER.TIMER_SYNC, handler),
+    onLotEnded: (handler) => socket.on(WS_AUCTION_EVENTS.SERVER.LOT_ENDED, handler),
     disconnect: () => {
       if (auctionId) socket.emit(WS_AUCTION_EVENTS.CLIENT.LEAVE_ROOM, { auctionId });
       socket.disconnect();

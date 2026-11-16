@@ -96,6 +96,7 @@ export interface AuctionEntity {
   introDurationMs?: number;
   elapsedMs?: number;
   isIntroActive?: boolean;
+  lots?: AuctionConsignmentItem[];
 }
 
 export interface AuctionQueryInput {

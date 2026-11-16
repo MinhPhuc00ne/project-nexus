@@ -88,6 +88,15 @@ export default function SellerAuctionDetailPage(): ReactElement {
               ...current,
               currentHighestBid: payload.bidAmount,
               totalBidsCount: current.totalBidsCount + 1,
+              items: (current.items ?? []).map((lot) =>
+                lot.id === payload.auctionItemId
+                  ? {
+                      ...lot,
+                      currentHighestBid: payload.bidAmount,
+                      totalBidsCount: payload.totalBidsCount ?? (lot.totalBidsCount ?? 0) + 1,
+                    }
+                  : lot,
+              ),
             }
           : current,
       );
@@ -99,7 +108,40 @@ export default function SellerAuctionDetailPage(): ReactElement {
       );
     });
     socket.onAuctionStarted((payload) => {
-      if (payload.auctionId === auction.id) void load();
+      if (payload.auctionId === auction.id) {
+        void load();
+        window.setTimeout(() => void load(), 250);
+      }
+    });
+    socket.onTimerSync((payload) => {
+      if (payload.auctionId !== auction.id) return;
+      setAuction((current) => {
+        if (!current) return current;
+        const lots = current.items ?? [];
+        const updatedLots = lots.map((lot) => {
+          const timer = payload.lotTimers?.find((entry) => entry.auctionItemId === lot.id);
+          return timer
+            ? {
+                ...lot,
+                endTime: timer.endTime,
+                lotStatus: timer.status,
+                isExtended: timer.isExtended,
+              }
+            : lot;
+        });
+        return {
+          ...current,
+          endTime: payload.endTime,
+          status: payload.status,
+          isExtended: payload.isExtended,
+          items: updatedLots,
+          lots: updatedLots,
+        };
+      });
+    });
+    socket.onLotEnded((payload) => {
+      if (payload.auctionId !== auction.id) return;
+      void load();
     });
 
     return () => socket.disconnect();
@@ -203,6 +245,7 @@ export default function SellerAuctionDetailPage(): ReactElement {
         isConsignmentLocked={auction.isConsignmentLocked}
         approvedItems={approvedItems}
         consignments={consignments}
+        liveItems={auction.items}
       />
 
       <div className="flex items-center gap-2 text-xs text-slate-500">

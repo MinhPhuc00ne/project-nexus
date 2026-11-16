@@ -29,6 +29,15 @@ export interface AuctionConsignmentItem {
   endTime?: string | null;
   originalEndTime?: string;
   isExtended?: boolean;
+  activeAward?: {
+    id: string;
+    tier?: string;
+    status: string;
+    offerAmount: number | string;
+    depositAmount: number | string;
+    expiresAt: string;
+    buyer?: { id: string; fullName: string; email?: string; reputationScore?: number } | null;
+  } | null;
   weightGrams?: number;
   lengthCm?: number;
   widthCm?: number;

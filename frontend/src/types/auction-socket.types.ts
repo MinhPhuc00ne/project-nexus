@@ -4,6 +4,7 @@ import type {
   WsBidPlacedPayload,
   WsTimeExtendedPayload,
   WsTimerSyncPayload,
+  WsLotEndedPayload,
 } from '@nexus/types';
 
 /**
@@ -22,5 +23,6 @@ export interface AuctionSocketClient {
   onBidPlaced: (handler: (payload: WsBidPlacedPayload) => void) => void;
   onTimeExtended: (handler: (payload: WsTimeExtendedPayload) => void) => void;
   onTimerSync: (handler: (payload: WsTimerSyncPayload) => void) => void;
+  onLotEnded: (handler: (payload: WsLotEndedPayload) => void) => void;
   disconnect: () => void;
 }

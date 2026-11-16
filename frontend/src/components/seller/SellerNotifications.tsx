@@ -19,9 +19,21 @@ export default function SellerNotifications({
   const state = useSellerNotifications(userId, isOpen);
   const busy = state.loading || Boolean(state.pending);
 
-  const openDispute = (notificationId: string, targetUrl?: string | null): void => {
+  const openNotification = (
+    notificationId: string,
+    targetUrl?: string | null,
+    type?: string,
+  ): void => {
     void state.markRead(notificationId);
-    navigate(targetUrl?.startsWith('/seller/') ? targetUrl : '/seller/disputes');
+    const sellerAuctionPath = targetUrl?.match(/^\/auction\/([^/?#]+)/);
+    const resolvedUrl = sellerAuctionPath ? `/seller/auctions/${sellerAuctionPath[1]}` : targetUrl;
+    navigate(
+      resolvedUrl?.startsWith('/seller/')
+        ? resolvedUrl
+        : type === 'DISPUTE'
+          ? '/seller/disputes'
+          : '/seller/auctions',
+    );
   };
 
   return (
@@ -120,13 +132,13 @@ export default function SellerNotifications({
                           >
                             {new Date(item.createdAt).toLocaleString('vi-VN')}
                           </time>
-                          {item.type === 'DISPUTE' && (
+                          {(item.targetUrl || item.type === 'DISPUTE') && (
                             <button
                               type="button"
-                              onClick={() => openDispute(item.id, item.targetUrl)}
+                              onClick={() => openNotification(item.id, item.targetUrl, item.type)}
                               className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
                             >
-                              Xem khiếu nại
+                              {item.type === 'DISPUTE' ? 'Xem xử lý' : 'Mở nội dung'}
                             </button>
                           )}
                           {!item.isRead && (
