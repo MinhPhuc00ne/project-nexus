@@ -65,6 +65,9 @@ ALTER TABLE "auction_awards"
   ADD COLUMN IF NOT EXISTS "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   ALTER COLUMN "order_id" DROP NOT NULL;
 
+ALTER TABLE "auction_awards" ALTER COLUMN "updated_at" DROP DEFAULT;
+
+ALTER TABLE "auction_awards" DROP CONSTRAINT IF EXISTS "auction_awards_status_check";
 ALTER TABLE "auction_awards" ALTER COLUMN "status" DROP DEFAULT;
 ALTER TABLE "auction_awards"
   ALTER COLUMN "status" TYPE "AuctionAwardStatus"
@@ -93,13 +96,13 @@ CREATE TABLE "auction_complaints" (
   "reporter_id" TEXT NOT NULL,
   "reporter_role" "Role" NOT NULL,
   "reason" TEXT NOT NULL,
-  "evidence_urls" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  "evidence_urls" TEXT[],
   "status" "AuctionComplaintStatus" NOT NULL DEFAULT 'OPEN',
   "admin_note" TEXT,
   "handled_by_id" TEXT,
   "handled_at" TIMESTAMP(3),
   "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at" TIMESTAMP(3) NOT NULL,
 
   CONSTRAINT "auction_complaints_pkey" PRIMARY KEY ("id")
 );
