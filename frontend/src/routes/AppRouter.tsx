@@ -81,6 +81,7 @@ const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'
 const AdminUsersPage = lazy(() => import('../pages/admin/AdminUsersPage'));
 const AdminSellersPage = lazy(() => import('../pages/admin/AdminSellersPage'));
 const AdminAuctionsPage = lazy(() => import('../pages/admin/AdminAuctionsPage'));
+const AdminAuctionLotsPage = lazy(() => import('../pages/admin/AdminAuctionLotsPage'));
 const AdminRefundsPage = lazy(() => import('../pages/admin/AdminRefundsPage'));
 const AdminStudioPage = lazy(() => import('../pages/admin/AdminStudioPage'));
 const AdminFinancePage = lazy(() => import('../pages/admin/AdminFinancePage'));
@@ -227,6 +228,7 @@ function AppRouter() {
                 <Route path="stores" element={<AdminStoresPage />} />
                 <Route path="reports" element={<AdminReportsPage />} />
                 <Route path="auctions" element={<AdminAuctionsPage />} />
+                <Route path="auctions/:auctionId/lots" element={<AdminAuctionLotsPage />} />
                 <Route path="refunds" element={<AdminRefundsPage />} />
                 <Route path="studio" element={<AdminStudioPage />} />
                 <Route path="finance" element={<AdminFinancePage />} />

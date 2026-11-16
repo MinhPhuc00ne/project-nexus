@@ -16,6 +16,10 @@ import {
 } from '../../../services/notifications';
 import type { NotificationsPage } from '../../../types/notification.types';
 import { useToast } from '../../ToastNotification';
+import {
+  publishAdminAuctionNotification,
+  setAdminNotificationConnection,
+} from '../Auctions/adminAuctionRealtime';
 
 export default function useAdminNotifications(userId: string, isOpen: boolean) {
   const { token } = useAuth();
@@ -118,12 +122,14 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       (payload: WsNotificationConnectedPayload) => {
         if (!currentSession() || payload.userId !== userId) return;
         setConnected(true);
+        setAdminNotificationConnection(true);
         applyCount(payload);
       },
     );
     socket.on(WS_NOTIFICATION_EVENTS.SERVER.NEW, (payload: WsNotificationNewPayload) => {
       if (!currentSession() || payload.userId !== userId || seen.has(payload.id)) return;
       seen.add(payload.id);
+      publishAdminAuctionNotification(payload);
       if (seen.size > 1000) seen.delete(seen.values().next().value!);
       // Prefer the server total to avoid adding twice when UNREAD_COUNT also arrives.
       if (typeof payload.unreadCount !== 'number' && !payload.isRead)
@@ -135,7 +141,10 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       (payload: WsNotificationUnreadCountPayload) => applyCount(payload),
     );
     const disconnected = () => {
-      if (active) setConnected(false);
+      if (active) {
+        setConnected(false);
+        setAdminNotificationConnection(false);
+      }
     };
     socket.on('disconnect', disconnected);
     socket.on('connect_error', disconnected);
@@ -146,6 +155,7 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       socket.disconnect();
       socket.removeAllListeners();
       setConnected(false);
+      setAdminNotificationConnection(false);
     };
   }, [token, userId]);
 

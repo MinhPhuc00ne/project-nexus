@@ -35,7 +35,9 @@ export interface AdminOrderDetail extends AdminOrder {
     quantity: number;
     unitPrice: AdminOrderAmount;
     totalPrice: AdminOrderAmount;
-    product: { id: string; title: string };
+    product: { id: string; title: string } | null;
+    titleSnapshot: string | null;
+    auctionItemId: string | null;
   }[];
   payments: {
     id: string;

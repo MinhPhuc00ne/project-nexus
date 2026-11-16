@@ -3,6 +3,12 @@ import api, { API_BASE_URL, apiRequest } from './api';
 import { getStoredToken } from './auth';
 import { WS_AUCTION_EVENTS } from '@nexus/types';
 import type {
+  AdminAuctionAward,
+  AdminAuctionComplaint,
+  AuctionComplaintState,
+  AwardAction,
+} from '../types/admin-auction-operations.types';
+import type {
   BuyerEligibilityResponse,
   MyBidItem,
   AuctionEntity,
@@ -15,6 +21,7 @@ import type {
   RegisterAuctionItemInput,
   AdminAuctionItem,
   AdminAuctionItemsResponse,
+  AdminAuctionLotsResponse,
   ReviewAuctionItemInput,
   AdminAuctionListResponse,
   PlaceBidResponse,
@@ -51,6 +58,85 @@ export const resolveAuctionImageUrl = formatAuctionImage;
 
 export function getAdminAuctionItemsApi(id: string): Promise<AdminAuctionItemsResponse> {
   return apiRequest<AdminAuctionItemsResponse>(`/auctions/admin/${id}/items`, {
+    requireAuth: true,
+  });
+}
+
+export async function getAdminAuctionLotsApi(id: string): Promise<AdminAuctionLotsResponse> {
+  const [room, consignments, intro] = await Promise.all([
+    apiRequest<AdminAuctionLotsResponse>(`/auctions/${id}`, { requireAuth: true }),
+    getAdminAuctionItemsApi(id),
+    getAuctionIntroShowcaseApi(id),
+  ]);
+  if (!Array.isArray(room.lots) || !Array.isArray(consignments.items))
+    throw new Error('Dữ liệu lô đấu giá không hợp lệ.');
+  return {
+    ...room,
+    serverTime: intro.serverTime,
+    introDurationMs: intro.introDurationMs,
+    elapsedMs: intro.elapsedMs,
+    isIntroActive: intro.isIntroActive,
+    lots: room.lots.map((lot) => {
+      const item = consignments.items.find((entry) => entry.id === lot.id);
+      if (!item) return lot;
+      return {
+        ...lot,
+        reservePrice: item.reservePrice ?? item.proposedReservePrice,
+        staffNote: item.staffNote,
+        activeAward:
+          item.awards?.find((award) =>
+            ['AWAITING_ACCEPTANCE', 'AWAITING_DEPOSIT', 'AWAITING_CHECKOUT', 'PAID'].includes(
+              award.status,
+            ),
+          ) ?? null,
+      };
+    }),
+  };
+}
+
+export function listAdminAuctionAwardsApi(auctionId: string): Promise<AdminAuctionAward[]> {
+  return apiRequest(`/auctions/admin/awards?${new URLSearchParams({ auctionId })}`, {
+    requireAuth: true,
+  });
+}
+export function confirmAdminAuctionAwardApi(id: string, action: AwardAction, note: string) {
+  return apiRequest(`/auctions/admin/awards/${id}/${action}`, {
+    method: 'POST',
+    body: { confirmed: true, note: note.trim() || undefined },
+    requireAuth: true,
+  });
+}
+export function listAdminAuctionComplaintsApi(
+  auctionId: string,
+  status: AuctionComplaintState | '',
+): Promise<AdminAuctionComplaint[]> {
+  return apiRequest(
+    `/auctions/complaints?${new URLSearchParams({ auctionId, ...(status ? { status } : {}) })}`,
+    { requireAuth: true },
+  );
+}
+export function resolveAdminAuctionComplaintApi(
+  id: string,
+  status: 'ACCEPTED' | 'REJECTED',
+  adminNote: string,
+) {
+  return apiRequest(`/auctions/complaints/${id}/resolve`, {
+    method: 'PATCH',
+    body: { status, adminNote: adminNote.trim() || undefined },
+    requireAuth: true,
+  });
+}
+export function saveAdminAuctionLotNoteApi(id: string, staffNote: string) {
+  return apiRequest(`/auctions/staff/items/${id}/note`, {
+    method: 'PATCH',
+    body: { staffNote: staffNote.trim() },
+    requireAuth: true,
+  });
+}
+
+export function adminEndAuctionLotApi(auctionId: string, itemId: string): Promise<unknown> {
+  return apiRequest(`/auctions/admin/${auctionId}/items/${itemId}/end`, {
+    method: 'POST',
     requireAuth: true,
   });
 }

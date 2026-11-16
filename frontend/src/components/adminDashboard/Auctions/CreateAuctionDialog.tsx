@@ -7,6 +7,7 @@ import { useToast } from '../../ToastNotification';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
 import { minEndDateTime } from '../../../utils/date-time';
+import ConsignmentDeadlineField from './ConsignmentDeadlineField';
 
 export default function CreateAuctionDialog({
   onClose,
@@ -23,6 +24,7 @@ export default function CreateAuctionDialog({
   const [imagePreview, setImagePreview] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  const [consignmentDeadline, setConsignmentDeadline] = useState('');
   const [buyerScore, setBuyerScore] = useState('100');
   const [sellerScore, setSellerScore] = useState('80');
   const [saving, setSaving] = useState(false);
@@ -52,6 +54,17 @@ export default function CreateAuctionDialog({
     if (!title.trim()) {
       setError('Vui lòng nhập tên phiên đấu giá.');
       return;
+    }
+    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
+      setError('Vui lòng chọn lịch hợp lệ, thời gian kết thúc phải sau thời gian bắt đầu.');
+      return;
+    }
+    if (consignmentDeadline) {
+      const deadline = new Date(consignmentDeadline).getTime();
+      if (!Number.isFinite(deadline) || deadline <= start.getTime() || deadline >= end.getTime()) {
+        setError('Hạn ký gửi phải sau thời gian bắt đầu và trước thời gian kết thúc phiên.');
+        return;
+      }
     }
     if (
       ![buyerScore, sellerScore].every(
@@ -100,6 +113,9 @@ export default function CreateAuctionDialog({
         imageUrl: uploadedImageUrl,
         startTime: start.toISOString(),
         endTime: end.toISOString(),
+        consignmentDeadline: consignmentDeadline
+          ? new Date(consignmentDeadline).toISOString()
+          : undefined,
         minBuyerReputation: Number(buyerScore),
         minSellerReputation: Number(sellerScore),
       });
@@ -251,6 +267,12 @@ export default function CreateAuctionDialog({
           <p className="text-xs text-slate-500">
             Thời gian theo múi giờ thiết bị. Phiên bắt đầu ngay nếu giờ bắt đầu đã tới.
           </p>
+          <ConsignmentDeadlineField
+            value={consignmentDeadline}
+            startTime={startTime}
+            endTime={endTime}
+            onChange={setConsignmentDeadline}
+          />
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-xs font-medium">
               Điểm uy tín Buyer tối thiểu
