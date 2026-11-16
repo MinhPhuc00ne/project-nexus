@@ -1,12 +1,20 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import api, { API_BASE_URL } from './api';
 import { getApiErrorMessage } from '../lib/apiErrors';
+export interface ChatbotAction {
+  type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN' | 'NAVIGATE';
+  endpoint?: string;
+  path?: string;
+  label?: string;
+  auto?: boolean;
+}
+
 export interface ChatbotReply {
   reply: string;
   engine: 'FAQ' | 'GEMINI' | 'ORDER';
   topic: string;
   sources: { id: string; title: string }[];
-  actions: { type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN'; endpoint?: string }[];
+  actions: ChatbotAction[];
   order?: {
     id: string;
     status: string;
@@ -25,13 +33,23 @@ export async function getChatbotCapabilities(signal?: AbortSignal): Promise<Chat
   });
   return response.data.data;
 }
+export interface ChatbotHistoryItem {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export async function sendChatbotMessage(
   message: string,
   guest: boolean,
   orderId?: string,
   signal?: AbortSignal,
+  history?: ChatbotHistoryItem[],
 ): Promise<ChatbotReply> {
-  const body = { message, ...(!guest && orderId ? { orderId } : {}) };
+  const body = {
+    message,
+    ...(!guest && orderId ? { orderId } : {}),
+    ...(history && history.length > 0 ? { history: history.slice(-12) } : {}),
+  };
   // Guest requests do not attach a session token or trigger token refresh.
   try {
     const response = guest

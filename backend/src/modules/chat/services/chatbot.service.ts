@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CommerceChatQueryService } from '../../commerce/services/commerce-chat-query.service';
 import { ChatbotCommerceService } from './chatbot-commerce.service';
-import { commerceIntent, isCommerceFollowUp, messageOrderId } from './chatbot-commerce-intent';
+import {
+  accountStatusIntent,
+  commerceIntent,
+  isCommerceFollowUp,
+  messageOrderId,
+} from './chatbot-commerce-intent';
 import {
   ChatbotHistoryMessageDto,
   ChatbotMessageDto,
@@ -16,13 +21,22 @@ import {
 } from './chatbot-knowledge';
 import { ChatbotRateLimitService } from './chatbot-rate-limit.service';
 
+/** Structured follow-up action rendered by the NEXUS chatbot UI. */
+export interface ChatbotAction {
+  type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN' | 'NAVIGATE';
+  endpoint?: string;
+  path?: string;
+  label?: string;
+  auto?: boolean;
+}
+
 /** Response schema returned by the NEXUS conversational assistant endpoints. */
 export interface ChatbotReply {
   reply: string;
   engine: 'FAQ' | 'GEMINI' | 'ORDER' | 'CART';
   topic: ChatbotTopic | 'WELCOME' | 'UNKNOWN';
   sources: { id: string; title: string }[];
-  actions: { type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN'; endpoint?: string }[];
+  actions: ChatbotAction[];
   orders?: Awaited<ReturnType<CommerceChatQueryService['orders']>>;
   cart?: Awaited<ReturnType<CommerceChatQueryService['cart']>>;
   order?: {
@@ -68,10 +82,20 @@ export class ChatbotService {
     if (orderId && (dto.intent || dto.status || dto.page || dto.limit))
       throw new BadRequestException('Tra cứu một đơn không kết hợp truy vấn danh sách hoặc giỏ.');
     if (orderId) return this.commerce.order(userId, orderId, dto.message);
+    const navResult = await this.commerce.navigate?.(dto.message, true);
+    if (navResult) return navResult;
     const result = await this.commerce.answer(userId, dto);
     if (result) return result;
     if (dto.status || dto.page || dto.limit)
       throw new BadRequestException('Hãy chọn truy vấn đơn mua, đơn bán hoặc giỏ hàng.');
+    const accountResult = await this.commerce.accountStatus?.(
+      userId,
+      dto.message,
+      dto.history ?? [],
+    );
+    if (accountResult) return accountResult;
+    const catalogResult = await this.commerce.searchCatalog?.(dto.message);
+    if (catalogResult) return catalogResult;
     return this.answer(dto.message, true, dto.history ?? []);
   }
 
@@ -83,6 +107,8 @@ export class ChatbotService {
    */
   async replyGuest(identity: string, dto: GuestChatbotMessageDto): Promise<ChatbotReply> {
     await this.rateLimit.check(`guest:${identity}`);
+    const navResult = await this.commerce.navigate?.(dto.message, false);
+    if (navResult) return navResult;
     const guestIntent = commerceIntent(dto.message);
     if (guestIntent || messageOrderId(dto.message) || isCommerceFollowUp(dto.message))
       return {
@@ -92,6 +118,22 @@ export class ChatbotService {
         sources: [],
         actions: [{ type: 'LOGIN' }],
       };
+    if (accountStatusIntent(dto.message, dto.history ?? []))
+      return {
+        reply:
+          'Vui lòng đăng nhập để kiểm tra điểm uy tín, số dư ví và điều kiện tài khoản của bạn.',
+        engine: 'FAQ',
+        topic: 'AUCTION',
+        sources: [],
+        actions: [{ type: 'LOGIN' }],
+      };
+    const catalogResult = await this.commerce.searchCatalog?.(dto.message);
+    if (catalogResult) {
+      return {
+        ...catalogResult,
+        actions: catalogResult.actions.filter((action) => action.type === 'NAVIGATE'),
+      };
+    }
     const response = await this.answer(dto.message, false, dto.history ?? []);
     if (response.topic === 'WELCOME' && response.engine === 'FAQ') {
       response.reply =
@@ -101,7 +143,7 @@ export class ChatbotService {
       response.reply =
         'Vui lòng đăng nhập để tra cứu đơn hàng của bạn. Khách chưa đăng nhập chỉ có thể hỏi chính sách chung của NEXUS.';
     }
-    response.actions = response.actions.map(() => ({ type: 'LOGIN' }));
+    response.actions = response.actions.length > 0 ? [{ type: 'LOGIN' }] : [];
     return response;
   }
 
@@ -200,7 +242,32 @@ export class ChatbotService {
    */
   private actionsForTopic(topic: ChatbotReply['topic']): ChatbotReply['actions'] {
     if (topic === 'WELCOME') return [];
-    if (topic === 'ORDER') return [{ type: 'SELECT_ORDER' }];
+    if (topic === 'ORDER')
+      return [
+        { type: 'NAVIGATE', path: '/buyer/orders', label: 'Mở đơn hàng của tôi' },
+        { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
+      ];
+    if (topic === 'AUCTION')
+      return [
+        { type: 'NAVIGATE', path: '/auction', label: 'Mở trang Đấu giá' },
+        { type: 'NAVIGATE', path: '/buyer/bids', label: 'Đấu giá của tôi' },
+        { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
+      ];
+    if (topic === 'WALLET')
+      return [
+        { type: 'NAVIGATE', path: '/buyer/wallet', label: 'Mở Ví NEXUS Pay' },
+        { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
+      ];
+    if (topic === 'REPUTATION')
+      return [
+        { type: 'NAVIGATE', path: '/buyer/reputation', label: 'Xem Điểm uy tín' },
+        { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
+      ];
+    if (topic === 'CART')
+      return [
+        { type: 'NAVIGATE', path: '/cart', label: 'Mở giỏ hàng' },
+        { type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' },
+      ];
     return [{ type: 'REQUEST_SUPPORT', endpoint: '/api/v1/chat/request-support' }];
   }
 }

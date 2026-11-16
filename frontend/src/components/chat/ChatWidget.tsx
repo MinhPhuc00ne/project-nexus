@@ -45,7 +45,7 @@ function GuestChatbotWidget(): JSX.Element {
         aria-label="Chatbot NEXUS"
         className={`${open ? 'flex' : 'hidden'} mt-3 h-[min(560px,calc(100dvh-32px))] w-[min(460px,calc(100vw-32px))] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
       >
-        <ChatbotPanel guest />
+        <ChatbotPanel guest storageKey="guest" />
       </section>
     </div>
   );
@@ -246,7 +246,7 @@ function ChatPanel({
 
   return (
     <div className="fixed bottom-4 right-4 z-[1300] font-sans max-sm:bottom-3 max-sm:right-3">
-      {!open ? (
+      {!open && (
         <button
           onClick={() => setOpen(true)}
           className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white shadow-xl hover:bg-blue-700"
@@ -255,125 +255,125 @@ function ChatPanel({
           <MessageCircle size={22} /> {canRequestSupport ? 'Tin nhắn & Hỗ trợ' : 'Tin nhắn'}{' '}
           {unread > 0 && <span className="rounded-full bg-red-500 px-2 text-xs">{unread}</span>}
         </button>
-      ) : (
-        <section
-          aria-label="Hộp tin nhắn"
-          className="flex h-[min(560px,calc(100dvh-32px))] w-[min(560px,calc(100vw-32px))] max-sm:h-[calc(100dvh-24px)] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl"
-        >
-          <header className="flex shrink-0 items-center justify-between gap-2 bg-blue-600 px-5 py-4 text-white">
-            <div className="flex items-center gap-3">
-              <MessageCircle />
-              <div>
-                <h2 className="font-bold">Nexus Chat</h2>
-                <p className="text-xs text-blue-100">Kết nối người mua, người bán và hỗ trợ</p>
-              </div>
+      )}
+      <section
+        aria-label="Hộp tin nhắn"
+        className={`${open ? 'flex' : 'hidden'} h-[min(560px,calc(100dvh-32px))] w-[min(560px,calc(100vw-32px))] max-sm:h-[calc(100dvh-24px)] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl`}
+      >
+        <header className="flex shrink-0 items-center justify-between gap-2 bg-blue-600 px-5 py-4 text-white">
+          <div className="flex items-center gap-3">
+            <MessageCircle />
+            <div>
+              <h2 className="font-bold">Nexus Chat</h2>
+              <p className="text-xs text-blue-100">Kết nối người mua, người bán và hỗ trợ</p>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Đóng chat"
-              className="rounded-lg p-2 hover:bg-blue-500"
-            >
-              <X size={20} />
-            </button>
-          </header>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Đóng chat"
+            className="rounded-lg p-2 hover:bg-blue-500"
+          >
+            <X size={20} />
+          </button>
+        </header>
 
-          {canRequestSupport && (
-            <nav
-              aria-label="Tin nhắn và hỗ trợ"
-              className="flex shrink-0 flex-wrap gap-1 border-b border-slate-100 px-3 py-2"
-            >
-              {(['bot', 'support', 'chat'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setView(tab)}
-                  aria-pressed={view === tab}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold max-sm:flex-1 max-sm:px-2 max-sm:text-xs ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
-                >
-                  {tab === 'bot'
-                    ? 'Trợ lý NEXUS'
-                    : tab === 'support'
-                      ? 'Nhân viên hỗ trợ'
-                      : 'Tin nhắn'}
-                </button>
-              ))}
-            </nav>
-          )}
-          {displayError && (
-            <div
-              role="alert"
-              className="flex items-center justify-between gap-2 bg-red-50 px-4 py-2 text-sm text-red-700"
-            >
-              {displayError}
-              <button onClick={clearError} aria-label="Đóng thông báo">
-                <X size={16} />
+        {canRequestSupport && (
+          <nav
+            aria-label="Tin nhắn và hỗ trợ"
+            className="flex shrink-0 flex-wrap gap-1 border-b border-slate-100 px-3 py-2"
+          >
+            {(['bot', 'support', 'chat'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setView(tab)}
+                aria-pressed={view === tab}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold max-sm:flex-1 max-sm:px-2 max-sm:text-xs ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
+              >
+                {tab === 'bot'
+                  ? 'Trợ lý NEXUS'
+                  : tab === 'support'
+                    ? 'Nhân viên hỗ trợ'
+                    : 'Tin nhắn'}
               </button>
-            </div>
-          )}
+            ))}
+          </nav>
+        )}
+        {displayError && (
+          <div
+            role="alert"
+            className="flex items-center justify-between gap-2 bg-red-50 px-4 py-2 text-sm text-red-700"
+          >
+            {displayError}
+            <button onClick={clearError} aria-label="Đóng thông báo">
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
-          {canRequestSupport && (
-            <div className={view === 'bot' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}>
-              <ChatbotPanel
-                creating={creating}
-                onRequestSupport={(description, orderId) =>
-                  handleSendSupportMessage({ category: 'Hỗ trợ từ chatbot', description, orderId })
-                }
-              />
-            </div>
-          )}
-          {view === 'bot' && canRequestSupport ? null : view === 'support' && canRequestSupport ? (
-            <SupportMenu
+        {canRequestSupport && (
+          <div className={view === 'bot' ? 'flex min-h-0 flex-1 flex-col' : 'hidden'}>
+            <ChatbotPanel
+              storageKey={userId}
+              creating={creating}
+              onRequestSupport={(description, orderId) =>
+                handleSendSupportMessage({ category: 'Hỗ trợ từ chatbot', description, orderId })
+              }
+            />
+          </div>
+        )}
+        {view === 'bot' && canRequestSupport ? null : view === 'support' && canRequestSupport ? (
+          <SupportMenu
+            conversations={conversations}
+            onSendSupportMessage={handleSendSupportMessage}
+            sending={creating}
+            onOpenConversation={(conversation) => {
+              setActive(conversation);
+              setView('chat');
+              clearError();
+            }}
+          />
+        ) : (
+          <div className="flex min-h-0 flex-1">
+            <ChatConversationList
               conversations={conversations}
-              onSendSupportMessage={handleSendSupportMessage}
-              sending={creating}
-              onOpenConversation={(conversation) => {
-                setActive(conversation);
-                setView('chat');
+              activeId={activeId}
+              onSelect={(c) => {
+                setActive(c);
                 clearError();
               }}
+              search={search}
+              onSearchChange={(val) => {
+                setSearch(val);
+                setPage(1);
+              }}
+              participantId={participantId}
+              onParticipantIdChange={setParticipantId}
+              type={type}
+              onTypeChange={setType}
+              creating={creating}
+              onCreateConversation={() => void handleStartConversation()}
+              hasMorePages={page < totalPages}
+              onLoadMore={() => setPage((v) => v + 1)}
+              hiddenOnMobile={!!active}
             />
-          ) : (
-            <div className="flex min-h-0 flex-1">
-              <ChatConversationList
-                conversations={conversations}
-                activeId={activeId}
-                onSelect={(c) => {
-                  setActive(c);
-                  clearError();
-                }}
-                search={search}
-                onSearchChange={(val) => {
-                  setSearch(val);
-                  setPage(1);
-                }}
-                participantId={participantId}
-                onParticipantIdChange={setParticipantId}
-                type={type}
-                onTypeChange={setType}
-                creating={creating}
-                onCreateConversation={() => void handleStartConversation()}
-                hasMorePages={page < totalPages}
-                onLoadMore={() => setPage((v) => v + 1)}
-                hiddenOnMobile={!!active}
-              />
 
-              <ChatMessageArea
-                active={active}
-                loading={room.loading}
-                messages={room.messages}
-                hasOlder={room.hasOlder}
-                older={room.older}
-                typing={room.typing}
-                draft={room.draft}
-                sending={room.sending}
-                onBack={() => setActive(null)}
-                onLoadOlder={() => void room.loadOlder()}
-                onDraftChange={room.setDraft}
-                onSend={() => void room.send()}
-              />
-            </div>
-          )}
-        </section>
-      )}
+            <ChatMessageArea
+              active={active}
+              loading={room.loading}
+              messages={room.messages}
+              hasOlder={room.hasOlder}
+              older={room.older}
+              typing={room.typing}
+              draft={room.draft}
+              sending={room.sending}
+              onBack={() => setActive(null)}
+              onLoadOlder={() => void room.loadOlder()}
+              onDraftChange={room.setDraft}
+              onSend={() => void room.send()}
+            />
+          </div>
+        )}
+      </section>
     </div>
   );
 }
