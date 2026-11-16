@@ -10,6 +10,7 @@ import {
 } from '../../services/auction.service';
 import SellerConsignmentForm from '../../components/seller/SellerConsignmentForm';
 import SellerConsignmentHistoryPanel from '../../components/seller/SellerConsignmentHistoryPanel';
+import { canSubmitConsignment } from '../../components/seller/sellerConsignmentHelpers';
 import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/seller/SellerUI';
 import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
 
@@ -31,11 +32,7 @@ export default function SellerAuctionConsignmentPage(): ReactElement {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
 
-  const eligibleAuctions = useMemo(
-    () =>
-      auctions.filter((auction) => auction.status === 'SCHEDULED' || auction.status === 'ACTIVE'),
-    [auctions],
-  );
+  const eligibleAuctions = useMemo(() => auctions.filter(canSubmitConsignment), [auctions]);
 
   const loadData = async (): Promise<void> => {
     setIsLoading(true);

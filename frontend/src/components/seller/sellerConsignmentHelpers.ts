@@ -1,6 +1,31 @@
 import { ApiRequestError, apiRequest } from '../../services/api';
 
 /**
+ * Auction fields used to decide whether a seller can still submit a consignment.
+ */
+export interface ConsignmentEligibleAuction {
+  status: string;
+  isConsignmentLocked?: boolean | null;
+  consignmentDeadline?: string | null;
+}
+
+/**
+ * Checks whether an auction is scheduled, unlocked, and still accepting consignments.
+ *
+ * @param auction - Auction lifecycle and consignment deadline fields.
+ * @returns True when the seller can submit an item to the auction.
+ */
+export function canSubmitConsignment(auction: ConsignmentEligibleAuction): boolean {
+  const isScheduled = auction.status === 'SCHEDULED' || auction.status === 'scheduled';
+  const deadline = auction.consignmentDeadline;
+  return (
+    isScheduled &&
+    !auction.isConsignmentLocked &&
+    (!deadline || new Date(deadline).getTime() > Date.now())
+  );
+}
+
+/**
  * State container for consignment registration form inputs.
  */
 export type ConsignmentFormState = {
@@ -10,7 +35,10 @@ export type ConsignmentFormState = {
   proposedStartingPrice: string;
   proposedReservePrice: string;
   proposedBidIncrement: string;
-  threeModelKey: string;
+  weightGrams: string;
+  lengthCm: string;
+  widthCm: string;
+  heightCm: string;
   appraisalCertificateNumber: string;
   appraisalAgency: string;
   certificateIssueDate: string;
@@ -26,11 +54,47 @@ export const initialConsignmentForm: ConsignmentFormState = {
   proposedStartingPrice: '',
   proposedReservePrice: '',
   proposedBidIncrement: '100000',
-  threeModelKey: '',
+  weightGrams: '500',
+  lengthCm: '20',
+  widthCm: '15',
+  heightCm: '10',
   appraisalCertificateNumber: '',
   appraisalAgency: '',
   certificateIssueDate: '',
 };
+
+/**
+ * Validates and converts consignment parcel sizing inputs for GHN shipping quotes.
+ *
+ * @param form - Current consignment form state.
+ * @returns Validated integer parcel values or a localized validation error message.
+ */
+export function parseConsignmentParcel(
+  form: Pick<ConsignmentFormState, 'weightGrams' | 'lengthCm' | 'widthCm' | 'heightCm'>,
+):
+  | {
+      ok: true;
+      parcel: { weightGrams: number; lengthCm: number; widthCm: number; heightCm: number };
+    }
+  | { ok: false; message: string } {
+  const weightGrams = Number(form.weightGrams);
+  const lengthCm = Number(form.lengthCm);
+  const widthCm = Number(form.widthCm);
+  const heightCm = Number(form.heightCm);
+  if (!Number.isInteger(weightGrams) || weightGrams < 1 || weightGrams > 50000) {
+    return { ok: false, message: 'Cân nặng đóng gói phải là số nguyên từ 1 đến 50.000 gram.' };
+  }
+  const dimensionsValid = [lengthCm, widthCm, heightCm].every(
+    (value) => Number.isInteger(value) && value >= 1 && value <= 200,
+  );
+  if (!dimensionsValid) {
+    return {
+      ok: false,
+      message: 'Kích thước Dài, Rộng, Cao phải là số nguyên từ 1 đến 200 cm.',
+    };
+  }
+  return { ok: true, parcel: { weightGrams, lengthCm, widthCm, heightCm } };
+}
 
 /**
  * Formats ISO date-time string into Vietnamese regional medium date and short time format.

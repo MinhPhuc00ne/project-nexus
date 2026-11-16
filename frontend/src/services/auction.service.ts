@@ -1,7 +1,10 @@
-import { io, type Socket } from 'socket.io-client';
-import api, { API_BASE_URL, apiRequest } from './api';
+import api, { apiRequest } from './api';
 import { getStoredToken } from './auth';
-import { WS_AUCTION_EVENTS } from '@nexus/types';
+import {
+  normalizeAuctionListResponse,
+  type RawAuctionListResponse,
+} from './auction-response.helpers';
+export { formatAuctionImage } from './auction-response.helpers';
 import type {
   AdminAuctionAward,
   AdminAuctionComplaint,
@@ -28,32 +31,12 @@ import type {
   SellerAuctionConsignment,
   AuctionIntroShowcaseResponse,
   AuctionAwardItem,
-  AuctionSocketClient,
 } from '../types/auction-api.types';
+export type * from '../types/auction-api.types';
+export { normalizeAuctionListResponse } from './auction-response.helpers';
+export { createAuctionSocket } from './auction-socket.service';
 
-/**
- * Chuẩn hóa URL hình ảnh từ API database hoặc uploads server
- */
-export function formatAuctionImage(url?: string | null): string {
-  if (!url || typeof url !== 'string' || !url.trim()) return '';
-  const trimmed = url.trim();
-  if (
-    trimmed.startsWith('http://') ||
-    trimmed.startsWith('https://') ||
-    trimmed.startsWith('data:') ||
-    trimmed.startsWith('blob:')
-  ) {
-    return trimmed;
-  }
-  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1').replace(
-    /\/$/,
-    '',
-  );
-  const backendOrigin = apiBase.replace(/\/api\/v1$/, '');
-  return `${backendOrigin}${cleanPath}`;
-}
-
+import { formatAuctionImage } from './auction-response.helpers';
 export const resolveAuctionImageUrl = formatAuctionImage;
 
 export function getAdminAuctionItemsApi(id: string): Promise<AdminAuctionItemsResponse> {
@@ -172,7 +155,9 @@ export function getAdminAuctionsApi(
   for (const [key, value] of Object.entries(query)) {
     if (value !== undefined && value !== '') params.set(key, String(value));
   }
-  return apiRequest<AdminAuctionListResponse>(`/auctions?${params}`, { requireAuth: true });
+  return apiRequest<RawAuctionListResponse>(`/auctions?${params}`, { requireAuth: true }).then(
+    (response) => normalizeAuctionListResponse(response) as AdminAuctionListResponse,
+  );
 }
 
 export function adminCreateAuctionApi(data: AdminCreateAuctionInput): Promise<AdminAuctionEntity> {
@@ -210,9 +195,10 @@ export function adminLockConsignmentApi(
 export async function getAuctionsApi(query?: AuctionQueryInput): Promise<AuctionListResponse> {
   const response = await api.get<{ data: AuctionListResponse }>('/auctions', { params: query });
   const payload = response?.data;
-  return (
+  const raw = (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
-  ) as AuctionListResponse;
+  ) as RawAuctionListResponse;
+  return normalizeAuctionListResponse(raw);
 }
 
 /**
@@ -353,52 +339,3 @@ export async function endAuctionApi(auctionId: string): Promise<AuctionEntity> {
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as AuctionEntity;
 }
-
-/**
- * Establishes a WebSocket connection to the auction namespace for real-time bid events.
- */
-export function createAuctionSocket(auctionId?: string): AuctionSocketClient {
-  const backendUrl = new URL(API_BASE_URL, window.location.origin);
-  const token = getStoredToken();
-
-  const socket: Socket = io(`${backendUrl.origin}/ws/auctions`, {
-    autoConnect: true,
-    auth: { token },
-  });
-
-  if (auctionId) {
-    socket.emit(WS_AUCTION_EVENTS.CLIENT.JOIN_ROOM, { auctionId });
-  }
-
-  return {
-    socket,
-    joinRoom: (id: string) => {
-      socket.emit(WS_AUCTION_EVENTS.CLIENT.JOIN_ROOM, { auctionId: id });
-    },
-    leaveRoom: (id: string) => {
-      socket.emit(WS_AUCTION_EVENTS.CLIENT.LEAVE_ROOM, { auctionId: id });
-    },
-    syncViewport: (id: string, rotation: { x: number; y: number; z: number }, zoom: number) => {
-      socket.emit(WS_AUCTION_EVENTS.CLIENT.SYNC_VIEWPORT, { auctionId: id, rotation, zoom });
-    },
-    onAuctionStarted: (handler) => {
-      socket.on(WS_AUCTION_EVENTS.SERVER.AUCTION_STARTED, handler);
-    },
-    onBidPlaced: (handler) => {
-      socket.on(WS_AUCTION_EVENTS.SERVER.BID_PLACED, handler);
-    },
-    onTimeExtended: (handler) => {
-      socket.on(WS_AUCTION_EVENTS.SERVER.TIME_EXTENDED, handler);
-    },
-    onTimerSync: (handler) => {
-      socket.on(WS_AUCTION_EVENTS.SERVER.TIMER_SYNC, handler);
-    },
-    disconnect: () => {
-      if (auctionId) {
-        socket.emit(WS_AUCTION_EVENTS.CLIENT.LEAVE_ROOM, { auctionId });
-      }
-      socket.disconnect();
-    },
-  };
-}
-export type * from '../types/auction-api.types';

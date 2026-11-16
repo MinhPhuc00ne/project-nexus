@@ -1547,7 +1547,7 @@ export class AuctionService implements OnModuleInit {
           data: {
             userId: lot.sellerId,
             auctionId: lot.auctionId,
-            targetUrl: auctionTargetUrl(lot.auctionId),
+            targetUrl: `/seller/auctions/${lot.auctionId}`,
             title: `${lotDisplayTitle(lot.lotNumber, lot.title)} đã kết thúc`,
             content: `${lotDisplayTitle(lot.lotNumber, lot.title)} đã có người thắng với giá ${formatVnd(Number(highestBid.bidAmount))}. Người thắng có 24 giờ để hoàn tất thanh toán 70% còn lại và phí vận chuyển.`,
             type: NotificationType.AUCTION,
@@ -1902,7 +1902,7 @@ export class AuctionService implements OnModuleInit {
       notifications.push({
         userId: sellerId,
         auctionId: auction.id,
-        targetUrl: auctionTargetUrl(auction.id),
+        targetUrl: `/seller/auctions/${auction.id}`,
         title: `Phiên "${auction.title}" có vật phẩm của bạn đã bắt đầu!`,
         content: `Phiên đấu giá chứa lô hàng ký gửi của bạn đã chính thức lên sóng. Bạn có thể theo dõi diễn biến trong phòng đấu giá.`,
         type: NotificationType.AUCTION,

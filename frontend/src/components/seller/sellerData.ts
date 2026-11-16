@@ -90,6 +90,8 @@ export interface SellerAuction {
   itemCount?: number;
   status: 'live' | 'pending' | 'scheduled' | 'ended';
   model: string;
+  consignmentDeadline?: string | null;
+  isConsignmentLocked?: boolean;
 }
 export const auctionStatuses = {
   live: 'Đang diễn ra',
