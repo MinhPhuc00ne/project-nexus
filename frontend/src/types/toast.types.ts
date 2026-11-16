@@ -1,5 +1,8 @@
 export interface ToastOptions {
   duration?: number;
+  targetUrl?: string;
+  onClick?: () => void;
+  actionLabel?: string;
 }
 
 export interface ToastApi {
@@ -13,6 +16,9 @@ export interface ToastItem {
   message: string;
   variant: 'success' | 'error';
   duration: number;
+  targetUrl?: string;
+  onClick?: () => void;
+  actionLabel?: string;
 }
 
 export interface ToastItemProps extends Omit<ToastItem, 'variant'> {

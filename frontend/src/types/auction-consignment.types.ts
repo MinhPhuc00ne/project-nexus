@@ -23,6 +23,7 @@ export interface AuctionConsignmentItem {
   bidIncrement?: number | string | null;
   proposedBidIncrement?: number | string | null;
   currentHighestBid?: number | string | null;
+  currentHighestBidderId?: string | null;
   totalBidsCount?: number;
   lotStatus?: AuctionStatus;
   startTime?: string | null;

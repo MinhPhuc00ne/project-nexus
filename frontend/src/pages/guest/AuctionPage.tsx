@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Heart, Share2, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
 import { BidStatus, AuctionStatus } from '@nexus/types';
@@ -23,8 +23,15 @@ import {
   type AuctionBidItem,
 } from '../../services/auction.service';
 import { getStoredToken } from '../../services/auth';
+import { useAuth } from '../../contexts/AuthContext';
 
+/**
+ * Live auction room page for guests and buyers with real-time WebSocket bidding,
+ * 3D showcase playback, and lot-level bid terminal synchronization.
+ */
 export const AuctionPage: React.FC = () => {
+  const { user } = useAuth();
+  const userRef = useRef(user);
   const { id } = useParams<{ id: string }>();
   const [activeAuction, setActiveAuction] = useState<AuctionEntity | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,20 +58,110 @@ export const AuctionPage: React.FC = () => {
   const [rotationAngle, setRotationAngle] = useState(0);
 
   useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  const resolveLeadingBidderLabel = useCallback(
+    (lot: AuctionConsignmentItem | undefined, auction: AuctionEntity | null): string => {
+      const currentUser = userRef.current;
+      const hasLotBids = Boolean(
+        (lot && Number(lot.totalBidsCount) > 0) || (lot && Number(lot.currentHighestBid) > 0),
+      );
+      if (lot && lot.currentHighestBidderId && hasLotBids) {
+        if (currentUser?.id && lot.currentHighestBidderId === currentUser.id) {
+          return `${currentUser.fullName || 'Bạn'} (Bạn)`;
+        }
+        const matchedBid = auction?.bids?.find(
+          (b) =>
+            b.bidder?.id === lot.currentHighestBidderId ||
+            Number(b.bidAmount) === Number(lot.currentHighestBid),
+        );
+        if (matchedBid?.bidder?.fullName) {
+          const isMe =
+            (currentUser?.id && matchedBid.bidder.id === currentUser.id) ||
+            (currentUser?.fullName && matchedBid.bidder.fullName === currentUser.fullName);
+          return isMe ? `${matchedBid.bidder.fullName} (Bạn)` : matchedBid.bidder.fullName;
+        }
+      }
+      if (auction?.bids && auction.bids.length > 0) {
+        const topBid = auction.bids[0];
+        const isMe =
+          (currentUser?.id && topBid.bidder?.id === currentUser.id) ||
+          (currentUser?.fullName && topBid.bidder?.fullName === currentUser.fullName);
+        return isMe
+          ? `${topBid.bidder?.fullName || 'Bạn'} (Bạn)`
+          : topBid.bidder?.fullName || 'Người tham gia ẩn danh';
+      }
+      return 'Chưa có lượt trả giá';
+    },
+    [],
+  );
+
+  const upsertBidList = useCallback(
+    (currentBids: AuctionBidItem[] | undefined, incomingBid: AuctionBidItem): AuctionBidItem[] => {
+      const currentUser = userRef.current;
+      const list = currentBids ? [...currentBids] : [];
+      const incomingBidderId = incomingBid.bidder?.id || '';
+      const incomingBidderName = incomingBid.bidder?.fullName || '';
+
+      const existingIndex = list.findIndex((b) => {
+        if (incomingBid.id && b.id && b.id === incomingBid.id) return true;
+        const bBidderId = b.bidder?.id || '';
+        const bBidderName = b.bidder?.fullName || '';
+        const sameAmount = Number(b.bidAmount) === Number(incomingBid.bidAmount);
+        const sameBidder =
+          (bBidderId && incomingBidderId && bBidderId === incomingBidderId) ||
+          (bBidderName && incomingBidderName && bBidderName === incomingBidderName) ||
+          (bBidderName.includes('tài khoản hiện tại') &&
+            (incomingBidderId === currentUser?.id || incomingBidderName === currentUser?.fullName));
+        return sameAmount && sameBidder;
+      });
+
+      if (existingIndex >= 0) {
+        list[existingIndex] = {
+          ...list[existingIndex],
+          ...incomingBid,
+          bidder: {
+            ...list[existingIndex].bidder,
+            ...incomingBid.bidder,
+            fullName: incomingBid.bidder?.fullName || list[existingIndex].bidder?.fullName,
+          },
+        };
+      } else {
+        list.unshift(incomingBid);
+      }
+
+      return list.sort((a, b) => {
+        const timeA = new Date(a.placedAt).getTime();
+        const timeB = new Date(b.placedAt).getTime();
+        if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
+          return timeB - timeA;
+        }
+        return Number(b.bidAmount) - Number(a.bidAmount);
+      });
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!activeAuction) return;
+    const lot = activeAuction.items?.[selectedLotIndex] || activeAuction.items?.[0];
+    setLeadingBidder(resolveLeadingBidderLabel(lot, activeAuction));
+  }, [user, activeAuction, selectedLotIndex, resolveLeadingBidderLabel]);
+
+  useEffect(() => {
     let socketClient: ReturnType<typeof createAuctionSocket> | null = null;
     let isMounted = true;
 
-    async function loadAuction() {
+    async function loadAuction(): Promise<void> {
       setIsLoading(true);
       try {
         let auctionData: AuctionEntity | null = null;
         if (id) {
           auctionData = await getAuctionDetailApi(id);
         } else {
-          // Lấy danh sách các phiên đấu giá thật từ API database
           const list = await getAuctionsApi({ limit: 10 });
           if (list?.items && list.items.length > 0) {
-            // Ưu tiên chọn phiên đang ACTIVE/EXTENDED, sau đó đến SCHEDULED
             const target =
               list.items.find((a) => a.status === 'ACTIVE' || a.status === 'EXTENDED') ||
               list.items.find((a) => a.status === 'SCHEDULED') ||
@@ -84,18 +181,32 @@ export const AuctionPage: React.FC = () => {
           } else {
             setShowCinematicIntro(false);
           }
-          const price =
-            Number(auctionData.currentHighestBid) || Number(auctionData.startingPrice) || 0;
+          const firstLot = auctionData.items?.[0];
+          const hasBids = Boolean(
+            (auctionData.bids && auctionData.bids.length > 0) ||
+            (firstLot && Number(firstLot.totalBidsCount) > 0) ||
+            (auctionData.totalBidsCount && Number(auctionData.totalBidsCount) > 0) ||
+            (firstLot && Number(firstLot.currentHighestBid) > 0) ||
+            Number(auctionData.currentHighestBid) > 0,
+          );
+          const price = hasBids
+            ? Number(firstLot?.currentHighestBid) || Number(auctionData.currentHighestBid) || 0
+            : 0;
           setCurrentPrice(price);
-          if (auctionData.bids && auctionData.bids.length > 0) {
-            setLeadingBidder(auctionData.bids[0].bidder?.fullName || 'Người tham gia ẩn danh');
-          } else {
-            setLeadingBidder('Chưa có lượt trả giá');
-          }
+          setLeadingBidder(resolveLeadingBidderLabel(firstLot, auctionData));
+          const isTimeOver = Boolean(
+            auctionData.endTime && new Date(auctionData.endTime).getTime() <= Date.now(),
+          );
+          const isEnded =
+            auctionData.status === 'ENDED' ||
+            auctionData.status === 'SETTLED' ||
+            auctionData.status === 'CANCELLED' ||
+            isTimeOver;
           const isLiveSession =
-            auctionData.status === 'ACTIVE' || auctionData.status === 'EXTENDED';
+            !isEnded && (auctionData.status === 'ACTIVE' || auctionData.status === 'EXTENDED');
           const isScheduled =
             !isLiveSession &&
+            !isEnded &&
             (auctionData.status === 'SCHEDULED' ||
               new Date(auctionData.startTime).getTime() > Date.now());
           const targetDateStr = isScheduled ? auctionData.startTime : auctionData.endTime;
@@ -105,7 +216,6 @@ export const AuctionPage: React.FC = () => {
           );
           setTimeLeft(remaining);
 
-          // Kiểm tra điều kiện tham gia đấu giá nếu đã đăng nhập
           if (getStoredToken()) {
             checkBuyerEligibilityApi(auctionData.id)
               .then((elig) => {
@@ -114,7 +224,6 @@ export const AuctionPage: React.FC = () => {
               .catch(() => {});
           }
 
-          // Kiểm tra nếu phiên này đang trong thời gian chiếu video 3D giới thiệu trực tiếp
           try {
             const showcase = await getAuctionIntroShowcaseApi(auctionData.id);
             if (isMounted && showcase?.isIntroActive) {
@@ -123,12 +232,11 @@ export const AuctionPage: React.FC = () => {
               setShow3DShowcase(true);
             }
           } catch {
-            // Phiên không có showcase telemetry
+            setShow3DShowcase(false);
           }
 
           socketClient = createAuctionSocket(auctionData.id);
 
-          // LẮNG NGHE SỰ KIỆN ADMIN BẮT ĐẦU PHIÊN ĐẤU GIÁ VÀ PHÁT SÓNG VIDEO TRỰC TIẾP TỚI BUYER
           socketClient.onAuctionStarted((payload) => {
             if (!isMounted) return;
             if (payload.auctionId === auctionData.id) {
@@ -156,7 +264,6 @@ export const AuctionPage: React.FC = () => {
               }
               setTimeout(() => setBidSuccessToast(null), 5000);
 
-              // Tự động chiếu video trực tiếp lên màn hình Buyer ngay lập tức mà không cần click!
               if (payload.items && payload.items.length > 0) {
                 setPlaybackMode('live');
                 setInitialElapsedMs(0);
@@ -169,26 +276,48 @@ export const AuctionPage: React.FC = () => {
 
           socketClient.onBidPlaced((payload) => {
             if (!isMounted) return;
-            setCurrentPrice(payload.bidAmount);
-            setLeadingBidder(payload.bidderName);
+            const validBid = Number(payload.bidAmount) || 0;
+            setCurrentPrice(validBid);
+            const currentUser = userRef.current;
+            const isMe =
+              (currentUser?.id && payload.bidderId === currentUser.id) ||
+              (currentUser?.fullName && payload.bidderName === currentUser.fullName);
+            setLeadingBidder(isMe ? `${payload.bidderName} (Bạn)` : payload.bidderName);
+
             setActiveAuction((prev) => {
               if (!prev) return null;
               const newBid: AuctionBidItem = {
                 id: payload.bidId,
-                bidAmount: payload.bidAmount,
+                bidAmount: validBid,
                 status: BidStatus.ACCEPTED,
-                placedAt: new Date().toISOString(),
+                placedAt: payload.placedAt || new Date().toISOString(),
                 bidder: {
                   id: payload.bidderId,
                   fullName: payload.bidderName,
                 },
               };
+              const updatedBids = upsertBidList(prev.bids, newBid);
+              const accurateCount = payload.totalBidsCount ?? updatedBids.length;
+
+              const updatedItems = prev.items?.map((item) => {
+                if (item.id === payload.auctionItemId) {
+                  return {
+                    ...item,
+                    currentHighestBid: validBid,
+                    currentHighestBidderId: payload.bidderId,
+                    totalBidsCount: accurateCount,
+                  };
+                }
+                return item;
+              });
+
               return {
                 ...prev,
-                currentHighestBid: payload.bidAmount,
+                currentHighestBid: validBid,
                 currentHighestBidderId: payload.bidderId,
-                totalBidsCount: (prev.totalBidsCount || 0) + 1,
-                bids: [newBid, ...(prev.bids || [])],
+                totalBidsCount: accurateCount,
+                bids: updatedBids,
+                items: updatedItems || prev.items,
               };
             });
           });
@@ -196,6 +325,15 @@ export const AuctionPage: React.FC = () => {
           socketClient.onTimeExtended((payload) => {
             if (!isMounted) return;
             setTimeLeft((prev) => prev + payload.extendedBySeconds);
+            setActiveAuction((prev) => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                endTime: payload.newEndTime || prev.endTime,
+                status: AuctionStatus.EXTENDED,
+                isExtended: true,
+              };
+            });
             setBidSuccessToast(
               `Phiên đấu giá được tự động gia hạn thêm ${payload.extendedBySeconds}s (Anti-Sniping)!`,
             );
@@ -205,7 +343,6 @@ export const AuctionPage: React.FC = () => {
           setActiveAuction(null);
         }
 
-        // Tải danh sách các phiên tương tự thật từ API database
         const res = await getAuctionsApi({ limit: 8 });
         if (isMounted && res?.items && res.items.length > 0) {
           const otherAuctions = res.items.filter((a) => a.id !== auctionData?.id);
@@ -213,7 +350,6 @@ export const AuctionPage: React.FC = () => {
             const mapped: SimilarWatch[] = otherAuctions.map((a) => {
               const isLive = a.status === 'ACTIVE' || a.status === 'EXTENDED';
               const aHasItems = Boolean(a.items && a.items.length > 0) || Boolean(a.product);
-              // ƯU TIÊN 1: Banner chính thức do Admin tạo cho phiên (imageUrl)
               const img =
                 (a.imageUrl && a.imageUrl.trim().length > 0
                   ? formatAuctionImage(a.imageUrl)
@@ -239,7 +375,25 @@ export const AuctionPage: React.FC = () => {
                 image: img,
                 priceLabel: isLive ? 'Giá hiện tại:' : 'Khởi điểm:',
                 price: `${currentBid.toLocaleString('vi-VN')} đ`,
-                usdPrice: `(≈ $${Math.round(currentBid / 24000).toLocaleString('en-US')} USD)`,
+                usdPrice: (() => {
+                  if (currentBid <= 0) return '(≈ $0 USD)';
+                  const rawUsd = currentBid / 24000;
+                  const formatted =
+                    rawUsd < 10
+                      ? new Intl.NumberFormat('en-US', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(rawUsd)
+                      : rawUsd < 1000
+                        ? new Intl.NumberFormat('en-US', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          }).format(rawUsd)
+                        : new Intl.NumberFormat('en-US', {
+                            maximumFractionDigits: 0,
+                          }).format(Math.round(rawUsd));
+                  return `(≈ $${formatted} USD)`;
+                })(),
                 statusLabel: isLive ? 'Trạng thái:' : 'Thời gian:',
                 statusVal: isLive
                   ? 'Đang diễn ra'
@@ -272,7 +426,7 @@ export const AuctionPage: React.FC = () => {
       isMounted = false;
       socketClient?.disconnect();
     };
-  }, [id]);
+  }, [id, resolveLeadingBidderLabel, upsertBidList]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -281,48 +435,93 @@ export const AuctionPage: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+  const formatVND = (amount: number): string => {
+    const val = Number(amount) || 0;
+    return new Intl.NumberFormat('vi-VN').format(val) + ' đ';
   };
 
-  const handleCloseShowcase = useCallback(() => {
+  const handleCloseShowcase = useCallback((): void => {
     setShow3DShowcase(false);
     setPlaybackMode('admin-replay');
   }, []);
 
-  const handleBidSuccess = async (amount: number) => {
+  const handleSelectLot = useCallback(
+    (idx: number): void => {
+      setSelectedLotIndex(idx);
+      setSelectedThumb(0);
+      const targetLot = activeAuction?.items?.[idx];
+      const hasLotBids = Boolean(
+        (targetLot && Number(targetLot.totalBidsCount) > 0) ||
+        (targetLot && Number(targetLot.currentHighestBid) > 0),
+      );
+      setCurrentPrice(hasLotBids ? Number(targetLot?.currentHighestBid) || 0 : 0);
+      setLeadingBidder(resolveLeadingBidderLabel(targetLot, activeAuction));
+    },
+    [activeAuction, resolveLeadingBidderLabel],
+  );
+
+  const handleBidSuccess = async (amount: number): Promise<void> => {
     if (!activeAuction?.id) return;
 
     try {
-      const res = await placeBidApi(activeAuction.id, { bidAmount: amount });
-      setCurrentPrice(res.currentHighestBid);
-      setLeadingBidder('Bạn (Tài khoản hiện tại)');
+      const res = await placeBidApi(activeAuction.id, {
+        bidAmount: amount,
+        auctionItemId: currentLot?.id,
+      });
+      const newPrice = Number(res?.bidAmount ?? res?.currentHighestBid ?? amount);
+      setCurrentPrice(newPrice);
+      const currentUser = userRef.current;
+      const myName = currentUser?.fullName || 'Bạn';
+      setLeadingBidder(`${myName} (Bạn)`);
 
-      // Cập nhật lượt đặt giá mới vào danh sách
       const myNewBid: AuctionBidItem = {
         id: res.bidId,
-        bidAmount: res.bidAmount,
+        bidAmount: newPrice,
         status: BidStatus.ACCEPTED,
         placedAt: new Date().toISOString(),
         bidder: {
-          id: 'current-user',
-          fullName: 'Bạn (Tài khoản hiện tại)',
+          id: currentUser?.id || 'current-user',
+          fullName: myName,
         },
       };
 
       setActiveAuction((prev) => {
         if (!prev) return null;
+        const updatedBids = upsertBidList(prev.bids, myNewBid);
+        const accurateCount = res.totalBidsCount ?? updatedBids.length;
+
+        const updatedItems = prev.items?.map((item, idx) => {
+          if (item.id === currentLot?.id || (!currentLot?.id && idx === 0)) {
+            return {
+              ...item,
+              currentHighestBid: newPrice,
+              currentHighestBidderId: currentUser?.id || 'current-user',
+              totalBidsCount: accurateCount,
+            };
+          }
+          return item;
+        });
+
+        const isoEndTime = res.endTime
+          ? typeof res.endTime === 'string'
+            ? res.endTime
+            : new Date(res.endTime).toISOString()
+          : prev.endTime;
+
         return {
           ...prev,
-          currentHighestBid: res.currentHighestBid,
-          currentHighestBidderId: 'current-user',
-          totalBidsCount: (prev.totalBidsCount || 0) + 1,
-          bids: [myNewBid, ...(prev.bids || [])],
+          currentHighestBid: newPrice,
+          currentHighestBidderId: currentUser?.id || 'current-user',
+          totalBidsCount: accurateCount,
+          bids: updatedBids,
+          items: updatedItems || prev.items,
+          endTime: isoEndTime,
+          ...(res.extended ? { status: AuctionStatus.EXTENDED, isExtended: true } : {}),
         };
       });
 
       setBidSuccessToast(
-        `Đặt giá thành công: ${formatVND(amount)}! Số dư ví NEXUS Pay đã được khóa cọc 10% an toàn.`,
+        `Đặt giá thành công: ${formatVND(newPrice)}! Số dư ví NEXUS Pay đã được khóa cọc 10% an toàn.`,
       );
       setTimeout(() => setBidSuccessToast(null), 4500);
     } catch (err: unknown) {
@@ -336,7 +535,7 @@ export const AuctionPage: React.FC = () => {
     }
   };
 
-  const handleToggleSimilarLike = (targetId: string) => {
+  const handleToggleSimilarLike = (targetId: string): void => {
     setLikedSimilar((prev) => ({ ...prev, [targetId]: !prev[targetId] }));
   };
 
@@ -399,7 +598,6 @@ export const AuctionPage: React.FC = () => {
       src: url,
     }));
   } else if (activeAuction.imageUrl && activeAuction.imageUrl.trim().length > 0) {
-    // ƯU TIÊN 1: Khi Seller chưa đưa lô hàng lên, hiển thị chính xác Banner phiên do Admin tạo!
     rawThumbnails = [
       {
         label: 'Banner đại diện phiên đấu giá (Admin khởi tạo)',
@@ -413,7 +611,6 @@ export const AuctionPage: React.FC = () => {
     }));
   }
 
-  // Không dùng ảnh giả lập, chỉ dùng ảnh thật từ dữ liệu
   const dynamicThumbnails = rawThumbnails;
   const hasLots = Boolean(activeAuction.items && activeAuction.items.length > 0);
   const hasItems = hasLots || Boolean(activeAuction.product);
@@ -422,7 +619,6 @@ export const AuctionPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      {/* Toast notification */}
       {bidSuccessToast && (
         <div className="fixed top-20 right-6 z-[2500] flex items-center gap-3 bg-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl animate-bounce">
           <CheckCircle2 className="w-5 h-5 text-white" />
@@ -437,7 +633,6 @@ export const AuctionPage: React.FC = () => {
         </div>
       )}
 
-      {/* MÀN HÌNH RẠP CHIẾU 3D SHOWCASE TRIỂN LÃM BẢO TÀNG */}
       {show3DShowcase && activeAuction && (
         <AuctionShowcaseHUD
           auctionTitle={activeAuction.title}
@@ -450,23 +645,18 @@ export const AuctionPage: React.FC = () => {
         />
       )}
 
-      {/* PHƯƠNG ÁN KẾT HỢP A & B: MÀN HÌNH RẠP CHIẾU CINEMATIC INTRO TỰ ĐỘNG MỞ KHI VÀO SÀN HOẶC KHI BẤM PHÓNG TO */}
       <CinematicAuctionIntro
         isOpen={showCinematicIntro}
         onClose={() => setShowCinematicIntro(false)}
         auction={activeAuction}
         currentLot={currentLot}
         selectedLotIndex={selectedLotIndex}
-        onSelectLot={(idx) => {
-          setSelectedLotIndex(idx);
-          setSelectedThumb(0);
-        }}
+        onSelectLot={handleSelectLot}
         initialTime={videoPlaybackTime}
         onTimeSync={(t) => setVideoPlaybackTime(t)}
       />
 
       <main className="max-w-7xl mx-auto px-4 py-5 pb-14">
-        {/* Breadcrumb Navigation */}
         <div className="flex items-center justify-between mb-5 text-[13px] text-slate-500">
           <nav className="flex items-center gap-2 flex-wrap" aria-label="Breadcrumb">
             <Link to="/" className="text-slate-500 hover:text-rose-500 transition">
@@ -507,7 +697,6 @@ export const AuctionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* MULTI-LOT SELECTION STRIP (Nhiều sản phẩm trong 1 phiên) */}
         {activeAuction.items && activeAuction.items.length > 1 && (
           <div className="mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
@@ -540,10 +729,7 @@ export const AuctionPage: React.FC = () => {
                   <button
                     key={lot.id || idx}
                     type="button"
-                    onClick={() => {
-                      setSelectedLotIndex(idx);
-                      setSelectedThumb(0);
-                    }}
+                    onClick={() => handleSelectLot(idx)}
                     className={`flex items-center gap-3 p-2.5 px-3.5 rounded-xl border text-left cursor-pointer transition shrink-0 max-w-xs ${
                       isSelected
                         ? 'border-blue-600 bg-blue-50/70 shadow-sm ring-2 ring-blue-600/30'
@@ -622,6 +808,7 @@ export const AuctionPage: React.FC = () => {
             hasItems={hasItems}
             hasBanner={hasBanner}
             hasVideo={hasVideo}
+            timeLeft={timeLeft}
           />
 
           {/* RIGHT: BID TERMINAL */}

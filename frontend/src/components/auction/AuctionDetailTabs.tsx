@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShieldCheck,
   Sliders,
@@ -11,7 +11,9 @@ import {
 } from 'lucide-react';
 import type { AuctionTabKey } from './types';
 import type { AuctionEntity, AuctionConsignmentItem } from '../../services/auction.service';
+import type { AuctionBidItem } from '../../types/auction-api.types';
 import { getShopReviewsApi, type ShopReviewItem } from '../../services/reviews.service';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface AuctionDetailTabsProps {
   activeTab: AuctionTabKey;
@@ -28,10 +30,46 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
   selectedItem,
   hasItems: _hasItems,
 }) => {
+  const { user: currentUser } = useAuth();
   const hasItems =
     _hasItems ??
     Boolean(selectedItem || auction?.product || (auction?.items && auction.items.length > 0));
-  const bidsCount = auction?.bids?.length || auction?.totalBidsCount || 0;
+
+  const uniqueBids = useMemo(() => {
+    if (!auction?.bids || auction.bids.length === 0) return [];
+    const seenIds = new Set<string>();
+    const seenCombos = new Set<string>();
+    const result: AuctionBidItem[] = [];
+
+    for (const b of auction.bids) {
+      if (b.id && seenIds.has(b.id)) continue;
+      if (b.id) seenIds.add(b.id);
+
+      // Phòng ngừa trường hợp cùng 1 lượt đặt giá vừa nhận từ REST vừa nhận từ WebSocket
+      const bidderIdentifier =
+        b.bidder?.id ||
+        (b.bidder?.fullName?.toLowerCase().includes('tài khoản hiện tại')
+          ? 'current-user'
+          : b.bidder?.fullName) ||
+        'unknown';
+      const comboKey = `${bidderIdentifier}-${Number(b.bidAmount)}`;
+      if (seenCombos.has(comboKey)) continue;
+      seenCombos.add(comboKey);
+
+      result.push(b);
+    }
+
+    return result.sort((a, b) => {
+      const timeA = new Date(a.placedAt).getTime();
+      const timeB = new Date(b.placedAt).getTime();
+      if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
+        return timeB - timeA;
+      }
+      return Number(b.bidAmount) - Number(a.bidAmount);
+    });
+  }, [auction?.bids]);
+
+  const bidsCount = uniqueBids.length || auction?.totalBidsCount || 0;
   const [reviews, setReviews] = useState<ShopReviewItem[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
@@ -305,9 +343,11 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                     <td className="py-2.5 text-slate-900 font-bold">
                       {activeItem?.startingPrice
                         ? `${Number(activeItem.startingPrice).toLocaleString('vi-VN')} đ`
-                        : auction?.startingPrice
-                          ? `${Number(auction.startingPrice).toLocaleString('vi-VN')} đ`
-                          : 'Chưa thiết lập'}
+                        : activeItem?.proposedStartingPrice
+                          ? `${Number(activeItem.proposedStartingPrice).toLocaleString('vi-VN')} đ`
+                          : auction?.startingPrice
+                            ? `${Number(auction.startingPrice).toLocaleString('vi-VN')} đ`
+                            : 'Chưa thiết lập'}
                     </td>
                   </tr>
                   <tr>
@@ -315,9 +355,13 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                       Bước giá tối thiểu (+Increment)
                     </td>
                     <td className="py-2.5 text-blue-600 font-bold">
-                      {auction?.bidIncrement
-                        ? `+${Number(auction.bidIncrement).toLocaleString('vi-VN')} đ`
-                        : '+1.000.000 đ'}
+                      {activeItem?.bidIncrement
+                        ? `+${Number(activeItem.bidIncrement).toLocaleString('vi-VN')} đ`
+                        : activeItem?.proposedBidIncrement
+                          ? `+${Number(activeItem.proposedBidIncrement).toLocaleString('vi-VN')} đ`
+                          : auction?.bidIncrement
+                            ? `+${Number(auction.bidIncrement).toLocaleString('vi-VN')} đ`
+                            : '+1.000 đ'}
                     </td>
                   </tr>
                   <tr>
@@ -380,7 +424,7 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
         {/* TAB 3: BID HISTORY */}
         {activeTab === 'history' && (
           <div>
-            {!auction?.bids || auction.bids.length === 0 ? (
+            {uniqueBids.length === 0 ? (
               <div className="py-12 text-center text-slate-400 text-xs">
                 Chưa có lượt đặt giá nào. Hãy là người đầu tiên trả giá để sở hữu hiện vật!
               </div>
@@ -397,36 +441,56 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {auction.bids.map((bid, idx) => (
-                      <tr key={bid.id || idx} className={idx === 0 ? 'bg-amber-50/40' : ''}>
-                        <td className="p-3 font-semibold text-slate-800">
-                          {bid.bidder?.fullName || 'Người dùng ***'}
-                        </td>
-                        <td
-                          className={`p-3 font-bold ${idx === 0 ? 'text-rose-600 text-sm' : 'text-slate-800'}`}
-                        >
-                          {Number(bid.bidAmount).toLocaleString('vi-VN')} đ
-                        </td>
-                        <td className="p-3 text-slate-500">
-                          {new Date(bid.placedAt).toLocaleTimeString('vi-VN')} (
-                          {new Date(bid.placedAt).toLocaleDateString('vi-VN')})
-                        </td>
-                        <td className="p-3">
-                          <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                            ✓ Đã khóa cọc 100%
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          {idx === 0 ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                              Dẫn đầu 👑
+                    {uniqueBids.map((bid, idx) => {
+                      const isMe =
+                        (currentUser?.id && bid.bidder?.id === currentUser.id) ||
+                        (currentUser?.fullName && bid.bidder?.fullName === currentUser.fullName) ||
+                        bid.bidder?.fullName?.toLowerCase().includes('tài khoản hiện tại') ||
+                        bid.bidder?.id === 'current-user';
+
+                      const rawName = bid.bidder?.fullName || 'Người dùng ***';
+                      const displayName = isMe
+                        ? currentUser?.fullName || rawName.replace(' (Tài khoản hiện tại)', '')
+                        : rawName;
+
+                      return (
+                        <tr key={bid.id || idx} className={idx === 0 ? 'bg-amber-50/40' : ''}>
+                          <td className="p-3 font-semibold text-slate-800">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{displayName}</span>
+                              {isMe && (
+                                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-full">
+                                  Bạn
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td
+                            className={`p-3 font-bold ${idx === 0 ? 'text-rose-600 text-sm' : 'text-slate-800'}`}
+                          >
+                            {Number(bid.bidAmount).toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="p-3 text-slate-500">
+                            {new Date(bid.placedAt).toLocaleTimeString('vi-VN')} (
+                            {new Date(bid.placedAt).toLocaleDateString('vi-VN')})
+                          </td>
+                          <td className="p-3">
+                            <span className="text-emerald-600 font-semibold flex items-center gap-1">
+                              ✓ Đã khóa cọc 100%
                             </span>
-                          ) : (
-                            <span className="text-slate-400">Bị vượt giá</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="p-3">
+                            {idx === 0 ? (
+                              <span className="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                Dẫn đầu 👑
+                              </span>
+                            ) : (
+                              <span className="text-slate-400">Bị vượt giá</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
