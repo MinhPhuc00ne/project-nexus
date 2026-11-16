@@ -69,6 +69,7 @@ export class SellerEngagementService {
                   id: true,
                   quantity: true,
                   unitPrice: true,
+                  titleSnapshot: true,
                   product: {
                     select: {
                       id: true,
@@ -76,6 +77,7 @@ export class SellerEngagementService {
                       images: { take: 1, orderBy: { sortOrder: 'asc' } },
                     },
                   },
+                  auctionItem: { select: { title: true, images: true } },
                 },
               },
             },
@@ -115,10 +117,11 @@ export class SellerEngagementService {
         totalAmount: Number(r.order.totalAmount),
         items: r.order.items.map((it) => ({
           id: it.id,
-          title: it.product?.title || '',
+          title:
+            it.product?.title || it.auctionItem?.title || it.titleSnapshot || 'Sản phẩm đấu giá',
           quantity: it.quantity,
           unitPrice: Number(it.unitPrice),
-          thumbnail: it.product?.images?.[0]?.imageUrl || null,
+          thumbnail: it.product?.images?.[0]?.imageUrl || it.auctionItem?.images?.[0] || null,
         })),
       },
     }));
@@ -185,6 +188,7 @@ export class SellerEngagementService {
                   id: true,
                   quantity: true,
                   unitPrice: true,
+                  titleSnapshot: true,
                   product: {
                     select: {
                       id: true,
@@ -192,6 +196,7 @@ export class SellerEngagementService {
                       images: { take: 1, orderBy: { sortOrder: 'asc' } },
                     },
                   },
+                  auctionItem: { select: { title: true, images: true } },
                 },
               },
             },
@@ -228,10 +233,11 @@ export class SellerEngagementService {
         status: d.order.status,
         items: d.order.items.map((it) => ({
           id: it.id,
-          title: it.product?.title || '',
+          title:
+            it.product?.title || it.auctionItem?.title || it.titleSnapshot || 'Sản phẩm đấu giá',
           quantity: it.quantity,
           unitPrice: Number(it.unitPrice),
-          thumbnail: it.product?.images?.[0]?.imageUrl || null,
+          thumbnail: it.product?.images?.[0]?.imageUrl || it.auctionItem?.images?.[0] || null,
         })),
       },
     }));
