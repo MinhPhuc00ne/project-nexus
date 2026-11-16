@@ -21,6 +21,7 @@ import { getStoredToken, getStoredUser } from '../../services/auth';
 import { createNotificationConnection } from '../../services/notificationSocket';
 import type { UserNotification } from '../../types/notification.types';
 import NotificationPreferencesModal from '../notifications/NotificationPreferencesModal';
+import { resolveNotificationTargetUrl } from '../../utils/notificationNavigation';
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -127,10 +128,13 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
   const handleNotificationClick = (item: UserNotification) => {
     void handleMarkOne(item);
-    if (item.targetUrl?.startsWith('/') && !item.targetUrl.startsWith('//')) {
-      navigate(item.targetUrl);
-      onClose?.();
+    const destination = resolveNotificationTargetUrl(item);
+    if (destination.startsWith('/') && !destination.startsWith('//')) {
+      navigate(destination);
+    } else {
+      window.location.assign(destination);
     }
+    onClose?.();
   };
 
   const getIconForType = (type: string) => {
@@ -187,7 +191,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
   return (
     <>
-      <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+8px)] z-[1100] w-[370px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-[-100px] sm:right-[-40px] md:right-0 top-[calc(100%+8px)] z-[1100] w-[360px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
           <div className="flex items-center gap-2">
@@ -245,7 +249,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               <div
                 key={item.id}
                 onClick={() => handleNotificationClick(item)}
-                className={`flex gap-3 px-4 py-3 transition-colors hover:bg-slate-50/80 cursor-pointer ${
+                className={`group flex gap-3 px-4 py-3 transition-colors hover:bg-slate-50/80 cursor-pointer ${
                   !item.isRead ? 'bg-orange-50/40' : ''
                 }`}
               >
@@ -269,9 +273,15 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     {item.content}
                   </p>
 
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                    <Clock size={10} />
-                    <span>{formatTime(item.createdAt)}</span>
+                  <div className="flex items-center justify-between gap-1 text-[10px] text-slate-400">
+                    <span className="flex items-center gap-1">
+                      <Clock size={10} />
+                      <span>{formatTime(item.createdAt)}</span>
+                    </span>
+                    <span className="text-blue-600 font-semibold text-[10px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                      <span>Mở</span>
+                      <ArrowRight size={10} />
+                    </span>
                   </div>
                 </div>
               </div>

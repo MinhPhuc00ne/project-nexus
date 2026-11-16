@@ -188,6 +188,7 @@ test('unavailable variants and products are reported without changing quantities
   assert.equal(result.cart.items[0].isUnavailable, true);
   assert.equal(result.cart.items[0].isOutOfStock, true);
   assert.equal(result.cart.items[0].quantity, 2);
+  assert.doesNotMatch(result.reply, /Trang 1\/1/);
 });
 
 test('guest history, sales and cart queries never reach database or Gemini', async () => {
@@ -417,7 +418,12 @@ test('purchase queries like "Tôi đã mua gì?" show readable product names and
       ],
     },
   ]);
-  for (const question of ['Tôi đã mua gì?', 'Mình đã mua những gì?']) {
+  for (const question of [
+    'Tôi đã mua gì?',
+    'Mình đã mua những gì?',
+    'tôi đã mua những hàng gì',
+    'Tôi vừa mua sản phẩm nào?',
+  ]) {
     const result = await f.bot.reply('me', { message: question });
     assert.equal(result.engine, 'ORDER', question);
     assert.equal(result.orders.scope, 'PURCHASES', question);
@@ -462,4 +468,401 @@ test('latest order defaults limit to 1, clear-filter resets status, and guest fo
   assert.deepEqual(guestFollowUp.actions, [{ type: 'LOGIN' }]);
   assert.equal(f.ai.answer.mock.callCount(), 0);
   assert.equal(f.prisma.$transaction.mock.callCount(), readsBeforeGuest);
+});
+
+test('buying prompts search active products and auctions or explicitly state none exist', async () => {
+  const f = fixture();
+  const sampleProducts = [
+    {
+      id: 'prod-watch',
+      title: 'Đồng hồ Rolex Submariner',
+      description: 'Đồng hồ cơ cao cấp',
+      basePrice: 250000000,
+      salePrice: null,
+      saleStartsAt: null,
+      saleEndsAt: null,
+      category: { name: 'Đồng hồ' },
+      inventories: [{ availableQty: 3 }],
+    },
+    {
+      id: 'prod-headset',
+      title: 'Tai nghe có dây Extra Bass',
+      description: 'Âm thanh rõ nét',
+      basePrice: 45000,
+      salePrice: null,
+      saleStartsAt: null,
+      saleEndsAt: null,
+      category: { name: 'Công nghệ' },
+      inventories: [{ availableQty: 12 }],
+    },
+  ];
+  const sampleAuctions = [
+    {
+      id: 'auc-room-1',
+      title: 'Phiên Bảo Vật NEXUS',
+      description: 'Đấu giá tổng hợp',
+      status: 'SCHEDULED',
+      startingPrice: 0,
+      currentHighestBid: 0,
+      items: [
+        {
+          id: 'lot-watch',
+          title: 'Đồng hồ cơ Patek Philippe Skeleton',
+          description: 'Phiên bản giới hạn',
+          lotStatus: 'ACTIVE',
+          startingPrice: 85000000,
+          proposedStartingPrice: 85000000,
+          currentHighestBid: 92000000,
+        },
+        {
+          id: 'lot-diamond',
+          title: 'Viên Kim Cương GIA 5.2 Carat',
+          description: 'Trang sức cao cấp',
+          lotStatus: 'SCHEDULED',
+          startingPrice: 480000000,
+          proposedStartingPrice: 480000000,
+          currentHighestBid: 0,
+        },
+      ],
+    },
+  ];
+  f.prisma.product = { findMany: mock.fn(async () => sampleProducts) };
+  f.prisma.auction = { findMany: mock.fn(async () => sampleAuctions) };
+
+  const both = await f.bot.reply('me', { message: 'Tôi muốn mua đồng hồ' });
+  assert.equal(both.engine, 'ORDER');
+  assert.match(both.reply, /Sản phẩm đang bán:/);
+  assert.match(both.reply, /Đồng hồ Rolex Submariner/);
+  assert.match(both.reply, /Đấu giá:/);
+  assert.match(both.reply, /Đồng hồ cơ Patek Philippe Skeleton/);
+  assert.match(both.reply, /92\.000\.000 đ/);
+
+  const onlyProduct = await f.bot.reply('me', { message: 'Cần mua tai nghe' });
+  assert.match(onlyProduct.reply, /Tai nghe có dây Extra Bass/);
+  assert.match(onlyProduct.reply, /Đấu giá: Không có phiên đấu giá phù hợp\./);
+
+  const onlyAuction = await f.bot.reply('me', { message: 'Có đấu giá kim cương không?' });
+  assert.match(onlyAuction.reply, /Sản phẩm đang bán: Không có sản phẩm phù hợp\./);
+  assert.match(onlyAuction.reply, /Viên Kim Cương GIA 5\.2 Carat/);
+
+  const missing = await f.bot.reply('me', { message: 'Tôi muốn mua tủ lạnh' });
+  assert.equal(missing.engine, 'ORDER');
+  assert.match(missing.reply, /không có sản phẩm hay phiên đấu giá nào phù hợp/i);
+
+  const guestBuy = await f.bot.replyGuest('peer', { message: 'Có bán đồng hồ không' });
+  assert.match(guestBuy.reply, /Đồng hồ Rolex Submariner/);
+  assert.match(guestBuy.reply, /Đồng hồ cơ Patek Philippe Skeleton/);
+  assert.ok(
+    guestBuy.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/product/prod-watch'),
+  );
+  assert.ok(
+    guestBuy.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction/auc-room-1'),
+  );
+  assert.equal(f.ai.answer.mock.callCount(), 0);
+
+  const navCart = await f.bot.reply('me', { message: 'Chuyển qua trang giỏ hàng' });
+  assert.equal(navCart.actions[0].type, 'NAVIGATE');
+  assert.equal(navCart.actions[0].path, '/cart');
+  assert.equal(navCart.actions[0].auto, true);
+
+  const navOrders = await f.bot.reply('me', { message: 'Mở trang đơn hàng của tôi' });
+  assert.deepEqual(navOrders.actions[0], {
+    type: 'NAVIGATE',
+    path: '/buyer/orders',
+    label: 'Mở Đơn hàng của tôi',
+    auto: true,
+  });
+
+  const navSearch = await f.bot.reply('me', { message: 'Mở trang tìm kiếm đồng hồ' });
+  assert.equal(navSearch.actions[0].path, '/search?q=dong%20ho');
+  assert.equal(navSearch.actions[0].auto, true);
+
+  const navAuctionItem = await f.bot.reply('me', { message: 'Vào đấu giá kim cương' });
+  assert.equal(navAuctionItem.actions[0].path, '/auction/auc-room-1');
+  assert.equal(navAuctionItem.actions[0].auto, true);
+
+  const guestProtectedNav = await f.bot.replyGuest('peer', { message: 'Mở trang đơn hàng' });
+  assert.deepEqual(guestProtectedNav.actions, [{ type: 'LOGIN' }]);
+
+  const guestPublicNav = await f.bot.replyGuest('peer', { message: 'Chuyển sang trang đấu giá' });
+  assert.equal(guestPublicNav.actions[0].type, 'NAVIGATE');
+  assert.equal(guestPublicNav.actions[0].path, '/auction');
+  assert.equal(guestPublicNav.actions[0].auto, true);
+});
+
+test('account eligibility, wallet balance and reputation queries return real account state', async () => {
+  const f = fixture();
+  let mockUser = {
+    role: 'BUYER',
+    isVerified: true,
+    isSellerActive: false,
+    isShopSuspended: false,
+    reputationScore: 95,
+    trustLevel: 'STANDARD',
+    wallet: { balance: 1000000000, lockedBalance: 0 },
+  };
+  f.prisma.user = { findUnique: mock.fn(async () => mockUser) };
+
+  const eligible = await f.bot.reply('me', { message: 'tài khoản tôi đủ điều kiện chưa' });
+  assert.equal(eligible.engine, 'ORDER');
+  assert.match(eligible.reply, /Đủ điều kiện tham gia đấu giá/);
+  assert.match(eligible.reply, /Điểm uy tín của bạn: 95 \(STANDARD\)/);
+  assert.match(eligible.reply, /1\.000\.000\.000 đ/);
+  assert.ok(eligible.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction'));
+
+  const followUp = await f.bot.reply('me', {
+    message: 'được không',
+    history: [{ role: 'user', content: 'tôi muốn đấu giá' }],
+  });
+  assert.match(followUp.reply, /Đủ điều kiện tham gia đấu giá/);
+
+  const walletCheck = await f.bot.reply('me', { message: 'Số dư ví của tôi' });
+  assert.equal(walletCheck.topic, 'WALLET');
+  assert.match(walletCheck.reply, /1\.000\.000\.000 đ/);
+  assert.doesNotMatch(walletCheck.reply, /Điểm uy tín|đấu giá/i);
+  assert.ok(walletCheck.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/buyer/wallet'));
+  assert.equal(
+    walletCheck.actions.some((a) => a.path?.startsWith('/auction')),
+    false,
+  );
+
+  const repCheck = await f.bot.reply('me', { message: 'Điểm uy tín của tôi bao nhiêu?' });
+  assert.equal(repCheck.topic, 'REPUTATION');
+  assert.match(repCheck.reply, /95/);
+  assert.doesNotMatch(repCheck.reply, /Ví NEXUS Pay|đấu giá/i);
+  assert.ok(repCheck.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/buyer/reputation'));
+  assert.equal(
+    repCheck.actions.some((a) => a.path?.startsWith('/auction')),
+    false,
+  );
+
+  mockUser = {
+    role: 'SELLER',
+    isVerified: true,
+    isSellerActive: true,
+    isShopSuspended: false,
+    reputationScore: 30,
+    trustLevel: 'SUSPENDED',
+    wallet: null,
+  };
+  const ineligible = await f.bot.reply('me', { message: 'tài khoản tôi đủ điều kiện chưa' });
+  assert.match(ineligible.reply, /Chưa đủ điều kiện/);
+  assert.match(ineligible.reply, /chế độ Người bán/);
+  assert.match(ineligible.reply, /thấp hơn mức tối thiểu \(40\)/);
+  assert.match(ineligible.reply, /Chưa khởi tạo ví/);
+
+  const guestCheck = await f.bot.replyGuest('peer', {
+    message: 'tài khoản tôi đủ điều kiện chưa',
+  });
+  assert.deepEqual(guestCheck.actions, [{ type: 'LOGIN' }]);
+  assert.equal(f.ai.answer.mock.callCount(), 0);
+});
+
+test('per-auction reputation eligibility lists eligible rooms, filters by name and navigates', async () => {
+  const f = fixture();
+  f.prisma.user = {
+    findUnique: mock.fn(async () => ({
+      role: 'BUYER',
+      isVerified: true,
+      isSellerActive: false,
+      isShopSuspended: false,
+      reputationScore: 95,
+      trustLevel: 'STANDARD',
+      wallet: { balance: 1000000000, lockedBalance: 0 },
+    })),
+  };
+  const auctions = [
+    {
+      id: 'auc-1',
+      title: 'Phiên Bảo Vật NEXUS',
+      description: 'Cổ vật quý hiếm',
+      status: 'ACTIVE',
+      startingPrice: 25000000,
+      currentHighestBid: 0,
+      minBuyerReputation: 40,
+      items: [{ id: 'lot-1', title: 'Đồng hồ cơ Patek', description: 'Vàng 18K' }],
+    },
+    {
+      id: 'auc-2',
+      title: 'Tuyệt Tác Kim Cương Hoàng Gia',
+      description: 'Trang sức cao cấp',
+      status: 'SCHEDULED',
+      startingPrice: 95000000,
+      currentHighestBid: 0,
+      minBuyerReputation: 80,
+      items: [{ id: 'lot-2', title: 'Viên Kim Cương GIA', description: 'Nước D' }],
+    },
+    {
+      id: 'auc-3',
+      title: 'Siêu Xe Sưu Tầm VIP',
+      description: 'Giới hạn điểm cao',
+      status: 'SCHEDULED',
+      startingPrice: 500000000,
+      currentHighestBid: 0,
+      minBuyerReputation: 120,
+      items: [{ id: 'lot-3', title: 'Siêu xe cổ điển', description: 'Độc bản' }],
+    },
+  ];
+  f.prisma.auction = { findMany: mock.fn(async () => auctions) };
+  f.prisma.product = { findMany: mock.fn(async () => []) };
+
+  const all = await f.bot.reply('me', {
+    message: 'Tài khoản tôi đủ điều kiện tham gia phiên đấu giá nào?',
+  });
+  assert.match(all.reply, /ĐỦ điều kiện tham gia \(2\)/);
+  assert.match(all.reply, /Phiên Bảo Vật NEXUS/);
+  assert.match(all.reply, /Tuyệt Tác Kim Cương Hoàng Gia/);
+  assert.match(all.reply, /CHƯA đủ điều kiện \(1\)/);
+  assert.match(all.reply, /Siêu Xe Sưu Tầm VIP/);
+  assert.match(all.reply, /95.*120/);
+  assert.ok(all.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction/auc-1'));
+  assert.ok(all.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction/auc-2'));
+  assert.equal(
+    all.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction/auc-3'),
+    false,
+  );
+
+  const byNameEligible = await f.bot.reply('me', {
+    message: 'Tôi có đủ điều kiện tham gia phiên kim cương không?',
+  });
+  assert.match(byNameEligible.reply, /ĐỦ điều kiện tham gia \(1\)/);
+  assert.match(byNameEligible.reply, /Tuyệt Tác Kim Cương Hoàng Gia/);
+  assert.doesNotMatch(byNameEligible.reply, /Siêu Xe Sưu Tầm VIP/);
+  assert.ok(
+    byNameEligible.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction/auc-2'),
+  );
+
+  const byNameIneligible = await f.bot.reply('me', {
+    message: 'Kiểm tra điều kiện phiên siêu xe',
+  });
+  assert.match(byNameIneligible.reply, /CHƯA đủ điều kiện/);
+  assert.match(byNameIneligible.reply, /Siêu Xe Sưu Tầm VIP/);
+  assert.doesNotMatch(byNameIneligible.reply, /Phiên Bảo Vật NEXUS/);
+
+  const byMissingName = await f.bot.reply('me', {
+    message: 'Đủ điều kiện phiên tủ lạnh không?',
+  });
+  assert.match(byMissingName.reply, /không có phiên đấu giá nào.*tu lanh/i);
+
+  const goRoom = await f.bot.reply('me', { message: 'Vào phiên kim cương' });
+  assert.equal(goRoom.actions[0].type, 'NAVIGATE');
+  assert.equal(goRoom.actions[0].path, '/auction/auc-2');
+  assert.equal(goRoom.actions[0].auto, true);
+
+  const ruleQuestion = await f.bot.reply('me', {
+    message: 'bao nhiêu uy tín thì đủ điều kiện tham gia đấu giá ?',
+  });
+  assert.equal(ruleQuestion.topic, 'AUCTION');
+  assert.match(ruleQuestion.reply, /Quy trình/);
+  assert.match(ruleQuestion.reply, /40 điểm uy tín/);
+  assert.doesNotMatch(ruleQuestion.reply, /Điểm uy tín của bạn/);
+  assert.ok(ruleQuestion.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction'));
+
+  const processQuestion = await f.bot.reply('me', {
+    message: 'giờ tao muốn mua đơn hàng đấu giá, hướng dẫn quy trình cho t',
+  });
+  assert.equal(processQuestion.topic, 'AUCTION');
+  assert.match(processQuestion.reply, /Quy trình/);
+  assert.match(processQuestion.reply, /24 giờ/);
+  assert.ok(processQuestion.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/auction'));
+  assert.ok(processQuestion.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/buyer/bids'));
+
+  const howToOrderHistory = await f.bot.reply('me', {
+    message: 'làm thế nào để xem lịch sử mua hàng',
+  });
+  assert.equal(howToOrderHistory.topic, 'ORDER');
+  assert.match(howToOrderHistory.reply, /Đơn hàng của tôi/);
+  assert.ok(
+    howToOrderHistory.actions.some((a) => a.type === 'NAVIGATE' && a.path === '/buyer/orders'),
+  );
+});
+
+test('cart affordability and eligibility checks filter items by budget and stock availability', async () => {
+  const f = fixture('BUYER', {
+    expiresAt: new Date(Date.now() + 60000),
+    items: [
+      cartLine({
+        id: 'pin',
+        productId: 'p-pin',
+        quantity: 1,
+        priceAtAdded: 15000,
+        product: {
+          id: 'p-pin',
+          title: 'Vỉ 5 viên pin cúc áo Maxell',
+          basePrice: 15000,
+          salePrice: null,
+          saleStartsAt: null,
+          saleEndsAt: null,
+          status: 'ACTIVE',
+          images: [],
+          options: [],
+          seller: { id: 'shop', fullName: 'Shop', avatarUrl: null, isShopSuspended: false },
+          inventories: [{ availableQty: 5 }],
+        },
+      }),
+      cartLine({
+        id: 'loupe',
+        productId: 'p-loupe',
+        quantity: 1,
+        priceAtAdded: 29000,
+        product: {
+          id: 'p-loupe',
+          title: 'Kính lúp thợ kim hoàn 10x',
+          basePrice: 29000,
+          salePrice: null,
+          saleStartsAt: null,
+          saleEndsAt: null,
+          status: 'ACTIVE',
+          images: [],
+          options: [],
+          seller: { id: 'shop', fullName: 'Shop', avatarUrl: null, isShopSuspended: false },
+          inventories: [{ availableQty: 5 }],
+        },
+      }),
+      cartLine({
+        id: 'oos',
+        productId: 'p-oos',
+        quantity: 1,
+        priceAtAdded: 10000,
+        product: {
+          id: 'p-oos',
+          title: 'Dây đeo hết hàng',
+          basePrice: 10000,
+          salePrice: null,
+          saleStartsAt: null,
+          saleEndsAt: null,
+          status: 'ACTIVE',
+          images: [],
+          options: [],
+          seller: { id: 'shop', fullName: 'Shop', avatarUrl: null, isShopSuspended: false },
+          inventories: [{ availableQty: 0 }],
+        },
+      }),
+    ],
+  });
+
+  const affordable = await f.bot.reply('me', {
+    message:
+      'giờ tài chính của t còn 15 ngàn, m kiểm tra xem trong giỏ hàng của t có sản phẩm nào đủ điều kiện mua không ?',
+  });
+  assert.equal(affordable.engine, 'CART');
+  assert.match(affordable.reply, /ngân sách 15\.000 đ/);
+  assert.match(affordable.reply, /Vỉ 5 viên pin cúc áo Maxell/);
+  assert.doesNotMatch(affordable.reply, /Kính lúp thợ kim hoàn/);
+  assert.doesNotMatch(affordable.reply, /Dây đeo hết hàng/);
+  assert.match(affordable.reply, /phí giao hàng/);
+
+  const tooLow = await f.bot.reply('me', {
+    message: 'ngân sách 10k trong giỏ hàng có sản phẩm nào đủ điều kiện mua không',
+  });
+  assert.match(tooLow.reply, /không có sản phẩm nào trong giỏ hàng đủ điều kiện mua/i);
+  assert.match(tooLow.reply, /15\.000 đ/);
+
+  const stockOnly = await f.bot.reply('me', {
+    message: 'trong giỏ hàng có sản phẩm nào đủ điều kiện mua không',
+  });
+  assert.match(stockOnly.reply, /có 2 sản phẩm đủ điều kiện mua ngay/);
+  assert.match(stockOnly.reply, /Vỉ 5 viên pin cúc áo Maxell/);
+  assert.match(stockOnly.reply, /Kính lúp thợ kim hoàn/);
+  assert.doesNotMatch(stockOnly.reply, /Dây đeo hết hàng/);
 });

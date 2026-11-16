@@ -261,25 +261,26 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
   return (
     <header className="home-header sticky top-0 z-[1000] w-full bg-white font-sans shadow-sm">
-      <div className="hidden h-9 border-b border-slate-200 bg-slate-50 text-[13px] text-slate-500 lg:flex">
-        <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-4">
-          <div className="flex items-center gap-2.5">
+      <div className="h-9 border-b border-slate-200 bg-slate-50 text-[12px] sm:text-[13px] text-slate-500 flex items-center">
+        <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-2 sm:px-4 py-1 gap-2">
+          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
             <button
               type="button"
               onClick={handleToggleSeller}
               disabled={isTogglingSeller}
-              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer whitespace-nowrap"
               title={
                 profile?.role === 'SELLER' || profile?.role === 'ADMIN'
                   ? 'Bấm để Bật/Tắt chế độ Người bán'
                   : 'Đăng ký trở thành Người bán'
               }
             >
-              <Store size={14} />
-              <span>Kênh Người Bán</span>
+              <Store size={14} className="shrink-0" />
+              <span className="hidden lg:inline">Kênh Người Bán</span>
+              <span className="lg:hidden">Người Bán</span>
               {(profile?.role === 'SELLER' || profile?.role === 'ADMIN') && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+                  className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-bold ${
                     profile.isSellerActive
                       ? 'bg-emerald-100 text-emerald-700'
                       : 'bg-slate-200 text-slate-600'
@@ -290,26 +291,30 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               )}
             </button>
 
-            <span className="text-xs text-slate-200">|</span>
+            <span className="text-xs text-slate-300">|</span>
 
             <button
               type="button"
               onClick={handleOpenUpgradeModal}
-              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer whitespace-nowrap"
             >
-              <ShoppingBag size={14} />
-              <span>{profile?.role === 'SELLER' ? 'Hồ sơ Người Bán' : 'Trở thành Seller'}</span>
+              <ShoppingBag size={14} className="shrink-0" />
+              <span className="hidden lg:inline">
+                {profile?.role === 'SELLER' ? 'Hồ sơ Người Bán' : 'Trở thành Seller'}
+              </span>
+              <span className="lg:hidden">Seller</span>
             </button>
 
-            <span className="text-xs text-slate-200">|</span>
+            <span className="text-xs text-slate-300">|</span>
 
             <div
-              className="relative inline-flex cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+              className="relative inline-flex cursor-pointer items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap"
               onMouseEnter={() => setShowAppQrModal(true)}
               onMouseLeave={() => setShowAppQrModal(false)}
             >
-              <Smartphone size={14} />
-              <span>Tải Ứng Dụng</span>
+              <Smartphone size={14} className="shrink-0" />
+              <span className="hidden lg:inline">Tải Ứng Dụng</span>
+              <span className="lg:hidden">Tải App</span>
 
               {showAppQrModal && (
                 <div className="absolute left-0 top-full z-[1010] mt-2">
@@ -338,19 +343,19 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               )}
             </div>
 
-            <span className="text-xs text-slate-200">|</span>
+            <span className="text-xs text-slate-300">|</span>
 
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-500">Kết nối:</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
+              <span className="text-xs text-slate-500 hidden xl:inline">Kết nối:</span>
 
               <a
                 href="https://facebook.com"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center justify-center text-slate-500 transition-colors hover:text-[#1c3973]"
-                title="Globe"
+                title="Facebook"
               >
-                <Globe size={15} />
+                <Globe size={14} />
               </a>
 
               <a
@@ -358,17 +363,18 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 className="flex items-center justify-center text-slate-500 transition-colors hover:text-[#1c3973]"
                 title="Chat"
               >
-                <MessageSquare size={15} />
+                <MessageSquare size={14} />
               </a>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer"
+                className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer whitespace-nowrap"
                 onClick={() => setShowNotifMenu(!showNotifMenu)}
+                title="Thông Báo"
               >
                 <div className="relative inline-flex">
                   <Bell size={14} />
@@ -380,7 +386,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   )}
                 </div>
 
-                <span>Thông Báo</span>
+                <span className="hidden lg:inline">Thông Báo</span>
               </button>
 
               <NotificationDropdown
@@ -390,31 +396,36 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               />
             </div>
 
-            <span className="text-xs text-slate-200">|</span>
+            <span className="text-xs text-slate-300">|</span>
 
             <a
               href="#help"
-              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap"
+              title="Trợ Giúp"
             >
-              <HelpCircle size={14} />
-              <span>Trợ Giúp</span>
+              <HelpCircle size={14} className="shrink-0" />
+              <span className="hidden lg:inline">Trợ Giúp</span>
             </a>
 
-            <span className="text-xs text-slate-200">|</span>
+            <span className="text-xs text-slate-300">|</span>
 
             <div className="relative" ref={langRef}>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+                className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap"
                 onClick={() => setShowLangMenu(!showLangMenu)}
+                title="Ngôn ngữ"
               >
-                <Globe size={14} />
+                <Globe size={14} className="shrink-0" />
 
-                <span>{languages.find((l) => l.code === currentLang)?.label}</span>
+                <span className="hidden md:inline">
+                  {languages.find((l) => l.code === currentLang)?.label}
+                </span>
+                <span className="md:hidden uppercase text-[11px] font-semibold">{currentLang}</span>
 
                 <ChevronDown
                   size={13}
-                  className={`transition-transform ${showLangMenu ? 'rotate-180' : ''}`}
+                  className={`transition-transform shrink-0 ${showLangMenu ? 'rotate-180' : ''}`}
                 />
               </button>
 
@@ -445,13 +456,13 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               )}
             </div>
 
-            <span className="text-xs text-slate-200">|</span>
+            <span className="text-xs text-slate-300">|</span>
 
             {effectiveLoggedIn ? (
               <div className="relative" ref={userRef}>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap cursor-pointer"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                 >
                   {displayUserAvatar ? (
@@ -459,19 +470,21 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       src={displayUserAvatar}
                       alt={displayUserName}
                       referrerPolicy="no-referrer"
-                      className="h-[22px] w-[22px] rounded-full object-cover"
+                      className="h-[20px] w-[20px] sm:h-[22px] sm:w-[22px] rounded-full object-cover shrink-0"
                     />
                   ) : (
-                    <div className="flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#1c3973] text-white">
+                    <div className="flex h-[20px] w-[20px] sm:h-[22px] sm:w-[22px] items-center justify-center rounded-full bg-[#1c3973] text-white shrink-0">
                       <User size={13} />
                     </div>
                   )}
 
-                  <span className="font-semibold text-slate-800">{displayUserName}</span>
+                  <span className="font-semibold text-slate-800 max-w-[65px] sm:max-w-[85px] lg:max-w-[130px] truncate">
+                    {displayUserName}
+                  </span>
 
                   <ChevronDown
                     size={13}
-                    className={`transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
+                    className={`transition-transform shrink-0 ${showUserMenu ? 'rotate-180' : ''}`}
                   />
                 </button>
 
@@ -486,20 +499,20 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 />
               </div>
             ) : (
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md px-1.5 py-1 text-[13px] font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+                  className="inline-flex items-center rounded-md px-1 sm:px-1.5 py-1 text-[12px] sm:text-[13px] font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
                   onClick={onLoginClick}
                 >
                   Đăng Nhập
                 </button>
 
-                <span className="text-xs text-slate-200">|</span>
+                <span className="text-xs text-slate-300">|</span>
 
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md px-1.5 py-1 text-[13px] font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+                  className="inline-flex items-center rounded-md px-1 sm:px-1.5 py-1 text-[12px] sm:text-[13px] font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
                   onClick={onRegisterClick}
                 >
                   Đăng Ký
@@ -510,8 +523,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
         </div>
       </div>
 
-      <div className="bg-white py-3.5 pb-2.5">
-        <div className="mx-auto flex w-full max-w-[1280px] items-center gap-6 px-4">
+      <div className="bg-white py-2 sm:py-3.5 pb-2 sm:pb-2.5">
+        <div className="mx-auto flex w-full max-w-[1280px] items-center gap-2.5 sm:gap-4 md:gap-6 px-2 sm:px-4">
           <a
             href="/"
             className="flex shrink-0 cursor-pointer items-center transition-transform hover:scale-[1.02]"
@@ -520,7 +533,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <img
               src={logoPath}
               alt="NEXUS Logo"
-              className="block h-[54px] w-auto object-contain"
+              className="block h-[38px] sm:h-[46px] md:h-[54px] w-auto object-contain"
               onError={(e) => {
                 const image = e.currentTarget;
                 image.onerror = null;
@@ -602,40 +615,42 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </button>
             </form>
 
-            <div className="hidden items-center gap-2 overflow-hidden pl-2 text-xs lg:flex">
-              <span className="shrink-0 text-slate-400">Xu hướng:</span>
+            {trendingKeywords.length > 0 && (
+              <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pl-2 text-xs">
+                <span className="shrink-0 text-slate-400">Xu hướng:</span>
 
-              <div className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {trendingKeywords.map((kw, idx) => (
-                  <a
-                    key={idx}
-                    href={`#search?q=${kw}`}
-                    className="whitespace-nowrap text-slate-500 no-underline transition-colors hover:text-[#f24e1e]"
-                    onClick={(e) => {
-                      e.preventDefault();
+                <div className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {trendingKeywords.map((kw, idx) => (
+                    <a
+                      key={idx}
+                      href={`#search?q=${kw}`}
+                      className="whitespace-nowrap text-slate-500 no-underline transition-colors hover:text-[#f24e1e]"
+                      onClick={(e) => {
+                        e.preventDefault();
 
-                      setSearchQuery(kw);
+                        setSearchQuery(kw);
 
-                      if (onKeywordClick) {
-                        onKeywordClick(kw);
-                      }
+                        if (onKeywordClick) {
+                          onKeywordClick(kw);
+                        }
 
-                      if (onSearch) {
-                        onSearch(kw, selectedFloor);
-                      }
-                    }}
-                  >
-                    {kw}
-                  </a>
-                ))}
+                        if (onSearch) {
+                          onSearch(kw, selectedFloor);
+                        }
+                      }}
+                    >
+                      {kw}
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="relative shrink-0" ref={cartRef}>
             <button
               type="button"
-              className="flex items-center gap-2.5 rounded-full border border-[#d6e4ff] bg-[#f0f5ff] px-3.5 py-2 transition-all hover:-translate-y-px hover:border-[#adc6ff] hover:bg-[#e6f0ff]"
+              className="flex items-center gap-1.5 sm:gap-2.5 rounded-full border border-[#d6e4ff] bg-[#f0f5ff] px-2.5 sm:px-3.5 py-1.5 sm:py-2 transition-all hover:-translate-y-px hover:border-[#adc6ff] hover:bg-[#e6f0ff] cursor-pointer"
               onClick={() => setShowCartPanel(!showCartPanel)}
             >
               <div className="relative flex items-center">
@@ -647,7 +662,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 )}
               </div>
 
-              <span className="text-sm font-bold text-[#1c3973]">Giỏ Hàng</span>
+              <span className="text-xs sm:text-sm font-bold text-[#1c3973] whitespace-nowrap">
+                Giỏ Hàng
+              </span>
             </button>
 
             <CartDropdownPanel

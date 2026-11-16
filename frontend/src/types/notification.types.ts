@@ -9,6 +9,7 @@ export interface UserNotification {
   createdAt: string;
   auctionId?: string | null;
   targetUrl?: string | null;
+  metadata?: { actionType?: string; [key: string]: unknown } | null;
 }
 
 export interface AdminNotificationSummary {

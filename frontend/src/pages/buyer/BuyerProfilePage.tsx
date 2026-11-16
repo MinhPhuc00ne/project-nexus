@@ -1,11 +1,15 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import ProfileEditor from '../../components/profile/ProfileEditor';
 import { useAuth } from '../../contexts/AuthContext';
+import BuyerBidsPage from './BuyerBidsPage';
 
 export default function BuyerProfilePage() {
   const { user, token, isLoading, refreshProfile } = useAuth();
   const location = useLocation();
-  if (!token) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  const [searchParams] = useSearchParams();
+  const showAuctionOffers = searchParams.get('tab') === 'auction-offers';
+  if (!token)
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   if (isLoading)
     return (
       <p role="status" className="p-10 text-center text-sm text-slate-600">
@@ -39,7 +43,30 @@ export default function BuyerProfilePage() {
           Chế độ hoạt động: Khách hàng (Buyer)
         </span>
       </div>
-      <ProfileEditor key={user.id} profile={user} />
+      <nav
+        aria-label="Nội dung hồ sơ"
+        className="flex gap-2 border-b border-slate-200 overflow-x-auto"
+      >
+        <Link
+          to="/buyer/profile"
+          aria-current={!showAuctionOffers ? 'page' : undefined}
+          className={`whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 ${!showAuctionOffers ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-blue-700'}`}
+        >
+          Thông tin cá nhân
+        </Link>
+        <Link
+          to="/buyer/profile?tab=auction-offers"
+          aria-current={showAuctionOffers ? 'page' : undefined}
+          className={`whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 ${showAuctionOffers ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-blue-700'}`}
+        >
+          Xác nhận mua đấu giá
+        </Link>
+      </nav>
+      {showAuctionOffers ? (
+        <BuyerBidsPage key={user.id} purchasesOnly />
+      ) : (
+        <ProfileEditor key={user.id} profile={user} />
+      )}
     </div>
   );
 }

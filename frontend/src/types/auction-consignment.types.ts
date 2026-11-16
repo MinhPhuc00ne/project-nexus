@@ -1,4 +1,5 @@
 import type { AuctionStatus } from '@nexus/types';
+import type { AuctionBidItem } from './auction-api.types';
 
 /**
  * Approved or proposed consignment lot included in an auction session payload.
@@ -23,7 +24,9 @@ export interface AuctionConsignmentItem {
   bidIncrement?: number | string | null;
   proposedBidIncrement?: number | string | null;
   currentHighestBid?: number | string | null;
+  currentHighestBidderId?: string | null;
   totalBidsCount?: number;
+  bids?: AuctionBidItem[];
   lotStatus?: AuctionStatus;
   startTime?: string | null;
   endTime?: string | null;

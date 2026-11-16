@@ -50,6 +50,7 @@ interface AuctionGalleryProps {
   hasItems?: boolean;
   hasBanner?: boolean;
   hasVideo?: boolean;
+  timeLeft?: number;
 }
 
 export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
@@ -68,6 +69,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
   hasItems: _hasItems,
   hasBanner: _hasBanner,
   hasVideo: _hasVideo,
+  timeLeft,
 }) => {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -85,20 +87,24 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
   // Phiên chưa có hàng và Admin cũng không tải banner
   const isSessionEmpty = !hasItems && !hasBanner && (!thumbnails || thumbnails.length === 0);
 
-  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
-
-  const isScheduled =
-    !isLive &&
-    (auction?.status === 'SCHEDULED' ||
-      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
+  const isTimeOver =
+    timeLeft !== undefined && timeLeft !== null
+      ? timeLeft <= 0
+      : Boolean(auction?.endTime && new Date(auction.endTime).getTime() <= Date.now());
 
   const isEnded =
     auction?.status === 'ENDED' ||
     auction?.status === 'SETTLED' ||
     auction?.status === 'CANCELLED' ||
-    (!isLive &&
-      !isScheduled &&
-      (auction?.endTime ? new Date(auction.endTime).getTime() <= Date.now() : false));
+    (isTimeOver && auction?.status !== 'SCHEDULED');
+
+  const isLive = !isEnded && (auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED');
+
+  const isScheduled =
+    !isLive &&
+    !isEnded &&
+    (auction?.status === 'SCHEDULED' ||
+      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
 
   // Chỉ lấy video thật từ DB, format URL nếu là đường dẫn uploads nội bộ
   const rawVideoUrl = auction?.videoUrl

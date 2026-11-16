@@ -194,6 +194,15 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
       </Link>
 
       <Link
+        to="/buyer/profile?tab=auction-offers"
+        className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-slate-800 transition-colors hover:bg-blue-50 hover:text-blue-700"
+        onClick={onClose}
+      >
+        <ShieldCheck size={15} />
+        <span>Xác nhận mua đấu giá</span>
+      </Link>
+
+      <Link
         to="/buyer/wishlist"
         className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-[13px] text-slate-800 transition-colors hover:bg-blue-50 hover:text-blue-700"
         onClick={onClose}

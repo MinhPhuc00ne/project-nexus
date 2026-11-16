@@ -1,25 +1,47 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AuctionStatus, Role } from '@nexus/types';
+import { Gavel, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { createAuctionSocket, getAuctionsApi } from '../../services/auction.service';
 import { useToast } from '../ToastNotification';
 
 /**
- * Shows real-time auction lifecycle alerts for the signed-in account.
+ * Payload representing an active live auction floating alert banner.
+ */
+interface AuctionLiveAlert {
+  auctionId: string;
+  title: string;
+}
+
+/**
+ * Shows real-time auction lifecycle alerts for the current session.
  * The server broadcasts `auction:started` to connected clients; subscribing to
  * the auction room afterwards also lets the current viewer receive `auction:ended`.
+ *
+ * @returns Floating live auction alert banner or null when inactive.
  */
-export default function AuctionLifecycleNotifier() {
-  const { user, token } = useAuth();
+export default function AuctionLifecycleNotifier(): React.ReactElement | null {
+  const { user } = useAuth();
   const toast = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [activeAlert, setActiveAlert] = useState<AuctionLiveAlert | null>(null);
   const handledStarts = useRef(new Set<string>());
   const joinedAuctions = useRef(new Set<string>());
+  const pathnameRef = useRef(location.pathname);
 
   useEffect(() => {
-    if (!token || !user) return;
+    pathnameRef.current = location.pathname;
+    setActiveAlert((curr) =>
+      curr && location.pathname.includes(`/auction/${curr.auctionId}`) ? null : curr,
+    );
+  }, [location.pathname]);
 
+  useEffect(() => {
     const connection = createAuctionSocket();
-    const role = user.role;
+    const role = user?.role;
     let active = true;
 
     const joinAuctionRoom = (auctionId: string): void => {
@@ -28,8 +50,6 @@ export default function AuctionLifecycleNotifier() {
       connection.joinRoom(auctionId);
     };
 
-    // A user can open the app after Admin has already started an auction.
-    // Join all active rooms immediately so the later `auction:ended` event is not missed.
     void Promise.all([
       getAuctionsApi({ status: AuctionStatus.ACTIVE, page: 1, limit: 100 }),
       getAuctionsApi({ status: AuctionStatus.EXTENDED, page: 1, limit: 100 }),
@@ -40,27 +60,44 @@ export default function AuctionLifecycleNotifier() {
           .flatMap((response) => response.items)
           .forEach((auction) => joinAuctionRoom(auction.id));
       })
-      .catch(() => {
-        // Live alerts remain available for auctions started after the current connection.
-      });
+      .catch(() => undefined);
 
     connection.onAuctionStarted((event) => {
       if (handledStarts.current.has(event.auctionId)) return;
       handledStarts.current.add(event.auctionId);
       joinAuctionRoom(event.auctionId);
 
+      const isCurrentAuctionPage = pathnameRef.current.includes(`/auction/${event.auctionId}`);
+      if (!isCurrentAuctionPage) {
+        setActiveAlert({ auctionId: event.auctionId, title: event.title });
+        setTimeout(() => {
+          setActiveAlert((curr) => (curr?.auctionId === event.auctionId ? null : curr));
+        }, 12000);
+      }
+
       if (role === Role.ADMIN) {
-        toast.success(`Phiên đấu giá “${event.title}” đã bắt đầu.`);
+        toast.success(`Phiên đấu giá “${event.title}” đã bắt đầu.`, {
+          targetUrl: `/admin/auctions`,
+          actionLabel: 'Quản trị phiên',
+        });
       } else if (role === Role.SUPPORT_STAFF) {
-        toast.success(`Phiên “${event.title}” đã bắt đầu. Hãy theo dõi hỗ trợ phiên.`);
-      } else if (role === Role.SELLER || user.isSellerActive) {
+        toast.success(`Phiên “${event.title}” đã bắt đầu. Hãy theo dõi hỗ trợ phiên.`, {
+          targetUrl: `/staff/auction-support`,
+          actionLabel: 'Hỗ trợ phiên',
+        });
+      } else if (role === Role.SELLER || user?.isSellerActive) {
         toast.success(
           `Phiên “${event.title}” đang diễn ra. Bạn có thể theo dõi trong Seller Center.`,
+          {
+            targetUrl: `/seller/auctions/${event.auctionId}`,
+            actionLabel: 'Vào phiên đấu giá',
+          },
         );
       } else {
-        toast.success(
-          `Phiên đấu giá “${event.title}” đang diễn ra. Hãy vào phòng đấu giá để đặt giá.`,
-        );
+        toast.success(`Phiên đấu giá “${event.title}” đang diễn ra trực tiếp!`, {
+          targetUrl: `/auction/${event.auctionId}`,
+          actionLabel: 'Vào sàn ngay',
+        });
       }
     });
 
@@ -71,12 +108,23 @@ export default function AuctionLifecycleNotifier() {
         joinedAuctions.current.delete(event.auctionId);
         connection.leaveRoom(event.auctionId);
 
-        if (event.winningBidderId === user.id) {
-          toast.success('Phiên đấu giá đã kết thúc. Chúc mừng, bạn là người chiến thắng!');
-        } else if (role === Role.SELLER || user.isSellerActive) {
-          toast.success('Phiên đấu giá đã kết thúc. Kiểm tra kết quả trong Seller Center.');
+        setActiveAlert((curr) => (curr?.auctionId === event.auctionId ? null : curr));
+
+        if (user && event.winningBidderId === user.id) {
+          toast.success('Phiên đấu giá đã kết thúc. Chúc mừng, bạn là người chiến thắng!', {
+            targetUrl: `/auction/${event.auctionId}`,
+            actionLabel: 'Xem chi tiết',
+          });
+        } else if (role === Role.SELLER || user?.isSellerActive) {
+          toast.success('Phiên đấu giá đã kết thúc. Kiểm tra kết quả trong Seller Center.', {
+            targetUrl: `/seller/auctions/${event.auctionId}`,
+            actionLabel: 'Xem kết quả',
+          });
         } else {
-          toast.success('Phiên đấu giá bạn đang theo dõi đã kết thúc.');
+          toast.success('Phiên đấu giá bạn đang theo dõi đã kết thúc.', {
+            targetUrl: `/auction/${event.auctionId}`,
+            actionLabel: 'Xem kết quả',
+          });
         }
       },
     );
@@ -87,7 +135,59 @@ export default function AuctionLifecycleNotifier() {
       joinedAuctions.current.clear();
       connection.disconnect();
     };
-  }, [token, toast, user]);
+  }, [toast, user]);
 
-  return null;
+  if (!activeAlert) return null;
+
+  return (
+    <aside
+      aria-label="Thông báo phiên đấu giá trực tiếp"
+      className="fixed bottom-6 right-6 z-[2600] flex w-[calc(100vw-2rem)] max-w-md items-center gap-3.5 rounded-2xl border border-amber-400/50 bg-slate-950/95 p-4 text-white shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-md animate-fade-in"
+    >
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 shadow-md">
+        <Gavel size={22} className="text-slate-950" />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
+          </span>
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
+            ĐẤU GIÁ TRỰC TIẾP
+          </span>
+        </div>
+        <p className="mt-0.5 truncate text-xs font-bold text-slate-100" title={activeAlert.title}>
+          {activeAlert.title}
+        </p>
+        <p className="text-[11px] text-slate-400">
+          Phiên đã chính thức mở sàn trực tiếp. Tham gia ngay!
+        </p>
+      </div>
+
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={() => {
+            navigate(`/auction/${activeAlert.auctionId}`);
+            setActiveAlert(null);
+          }}
+          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-3 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:from-amber-400 hover:to-amber-300 cursor-pointer"
+        >
+          <span>Vào sàn</span>
+          <ArrowRight size={13} />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveAlert(null)}
+          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-white cursor-pointer"
+          title="Đóng thông báo"
+        >
+          <X size={15} />
+        </button>
+      </div>
+    </aside>
+  );
 }

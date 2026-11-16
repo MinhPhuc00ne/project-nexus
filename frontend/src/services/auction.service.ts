@@ -2,6 +2,7 @@ import api, { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import {
   normalizeAuctionListResponse,
+  unwrapAuctionResponse,
   type RawAuctionListResponse,
 } from './auction-response.helpers';
 export { formatAuctionImage } from './auction-response.helpers';
@@ -32,6 +33,9 @@ import type {
   AuctionIntroShowcaseResponse,
   StaffAuctionOverviewResponse,
   AuctionAwardItem,
+  AuctionAwardQuote,
+  CheckoutAuctionAwardInput,
+  CreateAuctionComplaintInput,
 } from '../types/auction-api.types';
 export type * from '../types/auction-api.types';
 export { normalizeAuctionListResponse } from './auction-response.helpers';
@@ -264,35 +268,97 @@ export async function getMyBidsApi(): Promise<MyBidItem[]> {
   return [];
 }
 
+/**
+ * Retrieves active and historical auction awards granted to the authenticated buyer.
+ *
+ * @returns Resolves with the buyer's auction award list.
+ */
 export async function getMyAuctionAwardsApi(): Promise<AuctionAwardItem[]> {
   const token = getStoredToken();
   if (!token) return [];
-  try {
-    const res = await api.get('/commerce/auction-awards');
-    return Array.isArray(res.data) ? res.data : [];
-  } catch (err) {
-    console.error('Failed to fetch auction awards:', err);
-    return [];
-  }
+  const res = await api.get<AuctionAwardItem[] | { data: AuctionAwardItem[] }>(
+    '/commerce/auction-awards',
+  );
+  const awards = unwrapAuctionResponse(res.data);
+  return Array.isArray(awards) ? awards : [];
 }
 
+/**
+ * Calculates GHN shipping fees and remaining balance due for an awarded auction lot.
+ *
+ * @param awardId - Identifier of the auction award.
+ * @param data - Delivery address and shipping option payload.
+ * @returns Resolves with the shipping quote and payment breakdown.
+ */
+export async function quoteAuctionAwardApi(
+  awardId: string,
+  data: CheckoutAuctionAwardInput,
+): Promise<AuctionAwardQuote> {
+  const res = await api.post<AuctionAwardQuote>(`/commerce/auction-awards/${awardId}/quote`, data);
+  return unwrapAuctionResponse(res.data);
+}
+
+/**
+ * Settles an awarded auction lot using the buyer's wallet balance and locked deposit.
+ *
+ * @param awardId - Identifier of the auction award to settle.
+ * @param data - Checkout payload specifying the delivery address.
+ * @returns Resolves with the created or updated order payload.
+ */
 export async function checkoutAuctionAwardApi(
   awardId: string,
-  shippingAddress: {
-    recipientName: string;
-    phoneNumber: string;
-    province: string;
-    district: string;
-    ward: string;
-    detailAddress: string;
-  },
-) {
-  const res = await api.post(`/commerce/auction-awards/${awardId}/checkout`, shippingAddress);
+  data: CheckoutAuctionAwardInput,
+): Promise<{ id?: string; order?: { id: string } }> {
+  const res = await api.post<{ id?: string; order?: { id: string } }>(
+    `/commerce/auction-awards/${awardId}/checkout`,
+    data,
+  );
+  return unwrapAuctionResponse(res.data);
+}
+
+/**
+ * Submits the runner-up buyer's response (accept or decline) to a second-chance auction award.
+ *
+ * @param awardId - Identifier of the second-chance auction award.
+ * @param accept - True to accept and lock deposit, false to decline.
+ * @returns Resolves with the updated auction award state.
+ */
+export async function respondSecondChanceAwardApi(
+  awardId: string,
+  accept: boolean,
+): Promise<AuctionAwardItem> {
+  const res = await api.post<AuctionAwardItem>(`/commerce/auction-awards/${awardId}/respond`, {
+    accept,
+  });
+  return unwrapAuctionResponse(res.data);
+}
+
+/**
+ * Declines an active auction award and forfeits the associated reservation according to platform policy.
+ *
+ * @param awardId - Identifier of the auction award to decline.
+ * @returns Resolves with the updated auction award record.
+ */
+export async function declineAuctionAwardApi(awardId: string): Promise<AuctionAwardItem> {
+  const res = await api.post<AuctionAwardItem>(`/commerce/auction-awards/${awardId}/decline`);
   return res.data;
 }
 
-export async function declineAuctionAwardApi(awardId: string) {
-  const res = await api.post(`/commerce/auction-awards/${awardId}/decline`);
+/**
+ * Files a formal buyer complaint regarding an auction session or lot irregularity.
+ *
+ * @param auctionId - Identifier of the target auction session.
+ * @param data - Complaint reason, description, and evidence attachments.
+ * @returns Resolves with the created complaint record.
+ */
+export async function createAuctionComplaintApi(
+  auctionId: string,
+  data: CreateAuctionComplaintInput,
+): Promise<{ id: string; status: string }> {
+  const res = await api.post<{ id: string; status: string }>(
+    `/auctions/${auctionId}/complaints`,
+    data,
+  );
   return res.data;
 }
 

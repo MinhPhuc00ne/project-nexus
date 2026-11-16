@@ -68,34 +68,11 @@ export const chatbotKnowledge = [
       'Đăng nhập để xem giỏ hàng, số lượng, tiền hàng và cảnh báo giá/tồn kho. Chatbot chỉ tra cứu; thêm, xóa, đổi số lượng và đặt hàng được thực hiện trong luồng giỏ hàng của NEXUS.',
   },
   {
-    id: 'ORDER',
-    title: 'Tra cứu đơn hàng',
-    keywords: [
-      'don hang',
-      'don mua',
-      'don ban',
-      'ma don',
-      'trang thai',
-      'don cua toi',
-      'hang den dau',
-      'order',
-    ],
-    answer:
-      'Vui lòng chọn mã đơn hàng cần tra cứu. Chatbot chỉ xem được đơn mà tài khoản đăng nhập là người mua hoặc người bán.',
-  },
-  {
-    id: 'SUPPORT',
-    title: 'Nhân viên hỗ trợ',
-    keywords: ['nhan vien', 'khieu nai', 'bao cao', 'lua dao', 'ho tro', 'support'],
-    answer:
-      'Bạn có thể gửi yêu cầu hỗ trợ tới nhân viên CSKH, kèm mã đơn và bằng chứng nếu liên quan giao dịch. Chatbot không phân xử khiếu nại; yêu cầu được đưa vào hàng đợi hỗ trợ.',
-  },
-  {
     id: 'AUCTION',
     title: 'Đấu giá 3D',
     keywords: ['dau gia', 'dau gia 3d', 'tra gia', 'dat gia', 'anti sniping', 'auction', 'bid'],
     answer:
-      'Để tham gia đấu giá trực tuyến 3D, tài khoản cần điểm uy tín từ 40 trở lên và số dư khả dụng trong ví NEXUS Pay đủ mức giá đặt; người bán cần từ 50 điểm uy tín để đăng sản phẩm và không được tự đấu giá phiên của mình. Khi có người trả giá cao hơn, tiền khóa của người trước được hoàn ngay về ví. Nếu có lượt đặt giá hợp lệ trong 2 phút cuối, thời gian kết thúc tự động gia hạn thêm 2 phút (Anti-Sniping). Người thắng cần hoàn tất thanh toán phí vận chuyển và xác nhận địa chỉ trong 24 giờ, nếu quá hạn sẽ bị hủy quyền thắng và trừ 10 điểm uy tín.',
+      'Quy trình tham gia & mua đơn hàng đấu giá 3D trên NEXUS:\n1. Điều kiện: Tài khoản ở chế độ Người mua, có ví NEXUS Pay đủ số dư khả dụng cho mức giá đặt và đạt tối thiểu 40 điểm uy tín (một số phiên riêng có thể yêu cầu cao hơn); người bán cần từ 50 điểm uy tín để đăng sản phẩm và không được tự đấu giá phiên của mình.\n2. Đặt giá: Chọn phiên đang mở, hệ thống tạm khóa số tiền đặt giá trong ví; nếu có người trả giá cao hơn, tiền khóa của người trước được hoàn ngay về ví. Có lượt đặt giá hợp lệ trong 2 phút cuối sẽ tự động gia hạn thêm 2 phút (Anti-Sniping).\n3. Thanh toán đơn thắng: Sau khi thắng phiên, vào mục Đấu giá của tôi để xác nhận địa chỉ nhận hàng và hoàn tất thanh toán trong 24 giờ (nếu quá hạn sẽ bị hủy quyền thắng và trừ 10 điểm uy tín).',
   },
   {
     id: 'WALLET',
@@ -133,6 +110,34 @@ export const chatbotKnowledge = [
     ],
     answer:
       'Tài khoản mặc định ở vai trò Người mua (Buyer). Sau khi gửi hồ sơ nâng cấp Người bán và được Admin phê duyệt, bạn có thể chuyển đổi tức thời giữa Chế độ Người mua và Chế độ Người bán ngay trên hệ thống mà không cần đăng xuất, dùng chung một ví NEXUS Pay. Người bán cần tối thiểu 50 điểm uy tín để đăng sản phẩm hoặc đấu giá, và nghiêm cấm tự mua sản phẩm hoặc tự đặt giá trong phiên đấu giá của chính mình.',
+  },
+  {
+    id: 'ORDER',
+    title: 'Tra cứu đơn hàng',
+    keywords: [
+      'don hang',
+      'don mua',
+      'don ban',
+      'ma don',
+      'trang thai',
+      'don cua toi',
+      'hang den dau',
+      'lich su mua hang',
+      'lich su dat hang',
+      'lich su don hang',
+      'xem don',
+      'don da mua',
+      'order',
+    ],
+    answer:
+      'Bạn có thể mở trang Đơn hàng của tôi để xem toàn bộ lịch sử mua hàng và chi tiết từng đơn, hoặc hỏi trực tiếp chatbot (ví dụ: "đơn mua của tôi", "tôi đã mua gì"). Chatbot chỉ hiển thị các đơn thuộc tài khoản đang đăng nhập.',
+  },
+  {
+    id: 'SUPPORT',
+    title: 'Nhân viên hỗ trợ',
+    keywords: ['nhan vien', 'khieu nai', 'bao cao', 'lua dao', 'ho tro', 'support'],
+    answer:
+      'Bạn có thể gửi yêu cầu hỗ trợ tới nhân viên CSKH, kèm mã đơn và bằng chứng nếu liên quan giao dịch. Chatbot không phân xử khiếu nại; yêu cầu được đưa vào hàng đợi hỗ trợ.',
   },
 ] as const;
 

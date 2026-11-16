@@ -13,6 +13,75 @@ import {
 import { useToast } from '../../ToastNotification';
 import { consignmentLockReason } from './consignmentAvailability';
 
+type AdminAuctionRowWithItems = AdminAuctionEntity & {
+  items?: AuctionConsignmentItem[];
+};
+
+function buildLegacyProductFallback(item: AdminAuctionRowWithItems): AuctionConsignmentItem[] {
+  if (item.items && item.items.length > 0) {
+    return item.items;
+  }
+  if (!item.product) {
+    return [];
+  }
+  return [
+    {
+      id: item.product.id,
+      title: item.product.title,
+      description: item.description,
+      images: item.imageUrl ? [item.imageUrl] : [],
+      threeModelKey: item.product.threeModelKey,
+      lotNumber: 1,
+      startingPrice: Number(item.startingPrice ?? 0),
+      bidIncrement: 0,
+      seller: item.seller ?? undefined,
+    },
+  ];
+}
+
+async function resolveApprovedShowcaseItems(
+  item: AdminAuctionRowWithItems,
+): Promise<AuctionConsignmentItem[]> {
+  try {
+    const itemsRes = await getAdminAuctionItemsApi(item.id);
+    const approvedItems: AuctionConsignmentItem[] = itemsRes.items
+      .filter((lot) => lot.status === 'APPROVED')
+      .sort((a, b) => (a.lotNumber ?? 999) - (b.lotNumber ?? 999))
+      .map((lot) => ({
+        id: lot.id,
+        title: lot.title,
+        description: lot.description,
+        images: lot.images,
+        threeModelKey: lot.threeModelKey,
+        appraisalCertificateNumber: lot.appraisalCertificateNumber,
+        appraisalAgency: lot.appraisalAgency,
+        certificateImages: lot.certificateImages,
+        certificateIssueDate: lot.certificateIssueDate,
+        status: lot.status,
+        lotNumber: lot.lotNumber,
+        startingPrice: lot.startingPrice
+          ? Number(lot.startingPrice)
+          : Number(lot.proposedStartingPrice),
+        proposedStartingPrice: Number(lot.proposedStartingPrice),
+        reservePrice: lot.reservePrice
+          ? Number(lot.reservePrice)
+          : lot.proposedReservePrice
+            ? Number(lot.proposedReservePrice)
+            : null,
+        proposedReservePrice: lot.proposedReservePrice ? Number(lot.proposedReservePrice) : null,
+        bidIncrement: lot.bidIncrement
+          ? Number(lot.bidIncrement)
+          : Number(lot.proposedBidIncrement),
+        proposedBidIncrement: Number(lot.proposedBidIncrement),
+        seller: lot.seller,
+      }));
+
+    return approvedItems.length > 0 ? approvedItems : buildLegacyProductFallback(item);
+  } catch {
+    return buildLegacyProductFallback(item);
+  }
+}
+
 export function useAdminAuctions() {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -44,73 +113,14 @@ export function useAdminAuctions() {
   } | null>(null);
 
   async function openShowcaseForAuction(item: AdminAuctionEntity) {
-    try {
-      const itemsRes = await getAdminAuctionItemsApi(item.id);
-      const approvedItems: AuctionConsignmentItem[] = itemsRes.items
-        .filter((lot) => lot.status === 'APPROVED')
-        .sort((a, b) => (a.lotNumber ?? 999) - (b.lotNumber ?? 999))
-        .map((lot) => ({
-          id: lot.id,
-          title: lot.title,
-          description: lot.description,
-          images: lot.images,
-          threeModelKey: lot.threeModelKey,
-          appraisalCertificateNumber: lot.appraisalCertificateNumber,
-          appraisalAgency: lot.appraisalAgency,
-          certificateImages: lot.certificateImages,
-          certificateIssueDate: lot.certificateIssueDate,
-          status: lot.status,
-          lotNumber: lot.lotNumber,
-          startingPrice: lot.startingPrice
-            ? Number(lot.startingPrice)
-            : Number(lot.proposedStartingPrice),
-          proposedStartingPrice: Number(lot.proposedStartingPrice),
-          reservePrice: lot.reservePrice
-            ? Number(lot.reservePrice)
-            : lot.proposedReservePrice
-              ? Number(lot.proposedReservePrice)
-              : null,
-          proposedReservePrice: lot.proposedReservePrice ? Number(lot.proposedReservePrice) : null,
-          bidIncrement: lot.bidIncrement
-            ? Number(lot.bidIncrement)
-            : Number(lot.proposedBidIncrement),
-          proposedBidIncrement: Number(lot.proposedBidIncrement),
-          seller: lot.seller,
-        }));
-
-      const legacyProductFallback: AuctionConsignmentItem[] =
-        approvedItems.length === 0 && item.product
-          ? [
-              {
-                id: item.product.id,
-                title: item.product.title,
-                description: item.description,
-                images: item.imageUrl ? [item.imageUrl] : [],
-                threeModelKey: item.product.threeModelKey,
-                lotNumber: 1,
-                startingPrice: Number(item.startingPrice ?? 0),
-                bidIncrement: 0,
-                seller: item.seller ?? undefined,
-              },
-            ]
-          : approvedItems;
-
-      setShowcaseState({
-        auctionId: item.id,
-        title: item.title,
-        description: item.description,
-        items: legacyProductFallback,
-        playbackMode: 'admin-replay',
-      });
-    } catch {
-      setShowcaseState({
-        auctionId: item.id,
-        title: item.title,
-        description: item.description,
-        items: [],
-        playbackMode: 'admin-replay',
-      });
-    }
+    const items = await resolveApprovedShowcaseItems(item);
+    setShowcaseState({
+      auctionId: item.id,
+      title: item.title,
+      description: item.description,
+      items,
+      playbackMode: 'admin-replay',
+    });
   }
 
   async function handleLockConsignment() {
@@ -148,12 +158,23 @@ export function useAdminAuctions() {
     setStartingId(item.id);
     try {
       const started = await adminStartAuctionApi(item.id);
+      const showcaseItems =
+        started.items && started.items.length > 0
+          ? started.items
+          : await resolveApprovedShowcaseItems(item);
       setData((current) =>
         current
           ? {
               ...current,
               items: current.items.map((row) =>
-                row.id === item.id ? { ...row, status: AuctionStatus.ACTIVE } : row,
+                row.id === item.id
+                  ? {
+                      ...row,
+                      status: AuctionStatus.ACTIVE,
+                      isConsignmentLocked: true,
+                      items: showcaseItems,
+                    }
+                  : row,
               ),
             }
           : current,
@@ -163,7 +184,7 @@ export function useAdminAuctions() {
         auctionId: started.id,
         title: started.title,
         description: started.description,
-        items: started.items ?? [],
+        items: showcaseItems,
         playbackMode: 'live',
       });
     } catch (cause: unknown) {

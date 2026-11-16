@@ -9,7 +9,7 @@ import {
   ShoppingBag,
   Loader2,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { getBuyerOrdersApi, disputeOrderApi, type BuyerOrder } from '../../services/orders';
 import CreateDisputeModal, { reasonLabels } from '../../components/disputes/CreateDisputeModal';
 
@@ -66,12 +66,15 @@ const tabs: { key: BuyerDisputeStatus; label: string }[] = [
 ];
 
 export default function BuyerDisputesPage() {
+  const [searchParams] = useSearchParams();
+  const queryOrderId = searchParams.get('orderId');
+
   const [disputes, setDisputes] = useState<BuyerDisputeItem[]>([]);
   const [orders, setOrders] = useState<BuyerOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<BuyerDisputeStatus>('ALL');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState(queryOrderId || '');
   const [reason, setReason] = useState<BuyerDisputeReason>('NOT_RECEIVED');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -81,6 +84,15 @@ export default function BuyerDisputesPage() {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
   };
+
+  // Tự động mở form khiếu nại và gán sẵn đơn hàng khi có orderId từ query param
+  useEffect(() => {
+    if (queryOrderId) {
+      setSelectedOrderId(queryOrderId);
+      setShowCreateModal(true);
+      showToast('Đã chọn đơn hàng cần khiếu nại. Vui lòng nhập lý do và mô tả.');
+    }
+  }, [queryOrderId]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
