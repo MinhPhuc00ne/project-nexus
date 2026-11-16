@@ -1,9 +1,17 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getAdminShopById } from '../../../services/admin';
+import {
+  createAdminShopViolation,
+  getAdminShopActionLogs,
+  getAdminShopById,
+  getAdminShopViolations,
+  resolveAdminShopAppeal,
+} from '../../../services/admin';
 import type { AdminShopDetail } from '../../../types/admin.types';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';
+import { useToast } from '../../ToastNotification';
+import ShopOrdersPanel from './ShopOrdersPanel';
 
 const labels: Record<string, string> = {
   ACTIVE: 'Đang mở bán',
@@ -26,10 +34,21 @@ const date = (value: string) => new Date(value).toLocaleString('vi-VN');
 const money = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-bold text-slate-900">{title}</h3>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -59,21 +78,48 @@ function evidenceUrls(value: unknown): string[] {
     : [];
 }
 
-export default function ShopDetail({ shopId, onClose }: { shopId: string; onClose: () => void }) {
+export default function ShopDetail({
+  shopId,
+  onClose,
+  onMutation,
+}: {
+  shopId: string;
+  onClose: () => void;
+  onMutation?: () => void;
+}) {
   const { token } = useAuth();
+  const toast = useToast();
   const [detail, setDetail] = useState<AdminShopDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
+  const [violationOpen, setViolationOpen] = useState(false);
+  const [appealOpen, setAppealOpen] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setError('');
     setDetail(null);
-    void getAdminShopById(shopId, controller.signal)
-      .then((result) => {
-        if (!controller.signal.aborted) setDetail(result);
+    void Promise.all([
+      getAdminShopById(shopId, controller.signal),
+      getAdminShopViolations(shopId, controller.signal),
+      getAdminShopActionLogs(shopId, controller.signal),
+    ])
+      .then(([result, violations, actionLogs]) => {
+        if (controller.signal.aborted) return;
+        const pending = violations.items.filter(
+          (item) => item.status === 'PENDING' || item.status === 'INVESTIGATING',
+        ).length;
+        const confirmed = violations.items.filter((item) => item.status === 'CONFIRMED').length;
+        setDetail({
+          ...result,
+          violations: {
+            summary: { total: violations.total, pending, confirmed },
+            items: violations.items,
+          },
+          moderationHistory: actionLogs.items,
+        });
       })
       .catch((cause) => {
         if (!controller.signal.aborted)
@@ -87,6 +133,11 @@ export default function ShopDetail({ shopId, onClose }: { shopId: string; onClos
 
   const shop = detail?.shop;
   const address = shop?.contact.address;
+  const handleMutationSuccess = (message: string) => {
+    toast.success(message);
+    setRevision((value) => value + 1);
+    onMutation?.();
+  };
 
   return (
     <Popup
@@ -129,6 +180,11 @@ export default function ShopDetail({ shopId, onClose }: { shopId: string; onClos
                 >
                   {labels[shop.status.currentStatus]}
                 </Badge>
+                {shop.status.isShopSuspended && (
+                  <Button variant="primary" onClick={() => setAppealOpen(true)}>
+                    Khôi phục theo kháng nghị
+                  </Button>
+                )}
               </div>
               {shop.storeDescription && (
                 <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-600">
@@ -248,7 +304,15 @@ export default function ShopDetail({ shopId, onClose }: { shopId: string; onClos
                 <p className="text-sm text-slate-500">Cửa hàng chưa có sản phẩm.</p>
               )}
             </Section>
-            <Section title="Vi phạm và báo cáo">
+            <ShopOrdersPanel shopId={shopId} />
+            <Section
+              title="Vi phạm và báo cáo"
+              action={
+                <Button variant="secondary" onClick={() => setViolationOpen(true)}>
+                  Ghi nhận vi phạm
+                </Button>
+              }
+            >
               <p className="text-xs text-slate-500">
                 Tổng: {detail.violations.summary.total} · Chờ xử lý / xác minh:{' '}
                 {detail.violations.summary.pending} · Đã xác nhận:{' '}
@@ -345,9 +409,298 @@ export default function ShopDetail({ shopId, onClose }: { shopId: string; onClos
                 <p className="text-sm text-slate-500">Chưa có lịch sử quản trị.</p>
               )}
             </Section>
+            {violationOpen && (
+              <CreateShopViolationDialog
+                shopName={shop.storeName}
+                shopId={shop.id}
+                onClose={() => setViolationOpen(false)}
+                onSuccess={(message) => {
+                  setViolationOpen(false);
+                  handleMutationSuccess(message);
+                }}
+              />
+            )}
+            {appealOpen && (
+              <ResolveShopAppealDialog
+                shopName={shop.storeName}
+                shopId={shop.id}
+                onClose={() => setAppealOpen(false)}
+                onSuccess={(message) => {
+                  setAppealOpen(false);
+                  handleMutationSuccess(message);
+                }}
+              />
+            )}
           </div>
         )
       )}
+    </Popup>
+  );
+}
+
+function CreateShopViolationDialog({
+  shopId,
+  shopName,
+  onClose,
+  onSuccess,
+}: {
+  shopId: string;
+  shopName: string;
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [evidenceText, setEvidenceText] = useState('');
+  const [penaltyLevel, setPenaltyLevel] = useState('WARNING');
+  const [status, setStatus] = useState<'PENDING' | 'INVESTIGATING' | 'CONFIRMED' | 'DISMISSED'>(
+    'CONFIRMED',
+  );
+  const [resolutionNotes, setResolutionNotes] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const inFlightRef = useRef(false);
+
+  const close = () => {
+    if (!inFlightRef.current) onClose();
+  };
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    setPending(true);
+    setError('');
+
+    try {
+      const result = await createAdminShopViolation(shopId, {
+        title: title.trim(),
+        description: description.trim(),
+        evidenceUrls: evidenceText
+          .split(/\r?\n/)
+          .map((url) => url.trim())
+          .filter(Boolean),
+        penaltyLevel,
+        status,
+        ...(resolutionNotes.trim() ? { resolutionNotes: resolutionNotes.trim() } : {}),
+      });
+      onSuccess(result.message);
+    } catch (cause: unknown) {
+      setError(cause instanceof Error ? cause.message : 'Không ghi nhận được vi phạm shop.');
+    } finally {
+      inFlightRef.current = false;
+      setPending(false);
+    }
+  };
+
+  return (
+    <Popup
+      isOpen
+      title="Ghi nhận vi phạm shop"
+      onClose={close}
+      closeOnEsc={!pending}
+      closeOnOverlay={!pending}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <p className="text-sm text-slate-600">
+          Ghi nhận hồ sơ vi phạm cho <strong>{shopName}</strong>.
+        </p>
+        <label className="block text-sm font-medium">
+          Tiêu đề vi phạm
+          <input
+            required
+            maxLength={200}
+            value={title}
+            disabled={pending}
+            onChange={(event) => setTitle(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
+          />
+        </label>
+        <label className="block text-sm font-medium">
+          Mô tả
+          <textarea
+            required
+            maxLength={5000}
+            rows={4}
+            value={description}
+            disabled={pending}
+            onChange={(event) => setDescription(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
+          />
+        </label>
+        <label className="block text-sm font-medium">
+          Link bằng chứng (mỗi dòng một link)
+          <textarea
+            rows={2}
+            value={evidenceText}
+            disabled={pending}
+            onChange={(event) => setEvidenceText(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
+            placeholder="https://..."
+          />
+        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm font-medium">
+            Mức xử lý
+            <select
+              value={penaltyLevel}
+              disabled={pending}
+              onChange={(event) => setPenaltyLevel(event.target.value)}
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3"
+            >
+              <option value="WARNING">Cảnh cáo</option>
+              <option value="PENALTY_POINTS">Trừ điểm uy tín</option>
+              <option value="TEMPORARY_SUSPENSION">Đình chỉ tạm thời</option>
+              <option value="PERMANENT_BAN">Cấm vĩnh viễn</option>
+            </select>
+          </label>
+          <label className="block text-sm font-medium">
+            Trạng thái hồ sơ
+            <select
+              value={status}
+              disabled={pending}
+              onChange={(event) =>
+                setStatus(
+                  event.target.value as 'PENDING' | 'INVESTIGATING' | 'CONFIRMED' | 'DISMISSED',
+                )
+              }
+              className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3"
+            >
+              <option value="PENDING">Chờ xử lý</option>
+              <option value="INVESTIGATING">Đang xác minh</option>
+              <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="DISMISSED">Đã bác bỏ</option>
+            </select>
+          </label>
+        </div>
+        <label className="block text-sm font-medium">
+          Ghi chú xử lý (không bắt buộc)
+          <textarea
+            rows={2}
+            value={resolutionNotes}
+            disabled={pending}
+            onChange={(event) => setResolutionNotes(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={close} disabled={pending}>
+            Hủy
+          </Button>
+          <Button type="submit" variant="danger" disabled={pending}>
+            {pending ? 'Đang lưu…' : 'Ghi nhận vi phạm'}
+          </Button>
+        </div>
+      </form>
+    </Popup>
+  );
+}
+
+function ResolveShopAppealDialog({
+  shopId,
+  shopName,
+  onClose,
+  onSuccess,
+}: {
+  shopId: string;
+  shopName: string;
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}) {
+  const [reason, setReason] = useState('');
+  const [restoredScore, setRestoredScore] = useState('100');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const inFlightRef = useRef(false);
+
+  const close = () => {
+    if (!inFlightRef.current) onClose();
+  };
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (inFlightRef.current) return;
+    const score = Number(restoredScore);
+    if (!Number.isInteger(score) || score < 50 || score > 2147483647) {
+      setError('Điểm uy tín phải là số nguyên từ 50 trở lên.');
+      return;
+    }
+
+    inFlightRef.current = true;
+    setPending(true);
+    setError('');
+    try {
+      const result = await resolveAdminShopAppeal(shopId, {
+        reason: reason.trim(),
+        restoredScore: score,
+      });
+      onSuccess(result.message);
+    } catch (cause: unknown) {
+      setError(cause instanceof Error ? cause.message : 'Không xử lý được kháng nghị shop.');
+    } finally {
+      inFlightRef.current = false;
+      setPending(false);
+    }
+  };
+
+  return (
+    <Popup
+      isOpen
+      title="Chấp nhận kháng nghị shop"
+      onClose={close}
+      closeOnEsc={!pending}
+      closeOnOverlay={!pending}
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <p className="text-sm text-slate-600">
+          Thao tác này mở lại hoạt động bán và kích hoạt lại sản phẩm INACTIVE của{' '}
+          <strong>{shopName}</strong>.
+        </p>
+        <label className="block text-sm font-medium">
+          Lý do chấp nhận
+          <textarea
+            required
+            maxLength={1000}
+            rows={4}
+            value={reason}
+            disabled={pending}
+            onChange={(event) => setReason(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
+          />
+        </label>
+        <label className="block text-sm font-medium">
+          Điểm uy tín khôi phục
+          <input
+            required
+            type="number"
+            min={50}
+            max={2147483647}
+            step={1}
+            value={restoredScore}
+            disabled={pending}
+            onChange={(event) => setRestoredScore(event.target.value)}
+            className="mt-2 w-full rounded-lg border border-slate-200 p-3"
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-sm text-red-700">
+            {error}
+          </p>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={close} disabled={pending}>
+            Hủy
+          </Button>
+          <Button type="submit" variant="primary" disabled={pending}>
+            {pending ? 'Đang khôi phục…' : 'Chấp nhận & khôi phục shop'}
+          </Button>
+        </div>
+      </form>
     </Popup>
   );
 }

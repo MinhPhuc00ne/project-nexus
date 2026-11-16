@@ -300,6 +300,17 @@ export interface AuctionIntroShowcaseResponse {
   items: AuctionConsignmentItem[];
 }
 
+export interface StaffAuctionOverviewResponse {
+  auctions: Array<{
+    id: string;
+    title: string;
+    status: AuctionStatus;
+    startTime: string;
+    endTime: string;
+    items?: AuctionConsignmentItem[];
+  }>;
+}
+
 export interface AuctionAwardItem {
   id: string;
   auctionId: string;

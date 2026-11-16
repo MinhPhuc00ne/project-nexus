@@ -9,6 +9,7 @@ import StaffTeamManagementPanel from './StaffTeamManagementPanel';
 import StaffTicketChatPanel from './StaffTicketChatPanel';
 import StaffDisputesPanel from './StaffDisputesPanel';
 import StaffBannersPanel from './StaffBannersPanel';
+import StaffAuctionSupportPanel from './StaffAuctionSupportPanel';
 
 export type { StaffSection };
 
@@ -38,7 +39,6 @@ export default function StaffDashboard({
 
   const content = sectionContent[activeNavigation];
   const unavailableApiMessage: Partial<Record<StaffSection, string>> = {
-    'Hỗ Trợ Đấu Giá 3D': 'Backend hiện chưa có API dành cho yêu cầu hỗ trợ đấu giá 3D.',
     'Lịch Sử & CSAT': 'Backend hiện chưa có API lịch sử xử lý và đánh giá CSAT của Staff.',
     'Hiệu Suất Cá Nhân': 'Backend hiện chưa có API thống kê hiệu suất theo nhân viên.',
   };
@@ -132,6 +132,8 @@ export default function StaffDashboard({
             <StaffDisputesPanel />
           ) : activeNavigation === 'Quản Lý Banner' ? (
             <StaffBannersPanel />
+          ) : activeNavigation === 'Hỗ Trợ Đấu Giá 3D' ? (
+            <StaffAuctionSupportPanel />
           ) : activeNavigation !== 'Hộp Thư Trực Tuyến' ? (
             <section
               className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   createChatConversation,
   getChatConversations,
+  getChatConversation,
   getChatUnreadCount,
   requestChatSupport,
 } from '../../services/chat';
@@ -14,7 +15,11 @@ import { getChatErrorMessage } from './chatUtils';
 import { useChatRoom } from './useChatRoom';
 import SupportMenu from './SupportMenu';
 import ChatbotPanel from './ChatbotPanel';
-import { OPEN_CHAT_WITH_USER_EVENT, type OpenChatWithUserRequest } from './chatEvents';
+import {
+  OPEN_CHAT_CONVERSATION_EVENT,
+  OPEN_CHAT_WITH_USER_EVENT,
+  type OpenChatWithUserRequest,
+} from './chatEvents';
 
 export default function ChatWidget(): JSX.Element | null {
   const { token, storedUser } = useAuth();
@@ -103,6 +108,28 @@ function ChatPanel({
     window.addEventListener(OPEN_CHAT_WITH_USER_EVENT, handleOpenChat);
     return () => window.removeEventListener(OPEN_CHAT_WITH_USER_EVENT, handleOpenChat);
   }, [creating, userId]);
+
+  useEffect(() => {
+    const handleOpenConversation = (event: Event): void => {
+      const conversationId = (event as CustomEvent<{ conversationId?: string }>).detail
+        ?.conversationId;
+      if (!conversationId) return;
+      setOpen(true);
+      setView('chat');
+      setActive(null);
+      setPanelError('');
+      setCreating(true);
+      void getChatConversation(conversationId)
+        .then((conversation) => {
+          setActive(conversation);
+          setRevision((value) => value + 1);
+        })
+        .catch((error: unknown) => setPanelError(getChatErrorMessage(error)))
+        .finally(() => setCreating(false));
+    };
+    window.addEventListener(OPEN_CHAT_CONVERSATION_EVENT, handleOpenConversation);
+    return () => window.removeEventListener(OPEN_CHAT_CONVERSATION_EVENT, handleOpenConversation);
+  }, []);
 
   const activeId = active?.id;
 

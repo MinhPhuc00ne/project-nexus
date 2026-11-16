@@ -30,6 +30,7 @@ import type {
   PlaceBidResponse,
   SellerAuctionConsignment,
   AuctionIntroShowcaseResponse,
+  StaffAuctionOverviewResponse,
   AuctionAwardItem,
 } from '../types/auction-api.types';
 export type * from '../types/auction-api.types';
@@ -214,6 +215,25 @@ export async function getAuctionIntroShowcaseApi(
   return (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as AuctionIntroShowcaseResponse;
+}
+
+/** Returns auction sessions that staff can monitor from the support workspace. */
+export function getStaffAuctionOverviewApi(): Promise<StaffAuctionOverviewResponse> {
+  return apiRequest<StaffAuctionOverviewResponse>('/auctions/staff/overview', {
+    requireAuth: true,
+  });
+}
+
+/** Opens a staff support conversation linked to this auction room. */
+export function requestAuctionSupportChatApi(
+  auctionId: string,
+  message: string,
+): Promise<{ id: string }> {
+  return apiRequest<{ id: string }>(`/auctions/${encodeURIComponent(auctionId)}/support-chat`, {
+    method: 'POST',
+    body: { message },
+    requireAuth: true,
+  });
 }
 
 /**

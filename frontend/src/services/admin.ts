@@ -60,6 +60,56 @@ export function getAdminOverviewAnalytics(signal?: AbortSignal): Promise<AdminOv
   return adminRequest({ url: '/admin/analytics/overview', method: 'GET', signal });
 }
 
+export function getAdminFinanceAnalytics(signal?: AbortSignal): Promise<AdminOverviewAnalytics> {
+  return adminRequest({ url: '/admin/finance/analytics', method: 'GET', signal });
+}
+
+export type AdminWithdrawalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
+
+export interface AdminWithdrawalRequest {
+  id: string;
+  userId: string;
+  sellerName: string;
+  sellerEmail: string;
+  sellerPhone: string | null;
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  accountHolderName: string;
+  status: AdminWithdrawalStatus;
+  rejectionReason: string | null;
+  adminNote: string | null;
+  reviewedBy: { id: string; fullName: string; email: string } | null;
+  reviewedAt: string | null;
+  createdAt: string;
+}
+
+export interface AdminWithdrawalPage {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  items: AdminWithdrawalRequest[];
+}
+
+export function listAdminWithdrawals(
+  params: { status?: AdminWithdrawalStatus; page?: number; limit?: number } = {},
+  signal?: AbortSignal,
+): Promise<AdminWithdrawalPage> {
+  return adminRequest({ url: '/admin/withdrawals', method: 'GET', params, signal });
+}
+
+export function reviewAdminWithdrawal(
+  id: string,
+  dto: { status: 'APPROVED' | 'REJECTED'; rejectionReason?: string; adminNote?: string },
+): Promise<{ success: boolean; message: string }> {
+  return adminRequest({
+    url: `/admin/withdrawals/${encodeURIComponent(id)}/review`,
+    method: 'PATCH',
+    data: dto,
+  });
+}
+
 // Không gửi mật khẩu: nhân viên tự đặt mật khẩu qua link gửi đến email cá nhân.
 export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult> {
   return adminRequest<StaffInvitationResult>({

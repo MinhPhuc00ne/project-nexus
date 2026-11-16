@@ -208,7 +208,12 @@ export default function SellerStoreManagement() {
         )
       )}
       {detailId && (
-        <ShopDetail key={detailId} shopId={detailId} onClose={() => setDetailId(null)} />
+        <ShopDetail
+          key={detailId}
+          shopId={detailId}
+          onClose={() => setDetailId(null)}
+          onMutation={refresh}
+        />
       )}
       {target && (
         <ShopStatusDialog
