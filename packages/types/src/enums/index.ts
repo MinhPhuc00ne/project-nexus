@@ -72,7 +72,7 @@ export enum AuctionAwardStatus {
  * Status of an auction-related complaint submitted to Admin.
  */
 export enum AuctionComplaintStatus {
-  PENDING = 'PENDING',
+  OPEN = 'OPEN',
   ACCEPTED = 'ACCEPTED',
   REJECTED = 'REJECTED',
 }
