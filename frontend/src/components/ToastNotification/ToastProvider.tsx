@@ -17,7 +17,20 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
       const requestedDuration = options?.duration ?? 4000;
       const duration =
         Number.isFinite(requestedDuration) && requestedDuration > 0 ? requestedDuration : 4000;
-      setToasts((current) => [...current, { id, message, variant, duration }].slice(-3));
+      setToasts((current) =>
+        [
+          ...current,
+          {
+            id,
+            message,
+            variant,
+            duration,
+            targetUrl: options?.targetUrl,
+            onClick: options?.onClick,
+            actionLabel: options?.actionLabel,
+          },
+        ].slice(-3),
+      );
       return id;
     },
     [],

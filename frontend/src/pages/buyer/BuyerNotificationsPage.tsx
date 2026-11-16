@@ -16,7 +16,9 @@ import {
   ChevronRight,
   Check,
   Settings,
+  ArrowRight,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   getNotifications,
   getNotificationPreferences,
@@ -29,8 +31,10 @@ import type {
   NotificationPreference,
   NotificationChannel,
 } from '../../types/notification.types';
+import { resolveNotificationTargetUrl } from '../../utils/notificationNavigation';
 
 export const BuyerNotificationsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'list' | 'preferences'>('list');
   const [filterRead, setFilterRead] = useState<'ALL' | 'UNREAD'>('ALL');
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
@@ -102,6 +106,18 @@ export const BuyerNotificationsPage: React.FC = () => {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.warn('Failed to mark as read:', err);
+    }
+  };
+
+  const handleNotificationClick = async (item: UserNotification) => {
+    if (!item.isRead) {
+      await handleMarkOne(item.id);
+    }
+    const destination = resolveNotificationTargetUrl(item);
+    if (destination.startsWith('/') && !destination.startsWith('//')) {
+      navigate(destination);
+    } else {
+      window.location.assign(destination);
     }
   };
 
@@ -317,8 +333,8 @@ export const BuyerNotificationsPage: React.FC = () => {
               {notifications.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => handleMarkOne(item.id)}
-                  className={`flex items-start gap-4 p-4.5 transition hover:bg-slate-50/80 cursor-pointer ${
+                  onClick={() => void handleNotificationClick(item)}
+                  className={`group flex items-start gap-4 p-4.5 transition hover:bg-slate-50/80 cursor-pointer ${
                     !item.isRead ? 'bg-orange-50/30' : ''
                   }`}
                 >
@@ -333,11 +349,17 @@ export const BuyerNotificationsPage: React.FC = () => {
                       >
                         {item.title}
                       </h4>
-                      {!item.isRead && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
-                          Chưa đọc
+                      <div className="flex items-center gap-2">
+                        {!item.isRead && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                            Chưa đọc
+                          </span>
+                        )}
+                        <span className="text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          <span>Mở trang</span>
+                          <ArrowRight size={12} />
                         </span>
-                      )}
+                      </div>
                     </div>
 
                     <p className="text-xs text-slate-600 leading-relaxed mb-2">{item.content}</p>

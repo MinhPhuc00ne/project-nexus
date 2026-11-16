@@ -45,14 +45,66 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
   requiredReputationScore,
   hasItems: _hasItems,
 }) => {
-  const minIncrement = auction?.bidIncrement ? Number(auction.bidIncrement) : 1000000;
-  const [customBidAmount, setCustomBidAmount] = useState(currentPrice + minIncrement);
+  const rawIncrement =
+    selectedItem?.bidIncrement !== undefined &&
+    selectedItem?.bidIncrement !== null &&
+    Number(selectedItem.bidIncrement) > 0
+      ? Number(selectedItem.bidIncrement)
+      : selectedItem?.proposedBidIncrement !== undefined &&
+          selectedItem?.proposedBidIncrement !== null &&
+          Number(selectedItem.proposedBidIncrement) > 0
+        ? Number(selectedItem.proposedBidIncrement)
+        : auction?.bidIncrement
+          ? Number(auction.bidIncrement)
+          : 1000;
+  const minIncrement = rawIncrement > 0 ? rawIncrement : 1000;
+
+  const rawStartPrice =
+    selectedItem?.startingPrice !== undefined &&
+    selectedItem?.startingPrice !== null &&
+    Number(selectedItem.startingPrice) > 0
+      ? Number(selectedItem.startingPrice)
+      : selectedItem?.proposedStartingPrice !== undefined &&
+          selectedItem?.proposedStartingPrice !== null &&
+          Number(selectedItem.proposedStartingPrice) > 0
+        ? Number(selectedItem.proposedStartingPrice)
+        : auction?.startingPrice
+          ? Number(auction.startingPrice)
+          : auction?.product?.basePrice
+            ? Number(auction.product.basePrice)
+            : 0;
+  const startPriceVal = Number(rawStartPrice) || 0;
+
+  const bidsCount = totalBidsCount ?? auction?.totalBidsCount ?? (auction?.bids?.length || 0);
+  const isFirstBid = bidsCount === 0 || Number(currentPrice) === 0;
+
+  const minValidBid = isFirstBid
+    ? startPriceVal > 0
+      ? startPriceVal
+      : minIncrement
+    : (currentPrice > 0 ? currentPrice : startPriceVal) + minIncrement;
+
+  const basePrice = currentPrice > 0 ? currentPrice : startPriceVal;
+
+  const [customBidAmount, setCustomBidAmount] = useState(
+    isFirstBid
+      ? startPriceVal > 0
+        ? startPriceVal
+        : minIncrement
+      : (currentPrice > 0 ? currentPrice : startPriceVal) + minIncrement,
+  );
   const [showBidModal, setShowBidModal] = useState(false);
   const [isReminderSet, setIsReminderSet] = useState(false);
 
   useEffect(() => {
-    setCustomBidAmount(currentPrice + minIncrement);
-  }, [currentPrice, minIncrement]);
+    if (!isFirstBid && currentPrice > 0) {
+      setCustomBidAmount(currentPrice + minIncrement);
+    } else if (startPriceVal > 0) {
+      setCustomBidAmount(startPriceVal);
+    } else {
+      setCustomBidAmount(minIncrement);
+    }
+  }, [currentPrice, minIncrement, startPriceVal, isFirstBid]);
 
   const formatTimer = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -62,16 +114,57 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
   };
 
   const formatVND = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' đ';
+    const val = Number(amount) || 0;
+    return new Intl.NumberFormat('vi-VN').format(val) + ' đ';
   };
 
   const formatUSD = (vnd: number) => {
-    const usd = Math.round(vnd / 24000);
-    return `(≈ $${new Intl.NumberFormat('en-US').format(usd)} USD)`;
+    const val = Number(vnd) || 0;
+    if (val <= 0) return '(≈ $0 USD)';
+    const rawUsd = val / 24000;
+    const formatted =
+      rawUsd < 10
+        ? new Intl.NumberFormat('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          }).format(rawUsd)
+        : rawUsd < 1000
+          ? new Intl.NumberFormat('en-US', {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 2,
+            }).format(rawUsd)
+          : new Intl.NumberFormat('en-US', {
+              maximumFractionDigits: 0,
+            }).format(Math.round(rawUsd));
+
+    return `(≈ $${formatted} USD)`;
   };
 
-  const handleQuickIncrement = (inc: number) => {
-    setCustomBidAmount(currentPrice + inc);
+  const quickButtons = isFirstBid
+    ? [
+        { label: 'Khởi điểm', targetAmount: startPriceVal > 0 ? startPriceVal : minIncrement },
+        {
+          label: `+${formatVND(minIncrement)}`,
+          targetAmount: (startPriceVal > 0 ? startPriceVal : 0) + minIncrement,
+        },
+        {
+          label: `+${formatVND(minIncrement * 2)}`,
+          targetAmount: (startPriceVal > 0 ? startPriceVal : 0) + minIncrement * 2,
+        },
+        {
+          label: `+${formatVND(minIncrement * 5)}`,
+          targetAmount: (startPriceVal > 0 ? startPriceVal : 0) + minIncrement * 5,
+        },
+      ]
+    : [
+        { label: `+${formatVND(minIncrement)}`, targetAmount: basePrice + minIncrement },
+        { label: `+${formatVND(minIncrement * 2)}`, targetAmount: basePrice + minIncrement * 2 },
+        { label: `+${formatVND(minIncrement * 5)}`, targetAmount: basePrice + minIncrement * 5 },
+        { label: `+${formatVND(minIncrement * 10)}`, targetAmount: basePrice + minIncrement * 10 },
+      ];
+
+  const handleQuickIncrement = (targetAmount: number) => {
+    setCustomBidAmount(targetAmount);
   };
 
   const handleConfirmBid = () => {
@@ -79,20 +172,24 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
     setShowBidModal(false);
   };
 
-  const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
-
-  const isScheduled =
-    !isLive &&
-    (auction?.status === 'SCHEDULED' ||
-      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
+  const isTimeOver =
+    timeLeft !== undefined && timeLeft !== null
+      ? timeLeft <= 0
+      : Boolean(auction?.endTime && new Date(auction.endTime).getTime() <= Date.now());
 
   const isEnded =
     auction?.status === 'ENDED' ||
     auction?.status === 'SETTLED' ||
     auction?.status === 'CANCELLED' ||
-    (!isLive &&
-      !isScheduled &&
-      (auction?.endTime ? new Date(auction.endTime).getTime() <= Date.now() : false));
+    (isTimeOver && auction?.status !== 'SCHEDULED');
+
+  const isLive = !isEnded && (auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED');
+
+  const isScheduled =
+    !isLive &&
+    !isEnded &&
+    (auction?.status === 'SCHEDULED' ||
+      (auction?.startTime ? new Date(auction.startTime).getTime() > Date.now() : false));
 
   const hasItems =
     _hasItems ??
@@ -109,15 +206,6 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
     : auction?.id
       ? `PHÂN ĐỢT #${auction.id.slice(0, 8).toUpperCase()}`
       : 'CHỜ NIÊM YẾT';
-
-  const startPriceVal = selectedItem?.startingPrice
-    ? Number(selectedItem.startingPrice)
-    : auction?.startingPrice
-      ? Number(auction.startingPrice)
-      : 0;
-
-  const quickIncrements = [minIncrement, minIncrement * 2, minIncrement * 5, minIncrement * 10];
-  const bidsCount = totalBidsCount ?? auction?.totalBidsCount ?? (auction?.bids?.length || 0);
 
   return (
     <div className="flex flex-col gap-5">
@@ -140,9 +228,11 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
       {/* Countdown Banner */}
       <div
         className={`rounded-xl p-4 sm:p-5 flex items-center justify-between shadow-lg text-white ${
-          isScheduled
-            ? 'bg-gradient-to-br from-amber-950 via-slate-900 to-amber-900 border border-amber-600/30'
-            : 'bg-gradient-to-br from-slate-900 via-slate-850 to-slate-800'
+          isEnded
+            ? 'bg-slate-900 border border-slate-800'
+            : isScheduled
+              ? 'bg-gradient-to-br from-amber-950 via-slate-900 to-amber-900 border border-amber-600/30'
+              : 'bg-gradient-to-br from-slate-900 via-slate-850 to-slate-800'
         }`}
       >
         <div className="flex flex-col gap-1">
@@ -151,7 +241,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           </span>
           <span
             className={`font-mono text-2xl sm:text-3xl font-extrabold tracking-wider ${
-              isScheduled ? 'text-amber-400' : 'text-rose-400'
+              isEnded ? 'text-slate-400' : isScheduled ? 'text-amber-400' : 'text-rose-400'
             }`}
           >
             {timeLeft > 0 ? formatTimer(timeLeft) : isScheduled ? 'CHUẨN BỊ MỞ' : 'ĐÃ KẾT THÚC'}
@@ -161,13 +251,17 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           <span className="text-sm font-bold text-white">
             {isScheduled ? 'Chưa mở trả giá' : `${bidsCount} lượt trả giá`}
           </span>
-          <span className="text-[11px] text-sky-400 flex items-center gap-1.5 justify-end">
+          <span
+            className={`text-[11px] flex items-center gap-1.5 justify-end ${
+              isEnded ? 'text-slate-400' : isScheduled ? 'text-amber-400' : 'text-sky-400'
+            }`}
+          >
             <span
               className={`w-2 h-2 rounded-full ${
-                isScheduled ? 'bg-amber-400' : 'bg-cyan-400 animate-ping'
+                isEnded ? 'bg-slate-500' : isScheduled ? 'bg-amber-400' : 'bg-cyan-400 animate-ping'
               }`}
             />
-            {isScheduled ? 'Sắp Diễn Ra' : 'Trực Tiếp'}
+            {isEnded ? 'Đã Kết Thúc' : isScheduled ? 'Sắp Diễn Ra' : 'Trực Tiếp'}
           </span>
         </div>
       </div>
@@ -327,8 +421,8 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           {/* Quick Bid Increment Buttons */}
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {quickIncrements.map((incVal, idx) => {
-                const isSelected = customBidAmount === currentPrice + incVal;
+              {quickButtons.map((btn, idx) => {
+                const isSelected = customBidAmount === btn.targetAmount;
                 return (
                   <button
                     key={idx}
@@ -339,15 +433,15 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                         ? 'bg-rose-600 text-white border-rose-600 shadow-sm'
                         : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-blue-50 hover:border-blue-300'
                     } disabled:opacity-50 disabled:cursor-not-allowed`}
-                    onClick={() => handleQuickIncrement(incVal)}
+                    onClick={() => handleQuickIncrement(btn.targetAmount)}
                   >
-                    <span className="font-extrabold text-xs">+{formatVND(incVal)}</span>
+                    <span className="font-extrabold text-xs">{btn.label}</span>
                     <span
                       className={`text-[10px] font-medium ${
                         isSelected ? 'text-white/80' : 'text-slate-400'
                       }`}
                     >
-                      = {formatVND(currentPrice + incVal)}
+                      = {formatVND(btn.targetAmount)}
                     </span>
                   </button>
                 );
@@ -379,7 +473,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                   isEnded ||
                   isFlaggedViewOnly ||
                   timeLeft <= 0 ||
-                  customBidAmount <= currentPrice
+                  customBidAmount < minValidBid
                 }
                 className="py-2.5 px-5 bg-gradient-to-r from-orange-500 to-rose-600 text-white font-extrabold text-sm rounded-xl shadow-md transition hover:opacity-95 active:scale-95 whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
                 onClick={() => setShowBidModal(true)}

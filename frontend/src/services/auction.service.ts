@@ -31,6 +31,9 @@ import type {
   SellerAuctionConsignment,
   AuctionIntroShowcaseResponse,
   AuctionAwardItem,
+  AuctionAwardQuote,
+  CheckoutAuctionAwardInput,
+  CreateAuctionComplaintInput,
 } from '../types/auction-api.types';
 export type * from '../types/auction-api.types';
 export { normalizeAuctionListResponse } from './auction-response.helpers';
@@ -256,23 +259,41 @@ export async function getMyAuctionAwardsApi(): Promise<AuctionAwardItem[]> {
   }
 }
 
-export async function checkoutAuctionAwardApi(
+export async function quoteAuctionAwardApi(
   awardId: string,
-  shippingAddress: {
-    recipientName: string;
-    phoneNumber: string;
-    province: string;
-    district: string;
-    ward: string;
-    detailAddress: string;
-  },
-) {
-  const res = await api.post(`/commerce/auction-awards/${awardId}/checkout`, shippingAddress);
+  data: CheckoutAuctionAwardInput,
+): Promise<AuctionAwardQuote> {
+  const res = await api.post(`/commerce/auction-awards/${awardId}/quote`, data);
+  return res.data;
+}
+
+export async function checkoutAuctionAwardApi(awardId: string, data: CheckoutAuctionAwardInput) {
+  const res = await api.post(`/commerce/auction-awards/${awardId}/checkout`, data);
+  return res.data;
+}
+
+export async function respondSecondChanceAwardApi(awardId: string, accept: boolean) {
+  const res = await api.post(`/commerce/auction-awards/${awardId}/respond`, { accept });
   return res.data;
 }
 
 export async function declineAuctionAwardApi(awardId: string) {
   const res = await api.post(`/commerce/auction-awards/${awardId}/decline`);
+  return res.data;
+}
+
+export async function createAuctionComplaintApi(
+  auctionId: string,
+  data: CreateAuctionComplaintInput,
+) {
+  const res = await api.post(`/auctions/${auctionId}/complaints`, data);
+  return res.data;
+}
+
+export async function requestAuctionSupportChatApi(auctionId: string, message?: string) {
+  const res = await api.post(`/auctions/${auctionId}/support-chat`, {
+    message: message || 'Yêu cầu hỗ trợ về phiên đấu giá',
+  });
   return res.data;
 }
 

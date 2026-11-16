@@ -62,6 +62,9 @@ export default function CreateDisputeModal({
                 #{o.orderNumber} - {Number(o.totalAmount).toLocaleString('vi-VN')} ₫ ({o.status})
               </option>
             ))}
+            {selectedOrderId && !orders.some((o) => o.id === selectedOrderId) && (
+              <option value={selectedOrderId}>Đơn hàng #{selectedOrderId}</option>
+            )}
           </select>
         </div>
 

@@ -163,6 +163,7 @@ export interface CreateAuctionInput {
 
 export interface PlaceBidInput {
   bidAmount: number;
+  auctionItemId?: string;
 }
 
 export interface AdminCreateAuctionInput {
@@ -268,13 +269,19 @@ export interface AdminAuctionListResponse {
 }
 
 export interface PlaceBidResponse {
-  success: boolean;
   bidId: string;
   bidAmount: number;
-  currentHighestBid: number;
-  endTime: string;
-  isExtended: boolean;
-  status: AuctionStatus;
+  currentHighestBid?: number;
+  nextMinimumBid?: number;
+  totalBidsCount?: number;
+  auctionId?: string;
+  auctionItemId?: string;
+  lotStatus?: AuctionStatus;
+  endTime?: string | Date;
+  extended?: boolean;
+  isExtended?: boolean;
+  status?: AuctionStatus;
+  success?: boolean;
 }
 
 /**
@@ -300,15 +307,53 @@ export interface AuctionIntroShowcaseResponse {
   items: AuctionConsignmentItem[];
 }
 
+export type AuctionAwardTierType = 'PRIMARY_WINNER' | 'SECOND_CHANCE';
+
+export type AuctionAwardStatusType =
+  | 'AWAITING_ACCEPTANCE'
+  | 'AWAITING_DEPOSIT'
+  | 'AWAITING_CHECKOUT'
+  | 'PAID'
+  | 'PAYMENT_DEFAULT'
+  | 'DECLINED'
+  | 'BUYER_WITHDRAWN'
+  | 'EXPIRED';
+
 export interface AuctionAwardItem {
   id: string;
   auctionId: string;
+  auctionItemId?: string | null;
+  buyerId?: string;
   bidId: string;
-  orderId: string;
+  orderId?: string | null;
   depositAmount: number | string;
-  status: string;
+  offerAmount?: number | string;
+  tier?: AuctionAwardTierType | string;
+  status: AuctionAwardStatusType | string;
   expiresAt: string;
+  confirmedAt?: string | null;
   completedAt?: string | null;
+  resolutionNote?: string | null;
+  bid?: {
+    id: string;
+    bidAmount: number | string;
+  };
+  auction?: {
+    id: string;
+    title: string;
+    sellerId?: string;
+  };
+  auctionItem?: {
+    id: string;
+    title: string;
+    images?: string[];
+    startingPrice?: number | string;
+    seller?: {
+      id: string;
+      fullName: string;
+      shopAvatarUrl?: string | null;
+    };
+  };
   order?: {
     id: string;
     subtotal: number | string;
@@ -316,8 +361,43 @@ export interface AuctionAwardItem {
     status: string;
     shippingFee: number | string;
   };
-  auction?: {
-    id: string;
-    title: string;
+}
+
+export interface AuctionAwardQuote {
+  awardId: string;
+  tier: AuctionAwardTierType | string;
+  offerAmount: number;
+  depositAmount: number;
+  remainingProductAmount: number;
+  shippingFee: number;
+  dueNow: number;
+  totalOrderAmount: number;
+  expiresAt: string;
+}
+
+export interface CheckoutAuctionAwardInput {
+  addressId?: string;
+  shippingAddress?: {
+    recipientName: string;
+    phoneNumber: string;
+    province: string;
+    district: string;
+    ward: string;
+    detailAddress: string;
+    provinceId?: number;
+    districtId?: number;
+    wardCode?: string;
   };
+  recipientName?: string;
+  phone?: string;
+  street?: string;
+  ward?: string;
+  district?: string;
+  city?: string;
+}
+
+export interface CreateAuctionComplaintInput {
+  auctionItemId?: string;
+  reason: string;
+  evidenceUrls?: string[];
 }
