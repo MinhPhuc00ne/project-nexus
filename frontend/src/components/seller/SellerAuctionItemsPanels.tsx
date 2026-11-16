@@ -195,10 +195,12 @@ export default function SellerAuctionItemsPanels({
                             ),
                         )}
                       </p>
-                      <p>
-                        Hạn 24h: {new Date(item.activeAward.expiresAt).toLocaleString('vi-VN')} (
-                        {formatDeadlineCountdown(item.activeAward.expiresAt)})
-                      </p>
+                      {item.activeAward.expiresAt && (
+                        <p>
+                          Hạn 24h: {new Date(item.activeAward.expiresAt).toLocaleString('vi-VN')} (
+                          {formatDeadlineCountdown(item.activeAward.expiresAt)})
+                        </p>
+                      )}
                       <Badge tone={statusTone(item.activeAward.status)}>
                         {awardStatusLabel(item.activeAward.status)}
                       </Badge>

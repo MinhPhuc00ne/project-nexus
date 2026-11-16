@@ -35,10 +35,10 @@ export interface AuctionConsignmentItem {
     tier?: string;
     status: string;
     offerAmount: number | string;
-    depositAmount: number | string;
+    depositAmount?: number | string;
     remainingProductAmount?: number | string;
     orderId?: string | null;
-    expiresAt: string;
+    expiresAt?: string;
     buyer?: { id: string; fullName: string; email?: string; reputationScore?: number } | null;
   } | null;
   weightGrams?: number;
