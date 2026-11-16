@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { X, AlertCircle, Send, Loader2 } from 'lucide-react';
 import { createAuctionComplaintApi } from '../../services/auction.service';
 import { useToast } from '../ToastNotification/useToast';
 
+/**
+ * Props for the buyer auction complaint modal.
+ */
 interface AuctionComplaintModalProps {
   auctionId: string;
   auctionItemId?: string | null;
@@ -12,6 +15,12 @@ interface AuctionComplaintModalProps {
   onSuccess?: () => void;
 }
 
+/**
+ * Modal enabling a buyer to submit an auction or lot complaint to platform administrators.
+ *
+ * @param props - Component props specifying target auction, lot context, and modal callbacks.
+ * @returns Rendered complaint modal or null when closed.
+ */
 export default function AuctionComplaintModal({
   auctionId,
   auctionItemId,
@@ -19,7 +28,7 @@ export default function AuctionComplaintModal({
   isOpen,
   onClose,
   onSuccess,
-}: AuctionComplaintModalProps) {
+}: AuctionComplaintModalProps): React.ReactElement | null {
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -27,7 +36,7 @@ export default function AuctionComplaintModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     if (!reason.trim()) {
       setErrorMsg('Vui lòng nhập lý do và nội dung khiếu nại.');

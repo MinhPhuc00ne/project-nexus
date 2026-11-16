@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AuctionStatus, Role } from '@nexus/types';
 import { Gavel, X, ArrowRight } from 'lucide-react';
@@ -6,6 +6,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { createAuctionSocket, getAuctionsApi } from '../../services/auction.service';
 import { useToast } from '../ToastNotification';
 
+/**
+ * Payload representing an active live auction floating alert banner.
+ */
 interface AuctionLiveAlert {
   auctionId: string;
   title: string;
@@ -15,8 +18,10 @@ interface AuctionLiveAlert {
  * Shows real-time auction lifecycle alerts for the current session.
  * The server broadcasts `auction:started` to connected clients; subscribing to
  * the auction room afterwards also lets the current viewer receive `auction:ended`.
+ *
+ * @returns Floating live auction alert banner or null when inactive.
  */
-export default function AuctionLifecycleNotifier() {
+export default function AuctionLifecycleNotifier(): React.ReactElement | null {
   const { user } = useAuth();
   const toast = useToast();
   const location = useLocation();
@@ -25,6 +30,14 @@ export default function AuctionLifecycleNotifier() {
   const [activeAlert, setActiveAlert] = useState<AuctionLiveAlert | null>(null);
   const handledStarts = useRef(new Set<string>());
   const joinedAuctions = useRef(new Set<string>());
+  const pathnameRef = useRef(location.pathname);
+
+  useEffect(() => {
+    pathnameRef.current = location.pathname;
+    setActiveAlert((curr) =>
+      curr && location.pathname.includes(`/auction/${curr.auctionId}`) ? null : curr,
+    );
+  }, [location.pathname]);
 
   useEffect(() => {
     const connection = createAuctionSocket();
@@ -37,8 +50,6 @@ export default function AuctionLifecycleNotifier() {
       connection.joinRoom(auctionId);
     };
 
-    // A user can open the app after Admin has already started an auction.
-    // Join all active rooms immediately so the later `auction:ended` event is not missed.
     void Promise.all([
       getAuctionsApi({ status: AuctionStatus.ACTIVE, page: 1, limit: 100 }),
       getAuctionsApi({ status: AuctionStatus.EXTENDED, page: 1, limit: 100 }),
@@ -49,20 +60,16 @@ export default function AuctionLifecycleNotifier() {
           .flatMap((response) => response.items)
           .forEach((auction) => joinAuctionRoom(auction.id));
       })
-      .catch(() => {
-        // Live alerts remain available for auctions started after the current connection.
-      });
+      .catch(() => undefined);
 
     connection.onAuctionStarted((event) => {
       if (handledStarts.current.has(event.auctionId)) return;
       handledStarts.current.add(event.auctionId);
       joinAuctionRoom(event.auctionId);
 
-      // Hiển thị Banner nổi bật nếu người dùng chưa ở trong trang đấu giá này
-      const isCurrentAuctionPage = location.pathname.includes(`/auction/${event.auctionId}`);
+      const isCurrentAuctionPage = pathnameRef.current.includes(`/auction/${event.auctionId}`);
       if (!isCurrentAuctionPage) {
         setActiveAlert({ auctionId: event.auctionId, title: event.title });
-        // Tự động thu hồi banner sau 12 giây
         setTimeout(() => {
           setActiveAlert((curr) => (curr?.auctionId === event.auctionId ? null : curr));
         }, 12000);
@@ -128,7 +135,7 @@ export default function AuctionLifecycleNotifier() {
       joinedAuctions.current.clear();
       connection.disconnect();
     };
-  }, [toast, user, location.pathname]);
+  }, [toast, user]);
 
   if (!activeAlert) return null;
 

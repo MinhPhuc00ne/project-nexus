@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -23,6 +23,9 @@ import { getAddresses, type UserAddress } from '../../services/address';
 import { getBuyerWalletApi, type BuyerWalletResponse } from '../../services/wallet.service';
 import { useToast } from '../ToastNotification/useToast';
 
+/**
+ * Props for the post-auction award checkout modal.
+ */
 interface AuctionAwardCheckoutModalProps {
   award: AuctionAwardItem;
   isOpen: boolean;
@@ -30,12 +33,19 @@ interface AuctionAwardCheckoutModalProps {
   onSuccess: (orderId?: string) => void;
 }
 
+/**
+ * Modal allowing an auction winner to select a delivery address, preview GHN shipping quotes,
+ * apply the 30% escrow deposit offset, and settle the remaining 70% balance via wallet.
+ *
+ * @param props - Component props containing the active auction award and modal callbacks.
+ * @returns Rendered modal dialog or null when closed.
+ */
 export default function AuctionAwardCheckoutModal({
   award,
   isOpen,
   onClose,
   onSuccess,
-}: AuctionAwardCheckoutModalProps) {
+}: AuctionAwardCheckoutModalProps): React.ReactElement | null {
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -49,12 +59,11 @@ export default function AuctionAwardCheckoutModal({
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Load addresses & wallet balance
   useEffect(() => {
     if (!isOpen) return;
     let isMounted = true;
 
-    async function init() {
+    async function init(): Promise<void> {
       setLoadingInitial(true);
       setErrorMsg(null);
       try {
@@ -88,9 +97,8 @@ export default function AuctionAwardCheckoutModal({
     };
   }, [isOpen, award.id]);
 
-  // Request quote whenever address changes
   const fetchQuote = useCallback(
-    async (addressId: string) => {
+    async (addressId: string): Promise<void> => {
       if (!addressId) return;
       setLoadingQuote(true);
       setErrorMsg(null);
@@ -126,7 +134,7 @@ export default function AuctionAwardCheckoutModal({
   const isBalanceSufficient = quote ? walletBalance >= dueNow : true;
   const missingAmount = Math.max(0, dueNow - walletBalance);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (): Promise<void> => {
     if (!selectedAddressId) {
       setErrorMsg('Vui lòng chọn hoặc thêm địa chỉ nhận hàng.');
       return;
@@ -146,13 +154,14 @@ export default function AuctionAwardCheckoutModal({
     setErrorMsg(null);
     try {
       const res = await checkoutAuctionAwardApi(award.id, { addressId: selectedAddressId });
+      const orderId = res?.id ?? res?.order?.id;
       toast.success('Thanh toán thành công! Đơn hàng đấu giá đã được khởi tạo.', {
-        targetUrl: res?.order?.id ? `/buyer/orders/${res.order.id}` : '/buyer/orders',
+        targetUrl: orderId ? `/buyer/orders/${orderId}` : '/buyer/orders',
       });
-      onSuccess(res?.order?.id);
+      onSuccess(orderId);
       onClose();
-      if (res?.order?.id) {
-        navigate(`/buyer/orders/${res.order.id}`);
+      if (orderId) {
+        navigate(`/buyer/orders/${orderId}`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Thanh toán thất bại, vui lòng thử lại.';

@@ -1,5 +1,9 @@
 /**
- * Resolves the target URL for a notification based on its properties and fallback heuristics.
+ * Resolves the target route for an in-app notification based on explicit route metadata
+ * and content-driven domain heuristics.
+ *
+ * @param item - Notification payload containing optional targetUrl, auctionId, type, title, and content.
+ * @returns Relative application route path to navigate to.
  */
 export function resolveNotificationTargetUrl(item: {
   targetUrl?: string | null;
@@ -8,13 +12,11 @@ export function resolveNotificationTargetUrl(item: {
   title?: string | null;
   content?: string | null;
 }): string {
-  // 1. Explicit targetUrl provided by backend
   if (item.targetUrl && typeof item.targetUrl === 'string' && item.targetUrl.trim().length > 0) {
     const trimmed = item.targetUrl.trim();
     if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
       return trimmed;
     }
-    // If absolute URL pointing to current origin, convert to relative route
     try {
       const parsed = new URL(trimmed, window.location.origin);
       if (parsed.origin === window.location.origin) {
@@ -22,16 +24,14 @@ export function resolveNotificationTargetUrl(item: {
       }
       return trimmed;
     } catch {
-      // Fall through to heuristics
+      void 0;
     }
   }
 
-  // 2. Specific auctionId
   if (item.auctionId) {
     return `/auction/${item.auctionId}`;
   }
 
-  // 3. Type or keyword-based heuristics
   const typeUpper = (item.type || '').toUpperCase();
   const text = `${item.title || ''} ${item.content || ''}`.toLowerCase();
 

@@ -247,11 +247,16 @@ export async function getMyBidsApi(): Promise<MyBidItem[]> {
   return [];
 }
 
+/**
+ * Retrieves active and historical auction awards granted to the authenticated buyer.
+ *
+ * @returns Resolves with the buyer's auction award list.
+ */
 export async function getMyAuctionAwardsApi(): Promise<AuctionAwardItem[]> {
   const token = getStoredToken();
   if (!token) return [];
   try {
-    const res = await api.get('/commerce/auction-awards');
+    const res = await api.get<AuctionAwardItem[]>('/commerce/auction-awards');
     return Array.isArray(res.data) ? res.data : [];
   } catch (err) {
     console.error('Failed to fetch auction awards:', err);
@@ -259,39 +264,97 @@ export async function getMyAuctionAwardsApi(): Promise<AuctionAwardItem[]> {
   }
 }
 
+/**
+ * Calculates GHN shipping fees and remaining balance due for an awarded auction lot.
+ *
+ * @param awardId - Identifier of the auction award.
+ * @param data - Delivery address and shipping option payload.
+ * @returns Resolves with the shipping quote and payment breakdown.
+ */
 export async function quoteAuctionAwardApi(
   awardId: string,
   data: CheckoutAuctionAwardInput,
 ): Promise<AuctionAwardQuote> {
-  const res = await api.post(`/commerce/auction-awards/${awardId}/quote`, data);
+  const res = await api.post<AuctionAwardQuote>(`/commerce/auction-awards/${awardId}/quote`, data);
   return res.data;
 }
 
-export async function checkoutAuctionAwardApi(awardId: string, data: CheckoutAuctionAwardInput) {
-  const res = await api.post(`/commerce/auction-awards/${awardId}/checkout`, data);
+/**
+ * Settles an awarded auction lot using the buyer's wallet balance and locked deposit.
+ *
+ * @param awardId - Identifier of the auction award to settle.
+ * @param data - Checkout payload specifying the delivery address.
+ * @returns Resolves with the created or updated order payload.
+ */
+export async function checkoutAuctionAwardApi(
+  awardId: string,
+  data: CheckoutAuctionAwardInput,
+): Promise<{ id?: string; order?: { id: string } }> {
+  const res = await api.post<{ id?: string; order?: { id: string } }>(
+    `/commerce/auction-awards/${awardId}/checkout`,
+    data,
+  );
   return res.data;
 }
 
-export async function respondSecondChanceAwardApi(awardId: string, accept: boolean) {
-  const res = await api.post(`/commerce/auction-awards/${awardId}/respond`, { accept });
+/**
+ * Submits the runner-up buyer's response (accept or decline) to a second-chance auction award.
+ *
+ * @param awardId - Identifier of the second-chance auction award.
+ * @param accept - True to accept and lock deposit, false to decline.
+ * @returns Resolves with the updated auction award state.
+ */
+export async function respondSecondChanceAwardApi(
+  awardId: string,
+  accept: boolean,
+): Promise<AuctionAwardItem> {
+  const res = await api.post<AuctionAwardItem>(`/commerce/auction-awards/${awardId}/respond`, {
+    accept,
+  });
   return res.data;
 }
 
-export async function declineAuctionAwardApi(awardId: string) {
-  const res = await api.post(`/commerce/auction-awards/${awardId}/decline`);
+/**
+ * Declines an active auction award and forfeits the associated reservation according to platform policy.
+ *
+ * @param awardId - Identifier of the auction award to decline.
+ * @returns Resolves with the updated auction award record.
+ */
+export async function declineAuctionAwardApi(awardId: string): Promise<AuctionAwardItem> {
+  const res = await api.post<AuctionAwardItem>(`/commerce/auction-awards/${awardId}/decline`);
   return res.data;
 }
 
+/**
+ * Files a formal buyer complaint regarding an auction session or lot irregularity.
+ *
+ * @param auctionId - Identifier of the target auction session.
+ * @param data - Complaint reason, description, and evidence attachments.
+ * @returns Resolves with the created complaint record.
+ */
 export async function createAuctionComplaintApi(
   auctionId: string,
   data: CreateAuctionComplaintInput,
-) {
-  const res = await api.post(`/auctions/${auctionId}/complaints`, data);
+): Promise<{ id: string; status: string }> {
+  const res = await api.post<{ id: string; status: string }>(
+    `/auctions/${auctionId}/complaints`,
+    data,
+  );
   return res.data;
 }
 
-export async function requestAuctionSupportChatApi(auctionId: string, message?: string) {
-  const res = await api.post(`/auctions/${auctionId}/support-chat`, {
+/**
+ * Initiates or retrieves a support chat conversation for a specific auction session.
+ *
+ * @param auctionId - Identifier of the auction session.
+ * @param message - Optional initial inquiry message.
+ * @returns Resolves with the support chat session metadata.
+ */
+export async function requestAuctionSupportChatApi(
+  auctionId: string,
+  message?: string,
+): Promise<{ conversationId?: string }> {
+  const res = await api.post<{ conversationId?: string }>(`/auctions/${auctionId}/support-chat`, {
     message: message || 'Yêu cầu hỗ trợ về phiên đấu giá',
   });
   return res.data;
