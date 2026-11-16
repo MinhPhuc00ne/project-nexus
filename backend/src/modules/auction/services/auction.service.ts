@@ -764,6 +764,8 @@ export class AuctionService implements OnModuleInit {
       bidIncrement: Number(updated.bidIncrement),
       introDurationMs,
       approvedLotsCount: approvedLots.length,
+      items: introItems,
+      lots: introItems,
     };
   }
 
