@@ -6,6 +6,7 @@ import type { AuctionViewerMode, AuctionTabKey, SimilarWatch } from '../../types
 import AuctionGallery from '../../components/auction/AuctionGallery';
 import AuctionBidTerminal from '../../components/auction/AuctionBidTerminal';
 import AuctionDetailTabs from '../../components/auction/AuctionDetailTabs';
+import { getLotBidHistory, mergeBidHistory } from '../../components/auction/bidHistory';
 import SimilarAuctionsSection from '../../components/auction/SimilarAuctionsSection';
 import { CinematicAuctionIntro } from '../../components/auction/CinematicAuctionIntro';
 import { AuctionShowcaseHUD } from '../../components/auction/showcase/AuctionShowcaseHUD';
@@ -71,7 +72,7 @@ export const AuctionPage: React.FC = () => {
         if (currentUser?.id && lot.currentHighestBidderId === currentUser.id) {
           return `${currentUser.fullName || 'Bạn'} (Bạn)`;
         }
-        const matchedBid = auction?.bids?.find(
+        const matchedBid = getLotBidHistory(auction, lot).find(
           (b) =>
             b.bidder?.id === lot.currentHighestBidderId ||
             Number(b.bidAmount) === Number(lot.currentHighestBid),
@@ -83,8 +84,9 @@ export const AuctionPage: React.FC = () => {
           return isMe ? `${matchedBid.bidder.fullName} (Bạn)` : matchedBid.bidder.fullName;
         }
       }
-      if (auction?.bids && auction.bids.length > 0) {
-        const topBid = auction.bids[0];
+      const lotBids = getLotBidHistory(auction, lot);
+      if (lotBids.length > 0) {
+        const topBid = lotBids[0];
         const isMe =
           (currentUser?.id && topBid.bidder?.id === currentUser.id) ||
           (currentUser?.fullName && topBid.bidder?.fullName === currentUser.fullName);
@@ -99,46 +101,7 @@ export const AuctionPage: React.FC = () => {
 
   const upsertBidList = useCallback(
     (currentBids: AuctionBidItem[] | undefined, incomingBid: AuctionBidItem): AuctionBidItem[] => {
-      const currentUser = userRef.current;
-      const list = currentBids ? [...currentBids] : [];
-      const incomingBidderId = incomingBid.bidder?.id || '';
-      const incomingBidderName = incomingBid.bidder?.fullName || '';
-
-      const existingIndex = list.findIndex((b) => {
-        if (incomingBid.id && b.id && b.id === incomingBid.id) return true;
-        const bBidderId = b.bidder?.id || '';
-        const bBidderName = b.bidder?.fullName || '';
-        const sameAmount = Number(b.bidAmount) === Number(incomingBid.bidAmount);
-        const sameBidder =
-          (bBidderId && incomingBidderId && bBidderId === incomingBidderId) ||
-          (bBidderName && incomingBidderName && bBidderName === incomingBidderName) ||
-          (bBidderName.includes('tài khoản hiện tại') &&
-            (incomingBidderId === currentUser?.id || incomingBidderName === currentUser?.fullName));
-        return sameAmount && sameBidder;
-      });
-
-      if (existingIndex >= 0) {
-        list[existingIndex] = {
-          ...list[existingIndex],
-          ...incomingBid,
-          bidder: {
-            ...list[existingIndex].bidder,
-            ...incomingBid.bidder,
-            fullName: incomingBid.bidder?.fullName || list[existingIndex].bidder?.fullName,
-          },
-        };
-      } else {
-        list.unshift(incomingBid);
-      }
-
-      return list.sort((a, b) => {
-        const timeA = new Date(a.placedAt).getTime();
-        const timeB = new Date(b.placedAt).getTime();
-        if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
-          return timeB - timeA;
-        }
-        return Number(b.bidAmount) - Number(a.bidAmount);
-      });
+      return mergeBidHistory(currentBids, [incomingBid]);
     },
     [],
   );
@@ -147,6 +110,7 @@ export const AuctionPage: React.FC = () => {
     if (!activeAuction) return;
     const lot = activeAuction.items?.[selectedLotIndex] || activeAuction.items?.[0];
     setLeadingBidder(resolveLeadingBidderLabel(lot, activeAuction));
+    if (lot) setCurrentPrice(Number(lot.currentHighestBid) || 0);
   }, [user, activeAuction, selectedLotIndex, resolveLeadingBidderLabel]);
 
   useEffect(() => {
@@ -288,6 +252,7 @@ export const AuctionPage: React.FC = () => {
               if (!prev) return null;
               const newBid: AuctionBidItem = {
                 id: payload.bidId,
+                auctionItemId: payload.auctionItemId,
                 bidAmount: validBid,
                 status: BidStatus.ACCEPTED,
                 placedAt: payload.placedAt || new Date().toISOString(),
@@ -303,6 +268,7 @@ export const AuctionPage: React.FC = () => {
                 if (item.id === payload.auctionItemId) {
                   return {
                     ...item,
+                    bids: upsertBidList(item.bids, newBid),
                     currentHighestBid: validBid,
                     currentHighestBidderId: payload.bidderId,
                     totalBidsCount: accurateCount,
@@ -476,6 +442,7 @@ export const AuctionPage: React.FC = () => {
 
       const myNewBid: AuctionBidItem = {
         id: res.bidId,
+        auctionItemId: currentLot?.id,
         bidAmount: newPrice,
         status: BidStatus.ACCEPTED,
         placedAt: new Date().toISOString(),
@@ -494,6 +461,7 @@ export const AuctionPage: React.FC = () => {
           if (item.id === currentLot?.id || (!currentLot?.id && idx === 0)) {
             return {
               ...item,
+              bids: upsertBidList(item.bids, myNewBid),
               currentHighestBid: newPrice,
               currentHighestBidderId: currentUser?.id || 'current-user',
               totalBidsCount: accurateCount,
@@ -822,7 +790,7 @@ export const AuctionPage: React.FC = () => {
             isEligible={eligibility?.isEligible ?? true}
             eligibilityReason={eligibility?.reason}
             isFlaggedViewOnly={eligibility?.isFlaggedViewOnly ?? false}
-            totalBidsCount={activeAuction.bids?.length ?? activeAuction.totalBidsCount ?? 0}
+            totalBidsCount={currentLot?.totalBidsCount ?? activeAuction.totalBidsCount ?? 0}
             buyerReputationScore={eligibility?.currentScore}
             requiredReputationScore={
               eligibility?.requiredScore ?? activeAuction.minBuyerReputation ?? 40

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
   Sliders,
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import type { AuctionTabKey } from './types';
 import type { AuctionEntity, AuctionConsignmentItem } from '../../services/auction.service';
-import type { AuctionBidItem } from '../../types/auction-api.types';
+import { getLotBidHistory } from './bidHistory';
 import { getShopReviewsApi, type ShopReviewItem } from '../../services/reviews.service';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -35,41 +35,11 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
     _hasItems ??
     Boolean(selectedItem || auction?.product || (auction?.items && auction.items.length > 0));
 
-  const uniqueBids = useMemo(() => {
-    if (!auction?.bids || auction.bids.length === 0) return [];
-    const seenIds = new Set<string>();
-    const seenCombos = new Set<string>();
-    const result: AuctionBidItem[] = [];
-
-    for (const b of auction.bids) {
-      if (b.id && seenIds.has(b.id)) continue;
-      if (b.id) seenIds.add(b.id);
-
-      // Phòng ngừa trường hợp cùng 1 lượt đặt giá vừa nhận từ REST vừa nhận từ WebSocket
-      const bidderIdentifier =
-        b.bidder?.id ||
-        (b.bidder?.fullName?.toLowerCase().includes('tài khoản hiện tại')
-          ? 'current-user'
-          : b.bidder?.fullName) ||
-        'unknown';
-      const comboKey = `${bidderIdentifier}-${Number(b.bidAmount)}`;
-      if (seenCombos.has(comboKey)) continue;
-      seenCombos.add(comboKey);
-
-      result.push(b);
-    }
-
-    return result.sort((a, b) => {
-      const timeA = new Date(a.placedAt).getTime();
-      const timeB = new Date(b.placedAt).getTime();
-      if (!isNaN(timeA) && !isNaN(timeB) && timeA !== timeB) {
-        return timeB - timeA;
-      }
-      return Number(b.bidAmount) - Number(a.bidAmount);
-    });
-  }, [auction?.bids]);
-
-  const bidsCount = uniqueBids.length || auction?.totalBidsCount || 0;
+  const historyLot = selectedItem ?? auction?.items?.[0];
+  const uniqueBids = getLotBidHistory(auction, historyLot);
+  const bidsCount = historyLot
+    ? Math.max(historyLot.totalBidsCount ?? 0, uniqueBids.length)
+    : Math.max(auction?.totalBidsCount ?? 0, uniqueBids.length);
   const [reviews, setReviews] = useState<ShopReviewItem[]>([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
 
@@ -424,6 +394,17 @@ export const AuctionDetailTabs: React.FC<AuctionDetailTabsProps> = ({
         {/* TAB 3: BID HISTORY */}
         {activeTab === 'history' && (
           <div>
+            {historyLot && (
+              <p className="mb-4 text-sm font-semibold text-slate-800">
+                Lô #{historyLot.lotNumber ?? 1}: {historyLot.title}
+              </p>
+            )}
+            {bidsCount > uniqueBids.length && (
+              <p className="mb-3 text-xs text-slate-500">
+                Đang hiển thị {uniqueBids.length} lượt gần nhất trong tổng số {bidsCount} lượt đặt
+                giá.
+              </p>
+            )}
             {uniqueBids.length === 0 ? (
               <div className="py-12 text-center text-slate-400 text-xs">
                 Chưa có lượt đặt giá nào. Hãy là người đầu tiên trả giá để sở hữu hiện vật!

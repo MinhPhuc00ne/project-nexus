@@ -24,6 +24,7 @@ export interface AuctionSeller {
 
 export interface AuctionBidItem {
   id: string;
+  auctionItemId?: string | null;
   bidAmount: number;
   status: BidStatus;
   placedAt: string;

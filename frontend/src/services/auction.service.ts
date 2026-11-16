@@ -2,6 +2,7 @@ import api, { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import {
   normalizeAuctionListResponse,
+  unwrapAuctionResponse,
   type RawAuctionListResponse,
 } from './auction-response.helpers';
 export { formatAuctionImage } from './auction-response.helpers';
@@ -255,13 +256,11 @@ export async function getMyBidsApi(): Promise<MyBidItem[]> {
 export async function getMyAuctionAwardsApi(): Promise<AuctionAwardItem[]> {
   const token = getStoredToken();
   if (!token) return [];
-  try {
-    const res = await api.get<AuctionAwardItem[]>('/commerce/auction-awards');
-    return Array.isArray(res.data) ? res.data : [];
-  } catch (err) {
-    console.error('Failed to fetch auction awards:', err);
-    return [];
-  }
+  const res = await api.get<AuctionAwardItem[] | { data: AuctionAwardItem[] }>(
+    '/commerce/auction-awards',
+  );
+  const awards = unwrapAuctionResponse(res.data);
+  return Array.isArray(awards) ? awards : [];
 }
 
 /**
@@ -276,7 +275,7 @@ export async function quoteAuctionAwardApi(
   data: CheckoutAuctionAwardInput,
 ): Promise<AuctionAwardQuote> {
   const res = await api.post<AuctionAwardQuote>(`/commerce/auction-awards/${awardId}/quote`, data);
-  return res.data;
+  return unwrapAuctionResponse(res.data);
 }
 
 /**
@@ -294,7 +293,7 @@ export async function checkoutAuctionAwardApi(
     `/commerce/auction-awards/${awardId}/checkout`,
     data,
   );
-  return res.data;
+  return unwrapAuctionResponse(res.data);
 }
 
 /**
@@ -311,7 +310,7 @@ export async function respondSecondChanceAwardApi(
   const res = await api.post<AuctionAwardItem>(`/commerce/auction-awards/${awardId}/respond`, {
     accept,
   });
-  return res.data;
+  return unwrapAuctionResponse(res.data);
 }
 
 /**

@@ -11,7 +11,14 @@ export function resolveNotificationTargetUrl(item: {
   type?: string | null;
   title?: string | null;
   content?: string | null;
+  metadata?: { actionType?: string } | null;
 }): string {
+  if (
+    item.metadata?.actionType === 'SECOND_CHANCE_INVITATION' ||
+    (item.type === 'AUCTION' && item.title?.startsWith('Cơ hội mua '))
+  ) {
+    return '/buyer/profile?tab=auction-offers';
+  }
   if (item.targetUrl && typeof item.targetUrl === 'string' && item.targetUrl.trim().length > 0) {
     const trimmed = item.targetUrl.trim();
     if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {

@@ -1,5 +1,10 @@
 import type { AuctionEntity, AuctionListResponse } from '../types/auction-api.types';
 
+/** Read either the standard HTTP envelope or an already unwrapped payload. */
+export function unwrapAuctionResponse<T>(payload: T | { data: T }): T {
+  return payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload;
+}
+
 /**
  * Auction list response payload in either supported pagination shape.
  */
