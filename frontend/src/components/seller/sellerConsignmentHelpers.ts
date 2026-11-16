@@ -1,6 +1,31 @@
 import { ApiRequestError, apiRequest } from '../../services/api';
 
 /**
+ * Auction fields used to decide whether a seller can still submit a consignment.
+ */
+export interface ConsignmentEligibleAuction {
+  status: string;
+  isConsignmentLocked?: boolean | null;
+  consignmentDeadline?: string | null;
+}
+
+/**
+ * Checks whether an auction is scheduled, unlocked, and still accepting consignments.
+ *
+ * @param auction - Auction lifecycle and consignment deadline fields.
+ * @returns True when the seller can submit an item to the auction.
+ */
+export function canSubmitConsignment(auction: ConsignmentEligibleAuction): boolean {
+  const isScheduled = auction.status === 'SCHEDULED' || auction.status === 'scheduled';
+  const deadline = auction.consignmentDeadline;
+  return (
+    isScheduled &&
+    !auction.isConsignmentLocked &&
+    (!deadline || new Date(deadline).getTime() > Date.now())
+  );
+}
+
+/**
  * State container for consignment registration form inputs.
  */
 export type ConsignmentFormState = {
@@ -10,14 +35,9 @@ export type ConsignmentFormState = {
   proposedStartingPrice: string;
   proposedReservePrice: string;
   proposedBidIncrement: string;
-  threeModelKey: string;
   appraisalCertificateNumber: string;
   appraisalAgency: string;
   certificateIssueDate: string;
-  weightGrams: string;
-  lengthCm: string;
-  widthCm: string;
-  heightCm: string;
 };
 
 /**
@@ -30,14 +50,9 @@ export const initialConsignmentForm: ConsignmentFormState = {
   proposedStartingPrice: '',
   proposedReservePrice: '',
   proposedBidIncrement: '100000',
-  threeModelKey: '',
   appraisalCertificateNumber: '',
   appraisalAgency: '',
   certificateIssueDate: '',
-  weightGrams: '500',
-  lengthCm: '20',
-  widthCm: '15',
-  heightCm: '10',
 };
 
 /**

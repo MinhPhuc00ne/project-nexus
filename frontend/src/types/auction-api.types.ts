@@ -1,11 +1,11 @@
-import { type Socket } from 'socket.io-client';
 import type { AuctionStatus, BidStatus } from '@nexus/types';
-import {
-  type WsAuctionStartedPayload,
-  type WsBidPlacedPayload,
-  type WsTimeExtendedPayload,
-  type WsTimerSyncPayload,
-} from '@nexus/types';
+import type { AuctionConsignmentItem, SellerAuctionConsignment } from './auction-consignment.types';
+export type {
+  AuctionConsignmentItem,
+  AuctionConsignmentStatus,
+  SellerAuctionConsignment,
+} from './auction-consignment.types';
+export type { AuctionSocketClient } from './auction-socket.types';
 
 export interface AuctionProduct {
   id: string;
@@ -31,44 +31,6 @@ export interface AuctionBidItem {
     id: string;
     fullName: string;
     avatarUrl?: string | null;
-  };
-}
-
-export interface AuctionConsignmentItem {
-  id: string;
-  title: string;
-  description?: string;
-  images?: string[];
-  videoUrl?: string | null;
-  threeModelKey?: string | null;
-  appraisalCertificateNumber?: string | null;
-  appraisalAgency?: string | null;
-  certificateImages?: string[];
-  certificateIssueDate?: string | null;
-  status?: string;
-  lotNumber?: number | null;
-  startingPrice?: number | string | null;
-  proposedStartingPrice?: number | string | null;
-  reservePrice?: number | string | null;
-  proposedReservePrice?: number | string | null;
-  bidIncrement?: number | string | null;
-  proposedBidIncrement?: number | string | null;
-  currentHighestBid?: number | string | null;
-  totalBidsCount?: number;
-  lotStatus?: AuctionStatus;
-  startTime?: string | null;
-  endTime?: string | null;
-  originalEndTime?: string;
-  isExtended?: boolean;
-  weightGrams?: number;
-  lengthCm?: number;
-  widthCm?: number;
-  heightCm?: number;
-  seller?: {
-    id: string;
-    fullName: string;
-    avatarUrl?: string | null;
-    shopAvatarUrl?: string | null;
   };
 }
 
@@ -198,17 +160,15 @@ export interface RegisterAuctionItemInput {
   proposedStartingPrice: number;
   proposedReservePrice?: number;
   proposedBidIncrement?: number;
-  threeModelKey?: string;
   appraisalCertificateNumber?: string;
   appraisalAgency?: string;
   certificateImages: string[];
   certificateIssueDate?: string;
-  weightGrams?: number;
-  lengthCm?: number;
-  widthCm?: number;
-  heightCm?: number;
 }
 
+/**
+ * Appraised auction item returned by the administrative review endpoint.
+ */
 export interface AdminAuctionItem extends Omit<
   RegisterAuctionItemInput,
   'proposedStartingPrice' | 'proposedReservePrice' | 'proposedBidIncrement'
@@ -218,6 +178,11 @@ export interface AdminAuctionItem extends Omit<
   proposedStartingPrice: number | string;
   proposedReservePrice: number | string | null;
   proposedBidIncrement: number | string;
+  threeModelKey?: string | null;
+  weightGrams?: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
   seller: AuctionSeller & {
     platformEmail?: string;
     shopAvatarUrl?: string | null;
@@ -271,47 +236,6 @@ export interface PlaceBidResponse {
 }
 
 /**
- * Lifecycle review state of a seller auction consignment item.
- */
-export type AuctionConsignmentStatus = 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
-
-/**
- * Consigned auction item entity with review status and parent auction details.
- */
-export interface SellerAuctionConsignment {
-  id: string;
-  auctionId: string;
-  title: string;
-  description: string;
-  images: string[];
-  proposedStartingPrice: number;
-  proposedReservePrice?: number | null;
-  proposedBidIncrement: number;
-  weightGrams?: number;
-  lengthCm?: number;
-  widthCm?: number;
-  heightCm?: number;
-  appraisalCertificateNumber?: string | null;
-  appraisalAgency?: string | null;
-  certificateImages: string[];
-  certificateIssueDate?: string | null;
-  status: AuctionConsignmentStatus;
-  rejectionReason?: string | null;
-  lotNumber?: number | null;
-  createdAt: string;
-  auction: {
-    id: string;
-    title: string;
-    status: AuctionStatus;
-    startTime: string;
-    endTime: string;
-    minSellerReputation: number;
-    consignmentDeadline?: string | null;
-    isConsignmentLocked?: boolean;
-  };
-}
-
-/**
  * Response payload returned after submitting an item for auction appraisal.
  */
 export interface RegisterAuctionItemResponse {
@@ -354,20 +278,4 @@ export interface AuctionAwardItem {
     id: string;
     title: string;
   };
-}
-
-export interface AuctionSocketClient {
-  socket: Socket;
-  joinRoom: (auctionId: string) => void;
-  leaveRoom: (auctionId: string) => void;
-  syncViewport: (
-    auctionId: string,
-    rotation: { x: number; y: number; z: number },
-    zoom: number,
-  ) => void;
-  onAuctionStarted: (handler: (payload: WsAuctionStartedPayload) => void) => void;
-  onBidPlaced: (handler: (payload: WsBidPlacedPayload) => void) => void;
-  onTimeExtended: (handler: (payload: WsTimeExtendedPayload) => void) => void;
-  onTimerSync: (handler: (payload: WsTimerSyncPayload) => void) => void;
-  disconnect: () => void;
 }
