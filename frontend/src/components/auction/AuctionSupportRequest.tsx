@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Headset, MessageCircle } from 'lucide-react';
 import { getStoredToken, getStoredUser } from '../../services/auth';
 import { requestAuctionSupportChatApi } from '../../services/auction.service';
 import { openChatConversation } from '../chat/chatEvents';
 
 export default function AuctionSupportRequest({ auctionId }: { auctionId: string }) {
+  const { t } = useTranslation('auction');
   const user = getStoredUser();
   const canRequest = Boolean(
     getStoredToken() && (user?.role === 'BUYER' || user?.role === 'SELLER'),
@@ -27,9 +29,7 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
       setMessage('');
       openChatConversation(conversation.id);
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : 'Không gửi được yêu cầu hỗ trợ. Vui lòng thử lại.',
-      );
+      setError(cause instanceof Error ? cause.message : t('supportRequest.sendError'));
     } finally {
       setPending(false);
     }
@@ -43,10 +43,8 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
             <Headset size={20} />
           </span>
           <div>
-            <h2 className="font-semibold text-slate-900">Cần hỗ trợ trong phiên đấu giá?</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Gửi câu hỏi trực tiếp đến đội ngũ hỗ trợ về phiên này.
-            </p>
+            <h2 className="font-semibold text-slate-900">{t('supportRequest.heading')}</h2>
+            <p className="mt-1 text-sm text-slate-600">{t('supportRequest.subheading')}</p>
           </div>
         </div>
         {canRequest ? (
@@ -58,18 +56,16 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
             }}
             className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <MessageCircle size={16} /> Yêu cầu hỗ trợ
+            <MessageCircle size={16} /> {t('supportRequest.requestButton')}
           </button>
         ) : getStoredToken() ? (
-          <span className="text-sm text-slate-500">
-            Tính năng này dành cho tài khoản Buyer hoặc Seller.
-          </span>
+          <span className="text-sm text-slate-500">{t('supportRequest.roleNotice')}</span>
         ) : (
           <Link
             to="/login"
             className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
           >
-            Đăng nhập để liên hệ
+            {t('supportRequest.loginToContact')}
           </Link>
         )}
       </section>
@@ -87,17 +83,15 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
             className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl sm:p-6"
           >
             <h2 id="auction-support-title" className="text-lg font-bold text-slate-900">
-              Yêu cầu hỗ trợ phiên đấu giá
+              {t('supportRequest.modalTitle')}
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Tin nhắn sẽ được gửi kèm mã phiên để nhân viên nắm được ngữ cảnh.
-            </p>
+            <p className="mt-1 text-sm text-slate-500">{t('supportRequest.modalDesc')}</p>
             <form onSubmit={(event) => void submit(event)} className="mt-4">
               <label
                 htmlFor="auction-support-message"
                 className="text-xs font-semibold text-slate-700"
               >
-                Nội dung cần hỗ trợ
+                {t('supportRequest.messageLabel')}
               </label>
               <textarea
                 id="auction-support-message"
@@ -107,11 +101,11 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
                 rows={5}
                 value={message}
                 onChange={(event) => setMessage(event.target.value)}
-                placeholder="Mô tả vấn đề bạn gặp trong phiên đấu giá…"
+                placeholder={t('supportRequest.messagePlaceholder')}
                 className="mt-1 w-full rounded-xl border border-slate-200 p-3 text-sm leading-6 outline-none focus:border-primary focus:ring-2 focus:ring-blue-100"
               />
               <div className="mt-1 flex justify-between text-[10px] text-slate-400">
-                <span>Tối đa 1.500 ký tự</span>
+                <span>{t('supportRequest.maxChars')}</span>
                 <span>{message.length}/1500</span>
               </div>
               {error && (
@@ -126,14 +120,14 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
                   onClick={() => setOpen(false)}
                   className="rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 disabled:opacity-50"
                 >
-                  Đóng
+                  {t('supportRequest.close')}
                 </button>
                 <button
                   type="submit"
                   disabled={pending || !message.trim()}
                   className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {pending ? 'Đang gửi…' : 'Gửi yêu cầu'}
+                  {pending ? t('supportRequest.sending') : t('supportRequest.submit')}
                 </button>
               </div>
             </form>

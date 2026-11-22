@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
 import { Heart, Share2, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
 import { BidStatus, AuctionStatus } from '@nexus/types';
 import type { AuctionViewerMode, AuctionTabKey, SimilarWatch } from '../../types';
@@ -32,6 +34,7 @@ import { useAuth } from '../../contexts/AuthContext';
  * 3D showcase playback, and lot-level bid terminal synchronization.
  */
 export const AuctionPage: React.FC = () => {
+  const { t, i18n } = useTranslation('auction');
   const { user } = useAuth();
   const userRef = useRef(user);
   const { id } = useParams<{ id: string }>();
@@ -51,7 +54,7 @@ export const AuctionPage: React.FC = () => {
   const [videoPlaybackTime, setVideoPlaybackTime] = useState<number>(0);
 
   const [currentPrice, setCurrentPrice] = useState(0);
-  const [leadingBidder, setLeadingBidder] = useState('Chưa có lượt trả giá');
+  const [leadingBidder, setLeadingBidder] = useState(() => t('page.noBidsYet'));
   const [bidSuccessToast, setBidSuccessToast] = useState<string | null>(null);
   const [bidErrorToast, setBidErrorToast] = useState<string | null>(null);
   const [eligibility, setEligibility] = useState<BuyerEligibilityResponse | null>(null);
@@ -71,7 +74,7 @@ export const AuctionPage: React.FC = () => {
       );
       if (lot && lot.currentHighestBidderId && hasLotBids) {
         if (currentUser?.id && lot.currentHighestBidderId === currentUser.id) {
-          return `${currentUser.fullName || 'Bạn'} (Bạn)`;
+          return `${currentUser.fullName || t('page.youLabel')} ${t('page.youSuffix')}`;
         }
         const matchedBid = getLotBidHistory(auction, lot).find(
           (b) =>
@@ -82,7 +85,9 @@ export const AuctionPage: React.FC = () => {
           const isMe =
             (currentUser?.id && matchedBid.bidder.id === currentUser.id) ||
             (currentUser?.fullName && matchedBid.bidder.fullName === currentUser.fullName);
-          return isMe ? `${matchedBid.bidder.fullName} (Bạn)` : matchedBid.bidder.fullName;
+          return isMe
+            ? `${matchedBid.bidder.fullName} ${t('page.youSuffix')}`
+            : matchedBid.bidder.fullName;
         }
       }
       const lotBids = getLotBidHistory(auction, lot);
@@ -92,12 +97,12 @@ export const AuctionPage: React.FC = () => {
           (currentUser?.id && topBid.bidder?.id === currentUser.id) ||
           (currentUser?.fullName && topBid.bidder?.fullName === currentUser.fullName);
         return isMe
-          ? `${topBid.bidder?.fullName || 'Bạn'} (Bạn)`
-          : topBid.bidder?.fullName || 'Người tham gia ẩn danh';
+          ? `${topBid.bidder?.fullName || t('page.youLabel')} ${t('page.youSuffix')}`
+          : topBid.bidder?.fullName || t('page.anonymousBidder');
       }
-      return 'Chưa có lượt trả giá';
+      return t('page.noBidsYet');
     },
-    [],
+    [t],
   );
 
   const upsertBidList = useCallback(
@@ -217,9 +222,7 @@ export const AuctionPage: React.FC = () => {
                     }
                   : prev,
               );
-              setBidSuccessToast(
-                `🔔 Phiên đấu giá "${payload.title}" đã bắt đầu! Đang phát sóng video giới thiệu trực tiếp...`,
-              );
+              setBidSuccessToast(t('page.auctionStartedToast', { title: payload.title }));
               if (auctionData.endTime) {
                 const remaining = Math.max(
                   0,
@@ -247,7 +250,9 @@ export const AuctionPage: React.FC = () => {
             const isMe =
               (currentUser?.id && payload.bidderId === currentUser.id) ||
               (currentUser?.fullName && payload.bidderName === currentUser.fullName);
-            setLeadingBidder(isMe ? `${payload.bidderName} (Bạn)` : payload.bidderName);
+            setLeadingBidder(
+              isMe ? `${payload.bidderName} ${t('page.youSuffix')}` : payload.bidderName,
+            );
 
             setActiveAuction((prev) => {
               if (!prev) return null;
@@ -302,7 +307,7 @@ export const AuctionPage: React.FC = () => {
               };
             });
             setBidSuccessToast(
-              `Phiên đấu giá được tự động gia hạn thêm ${payload.extendedBySeconds}s (Anti-Sniping)!`,
+              t('page.antiSnipingExtendedToast', { seconds: payload.extendedBySeconds }),
             );
             setTimeout(() => setBidSuccessToast(null), 4000);
           });
@@ -331,17 +336,17 @@ export const AuctionPage: React.FC = () => {
                 id: a.id,
                 badge: {
                   text: isLive
-                    ? 'LIVE BID'
+                    ? t('page.badgeLive')
                     : a.status === 'SCHEDULED'
-                      ? 'SẮP DIỄN RA'
-                      : 'ĐÃ KẾT THÚC',
+                      ? t('page.badgeUpcoming')
+                      : t('page.badgeEnded'),
                   type: isLive ? 'live' : a.status === 'SCHEDULED' ? 'upcoming' : 'buy-now',
                 },
-                brand: a.product?.category?.name || 'PHIÊN ĐẤU GIÁ',
+                brand: a.product?.category?.name || t('page.defaultBrand'),
                 title: a.title,
                 image: img,
-                priceLabel: isLive ? 'Giá hiện tại:' : 'Khởi điểm:',
-                price: `${currentBid.toLocaleString('vi-VN')} đ`,
+                priceLabel: isLive ? t('page.priceLabelCurrent') : t('page.priceLabelStart'),
+                price: formatCurrency(currentBid, i18n.language),
                 usdPrice: (() => {
                   if (currentBid <= 0) return '(≈ $0 USD)';
                   const rawUsd = currentBid / 24000;
@@ -361,12 +366,12 @@ export const AuctionPage: React.FC = () => {
                           }).format(Math.round(rawUsd));
                   return `(≈ $${formatted} USD)`;
                 })(),
-                statusLabel: isLive ? 'Trạng thái:' : 'Thời gian:',
+                statusLabel: isLive ? t('page.statusLabelLive') : t('page.statusLabelTime'),
                 statusVal: isLive
-                  ? 'Đang diễn ra'
+                  ? t('page.statusLive')
                   : a.status === 'SCHEDULED'
-                    ? 'Sắp mở'
-                    : 'Đã kết thúc',
+                    ? t('page.statusUpcoming')
+                    : t('page.statusEnded'),
                 statusType: isLive ? 'blue' : 'green',
                 hasItems: aHasItems,
                 hasVideo: Boolean(a.videoUrl && a.videoUrl.trim().length > 0),
@@ -393,7 +398,7 @@ export const AuctionPage: React.FC = () => {
       isMounted = false;
       socketClient?.disconnect();
     };
-  }, [id, resolveLeadingBidderLabel, upsertBidList]);
+  }, [id, resolveLeadingBidderLabel, upsertBidList, t, i18n.language]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -403,8 +408,7 @@ export const AuctionPage: React.FC = () => {
   }, []);
 
   const formatVND = (amount: number): string => {
-    const val = Number(amount) || 0;
-    return new Intl.NumberFormat('vi-VN').format(val) + ' đ';
+    return formatCurrency(Number(amount) || 0, i18n.language);
   };
 
   const handleCloseShowcase = useCallback((): void => {
@@ -438,8 +442,8 @@ export const AuctionPage: React.FC = () => {
       const newPrice = Number(res?.bidAmount ?? res?.currentHighestBid ?? amount);
       setCurrentPrice(newPrice);
       const currentUser = userRef.current;
-      const myName = currentUser?.fullName || 'Bạn';
-      setLeadingBidder(`${myName} (Bạn)`);
+      const myName = currentUser?.fullName || t('page.youLabel');
+      setLeadingBidder(`${myName} ${t('page.youSuffix')}`);
 
       const myNewBid: AuctionBidItem = {
         id: res.bidId,
@@ -489,16 +493,14 @@ export const AuctionPage: React.FC = () => {
         };
       });
 
-      setBidSuccessToast(
-        `Đặt giá thành công: ${formatVND(newPrice)}! Số dư ví NEXUS Pay đã được khóa cọc 10% an toàn.`,
-      );
+      setBidSuccessToast(t('page.bidSuccessToast', { amount: formatVND(newPrice) }));
       setTimeout(() => setBidSuccessToast(null), 4500);
     } catch (err: unknown) {
       const message =
         err instanceof Error
           ? err.message
           : (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-            'Đặt giá không thành công. Vui lòng kiểm tra số dư ví NEXUS Pay hoặc thử lại.';
+            t('page.bidFailedToast');
       setBidErrorToast(message);
       setTimeout(() => setBidErrorToast(null), 5000);
     }
@@ -512,9 +514,7 @@ export const AuctionPage: React.FC = () => {
     return (
       <div className="min-h-[70vh] bg-slate-50 flex flex-col items-center justify-center p-8 gap-4">
         <div className="w-12 h-12 rounded-full border-4 border-slate-200 border-t-rose-500 animate-spin" />
-        <p className="text-sm font-semibold text-slate-600">
-          Đang kết nối phòng đấu giá trực tiếp từ cơ sở dữ liệu NEXUS...
-        </p>
+        <p className="text-sm font-semibold text-slate-600">{t('page.loadingRoom')}</p>
       </div>
     );
   }
@@ -526,18 +526,13 @@ export const AuctionPage: React.FC = () => {
           <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 font-bold text-xl">
             🔨
           </div>
-          <h2 className="text-lg font-extrabold text-slate-900">
-            Hiện chưa có phiên đấu giá nào được mở
-          </h2>
-          <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">
-            Các phiên đấu giá thẩm định trực tiếp sẽ được mở theo lịch trình kiểm định thực tế của
-            sàn.
-          </p>
+          <h2 className="text-lg font-extrabold text-slate-900">{t('page.emptyTitle')}</h2>
+          <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">{t('page.emptyDesc')}</p>
           <Link
             to="/"
             className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-blue-700 transition"
           >
-            Quay Về Trang Chủ
+            {t('page.backHome')}
           </Link>
         </div>
       </div>
@@ -562,20 +557,22 @@ export const AuctionPage: React.FC = () => {
     rawThumbnails = lotImages.map((url, i) => ({
       label:
         i === 0
-          ? `Lô #${currentLot?.lotNumber ?? selectedLotIndex + 1} - Ảnh chính thực tế`
-          : `Góc chụp thực tế ${i + 1}`,
+          ? t('page.lotMainPhoto', { number: currentLot?.lotNumber ?? selectedLotIndex + 1 })
+          : t('page.lotAnglePhoto', { index: i + 1 }),
       src: url,
     }));
   } else if (activeAuction.imageUrl && activeAuction.imageUrl.trim().length > 0) {
     rawThumbnails = [
       {
-        label: 'Banner đại diện phiên đấu giá (Admin khởi tạo)',
+        label: t('page.adminBannerLabel'),
         src: formatAuctionImage(activeAuction.imageUrl),
       },
     ];
   } else if (productImages.length > 0) {
     rawThumbnails = productImages.map((img, i) => ({
-      label: img.isThumbnail ? 'Ảnh sản phẩm chính thức' : `Góc chụp thực tế ${i + 1}`,
+      label: img.isThumbnail
+        ? t('page.productMainPhoto')
+        : t('page.lotAnglePhoto', { index: i + 1 }),
       src: img.imageUrl,
     }));
   }
@@ -629,11 +626,11 @@ export const AuctionPage: React.FC = () => {
         <div className="flex items-center justify-between mb-5 text-[13px] text-slate-500">
           <nav className="flex items-center gap-2 flex-wrap" aria-label="Breadcrumb">
             <Link to="/" className="text-slate-500 hover:text-rose-500 transition">
-              Trang Chủ
+              {t('page.breadcrumbHome')}
             </Link>
             <span className="text-slate-300">/</span>
             <Link to="/auction" className="text-slate-500 hover:text-rose-500 transition">
-              Sàn Đấu Giá Trực Tuyến
+              {t('page.breadcrumbAuctions')}
             </Link>
             <span className="text-slate-300">/</span>
             <span className="text-slate-900 font-semibold truncate max-w-xs sm:max-w-md">
@@ -650,18 +647,18 @@ export const AuctionPage: React.FC = () => {
               onClick={() => setIsLiked(!isLiked)}
             >
               <Heart className={`w-3.5 h-3.5 ${isLiked ? 'fill-red-500' : ''}`} />
-              <span>{isLiked ? 'Đã Lưu' : 'Yêu Thích'}</span>
+              <span>{isLiked ? t('page.saved') : t('page.favorite')}</span>
             </button>
             <button
               type="button"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 cursor-pointer transition hover:border-slate-300"
               onClick={() => {
                 void navigator.clipboard?.writeText(window.location.href);
-                alert('Đã sao chép liên kết phòng đấu giá!');
+                alert(t('page.linkCopied'));
               }}
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>Chia Sẻ</span>
+              <span>{t('page.share')}</span>
             </button>
           </div>
         </div>
@@ -675,16 +672,13 @@ export const AuctionPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-xs sm:text-sm font-bold text-slate-900 m-0">
-                    Danh Sách Lô Hàng Trong Phiên Này ({activeAuction.items.length} sản phẩm)
+                    {t('page.lotsTitle', { count: activeAuction.items.length })}
                   </h3>
-                  <p className="text-[11px] text-slate-500 m-0">
-                    Bấm chọn từng lô hàng để xem hình ảnh thực tế, giấy kiểm định và thông tin chi
-                    tiết
-                  </p>
+                  <p className="text-[11px] text-slate-500 m-0">{t('page.lotsSubtitle')}</p>
                 </div>
               </div>
               <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
-                Đang xem: Lô #{currentLot?.lotNumber ?? selectedLotIndex + 1}
+                {t('page.viewingLot', { number: currentLot?.lotNumber ?? selectedLotIndex + 1 })}
               </span>
             </div>
 
@@ -717,7 +711,7 @@ export const AuctionPage: React.FC = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
-                          LÔ #{lot.lotNumber ?? idx + 1}
+                          {t('page.lotBadge', { number: lot.lotNumber ?? idx + 1 })}
                         </span>
                         {lot.threeModelKey && (
                           <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-sky-100 text-sky-700">
@@ -730,8 +724,8 @@ export const AuctionPage: React.FC = () => {
                       </p>
                       <p className="text-[11px] font-extrabold text-blue-600 mt-0.5">
                         {lot.startingPrice
-                          ? `${Number(lot.startingPrice).toLocaleString('vi-VN')} đ`
-                          : 'Chờ định giá'}
+                          ? formatCurrency(Number(lot.startingPrice), i18n.language)
+                          : t('page.awaitingValuation')}
                       </p>
                     </div>
                   </button>
@@ -747,12 +741,14 @@ export const AuctionPage: React.FC = () => {
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-600" />
             <div className="text-xs">
               <p className="font-bold text-amber-900 text-sm">
-                Phiên đấu giá đang mở tiếp nhận sản phẩm (Chờ người bán ký gửi)
+                {t('page.awaitingConsignmentTitle')}
               </p>
               <p className="text-amber-700 mt-0.5">
-                Admin đã khởi tạo phiên đấu giá. Ảnh hiển thị hiện tại là ảnh bìa đại diện của
-                phiên. Người bán (Seller) có thể vào mục <b>Ký Gửi Đấu Giá</b> để đăng ký niêm yết
-                sản phẩm thật lên phiên này.
+                <Trans
+                  ns="auction"
+                  i18nKey="page.awaitingConsignmentDesc"
+                  components={{ bold: <b /> }}
+                />
               </p>
             </div>
           </div>

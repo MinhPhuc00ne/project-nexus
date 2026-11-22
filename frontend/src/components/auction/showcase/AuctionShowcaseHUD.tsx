@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import { formatCurrency as formatI18nCurrency } from '../../../i18n/formatters';
+import { getIntlLocale } from '../../../i18n/config';
 import {
   CheckCircle2,
   FileCheck2,
@@ -57,23 +60,11 @@ const waitMs = (ms: number, signal: AbortSignal): Promise<void> =>
     signal.addEventListener('abort', onAbort, { once: true });
   });
 
-const formatCurrency = (val?: number | string | null): string => {
-  const num = Number(val ?? 0);
-  if (!Number.isFinite(num) || num <= 0) return 'Theo thỏa thuận phiên';
-  return `${num.toLocaleString('vi-VN')} ₫`;
-};
-
-const formatDateVi = (iso?: string | null): string | null => {
-  if (!iso) return null;
-  const parsed = new Date(iso);
-  if (!Number.isFinite(parsed.getTime())) return null;
-  return parsed.toLocaleDateString('vi-VN');
-};
-
 const RealProductPhotoSpotlight: React.FC<{ title: string; images: string[] }> = ({
   title,
   images,
 }) => {
+  const { t } = useTranslation('auction');
   const [photoIdx, setPhotoIdx] = useState(0);
   const resolvedUrls = useMemo(
     () => images.map((u) => formatAuctionImage(u)).filter(Boolean),
@@ -99,18 +90,18 @@ const RealProductPhotoSpotlight: React.FC<{ title: string; images: string[] }> =
           <img
             key={currentUrl}
             src={currentUrl}
-            alt={`${title} - ảnh thực tế`}
+            alt={t('showcase.realPhotoAlt', { title })}
             className="ken-burns-pan h-full w-full object-cover"
           />
           <div className="museum-frame-glass-glare pointer-events-none absolute inset-0" />
           <span className="absolute right-2 bottom-2 rounded-md border border-amber-400/40 bg-slate-950/85 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-200">
-            ẢNH THẬT {photoIdx + 1}/{resolvedUrls.length}
+            {t('showcase.realPhotoBadge', { current: photoIdx + 1, total: resolvedUrls.length })}
           </span>
         </div>
       </div>
       <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-cyan-400/35 bg-slate-950/75 px-3 py-1 text-[10px] font-mono font-semibold tracking-wider text-cyan-200 backdrop-blur-md">
         <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-        <span>ẢNH THỰC TẾ SẢN PHẨM</span>
+        <span>{t('showcase.realPhotoTag')}</span>
       </div>
     </div>
   );
@@ -129,7 +120,21 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
   onComplete,
   onCancel,
 }) => {
+  const { t, i18n } = useTranslation('auction');
   const isAdminReplay = playbackMode === 'admin-replay';
+
+  const formatCurrency = (val?: number | string | null): string => {
+    const num = Number(val ?? 0);
+    if (!Number.isFinite(num) || num <= 0) return t('showcase.byAgreement');
+    return formatI18nCurrency(num, i18n.language);
+  };
+
+  const formatDateVi = (iso?: string | null): string | null => {
+    if (!iso) return null;
+    const parsed = new Date(iso);
+    if (!Number.isFinite(parsed.getTime())) return null;
+    return parsed.toLocaleDateString(getIntlLocale(i18n.language));
+  };
 
   const [phase, setPhase] = useState<ScenePhase>('hall');
   const [doorsOpen, setDoorsOpen] = useState(false);
@@ -172,7 +177,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
       {
         id: 'fallback-lot-1',
         title: auctionTitle,
-        description: auctionDescription || 'Vật phẩm đấu giá đã qua thẩm định chính thức.',
+        description: auctionDescription || t('showcase.fallbackDesc'),
         images: [],
         lotNumber: 1,
         startingPrice: 0,
@@ -376,7 +381,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
       className="museum-showcase-root flex flex-col justify-between"
       role="dialog"
       aria-modal="true"
-      aria-label={`Video giới thiệu phiên đấu giá ${auctionTitle}`}
+      aria-label={t('showcase.dialogAria', { title: auctionTitle })}
     >
       {/* Khung nền điện ảnh: Sàn phản chiếu + Bokeh hạt vàng + Spotlight + Lens Flare */}
       <div className="cinema-bokeh-field" />
@@ -404,7 +409,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                 isAdminReplay ? 'bg-amber-400' : 'bg-rose-500 animate-ping'
               }`}
             />
-            {isAdminReplay ? 'XEM LẠI DEMO QUẢN TRỊ' : 'PHÁT SÓNG TRỰC TIẾP • NEXUS AUCTION'}
+            {isAdminReplay ? t('showcase.adminReplayBadge') : t('showcase.liveBroadcastBadge')}
           </span>
           <span className="hidden max-w-md truncate text-xs font-medium text-slate-300 sm:inline-block">
             {auctionTitle}
@@ -416,24 +421,26 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
             type="button"
             onClick={toggleMute}
             className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-900/85 px-3 py-1.5 text-xs font-semibold text-slate-200 transition hover:border-amber-400/50 hover:text-white"
-            title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+            title={isMuted ? t('showcase.unmuteTitle') : t('showcase.muteTitle')}
           >
             {isMuted ? (
               <VolumeX className="h-3.5 w-3.5 text-rose-400" />
             ) : (
               <Volume2 className="h-3.5 w-3.5 text-amber-400" />
             )}
-            <span className="hidden sm:inline">{isMuted ? 'Đang tắt tiếng' : 'Âm thanh'}</span>
+            <span className="hidden sm:inline">
+              {isMuted ? t('showcase.muted') : t('showcase.sound')}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={onCancel ?? onComplete}
             className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-amber-400/50 bg-amber-500/20 px-3.5 py-1.5 text-xs font-bold text-amber-100 transition hover:bg-amber-500/35 hover:scale-105 active:scale-95"
-            title={isAdminReplay ? 'Đóng xem lại' : 'Bỏ qua video và vào sàn đặt giá ngay'}
+            title={isAdminReplay ? t('showcase.closeReplayTitle') : t('showcase.skipToBidTitle')}
           >
             <X className="h-3.5 w-3.5" />
-            <span>{isAdminReplay ? 'Đóng xem lại' : 'Bỏ qua video ⏩'}</span>
+            <span>{isAdminReplay ? t('showcase.closeReplay') : t('showcase.skipVideo')}</span>
           </button>
         </div>
       </header>
@@ -445,7 +452,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
           <section className="museum-pedestal-enter w-full max-w-4xl space-y-6 text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-slate-900/85 px-4 py-1.5 text-xs font-mono tracking-[0.22em] text-amber-200 uppercase">
               <Sparkles className="h-4 w-4 text-amber-400" />
-              <span>KHAI MẠC PHIÊN ĐẤU GIÁ TRỰC TUYẾN NEXUS</span>
+              <span>{t('showcase.hallOpeningBadge')}</span>
             </div>
 
             <div className="relative mx-auto rounded-3xl border border-amber-400/40 bg-slate-950/80 p-7 shadow-[0_0_90px_rgba(245,158,11,0.22)] backdrop-blur-xl sm:p-11">
@@ -477,25 +484,27 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
               <div className="mt-7 grid grid-cols-1 gap-3 text-left sm:grid-cols-3">
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4">
                   <p className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                    Danh mục đấu giá
+                    {t('showcase.hallCatalogLabel')}
                   </p>
                   <p className="mt-1 text-lg font-extrabold text-white">
-                    {resolvedLots.length} Lô Đã Thẩm Định
+                    {t('showcase.hallLotsVerified', { count: resolvedLots.length })}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4">
                   <p className="text-[10px] font-mono uppercase tracking-wider text-amber-300">
-                    Xác thực nguồn gốc
+                    {t('showcase.hallOriginLabel')}
                   </p>
                   <p className="mt-1 text-lg font-extrabold text-amber-100">
-                    100% Hồ Sơ Chính Hãng
+                    {t('showcase.hallOriginValue')}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/10 p-4">
                   <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-300">
-                    Trạng thái phát sóng
+                    {t('showcase.hallStatusLabel')}
                   </p>
-                  <p className="mt-1 text-lg font-extrabold text-cyan-100">Chuẩn Bị Vào Sàn</p>
+                  <p className="mt-1 text-lg font-extrabold text-cyan-100">
+                    {t('showcase.hallStatusValue')}
+                  </p>
                 </div>
               </div>
             </div>
@@ -543,11 +552,13 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
 
               <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
                 <span className="rounded-lg border border-amber-400/50 bg-amber-400/20 px-2.5 py-1 text-[11px] font-mono font-bold text-amber-100">
-                  LÔ #{String(activeLot.lotNumber ?? currentLotIdx + 1).padStart(2, '0')} /{' '}
-                  {String(resolvedLots.length).padStart(2, '0')}
+                  {t('showcase.lotCounter', {
+                    current: String(activeLot.lotNumber ?? currentLotIdx + 1).padStart(2, '0'),
+                    total: String(resolvedLots.length).padStart(2, '0'),
+                  })}
                 </span>
                 <span className="rounded-lg border border-emerald-400/40 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-mono font-bold text-emerald-300">
-                  ĐÃ THẨM ĐỊNH HỢP LỆ
+                  {t('showcase.verifiedValid')}
                 </span>
               </div>
 
@@ -560,7 +571,11 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                           presetKey={activeVisual.preset.key}
                           accentColor={activeVisual.preset.accentColor}
                           secondaryColor={activeVisual.preset.secondaryColor}
-                          modelLabel={activeVisual.preset.label}
+                          modelLabel={
+                            i18n.language === 'en'
+                              ? activeVisual.preset.englishLabel
+                              : activeVisual.preset.label
+                          }
                         />
                       </div>
                       <RealProductPhotoSpotlight
@@ -574,7 +589,11 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                         presetKey={activeVisual.preset.key}
                         accentColor={activeVisual.preset.accentColor}
                         secondaryColor={activeVisual.preset.secondaryColor}
-                        modelLabel={activeVisual.preset.label}
+                        modelLabel={
+                          i18n.language === 'en'
+                            ? activeVisual.preset.englishLabel
+                            : activeVisual.preset.label
+                        }
                       />
                     </div>
                   )
@@ -596,10 +615,10 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                   <div className="flex items-center justify-between gap-2 text-[11px] font-mono uppercase text-amber-300">
                     <span className="flex items-center gap-1.5">
                       <Store className="h-3.5 w-3.5" />
-                      {activeLot.seller?.fullName || 'Gian hàng ký gửi NEXUS'}
+                      {activeLot.seller?.fullName || t('showcase.defaultConsignmentShop')}
                     </span>
                     <span className="inline-flex items-center gap-1 font-bold text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> ĐÃ PHÊ DUYỆT
+                      <CheckCircle2 className="h-3.5 w-3.5" /> {t('showcase.approved')}
                     </span>
                   </div>
                   <h2 className="mt-2 text-xl font-extrabold leading-snug text-white sm:text-2xl">
@@ -618,7 +637,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                 <div className="hud-panel-slide grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-cyan-500/35 bg-slate-900/85 p-4 backdrop-blur-md">
                     <p className="text-[10px] font-mono uppercase tracking-wider text-cyan-300">
-                      Giá khởi điểm
+                      {t('showcase.startingPrice')}
                     </p>
                     <p className="mt-1 text-lg font-black text-white sm:text-xl">
                       {formatCurrency(resolvedStartingPrice)}
@@ -626,12 +645,12 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                   </div>
                   <div className="rounded-2xl border border-amber-500/35 bg-slate-900/85 p-4 backdrop-blur-md">
                     <p className="text-[10px] font-mono uppercase tracking-wider text-amber-300">
-                      Bước giá tối thiểu
+                      {t('showcase.minIncrement')}
                     </p>
                     <p className="mt-1 text-lg font-black text-amber-300 sm:text-xl">
                       {Number(resolvedBidIncrement ?? 0) > 0
                         ? `+${formatCurrency(resolvedBidIncrement)}`
-                        : 'Theo quy định phiên'}
+                        : t('showcase.byRules')}
                     </p>
                   </div>
                 </div>
@@ -644,23 +663,29 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                   </div>
                   <div className="min-w-0 flex-1 space-y-0.5">
                     <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-300">
-                      Hồ sơ kiểm định & Xác thực từ Seller
+                      {t('showcase.certSectionTitle')}
                     </p>
                     <p className="truncate text-sm font-bold text-white">
-                      Mã chứng thư: {certNumber ?? 'Chưa đính kèm mã chứng thư'}
+                      {certNumber
+                        ? t('showcase.certNumber', { code: certNumber })
+                        : t('showcase.certMissing')}
                     </p>
                     <p className="truncate text-xs text-slate-300">
-                      Đơn vị cấp: {certAgency ?? 'Chưa cập nhật đơn vị cấp'}
+                      {certAgency
+                        ? t('showcase.certAgency', { agency: certAgency })
+                        : t('showcase.certAgencyMissing')}
                     </p>
                     {certIssueDate && (
-                      <p className="text-[11px] text-emerald-300/90">Ngày cấp: {certIssueDate}</p>
+                      <p className="text-[11px] text-emerald-300/90">
+                        {t('showcase.certIssueDate', { date: certIssueDate })}
+                      </p>
                     )}
                   </div>
                   {certPreviewImg && (
                     <div className="shrink-0 overflow-hidden rounded-lg border border-emerald-400/40 bg-slate-950 p-0.5">
                       <img
                         src={certPreviewImg}
-                        alt={`Chứng thư ${certNumber || activeLot.title}`}
+                        alt={t('showcase.certAlt', { name: certNumber || activeLot.title })}
                         className="h-14 w-14 rounded object-cover"
                       />
                     </div>
@@ -671,10 +696,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
               {hudVisibleCount >= 4 && (
                 <div className="hud-panel-slide flex items-center gap-2.5 rounded-2xl border border-amber-400/25 bg-slate-950/85 p-3.5 text-xs text-slate-300">
                   <FileCheck2 className="h-4 w-4 shrink-0 text-amber-400" />
-                  <span>
-                    Thông tin giá khởi điểm, bước giá và chứng thư kiểm định được đồng bộ trực tiếp
-                    từ hồ sơ ký gửi của người bán.
-                  </span>
+                  <span>{t('showcase.syncNote')}</span>
                 </div>
               )}
             </div>
@@ -694,7 +716,9 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                 <p className="text-xs font-mono uppercase tracking-[0.42em] text-emerald-400">
                   AUTHENTICATION COMPLETE
                 </p>
-                <h2 className="text-3xl font-black text-white sm:text-5xl">THẨM ĐỊNH HOÀN TẤT</h2>
+                <h2 className="text-3xl font-black text-white sm:text-5xl">
+                  {t('showcase.climaxAuthComplete')}
+                </h2>
               </div>
             )}
 
@@ -704,7 +728,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                   ARE YOU READY TO BID?
                 </p>
                 <h2 className="bg-gradient-to-r from-cyan-300 via-white to-amber-300 bg-clip-text text-3xl font-black text-transparent sm:text-5xl">
-                  PHIÊN ĐẤU GIÁ SẮP MỞ CỬA
+                  {t('showcase.climaxReady')}
                 </h2>
               </div>
             )}
@@ -715,11 +739,15 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                   AUCTION ROOM IS NOW OPEN
                 </p>
                 <div className="text-6xl font-black text-amber-400 drop-shadow-[0_0_40px_rgba(251,191,36,0.85)] sm:text-8xl">
-                  {climaxCountdown === 'START' ? 'BẮT ĐẦU!' : climaxCountdown}
+                  {climaxCountdown === 'START' ? t('showcase.climaxStart') : climaxCountdown}
                 </div>
                 <p className="text-sm text-slate-300">
-                  Đang mở khóa sàn trả giá trực tiếp cho phiên{' '}
-                  <strong className="text-white">{auctionTitle}</strong>...
+                  <Trans
+                    ns="auction"
+                    i18nKey="showcase.climaxOpening"
+                    values={{ title: auctionTitle }}
+                    components={{ bold: <strong className="text-white" /> }}
+                  />
                 </p>
               </div>
             )}
@@ -749,7 +777,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                       : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
                   }`}
                 >
-                  Mở màn
+                  {t('showcase.jumpHall')}
                 </button>
 
                 {resolvedLots.map(({ item }, idx) => {
@@ -766,7 +794,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                           : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
                       }`}
                     >
-                      Lô #{item.lotNumber ?? idx + 1}
+                      {t('showcase.jumpLot', { number: item.lotNumber ?? idx + 1 })}
                     </button>
                   );
                 })}
@@ -780,22 +808,23 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                       : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
                   }`}
                 >
-                  Mở sàn
+                  {t('showcase.jumpClimax')}
                 </button>
               </div>
             ) : (
               <p className="text-[11px] font-mono font-semibold text-amber-200/90">
                 {phase === 'hall'
-                  ? 'CHƯƠNG TRÌNH GIỚI THIỆU PHIÊN ĐẤU GIÁ TRỰC TUYẾN NEXUS'
+                  ? t('showcase.footerHall')
                   : phase === 'lot'
-                    ? `ĐANG GIỚI THIỆU LÔ #${activeLot.lotNumber ?? currentLotIdx + 1} / ${resolvedLots.length}`
-                    : 'CHUẨN BỊ MỞ BÀN TRẢ GIÁ TRỰC TIẾP'}
+                    ? t('showcase.footerLot', {
+                        current: activeLot.lotNumber ?? currentLotIdx + 1,
+                        total: resolvedLots.length,
+                      })
+                    : t('showcase.footerClimax')}
               </p>
             )}
 
-            <p className="text-[11px] font-mono text-slate-400">
-              NEXUS LIVE BROADCAST • ĐỒNG BỘ THỜI GIAN THỰC
-            </p>
+            <p className="text-[11px] font-mono text-slate-400">{t('showcase.footerRight')}</p>
           </div>
         </div>
       </footer>
