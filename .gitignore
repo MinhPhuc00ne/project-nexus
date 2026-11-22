@@ -28,6 +28,8 @@ coverage/
 .nyc_output/
 *.lcov
 test-results/
+e2e/report/
+playwright-report/
 /frontend/test/
 
 .cache/
