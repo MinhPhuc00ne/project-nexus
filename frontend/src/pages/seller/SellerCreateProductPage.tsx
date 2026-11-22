@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/seller/SellerUI';
 import SellerProductImages from '../../components/seller/SellerProductImages';
+import SellerCategoryPicker from '../../components/seller/SellerCategoryPicker';
 import useSellerProductForm from '../../components/seller/useSellerProductForm';
 import { useParams } from 'react-router-dom';
 import { useSellerSession } from '../../components/seller/SellerSession';
@@ -171,25 +172,20 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                     placeholder="Nhập tên sản phẩm muốn đăng bán"
                   />
                 </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Danh mục sản phẩm <span className="text-red-500">*</span>
-                  <select
-                    required
-                    disabled={categoryLoading || Boolean(categoryError) || !categoryOptions.length}
-                    value={form.categoryId}
-                    onChange={(event) => setForm({ ...form, categoryId: event.target.value })}
-                    className={inputClass}
-                  >
-                    <option value="">
-                      {categoryLoading ? 'Đang tải danh mục…' : 'Chọn danh mục'}
-                    </option>
-                    {categoryOptions.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SellerCategoryPicker
+                  options={categoryOptions}
+                  value={form.categoryId}
+                  onChange={(categoryId) => setForm((current) => ({ ...current, categoryId }))}
+                  loading={categoryLoading}
+                  disabled={
+                    pending ||
+                    user.isShopSuspended ||
+                    !user.isSellerActive ||
+                    categoryLoading ||
+                    Boolean(categoryError) ||
+                    !categoryOptions.length
+                  }
+                />
                 {categoryError && (
                   <div role="alert" className="space-y-2 text-sm text-red-600">
                     <p>{categoryError}</p>

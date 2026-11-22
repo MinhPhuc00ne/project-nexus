@@ -69,3 +69,12 @@ export interface AdminProductMutationResult {
 export interface UpdateProductStatusResult extends AdminProductMutationResult {
   product: { id: string; title: string; status: AdminProductStatus };
 }
+
+export interface UpdateProductCategoryDto {
+  categoryId: string;
+  reason?: string;
+}
+
+export interface UpdateProductCategoryResult extends AdminProductMutationResult {
+  product: { id: string; title: string; categoryId: string; category: AdminProduct['category'] };
+}

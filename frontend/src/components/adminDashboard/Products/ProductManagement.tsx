@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Package, RefreshCw, Trash2 } from 'lucide-react';
+import {
+  BadgeCheck,
+  Ellipsis,
+  Eye,
+  EyeOff,
+  Package,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getCategoryTree } from '../../../services/admin';
 import type { AdminProduct, AdminProductStatus } from '../../../types/admin-product.types';
@@ -11,6 +21,7 @@ import { formatMoney } from '../shared/adminData';
 import { adminProductLabels } from './adminProductData';
 import type { AdminTabProps } from '../shared/adminTypes';
 import { useAdminProducts } from './useAdminProducts';
+import ProductCategoryDialog from './ProductCategoryDialog';
 
 export default function ProductManagement({ actions }: AdminTabProps) {
   const { token } = useAuth();
@@ -20,6 +31,8 @@ export default function ProductManagement({ actions }: AdminTabProps) {
   const [categoryError, setCategoryError] = useState('');
   const [categoryRevision, setCategoryRevision] = useState(0);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [categoryProduct, setCategoryProduct] = useState<AdminProduct | null>(null);
+  const categoryOptions = flattenCategories(categories);
   const [decision, setDecision] = useState<{
     product: AdminProduct;
     kind: 'activate' | 'hide' | 'delete';
@@ -123,11 +136,12 @@ export default function ProductManagement({ actions }: AdminTabProps) {
           <>
             {result.items.length ? (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-left text-xs">
+                <table className="w-full min-w-[1050px] text-left text-xs">
                   <thead className="bg-blue-50 text-slate-500">
                     <tr>
                       {[
                         'Sản phẩm',
+                        'Danh mục',
                         'Seller',
                         'Giá niêm yết',
                         'Tồn kho',
@@ -154,11 +168,34 @@ export default function ProductManagement({ actions }: AdminTabProps) {
                             )}
                             <div className="max-w-72 break-words">
                               <p className="font-semibold">{product.title}</p>
-                              <p className="mt-1 text-slate-500">{product.category.name}</p>
                               <p className="mt-1 break-all text-[10px] text-slate-400">
                                 {product.id}
                               </p>
                             </div>
+                          </div>
+                        </td>
+                        <td className="max-w-56 p-3">
+                          <div className="flex items-start gap-2">
+                            <span className="min-w-0 flex-1 break-words text-slate-600">
+                              {categoryOptions.find(
+                                ({ category }) => category.id === product.category?.id,
+                              )?.path ||
+                                product.category?.name ||
+                                'Chưa phân loại'}
+                            </span>
+                            <Button
+                              variant="secondary"
+                              className="shrink-0 px-2"
+                              aria-label={`${product.category ? 'Đổi' : 'Gắn'} danh mục sản phẩm ${product.title}`}
+                              title={product.category ? 'Đổi danh mục' : 'Gắn danh mục'}
+                              onClick={() => setCategoryProduct(product)}
+                            >
+                              {product.category ? (
+                                <Pencil size={15} aria-hidden="true" />
+                              ) : (
+                                <Plus size={15} aria-hidden="true" />
+                              )}
+                            </Button>
                           </div>
                         </td>
                         <td className="max-w-56 break-words p-3">
@@ -185,19 +222,34 @@ export default function ProductManagement({ actions }: AdminTabProps) {
                         </td>
                         <td className="p-3">
                           <div className="flex max-w-64 flex-wrap gap-2">
-                            <Button variant="secondary" onClick={() => setDetailId(product.id)}>
-                              Chi tiết
+                            <Button
+                              variant="secondary"
+                              aria-label={`Chi tiết sản phẩm ${product.title}`}
+                              title="Chi tiết sản phẩm"
+                              onClick={() => setDetailId(product.id)}
+                            >
+                              <Ellipsis size={15} aria-hidden="true" />
                             </Button>
                             {product.status === 'ACTIVE' ? (
                               <Button
                                 variant="danger"
+                                aria-label={`Ẩn sản phẩm ${product.title}`}
+                                title="Ẩn sản phẩm"
                                 onClick={() => setDecision({ product, kind: 'hide' })}
                               >
-                                Ẩn
+                                <EyeOff size={15} aria-hidden="true" />
                               </Button>
                             ) : (
-                              <Button onClick={() => setDecision({ product, kind: 'activate' })}>
-                                {product.status === 'DRAFT' ? 'Cho phép bán' : 'Hiện lại'}
+                              <Button
+                                aria-label={`${product.status === 'DRAFT' ? 'Cho phép bán sản phẩm' : 'Hiện lại sản phẩm'} ${product.title}`}
+                                title={product.status === 'DRAFT' ? 'Cho phép bán' : 'Hiện lại'}
+                                onClick={() => setDecision({ product, kind: 'activate' })}
+                              >
+                                {product.status === 'DRAFT' ? (
+                                  <BadgeCheck size={15} aria-hidden="true" />
+                                ) : (
+                                  <Eye size={15} aria-hidden="true" />
+                                )}
                               </Button>
                             )}
                             <Button
@@ -241,6 +293,19 @@ export default function ProductManagement({ actions }: AdminTabProps) {
             </div>
           </>
         )
+      )}
+      {categoryProduct && (
+        <ProductCategoryDialog
+          key={`${token}:${categoryProduct.id}`}
+          product={categoryProduct}
+          onClose={() => setCategoryProduct(null)}
+          onCategoriesChanged={() => setCategoryRevision((value) => value + 1)}
+          onSaved={(message) => {
+            setCategoryProduct(null);
+            actions.notify(message);
+            refresh();
+          }}
+        />
       )}
       {detailId && (
         <ProductDetailDialog

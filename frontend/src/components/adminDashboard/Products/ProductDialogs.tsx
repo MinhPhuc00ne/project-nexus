@@ -94,7 +94,9 @@ export function ProductDetailDialog({
               ['Điện thoại seller', detail.seller.phoneNumber],
               [
                 'Danh mục',
-                [detail.category.parent?.name, detail.category.name].filter(Boolean).join(' / '),
+                [detail.category?.parent?.name, detail.category?.name]
+                  .filter(Boolean)
+                  .join(' / ') || 'Chưa phân loại',
               ],
               ['Giá niêm yết', formatMoney(detail.basePrice)],
               ['Trạng thái', adminProductLabels[detail.status]],
