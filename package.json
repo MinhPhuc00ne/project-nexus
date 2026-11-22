@@ -14,7 +14,7 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test",
-    "test:coverage": "npm run test:coverage --workspace=backend --if-present",
+    "test:coverage": "npm run test:coverage --workspace=backend --if-present && npm run test:coverage --workspace=frontend --if-present",
     "build:types": "npm run build --workspace=@nexus/types --if-present",
     "dev:backend": "npm run start:dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
