@@ -13,11 +13,11 @@ All constants, thresholds, and operational invariants below are verified directl
 
 | Trust Level (`ReputationTrustLevel`) | Score Range | Operational Meaning                                              |
 | :----------------------------------- | :---------- | :--------------------------------------------------------------- |
-| `EXCELLENT`                          | $\ge 120$   | Top-tier trusted account                                         |
-| `GOOD`                               | $100 - 119$ | Good standing                                                    |
-| `STANDARD`                           | $80 - 99$   | Standard trading privileges                                      |
-| `PROBATION`                          | $40 - 79$   | New account (`50`) or under observation                          |
-| `SUSPENDED`                          | $< 40$      | Restricted from trading/bidding due to penalties (`PenaltyType`) |
+| `EXCELLENT`                          | ≥ 120       | Top-tier trusted account                                         |
+| `GOOD`                               | 100 – 119   | Good standing                                                    |
+| `STANDARD`                           | 80 – 99     | Standard trading privileges                                      |
+| `PROBATION`                          | 40 – 79     | New account (`50`) or under observation                          |
+| `SUSPENDED`                          | < 40        | Restricted from trading/bidding due to penalties (`PenaltyType`) |
 
 ## 2. Commerce, Cart & Pricing (`cart.service.ts`, `product-price.ts`)
 

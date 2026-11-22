@@ -13,11 +13,11 @@ Toàn bộ các hằng số, ngưỡng kiểm tra và quy tắc dưới đây đ
 
 | Hạng uy tín (`ReputationTrustLevel`) | Khoảng điểm | Ý nghĩa vận hành                                              |
 | :----------------------------------- | :---------- | :------------------------------------------------------------ |
-| `EXCELLENT`                          | $\ge 120$   | Uy tín xuất sắc                                               |
-| `GOOD`                               | $100 - 119$ | Uy tín tốt                                                    |
-| `STANDARD`                           | $80 - 99$   | Mức chuẩn giao dịch bình thường                               |
-| `PROBATION`                          | $40 - 79$   | Đang theo dõi / tài khoản mới (`50`)                          |
-| `SUSPENDED`                          | $< 40$      | Bị hạn chế quyền giao dịch/đặt giá do vi phạm (`PenaltyType`) |
+| `EXCELLENT`                          | ≥ 120       | Uy tín xuất sắc                                               |
+| `GOOD`                               | 100 – 119   | Uy tín tốt                                                    |
+| `STANDARD`                           | 80 – 99     | Mức chuẩn giao dịch bình thường                               |
+| `PROBATION`                          | 40 – 79     | Đang theo dõi / tài khoản mới (`50`)                          |
+| `SUSPENDED`                          | < 40        | Bị hạn chế quyền giao dịch/đặt giá do vi phạm (`PenaltyType`) |
 
 ## 2. Thương mại, Giỏ hàng & Định giá (`cart.service.ts`, `product-price.ts`)
 
