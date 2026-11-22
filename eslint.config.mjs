@@ -1,4 +1,5 @@
 import tseslint from 'typescript-eslint';
+import sonarjs from 'eslint-plugin-sonarjs';
 
 export default tseslint.config(
   {
@@ -16,6 +17,7 @@ export default tseslint.config(
     ],
   },
   ...tseslint.configs.recommended,
+  sonarjs.configs.recommended,
   {
     files: ['**/*.{js,mjs,cjs,ts,tsx}'],
     rules: {
@@ -33,6 +35,30 @@ export default tseslint.config(
       'prefer-const': 'error',
       'no-var': 'error',
       eqeqeq: ['error', 'always'],
+      'sonarjs/cognitive-complexity': ['warn', 15],
+      'sonarjs/no-duplicate-string': ['warn', { threshold: 4 }],
+      'sonarjs/no-identical-functions': 'warn',
+      'sonarjs/no-collapsible-if': 'warn',
+      'sonarjs/no-nested-conditional': 'warn',
+      'sonarjs/no-nested-template-literals': 'warn',
+      'sonarjs/super-linear-regex': 'warn',
+      'sonarjs/duplicates-in-character-class': 'warn',
+      'sonarjs/concise-regex': 'warn',
+      'sonarjs/pseudo-random': 'warn',
+      'sonarjs/regex-complexity': 'warn',
+      'sonarjs/no-nested-functions': 'warn',
+      'sonarjs/void-use': 'warn',
+      'sonarjs/use-type-alias': 'warn',
+      'sonarjs/no-clear-text-protocols': 'warn',
+      'sonarjs/sql-queries': 'warn',
+      'sonarjs/no-dead-store': 'warn',
+      'sonarjs/no-redundant-assignments': 'warn',
+      'sonarjs/no-empty-collection': 'warn',
+      'sonarjs/no-unused-vars': 'warn',
+      'sonarjs/no-useless-catch': 'warn',
+      'sonarjs/hashing': 'warn',
+      'sonarjs/empty-string-repetition': 'warn',
+      'sonarjs/no-hardcoded-ip': 'warn',
     },
   },
 );
