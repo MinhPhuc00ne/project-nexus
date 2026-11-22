@@ -50,13 +50,9 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
         </div>
         <Badge>VND</Badge>
       </div>
-      <div className="mb-7 grid gap-4 rounded-xl bg-blue-50/70 p-4 sm:grid-cols-3">
+      <div className="mb-7 grid gap-4 rounded-xl bg-blue-50/70 p-4 sm:grid-cols-2">
         <div>
-          <p className="text-[9px] uppercase text-slate-500">Tổng phí sàn · {current.unit}</p>
-          <p className="mt-1 text-base font-bold tracking-tight">{formatMoney(current.total)}</p>
-        </div>
-        <div>
-          <p className="text-[9px] uppercase text-slate-500">Phí đấu giá 3D</p>
+          <p className="text-[9px] uppercase text-slate-500">Phí sàn từ đấu giá</p>
           <p className="mt-1 text-base font-bold text-primary">{formatMoney(current.auction)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
             Tỷ trọng: {current.total ? ((current.auction / current.total) * 100).toFixed(1) : '0.0'}
@@ -64,7 +60,7 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
           </p>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-slate-500">Phí đơn hàng thường</p>
+          <p className="text-[9px] uppercase text-slate-500">Phí sàn từ đơn thường</p>
           <p className="mt-1 text-base font-bold text-blue-500">{formatMoney(current.normal)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
             Tỷ trọng: {current.total ? ((current.normal / current.total) * 100).toFixed(1) : '0.0'}%

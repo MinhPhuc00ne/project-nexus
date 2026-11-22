@@ -15,10 +15,13 @@ import AuctionRow from '../../components/adminDashboard/Auctions/AuctionRow';
 import { statuses } from '../../components/adminDashboard/Auctions/auctionStatuses';
 import DeleteAuctionDialog from '../../components/adminDashboard/Auctions/DeleteAuctionDialog';
 import type { AdminAuctionEntity } from '../../services/auction.service';
+import PromoteAuctionDialog from '../../components/adminDashboard/Auctions/PromoteAuctionDialog';
+import useAuctionBanners from '../../components/adminDashboard/Auctions/useAuctionBanners';
 
 export default function AdminAuctionsPage() {
   const [editingAuction, setEditingAuction] = useState<AdminAuctionEntity | null>(null);
   const [deletingAuction, setDeletingAuction] = useState<AdminAuctionEntity | null>(null);
+  const [promotingAuction, setPromotingAuction] = useState<AdminAuctionEntity | null>(null);
   const {
     now,
     lockDisabledReason,
@@ -32,6 +35,7 @@ export default function AdminAuctionsPage() {
     page,
     setPage,
     setRevision,
+    revision,
     loading,
     error,
     creating,
@@ -50,6 +54,7 @@ export default function AdminAuctionsPage() {
     handleLockConsignment,
     handleStartAuction,
   } = useAdminAuctions();
+  const banners = useAuctionBanners(token, revision);
   return (
     <Panel
       title="Quản lí đấu giá"
@@ -100,6 +105,11 @@ export default function AdminAuctionsPage() {
           Đang tải phiên đấu giá…
         </p>
       )}
+      {banners.error && (
+        <p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+          Chưa kiểm tra được banner của các phiên: {banners.error}. Bấm Làm mới để thử lại.
+        </p>
+      )}
       {error && (
         <div role="alert" className="space-y-3 rounded-lg bg-red-50 p-4 text-sm text-red-700">
           <p>{error}</p>
@@ -147,6 +157,8 @@ export default function AdminAuctionsPage() {
                       handleStartAuction={handleStartAuction}
                       onEdit={setEditingAuction}
                       onDelete={setDeletingAuction}
+                      onPromote={setPromotingAuction}
+                      banners={banners}
                     />
                   ))}
                 </tbody>
@@ -211,6 +223,17 @@ export default function AdminAuctionsPage() {
           </p>
         )}
       </Popup>
+      {promotingAuction && (
+        <PromoteAuctionDialog
+          key={`${token}:${promotingAuction.id}`}
+          auction={promotingAuction}
+          onClose={() => setPromotingAuction(null)}
+          onPromoted={() => {
+            setPromotingAuction(null);
+            setRevision((value) => value + 1);
+          }}
+        />
+      )}
       {editingAuction && (
         <CreateAuctionDialog
           key={`edit:${token}:${editingAuction.id}`}

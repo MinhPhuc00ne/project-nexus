@@ -241,6 +241,7 @@ export function useAdminAuctions() {
     page,
     setPage,
     setRevision,
+    revision,
     loading,
     error,
     creating,

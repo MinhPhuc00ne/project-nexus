@@ -103,7 +103,7 @@ function hooks() {
         return [
           slots[index],
           (value) => {
-            slots[index] = value;
+            slots[index] = typeof value === 'function' ? value(slots[index]) : value;
           },
         ];
       },
@@ -129,6 +129,100 @@ function find(node, predicate) {
 }
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
+function createFormSetup({ hasImage = true, promotionFails = false } = {}) {
+  const harness = hooks();
+  const calls = { creates: 0, promotions: 0, completed: 0, errors: [] };
+  const component = load(`${base}CreateAuctionDialog.tsx`, {
+    react: harness.react,
+    'react/jsx-runtime': { jsx, jsxs: jsx },
+    'lucide-react': {},
+    '../../../services/api': {},
+    '../../../services/auction.service': {
+      adminCreateAuctionApi: async (payload) => {
+        calls.creates++;
+        return { ...payload, id: 'created', status: 'SCHEDULED' };
+      },
+    },
+    '../../../services/auth': { getStoredToken: () => 'session' },
+    '../../ToastNotification': {
+      useToast: () => ({ success() {}, error: (message) => calls.errors.push(message) }),
+    },
+    '../../Popup': {},
+    '../shared/AdminUI': {},
+    '../../../utils/date-time': { minEndDateTime() {} },
+    './ConsignmentDeadlineField': {},
+    './auctionManagementAvailability': policy,
+    './auctionBannerPromotion': {
+      promoteAuctionBanner: async () => {
+        calls.promotions++;
+        if (promotionFails) throw Error('Unavailable');
+      },
+    },
+  }).default;
+  const props = {
+    onClose() {},
+    onCreated: () => {
+      calls.completed++;
+    },
+  };
+  const render = () => harness.render(component, props);
+  find(render(), (node) => node.type === 'input' && node.props.autoFocus).props.onChange({
+    target: { value: 'New room' },
+  });
+  const dateField = (text) =>
+    find(
+      find(
+        render(),
+        (node) =>
+          node.type === 'label' &&
+          [node.props.children]
+            .flat()
+            .some((value) => typeof value === 'string' && value.trim() === text),
+      ),
+      (node) => node.type === 'input',
+    );
+  dateField('Bắt đầu').props.onChange({ target: { value: '2030-01-01T10:00' } });
+  dateField('Kết thúc').props.onChange({ target: { value: '2030-01-01T12:00' } });
+  if (hasImage)
+    find(
+      render(),
+      (node) => node.type === 'input' && node.props.inputMode === 'url',
+    ).props.onChange({ target: { value: 'https://example.com/room.png' } });
+  return { calls, render };
+}
+
+test('create switch works as a promotion request and validates the image before creating', async () => {
+  const app = createFormSetup();
+  let tree = app.render();
+  const toggle = find(tree, (node) => node.props?.role === 'switch');
+  assert.equal(toggle.props.disabled, false);
+  toggle.props.onClick();
+  tree = app.render();
+  assert.equal(find(tree, (node) => node.props?.role === 'switch').props['aria-checked'], true);
+  find(tree, (node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  await tick();
+  assert.equal(app.calls.creates, 1);
+  assert.equal(app.calls.promotions, 1);
+  assert.equal(app.calls.completed, 1);
+
+  const missing = createFormSetup({ hasImage: false });
+  find(missing.render(), (node) => node.props?.role === 'switch').props.onClick();
+  find(missing.render(), (node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  await tick();
+  assert.equal(missing.calls.creates, 0);
+});
+
+test('promotion failure preserves successful room creation and directs retry to the banner button', async () => {
+  const app = createFormSetup({ promotionFails: true });
+  find(app.render(), (node) => node.props?.role === 'switch').props.onClick();
+  find(app.render(), (node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
+  await tick();
+  assert.equal(app.calls.creates, 1);
+  assert.equal(app.calls.completed, 1);
+  assert.equal(app.calls.errors.length, 1);
+  assert.match(app.calls.errors[0], /Lên banner/);
+});
+
 test('edit form sends PATCH data, preserves original date precision, and clears deadline explicitly', async () => {
   const harness = hooks();
   const calls = [];
@@ -153,6 +247,7 @@ test('edit form sends PATCH data, preserves original date precision, and clears 
     '../../../utils/date-time': { minEndDateTime() {} },
     './ConsignmentDeadlineField': {},
     './auctionManagementAvailability': policy,
+    './auctionBannerPromotion': {},
   }).default;
   let saved;
   const props = {

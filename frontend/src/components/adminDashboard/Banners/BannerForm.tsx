@@ -2,7 +2,8 @@ import { useRef, useState, type FormEvent } from 'react';
 import { Upload } from 'lucide-react';
 import { bannerLink, type BannerInput } from '../../../services/banners';
 import { uploadBannerImage } from '../../../services/banners.service';
-import { Button, Panel } from '../shared/AdminUI';
+import { Button } from '../shared/AdminUI';
+import Popup from '../../Popup';
 import { Input } from '../../ui/input';
 import { minEndDateTime } from '../../../utils/date-time';
 
@@ -56,10 +57,20 @@ export default function BannerForm({
   }
 
   return (
-    <Panel
+    <Popup
+      isOpen
       title={id ? 'Chỉnh sửa banner' : 'Thêm banner'}
-      subtitle="Chọn ảnh từ máy. Gợi ý ảnh ngang tỉ lệ 3:1, nội dung nằm trong ảnh."
+      size="xl"
+      onClose={() => {
+        if (!saving && !uploading) onCancel();
+      }}
+      closeOnOverlay={!saving && !uploading}
+      closeOnEsc={!saving && !uploading}
+      showCloseButton={!saving && !uploading}
     >
+      <p className="mb-5 text-xs text-slate-500">
+        Chọn ảnh từ máy. Gợi ý ảnh ngang tỉ lệ 3:1, nội dung nằm trong ảnh.
+      </p>
       <form
         onSubmit={(event) => {
           if (uploading || uploadError || !value.imageUrl) {
@@ -226,6 +237,6 @@ export default function BannerForm({
           </div>
         </fieldset>
       </form>
-    </Panel>
+    </Popup>
   );
 }

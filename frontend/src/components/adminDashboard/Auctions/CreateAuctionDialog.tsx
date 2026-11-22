@@ -13,6 +13,7 @@ import { Button } from '../shared/AdminUI';
 import { minEndDateTime } from '../../../utils/date-time';
 import ConsignmentDeadlineField from './ConsignmentDeadlineField';
 import { auctionEditReason } from './auctionManagementAvailability';
+import { promoteAuctionBanner } from './auctionBannerPromotion';
 
 function localDateTime(value?: string | null) {
   if (!value) return '';
@@ -43,6 +44,7 @@ export default function CreateAuctionDialog({
   );
   const [buyerScore, setBuyerScore] = useState(String(auction?.minBuyerReputation ?? 100));
   const [sellerScore, setSellerScore] = useState(String(auction?.minSellerReputation ?? 80));
+  const [promoteOnCreate, setPromoteOnCreate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const lock = useRef(false);
@@ -67,6 +69,10 @@ export default function CreateAuctionDialog({
     setError('');
     if (auction && auctionEditReason(auction)) {
       setError(auctionEditReason(auction));
+      return;
+    }
+    if (!auction && promoteOnCreate && !imageFile && !imageUrl.trim()) {
+      setError('Vui lòng thêm ảnh phiên đấu giá để đưa lên banner.');
       return;
     }
     const start = new Date(startTime);
@@ -154,8 +160,29 @@ export default function CreateAuctionDialog({
             consignmentDeadline: payload.consignmentDeadline ?? undefined,
           });
       if (active.current && token === getStoredToken()) {
-        toast.success(auction ? 'Đã cập nhật phiên đấu giá.' : 'Đã tạo phiên đấu giá.');
-        onCreated(saved);
+        let bannerError = '';
+        if (!auction && promoteOnCreate) {
+          try {
+            await promoteAuctionBanner(saved);
+          } catch (cause) {
+            bannerError = cause instanceof Error ? cause.message : 'Không thể đưa lên banner.';
+          }
+        }
+        if (active.current && token === getStoredToken()) {
+          toast.success(
+            auction
+              ? 'Đã cập nhật phiên đấu giá.'
+              : promoteOnCreate && !bannerError
+                ? 'Đã tạo phiên đấu giá và đưa lên banner theo lịch.'
+                : 'Đã tạo phiên đấu giá.',
+          );
+          if (bannerError)
+            toast.error(
+              `Phiên đã được tạo, nhưng chưa xác nhận được banner: ${bannerError} Bạn có thể dùng nút “Lên banner” để thử lại.`,
+              { duration: 10000 },
+            );
+          onCreated(saved);
+        }
       }
     } catch (cause) {
       if (active.current && token === getStoredToken())
@@ -302,6 +329,32 @@ export default function CreateAuctionDialog({
               />
             </label>
           </div>
+          {!auction && (
+            <div className="flex items-start justify-between gap-4 rounded-lg border border-blue-100 bg-blue-50 p-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">Đưa lên banner</p>
+                <p id="auction-banner-hint" className="mt-1 text-xs leading-5 text-slate-600">
+                  Bật để yêu cầu đưa lên banner sau khi tạo phiên. Nếu đã có banner thì giữ nguyên.
+                  Hệ thống hiện cũng tự tạo banner khi phiên có ảnh; công tắc này không gỡ banner.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-label="Đưa lên banner"
+                aria-describedby="auction-banner-hint"
+                aria-checked={promoteOnCreate}
+                disabled={saving}
+                onClick={() => setPromoteOnCreate((current) => !current)}
+                title="Yêu cầu đưa lên banner sau khi tạo phiên"
+                className={`relative mt-0.5 h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed ${promoteOnCreate ? 'bg-primary' : 'bg-slate-300'}`}
+              >
+                <span
+                  className={`absolute top-0.5 size-5 rounded-full bg-white shadow-sm transition-transform ${promoteOnCreate ? 'translate-x-5 left-0.5' : 'left-0.5'}`}
+                />
+              </button>
+            </div>
+          )}
           <p className="text-xs text-slate-500">
             {auction
               ? 'Thời gian theo múi giờ thiết bị. Lịch của các lô đã duyệt không tự thay đổi theo lịch phiên.'
