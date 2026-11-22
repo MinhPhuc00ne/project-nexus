@@ -17,6 +17,8 @@ const { GhnLogisticsService } = load(
 );
 const { ReviewsService } = load('../src/modules/commerce/services/reviews.service.ts');
 const { ReportsService } = load('../src/modules/commerce/services/reports.service.ts');
+const { FeedbackController } = load('../src/modules/commerce/controllers/feedback.controller.ts');
+const { ROLES_KEY } = load('../src/core/security/roles.decorator.ts');
 const { BannerService } = load('../src/modules/catalog/services/banner.service.ts');
 
 test('sale boundaries use one effective price and never replace base price', () => {
@@ -173,4 +175,72 @@ test('public banners filter active time windows and invalid intervals never writ
     /kết thúc/,
   );
   assert.equal(created, false);
+});
+
+test('support staff and admin can moderate reviews with valid reputation penalty and notification', async () => {
+  for (const method of ['adminListReviews', 'adminDeleteProductReview', 'adminDeleteShopReview']) {
+    const roles = Reflect.getMetadata(ROLES_KEY, FeedbackController.prototype[method]);
+    assert.ok(roles.includes('ADMIN'));
+    assert.ok(roles.includes('SUPPORT_STAFF'));
+  }
+
+  const notifications = [];
+  const reputationCalls = [];
+  const productUpdates = [];
+  const deletedIds = [];
+  const reviewRow = {
+    id: 'rev-1',
+    productId: 'prod-1',
+    reviewerId: 'buyer-1',
+    rating: 1,
+    reviewer: { id: 'buyer-1', reputationScore: 60 },
+    product: { id: 'prod-1', title: 'Tranh sơn mài', reviewCount: 2, ratingSum: 6 },
+  };
+  const tx = {
+    productReview: {
+      findUnique: async () => reviewRow,
+      delete: async ({ where }) => deletedIds.push(where.id),
+    },
+    product: { update: async (args) => productUpdates.push(args) },
+    notification: { create: async ({ data }) => notifications.push(data) },
+  };
+  const service = new ReviewsService(
+    { $transaction: (fn) => fn(tx) },
+    { adjustScore: async (payload) => reputationCalls.push(payload) },
+  );
+
+  await assert.rejects(
+    service.adminDeleteReview(
+      'rev-1',
+      'product',
+      { reason: 'Ngôn từ thô tục', pointsToDeduct: 0 },
+      'SUPPORT_STAFF',
+    ),
+    /lớn hơn 0/,
+  );
+
+  await assert.rejects(
+    service.adminDeleteReview(
+      'rev-1',
+      'product',
+      { reason: 'Ngôn từ thô tục', pointsToDeduct: 61 },
+      'SUPPORT_STAFF',
+    ),
+    /tối đa 60/,
+  );
+
+  const res = await service.adminDeleteReview(
+    'rev-1',
+    'product',
+    { reason: 'Ngôn từ thô tục, xúc phạm', pointsToDeduct: 15 },
+    'SUPPORT_STAFF',
+  );
+  assert.equal(res.success, true);
+  assert.equal(reputationCalls[0].deltaPoints, -15);
+  assert.equal(reputationCalls[0].referenceId, 'STAFF_DELETE_REVIEW:rev-1');
+  assert.equal(productUpdates[0].data.reviewCount, 1);
+  assert.equal(productUpdates[0].data.averageRating, 5);
+  assert.deepEqual(deletedIds, ['rev-1']);
+  assert.match(notifications[0].content, /Nhân viên kiểm duyệt/);
+  assert.match(notifications[0].content, /15 điểm uy tín/);
 });

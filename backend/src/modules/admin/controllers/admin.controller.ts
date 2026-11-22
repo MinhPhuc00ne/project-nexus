@@ -30,6 +30,7 @@ import { QueryUsersDto } from '../dtos/query-users.dto';
 import { RejectSellerRequestDto } from '../dtos/reject-seller-request.dto';
 import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';
 import { QueryAdminProductsDto } from '../dtos/query-admin-products.dto';
+import { UpdateProductCategoryDto } from '../dtos/update-product-category.dto';
 import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
 import { QueryAdminShopsDto } from '../dtos/query-admin-shops.dto';
 import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
@@ -301,6 +302,23 @@ export class AdminController {
     @Body() dto: UpdateProductStatusDto,
   ) {
     return this.adminProductsService.updateProductStatus(id, admin.id, dto);
+  }
+
+  @Patch('products/:id/category')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Assign or update product catalog category',
+    description:
+      'Allows Admin to reassign a product to a newly created or more appropriate catalog category and notifies the seller.',
+  })
+  @ApiResponse({ status: 200, description: 'Product category updated successfully' })
+  @ApiResponse({ status: 404, description: 'Product or category not found' })
+  async updateProductCategory(
+    @Param('id') id: string,
+    @CurrentUser() admin: AuthenticatedUserPayload,
+    @Body() dto: UpdateProductCategoryDto,
+  ) {
+    return this.adminProductsService.updateProductCategory(id, admin.id, dto);
   }
 
   @Delete('products/:id')

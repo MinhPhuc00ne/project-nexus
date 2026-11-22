@@ -793,7 +793,67 @@ export class OrderService {
       });
 
       if (!payment) {
-        this.logger.warn(`Không tìm thấy bản ghi Payment cho PayOS orderCode=${orderCode}`);
+        // Kiểm tra xem đây có phải là giao dịch nạp tiền ví qua PayOS không
+        const walletTx = await this.prisma.walletTransaction.findFirst({
+          where: {
+            referenceId: String(orderCode),
+            type: WalletTransactionType.DEPOSIT,
+          },
+          include: {
+            wallet: true,
+          },
+        });
+
+        if (walletTx) {
+          if (walletTx.status === WalletTransactionStatus.SUCCESS) {
+            this.logger.log(`Nạp ví PayOS orderCode=${orderCode} đã được xử lý trước đó`);
+            return { success: true, message: 'Already processed' };
+          }
+
+          if (Number(webhookData.amount) !== Number(walletTx.amount)) {
+            throw new BadRequestException('Số tiền nạp PayOS không khớp giao dịch.');
+          }
+
+          await this.prisma.$transaction(async (tx) => {
+            await tx.walletTransaction.update({
+              where: { id: walletTx.id },
+              data: {
+                status: WalletTransactionStatus.SUCCESS,
+                description: `${walletTx.description} (Đã thanh toán VietQR PayOS)`,
+              },
+            });
+
+            await tx.wallet.update({
+              where: { id: walletTx.walletId },
+              data: {
+                balance: { increment: walletTx.amount },
+              },
+            });
+
+            await this.auctionCheckout?.processPendingDepositsForUser(tx, walletTx.wallet.userId);
+
+            if (tx.notification?.create) {
+              await tx.notification.create({
+                data: {
+                  userId: walletTx.wallet.userId,
+                  title: 'Nạp tiền ví NEXUS Pay thành công ✅',
+                  content: `Bạn đã nạp thành công ${Number(walletTx.amount).toLocaleString('vi-VN')} VND vào ví NEXUS Pay qua PayOS (VietQR).`,
+                  type: NotificationType.PAYMENT,
+                  channel: NotificationChannel.IN_APP,
+                },
+              });
+            }
+          });
+
+          this.logger.log(
+            `Nạp ví PayOS orderCode=${orderCode} thành công cho userId=${walletTx.wallet.userId}`,
+          );
+          return { success: true, message: 'Wallet deposit processed successfully' };
+        }
+
+        this.logger.warn(
+          `Không tìm thấy bản ghi Payment hoặc WalletTransaction cho PayOS orderCode=${orderCode}`,
+        );
         return { success: false, message: 'Payment record not found' };
       }
 
@@ -1153,7 +1213,7 @@ export class OrderService {
   }
 
   /**
-   * Nạp tiền vào ví cá nhân (để mua sắm / test thanh toán ví)
+   * Nạp tiền vào ví cá nhân (hỗ trợ qua cổng PayOS VietQR hoặc nạp trực tiếp)
    */
   async depositToUserWallet(userId: string, dto: DepositWalletDto) {
     if (dto.amount <= 0) {
@@ -1177,6 +1237,47 @@ export class OrderService {
 
     const depositAmount = new Prisma.Decimal(dto.amount);
 
+    // Nếu chọn cổng PayOS và dịch vụ PayOS khả dụng (môi trường runtime thực tế)
+    if (dto.provider === 'PAYOS' && this.payosService?.createPaymentLink) {
+      const orderCode = Number(
+        `${Math.floor(Date.now() / 1000)}${Math.floor(Math.random() * 90 + 10)}`,
+      );
+
+      const walletTx = await this.prisma.walletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          amount: depositAmount,
+          type: WalletTransactionType.DEPOSIT,
+          status: WalletTransactionStatus.PENDING,
+          referenceId: String(orderCode),
+          description: dto.description?.trim() || `Nạp tiền ví NEXUS Pay (Mã GD: ${orderCode})`,
+        },
+      });
+
+      const paymentLink = await this.payosService.createPaymentLink({
+        orderCode,
+        amount: dto.amount,
+        description: `Nap vi NEXUS Pay`,
+        returnUrl: 'https://nexus.local/wallet',
+        cancelUrl: 'https://nexus.local/wallet',
+      });
+
+      return {
+        success: true,
+        paymentProvider: 'PAYOS',
+        orderCode,
+        checkoutUrl: paymentLink.checkoutUrl,
+        qrCode: paymentLink.qrCode,
+        amount: dto.amount,
+        accountNumber: paymentLink.accountNumber,
+        accountName: paymentLink.accountName,
+        bin: paymentLink.bin,
+        transactionId: walletTx.id,
+        message: 'Tạo link nạp tiền PayOS thành công. Vui lòng quét mã VietQR để hoàn tất.',
+      };
+    }
+
+    // Nạp tiền trực tiếp (cho test automation hoặc khi chỉ định DIRECT)
     const result = await this.prisma.$transaction(async (tx) => {
       await tx.wallet.update({
         where: { id: wallet.id },
@@ -1213,6 +1314,39 @@ export class OrderService {
         description: result.transaction.description,
         createdAt: result.transaction.createdAt,
       },
+    };
+  }
+
+  /**
+   * Kiểm tra trạng thái nạp tiền ví theo orderCode
+   */
+  async checkPayosWalletDepositStatus(orderCode: number, userId: string) {
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId },
+    });
+    if (!wallet) {
+      throw new NotFoundException('Ví người dùng không tồn tại');
+    }
+
+    const tx = await this.prisma.walletTransaction.findFirst({
+      where: {
+        walletId: wallet.id,
+        referenceId: String(orderCode),
+        type: WalletTransactionType.DEPOSIT,
+      },
+    });
+
+    if (!tx) {
+      throw new NotFoundException('Không tìm thấy giao dịch nạp ví tương ứng với mã đơn này');
+    }
+
+    return {
+      orderCode,
+      status: tx.status,
+      amount: Number(tx.amount),
+      description: tx.description,
+      createdAt: tx.createdAt,
+      balance: Number(wallet.balance),
     };
   }
 }
