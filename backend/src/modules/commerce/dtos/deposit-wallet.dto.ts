@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class DepositWalletDto {
   @ApiProperty({
@@ -17,4 +17,13 @@ export class DepositWalletDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({
+    enum: ['PAYOS', 'DIRECT'],
+    default: 'PAYOS',
+    description: 'Phương thức nạp: PAYOS (tạo VietQR thanh toán) hoặc DIRECT (nạp thử nghiệm)',
+  })
+  @IsOptional()
+  @IsEnum(['PAYOS', 'DIRECT'])
+  provider?: 'PAYOS' | 'DIRECT';
 }
