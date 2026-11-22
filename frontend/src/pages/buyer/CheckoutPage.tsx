@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, ShoppingBag, ArrowLeft, ChevronRight, Package } from 'lucide-react';
 import { fetchCart, clearCart, type CartItem } from '../../services/cart';
 import { getAddresses, createAddress, type UserAddress } from '../../services/address';
@@ -17,6 +18,7 @@ import CheckoutPaymentMethod from '../../components/checkout/CheckoutPaymentMeth
 import CheckoutOrderSummary from '../../components/checkout/CheckoutOrderSummary';
 
 export default function CheckoutPage() {
+  const { t } = useTranslation(['commerce', 'common']);
   const navigate = useNavigate();
 
   const [items, setItems] = useState<CartItem[]>([]);
@@ -163,7 +165,7 @@ export default function CheckoutPage() {
   if (loadingCart) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500 text-xs">
-        Đang tải thông tin thanh toán...
+        {t('commerce:checkout.loading')}
       </div>
     );
   }
@@ -180,14 +182,14 @@ export default function CheckoutPage() {
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center gap-2 text-xs text-slate-500 mb-6">
           <Link to="/" className="hover:text-blue-600 transition">
-            Trang chủ
+            {t('common:nav.home')}
           </Link>
           <ChevronRight size={13} />
           <Link to="/cart" className="hover:text-blue-600 transition">
-            Giỏ hàng
+            {t('common:nav.cart')}
           </Link>
           <ChevronRight size={13} />
-          <span className="font-semibold text-slate-800">Thanh toán đơn hàng</span>
+          <span className="font-semibold text-slate-800">{t('commerce:checkout.title')}</span>
         </div>
 
         {checkoutDone ? (
@@ -204,7 +206,7 @@ export default function CheckoutPage() {
                   className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow transition hover:bg-slate-800"
                 >
                   <ShoppingBag size={14} />
-                  <span>Xem Đơn Hàng Của Tôi</span>
+                  <span>{t('commerce:checkout.viewMyOrders')}</span>
                 </Link>
               }
               secondaryAction={
@@ -212,7 +214,7 @@ export default function CheckoutPage() {
                   to="/search"
                   className="rounded-xl bg-slate-100 px-6 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
                 >
-                  Tiếp tục mua sắm
+                  {t('commerce:cart.continueShopping')}
                 </Link>
               }
             />
@@ -221,17 +223,15 @@ export default function CheckoutPage() {
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto shadow-sm">
             <Package size={40} className="text-slate-300 mx-auto mb-3" />
             <h2 className="text-lg font-bold text-slate-800 mb-1">
-              Không có sản phẩm nào để thanh toán
+              {t('commerce:checkout.noItemsTitle')}
             </h2>
-            <p className="text-xs text-slate-500 mb-6">
-              Vui lòng quay lại giỏ hàng và chọn sản phẩm.
-            </p>
+            <p className="text-xs text-slate-500 mb-6">{t('commerce:checkout.noItemsDesc')}</p>
             <Link
               to="/cart"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition"
             >
               <ArrowLeft size={14} />
-              <span>Quay lại giỏ hàng</span>
+              <span>{t('commerce:checkout.backToCart')}</span>
             </Link>
           </div>
         ) : (
