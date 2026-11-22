@@ -164,6 +164,78 @@
       "CONFIRMED": "Completed",
       "CANCELLED": "Cancelled",
       "REFUNDED": "Refunded"
+    },
+    "addressCard": {
+      "title": "Shipping Address (GHN Express)",
+      "snapshotBadge": "Order record",
+      "noName": "No recipient name",
+      "noPhone": "No phone number",
+      "noAddress": "No detailed address.",
+      "escrowNote": "The shipping address is locked to this order to ensure escrow protection and delivery inspection."
+    },
+    "card": {
+      "completed": "Completed",
+      "orderCodeMeta": "Order ID: {{code}} • {{date}} • x{{qty}} items",
+      "codLabel": "Cash on Delivery (COD)",
+      "openingPayos": "Opening PayOS…",
+      "payWithPayos": "Pay with PayOS",
+      "disputeOrReturn": "Dispute / Return",
+      "confirming": "Confirming…",
+      "confirmReceived": "Order Received",
+      "reviewProduct": "Review Product",
+      "viewDetails": "View details"
+    },
+    "itemsSummary": {
+      "defaultShop": "NEXUS Shop",
+      "verifiedPartner": "Verified partner seller",
+      "viewShop": "View shop",
+      "defaultProductTitle": "Purchased Product",
+      "variantLabel": "Variant:",
+      "qtyLabel": "Quantity: x{{qty}}",
+      "perItem": "{{price}} / item",
+      "subtotalMerchandise": "Merchandise subtotal:",
+      "ghnShipping": "Shipping fee (GHN Express):",
+      "freeShipping": "Free",
+      "grandTotal": "Total amount:"
+    },
+    "timeline": {
+      "orderPlaced": "Order Placed",
+      "codPayment": "Payment (COD)",
+      "paid": "Paid",
+      "codCollected": "Cash collected on delivery",
+      "codCollectOnDelivery": "Collect cash on delivery",
+      "completedStep": "Completed",
+      "preparing": "Preparing",
+      "shipping": "Shipping",
+      "completed": "Completed",
+      "delivered": "Delivered",
+      "cancelledTitle": "Order Cancelled",
+      "cancelledDesc": "This order was cancelled on {{date}}.",
+      "statusTitle": "Order Status"
+    },
+    "reviewModal": {
+      "defaultProductComment": "Great product, fast shipping and matches description.",
+      "defaultShopComment": "Trusted shop, careful packaging and attentive service.",
+      "submitFailed": "Unable to submit review right now. Please check the order status.",
+      "title": "Review Order #{{code}}",
+      "thankYouTitle": "Thank you for submitting your review!",
+      "thankYouDesc": "Your review has been recorded in the system and updated on the NEXUS shop reputation.",
+      "close": "Close",
+      "rateProductsTitle": "Rate product quality",
+      "defaultProductName": "NEXUS Product",
+      "ratingLabel": "Rating:",
+      "rating5": "Excellent",
+      "rating4": "Satisfied",
+      "rating3": "Average",
+      "rating2": "Dissatisfied",
+      "rating1": "Very poor",
+      "productCommentPlaceholder": "Share your feedback on product quality, finish, packaging…",
+      "rateShopLabel": "Rate seller / shop service",
+      "shopTrustLabel": "Shop trustworthiness:",
+      "shopCommentPlaceholder": "Comment on consultation attitude and order preparation speed…",
+      "cancel": "Cancel",
+      "submitting": "Submitting review…",
+      "submitNow": "Submit Review"
     }
   }
 }

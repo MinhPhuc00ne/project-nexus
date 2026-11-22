@@ -164,6 +164,78 @@
       "CONFIRMED": "Hoàn thành",
       "CANCELLED": "Đã hủy",
       "REFUNDED": "Đã hoàn tiền"
+    },
+    "addressCard": {
+      "title": "Địa chỉ nhận hàng (GHN Express)",
+      "snapshotBadge": "Bản ghi đơn hàng",
+      "noName": "Chưa có họ tên",
+      "noPhone": "Chưa có số điện thoại",
+      "noAddress": "Chưa có thông tin địa chỉ chi tiết.",
+      "escrowNote": "Địa chỉ giao hàng đã được cố định theo đơn hàng để đảm bảo quyền lợi bảo chứng ký quỹ và kiểm định bàn giao."
+    },
+    "card": {
+      "completed": "Hoàn thành",
+      "orderCodeMeta": "Mã đơn: {{code}} • {{date}} • x{{qty}} sản phẩm",
+      "codLabel": "Tiền mặt khi nhận hàng (COD)",
+      "openingPayos": "Đang mở PayOS...",
+      "payWithPayos": "Thanh toán PayOS",
+      "disputeOrReturn": "Khiếu nại / Trả hàng",
+      "confirming": "Đang xác nhận...",
+      "confirmReceived": "Đã nhận được hàng",
+      "reviewProduct": "Đánh giá sản phẩm",
+      "viewDetails": "Xem chi tiết"
+    },
+    "itemsSummary": {
+      "defaultShop": "Gian Hàng NEXUS",
+      "verifiedPartner": "Người bán đối tác đã xác thực",
+      "viewShop": "Xem gian hàng",
+      "defaultProductTitle": "Sản phẩm mua sắm",
+      "variantLabel": "Phân loại:",
+      "qtyLabel": "Số lượng: x{{qty}}",
+      "perItem": "{{price}} / sản phẩm",
+      "subtotalMerchandise": "Tổng tiền hàng:",
+      "ghnShipping": "Phí vận chuyển (GHN Express):",
+      "freeShipping": "Miễn phí",
+      "grandTotal": "Tổng thanh toán:"
+    },
+    "timeline": {
+      "orderPlaced": "Đơn Hàng Đã Đặt",
+      "codPayment": "Thanh toán (COD)",
+      "paid": "Đã Thanh Toán",
+      "codCollected": "Đã thu tiền khi giao",
+      "codCollectOnDelivery": "Thu tiền khi giao hàng",
+      "completedStep": "Hoàn tất",
+      "preparing": "Đang Chuẩn Bị",
+      "shipping": "Đang Giao Hàng",
+      "completed": "Hoàn Thành",
+      "delivered": "Đã Giao Hàng",
+      "cancelledTitle": "Đơn hàng đã huỷ",
+      "cancelledDesc": "Đơn hàng này đã bị huỷ vào {{date}}.",
+      "statusTitle": "Trạng thái đơn hàng"
+    },
+    "reviewModal": {
+      "defaultProductComment": "Sản phẩm rất tốt, giao hàng nhanh và đúng mô tả.",
+      "defaultShopComment": "Gian hàng uy tín, đóng gói cẩn thận và phục vụ chu đáo.",
+      "submitFailed": "Không thể gửi đánh giá lúc này. Vui lòng kiểm tra lại trạng thái đơn hàng.",
+      "title": "Đánh giá đơn hàng #{{code}}",
+      "thankYouTitle": "Cảm ơn bạn đã gửi đánh giá sản phẩm!",
+      "thankYouDesc": "Đánh giá của bạn đã được ghi nhận vào hệ thống và điểm uy tín của gian hàng NEXUS.",
+      "close": "Đóng",
+      "rateProductsTitle": "Đánh giá chất lượng sản phẩm",
+      "defaultProductName": "Sản phẩm NEXUS",
+      "ratingLabel": "Đánh giá:",
+      "rating5": "Tuyệt vời",
+      "rating4": "Hài lòng",
+      "rating3": "Bình thường",
+      "rating2": "Không hài lòng",
+      "rating1": "Rất tệ",
+      "productCommentPlaceholder": "Hãy chia sẻ nhận xét của bạn về chất lượng sản phẩm, độ hoàn thiện, đóng gói...",
+      "rateShopLabel": "Đánh giá dịch vụ của người bán / gian hàng",
+      "shopTrustLabel": "Độ uy tín shop:",
+      "shopCommentPlaceholder": "Nhận xét về thái độ tư vấn, tốc độ chuẩn bị hàng của shop...",
+      "cancel": "Hủy",
+      "submitting": "Đang gửi đánh giá...",
+      "submitNow": "Gửi đánh giá ngay"
     }
   }
 }
