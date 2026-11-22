@@ -94,7 +94,7 @@ export default function Sidebar({
       {/* Lớp nền tối chỉ xuất hiện khi mở menu mobile; bấm nền sẽ đóng menu. */}
       {open && (
         <button
-          aria-label="Đóng menu"
+          aria-label={t('sidebar.closeMenu')}
           onClick={onClose}
           className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
         />
@@ -107,14 +107,14 @@ export default function Sidebar({
           <NavLink
             to="/admin/overview"
             onClick={onClose}
-            aria-label="NEXUS Admin - Tổng quan"
+            aria-label={t('sidebar.overviewAria')}
             className="flex flex-1 items-center"
           >
             {/* Vite phục vụ public từ gốc URL, nên đường dẫn không có chữ /public. */}
             <img src="/images/logo.png" alt="NEXUS" className="h-16 w-44 object-contain" />
           </NavLink>
           <button
-            aria-label="Đóng menu"
+            aria-label={t('sidebar.closeMenu')}
             onClick={onClose}
             className="ml-auto p-1 text-slate-500 lg:hidden"
           >
@@ -122,7 +122,7 @@ export default function Sidebar({
           </button>
         </div>
         <nav
-          aria-label="Điều hướng quản trị"
+          aria-label={t('sidebar.navAria')}
           className="flex-1 space-y-6 overflow-y-auto px-3 py-6"
         >
           {adminNavigation.map((group) => (
@@ -164,10 +164,10 @@ export default function Sidebar({
         <div className="border-t border-slate-100 p-4">
           <div className="flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2.5 text-[10px] font-medium text-primary">
             <ChartNoAxesCombined size={15} />
-            <span>Engine 3D WebGL</span>
+            <span>{t('sidebar.engineLabel')}</span>
             <span className="ml-auto flex items-center gap-1 text-emerald-600">
               <span className="size-1.5 rounded-full bg-emerald-500" />
-              DEMO
+              {t('sidebar.demoBadge')}
             </span>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getAdminSettings, getAdminOverviewAnalytics, listUsers } from '../../../services/admin';
@@ -22,6 +23,7 @@ interface OverviewData {
 }
 
 export default function useOverviewData() {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [data, setData] = useState<OverviewData>({});
   const [loading, setLoading] = useState(true);
@@ -46,17 +48,25 @@ export default function useOverviewData() {
         if (active)
           setErrors((current) => [
             ...current,
-            `${label}: ${cause instanceof Error ? cause.message : 'Không tải được dữ liệu.'}`,
+            `${label}: ${cause instanceof Error ? cause.message : t('overview.loadErrFallback')}`,
           ]);
       }
     }
     void Promise.allSettled([
-      load('Yêu cầu chờ xử lý', 'queues', getAdminNotificationSummary()),
-      load('Thống kê tổng quan', 'analytics', getAdminOverviewAnalytics(controller.signal)),
-      load('Cấu hình', 'settings', getAdminSettings(controller.signal)),
-      load('Kết nối GHN', 'ghn', apiRequest<GhnDiagnostic>('/fulfillment/shipping/diagnostic')),
+      load(t('overview.sources.queues'), 'queues', getAdminNotificationSummary()),
       load(
-        'Phiên đang diễn ra',
+        t('overview.sources.analytics'),
+        'analytics',
+        getAdminOverviewAnalytics(controller.signal),
+      ),
+      load(t('overview.sources.settings'), 'settings', getAdminSettings(controller.signal)),
+      load(
+        t('overview.sources.ghn'),
+        'ghn',
+        apiRequest<GhnDiagnostic>('/fulfillment/shipping/diagnostic'),
+      ),
+      load(
+        t('overview.sources.live'),
         'live',
         Promise.all([
           getAdminAuctionsApi({ page: 1, limit: 1, status: AuctionStatus.ACTIVE }),
@@ -67,7 +77,7 @@ export default function useOverviewData() {
         ),
       ),
       load(
-        'Người dùng',
+        t('overview.sources.users'),
         'users',
         Promise.all([
           listUsers({ page: 1, limit: 1 }, controller.signal),
