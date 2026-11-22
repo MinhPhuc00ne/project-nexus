@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ImagePlus, X } from 'lucide-react';
 import { apiRequest } from '../../../services/api';
 import { adminCreateAuctionApi, type AdminAuctionEntity } from '../../../services/auction.service';
@@ -16,6 +17,7 @@ export default function CreateAuctionDialog({
   onClose: () => void;
   onCreated: (auction: AdminAuctionEntity) => void;
 }) {
+  const { t } = useTranslation('admin');
   const toast = useToast();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -52,17 +54,17 @@ export default function CreateAuctionDialog({
     const start = new Date(startTime);
     const end = new Date(endTime);
     if (!title.trim()) {
-      setError('Vui lòng nhập tên phiên đấu giá.');
+      setError(t('auctions.create.errTitle'));
       return;
     }
     if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
-      setError('Vui lòng chọn lịch hợp lệ, thời gian kết thúc phải sau thời gian bắt đầu.');
+      setError(t('auctions.create.errSchedule'));
       return;
     }
     if (consignmentDeadline) {
       const deadline = new Date(consignmentDeadline).getTime();
       if (!Number.isFinite(deadline) || deadline <= start.getTime() || deadline >= end.getTime()) {
-        setError('Hạn ký gửi phải sau thời gian bắt đầu và trước thời gian kết thúc phiên.');
+        setError(t('auctions.create.errDeadline'));
         return;
       }
     }
@@ -71,7 +73,7 @@ export default function CreateAuctionDialog({
         (value) => value.trim() && Number.isSafeInteger(Number(value)) && Number(value) >= 0,
       )
     ) {
-      setError('Điểm uy tín phải là số nguyên không âm.');
+      setError(t('auctions.create.errReputation'));
       return;
     }
 
@@ -91,13 +93,13 @@ export default function CreateAuctionDialog({
             isFormData: true,
             requireAuth: true,
           });
-          if (!result?.url) throw new Error('Máy chủ chưa trả về đường dẫn ảnh hợp lệ.');
+          if (!result?.url) throw new Error(t('auctions.create.errImageUrl'));
           uploadedImageUrl = result.url;
         } catch (uploadError) {
           setError(
             uploadError instanceof Error
-              ? `Tải ảnh đại diện thất bại: ${uploadError.message}`
-              : 'Tải ảnh đại diện thất bại.',
+              ? t('auctions.create.errUploadWithDetail', { message: uploadError.message })
+              : t('auctions.create.errUpload'),
           );
           lock.current = false;
           if (active.current) setSaving(false);
@@ -120,12 +122,12 @@ export default function CreateAuctionDialog({
         minSellerReputation: Number(sellerScore),
       });
       if (active.current && token === getStoredToken()) {
-        toast.success('Đã tạo phiên đấu giá.');
+        toast.success(t('auctions.create.toastSuccess'));
         onCreated(auction);
       }
     } catch (cause) {
       if (active.current && token === getStoredToken())
-        setError(cause instanceof Error ? cause.message : 'Không thể tạo phiên đấu giá.');
+        setError(cause instanceof Error ? cause.message : t('auctions.create.errCreate'));
     } finally {
       lock.current = false;
       if (active.current) setSaving(false);
@@ -137,7 +139,7 @@ export default function CreateAuctionDialog({
   return (
     <Popup
       isOpen
-      title="Tạo phiên đấu giá"
+      title={t('auctions.create.title')}
       size="lg"
       onClose={() => {
         if (!lock.current) onClose();
@@ -146,18 +148,18 @@ export default function CreateAuctionDialog({
       <form onSubmit={(event) => void submit(event)} className="space-y-5">
         <fieldset disabled={saving} className="space-y-5 disabled:opacity-60">
           <label className="block text-xs font-medium">
-            Tên phiên đấu giá <span className="text-red-600">*</span>
+            {t('auctions.create.nameLabel')} <span className="text-red-600">*</span>
             <input
               autoFocus
               required
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               className={inputClass}
-              placeholder="Ví dụ: Phiên đấu giá đồng hồ tháng 11"
+              placeholder={t('auctions.create.namePlaceholder')}
             />
           </label>
           <label className="block text-xs font-medium">
-            Mô tả / thể lệ
+            {t('auctions.create.descriptionLabel')}
             <textarea
               rows={4}
               value={description}
@@ -167,13 +169,13 @@ export default function CreateAuctionDialog({
           </label>
           <div className="space-y-2">
             <span className="block text-xs font-medium text-slate-700">
-              Ảnh đại diện / Banner phiên đấu giá
+              {t('auctions.create.bannerLabel')}
             </span>
             {imagePreview || imageUrl ? (
               <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                 <img
                   src={imagePreview || imageUrl}
-                  alt="Ảnh đại diện phiên đấu giá"
+                  alt={t('auctions.create.bannerAlt')}
                   className="h-36 w-full object-cover"
                 />
                 <button
@@ -184,8 +186,8 @@ export default function CreateAuctionDialog({
                     setImagePreview('');
                   }}
                   className="absolute right-2 top-2 rounded-full bg-slate-900/70 p-1 text-white shadow-xs transition-colors hover:bg-red-600 cursor-pointer"
-                  title="Xóa ảnh"
-                  aria-label="Xóa ảnh"
+                  title={t('auctions.create.removeImage')}
+                  aria-label={t('auctions.create.removeImage')}
                 >
                   <X size={14} aria-hidden="true" />
                 </button>
@@ -194,9 +196,11 @@ export default function CreateAuctionDialog({
               <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/60 p-4 text-center text-xs text-slate-600 hover:bg-blue-50">
                 <ImagePlus className="text-blue-600" size={24} aria-hidden="true" />
                 <span className="font-medium text-blue-700">
-                  Tải ảnh đại diện cho phiên đấu giá
+                  {t('auctions.create.uploadPrompt')}
                 </span>
-                <span className="text-[11px] text-slate-500">PNG, JPG, WEBP · tối đa 5MB</span>
+                <span className="text-[11px] text-slate-500">
+                  {t('auctions.create.uploadHint')}
+                </span>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
@@ -206,11 +210,11 @@ export default function CreateAuctionDialog({
                     if (!file) return;
                     event.target.value = '';
                     if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
-                      setError('Vui lòng chọn ảnh PNG, JPG hoặc WEBP.');
+                      setError(t('auctions.create.errInvalidFileType'));
                       return;
                     }
                     if (file.size > 5 * 1024 * 1024) {
-                      setError('Ảnh đại diện không được vượt quá 5MB.');
+                      setError(t('auctions.create.errFileSize'));
                       return;
                     }
                     setError('');
@@ -221,7 +225,9 @@ export default function CreateAuctionDialog({
               </label>
             )}
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-400 shrink-0">hoặc URL ảnh:</span>
+              <span className="text-[11px] text-slate-400 shrink-0">
+                {t('auctions.create.orImageUrl')}
+              </span>
               <input
                 type="url"
                 value={imageUrl}
@@ -232,14 +238,14 @@ export default function CreateAuctionDialog({
                     setImagePreview('');
                   }
                 }}
-                placeholder="https://... hoặc /uploads/..."
+                placeholder={t('auctions.create.urlPlaceholder')}
                 className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-blue-500"
               />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-xs font-medium">
-              Bắt đầu <span className="text-red-600">*</span>
+              {t('auctions.create.startLabel')} <span className="text-red-600">*</span>
               <input
                 required
                 type="datetime-local"
@@ -253,7 +259,7 @@ export default function CreateAuctionDialog({
               />
             </label>
             <label className="block text-xs font-medium">
-              Kết thúc <span className="text-red-600">*</span>
+              {t('auctions.create.endLabel')} <span className="text-red-600">*</span>
               <input
                 required
                 type="datetime-local"
@@ -264,9 +270,7 @@ export default function CreateAuctionDialog({
               />
             </label>
           </div>
-          <p className="text-xs text-slate-500">
-            Thời gian theo múi giờ thiết bị. Phiên bắt đầu ngay nếu giờ bắt đầu đã tới.
-          </p>
+          <p className="text-xs text-slate-500">{t('auctions.create.timezoneHint')}</p>
           <ConsignmentDeadlineField
             value={consignmentDeadline}
             startTime={startTime}
@@ -275,7 +279,7 @@ export default function CreateAuctionDialog({
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-xs font-medium">
-              Điểm uy tín Buyer tối thiểu
+              {t('auctions.create.buyerRepLabel')}
               <input
                 required
                 type="number"
@@ -287,7 +291,7 @@ export default function CreateAuctionDialog({
               />
             </label>
             <label className="block text-xs font-medium">
-              Điểm uy tín Seller tối thiểu
+              {t('auctions.create.sellerRepLabel')}
               <input
                 required
                 type="number"
@@ -307,10 +311,10 @@ export default function CreateAuctionDialog({
         )}
         <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
           <Button type="button" variant="secondary" disabled={saving} onClick={onClose}>
-            Hủy
+            {t('auctions.common.cancel')}
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Đang tạo…' : 'Tạo phiên đấu giá'}
+            {saving ? t('auctions.create.creating') : t('auctions.create.title')}
           </Button>
         </div>
       </form>

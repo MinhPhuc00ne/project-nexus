@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Heart, ArrowRight, Film, Package } from 'lucide-react';
 import type { SimilarWatch } from './types';
 
@@ -14,6 +15,7 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
   likedSimilar,
   onToggleLike,
 }) => {
+  const { t } = useTranslation('auction');
   if (!watches || watches.length === 0) {
     return null;
   }
@@ -22,19 +24,15 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
     <section className="mt-12 mb-14">
       <div className="flex items-end justify-between mb-6">
         <div className="flex flex-col gap-1">
-          <h2 className="text-[22px] font-extrabold text-slate-900 m-0">
-            Các Phiên Đấu Giá Khác Đang Diễn Ra
-          </h2>
-          <p className="text-[13px] text-slate-500 m-0">
-            Khám phá thêm các phiên đấu giá trực tiếp và sắp mở được thẩm duyệt bởi NEXUS
-          </p>
+          <h2 className="text-[22px] font-extrabold text-slate-900 m-0">{t('similar.title')}</h2>
+          <p className="text-[13px] text-slate-500 m-0">{t('similar.subtitle')}</p>
         </div>
 
         <Link
           to="/search?floor=Sàn+Đấu+Giá+Live"
           className="text-[13px] font-bold text-blue-600 no-underline inline-flex items-center gap-1 transition-all hover:gap-2 hover:underline"
         >
-          <span>Xem tất cả {watches.length} phiên</span>
+          <span>{t('similar.viewAll', { count: watches.length })}</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
@@ -74,7 +72,7 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
                   e.stopPropagation();
                   onToggleLike(item.id);
                 }}
-                aria-label="Thêm vào yêu thích"
+                aria-label={t('similar.favoriteAria')}
               >
                 <Heart className={`w-3.5 h-3.5 ${liked ? 'fill-red-500 text-red-500' : ''}`} />
               </button>
@@ -90,8 +88,12 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center bg-radial from-slate-800 via-slate-900 to-slate-950 text-slate-400">
                     <Package className="w-9 h-9 text-amber-400 mb-1.5 animate-pulse" />
-                    <span className="text-[11px] font-bold text-slate-200">Đang nhận ký gửi</span>
-                    <span className="text-[10px] text-slate-400 mt-0.5">Chưa có hiện vật</span>
+                    <span className="text-[11px] font-bold text-slate-200">
+                      {t('similar.awaitingConsignment')}
+                    </span>
+                    <span className="text-[10px] text-slate-400 mt-0.5">
+                      {t('similar.noItemsYet')}
+                    </span>
                   </div>
                 )}
 
@@ -133,9 +135,11 @@ export const SimilarAuctionsSection: React.FC<SimilarAuctionsSectionProps> = ({
                   ) : (
                     <div className="flex flex-col">
                       <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full w-fit mb-1">
-                        Chờ niêm yết
+                        {t('similar.pendingListing')}
                       </span>
-                      <span className="text-xs font-bold text-slate-700">Đang nhận hiện vật</span>
+                      <span className="text-xs font-bold text-slate-700">
+                        {t('similar.acceptingItems')}
+                      </span>
                     </div>
                   )}
 

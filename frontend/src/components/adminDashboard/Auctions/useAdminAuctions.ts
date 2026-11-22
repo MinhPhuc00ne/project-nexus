@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
@@ -83,6 +84,7 @@ async function resolveApprovedShowcaseItems(
 }
 
 export function useAdminAuctions() {
+  const { t } = useTranslation('admin');
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -125,9 +127,9 @@ export function useAdminAuctions() {
 
   async function handleLockConsignment() {
     if (!lockingAuction || locking || startingId) return;
-    const reason = consignmentLockReason(lockingAuction, Date.now());
-    if (reason) {
-      setLockError(reason);
+    const reasonKey = consignmentLockReason(lockingAuction, Date.now());
+    if (reasonKey) {
+      setLockError(t(`auctions.lockReasons.${reasonKey}`));
       return;
     }
     setLocking(true);
@@ -145,9 +147,9 @@ export function useAdminAuctions() {
           : current,
       );
       setLockingAuction(null);
-      toast.success('Đã chốt ký gửi phiên đấu giá.');
+      toast.success(t('auctions.page.lockSuccess'));
     } catch (cause: unknown) {
-      setLockError(cause instanceof Error ? cause.message : 'Không thể chốt ký gửi.');
+      setLockError(cause instanceof Error ? cause.message : t('auctions.page.lockError'));
     } finally {
       setLocking(false);
     }
@@ -179,7 +181,7 @@ export function useAdminAuctions() {
             }
           : current,
       );
-      toast.success(`Đã mở phiên "${item.title}" & phát sóng video giới thiệu trực tiếp!`);
+      toast.success(t('auctions.page.startSuccess', { title: item.title }));
       setShowcaseState({
         auctionId: started.id,
         title: started.title,
@@ -188,7 +190,7 @@ export function useAdminAuctions() {
         playbackMode: 'live',
       });
     } catch (cause: unknown) {
-      toast.error(cause instanceof Error ? cause.message : 'Không thể bắt đầu phiên đấu giá.');
+      toast.error(cause instanceof Error ? cause.message : t('auctions.page.startError'));
     } finally {
       setStartingId(null);
     }
@@ -217,8 +219,7 @@ export function useAdminAuctions() {
         if (active) setData(result);
       })
       .catch((cause: unknown) => {
-        if (active)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải phiên đấu giá.');
+        if (active) setError(cause instanceof Error ? cause.message : t('auctions.page.loadError'));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -226,11 +227,13 @@ export function useAdminAuctions() {
     return () => {
       active = false;
     };
-  }, [token, page, keyword, status, revision]);
+  }, [token, page, keyword, status, revision, t]);
+
+  const lockReasonKey = lockingAuction ? consignmentLockReason(lockingAuction, now) : '';
 
   return {
     now,
-    lockDisabledReason: lockingAuction ? consignmentLockReason(lockingAuction, now) : '',
+    lockDisabledReason: lockReasonKey ? t(`auctions.lockReasons.${lockReasonKey}`) : '',
     token,
     data,
     status,

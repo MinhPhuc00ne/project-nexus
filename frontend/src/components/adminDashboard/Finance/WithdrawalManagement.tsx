@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, WalletCards } from 'lucide-react';
 import {
   listAdminWithdrawals,
@@ -6,18 +7,21 @@ import {
   type AdminWithdrawalRequest,
   type AdminWithdrawalStatus,
 } from '../../../services/admin';
+import { getIntlLocale } from '../../../i18n/config';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';
 
-const statusLabels: Record<AdminWithdrawalStatus, string> = {
-  PENDING: 'Chờ duyệt',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Đã từ chối',
-  COMPLETED: 'Đã hoàn tất',
-};
-const date = (value: string | null) => (value ? new Date(value).toLocaleString('vi-VN') : '—');
+const WITHDRAWAL_STATUSES: AdminWithdrawalStatus[] = [
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'COMPLETED',
+];
 
 export default function WithdrawalManagement() {
+  const { t, i18n } = useTranslation('admin');
+  const date = (value: string | null) =>
+    value ? new Date(value).toLocaleString(getIntlLocale(i18n.language)) : '—';
   const [status, setStatus] = useState<AdminWithdrawalStatus | ''>('PENDING');
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);
@@ -50,14 +54,14 @@ export default function WithdrawalManagement() {
       .catch((cause: unknown) => {
         if (!controller.signal.aborted) {
           setResult(null);
-          setError(cause instanceof Error ? cause.message : 'Không tải được yêu cầu rút tiền.');
+          setError(cause instanceof Error ? cause.message : t('finance.withdrawals.loadErr'));
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [page, status, revision]);
+  }, [page, status, revision, t]);
 
   function openReview(item: AdminWithdrawalRequest, next: 'APPROVED' | 'REJECTED') {
     setTarget(item);
@@ -82,7 +86,7 @@ export default function WithdrawalManagement() {
       setTarget(null);
       setRevision((value) => value + 1);
     } catch (cause) {
-      setActionError(cause instanceof Error ? cause.message : 'Không xử lý được yêu cầu rút tiền.');
+      setActionError(cause instanceof Error ? cause.message : t('finance.withdrawals.processErr'));
     } finally {
       setSaving(false);
     }
@@ -96,8 +100,8 @@ export default function WithdrawalManagement() {
         : 'amber';
   return (
     <Panel
-      title="Yêu cầu rút tiền của người bán"
-      subtitle="Duyệt chuyển khoản hoặc từ chối yêu cầu. Từ chối sẽ hoàn số tiền đang khóa về ví người bán."
+      title={t('finance.withdrawals.title')}
+      subtitle={t('finance.withdrawals.subtitle')}
       icon={<WalletCards size={19} />}
       action={
         <Button
@@ -105,13 +109,13 @@ export default function WithdrawalManagement() {
           disabled={loading}
           onClick={() => setRevision((value) => value + 1)}
         >
-          <RefreshCw size={14} /> Làm mới
+          <RefreshCw size={14} /> {t('finance.withdrawals.refresh')}
         </Button>
       }
     >
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <label className="text-xs text-slate-500">
-          Trạng thái
+          {t('finance.withdrawals.statusLabel')}
           <select
             value={status}
             onChange={(event) => {
@@ -120,15 +124,17 @@ export default function WithdrawalManagement() {
             }}
             className="mt-1 block h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-800"
           >
-            <option value="">Tất cả trạng thái</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
+            <option value="">{t('finance.withdrawals.allStatuses')}</option>
+            {WITHDRAWAL_STATUSES.map((value) => (
               <option key={value} value={value}>
-                {label}
+                {t(`finance.withdrawals.statuses.${value}`)}
               </option>
             ))}
           </select>
         </label>
-        <span className="text-xs text-slate-500">Tổng {result?.total ?? 0} yêu cầu</span>
+        <span className="text-xs text-slate-500">
+          {t('finance.withdrawals.totalCount', { count: result?.total ?? 0 })}
+        </span>
       </div>
       {notice && (
         <p role="status" className="mb-4 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">
@@ -137,19 +143,19 @@ export default function WithdrawalManagement() {
       )}
       {loading ? (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
-          Đang tải yêu cầu rút tiền…
+          {t('finance.withdrawals.loading')}
         </p>
       ) : error ? (
         <div role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
           {error}
           <div className="mt-3">
             <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-              Thử lại
+              {t('finance.withdrawals.retry')}
             </Button>
           </div>
         </div>
       ) : !result?.items.length ? (
-        <EmptyState text="Không có yêu cầu rút tiền phù hợp." />
+        <EmptyState text={t('finance.withdrawals.empty')} />
       ) : (
         <>
           <div className="overflow-x-auto">
@@ -157,12 +163,12 @@ export default function WithdrawalManagement() {
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
                   {[
-                    'Người bán',
-                    'Số tiền',
-                    'Tài khoản nhận',
-                    'Ngày gửi',
-                    'Trạng thái',
-                    'Thao tác',
+                    t('finance.withdrawals.cols.seller'),
+                    t('finance.withdrawals.cols.amount'),
+                    t('finance.withdrawals.cols.bank'),
+                    t('finance.withdrawals.cols.submittedAt'),
+                    t('finance.withdrawals.cols.status'),
+                    t('finance.withdrawals.cols.actions'),
                   ].map((label) => (
                     <th key={label} scope="col" className="p-3 font-semibold">
                       {label}
@@ -190,29 +196,40 @@ export default function WithdrawalManagement() {
                     </td>
                     <td className="whitespace-nowrap p-3 text-slate-500">{date(item.createdAt)}</td>
                     <td className="p-3">
-                      <Badge tone={tone(item.status)}>{statusLabels[item.status]}</Badge>
+                      <Badge tone={tone(item.status)}>
+                        {t(`finance.withdrawals.statuses.${item.status}`)}
+                      </Badge>
                       {item.rejectionReason && (
-                        <p className="mt-2 max-w-48 text-rose-700">Lý do: {item.rejectionReason}</p>
+                        <p className="mt-2 max-w-48 text-rose-700">
+                          {t('finance.withdrawals.reasonPrefix', { reason: item.rejectionReason })}
+                        </p>
                       )}
                       {item.adminNote && (
-                        <p className="mt-2 max-w-48 text-slate-500">Ghi chú: {item.adminNote}</p>
+                        <p className="mt-2 max-w-48 text-slate-500">
+                          {t('finance.withdrawals.notePrefix', { note: item.adminNote })}
+                        </p>
                       )}
                       {item.reviewedBy && (
                         <p className="mt-2 text-slate-400">
-                          Xử lý bởi {item.reviewedBy.fullName} · {date(item.reviewedAt)}
+                          {t('finance.withdrawals.reviewedBy', {
+                            name: item.reviewedBy.fullName,
+                            date: date(item.reviewedAt),
+                          })}
                         </p>
                       )}
                     </td>
                     <td className="p-3">
                       {item.status === 'PENDING' ? (
                         <div className="flex flex-wrap gap-2">
-                          <Button onClick={() => openReview(item, 'APPROVED')}>Duyệt</Button>
+                          <Button onClick={() => openReview(item, 'APPROVED')}>
+                            {t('finance.withdrawals.approveBtn')}
+                          </Button>
                           <Button variant="danger" onClick={() => openReview(item, 'REJECTED')}>
-                            Từ chối
+                            {t('finance.withdrawals.rejectBtn')}
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-slate-400">Đã xử lý</span>
+                        <span className="text-slate-400">{t('finance.withdrawals.processed')}</span>
                       )}
                     </td>
                   </tr>
@@ -222,7 +239,10 @@ export default function WithdrawalManagement() {
           </div>
           <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500">
             <span>
-              Trang {page}/{Math.max(1, result.totalPages)}
+              {t('finance.withdrawals.pageLabel', {
+                page,
+                totalPages: Math.max(1, result.totalPages),
+              })}
             </span>
             <div className="flex gap-2">
               <Button
@@ -230,14 +250,14 @@ export default function WithdrawalManagement() {
                 disabled={page <= 1}
                 onClick={() => setPage((value) => value - 1)}
               >
-                Trước
+                {t('finance.withdrawals.prev')}
               </Button>
               <Button
                 variant="secondary"
                 disabled={page >= result.totalPages}
                 onClick={() => setPage((value) => value + 1)}
               >
-                Sau
+                {t('finance.withdrawals.next')}
               </Button>
             </div>
           </div>
@@ -257,7 +277,9 @@ export default function WithdrawalManagement() {
             className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl sm:p-6"
           >
             <h2 id="withdrawal-review-title" className="text-lg font-bold text-slate-900">
-              {decision === 'APPROVED' ? 'Duyệt yêu cầu rút tiền' : 'Từ chối yêu cầu rút tiền'}
+              {decision === 'APPROVED'
+                ? t('finance.withdrawals.modalApproveTitle')
+                : t('finance.withdrawals.modalRejectTitle')}
             </h2>
             <p className="mt-2 text-sm text-slate-600">
               {target.sellerName} · {formatMoney(target.amount)} · {target.bankName}{' '}
@@ -266,7 +288,7 @@ export default function WithdrawalManagement() {
             <form onSubmit={(event) => void submitReview(event)} className="mt-4 space-y-3">
               {decision === 'REJECTED' && (
                 <label className="block text-xs font-medium text-slate-600">
-                  Lý do từ chối
+                  {t('finance.withdrawals.rejectReasonLabel')}
                   <textarea
                     required
                     autoFocus
@@ -279,7 +301,7 @@ export default function WithdrawalManagement() {
                 </label>
               )}
               <label className="block text-xs font-medium text-slate-600">
-                Ghi chú Admin (không bắt buộc)
+                {t('finance.withdrawals.adminNoteLabel')}
                 <textarea
                   maxLength={1000}
                   value={adminNote}
@@ -290,8 +312,7 @@ export default function WithdrawalManagement() {
               </label>
               {decision === 'APPROVED' && (
                 <p className="rounded-lg bg-amber-50 p-3 text-xs leading-5 text-amber-800">
-                  Khi duyệt, BE sẽ trừ số tiền khỏi số dư đang khóa và đánh dấu giao dịch rút tiền
-                  thành công.
+                  {t('finance.withdrawals.approveHint')}
                 </p>
               )}
               {actionError && (
@@ -306,7 +327,7 @@ export default function WithdrawalManagement() {
                   disabled={saving}
                   onClick={() => setTarget(null)}
                 >
-                  Hủy
+                  {t('finance.withdrawals.cancel')}
                 </Button>
                 <Button
                   type="submit"
@@ -314,10 +335,10 @@ export default function WithdrawalManagement() {
                   disabled={saving || (decision === 'REJECTED' && !rejectionReason.trim())}
                 >
                   {saving
-                    ? 'Đang xử lý…'
+                    ? t('finance.withdrawals.processing')
                     : decision === 'APPROVED'
-                      ? 'Xác nhận duyệt'
-                      : 'Xác nhận từ chối'}
+                      ? t('finance.withdrawals.confirmApprove')
+                      : t('finance.withdrawals.confirmReject')}
                 </Button>
               </div>
             </form>

@@ -22,6 +22,17 @@ export const navigation = [
 
 export type StaffSection = (typeof navigation)[number]['label'];
 
+export const sectionKeyMap = {
+  'Quản Lý Nhân Viên': 'team',
+  'Hộp Thư Trực Tuyến': 'inbox',
+  'Khiếu Nại & Tranh Chấp': 'disputes',
+  'Hỗ Trợ Đấu Giá 3D': 'auctionSupport',
+  'Hướng Dẫn & FAQ Sàn': 'faq',
+  'Quản Lý Banner': 'banners',
+  'Lịch Sử & CSAT': 'history',
+  'Hiệu Suất Cá Nhân': 'performance',
+} as const satisfies Record<StaffSection, string>;
+
 export const sectionContent: Record<
   StaffSection,
   { title: string; description: string; topics: string[] }

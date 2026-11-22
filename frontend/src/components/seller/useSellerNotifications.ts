@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getStoredToken, getStoredUser } from '../../services/auth';
 import {
@@ -15,6 +16,7 @@ import type { NotificationsPage } from '../../types/notification.types';
 import { useToast } from '../ToastNotification';
 
 export default function useSellerNotifications(userId: string, isOpen: boolean) {
+  const { t } = useTranslation('seller');
   const { token } = useAuth();
   const toast = useToast();
   const [unreadCount, setUnreadCount] = useState<number | null>(null);
@@ -93,9 +95,7 @@ export default function useSellerNotifications(userId: string, isOpen: boolean) 
         },
         (cause: unknown) => {
           if (active && isCurrentSession() && !loadedList.current)
-            setError(
-              cause instanceof Error ? cause.message : 'Không thể tải số thông báo chưa đọc.',
-            );
+            setError(cause instanceof Error ? cause.message : t('notifications.unreadCountFailed'));
         },
       );
     }
@@ -121,7 +121,7 @@ export default function useSellerNotifications(userId: string, isOpen: boolean) 
       },
       (cause: unknown) => {
         if (active && isCurrentSession()) {
-          setError(cause instanceof Error ? cause.message : 'Không thể tải thông báo.');
+          setError(cause instanceof Error ? cause.message : t('notifications.loadFailed'));
           setLoading(false);
         }
       },
@@ -145,7 +145,7 @@ export default function useSellerNotifications(userId: string, isOpen: boolean) 
       setRevision((current) => current + 1);
     } catch (cause) {
       if (isCurrentSession()) {
-        const message = cause instanceof Error ? cause.message : 'Không thể cập nhật thông báo.';
+        const message = cause instanceof Error ? cause.message : t('notifications.updateFailed');
         setError(message);
         toast.error(message);
       }

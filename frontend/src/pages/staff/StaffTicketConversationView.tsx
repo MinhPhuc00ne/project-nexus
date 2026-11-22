@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MessageCircle,
   Paperclip,
@@ -46,16 +47,6 @@ export interface SupportTicket {
   messages: ChatMessage[];
 }
 
-const quickCannedTemplates = [
-  { label: '👋 Chào khách', text: 'Chào bạn! Tôi có thể hỗ trợ gì cho bạn ạ?' },
-  { label: '📦 Hỏi mã đơn', text: 'Vui lòng cung cấp mã đơn hàng để tôi kiểm tra giúp bạn nhé.' },
-  {
-    label: '⏳ Đang kiểm tra',
-    text: 'Tôi đang kiểm tra thông tin vận chuyển, bạn chờ trong giây lát nhé.',
-  },
-  { label: '✅ Đã giải quyết', text: 'Yêu cầu của bạn đã được xử lý hoàn tất rồi nhé!' },
-];
-
 interface Props {
   activeTicket?: SupportTicket;
   reply: string;
@@ -89,6 +80,10 @@ export default function StaffTicketConversationView({
   loadingOlder,
   onLoadOlder,
 }: Props) {
+  const { t } = useTranslation('staff');
+  const quickCannedTemplates = t('inbox.conversation.canned', {
+    returnObjects: true,
+  }) as Array<{ label: string; text: string }>;
   const fileInput = useRef<HTMLInputElement>(null);
   const scrollArea = useRef<HTMLDivElement>(null);
   const previousLast = useRef<string | number | undefined>(undefined);
@@ -127,9 +122,9 @@ export default function StaffTicketConversationView({
       const urls = await uploadChatAttachments(files);
       if (currentTicketId.current !== ticketId) return;
       setAttachments((current) => [...new Set([...current, ...urls])].slice(0, 5));
-      notify(`Đã đính kèm ${urls.length} ảnh.`);
+      notify(t('inbox.conversation.attachedToast', { count: urls.length }));
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'Không thể tải ảnh.');
+      notify(error instanceof Error ? error.message : t('inbox.conversation.uploadErr'));
     } finally {
       setUploading(false);
       if (fileInput.current) fileInput.current.value = '';
@@ -147,7 +142,7 @@ export default function StaffTicketConversationView({
     if (!activeTicket) return;
     void navigator.clipboard.writeText(activeTicket.id);
     setCopiedId(true);
-    notify('Đã sao chép mã ticket!');
+    notify(t('inbox.conversation.copiedToast'));
     setTimeout(() => setCopiedId(false), 2000);
   }
 
@@ -161,10 +156,10 @@ export default function StaffTicketConversationView({
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 mb-3">
           <MessageCircle size={28} />
         </div>
-        <strong className="text-base font-bold text-slate-800">Chọn một hội thoại</strong>
-        <p className="mt-1 max-w-xs text-xs text-slate-500">
-          Tiếp nhận và phản hồi khách hàng từ danh sách hàng đợi bên trái.
-        </p>
+        <strong className="text-base font-bold text-slate-800">
+          {t('inbox.conversation.emptyTitle')}
+        </strong>
+        <p className="mt-1 max-w-xs text-xs text-slate-500">{t('inbox.conversation.emptyDesc')}</p>
       </div>
     );
   }
@@ -190,8 +185,12 @@ export default function StaffTicketConversationView({
               <button
                 type="button"
                 onClick={handleCopyTicketId}
-                title={copiedId ? 'Đã sao chép mã hội thoại' : 'Sao chép mã hội thoại'}
-                aria-label={copiedId ? 'Đã sao chép mã hội thoại' : 'Sao chép mã hội thoại'}
+                title={
+                  copiedId ? t('inbox.conversation.copiedAria') : t('inbox.conversation.copyAria')
+                }
+                aria-label={
+                  copiedId ? t('inbox.conversation.copiedAria') : t('inbox.conversation.copyAria')
+                }
                 className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
               >
                 {copiedId ? <Check size={10} className="text-emerald-600" /> : <Copy size={10} />}
@@ -199,7 +198,7 @@ export default function StaffTicketConversationView({
               </button>
             </div>
             <small className="block truncate text-[11px] text-slate-500">
-              {activeTicket.subject || 'Hỗ trợ trực tuyến'}
+              {activeTicket.subject || t('inbox.conversation.onlineSupport')}
             </small>
           </div>
         </div>
@@ -213,7 +212,7 @@ export default function StaffTicketConversationView({
               disabled={updatingStatus}
               onClick={onClaim}
             >
-              {updatingStatus ? 'Đang nhận…' : 'Nhận xử lý'}
+              {updatingStatus ? t('inbox.conversation.claiming') : t('inbox.conversation.claimBtn')}
             </button>
           )}
 
@@ -225,14 +224,14 @@ export default function StaffTicketConversationView({
               onClick={onResolve}
             >
               <CheckCheck size={14} />
-              {updatingStatus ? 'Đang lưu…' : 'Hoàn tất'}
+              {updatingStatus ? t('inbox.conversation.saving') : t('inbox.conversation.resolveBtn')}
             </button>
           )}
 
           {activeTicket.status === 'resolved' && (
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
               <CheckCheck size={13} />
-              Đã hoàn tất
+              {t('inbox.conversation.resolvedBadge')}
             </span>
           )}
         </div>
@@ -243,7 +242,7 @@ export default function StaffTicketConversationView({
         className="support-message-stream custom-scrollbar flex-1 min-h-0 overflow-y-auto bg-slate-50/60 p-4 space-y-1.5"
         ref={scrollArea}
         role="log"
-        aria-label="Tin nhắn hội thoại"
+        aria-label={t('inbox.conversation.messagesAria')}
         aria-busy={loading}
       >
         {hasOlder && (
@@ -254,20 +253,22 @@ export default function StaffTicketConversationView({
               disabled={loadingOlder}
               onClick={onLoadOlder}
             >
-              {loadingOlder ? 'Đang tải tin cũ…' : 'Xem tin nhắn cũ hơn'}
+              {loadingOlder
+                ? t('inbox.conversation.loadingOlder')
+                : t('inbox.conversation.loadOlder')}
             </button>
           </div>
         )}
 
         {loading ? (
           <div className="flex justify-center py-12 text-xs text-slate-400" role="status">
-            Đang tải tin nhắn…
+            {t('inbox.conversation.loadingMessages')}
           </div>
         ) : (
           !activeTicket.messages.length && (
             <div className="flex flex-col items-center justify-center py-16 text-slate-400">
               <MessageCircle size={28} className="text-slate-300 mb-2" />
-              <p className="text-xs">Chưa có tin nhắn trong phiên này.</p>
+              <p className="text-xs">{t('inbox.conversation.noMessages')}</p>
             </div>
           )
         )}
@@ -302,7 +303,8 @@ export default function StaffTicketConversationView({
                   }`}
                 >
                   <span className="font-semibold text-slate-700">
-                    {message.author || (isAgent ? 'Bạn' : activeTicket.customer)}
+                    {message.author ||
+                      (isAgent ? t('inbox.conversation.youAuthor') : activeTicket.customer)}
                   </span>
                   <time>{message.time}</time>
                   {isAgent && <ShieldCheck size={12} className="text-blue-600" />}
@@ -344,7 +346,9 @@ export default function StaffTicketConversationView({
                   }`}
                 >
                   {message.isRead ? <CheckCheck size={12} /> : <Check size={12} />}
-                  <span>{message.isRead ? 'Đã đọc' : 'Đã gửi'}</span>
+                  <span>
+                    {message.isRead ? t('inbox.conversation.read') : t('inbox.conversation.sent')}
+                  </span>
                 </div>
               )}
             </article>
@@ -358,7 +362,7 @@ export default function StaffTicketConversationView({
               <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0.2s]" />
               <span className="h-1.5 w-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0.4s]" />
             </span>
-            <span>Khách hàng đang nhập…</span>
+            <span>{t('inbox.conversation.customerTyping')}</span>
           </div>
         )}
       </div>
@@ -368,7 +372,7 @@ export default function StaffTicketConversationView({
         {/* Quick Canned Replies in a neat single row */}
         <div className="flex items-center gap-2 pb-2 min-w-0">
           <span className="flex items-center gap-1 text-[10.5px] font-semibold text-slate-400 shrink-0">
-            <Sparkles size={12} className="text-amber-500" /> Nhanh:
+            <Sparkles size={12} className="text-amber-500" /> {t('inbox.conversation.quickLabel')}
           </span>
           <div className="flex items-center gap-1.5 overflow-x-auto min-w-0 flex-nowrap py-0.5 custom-scrollbar">
             {quickCannedTemplates.map(({ label, text }) => (
@@ -388,17 +392,20 @@ export default function StaffTicketConversationView({
 
         {/* Attachment Previews */}
         {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2 pb-2" aria-label="Ảnh chờ gửi">
+          <div
+            className="flex flex-wrap gap-2 pb-2"
+            aria-label={t('inbox.conversation.pendingImagesAria')}
+          >
             {attachments.map((url) => (
               <div key={url} className="relative group">
                 <img
                   src={url}
-                  alt="Ảnh chờ gửi"
+                  alt={t('inbox.conversation.pendingImageAlt')}
                   className="h-14 w-14 rounded-lg border border-slate-200 object-cover"
                 />
                 <button
                   type="button"
-                  aria-label="Bỏ ảnh đính kèm"
+                  aria-label={t('inbox.conversation.removeAttachmentAria')}
                   disabled={disabled}
                   onClick={() =>
                     setAttachments((current) => current.filter((item) => item !== url))
@@ -414,7 +421,7 @@ export default function StaffTicketConversationView({
 
         {/* Text Area */}
         <textarea
-          aria-label="Nội dung phản hồi"
+          aria-label={t('inbox.conversation.replyAria')}
           disabled={disabled}
           value={reply}
           onChange={(event) => onReplyChange(event.target.value)}
@@ -422,8 +429,8 @@ export default function StaffTicketConversationView({
           rows={2}
           placeholder={
             activeTicket.status === 'resolved'
-              ? 'Hội thoại đã hoàn tất'
-              : 'Nhập nội dung phản hồi khách hàng…'
+              ? t('inbox.conversation.resolvedPlaceholder')
+              : t('inbox.conversation.replyPlaceholder')
           }
           className="w-full rounded-xl border border-slate-200 bg-slate-50/70 p-2.5 text-[13px] text-slate-800 placeholder-slate-400 outline-none transition-all resize-none focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/15 disabled:opacity-50"
         />
@@ -433,8 +440,8 @@ export default function StaffTicketConversationView({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              aria-label="Đính kèm ảnh"
-              title="Đính kèm tối đa 5 ảnh"
+              aria-label={t('inbox.conversation.attachAria')}
+              title={t('inbox.conversation.attachTitle')}
               disabled={disabled || attachments.length >= 5}
               onClick={() => fileInput.current?.click()}
               className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors disabled:opacity-40 cursor-pointer"
@@ -451,7 +458,7 @@ export default function StaffTicketConversationView({
             />
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
               <ShieldCheck size={13} className="text-blue-600" />
-              Nhân viên hỗ trợ
+              {t('inbox.conversation.staffBadge')}
             </span>
           </div>
 
@@ -463,10 +470,10 @@ export default function StaffTicketConversationView({
           >
             <span>
               {uploading
-                ? 'Đang tải ảnh…'
+                ? t('inbox.conversation.uploading')
                 : sending && activeTicket.status === 'chatting'
-                  ? 'Đang gửi…'
-                  : 'Gửi phản hồi'}
+                  ? t('inbox.conversation.sending')
+                  : t('inbox.conversation.sendBtn')}
             </span>
             <Send size={13} />
           </button>

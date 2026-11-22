@@ -1,4 +1,5 @@
 import { useCallback, type ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import useProductResource from '../productDetail/useProductResource';
 import {
   getShippingDistricts,
@@ -17,6 +18,7 @@ export default function GhnLocationPicker({
   value: GhnLocation;
   onChange: (value: GhnLocation) => void;
 }): ReactElement {
+  const { t } = useTranslation('seller');
   const provinces = useProductResource(getShippingProvinces);
   const districtLoader = useCallback(
     () =>
@@ -41,9 +43,9 @@ export default function GhnLocationPicker({
     <fieldset className="space-y-3 rounded-xl border border-slate-200 p-4">
       <legend className="px-2 font-semibold">{label}</legend>
       <label className="block">
-        Tỉnh / thành phố
+        {t('shipping.locationPicker.province')}
         <select
-          aria-label={`${label}: Tỉnh / thành phố`}
+          aria-label={`${label}: ${t('shipping.locationPicker.province')}`}
           className={selectClass}
           value={value.provinceId}
           disabled={provinces.loading || !!provinces.error}
@@ -51,7 +53,11 @@ export default function GhnLocationPicker({
             onChange({ provinceId: event.target.value, districtId: '', wardCode: '' })
           }
         >
-          <option value="">{provinces.loading ? 'Đang tải…' : 'Chọn tỉnh / thành phố'}</option>
+          <option value="">
+            {provinces.loading
+              ? t('shipping.locationPicker.loading')
+              : t('shipping.locationPicker.selectProvince')}
+          </option>
           {provinces.data?.map((item) => (
             <option key={item.provinceId} value={item.provinceId}>
               {item.provinceName}
@@ -60,16 +66,18 @@ export default function GhnLocationPicker({
         </select>
       </label>
       <label className="block">
-        Quận / huyện
+        {t('shipping.locationPicker.district')}
         <select
-          aria-label={`${label}: Quận / huyện`}
+          aria-label={`${label}: ${t('shipping.locationPicker.district')}`}
           className={selectClass}
           value={value.districtId}
           disabled={!value.provinceId || districts.loading || !!districts.error}
           onChange={(event) => onChange({ ...value, districtId: event.target.value, wardCode: '' })}
         >
           <option value="">
-            {districts.loading && value.provinceId ? 'Đang tải…' : 'Chọn quận / huyện'}
+            {districts.loading && value.provinceId
+              ? t('shipping.locationPicker.loading')
+              : t('shipping.locationPicker.selectDistrict')}
           </option>
           {districts.data?.map((item) => (
             <option key={item.districtId} value={item.districtId}>
@@ -79,16 +87,18 @@ export default function GhnLocationPicker({
         </select>
       </label>
       <label className="block">
-        Phường / xã
+        {t('shipping.locationPicker.ward')}
         <select
-          aria-label={`${label}: Phường / xã`}
+          aria-label={`${label}: ${t('shipping.locationPicker.ward')}`}
           className={selectClass}
           value={value.wardCode}
           disabled={!value.districtId || wards.loading || !!wards.error}
           onChange={(event) => onChange({ ...value, wardCode: event.target.value })}
         >
           <option value="">
-            {wards.loading && value.districtId ? 'Đang tải…' : 'Chọn phường / xã'}
+            {wards.loading && value.districtId
+              ? t('shipping.locationPicker.loading')
+              : t('shipping.locationPicker.selectWard')}
           </option>
           {wards.data?.map((item) => (
             <option key={item.wardCode} value={item.wardCode}>
@@ -99,17 +109,17 @@ export default function GhnLocationPicker({
       </label>
       {!error && !districts.loading && value.provinceId && !districts.data?.length && (
         <p role="status" className="text-xs text-amber-700">
-          GHN chưa trả về quận / huyện cho tỉnh đã chọn.
+          {t('shipping.locationPicker.noDistricts')}
         </p>
       )}
       {!error && !wards.loading && value.districtId && !wards.data?.length && (
         <p role="status" className="text-xs text-amber-700">
-          GHN chưa trả về phường / xã cho quận đã chọn.
+          {t('shipping.locationPicker.noWards')}
         </p>
       )}
       {(error || (!provinces.loading && !provinces.data?.length)) && (
         <div role="alert" className="text-xs text-amber-700">
-          <p>{error || 'GHN chưa trả về danh sách địa phương. Chưa thể đối soát cước GHN.'}</p>
+          <p>{error || t('shipping.locationPicker.noProvinces')}</p>
           <button
             type="button"
             className="mt-2 text-blue-700 underline"
@@ -119,7 +129,7 @@ export default function GhnLocationPicker({
               wards.retry();
             }}
           >
-            Tải lại địa phương
+            {t('shipping.locationPicker.reloadLocations')}
           </button>
         </div>
       )}

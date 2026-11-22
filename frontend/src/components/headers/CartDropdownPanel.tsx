@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
 import type { CartDropdownItem } from '../../types/cart.types';
 
 export type { CartDropdownItem };
@@ -15,13 +17,16 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
   cartItems,
   onClose,
 }) => {
+  const { t } = useTranslation('common');
   if (!isOpen) return null;
 
   return (
     <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+6px)] z-[1100] w-[380px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
-        <h4 className="m-0 text-sm font-bold text-slate-800">Giỏ Hàng Của Bạn</h4>
-        <span className="text-xs text-slate-500">{cartItems.length} món</span>
+        <h4 className="m-0 text-sm font-bold text-slate-800">{t('header.cartTitle')}</h4>
+        <span className="text-xs text-slate-500">
+          {t('header.cartItemsCount', { count: cartItems.length })}
+        </span>
       </div>
 
       <div className="max-h-72 overflow-y-auto">
@@ -69,9 +74,7 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
 
                   <div className="flex items-center justify-between">
                     <span className="text-[13px] font-bold text-[#f24e1e]">
-                      {typeof item.price === 'number'
-                        ? `${item.price.toLocaleString('vi-VN')} ₫`
-                        : item.price}
+                      {typeof item.price === 'number' ? formatCurrency(item.price) : item.price}
                     </span>
                     {item.qty && (
                       <span className="text-xs text-slate-400 font-medium">x{item.qty}</span>
@@ -82,9 +85,7 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
             );
           })
         ) : (
-          <div className="p-6 text-center text-[13px] text-slate-400">
-            Chưa có sản phẩm trong giỏ hàng
-          </div>
+          <div className="p-6 text-center text-[13px] text-slate-400">{t('header.emptyCart')}</div>
         )}
       </div>
 
@@ -95,7 +96,7 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
             className="block w-full py-2.5 px-4 rounded-xl bg-[#f24e1e] hover:bg-[#d63b0e] text-white text-center font-bold text-xs shadow-md transition"
             onClick={onClose}
           >
-            Xem Giỏ Hàng & Thanh Toán
+            {t('header.checkoutCart')}
           </Link>
         </div>
       )}

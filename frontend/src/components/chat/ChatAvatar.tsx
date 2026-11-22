@@ -1,4 +1,5 @@
 ﻿import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 interface Props {
   src?: string | null;
   name: string;
@@ -6,6 +7,7 @@ interface Props {
   className?: string;
 }
 export default function ChatAvatar({ src, name, size = 40, className = '' }: Props) {
+  const { t } = useTranslation('common');
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const initials =
     name
@@ -25,14 +27,14 @@ export default function ChatAvatar({ src, name, size = 40, className = '' }: Pro
       {src && src !== failedSrc ? (
         <img
           src={src}
-          alt={`Ảnh đại diện ${name}`}
+          alt={t('chat.avatarAlt', { name })}
           width={size}
           height={size}
           className="h-full w-full object-cover"
           onError={() => setFailedSrc(src)}
         />
       ) : (
-        <span role="img" aria-label={`Ảnh đại diện ${name}`}>
+        <span role="img" aria-label={t('chat.avatarAlt', { name })}>
           {initials}
         </span>
       )}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Mail, Bell, BellRing, Save, Loader2, Check } from 'lucide-react';
 import {
   getNotificationPreferences,
@@ -12,25 +13,10 @@ interface NotificationPreferencesModalProps {
   onSaved?: () => void;
 }
 
-const channelMeta: Record<
-  NotificationChannel,
-  { label: string; desc: string; icon: React.ReactNode }
-> = {
-  IN_APP: {
-    label: 'Thông báo trên hệ thống (In-App)',
-    desc: 'Hiển thị quả chuông đỏ và thông báo trực tiếp khi hoạt động trên NEXUS.',
-    icon: <Bell size={18} className="text-blue-600" />,
-  },
-  EMAIL: {
-    label: 'Hộp thư điện tử (Email)',
-    desc: 'Gửi email xác nhận đơn hàng, cập nhật lượt trả giá và thay đổi điểm uy tín.',
-    icon: <Mail size={18} className="text-amber-600" />,
-  },
-  PUSH: {
-    label: 'Thông báo đẩy trình duyệt (Web Push)',
-    desc: 'Nhận thông báo khi bị vượt giá hoặc sắp hết giờ đấu giá ngay cả khi rời tab.',
-    icon: <BellRing size={18} className="text-purple-600" />,
-  },
+const channelIcons: Record<NotificationChannel, React.ReactNode> = {
+  IN_APP: <Bell size={18} className="text-blue-600" />,
+  EMAIL: <Mail size={18} className="text-amber-600" />,
+  PUSH: <BellRing size={18} className="text-purple-600" />,
 };
 
 export const NotificationPreferencesModal: React.FC<NotificationPreferencesModalProps> = ({
@@ -38,6 +24,7 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
   onClose,
   onSaved,
 }) => {
+  const { t } = useTranslation('common');
   const [preferences, setPreferences] = useState<NotificationPreference[]>([
     { channel: 'IN_APP', isEnabled: true },
     { channel: 'EMAIL', isEnabled: true },
@@ -87,14 +74,14 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
     setSuccessMsg(null);
     try {
       const res = await saveNotificationPreferences(preferences);
-      setSuccessMsg(res.message || 'Đã lưu cài đặt thông báo thành công!');
+      setSuccessMsg(res.message || t('notificationPrefs.saveSuccess'));
       if (onSaved) onSaved();
       setTimeout(() => {
         setSuccessMsg(null);
         onClose();
       }, 1500);
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : 'Lỗi khi lưu cài đặt.');
+      setErrorMsg(err instanceof Error ? err.message : t('notificationPrefs.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -107,7 +94,7 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-2">
             <Bell size={18} className="text-blue-600" />
-            <h3 className="text-sm font-bold text-slate-900 m-0">Tùy Chọn Nhận Thông Báo</h3>
+            <h3 className="text-sm font-bold text-slate-900 m-0">{t('notificationPrefs.title')}</h3>
           </div>
           <button
             type="button"
@@ -121,8 +108,7 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
         {/* Body */}
         <div className="p-5 space-y-4">
           <p className="text-xs text-slate-500 m-0 leading-relaxed">
-            Tùy chỉnh các kênh bạn muốn NEXUS gửi cảnh báo thời gian thực về đơn hàng, biến động giá
-            đấu và tài khoản.
+            {t('notificationPrefs.subtitle')}
           </p>
 
           {successMsg && (
@@ -141,12 +127,12 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
           {loading ? (
             <div className="py-8 flex flex-col items-center justify-center text-slate-400 text-xs gap-2">
               <Loader2 size={20} className="animate-spin text-blue-600" />
-              <span>Đang tải tùy chọn…</span>
+              <span>{t('notificationPrefs.loading')}</span>
             </div>
           ) : (
             <div className="space-y-3">
               {(['IN_APP', 'EMAIL', 'PUSH'] as NotificationChannel[]).map((channel) => {
-                const meta = channelMeta[channel];
+                const icon = channelIcons[channel];
                 const currentPref = preferences.find((p) => p.channel === channel);
                 const isChecked = currentPref?.isEnabled ?? true;
 
@@ -157,11 +143,13 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
                     className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/20 transition cursor-pointer select-none"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 p-2 bg-slate-50 rounded-lg shrink-0">{meta.icon}</div>
+                      <div className="mt-0.5 p-2 bg-slate-50 rounded-lg shrink-0">{icon}</div>
                       <div>
-                        <h4 className="text-xs font-bold text-slate-900 m-0">{meta.label}</h4>
+                        <h4 className="text-xs font-bold text-slate-900 m-0">
+                          {t(`notificationPrefs.channels.${channel}.label`)}
+                        </h4>
                         <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
-                          {meta.desc}
+                          {t(`notificationPrefs.channels.${channel}.desc`)}
                         </p>
                       </div>
                     </div>
@@ -190,7 +178,7 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
             onClick={onClose}
             className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-xl transition cursor-pointer"
           >
-            Hủy Bỏ
+            {t('notificationPrefs.cancel')}
           </button>
           <button
             type="button"
@@ -199,7 +187,7 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
             className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            <span>{saving ? 'Đang lưu…' : 'Lưu Tùy Chọn'}</span>
+            <span>{saving ? t('notificationPrefs.saving') : t('notificationPrefs.save')}</span>
           </button>
         </div>
       </div>

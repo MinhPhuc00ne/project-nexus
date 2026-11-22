@@ -1,5 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { QrCode, Copy } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import type { PayosPaymentInfo } from '../../services/orders';
 
 interface PayosQrModalProps {
@@ -8,10 +10,11 @@ interface PayosQrModalProps {
 }
 
 export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySuccess }) => {
+  const { t } = useTranslation('commerce');
   const copyToClipboard = (text: string, label: string) => {
     void navigator.clipboard.writeText(text);
     if (onCopySuccess) {
-      onCopySuccess(`Đã sao chép ${label}!`);
+      onCopySuccess(t('checkout.copiedToast', { label }));
     }
   };
 
@@ -27,10 +30,10 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
       <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
         <div className="flex items-center gap-2">
           <QrCode className="text-emerald-400" size={22} />
-          <span className="font-bold text-sm text-white">Thanh Toán PayOS VietQR 24/7</span>
+          <span className="font-bold text-sm text-white">{t('checkout.qrModalTitle')}</span>
         </div>
         <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-          Tự Động Kích Hoạt
+          {t('checkout.autoActivateBadge')}
         </span>
       </div>
 
@@ -41,33 +44,40 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
           ) : (
             <div className="w-48 h-48 flex flex-col items-center justify-center text-slate-400 text-xs">
               <QrCode size={48} className="mb-2 text-slate-300" />
-              <span>Quét mã qua link PayOS</span>
+              <span>{t('checkout.scanViaLink')}</span>
             </div>
           )}
           <span className="text-[11px] text-slate-500 mt-2 font-semibold">
-            Mở app ngân hàng để quét mã
+            {t('checkout.openBankApp')}
           </span>
         </div>
 
         <div className="space-y-3 text-xs">
           {payment.accountName && (
             <div>
-              <span className="text-slate-400 text-[11px] block">Người thụ hưởng:</span>
+              <span className="text-slate-400 text-[11px] block">{t('checkout.beneficiary')}</span>
               <strong className="text-white text-sm">{payment.accountName}</strong>
             </div>
           )}
           {payment.accountNumber && (
             <div>
-              <span className="text-slate-400 text-[11px] block">Số tài khoản:</span>
+              <span className="text-slate-400 text-[11px] block">
+                {t('checkout.accountNumber')}
+              </span>
               <div className="flex items-center gap-2">
                 <strong className="text-emerald-400 font-mono text-base tracking-wider">
                   {payment.accountNumber}
                 </strong>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(payment.accountNumber!, 'Số tài khoản')}
+                  onClick={() =>
+                    copyToClipboard(
+                      payment.accountNumber!,
+                      t('checkout.accountNumber').replace(/:$/, ''),
+                    )
+                  }
                   className="text-slate-400 hover:text-white transition"
-                  title="Sao chép số tài khoản"
+                  title={t('checkout.copyAccountNumberTitle')}
                 >
                   <Copy size={14} />
                 </button>
@@ -75,23 +85,30 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
             </div>
           )}
           <div>
-            <span className="text-slate-400 text-[11px] block">Số tiền cần thanh toán:</span>
+            <span className="text-slate-400 text-[11px] block">{t('checkout.amountToPay')}</span>
             <strong className="text-amber-400 text-base font-extrabold">
-              {Number(payment.amount).toLocaleString('vi-VN')} ₫
+              {formatCurrency(Number(payment.amount))}
             </strong>
           </div>
           {payment.description && (
             <div>
-              <span className="text-slate-400 text-[11px] block">Nội dung chuyển khoản:</span>
+              <span className="text-slate-400 text-[11px] block">
+                {t('checkout.transferContent')}
+              </span>
               <div className="flex items-center gap-2">
                 <span className="text-slate-200 font-mono bg-white/10 px-2 py-0.5 rounded text-xs break-all">
                   {payment.description}
                 </span>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(payment.description!, 'Nội dung chuyển khoản')}
+                  onClick={() =>
+                    copyToClipboard(
+                      payment.description!,
+                      t('checkout.transferContent').replace(/:$/, ''),
+                    )
+                  }
                   className="text-slate-400 hover:text-white transition"
-                  title="Sao chép nội dung"
+                  title={t('checkout.copyContentTitle')}
                 >
                   <Copy size={14} />
                 </button>
@@ -106,7 +123,7 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
         </span>
-        <span>Hệ thống tự động kích hoạt ngay khi bạn hoàn tất chuyển khoản VietQR.</span>
+        <span>{t('checkout.qrAutoActivateNote')}</span>
       </div>
     </div>
   );

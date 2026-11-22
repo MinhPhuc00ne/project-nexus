@@ -1,20 +1,22 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ProductDetail } from '../../types/product.types';
 import ProductReviewsSection from './ProductReviewsSection';
 
 export default function ProductInfoTabs({ product }: { product: ProductDetail }) {
+  const { t } = useTranslation('guest');
   const [tab, setTab] = useState('description');
   const tabs = [
-    ['description', 'Mô tả sản phẩm'],
-    ['specs', 'Thông số sản phẩm'],
-    ['reviews', 'Đánh giá sản phẩm & Shop'],
+    ['description', t('product.tabDescription')],
+    ['specs', t('product.tabSpecs')],
+    ['reviews', t('product.tabReviews')],
   ];
   return (
     <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
       <div
         className="flex flex-wrap gap-5 border-b border-slate-200 px-6"
         role="tablist"
-        aria-label="Thông tin sản phẩm"
+        aria-label={t('product.tabsAria')}
       >
         {tabs.map(([id, label]) => (
           <button
@@ -40,7 +42,7 @@ export default function ProductInfoTabs({ product }: { product: ProductDetail })
         className="p-6 text-sm leading-7 text-slate-700"
       >
         {tab === 'description' && (
-          <p className="whitespace-pre-line">{product.description || 'Chưa có mô tả sản phẩm.'}</p>
+          <p className="whitespace-pre-line">{product.description || t('product.noDescription')}</p>
         )}
         {tab === 'specs' &&
           (Object.keys(product.specs).length ? (
@@ -53,7 +55,7 @@ export default function ProductInfoTabs({ product }: { product: ProductDetail })
               ))}
             </dl>
           ) : (
-            <p>Chưa có thông số sản phẩm.</p>
+            <p>{t('product.noSpecs')}</p>
           ))}
         {tab === 'reviews' && (
           <ProductReviewsSection

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Popup from '../Popup';
 import { clearCart, type CartItem } from '../../services/cart';
 import { getStoredToken } from '../../services/auth';
@@ -38,6 +39,7 @@ export default function CheckoutModal({
   onCheckoutSuccess,
   showToast,
 }: CheckoutModalProps) {
+  const { t } = useTranslation('commerce');
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [customAddress, setCustomAddress] =
@@ -126,7 +128,7 @@ export default function CheckoutModal({
 
   const handleSaveNewAddress = async (addr: ShippingAddressInput) => {
     setCustomAddress(addr);
-    showToast('Đã lưu và cập nhật địa chỉ giao hàng.');
+    showToast(t('checkout.addressSaved'));
     createAddress({ ...addr, isDefault: true })
       .then((created) => {
         if (created) {
@@ -140,7 +142,7 @@ export default function CheckoutModal({
   const handleConfirmCheckout = async () => {
     const { recipientName, phone, street, city, district, ward } = currentAddress;
     if (!recipientName.trim() || !phone.trim() || !street.trim()) {
-      showToast('Vui lòng cung cấp đầy đủ thông tin địa chỉ giao hàng.');
+      showToast(t('checkout.addressMissing'));
       return;
     }
 
@@ -181,7 +183,7 @@ export default function CheckoutModal({
           ? resMsg.join(', ')
           : typeof resMsg === 'string'
             ? resMsg
-            : 'Thanh toán thất bại. Vui lòng thử lại!',
+            : t('checkout.failed'),
       );
     } finally {
       setIsProcessingOrder(false);
@@ -203,13 +205,13 @@ export default function CheckoutModal({
       title={
         checkoutSuccess
           ? paymentMethod === 'COD'
-            ? 'Đặt Hàng COD Thành Công'
+            ? t('checkout.modalTitleCodSuccess')
             : isPaid
-              ? 'Thanh Toán Thành Công'
+              ? t('checkout.modalTitlePaidSuccess')
               : payosPayment
-                ? 'Quét Mã PayOS Để Thanh Toán'
-                : 'Đặt Hàng Thành Công'
-          : 'Xác Nhận Đặt Hàng & Thanh Toán'
+                ? t('checkout.modalTitleScanPayos')
+                : t('checkout.modalTitleOrderSuccess')
+          : t('checkout.modalTitleConfirm')
       }
       size={checkoutSuccess ? 'lg' : 'xl'}
     >
@@ -228,7 +230,7 @@ export default function CheckoutModal({
                 onClick={handleClose}
                 className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800"
               >
-                Xem đơn hàng của tôi
+                {t('checkout.viewMyOrders')}
               </Link>
             }
             secondaryAction={
@@ -237,7 +239,7 @@ export default function CheckoutModal({
                 onClick={handleClose}
                 className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-blue-700"
               >
-                Hoàn tất
+                {t('checkout.done')}
               </button>
             }
           />
@@ -273,7 +275,7 @@ export default function CheckoutModal({
                 disabled={isProcessingOrder}
                 className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
               >
-                Hủy
+                {t('checkout.cancel')}
               </button>
               <button
                 type="button"
@@ -286,10 +288,10 @@ export default function CheckoutModal({
                 )}
                 <span>
                   {isProcessingOrder
-                    ? 'Đang xử lý đơn hàng...'
+                    ? t('checkout.processingOrder')
                     : isCalculatingFee
-                      ? 'Đang tính cước GHN...'
-                      : 'Xác nhận đặt hàng'}
+                      ? t('checkout.calculatingGhn')
+                      : t('checkout.confirmOrder')}
                 </span>
               </button>
             </div>

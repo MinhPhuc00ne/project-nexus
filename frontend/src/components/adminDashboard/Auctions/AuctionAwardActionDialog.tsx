@@ -1,3 +1,6 @@
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../../i18n/config';
+import { formatCurrency } from '../../../i18n/formatters';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
 import {
@@ -25,13 +28,19 @@ export default function AuctionAwardActionDialog({
   onClose,
   onConfirm,
 }: Props) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
   const paymentDefault = action === 'payment-default';
   const eligible = canConfirmAwardAction(award, action);
   return (
     <Popup
       isOpen
       size="lg"
-      title={paymentDefault ? 'Xử phạt quá hạn thanh toán' : 'Xác nhận khách thứ hai không mua nữa'}
+      title={
+        paymentDefault
+          ? t('auctions.awardDialog.titleDefault')
+          : t('auctions.awardDialog.titleWithdraw')
+      }
       onClose={() => {
         if (!pending) onClose();
       }}
@@ -49,36 +58,48 @@ export default function AuctionAwardActionDialog({
       >
         <div className="rounded-xl bg-slate-50 p-4 text-sm">
           <p className="font-semibold">
-            {award.auctionItem?.lotNumber ? `Lô ${award.auctionItem.lotNumber} · ` : ''}
-            {award.auctionItem?.title ?? 'Vật phẩm đấu giá'}
+            {award.auctionItem?.lotNumber
+              ? `${t('auctions.common.lotPrefix', { number: award.auctionItem.lotNumber })} · `
+              : ''}
+            {award.auctionItem?.title ?? t('auctions.awardsPanel.fallbackItemTitle')}
           </p>
-          <p className="mt-1">Người mua: {award.buyer?.fullName ?? '—'}</p>
-          <p className="mt-1">Tiền cọc: {Number(award.depositAmount).toLocaleString('vi-VN')} ₫</p>
-          <p className="mt-1">Hạn xử lý: {new Date(award.expiresAt).toLocaleString('vi-VN')}</p>
+          <p className="mt-1">
+            {t('auctions.awardDialog.buyer', { name: award.buyer?.fullName ?? '—' })}
+          </p>
+          <p className="mt-1">
+            {t('auctions.awardDialog.deposit', {
+              amount: formatCurrency(Number(award.depositAmount), i18n.language),
+            })}
+          </p>
+          <p className="mt-1">
+            {t('auctions.awardDialog.deadline', {
+              time: new Date(award.expiresAt).toLocaleString(locale),
+            })}
+          </p>
         </div>
         <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
           {paymentDefault
-            ? 'Người mua sẽ mất 30% cọc và bị trừ 10 điểm uy tín. Với người thắng đầu tiên, hệ thống sẽ mời người mua thứ hai nếu đủ điều kiện.'
-            : 'Hệ thống hoàn 30% cọc nếu đã đóng và đóng lô hàng. Thao tác chỉ áp dụng cho người mua thứ hai.'}
+            ? t('auctions.awardDialog.warningDefault')
+            : t('auctions.awardDialog.warningWithdraw')}
         </p>
         <label className="block text-sm font-medium">
-          Ghi chú xử lý
+          {t('auctions.awardDialog.noteLabel')}
           <textarea
             name="note"
             maxLength={1000}
             rows={3}
             disabled={pending}
-            placeholder="Nhập ghi chú (không bắt buộc)"
+            placeholder={t('auctions.awardDialog.notePlaceholder')}
             className="mt-2 w-full rounded-lg border border-slate-200 p-3 text-sm font-normal"
           />
         </label>
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" required disabled={pending} className="mt-1" />
-          Tôi đã kiểm tra thông tin và xác nhận thực hiện thao tác này.
+          {t('auctions.awardDialog.confirmCheckbox')}
         </label>
         {!eligible && (
           <p role="alert" className="text-sm text-red-700">
-            Máy chủ không cho phép thao tác này ở trạng thái hiện tại. Hãy làm mới để cập nhật.
+            {t('auctions.awardDialog.ineligible')}
           </p>
         )}
         {error && (
@@ -88,14 +109,14 @@ export default function AuctionAwardActionDialog({
         )}
         <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
           <Button type="button" variant="secondary" disabled={pending} onClick={onClose}>
-            Hủy
+            {t('auctions.common.cancel')}
           </Button>
           <Button type="submit" variant="danger" disabled={pending || blocked || !eligible}>
             {pending
-              ? 'Đang xử lý…'
+              ? t('auctions.reviewForm.processing')
               : paymentDefault
-                ? 'Xử phạt quá hạn thanh toán'
-                : 'Xác nhận không mua nữa'}
+                ? t('auctions.awardDialog.titleDefault')
+                : t('auctions.awardDialog.confirmWithdrawBtn')}
           </Button>
         </div>
       </form>

@@ -1,4 +1,7 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
+import { formatCurrency } from '../../i18n/formatters';
 import type { HomeProduct } from './home.types';
 import { formatAuctionImage, type AuctionEntity } from '../../services/auction.service';
 
@@ -8,6 +11,7 @@ export interface HomeAuctionCardProps {
 }
 
 export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
+  const { t, i18n } = useTranslation('guest');
   const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
   const isUpcoming =
     !isLive &&
@@ -25,7 +29,7 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
     auction?.product?.title ||
     auction?.items?.[0]?.title ||
     product?.name ||
-    'Chưa có dữ liệu';
+    t('home.auctionCard.noData');
 
   const resolveRealImage = (): string => {
     if (auction?.imageUrl && auction.imageUrl.trim().length > 0) {
@@ -82,18 +86,18 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
             }}
           />
         ) : (
-          <span className="text-xs text-slate-400">Chưa có hình ảnh</span>
+          <span className="text-xs text-slate-400">{t('home.auctionCard.noImage')}</span>
         )}
         <span
           className={`absolute left-2 top-2 rounded px-2 py-1 text-[10px] font-bold text-white shadow-xs ${
             isUpcoming ? 'bg-amber-500' : 'bg-sky-500'
           }`}
         >
-          {isUpcoming ? 'SẮP MỞ' : 'TRỰC TIẾP'}
+          {isUpcoming ? t('home.auctionCard.upcoming') : t('home.auctionCard.live')}
         </span>
         <button
           type="button"
-          aria-label={`Xem chi tiết ${title}`}
+          aria-label={t('home.auctionCard.viewDetailAria', { title })}
           className="absolute bottom-2 right-2 rounded-md border border-white/70 bg-slate-900/70 px-2.5 py-1.5 text-[10px] font-semibold text-white transition hover:bg-slate-900 cursor-pointer"
           onClick={(e) => {
             e.preventDefault();
@@ -101,7 +105,7 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
             window.location.href = targetUrl;
           }}
         >
-          Chi Tiết
+          {t('home.auctionCard.details')}
         </button>
       </Link>
 
@@ -114,15 +118,19 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
 
         <div className="mt-2 flex items-center justify-between">
           <span className="text-xs font-extrabold text-sky-500">
-            {currentPrice ? `${currentPrice.toLocaleString('vi-VN')} đ` : '--'}
+            {currentPrice ? formatCurrency(currentPrice) : '--'}
           </span>
 
           <span className="text-[10px] text-slate-400">
             {isUpcoming
-              ? `Mở ${new Date(auction!.startTime).toLocaleDateString('vi-VN')}`
+              ? t('home.auctionCard.opensOn', {
+                  date: new Date(auction!.startTime).toLocaleDateString(
+                    getIntlLocale(i18n.language),
+                  ),
+                })
               : bidsCount
-                ? `${bidsCount} lượt bid`
-                : 'Mới mở'}
+                ? t('home.auctionCard.bidsCount', { count: bidsCount })
+                : t('home.auctionCard.newlyOpened')}
           </span>
         </div>
       </div>

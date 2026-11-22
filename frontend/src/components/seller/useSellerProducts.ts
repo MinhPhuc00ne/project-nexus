@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../ToastNotification';
 import { useSellerSession } from './SellerSession';
@@ -12,6 +13,7 @@ import {
 } from '../../services/sellerProducts';
 
 export default function useSellerProducts() {
+  const { t } = useTranslation('seller');
   const { token } = useAuth();
   const user = useSellerSession();
   const { refreshShop } = useSellerWorkspace();
@@ -47,8 +49,7 @@ export default function useSellerProducts() {
             token,
             products: [],
             loading: false,
-            error:
-              cause instanceof Error ? cause.message : 'Không tải được sản phẩm của gian hàng.',
+            error: cause instanceof Error ? cause.message : t('products.hook.loadErr'),
           });
       },
     );
@@ -75,18 +76,21 @@ export default function useSellerProducts() {
       const stopping = product.status === 'ACTIVE';
       if (stopping) {
         const result = await hideSellerProduct(product.id);
-        if (!result.success) throw new Error('Máy chủ chưa xác nhận ngừng bán sản phẩm.');
+        if (!result.success) throw new Error(t('products.hook.stopUnconfirmed'));
       } else await reactivateSellerProduct(product.id);
       if (active.current && token === getStoredToken()) {
         setSelectedProduct(null);
-        toast.success(`Đã ${stopping ? 'ngừng bán' : 'bán lại'} sản phẩm ${product.title}.`);
+        toast.success(
+          stopping
+            ? t('products.hook.toggledStop', { title: product.title })
+            : t('products.hook.toggledRelist', { title: product.title }),
+        );
         reload();
         refreshShop();
       }
     } catch (cause) {
       if (active.current && token === getStoredToken()) {
-        const message =
-          cause instanceof Error ? cause.message : 'Không thể đổi trạng thái sản phẩm.';
+        const message = cause instanceof Error ? cause.message : t('products.hook.toggleErr');
         setActionError(message);
         toast.error(message);
       }

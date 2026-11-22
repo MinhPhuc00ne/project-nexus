@@ -1,8 +1,10 @@
 import { LoaderCircle, MapPin, RefreshCw, UserRound, Wallet } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getUserById } from '../../../services/admin';
 import type { AdminUserDetail, AdminUserRole } from '../../../types/user.types';
+import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';
 import ShopDetail from '../Stores/ShopDetail';
@@ -15,21 +17,29 @@ const roleLabels: Record<AdminUserRole, string> = {
   ADMIN: 'Admin',
 };
 
-function formatDate(value: string) {
+function formatDate(value: string, locale: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('vi-VN');
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString(locale);
 }
 
-function formatMoney(value: number, currency: string) {
-  return `${value.toLocaleString('vi-VN')} ${currency}`;
+function formatMoney(value: number, currency: string, locale: string) {
+  return `${value.toLocaleString(locale)} ${currency}`;
 }
 
-function DetailField({ label, children }: { label: string; children: ReactNode }) {
+function DetailField({
+  label,
+  children,
+  emptyLabel,
+}: {
+  label: string;
+  children: ReactNode;
+  emptyLabel: string;
+}) {
   return (
     <div className="min-w-0">
       <dt className="text-xs text-slate-500">{label}</dt>
       <dd className="mt-1 break-words text-sm font-medium text-slate-800">
-        {children === null || children === undefined || children === '' ? 'Chưa có' : children}
+        {children === null || children === undefined || children === '' ? emptyLabel : children}
       </dd>
     </div>
   );
@@ -42,6 +52,9 @@ export default function UserAccountDetail({
   userId: string;
   onClose: () => void;
 }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
+  const emptyValue = t('users.detail.emptyValue');
   const { token } = useAuth();
   const [user, setUser] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,14 +73,14 @@ export default function UserAccountDetail({
       })
       .catch((cause) => {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : 'Không thể tải chi tiết tài khoản.');
+          setError(cause instanceof Error ? cause.message : t('users.detail.loadErr'));
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [userId, token, revision]);
+  }, [userId, token, revision, t]);
 
   if (viewingShopId === userId && user?.role === 'SELLER') {
     return <ShopDetail shopId={userId} onClose={() => setViewingShopId(null)} />;
@@ -77,11 +90,11 @@ export default function UserAccountDetail({
     <Popup
       isOpen
       onClose={onClose}
-      title="Chi tiết tài khoản"
+      title={t('users.detail.title')}
       size="lg"
       footer={
         <Button type="button" variant="secondary" onClick={onClose}>
-          Đóng
+          {t('users.detail.close')}
         </Button>
       }
     >
@@ -91,7 +104,7 @@ export default function UserAccountDetail({
           className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500"
         >
           <LoaderCircle size={20} className="animate-spin" aria-hidden="true" />
-          Đang tải thông tin tài khoản…
+          {t('users.detail.loading')}
         </div>
       )}
       {!loading && error && (
@@ -102,7 +115,7 @@ export default function UserAccountDetail({
             variant="secondary"
             onClick={() => setRevision((value) => value + 1)}
           >
-            <RefreshCw size={15} aria-hidden="true" /> Thử lại
+            <RefreshCw size={15} aria-hidden="true" /> {t('users.detail.retry')}
           </Button>
         </div>
       )}
@@ -120,68 +133,92 @@ export default function UserAccountDetail({
               <div className="mt-3 flex flex-wrap gap-2">
                 <Badge>{roleLabels[user.role]}</Badge>
                 <Badge tone={user.isLocked ? 'red' : 'green'}>
-                  {user.isLocked ? 'Đã khóa' : 'Hoạt động'}
+                  {user.isLocked ? t('users.detail.lockedBadge') : t('users.detail.activeBadge')}
                 </Badge>
                 <Badge tone={user.isVerified ? 'green' : 'amber'}>
-                  {user.isVerified ? 'Đã xác minh' : 'Chưa xác minh'}
+                  {user.isVerified ? t('users.detail.verified') : t('users.detail.unverified')}
                 </Badge>
               </div>
             </div>
           </div>
 
-          <section aria-label="Thông tin tài khoản">
+          <section aria-label={t('users.detail.infoTitle')}>
             <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
-              <UserRound size={17} aria-hidden="true" /> Thông tin tài khoản
+              <UserRound size={17} aria-hidden="true" /> {t('users.detail.infoTitle')}
             </h3>
             <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
-              <DetailField label="Mã tài khoản">{user.id}</DetailField>
-              <DetailField label="Số điện thoại">{user.phoneNumber}</DetailField>
-              <DetailField label="Email cá nhân">{user.personalEmail}</DetailField>
-              <DetailField label="Email công tác">{user.platformEmail}</DetailField>
-              <DetailField label="Điểm uy tín">{user.reputationScore}</DetailField>
-              <DetailField label="Mức độ tín nhiệm">{user.trustLevel}</DetailField>
-              <DetailField label="Chế độ bán hàng">
-                {user.isSellerActive ? 'Đang bật' : 'Đang tắt'}
+              <DetailField label={t('users.detail.idLabel')} emptyLabel={emptyValue}>
+                {user.id}
               </DetailField>
-              <DetailField label="Ngày tạo">{formatDate(user.createdAt)}</DetailField>
-              <DetailField label="Cập nhật lần cuối">{formatDate(user.updatedAt)}</DetailField>
+              <DetailField label={t('users.detail.phoneLabel')} emptyLabel={emptyValue}>
+                {user.phoneNumber}
+              </DetailField>
+              <DetailField label={t('users.detail.personalEmailLabel')} emptyLabel={emptyValue}>
+                {user.personalEmail}
+              </DetailField>
+              <DetailField label={t('users.detail.workEmailLabel')} emptyLabel={emptyValue}>
+                {user.platformEmail}
+              </DetailField>
+              <DetailField label={t('users.detail.reputationLabel')} emptyLabel={emptyValue}>
+                {user.reputationScore}
+              </DetailField>
+              <DetailField label={t('users.detail.trustLevelLabel')} emptyLabel={emptyValue}>
+                {user.trustLevel}
+              </DetailField>
+              <DetailField label={t('users.detail.sellerModeLabel')} emptyLabel={emptyValue}>
+                {user.isSellerActive ? t('users.detail.sellerOn') : t('users.detail.sellerOff')}
+              </DetailField>
+              <DetailField label={t('users.detail.createdAtLabel')} emptyLabel={emptyValue}>
+                {formatDate(user.createdAt, locale)}
+              </DetailField>
+              <DetailField label={t('users.detail.updatedAtLabel')} emptyLabel={emptyValue}>
+                {formatDate(user.updatedAt, locale)}
+              </DetailField>
             </dl>
           </section>
 
-          <section aria-label="Ví tiền" className="border-t border-slate-100 pt-5">
+          <section
+            aria-label={t('users.detail.walletTitle')}
+            className="border-t border-slate-100 pt-5"
+          >
             <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
-              <Wallet size={17} aria-hidden="true" /> Ví tiền
+              <Wallet size={17} aria-hidden="true" /> {t('users.detail.walletTitle')}
             </h3>
             {user.wallet ? (
               <dl className="grid gap-4 rounded-xl bg-blue-50/60 p-4 sm:grid-cols-2">
-                <DetailField label="Số dư">
-                  {formatMoney(user.wallet.balance, user.wallet.currency)}
+                <DetailField label={t('users.detail.balanceLabel')} emptyLabel={emptyValue}>
+                  {formatMoney(user.wallet.balance, user.wallet.currency, locale)}
                 </DetailField>
-                <DetailField label="Số dư bị khóa">
-                  {formatMoney(user.wallet.lockedBalance, user.wallet.currency)}
+                <DetailField label={t('users.detail.lockedBalanceLabel')} emptyLabel={emptyValue}>
+                  {formatMoney(user.wallet.lockedBalance, user.wallet.currency, locale)}
                 </DetailField>
               </dl>
             ) : (
-              <p className="text-sm text-slate-500">Tài khoản chưa có ví.</p>
+              <p className="text-sm text-slate-500">{t('users.detail.noWallet')}</p>
             )}
           </section>
 
-          <section aria-label="Thống kê hoạt động" className="border-t border-slate-100 pt-5">
-            <h3 className="mb-4 text-sm font-bold text-slate-900">Thống kê hoạt động</h3>
+          <section
+            aria-label={t('users.detail.activityTitle')}
+            className="border-t border-slate-100 pt-5"
+          >
+            <h3 className="mb-4 text-sm font-bold text-slate-900">
+              {t('users.detail.activityTitle')}
+            </h3>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {(
                 [
-                  ['Sản phẩm', user.stats.products],
-                  ['Đơn mua', user.stats.ordersAsBuyer],
-                  ['Đơn bán', user.stats.ordersAsSeller],
-                  ['Phiên đấu giá', user.stats.auctions],
-                  ['Tranh chấp đã mở', user.stats.disputesOpened],
+                  [t('users.detail.statProducts'), user.stats.products],
+                  [t('users.detail.statOrdersBuyer'), user.stats.ordersAsBuyer],
+                  [t('users.detail.statOrdersSeller'), user.stats.ordersAsSeller],
+                  [t('users.detail.statAuctions'), user.stats.auctions],
+                  [t('users.detail.statDisputes'), user.stats.disputesOpened],
                 ] as const
               ).map(([label, value]) => (
                 <div key={label} className="rounded-xl border border-slate-200 p-3">
                   <dt className="text-xs text-slate-500">{label}</dt>
                   <dd className="mt-1 text-xl font-bold text-primary">
-                    {value.toLocaleString('vi-VN')}
+                    {value.toLocaleString(locale)}
                   </dd>
                 </div>
               ))}
@@ -192,20 +229,28 @@ export default function UserAccountDetail({
             <UserShopSummary userId={user.id} onView={() => setViewingShopId(user.id)} />
           )}
 
-          <section aria-label="Sổ địa chỉ" className="border-t border-slate-100 pt-5">
+          <section
+            aria-label={t('users.detail.addressesTitle', { count: user.addresses.length })}
+            className="border-t border-slate-100 pt-5"
+          >
             <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
-              <MapPin size={17} aria-hidden="true" /> Sổ địa chỉ ({user.addresses.length})
+              <MapPin size={17} aria-hidden="true" />{' '}
+              {t('users.detail.addressesTitle', { count: user.addresses.length })}
             </h3>
             {user.addresses.length ? (
               <ul className="space-y-3">
                 {user.addresses.map((address, index) => (
                   <li key={address.id} className="rounded-xl border border-slate-200 p-4 text-sm">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-semibold">Địa chỉ {index + 1}</span>
-                      {address.isDefault && <Badge tone="green">Mặc định</Badge>}
+                      <span className="font-semibold">
+                        {t('users.detail.addressIndex', { index: index + 1 })}
+                      </span>
+                      {address.isDefault && (
+                        <Badge tone="green">{t('users.detail.defaultBadge')}</Badge>
+                      )}
                     </div>
                     <p className="mt-2 break-words text-slate-600">
-                      Người nhận / liên hệ: {address.recipientName}
+                      {t('users.detail.recipientLabel', { name: address.recipientName })}
                     </p>
                     <p className="mt-1 text-slate-500">{address.phone}</p>
                     <p className="mt-2 break-words text-slate-600">
@@ -223,7 +268,7 @@ export default function UserAccountDetail({
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-slate-500">Tài khoản chưa có địa chỉ.</p>
+              <p className="text-sm text-slate-500">{t('users.detail.noAddresses')}</p>
             )}
           </section>
         </div>

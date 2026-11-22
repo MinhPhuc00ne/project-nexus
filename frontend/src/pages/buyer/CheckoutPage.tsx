@@ -104,7 +104,7 @@ export default function CheckoutPage() {
 
   const handleSaveNewAddress = async (addr: ShippingAddressInput) => {
     setCustomAddress(addr);
-    showToast('Đã lưu và cập nhật địa chỉ giao hàng.');
+    showToast(t('commerce:checkoutExtra.addressSavedToast'));
     try {
       const created = await createAddress({
         recipientName: addr.recipientName.trim(),
@@ -130,7 +130,7 @@ export default function CheckoutPage() {
       !currentAddress.phone.trim() ||
       !currentAddress.street.trim()
     ) {
-      showToast('Vui lòng cung cấp đầy đủ thông tin địa chỉ giao hàng.');
+      showToast(t('commerce:checkoutExtra.addressIncompleteToast'));
       return;
     }
 
@@ -155,7 +155,8 @@ export default function CheckoutPage() {
       await clearCart();
     } catch (err: unknown) {
       console.error('Checkout failed:', err);
-      const msg = err instanceof Error ? err.message : 'Thanh toán thất bại. Vui lòng thử lại!';
+      const msg =
+        err instanceof Error ? err.message : t('commerce:checkoutExtra.checkoutFailedToast');
       showToast(msg);
     } finally {
       setIsSubmitting(false);

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import ProtectedRoute from './ProtectedRoute';
 import ScrollToTop from '../components/common/ScrollToTop';
@@ -92,6 +93,7 @@ const AdminCategoriesPage = lazy(() => import('../pages/admin/AdminCategoriesPag
 const AdminBannersPage = lazy(() => import('../pages/admin/AdminBannersPage'));
 
 function AppRouter() {
+  const { t } = useTranslation('common');
   return (
     <BrowserRouter>
       <ScrollToTop />
@@ -103,7 +105,7 @@ function AppRouter() {
               role="status"
               className="flex min-h-dvh items-center justify-center bg-slate-50 p-6 text-sm text-slate-600"
             >
-              Đang tải trang…
+              {t('states.loadingPage')}
             </main>
           }
         >

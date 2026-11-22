@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { ApiResponse } from '@nexus/types';
+import i18n from '../i18n';
 import api, { API_BASE_URL } from './api';
 import type { AuthMessage, AuthUser, LoginResponse } from '../types/user.types';
 import { getApiErrorMessage, getApiErrorMessages } from '../lib/apiErrors';
@@ -134,27 +135,27 @@ async function post<T>(path: string, body: object): Promise<T> {
       // Chỉ xử lý thêm lỗi validation cho luồng đăng ký và xác thực tài khoản.
       if (path === 'register' || path === 'verify-email') {
         if (!error.response) {
-          throw new Error('Không thể kết nối máy chủ. Vui lòng thử lại.');
+          throw new Error(i18n.t('errors:network'));
         }
         const messages = getApiErrorMessages(payload);
         throw new RegistrationError(
-          messages.length ? messages : ['Yêu cầu thất bại.'],
+          messages.length ? messages : [i18n.t('errors:default')],
           error.response.status,
         );
       }
       throw new Error(
         getApiErrorMessage(
           payload,
-          error.response ? 'Yêu cầu thất bại.' : 'Không thể kết nối máy chủ. Vui lòng thử lại.',
+          error.response ? i18n.t('errors:default') : i18n.t('errors:network'),
         ),
       );
     }
-    throw new Error('Không thể kết nối máy chủ. Vui lòng thử lại.');
+    throw new Error(i18n.t('errors:network'));
   }
 
   const payload = response.data;
   if (!payload || typeof payload !== 'object' || !('data' in payload) || !payload.data) {
-    throw new Error('Máy chủ trả về dữ liệu không hợp lệ.');
+    throw new Error(i18n.t('errors:services.invalidAuctionLotData'));
   }
   return payload.data;
 }
@@ -188,7 +189,7 @@ export function resetPassword(
 export function refreshToken(): Promise<{ accessToken: string; refreshToken: string }> {
   const currentRefreshToken = getStoredRefreshToken();
   if (!currentRefreshToken) {
-    throw new Error('Không tìm thấy refresh token.');
+    throw new Error(i18n.t('errors:services.missingRefreshToken'));
   }
   return post('refresh', { refreshToken: currentRefreshToken });
 }

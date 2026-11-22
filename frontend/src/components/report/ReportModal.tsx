@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Flag, CheckCircle2, AlertCircle, Upload, X } from 'lucide-react';
 import Popup from '../Popup';
 import {
@@ -26,8 +27,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   targetName,
   onReported,
 }) => {
-  const reasons = targetType === 'PRODUCT' ? PRODUCT_REPORT_REASONS : SHOP_REPORT_REASONS;
-  const [selectedReason, setSelectedReason] = useState(reasons[0]);
+  const { t } = useTranslation('common');
+  const rawReasons = targetType === 'PRODUCT' ? PRODUCT_REPORT_REASONS : SHOP_REPORT_REASONS;
+  const reasonsKey = targetType === 'PRODUCT' ? 'productReasons' : 'shopReasons';
+  const reasons = rawReasons.map((fallback, idx) =>
+    t(`reportModal.${reasonsKey}.${idx}`, { defaultValue: fallback }),
+  );
+  const [selectedReasonIdx, setSelectedReasonIdx] = useState(0);
+  const selectedReason = reasons[selectedReasonIdx] ?? reasons[0];
   const [description, setDescription] = useState('');
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -35,7 +42,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
 
   const isProduct = targetType === 'PRODUCT';
-  const titleLabel = isProduct ? 'Báo cáo vi phạm sản phẩm' : 'Báo cáo vi phạm gian hàng';
+  const titleLabel = isProduct ? t('reportModal.titleProduct') : t('reportModal.titleShop');
+  const targetNoun = isProduct ? t('reportModal.productNoun') : t('reportModal.shopNoun');
 
   const handleResetAndClose = () => {
     if (submitting) return;
@@ -43,7 +51,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     setError('');
     setDescription('');
     setEvidenceFiles([]);
-    setSelectedReason(reasons[0]);
+    setSelectedReasonIdx(0);
     onClose();
   };
 
@@ -62,14 +70,18 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         description: description.trim(),
         evidenceUrls,
       });
-      setSubmittedCode(result.id ?? 'Đã tiếp nhận');
+      setSubmittedCode(result.id ?? t('reportModal.receivedFallback'));
       if (onReported) {
         onReported(
-          `Đã gửi báo cáo ${isProduct ? 'sản phẩm' : 'gian hàng'} "${targetName}" (Mã: #${result.id}).`,
+          t('reportModal.reportedToast', {
+            targetType: targetNoun,
+            name: targetName,
+            id: result.id,
+          }),
         );
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Không thể gửi báo cáo lúc này.');
+      setError(err instanceof Error ? err.message : t('reportModal.submitFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -93,15 +105,10 @@ export const ReportModal: React.FC<ReportModalProps> = ({
             <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
             <div className="text-xs text-slate-700 space-y-1">
               <p className="font-bold text-slate-900 text-sm">
-                Đã tiếp nhận báo cáo thành công (#{submittedCode})
+                {t('reportModal.successTitle', { code: submittedCode })}
               </p>
-              <p>
-                Bộ phận Kiểm duyệt & An toàn Giao dịch NEXUS đã ghi nhận báo cáo của bạn đối với{' '}
-                {isProduct ? 'sản phẩm' : 'gian hàng'} <strong>{targetName}</strong>.
-              </p>
-              <p className="text-slate-500">
-                Chúng tôi sẽ kiểm tra và xử lý trong vòng 24 giờ làm việc.
-              </p>
+              <p>{t('reportModal.successDesc', { targetType: targetNoun, name: targetName })}</p>
+              <p className="text-slate-500">{t('reportModal.successEta')}</p>
             </div>
           </div>
           <div className="flex justify-end">
@@ -110,7 +117,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               onClick={handleResetAndClose}
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition cursor-pointer"
             >
-              Đóng
+              {t('reportModal.close')}
             </button>
           </div>
         </div>
@@ -118,7 +125,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs">
             <span className="text-slate-500">
-              {isProduct ? 'Sản phẩm báo cáo:' : 'Gian hàng báo cáo:'}
+              {isProduct ? t('reportModal.targetProductLabel') : t('reportModal.targetShopLabel')}
             </span>{' '}
             <strong className="text-slate-900">{targetName}</strong>
           </div>
@@ -132,14 +139,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-2">
-              Lý do báo cáo <span className="text-red-500">*</span>
+              {t('reportModal.reasonLabel')} <span className="text-red-500">*</span>
             </label>
             <div className="space-y-1.5">
-              {reasons.map((r) => (
+              {reasons.map((r, idx) => (
                 <label
                   key={r}
                   className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition ${
-                    selectedReason === r
+                    selectedReasonIdx === idx
                       ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-semibold'
                       : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
@@ -148,8 +155,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                     type="radio"
                     name="report-reason"
                     value={r}
-                    checked={selectedReason === r}
-                    onChange={() => setSelectedReason(r)}
+                    checked={selectedReasonIdx === idx}
+                    onChange={() => setSelectedReasonIdx(idx)}
                     className="accent-blue-600"
                   />
                   <span>{r}</span>
@@ -160,7 +167,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Mô tả chi tiết vi phạm <span className="text-red-500">*</span>
+              {t('reportModal.detailsLabel')} <span className="text-red-500">*</span>
             </label>
             <textarea
               required
@@ -168,19 +175,19 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               maxLength={1000}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Cung cấp thêm thông tin cụ thể để đội ngũ kiểm duyệt NEXUS xác minh nhanh chóng..."
+              placeholder={t('reportModal.detailsPlaceholder')}
               className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Hình ảnh minh chứng (Tùy chọn, tối đa 3 ảnh)
+              {t('reportModal.evidenceLabel')}
             </label>
             <div className="flex flex-wrap items-center gap-2">
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-blue-300 bg-blue-50/40 hover:bg-blue-50 text-xs font-medium text-blue-700 cursor-pointer transition">
                 <Upload className="w-3.5 h-3.5" />
-                <span>Tải ảnh bằng chứng</span>
+                <span>{t('reportModal.uploadEvidence')}</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -217,14 +224,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               disabled={submitting}
               className="px-4 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 transition cursor-pointer"
             >
-              Hủy
+              {t('reportModal.cancel')}
             </button>
             <button
               type="submit"
               disabled={submitting}
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white transition disabled:opacity-50 cursor-pointer"
             >
-              {submitting ? 'Đang gửi báo cáo…' : 'Gửi báo cáo'}
+              {submitting ? t('reportModal.submitting') : t('reportModal.submit')}
             </button>
           </div>
         </form>

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
+import i18n from '../../i18n/index';
 import { ApiRequestError } from '../../services/api';
 import {
   getAuctionsApi,
@@ -16,7 +18,9 @@ import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof ApiRequestError) return `${error.message} (HTTP ${error.status})`;
-  return error instanceof Error ? error.message : 'Có lỗi không xác định. Vui lòng thử lại.';
+  return error instanceof Error
+    ? error.message
+    : i18n.t('auctions.consignment.unknownErr', { ns: 'seller' });
 }
 
 /**
@@ -25,6 +29,7 @@ function getErrorMessage(error: unknown): string {
  * @returns Rendered auction consignment page layout.
  */
 export default function SellerAuctionConsignmentPage(): ReactElement {
+  const { t } = useTranslation('seller');
   const { notify } = useSellerWorkspace();
   const [searchParams] = useSearchParams();
   const [auctions, setAuctions] = useState<AuctionEntity[]>([]);
@@ -60,30 +65,28 @@ export default function SellerAuctionConsignmentPage(): ReactElement {
   return (
     <div className="flex flex-col gap-5" data-seller="page-stack">
       <PageHeading
-        title="Gửi vật phẩm vào đấu giá"
-        description="Nộp ảnh, chứng thư thẩm định và mức giá đề xuất. Admin sẽ duyệt trước khi vật phẩm xuất hiện trong phiên."
+        title={t('auctions.consignment.pageTitle')}
+        description={t('auctions.consignment.pageDesc')}
         actions={
           <SellerLink secondary to="/seller/auctions">
             <ArrowLeft size={16} aria-hidden="true" />
-            Quay lại đấu giá
+            {t('auctions.consignment.backToAuctions')}
           </SellerLink>
         }
       />
 
       {loadError && (
         <Panel
-          title="Không tải được dữ liệu đấu giá"
+          title={t('auctions.consignment.loadErrTitle')}
           subtitle={loadError}
           action={
             <SellerButton secondary onClick={() => void loadData()}>
               <RefreshCw size={15} aria-hidden="true" />
-              Thử lại
+              {t('auctions.consignment.retry')}
             </SellerButton>
           }
         >
-          <p className="text-sm text-slate-500">
-            Kiểm tra đăng nhập Seller và kết nối backend rồi thử lại.
-          </p>
+          <p className="text-sm text-slate-500">{t('auctions.consignment.loadErrHint')}</p>
         </Panel>
       )}
 

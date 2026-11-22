@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
+import { getIntlLocale } from '../../i18n/config';
 import { ShoppingBag, Clock, AlertCircle, CheckCircle2, Upload } from 'lucide-react';
 import Popup from '../Popup';
 import { createSellerRequest, getMySellerRequests } from '../../services/users';
@@ -24,6 +26,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
   profile,
   onSuccess,
 }) => {
+  const { t, i18n } = useTranslation('common');
   const [upgradeRequests, setUpgradeRequests] = useState<SellerUpgradeRequest[]>([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [isSubmittingUpgrade, setIsSubmittingUpgrade] = useState(false);
@@ -70,7 +73,9 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       })
       .catch((err: unknown) => {
         if (active) {
-          setUpgradeError(err instanceof Error ? err.message : 'Không thể tải lịch sử yêu cầu.');
+          setUpgradeError(
+            err instanceof Error ? err.message : t('upgradeSeller.loadHistoryFailed'),
+          );
         }
       })
       .finally(() => {
@@ -98,7 +103,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       .catch((err: unknown) => {
         if (active) {
           setLocationError(
-            err instanceof Error ? err.message : 'Không thể tải danh sách Tỉnh/Thành phố từ GHN.',
+            err instanceof Error ? err.message : t('upgradeSeller.loadProvincesFailed'),
           );
         }
       })
@@ -128,7 +133,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       .catch((err: unknown) => {
         if (active) {
           setLocationError(
-            err instanceof Error ? err.message : 'Không thể tải danh sách Quận/Huyện từ GHN.',
+            err instanceof Error ? err.message : t('upgradeSeller.loadDistrictsFailed'),
           );
         }
       })
@@ -157,9 +162,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       })
       .catch((err: unknown) => {
         if (active) {
-          setLocationError(
-            err instanceof Error ? err.message : 'Không thể tải danh sách Phường/Xã từ GHN.',
-          );
+          setLocationError(err instanceof Error ? err.message : t('upgradeSeller.loadWardsFailed'));
         }
       })
       .finally(() => {
@@ -174,18 +177,16 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
   const handleSubmitUpgrade = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!storeName.trim() || !phone.trim()) {
-      setUpgradeError('Vui lòng nhập Tên gian hàng và Số điện thoại liên hệ.');
+      setUpgradeError(t('upgradeSeller.missingBasicInfo'));
       return;
     }
     if (!proofFile) {
-      setUpgradeError('Vui lòng tải lên tài liệu chứng minh (CCCD hoặc Giấy phép kinh doanh).');
+      setUpgradeError(t('upgradeSeller.missingProofFile'));
       return;
     }
 
     if (!street.trim() || !city || !district || !ward) {
-      setUpgradeError(
-        'Vui lòng nhập Số nhà, tên đường và chọn đủ Tỉnh/Thành phố, Quận/Huyện, Phường/Xã của gian hàng.',
-      );
+      setUpgradeError(t('upgradeSeller.missingAddress'));
       return;
     }
 
@@ -209,7 +210,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       formData.append('file', proofFile);
 
       const res = await createSellerRequest(formData);
-      const successMsg = res.message || 'Gửi yêu cầu nâng cấp thành công!';
+      const successMsg = res.message || t('upgradeSeller.submitSuccess');
       setUpgradeSuccess(successMsg);
       if (onSuccess) onSuccess(successMsg);
 
@@ -227,7 +228,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       setIdentityCardNumber('');
       setProofFile(null);
     } catch (err: unknown) {
-      setUpgradeError(err instanceof Error ? err.message : 'Gửi yêu cầu thất bại.');
+      setUpgradeError(err instanceof Error ? err.message : t('upgradeSeller.submitFailed'));
     } finally {
       setIsSubmittingUpgrade(false);
     }
@@ -246,8 +247,8 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
           <ShoppingBag className="w-5 h-5 text-orange-500" />
           <span>
             {profile?.role === Role.SELLER
-              ? 'Thông Tin Gian Hàng Người Bán'
-              : 'Đăng Ký Nâng Cấp Thành Người Bán (Seller)'}
+              ? t('upgradeSeller.titleSeller')
+              : t('upgradeSeller.titleUpgrade')}
           </span>
         </div>
       }
@@ -256,7 +257,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
       {isLoadingRequests ? (
         <div className="py-12 text-center text-slate-500">
           <Clock className="w-8 h-8 mx-auto mb-2 text-slate-400 animate-spin" />
-          Đang tải dữ liệu hồ sơ từ máy chủ...
+          {t('upgradeSeller.loadingProfile')}
         </div>
       ) : upgradeRequests.some((r) => r.status === 'PENDING') ? (
         (() => {
@@ -267,23 +268,22 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                 <Clock className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
                 <div className="text-sm">
                   <h4 className="font-bold text-amber-900 mb-1">
-                    Hồ sơ của bạn đang được Ban Quản Trị xét duyệt!
+                    {t('upgradeSeller.pendingTitle')}
                   </h4>
-                  <p className="text-amber-800">
-                    Bạn đã gửi yêu cầu nâng cấp tài khoản lên Seller. Quản trị viên đang tiến hành
-                    kiểm tra thông tin và tài liệu chứng minh.
-                  </p>
+                  <p className="text-amber-800">{t('upgradeSeller.pendingDesc')}</p>
                 </div>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm space-y-2">
                 <div className="flex justify-between border-b border-slate-200 pb-2">
-                  <span className="text-slate-500">Tên gian hàng:</span>
+                  <span className="text-slate-500">{t('upgradeSeller.shopNameLabel')}</span>
                   <strong className="text-slate-800">{pendingReq.storeName}</strong>
                 </div>
                 {(pendingReq.street || pendingReq.city) && (
                   <div className="flex justify-between gap-4 border-b border-slate-200 pb-2">
-                    <span className="text-slate-500 shrink-0">Địa chỉ gian hàng:</span>
+                    <span className="text-slate-500 shrink-0">
+                      {t('upgradeSeller.shopAddressLabel')}
+                    </span>
                     <span className="text-slate-800 font-medium text-right break-words min-w-0">
                       {[pendingReq.street, pendingReq.ward, pendingReq.district, pendingReq.city]
                         .filter(Boolean)
@@ -292,33 +292,33 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   </div>
                 )}
                 <div className="flex justify-between border-b border-slate-200 pb-2">
-                  <span className="text-slate-500">Số điện thoại liên hệ:</span>
+                  <span className="text-slate-500">{t('upgradeSeller.phoneLabel')}</span>
                   <span className="text-slate-800 font-medium">{pendingReq.phone}</span>
                 </div>
                 {pendingReq.businessEmail && (
                   <div className="flex justify-between border-b border-slate-200 pb-2">
-                    <span className="text-slate-500">Email kinh doanh:</span>
+                    <span className="text-slate-500">{t('upgradeSeller.businessEmailLabel')}</span>
                     <span className="text-slate-800 font-medium">{pendingReq.businessEmail}</span>
                   </div>
                 )}
                 {pendingReq.identityCardNumber && (
                   <div className="flex justify-between border-b border-slate-200 pb-2">
-                    <span className="text-slate-500">Số CCCD/CMND:</span>
+                    <span className="text-slate-500">{t('upgradeSeller.idNumberLabel')}</span>
                     <span className="text-slate-800 font-medium">
                       {pendingReq.identityCardNumber}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between border-b border-slate-200 pb-2">
-                  <span className="text-slate-500">Thời gian nộp:</span>
+                  <span className="text-slate-500">{t('upgradeSeller.submittedAtLabel')}</span>
                   <span className="text-slate-800">
-                    {new Date(pendingReq.createdAt).toLocaleString('vi-VN')}
+                    {new Date(pendingReq.createdAt).toLocaleString(getIntlLocale(i18n.language))}
                   </span>
                 </div>
                 <div className="flex justify-between items-center pt-1">
-                  <span className="text-slate-500">Trạng thái:</span>
+                  <span className="text-slate-500">{t('upgradeSeller.statusLabel')}</span>
                   <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
-                    ĐANG CHỜ DUYỆT (PENDING)
+                    {t('upgradeSeller.pendingBadge')}
                   </span>
                 </div>
               </div>
@@ -329,7 +329,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   className="px-5 py-2 text-sm font-semibold bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition"
                   onClick={handleClose}
                 >
-                  Đã hiểu
+                  {t('upgradeSeller.understood')}
                 </button>
               </div>
             </div>
@@ -341,11 +341,9 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
             <div className="p-3 text-sm text-red-700 bg-red-50 rounded-xl border border-red-200 flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
               <div>
-                <strong>Yêu cầu trước đó bị từ chối:</strong>{' '}
-                {upgradeRequests[0].rejectionReason || 'Hồ sơ chưa đạt tiêu chuẩn sàn.'}
-                <p className="text-xs text-red-600 mt-1">
-                  Vui lòng bổ sung giấy tờ và thông tin chính xác để gửi lại yêu cầu.
-                </p>
+                <strong>{t('upgradeSeller.rejectedPrefix')}</strong>{' '}
+                {upgradeRequests[0].rejectionReason || t('upgradeSeller.rejectedFallback')}
+                <p className="text-xs text-red-600 mt-1">{t('upgradeSeller.rejectedHint')}</p>
               </div>
             </div>
           )}
@@ -370,7 +368,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   htmlFor="seller-store-street"
                   className="block text-xs font-semibold text-slate-700 mb-1"
                 >
-                  Số nhà, tên đường <span className="text-red-500">*</span>
+                  {t('upgradeSeller.streetLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="seller-store-street"
@@ -378,7 +376,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   type="text"
                   required
                   autoComplete="address-line1"
-                  placeholder="VD: 720A Điện Biên Phủ"
+                  placeholder={t('upgradeSeller.streetPlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={street}
                   onChange={(e) => setStreet(e.target.value)}
@@ -390,7 +388,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   htmlFor="seller-store-city"
                   className="block text-xs font-semibold text-slate-700 mb-1"
                 >
-                  Tỉnh/Thành phố <span className="text-red-500">*</span>
+                  {t('upgradeSeller.provinceLabel')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="seller-store-city"
@@ -414,7 +412,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   disabled={isSubmittingUpgrade || isLoadingProvinces}
                 >
                   <option value="" disabled>
-                    Chọn Tỉnh/Thành phố
+                    {t('upgradeSeller.selectProvince')}
                   </option>
                   {provinces.map((province) => (
                     <option key={province.provinceId} value={province.provinceId}>
@@ -428,7 +426,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   htmlFor="seller-store-district"
                   className="block text-xs font-semibold text-slate-700 mb-1"
                 >
-                  Quận/Huyện <span className="text-red-500">*</span>
+                  {t('upgradeSeller.districtLabel')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="seller-store-district"
@@ -449,7 +447,9 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   disabled={!provinceId || isSubmittingUpgrade || isLoadingDistricts}
                 >
                   <option value="">
-                    {isLoadingDistricts && provinceId ? 'Đang tải từ GHN…' : 'Chọn Quận/Huyện'}
+                    {isLoadingDistricts && provinceId
+                      ? t('upgradeSeller.loadingGhn')
+                      : t('upgradeSeller.selectDistrict')}
                   </option>
                   {districts.map((item) => (
                     <option key={item.districtId} value={item.districtId}>
@@ -463,7 +463,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   htmlFor="seller-store-ward"
                   className="block text-xs font-semibold text-slate-700 mb-1"
                 >
-                  Phường/Xã <span className="text-red-500">*</span>
+                  {t('upgradeSeller.wardLabel')} <span className="text-red-500">*</span>
                 </label>
                 <select
                   id="seller-store-ward"
@@ -480,7 +480,9 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                   disabled={!districtId || isSubmittingUpgrade || isLoadingWards}
                 >
                   <option value="">
-                    {isLoadingWards && districtId ? 'Đang tải từ GHN…' : 'Chọn Phường/Xã'}
+                    {isLoadingWards && districtId
+                      ? t('upgradeSeller.loadingGhn')
+                      : t('upgradeSeller.selectWard')}
                   </option>
                   {wards.map((item) => (
                     <option key={item.wardCode} value={item.wardCode}>
@@ -495,18 +497,18 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                 role="alert"
                 className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"
               >
-                Không thể tải địa chỉ từ GHN: {locationError}
+                {t('upgradeSeller.ghnLoadError', { error: locationError })}
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tên Gian Hàng / Thương Hiệu <span className="text-red-500">*</span>
+                  {t('upgradeSeller.storeNameLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Cổ Vật Hoàng Gia Store"
+                  placeholder={t('upgradeSeller.storeNamePlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={storeName}
                   onChange={(e) => setStoreName(e.target.value)}
@@ -516,12 +518,12 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Số Điện Thoại Liên Hệ <span className="text-red-500">*</span>
+                  {t('upgradeSeller.contactPhoneLabel')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="tel"
                   required
-                  placeholder="VD: 0987654321"
+                  placeholder={t('upgradeSeller.phonePlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -533,11 +535,11 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Email Kinh Doanh
+                  {t('upgradeSeller.businessEmailFieldLabel')}
                 </label>
                 <input
                   type="email"
-                  placeholder="VD: shop@domain.com"
+                  placeholder={t('upgradeSeller.businessEmailPlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={businessEmail}
                   onChange={(e) => setBusinessEmail(e.target.value)}
@@ -547,11 +549,11 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Số CCCD / CMND / Mã Doanh Nghiệp
+                  {t('upgradeSeller.identityCardLabel')}
                 </label>
                 <input
                   type="text"
-                  placeholder="VD: 001202008888"
+                  placeholder={t('upgradeSeller.identityCardPlaceholder')}
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                   value={identityCardNumber}
                   onChange={(e) => setIdentityCardNumber(e.target.value)}
@@ -562,11 +564,11 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Mô Tả Gian Hàng & Sản Phẩm Kinh Doanh
+                {t('upgradeSeller.descriptionLabel')}
               </label>
               <textarea
                 rows={2}
-                placeholder="Mô tả ngắn gọn về nguồn gốc sản phẩm, lĩnh vực hoạt động..."
+                placeholder={t('upgradeSeller.descriptionPlaceholder')}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                 value={storeDescription}
                 onChange={(e) => setStoreDescription(e.target.value)}
@@ -576,14 +578,13 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Tài Liệu Đính Kèm Chứng Minh (Ảnh CCCD / GPKD){' '}
-                <span className="text-red-500">*</span>
+                {t('upgradeSeller.proofFileLabel')} <span className="text-red-500">*</span>
               </label>
               <div className="flex items-center gap-3">
                 <label className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-300 hover:border-orange-500 hover:bg-orange-50/50 rounded-lg cursor-pointer transition text-sm text-slate-600">
                   <Upload className="w-4 h-4 text-orange-500" />
                   <span>
-                    {proofFile ? proofFile.name : 'Chọn tệp đính kèm (Ảnh/PDF tối đa 15MB)'}
+                    {proofFile ? proofFile.name : t('upgradeSeller.proofFilePlaceholder')}
                   </span>
                   <input
                     type="file"
@@ -601,14 +602,11 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                     onClick={() => setProofFile(null)}
                     disabled={isSubmittingUpgrade}
                   >
-                    Xóa tệp
+                    {t('upgradeSeller.removeFile')}
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Hệ thống yêu cầu tài liệu để đảm bảo tính pháp lý và bảo vệ quyền lợi người mua trên
-                sàn.
-              </p>
+              <p className="text-[11px] text-slate-400 mt-1">{t('upgradeSeller.legalNote')}</p>
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -618,14 +616,14 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
                 onClick={handleClose}
                 disabled={isSubmittingUpgrade}
               >
-                Hủy bỏ
+                {t('upgradeSeller.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={isSubmittingUpgrade}
                 className="px-5 py-2 text-sm font-semibold text-white bg-[#f24e1e] hover:bg-[#d94217] rounded-lg transition disabled:opacity-50"
               >
-                {isSubmittingUpgrade ? 'Đang gửi hồ sơ...' : 'Nộp Hồ Sơ Xét Duyệt'}
+                {isSubmittingUpgrade ? t('upgradeSeller.submitting') : t('upgradeSeller.submit')}
               </button>
             </div>
           </form>

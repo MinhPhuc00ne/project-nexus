@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { minEndDateTime } from '../../../utils/date-time';
 
 type Props = {
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export default function ConsignmentDeadlineField({ value, startTime, endTime, onChange }: Props) {
+  const { t } = useTranslation('admin');
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const start = new Date(startTime).getTime();
@@ -23,7 +25,7 @@ export default function ConsignmentDeadlineField({ value, startTime, endTime, on
   const hasAvailableTime = hasSchedule && !!min && !!max && min <= max;
   const error =
     value && (!hasSchedule || !Number.isFinite(deadline) || deadline <= start || deadline >= end)
-      ? 'Hạn ký gửi phải sau thời gian bắt đầu và trước thời gian kết thúc phiên.'
+      ? t('auctions.create.errDeadline')
       : '';
 
   useEffect(() => {
@@ -33,7 +35,8 @@ export default function ConsignmentDeadlineField({ value, startTime, endTime, on
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="block text-xs font-medium">
-        Hạn ký gửi <span className="font-normal text-slate-500">(không bắt buộc)</span>
+        {t('auctions.create.deadline.label')}{' '}
+        <span className="font-normal text-slate-500">{t('auctions.create.deadline.optional')}</span>
       </label>
       <input
         ref={input}
@@ -56,15 +59,15 @@ export default function ConsignmentDeadlineField({ value, startTime, endTime, on
           onClick={() => onChange('')}
           className="text-xs text-blue-600 hover:underline"
         >
-          Bỏ hạn ký gửi
+          {t('auctions.create.deadline.clear')}
         </button>
       )}
       <p id={`${id}-hint`} className="text-xs text-slate-500">
         {!hasSchedule
-          ? 'Chọn lịch bắt đầu và kết thúc phiên trước khi chọn hạn ký gửi.'
+          ? t('auctions.create.deadline.hintNoSchedule')
           : !hasAvailableTime
-            ? 'Lịch phiên cần cách nhau ít nhất 2 phút để chọn hạn ký gửi ở giữa.'
-            : 'Chọn hạn ký gửi sau giờ bắt đầu và trước giờ kết thúc phiên, tối thiểu 1 phút mỗi phía.'}
+            ? t('auctions.create.deadline.hintTooShort')
+            : t('auctions.create.deadline.hintValid')}
       </p>
       {error && (
         <p id={`${id}-error`} role="alert" className="text-xs text-red-700">

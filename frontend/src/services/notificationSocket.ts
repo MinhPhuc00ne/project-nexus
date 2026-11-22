@@ -1,4 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
+import i18n from '../i18n';
 import { API_BASE_URL } from './api';
 import { getStoredToken, getStoredUser } from './auth';
 import type { UserNotification } from '../types/notification.types';
@@ -39,7 +40,8 @@ export interface NotificationSocketConnection {
 
 /** Opens the authenticated account-notification Socket.IO connection. */
 export function createNotificationConnection(): NotificationSocketConnection {
-  if (!getStoredToken()) throw new Error('Vui lòng đăng nhập để nhận thông báo thời gian thực.');
+  if (!getStoredToken())
+    throw new Error(i18n.t('errors:services.notificationsRealtimeAuthRequired'));
 
   const backendUrl = new URL(API_BASE_URL, window.location.origin);
   const socket: NotificationSocket = io(`${backendUrl.origin}/ws/notifications`, {

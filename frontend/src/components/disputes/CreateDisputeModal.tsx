@@ -1,4 +1,6 @@
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
 import type { BuyerOrder } from '../../services/orders';
 import type { BuyerDisputeReason } from '../../pages/buyer/BuyerDisputesPage';
 
@@ -37,59 +39,64 @@ export default function CreateDisputeModal({
   onSubmit,
   submitting,
 }: CreateDisputeModalProps) {
+  const { t } = useTranslation('common');
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl space-y-4">
-        <h3 className="text-base font-bold text-slate-900">Mở khiếu nại bảo vệ Escrow</h3>
-        <p className="text-xs text-slate-500">
-          Khoản thanh toán của đơn hàng sẽ bị tạm giữ, nhân viên hòa giải NEXUS sẽ thẩm định.
-        </p>
+        <h3 className="text-base font-bold text-slate-900">{t('disputeModal.title')}</h3>
+        <p className="text-xs text-slate-500">{t('disputeModal.subtitle')}</p>
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">
-            Chọn đơn hàng cần khiếu nại
+            {t('disputeModal.selectOrderLabel')}
           </label>
           <select
             value={selectedOrderId}
             onChange={(e) => setSelectedOrderId(e.target.value)}
             className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-500 bg-white"
           >
-            <option value="">-- Chọn đơn hàng --</option>
+            <option value="">{t('disputeModal.selectOrderPlaceholder')}</option>
             {orders.map((o) => (
               <option key={o.id} value={o.id}>
-                #{o.orderNumber} - {Number(o.totalAmount).toLocaleString('vi-VN')} ₫ ({o.status})
+                #{o.orderNumber} - {formatCurrency(Number(o.totalAmount))} ({o.status})
               </option>
             ))}
             {selectedOrderId && !orders.some((o) => o.id === selectedOrderId) && (
-              <option value={selectedOrderId}>Đơn hàng #{selectedOrderId}</option>
+              <option value={selectedOrderId}>
+                {t('disputeModal.orderFallback', { id: selectedOrderId })}
+              </option>
             )}
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Lý do khiếu nại</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            {t('disputeModal.reasonLabel')}
+          </label>
           <select
             value={reason}
             onChange={(e) => setReason(e.target.value as BuyerDisputeReason)}
             className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-red-500 bg-white"
           >
-            {Object.entries(reasonLabels).map(([k, label]) => (
+            {(Object.keys(reasonLabels) as BuyerDisputeReason[]).map((k) => (
               <option key={k} value={k}>
-                {label}
+                {t(`disputeModal.reasons.${k}`)}
               </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">Mô tả chi tiết</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            {t('disputeModal.detailsLabel')}
+          </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            placeholder="Mô tả hiện trạng sản phẩm, biên bản đồng kiểm khi nhận hàng…"
+            placeholder={t('disputeModal.detailsPlaceholder')}
             className="w-full rounded-xl border border-slate-200 px-3.5 py-2 text-xs outline-none focus:border-red-500"
           />
         </div>
@@ -100,7 +107,7 @@ export default function CreateDisputeModal({
             onClick={onClose}
             className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
           >
-            Hủy
+            {t('disputeModal.cancel')}
           </button>
           <button
             type="button"
@@ -109,7 +116,7 @@ export default function CreateDisputeModal({
             className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
           >
             {submitting ? <Loader2 size={13} className="animate-spin" /> : null}
-            Gửi khiếu nại
+            {t('disputeModal.submit')}
           </button>
         </div>
       </div>

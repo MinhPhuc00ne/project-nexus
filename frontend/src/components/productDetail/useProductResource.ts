@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import i18n from '../../i18n';
 
 export default function useProductResource<T>(load: () => Promise<T>) {
   const [state, setState] = useState<{
@@ -20,7 +21,7 @@ export default function useProductResource<T>(load: () => Promise<T>) {
           setState({
             loader: load,
             data: null,
-            error: cause instanceof Error ? cause.message : 'Không thể tải sản phẩm.',
+            error: cause instanceof Error ? cause.message : i18n.t('guest:product.loadFailed'),
             loading: false,
           });
       },

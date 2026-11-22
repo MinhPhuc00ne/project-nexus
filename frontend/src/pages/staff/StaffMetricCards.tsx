@@ -1,4 +1,5 @@
 import { Clock3, MessageCircle, CheckCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   chattingCount: number;
@@ -13,32 +14,33 @@ export default function StaffMetricCards({
   hasTickets,
   resolvedCount = 0,
 }: Props) {
+  const { t } = useTranslation('staff');
   const metrics = [
     {
-      label: 'Đang xử lý',
+      label: t('inbox.metrics.chatting'),
       value: chattingCount,
       Icon: MessageCircle,
       tone: 'blue',
-      hint: 'Hội thoại đang chat',
+      hint: t('inbox.metrics.chattingHint'),
     },
     {
-      label: 'Chờ tiếp nhận',
+      label: t('inbox.metrics.waiting'),
       value: waitingCount,
       Icon: Clock3,
       tone: 'amber',
-      hint: 'Khách hàng chờ hỗ trợ',
+      hint: t('inbox.metrics.waitingHint'),
     },
     {
-      label: 'Đã hoàn tất',
+      label: t('inbox.metrics.resolved'),
       value: resolvedCount,
       Icon: CheckCheck,
       tone: 'green',
-      hint: 'Hội thoại đã xử lý',
+      hint: t('inbox.metrics.resolvedHint'),
     },
   ];
 
   return (
-    <div className="support-metrics-strip" aria-label="Tổng quan hội thoại">
+    <div className="support-metrics-strip" aria-label={t('inbox.metrics.aria')}>
       {metrics.map(({ label, value, Icon, tone, hint }) => (
         <div key={label} title={hint} className={`support-metric-chip ${tone}`}>
           <Icon size={14} className="shrink-0" />

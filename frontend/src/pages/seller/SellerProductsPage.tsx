@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
+import { getIntlLocale } from '../../i18n/config';
 import { Inbox as InboxOutlined } from 'lucide-react';
 import {
   Plus as PlusOutlined,
@@ -32,9 +35,14 @@ import {
 } from '../../services/productExtras';
 import { updateProductSale, type SellerProduct } from '../../services/sellerProducts';
 
-const statuses = { ACTIVE: 'Đang bán', INACTIVE: 'Ngừng bán', DRAFT: 'Bản nháp' };
+const statusKeys = {
+  ACTIVE: 'products.statuses.ACTIVE',
+  INACTIVE: 'products.statuses.INACTIVE',
+  DRAFT: 'products.statuses.DRAFT',
+} as const;
 
 export default function SellerProductsPage({ inventory = false }: { inventory?: boolean }) {
+  const { t, i18n } = useTranslation('seller');
   const user = useSellerSession();
   const toast = useToast();
   const canManage = user.isSellerActive && !user.isShopSuspended;
@@ -114,15 +122,13 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
       });
       toast.success(
         saleDraft.enabled
-          ? `Đã bật chương trình Sale (-${pct}%) cho "${saleModalProduct.title}".`
-          : `Đã tắt chương trình Sale cho "${saleModalProduct.title}".`,
+          ? t('products.saleToastOn', { pct, title: saleModalProduct.title })
+          : t('products.saleToastOff', { title: saleModalProduct.title }),
       );
       setSaleModalProduct(null);
       reload();
     } catch (cause) {
-      toast.error(
-        cause instanceof Error ? cause.message : 'KhÃ´ng thá»ƒ cáº­p nháº­t chÆ°Æ¡ng trÃ¬nh Sale.',
-      );
+      toast.error(cause instanceof Error ? cause.message : t('products.saleToastErr'));
     } finally {
       setSaleSaving(false);
     }
@@ -131,55 +137,55 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
   return (
     <div className="space-y-6">
       <PageHeading
-        title={inventory ? 'Kho hàng & sản phẩm' : 'Quản lý sản phẩm & Khuyến mãi Sale'}
-        description="Quản lý danh sách sản phẩm, phân loại tùy chọn (màu, size) và chương trình giảm giá Sale."
+        title={inventory ? t('products.inventoryTitle') : t('products.manageTitle')}
+        description={t('products.pageDesc')}
         actions={
           <SellerLink to="/seller/products/new">
-            <PlusOutlined /> Đăng bán sản phẩm
+            <PlusOutlined /> {t('products.publishNew')}
           </SellerLink>
         }
       />
       <div className="grid gap-4 sm:grid-cols-4">
         <StatCard
-          label="Sản phẩm của gian hàng"
+          label={t('products.statTotal')}
           value={unavailable ? '—' : products.length}
-          detail="Tổng số sản phẩm"
+          detail={t('products.statTotalDetail')}
           icon={<ShopOutlined />}
         />
         <StatCard
-          label="Sản phẩm đang bán"
+          label={t('products.statActive')}
           value={
             unavailable ? '—' : products.filter((product) => product.status === 'ACTIVE').length
           }
-          detail="Trạng thái đang bán"
+          detail={t('products.statActiveDetail')}
           icon={<InboxOutlined />}
         />
         <StatCard
-          label="Đang chạy Sale"
+          label={t('products.statOnSale')}
           value={unavailable ? '—' : onSaleCount}
-          detail="Sản phẩm đang giảm giá"
+          detail={t('products.statOnSaleDetail')}
           icon={<ThunderboltOutlined />}
         />
         <StatCard
-          label="Tồn kho khả dụng"
-          value={unavailable ? '—' : available.toLocaleString('vi-VN')}
-          detail="Tổng số lượng có thể bán"
+          label={t('products.statStock')}
+          value={unavailable ? '—' : available.toLocaleString(getIntlLocale(i18n.language))}
+          detail={t('products.statStockDetail')}
           icon={<InboxOutlined />}
         />
       </div>
       <div className="flex flex-wrap gap-3">
         <SellerLink to="/seller/products" secondary={inventory}>
-          Sản phẩm đăng bán
+          {t('products.tabProducts')}
         </SellerLink>
         <SellerLink to="/seller/inventory" secondary={!inventory}>
-          Kho hàng
+          {t('products.tabInventory')}
         </SellerLink>
       </div>
       <Panel
-        title={inventory ? 'Tồn kho theo sản phẩm' : 'Danh sách sản phẩm'}
+        title={inventory ? t('products.panelInventory') : t('products.panelList')}
         action={
           <SellerButton secondary disabled={loading} onClick={reload}>
-            <ReloadOutlined /> Làm mới
+            <ReloadOutlined /> {t('products.refresh')}
           </SellerButton>
         }
       >
@@ -187,50 +193,46 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-400">
             <SearchOutlined />
             <input
-              aria-label="Tìm sản phẩm của gian hàng"
+              aria-label={t('products.searchAria')}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Tìm theo tên sản phẩm…"
+              placeholder={t('products.searchPlaceholder')}
               className="min-w-0 flex-1 bg-transparent text-sm text-slate-700 outline-none"
             />
           </label>
           <select
-            aria-label="Trạng thái sản phẩm"
+            aria-label={t('products.statusAria')}
             value={status}
             onChange={(event) => setStatus(event.target.value)}
             className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-600"
           >
-            <option value="all">Tất cả trạng thái</option>
-            {Object.entries(statuses).map(([value, label]) => (
+            <option value="all">{t('products.allStatuses')}</option>
+            {Object.entries(statusKeys).map(([value, labelKey]) => (
               <option key={value} value={value}>
-                {label}
+                {t(labelKey)}
               </option>
             ))}
           </select>
         </div>
         {loading ? (
           <p role="status" className="p-8 text-center text-sm text-slate-500">
-            Đang tải sản phẩm…
+            {t('products.loading')}
           </p>
         ) : error ? (
           <div role="alert" className="space-y-3 rounded-xl bg-red-50 p-4 text-sm text-red-700">
             <p>{error}</p>
             <SellerButton secondary onClick={reload}>
-              Thử lại
+              {t('products.retry')}
             </SellerButton>
           </div>
         ) : !filtered.length ? (
           <EmptyState
-            title={products.length ? 'Không có sản phẩm phù hợp' : 'Chưa có sản phẩm'}
-            description={
-              products.length
-                ? 'Thử đổi từ khóa hoặc trạng thái lọc.'
-                : 'Đăng bán sản phẩm đầu tiên để bắt đầu quản lý gian hàng.'
-            }
+            title={products.length ? t('products.emptyMatchTitle') : t('products.emptyTitle')}
+            description={products.length ? t('products.emptyMatchDesc') : t('products.emptyDesc')}
             action={
               !products.length ? (
                 <SellerLink to="/seller/products/new">
-                  <PlusOutlined /> Đăng bán sản phẩm
+                  <PlusOutlined /> {t('products.publishNew')}
                 </SellerLink>
               ) : undefined
             }
@@ -241,12 +243,12 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
               <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
                 <tr>
                   {[
-                    'Sản phẩm & Phân loại',
-                    'Giá bán / Sale',
-                    'Trạng thái',
-                    'Tổng tồn kho',
-                    'Khả dụng',
-                    'Thao tác',
+                    t('products.cols.productVariants'),
+                    t('products.cols.priceSale'),
+                    t('products.cols.status'),
+                    t('products.cols.totalQty'),
+                    t('products.cols.availableQty'),
+                    t('products.cols.actions'),
                   ].map((label) => (
                     <th key={label} scope="col" className="px-3 py-3 font-medium">
                       {label}
@@ -308,25 +310,27 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="font-bold text-blue-700">
-                                {sale.effectivePrice.toLocaleString('vi-VN')} ₫
+                                {formatCurrency(sale.effectivePrice)}
                               </span>
                               <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                                 -{sale.discountPercent}%
                               </span>
                             </div>
                             <span className="text-[11px] line-through text-slate-400">
-                              {sale.originalPrice.toLocaleString('vi-VN')} ₫
+                              {formatCurrency(sale.originalPrice)}
                             </span>
                           </div>
                         ) : (
                           <span className="font-semibold text-slate-800">
-                            {Number(product.basePrice).toLocaleString('vi-VN')} ₫
+                            {formatCurrency(Number(product.basePrice))}
                           </span>
                         )}
                       </td>
                       <td className="px-3 py-4">
                         <Badge tone={product.status === 'ACTIVE' ? 'green' : 'gray'}>
-                          {statuses[product.status] ?? product.status}
+                          {statusKeys[product.status]
+                            ? t(statusKeys[product.status])
+                            : product.status}
                         </Badge>
                       </td>
                       <td className="px-3 py-4">{product.totalQty}</td>
@@ -335,12 +339,12 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                         <div className="flex flex-wrap gap-2">
                           {canManage && (
                             <SellerButton secondary onClick={() => openSaleModal(product)}>
-                              <ThunderboltOutlined /> Sale
+                              <ThunderboltOutlined /> {t('products.saleBtn')}
                             </SellerButton>
                           )}
                           {canManage && (
                             <SellerLink to={`/seller/products/${product.id}/edit`} secondary>
-                              <EditOutlined /> Sửa
+                              <EditOutlined /> {t('products.editBtn')}
                             </SellerLink>
                           )}
                           <SellerButton
@@ -350,10 +354,10 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                           >
                             <StopOutlined />{' '}
                             {pendingId === product.id
-                              ? 'Đang xử lý…'
+                              ? t('products.processing')
                               : product.status === 'ACTIVE'
-                                ? 'Ngừng bán'
-                                : 'Bán lại'}
+                                ? t('products.stopSelling')
+                                : t('products.relist')}
                           </SellerButton>
                         </div>
                       </td>
@@ -370,14 +374,15 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
       <Popup
         isOpen={Boolean(saleModalProduct)}
         onClose={() => setSaleModalProduct(null)}
-        title={`Thiết lập Khuyến mãi / Sale: ${saleModalProduct?.title ?? ''}`}
+        title={t('products.saleModal.title', { title: saleModalProduct?.title ?? '' })}
         footer={
           <>
             <SellerButton secondary onClick={() => setSaleModalProduct(null)}>
-              Hủy
+              {t('products.saleModal.cancel')}
             </SellerButton>
             <SellerButton disabled={saleSaving} onClick={() => void handleSaveSaleModal()}>
-              <ThunderboltOutlined /> {saleSaving ? 'Đang lưu…' : 'Lưu chương trình Sale'}
+              <ThunderboltOutlined />{' '}
+              {saleSaving ? t('products.saleModal.saving') : t('products.saleModal.save')}
             </SellerButton>
           </>
         }
@@ -385,15 +390,15 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
         {saleModalProduct && (
           <div className="space-y-4 text-xs">
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 flex justify-between items-center">
-              <span className="text-slate-600">Giá bán gốc hiện tại:</span>
+              <span className="text-slate-600">{t('products.saleModal.basePriceLabel')}</span>
               <strong className="text-sm text-slate-900">
-                {Number(saleModalProduct.basePrice).toLocaleString('vi-VN')} ₫
+                {formatCurrency(Number(saleModalProduct.basePrice))}
               </strong>
             </div>
 
             <label className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50/70 p-3 cursor-pointer">
               <span className="font-bold text-[#1c3973]">
-                Kích hoạt chương trình Giảm giá (Sale) cho sản phẩm này
+                {t('products.saleModal.enableLabel')}
               </span>
               <input
                 type="checkbox"
@@ -406,7 +411,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
             {saleDraft.enabled && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="font-semibold text-slate-700">
-                  Mức giảm giá (%)
+                  {t('products.saleModal.discountPercent')}
                   <input
                     type="number"
                     min={1}
@@ -426,7 +431,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                 </label>
 
                 <label className="font-semibold text-slate-700">
-                  Giá khuyến mãi sau giảm (VNĐ)
+                  {t('products.saleModal.salePrice')}
                   <input
                     type="number"
                     min={1000}
@@ -450,16 +455,18 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                 </label>
 
                 <label className="sm:col-span-2 font-semibold text-slate-700">
-                  Nhãn hiển thị
+                  {t('products.saleModal.badgeLabel')}
                   <select
                     value={saleDraft.label || 'FLASH SALE'}
                     onChange={(e) => setSaleDraft((prev) => ({ ...prev, label: e.target.value }))}
                     className="mt-1.5 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
                   >
-                    <option value="FLASH SALE">FLASH SALE</option>
-                    <option value="GIẢM SỐC">GIẢM SỐC</option>
-                    <option value="ƯU ĐÃI ĐẶC BIỆT">ƯU ĐÃI ĐẶC BIỆT</option>
-                    <option value="XẢ KHO">XẢ KHO</option>
+                    <option value="FLASH SALE">{t('products.saleModal.badges.FLASH_SALE')}</option>
+                    <option value="GIẢM SỐC">{t('products.saleModal.badges.HOT_DEAL')}</option>
+                    <option value="ƯU ĐÃI ĐẶC BIỆT">
+                      {t('products.saleModal.badges.SPECIAL_OFFER')}
+                    </option>
+                    <option value="XẢ KHO">{t('products.saleModal.badges.CLEARANCE')}</option>
                   </select>
                 </label>
               </div>
@@ -471,37 +478,41 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
       <Popup
         isOpen={Boolean(selectedProduct)}
         onClose={closeHide}
-        title={stopping ? 'Xác nhận ngừng bán sản phẩm' : 'Xác nhận bán lại sản phẩm'}
+        title={
+          stopping ? t('products.toggleModal.stopTitle') : t('products.toggleModal.relistTitle')
+        }
         closeOnOverlay={!pendingId}
         closeOnEsc={!pendingId}
         showCloseButton={!pendingId}
         footer={
           <>
             <SellerButton secondary disabled={Boolean(pendingId)} onClick={closeHide}>
-              Hủy
+              {t('products.toggleModal.cancel')}
             </SellerButton>
             <SellerButton
               disabled={Boolean(pendingId) || !canManage}
               onClick={() => void confirmHide()}
             >
               <StopOutlined />
-              {pendingId ? 'Đang xử lý…' : stopping ? 'Xác nhận ngừng bán' : 'Xác nhận bán lại'}
+              {pendingId
+                ? t('products.toggleModal.processing')
+                : stopping
+                  ? t('products.toggleModal.confirmStop')
+                  : t('products.toggleModal.confirmRelist')}
             </SellerButton>
           </>
         }
       >
         <p className="text-sm text-slate-700">
-          Bạn có muốn {stopping ? 'ngừng bán' : 'bán lại'} sản phẩm{' '}
+          {stopping ? t('products.toggleModal.bodyStop') : t('products.toggleModal.bodyRelist')}
           <strong className="break-words">{selectedProduct?.title}</strong>?
         </p>
         <p className="mt-3 text-sm text-slate-500">
-          {stopping
-            ? 'Sản phẩm sẽ chuyển sang trạng thái ngừng bán và vẫn được giữ trong danh sách quản lý.'
-            : 'Sản phẩm sẽ được công khai trở lại cho người mua.'}
+          {stopping ? t('products.toggleModal.descStop') : t('products.toggleModal.descRelist')}
         </p>
         {pendingId && (
           <p role="status" className="mt-3 text-sm text-blue-600">
-            Đang xử lý yêu cầu…
+            {t('products.toggleModal.processingRequest')}
           </p>
         )}
         {actionError && (

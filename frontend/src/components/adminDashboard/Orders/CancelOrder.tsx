@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
 import { cancelAdminOrder } from '../../../services/admin';
@@ -14,6 +15,7 @@ export default function CancelOrder({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation('admin');
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
@@ -22,7 +24,7 @@ export default function CancelOrder({
     <Popup
       isOpen
       onClose={onClose}
-      title="Hủy đơn hàng"
+      title={t('orders.cancelDialog.title')}
       size="md"
       closeOnEsc={!pending}
       closeOnOverlay={!pending}
@@ -33,7 +35,7 @@ export default function CancelOrder({
           event.preventDefault();
           if (submitting.current) return;
           if (!reason.trim()) {
-            setError('Vui lòng nhập lý do hủy đơn.');
+            setError(t('orders.cancelDialog.reasonRequiredErr'));
             return;
           }
           submitting.current = true;
@@ -43,9 +45,7 @@ export default function CancelOrder({
             await cancelAdminOrder(order.id, reason.trim());
             onSuccess();
           } catch (cause) {
-            setError(
-              `${message(cause)} Nếu mất kết nối, hãy đóng cửa sổ và tải lại đơn để kiểm tra kết quả trước khi thử lại.`,
-            );
+            setError(t('orders.cancelDialog.timeoutHint', { message: message(cause) }));
           } finally {
             submitting.current = false;
             setPending(false);
@@ -53,11 +53,10 @@ export default function CancelOrder({
         }}
       >
         <p className="mb-4 break-words text-sm text-slate-600">
-          Đơn {order.id}. Chỉ hủy trước khi đơn vị vận chuyển nhận hàng. Với đơn đã thanh toán, hãy
-          kiểm tra trạng thái hoàn tiền sau khi hủy.
+          {t('orders.cancelDialog.descPrefix', { id: order.id })}
         </p>
         <label className="block text-sm font-semibold">
-          Lý do hủy đơn *
+          {t('orders.cancelDialog.reasonLabel')}
           <textarea
             autoFocus
             rows={3}
@@ -75,10 +74,10 @@ export default function CancelOrder({
         )}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" disabled={pending} onClick={onClose}>
-            Đóng
+            {t('orders.cancelDialog.close')}
           </Button>
           <Button variant="danger" type="submit" disabled={pending}>
-            {pending ? 'Đang hủy…' : 'Xác nhận hủy'}
+            {pending ? t('orders.cancelDialog.cancelling') : t('orders.cancelDialog.confirm')}
           </Button>
         </div>
       </form>

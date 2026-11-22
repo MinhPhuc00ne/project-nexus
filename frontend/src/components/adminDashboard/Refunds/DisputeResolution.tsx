@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { resolveAdminDispute } from '../../../services/admin';
 import { Button } from '../shared/AdminUI';
 
@@ -15,6 +16,7 @@ export default function DisputeResolution({
   onResolved: () => void;
   onBusyChange: (busy: boolean) => void;
 }) {
+  const { t } = useTranslation('admin');
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -31,7 +33,7 @@ export default function DisputeResolution({
       await resolveAdminDispute(orderId, decision, reason.trim());
       onResolved();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể phân xử khiếu nại.');
+      setError(cause instanceof Error ? cause.message : t('refunds.resolution.resolveErr'));
     } finally {
       submitting.current = false;
       setSaving(false);
@@ -48,17 +50,23 @@ export default function DisputeResolution({
     return (
       <div className="space-y-4">
         <p className="text-sm text-slate-700">
-          Bạn có chắc muốn <strong>{decision === 'BUYER' ? 'xác nhận' : 'bác bỏ'}</strong> khiếu nại
-          của đơn hàng <strong className="break-all">{orderId}</strong>?
+          {t('refunds.resolution.confirmPrefix')}
+          <strong>
+            {decision === 'BUYER'
+              ? t('refunds.resolution.confirmApproveVerb')
+              : t('refunds.resolution.confirmRejectVerb')}
+          </strong>
+          {t('refunds.resolution.confirmSuffix')}
+          <strong className="break-all">{orderId}</strong>?
         </p>
         <div className="rounded-lg bg-slate-50 p-3 text-sm">
-          <p className="mb-1 font-semibold">Lý do xử lý</p>
+          <p className="mb-1 font-semibold">{t('refunds.resolution.reasonTitle')}</p>
           <p className="whitespace-pre-wrap break-words">{reason.trim()}</p>
         </div>
         <p className="text-sm text-amber-700">
           {decision === 'BUYER'
-            ? 'Bên mua thắng. Hệ thống sẽ xử lý hoàn tiền theo phương thức thanh toán của đơn hàng.'
-            : 'Bên bán thắng. Hệ thống sẽ giải ngân tiền ký quỹ cho người bán.'}
+            ? t('refunds.resolution.buyerFavorHint')
+            : t('refunds.resolution.sellerFavorHint')}
         </p>
         {error && (
           <p role="alert" className="text-sm text-rose-700">
@@ -67,7 +75,7 @@ export default function DisputeResolution({
         )}
         <div className="flex flex-wrap justify-end gap-2">
           <Button type="button" variant="secondary" disabled={saving} onClick={() => choose(null)}>
-            Quay lại
+            {t('refunds.resolution.backBtn')}
           </Button>
           <Button
             type="button"
@@ -75,7 +83,11 @@ export default function DisputeResolution({
             disabled={saving}
             onClick={() => void submit()}
           >
-            {saving ? 'Đang xử lý…' : decision === 'BUYER' ? 'Đồng ý xác nhận' : 'Đồng ý bác bỏ'}
+            {saving
+              ? t('refunds.resolution.processing')
+              : decision === 'BUYER'
+                ? t('refunds.resolution.confirmApproveBtn')
+                : t('refunds.resolution.confirmRejectBtn')}
           </Button>
         </div>
       </div>
@@ -84,7 +96,7 @@ export default function DisputeResolution({
   return (
     <div className="space-y-3 border-t border-slate-200 pt-4">
       <label className="block text-sm text-slate-700">
-        Lý do xử lý
+        {t('refunds.resolution.reasonLabel')}
         <textarea
           required
           minLength={5}
@@ -94,12 +106,10 @@ export default function DisputeResolution({
           className="mt-1 block min-h-24 w-full rounded-lg border border-slate-200 p-2 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
         />
       </label>
-      <p className="text-xs text-slate-500">
-        Nhập lý do ít nhất 5 ký tự, sau đó chọn xác nhận hoặc bác bỏ khiếu nại.
-      </p>
+      <p className="text-xs text-slate-500">{t('refunds.resolution.reasonHint')}</p>
       <div className="flex flex-wrap gap-2">
         <Button type="button" disabled={!validReason} onClick={() => choose('BUYER')}>
-          Xác nhận hoàn tiền
+          {t('refunds.resolution.approveRefundBtn')}
         </Button>
         <Button
           type="button"
@@ -107,7 +117,7 @@ export default function DisputeResolution({
           disabled={!validReason}
           onClick={() => choose('SELLER')}
         >
-          Bác bỏ khiếu nại
+          {t('refunds.resolution.dismissBtn')}
         </Button>
       </div>
     </div>

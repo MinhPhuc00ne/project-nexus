@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '../i18n';
 import api, { API_BASE_URL } from './api';
 import { getApiErrorMessage } from '../lib/apiErrors';
 export interface ChatbotAction {
@@ -63,8 +64,8 @@ export async function sendChatbotMessage(
     if (axios.isAxiosError(error) && error.code !== 'ERR_CANCELED') {
       const fallback =
         error.response?.status === 429
-          ? 'Bạn gửi quá nhiều câu hỏi. Vui lòng chờ một phút rồi thử lại.'
-          : 'Không thể kết nối trợ lý NEXUS. Vui lòng thử lại.';
+          ? i18n.t('errors:services.chatbotRateLimit')
+          : i18n.t('errors:services.chatbotConnectFailed');
       throw new Error(getApiErrorMessage(error.response?.data, fallback));
     }
     throw error;

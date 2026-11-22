@@ -1,5 +1,6 @@
 import { Search, Inbox } from 'lucide-react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button as ShadcnButton } from '../../ui/button';
 import { Card } from '../../ui/card';
 import { Input } from '../../ui/input';
@@ -96,19 +97,21 @@ export function Badge({
 export function SearchInput({
   value,
   onChange,
-  placeholder = 'Tìm kiếm...',
+  placeholder,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
 }) {
+  const { t } = useTranslation('admin');
+  const resolvedPlaceholder = placeholder ?? t('shared.searchPlaceholder');
   return (
     <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-400">
       <Search size={16} />
       <Input
         className="h-auto w-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 py-0 text-xs text-slate-800 shadow-none outline-none placeholder:text-slate-400 focus-visible:outline-none"
-        aria-label={placeholder}
-        placeholder={placeholder}
+        aria-label={resolvedPlaceholder}
+        placeholder={resolvedPlaceholder}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -116,11 +119,12 @@ export function SearchInput({
   );
 }
 
-export function EmptyState({ text = 'Không có yêu cầu nào trong danh sách.' }: { text?: string }) {
+export function EmptyState({ text }: { text?: string }) {
+  const { t } = useTranslation('admin');
   return (
     <div className="flex flex-col items-center gap-3 py-12 text-center text-sm text-slate-400">
       <Inbox size={32} strokeWidth={1.5} />
-      <p>{text}</p>
+      <p>{text ?? t('shared.emptyDefault')}</p>
     </div>
   );
 }

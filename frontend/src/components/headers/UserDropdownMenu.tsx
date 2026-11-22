@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
+import { formatCurrency } from '../../i18n/formatters';
 import {
   User,
   Wallet,
@@ -36,6 +38,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
   displayUserAvatar,
   onLogoutClick,
 }) => {
+  const { t } = useTranslation('common');
   const navigate = useNavigate();
   const { switchActiveMode } = useAuth();
 
@@ -47,12 +50,12 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
 
   const roleBadgeLabel =
     profile?.role === Role.ADMIN
-      ? 'Quản trị viên (Admin)'
+      ? t('header.roleBadges.admin')
       : profile?.role === Role.SUPPORT_STAFF
-        ? 'Nhân viên (Staff)'
+        ? t('header.roleBadges.staff')
         : isSellerModeActive
-          ? 'Người bán (Seller)'
-          : 'Khách hàng (Buyer)';
+          ? t('header.roleBadges.seller')
+          : t('header.roleBadges.buyer');
 
   const handleSwitchMode = async () => {
     onClose();
@@ -98,17 +101,15 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         <div className="mb-2 p-2.5 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1">
           <div className="flex justify-between items-center">
             <span className="flex items-center gap-1 font-medium text-slate-600">
-              <Wallet size={12} className="text-blue-600" /> Số dư ví:
+              <Wallet size={12} className="text-blue-600" /> {t('header.walletBalance')}
             </span>
             <strong className="text-blue-700 font-bold">
-              {profile.wallet
-                ? `${Number(profile.wallet.balance).toLocaleString('vi-VN')} ₫`
-                : '0 ₫'}
+              {formatCurrency(Number(profile.wallet?.balance ?? 0))}
             </strong>
           </div>
           <div className="flex justify-between items-center">
             <span className="flex items-center gap-1 font-medium text-slate-600">
-              <Award size={12} className="text-blue-600" /> Điểm uy tín:
+              <Award size={12} className="text-blue-600" /> {t('header.reputationScore')}
             </span>
             <span className="font-semibold text-slate-800">
               {profile.reputationScore} ({profile.trustLevel})
@@ -126,7 +127,9 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
           <span className="flex items-center gap-2">
             <Store size={14} />
             <span>
-              {isSellerModeActive ? 'Chuyển sang Khách hàng' : 'Vào Kênh Người Bán (Seller)'}
+              {isSellerModeActive
+                ? t('header.switchToBuyerShort')
+                : t('header.switchToSellerShort')}
             </span>
           </span>
           <ArrowLeftRight size={13} />
@@ -140,7 +143,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
           onClick={onClose}
         >
           <ShieldCheck size={15} />
-          <span>Bảng Điều Hành Admin</span>
+          <span>{t('header.adminConsole')}</span>
         </Link>
       )}
 
@@ -151,7 +154,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
           onClick={onClose}
         >
           <Store size={15} />
-          <span>Trang Quản Trị & Duyệt Hồ Sơ</span>
+          <span>{t('header.staffPortalLink')}</span>
         </Link>
       )}
 
@@ -163,7 +166,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         onClick={onClose}
       >
         <User size={15} />
-        <span>Hồ sơ cá nhân</span>
+        <span>{t('nav.profile')}</span>
       </Link>
 
       <Link
@@ -172,7 +175,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         onClick={onClose}
       >
         <Package size={15} />
-        <span>Đơn hàng của tôi</span>
+        <span>{t('header.myOrders')}</span>
       </Link>
 
       <Link
@@ -181,7 +184,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         onClick={onClose}
       >
         <Wallet size={15} />
-        <span>Ví NEXUS Pay</span>
+        <span>{t('footer.nexusPayWallet')}</span>
       </Link>
 
       <Link
@@ -190,7 +193,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         onClick={onClose}
       >
         <Gavel size={15} />
-        <span>Đấu giá của tôi</span>
+        <span>{t('header.myBids')}</span>
       </Link>
 
       <Link
@@ -199,7 +202,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         onClick={onClose}
       >
         <ShieldCheck size={15} />
-        <span>Xác nhận mua đấu giá</span>
+        <span>{t('header.confirmAuctionPurchase')}</span>
       </Link>
 
       <Link
@@ -208,7 +211,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         onClick={onClose}
       >
         <Heart size={15} />
-        <span>Sản phẩm yêu thích</span>
+        <span>{t('header.wishlist')}</span>
       </Link>
 
       <div className="my-1.5 h-px bg-slate-200" />
@@ -225,7 +228,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         }}
       >
         <LogOut size={15} />
-        <span>Đăng xuất</span>
+        <span>{t('nav.logout')}</span>
       </button>
     </div>
   );

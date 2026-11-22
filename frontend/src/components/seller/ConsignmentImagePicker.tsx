@@ -1,5 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type ReactElement } from 'react';
 import { ImagePlus, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Configuration for an image picker used by an auction consignment form.
@@ -27,6 +28,7 @@ export default function ConsignmentImagePicker({
   previewLabel,
   previewDescription,
 }: ConsignmentImagePickerProps): ReactElement {
+  const { t } = useTranslation('seller');
   const [previews, setPreviews] = useState<string[]>([]);
 
   useEffect(() => {
@@ -39,13 +41,13 @@ export default function ConsignmentImagePicker({
     const selected = Array.from(event.target.files ?? []);
     if (!selected.length) return;
     if (selected.some((file) => !file.type.startsWith('image/'))) {
-      onError('Chỉ nhận tệp hình ảnh cho hồ sơ đấu giá.');
+      onError(t('auctions.consignment.pickerOnlyImagesErr'));
       event.target.value = '';
       return;
     }
     const merged = [...files, ...selected];
     if (merged.length > 5) {
-      onError('Mỗi nhóm chỉ được tải tối đa 5 ảnh.');
+      onError(t('auctions.consignment.pickerMax5Err'));
       event.target.value = '';
       return;
     }
@@ -58,13 +60,17 @@ export default function ConsignmentImagePicker({
       <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border border-dashed border-blue-200 bg-blue-50/60 px-5 py-7 text-center text-sm text-slate-600 hover:bg-blue-50">
         <ImagePlus className="text-blue-600" size={28} aria-hidden="true" />
         <span className="font-medium text-blue-700">{label}</span>
-        <span className="text-xs text-slate-500">PNG, JPG, WEBP · tối đa 5 ảnh</span>
+        <span className="text-xs text-slate-500">{t('auctions.consignment.pickerHint')}</span>
         <input className="sr-only" type="file" accept="image/*" multiple onChange={selectFiles} />
       </label>
       {previews.length > 0 && (
         <div className="mt-4 space-y-2">
           <p className="text-xs font-semibold text-slate-600">
-            Đã chọn {previews.length}/5 {previewLabel} {previewDescription}
+            {t('auctions.consignment.pickerSelectedCount', {
+              count: previews.length,
+              label: previewLabel,
+              desc: previewDescription,
+            })}
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
             {previews.map((url, index) => (
@@ -79,14 +85,17 @@ export default function ConsignmentImagePicker({
                 />
                 {previewDescription && index === 0 && (
                   <span className="absolute left-1.5 top-1.5 rounded-md bg-blue-600 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-xs">
-                    Ảnh chính
+                    {t('auctions.consignment.pickerMainBadge')}
                   </span>
                 )}
                 <button
                   type="button"
                   onClick={() => onFilesChange(files.filter((_, fileIndex) => fileIndex !== index))}
-                  aria-label={`Xóa ${previewLabel.toLocaleLowerCase()} ${index + 1}`}
-                  title="Xóa ảnh"
+                  aria-label={t('auctions.consignment.pickerRemoveAria', {
+                    label: previewLabel.toLocaleLowerCase(),
+                    index: index + 1,
+                  })}
+                  title={t('auctions.consignment.pickerRemoveTitle')}
                   className="absolute right-1.5 top-1.5 rounded-full bg-slate-900/70 p-1 text-white shadow-xs transition-colors hover:bg-red-600 cursor-pointer"
                 >
                   <X size={13} aria-hidden="true" />

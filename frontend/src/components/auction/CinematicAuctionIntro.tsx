@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
 import {
   FastForward,
   Play,
@@ -41,6 +43,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
   initialTime = 0,
   onTimeSync,
 }) => {
+  const { t, i18n } = useTranslation('auction');
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(true);
@@ -167,12 +170,12 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
   };
 
   const formatVND = (num?: number | string | null) => {
-    if (!num) return '0 đ';
-    return Number(num).toLocaleString('vi-VN') + ' đ';
+    if (!num) return formatCurrency(0, i18n.language);
+    return formatCurrency(Number(num), i18n.language);
   };
 
   const sessionItems: AuctionConsignmentItem[] = auction?.items || [];
-  const sessionTitle = auction?.title || 'Phiên Đấu Giá Trực Tiếp';
+  const sessionTitle = auction?.title || t('cinematic.defaultTitle');
   const sessionCode = auction?.id ? `#${auction.id.slice(0, 8).toUpperCase()}` : '#LIVE';
   const isLive = auction?.status === 'ACTIVE' || auction?.status === 'EXTENDED';
 
@@ -195,7 +198,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/15 px-2.5 py-0.5 rounded-full border border-rose-500/30">
-                  Video Toàn Phiên Đấu Giá
+                  {t('cinematic.badge')}
                 </span>
                 <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
                   {sessionCode}
@@ -203,12 +206,14 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                 {isLive ? (
                   <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    Đang Đấu Giá Trực Tiếp
+                    {t('cinematic.live')}
                   </span>
                 ) : (
                   <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {auction?.status === 'SCHEDULED' ? 'Phiên Sắp Mở' : 'Phiên Đấu Giá'}
+                    {auction?.status === 'SCHEDULED'
+                      ? t('cinematic.upcoming')
+                      : t('cinematic.session')}
                   </span>
                 )}
               </div>
@@ -221,18 +226,18 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
           {/* NÚT BỎ QUA VIDEO KÈM VÒNG TRÒN TIẾN TRÌNH */}
           <div className="flex items-center gap-3 shrink-0 ml-2">
             <span className="text-[11px] text-slate-400 hidden md:inline font-mono">
-              Nhấn{' '}
+              {t('cinematic.pressEscPrefix')}{' '}
               <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[10px]">
                 Esc
               </kbd>{' '}
-              để vào sàn
+              {t('cinematic.pressEscSuffix')}
             </span>
 
             <button
               type="button"
               onClick={handleClose}
               className="group relative flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-gradient-to-r from-orange-500 via-amber-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white text-xs sm:text-sm font-extrabold rounded-full shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-white/30"
-              title="Bỏ qua video và vào phòng đấu giá ngay"
+              title={t('cinematic.skipTitle')}
             >
               {/* Vòng tròn đếm ngược SVG */}
               <div className="relative w-5 h-5 flex items-center justify-center shrink-0">
@@ -260,7 +265,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                 </svg>
                 <span className="absolute text-[9px] font-mono font-black">{countdown}</span>
               </div>
-              <span>Bỏ qua video</span>
+              <span>{t('cinematic.skip')}</span>
               <FastForward className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
             </button>
           </div>
@@ -285,14 +290,10 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                 <Film className="w-14 h-14 text-slate-700 mb-3" />
               )}
               <h3 className="text-base font-bold text-white mb-1">
-                {videoError
-                  ? 'Không thể phát video giới thiệu'
-                  : 'Phiên này chưa có video giới thiệu'}
+                {videoError ? t('cinematic.videoErrorTitle') : t('cinematic.noVideoTitle')}
               </h3>
               <p className="text-xs text-slate-400 mb-4">
-                {videoError
-                  ? 'Định dạng video không được hỗ trợ hoặc đường dẫn video đang được bảo trì.'
-                  : 'Admin chưa đăng tải video trailer cho phiên đấu giá này.'}
+                {videoError ? t('cinematic.videoErrorDesc') : t('cinematic.noVideoDesc')}
               </p>
               <button
                 type="button"
@@ -300,7 +301,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                 className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-lg transition cursor-pointer flex items-center gap-2"
               >
                 <Gavel className="w-4 h-4" />
-                <span>Vào Phòng Đấu Giá Ngay</span>
+                <span>{t('cinematic.enterRoomNow')}</span>
               </button>
             </div>
           ) : isYouTube ? (
@@ -336,7 +337,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             <div className="absolute top-4 left-4 z-20 pointer-events-none flex items-center gap-2 bg-black/75 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
               <span className="text-[10px] font-mono font-bold text-slate-200">
-                NEXUS OFFICIAL SHOWCASE • TOÀN CẢNH PHIÊN
+                {t('cinematic.watermark')}
               </span>
             </div>
           )}
@@ -349,7 +350,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
               className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-500/40 text-xs font-semibold backdrop-blur-md shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer animate-pulse"
             >
               <VolumeX className="w-3.5 h-3.5" />
-              <span>Bấm để bật âm thanh 🔊</span>
+              <span>{t('cinematic.unmutePrompt')}</span>
             </button>
           )}
 
@@ -373,7 +374,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                     type="button"
                     onClick={togglePlay}
                     className="p-1 hover:bg-white/20 rounded-lg transition cursor-pointer"
-                    title={isPlaying ? 'Tạm dừng (Space)' : 'Phát tiếp (Space)'}
+                    title={isPlaying ? t('cinematic.pauseTitle') : t('cinematic.playTitle')}
                   >
                     {isPlaying ? (
                       <Pause className="w-4 h-4 fill-white" />
@@ -386,7 +387,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                     type="button"
                     onClick={toggleMute}
                     className="p-1 hover:bg-white/20 rounded-lg transition cursor-pointer"
-                    title={isMuted ? 'Bật âm thanh (M)' : 'Tắt tiếng (M)'}
+                    title={isMuted ? t('cinematic.unmuteTitle') : t('cinematic.muteTitle')}
                   >
                     {isMuted ? (
                       <VolumeX className="w-4 h-4 text-amber-400" />
@@ -413,7 +414,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                       }
                     }}
                     className="p-1 hover:bg-white/20 rounded-lg transition cursor-pointer text-slate-300 hover:text-white"
-                    title="Phát lại từ đầu"
+                    title={t('cinematic.restartTitle')}
                   >
                     <RotateCcw className="w-4 h-4" />
                   </button>
@@ -426,7 +427,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                       }
                     }}
                     className="p-1 hover:bg-white/20 rounded-lg transition cursor-pointer text-slate-300 hover:text-white"
-                    title="Xem toàn màn hình"
+                    title={t('cinematic.fullscreenTitle')}
                   >
                     <Maximize2 className="w-4 h-4" />
                   </button>
@@ -443,12 +444,12 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             <div className="flex items-center gap-2 min-w-0">
               <Layers className="w-4 h-4 text-sky-400 shrink-0" />
               <span className="text-xs font-bold text-white uppercase tracking-wider">
-                Danh Mục Hiện Vật Trong Phiên
+                {t('cinematic.catalogTitle')}
               </span>
               <span className="text-[11px] font-bold text-sky-400 bg-sky-950/60 border border-sky-500/30 px-2 py-0.5 rounded-full shrink-0">
                 {sessionItems.length > 0
-                  ? `${sessionItems.length} sản phẩm`
-                  : 'Đang tiếp nhận sản phẩm'}
+                  ? t('cinematic.itemsCount', { count: sessionItems.length })
+                  : t('cinematic.acceptingItems')}
               </span>
             </div>
 
@@ -458,7 +459,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
               className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs transition shadow-lg shadow-blue-600/30 flex items-center gap-2 cursor-pointer shrink-0"
             >
               <Gavel className="w-3.5 h-3.5" />
-              <span>Vào Sàn Đặt Giá Ngay</span>
+              <span>{t('cinematic.bidNow')}</span>
             </button>
           </div>
 
@@ -502,11 +503,11 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                               : 'bg-slate-800 text-slate-300 border border-slate-700'
                           }`}
                         >
-                          LÔ #{lot.lotNumber ?? idx + 1}
+                          {t('cinematic.lotBadge', { number: lot.lotNumber ?? idx + 1 })}
                         </span>
                         {isSelected && (
                           <span className="text-[9px] font-bold text-rose-400 flex items-center gap-0.5">
-                            <Sparkles className="w-2.5 h-2.5" /> Đang chọn
+                            <Sparkles className="w-2.5 h-2.5" /> {t('cinematic.selected')}
                           </span>
                         )}
                       </div>
@@ -515,8 +516,8 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                       </p>
                       <p className="text-[10px] font-extrabold text-rose-400 mt-0.5 m-0">
                         {lot.startingPrice
-                          ? `Khởi điểm: ${formatVND(lot.startingPrice)}`
-                          : 'Chờ định giá'}
+                          ? t('cinematic.startPrice', { amount: formatVND(lot.startingPrice) })
+                          : t('cinematic.awaitingValuation')}
                       </p>
                     </div>
                   </button>
@@ -529,12 +530,9 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
               <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
               <div className="min-w-0 flex-1">
                 <span className="font-bold text-amber-200">
-                  Phiên đấu giá đang mở tiếp nhận hiện vật ký gửi:
+                  {t('cinematic.consignmentOpenLabel')}
                 </span>{' '}
-                <span className="text-amber-300/80">
-                  Video này là thước phim giới thiệu tổng quan do Admin tạo cho phiên. Người bán
-                  (Seller) có thể gửi yêu cầu ký gửi để niêm yết các sản phẩm thực tế vào phiên này.
-                </span>
+                <span className="text-amber-300/80">{t('cinematic.consignmentOpenDesc')}</span>
               </div>
             </div>
           )}

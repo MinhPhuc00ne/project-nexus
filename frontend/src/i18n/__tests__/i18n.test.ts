@@ -27,4 +27,19 @@ describe('i18n infrastructure', () => {
     expect(formattedVi).toContain('150');
     expect(formattedEn).toContain('150');
   });
+
+  it('switches report reasons, seller presets, and service error keys cleanly to en', async () => {
+    await i18n.changeLanguage('en');
+    expect(i18n.t('common:reportModal.productReasons.0')).toBe('Counterfeit / Not authentic');
+    expect(i18n.t('common:reportModal.shopReasons.0')).toBe(
+      'Suspected scam / Off-platform bank transfer request',
+    );
+    expect(i18n.t('seller:productForm.presetGroups.0.name')).toBe('Color');
+    expect(i18n.t('errors:services.missingRefreshToken')).toBe('Refresh token not found.');
+    expect(i18n.t('errors:services.invalidAuctionLotData')).toBe('Invalid auction lot data.');
+    expect(i18n.t('errors:services.cartMergeUnconfirmed')).toBe(
+      'Server did not confirm the cart merge result.',
+    );
+    expect(i18n.t('errors:services.missingProductId')).toBe('Missing product ID.');
+  });
 });

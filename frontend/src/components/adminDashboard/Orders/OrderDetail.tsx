@@ -1,18 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
 import { getAdminOrderById } from '../../../services/admin';
 import type { AdminOrderDetail } from '../../../types/admin-order.types';
-import {
-  paymentLabels,
-  shipmentLabels,
-  money,
-  date,
-  message,
-  OrderBadge,
-} from './orderPresentation';
+import { money, date, message, OrderBadge } from './orderPresentation';
 
 export default function OrderDetail({ id }: { id: string }) {
+  const { t } = useTranslation('admin');
   const [detail, setDetail] = useState<AdminOrderDetail | null>(null);
   const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
@@ -34,14 +29,14 @@ export default function OrderDetail({ id }: { id: string }) {
       <div role="alert" className="space-y-3 text-sm text-red-600">
         <p>{error}</p>
         <Button variant="secondary" onClick={() => setRefresh((value) => value + 1)}>
-          Thử lại
+          {t('orders.detail.retry')}
         </Button>
       </div>
     );
   if (!detail)
     return (
       <p role="status" className="text-sm text-slate-500">
-        Đang tải chi tiết đơn hàng…
+        {t('orders.detail.loading')}
       </p>
     );
   const address = detail.shippingAddressSnapshot;
@@ -49,28 +44,30 @@ export default function OrderDetail({ id }: { id: string }) {
     <div className="space-y-5">
       <DetailFields
         fields={[
-          ['Mã đơn', detail.id],
-          ['Trạng thái', <OrderBadge status={detail.status} />],
-          ['Người mua', `${detail.buyer.fullName}\n${detail.buyer.email}`],
-          ['Người bán', `${detail.seller.fullName}\n${detail.seller.email}`],
-          ['Ngày tạo', date(detail.createdAt)],
-          ['Cập nhật', date(detail.updatedAt)],
-          ['Tiền hàng', money(detail.subtotal)],
-          ['Phí vận chuyển', money(detail.shippingFee)],
-          ['Tổng tiền', money(detail.totalAmount)],
+          [t('orders.detail.fields.id'), detail.id],
+          [t('orders.detail.fields.status'), <OrderBadge status={detail.status} />],
+          [t('orders.detail.fields.buyer'), `${detail.buyer.fullName}\n${detail.buyer.email}`],
+          [t('orders.detail.fields.seller'), `${detail.seller.fullName}\n${detail.seller.email}`],
+          [t('orders.detail.fields.createdAt'), date(detail.createdAt)],
+          [t('orders.detail.fields.updatedAt'), date(detail.updatedAt)],
+          [t('orders.detail.fields.subtotal'), money(detail.subtotal)],
+          [t('orders.detail.fields.shippingFee'), money(detail.shippingFee)],
+          [t('orders.detail.fields.total'), money(detail.totalAmount)],
           [
-            'Vận chuyển',
+            t('orders.detail.fields.shipping'),
             detail.shipment
-              ? (shipmentLabels[detail.shipment.status] ?? detail.shipment.status)
-              : 'Chưa có vận đơn',
+              ? t(`orders.shipmentStatuses.${detail.shipment.status}`, {
+                  defaultValue: detail.shipment.status,
+                })
+              : t('orders.detail.noWaybill'),
           ],
-          ['Mã vận đơn', detail.shipment?.waybillCode],
+          [t('orders.detail.fields.waybill'), detail.shipment?.waybillCode],
           [
-            'Người nhận',
+            t('orders.detail.fields.recipient'),
             address ? [address.recipientName, address.phone].filter(Boolean).join(' · ') : null,
           ],
           [
-            'Địa chỉ giao hàng',
+            t('orders.detail.fields.address'),
             address?.formattedAddress ||
               (address
                 ? [address.street, address.ward, address.district, address.city]
@@ -78,15 +75,15 @@ export default function OrderDetail({ id }: { id: string }) {
                     .join(', ')
                 : null),
           ],
-          ['Bên hủy đơn', detail.cancellationActor],
+          [t('orders.detail.fields.cancelledBy'), detail.cancellationActor],
         ]}
       />
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold">Sản phẩm</h3>
+        <h3 className="text-sm font-semibold">{t('orders.detail.productsTitle')}</h3>
         {detail.items.map((item) => (
           <div key={item.id} className="rounded-lg border border-slate-200 p-3 text-sm">
             <p className="font-medium">
-              {item.titleSnapshot ?? item.product?.title ?? 'Vật phẩm trong đơn'}
+              {item.titleSnapshot ?? item.product?.title ?? t('orders.detail.defaultItem')}
             </p>
             <p className="mt-1 text-slate-500">
               {item.quantity} × {money(item.unitPrice)} = {money(item.totalPrice)}
@@ -95,13 +92,15 @@ export default function OrderDetail({ id }: { id: string }) {
         ))}
       </section>
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold">Lịch sử thanh toán</h3>
+        <h3 className="text-sm font-semibold">{t('orders.detail.paymentsTitle')}</h3>
         {detail.payments.length ? (
           detail.payments.map((payment) => (
             <div key={payment.id} className="rounded-lg border border-slate-200 p-3 text-sm">
               <p>
                 {payment.provider} · {money(payment.amount)} ·{' '}
-                {paymentLabels[payment.status] ?? payment.status}
+                {t(`orders.paymentStatuses.${payment.status}`, {
+                  defaultValue: payment.status,
+                })}
               </p>
               <p className="mt-1 break-all text-xs text-slate-500">
                 {payment.id} · {date(payment.createdAt)}
@@ -109,34 +108,41 @@ export default function OrderDetail({ id }: { id: string }) {
             </div>
           ))
         ) : (
-          <p className="text-sm text-slate-500">Chưa có giao dịch thanh toán.</p>
+          <p className="text-sm text-slate-500">{t('orders.detail.noPayments')}</p>
         )}
       </section>
       {detail.escrowRecord && (
         <DetailFields
           fields={[
-            ['Trạng thái ký quỹ', detail.escrowRecord.status],
-            ['Tiền ký quỹ', money(detail.escrowRecord.totalAmount)],
-            ['Phí nền tảng', money(detail.escrowRecord.platformFee)],
-            ['Tiền trả người bán', money(detail.escrowRecord.sellerPayout)],
+            [t('orders.detail.fields.escrowStatus'), detail.escrowRecord.status],
+            [t('orders.detail.fields.escrowTotal'), money(detail.escrowRecord.totalAmount)],
+            [t('orders.detail.fields.platformFee'), money(detail.escrowRecord.platformFee)],
+            [t('orders.detail.fields.sellerPayout'), money(detail.escrowRecord.sellerPayout)],
           ]}
         />
       )}
       {detail.afterSales && (
         <DetailFields
           fields={[
-            ['Yêu cầu hậu mãi', `${detail.afterSales.kind} · ${detail.afterSales.status}`],
-            ['Lý do', detail.afterSales.reason],
-            ['Lý do quyết định', detail.afterSales.decisionReason],
+            [
+              t('orders.detail.fields.afterSales'),
+              `${detail.afterSales.kind} · ${detail.afterSales.status}`,
+            ],
+            [t('orders.detail.fields.reason'), detail.afterSales.reason],
+            [t('orders.detail.fields.decisionReason'), detail.afterSales.decisionReason],
           ]}
         />
       )}
       {detail.dispute && (
-        <DetailFields fields={[['Khiếu nại', `${detail.dispute.id} · ${detail.dispute.status}`]]} />
+        <DetailFields
+          fields={[
+            [t('orders.detail.fields.dispute'), `${detail.dispute.id} · ${detail.dispute.status}`],
+          ]}
+        />
       )}
       {!!detail.refunds.length && (
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold">Hoàn tiền</h3>
+          <h3 className="text-sm font-semibold">{t('orders.detail.refundsTitle')}</h3>
           {detail.refunds.map((refund) => (
             <div key={refund.id} className="rounded-lg border border-slate-200 p-3 text-sm">
               <p>

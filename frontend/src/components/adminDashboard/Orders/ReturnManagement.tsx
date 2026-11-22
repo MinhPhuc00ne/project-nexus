@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
 import { listAdminReturns } from '../../../services/admin-returns';
 import {
@@ -12,6 +13,7 @@ import { date, message } from './orderPresentation';
 import ReturnDetail from './ReturnDetail';
 
 export default function ReturnManagement() {
+  const { t } = useTranslation('admin');
   const [params, setParams] = useSearchParams();
   const selectedOrder = params.get('return');
   const [status, setStatus] = useState<ReturnStatus | ''>('');
@@ -59,8 +61,8 @@ export default function ReturnManagement() {
         </p>
       )}
       <Panel
-        title="Hoàn trả hàng"
-        subtitle="Duyệt yêu cầu, theo dõi vận đơn chiều về và xác nhận kiểm hàng."
+        title={t('orders.returns.title')}
+        subtitle={t('orders.returns.subtitle')}
         icon={<RotateCcw size={19} />}
         action={
           <Button
@@ -68,12 +70,12 @@ export default function ReturnManagement() {
             disabled={loading}
             onClick={() => setRevision((value) => value + 1)}
           >
-            Làm mới
+            {t('orders.returns.refresh')}
           </Button>
         }
       >
         <select
-          aria-label="Lọc trạng thái trả hàng"
+          aria-label={t('orders.returns.statusAria')}
           value={status}
           className="mb-4 rounded-lg border border-slate-200 p-3 text-sm"
           onChange={(event) => {
@@ -81,26 +83,28 @@ export default function ReturnManagement() {
             setPage(1);
           }}
         >
-          <option value="">Tất cả trạng thái</option>
-          {Object.entries(returnStatusLabels).map(([value, label]) => (
+          <option value="">{t('orders.returns.allStatuses')}</option>
+          {(Object.keys(returnStatusLabels) as ReturnStatus[]).map((value) => (
             <option key={value} value={value}>
-              {label}
+              {t(`orders.returns.statuses.${value}`, {
+                defaultValue: returnStatusLabels[value],
+              })}
             </option>
           ))}
         </select>
         {loading ? (
           <p role="status" className="py-12 text-center text-sm text-slate-500">
-            Đang tải yêu cầu trả hàng…
+            {t('orders.returns.loading')}
           </p>
         ) : error ? (
           <div role="alert" className="space-y-3 text-sm text-red-600">
             <p>{error}</p>
             <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-              Thử lại
+              {t('orders.returns.retry')}
             </Button>
           </div>
         ) : !rows.length ? (
-          <EmptyState text="Chưa có yêu cầu trả hàng phù hợp." />
+          <EmptyState text={t('orders.returns.empty')} />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -108,11 +112,11 @@ export default function ReturnManagement() {
                 <thead className="bg-blue-50 text-slate-500">
                   <tr>
                     {[
-                      'Đơn hàng',
-                      'Lý do trả hàng',
-                      'Vận đơn chiều về',
-                      'Trạng thái',
-                      'Thao tác',
+                      t('orders.returns.cols.order'),
+                      t('orders.returns.cols.reason'),
+                      t('orders.returns.cols.waybill'),
+                      t('orders.returns.cols.status'),
+                      t('orders.returns.cols.actions'),
                     ].map((label) => (
                       <th key={label} scope="col" className="p-3 font-semibold">
                         {label}
@@ -132,10 +136,12 @@ export default function ReturnManagement() {
                       </td>
                       <td className="p-3">
                         <p className="break-all">
-                          {row.returnWaybillCode || 'Chưa gắn vận đơn riêng'}
+                          {row.returnWaybillCode || t('orders.returns.noReturnWaybill')}
                         </p>
                         {row.receivedAt && (
-                          <p className="mt-2 text-slate-500">Nhận: {date(row.receivedAt)}</p>
+                          <p className="mt-2 text-slate-500">
+                            {t('orders.returns.receivedAt', { date: date(row.receivedAt) })}
+                          </p>
                         )}
                       </td>
                       <td className="p-3">
@@ -148,12 +154,15 @@ export default function ReturnManagement() {
                                 : 'amber'
                           }
                         >
-                          {returnStatusLabels[row.status as ReturnStatus] ?? row.status}
+                          {t(`orders.returns.statuses.${row.status as ReturnStatus}`, {
+                            defaultValue:
+                              returnStatusLabels[row.status as ReturnStatus] ?? row.status,
+                          })}
                         </Badge>
                       </td>
                       <td className="p-3">
                         <Button variant="secondary" onClick={() => selectOrder(row.orderId)}>
-                          Xem & xử lý
+                          {t('orders.returns.viewAndProcess')}
                         </Button>
                       </td>
                     </tr>
@@ -163,7 +172,11 @@ export default function ReturnManagement() {
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
               <span>
-                {rows.length} yêu cầu · Trang {currentPage}/{pages}
+                {t('orders.returns.pagination', {
+                  total: rows.length,
+                  page: currentPage,
+                  pages,
+                })}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -171,14 +184,14 @@ export default function ReturnManagement() {
                   disabled={currentPage <= 1}
                   onClick={() => setPage(currentPage - 1)}
                 >
-                  Trước
+                  {t('orders.returns.prev')}
                 </Button>
                 <Button
                   variant="secondary"
                   disabled={currentPage >= pages}
                   onClick={() => setPage(currentPage + 1)}
                 >
-                  Sau
+                  {t('orders.returns.next')}
                 </Button>
               </div>
             </div>
@@ -191,9 +204,7 @@ export default function ReturnManagement() {
           orderId={selectedOrder}
           onClose={() => selectOrder(null)}
           onUpdated={() => {
-            setNotice(
-              'Đã cập nhật yêu cầu. Trạng thái và hoàn tiền được cập nhật theo kết quả xử lý của hệ thống.',
-            );
+            setNotice(t('orders.returns.updatedNotice'));
             setRevision((value) => value + 1);
           }}
         />

@@ -1,3 +1,6 @@
+import i18n from '../../i18n/index';
+import { getIntlLocale } from '../../i18n/config';
+import { formatCurrency } from '../../i18n/formatters';
 import type {
   TransactionStatus,
   TransactionType,
@@ -5,33 +8,43 @@ import type {
 } from '../../types/seller-finance.types';
 
 export function financeMoney(value: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatCurrency(value);
 }
 
 export function financeDate(value: string): string {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString('vi-VN');
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString(getIntlLocale(i18n.language));
 }
 
-export const transactionLabels: Record<TransactionType, string> = {
-  DEPOSIT: 'Nạp tiền',
-  WITHDRAW: 'Rút tiền',
-  ESCROW_LOCK: 'Khóa ký quỹ',
-  ESCROW_PAYOUT: 'Giải ngân',
-  ESCROW_REFUND: 'Hoàn ký quỹ',
-};
-export const transactionStatusLabels: Record<TransactionStatus, string> = {
-  PENDING: 'Đang xử lý',
-  SUCCESS: 'Thành công',
-  FAILED: 'Thất bại',
-};
-export const withdrawalLabels: Record<WithdrawalStatus, string> = {
-  PENDING: 'Chờ duyệt',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Từ chối',
-  COMPLETED: 'Hoàn tất',
-};
+export const transactionLabelKeys = {
+  DEPOSIT: 'finance.transactionTypes.DEPOSIT',
+  WITHDRAW: 'finance.transactionTypes.WITHDRAW',
+  ESCROW_LOCK: 'finance.transactionTypes.ESCROW_LOCK',
+  ESCROW_PAYOUT: 'finance.transactionTypes.ESCROW_PAYOUT',
+  ESCROW_REFUND: 'finance.transactionTypes.ESCROW_REFUND',
+} as const satisfies Record<TransactionType, string>;
+
+export const transactionStatusLabelKeys = {
+  PENDING: 'finance.transactionStatuses.PENDING',
+  SUCCESS: 'finance.transactionStatuses.SUCCESS',
+  FAILED: 'finance.transactionStatuses.FAILED',
+} as const satisfies Record<TransactionStatus, string>;
+
+export const withdrawalLabelKeys = {
+  PENDING: 'finance.withdrawalStatuses.PENDING',
+  APPROVED: 'finance.withdrawalStatuses.APPROVED',
+  REJECTED: 'finance.withdrawalStatuses.REJECTED',
+  COMPLETED: 'finance.withdrawalStatuses.COMPLETED',
+} as const satisfies Record<WithdrawalStatus, string>;
+
+export function getTransactionLabel(type: TransactionType): string {
+  return i18n.t(transactionLabelKeys[type], { ns: 'seller', defaultValue: type });
+}
+
+export function getTransactionStatusLabel(status: TransactionStatus): string {
+  return i18n.t(transactionStatusLabelKeys[status], { ns: 'seller', defaultValue: status });
+}
+
+export function getWithdrawalLabel(status: WithdrawalStatus): string {
+  return i18n.t(withdrawalLabelKeys[status], { ns: 'seller', defaultValue: status });
+}

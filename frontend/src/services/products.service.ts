@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+import { formatCurrency } from '../i18n/formatters';
 import api, { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import type { ProductDetail, ProductItem } from '../types/product.types';
@@ -98,7 +100,7 @@ export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
     primaryBadge: sale.isOnSale
       ? { text: `${sale.label} -${sale.discountPercent}%`, type: 'flash' }
       : { text: 'NEXUS MALL', type: 'mall' },
-    subBadge: { text: 'Chính Hãng 100%' },
+    subBadge: { text: i18n.t('errors:services.authenticBadge') },
     imageOverlay: {
       leftText: '',
       leftIcon: undefined,
@@ -108,13 +110,13 @@ export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
     },
     rating: p.averageRating && p.averageRating > 0 ? p.averageRating : 5.0,
     soldCount: 0,
-    oldPrice: sale.isOnSale ? `${sale.originalPrice.toLocaleString('vi-VN')} ₫` : undefined,
-    currentPrice: `${sale.effectivePrice.toLocaleString('vi-VN')} ₫`,
+    oldPrice: sale.isOnSale ? formatCurrency(sale.originalPrice) : undefined,
+    currentPrice: formatCurrency(sale.effectivePrice),
     priceColor: 'red',
     subMetaLeft: 'Freeship GHN Express',
     subMetaRightType: 'green_ship',
     shopId: p.seller?.id,
-    shopName: p.seller?.fullName || 'Gian Hàng NEXUS',
+    shopName: p.seller?.fullName || i18n.t('errors:services.defaultShopName'),
     rawPrice: sale.effectivePrice,
   };
 }
@@ -170,11 +172,16 @@ export async function getCategoriesApi(): Promise<CategoryNode[]> {
 
 function mapProduct(product: CatalogProduct): ProductDetail {
   const specs: Record<string, string> = {};
-  if (product?.category?.name) specs['Danh mục'] = product.category.name;
-  if (product?.weightGrams !== undefined) specs['Khối lượng'] = `${product.weightGrams} g`;
-  if (product?.lengthCm !== undefined) specs['Chiều dài'] = `${product.lengthCm} cm`;
-  if (product?.widthCm !== undefined) specs['Chiều rộng'] = `${product.widthCm} cm`;
-  if (product?.heightCm !== undefined) specs['Chiều cao'] = `${product.heightCm} cm`;
+  if (product?.category?.name)
+    specs[i18n.t('errors:services.specCategory')] = product.category.name;
+  if (product?.weightGrams !== undefined)
+    specs[i18n.t('errors:services.specWeight')] = `${product.weightGrams} g`;
+  if (product?.lengthCm !== undefined)
+    specs[i18n.t('errors:services.specLength')] = `${product.lengthCm} cm`;
+  if (product?.widthCm !== undefined)
+    specs[i18n.t('errors:services.specWidth')] = `${product.widthCm} cm`;
+  if (product?.heightCm !== undefined)
+    specs[i18n.t('errors:services.specHeight')] = `${product.heightCm} cm`;
 
   const rawBasePrice = Number(product?.basePrice ?? 0);
   const saleInfo = saleConfigFromApi(
@@ -199,10 +206,8 @@ function mapProduct(product: CatalogProduct): ProductDetail {
     brand: product?.category?.name || 'NEXUS',
     price: sale.effectivePrice,
     originalPrice: rawBasePrice,
-    formattedPrice: `${sale.effectivePrice.toLocaleString('vi-VN')} ₫`,
-    formattedOldPrice: sale.isOnSale
-      ? `${sale.originalPrice.toLocaleString('vi-VN')} ₫`
-      : undefined,
+    formattedPrice: formatCurrency(sale.effectivePrice),
+    formattedOldPrice: sale.isOnSale ? formatCurrency(sale.originalPrice) : undefined,
     discount: sale.isOnSale ? sale.discountPercent : undefined,
     saleLabel: sale.isOnSale ? sale.label : undefined,
     saleInfo,
@@ -216,7 +221,7 @@ function mapProduct(product: CatalogProduct): ProductDetail {
     reviewsCount: product?.reviewCount ?? 0,
     shop: {
       id: product?.seller?.id,
-      name: product?.seller?.fullName ?? 'Chưa có thông tin người bán',
+      name: product?.seller?.fullName ?? i18n.t('errors:services.unknownSeller'),
       verified: Boolean(product?.seller?.reputationScore && product.seller.reputationScore >= 80),
       // Tách riêng hoàn toàn Avatar của Shop và Avatar của Seller
       avatarUrl: product?.seller?.shopAvatarUrl ?? undefined,
@@ -256,7 +261,7 @@ export async function getProductsCatalog(query: CatalogQuery = {}): Promise<Prod
 
 export async function getProductByIdAsync(id: string): Promise<ProductDetail> {
   const trimmed = id.trim();
-  if (!trimmed) throw new Error('Thiếu mã sản phẩm.');
+  if (!trimmed) throw new Error(i18n.t('errors:services.missingProductId'));
   return mapProduct(
     await request<CatalogProduct>(`/catalog/products/${encodeURIComponent(trimmed)}`),
   );

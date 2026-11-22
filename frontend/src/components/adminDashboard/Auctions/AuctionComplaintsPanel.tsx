@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../../i18n/config';
 import {
   listAdminAuctionComplaintsApi,
   resolveAdminAuctionComplaintApi,
 } from '../../../services/auction.service';
 import {
-  complaintLabels,
+  AUCTION_COMPLAINT_STATES,
   type AuctionComplaintState,
 } from '../../../types/admin-auction-operations.types';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
@@ -19,6 +21,8 @@ export default function AuctionComplaintsPanel({
   refreshKey: number;
   realtimeConnected: boolean;
 }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
   const [status, setStatus] = useState<AuctionComplaintState | ''>('');
   const [selection, setSelection] = useState<{
     id: string;
@@ -31,20 +35,20 @@ export default function AuctionComplaintsPanel({
   const resource = useAuctionOperationResource(load, refreshKey, realtimeConnected);
   return (
     <Panel
-      title="Khiếu nại đấu giá"
-      subtitle="Xem bằng chứng và xử lý khiếu nại của người tham gia trong phiên này."
+      title={t('auctions.complaintsPanel.title')}
+      subtitle={t('auctions.complaintsPanel.subtitle')}
       action={
         <Button
           variant="secondary"
           disabled={resource.loading || resource.pending}
           onClick={resource.refresh}
         >
-          Làm mới
+          {t('auctions.common.refresh')}
         </Button>
       }
     >
       <select
-        aria-label="Lọc khiếu nại đấu giá"
+        aria-label={t('auctions.complaintsPanel.filterAria')}
         value={status}
         disabled={resource.pending}
         onChange={(event) => {
@@ -53,16 +57,16 @@ export default function AuctionComplaintsPanel({
         }}
         className="mb-4 rounded-lg border border-slate-200 p-3 text-xs"
       >
-        <option value="">Tất cả trạng thái</option>
-        {Object.entries(complaintLabels).map(([value, label]) => (
+        <option value="">{t('auctions.complaintsPanel.allStatuses')}</option>
+        {AUCTION_COMPLAINT_STATES.map((value) => (
           <option key={value} value={value}>
-            {label}
+            {t(`auctions.complaintStates.${value}`)}
           </option>
         ))}
       </select>
       {resource.loading && (
         <p role="status" className="mb-3 text-sm text-slate-500">
-          Đang tải khiếu nại…
+          {t('auctions.complaintsPanel.loading')}
         </p>
       )}
       {(resource.error || resource.actionError) && (
@@ -76,7 +80,7 @@ export default function AuctionComplaintsPanel({
         </p>
       )}
       {!resource.loading && !resource.error && !resource.rows.length && (
-        <EmptyState text="Chưa có khiếu nại phù hợp trong phiên." />
+        <EmptyState text={t('auctions.complaintsPanel.empty')} />
       )}
       <div className="space-y-4">
         {resource.rows.map((complaint) => (
@@ -86,7 +90,7 @@ export default function AuctionComplaintsPanel({
                 <h3 className="font-semibold">{complaint.reporter.fullName}</h3>
                 <p className="text-xs text-slate-500">
                   {complaint.reporter.email} ·{' '}
-                  {new Date(complaint.createdAt).toLocaleString('vi-VN')}
+                  {new Date(complaint.createdAt).toLocaleString(locale)}
                 </p>
               </div>
               <Badge
@@ -98,13 +102,13 @@ export default function AuctionComplaintsPanel({
                       : 'red'
                 }
               >
-                {complaintLabels[complaint.status]}
+                {t(`auctions.complaintStates.${complaint.status}`)}
               </Badge>
             </div>
             <p className="text-xs text-slate-500">
               {complaint.auctionItem
-                ? `Lô ${complaint.auctionItem.lotNumber ?? '—'} · ${complaint.auctionItem.title}`
-                : 'Khiếu nại chung về phiên'}
+                ? `${t('auctions.common.lotPrefix', { number: complaint.auctionItem.lotNumber ?? '—' })} · ${complaint.auctionItem.title}`
+                : t('auctions.complaintsPanel.generalComplaint')}
             </p>
             <p className="whitespace-pre-wrap break-words text-sm">{complaint.reason}</p>
             {!!complaint.evidenceUrls.length && (
@@ -119,7 +123,7 @@ export default function AuctionComplaintsPanel({
                         rel="noopener noreferrer"
                         className="text-xs text-blue-600 underline"
                       >
-                        Bằng chứng {index + 1}
+                        {t('auctions.complaintsPanel.evidence', { index: index + 1 })}
                       </a>
                     ),
                 )}
@@ -127,14 +131,14 @@ export default function AuctionComplaintsPanel({
             )}
             {complaint.adminNote && (
               <p className="rounded-lg bg-slate-50 p-3 text-sm">
-                Ghi chú Admin: {complaint.adminNote}
+                {t('auctions.complaintsPanel.adminNote', { note: complaint.adminNote })}
               </p>
             )}
             {complaint.handledBy && (
               <p className="text-xs text-slate-500">
-                Xử lý bởi {complaint.handledBy.fullName}
+                {t('auctions.complaintsPanel.handledBy', { name: complaint.handledBy.fullName })}
                 {complaint.handledAt
-                  ? ` · ${new Date(complaint.handledAt).toLocaleString('vi-VN')}`
+                  ? ` · ${new Date(complaint.handledAt).toLocaleString(locale)}`
                   : ''}
               </p>
             )}
@@ -144,14 +148,14 @@ export default function AuctionComplaintsPanel({
                   disabled={resource.pending || resource.loading || !!resource.error}
                   onClick={() => setSelection({ id: complaint.id, decision: 'ACCEPTED' })}
                 >
-                  Chấp thuận
+                  {t('auctions.complaintsPanel.acceptBtn')}
                 </Button>
                 <Button
                   variant="danger"
                   disabled={resource.pending || resource.loading || !!resource.error}
                   onClick={() => setSelection({ id: complaint.id, decision: 'REJECTED' })}
                 >
-                  Từ chối
+                  {t('auctions.complaintsPanel.rejectBtn')}
                 </Button>
               </div>
             )}
@@ -172,10 +176,12 @@ export default function AuctionComplaintsPanel({
                 }}
               >
                 <p className="text-sm font-semibold">
-                  Xác nhận {selection.decision === 'ACCEPTED' ? 'chấp thuận' : 'từ chối'} khiếu nại?
+                  {selection.decision === 'ACCEPTED'
+                    ? t('auctions.complaintsPanel.confirmAccept')
+                    : t('auctions.complaintsPanel.confirmReject')}
                 </p>
                 <label className="block text-xs">
-                  Ghi chú xử lý
+                  {t('auctions.complaintsPanel.noteLabel')}
                   <textarea
                     name="adminNote"
                     rows={3}
@@ -189,7 +195,9 @@ export default function AuctionComplaintsPanel({
                     type="submit"
                     disabled={resource.pending || resource.loading || !!resource.error}
                   >
-                    {resource.pending ? 'Đang xử lý…' : 'Xác nhận'}
+                    {resource.pending
+                      ? t('auctions.reviewForm.processing')
+                      : t('auctions.complaintsPanel.confirmBtn')}
                   </Button>
                   <Button
                     type="button"
@@ -197,7 +205,7 @@ export default function AuctionComplaintsPanel({
                     disabled={resource.pending}
                     onClick={() => setSelection(null)}
                   >
-                    Hủy
+                    {t('auctions.common.cancel')}
                   </Button>
                 </div>
               </form>

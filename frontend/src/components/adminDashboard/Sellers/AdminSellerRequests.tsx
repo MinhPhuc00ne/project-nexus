@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSellerRequests } from '../../../services/admin';
 import type { PaginatedResult } from '../../../types/admin.types';
 import type { SellerUpgradeRequest } from '../../../services/users';
@@ -16,6 +17,7 @@ export type SellerRequestFilter = 'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL';
 
 // Giữ danh sách/bộ lọc/phân trang dùng chung cho panel, sidebar và trang tổng quan.
 function useSellerRequests() {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [status, setStatus] = useState<SellerRequestFilter>('PENDING');
   const [page, setPage] = useState(1);
@@ -83,7 +85,7 @@ function useSellerRequests() {
       })
       .catch((cause) => {
         if (current !== revision.current) return;
-        setError(cause instanceof Error ? cause.message : 'Không thể tải hồ sơ người bán.');
+        setError(cause instanceof Error ? cause.message : t('sellers.loadErr'));
       })
       .finally(() => {
         if (current === revision.current) setLoading(false);

@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Package,
   ChevronLeft,
@@ -24,69 +27,67 @@ import OrderAddressCard from '../../components/orders/OrderAddressCard';
 import OrderItemsSummary from '../../components/orders/OrderItemsSummary';
 import OrderReviewModal from '../../components/orders/OrderReviewModal';
 
-const statusMap: Record<
-  string,
-  { label: string; color: string; bg: string; border: string; icon: typeof Clock }
-> = {
+const statusMap = {
   PENDING_PAYMENT: {
-    label: 'Chờ thanh toán',
+    labelKey: 'orderDetailPage.status.pendingPayment',
     color: 'text-amber-800',
     bg: 'bg-amber-50',
     border: 'border-amber-200',
     icon: Clock,
   },
   PAID: {
-    label: 'Đã thanh toán',
+    labelKey: 'orderDetailPage.status.paid',
     color: 'text-emerald-800',
     bg: 'bg-emerald-50',
     border: 'border-emerald-200',
     icon: CheckCircle,
   },
   PREPARING: {
-    label: 'Chuẩn bị hàng',
+    labelKey: 'orderDetailPage.status.preparing',
     color: 'text-blue-800',
     bg: 'bg-blue-50',
     border: 'border-blue-200',
     icon: Package,
   },
   SHIPPING: {
-    label: 'Đang giao hàng',
+    labelKey: 'orderDetailPage.status.shipping',
     color: 'text-indigo-800',
     bg: 'bg-indigo-50',
     border: 'border-indigo-200',
     icon: Truck,
   },
   DELIVERED: {
-    label: 'Đã giao hàng',
+    labelKey: 'orderDetailPage.status.delivered',
     color: 'text-emerald-800',
     bg: 'bg-emerald-50',
     border: 'border-emerald-200',
     icon: CheckCircle,
   },
   CONFIRMED: {
-    label: 'Hoàn thành',
+    labelKey: 'orderDetailPage.status.completed',
     color: 'text-teal-800',
     bg: 'bg-teal-50',
     border: 'border-teal-200',
     icon: CheckCircle,
   },
   COMPLETED: {
-    label: 'Hoàn thành',
+    labelKey: 'orderDetailPage.status.completed',
     color: 'text-teal-800',
     bg: 'bg-teal-50',
     border: 'border-teal-200',
     icon: CheckCircle,
   },
   CANCELLED: {
-    label: 'Đã huỷ',
+    labelKey: 'orderDetailPage.status.cancelled',
     color: 'text-rose-800',
     bg: 'bg-rose-50',
     border: 'border-rose-200',
     icon: Clock,
   },
-};
+} as const;
 
 export default function BuyerOrderDetailPage() {
+  const { t, i18n } = useTranslation('buyer');
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<BuyerOrder | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,12 +104,12 @@ export default function BuyerOrderDetailPage() {
       const data = await getBuyerOrderDetailApi(id);
       setOrder(data);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể tải chi tiết đơn hàng.';
+      const msg = err instanceof Error ? err.message : t('orderDetailPage.loadError');
       setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     void fetchOrderDetail();
@@ -123,7 +124,7 @@ export default function BuyerOrderDetailPage() {
         window.open(paymentInfo.checkoutUrl, '_blank');
       }
     } catch {
-      alert('Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.');
+      alert(t('orderDetailPage.paymentLinkError'));
     } finally {
       setIsPaying(false);
     }
@@ -131,7 +132,7 @@ export default function BuyerOrderDetailPage() {
 
   const handleConfirmDelivery = async () => {
     if (!order) return;
-    if (!window.confirm('Bạn xác nhận đã nhận được kiện hàng này đầy đủ và nguyên vẹn?')) {
+    if (!window.confirm(t('orderDetailPage.confirmDeliveryPrompt'))) {
       return;
     }
     setIsConfirming(true);
@@ -145,7 +146,7 @@ export default function BuyerOrderDetailPage() {
         typeof err === 'object' &&
         'response' in err &&
         (err as { response?: { data?: { message?: string } } }).response?.data?.message;
-      alert(msg || 'Không thể xác nhận nhận hàng lúc này. Vui lòng thử lại sau.');
+      alert(msg || t('orderDetailPage.confirmDeliveryError'));
     } finally {
       setIsConfirming(false);
     }
@@ -156,14 +157,16 @@ export default function BuyerOrderDetailPage() {
     {}) as NonNullable<BuyerOrder['shippingAddress']>;
 
   const isCod = isCodOrder(order);
-  const statusConfig = (order?.status && statusMap[order.status]) || statusMap.PENDING_PAYMENT;
+  const statusConfig =
+    (order?.status && statusMap[order.status as keyof typeof statusMap]) ||
+    statusMap.PENDING_PAYMENT;
   const StatusIcon = statusConfig.icon;
 
   if (loading) {
     return (
       <div className="py-20 flex flex-col items-center justify-center text-slate-400 text-xs">
         <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-        <span>Đang tải thông tin đơn hàng...</span>
+        <span>{t('orderDetailPage.loading')}</span>
       </div>
     );
   }
@@ -172,13 +175,13 @@ export default function BuyerOrderDetailPage() {
     return (
       <div className="py-16 text-center max-w-md mx-auto bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
         <p className="text-sm font-semibold text-rose-600 mb-4">
-          {error || 'Không tìm thấy đơn hàng'}
+          {error || t('orderDetailPage.notFound')}
         </p>
         <Link
           to="/buyer/orders"
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition"
         >
-          <ChevronLeft size={14} /> Quay lại danh sách đơn hàng
+          <ChevronLeft size={14} /> {t('orderDetailPage.backToOrders')}
         </Link>
       </div>
     );
@@ -193,19 +196,23 @@ export default function BuyerOrderDetailPage() {
             to="/buyer/orders"
             className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-600 transition mb-2"
           >
-            <ChevronLeft size={14} /> Quay lại danh sách đơn hàng
+            <ChevronLeft size={14} /> {t('orderDetailPage.backToOrders')}
           </Link>
           <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <span>Chi tiết đơn hàng #{order.orderNumber || order.id?.slice(0, 8)}</span>
+            <span>
+              {t('orderDetailPage.title', { number: order.orderNumber || order.id?.slice(0, 8) })}
+            </span>
             <span
               className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${statusConfig.color} ${statusConfig.bg} ${statusConfig.border}`}
             >
               <StatusIcon size={12} />
-              {statusConfig.label}
+              {t(statusConfig.labelKey)}
             </span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Ngày đặt hàng: {new Date(order.createdAt).toLocaleString('vi-VN')}
+            {t('orderDetailPage.orderedAt', {
+              date: new Date(order.createdAt).toLocaleString(getIntlLocale(i18n.language)),
+            })}
           </p>
         </div>
 
@@ -213,7 +220,7 @@ export default function BuyerOrderDetailPage() {
           (isCod ? (
             <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-700 shadow-sm">
               <Banknote size={15} className="text-emerald-600" />
-              <span>Tiền mặt khi nhận hàng (COD)</span>
+              <span>{t('orderDetailPage.codLabel')}</span>
             </div>
           ) : (
             <button
@@ -225,12 +232,12 @@ export default function BuyerOrderDetailPage() {
               {isPaying ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
-                  <span>Đang kết nối PayOS...</span>
+                  <span>{t('orderDetailPage.connectingPayos')}</span>
                 </>
               ) : (
                 <>
                   <CreditCard size={14} />
-                  <span>Thanh toán PayOS ngay</span>
+                  <span>{t('orderDetailPage.payWithPayos')}</span>
                   <ExternalLink size={12} />
                 </>
               )}
@@ -247,11 +254,10 @@ export default function BuyerOrderDetailPage() {
             </div>
             <div>
               <h4 className="text-sm font-bold text-emerald-950">
-                Đơn hàng đã được bưu tá GHN giao thành công
+                {t('orderDetailPage.deliveredBannerTitle')}
               </h4>
               <p className="text-xs text-emerald-700 mt-0.5">
-                Vui lòng kiểm tra sản phẩm. Nếu có vấn đề hãy bấm khiếu nại/trả hàng. Nếu hàng
-                nguyên vẹn, hãy bấm xác nhận nhận hàng.
+                {t('orderDetailPage.deliveredBannerDesc')}
               </p>
             </div>
           </div>
@@ -260,7 +266,7 @@ export default function BuyerOrderDetailPage() {
               to={`/buyer/disputes?orderId=${order.id}`}
               className="px-4 py-2 rounded-xl text-xs font-bold border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition shadow-sm"
             >
-              Khiếu nại / Trả hàng
+              {t('orderDetailPage.disputeOrReturn')}
             </Link>
             <button
               type="button"
@@ -271,12 +277,12 @@ export default function BuyerOrderDetailPage() {
               {isConfirming ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
-                  <span>Đang xử lý...</span>
+                  <span>{t('orderDetailPage.processing')}</span>
                 </>
               ) : (
                 <>
                   <CheckCircle size={14} />
-                  <span>Đã nhận được hàng</span>
+                  <span>{t('orderDetailPage.confirmReceived')}</span>
                 </>
               )}
             </button>
@@ -291,10 +297,11 @@ export default function BuyerOrderDetailPage() {
               <CheckCircle size={22} />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-blue-950">Đơn hàng đã hoàn thành</h4>
+              <h4 className="text-sm font-bold text-blue-950">
+                {t('orderDetailPage.completedBannerTitle')}
+              </h4>
               <p className="text-xs text-blue-700 mt-0.5">
-                Cảm ơn bạn đã mua sắm tại NEXUS! Bạn có thể đánh giá sản phẩm để chia sẻ trải
-                nghiệm.
+                {t('orderDetailPage.completedBannerDesc')}
               </p>
             </div>
           </div>
@@ -303,7 +310,7 @@ export default function BuyerOrderDetailPage() {
             onClick={() => setShowReviewModal(true)}
             className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
           >
-            Đánh giá sản phẩm
+            {t('orderDetailPage.rateProducts')}
           </button>
         </div>
       )}
@@ -344,35 +351,37 @@ export default function BuyerOrderDetailPage() {
               ) : (
                 <CreditCard size={16} className="text-blue-600" />
               )}
-              <span>Phương thức thanh toán</span>
+              <span>{t('orderDetailPage.paymentMethodTitle')}</span>
             </h3>
             {isCod ? (
               <div className="space-y-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs">
                 <div className="flex justify-between font-bold text-slate-800">
-                  <span>Hình thức:</span>
+                  <span>{t('orderDetailPage.methodLabel')}</span>
                   <span className="font-extrabold text-emerald-700">
-                    Tiền mặt khi nhận hàng (COD)
+                    {t('orderDetailPage.codLabel')}
                   </span>
                 </div>
                 {['DELIVERED', 'CONFIRMED', 'COMPLETED'].includes(order.status) ? (
                   <div className="flex justify-between text-[11px] text-slate-500">
-                    <span>Trạng thái:</span>
+                    <span>{t('orderDetailPage.statusLabel')}</span>
                     <span className="font-semibold text-emerald-700">
-                      Đã thanh toán tiền mặt ({Number(order.totalAmount).toLocaleString('vi-VN')} ₫)
+                      {t('orderDetailPage.paidCash', {
+                        amount: formatCurrency(Number(order.totalAmount), i18n.language),
+                      })}
                     </span>
                   </div>
                 ) : (
                   <>
                     <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Cần trả shipper khi giao:</span>
+                      <span>{t('orderDetailPage.codAmountDue')}</span>
                       <span className="font-extrabold text-[#f24e1e]">
-                        {Number(order.totalAmount).toLocaleString('vi-VN')} ₫
+                        {formatCurrency(Number(order.totalAmount), i18n.language)}
                       </span>
                     </div>
                     <div className="flex justify-between text-[11px] text-slate-500">
-                      <span>Trạng thái:</span>
+                      <span>{t('orderDetailPage.statusLabel')}</span>
                       <span className="font-semibold text-amber-700">
-                        Chờ nhận hàng & thanh toán
+                        {t('orderDetailPage.awaitingDeliveryPayment')}
                       </span>
                     </div>
                   </>
@@ -381,15 +390,15 @@ export default function BuyerOrderDetailPage() {
             ) : (
               <div className="space-y-1 rounded-xl bg-slate-50 p-3 text-xs">
                 <div className="flex justify-between font-bold text-slate-800">
-                  <span>Hình thức:</span>
-                  <span className="text-blue-600">PayOS VietQR (Escrow)</span>
+                  <span>{t('orderDetailPage.methodLabel')}</span>
+                  <span className="text-blue-600">{t('orderDetailPage.payosMethod')}</span>
                 </div>
                 <div className="flex justify-between text-[11px] text-slate-500">
-                  <span>Trạng thái:</span>
+                  <span>{t('orderDetailPage.statusLabel')}</span>
                   <span className="font-semibold text-slate-700">
                     {order.status !== 'PENDING_PAYMENT'
-                      ? 'Đã thanh toán (PayOS VietQR)'
-                      : 'Chờ thanh toán'}
+                      ? t('orderDetailPage.paidPayos')
+                      : t('orderDetailPage.status.pendingPayment')}
                   </span>
                 </div>
               </div>
@@ -398,15 +407,12 @@ export default function BuyerOrderDetailPage() {
             {isCod ? (
               <div className="flex items-start gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/70 p-2.5 text-[11px] text-emerald-900">
                 <Truck size={16} className="mt-0.5 shrink-0 text-emerald-600" />
-                <span>
-                  Quý khách được quyền đồng kiểm tra sản phẩm với bưu tá GHN Express trước khi thanh
-                  toán.
-                </span>
+                <span>{t('orderDetailPage.codInspectionNote')}</span>
               </div>
             ) : (
               <div className="flex items-start gap-2 rounded-xl border border-indigo-100/70 bg-indigo-50/70 p-2.5 text-[11px] text-indigo-700">
                 <ShieldCheck size={16} className="mt-0.5 shrink-0 text-indigo-600" />
-                <span>Giao dịch được bảo hộ 100% qua cơ chế ký quỹ NEXUS Escrow.</span>
+                <span>{t('orderDetailPage.escrowProtectionNote')}</span>
               </div>
             )}
           </div>

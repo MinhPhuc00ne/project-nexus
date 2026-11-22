@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { AlertCircle, Gavel, LoaderCircle, Radio, RefreshCw } from 'lucide-react';
 import { WS_AUCTION_EVENTS } from '@nexus/types';
 import { AuctionShowcaseHUD } from '../../components/auction/showcase/AuctionShowcaseHUD';
+import { getIntlLocale } from '../../i18n/config';
 import {
   createAuctionSocket,
   getAuctionIntroShowcaseApi,
@@ -16,21 +19,23 @@ type StaffAuctionSession = StaffAuctionOverviewResponse['auctions'][number];
 
 const LIVE_STATUSES = new Set(['ACTIVE', 'EXTENDED']);
 
-function formatSessionTime(value: string): string {
+function formatSessionTime(value: string, t: TFunction<'staff'>, locale: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
-    ? 'Chưa có thời gian'
-    : new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+    ? t('auctionSupport.noTime')
+    : new Intl.DateTimeFormat(locale, { dateStyle: 'short', timeStyle: 'short' }).format(date);
 }
 
-function getStatusLabel(status: string): string {
-  if (status === 'ACTIVE' || status === 'EXTENDED') return 'Đang diễn ra';
-  if (status === 'SCHEDULED') return 'Sắp bắt đầu';
-  if (status === 'ENDED') return 'Đã kết thúc';
+function getStatusLabel(status: string, t: TFunction<'staff'>): string {
+  if (status === 'ACTIVE' || status === 'EXTENDED') return t('auctionSupport.statusLive');
+  if (status === 'SCHEDULED') return t('auctionSupport.statusScheduled');
+  if (status === 'ENDED') return t('auctionSupport.statusEnded');
   return status;
 }
 
 export default function StaffAuctionSupportPanel() {
+  const { t, i18n } = useTranslation('staff');
+  const locale = getIntlLocale(i18n.language);
   const [auctions, setAuctions] = useState<StaffAuctionSession[]>([]);
   const [activeIntro, setActiveIntro] = useState<AuctionIntroShowcaseResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,39 +47,40 @@ export default function StaffAuctionSupportPanel() {
   const introRequestsRef = useRef(new Map<string, number>());
   const activeIntroRef = useRef<AuctionIntroShowcaseResponse | null>(null);
 
-  const loadIntro = useCallback(async (auctionId: string) => {
-    const generation = lifecycleGenerationRef.current;
-    if (introRequestsRef.current.get(auctionId) === generation) return;
-    introRequestsRef.current.set(auctionId, generation);
-    setIntroLoadingId(auctionId);
+  const loadIntro = useCallback(
+    async (auctionId: string) => {
+      const generation = lifecycleGenerationRef.current;
+      if (introRequestsRef.current.get(auctionId) === generation) return;
+      introRequestsRef.current.set(auctionId, generation);
+      setIntroLoadingId(auctionId);
 
-    try {
-      const response = await getAuctionIntroShowcaseApi(auctionId);
-      if (!mountedRef.current || lifecycleGenerationRef.current !== generation) return;
+      try {
+        const response = await getAuctionIntroShowcaseApi(auctionId);
+        if (!mountedRef.current || lifecycleGenerationRef.current !== generation) return;
 
-      if (response.isIntroActive) {
-        activeIntroRef.current = response;
-        setActiveIntro(response);
-        setError('');
-      } else if (activeIntroRef.current?.auctionId === auctionId) {
-        activeIntroRef.current = null;
-        setActiveIntro(null);
+        if (response.isIntroActive) {
+          activeIntroRef.current = response;
+          setActiveIntro(response);
+          setError('');
+        } else if (activeIntroRef.current?.auctionId === auctionId) {
+          activeIntroRef.current = null;
+          setActiveIntro(null);
+        }
+      } catch (cause: unknown) {
+        if (mountedRef.current && lifecycleGenerationRef.current === generation) {
+          setError(cause instanceof Error ? cause.message : t('auctionSupport.loadIntroErr'));
+        }
+      } finally {
+        if (introRequestsRef.current.get(auctionId) === generation) {
+          introRequestsRef.current.delete(auctionId);
+        }
+        if (mountedRef.current && lifecycleGenerationRef.current === generation) {
+          setIntroLoadingId(null);
+        }
       }
-    } catch (cause: unknown) {
-      if (mountedRef.current && lifecycleGenerationRef.current === generation) {
-        setError(
-          cause instanceof Error ? cause.message : 'Không tải được dữ liệu intro phiên đấu giá.',
-        );
-      }
-    } finally {
-      if (introRequestsRef.current.get(auctionId) === generation) {
-        introRequestsRef.current.delete(auctionId);
-      }
-      if (mountedRef.current && lifecycleGenerationRef.current === generation) {
-        setIntroLoadingId(null);
-      }
-    }
-  }, []);
+    },
+    [t],
+  );
 
   const refreshOverview = useCallback(async () => {
     const generation = lifecycleGenerationRef.current;
@@ -92,9 +98,7 @@ export default function StaffAuctionSupportPanel() {
       await Promise.all(liveSessions.map((session) => loadIntro(session.id)));
     } catch (cause: unknown) {
       if (mountedRef.current && lifecycleGenerationRef.current === generation) {
-        setError(
-          cause instanceof Error ? cause.message : 'Không tải được danh sách phiên đấu giá.',
-        );
+        setError(cause instanceof Error ? cause.message : t('auctionSupport.loadOverviewErr'));
       }
     } finally {
       if (mountedRef.current && lifecycleGenerationRef.current === generation) {
@@ -102,7 +106,7 @@ export default function StaffAuctionSupportPanel() {
         setRefreshing(false);
       }
     }
-  }, [loadIntro]);
+  }, [loadIntro, t]);
 
   useEffect(() => {
     lifecycleGenerationRef.current += 1;
@@ -136,17 +140,14 @@ export default function StaffAuctionSupportPanel() {
   });
 
   return (
-    <section className="mt-5 space-y-4" aria-label="Hỗ trợ đấu giá 3D">
+    <section className="mt-5 space-y-4" aria-label={t('auctionSupport.sectionAria')}>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div>
           <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
             <Gavel size={18} className="text-blue-600" />
-            Theo dõi intro đấu giá trực tiếp
+            {t('auctionSupport.headerTitle')}
           </div>
-          <p className="mt-1 text-sm text-slate-500">
-            Intro sẽ tự mở khi admin bắt đầu phiên. Staff vào muộn sẽ được đồng bộ thời gian đang
-            phát.
-          </p>
+          <p className="mt-1 text-sm text-slate-500">{t('auctionSupport.headerDesc')}</p>
         </div>
         <button
           type="button"
@@ -159,7 +160,7 @@ export default function StaffAuctionSupportPanel() {
           ) : (
             <RefreshCw size={16} />
           )}
-          Làm mới
+          {t('auctionSupport.refresh')}
         </button>
       </div>
 
@@ -175,17 +176,19 @@ export default function StaffAuctionSupportPanel() {
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-          <h2 className="font-bold text-slate-900">Phiên đấu giá</h2>
-          <span className="text-xs text-slate-500">{auctions.length} phiên</span>
+          <h2 className="font-bold text-slate-900">{t('auctionSupport.listTitle')}</h2>
+          <span className="text-xs text-slate-500">
+            {t('auctionSupport.count', { count: auctions.length })}
+          </span>
         </div>
 
         {loading ? (
           <div role="status" className="flex items-center gap-2 px-5 py-10 text-sm text-slate-500">
-            <LoaderCircle size={17} className="animate-spin" /> Đang tải phiên đấu giá…
+            <LoaderCircle size={17} className="animate-spin" /> {t('auctionSupport.loading')}
           </div>
         ) : sortedAuctions.length === 0 ? (
           <div className="px-5 py-10 text-center text-sm text-slate-500">
-            Hiện chưa có phiên đấu giá cần theo dõi.
+            {t('auctionSupport.empty')}
           </div>
         ) : (
           <ul className="divide-y divide-slate-100">
@@ -207,11 +210,13 @@ export default function StaffAuctionSupportPanel() {
                         }`}
                       >
                         {isLive && <Radio size={12} />}
-                        {getStatusLabel(auction.status)}
+                        {getStatusLabel(auction.status, t)}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-500">
-                      Bắt đầu: {formatSessionTime(auction.startTime)}
+                      {t('auctionSupport.startsAt', {
+                        date: formatSessionTime(auction.startTime, t, locale),
+                      })}
                     </p>
                   </div>
                   <button
@@ -220,10 +225,12 @@ export default function StaffAuctionSupportPanel() {
                     disabled={!isLive || isLoadingIntro}
                     className="rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400"
                     title={
-                      isLive ? 'Mở intro nếu vẫn đang phát' : 'Intro chỉ phát khi phiên bắt đầu'
+                      isLive ? t('auctionSupport.liveTitle') : t('auctionSupport.notLiveTitle')
                     }
                   >
-                    {isLoadingIntro ? 'Đang tải…' : 'Xem intro đang phát'}
+                    {isLoadingIntro
+                      ? t('auctionSupport.loadingBtn')
+                      : t('auctionSupport.watchIntroBtn')}
                   </button>
                 </li>
               );

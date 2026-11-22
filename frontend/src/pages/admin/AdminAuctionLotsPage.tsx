@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, ArrowRight, Gavel, MessageSquare, RefreshCw, Trophy } from 'lucide-react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import AuctionLotCard from '../../components/adminDashboard/Auctions/AuctionLotCard';
 import { useAdminAuctionLots } from '../../components/adminDashboard/Auctions/useAdminAuctionLots';
-import { statuses } from '../../components/adminDashboard/Auctions/auctionStatuses';
+import {
+  AUCTION_STATUS_KEYS,
+  isKnownAuctionStatus,
+} from '../../components/adminDashboard/Auctions/auctionStatuses';
 import AuctionAwardsPanel from '../../components/adminDashboard/Auctions/AuctionAwardsPanel';
 import AuctionComplaintsPanel from '../../components/adminDashboard/Auctions/AuctionComplaintsPanel';
 import { useAuth } from '../../contexts/AuthContext';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Badge,
   Button,
@@ -22,6 +27,8 @@ export default function AdminAuctionLotsPage() {
 }
 
 function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
   const {
     data,
     loading,
@@ -68,8 +75,8 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
     (lot) =>
       (!status || lot.lotStatus === status) &&
       `${lot.title} ${lot.lotNumber ?? ''} ${lot.seller?.fullName ?? ''}`
-        .toLocaleLowerCase('vi-VN')
-        .includes(search.trim().toLocaleLowerCase('vi-VN')),
+        .toLocaleLowerCase(locale)
+        .includes(search.trim().toLocaleLowerCase(locale)),
   );
   const liveCount = lots.filter((lot) => ['ACTIVE', 'EXTENDED'].includes(lot.lotStatus)).length;
   const introRemaining = data?.isIntroActive
@@ -89,47 +96,53 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
           to="/admin/auctions"
           className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
         >
-          <ArrowLeft size={16} /> Danh sách phiên đấu giá
+          <ArrowLeft size={16} /> {t('auctions.lotsPage.backToAuctions')}
         </Link>
         {tab !== 'awards' && (
           <Button disabled={!!pendingId} onClick={() => changeTab('awards')}>
-            <Trophy size={16} /> Quyền mua & thanh toán <ArrowRight size={15} />
+            <Trophy size={16} /> {t('auctions.lotsPage.awardsShortcut')} <ArrowRight size={15} />
           </Button>
         )}
       </div>
       <Panel
-        title={data?.title ?? 'Điều hành đấu giá từng lô'}
-        subtitle="Theo dõi giá, thời gian và chốt kết quả riêng cho từng lô đã được duyệt."
+        title={data?.title ?? t('auctions.lotsPage.fallbackTitle')}
+        subtitle={t('auctions.lotsPage.subtitle')}
         icon={<Gavel size={20} />}
         action={
           <Button variant="secondary" disabled={loading || !!pendingId} onClick={refresh}>
-            <RefreshCw size={15} /> Làm mới
+            <RefreshCw size={15} /> {t('auctions.common.refresh')}
           </Button>
         }
       >
         <div className="flex flex-wrap items-center gap-2">
           {data && (
-            <Badge>{statuses.find(([value]) => value === data.status)?.[1] ?? data.status}</Badge>
+            <Badge>
+              {isKnownAuctionStatus(data.status)
+                ? t(`auctions.statuses.${data.status}`)
+                : data.status}
+            </Badge>
           )}
           <Badge tone={connected ? 'green' : 'amber'}>
             {connected
-              ? 'Đang cập nhật trực tiếp'
-              : 'Mất kết nối trực tiếp · tự tải lại mỗi 15 giây'}
+              ? t('auctions.lotsPage.liveConnected')
+              : t('auctions.lotsPage.liveDisconnected')}
           </Badge>
         </div>
         {data && (
           <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {[
-              ['Tổng số lô', lots.length],
-              ['Đang đấu giá', liveCount],
+            {(
               [
-                'Đã kết thúc',
-                lots.filter((lot) => ['ENDED', 'SETTLED'].includes(lot.lotStatus)).length,
-              ],
-              ['Không thành công', lots.filter((lot) => lot.lotStatus === 'FAILED').length],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                <p className="text-xs text-slate-500">{label}</p>
+                ['totalLots', lots.length],
+                ['liveLots', liveCount],
+                [
+                  'endedLots',
+                  lots.filter((lot) => ['ENDED', 'SETTLED'].includes(lot.lotStatus)).length,
+                ],
+                ['failedLots', lots.filter((lot) => lot.lotStatus === 'FAILED').length],
+              ] as const
+            ).map(([key, value]) => (
+              <div key={key} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                <p className="text-xs text-slate-500">{t(`auctions.lotsPage.stats.${key}`)}</p>
                 <p className="mt-2 text-2xl font-bold text-primary">{value}</p>
               </div>
             ))}
@@ -137,16 +150,16 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
         )}
       </Panel>
       <nav
-        aria-label="Nội dung quản trị phiên"
+        aria-label={t('auctions.lotsPage.navAria')}
         className="flex flex-wrap gap-1 rounded-xl border border-slate-200 bg-white p-1.5"
       >
         {(
           [
-            ['lots', 'Điều hành lô', Gavel],
-            ['awards', 'Quyền mua & thanh toán', Trophy],
-            ['complaints', 'Khiếu nại', MessageSquare],
+            ['lots', Gavel],
+            ['awards', Trophy],
+            ['complaints', MessageSquare],
           ] as const
-        ).map(([value, label, Icon]) => (
+        ).map(([value, Icon]) => (
           <button
             type="button"
             key={value}
@@ -156,13 +169,13 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
             onClick={() => changeTab(value)}
           >
             <Icon size={16} aria-hidden="true" />
-            {label}
+            {t(`auctions.lotsPage.tabs.${value}`)}
           </button>
         ))}
       </nav>
       {introRemaining > 0 && (
         <p role="status" className="rounded-xl bg-blue-50 p-4 text-sm text-primary">
-          Đang trình chiếu giới thiệu 3D · Còn {introRemaining} giây trước khi mở đặt giá.
+          {t('auctions.lotsPage.introNotice', { seconds: introRemaining })}
         </p>
       )}
       {realtimeError && (
@@ -193,7 +206,7 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
       )}
       {loading && !data && (
         <p role="status" className="py-12 text-center text-sm text-slate-500">
-          Đang tải các lô đấu giá…
+          {t('auctions.lotsPage.loading')}
         </p>
       )}
       {data && tab === 'awards' && (
@@ -220,27 +233,27 @@ function AuctionLotsWorkspace({ auctionId }: { auctionId: string }) {
               <SearchInput
                 value={search}
                 onChange={setSearch}
-                placeholder="Tìm tên vật phẩm, số lô hoặc seller…"
+                placeholder={t('auctions.lotsPage.searchPlaceholder')}
               />
             </div>
             <select
-              aria-label="Lọc trạng thái lô"
+              aria-label={t('auctions.lotsPage.filterAria')}
               value={status}
               onChange={(event) => setStatus(event.target.value)}
               className="rounded-lg border border-slate-200 bg-white p-3 text-xs"
             >
-              <option value="">Tất cả trạng thái lô</option>
-              {statuses.map(([value, label]) => (
+              <option value="">{t('auctions.lotsPage.allLotStatuses')}</option>
+              {AUCTION_STATUS_KEYS.map((value) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t(`auctions.statuses.${value}`)}
                 </option>
               ))}
             </select>
           </div>
           {!lots.length ? (
-            <EmptyState text="Phiên chưa có lô được duyệt. Hãy duyệt sản phẩm ký gửi tại danh sách phiên." />
+            <EmptyState text={t('auctions.lotsPage.emptyNoLots')} />
           ) : !visible.length ? (
-            <EmptyState text="Không có lô phù hợp với bộ lọc." />
+            <EmptyState text={t('auctions.lotsPage.emptyNoMatch')} />
           ) : (
             <div className="grid items-start gap-5 xl:grid-cols-2">
               {visible.map((lot) => (

@@ -1,4 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Wallet,
   ArrowDownLeft,
@@ -36,14 +39,15 @@ const statusBadge: Record<string, { icon: React.ReactNode; cls: string }> = {
   },
 };
 
-const filterTabs: { key: FilterType; label: string }[] = [
-  { key: 'ALL', label: 'Tất cả' },
-  { key: 'TOP_UP', label: 'Nạp tiền' },
-  { key: 'PAYMENT', label: 'Thanh toán' },
-  { key: 'REFUND', label: 'Hoàn tiền' },
-];
+const filterTabs = [
+  { key: 'ALL', labelKey: 'walletPage.tabs.all' },
+  { key: 'TOP_UP', labelKey: 'walletPage.tabs.topUp' },
+  { key: 'PAYMENT', labelKey: 'walletPage.tabs.payment' },
+  { key: 'REFUND', labelKey: 'walletPage.tabs.refund' },
+] as const satisfies { key: FilterType; labelKey: string }[];
 
 export default function BuyerWalletPage() {
+  const { t, i18n } = useTranslation('buyer');
   const { user } = useAuth();
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [showTopUp, setShowTopUp] = useState(false);
@@ -87,7 +91,7 @@ export default function BuyerWalletPage() {
   const handleDeposit = async () => {
     const amount = Number(topUpAmount);
     if (!amount || amount < 10000) {
-      showToast('Vui lòng nhập số tiền nạp tối thiểu 10.000 ₫');
+      showToast(t('walletPage.minDepositError'));
       return;
     }
     setSubmittingTopUp(true);
@@ -99,12 +103,12 @@ export default function BuyerWalletPage() {
       if (res.checkoutUrl) {
         window.open(res.checkoutUrl, '_blank');
       }
-      showToast('Đã gửi yêu cầu nạp tiền vào ví!');
+      showToast(t('walletPage.depositRequestSent'));
       setShowTopUp(false);
       setTopUpAmount('');
       void fetchWallet();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Không thể kết nối nạp tiền.';
+      const msg = err instanceof Error ? err.message : t('walletPage.depositConnectError');
       showToast(msg);
     } finally {
       setSubmittingTopUp(false);
@@ -140,16 +144,19 @@ export default function BuyerWalletPage() {
             <div className="flex items-center gap-2 mb-1">
               <Wallet size={16} className="text-white/80" />
               <p className="text-xs font-semibold text-white/80 uppercase tracking-widest">
-                Ví điện tử NEXUS Pay
+                {t('walletPage.cardTitle')}
               </p>
             </div>
-            <p className="text-3xl font-extrabold mb-0.5">{balance.toLocaleString('vi-VN')} ₫</p>
-            <p className="text-xs text-white/70">Số dư khả dụng</p>
+            <p className="text-3xl font-extrabold mb-0.5">
+              {formatCurrency(balance, i18n.language)}
+            </p>
+            <p className="text-xs text-white/70">{t('walletPage.availableBalance')}</p>
 
             <div className="mt-3 flex items-center gap-2 bg-white/15 rounded-xl px-3 py-1.5 w-fit">
               <Lock size={12} className="text-white/80" />
               <span className="text-xs text-white/90">
-                Ký quỹ đang giữ: <strong>{lockedBalance.toLocaleString('vi-VN')} ₫</strong>
+                {t('walletPage.escrowLocked')}{' '}
+                <strong>{formatCurrency(lockedBalance, i18n.language)}</strong>
               </span>
             </div>
           </div>
@@ -159,7 +166,7 @@ export default function BuyerWalletPage() {
             onClick={() => setShowTopUp(true)}
             className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-orange-600 shadow-md hover:bg-orange-50 transition cursor-pointer self-start sm:self-center"
           >
-            <Plus size={15} /> Nạp tiền ví
+            <Plus size={15} /> {t('walletPage.topUpButton')}
           </button>
         </div>
 
@@ -171,7 +178,7 @@ export default function BuyerWalletPage() {
             type="button"
             onClick={() => void navigator.clipboard.writeText(user?.id ?? '')}
             className="text-white/50 hover:text-white transition"
-            title="Sao chép ID ví"
+            title={t('walletPage.copyWalletIdTitle')}
           >
             <Copy size={11} />
           </button>
@@ -183,19 +190,23 @@ export default function BuyerWalletPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <ArrowDownLeft size={13} className="text-emerald-600" />
-            <span className="text-[11px] font-semibold text-slate-500">Tổng nạp</span>
+            <span className="text-[11px] font-semibold text-slate-500">
+              {t('walletPage.totalTopUp')}
+            </span>
           </div>
           <p className="text-base font-extrabold text-emerald-600">
-            +{totalIn.toLocaleString('vi-VN')} ₫
+            +{formatCurrency(totalIn, i18n.language)}
           </p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2 mb-1">
             <ArrowUpRight size={13} className="text-red-500" />
-            <span className="text-[11px] font-semibold text-slate-500">Tổng chi tiêu</span>
+            <span className="text-[11px] font-semibold text-slate-500">
+              {t('walletPage.totalSpent')}
+            </span>
           </div>
           <p className="text-base font-extrabold text-red-500">
-            -{totalOut.toLocaleString('vi-VN')} ₫
+            -{formatCurrency(totalOut, i18n.language)}
           </p>
         </div>
       </div>
@@ -215,20 +226,20 @@ export default function BuyerWalletPage() {
       {/* Transaction History */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <h2 className="text-sm font-bold text-slate-900">Lịch sử giao dịch</h2>
+          <h2 className="text-sm font-bold text-slate-900">{t('walletPage.historyTitle')}</h2>
           <div className="flex flex-wrap gap-1.5">
-            {filterTabs.map((t) => (
+            {filterTabs.map((tab) => (
               <button
-                key={t.key}
+                key={tab.key}
                 type="button"
-                onClick={() => setFilter(t.key)}
+                onClick={() => setFilter(tab.key)}
                 className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
-                  filter === t.key
+                  filter === tab.key
                     ? 'bg-slate-900 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {t.label}
+                {t(tab.labelKey)}
               </button>
             ))}
           </div>
@@ -236,11 +247,12 @@ export default function BuyerWalletPage() {
 
         {loading ? (
           <div className="py-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <Loader2 size={16} className="animate-spin text-orange-500" /> Đang tải lịch sử ví…
+            <Loader2 size={16} className="animate-spin text-orange-500" />{' '}
+            {t('walletPage.loadingHistory')}
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-10 text-center text-xs text-slate-400">
-            Chưa có giao dịch nào được ghi nhận.
+            {t('walletPage.emptyHistory')}
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -255,7 +267,7 @@ export default function BuyerWalletPage() {
                       {tx.description || tx.type}
                     </p>
                     <p className="text-[11px] text-slate-400">
-                      {new Date(tx.createdAt).toLocaleString('vi-VN')}
+                      {new Date(tx.createdAt).toLocaleString(getIntlLocale(i18n.language))}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
@@ -265,7 +277,7 @@ export default function BuyerWalletPage() {
                       }`}
                     >
                       {isPositive ? '+' : ''}
-                      {Number(tx.amount).toLocaleString('vi-VN')} ₫
+                      {formatCurrency(Number(tx.amount), i18n.language)}
                     </p>
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}

@@ -1,41 +1,43 @@
 import { RefreshCw as ReloadOutlined, Store as ShopOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useSellerWorkspace } from './SellerWorkspace';
 import { Panel, SellerButton } from './SellerUI';
 
 export default function SellerShopInfo() {
+  const { t } = useTranslation('seller');
   const { shop, storeLoading, storeError, refreshShop } = useSellerWorkspace();
   const address = shop?.address;
   const shopLogoUrl = shop?.avatarUrl ?? null;
 
   const fields = shop
     ? [
-        ['Tên gian hàng', shop.name],
-        ['Chủ gian hàng', shop.sellerFullName],
+        [t('settings.shopInfo.shopName'), shop.name],
+        [t('settings.shopInfo.owner'), shop.sellerFullName],
         [
-          'Địa chỉ',
+          t('settings.shopInfo.address'),
           address?.formattedAddress ||
             [address?.street, address?.ward, address?.district, address?.city]
               .filter(Boolean)
               .join(', ') ||
-            'Chưa có địa chỉ',
+            t('settings.shopInfo.noAddress'),
         ],
-        ['Sản phẩm đang bán', String(shop.stats.totalProducts)],
-        ['Số đánh giá', String(shop.stats.totalReviews)],
-        ['Điểm uy tín', String(shop.reputationScore)],
+        [t('settings.shopInfo.activeProducts'), String(shop.stats.totalProducts)],
+        [t('settings.shopInfo.reviewCount'), String(shop.stats.totalReviews)],
+        [t('settings.shopInfo.reputationScore'), String(shop.reputationScore)],
       ]
     : [];
   return (
     <Panel
-      title="Thông tin gian hàng trên hệ thống"
+      title={t('settings.shopInfo.title')}
       action={
         <SellerButton secondary onClick={refreshShop} disabled={storeLoading}>
-          <ReloadOutlined /> Làm mới
+          <ReloadOutlined /> {t('settings.shopInfo.refresh')}
         </SellerButton>
       }
     >
       {storeLoading && (
         <p role="status" className="py-5 text-sm text-slate-500">
-          Đang tải thông tin gian hàng…
+          {t('settings.shopInfo.loading')}
         </p>
       )}
       {storeError && (
@@ -56,7 +58,7 @@ export default function SellerShopInfo() {
             <div>
               <p className="text-sm font-bold text-slate-900">{shop.name}</p>
               <p className="text-xs text-slate-500">
-                Logo gian hàng độc lập · Chủ sở hữu: {shop.sellerFullName}
+                {t('settings.shopInfo.logoSubtitle', { owner: shop.sellerFullName })}
               </p>
             </div>
           </div>
@@ -69,9 +71,9 @@ export default function SellerShopInfo() {
             ))}
           </dl>
           <div className="border-t border-slate-100 pt-4">
-            <p className="mb-2 text-xs text-slate-500">Mô tả gian hàng</p>
+            <p className="mb-2 text-xs text-slate-500">{t('settings.shopInfo.descriptionLabel')}</p>
             <p className="whitespace-pre-wrap break-words text-sm text-slate-700">
-              {shop.description || 'Chưa có mô tả gian hàng.'}
+              {shop.description || t('settings.shopInfo.noDescription')}
             </p>
           </div>
         </div>

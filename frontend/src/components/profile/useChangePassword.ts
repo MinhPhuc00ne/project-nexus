@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import i18n from '../../i18n';
 import { getStoredUser } from '../../services/auth';
 import {
   confirmChangePasswordOtp,
@@ -37,7 +38,7 @@ export default function useChangePassword(
 
   const assertAccount = () => {
     if (getStoredUser()?.id !== userId)
-      throw new Error('Tài khoản đang đăng nhập đã thay đổi. Vui lòng mở lại trang hồ sơ.');
+      throw new Error(i18n.t('common:profileEditor.changePasswordModal.accountChangedError'));
   };
   async function requestOtp(): Promise<void> {
     if (lock.current || Date.now() < resendAt) return;
@@ -58,7 +59,11 @@ export default function useChangePassword(
       setResendAt(time + 30 * 1000);
     } catch (cause) {
       if (active.current)
-        setError(cause instanceof Error ? cause.message : 'Không thể gửi mã OTP.');
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : i18n.t('common:profileEditor.changePasswordModal.sendOtpFailed'),
+        );
     } finally {
       lock.current = false;
       if (active.current) setPending(null);
@@ -69,8 +74,10 @@ export default function useChangePassword(
     setError('');
     try {
       assertAccount();
-      if (!sent) throw new Error('Vui lòng gửi mã OTP trước.');
-      if (Date.now() >= expiresAt) throw new Error('Mã OTP đã hết hạn. Vui lòng gửi lại mã mới.');
+      if (!sent)
+        throw new Error(i18n.t('common:profileEditor.changePasswordModal.requestOtpFirstError'));
+      if (Date.now() >= expiresAt)
+        throw new Error(i18n.t('common:profileEditor.changePasswordModal.expiredError'));
       const payload = validatePasswordChange(otp, newPassword, confirmation);
       lock.current = true;
       setPending('confirm');
@@ -79,7 +86,11 @@ export default function useChangePassword(
       if (active.current) onSuccess();
     } catch (cause) {
       if (active.current)
-        setError(cause instanceof Error ? cause.message : 'Không thể đổi mật khẩu.');
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : i18n.t('common:profileEditor.changePasswordModal.changeFailed'),
+        );
     } finally {
       lock.current = false;
       if (active.current) setPending(null);

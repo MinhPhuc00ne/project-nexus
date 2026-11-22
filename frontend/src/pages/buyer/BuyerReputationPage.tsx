@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Award,
   ShieldCheck,
@@ -22,48 +24,46 @@ import {
 } from '../../services/reputation.service';
 import { ROUTES } from '../../routes/paths';
 
-const TRUST_LEVEL_CONFIG: Record<
-  ReputationTrustLevel,
-  { label: string; badgeCls: string; colorCls: string; icon: string; desc: string }
-> = {
+const TRUST_LEVEL_CONFIG = {
   EXCELLENT: {
-    label: 'Kim Cương (≥ 120 điểm)',
+    labelKey: 'reputationPage.trustLevels.excellentLabel',
     badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     colorCls: 'text-indigo-600',
     icon: '💎',
-    desc: 'Cấp bậc tin cậy cao nhất trên sàn NEXUS. Hưởng trọn vẹn đặc quyền VIP, ưu tiên tham gia mọi phòng đấu giá cao cấp và ưu tiên xử lý tranh chấp.',
+    descKey: 'reputationPage.trustLevels.excellentDesc',
   },
   GOOD: {
-    label: 'Bạch Kim (100 - 119 điểm)',
+    labelKey: 'reputationPage.trustLevels.goodLabel',
     badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     colorCls: 'text-emerald-600',
     icon: '🛡️',
-    desc: 'Tài khoản hoạt động rất uy tín, hoàn tất đơn hàng chuẩn xác, đủ điều kiện mở gian hàng Seller và tham gia toàn bộ các phiên đấu giá.',
+    descKey: 'reputationPage.trustLevels.goodDesc',
   },
   STANDARD: {
-    label: 'Tiêu Chuẩn (80 - 99 điểm)',
+    labelKey: 'reputationPage.trustLevels.standardLabel',
     badgeCls: 'bg-blue-50 text-blue-700 border-blue-200',
     colorCls: 'text-blue-600',
     icon: '🥈',
-    desc: 'Tài khoản ở mức an toàn tiêu chuẩn. Đủ điều kiện tham gia đấu giá phổ thông và mua sắm thương mại điện tử bảo chứng Escrow.',
+    descKey: 'reputationPage.trustLevels.standardDesc',
   },
   PROBATION: {
-    label: 'Cảnh Báo (40 - 79 điểm)',
+    labelKey: 'reputationPage.trustLevels.probationLabel',
     badgeCls: 'bg-amber-50 text-amber-700 border-amber-200',
     colorCls: 'text-amber-600',
     icon: '⚠️',
-    desc: 'Tài khoản đang trong diện theo dõi do có vi phạm giao dịch hoặc hủy đơn. Một số phiên đấu giá cao cấp có thể chuyển sang chế độ Chỉ Xem (View-Only).',
+    descKey: 'reputationPage.trustLevels.probationDesc',
   },
   SUSPENDED: {
-    label: 'Đình Chỉ (< 40 điểm)',
+    labelKey: 'reputationPage.trustLevels.suspendedLabel',
     badgeCls: 'bg-rose-50 text-rose-700 border-rose-200',
     colorCls: 'text-rose-600',
     icon: '🚫',
-    desc: 'Điểm uy tín dưới ngưỡng an toàn tối thiểu (dưới 40 điểm). Tài khoản bị khóa quyền đặt giá đấu giá và mở gian hàng. Vui lòng liên hệ BQT để được hỗ trợ.',
+    descKey: 'reputationPage.trustLevels.suspendedDesc',
   },
-};
+} as const;
 
 export default function BuyerReputationPage() {
+  const { t, i18n } = useTranslation('buyer');
   const [summary, setSummary] = useState<ReputationSummary | null>(null);
   const [logs, setLogs] = useState<ReputationLogItem[]>([]);
   const [totalLogs, setTotalLogs] = useState(0);
@@ -112,13 +112,8 @@ export default function BuyerReputationPage() {
               <Award size={20} />
             </div>
             <div>
-              <h1 className="text-lg font-extrabold text-slate-900">
-                Điểm Uy Tín & Cấp Bậc Khách Hàng
-              </h1>
-              <p className="text-xs text-slate-500">
-                Thang điểm đánh giá độ tin cậy, lịch sử giao dịch và quyền lợi của tài khoản trên
-                sàn NEXUS.
-              </p>
+              <h1 className="text-lg font-extrabold text-slate-900">{t('reputationPage.title')}</h1>
+              <p className="text-xs text-slate-500">{t('reputationPage.subtitle')}</p>
             </div>
           </div>
         </div>
@@ -127,14 +122,14 @@ export default function BuyerReputationPage() {
           to={ROUTES.BUYER}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
         >
-          <ChevronLeft size={14} /> Quay lại Tổng quan
+          <ChevronLeft size={14} /> {t('reputationPage.backToOverview')}
         </Link>
       </div>
 
       {loading && !summary ? (
         <div className="py-20 flex flex-col items-center justify-center text-slate-400 text-xs">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-          <span>Đang tải thông tin điểm uy tín...</span>
+          <span>{t('reputationPage.loading')}</span>
         </div>
       ) : (
         <>
@@ -145,19 +140,21 @@ export default function BuyerReputationPage() {
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                    Chỉ Số Uy Tín Hiện Tại
+                    {t('reputationPage.currentIndex')}
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${config.badgeCls}`}
                   >
                     <span>{config.icon}</span>
-                    <span>{config.label}</span>
+                    <span>{t(config.labelKey)}</span>
                   </span>
                 </div>
 
                 <div className="mt-5 flex items-baseline gap-3">
                   <span className="text-5xl font-black tracking-tight text-slate-900">{score}</span>
-                  <span className="text-sm font-bold text-slate-400">/ 100 điểm tối đa</span>
+                  <span className="text-sm font-bold text-slate-400">
+                    {t('reputationPage.maxScore')}
+                  </span>
                 </div>
 
                 {/* Progress bar */}
@@ -177,17 +174,17 @@ export default function BuyerReputationPage() {
                     />
                   </div>
                   <div className="mt-2 flex justify-between text-[11px] text-slate-400 font-medium">
-                    <span>0 (Rủi ro cao)</span>
-                    <span>20 (Đủ điều kiện bán)</span>
-                    <span>80 (Đấu giá VIP)</span>
-                    <span>100 (Tối thượng)</span>
+                    <span>{t('reputationPage.scale0')}</span>
+                    <span>{t('reputationPage.scale20')}</span>
+                    <span>{t('reputationPage.scale80')}</span>
+                    <span>{t('reputationPage.scale100')}</span>
                   </div>
                 </div>
               </div>
 
               <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50/70 p-3.5 flex items-start gap-2.5 text-xs text-slate-600">
                 <Info size={16} className="text-blue-600 shrink-0 mt-0.5" />
-                <p className="leading-relaxed">{config.desc}</p>
+                <p className="leading-relaxed">{t(config.descKey)}</p>
               </div>
             </div>
 
@@ -195,7 +192,7 @@ export default function BuyerReputationPage() {
             <div className="md:col-span-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
               <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
-                  Quyền Lợi & Điều Kiện Mở Khóa
+                  {t('reputationPage.privilegesTitle')}
                 </h3>
 
                 <div className="space-y-3">
@@ -206,17 +203,21 @@ export default function BuyerReputationPage() {
                         <Gavel size={16} />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800">Tham gia Đấu giá VIP</p>
-                        <p className="text-[11px] text-slate-400">Yêu cầu uy tín ≥ 80</p>
+                        <p className="font-bold text-slate-800">
+                          {t('reputationPage.vipAuctionTitle')}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {t('reputationPage.vipAuctionReq')}
+                        </p>
                       </div>
                     </div>
                     {score >= 80 ? (
                       <span className="flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                        <CheckCircle2 size={14} /> Đủ điều kiện
+                        <CheckCircle2 size={14} /> {t('reputationPage.eligible')}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 font-bold text-slate-400 text-xs">
-                        Chưa đạt
+                        {t('reputationPage.notEligible')}
                       </span>
                     )}
                   </div>
@@ -228,17 +229,21 @@ export default function BuyerReputationPage() {
                         <Store size={16} />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800">Mở gian hàng Seller</p>
-                        <p className="text-[11px] text-slate-400">Yêu cầu uy tín ≥ 20</p>
+                        <p className="font-bold text-slate-800">
+                          {t('reputationPage.openShopTitle')}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {t('reputationPage.openShopReq')}
+                        </p>
                       </div>
                     </div>
                     {score >= 20 && !summary?.isSuspended ? (
                       <span className="flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                        <CheckCircle2 size={14} /> Đủ điều kiện
+                        <CheckCircle2 size={14} /> {t('reputationPage.eligible')}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 font-bold text-rose-500 text-xs">
-                        <AlertTriangle size={14} /> Bị giới hạn
+                        <AlertTriangle size={14} /> {t('reputationPage.restricted')}
                       </span>
                     )}
                   </div>
@@ -250,12 +255,16 @@ export default function BuyerReputationPage() {
                         <ShieldCheck size={16} />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800">Trạng thái an toàn</p>
-                        <p className="text-[11px] text-slate-400">Bảo vệ qua NEXUS Escrow</p>
+                        <p className="font-bold text-slate-800">
+                          {t('reputationPage.safeStatusTitle')}
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          {t('reputationPage.safeStatusDesc')}
+                        </p>
                       </div>
                     </div>
                     <span className="flex items-center gap-1 font-bold text-emerald-600 text-xs">
-                      <CheckCircle2 size={14} /> Hoạt động tốt
+                      <CheckCircle2 size={14} /> {t('reputationPage.goodStanding')}
                     </span>
                   </div>
                 </div>
@@ -266,7 +275,7 @@ export default function BuyerReputationPage() {
                   to="/buyer/orders"
                   className="w-full flex items-center justify-center gap-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
                 >
-                  <span>Xem đơn hàng để tích lũy thêm điểm</span>
+                  <span>{t('reputationPage.viewOrdersForPoints')}</span>
                   <span>→</span>
                 </Link>
               </div>
@@ -278,9 +287,11 @@ export default function BuyerReputationPage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2">
                 <History size={18} className="text-blue-600" />
-                <h3 className="text-sm font-bold text-slate-900">Lịch Sử Biến Động Điểm Uy Tín</h3>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {t('reputationPage.historyTitle')}
+                </h3>
                 <span className="text-xs text-slate-400 font-normal">
-                  ({totalLogs} giao dịch được ghi nhận)
+                  {t('reputationPage.recordsCount', { count: totalLogs })}
                 </span>
               </div>
             </div>
@@ -288,10 +299,9 @@ export default function BuyerReputationPage() {
             {logs.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-500">
                 <Award size={36} className="mx-auto text-slate-300 mb-2" />
-                <p className="font-semibold text-slate-700">Tài khoản chưa có biến động điểm nào</p>
+                <p className="font-semibold text-slate-700">{t('reputationPage.emptyTitle')}</p>
                 <p className="text-slate-400 mt-1 max-w-sm mx-auto">
-                  Bạn đang giữ mức điểm chuẩn ban đầu (100 điểm). Hãy tiếp tục hoàn thành các đơn
-                  hàng để duy trì thứ hạng cao!
+                  {t('reputationPage.emptyDesc')}
                 </p>
               </div>
             ) : (
@@ -299,10 +309,12 @@ export default function BuyerReputationPage() {
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">
-                      <th className="pb-3 pl-2">Thời gian</th>
-                      <th className="pb-3">Hành động / Lý do</th>
-                      <th className="pb-3 text-center">Biến động</th>
-                      <th className="pb-3 text-right pr-2">Số dư sau giao dịch</th>
+                      <th className="pb-3 pl-2">{t('reputationPage.colTime')}</th>
+                      <th className="pb-3">{t('reputationPage.colReason')}</th>
+                      <th className="pb-3 text-center">{t('reputationPage.colDelta')}</th>
+                      <th className="pb-3 text-right pr-2">
+                        {t('reputationPage.colBalanceAfter')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -311,7 +323,7 @@ export default function BuyerReputationPage() {
                       return (
                         <tr key={log.id} className="hover:bg-slate-50/70 transition">
                           <td className="py-3.5 pl-2 text-slate-500 whitespace-nowrap">
-                            {new Date(log.createdAt).toLocaleString('vi-VN')}
+                            {new Date(log.createdAt).toLocaleString(getIntlLocale(i18n.language))}
                           </td>
                           <td className="py-3.5 font-medium text-slate-900">
                             <p>{log.reason}</p>
@@ -329,11 +341,12 @@ export default function BuyerReputationPage() {
                                   : 'bg-rose-50 text-rose-700 border border-rose-200'
                               }`}
                             >
-                              {isPositive ? `+${log.deltaPoints}` : log.deltaPoints} điểm
+                              {isPositive ? `+${log.deltaPoints}` : log.deltaPoints}{' '}
+                              {t('reputationPage.pointsUnit')}
                             </span>
                           </td>
                           <td className="py-3.5 text-right pr-2 font-bold text-slate-900">
-                            {log.balanceAfter} đ
+                            {log.balanceAfter} {t('reputationPage.pointsUnit')}
                           </td>
                         </tr>
                       );
@@ -347,7 +360,7 @@ export default function BuyerReputationPage() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
                 <span className="text-slate-500">
-                  Trang {page} / {totalPages}
+                  {t('reputationPage.pageLabel', { page, totalPages })}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <button

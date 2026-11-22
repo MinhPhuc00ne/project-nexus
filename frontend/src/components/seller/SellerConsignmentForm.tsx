@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from 'react';
 import { LoaderCircle, Send } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { registerAuctionItemApi, type AuctionEntity } from '../../services/auction.service';
 import {
   getConsignmentErrorMessage,
@@ -33,6 +34,7 @@ export default function SellerConsignmentForm({
   onSuccess,
   preselectedAuctionId,
 }: SellerConsignmentFormProps): ReactElement {
+  const { t } = useTranslation('seller');
   const { notify } = useSellerWorkspace();
   const [form, setForm] = useState<ConsignmentFormState>(initialConsignmentForm);
   const [itemImages, setItemImages] = useState<File[]>([]);
@@ -60,11 +62,11 @@ export default function SellerConsignmentForm({
   const submit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     if (!form.auctionId || !form.title.trim() || !form.description.trim()) {
-      notify('Hãy chọn phiên đấu giá, nhập tên và mô tả vật phẩm.', 'error');
+      notify(t('auctions.consignment.missingFieldsErr'), 'error');
       return;
     }
     if (!itemImages.length || !certificateImages.length) {
-      notify('Cần tối thiểu một ảnh vật phẩm và một ảnh chứng thư để Admin thẩm định.', 'error');
+      notify(t('auctions.consignment.missingImagesErr'), 'error');
       return;
     }
     const startingPrice = Number(form.proposedStartingPrice);
@@ -73,18 +75,18 @@ export default function SellerConsignmentForm({
       ? Number(form.proposedReservePrice)
       : undefined;
     if (!Number.isFinite(startingPrice) || startingPrice < 10000) {
-      notify('Giá khởi điểm phải từ 10.000 ₫.', 'error');
+      notify(t('auctions.consignment.minStartPriceErr'), 'error');
       return;
     }
     if (!Number.isFinite(bidIncrement) || bidIncrement < 1000) {
-      notify('Bước giá tối thiểu là 1.000 ₫.', 'error');
+      notify(t('auctions.consignment.minIncrementErr'), 'error');
       return;
     }
     if (
       reservePrice !== undefined &&
       (!Number.isFinite(reservePrice) || reservePrice < 10000 || reservePrice > startingPrice)
     ) {
-      notify('Giá sàn phải từ 10.000 ₫ và nhỏ hơn hoặc bằng giá khởi điểm.', 'error');
+      notify(t('auctions.consignment.reserveRangeErr'), 'error');
       return;
     }
     const parcelCheck = parseConsignmentParcel(form);
@@ -94,10 +96,16 @@ export default function SellerConsignmentForm({
     }
     setIsSubmitting(true);
     try {
-      notify('Đang tải ảnh vật phẩm…');
-      const images = await uploadConsignmentFiles(itemImages, 'ảnh vật phẩm');
-      notify('Đang tải chứng thư thẩm định…');
-      const certificates = await uploadConsignmentFiles(certificateImages, 'ảnh chứng thư');
+      notify(t('auctions.consignment.uploadingItems'));
+      const images = await uploadConsignmentFiles(
+        itemImages,
+        t('auctions.consignment.itemPhotosLabel'),
+      );
+      notify(t('auctions.consignment.uploadingCerts'));
+      const certificates = await uploadConsignmentFiles(
+        certificateImages,
+        t('auctions.consignment.certPhotosLabel'),
+      );
       const response = await registerAuctionItemApi(form.auctionId, {
         title: form.title.trim(),
         description: form.description.trim(),
@@ -118,7 +126,7 @@ export default function SellerConsignmentForm({
           ? { certificateIssueDate: new Date(form.certificateIssueDate).toISOString() }
           : {}),
       });
-      notify(response.message || 'Đã gửi vật phẩm để Admin duyệt.', 'success');
+      notify(response.message || t('auctions.consignment.submitSuccess'), 'success');
       setForm(initialConsignmentForm);
       setItemImages([]);
       setCertificateImages([]);
@@ -138,14 +146,17 @@ export default function SellerConsignmentForm({
         isLoading={isLoading}
         updateForm={updateForm}
       />
-      <Panel title="Ảnh vật phẩm" subtitle="Tải 1–5 ảnh rõ nét từ nhiều góc để Admin thẩm định.">
+      <Panel
+        title={t('auctions.consignment.itemPhotosTitle')}
+        subtitle={t('auctions.consignment.itemPhotosSubtitle')}
+      >
         <ConsignmentImagePicker
           files={itemImages}
           onFilesChange={setItemImages}
           onError={(message) => notify(message, 'error')}
-          label="Chọn ảnh vật phẩm *"
-          previewLabel="ảnh vật phẩm"
-          previewDescription="(ảnh đầu tiên là ảnh đại diện):"
+          label={t('auctions.consignment.chooseItemPhotos')}
+          previewLabel={t('auctions.consignment.itemPhotosLabel')}
+          previewDescription={t('auctions.consignment.previewDescCover')}
         />
       </Panel>
       <SellerConsignmentCertificateFields
@@ -157,14 +168,16 @@ export default function SellerConsignmentForm({
       />
       <div className="flex justify-end gap-3">
         <SellerLink secondary to="/seller/auctions">
-          Hủy
+          {t('auctions.consignment.cancel')}
         </SellerLink>
         <SellerButton
           type="submit"
           disabled={isSubmitting || isLoading || !eligibleAuctions.length}
         >
           {isSubmitting ? <LoaderCircle className="animate-spin" size={16} /> : <Send size={16} />}
-          {isSubmitting ? 'Đang gửi hồ sơ…' : 'Gửi Admin thẩm định'}
+          {isSubmitting
+            ? t('auctions.consignment.submitting')
+            : t('auctions.consignment.submitBtn')}
         </SellerButton>
       </div>
     </form>

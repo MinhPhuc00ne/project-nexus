@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { HomeHeroSlide } from './home.types';
 
@@ -8,25 +9,25 @@ export interface HomeHeroBannerProps {
   loading?: boolean;
 }
 
-const FALLBACK_PLATFORM_SLIDES: HomeHeroSlide[] = [
-  {
-    badge: 'NEXUS OFFICIAL PLATFORM',
-    title: 'Sàn Thương Mại Điện Tử &',
-    accent: 'Đấu Giá Trực Tuyến Độc Bản',
-    description:
-      'Mua sắm sản phẩm công nghệ, gear, phụ kiện cao cấp. Trải nghiệm tương tác đa chiều, thanh toán bảo chứng PayOS Escrow và giao vận hỏa tốc GHN.',
-    image:
-      'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1400&q=80',
-    targetUrl: '/search',
-    isFullBanner: false,
-  },
-];
-
 export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerProps) {
+  const { t } = useTranslation('guest');
   const [activeSlide, setActiveSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  const activeSlides = slides.length > 0 ? slides : FALLBACK_PLATFORM_SLIDES;
+  const fallbackPlatformSlides: HomeHeroSlide[] = [
+    {
+      badge: 'NEXUS OFFICIAL PLATFORM',
+      title: t('home.heroFallback.title'),
+      accent: t('home.heroFallback.accent'),
+      description: t('home.heroFallback.description'),
+      image:
+        'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1400&q=80',
+      targetUrl: '/search',
+      isFullBanner: false,
+    },
+  ];
+
+  const activeSlides = slides.length > 0 ? slides : fallbackPlatformSlides;
 
   const showPreviousSlide = useCallback(
     () => setActiveSlide((current) => (current === 0 ? activeSlides.length - 1 : current - 1)),
@@ -134,14 +135,14 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
                     to={currentSlide.targetUrl || '/search'}
                     className="inline-flex items-center justify-center rounded-xl bg-[#f36a22] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(243,106,34,0.25)] transition hover:bg-[#ea5b10] hover:shadow-lg active:scale-95"
                   >
-                    Mua Sắm Ngay
+                    {t('home.heroFallback.shopNow')}
                   </Link>
 
                   <Link
                     to="/auction"
                     className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white/90 px-6 py-3 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-white hover:border-slate-400 active:scale-95"
                   >
-                    Xem Phòng Đấu Giá
+                    {t('home.heroFallback.viewAuctionRoom')}
                   </Link>
                 </div>
               </div>
@@ -168,7 +169,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
           <>
             <button
               type="button"
-              aria-label="Banner trước"
+              aria-label={t('home.heroFallback.prevBanner')}
               onClick={showPreviousSlide}
               className="absolute left-3 top-1/2 z-20 flex h-9 w-9 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/85 text-slate-700 shadow-md backdrop-blur-md transition-all duration-200 hover:border-orange-300 hover:bg-white hover:text-[#f36a22] hover:scale-105 active:scale-95 sm:left-5 cursor-pointer"
             >
@@ -177,7 +178,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
 
             <button
               type="button"
-              aria-label="Banner tiếp theo"
+              aria-label={t('home.heroFallback.nextBanner')}
               onClick={showNextSlide}
               className="absolute right-3 top-1/2 z-20 flex h-9 w-9 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/85 text-slate-700 shadow-md backdrop-blur-md transition-all duration-200 hover:border-orange-300 hover:bg-white hover:text-[#f36a22] hover:scale-105 active:scale-95 sm:right-5 cursor-pointer"
             >
@@ -189,7 +190,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
                 <button
                   key={index}
                   type="button"
-                  aria-label={`Chuyển đến slide ${index + 1}`}
+                  aria-label={t('home.heroFallback.goToSlide', { index: index + 1 })}
                   onClick={() => setActiveSlide(index)}
                   className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                     activeSlide === index ? 'w-7 bg-[#f36a22]' : 'w-2 bg-white/75 hover:bg-white'

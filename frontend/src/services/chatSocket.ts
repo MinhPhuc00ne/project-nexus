@@ -1,4 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
+import i18n from '../i18n';
 import { API_BASE_URL } from './api';
 import { getStoredToken, getStoredUser } from './auth';
 import type { ChatMessage } from '../types/chat.types';
@@ -38,7 +39,7 @@ export interface ChatConnectionClient {
 
 // Subscribe to events before calling connect(). Send messages through Axios.
 export function createChatConnection(): ChatConnectionClient {
-  if (!getStoredToken()) throw new Error('Vui lòng đăng nhập để sử dụng chat.');
+  if (!getStoredToken()) throw new Error(i18n.t('errors:services.chatAuthRequired'));
   const backendUrl = new URL(API_BASE_URL, window.location.origin);
   const socket: ChatSocket = io(`${backendUrl.origin}/chat`, {
     autoConnect: false,

@@ -1,6 +1,7 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { ChevronLeft as LeftOutlined } from 'lucide-react';
 import { ChevronRight as RightOutlined, Eye as EyeOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import useProductResource from '../productDetail/useProductResource';
 import { getSellerTransactions, getSellerWithdrawals } from '../../services/sellerFinance';
 import type {
@@ -16,9 +17,11 @@ import SellerWithdrawalDetail from './SellerWithdrawalDetail';
 import {
   financeDate,
   financeMoney,
-  transactionLabels,
-  transactionStatusLabels,
-  withdrawalLabels,
+  getTransactionLabel,
+  getTransactionStatusLabel,
+  getWithdrawalLabel,
+  transactionLabelKeys,
+  transactionStatusLabelKeys,
 } from './financeFormat';
 
 const selectClass =
@@ -29,6 +32,7 @@ type HistoryData =
   | { kind: 'withdrawals'; data: FinancePage<SellerWithdrawal> };
 
 export default function SellerFinanceHistory({ revision }: { revision: number }): ReactElement {
+  const { t } = useTranslation('seller');
   const [tab, setTab] = useState<'transactions' | 'withdrawals'>('transactions');
   const [page, setPage] = useState(1);
   const [type, setType] = useState<TransactionType | ''>('');
@@ -48,20 +52,17 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
   const resource = useProductResource(load);
   const result = resource.data;
   return (
-    <Panel
-      title="Lịch sử tài chính"
-      subtitle="Theo dõi giao dịch và tiến độ xử lý yêu cầu rút tiền"
-    >
+    <Panel title={t('finance.history.title')} subtitle={t('finance.history.subtitle')}>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div
           role="tablist"
-          aria-label="Lịch sử tài chính"
+          aria-label={t('finance.history.title')}
           className="flex gap-1 rounded-lg bg-blue-50 p-1"
         >
           {(
             [
-              ['transactions', 'Giao dịch'],
-              ['withdrawals', 'Yêu cầu rút tiền'],
+              ['transactions', t('finance.history.tabTransactions')],
+              ['withdrawals', t('finance.history.tabWithdrawals')],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -81,7 +82,7 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
         {tab === 'transactions' && (
           <div className="flex flex-wrap gap-2">
             <select
-              aria-label="Loại giao dịch"
+              aria-label={t('finance.history.typeAria')}
               className={selectClass}
               value={type}
               onChange={(e) => {
@@ -89,15 +90,15 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
                 setPage(1);
               }}
             >
-              <option value="">Tất cả loại giao dịch</option>
-              {Object.entries(transactionLabels).map(([key, label]) => (
+              <option value="">{t('finance.history.allTypes')}</option>
+              {Object.entries(transactionLabelKeys).map(([key, labelKey]) => (
                 <option key={key} value={key}>
-                  {label}
+                  {t(labelKey)}
                 </option>
               ))}
             </select>
             <select
-              aria-label="Trạng thái giao dịch"
+              aria-label={t('finance.history.statusAria')}
               className={selectClass}
               value={status}
               onChange={(e) => {
@@ -105,10 +106,10 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
                 setPage(1);
               }}
             >
-              <option value="">Tất cả trạng thái</option>
-              {Object.entries(transactionStatusLabels).map(([key, label]) => (
+              <option value="">{t('finance.history.allStatuses')}</option>
+              {Object.entries(transactionStatusLabelKeys).map(([key, labelKey]) => (
                 <option key={key} value={key}>
-                  {label}
+                  {t(labelKey)}
                 </option>
               ))}
             </select>
@@ -123,11 +124,13 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
                 <thead className="border-y border-blue-100 bg-blue-50/60 text-slate-500">
                   <tr>
                     {[
-                      'Thời gian / Mã',
-                      tab === 'transactions' ? 'Giao dịch' : 'Ngân hàng thụ hưởng',
-                      'Số tiền',
-                      'Trạng thái',
-                      'Chi tiết',
+                      t('finance.history.colTimeId'),
+                      tab === 'transactions'
+                        ? t('finance.history.colTransaction')
+                        : t('finance.history.colBank'),
+                      t('finance.history.colAmount'),
+                      t('finance.history.colStatus'),
+                      t('finance.history.colDetail'),
                     ].map((label) => (
                       <th key={label} className="px-3 py-3 font-medium">
                         {label}
@@ -146,7 +149,7 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
                             </small>
                           </td>
                           <td className="px-3 py-4 font-medium">
-                            {transactionLabels[item.type] || item.type}
+                            {getTransactionLabel(item.type)}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 font-semibold text-blue-700">
                             {financeMoney(item.amount)}
@@ -161,7 +164,7 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
                                     : 'amber'
                               }
                             >
-                              {transactionStatusLabels[item.status] || item.status}
+                              {getTransactionStatusLabel(item.status)}
                             </Badge>
                           </td>
                           <td className="max-w-[300px] break-words px-3 py-4 leading-6 text-slate-500">
@@ -198,7 +201,7 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
                                       : 'amber'
                               }
                             >
-                              {withdrawalLabels[item.status] || item.status}
+                              {getWithdrawalLabel(item.status)}
                             </Badge>
                           </td>
                           <td className="px-3 py-4">
@@ -206,7 +209,7 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
                               className="inline-flex items-center gap-1 text-blue-600 hover:underline"
                               onClick={() => setDetail(item)}
                             >
-                              <EyeOutlined /> Xem chi tiết
+                              <EyeOutlined /> {t('finance.history.viewDetail')}
                             </button>
                           </td>
                         </tr>
@@ -217,21 +220,26 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
           ) : (
             <EmptyState
               title={
-                tab === 'transactions' ? 'Chưa có giao dịch phù hợp' : 'Chưa có yêu cầu rút tiền'
+                tab === 'transactions'
+                  ? t('finance.history.emptyTransactions')
+                  : t('finance.history.emptyWithdrawals')
               }
-              description="Dữ liệu sẽ hiển thị khi có giao dịch hoặc yêu cầu mới."
+              description={t('finance.history.emptyDesc')}
             />
           ))}
         {result && (
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
             <span>
-              {result.data.total} bản ghi · Trang {result.data.page}/
-              {Math.max(1, result.data.totalPages)}
+              {t('ui.paginationSummary', {
+                total: result.data.total,
+                page: result.data.page,
+                totalPages: Math.max(1, result.data.totalPages),
+              })}
             </span>
             <div className="flex gap-2">
               <SellerButton
                 secondary
-                aria-label="Trang trước"
+                aria-label={t('ui.prevPage')}
                 disabled={page <= 1}
                 onClick={() => setPage(page - 1)}
               >
@@ -239,7 +247,7 @@ export default function SellerFinanceHistory({ revision }: { revision: number })
               </SellerButton>
               <SellerButton
                 secondary
-                aria-label="Trang sau"
+                aria-label={t('ui.nextPage')}
                 disabled={page >= result.data.totalPages}
                 onClick={() => setPage(page + 1)}
               >

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, CheckCircle2, AlertCircle, Loader2, Store, Package } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import Popup from '../Popup';
 import { submitProductReviewApi, submitShopReviewApi } from '../../services/reviews.service';
 import type { BuyerOrder } from '../../services/orders';
@@ -17,6 +19,7 @@ export default function OrderReviewModal({
   order,
   onSuccess,
 }: OrderReviewModalProps) {
+  const { t } = useTranslation('commerce');
   const items = Array.isArray(order.items) ? order.items : [];
 
   // Ratings for each product
@@ -56,7 +59,7 @@ export default function OrderReviewModal({
 
         await submitProductReviewApi(order.id, productId, {
           rating,
-          comment: comment || 'Sản phẩm rất tốt, giao hàng nhanh và đúng mô tả.',
+          comment: comment || t('orders.reviewModal.defaultProductComment'),
         });
       }
 
@@ -64,17 +67,14 @@ export default function OrderReviewModal({
       if (includeShop) {
         await submitShopReviewApi(order.id, {
           rating: shopRating,
-          comment: shopComment.trim() || 'Gian hàng uy tín, đóng gói cẩn thận và phục vụ chu đáo.',
+          comment: shopComment.trim() || t('orders.reviewModal.defaultShopComment'),
         });
       }
 
       setSuccess(true);
       if (onSuccess) onSuccess();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : 'Không thể gửi đánh giá lúc này. Vui lòng kiểm tra lại trạng thái đơn hàng.';
+      const msg = err instanceof Error ? err.message : t('orders.reviewModal.submitFailed');
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -95,7 +95,9 @@ export default function OrderReviewModal({
       title={
         <div className="flex items-center gap-2 text-base font-bold text-slate-900">
           <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-          <span>Đánh giá đơn hàng #{order.orderNumber || order.id?.slice(0, 8)}</span>
+          <span>
+            {t('orders.reviewModal.title', { code: order.orderNumber || order.id?.slice(0, 8) })}
+          </span>
         </div>
       }
       size="lg"
@@ -107,10 +109,10 @@ export default function OrderReviewModal({
           </div>
           <div className="space-y-1">
             <h3 className="text-base font-bold text-slate-900">
-              Cảm ơn bạn đã gửi đánh giá sản phẩm!
+              {t('orders.reviewModal.thankYouTitle')}
             </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Đánh giá của bạn đã được ghi nhận vào hệ thống và điểm uy tín của gian hàng NEXUS.
+              {t('orders.reviewModal.thankYouDesc')}
             </p>
           </div>
           <button
@@ -118,7 +120,7 @@ export default function OrderReviewModal({
             onClick={handleClose}
             className="px-6 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition"
           >
-            Đóng
+            {t('orders.reviewModal.close')}
           </button>
         </div>
       ) : (
@@ -134,12 +136,12 @@ export default function OrderReviewModal({
           <div className="space-y-4">
             <h4 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-slate-700">
               <Package size={14} className="text-blue-600" />
-              <span>Đánh giá chất lượng sản phẩm</span>
+              <span>{t('orders.reviewModal.rateProductsTitle')}</span>
             </h4>
 
             {items.map((item) => {
               const pid = item.productId || item.product?.id || item.id;
-              const title = item.product?.title || 'Sản phẩm NEXUS';
+              const title = item.product?.title || t('orders.reviewModal.defaultProductName');
               const firstImage = item.product?.images?.[0];
               const img =
                 item.product?.thumbnail ||
@@ -163,7 +165,7 @@ export default function OrderReviewModal({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-bold text-slate-900">{title}</p>
                       <p className="text-[11px] text-slate-500">
-                        {Number(item.unitPrice || item.subtotal || 0).toLocaleString('vi-VN')} ₫ x{' '}
+                        {formatCurrency(Number(item.unitPrice || item.subtotal || 0))} x{' '}
                         {item.quantity}
                       </p>
                     </div>
@@ -171,7 +173,9 @@ export default function OrderReviewModal({
 
                   {/* Chọn sao */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-700">Đánh giá:</span>
+                    <span className="text-xs font-semibold text-slate-700">
+                      {t('orders.reviewModal.ratingLabel')}
+                    </span>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -192,15 +196,17 @@ export default function OrderReviewModal({
                       ))}
                     </div>
                     <span className="text-xs font-bold text-amber-600 ml-1">
-                      {currentRating === 5
-                        ? 'Tuyệt vời'
-                        : currentRating === 4
-                          ? 'Hài lòng'
-                          : currentRating === 3
-                            ? 'Bình thường'
-                            : currentRating === 2
-                              ? 'Không hài lòng'
-                              : 'Rất tệ'}
+                      {t(
+                        (
+                          {
+                            1: 'orders.reviewModal.rating1',
+                            2: 'orders.reviewModal.rating2',
+                            3: 'orders.reviewModal.rating3',
+                            4: 'orders.reviewModal.rating4',
+                            5: 'orders.reviewModal.rating5',
+                          } as const
+                        )[currentRating] ?? 'orders.reviewModal.rating5',
+                      )}
                     </span>
                   </div>
 
@@ -212,7 +218,7 @@ export default function OrderReviewModal({
                       onChange={(e) =>
                         setProductComments((prev) => ({ ...prev, [pid]: e.target.value }))
                       }
-                      placeholder="Hãy chia sẻ nhận xét của bạn về chất lượng sản phẩm, độ hoàn thiện, đóng gói..."
+                      placeholder={t('orders.reviewModal.productCommentPlaceholder')}
                       className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
                     />
                   </div>
@@ -232,14 +238,16 @@ export default function OrderReviewModal({
                   className="rounded text-blue-600 focus:ring-blue-500"
                 />
                 <Store size={14} className="text-sky-600" />
-                <span>Đánh giá dịch vụ của người bán / gian hàng</span>
+                <span>{t('orders.reviewModal.rateShopLabel')}</span>
               </label>
             </div>
 
             {includeShop && (
               <div className="space-y-3 pt-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-700">Độ uy tín shop:</span>
+                  <span className="text-xs font-semibold text-slate-700">
+                    {t('orders.reviewModal.shopTrustLabel')}
+                  </span>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -263,7 +271,7 @@ export default function OrderReviewModal({
                   rows={2}
                   value={shopComment}
                   onChange={(e) => setShopComment(e.target.value)}
-                  placeholder="Nhận xét về thái độ tư vấn, tốc độ chuẩn bị hàng của shop..."
+                  placeholder={t('orders.reviewModal.shopCommentPlaceholder')}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
                 />
               </div>
@@ -277,7 +285,7 @@ export default function OrderReviewModal({
               onClick={handleClose}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
             >
-              Hủy
+              {t('orders.reviewModal.cancel')}
             </button>
             <button
               type="submit"
@@ -287,10 +295,10 @@ export default function OrderReviewModal({
               {submitting ? (
                 <>
                   <Loader2 size={13} className="animate-spin" />
-                  <span>Đang gửi đánh giá...</span>
+                  <span>{t('orders.reviewModal.submitting')}</span>
                 </>
               ) : (
-                <span>Gửi đánh giá ngay</span>
+                <span>{t('orders.reviewModal.submitNow')}</span>
               )}
             </button>
           </div>

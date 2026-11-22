@@ -1,8 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
+import { getIntlLocale } from '../../i18n/config';
 import type { ProductReviewItem } from '../../services/reviews.service';
 
 export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
+  const { t, i18n } = useTranslation('guest');
   return (
     <div className="py-4 space-y-2.5">
       <div className="flex items-center justify-between">
@@ -20,7 +23,7 @@ export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
           </div>
           <div>
             <p className="text-xs font-bold text-slate-800">
-              {rev.reviewer?.fullName || 'Người mua ẩn danh'}
+              {rev.reviewer?.fullName || t('product.anonymousBuyer')}
             </p>
             <div className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((s) => (
@@ -38,7 +41,9 @@ export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
           </div>
         </div>
         <span className="text-[11px] text-slate-400">
-          {rev.createdAt ? new Date(rev.createdAt).toLocaleDateString('vi-VN') : ''}
+          {rev.createdAt
+            ? new Date(rev.createdAt).toLocaleDateString(getIntlLocale(i18n.language))
+            : ''}
         </span>
       </div>
 

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Preset3DModelKey } from './preset3dModels';
 
 interface Point3D {
@@ -624,6 +625,7 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
   secondaryColor,
   modelLabel,
 }) => {
+  const { t } = useTranslation('auction');
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -800,12 +802,12 @@ export const Museum3DCanvas: React.FC<Museum3DCanvasProps> = ({
     <div className="relative flex flex-col items-center justify-center w-full h-full">
       <canvas
         ref={canvasRef}
-        aria-label={`Mô hình 3D ${modelLabel}`}
+        aria-label={t('showcase.canvasAria', { label: modelLabel })}
         className="w-full h-full max-w-[480px] max-h-[380px]"
       />
       <div className="mt-1 inline-flex items-center gap-2 rounded-full border border-amber-400/35 bg-slate-950/75 px-3.5 py-1 text-[11px] font-mono font-semibold tracking-wider text-amber-200 shadow-lg backdrop-blur-md">
         <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-        <span>TRÌNH CHIẾU HOLOGRAM 360° • {modelLabel.toUpperCase()}</span>
+        <span>{t('showcase.hologramTag', { label: modelLabel.toUpperCase() })}</span>
       </div>
     </div>
   );

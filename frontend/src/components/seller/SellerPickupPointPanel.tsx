@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from 'react';
 import { MapPin, RefreshCw, Save } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../ToastNotification';
 import {
   getSellerPickupPoint,
@@ -23,6 +24,7 @@ const emptyPoint: SellerPickupPoint = {
  * @returns Rendered pickup point configuration panel.
  */
 export default function SellerPickupPointPanel(): ReactElement {
+  const { t } = useTranslation('seller');
   const toast = useToast();
   const [point, setPoint] = useState<SellerPickupPoint>(emptyPoint);
   const [loading, setLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function SellerPickupPointPanel(): ReactElement {
     try {
       setPoint((await getSellerPickupPoint()) ?? emptyPoint);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể tải điểm lấy hàng GHN.');
+      setError(cause instanceof Error ? cause.message : t('shipping.pickup.loadErr'));
     } finally {
       setLoading(false);
     }
@@ -51,9 +53,9 @@ export default function SellerPickupPointPanel(): ReactElement {
     try {
       const saved = await saveSellerPickupPoint(point);
       setPoint(saved);
-      toast.success('Đã gửi đồng bộ điểm lấy hàng GHN.');
+      toast.success(t('shipping.pickup.saveSuccess'));
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Không thể lưu điểm lấy hàng.';
+      const message = cause instanceof Error ? cause.message : t('shipping.pickup.saveErr');
       setError(message);
       toast.error(message);
     } finally {
@@ -61,29 +63,26 @@ export default function SellerPickupPointPanel(): ReactElement {
     }
   };
   return (
-    <Panel
-      title="Điểm lấy hàng GHN"
-      subtitle="Thông tin này được dùng khi tạo vận đơn và bàn giao hàng."
-    >
+    <Panel title={t('shipping.pickup.title')} subtitle={t('shipping.pickup.subtitle')}>
       {loading ? (
-        <p className="text-sm text-slate-500">Đang tải điểm lấy hàng…</p>
+        <p className="text-sm text-slate-500">{t('shipping.pickup.loading')}</p>
       ) : (
         <form onSubmit={(event) => void submit(event)} className="space-y-4">
           <div className="rounded-lg border border-blue-100 bg-blue-50 p-3 text-xs text-blue-900">
             <MapPin className="mr-1 inline size-4" />
             {point.status
-              ? `Trạng thái đồng bộ: ${point.status}`
-              : 'Chưa có điểm lấy hàng GHN được đồng bộ.'}
+              ? t('shipping.pickup.syncStatus', { status: point.status })
+              : t('shipping.pickup.notSynced')}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
             {(
               [
-                ['name', 'Tên điểm lấy hàng'],
-                ['phone', 'Số điện thoại'],
-                ['street', 'Số nhà, tên đường'],
-                ['city', 'Tỉnh / thành phố'],
-                ['district', 'Quận / huyện'],
-                ['ward', 'Phường / xã'],
+                ['name', t('shipping.pickup.name')],
+                ['phone', t('shipping.pickup.phone')],
+                ['street', t('shipping.pickup.street')],
+                ['city', t('shipping.pickup.city')],
+                ['district', t('shipping.pickup.district')],
+                ['ward', t('shipping.pickup.ward')],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="text-sm font-medium text-slate-700">
@@ -105,11 +104,11 @@ export default function SellerPickupPointPanel(): ReactElement {
           <div className="flex flex-wrap justify-end gap-2">
             <SellerButton type="button" secondary disabled={saving} onClick={() => void load()}>
               <RefreshCw />
-              Tải lại
+              {t('shipping.pickup.reload')}
             </SellerButton>
             <SellerButton type="submit" disabled={saving}>
               <Save />
-              {saving ? 'Đang đồng bộ…' : 'Lưu điểm lấy hàng'}
+              {saving ? t('shipping.pickup.saving') : t('shipping.pickup.save')}
             </SellerButton>
           </div>
         </form>

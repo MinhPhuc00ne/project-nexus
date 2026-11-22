@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
@@ -11,15 +12,10 @@ import {
   type ReturnAction,
   type ReturnStatus,
 } from '../../../types/admin-return.types';
-import { date, message, money, OrderBadge, shipmentLabels } from './orderPresentation';
+import { date, message, money, OrderBadge } from './orderPresentation';
 
 type Action = 'approve' | 'reject' | 'waybill' | 'receive';
-const actionLabels: Record<Action, string> = {
-  approve: 'Duyệt trả hàng',
-  reject: 'Từ chối',
-  waybill: 'Gắn vận đơn chiều về',
-  receive: 'Xác nhận nhận hàng',
-};
+const RETURN_ACTIONS: Action[] = ['approve', 'reject', 'waybill', 'receive'];
 
 export default function ReturnDetail({
   orderId,
@@ -30,6 +26,7 @@ export default function ReturnDetail({
   onClose: () => void;
   onUpdated: () => void;
 }) {
+  const { t } = useTranslation('admin');
   const [data, setData] = useState<{ order: AdminOrderDetail; returns: AdminReturnOrder } | null>(
     null,
   );
@@ -73,7 +70,7 @@ export default function ReturnDetail({
       setData((current) =>
         current ? { ...current, returns: { ...current.returns, afterSales: updated } } : null,
       );
-      setNotice('Đã xử lý yêu cầu. Đang tải trạng thái mới nhất.');
+      setNotice(t('orders.returns.detail.processedNotice'));
       setAction(null);
       onUpdated();
     } catch (cause) {
@@ -97,7 +94,7 @@ export default function ReturnDetail({
   return (
     <Popup
       isOpen
-      title="Chi tiết hoàn trả hàng"
+      title={t('orders.returns.detail.title')}
       size="xl"
       onClose={() => {
         if (!pending) onClose();
@@ -109,14 +106,14 @@ export default function ReturnDetail({
       <div className="space-y-5">
         {loading && (
           <p role="status" className="text-sm text-slate-500">
-            Đang tải thông tin trả hàng…
+            {t('orders.returns.detail.loading')}
           </p>
         )}
         {error && (
           <div role="alert" className="space-y-2 text-sm text-red-700">
             <p>{error}</p>
             <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-              Thử lại
+              {t('orders.returns.detail.retry')}
             </Button>
           </div>
         )}
@@ -134,43 +131,70 @@ export default function ReturnDetail({
           <>
             <DetailFields
               fields={[
-                ['Đơn hàng', data.order.id],
+                [t('orders.returns.detail.fields.order'), data.order.id],
                 [
-                  'Nguồn đơn hàng',
-                  data.returns.isAuction ? 'Mua từ phiên đấu giá' : 'Mua hàng thông thường',
+                  t('orders.returns.detail.fields.source'),
+                  data.returns.isAuction
+                    ? t('orders.returns.detail.sourceAuction')
+                    : t('orders.returns.detail.sourceNormal'),
                 ],
-                ['Trạng thái đơn', <OrderBadge status={data.order.status} />],
-                ['Người mua', `${data.order.buyer.fullName}\n${data.order.buyer.email}`],
-                ['Người bán', `${data.order.seller.fullName}\n${data.order.seller.email}`],
-                ['Tổng tiền đơn hàng', money(data.order.totalAmount)],
-                ['Ngày yêu cầu', date(request.createdAt)],
                 [
-                  'Trạng thái trả hàng',
+                  t('orders.returns.detail.fields.orderStatus'),
+                  <OrderBadge status={data.order.status} />,
+                ],
+                [
+                  t('orders.returns.detail.fields.buyer'),
+                  `${data.order.buyer.fullName}\n${data.order.buyer.email}`,
+                ],
+                [
+                  t('orders.returns.detail.fields.seller'),
+                  `${data.order.seller.fullName}\n${data.order.seller.email}`,
+                ],
+                [t('orders.returns.detail.fields.orderTotal'), money(data.order.totalAmount)],
+                [t('orders.returns.detail.fields.requestedAt'), date(request.createdAt)],
+                [
+                  t('orders.returns.detail.fields.returnStatus'),
                   <Badge>
-                    {returnStatusLabels[request.status as ReturnStatus] ?? request.status}
+                    {t(`orders.returns.statuses.${request.status as ReturnStatus}`, {
+                      defaultValue:
+                        returnStatusLabels[request.status as ReturnStatus] ?? request.status,
+                    })}
                   </Badge>,
                 ],
-                ['Lý do yêu cầu', request.reason],
-                ['Ghi chú duyệt', request.decisionReason],
-                ['Vận đơn gốc', data.returns.shipment?.waybillCode],
+                [t('orders.returns.detail.fields.reason'), request.reason],
+                [t('orders.returns.detail.fields.decisionNote'), request.decisionReason],
                 [
-                  'Vận chuyển',
+                  t('orders.returns.detail.fields.originalWaybill'),
+                  data.returns.shipment?.waybillCode,
+                ],
+                [
+                  t('orders.returns.detail.fields.shipping'),
                   data.returns.shipment
-                    ? (shipmentLabels[data.returns.shipment.status] ?? data.returns.shipment.status)
+                    ? t(`orders.shipmentStatuses.${data.returns.shipment.status}`, {
+                        defaultValue: data.returns.shipment.status,
+                      })
                     : null,
                 ],
-                ['Vận đơn chiều về', request.returnWaybillCode],
-                ['Đã nhận hàng lúc', request.receivedAt ? date(request.receivedAt) : null],
-                ['Đã nhập lại kho lúc', request.restockedAt ? date(request.restockedAt) : null],
-                ['Ký quỹ', data.returns.escrowRecord?.status],
+                [t('orders.returns.detail.fields.returnWaybill'), request.returnWaybillCode],
+                [
+                  t('orders.returns.detail.fields.receivedAt'),
+                  request.receivedAt ? date(request.receivedAt) : null,
+                ],
+                [
+                  t('orders.returns.detail.fields.restockedAt'),
+                  request.restockedAt ? date(request.restockedAt) : null,
+                ],
+                [t('orders.returns.detail.fields.escrow'), data.returns.escrowRecord?.status],
               ]}
             />
             <section className="space-y-2">
-              <h3 className="text-sm font-semibold">Sản phẩm trả hàng</h3>
+              <h3 className="text-sm font-semibold">{t('orders.returns.detail.itemsTitle')}</h3>
               {data.order.items.map((item) => (
                 <div key={item.id} className="rounded-lg border border-slate-200 p-3 text-sm">
                   <p className="font-medium">
-                    {item.titleSnapshot ?? item.product?.title ?? 'Vật phẩm trong đơn'}
+                    {item.titleSnapshot ??
+                      item.product?.title ??
+                      t('orders.returns.detail.defaultItem')}
                   </p>
                   <p className="mt-1 text-slate-500">
                     {item.quantity} × {money(item.unitPrice)}
@@ -179,7 +203,7 @@ export default function ReturnDetail({
               ))}
             </section>
             <section className="space-y-2">
-              <h3 className="text-sm font-semibold">Bằng chứng</h3>
+              <h3 className="text-sm font-semibold">{t('orders.returns.detail.evidenceTitle')}</h3>
               {evidence.length ? (
                 <div className="flex flex-wrap gap-3">
                   {evidence.map((url, index) => (
@@ -190,46 +214,46 @@ export default function ReturnDetail({
                       rel="noopener noreferrer"
                       className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-700 underline"
                     >
-                      Bằng chứng {index + 1}
+                      {t('orders.returns.detail.evidenceIndex', { index: index + 1 })}
                     </a>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-slate-500">Không có bằng chứng đính kèm.</p>
+                <p className="text-sm text-slate-500">{t('orders.returns.detail.noEvidence')}</p>
               )}
             </section>
             <section className="space-y-2">
-              <h3 className="text-sm font-semibold">Hoàn tiền</h3>
+              <h3 className="text-sm font-semibold">{t('orders.returns.detail.refundsTitle')}</h3>
               {data.returns.refunds.length ? (
                 data.returns.refunds.map((refund) => (
                   <div key={refund.id} className="rounded-lg bg-slate-50 p-3 text-sm">
                     <p>
                       {money(refund.amount)} ·{' '}
                       {refund.destination === 'WALLET'
-                        ? 'Ví NEXUS'
+                        ? t('orders.returns.detail.destWallet')
                         : refund.destination === 'ORIGINAL'
-                          ? 'Nguồn thanh toán ban đầu'
+                          ? t('orders.returns.detail.destOriginal')
                           : refund.destination}{' '}
                       ·{' '}
                       {refund.status === 'SUCCESS'
-                        ? 'Đã hoàn tiền'
+                        ? t('orders.returns.detail.refundSuccess')
                         : refund.status === 'PENDING'
-                          ? 'Chờ hoàn tiền'
+                          ? t('orders.returns.detail.refundPending')
                           : refund.status}
                     </p>
                     {refund.externalReference && (
                       <p className="mt-1 break-all text-xs text-slate-500">
-                        Mã đối soát: {refund.externalReference}
+                        {t('orders.returns.detail.reconcileRef', { ref: refund.externalReference })}
                       </p>
                     )}
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-slate-500">Chưa có giao dịch hoàn tiền.</p>
+                <p className="text-sm text-slate-500">{t('orders.returns.detail.noRefunds')}</p>
               )}
             </section>
             <div className="flex flex-wrap gap-2">
-              {(Object.keys(actionLabels) as Action[]).map((value) => (
+              {RETURN_ACTIONS.map((value) => (
                 <Button
                   key={value}
                   variant={value === 'reject' ? 'danger' : 'secondary'}
@@ -240,7 +264,7 @@ export default function ReturnDetail({
                     setNotice('');
                   }}
                 >
-                  {actionLabels[value]}
+                  {t(`orders.returns.detail.actions.${value}`)}
                 </Button>
               ))}
             </div>
@@ -269,15 +293,16 @@ export default function ReturnDetail({
                   );
                 }}
               >
-                <h3 className="text-sm font-semibold">{actionLabels[action]}</h3>
+                <h3 className="text-sm font-semibold">
+                  {t(`orders.returns.detail.actions.${action}`)}
+                </h3>
                 {action === 'waybill' ? (
                   <>
                     <p className="text-sm text-slate-600">
-                      Nhập mã vận đơn GHN chiều về đã được tạo cho đơn này. Hệ thống sẽ kiểm tra vận
-                      đơn trước khi lưu.
+                      {t('orders.returns.detail.waybillDesc')}
                     </p>
                     <label className="block text-sm">
-                      Mã vận đơn chiều về
+                      {t('orders.returns.detail.waybillLabel')}
                       <input
                         name="waybillCode"
                         required
@@ -291,24 +316,21 @@ export default function ReturnDetail({
                   <>
                     {action === 'approve' && (
                       <p className="text-sm text-slate-600">
-                        Xác nhận cho khách trả toàn bộ đơn hàng. Với đơn đang vận chuyển, hệ thống
-                        sẽ gửi yêu cầu chuyển hoàn tới GHN.
+                        {t('orders.returns.detail.approveDesc')}
                       </p>
                     )}
                     {action === 'reject' && (
                       <p className="text-sm text-slate-600">
-                        Ghi rõ lý do từ chối để người mua theo dõi kết quả xử lý.
+                        {t('orders.returns.detail.rejectDesc')}
                       </p>
                     )}
                     {action === 'receive' && (
                       <>
                         <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-                          Chỉ xác nhận sau khi đã nhận và kiểm hàng thực tế. Hệ thống sẽ kiểm tra
-                          vận chuyển và xử lý hoàn tiền; lựa chọn nhập kho áp dụng cho toàn bộ sản
-                          phẩm trong đơn.
+                          {t('orders.returns.detail.receiveWarn')}
                         </p>
                         <label className="block text-sm">
-                          Kết quả kiểm hàng
+                          {t('orders.returns.detail.inspectionLabel')}
                           <select
                             name="restock"
                             required
@@ -317,18 +339,18 @@ export default function ReturnDetail({
                             className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3"
                           >
                             <option value="" disabled>
-                              Chọn kết quả kiểm hàng
+                              {t('orders.returns.detail.inspectionPlaceholder')}
                             </option>
-                            <option value="true">
-                              Tất cả sản phẩm đủ điều kiện bán lại · Nhập lại kho
-                            </option>
-                            <option value="false">Không nhập lại kho</option>
+                            <option value="true">{t('orders.returns.detail.restockTrue')}</option>
+                            <option value="false">{t('orders.returns.detail.restockFalse')}</option>
                           </select>
                         </label>
                       </>
                     )}
                     <label className="block text-sm">
-                      {action === 'receive' ? 'Ghi chú kiểm hàng' : 'Lý do xử lý'}
+                      {action === 'receive'
+                        ? t('orders.returns.detail.inspectionNotesLabel')
+                        : t('orders.returns.detail.processReasonLabel')}
                       <textarea
                         name="reason"
                         required
@@ -342,7 +364,7 @@ export default function ReturnDetail({
                 )}
                 <label className="flex items-start gap-2 text-sm">
                   <input type="checkbox" required disabled={blocked} className="mt-1" />
-                  Tôi đã kiểm tra thông tin và xác nhận thực hiện thao tác này.
+                  {t('orders.returns.detail.confirmCheckbox')}
                 </label>
                 <div className="flex gap-2">
                   <Button
@@ -350,7 +372,9 @@ export default function ReturnDetail({
                     variant={action === 'reject' ? 'danger' : 'primary'}
                     disabled={blocked}
                   >
-                    {pending ? 'Đang xử lý…' : 'Xác nhận'}
+                    {pending
+                      ? t('orders.returns.detail.processing')
+                      : t('orders.returns.detail.confirmBtn')}
                   </Button>
                   <Button
                     type="button"
@@ -358,7 +382,7 @@ export default function ReturnDetail({
                     disabled={pending}
                     onClick={() => setAction(null)}
                   >
-                    Hủy
+                    {t('orders.returns.detail.cancelBtn')}
                   </Button>
                 </div>
               </form>
@@ -366,7 +390,7 @@ export default function ReturnDetail({
           </>
         )}
         {!loading && !error && request?.kind !== 'RETURN' && (
-          <p className="text-sm text-slate-500">Đơn hàng này không có yêu cầu trả hàng.</p>
+          <p className="text-sm text-slate-500">{t('orders.returns.detail.noReturnRequest')}</p>
         )}
       </div>
     </Popup>
