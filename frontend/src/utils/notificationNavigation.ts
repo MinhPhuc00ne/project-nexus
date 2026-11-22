@@ -19,9 +19,14 @@ export function resolveNotificationTargetUrl(item: {
   ) {
     return '/buyer/profile?tab=auction-offers';
   }
-  if (item.targetUrl && typeof item.targetUrl === 'string' && item.targetUrl.trim().length > 0) {
+  if (
+    item.targetUrl &&
+    typeof item.targetUrl === 'string' &&
+    item.targetUrl.trim().length > 0 &&
+    !item.targetUrl.trim().startsWith('//')
+  ) {
     const trimmed = item.targetUrl.trim();
-    if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+    if (trimmed.startsWith('/')) {
       return trimmed;
     }
     try {

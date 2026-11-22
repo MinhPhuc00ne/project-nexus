@@ -4,17 +4,40 @@ title: Design Patterns
 
 # Design Patterns (Backend & Frontend)
 
-## 1. Backend Patterns (NestJS 12)
+This page documents the core architectural and implementation patterns enforced across the Project Nexus Backend and Frontend codebases.
 
-1. **Inversion of Control & Dependency Injection**: Services and repositories declare dependencies via constructor injection, enabling clean unit testing with `node:test`.
-2. **Unit of Work (`prisma.$transaction`)**: Multi-table financial and inventory mutations run inside atomic Prisma transactions.
-3. **Strategy Pattern for Payments & Logistics**: External providers (`PayosService`, `Wallet`, `COD`, `GhnLogisticsService`) are encapsulated behind uniform service contracts.
-4. **In-Process Domain Events (`@nestjs/event-emitter`)**: Modules communicate asynchronously via `EventEmitter2` and `@OnEvent()` to avoid circular dependencies.
-5. **Distributed & Pessimistic Row Locking**: Combines PostgreSQL `SELECT ... FOR UPDATE` with Redis locks to serialize high-concurrency bids and stock reservations.
+## 1. Backend Patterns (`backend/src`)
 
-## 2. Frontend Patterns (React 19)
+| Pattern                                  | Real Implementation                                                                                    | Technical Benefit                                                                      |
+| :--------------------------------------- | :----------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |
+| **Inversion of Control & DI**            | All Services, Controllers, and Gateways use NestJS constructor injection                               | Cleanly mockable dependencies for `node:test` unit/integration tests                   |
+| **Unit of Work (`prisma.$transaction`)** | `OrderService`, `OrderEscrowService`, `RefundService`, `AuctionService`, `SellerFinanceService`        | Guarantees ACID atomicity across wallets, escrow, inventory, and orders                |
+| **Strategy Pattern**                     | Payments (`PayosService`, `WALLET`, `COD`) & Logistics (`GhnLogisticsService`, `RouteDistanceService`) | New providers can be added without modifying core checkout orchestration               |
+| **In-Process Domain Events**             | `EventEmitterModule.forRoot({ wildcard: true, delimiter: '.' })`                                       | Decouples core transactions from side effects (reputation updates, notifications)      |
+| **Pessimistic + Distributed Lock**       | PostgreSQL `SELECT ... FOR UPDATE` combined with Redis locks (`AuctionService`)                        | Eliminates race conditions and double-spending under concurrent bids or stock checkout |
+| **Delegate Wrapper**                     | `PrismaService` wraps `Notification` writes to emit via `NotificationRealtimeBus`                      | Any service creating a `Notification` automatically triggers Socket.IO delivery        |
 
-1. **Shared Contracts (`@nexus/types`)**: Imports enums, DTOs, and WebSocket event names from a single package.
-2. **In-Flight Request Deduplication & Cross-Tab Sync**: `AuthContext` deduplicates concurrent `/users/me` calls and listens to `storage` events for multi-tab session sync.
-3. **Data-Driven Navigation**: Portal sidebars render from typed configuration arrays paired with `i18n` keys.
-4. **WebGL Scene Lifecycle**: Explicitly disposes geometries, materials, and renderers on unmount, falling back to a 2D-textured 3D pedestal when a `.glb` asset is absent.
+## 2. Frontend Patterns (`frontend/src`)
+
+### Single Source of Truth (`@nexus/types`)
+
+Both Frontend and Backend import Enums (`Role`, `OrderStatus`, `AuctionStatus`), DTOs, and WebSocket event constants from `@nexus/types`, preventing string drift.
+
+### In-Flight Deduplication & Cross-Tab Sync (`AuthContext.tsx`)
+
+- `inFlightPromiseRef` deduplicates concurrent `/users/me` calls sharing the same access token.
+- Listens to `nexus:auth-change` and browser `storage` events (`nexus:auth-*`) to synchronize login/logout and cart state across browser tabs.
+- `applyModeOverride()` reconciles route prefixes (`/seller/*` forces `SELLER`, `/buyer/*` preserves `BUYER`, `isShopSuspended` forces `BUYER`).
+
+### Token Refresh Queue (`services/api.ts`)
+
+The Axios response interceptor catches HTTP `401` errors using `isRefreshing` and `failedQueue` so concurrent expired requests trigger **only one** `/auth/refresh` call and replay cleanly once refreshed.
+
+### Data-Driven Navigation & Security Hardening
+
+- Portal sidebars (Buyer, Seller, Staff, Admin) are configuration-driven with i18n keys.
+- `resolveNotificationTargetUrl()` (`utils/notificationNavigation.ts`) resolves notification routes while rejecting protocol-relative open-redirect vectors (`//...`).
+
+### WebGL 3D Scene Lifecycle
+
+The 3D auction viewer explicitly disposes `geometry.dispose()`, `material.dispose()`, and `renderer.dispose()` on unmount to prevent GPU memory leaks, and falls back to a 3D pedestal displaying 2D product images when a `.glb` model is unavailable.
