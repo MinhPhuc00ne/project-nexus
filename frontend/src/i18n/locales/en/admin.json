@@ -1295,5 +1295,146 @@
     "fallbackTitle": "Admin",
     "footerOps": "© 2026 NEXUS • Admin Operations",
     "footerPlatform": "3D Auction & Commerce Platform"
+  },
+  "studio": {
+    "title": "3D Live Broadcast Studio",
+    "subtitle": "Control auction sessions and verify setup before going live",
+    "statusSimulating": "Simulating broadcast",
+    "webglTitle": "WebGL Auction Space",
+    "webglSubtitle": "Camera, audio, and 3D model are not connected to live streaming service.",
+    "micOn": "Mic on",
+    "micOff": "Mic off",
+    "cameraOn": "Camera on",
+    "cameraOff": "Camera off",
+    "toastStopped": "Stopped broadcast simulation.",
+    "toastStarted": "Started broadcast simulation, no actual video transmitted.",
+    "stopDemo": "Stop demo broadcast",
+    "startDemo": "Start demo broadcast",
+    "sessionSettingsTitle": "Session Settings",
+    "auctionSession": "Auction Session",
+    "selectApprovedSession": "Select an approved session",
+    "streamQuality": "Stream Quality",
+    "antiSnipingSeconds": "+{{seconds}}s",
+    "platformFee": "Platform Fee",
+    "manageAuctionSchedule": "Manage auction schedule",
+    "signalCheckTitle": "Signal Check",
+    "signalChecks": {
+      "ws": "WebSocket connection",
+      "webgl": "WebGL renderer",
+      "audio": "Audio input"
+    }
+  },
+  "chat": {
+    "title": "Chat Management",
+    "subtitle": "Manage system auto-replies, moderate shop responses, and audit support conversations.",
+    "tablistAria": "Chat management",
+    "tabs": {
+      "replies": "Auto-replies",
+      "audit": "Conversation Audit"
+    },
+    "triggers": {
+      "WELCOME": "First greeting",
+      "OFFLINE": "Offline",
+      "KEYWORD": "Keyword",
+      "DEFAULT": "Default"
+    },
+    "close": "Close",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "pager": {
+      "pageOf": "Page {{page}} / {{total}}",
+      "prev": "Previous",
+      "next": "Next"
+    },
+    "errors": {
+      "loadReplies": "Unable to load auto-replies list.",
+      "createReply": "Unable to create auto-reply.",
+      "lockReply": "Unable to lock auto-reply.",
+      "loadHistory": "Unable to load processing history.",
+      "loadConversations": "Unable to load conversations list.",
+      "loadAudit": "Unable to load conversation log."
+    },
+    "toasts": {
+      "created": "System auto-reply created.",
+      "locked": "Shop auto-reply locked."
+    },
+    "create": {
+      "title": "Create System Auto-reply",
+      "subtitle": "Configure greetings and auto-responses for platform support conversations.",
+      "nameLabel": "Configuration Name",
+      "namePlaceholder": "Support welcome message",
+      "triggerLabel": "Trigger Type",
+      "keywordLabel": "Keyword",
+      "contentLabel": "Response Content",
+      "contentPlaceholder": "Enter auto-reply message content",
+      "activateNow": "Activate immediately",
+      "submit": "Create Configuration"
+    },
+    "list": {
+      "title": "Platform Auto-replies",
+      "subtitle": "Monitor system and seller configurations; lock violating messages and view history.",
+      "scopeAria": "Filter scope",
+      "allScopes": "All scopes",
+      "systemScope": "System",
+      "shopScope": "Shop",
+      "statusAria": "Filter status",
+      "allStatuses": "All statuses",
+      "activeStatus": "Active",
+      "lockedStatus": "Locked",
+      "shopIdAria": "Filter by shop ID",
+      "shopIdPlaceholder": "Shop ID (optional)",
+      "loading": "Loading configurations…",
+      "empty": "No matching auto-replies found.",
+      "defaultName": "Auto-reply",
+      "createdAt": "Created {{time}}",
+      "shopPrefix": "Shop:",
+      "historyBtn": "History",
+      "lockBtn": "Lock"
+    },
+    "lockModal": {
+      "title": "Lock Shop Auto-reply",
+      "reasonLabel": "Lock Reason",
+      "confirm": "Confirm Lock"
+    },
+    "historyModal": {
+      "title": "Auto-reply History",
+      "status": "Status",
+      "lockedByAdmin": "Locked by administrator",
+      "lockedAt": "Locked At",
+      "actor": "Handled By",
+      "shop": "Shop",
+      "reason": "Reason",
+      "noReason": "No reason recorded."
+    },
+    "audit": {
+      "title": "Conversation Audit",
+      "subtitle": "View message contents and identities of staff accounts that sent messages in the conversation.",
+      "filterAria": "Filter conversation type",
+      "allTypes": "All conversations",
+      "types": {
+        "STAFF_BUYER": "Staff – Buyer",
+        "STAFF_SELLER": "Staff – Seller",
+        "SUPPORT_TICKET": "Support Ticket",
+        "BUYER_SELLER": "Buyer – Seller"
+      },
+      "loading": "Loading conversations…",
+      "empty": "No conversations found.",
+      "fallbackTitle": "Conversation",
+      "columns": {
+        "participants": "Participants",
+        "type": "Type",
+        "updated": "Updated",
+        "lastMessage": "Latest Message"
+      },
+      "noMessage": "No messages yet",
+      "viewAudit": "View audit",
+      "modalTitle": "Conversation Audit",
+      "conversationId": "Conversation ID: {{id}}",
+      "loadingLog": "Loading log…",
+      "emptyMessages": "This conversation has no messages yet.",
+      "fallbackSender": "Account"
+    }
   }
 }

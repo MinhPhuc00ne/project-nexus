@@ -1295,5 +1295,146 @@
     "fallbackTitle": "Admin",
     "footerOps": "© 2026 NEXUS • Admin Operations",
     "footerPlatform": "3D Auction & Commerce Platform"
+  },
+  "studio": {
+    "title": "Studio phát trực tiếp 3D",
+    "subtitle": "Điều khiển phiên đấu giá và kiểm tra thiết lập trước khi phát sóng",
+    "statusSimulating": "Đang mô phỏng phát sóng",
+    "webglTitle": "Không gian đấu giá WebGL",
+    "webglSubtitle": "Camera, âm thanh và mô hình 3D chưa kết nối dịch vụ trực tiếp.",
+    "micOn": "Mic bật",
+    "micOff": "Mic tắt",
+    "cameraOn": "Camera bật",
+    "cameraOff": "Camera tắt",
+    "toastStopped": "Đã dừng mô phỏng phát sóng.",
+    "toastStarted": "Đã bắt đầu mô phỏng phát sóng, chưa truyền video thực tế.",
+    "stopDemo": "Dừng phát demo",
+    "startDemo": "Bắt đầu phát demo",
+    "sessionSettingsTitle": "Thiết lập phiên",
+    "auctionSession": "Phiên đấu giá",
+    "selectApprovedSession": "Chọn phiên đã duyệt",
+    "streamQuality": "Chất lượng phát",
+    "antiSnipingSeconds": "+{{seconds}} giây",
+    "platformFee": "Phí sàn",
+    "manageAuctionSchedule": "Quản lý lịch đấu giá",
+    "signalCheckTitle": "Kiểm tra tín hiệu",
+    "signalChecks": {
+      "ws": "Kết nối WebSocket",
+      "webgl": "WebGL renderer",
+      "audio": "Âm thanh đầu vào"
+    }
+  },
+  "chat": {
+    "title": "Quản lý Chat",
+    "subtitle": "Quản lý auto-reply hệ thống, kiểm duyệt phản hồi của shop và audit hội thoại hỗ trợ.",
+    "tablistAria": "Quản lý chat",
+    "tabs": {
+      "replies": "Tin nhắn tự động",
+      "audit": "Audit hội thoại"
+    },
+    "triggers": {
+      "WELCOME": "Lời chào đầu tiên",
+      "OFFLINE": "Ngoài giờ",
+      "KEYWORD": "Từ khóa",
+      "DEFAULT": "Mặc định"
+    },
+    "close": "Đóng",
+    "retry": "Thử lại",
+    "refresh": "Làm mới",
+    "cancel": "Hủy",
+    "saving": "Đang lưu…",
+    "pager": {
+      "pageOf": "Trang {{page}} / {{total}}",
+      "prev": "Trước",
+      "next": "Sau"
+    },
+    "errors": {
+      "loadReplies": "Không tải được danh sách tin nhắn tự động.",
+      "createReply": "Không tạo được tin nhắn tự động.",
+      "lockReply": "Không khóa được tin nhắn tự động.",
+      "loadHistory": "Không tải được lịch sử xử lý.",
+      "loadConversations": "Không tải được danh sách hội thoại.",
+      "loadAudit": "Không tải được nhật ký hội thoại."
+    },
+    "toasts": {
+      "created": "Đã tạo tin nhắn tự động hệ thống.",
+      "locked": "Đã khóa tin nhắn tự động của shop."
+    },
+    "create": {
+      "title": "Tạo tin nhắn tự động hệ thống",
+      "subtitle": "Cấu hình lời chào và phản hồi tự động cho hội thoại hỗ trợ của sàn.",
+      "nameLabel": "Tên cấu hình",
+      "namePlaceholder": "Tin nhắn chào mừng CSKH",
+      "triggerLabel": "Kiểu kích hoạt",
+      "keywordLabel": "Từ khóa",
+      "contentLabel": "Nội dung phản hồi",
+      "contentPlaceholder": "Nhập nội dung tin nhắn tự động",
+      "activateNow": "Kích hoạt ngay",
+      "submit": "Tạo cấu hình"
+    },
+    "list": {
+      "title": "Tin nhắn tự động toàn sàn",
+      "subtitle": "Theo dõi cấu hình của hệ thống và seller; có thể khóa tin nhắn vi phạm và xem lịch sử.",
+      "scopeAria": "Lọc phạm vi",
+      "allScopes": "Tất cả phạm vi",
+      "systemScope": "Hệ thống",
+      "shopScope": "Shop",
+      "statusAria": "Lọc trạng thái",
+      "allStatuses": "Tất cả trạng thái",
+      "activeStatus": "Đang hoạt động",
+      "lockedStatus": "Đã khóa",
+      "shopIdAria": "Lọc theo mã shop",
+      "shopIdPlaceholder": "Mã shop (tùy chọn)",
+      "loading": "Đang tải cấu hình…",
+      "empty": "Chưa có tin nhắn tự động phù hợp.",
+      "defaultName": "Tin nhắn tự động",
+      "createdAt": "Tạo {{time}}",
+      "shopPrefix": "Shop:",
+      "historyBtn": "Lịch sử",
+      "lockBtn": "Khóa"
+    },
+    "lockModal": {
+      "title": "Khóa tin nhắn tự động của shop",
+      "reasonLabel": "Lý do khóa",
+      "confirm": "Xác nhận khóa"
+    },
+    "historyModal": {
+      "title": "Lịch sử tin nhắn tự động",
+      "status": "Trạng thái",
+      "lockedByAdmin": "Đã khóa bởi quản trị viên",
+      "lockedAt": "Thời điểm khóa",
+      "actor": "Người xử lý",
+      "shop": "Shop",
+      "reason": "Lý do",
+      "noReason": "Không có lý do được ghi nhận."
+    },
+    "audit": {
+      "title": "Audit hội thoại",
+      "subtitle": "Xem nội dung tin nhắn và danh tính tài khoản staff đã gửi trong hội thoại.",
+      "filterAria": "Lọc loại hội thoại",
+      "allTypes": "Tất cả hội thoại",
+      "types": {
+        "STAFF_BUYER": "Staff – Buyer",
+        "STAFF_SELLER": "Staff – Seller",
+        "SUPPORT_TICKET": "Yêu cầu hỗ trợ",
+        "BUYER_SELLER": "Buyer – Seller"
+      },
+      "loading": "Đang tải hội thoại…",
+      "empty": "Không tìm thấy hội thoại.",
+      "fallbackTitle": "Hội thoại",
+      "columns": {
+        "participants": "Người tham gia",
+        "type": "Loại",
+        "updated": "Cập nhật",
+        "lastMessage": "Tin nhắn gần nhất"
+      },
+      "noMessage": "Chưa có tin nhắn",
+      "viewAudit": "Xem audit",
+      "modalTitle": "Audit hội thoại",
+      "conversationId": "Mã hội thoại: {{id}}",
+      "loadingLog": "Đang tải nhật ký…",
+      "emptyMessages": "Hội thoại chưa có tin nhắn.",
+      "fallbackSender": "Tài khoản"
+    }
   }
 }
