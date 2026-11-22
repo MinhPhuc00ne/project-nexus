@@ -6,6 +6,7 @@ import {
   ShieldCheck as SafetyCertificateOutlined,
   Store as ShopOutlined,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerShopProfile } from '../../services/shops';
 import useProductResource from '../../components/productDetail/useProductResource';
@@ -24,10 +25,10 @@ import SellerNotificationPreferences from '../../components/seller/SellerNotific
 
 type SettingsTab = 'store' | 'shipping' | 'notifications' | 'account';
 const tabs = [
-  { key: 'store', label: 'Hồ sơ gian hàng', icon: ShopOutlined },
-  { key: 'shipping', label: 'Địa chỉ shop', icon: EnvironmentOutlined },
-  { key: 'notifications', label: 'Thông báo', icon: BellOutlined },
-  { key: 'account', label: 'Tài khoản & bảo mật', icon: SafetyCertificateOutlined },
+  { key: 'store', labelKey: 'settings.tabs.store', icon: ShopOutlined },
+  { key: 'shipping', labelKey: 'settings.tabs.shipping', icon: EnvironmentOutlined },
+  { key: 'notifications', labelKey: 'settings.tabs.notifications', icon: BellOutlined },
+  { key: 'account', labelKey: 'settings.tabs.account', icon: SafetyCertificateOutlined },
 ] as const;
 
 export default function SellerSettingsPage(): ReactElement {
@@ -37,6 +38,7 @@ export default function SellerSettingsPage(): ReactElement {
 }
 
 function SettingsWorkspace(): ReactElement {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const { refreshProfile } = useAuth();
   const { refreshShop } = useSellerWorkspace();
@@ -47,23 +49,24 @@ function SettingsWorkspace(): ReactElement {
     refreshShop();
     void refreshProfile();
   }
+  const activeTab = tabs.find((item) => item.key === tab);
   return (
     <div className="space-y-5">
       <PageHeading
-        title="Cài đặt Shop"
-        description="Thông tin rõ ràng, gian hàng chuyên nghiệp, kết nối khách hàng."
+        title={t('settings.pageTitle')}
+        description={t('settings.pageDesc')}
         actions={
           <SellerButton secondary disabled={profile.loading} onClick={profile.retry}>
-            <ReloadOutlined /> Làm mới thông tin shop
+            <ReloadOutlined /> {t('settings.refresh')}
           </SellerButton>
         }
       />
       <div className="grid items-start gap-5 lg:grid-cols-[210px_minmax(0,1fr)]">
         <nav
-          aria-label="Cài đặt gian hàng"
+          aria-label={t('settings.navAria')}
           className="grid grid-cols-2 gap-1 rounded-xl border border-blue-100 bg-white p-2 sm:grid-cols-4 lg:flex lg:flex-col lg:p-3"
         >
-          {tabs.map(({ key, label, icon: Icon }) => (
+          {tabs.map(({ key, labelKey, icon: Icon }) => (
             <button
               key={key}
               aria-current={tab === key ? 'page' : undefined}
@@ -71,18 +74,18 @@ function SettingsWorkspace(): ReactElement {
               onClick={() => setTab(key)}
             >
               <Icon className="text-base" />
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </nav>
         <Panel
-          title={tabs.find((item) => item.key === tab)?.label}
+          title={activeTab ? t(activeTab.labelKey) : undefined}
           subtitle={
             tab === 'notifications'
-              ? 'Quản lý các kênh nhận thông báo của tài khoản'
+              ? t('settings.subtitles.notifications')
               : tab === 'account'
-                ? 'Thông tin tài khoản và bảo mật đăng nhập'
-                : 'Thông tin được lưu và đồng bộ lên hệ thống'
+                ? t('settings.subtitles.account')
+                : t('settings.subtitles.default')
           }
         >
           {tab === 'notifications' ? (
@@ -104,22 +107,26 @@ function SettingsWorkspace(): ReactElement {
               </div>
               <dl className="grid gap-4 text-sm sm:grid-cols-2">
                 <div>
-                  <dt className="mb-2 text-xs text-slate-500">Số điện thoại cá nhân</dt>
-                  <dd className="m-0">{user.phoneNumber || 'Chưa cập nhật'}</dd>
+                  <dt className="mb-2 text-xs text-slate-500">
+                    {t('settings.account.phoneLabel')}
+                  </dt>
+                  <dd className="m-0">{user.phoneNumber || t('settings.account.notUpdated')}</dd>
                 </div>
                 <div>
-                  <dt className="mb-2 text-xs text-slate-500">Trạng thái xác thực</dt>
+                  <dt className="mb-2 text-xs text-slate-500">
+                    {t('settings.account.verifiedLabel')}
+                  </dt>
                   <dd className="m-0">
                     <Badge tone={user.isVerified ? 'green' : 'amber'}>
-                      {user.isVerified ? 'Đã xác thực' : 'Chưa xác thực'}
+                      {user.isVerified
+                        ? t('settings.account.verified')
+                        : t('settings.account.unverified')}
                     </Badge>
                   </dd>
                 </div>
               </dl>
-              <p className="text-xs leading-6 text-slate-500">
-                Cập nhật ảnh đại diện, thông tin cá nhân và đổi mật khẩu trong Hồ sơ cá nhân.
-              </p>
-              <SellerLink to="/seller/profile">Mở hồ sơ cá nhân</SellerLink>
+              <p className="text-xs leading-6 text-slate-500">{t('settings.account.hint')}</p>
+              <SellerLink to="/seller/profile">{t('settings.account.openProfile')}</SellerLink>
             </div>
           ) : (
             <SellerResourceState

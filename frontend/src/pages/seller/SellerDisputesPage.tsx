@@ -2,6 +2,7 @@ import { useCallback, useState, type ReactElement } from 'react';
 import { RefreshCw as ReloadOutlined } from 'lucide-react';
 import { FileText as FileTextOutlined } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerDisputes } from '../../services/sellerDisputes';
 import type { SellerDispute, SellerDisputeStatus } from '../../types/seller-dispute.types';
@@ -17,7 +18,11 @@ import {
 import SellerResourceState from '../../components/seller/SellerResourceState';
 import SellerDisputeResponse from '../../components/seller/SellerDisputeResponse';
 import SellerPagination from '../../components/seller/SellerPagination';
-import { canRespondDispute, disputeLabels } from '../../components/seller/orderPresentation';
+import {
+  canRespondDispute,
+  disputeLabelKeys,
+  getDisputeLabel,
+} from '../../components/seller/orderPresentation';
 import { financeDate, financeMoney } from '../../components/seller/financeFormat';
 
 export default function SellerDisputesPage(): ReactElement {
@@ -26,6 +31,7 @@ export default function SellerDisputesPage(): ReactElement {
   return <DisputesWorkspace key={`${user.id}:${token}`} />;
 }
 function DisputesWorkspace(): ReactElement {
+  const { t } = useTranslation('seller');
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<SellerDisputeStatus | ''>('');
   const [revision, setRevision] = useState(0);
@@ -39,26 +45,23 @@ function DisputesWorkspace(): ReactElement {
   return (
     <div className="space-y-5">
       <PageHeading
-        title="Khiếu nại & giải trình"
-        description="Đối chiếu đơn hàng, bổ sung bằng chứng và phối hợp xử lý khiếu nại."
+        title={t('disputes.pageTitle')}
+        description={t('disputes.pageDesc')}
         actions={
           <SellerButton secondary onClick={refresh} disabled={resource.loading}>
             <ReloadOutlined />
-            Làm mới
+            {t('disputes.refresh')}
           </SellerButton>
         }
       />
-      <Panel
-        title="Hồ sơ khiếu nại của gian hàng"
-        subtitle="Giải trình được gửi tới đội ngũ kiểm duyệt để xem xét"
-      >
+      <Panel title={t('disputes.panelTitle')} subtitle={t('disputes.panelSubtitle')}>
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2 text-xs text-blue-800">
             {resource.data &&
               [
-                ['Tất cả', resource.data.counters.all],
-                ['Mới mở', resource.data.counters.open],
-                ['Đang xem xét', resource.data.counters.underReview],
+                [t('disputes.counters.all'), resource.data.counters.all],
+                [t('disputes.counters.open'), resource.data.counters.open],
+                [t('disputes.counters.underReview'), resource.data.counters.underReview],
               ].map(([label, count]) => (
                 <span className="rounded-lg bg-blue-50 px-3 py-2" key={label}>
                   {label}: <b>{count}</b>
@@ -66,7 +69,7 @@ function DisputesWorkspace(): ReactElement {
               ))}
           </div>
           <select
-            aria-label="Trạng thái khiếu nại"
+            aria-label={t('disputes.statusAria')}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs"
             value={status}
             onChange={(e) => {
@@ -74,10 +77,10 @@ function DisputesWorkspace(): ReactElement {
               setPage(1);
             }}
           >
-            <option value="">Tất cả trạng thái</option>
-            {Object.entries(disputeLabels).map(([key, label]) => (
+            <option value="">{t('disputes.allStatuses')}</option>
+            {Object.entries(disputeLabelKeys).map(([key, labelKey]) => (
               <option value={key} key={key}>
-                {label}
+                {t(labelKey)}
               </option>
             ))}
           </select>
@@ -99,14 +102,14 @@ function DisputesWorkspace(): ReactElement {
                             to={`/seller/orders/${item.orderId}`}
                             className="text-xs font-semibold text-blue-700"
                           >
-                            Đơn #{item.orderId.slice(0, 8)}
+                            {t('disputes.orderNumber', { id: item.orderId.slice(0, 8) })}
                           </Link>
                           <p className="mt-2 text-xs text-slate-500">
                             {item.openedBy.fullName} · {financeDate(item.createdAt)}
                           </p>
                         </div>
                         <Badge tone={canRespondDispute(item.status) ? 'amber' : 'gray'}>
-                          {disputeLabels[item.status] || item.status}
+                          {getDisputeLabel(item.status)}
                         </Badge>
                       </div>
                       <p className="my-4 line-clamp-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
@@ -115,12 +118,14 @@ function DisputesWorkspace(): ReactElement {
                       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
                         <span className="text-xs text-slate-500">
                           {item.order.items.map((product) => product.title).join(', ') ||
-                            'Chi tiết trong đơn hàng'}{' '}
+                            t('disputes.orderDetailFallback')}{' '}
                           · {financeMoney(item.order.totalAmount)}
                         </span>
                         <SellerButton secondary onClick={() => setSelected(item)}>
                           <FileTextOutlined />
-                          {canRespondDispute(item.status) ? 'Xem & gửi giải trình' : 'Xem hồ sơ'}
+                          {canRespondDispute(item.status)
+                            ? t('disputes.respondBtn')
+                            : t('disputes.viewCaseBtn')}
                         </SellerButton>
                       </div>
                     </article>
@@ -128,8 +133,8 @@ function DisputesWorkspace(): ReactElement {
                 </div>
               ) : (
                 <EmptyState
-                  title="Không có khiếu nại phù hợp"
-                  description="Các khiếu nại liên quan đến đơn hàng của bạn sẽ hiển thị tại đây."
+                  title={t('disputes.emptyTitle')}
+                  description={t('disputes.emptyDesc')}
                 />
               )}
               <SellerPagination
