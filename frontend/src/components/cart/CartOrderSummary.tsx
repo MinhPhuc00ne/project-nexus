@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Tag, Check, ArrowRight, Truck, ShieldCheck } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import type { CartItem } from '../../services/cart';
 
 interface CartOrderSummaryProps {
@@ -21,6 +23,7 @@ export default function CartOrderSummary({
   onRemoveVoucher,
   onProceedCheckout,
 }: CartOrderSummaryProps) {
+  const { t } = useTranslation('commerce');
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherError, setVoucherError] = useState('');
 
@@ -31,14 +34,14 @@ export default function CartOrderSummary({
     const code = voucherCode.trim().toUpperCase();
     setVoucherError('');
     if (!code) {
-      setVoucherError('Vui lòng nhập mã giảm giá.');
+      setVoucherError(t('cart.voucherEmptyError'));
       return;
     }
     if (code === 'NEXUS500K' || code === 'FREESHIP') {
       onApplyVoucher(code);
       setVoucherCode('');
     } else {
-      setVoucherError('Mã ưu đãi không hợp lệ hoặc đã hết hạn.');
+      setVoucherError(t('cart.voucherInvalidError'));
     }
   };
 
@@ -47,7 +50,7 @@ export default function CartOrderSummary({
       <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
           <Tag size={15} className="text-[#f24e1e]" />
-          Mã Ưu Đãi / Voucher Sàn
+          {t('cart.voucherTitle')}
         </h3>
 
         <form onSubmit={handleSubmitVoucher} className="flex gap-2 mb-2">
@@ -55,14 +58,14 @@ export default function CartOrderSummary({
             type="text"
             value={voucherCode}
             onChange={(e) => setVoucherCode(e.target.value)}
-            placeholder="Nhập NEXUS500K hoặc FREESHIP"
+            placeholder={t('cart.voucherPlaceholder')}
             className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#f24e1e] uppercase font-semibold"
           />
           <button
             type="submit"
             className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition cursor-pointer"
           >
-            Áp dụng
+            {t('cart.applyVoucher')}
           </button>
         </form>
 
@@ -71,7 +74,7 @@ export default function CartOrderSummary({
           <div className="flex items-center justify-between text-xs text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200 mt-2">
             <span className="font-bold flex items-center gap-1">
               <Check size={13} /> {appliedVoucher.code} (-
-              {Number(appliedVoucher.discount).toLocaleString('vi-VN')}₫)
+              {formatCurrency(Number(appliedVoucher.discount))})
             </span>
             <button
               type="button"
@@ -86,46 +89,46 @@ export default function CartOrderSummary({
 
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
         <h3 className="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100">
-          Tóm Tắt Đơn Hàng
+          {t('cart.orderSummaryTitle')}
         </h3>
 
         <div className="space-y-2.5 text-xs text-slate-600">
           <div className="flex justify-between">
-            <span>Tạm tính ({selectedQuantity} món đã chọn):</span>
+            <span>{t('cart.subtotalSelected', { count: selectedQuantity })}</span>
             <span className="font-semibold text-slate-800">
-              {Number(rawSubtotal).toLocaleString('vi-VN')} ₫
+              {formatCurrency(Number(rawSubtotal))}
             </span>
           </div>
 
           {appliedVoucher && (
             <div className="flex justify-between text-emerald-600">
-              <span>Voucher giảm giá:</span>
-              <span className="font-bold">
-                -{Number(appliedVoucher.discount).toLocaleString('vi-VN')} ₫
-              </span>
+              <span>{t('cart.voucherDiscount')}</span>
+              <span className="font-bold">-{formatCurrency(Number(appliedVoucher.discount))}</span>
             </div>
           )}
 
           <div className="flex justify-between">
-            <span>Phí vận chuyển GHN Express:</span>
+            <span>{t('cart.ghnShippingFee')}</span>
             {appliedVoucher?.code === 'FREESHIP' ? (
-              <span className="font-semibold text-emerald-600">MIỄN PHÍ</span>
+              <span className="font-semibold text-emerald-600">{t('cart.freeShipping')}</span>
             ) : (
-              <span className="font-medium text-slate-500 italic">Tính ở bước thanh toán</span>
+              <span className="font-medium text-slate-500 italic">
+                {t('cart.calculatedAtCheckout')}
+              </span>
             )}
           </div>
         </div>
 
         <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
-          <span className="text-sm font-bold text-slate-900">Tổng thanh toán:</span>
+          <span className="text-sm font-bold text-slate-900">{t('checkout.total')}:</span>
           <div className="text-right">
             <div className="text-2xl font-extrabold text-[#f24e1e]">
-              {Number(grandTotal).toLocaleString('vi-VN')} ₫
+              {formatCurrency(Number(grandTotal))}
             </div>
             <span className="text-[10px] text-slate-400 block">
               {appliedVoucher?.code === 'FREESHIP'
-                ? '(Đã bao gồm VAT & Ký quỹ Escrow)'
-                : '(Chưa gồm cước GHN theo địa chỉ nhận)'}
+                ? t('cart.vatAndEscrowIncluded')
+                : t('cart.ghnFeeExcluded')}
             </span>
           </div>
         </div>
@@ -140,17 +143,17 @@ export default function CartOrderSummary({
               : 'bg-[#f24e1e] hover:bg-[#d63b0e] text-white hover:shadow-lg'
           }`}
         >
-          Tiến Hành Thanh Toán ({selectedQuantity})
+          {t('cart.proceedCheckoutCount', { count: selectedQuantity })}
           <ArrowRight size={16} />
         </button>
 
         <div className="flex items-center justify-center gap-4 text-xs text-slate-500 pt-2">
           <span className="flex items-center gap-1">
-            <Truck size={14} className="text-blue-600" /> Đồng kiểm GHN
+            <Truck size={14} className="text-blue-600" /> {t('cart.ghnInspection')}
           </span>
           <span>•</span>
           <span className="flex items-center gap-1">
-            <ShieldCheck size={14} className="text-emerald-600" /> Ký quỹ 100%
+            <ShieldCheck size={14} className="text-emerald-600" /> {t('cart.escrow100')}
           </span>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Trash2, Minus, Plus, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import type { CartItem } from '../../types/cart.types';
 
 interface CartItemListProps {
@@ -20,6 +22,7 @@ export const CartItemList: React.FC<CartItemListProps> = ({
   onUpdateQty,
   onRemoveItem,
 }) => {
+  const { t } = useTranslation('commerce');
   return (
     <div className="lg:col-span-8 space-y-4">
       <div className="bg-white rounded-xl border border-slate-200 px-5 py-3.5 flex items-center justify-between text-xs font-bold text-slate-600 shadow-sm">
@@ -30,12 +33,12 @@ export const CartItemList: React.FC<CartItemListProps> = ({
             onChange={(e) => onToggleSelectAll(e.target.checked)}
             className="h-4 w-4 cursor-pointer rounded accent-[#f24e1e] focus:ring-orange-400"
           />
-          <span>Chọn tất cả ({items.length} món)</span>
+          <span>{t('cart.selectAll', { count: items.length })}</span>
         </label>
         <div className="hidden sm:flex items-center gap-12 pr-6">
-          <span className="w-24 text-right">Đơn giá</span>
-          <span className="w-24 text-center">Số lượng</span>
-          <span className="w-28 text-right">Số tiền</span>
+          <span className="w-24 text-right">{t('cart.unitPrice')}</span>
+          <span className="w-24 text-center">{t('cart.quantity')}</span>
+          <span className="w-28 text-right">{t('cart.amount')}</span>
           <span className="w-8"></span>
         </div>
       </div>
@@ -98,16 +101,16 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                     <div className="mt-1">
                       {item.isOutOfStock ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">
-                          Hết hàng
+                          {t('cart.outOfStockBadge')}
                         </span>
                       ) : item.isStockInsufficient ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                          Chỉ còn lại {item.availableQty} sản phẩm
+                          {t('cart.lowStockBadge', { count: item.availableQty })}
                         </span>
                       ) : hasSelections ? (
                         <div className="flex flex-wrap items-center gap-1.5">
                           <span className="text-[11px] font-semibold text-slate-500">
-                            Phân loại:
+                            {t('cart.variantLabel')}
                           </span>
                           {selectionEntries.map(([key, val]) => (
                             <span
@@ -119,19 +122,19 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                             </span>
                           ))}
                           <span className="text-[11px] text-emerald-600 font-medium ml-1">
-                            • Bảo chứng Escrow
+                            {t('cart.escrowBadge')}
                           </span>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[11px] text-slate-400">
-                            Phân loại: Bản Tiêu Chuẩn • Bảo chứng Escrow
+                            {t('cart.standardVariant')}
                           </span>
                           <Link
                             to={targetUrl}
                             className="text-[11px] text-[#f24e1e] hover:underline font-semibold"
                           >
-                            (Chọn màu sắc/kích cỡ)
+                            {t('cart.chooseVariant')}
                           </Link>
                         </div>
                       )}
@@ -142,11 +145,11 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                 <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                   <div className="w-24 text-right">
                     <span className="text-xs font-semibold text-slate-700 block">
-                      {Number(item.price).toLocaleString('vi-VN')} ₫
+                      {formatCurrency(Number(item.price))}
                     </span>
                     {item.hasPriceChanged && item.priceAtAdded && (
                       <span className="text-[10px] text-slate-400 line-through block">
-                        {Number(item.priceAtAdded).toLocaleString('vi-VN')} ₫
+                        {formatCurrency(Number(item.priceAtAdded))}
                       </span>
                     )}
                   </div>
@@ -173,14 +176,14 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                   </div>
 
                   <div className="w-28 text-right text-sm font-extrabold text-[#f24e1e]">
-                    {Number(item.price * item.qty).toLocaleString('vi-VN')} ₫
+                    {formatCurrency(Number(item.price * item.qty))}
                   </div>
 
                   <button
                     type="button"
                     onClick={() => onRemoveItem(item.id)}
                     className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                    title="Xóa sản phẩm"
+                    title={t('cart.removeItemTitle')}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -191,9 +194,10 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px]">
                   <AlertTriangle size={14} className="shrink-0 text-amber-600" />
                   <span>
-                    Giá sản phẩm vừa được người bán cập nhật: từ{' '}
-                    <strong>{Number(item.priceAtAdded).toLocaleString('vi-VN')} ₫</strong> sang{' '}
-                    <strong>{Number(item.price).toLocaleString('vi-VN')} ₫</strong>.
+                    {t('cart.priceChanged', {
+                      from: formatCurrency(Number(item.priceAtAdded)),
+                      to: formatCurrency(Number(item.price)),
+                    })}
                   </span>
                 </div>
               )}
@@ -205,10 +209,9 @@ export const CartItemList: React.FC<CartItemListProps> = ({
       <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 flex items-start gap-3">
         <ShieldCheck size={20} className="text-indigo-600 shrink-0 mt-0.5" />
         <div>
-          <h4 className="font-bold mb-0.5">Thanh toán Ký quỹ Bảo chứng Escrow an toàn</h4>
+          <h4 className="font-bold mb-0.5">{t('cart.escrowBannerTitle')}</h4>
           <p className="text-indigo-700 leading-relaxed text-[11px]">
-            Toàn bộ đơn hàng được giữ tiền ký quỹ tại cổng PayOS / Ví NEXUS Pay. Người bán chỉ nhận
-            được khoản thanh toán sau khi quý khách đồng kiểm bưu kiện và xác nhận hoàn tất.
+            {t('cart.escrowBannerDesc')}
           </p>
         </div>
       </div>

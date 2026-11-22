@@ -1,4 +1,5 @@
 import React, { useState, useEffect, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Edit2, Plus } from 'lucide-react';
 import type { UserAddress } from '../../services/address';
 import type { ShippingAddressInput } from '../../services/orders';
@@ -21,6 +22,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
   onSaveNewAddress,
   showToast,
 }) => {
+  const { t } = useTranslation('commerce');
   const [mode, setMode] = useState<'VIEW' | 'SELECT' | 'NEW'>(
     addresses.length > 0 ? 'VIEW' : 'NEW',
   );
@@ -77,7 +79,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
   const handleSubmitNew = async (e: FormEvent) => {
     e.preventDefault();
     if (!formState.recipientName.trim() || !formState.phone.trim() || !formState.street.trim()) {
-      showToast('Vui lòng điền đủ họ tên, số điện thoại và địa chỉ nhận hàng.');
+      showToast(t('checkout.missingAddressFields'));
       return;
     }
     await onSaveNewAddress(formState);
@@ -89,7 +91,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
           <MapPin className="text-[#f24e1e]" size={18} />
-          <span>Địa chỉ nhận hàng (GHN Express)</span>
+          <span>{t('checkout.ghnAddressTitle')}</span>
         </h2>
 
         {mode === 'VIEW' && (
@@ -99,7 +101,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
             className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer"
           >
             <Edit2 size={13} />
-            <span>Thay đổi</span>
+            <span>{t('checkout.change')}</span>
           </button>
         )}
 
@@ -109,7 +111,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
             onClick={() => setMode('VIEW')}
             className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
           >
-            Đóng
+            {t('checkout.close')}
           </button>
         )}
       </div>
@@ -118,18 +120,18 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2">
             <span className="font-extrabold text-slate-900 text-sm">
-              {displayAddress.recipientName || 'Chưa có họ tên người nhận'}
+              {displayAddress.recipientName || t('checkout.noRecipientName')}
             </span>
             <span className="text-slate-500">•</span>
             <span className="font-semibold text-slate-700">{displayAddress.phone}</span>
             {displayAddress.isDefault && (
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
-                Mặc định
+                {t('checkout.defaultBadge')}
               </span>
             )}
           </div>
           <p className="text-slate-600 leading-relaxed">
-            {formattedAddress || 'Chưa có thông tin địa chỉ chi tiết.'}
+            {formattedAddress || t('checkout.noStreetDetails')}
           </p>
         </div>
       )}
@@ -137,7 +139,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
       {mode === 'SELECT' && (
         <div className="space-y-3">
           <p className="text-xs font-semibold text-slate-600">
-            Chọn địa chỉ từ sổ địa chỉ của bạn:
+            {t('checkout.selectFromAddressBook')}
           </p>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {addresses.map((a) => (
@@ -166,7 +168,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
                     <span className="text-slate-600">{a.phone}</span>
                     {a.isDefault && (
                       <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
-                        Mặc định
+                        {t('checkout.defaultBadge')}
                       </span>
                     )}
                   </div>
@@ -195,7 +197,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
               className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1.5 cursor-pointer"
             >
               <Plus size={14} />
-              <span>Thêm địa chỉ nhận hàng mới</span>
+              <span>{t('checkout.addNewAddress')}</span>
             </button>
 
             <button
@@ -203,7 +205,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
               onClick={() => setMode('VIEW')}
               className="px-4 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition cursor-pointer"
             >
-              Hoàn tất
+              {t('checkout.done')}
             </button>
           </div>
         </div>
