@@ -4,7 +4,7 @@ title: Cơ sở dữ liệu & Prisma Schema
 
 # Cơ sở dữ liệu (PostgreSQL 17 + Prisma 7)
 
-Toàn bộ mô hình dữ liệu quan hệ của Project Nexus được định nghĩa tập trung trong `backend/prisma/schema.prisma` với **44 models** và **27 enums**, ánh xạ sang bảng/cột PostgreSQL theo chuẩn `snake_case` (`@map` / `@@map`).
+Toàn bộ mô hình dữ liệu quan hệ của Project Nexus được định nghĩa tập trung trong `backend/prisma/schema.prisma` với **46 models** và **27 enums**, ánh xạ sang bảng/cột PostgreSQL theo chuẩn `snake_case` (`@map` / `@@map`).
 
 ## 1. Sơ đồ Quan hệ Thực thể (ERD Tổng quan)
 
@@ -34,7 +34,7 @@ erDiagram
     AuctionItem ||--o{ AuctionComplaint : complaints
 ```
 
-## 2. Phân nhóm Chi tiết 44 Bảng Dữ liệu
+## 2. Phân nhóm Chi tiết 46 Bảng Dữ liệu
 
 ### Nhóm 1: Định danh, Phân quyền & Uy tín
 

@@ -4,7 +4,7 @@ title: Database & Prisma Schema
 
 # Database Architecture (PostgreSQL 17 + Prisma 7)
 
-Project Nexus defines its complete relational data model in `backend/prisma/schema.prisma`, comprising **44 models** and **27 enums** mapped to PostgreSQL `snake_case` tables and columns (`@map` / `@@map`).
+Project Nexus defines its complete relational data model in `backend/prisma/schema.prisma`, comprising **46 models** and **27 enums** mapped to PostgreSQL `snake_case` tables and columns (`@map` / `@@map`).
 
 ## 1. Entity Relationship Diagram (Core Overview)
 
@@ -34,7 +34,7 @@ erDiagram
     AuctionItem ||--o{ AuctionComplaint : complaints
 ```
 
-## 2. Detailed Breakdown of 44 Models
+## 2. Detailed Breakdown of 46 Models
 
 ### Group 1: Identity, RBAC & Reputation
 
