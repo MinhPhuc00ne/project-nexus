@@ -1,11 +1,14 @@
 import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { getIntlLocale } from '../../../i18n/config';
+import { formatCurrency } from '../../../i18n/formatters';
 import {
   confirmAdminAuctionAwardApi,
   listAdminAuctionAwardsApi,
 } from '../../../services/auction.service';
 import {
-  awardLabels,
+  AUCTION_AWARD_STATES,
   canConfirmAwardAction,
   type AwardAction,
 } from '../../../types/admin-auction-operations.types';
@@ -13,7 +16,6 @@ import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { useAuctionOperationResource } from './useAuctionOperationResource';
 import AuctionAwardActionDialog from './AuctionAwardActionDialog';
 
-const money = (value: number) => `${Number(value).toLocaleString('vi-VN')} ₫`;
 export default function AuctionAwardsPanel({
   auctionId,
   refreshKey,
@@ -27,6 +29,9 @@ export default function AuctionAwardsPanel({
   lotId: string;
   onLotChange: (lotId: string) => void;
 }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
+  const money = (value: number) => formatCurrency(Number(value), i18n.language);
   const load = useCallback(() => listAdminAuctionAwardsApi(auctionId), [auctionId]);
   const resource = useAuctionOperationResource(load, refreshKey, realtimeConnected);
   const [status, setStatus] = useState('');
@@ -44,35 +49,36 @@ export default function AuctionAwardsPanel({
   ];
   return (
     <Panel
-      title="Quyền mua & thanh toán"
-      subtitle="Theo dõi quyền mua, tiền cọc, hạn thanh toán và xử lý sau đấu giá."
+      title={t('auctions.awardsPanel.title')}
+      subtitle={t('auctions.awardsPanel.subtitle')}
       action={
         <Button
           variant="secondary"
           disabled={resource.loading || resource.pending}
           onClick={resource.refresh}
         >
-          Làm mới
+          {t('auctions.common.refresh')}
         </Button>
       }
     >
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {[
-          ['Tổng quyền mua', resource.rows.length],
+        {(
           [
-            'Đang chờ xử lý',
-            resource.rows.filter((row) =>
-              ['AWAITING_ACCEPTANCE', 'AWAITING_DEPOSIT', 'AWAITING_CHECKOUT'].includes(row.status),
-            ).length,
-          ],
-          [
-            'Đã xử phạt quá hạn',
-            resource.rows.filter((row) => row.status === 'PAYMENT_DEFAULT').length,
-          ],
-          ['Đã thanh toán', resource.rows.filter((row) => row.status === 'PAID').length],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-xl bg-slate-50 p-4">
-            <p className="text-xs text-slate-500">{label}</p>
+            ['total', resource.rows.length],
+            [
+              'pending',
+              resource.rows.filter((row) =>
+                ['AWAITING_ACCEPTANCE', 'AWAITING_DEPOSIT', 'AWAITING_CHECKOUT'].includes(
+                  row.status,
+                ),
+              ).length,
+            ],
+            ['defaulted', resource.rows.filter((row) => row.status === 'PAYMENT_DEFAULT').length],
+            ['paid', resource.rows.filter((row) => row.status === 'PAID').length],
+          ] as const
+        ).map(([key, value]) => (
+          <div key={key} className="rounded-xl bg-slate-50 p-4">
+            <p className="text-xs text-slate-500">{t(`auctions.awardsPanel.stats.${key}`)}</p>
             <p className="mt-2 text-2xl font-bold text-primary">
               {resource.loading && !resource.rows.length ? '—' : value}
             </p>
@@ -81,7 +87,7 @@ export default function AuctionAwardsPanel({
       </div>
       <div className="mb-4 flex flex-wrap gap-3">
         <select
-          aria-label="Lọc quyền mua theo lô"
+          aria-label={t('auctions.awardsPanel.filterLotAria')}
           value={lotId}
           disabled={resource.pending}
           onChange={(event) => {
@@ -90,18 +96,18 @@ export default function AuctionAwardsPanel({
           }}
           className="max-w-full rounded-lg border border-slate-200 p-3 text-xs"
         >
-          <option value="">Tất cả lô</option>
+          <option value="">{t('auctions.awardsPanel.allLots')}</option>
           {lotId && !lotOptions.some((lot) => lot.id === lotId) && (
-            <option value={lotId}>Lô đang chọn</option>
+            <option value={lotId}>{t('auctions.awardsPanel.selectedLot')}</option>
           )}
           {lotOptions.map((lot) => (
             <option key={lot.id} value={lot.id}>
-              Lô {lot.lotNumber ?? '—'} · {lot.title}
+              {t('auctions.common.lotPrefix', { number: lot.lotNumber ?? '—' })} · {lot.title}
             </option>
           ))}
         </select>
         <select
-          aria-label="Lọc trạng thái quyền mua"
+          aria-label={t('auctions.awardsPanel.filterStatusAria')}
           value={status}
           disabled={resource.pending}
           onChange={(event) => {
@@ -110,10 +116,10 @@ export default function AuctionAwardsPanel({
           }}
           className="rounded-lg border border-slate-200 p-3 text-xs"
         >
-          <option value="">Tất cả trạng thái</option>
-          {Object.entries(awardLabels).map(([value, label]) => (
+          <option value="">{t('auctions.awardsPanel.allStatuses')}</option>
+          {AUCTION_AWARD_STATES.map((value) => (
             <option key={value} value={value}>
-              {label}
+              {t(`auctions.awardStates.${value}`)}
             </option>
           ))}
         </select>
@@ -126,13 +132,13 @@ export default function AuctionAwardsPanel({
               setSelection(null);
             }}
           >
-            Xem tất cả lô
+            {t('auctions.awardsPanel.viewAllLots')}
           </Button>
         )}
       </div>
       {resource.loading && (
         <p role="status" className="mb-3 text-sm text-slate-500">
-          Đang cập nhật quyền mua…
+          {t('auctions.awardsPanel.loading')}
         </p>
       )}
       {(resource.error || resource.actionError) && (
@@ -147,11 +153,7 @@ export default function AuctionAwardsPanel({
       )}
       {!resource.loading && !resource.error && !visible.length && (
         <EmptyState
-          text={
-            lotId
-              ? 'Lô này chưa có quyền mua phù hợp. Quyền mua được tạo khi lô kết thúc và có người thắng hợp lệ.'
-              : 'Chưa có quyền mua phù hợp. Khi lô kết thúc và có người thắng hợp lệ, kết quả sẽ xuất hiện tại đây.'
-          }
+          text={lotId ? t('auctions.awardsPanel.emptyForLot') : t('auctions.awardsPanel.emptyAll')}
         />
       )}
       <div className="space-y-4">
@@ -163,11 +165,13 @@ export default function AuctionAwardsPanel({
               <div className="flex flex-wrap justify-between gap-3">
                 <div>
                   <h3 className="font-semibold">
-                    {award.auctionItem?.lotNumber ? `Lô ${award.auctionItem.lotNumber} · ` : ''}
-                    {award.auctionItem?.title ?? 'Vật phẩm đấu giá'}
+                    {award.auctionItem?.lotNumber
+                      ? `${t('auctions.common.lotPrefix', { number: award.auctionItem.lotNumber })} · `
+                      : ''}
+                    {award.auctionItem?.title ?? t('auctions.awardsPanel.fallbackItemTitle')}
                   </h3>
                   <p className="mt-1 text-sm">
-                    {award.buyer?.fullName ?? 'Chưa có thông tin người mua'}
+                    {award.buyer?.fullName ?? t('auctions.awardsPanel.unknownBuyer')}
                   </p>
                   <p className="text-xs text-slate-500">{award.buyer?.email}</p>
                 </div>
@@ -181,19 +185,26 @@ export default function AuctionAwardsPanel({
                           : 'amber'
                     }
                   >
-                    {awardLabels[award.status] ?? award.status}
+                    {(AUCTION_AWARD_STATES as readonly string[]).includes(award.status)
+                      ? t(`auctions.awardStates.${award.status}`)
+                      : award.status}
                   </Badge>
                   <Badge tone="gray">
-                    {award.tier === 'PRIMARY_WINNER' ? 'Người thắng' : 'Người mua thứ hai'}
+                    {award.tier === 'PRIMARY_WINNER'
+                      ? t('auctions.awardsPanel.tierPrimary')
+                      : t('auctions.awardsPanel.tierSecond')}
                   </Badge>
                 </div>
               </div>
               <dl className="grid gap-3 text-xs sm:grid-cols-4">
                 {[
-                  ['Giá mua', money(award.offerAmount)],
-                  ['Tiền cọc', money(award.depositAmount)],
-                  ['Tiền hàng còn lại', money(award.remainingProductAmount)],
-                  ['Hạn xử lý', new Date(award.expiresAt).toLocaleString('vi-VN')],
+                  [t('auctions.awardsPanel.offerAmount'), money(award.offerAmount)],
+                  [t('auctions.awardsPanel.depositAmount'), money(award.depositAmount)],
+                  [t('auctions.awardsPanel.remainingAmount'), money(award.remainingProductAmount)],
+                  [
+                    t('auctions.awardsPanel.expiresAt'),
+                    new Date(award.expiresAt).toLocaleString(locale),
+                  ],
                 ].map(([label, value]) => (
                   <div key={label}>
                     <dt className="text-slate-500">{label}</dt>
@@ -202,11 +213,13 @@ export default function AuctionAwardsPanel({
                 ))}
               </dl>
               {award.resolutionNote && (
-                <p className="text-sm text-slate-600">Ghi chú: {award.resolutionNote}</p>
+                <p className="text-sm text-slate-600">
+                  {t('auctions.awardsPanel.note', { note: award.resolutionNote })}
+                </p>
               )}
               {award.order && (
                 <p className="text-xs">
-                  Đơn hàng:{' '}
+                  {t('auctions.awardsPanel.orderLabel')}{' '}
                   <Link to="/admin/orders" className="break-all text-blue-600 underline">
                     {award.order.id}
                   </Link>{' '}
@@ -220,12 +233,12 @@ export default function AuctionAwardsPanel({
                   disabled={
                     resource.pending || resource.loading || !!resource.error || !canPenalize
                   }
-                  title={!canPenalize ? 'Máy chủ chưa cho phép xử phạt quyền mua này.' : undefined}
+                  title={!canPenalize ? t('auctions.awardsPanel.penalizeDisabledTitle') : undefined}
                   onClick={() => {
                     if (canPenalize) setSelection({ id: award.id, action: 'payment-default' });
                   }}
                 >
-                  Xử phạt quá hạn thanh toán
+                  {t('auctions.awardsPanel.penalizeBtn')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -233,12 +246,12 @@ export default function AuctionAwardsPanel({
                   disabled={
                     resource.pending || resource.loading || !!resource.error || !canWithdraw
                   }
-                  title={!canWithdraw ? 'Máy chủ chưa cho phép thao tác này.' : undefined}
+                  title={!canWithdraw ? t('auctions.awardsPanel.withdrawDisabledTitle') : undefined}
                   onClick={() => {
                     if (canWithdraw) setSelection({ id: award.id, action: 'not-buying' });
                   }}
                 >
-                  Khách không mua nữa
+                  {t('auctions.awardsPanel.withdrawBtn')}
                 </Button>
               </div>
             </article>

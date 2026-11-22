@@ -1,4 +1,6 @@
 import { useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../i18n/formatters';
 import type { AdminAuctionItem, ReviewAuctionItemInput } from '../../../services/auction.service';
 import { Button } from '../shared/AdminUI';
 
@@ -13,9 +15,10 @@ export default function ReviewAuctionItemForm({
   busy: boolean;
   onReview: (itemId: string, data: ReviewAuctionItemInput) => Promise<void>;
 }) {
+  const { t, i18n } = useTranslation('admin');
   const [rejecting, setRejecting] = useState(false);
   const [error, setError] = useState('');
-  const money = (value: number | string) => `${Number(value).toLocaleString('vi-VN')} ₫`;
+  const money = (value: number | string) => formatCurrency(Number(value), i18n.language);
 
   async function submit(
     event: FormEvent<HTMLFormElement>,
@@ -29,48 +32,54 @@ export default function ReviewAuctionItemForm({
       let payload: ReviewAuctionItemInput;
       if (action === 'REJECT') {
         const reason = String(values.get('reason') || '').trim();
-        if (!reason) throw new Error('Vui lòng nhập lý do từ chối.');
+        if (!reason) throw new Error(t('auctions.reviewForm.errRejectReason'));
         payload = { action, rejectionReason: reason };
       } else {
         const lot = String(values.get('lot') || '').trim();
         const lotNumber = lot ? Number(lot) : undefined;
         if (lotNumber !== undefined && (!Number.isSafeInteger(lotNumber) || lotNumber < 1))
-          throw new Error('Số lô phải là số nguyên lớn hơn hoặc bằng 1.');
+          throw new Error(t('auctions.reviewForm.errLotNumber'));
         payload = lotNumber === undefined ? { action } : { action, lotNumber };
       }
       await onReview(item.id, payload);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể xử lý sản phẩm.');
+      setError(cause instanceof Error ? cause.message : t('auctions.reviewForm.errProcess'));
     }
   }
 
   return (
     <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
-      <p className="text-xs font-semibold text-slate-600">Đề xuất của seller</p>
+      <p className="text-xs font-semibold text-slate-600">
+        {t('auctions.reviewForm.sellerProposal')}
+      </p>
       <dl className="grid gap-3 text-xs sm:grid-cols-2">
         <div>
-          <dt className="text-slate-500">Giá khởi điểm</dt>
+          <dt className="text-slate-500">{t('auctions.reviewForm.startingPrice')}</dt>
           <dd className="mt-1 font-medium">{money(item.proposedStartingPrice)}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Giá bảo lưu</dt>
+          <dt className="text-slate-500">{t('auctions.reviewForm.reservePrice')}</dt>
           <dd className="mt-1 font-medium">
-            {Number(item.proposedReservePrice) > 0 ? money(item.proposedReservePrice!) : 'Không có'}
+            {Number(item.proposedReservePrice) > 0
+              ? money(item.proposedReservePrice!)
+              : t('auctions.common.none')}
           </dd>
         </div>
         <div>
-          <dt className="text-slate-500">Bước giá</dt>
+          <dt className="text-slate-500">{t('auctions.reviewForm.bidIncrement')}</dt>
           <dd className="mt-1 font-medium">{money(item.proposedBidIncrement)}</dd>
         </div>
         <div>
-          <dt className="text-slate-500">Số lô</dt>
-          <dd className="mt-1 font-medium">{item.lotNumber ?? 'Tự gán khi phê duyệt'}</dd>
+          <dt className="text-slate-500">{t('auctions.reviewForm.lotNumber')}</dt>
+          <dd className="mt-1 font-medium">
+            {item.lotNumber ?? t('auctions.reviewForm.autoAssign')}
+          </dd>
         </div>
       </dl>
       <form onSubmit={(event) => void submit(event, 'APPROVE')}>
         <fieldset disabled={busy} className="space-y-3 disabled:opacity-60">
           <label className="block text-xs">
-            Số lô
+            {t('auctions.reviewForm.lotNumber')}
             <input
               name="lot"
               type="number"
@@ -81,7 +90,9 @@ export default function ReviewAuctionItemForm({
             />
           </label>
           <div className="flex gap-3">
-            <Button type="submit">{busy ? 'Đang xử lý…' : 'Phê duyệt'}</Button>
+            <Button type="submit">
+              {busy ? t('auctions.reviewForm.processing') : t('auctions.reviewForm.approve')}
+            </Button>
             <Button
               type="button"
               variant="danger"
@@ -90,7 +101,7 @@ export default function ReviewAuctionItemForm({
                 setError('');
               }}
             >
-              Từ chối
+              {t('auctions.reviewForm.reject')}
             </Button>
           </div>
         </fieldset>
@@ -102,12 +113,14 @@ export default function ReviewAuctionItemForm({
         >
           <fieldset disabled={busy} className="space-y-3 disabled:opacity-60">
             <label className="block text-xs">
-              Lý do từ chối *
+              {t('auctions.reviewForm.rejectReasonLabel')}
               <textarea autoFocus name="reason" required rows={3} className={inputClass} />
             </label>
             <div className="flex gap-3">
               <Button type="submit" variant="danger">
-                {busy ? 'Đang xử lý…' : 'Xác nhận từ chối'}
+                {busy
+                  ? t('auctions.reviewForm.processing')
+                  : t('auctions.reviewForm.confirmReject')}
               </Button>
               <Button
                 type="button"
@@ -117,7 +130,7 @@ export default function ReviewAuctionItemForm({
                   setError('');
                 }}
               >
-                Hủy
+                {t('auctions.common.cancel')}
               </Button>
             </div>
           </fieldset>

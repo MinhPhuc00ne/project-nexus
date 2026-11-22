@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 
 export function useAuctionOperationResource<T>(
@@ -6,6 +7,7 @@ export function useAuctionOperationResource<T>(
   refreshKey: number,
   realtimeConnected = false,
 ) {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +33,7 @@ export function useAuctionOperationResource<T>(
     if (initialLoad) setError('');
     void load()
       .then((result) => {
-        if (!Array.isArray(result)) throw new Error('Dữ liệu trả về không hợp lệ.');
+        if (!Array.isArray(result)) throw new Error(t('auctions.operationResource.invalidData'));
         if (active) {
           loadedScope.current = { load, token };
           setRows(result);
@@ -39,7 +41,10 @@ export function useAuctionOperationResource<T>(
         }
       })
       .catch((cause: unknown) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Không thể tải dữ liệu.');
+        if (active)
+          setError(
+            cause instanceof Error ? cause.message : t('auctions.operationResource.loadError'),
+          );
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -47,7 +52,7 @@ export function useAuctionOperationResource<T>(
     return () => {
       active = false;
     };
-  }, [load, refreshKey, revision, token]);
+  }, [load, refreshKey, revision, token, t]);
   useEffect(() => {
     if (realtimeConnected) return;
     const timer = setInterval(() => {
@@ -65,12 +70,12 @@ export function useAuctionOperationResource<T>(
     try {
       await action();
       if (!mounted.current) return false;
-      setNotice('Đã xử lý thành công.');
+      setNotice(t('auctions.operationResource.successNotice'));
       return true;
     } catch (cause) {
       if (mounted.current)
         setActionError(
-          `${cause instanceof Error ? cause.message : 'Không thể xử lý.'} Hãy tải lại trạng thái trước khi thử lại.`,
+          `${cause instanceof Error ? cause.message : t('auctions.operationResource.actionErrorFallback')} ${t('auctions.operationResource.actionErrorSuffix')}`,
         );
       return false;
     } finally {

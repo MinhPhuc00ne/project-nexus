@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../../i18n/formatters';
 import {
   getAdminAuctionItemsApi,
   reviewAuctionItemApi,
@@ -12,11 +14,6 @@ import { Badge, Button, EmptyState } from '../shared/AdminUI';
 import ReviewAuctionItemForm from './ReviewAuctionItemForm';
 import AuctionItemDetails from './AuctionItemDetails';
 
-const itemStatuses: Record<string, string> = {
-  PENDING_REVIEW: 'Chờ duyệt',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Từ chối',
-};
 export default function AuctionItemsDialog({
   auction,
   onClose,
@@ -26,6 +23,7 @@ export default function AuctionItemsDialog({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t, i18n } = useTranslation('admin');
   const toast = useToast();
   const [data, setData] = useState<AdminAuctionItemsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +49,9 @@ export default function AuctionItemsDialog({
       })
       .catch((cause: unknown) => {
         if (current)
-          setLoadError(cause instanceof Error ? cause.message : 'Không thể tải sản phẩm.');
+          setLoadError(
+            cause instanceof Error ? cause.message : t('auctions.itemsDialog.loadError'),
+          );
       })
       .finally(() => {
         if (current) setLoading(false);
@@ -59,7 +59,7 @@ export default function AuctionItemsDialog({
     return () => {
       current = false;
     };
-  }, [auction.id, revision]);
+  }, [auction.id, revision, t]);
 
   const detailItem = data?.items.find((item) => item.id === detail?.id);
 
@@ -105,7 +105,7 @@ export default function AuctionItemsDialog({
     <Popup
       isOpen
       size="xl"
-      title={`Sản phẩm · ${auction.title}`}
+      title={t('auctions.itemsDialog.title', { title: auction.title })}
       onClose={() => {
         if (!lock.current) onClose();
       }}
@@ -120,22 +120,22 @@ export default function AuctionItemsDialog({
         />
       ) : (
         <div className="space-y-6">
-          <section aria-label="Danh sách sản phẩm" className="space-y-3">
+          <section aria-label={t('auctions.itemsDialog.sectionAria')} className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-semibold">
-                Sản phẩm trong phiên {data ? `(${data.totalCount})` : ''}
+                {t('auctions.itemsDialog.heading')} {data ? `(${data.totalCount})` : ''}
               </h3>
               <Button
                 variant="secondary"
                 disabled={loading || saving}
                 onClick={() => setRevision((value) => value + 1)}
               >
-                Làm mới
+                {t('auctions.common.refresh')}
               </Button>
             </div>
             {loading && (
               <p role="status" className="text-sm text-slate-500">
-                Đang tải sản phẩm…
+                {t('auctions.itemsDialog.loading')}
               </p>
             )}
             {loadError && (
@@ -144,7 +144,7 @@ export default function AuctionItemsDialog({
               </p>
             )}
             {!loading && !loadError && data?.items.length === 0 && (
-              <EmptyState text="Chưa có sản phẩm đăng ký trong phiên." />
+              <EmptyState text={t('auctions.itemsDialog.empty')} />
             )}
             {!loading &&
               !loadError &&
@@ -160,16 +160,21 @@ export default function AuctionItemsDialog({
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="break-words font-semibold">
-                        {item.lotNumber ? `Lô ${item.lotNumber} · ` : ''}
+                        {item.lotNumber
+                          ? `${t('auctions.common.lotPrefix', { number: item.lotNumber })} · `
+                          : ''}
                         {item.title}
                       </p>
-                      <p className="text-xs text-slate-500">Người gửi: {item.seller.fullName}</p>
+                      <p className="text-xs text-slate-500">
+                        {t('auctions.itemsDialog.submittedBy', { name: item.seller.fullName })}
+                      </p>
                       <p className="mt-1">
-                        Khởi điểm:{' '}
-                        {Number(item.startingPrice ?? item.proposedStartingPrice).toLocaleString(
-                          'vi-VN',
-                        )}{' '}
-                        ₫
+                        {t('auctions.itemsDialog.startingPrice', {
+                          price: formatCurrency(
+                            Number(item.startingPrice ?? item.proposedStartingPrice),
+                            i18n.language,
+                          ),
+                        })}
                       </p>
                     </div>
                     <Badge
@@ -181,7 +186,7 @@ export default function AuctionItemsDialog({
                             : 'amber'
                       }
                     >
-                      {itemStatuses[item.status] || item.status}
+                      {t(`auctions.itemStates.${item.status}`)}
                     </Badge>
                   </div>
                   <p className="mt-3 whitespace-pre-wrap break-words text-slate-600">
@@ -193,26 +198,34 @@ export default function AuctionItemsDialog({
                       disabled={saving}
                       onClick={() => setDetail({ id: item.id, view: 'shop' })}
                     >
-                      Xem shop
+                      {t('auctions.itemsDialog.viewShop')}
                     </Button>
                     <Button
                       variant="secondary"
                       disabled={saving}
                       onClick={() => setDetail({ id: item.id, view: 'item' })}
                     >
-                      Chi tiết vật phẩm
+                      {t('auctions.itemsDialog.viewItem')}
                     </Button>
                     <span className="text-xs text-slate-500">
-                      Uy tín seller: {item.seller.reputationScore ?? 'Chưa có dữ liệu'} · Yêu cầu:{' '}
-                      {auction.minSellerReputation}
+                      {t('auctions.itemsDialog.sellerReputation', {
+                        score: item.seller.reputationScore ?? t('auctions.itemsDialog.noData'),
+                        min: auction.minSellerReputation,
+                      })}
                     </span>
-                    {item.seller.isShopSuspended && <Badge tone="red">Shop bị đình chỉ</Badge>}
+                    {item.seller.isShopSuspended && (
+                      <Badge tone="red">{t('auctions.itemsDialog.shopSuspended')}</Badge>
+                    )}
                   </div>
                   {item.isSellerFlagged && (
-                    <p className="mt-2 text-amber-700">Lưu ý: {item.flagReason}</p>
+                    <p className="mt-2 text-amber-700">
+                      {t('auctions.itemsDialog.flagNotice', { reason: item.flagReason })}
+                    </p>
                   )}
                   {item.rejectionReason && (
-                    <p className="mt-2 text-red-700">Lý do từ chối: {item.rejectionReason}</p>
+                    <p className="mt-2 text-red-700">
+                      {t('auctions.itemsDialog.rejectionReason', { reason: item.rejectionReason })}
+                    </p>
                   )}
                   {item.status === 'PENDING_REVIEW' && (
                     <ReviewAuctionItemForm item={item} busy={saving || loading} onReview={review} />
@@ -222,7 +235,7 @@ export default function AuctionItemsDialog({
           </section>
           <div className="flex justify-end">
             <Button variant="secondary" disabled={saving} onClick={onClose}>
-              Đóng
+              {t('auctions.common.close')}
             </Button>
           </div>
         </div>
