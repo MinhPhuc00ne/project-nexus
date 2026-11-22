@@ -115,45 +115,37 @@ npx turbo run build
 npm test
 ```
 
-## 5. Complete Documentation Index
+## 5. Engineering Wiki & Documentation
 
-This repository maintains thorough technical documentation organized by domain and operational responsibility. The following index references every documentation file across the project:
+All project documentation is consolidated into the bilingual (**VI / EN**) Docusaurus v3 Engineering Wiki at `docs-site/` (with auto-exported OpenAPI Reference from NestJS Swagger):
 
-### Project Operations and Contributing
+```bash
+# Start local Engineering Wiki server
+npm run docs:dev
 
-- [README.md](README.md): Project overview, technology stack, development quickstart, and comprehensive index.
-- [CONTRIBUTING.md](CONTRIBUTING.md): Git branching model, Conventional Commits standard, Merge Request lifecycle, and GitLab CLI automation.
-- [.gitlab/merge_request_templates/default.md](.gitlab/merge_request_templates/default.md): Merge Request submission template and author verification checklist.
+# Export latest OpenAPI spec from NestJS Swagger and verify bilingual parity
+npm run docs:openapi && npm run docs:check
 
-### Architecture and Business Logic
+# Build static Wiki for production
+npm run docs:build
 
-- [docs/README.md](docs/README.md): Central documentation navigation portal and directory architecture.
-- [docs/architecture/ARCHITECTURE_MODEL.md](docs/architecture/ARCHITECTURE_MODEL.md): Level 1.5 Modular Monolith architecture, dependency graphs, and module isolation boundaries.
-- [docs/architecture/BUSINESS_RULES.md](docs/architecture/BUSINESS_RULES.md): Core platform business rules, anti-sniping auction mechanics, escrow settlements, and commission rates.
-- [docs/architecture/DESIGN_PATTERNS.md](docs/architecture/DESIGN_PATTERNS.md): Backend and frontend design patterns, state machines, and concurrency controls.
-- [docs/srs/README.md](docs/srs/README.md): Software requirements specification, user personas, and transaction lifecycles.
+# Sync Wiki pages to GitLab Wiki (requires authenticated glab CLI)
+npm run docs:sync-gitlab-wiki
+```
 
-### API Contracts and Integration
+### Key Wiki Sections (`docs-site/docs/`)
 
-- [docs/api/README.md](docs/api/README.md): REST API endpoints, WebSocket contracts, authentication schemas, and event payloads.
-- [docs/api/ORDER_AFTER_SALES.md](docs/api/ORDER_AFTER_SALES.md): Post-purchase order states, cancellation workflows, return claims, and escrow dispute transitions.
-
-### Engineering Guides
-
-- [docs/backend/BACKEND_GUIDE.md](docs/backend/BACKEND_GUIDE.md): NestJS backend architecture, dependency injection, and Prisma database administration.
-- [docs/frontend/FRONTEND_GUIDE.md](docs/frontend/FRONTEND_GUIDE.md): React frontend architecture, state management patterns, and route protection mechanisms.
-- [docs/frontend/UI_SPECIFICATION.md](docs/frontend/UI_SPECIFICATION.md): UI design tokens, typography, component styling standards, and accessibility requirements.
-- [infra/README.md](infra/README.md): Docker infrastructure topologies, container compose files, and service networking.
-
-### Technical and Code Standards
-
-- [docs/standards/CLEAN_CODE.md](docs/standards/CLEAN_CODE.md): Cyclomatic complexity limits, class boundaries, strict prohibition of inline comments, and TSDoc documentation standards.
-- [docs/standards/DESIGN_PRINCIPLES.md](docs/standards/DESIGN_PRINCIPLES.md): SOLID principles, high cohesion, loose coupling, and defensive programming guidelines.
-- [docs/standards/NAMING_CONVENTIONS.md](docs/standards/NAMING_CONVENTIONS.md): Systematic naming conventions for files, directories, symbols, database entities, and API routes.
-- [docs/standards/WRITING_STYLE.md](docs/standards/WRITING_STYLE.md): Standard US English technical writing style guide and grammatical constraints.
-
-### Specialized Module References
-
-- [backend/CHATBOT.md](backend/CHATBOT.md): Customer service AI chatbot architecture, Gemini LLM function calling, and prompt design.
-- [frontend/FE_FILE_GUIDE.md](frontend/FE_FILE_GUIDE.md): Detailed inventory of all frontend files, functional responsibilities, and API readiness states.
-- [frontend/src/components/ToastNotification/README.md](frontend/src/components/ToastNotification/README.md): Toast notification component usage guidelines, variants, and event triggers.
+- [intro.md](docs-site/docs/intro.md): Project overview and verified technology stack.
+- [getting-started/quickstart.md](docs-site/docs/getting-started/quickstart.md): Local and Docker quickstart guide.
+- [architecture/system-overview.md](docs-site/docs/architecture/system-overview.md): Modular Monolith Level 1.5 architecture and boundaries.
+- [architecture/database-schema.md](docs-site/docs/architecture/database-schema.md): PostgreSQL 17 and Prisma 7 schema overview.
+- [architecture/business-rules.md](docs-site/docs/architecture/business-rules.md): Code-verified business rules (reputation, escrow, anti-sniping).
+- [architecture/state-machines.md](docs-site/docs/architecture/state-machines.md): Order, Escrow, After-Sales, and Auction lifecycles.
+- [architecture/realtime-events.md](docs-site/docs/architecture/realtime-events.md): Socket.IO gateway contracts (`/ws/auctions`, `/ws/chat`, `/ws/notifications`).
+- [modules/overview.md](docs-site/docs/modules/overview.md): Detailed summary of all 10 backend modules and AI chatbot.
+- [frontend/i18n-guide.md](docs-site/docs/frontend/i18n-guide.md): Frontend multi-language (`vi`/`en`) architecture and extension guide.
+- [quality/code-standards.md](docs-site/docs/quality/code-standards.md): Clean Code, Naming Conventions, and 3-tier Sonar quality gate.
+- [quality/testing-ci.md](docs-site/docs/quality/testing-ci.md): 3-tier testing pyramid (`node:test`, Vitest, Playwright) and CI/CD.
+- [operations/runbook.md](docs-site/docs/operations/runbook.md): Operations and troubleshooting runbook.
+- [CONTRIBUTING.md](CONTRIBUTING.md): Git branching, Conventional Commits, and `glab` Merge Request workflow.
+- [infra/README.md](infra/README.md): Docker infrastructure topologies and compose setup.

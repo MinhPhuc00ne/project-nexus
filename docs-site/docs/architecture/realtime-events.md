@@ -2,12 +2,21 @@
 title: Sự kiện Realtime (WebSocket)
 ---
 
-# WebSocket Gateways
+# WebSocket Contracts
 
-Backend cung cấp 3 Socket.IO Gateways tách biệt theo namespace:
+Backend cung cấp 3 Socket.IO Gateways (xác thực JWT qua handshake auth/header):
 
-| Namespace           | Gateway                | Chức năng chính                                                                                 |
-| :------------------ | :--------------------- | :---------------------------------------------------------------------------------------------- |
-| `/ws/auctions`      | `AuctionGateway`       | Tham gia phòng đấu giá, đặt giá realtime, đồng bộ đếm ngược & anti-sniping, đồng bộ góc nhìn 3D |
-| `/ws/chat`          | `ChatGateway`          | Chat Buyer–Seller, hàng đợi hỗ trợ Staff, trạng thái online/typing                              |
-| `/ws/notifications` | `NotificationsGateway` | Đẩy thông báo in-app realtime và cập nhật số lượng chưa đọc (`unreadCount`)                     |
+## 1. `/ws/auctions` (`AuctionGateway`)
+
+- **Client → Server**: `auction:join`, `auction:leave`, `auction:bid:place`, `auction:3d:sync`
+- **Server → Client**: `auction:bid:placed`, `auction:bid:rejected`, `auction:time_extended` (anti-sniping +2 phút), `auction:ended`, `auction:3d:synced`
+- **Lưu ý phân quyền**: Tài khoản `SELLER` đang bật chế độ Người bán (`isSellerActive = true`) chỉ được xem, không được đặt giá (Backend trả lỗi `403`).
+
+## 2. `/ws/chat` (`ChatGateway`)
+
+- Hỗ trợ hội thoại Buyer–Seller (`BUYER_SELLER`), hàng đợi hỗ trợ Staff (`StaffQueueService`), trạng thái online/typing và tin nhắn tự động của Shop (`ChatAutoReply`).
+
+## 3. `/ws/notifications` (`NotificationsGateway`)
+
+- **Events**: `notification:connected`, `notification:new`, `notification:unread_count`
+- Tự động đẩy thông báo in-app và đồng bộ badge chưa đọc khi `PrismaService` ghi `Notification` mới.

@@ -2,12 +2,21 @@
 title: Realtime Events (WebSocket)
 ---
 
-# WebSocket Gateways
+# WebSocket Contracts
 
-The backend exposes 3 Socket.IO gateways across dedicated namespaces:
+The backend exposes 3 JWT-authenticated Socket.IO gateways:
 
-| Namespace           | Gateway                | Responsibilities                                                                    |
-| :------------------ | :--------------------- | :---------------------------------------------------------------------------------- |
-| `/ws/auctions`      | `AuctionGateway`       | Room membership, real-time bidding, countdown & anti-sniping sync, 3D viewport sync |
-| `/ws/chat`          | `ChatGateway`          | Buyer–Seller chat, Staff support queue, presence and typing indicators              |
-| `/ws/notifications` | `NotificationsGateway` | Real-time in-app notifications and unread badge sync (`unreadCount`)                |
+## 1. `/ws/auctions` (`AuctionGateway`)
+
+- **Client → Server**: `auction:join`, `auction:leave`, `auction:bid:place`, `auction:3d:sync`
+- **Server → Client**: `auction:bid:placed`, `auction:bid:rejected`, `auction:time_extended` (+2m anti-sniping), `auction:ended`, `auction:3d:synced`
+- **Role Guard**: `SELLER` accounts with `isSellerActive = true` are view-only and receive `403` if attempting to bid.
+
+## 2. `/ws/chat` (`ChatGateway`)
+
+- Powers Buyer–Seller chat (`BUYER_SELLER`), Staff support queue (`StaffQueueService`), presence/typing indicators, and shop auto-replies (`ChatAutoReply`).
+
+## 3. `/ws/notifications` (`NotificationsGateway`)
+
+- **Events**: `notification:connected`, `notification:new`, `notification:unread_count`
+- Pushes real-time in-app notifications and unread badge updates whenever `PrismaService` creates a new `Notification`.

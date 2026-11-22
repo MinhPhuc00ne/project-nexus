@@ -10,12 +10,18 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: 'category',
-      label: 'Kiến trúc & Nghiệp vụ',
+      label: 'Kiến trúc & Quyết định (ADR)',
       items: [
         'architecture/system-overview',
         'architecture/database-schema',
         'architecture/business-rules',
+        'architecture/state-machines',
+        'architecture/design-patterns',
         'architecture/realtime-events',
+        'adr/modular-monolith',
+        'adr/frontend-i18n',
+        'adr/zero-server-sonar',
+        'adr/docusaurus-scalar-openapi',
       ],
     },
     {
@@ -26,12 +32,17 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Frontend & Đa ngôn ngữ',
-      items: ['frontend/architecture', 'frontend/i18n-guide'],
+      items: ['frontend/architecture', 'frontend/ui-specification', 'frontend/i18n-guide'],
     },
     {
       type: 'category',
       label: 'Chất lượng & Kiểm thử',
       items: ['quality/code-standards', 'quality/testing-ci'],
+    },
+    {
+      type: 'category',
+      label: 'Vận hành (Runbook)',
+      items: ['operations/runbook'],
     },
   ],
 };
