@@ -20,7 +20,88 @@
       "loyalty": "Loyalty Rewards",
       "payosRefund": "PayOS Cashback"
     },
-    "viewAllPromos": "View All Promotions →"
+    "viewAllPromos": "View All Promotions →",
+    "heroFallback": {
+      "title": "E-Commerce Marketplace &",
+      "accent": "Exclusive Live Auctions",
+      "description": "Shop tech products, gear, and premium accessories. Experience multi-dimensional interaction, PayOS Escrow protection, and GHN express shipping.",
+      "shopNow": "Shop Now",
+      "viewAuctionRoom": "View Auction Room",
+      "prevBanner": "Previous banner",
+      "nextBanner": "Next banner",
+      "goToSlide": "Go to slide {{index}}"
+    },
+    "categoriesSection": {
+      "title": "Product Categories",
+      "viewAll": "View all categories →",
+      "subcategoriesCount": "{{count}} subcategories",
+      "manyProducts": "Many products"
+    },
+    "auctionCard": {
+      "noData": "No data",
+      "noImage": "No image",
+      "upcoming": "UPCOMING",
+      "live": "LIVE",
+      "viewDetailAria": "View details {{title}}",
+      "details": "Details",
+      "opensOn": "Opens {{date}}",
+      "bidsCount": "{{count}} bids",
+      "newlyOpened": "Just opened"
+    },
+    "flashSale": {
+      "noImage": "No image",
+      "soldProgress": "SOLD {{sold}}/50"
+    },
+    "liveAuction": {
+      "defaultTitle": "Live Auction Room",
+      "exclusiveFeature": "Exclusive Feature",
+      "viewersCount": "Viewers: 1.42k",
+      "heading": "NEXUS LIVE AUCTION - Live Auction Room",
+      "subheading": "Anti-Sniping protection, Atomic Queue, and transparent escrow.",
+      "noImage": "No image",
+      "upcomingBadge": "UPCOMING",
+      "liveBadge": "LIVE NOW",
+      "lotsCount": "{{count}} LOTS",
+      "realInspection": "Verified Inspection",
+      "depositBadge": "10% Deposit (Auto-refund)",
+      "viewMode": "View mode: Studio Photos & Inspection Report",
+      "enterRoom": "Enter Auction Room",
+      "lotNumber": "LOT #{{num}}",
+      "specialLot": "Special Lot #01",
+      "upcomingDesc": "Auction is scheduled. Buyers can preview items, inspection reports, and set reminders.",
+      "liveDesc": "Item is being watched live by buyers in the 3D interactive auction room.",
+      "startingPrice": "Starting Price",
+      "currentPrice": "Current Price",
+      "depositAmount": "Deposit: {{amount}}",
+      "startsIn": "Starts In",
+      "endsIn": "Ends In",
+      "statusScheduled": "Status: Scheduled",
+      "viewAndSchedule": "View Details & Schedule",
+      "placeBidNow": "Place Bid Now",
+      "roomDetails": "Room Details"
+    },
+    "recommendationCard": {
+      "noImage": "No image",
+      "favoriteAria": "Favorite {{name}}",
+      "active": "Active",
+      "noData": "No data",
+      "soldCount": "({{count}} sold)",
+      "fastShipping": "Fast nationwide shipping",
+      "addToCart": "Add to Cart"
+    },
+    "recommendationsSection": {
+      "title": "Recommended For You",
+      "personalizedBadge": "✨ Personalized for your taste",
+      "trendingBadge": "Top Trending",
+      "personalizedDesc": "AI-recommended based on items in your cart & order history",
+      "trendingDesc": "Most purchased and highest-rated products today",
+      "exploreAll": "Explore full catalog",
+      "empty": "No recommended products available right now.",
+      "forYouBadge": "🎯 For You",
+      "defaultShopName": "Nexus Store",
+      "noReviews": "No reviews yet",
+      "soldCount": "{{count}} sold"
+    }
   },
   "search": {
     "title": "Search Results",

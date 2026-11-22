@@ -20,7 +20,88 @@
       "loyalty": "Khách Hàng Thân Thiết",
       "payosRefund": "Hoàn Tiền PayOS"
     },
-    "viewAllPromos": "Xem Tất Cả Khuyến Mãi →"
+    "viewAllPromos": "Xem Tất Cả Khuyến Mãi →",
+    "heroFallback": {
+      "title": "Sàn Thương Mại Điện Tử &",
+      "accent": "Đấu Giá Trực Tuyến Độc Bản",
+      "description": "Mua sắm sản phẩm công nghệ, gear, phụ kiện cao cấp. Trải nghiệm tương tác đa chiều, thanh toán bảo chứng PayOS Escrow và giao vận hỏa tốc GHN.",
+      "shopNow": "Mua Sắm Ngay",
+      "viewAuctionRoom": "Xem Phòng Đấu Giá",
+      "prevBanner": "Banner trước",
+      "nextBanner": "Banner tiếp theo",
+      "goToSlide": "Chuyển đến slide {{index}}"
+    },
+    "categoriesSection": {
+      "title": "Danh Mục Sản Phẩm",
+      "viewAll": "Xem tất cả danh mục →",
+      "subcategoriesCount": "{{count}} nhóm con",
+      "manyProducts": "Nhiều sản phẩm"
+    },
+    "auctionCard": {
+      "noData": "Chưa có dữ liệu",
+      "noImage": "Chưa có hình ảnh",
+      "upcoming": "SẮP MỞ",
+      "live": "TRỰC TIẾP",
+      "viewDetailAria": "Xem chi tiết {{title}}",
+      "details": "Chi Tiết",
+      "opensOn": "Mở {{date}}",
+      "bidsCount": "{{count}} lượt bid",
+      "newlyOpened": "Mới mở"
+    },
+    "flashSale": {
+      "noImage": "Chưa có hình ảnh",
+      "soldProgress": "ĐÃ BÁN {{sold}}/50"
+    },
+    "liveAuction": {
+      "defaultTitle": "Phòng Đấu Giá Trực Tiếp",
+      "exclusiveFeature": "Tính Năng Độc Quyền",
+      "viewersCount": "Người đang xem: 1,42k",
+      "heading": "NEXUS LIVE AUCTION - Phòng Đấu Giá Trực Tiếp",
+      "subheading": "Bảo vệ Anti-Sniping, hàng đợi Atomic Queue và ký quỹ minh bạch.",
+      "noImage": "Chưa có hình ảnh",
+      "upcomingBadge": "SẮP DIỄN RA",
+      "liveBadge": "LIVE TRỰC TIẾP",
+      "lotsCount": "{{count}} LÔ SẢN PHẨM",
+      "realInspection": "Thẩm Định Thực Tế",
+      "depositBadge": "Cọc 10% (Hoàn tự động)",
+      "viewMode": "Chế độ xem: Ảnh Studio & Hồ sơ thẩm định",
+      "enterRoom": "Vào Phòng Đấu Giá",
+      "lotNumber": "LÔ #{{num}}",
+      "specialLot": "Lô đặc biệt #01",
+      "upcomingDesc": "Phiên đấu giá đã được lên lịch. Người mua có thể xem trước sản phẩm, hồ sơ kiểm định và đặt lịch.",
+      "liveDesc": "Mẫu đang được người mua theo dõi ngay trong phòng đấu giá tương tác 3D.",
+      "startingPrice": "Giá Khởi Điểm",
+      "currentPrice": "Giá Hiện Tại",
+      "depositAmount": "Tiền cọc: {{amount}}",
+      "startsIn": "Khởi Tranh Sau",
+      "endsIn": "Đếm Ngược Kết Thúc",
+      "statusScheduled": "Trạng Thái: Đã Lên Lịch",
+      "viewAndSchedule": "Xem Chi Tiết & Đặt Lịch",
+      "placeBidNow": "Đặt Giá Ngay",
+      "roomDetails": "Chi Tiết Phòng"
+    },
+    "recommendationCard": {
+      "noImage": "Chưa có hình ảnh",
+      "favoriteAria": "Yêu thích {{name}}",
+      "active": "Hoạt động",
+      "noData": "Chưa có dữ liệu",
+      "soldCount": "({{count}} đã bán)",
+      "fastShipping": "Giao hàng nhanh toàn quốc",
+      "addToCart": "Thêm Giỏ"
+    },
+    "recommendationsSection": {
+      "title": "Gợi Ý Dành Riêng Cho Bạn",
+      "personalizedBadge": "✨ Cá nhân hóa theo gu của bạn",
+      "trendingBadge": "Xu hướng nổi bật",
+      "personalizedDesc": "Được thuật toán AI đề xuất dựa trên sản phẩm trong giỏ hàng & lịch sử đơn hàng của bạn",
+      "trendingDesc": "Sản phẩm được mua nhiều và đánh giá cao nhất hôm nay",
+      "exploreAll": "Khám phá toàn bộ sàn",
+      "empty": "Chưa có sản phẩm gợi ý nào lúc này.",
+      "forYouBadge": "🎯 Theo gu bạn",
+      "defaultShopName": "Gian hàng Nexus",
+      "noReviews": "Chưa có đánh giá",
+      "soldCount": "Đã bán {{count}}"
+    }
   },
   "search": {
     "title": "Kết quả tìm kiếm",
