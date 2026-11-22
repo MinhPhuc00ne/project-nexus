@@ -1,13 +1,17 @@
 {
+  "sidebar": {
+    "subtitle": "Support Center",
+    "sectionTitle": "SUPPORT OPERATIONS",
+    "closeMenu": "Close menu"
+  },
   "nav": {
-    "inbox": "Support Inbox",
-    "sellerApprovals": "Seller Approvals",
-    "disputes": "Dispute Resolution",
-    "auctionSupport": "Auction Support",
+    "team": "Team Management",
+    "inbox": "Live Inbox",
+    "disputes": "Disputes & Claims",
+    "auctionSupport": "3D Auction Support",
+    "faq": "Guides & FAQ",
     "banners": "Banner Management",
-    "faq": "FAQ",
-    "history": "Ticket History",
-    "performance": "Performance",
-    "team": "Support Team"
+    "history": "History & CSAT",
+    "performance": "Performance"
   }
 }

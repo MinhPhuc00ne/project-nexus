@@ -1,13 +1,17 @@
 {
+  "sidebar": {
+    "subtitle": "Trung tâm hỗ trợ",
+    "sectionTitle": "NGHIỆP VỤ HỖ TRỢ",
+    "closeMenu": "Đóng menu"
+  },
   "nav": {
-    "inbox": "Hộp thư hỗ trợ",
-    "sellerApprovals": "Duyệt hồ sơ Seller",
-    "disputes": "Xử lý tranh chấp",
-    "auctionSupport": "Hỗ trợ đấu giá",
-    "banners": "Quản lý Banner",
-    "faq": "Câu hỏi thường gặp",
-    "history": "Lịch sử xử lý",
-    "performance": "Hiệu suất",
-    "team": "Đội ngũ hỗ trợ"
+    "team": "Quản Lý Nhân Viên",
+    "inbox": "Hộp Thư Trực Tuyến",
+    "disputes": "Khiếu Nại & Tranh Chấp",
+    "auctionSupport": "Hỗ Trợ Đấu Giá 3D",
+    "faq": "Hướng Dẫn & FAQ Sàn",
+    "banners": "Quản Lý Banner",
+    "history": "Lịch Sử & CSAT",
+    "performance": "Hiệu Suất Cá Nhân"
   }
 }
