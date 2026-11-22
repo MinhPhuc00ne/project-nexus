@@ -1,11 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import PagePlaceholder from '../../components/PagePlaceholder';
 
 export default function VerifyOtpPage() {
-  return (
-    <PagePlaceholder
-      area="Auth"
-      title="Xác thực tài khoản (OTP)"
-      description="Nhập mã xác thực gồm 6 chữ số được gửi tới email hoặc số điện thoại của bạn."
-    />
-  );
+  const { t } = useTranslation('auth');
+  return <PagePlaceholder area="Auth" title={t('otp.title')} description={t('otp.subtitle')} />;
 }

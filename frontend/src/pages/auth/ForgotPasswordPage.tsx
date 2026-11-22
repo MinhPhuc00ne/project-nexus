@@ -1,11 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import PagePlaceholder from '../../components/PagePlaceholder';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation('auth');
   return (
     <PagePlaceholder
       area="Auth"
-      title="Quên mật khẩu"
-      description="Nhập địa chỉ email đã đăng ký để nhận mã khôi phục hoặc liên kết đặt lại mật khẩu."
+      title={t('forgotPassword.title')}
+      description={t('forgotPassword.subtitle')}
     />
   );
 }
