@@ -1,4 +1,5 @@
 import { useState, type DragEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GripVertical, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
 import { categoryMoveError } from '../../../utils/category-tree';
 import { Badge, Button } from '../shared/AdminUI';
@@ -18,6 +19,7 @@ export default function CategoryNode({
   onDrag: (category: CategoryTreeItem | null) => void;
   onDropCategory: (parent: CategoryTreeItem | null) => void;
 }) {
+  const { t } = useTranslation('admin');
   const [dragOver, setDragOver] = useState(false);
   const children = category.children ?? [];
   const canAddChild = category.level === 1 || category.level === 2;
@@ -52,14 +54,17 @@ export default function CategoryNode({
     <span className="inline-flex min-w-0 max-w-full flex-wrap items-center gap-2 align-middle">
       <Tag size={14} className="shrink-0 text-primary" aria-hidden="true" />
       <span className="break-words text-sm font-semibold text-slate-800">{category.name}</span>
-      <Badge tone="gray">Cấp {category.level}</Badge>
+      <Badge tone="gray">{t('categories.levelBadge', { level: category.level })}</Badge>
       <span className="break-all text-xs text-slate-500">{category.slug}</span>
       {dragged && dragOver && (
         <span className={`w-full text-xs ${canDrop ? 'text-blue-700' : 'text-red-700'}`}>
           {moveError ||
             (sameParent
-              ? 'Danh mục này đã nằm trong mục cha này.'
-              : `Thả để chuyển vào "${category.name}" (cấp ${category.level + 1}), rồi xác nhận.`)}
+              ? t('categories.alreadyInThisParent')
+              : t('categories.dropToMoveHint', {
+                  name: category.name,
+                  level: category.level + 1,
+                }))}
         </span>
       )}
     </span>
@@ -75,8 +80,8 @@ export default function CategoryNode({
           type="button"
           variant="secondary"
           draggable
-          aria-label={`Kéo để chuyển danh mục ${category.name}`}
-          title="Kéo để đổi danh mục cha; hoặc dùng nút sửa"
+          aria-label={t('categories.dragAria', { name: category.name })}
+          title={t('categories.dragTitle')}
           className="cursor-grab active:cursor-grabbing"
           onDragStart={(event) => {
             event.stopPropagation();
@@ -94,8 +99,8 @@ export default function CategoryNode({
         <Button
           type="button"
           variant="secondary"
-          aria-label={`Sửa danh mục ${category.name}`}
-          title="Sửa danh mục"
+          aria-label={t('categories.editAria', { name: category.name })}
+          title={t('categories.editTitle')}
           onClick={() => onAction({ kind: 'edit', category })}
         >
           <Pencil size={16} aria-hidden="true" />
@@ -104,8 +109,8 @@ export default function CategoryNode({
           <Button
             type="button"
             variant="secondary"
-            aria-label={`Thêm danh mục con cho ${category.name}`}
-            title="Thêm danh mục con"
+            aria-label={t('categories.addChildAria', { name: category.name })}
+            title={t('categories.addChildTitle')}
             onClick={() => onAction({ kind: 'create', parent: category })}
           >
             <Plus size={16} aria-hidden="true" />
@@ -114,8 +119,10 @@ export default function CategoryNode({
         <Button
           type="button"
           variant="danger"
-          aria-label={`Xóa danh mục ${category.name}`}
-          title={children.length > 0 ? 'Cần xóa hoặc chuyển danh mục con trước' : 'Xóa danh mục'}
+          aria-label={t('categories.deleteAria', { name: category.name })}
+          title={
+            children.length > 0 ? t('categories.deleteDisabledTitle') : t('categories.deleteTitle')
+          }
           disabled={children.length > 0}
           onClick={() => onAction({ kind: 'delete', category })}
         >
@@ -128,7 +135,7 @@ export default function CategoryNode({
             {label}
           </summary>
           <ul
-            aria-label={`Danh mục con của ${category.name}`}
+            aria-label={t('categories.childrenListAria', { name: category.name })}
             className="m-3 ml-4 space-y-2 border-l border-blue-100 pl-3 sm:ml-6"
           >
             {children.map((child) => (

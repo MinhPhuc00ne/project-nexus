@@ -2,6 +2,7 @@ import { mockLogistics, mockSystemEvents } from './mockData/system';
 // Hai khối dùng ở Tổng quan và Hệ thống: trạng thái vận chuyển và danh sách nhật ký sự kiện.
 
 import { Download, ScrollText, Truck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge, Button, Panel } from '../shared/AdminUI';
 import type { AdminTabProps } from '../shared/adminTypes';
 
@@ -10,31 +11,32 @@ import type { AdminTabProps } from '../shared/adminTypes';
 // Pick chỉ lấy kiểu của prop actions; card này không cần nhận toàn bộ AdminData.
 // Endpoint và trạng thái GHN dưới đây chỉ là nội dung hiển thị, chưa gửi request thật.
 export function LogisticsCard({ actions }: Pick<AdminTabProps, 'actions'>) {
+  const { t } = useTranslation('admin');
   return (
     <Panel
-      title="Kết nối GHN Logistics API"
-      subtitle="Tự động kích hoạt webhook khi đấu giá gõ chốt phiên thành công"
+      title={t('system.logistics.title')}
+      subtitle={t('system.logistics.subtitle')}
       icon={<Truck size={19} />}
     >
       <div className="space-y-3 rounded-lg bg-blue-50 p-3 text-[11px]">
         <div className="flex justify-between gap-2">
-          <span className="text-slate-500">Webhook endpoint</span>
+          <span className="text-slate-500">{t('system.logistics.webhookEndpoint')}</span>
           <code className="break-all text-primary">{mockLogistics.webhookEndpoint}</code>
         </div>
         <div className="flex justify-between">
-          <span className="text-slate-500">Tạo vận đơn tự động</span>
+          <span className="text-slate-500">{t('system.logistics.autoShipment')}</span>
           <Badge tone="green">{mockLogistics.automaticShipmentStatus}</Badge>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[10px]">
         <span className="text-slate-500">
-          Độ trễ phản hồi: <b>{mockLogistics.latency}</b>
+          {t('system.logistics.latencyPrefix')} <b>{mockLogistics.latency}</b>
         </span>
         <button
-          onClick={() => actions.notify('Chưa kết nối API GHN. Đây là trạng thái minh họa.')}
+          onClick={() => actions.notify(t('system.logistics.demoNotice'))}
           className="font-semibold text-primary hover:underline"
         >
-          Tạo lại vận đơn lỗi
+          {t('system.logistics.retryFailed')}
         </button>
       </div>
     </Panel>
@@ -43,6 +45,7 @@ export function LogisticsCard({ actions }: Pick<AdminTabProps, 'actions'>) {
 
 // compact=true dùng trong Tổng quan để hiển thị 3 sự kiện; tab Hệ thống hiển thị đầy đủ.
 export function EventLog({ compact = false }: { compact?: boolean }) {
+  const { t } = useTranslation('admin');
   const download = () => {
     // Chỉ xuất thời gian/nội dung; tone là class màu UI nên không đưa vào JSON tải xuống.
     // JSON.stringify(..., null, 2) thụt dòng 2 dấu cách cho dễ đọc.
@@ -67,8 +70,8 @@ export function EventLog({ compact = false }: { compact?: boolean }) {
 
   return (
     <Panel
-      title="Nhật ký sự kiện thời gian thực"
-      subtitle="Theo dõi hoạt động hệ thống (dữ liệu demo)"
+      title={t('system.events.title')}
+      subtitle={t('system.events.subtitle')}
       icon={<ScrollText size={19} />}
       action={<span className="mt-3 size-2 shrink-0 rounded-full bg-blue-500" />}
     >
@@ -84,7 +87,7 @@ export function EventLog({ compact = false }: { compact?: boolean }) {
       </div>
       <Button variant="secondary" onClick={download} className="mt-4 w-full">
         <Download size={13} />
-        Xuất event log (JSON)
+        {t('system.events.exportJson')}
       </Button>
     </Panel>
   );

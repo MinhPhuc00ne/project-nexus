@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload } from 'lucide-react';
 import { bannerLink, type BannerInput } from '../../../services/banners';
 import { uploadBannerImage } from '../../../services/banners.service';
@@ -31,6 +32,7 @@ export default function BannerForm({
   submit,
   onCancel,
 }: BannerFormProps) {
+  const { t } = useTranslation('admin');
   const [previewFailed, setPreviewFailed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -49,7 +51,7 @@ export default function BannerForm({
       update({ imageUrl });
       setFileName(file.name);
     } catch (error) {
-      setUploadError(error instanceof Error ? error.message : 'Không thể tải ảnh banner lên.');
+      setUploadError(error instanceof Error ? error.message : t('banners.form.uploadErr'));
     } finally {
       setUploading(false);
     }
@@ -57,8 +59,8 @@ export default function BannerForm({
 
   return (
     <Panel
-      title={id ? 'Chỉnh sửa banner' : 'Thêm banner'}
-      subtitle="Chọn ảnh từ máy. Gợi ý ảnh ngang tỉ lệ 3:1, nội dung nằm trong ảnh."
+      title={id ? t('banners.form.editTitle') : t('banners.form.createTitle')}
+      subtitle={t('banners.form.subtitle')}
     >
       <form
         onSubmit={(event) => {
@@ -72,7 +74,7 @@ export default function BannerForm({
         <fieldset disabled={saving || uploading} className="grid min-w-0 gap-5 lg:grid-cols-2">
           <div className="space-y-4">
             <label className="block space-y-2 text-xs font-semibold">
-              Tiêu đề
+              {t('banners.form.titleLabel')}
               <Input
                 required
                 minLength={2}
@@ -82,7 +84,7 @@ export default function BannerForm({
               />
             </label>
             <label className="block space-y-2 text-xs font-semibold">
-              Link khi bấm (không bắt buộc)
+              {t('banners.form.targetUrlLabel')}
               <Input
                 type="url"
                 pattern="https?://.+"
@@ -93,7 +95,7 @@ export default function BannerForm({
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block space-y-2 text-xs font-semibold">
-                Bắt đầu
+                {t('banners.form.startsAtLabel')}
                 <Input
                   type="datetime-local"
                   value={localDate(value.startsAt)}
@@ -113,7 +115,7 @@ export default function BannerForm({
                 />
               </label>
               <label className="block space-y-2 text-xs font-semibold">
-                Kết thúc
+                {t('banners.form.endsAtLabel')}
                 <Input
                   type="datetime-local"
                   value={localDate(value.endsAt)}
@@ -128,11 +130,9 @@ export default function BannerForm({
                 />
               </label>
             </div>
-            <p className="text-xs text-slate-500">
-              Thời gian theo múi giờ thiết bị. Bỏ trống để không giới hạn.
-            </p>
+            <p className="text-xs text-slate-500">{t('banners.form.scheduleHint')}</p>
             <label className="block space-y-2 text-xs font-semibold">
-              Thứ tự ưu tiên (1 hiển thị đầu tiên)
+              {t('banners.form.priorityLabel')}
               <Input
                 required
                 type="number"
@@ -149,15 +149,15 @@ export default function BannerForm({
                 checked={value.isActive}
                 onChange={(event) => update({ isActive: event.target.checked })}
               />{' '}
-              Bật banner
+              {t('banners.form.activeLabel')}
             </label>
           </div>
           <div className="min-w-0">
-            <p className="mb-3 text-xs font-semibold">Ảnh banner</p>
+            <p className="mb-3 text-xs font-semibold">{t('banners.form.imageSectionTitle')}</p>
             <input
               ref={fileInputRef}
               type="file"
-              aria-label="Chọn ảnh banner"
+              aria-label={t('banners.form.chooseImageAria')}
               className="hidden"
               accept=".jpg,.jpeg,.png,.webp,.gif,.svg"
               onChange={(event) => {
@@ -170,12 +170,12 @@ export default function BannerForm({
               {bannerLink(value.imageUrl) && !previewFailed ? (
                 <img
                   src={value.imageUrl}
-                  alt={value.title || 'Ảnh banner'}
+                  alt={value.title || t('banners.form.imageAltFallback')}
                   className="h-full w-full object-contain"
                   onError={() => setPreviewFailed(true)}
                 />
               ) : (
-                <p className="text-xs text-slate-500">Chưa có ảnh banner</p>
+                <p className="text-xs text-slate-500">{t('banners.form.noImage')}</p>
               )}
             </div>
             <div className="mt-3">
@@ -186,24 +186,26 @@ export default function BannerForm({
                 disabled={saving || uploading}
               >
                 <Upload size={18} />
-                {uploading ? 'Đang tải ảnh…' : value.imageUrl ? 'Đổi ảnh banner' : 'Tải ảnh lên'}
+                {uploading
+                  ? t('banners.form.uploading')
+                  : value.imageUrl
+                    ? t('banners.form.changeImage')
+                    : t('banners.form.uploadImage')}
               </Button>
             </div>
-            <p className="mt-3 text-xs text-slate-500">
-              JPG, PNG, WEBP, GIF hoặc SVG, tối đa 25MB.
-            </p>
+            <p className="mt-3 text-xs text-slate-500">{t('banners.form.imageHint')}</p>
             {uploading && (
               <p role="status" className="mt-2 text-sm text-slate-500">
-                Đang tải ảnh lên…
+                {t('banners.form.uploading')}
               </p>
             )}
             {fileName && !uploading && (
-              <p className="mt-2 break-words text-xs text-slate-500">Ảnh đã tải: {fileName}</p>
+              <p className="mt-2 break-words text-xs text-slate-500">
+                {t('banners.form.uploadedFile', { name: fileName })}
+              </p>
             )}
             {previewFailed && (
-              <p className="mt-2 text-xs text-slate-500">
-                Không tải được ảnh. Vui lòng chọn lại ảnh.
-              </p>
+              <p className="mt-2 text-xs text-slate-500">{t('banners.form.previewErr')}</p>
             )}
             {uploadError && (
               <p role="alert" className="mt-2 text-sm text-rose-600">
@@ -218,10 +220,14 @@ export default function BannerForm({
           )}
           <div className="flex gap-2 lg:col-span-2">
             <Button type="submit" disabled={uploading || !!uploadError || !value.imageUrl}>
-              {uploading ? 'Đang tải ảnh…' : saving ? 'Đang lưu…' : 'Lưu banner'}
+              {uploading
+                ? t('banners.form.uploading')
+                : saving
+                  ? t('banners.form.saving')
+                  : t('banners.form.saveBtn')}
             </Button>
             <Button type="button" variant="secondary" onClick={onCancel}>
-              Hủy
+              {t('banners.form.cancel')}
             </Button>
           </div>
         </fieldset>
