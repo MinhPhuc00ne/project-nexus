@@ -1,0 +1,29 @@
+{
+  "title": "Đấu giá trực tuyến",
+  "status": {
+    "DRAFT": "Bản nháp",
+    "SCHEDULED": "Sắp diễn ra",
+    "ACTIVE": "Đang diễn ra",
+    "EXTENDED": "Gia hạn chống bắn tỉa",
+    "ENDED": "Đã kết thúc",
+    "SETTLED": "Đã tất toán",
+    "CANCELLED": "Đã hủy",
+    "FAILED": "Thất bại"
+  },
+  "bidding": {
+    "currentBid": "Giá cao nhất hiện tại",
+    "startingPrice": "Giá khởi điểm",
+    "bidIncrement": "Bước giá tối thiểu",
+    "placeBid": "Đặt giá ngay",
+    "bidHistory": "Lịch sử đặt giá",
+    "timeRemaining": "Thời gian còn lại",
+    "antiSnipingNotice": "Đặt giá trong 2 phút cuối sẽ tự động gia hạn thêm 2 phút."
+  },
+  "awards": {
+    "primaryWinner": "Người thắng chính thức",
+    "secondChance": "Cơ hội thứ hai",
+    "acceptOffer": "Chấp nhận mua",
+    "declineOffer": "Từ chối",
+    "proceedCheckout": "Thanh toán ngay"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "header": {
+    "panelTitle": "NEXUS ADMIN PANEL",
+    "clusterStatus": "Cụm máy chủ: 99.98%",
+    "broadcastReady": "PHÁT SÓNG 3D: SẴN SÀNG",
+    "openMenu": "Mở menu"
+  },
+  "nav": {
+    "overview": "Tổng quan",
+    "users": "Người dùng",
+    "sellers": "Duyệt Seller",
+    "stores": "Cửa hàng",
+    "categories": "Danh mục",
+    "products": "Sản phẩm",
+    "orders": "Đơn hàng",
+    "auctions": "Đấu giá",
+    "banners": "Banner sự kiện",
+    "refunds": "Hoàn tiền",
+    "finance": "Tài chính",
+    "reports": "Báo cáo vi phạm",
+    "chat": "Tin nhắn tự động",
+    "studio": "3D Studio",
+    "system": "Hệ thống",
+    "settings": "Cài đặt"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "home": {
+    "heroTitle": "Next-Gen Shopping & Live Auctions",
+    "featuredAuctions": "Featured Auctions",
+    "featuredProducts": "Recommended Products",
+    "categories": "Product Categories"
+  },
+  "search": {
+    "title": "Search Results",
+    "placeholder": "Search products or shops…",
+    "sortBy": "Sort by"
+  },
+  "product": {
+    "addToCart": "Add to cart",
+    "buyNow": "Buy now",
+    "outOfStock": "Out of stock",
+    "inStock": "{{count}} in stock",
+    "reviews": "Product Reviews",
+    "description": "Product Description"
+  },
+  "shop": {
+    "visitShop": "Visit shop",
+    "chatWithShop": "Chat with shop",
+    "productsCount": "{{count}} products"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist or has been moved.",
+    "backHome": "Back to Home"
+  }
+}

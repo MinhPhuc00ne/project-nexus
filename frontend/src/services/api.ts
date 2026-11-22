@@ -1,4 +1,6 @@
 import axios, { type AxiosError } from 'axios';
+import i18n from '../i18n';
+import { normalizeLanguage } from '../i18n/config';
 import { getApiErrorMessage } from '../lib/apiErrors';
 import {
   clearAuthSession,
@@ -60,6 +62,7 @@ api.interceptors.request.use((config) => {
   if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers['Accept-Language'] = normalizeLanguage(i18n.resolvedLanguage || i18n.language);
   return config;
 });
 
@@ -156,7 +159,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   } else if (requireAuth) {
-    throw new Error('Vui lòng đăng nhập để thực hiện thao tác này.');
+    throw new Error(i18n.t('errors:authRequired'));
   }
 
   const endpoint = path.startsWith('/') ? path : `/${path}`;
@@ -186,9 +189,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   } catch (error) {
     if (axios.isAxiosError<ApiResponsePayload>(error)) {
       if (!error.response) {
-        throw new Error(
-          'Không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ backend.',
-        );
+        throw new Error(i18n.t('errors:network'));
       }
       const payload = error.response.data;
       const errorMsg = getApiErrorMessage(payload);

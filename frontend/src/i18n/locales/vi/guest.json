@@ -1,0 +1,31 @@
+{
+  "home": {
+    "heroTitle": "Mua sắm & Đấu giá Trực tuyến Thế hệ Mới",
+    "featuredAuctions": "Phiên đấu giá nổi bật",
+    "featuredProducts": "Sản phẩm đề xuất",
+    "categories": "Danh mục sản phẩm"
+  },
+  "search": {
+    "title": "Kết quả tìm kiếm",
+    "placeholder": "Tìm sản phẩm hoặc shop…",
+    "sortBy": "Sắp xếp theo"
+  },
+  "product": {
+    "addToCart": "Thêm vào giỏ hàng",
+    "buyNow": "Mua ngay",
+    "outOfStock": "Hết hàng",
+    "inStock": "Còn {{count}} sản phẩm",
+    "reviews": "Đánh giá sản phẩm",
+    "description": "Mô tả sản phẩm"
+  },
+  "shop": {
+    "visitShop": "Xem cửa hàng",
+    "chatWithShop": "Nhắn tin với shop",
+    "productsCount": "{{count}} sản phẩm"
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang",
+    "description": "Đường dẫn bạn truy cập không tồn tại hoặc đã bị di chuyển.",
+    "backHome": "Về trang chủ"
+  }
+}

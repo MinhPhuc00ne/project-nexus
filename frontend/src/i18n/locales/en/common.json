@@ -1,0 +1,87 @@
+{
+  "brand": {
+    "name": "NEXUS",
+    "tagline": "Multi-Shop E-Commerce & Live Auctions",
+    "pageTitle": "NEXUS - Multi-Shop E-Commerce & Live Auctions"
+  },
+  "language": {
+    "label": "Language",
+    "switchAria": "Switch interface language",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "reset": "Reset",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "retry": "Retry",
+    "viewDetails": "View details",
+    "viewAll": "View all",
+    "copy": "Copy",
+    "copied": "Copied",
+    "upload": "Upload",
+    "download": "Download",
+    "refresh": "Refresh"
+  },
+  "states": {
+    "loading": "Loading…",
+    "loadingPage": "Loading page…",
+    "checkingAccess": "Checking access permissions…",
+    "empty": "No data available.",
+    "noResults": "No matching results found.",
+    "success": "Success",
+    "error": "An error occurred"
+  },
+  "nav": {
+    "home": "Home",
+    "auctions": "Auctions",
+    "cart": "Cart",
+    "login": "Sign in",
+    "register": "Sign up",
+    "logout": "Sign out",
+    "profile": "Profile",
+    "notifications": "Notifications",
+    "buyerPortal": "Buyer Portal",
+    "sellerPortal": "Seller Center",
+    "staffPortal": "Support Portal",
+    "adminPortal": "Admin Panel",
+    "about": "About",
+    "contact": "Contact",
+    "terms": "Terms",
+    "privacy": "Privacy"
+  },
+  "header": {
+    "searchPlaceholder": "Search products, brands, or live auctions…",
+    "sellerChannel": "Seller Center",
+    "becomeSeller": "Become a Seller",
+    "switchToSeller": "Switch to Seller Mode",
+    "switchToBuyer": "Switch to Buyer Mode",
+    "helpCenter": "Help",
+    "noNotifications": "You have no notifications yet.",
+    "emptyCart": "Your shopping cart is empty.",
+    "viewCart": "View cart"
+  },
+  "footer": {
+    "description": "Enterprise multi-shop e-commerce platform integrated with real-time 3D live auctions.",
+    "customerCare": "Customer Care",
+    "aboutNexus": "About NEXUS",
+    "paymentMethods": "Payments",
+    "logistics": "Logistics",
+    "copyright": "© {{year}} Project Nexus. All rights reserved."
+  },
+  "pagination": {
+    "showing": "Showing {{from}}–{{to}} of {{total}}",
+    "page": "Page {{page}} / {{totalPages}}"
+  }
+}

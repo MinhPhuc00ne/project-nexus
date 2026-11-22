@@ -1,0 +1,26 @@
+{
+  "header": {
+    "panelTitle": "NEXUS ADMIN PANEL",
+    "clusterStatus": "Cluster uptime: 99.98%",
+    "broadcastReady": "3D BROADCAST: READY",
+    "openMenu": "Open menu"
+  },
+  "nav": {
+    "overview": "Overview",
+    "users": "Users",
+    "sellers": "Seller Approvals",
+    "stores": "Stores",
+    "categories": "Categories",
+    "products": "Products",
+    "orders": "Orders",
+    "auctions": "Auctions",
+    "banners": "Event Banners",
+    "refunds": "Refunds",
+    "finance": "Finance",
+    "reports": "Violation Reports",
+    "chat": "Auto Replies",
+    "studio": "3D Studio",
+    "system": "System",
+    "settings": "Settings"
+  }
+}

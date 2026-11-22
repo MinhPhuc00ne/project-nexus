@@ -1,0 +1,33 @@
+{
+  "cart": {
+    "title": "Your Shopping Cart",
+    "empty": "Your shopping cart is empty.",
+    "subtotal": "Subtotal",
+    "checkout": "Proceed to Checkout",
+    "remove": "Remove"
+  },
+  "checkout": {
+    "title": "Order Checkout",
+    "shippingAddress": "Shipping Address",
+    "paymentMethod": "Payment Method",
+    "payos": "VietQR Bank Transfer (PayOS)",
+    "wallet": "NEXUS Pay Wallet",
+    "cod": "Cash on Delivery (COD)",
+    "shippingFee": "Shipping Fee",
+    "total": "Total Amount",
+    "placeOrder": "Place Order"
+  },
+  "orders": {
+    "title": "Orders",
+    "status": {
+      "PENDING_PAYMENT": "Pending Payment",
+      "PAID": "Paid",
+      "PREPARING": "Preparing",
+      "SHIPPING": "Shipping",
+      "DELIVERED": "Delivered",
+      "CONFIRMED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded"
+    }
+  }
+}

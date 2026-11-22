@@ -1,0 +1,33 @@
+{
+  "cart": {
+    "title": "Giỏ hàng của bạn",
+    "empty": "Chưa có sản phẩm nào trong giỏ hàng.",
+    "subtotal": "Tạm tính",
+    "checkout": "Tiến hành thanh toán",
+    "remove": "Xóa"
+  },
+  "checkout": {
+    "title": "Thanh toán đơn hàng",
+    "shippingAddress": "Địa chỉ nhận hàng",
+    "paymentMethod": "Phương thức thanh toán",
+    "payos": "Chuyển khoản VietQR (PayOS)",
+    "wallet": "Ví NEXUS Pay",
+    "cod": "Thanh toán khi nhận hàng (COD)",
+    "shippingFee": "Phí vận chuyển",
+    "total": "Tổng thanh toán",
+    "placeOrder": "Đặt hàng"
+  },
+  "orders": {
+    "title": "Đơn hàng",
+    "status": {
+      "PENDING_PAYMENT": "Chờ thanh toán",
+      "PAID": "Đã thanh toán",
+      "PREPARING": "Đang chuẩn bị",
+      "SHIPPING": "Đang giao hàng",
+      "DELIVERED": "Đã giao hàng",
+      "CONFIRMED": "Hoàn thành",
+      "CANCELLED": "Đã hủy",
+      "REFUNDED": "Đã hoàn tiền"
+    }
+  }
+}
