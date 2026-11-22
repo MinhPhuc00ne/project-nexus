@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
 import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import {
   Store as ShopOutlined,
@@ -23,6 +25,7 @@ export default function SellerCreateProductPage() {
 }
 
 function SellerProductFormPage({ productId }: { productId?: string }) {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const editing = Boolean(productId);
   const {
@@ -56,8 +59,8 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
   const effectiveSale = computeEffectiveSale(price, saleConfig);
   const priceLabel =
     Number.isFinite(price) && price > 0
-      ? `${effectiveSale.effectivePrice.toLocaleString('vi-VN')} ₫`
-      : 'Chưa nhập giá bán';
+      ? formatCurrency(effectiveSale.effectivePrice)
+      : t('productForm.noPrice');
 
   const handleAddPresetOption = (presetName: string, sampleValues: string[]) => {
     if (optionGroups.some((g) => g.name.toLowerCase() === presetName.toLowerCase())) return;
@@ -100,7 +103,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
   if (productLoading)
     return (
       <p role="status" className="p-8 text-sm text-slate-500">
-        Đang tải sản phẩm…
+        {t('productForm.loadingProduct')}
       </p>
     );
   if (productError)
@@ -108,10 +111,10 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
       <div role="alert" className="space-y-4 rounded-xl bg-red-50 p-5 text-sm text-red-700">
         <p>{productError}</p>
         <SellerButton secondary onClick={retryProduct}>
-          Thử lại
+          {t('productForm.retry')}
         </SellerButton>
         <SellerLink to="/seller/products" secondary>
-          Danh sách sản phẩm
+          {t('productForm.backToList')}
         </SellerLink>
       </div>
     );
@@ -119,12 +122,12 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
   return (
     <div className="space-y-6">
       <PageHeading
-        title={editing ? 'Chỉnh sửa sản phẩm' : 'Đăng bán sản phẩm'}
-        description="Chuẩn bị thông tin, phân loại tùy chọn (màu, size…), chương trình Sale và tồn kho cho sản phẩm."
+        title={editing ? t('productForm.editTitle') : t('productForm.createTitle')}
+        description={t('productForm.pageDesc')}
         actions={
           <SellerLink to="/seller/products" secondary>
             <ArrowLeftOutlined />
-            Danh sách sản phẩm
+            {t('productForm.backToList')}
           </SellerLink>
         }
       />
@@ -138,12 +141,12 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
       )}
       {(!user.isSellerActive || user.isShopSuspended) && (
         <p role="alert" className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
-          Gian hàng đang bị đình chỉ hoặc chưa bật chế độ người bán nên chưa thể lưu sản phẩm.
+          {t('productForm.suspendedBanner')}
         </p>
       )}
       {pending && (
         <p role="status" className="rounded-xl bg-blue-50 p-4 text-sm text-blue-800">
-          {progress || 'Đang chuẩn bị đăng bán…'}
+          {progress || t('productForm.preparingBanner')}
         </p>
       )}
       <form
@@ -158,21 +161,21 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
           className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_310px]"
         >
           <div className="min-w-0 space-y-5">
-            <Panel title="Thông tin sản phẩm" subtitle="Thông tin hiển thị cho người mua">
+            <Panel title={t('productForm.infoTitle')} subtitle={t('productForm.infoSubtitle')}>
               <div className="space-y-5">
                 <label className="block text-sm font-medium text-slate-700">
-                  Tên sản phẩm <span className="text-red-500">*</span>
+                  {t('productForm.titleLabel')} <span className="text-red-500">*</span>
                   <input
                     required
                     maxLength={160}
                     value={form.title}
                     onChange={(event) => setForm({ ...form, title: event.target.value })}
                     className={inputClass}
-                    placeholder="Nhập tên sản phẩm muốn đăng bán"
+                    placeholder={t('productForm.titlePlaceholder')}
                   />
                 </label>
                 <label className="block text-sm font-medium text-slate-700">
-                  Danh mục sản phẩm <span className="text-red-500">*</span>
+                  {t('productForm.categoryLabel')} <span className="text-red-500">*</span>
                   <select
                     required
                     disabled={categoryLoading || Boolean(categoryError) || !categoryOptions.length}
@@ -181,7 +184,9 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                     className={inputClass}
                   >
                     <option value="">
-                      {categoryLoading ? 'Đang tải danh mục…' : 'Chọn danh mục'}
+                      {categoryLoading
+                        ? t('productForm.loadingCategories')
+                        : t('productForm.selectCategory')}
                     </option>
                     {categoryOptions.map((category) => (
                       <option key={category.id} value={category.id}>
@@ -194,18 +199,17 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                   <div role="alert" className="space-y-2 text-sm text-red-600">
                     <p>{categoryError}</p>
                     <SellerButton secondary onClick={retryCategories}>
-                      Tải lại danh mục
+                      {t('productForm.reloadCategories')}
                     </SellerButton>
                   </div>
                 )}
                 {!categoryLoading && !categoryError && !categoryOptions.length && (
                   <p role="status" className="text-sm text-amber-700">
-                    Hệ thống chưa có danh mục. Vui lòng liên hệ quản trị viên để bổ sung trước khi
-                    đăng bán.
+                    {t('productForm.noCategories')}
                   </p>
                 )}
                 <label className="block text-sm font-medium text-slate-700">
-                  Mô tả sản phẩm <span className="text-red-500">*</span>
+                  {t('productForm.descLabel')} <span className="text-red-500">*</span>
                   <textarea
                     required
                     maxLength={5000}
@@ -213,16 +217,16 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                     value={form.description}
                     onChange={(event) => setForm({ ...form, description: event.target.value })}
                     className={inputClass}
-                    placeholder="Mô tả tình trạng, chất liệu, nguồn gốc, phụ kiện và chính sách bảo hành…"
+                    placeholder={t('productForm.descPlaceholder')}
                   />
                   <span className="mt-1 block text-right text-xs font-normal text-slate-400">
-                    {form.description.length}/5.000 ký tự
+                    {t('productForm.charCount', { count: form.description.length })}
                   </span>
                 </label>
               </div>
             </Panel>
 
-            <Panel title="Hình ảnh sản phẩm" subtitle="Ảnh đầu tiên được dùng làm ảnh bìa">
+            <Panel title={t('productForm.imagesTitle')} subtitle={t('productForm.imagesSubtitle')}>
               <SellerProductImages
                 files={files}
                 onChange={setFiles}
@@ -233,13 +237,13 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
 
             {/* TÍNH NĂNG MỚI #5: PHÂN LOẠI HÀNG / TÙY CHỌN (MÀU SẮC, SIZE, PHIÊN BẢN...) */}
             <Panel
-              title="Phân loại hàng & Tùy chọn cho người mua (Màu sắc, Size…)"
-              subtitle="Cho phép người mua chọn Màu sắc, Kích thước (Size), Phiên bản khi đặt hàng"
+              title={t('productForm.optionsTitle')}
+              subtitle={t('productForm.optionsSubtitle')}
             >
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-xs font-semibold text-slate-600">
-                    Thêm nhanh nhóm tùy chọn:
+                    {t('productForm.quickAddLabel')}
                   </span>
                   {PRESET_OPTION_GROUPS.map((preset) => (
                     <button
@@ -256,15 +260,13 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                     onClick={handleAddCustomOptionGroup}
                     className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                   >
-                    <PlusOutlined /> Tùy chọn tự đặt
+                    <PlusOutlined /> {t('productForm.customOptionBtn')}
                   </button>
                 </div>
 
                 {optionGroups.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4 text-center text-xs text-slate-500">
-                    Chưa có nhóm phân loại nào. Bấm vào các nút phía trên (VD:{' '}
-                    <strong>+ Màu sắc</strong>, <strong>+ Kích thước (Size)</strong>) để người mua
-                    có thể chọn khi mua sản phẩm.
+                    {t('productForm.noOptionsHint')}
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -278,7 +280,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex-1">
                               <label className="block text-xs font-semibold text-slate-700">
-                                Tên nhóm tùy chọn (VD: Màu sắc, Size, Chất liệu)
+                                {t('productForm.groupNameLabel')}
                                 <input
                                   type="text"
                                   value={group.name}
@@ -289,7 +291,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                                       ),
                                     )
                                   }
-                                  placeholder="Nhập tên nhóm (VD: Màu sắc)"
+                                  placeholder={t('productForm.groupNamePlaceholder')}
                                   className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-blue-600"
                                 />
                               </label>
@@ -301,13 +303,13 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                               }
                               className="mt-5 inline-flex items-center gap-1 rounded-md border border-red-200 bg-white px-2.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50"
                             >
-                              <DeleteOutlined /> Xóa nhóm
+                              <DeleteOutlined /> {t('productForm.deleteGroup')}
                             </button>
                           </div>
 
                           <div>
                             <span className="block text-xs font-semibold text-slate-700 mb-1.5">
-                              Các lựa chọn cho khách hàng:
+                              {t('productForm.choicesLabel')}
                             </span>
                             <div className="flex flex-wrap gap-1.5 mb-2">
                               {group.values.map((val) => (
@@ -329,7 +331,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                                       )
                                     }
                                     className="text-slate-400 hover:text-red-600 font-bold"
-                                    aria-label={`Xóa ${val}`}
+                                    aria-label={t('productForm.removeChoiceAria', { val })}
                                   >
                                     ×
                                   </button>
@@ -352,7 +354,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                                     handleAddValueToGroup(groupId);
                                   }
                                 }}
-                                placeholder="Nhập thêm lựa chọn (ngăn cách bằng dấu phẩy, VD: Đỏ, Xám) rồi bấm Thêm"
+                                placeholder={t('productForm.choicePlaceholder')}
                                 className="flex-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-blue-600"
                               />
                               <button
@@ -360,7 +362,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                                 onClick={() => handleAddValueToGroup(groupId)}
                                 className="rounded-md bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
                               >
-                                + Thêm lựa chọn
+                                {t('productForm.addChoiceBtn')}
                               </button>
                             </div>
                           </div>
@@ -372,10 +374,13 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
               </div>
             </Panel>
 
-            <Panel title="Giá bán và số lượng" subtitle="Thông tin giá gốc và tồn kho dự kiến">
+            <Panel
+              title={t('productForm.pricingTitle')}
+              subtitle={t('productForm.pricingSubtitle')}
+            >
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Giá bán gốc (VND) <span className="text-red-500">*</span>
+                  {t('productForm.basePriceLabel')} <span className="text-red-500">*</span>
                   <input
                     required
                     type="number"
@@ -396,11 +401,11 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                       }
                     }}
                     className={inputClass}
-                    placeholder="Nhập giá bán gốc"
+                    placeholder={t('productForm.basePricePlaceholder')}
                   />
                 </label>
                 <label className="text-sm font-medium text-slate-700">
-                  Số lượng tồn kho <span className="text-red-500">*</span>
+                  {t('productForm.stockLabel')} <span className="text-red-500">*</span>
                   <input
                     required
                     type="number"
@@ -409,28 +414,24 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                     value={form.quantity}
                     onChange={(event) => setForm({ ...form, quantity: event.target.value })}
                     className={inputClass}
-                    placeholder="Nhập số lượng"
+                    placeholder={t('productForm.stockPlaceholder')}
                   />
                 </label>
               </div>
             </Panel>
 
             {/* TÍNH NĂNG MỚI #2: CHƯƠNG TRÌNH SALE / GIẢM GIÁ CHO SẢN PHẨM */}
-            <Panel
-              title="Chương trình Khuyến mãi / Giảm giá (Sale)"
-              subtitle="Thiết lập mức giảm giá và nhãn Sale hiển thị nổi bật cho người mua"
-            >
+            <Panel title={t('productForm.saleTitle')} subtitle={t('productForm.saleSubtitle')}>
               <div className="space-y-4">
                 <label className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50/60 p-3.5 cursor-pointer">
                   <div className="flex items-center gap-2.5">
                     <ThunderboltOutlined className="text-lg text-blue-600" />
                     <div>
                       <p className="text-xs font-bold text-[#1c3973]">
-                        Bật chương trình Giảm giá (Sale) cho sản phẩm này
+                        {t('productForm.enableSaleTitle')}
                       </p>
                       <p className="text-[11px] text-slate-500">
-                        Hiển thị giá khuyến mãi, giá gốc gạch ngang và huy hiệu giảm giá trên trang
-                        sản phẩm.
+                        {t('productForm.enableSaleDesc')}
                       </p>
                     </div>
                   </div>
@@ -457,7 +458,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                 {saleConfig.enabled && (
                   <div className="grid gap-4 sm:grid-cols-3 rounded-lg border border-slate-200 bg-white p-4">
                     <label className="text-xs font-semibold text-slate-700">
-                      Mức giảm giá (%)
+                      {t('productForm.discountPercent')}
                       <input
                         type="number"
                         min={1}
@@ -480,7 +481,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                     </label>
 
                     <label className="text-xs font-semibold text-slate-700">
-                      Giá sau giảm (VNĐ)
+                      {t('productForm.salePriceLabel')}
                       <input
                         type="number"
                         min={1000}
@@ -514,7 +515,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                     </label>
 
                     <label className="text-xs font-semibold text-slate-700">
-                      Nhãn chương trình Sale
+                      {t('productForm.saleBadgeLabel')}
                       <select
                         value={saleConfig.label || 'FLASH SALE'}
                         onChange={(e) =>
@@ -522,22 +523,26 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                         }
                         className={inputClass}
                       >
-                        <option value="FLASH SALE">FLASH SALE</option>
-                        <option value="GIẢM SỐC">GIẢM SỐC</option>
-                        <option value="ƯU ĐÃI ĐẶC BIỆT">ƯU ĐÃI ĐẶC BIỆT</option>
-                        <option value="XẢ KHO">XẢ KHO</option>
+                        <option value="FLASH SALE">
+                          {t('products.saleModal.badges.FLASH_SALE')}
+                        </option>
+                        <option value="GIẢM SỐC">{t('products.saleModal.badges.HOT_DEAL')}</option>
+                        <option value="ƯU ĐÃI ĐẶC BIỆT">
+                          {t('products.saleModal.badges.SPECIAL_OFFER')}
+                        </option>
+                        <option value="XẢ KHO">{t('products.saleModal.badges.CLEARANCE')}</option>
                       </select>
                     </label>
 
                     {Number(form.price) > 0 && (
                       <div className="sm:col-span-3 flex flex-wrap items-center justify-between gap-2 rounded-md bg-blue-50 px-3.5 py-2.5 text-xs">
                         <span className="text-slate-600">
-                          Giá hiển thị cho người mua:{' '}
+                          {t('productForm.buyerPreview')}{' '}
                           <strong className="text-blue-700 text-sm">
-                            {effectiveSale.effectivePrice.toLocaleString('vi-VN')} ₫
+                            {formatCurrency(effectiveSale.effectivePrice)}
                           </strong>{' '}
                           <span className="line-through text-slate-400 ml-1">
-                            {Number(form.price).toLocaleString('vi-VN')} ₫
+                            {formatCurrency(Number(form.price))}
                           </span>
                         </span>
                         <span className="rounded bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white">
@@ -551,16 +556,16 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
             </Panel>
 
             <Panel
-              title="Thông tin vận chuyển"
-              subtitle="Khối lượng và kích thước sau khi đóng gói"
+              title={t('productForm.shippingTitle')}
+              subtitle={t('productForm.shippingSubtitle')}
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 {(
                   [
-                    ['weight', 'Khối lượng (gram)'],
-                    ['length', 'Chiều dài (cm)'],
-                    ['width', 'Chiều rộng (cm)'],
-                    ['height', 'Chiều cao (cm)'],
+                    ['weight', t('productForm.weight')],
+                    ['length', t('productForm.length')],
+                    ['width', t('productForm.width')],
+                    ['height', t('productForm.height')],
                   ] as const
                 ).map(([key, label]) => (
                   <label key={key} className="text-sm font-medium text-slate-700">
@@ -572,7 +577,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                       value={form[key]}
                       onChange={(event) => setForm({ ...form, [key]: event.target.value })}
                       className={inputClass}
-                      placeholder="Chưa nhập"
+                      placeholder={t('productForm.dimensionPlaceholder')}
                     />
                   </label>
                 ))}
@@ -580,7 +585,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
             </Panel>
             <div className="flex flex-wrap justify-end gap-3 rounded-xl border border-slate-200 bg-white p-4">
               <SellerButton secondary onClick={reset}>
-                {editing ? 'Khôi phục thông tin ban đầu' : 'Xóa thông tin đã nhập'}
+                {editing ? t('productForm.resetEdit') : t('productForm.resetCreate')}
               </SellerButton>
               <SellerButton
                 type="submit"
@@ -589,15 +594,19 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                 }
               >
                 <ShopOutlined />
-                {pending ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Đăng bán sản phẩm'}
+                {pending
+                  ? t('productForm.saving')
+                  : editing
+                    ? t('productForm.saveChanges')
+                    : t('productForm.submitPublish')}
               </SellerButton>
             </div>
           </div>
           <aside className="space-y-5 xl:sticky xl:top-24">
             <Panel
-              title="Thông tin đang nhập"
+              title={t('productForm.previewTitle')}
               subtitle={
-                editing ? 'Xem lại thông tin trước khi lưu' : 'Chưa phải sản phẩm đã đăng bán'
+                editing ? t('productForm.previewEditSub') : t('productForm.previewCreateSub')
               }
             >
               <div className="space-y-4">
@@ -605,14 +614,14 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                   <ShopOutlined className="text-4xl" />
                 </div>
                 <h2 className="break-words text-base font-semibold text-slate-900">
-                  {form.title.trim() || 'Chưa nhập tên sản phẩm'}
+                  {form.title.trim() || t('productForm.untitled')}
                 </h2>
                 <div>
                   <p className="font-bold text-blue-700 text-lg">{priceLabel}</p>
                   {effectiveSale.isOnSale && (
                     <div className="mt-1 flex items-center gap-2 text-xs">
                       <span className="line-through text-slate-400">
-                        {effectiveSale.originalPrice.toLocaleString('vi-VN')} ₫
+                        {formatCurrency(effectiveSale.originalPrice)}
                       </span>
                       <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
                         -{effectiveSale.discountPercent}%
@@ -622,40 +631,40 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                 </div>
                 <dl className="space-y-3 text-xs">
                   <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Ảnh đã chọn</dt>
+                    <dt className="text-slate-500">{t('productForm.selectedImages')}</dt>
                     <dd>{files.length + existingImages.length}/5</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Số lượng</dt>
-                    <dd>{form.quantity || 'Chưa nhập'}</dd>
+                    <dt className="text-slate-500">{t('productForm.quantity')}</dt>
+                    <dd>{form.quantity || t('productForm.dimensionPlaceholder')}</dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Nhóm tùy chọn</dt>
+                    <dt className="text-slate-500">{t('productForm.optionGroupsCount')}</dt>
                     <dd className="font-semibold text-blue-700">
-                      {optionGroups.filter((g) => g.name && g.values.length).length} nhóm
+                      {t('productForm.groupsUnit', {
+                        count: optionGroups.filter((g) => g.name && g.values.length).length,
+                      })}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Khuyến mãi Sale</dt>
+                    <dt className="text-slate-500">{t('productForm.saleStatus')}</dt>
                     <dd className="font-semibold text-blue-700">
                       {effectiveSale.isOnSale
-                        ? `Đang bật (-${effectiveSale.discountPercent}%)`
-                        : 'Không bật'}
+                        ? t('productForm.saleActive', { pct: effectiveSale.discountPercent })
+                        : t('productForm.saleInactive')}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3">
-                    <dt className="text-slate-500">Trạng thái</dt>
+                    <dt className="text-slate-500">{t('productForm.statusLabel')}</dt>
                     <dd className="text-blue-700">
-                      {editing ? 'Đang chỉnh sửa' : 'Chưa đăng bán'}
+                      {editing ? t('productForm.statusEditing') : t('productForm.statusDraft')}
                     </dd>
                   </div>
                 </dl>
               </div>
             </Panel>
             <p className="px-1 text-xs leading-6 text-slate-500">
-              {editing
-                ? 'Chỉ lưu thay đổi khi bạn bấm Lưu thay đổi. Ảnh mới được tải lên trước khi cập nhật sản phẩm.'
-                : 'Sản phẩm sẽ được mở bán sau khi máy chủ xác nhận thành công. Ảnh được tải lên khi bạn bấm đăng bán.'}
+              {editing ? t('productForm.asideEditNote') : t('productForm.asideCreateNote')}
             </p>
           </aside>
         </fieldset>

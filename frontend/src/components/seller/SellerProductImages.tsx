@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X as CloseOutlined } from 'lucide-react';
 import { Image as PictureOutlined, Upload as UploadOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { PRODUCT_IMAGE_LIMIT, validateProductImages } from '../../services/sellerProducts';
 
 export default function SellerProductImages({
@@ -14,6 +15,7 @@ export default function SellerProductImages({
   existingImages?: string[];
   onExistingImagesChange?: (images: string[]) => void;
 }) {
+  const { t } = useTranslation('seller');
   const [previews, setPreviews] = useState<string[]>([]);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -27,10 +29,10 @@ export default function SellerProductImages({
     const next = [...files, ...Array.from(selected)];
     try {
       if (next.length + existingImages.length > PRODUCT_IMAGE_LIMIT)
-        throw new Error('Tổng ảnh cũ và ảnh mới không được quá 5 ảnh.');
+        throw new Error(t('productForm.images.maxImagesErr'));
       validateProductImages(next);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Ảnh không hợp lệ.');
+      setError(cause instanceof Error ? cause.message : t('productForm.images.invalidErr'));
       return;
     }
     setError('');
@@ -41,9 +43,11 @@ export default function SellerProductImages({
     <div className="space-y-4">
       <label className="flex cursor-pointer flex-col items-center gap-3 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-7 text-center hover:bg-blue-50">
         <UploadOutlined className="text-3xl text-blue-600" />
-        <span className="text-sm font-semibold text-slate-800">Chọn ảnh sản phẩm</span>
+        <span className="text-sm font-semibold text-slate-800">
+          {t('productForm.images.chooseLabel')}
+        </span>
         <span className="text-xs leading-6 text-slate-500">
-          Tối đa {PRODUCT_IMAGE_LIMIT} ảnh JPG, PNG, WEBP · Mỗi ảnh không quá 25 MB
+          {t('productForm.images.hint', { limit: PRODUCT_IMAGE_LIMIT })}
         </span>
         <input
           type="file"
@@ -70,12 +74,12 @@ export default function SellerProductImages({
             >
               <img
                 src={url}
-                alt={`Ảnh đã lưu ${index + 1}`}
+                alt={t('productForm.images.savedAlt', { index: index + 1 })}
                 className="aspect-square w-full rounded-lg object-contain"
               />
               <button
                 type="button"
-                aria-label={`Bỏ ảnh đã lưu ${index + 1}`}
+                aria-label={t('productForm.images.removeSavedAria', { index: index + 1 })}
                 onClick={() => {
                   setError('');
                   onExistingImagesChange?.(
@@ -87,7 +91,9 @@ export default function SellerProductImages({
                 <CloseOutlined />
               </button>
               <p className="mt-2 text-[10px] text-slate-500">
-                {index === 0 ? 'Ảnh bìa' : 'Ảnh đã lưu'}
+                {index === 0
+                  ? t('productForm.images.coverLabel')
+                  : t('productForm.images.savedLabel')}
               </p>
             </li>
           ))}
@@ -99,12 +105,12 @@ export default function SellerProductImages({
             <li key={url} className="relative rounded-xl border border-slate-200 bg-slate-50 p-2">
               <img
                 src={url}
-                alt={`Ảnh sản phẩm ${index + 1}`}
+                alt={t('productForm.images.newAlt', { index: index + 1 })}
                 className="aspect-square w-full rounded-lg object-contain"
               />
               <button
                 type="button"
-                aria-label={`Bỏ ảnh ${index + 1}`}
+                aria-label={t('productForm.images.removeNewAria', { index: index + 1 })}
                 onClick={() => {
                   setError('');
                   onChange(files.filter((_, itemIndex) => itemIndex !== index));
@@ -114,7 +120,7 @@ export default function SellerProductImages({
                 <CloseOutlined />
               </button>
               <p className="mt-2 truncate text-[10px] text-slate-500">
-                {index === 0 ? 'Ảnh bìa · ' : ''}
+                {index === 0 ? t('productForm.images.coverPrefix') : ''}
                 {files[index]?.name}
               </p>
             </li>
@@ -123,12 +129,10 @@ export default function SellerProductImages({
       ) : !existingImages.length ? (
         <p className="flex items-center gap-2 text-xs text-slate-500">
           <PictureOutlined />
-          Chưa chọn ảnh sản phẩm.
+          {t('productForm.images.noneSelected')}
         </p>
       ) : null}
-      <p className="text-xs leading-6 text-slate-500">
-        Ảnh đầu tiên là ảnh bìa. Ảnh được tải lên máy chủ khi bạn bấm đăng bán sản phẩm.
-      </p>
+      <p className="text-xs leading-6 text-slate-500">{t('productForm.images.footerHint')}</p>
     </div>
   );
 }
