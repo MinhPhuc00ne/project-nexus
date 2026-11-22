@@ -10,6 +10,7 @@ export default tseslint.config(
       '**/out/**',
       '**/.next/**',
       '**/coverage/**',
+      '**/.docusaurus/**',
       '**/.agents/**',
       '**/*.min.js',
       '**/*.d.ts',

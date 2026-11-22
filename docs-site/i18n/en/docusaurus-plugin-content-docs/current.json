@@ -1,0 +1,9 @@
+{
+  "sidebar.docsSidebar.category.Bắt đầu nhanh": { "message": "Getting Started" },
+  "sidebar.docsSidebar.category.Kiến trúc & Nghiệp vụ": {
+    "message": "Architecture & Business Rules"
+  },
+  "sidebar.docsSidebar.category.Backend Modules": { "message": "Backend Modules" },
+  "sidebar.docsSidebar.category.Frontend & Đa ngôn ngữ": { "message": "Frontend & i18n" },
+  "sidebar.docsSidebar.category.Chất lượng & Kiểm thử": { "message": "Quality & Testing" }
+}
