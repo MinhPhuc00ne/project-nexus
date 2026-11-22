@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import i18n from '../index';
 import { formatCurrency } from '../formatters';
 import { normalizeLanguage } from '../config';
+import { returnStatusLabels, type ReturnStatus } from '../../types/admin-return.types';
 
 describe('i18n infrastructure', () => {
   beforeEach(async () => {
@@ -41,5 +42,16 @@ describe('i18n infrastructure', () => {
       'Server did not confirm the cart merge result.',
     );
     expect(i18n.t('errors:services.missingProductId')).toBe('Missing product ID.');
+  });
+
+  it('translates all admin return statuses and banner statuses to en without Vietnamese fallback', async () => {
+    await i18n.changeLanguage('en');
+    for (const status of Object.keys(returnStatusLabels) as ReturnStatus[]) {
+      const translated = i18n.t(`admin:orders.returns.statuses.${status}`, {
+        defaultValue: returnStatusLabels[status],
+      });
+      expect(translated).not.toBe(returnStatusLabels[status]);
+    }
+    expect(i18n.t('admin:banners.statuses.Đã hết hạn')).toBe('Expired');
   });
 });
