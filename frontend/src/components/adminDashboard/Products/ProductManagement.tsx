@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Package, RefreshCw, Trash2 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getCategoryTree } from '../../../services/admin';
@@ -8,11 +9,13 @@ import { flattenCategories } from '../../../utils/category-tree';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { ProductActionDialog, ProductDetailDialog } from './ProductDialogs';
 import { formatMoney } from '../shared/adminData';
-import { adminProductLabels } from './adminProductData';
 import type { AdminTabProps } from '../shared/adminTypes';
 import { useAdminProducts } from './useAdminProducts';
 
+const PRODUCT_STATUSES: AdminProductStatus[] = ['ACTIVE', 'INACTIVE', 'DRAFT'];
+
 export default function ProductManagement({ actions }: AdminTabProps) {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const { search, setSearch, query, setQuery, result, loading, error, refresh } =
     useAdminProducts();
@@ -34,21 +37,19 @@ export default function ProductManagement({ actions }: AdminTabProps) {
       })
       .catch((cause) => {
         if (!controller.signal.aborted)
-          setCategoryError(
-            cause instanceof Error ? cause.message : 'Không thể tải bộ lọc danh mục.',
-          );
+          setCategoryError(cause instanceof Error ? cause.message : t('products.loadCategoryErr'));
       });
     return () => controller.abort();
-  }, [token, categoryRevision]);
+  }, [token, categoryRevision, t]);
 
   return (
     <Panel
-      title="Sản phẩm của Seller"
-      subtitle="Xem thông tin, quản lý trạng thái và xử lý sản phẩm trên hệ thống"
+      title={t('products.title')}
+      subtitle={t('products.subtitle')}
       icon={<Package size={19} />}
       action={
         <Button variant="secondary" disabled={loading} onClick={refresh}>
-          <RefreshCw size={14} aria-hidden="true" /> Làm mới
+          <RefreshCw size={14} aria-hidden="true" /> {t('products.refresh')}
         </Button>
       }
     >
@@ -57,11 +58,11 @@ export default function ProductManagement({ actions }: AdminTabProps) {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Tìm tên, mô tả sản phẩm hoặc tên/email seller…"
+            placeholder={t('products.searchPlaceholder')}
           />
         </div>
         <select
-          aria-label="Lọc trạng thái sản phẩm"
+          aria-label={t('products.statusAria')}
           value={query.status ?? ''}
           onChange={(event) =>
             setQuery((current) => ({
@@ -72,15 +73,15 @@ export default function ProductManagement({ actions }: AdminTabProps) {
           }
           className="min-h-10 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"
         >
-          <option value="">Tất cả trạng thái</option>
-          {Object.entries(adminProductLabels).map(([value, label]) => (
+          <option value="">{t('products.allStatuses')}</option>
+          {PRODUCT_STATUSES.map((value) => (
             <option key={value} value={value}>
-              {label}
+              {t(`products.statuses.${value}`)}
             </option>
           ))}
         </select>
         <select
-          aria-label="Lọc danh mục sản phẩm"
+          aria-label={t('products.categoryAria')}
           value={query.categoryId ?? ''}
           onChange={(event) =>
             setQuery((current) => ({
@@ -91,7 +92,7 @@ export default function ProductManagement({ actions }: AdminTabProps) {
           }
           className="min-h-10 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"
         >
-          <option value="">Tất cả danh mục</option>
+          <option value="">{t('products.allCategories')}</option>
           {flattenCategories(categories).map(({ category, path }) => (
             <option key={category.id} value={category.id}>
               {path}
@@ -101,21 +102,21 @@ export default function ProductManagement({ actions }: AdminTabProps) {
       </div>
       {categoryError && (
         <div role="alert" className="mb-4 flex flex-wrap items-center gap-2 text-xs text-red-700">
-          <p>Không tải được bộ lọc danh mục: {categoryError}</p>
+          <p>{t('products.categoryFilterErrPrefix', { message: categoryError })}</p>
           <Button variant="secondary" onClick={() => setCategoryRevision((value) => value + 1)}>
-            Thử lại
+            {t('products.retry')}
           </Button>
         </div>
       )}
       {loading ? (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
-          Đang tải sản phẩm…
+          {t('products.loading')}
         </p>
       ) : error ? (
         <div role="alert" className="space-y-3 py-5 text-sm text-red-700">
           <p>{error}</p>
           <Button variant="secondary" onClick={refresh}>
-            Thử lại
+            {t('products.retry')}
           </Button>
         </div>
       ) : (
@@ -127,12 +128,12 @@ export default function ProductManagement({ actions }: AdminTabProps) {
                   <thead className="bg-blue-50 text-slate-500">
                     <tr>
                       {[
-                        'Sản phẩm',
-                        'Seller',
-                        'Giá niêm yết',
-                        'Tồn kho',
-                        'Trạng thái',
-                        'Thao tác',
+                        t('products.cols.product'),
+                        t('products.cols.seller'),
+                        t('products.cols.price'),
+                        t('products.cols.stock'),
+                        t('products.cols.status'),
+                        t('products.cols.actions'),
                       ].map((title) => (
                         <th scope="col" key={title} className="p-3 font-semibold">
                           {title}
@@ -167,8 +168,10 @@ export default function ProductManagement({ actions }: AdminTabProps) {
                         </td>
                         <td className="whitespace-nowrap p-3">{formatMoney(product.basePrice)}</td>
                         <td className="p-3">
-                          <p>{product.stock.availableQty} có thể bán</p>
-                          <p className="mt-1 text-slate-500">Tổng: {product.stock.totalQty}</p>
+                          <p>{t('products.availableQty', { count: product.stock.availableQty })}</p>
+                          <p className="mt-1 text-slate-500">
+                            {t('products.totalQty', { count: product.stock.totalQty })}
+                          </p>
                         </td>
                         <td className="p-3">
                           <Badge
@@ -180,30 +183,32 @@ export default function ProductManagement({ actions }: AdminTabProps) {
                                   : 'gray'
                             }
                           >
-                            {adminProductLabels[product.status]}
+                            {t(`products.statuses.${product.status}`)}
                           </Badge>
                         </td>
                         <td className="p-3">
                           <div className="flex max-w-64 flex-wrap gap-2">
                             <Button variant="secondary" onClick={() => setDetailId(product.id)}>
-                              Chi tiết
+                              {t('products.detailsBtn')}
                             </Button>
                             {product.status === 'ACTIVE' ? (
                               <Button
                                 variant="danger"
                                 onClick={() => setDecision({ product, kind: 'hide' })}
                               >
-                                Ẩn
+                                {t('products.hideBtn')}
                               </Button>
                             ) : (
                               <Button onClick={() => setDecision({ product, kind: 'activate' })}>
-                                {product.status === 'DRAFT' ? 'Cho phép bán' : 'Hiện lại'}
+                                {product.status === 'DRAFT'
+                                  ? t('products.allowSellBtn')
+                                  : t('products.showAgainBtn')}
                               </Button>
                             )}
                             <Button
                               variant="danger"
-                              aria-label={`Xóa sản phẩm ${product.title}`}
-                              title="Xóa sản phẩm"
+                              aria-label={t('products.deleteAria', { title: product.title })}
+                              title={t('products.deleteTitle')}
                               onClick={() => setDecision({ product, kind: 'delete' })}
                             >
                               <Trash2 size={15} aria-hidden="true" />
@@ -216,11 +221,15 @@ export default function ProductManagement({ actions }: AdminTabProps) {
                 </table>
               </div>
             ) : (
-              <EmptyState text="Không có sản phẩm phù hợp với bộ lọc." />
+              <EmptyState text={t('products.empty')} />
             )}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
               <span>
-                {result.total} sản phẩm · Trang {result.page}/{Math.max(1, result.totalPages)}
+                {t('products.pagination', {
+                  total: result.total,
+                  page: result.page,
+                  totalPages: Math.max(1, result.totalPages),
+                })}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -228,14 +237,14 @@ export default function ProductManagement({ actions }: AdminTabProps) {
                   disabled={result.page <= 1}
                   onClick={() => setQuery((current) => ({ ...current, page: result.page - 1 }))}
                 >
-                  Trước
+                  {t('products.prev')}
                 </Button>
                 <Button
                   variant="secondary"
                   disabled={result.page >= result.totalPages}
                   onClick={() => setQuery((current) => ({ ...current, page: result.page + 1 }))}
                 >
-                  Sau
+                  {t('products.next')}
                 </Button>
               </div>
             </div>

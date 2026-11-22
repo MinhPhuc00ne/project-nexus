@@ -1,21 +1,23 @@
 import OrderManagement from '../../components/adminDashboard/Orders/OrderManagement';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import ReturnManagement from '../../components/adminDashboard/Orders/ReturnManagement';
 
 export default function AdminOrdersPage() {
+  const { t } = useTranslation('admin');
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') === 'returns' ? 'returns' : 'orders';
   return (
     <div className="space-y-5">
       <div
         role="tablist"
-        aria-label="Quản lý đơn hàng"
+        aria-label={t('orders.tabsAria')}
         className="flex gap-2 rounded-xl bg-slate-100 p-1.5"
       >
         {(
           [
-            ['orders', 'Đơn hàng'],
-            ['returns', 'Hoàn trả hàng'],
+            ['orders', t('orders.tabOrders')],
+            ['returns', t('orders.tabReturns')],
           ] as const
         ).map(([value, label]) => (
           <button
