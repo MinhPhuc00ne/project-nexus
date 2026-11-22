@@ -15,6 +15,7 @@ export type AdminTab =
   | 'refunds'
   | 'finance'
   | 'system'
+  | 'chat'
   | 'settings';
 
 /** Auction listing item representing pending, scheduled, or live bidding events. */

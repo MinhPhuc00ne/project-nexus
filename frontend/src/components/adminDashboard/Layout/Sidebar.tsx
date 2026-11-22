@@ -8,6 +8,7 @@ import {
   Flag,
   Layers,
   LayoutDashboard,
+  MessageCircle,
   Settings2,
   ShieldCheck,
   Store,
@@ -56,6 +57,7 @@ export const adminNavigation: {
       { id: 'finance', label: 'Tài chính & phí sàn', icon: Wallet },
       { id: 'system', label: 'Hệ thống & nhật ký', icon: Activity },
       { id: 'settings', label: 'Cài đặt & kiểm duyệt', icon: Settings2 },
+      { id: 'chat', label: 'Quản lý Chat', icon: MessageCircle },
     ],
   },
 ];

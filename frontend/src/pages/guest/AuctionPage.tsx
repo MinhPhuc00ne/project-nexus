@@ -5,6 +5,7 @@ import { BidStatus, AuctionStatus } from '@nexus/types';
 import type { AuctionViewerMode, AuctionTabKey, SimilarWatch } from '../../types';
 import AuctionGallery from '../../components/auction/AuctionGallery';
 import AuctionBidTerminal from '../../components/auction/AuctionBidTerminal';
+import AuctionSupportRequest from '../../components/auction/AuctionSupportRequest';
 import AuctionDetailTabs from '../../components/auction/AuctionDetailTabs';
 import { getLotBidHistory, mergeBidHistory } from '../../components/auction/bidHistory';
 import SimilarAuctionsSection from '../../components/auction/SimilarAuctionsSection';
@@ -798,6 +799,8 @@ export const AuctionPage: React.FC = () => {
             hasItems={hasItems}
           />
         </div>
+
+        <AuctionSupportRequest auctionId={activeAuction.id} />
 
         {/* TABS SECTION */}
         <AuctionDetailTabs
