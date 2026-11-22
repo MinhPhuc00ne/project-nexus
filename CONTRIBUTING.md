@@ -107,6 +107,5 @@ glab mr merge <mr-id> --rebase --remove-source-branch
 
 Detailed requirements covering cyclomatic complexity limits, class length boundaries, docstring formatting, and system naming conventions are documented in:
 
-- [Clean Code Standard](docs/standards/CLEAN_CODE.md)
-- [Technical Writing Style Guide](docs/standards/WRITING_STYLE.md)
-- [Naming Conventions](docs/standards/NAMING_CONVENTIONS.md)
+- [Code Standards and Sonar Quality Gate](docs-site/docs/quality/code-standards.md)
+- [3-Tier Testing and CI](docs-site/docs/quality/testing-ci.md)
