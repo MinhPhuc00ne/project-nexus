@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Search, X, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import CatalogListing from '../../components/products/CatalogListing';
 import SearchFilterSidebar, {
   type SearchFilterState,
@@ -8,6 +10,7 @@ import SearchFilterSidebar, {
 import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
 
 export default function SearchPage() {
+  const { t } = useTranslation('guest');
   const [params, setParams] = useSearchParams();
   const rawSearch = params.get('q')?.trim() ?? '';
   const rawCategoryId = params.get('categoryId')?.trim() ?? '';
@@ -59,21 +62,30 @@ export default function SearchPage() {
 
   const activeBadges: { label: string; key: keyof SearchFilterState }[] = [];
   if (categoryId || categoryName) {
-    activeBadges.push({ label: `Danh mục: ${categoryName || categoryId}`, key: 'categoryId' });
+    activeBadges.push({
+      label: t('search.badgeCategory', { name: categoryName || categoryId }),
+      key: 'categoryId',
+    });
   }
   if (rawCity) {
-    activeBadges.push({ label: `Nơi bán: ${rawCity}`, key: 'city' });
+    activeBadges.push({ label: t('search.badgeCity', { city: rawCity }), key: 'city' });
   }
   if (rawMinPrice !== undefined || rawMaxPrice !== undefined) {
-    const minText = rawMinPrice ? `${rawMinPrice.toLocaleString('vi-VN')}₫` : '0₫';
-    const maxText = rawMaxPrice ? `${rawMaxPrice.toLocaleString('vi-VN')}₫` : '∞';
-    activeBadges.push({ label: `Giá: ${minText} - ${maxText}`, key: 'minPrice' });
+    const minText = rawMinPrice ? formatCurrency(rawMinPrice) : formatCurrency(0);
+    const maxText = rawMaxPrice ? formatCurrency(rawMaxPrice) : '∞';
+    activeBadges.push({
+      label: t('search.badgePrice', { min: minText, max: maxText }),
+      key: 'minPrice',
+    });
   }
   if (rawMinRating) {
-    activeBadges.push({ label: `Đánh giá: Từ ${rawMinRating} sao`, key: 'minRating' });
+    activeBadges.push({
+      label: t('search.badgeRating', { rating: rawMinRating }),
+      key: 'minRating',
+    });
   }
   if (rawInStock) {
-    activeBadges.push({ label: 'Chỉ còn hàng', key: 'inStock' });
+    activeBadges.push({ label: t('search.badgeInStock'), key: 'inStock' });
   }
 
   const updateFiltersInUrl = (nextFilters: SearchFilterState) => {
@@ -158,33 +170,25 @@ export default function SearchPage() {
 
   const renderPageTitle = () => {
     if (search && categoryName) {
-      return (
-        <>
-          Kết quả tìm kiếm cho <span className="text-blue-600 font-extrabold">"{search}"</span>{' '}
-          trong <span className="text-blue-600 font-extrabold">{categoryName}</span>
-        </>
-      );
+      return t('search.titleSearchInCategory', { search, category: categoryName });
     }
     if (categoryName) {
       return (
         <>
-          Sản phẩm thuộc danh mục{' '}
-          <span className="text-blue-600 font-extrabold">{categoryName}</span>
+          {t('search.titleCategoryOnly', { category: categoryName })}
           {rawSearch && (
-            <span className="text-sm font-normal text-slate-500"> (từ khóa: "{rawSearch}")</span>
+            <span className="text-sm font-normal text-slate-500">
+              {' '}
+              {t('search.titleKeywordSuffix', { keyword: rawSearch })}
+            </span>
           )}
         </>
       );
     }
     if (search) {
-      return (
-        <>
-          Kết quả tìm kiếm cho từ khóa{' '}
-          <span className="text-blue-600 font-extrabold">"{search}"</span>
-        </>
-      );
+      return t('search.titleSearchOnly', { search });
     }
-    return 'Khám Phá Tất Cả Sản Phẩm';
+    return t('search.titleExploreAll');
   };
 
   return (
@@ -195,11 +199,11 @@ export default function SearchPage() {
           to="/"
           className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 transition"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> Trang chủ
+          <ArrowLeft className="h-3.5 w-3.5" /> {t('search.breadcrumbHome')}
         </Link>
         <span className="text-slate-300">/</span>
         <Link to="/categories" className="text-slate-600 hover:text-blue-600 transition">
-          Danh mục
+          {t('search.breadcrumbCategories')}
         </Link>
         {categoryName && (
           <>
@@ -217,9 +221,7 @@ export default function SearchPage() {
               <Sparkles className="h-5 w-5 text-blue-600 shrink-0 hidden sm:inline-block" />
               <span>{renderPageTitle()}</span>
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500">
-              Sản phẩm chính hãng, kiểm định minh bạch, bảo chứng ký quỹ NEXUS Escrow.
-            </p>
+            <p className="text-xs sm:text-sm text-slate-500">{t('search.subtitle')}</p>
           </div>
 
           {/* Search Input Box */}
@@ -230,7 +232,7 @@ export default function SearchPage() {
                 type="text"
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
-                placeholder="Tìm theo tên sản phẩm, thương hiệu..."
+                placeholder={t('search.inputPlaceholder')}
                 className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs placeholder:text-slate-400"
               />
               {inputVal && (
@@ -238,7 +240,7 @@ export default function SearchPage() {
                   type="button"
                   onClick={() => setInputVal('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 rounded cursor-pointer"
-                  title="Xóa từ khóa"
+                  title={t('search.clearKeyword')}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -248,7 +250,7 @@ export default function SearchPage() {
               type="submit"
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-xs shrink-0 cursor-pointer"
             >
-              Tìm kiếm
+              {t('search.submitButton')}
             </button>
           </form>
         </div>
@@ -257,7 +259,8 @@ export default function SearchPage() {
         {activeBadges.length > 0 && (
           <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide mr-1 flex items-center gap-1">
-              <SlidersHorizontal className="h-3.5 w-3.5 text-blue-600" /> Đang lọc:
+              <SlidersHorizontal className="h-3.5 w-3.5 text-blue-600" />{' '}
+              {t('search.filteringLabel')}
             </span>
             {activeBadges.map((badge) => (
               <span
@@ -269,7 +272,7 @@ export default function SearchPage() {
                   type="button"
                   onClick={() => removeFilterItem(badge.key)}
                   className="text-blue-500 hover:text-rose-600 cursor-pointer ml-0.5"
-                  title={`Xóa bộ lọc ${badge.label}`}
+                  title={t('search.removeFilter', { label: badge.label })}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -280,7 +283,7 @@ export default function SearchPage() {
               onClick={handleResetFilters}
               className="text-xs font-semibold text-rose-500 hover:text-rose-700 hover:underline ml-2 cursor-pointer"
             >
-              Xóa tất cả bộ lọc
+              {t('search.clearAllFilters')}
             </button>
           </div>
         )}
@@ -298,7 +301,7 @@ export default function SearchPage() {
         />
 
         <section
-          aria-label="Danh sách sản phẩm tìm kiếm"
+          aria-label={t('search.resultsAria')}
           className="flex-1 min-w-0 w-full rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-xs"
         >
           <CatalogListing

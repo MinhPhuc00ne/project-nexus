@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { LayoutGrid as AppstoreOutlined } from 'lucide-react';
 import {
   ArrowRight as ArrowRightOutlined,
@@ -11,6 +12,7 @@ import { FALLBACK_CATEGORY_TREE, getCategoryImageUrl } from '../../mocks/categor
 import { ROUTES } from '../../routes/paths';
 
 export default function CategoryPage() {
+  const { t } = useTranslation('guest');
   const [categories, setCategories] = useState<CategoryNode[]>(FALLBACK_CATEGORY_TREE);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -47,14 +49,13 @@ export default function CategoryPage() {
       <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 p-8 sm:p-10 text-white shadow-md">
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3.5 py-1 text-xs font-semibold backdrop-blur-sm">
-            <AppstoreOutlined /> Hệ thống ngành hàng NEXUS
+            <AppstoreOutlined /> {t('categories.badge')}
           </div>
           <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Khám Phá Danh Mục Sản Phẩm
+            {t('categories.title')}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-sky-100 leading-relaxed">
-            Tìm kiếm dễ dàng giữa hàng ngàn sản phẩm công nghệ, đồng hồ xa xỉ, mô hình 3D và các bộ
-            sưu tập giới hạn được giám định chính hãng.
+            {t('categories.subtitle')}
           </p>
 
           <div className="mt-6 flex max-w-md items-center gap-2 rounded-xl bg-white p-1.5 shadow-lg">
@@ -63,7 +64,7 @@ export default function CategoryPage() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm nhanh ngành hàng hoặc nhóm sản phẩm..."
+              placeholder={t('categories.searchPlaceholder')}
               className="w-full bg-transparent px-2 py-1 text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
             />
             {searchTerm && (
@@ -72,7 +73,7 @@ export default function CategoryPage() {
                 onClick={() => setSearchTerm('')}
                 className="mr-2 text-xs text-slate-400 hover:text-slate-600"
               >
-                Xóa
+                {t('categories.clearSearch')}
               </button>
             )}
           </div>
@@ -84,8 +85,8 @@ export default function CategoryPage() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-800">
             {searchTerm
-              ? `Kết quả tìm kiếm ngành hàng (${filteredCategories.length})`
-              : 'Tất Cả Ngành Hàng'}
+              ? t('categories.searchResultsHeading', { count: filteredCategories.length })
+              : t('categories.allCategoriesHeading')}
           </h2>
 
           <button
@@ -95,21 +96,21 @@ export default function CategoryPage() {
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50"
           >
             <ReloadOutlined className={loading ? 'animate-spin' : ''} />
-            Làm mới danh mục
+            {t('categories.refresh')}
           </button>
         </div>
 
         {filteredCategories.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
             <p className="text-slate-500">
-              Không tìm thấy danh mục nào phù hợp với từ khóa &ldquo;{searchTerm}&rdquo;.
+              {t('categories.emptyForKeyword', { keyword: searchTerm })}
             </p>
             <button
               type="button"
               onClick={() => setSearchTerm('')}
               className="mt-3 text-sm font-semibold text-blue-600 hover:underline"
             >
-              Xem tất cả danh mục
+              {t('categories.viewAll')}
             </button>
           </div>
         ) : (
@@ -140,8 +141,8 @@ export default function CategoryPage() {
                         </Link>
                         <p className="mt-1 text-xs text-slate-400">
                           {cat.children && cat.children.length > 0
-                            ? `${cat.children.length} phân loại con`
-                            : 'Danh mục tiêu chuẩn'}
+                            ? t('categories.subcategoriesCount', { count: cat.children.length })
+                            : t('categories.standardCategory')}
                         </p>
                       </div>
                     </div>
@@ -149,7 +150,7 @@ export default function CategoryPage() {
                     {cat.children && cat.children.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
                         <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                          Phân loại nổi bật
+                          {t('categories.featuredSubcategories')}
                         </p>
                         <div className="flex flex-wrap gap-1.5">
                           {cat.children.map((child) => (
@@ -171,7 +172,7 @@ export default function CategoryPage() {
                       to={parentUrl}
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700"
                     >
-                      Khám phá tất cả sản phẩm thuộc {cat.name}{' '}
+                      {t('categories.exploreCategory', { name: cat.name })}{' '}
                       <ArrowRightOutlined className="text-[10px]" />
                     </Link>
                   </div>
