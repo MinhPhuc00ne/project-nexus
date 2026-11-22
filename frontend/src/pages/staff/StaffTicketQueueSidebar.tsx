@@ -1,15 +1,8 @@
 import type { JSX } from 'react';
+import { useTranslation } from 'react-i18next';
 import ChatAvatar from '../../components/chat/ChatAvatar';
 import { Gavel, Inbox, Search, ShieldCheck, Truck, X } from 'lucide-react';
 import type { SupportTicket, TicketStatus } from './StaffTicketConversationView';
-
-function formatQueueRole(role: string): string {
-  if (role === 'SELLER') return 'Người bán';
-  if (role === 'BUYER') return 'Người mua';
-  if (role === 'SELLER VERIFIED') return 'Người bán xác minh';
-  if (role === 'VIP GOLD') return 'VIP';
-  return role;
-}
 
 export interface StaffTicketQueueSidebarProps {
   tickets: SupportTicket[] | null;
@@ -36,6 +29,14 @@ export default function StaffTicketQueueSidebar({
   chattingCount,
   waitingCount,
 }: StaffTicketQueueSidebarProps): JSX.Element {
+  const { t } = useTranslation('staff');
+  const formatQueueRole = (role: string): string => {
+    if (role === 'SELLER') return t('inbox.queue.roles.SELLER');
+    if (role === 'BUYER') return t('inbox.queue.roles.BUYER');
+    if (role === 'SELLER VERIFIED') return t('inbox.queue.roles.SELLER_VERIFIED');
+    if (role === 'VIP GOLD') return t('inbox.queue.roles.VIP_GOLD');
+    return role;
+  };
   const resolvedCount = tickets?.filter((t) => t.status === 'resolved').length ?? 0;
 
   return (
@@ -46,10 +47,10 @@ export default function StaffTicketQueueSidebar({
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
             <Inbox size={15} />
           </div>
-          <h2 className="m-0 text-[13px] font-bold text-slate-800">Hàng Đợi Hỗ Trợ</h2>
+          <h2 className="m-0 text-[13px] font-bold text-slate-800">{t('inbox.queue.title')}</h2>
         </div>
         <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-          {tickets === null ? '–' : `${tickets.length} ticket`}
+          {tickets === null ? '–' : t('inbox.queue.ticketCount', { count: tickets.length })}
         </span>
       </div>
 
@@ -58,7 +59,7 @@ export default function StaffTicketQueueSidebar({
         <div
           className="flex items-center gap-1 rounded-lg bg-slate-100/90 p-1"
           role="group"
-          aria-label="Lọc ticket"
+          aria-label={t('inbox.queue.filterAria')}
         >
           <button
             type="button"
@@ -69,7 +70,8 @@ export default function StaffTicketQueueSidebar({
             }`}
             onClick={() => onFilterChange('all')}
           >
-            Tất cả{tickets !== null && ` (${tickets.length})`}
+            {t('inbox.queue.all')}
+            {tickets !== null && ` (${tickets.length})`}
           </button>
           <button
             type="button"
@@ -80,7 +82,8 @@ export default function StaffTicketQueueSidebar({
             }`}
             onClick={() => onFilterChange('chatting')}
           >
-            Đang chat{tickets !== null && ` (${chattingCount})`}
+            {t('inbox.queue.chatting')}
+            {tickets !== null && ` (${chattingCount})`}
           </button>
           <button
             type="button"
@@ -91,7 +94,8 @@ export default function StaffTicketQueueSidebar({
             }`}
             onClick={() => onFilterChange('waiting')}
           >
-            Chờ{tickets !== null && ` (${waitingCount})`}
+            {t('inbox.queue.waiting')}
+            {tickets !== null && ` (${waitingCount})`}
           </button>
           <button
             type="button"
@@ -102,7 +106,8 @@ export default function StaffTicketQueueSidebar({
             }`}
             onClick={() => onFilterChange('resolved')}
           >
-            Xong{tickets !== null && ` (${resolvedCount})`}
+            {t('inbox.queue.resolved')}
+            {tickets !== null && ` (${resolvedCount})`}
           </button>
         </div>
       </div>
@@ -114,8 +119,8 @@ export default function StaffTicketQueueSidebar({
           <input
             value={searchText}
             onChange={(event) => onSearchChange(event.target.value)}
-            aria-label="Tìm hội thoại"
-            placeholder="Tìm tên khách, mã ticket..."
+            aria-label={t('inbox.queue.searchAria')}
+            placeholder={t('inbox.queue.searchPlaceholder')}
             className="w-full rounded-lg border border-slate-200 bg-slate-50/80 py-1.5 pl-8 pr-7 text-[11px] text-slate-800 placeholder-slate-400 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
           />
           {searchText && (
@@ -123,7 +128,7 @@ export default function StaffTicketQueueSidebar({
               type="button"
               onClick={() => onSearchChange('')}
               className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
-              aria-label="Xóa tìm kiếm"
+              aria-label={t('inbox.queue.clearSearchAria')}
             >
               <X size={12} />
             </button>
@@ -191,7 +196,7 @@ export default function StaffTicketQueueSidebar({
 
                 {/* Message Preview */}
                 <p className="mt-1.5 text-[11px] text-slate-600 line-clamp-1 font-normal">
-                  {ticket.preview || 'Chưa có tin nhắn...'}
+                  {ticket.preview || t('inbox.queue.noMessagesYet')}
                 </p>
 
                 {/* Bottom Row: Category + Status */}
@@ -199,16 +204,19 @@ export default function StaffTicketQueueSidebar({
                   <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-1.5 py-0.5 text-slate-600 font-medium">
                     {ticket.category === 'Auction 3D' ? (
                       <>
-                        <Gavel size={11} className="text-purple-600" /> Đấu giá 3D
+                        <Gavel size={11} className="text-purple-600" />{' '}
+                        {t('inbox.queue.catAuction')}
                       </>
                     ) : ticket.category === 'Shipping' ? (
                       <>
-                        <Truck size={11} className="text-sky-600" /> Vận chuyển GHN
+                        <Truck size={11} className="text-sky-600" /> {t('inbox.queue.catShipping')}
                       </>
                     ) : (
                       <>
                         <ShieldCheck size={11} className="text-blue-600" />{' '}
-                        {ticket.category === 'General' ? 'Hỗ trợ' : 'Escrow'}
+                        {ticket.category === 'General'
+                          ? t('inbox.queue.catGeneral')
+                          : t('inbox.queue.catEscrow')}
                       </>
                     )}
                   </span>
@@ -223,10 +231,10 @@ export default function StaffTicketQueueSidebar({
                     }`}
                   >
                     {ticket.status === 'chatting'
-                      ? '● Đang hỗ trợ'
+                      ? t('inbox.queue.statusChatting')
                       : ticket.status === 'resolved'
-                        ? '✓ Đã hoàn tất'
-                        : '⏱ Chờ tiếp nhận'}
+                        ? t('inbox.queue.statusResolved')
+                        : t('inbox.queue.statusWaiting')}
                   </span>
                 </div>
               </button>
@@ -238,10 +246,10 @@ export default function StaffTicketQueueSidebar({
               <Inbox size={20} />
             </div>
             <p className="text-[12px] font-semibold text-slate-700">
-              {tickets === null ? 'Đang tải hội thoại...' : 'Không có hội thoại phù hợp'}
+              {tickets === null ? t('inbox.queue.loadingTitle') : t('inbox.queue.emptyTitle')}
             </p>
             <span className="text-[10px] text-slate-400">
-              {tickets === null ? 'Vui lòng chờ trong giây lát' : 'Thử đổi bộ lọc hoặc từ khóa'}
+              {tickets === null ? t('inbox.queue.loadingDesc') : t('inbox.queue.emptyDesc')}
             </span>
           </div>
         )}

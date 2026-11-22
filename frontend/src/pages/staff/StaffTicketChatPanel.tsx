@@ -1,6 +1,8 @@
 import './staffSupportChat.css';
 import { RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
 import StaffMetricCards from './StaffMetricCards';
 import StaffTicketConversationView, {
   type SupportTicket,
@@ -21,18 +23,21 @@ import type { ChatConversation, SupportConversationStatus } from '../../types/ch
 export type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
 export type { SupportTicket, TicketStatus };
 
-const timeFormatter = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' });
-const dateFormatter = new Intl.DateTimeFormat('vi-VN', { day: '2-digit', month: '2-digit' });
-
-function formatConversationTime(value?: string | null, includeTimeForOlderDates = false): string {
+function formatConversationTime(
+  value?: string | null,
+  includeTimeForOlderDates = false,
+  locale = 'vi-VN',
+): string {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
+  const timeFmt = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
+  const dateFmt = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit' });
   const isToday = date.toDateString() === new Date().toDateString();
-  if (isToday) return timeFormatter.format(date);
+  if (isToday) return timeFmt.format(date);
   return includeTimeForOlderDates
-    ? `${dateFormatter.format(date)} · ${timeFormatter.format(date)}`
-    : dateFormatter.format(date);
+    ? `${dateFmt.format(date)} · ${timeFmt.format(date)}`
+    : dateFmt.format(date);
 }
 
 interface StaffTicketChatPanelProps {
@@ -46,6 +51,8 @@ export default function StaffTicketChatPanel({
   onSearchChange = () => {},
   notify,
 }: StaffTicketChatPanelProps): JSX.Element {
+  const { t, i18n } = useTranslation('staff');
+  const locale = getIntlLocale(i18n.language);
   const { storedUser } = useAuth();
   const [conversations, setConversations] = useState<ChatConversation[] | null>(null);
   const [revision, setRevision] = useState(0);
@@ -99,9 +106,7 @@ export default function StaffTicketChatPanel({
         setListError('');
       } catch (error) {
         if (!cancelled) {
-          setListError(
-            error instanceof Error ? error.message : 'Could not load support conversations.',
-          );
+          setListError(error instanceof Error ? error.message : t('inbox.loadConversationsErr'));
         }
       }
     };
@@ -134,7 +139,7 @@ export default function StaffTicketChatPanel({
           : c.status === 'RESOLVED' || c.status === 'CLOSED'
             ? 'resolved'
             : 'chatting',
-      time: formatConversationTime(c.lastMessageAt),
+      time: formatConversationTime(c.lastMessageAt, false, locale),
       preview: c.lastMessage ?? '',
       messages:
         c.id === activeTicketId && !room.loading
@@ -146,7 +151,7 @@ export default function StaffTicketChatPanel({
               attachments: m.attachments,
               isAgent: m.isMe,
               isRead: m.isRead,
-              time: formatConversationTime(m.createdAt, true),
+              time: formatConversationTime(m.createdAt, true, locale),
             }))
           : [],
     })) ?? null;
@@ -190,10 +195,10 @@ export default function StaffTicketChatPanel({
             conversation.id === claimed.id ? claimed : conversation,
           ) ?? current,
       );
-      notify('Đã tiếp nhận hội thoại.');
+      notify(t('inbox.claimedToast'));
       refresh();
     } catch (error) {
-      setListError(error instanceof Error ? error.message : 'Could not claim the conversation.');
+      setListError(error instanceof Error ? error.message : t('inbox.claimErr'));
     } finally {
       setUpdatingStatus(false);
     }
@@ -210,12 +215,10 @@ export default function StaffTicketChatPanel({
             conversation.id === resolved.id ? resolved : conversation,
           ) ?? current,
       );
-      notify('Đã hoàn tất hội thoại.');
+      notify(t('inbox.resolvedToast'));
       refresh();
     } catch (error) {
-      setListError(
-        error instanceof Error ? error.message : 'Could not update the conversation status.',
-      );
+      setListError(error instanceof Error ? error.message : t('inbox.resolveErr'));
     } finally {
       setUpdatingStatus(false);
     }
@@ -228,7 +231,7 @@ export default function StaffTicketChatPanel({
         <div className="flex items-center gap-2">
           <div className="support-status-chip">
             <span className={`support-status-dot ${room.connected ? '' : 'offline'}`} />
-            <span>{room.connected ? 'Đã kết nối trực tuyến' : 'Đang kết nối…'}</span>
+            <span>{room.connected ? t('inbox.connected') : t('inbox.connecting')}</span>
           </div>
         </div>
 
@@ -244,10 +247,10 @@ export default function StaffTicketChatPanel({
             type="button"
             onClick={refresh}
             className="support-refresh-btn"
-            title="Làm mới dữ liệu"
+            title={t('inbox.refreshTitle')}
           >
             <RefreshCw size={13} />
-            <span>Làm mới</span>
+            <span>{t('inbox.refresh')}</span>
           </button>
         </div>
       </div>

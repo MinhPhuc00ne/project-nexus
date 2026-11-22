@@ -51,7 +51,7 @@ export default function StaffSidebar({
         <div className="[padding:22px_18px_10px] [color:#9aa2b4] text-[10px] font-extrabold [letter-spacing:0.11em]">
           {t('sidebar.sectionTitle')}
         </div>
-        <nav className="grid [gap:5px] [padding:0_10px]" aria-label="Điều hướng nhân viên">
+        <nav className="grid [gap:5px] [padding:0_10px]" aria-label={t('sidebarNavAria')}>
           {navigation
             .filter(({ label }) => label !== 'Quản Lý Nhân Viên' || managementAccess === 'allowed')
             .map(({ label, i18nKey, icon: Icon }) => (
@@ -79,7 +79,7 @@ export default function StaffSidebar({
       {isSidebarOpen && (
         <button
           className="hidden max-[760px]:fixed max-[760px]:[inset:0] max-[760px]:[z-index:25] max-[760px]:block max-[760px]:[border:0] max-[760px]:[background:rgb(19_27_43_/_35%)]"
-          aria-label="Đóng menu"
+          aria-label={t('sidebar.closeMenu')}
           onClick={onCloseSidebar}
         />
       )}

@@ -1,19 +1,21 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getStaffDisputes, resolveStaffDispute } from '../../services/staff';
 import type { StaffDispute, StaffDisputeStatus, StaffDisputesPage } from '../../services/staff';
+import { getIntlLocale } from '../../i18n/config';
+import { formatCurrency } from '../../i18n/formatters';
 
-const statusLabel: Record<StaffDisputeStatus, string> = {
-  OPEN: 'Mới mở',
-  UNDER_REVIEW: 'Đang xem xét',
-  RESOLVED_SELLER_FAVOR: 'Đã xử lý, có lợi cho Seller',
-  RESOLVED_BUYER_FAVOR: 'Đã xử lý, có lợi cho Buyer',
-  CANCELLED: 'Đã hủy',
-};
-
-const money = (value: number) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+const DISPUTE_STATUSES: StaffDisputeStatus[] = [
+  'OPEN',
+  'UNDER_REVIEW',
+  'RESOLVED_SELLER_FAVOR',
+  'RESOLVED_BUYER_FAVOR',
+  'CANCELLED',
+];
 
 export default function StaffDisputesPanel() {
+  const { t, i18n } = useTranslation('staff');
+  const locale = getIntlLocale(i18n.language);
   const [result, setResult] = useState<StaffDisputesPage | null>(null);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<StaffDisputeStatus | ''>('');
@@ -50,7 +52,7 @@ export default function StaffDisputesPanel() {
       })
       .catch((cause: unknown) => {
         if (!cancelled) {
-          setError(cause instanceof Error ? cause.message : 'Không thể tải danh sách khiếu nại.');
+          setError(cause instanceof Error ? cause.message : t('disputes.loadErr'));
           setResult(null);
         }
       })
@@ -60,7 +62,7 @@ export default function StaffDisputesPanel() {
     return () => {
       cancelled = true;
     };
-  }, [page, status, search, reload]);
+  }, [page, status, search, reload, t]);
 
   async function submitResolution(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -73,7 +75,7 @@ export default function StaffDisputesPanel() {
       setReason('');
       setReload((value) => value + 1);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể lưu kết quả xử lý.');
+      setError(cause instanceof Error ? cause.message : t('disputes.saveErr'));
     } finally {
       setSaving(false);
     }
@@ -81,17 +83,17 @@ export default function StaffDisputesPanel() {
 
   const counters = result?.counters;
   const summaryCards = [
-    { label: 'Tất cả', value: counters?.all },
-    { label: 'Chờ xử lý', value: counters?.pendingReview },
-    { label: 'Đang xem xét', value: counters?.underReview },
+    { label: t('disputes.summary.all'), value: counters?.all },
+    { label: t('disputes.summary.pending'), value: counters?.pendingReview },
+    { label: t('disputes.summary.underReview'), value: counters?.underReview },
     {
-      label: 'Đã giải quyết',
+      label: t('disputes.summary.resolved'),
       value: (counters?.resolvedBuyerFavor ?? 0) + (counters?.resolvedSellerFavor ?? 0),
     },
   ];
 
   return (
-    <section className="mt-5 space-y-4" aria-label="Khiếu nại và tranh chấp">
+    <section className="mt-5 space-y-4" aria-label={t('disputes.sectionAria')}>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {summaryCards.map(({ label, value }) => (
           <div key={label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -103,14 +105,14 @@ export default function StaffDisputesPanel() {
 
       <div className="flex flex-wrap gap-3 rounded-xl border border-slate-200 bg-white p-4">
         <input
-          aria-label="Tìm khiếu nại"
+          aria-label={t('disputes.searchAria')}
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
-          placeholder="Tìm mã khiếu nại, đơn hàng hoặc khách hàng"
+          placeholder={t('disputes.searchPlaceholder')}
           className="min-w-56 flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
         />
         <select
-          aria-label="Lọc trạng thái khiếu nại"
+          aria-label={t('disputes.statusAria')}
           value={status}
           onChange={(event) => {
             setPage(1);
@@ -118,10 +120,10 @@ export default function StaffDisputesPanel() {
           }}
           className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
         >
-          <option value="">Tất cả trạng thái</option>
-          {Object.entries(statusLabel).map(([key, label]) => (
+          <option value="">{t('disputes.allStatuses')}</option>
+          {DISPUTE_STATUSES.map((key) => (
             <option key={key} value={key}>
-              {label}
+              {t(`disputes.statuses.${key}`)}
             </option>
           ))}
         </select>
@@ -130,7 +132,7 @@ export default function StaffDisputesPanel() {
           onClick={() => setReload((value) => value + 1)}
           className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium hover:bg-slate-50"
         >
-          Tải lại
+          {t('disputes.reload')}
         </button>
       </div>
 
@@ -144,7 +146,7 @@ export default function StaffDisputesPanel() {
           role="status"
           className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500"
         >
-          Đang tải khiếu nại từ hệ thống…
+          {t('disputes.loading')}
         </p>
       ) : result?.items.length ? (
         <div className="space-y-3">
@@ -161,15 +163,17 @@ export default function StaffDisputesPanel() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h2 className="font-bold text-slate-900">
-                      Khiếu nại #{dispute.id.slice(0, 8)}
+                      {t('disputes.cardTitle', { id: dispute.id.slice(0, 8) })}
                     </h2>
                     <p className="mt-1 text-xs text-slate-500">
-                      Đơn hàng {dispute.orderId} ·{' '}
-                      {new Date(dispute.createdAt).toLocaleString('vi-VN')}
+                      {t('disputes.orderAndTime', {
+                        orderId: dispute.orderId,
+                        time: new Date(dispute.createdAt).toLocaleString(locale),
+                      })}
                     </p>
                   </div>
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                    {statusLabel[dispute.status]}
+                    {t(`disputes.statuses.${dispute.status}`)}
                   </span>
                 </div>
                 <p className="mt-3 text-sm text-slate-700">{dispute.reason}</p>
@@ -183,33 +187,34 @@ export default function StaffDisputesPanel() {
                         rel="noreferrer"
                         className="rounded-lg border border-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50"
                       >
-                        Mở bằng chứng {index + 1}
+                        {t('disputes.openEvidence', { index: index + 1 })}
                       </a>
                     ))}
                   </div>
                 )}
                 <div className="mt-3 grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
                   <p>
-                    Người khiếu nại: <b>{dispute.openedBy.fullName}</b> ({dispute.openedBy.email})
+                    {t('disputes.openedBy')} <b>{dispute.openedBy.fullName}</b> (
+                    {dispute.openedBy.email})
                   </p>
                   <p>
-                    Giá trị đơn: <b>{money(dispute.order.totalAmount)}</b>
+                    {t('disputes.orderTotal')} <b>{formatCurrency(dispute.order.totalAmount)}</b>
                   </p>
-                  <p>Buyer: {dispute.order.buyer.fullName}</p>
-                  <p>Seller: {dispute.order.seller.fullName}</p>
+                  <p>{t('disputes.buyer', { name: dispute.order.buyer.fullName })}</p>
+                  <p>{t('disputes.seller', { name: dispute.order.seller.fullName })}</p>
                 </div>
                 {dispute.order.items.length > 0 && (
                   <ul className="mt-3 space-y-1 border-t border-slate-100 pt-3 text-xs text-slate-600">
                     {dispute.order.items.map((item) => (
                       <li key={item.id}>
-                        {item.title} × {item.quantity} — {money(item.totalPrice)}
+                        {item.title} × {item.quantity} — {formatCurrency(item.totalPrice)}
                       </li>
                     ))}
                   </ul>
                 )}
                 {dispute.resolutionNotes && (
                   <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-                    Ghi chú xử lý: {dispute.resolutionNotes}
+                    {t('disputes.resolutionNotes', { notes: dispute.resolutionNotes })}
                   </p>
                 )}
                 {canResolve && (
@@ -222,7 +227,7 @@ export default function StaffDisputesPanel() {
                     }}
                     className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
                   >
-                    Xử lý khiếu nại
+                    {t('disputes.resolveBtn')}
                   </button>
                 )}
               </article>
@@ -230,7 +235,11 @@ export default function StaffDisputesPanel() {
           })}
           <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
             <span>
-              Trang {result.page} / {Math.max(1, result.totalPages)} · {result.total} khiếu nại
+              {t('disputes.pagination', {
+                page: result.page,
+                totalPages: Math.max(1, result.totalPages),
+                total: result.total,
+              })}
             </span>
             <div className="flex gap-2">
               <button
@@ -238,21 +247,21 @@ export default function StaffDisputesPanel() {
                 onClick={() => setPage((value) => value - 1)}
                 className="rounded-md border px-3 py-1.5 disabled:opacity-40"
               >
-                Trước
+                {t('disputes.prev')}
               </button>
               <button
                 disabled={page >= result.totalPages || loading}
                 onClick={() => setPage((value) => value + 1)}
                 className="rounded-md border px-3 py-1.5 disabled:opacity-40"
               >
-                Sau
+                {t('disputes.next')}
               </button>
             </div>
           </div>
         </div>
       ) : (
         <p className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-500">
-          Không có khiếu nại phù hợp.
+          {t('disputes.empty')}
         </p>
       )}
 
@@ -270,26 +279,25 @@ export default function StaffDisputesPanel() {
           >
             <div>
               <h2 id="staff-dispute-resolution-title" className="text-lg font-bold text-slate-900">
-                Kết luận khiếu nại
+                {t('disputes.modalTitle')}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
-                Kết quả sẽ cập nhật trạng thái tranh chấp và xử lý tiền ký quỹ của đơn{' '}
-                {selected.orderId}.
+                {t('disputes.modalDesc', { orderId: selected.orderId })}
               </p>
             </div>
             <label className="block space-y-1 text-sm font-medium text-slate-700">
-              Kết luận
+              {t('disputes.verdictLabel')}
               <select
                 value={verdict}
                 onChange={(event) => setVerdict(event.target.value as 'BUYER' | 'SELLER')}
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2"
               >
-                <option value="BUYER">Có lợi cho Buyer</option>
-                <option value="SELLER">Có lợi cho Seller</option>
+                <option value="BUYER">{t('disputes.verdictBuyer')}</option>
+                <option value="SELLER">{t('disputes.verdictSeller')}</option>
               </select>
             </label>
             <label className="block space-y-1 text-sm font-medium text-slate-700">
-              Lý do xử lý
+              {t('disputes.reasonLabel')}
               <textarea
                 required
                 minLength={1}
@@ -311,14 +319,14 @@ export default function StaffDisputesPanel() {
                 onClick={() => setSelected(null)}
                 className="rounded-lg border px-4 py-2 text-sm"
               >
-                Hủy
+                {t('disputes.cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saving || !reason.trim()}
                 className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
-                {saving ? 'Đang lưu…' : 'Xác nhận xử lý'}
+                {saving ? t('disputes.saving') : t('disputes.confirmResolve')}
               </button>
             </div>
           </form>
