@@ -13,6 +13,7 @@ import { clearAuthSession, getStoredToken, getStoredUser, saveAuthSession } from
 import { getMe, toggleSellerMode } from '../services/users';
 import { mergeGuestCartAfterLogin, resetCartSync } from '../services/cart';
 import type { AuthUser, UserProfile } from '../types/user.types';
+import { useToast } from '../components/ToastNotification';
 
 const ACTIVE_MODE_PREFIX = 'nexus:active-mode:';
 
@@ -51,13 +52,17 @@ function applyModeOverride(profile: UserProfile): UserProfile {
   const onSellerRoute =
     typeof window !== 'undefined' && window.location.pathname.startsWith('/seller');
   const onBuyerRoute =
-    typeof window !== 'undefined' && window.location.pathname.startsWith('/buyer');
+    typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/buyer') || window.location.pathname === '/');
 
   let effectiveMode: 'SELLER' | 'BUYER';
   if (onSellerRoute) {
     effectiveMode = 'SELLER';
-  } else if (onBuyerRoute && storedMode === 'BUYER') {
-    effectiveMode = 'BUYER';
+  } else if (onBuyerRoute) {
+    effectiveMode =
+      storedMode === 'SELLER' && !window.location.pathname.startsWith('/buyer')
+        ? 'SELLER'
+        : 'BUYER';
   } else if (storedMode) {
     effectiveMode = storedMode;
   } else {
@@ -65,8 +70,10 @@ function applyModeOverride(profile: UserProfile): UserProfile {
   }
   setStoredActiveMode(profile.id, effectiveMode);
 
-  const isSellerActive = Boolean(profile.isSellerActive && !profile.isShopSuspended);
-  const currentMode = isSellerActive ? effectiveMode : 'BUYER';
+  const isSellerActive = Boolean(
+    !profile.isShopSuspended && (effectiveMode === 'SELLER' || profile.isSellerActive),
+  );
+  const currentMode = effectiveMode;
 
   return {
     ...profile,
@@ -95,10 +102,24 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const toast = useToast();
   const [token, setToken] = useState<string | null>(() => getStoredToken());
   const [storedUser, setStoredUser] = useState<AuthUser | null>(() => getStoredUser());
   const [user, setUserState] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(() => Boolean(getStoredToken()));
+
+  // Trigger login toast notification if queued from OAuth login redirect
+  useEffect(() => {
+    try {
+      const pendingToastName = sessionStorage.getItem('nexus:login-toast');
+      if (pendingToastName) {
+        sessionStorage.removeItem('nexus:login-toast');
+        toast.success(`Đăng nhập thành công! Chào mừng ${pendingToastName} quay trở lại.`);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [toast]);
 
   const inFlightPromiseRef = useRef<{ token: string; promise: Promise<UserProfile | null> } | null>(
     null,
@@ -129,25 +150,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const switchActiveMode = useCallback(async (mode: 'SELLER' | 'BUYER'): Promise<void> => {
-    const wantSeller = mode === 'SELLER';
-    try {
-      const res = await toggleSellerMode(wantSeller);
+  const switchActiveMode = useCallback(
+    async (mode: 'SELLER' | 'BUYER'): Promise<void> => {
+      const wantSeller = mode === 'SELLER';
+      setStoredActiveMode(user?.id, mode);
       setUserState((prev) => {
         if (!prev) return prev;
-        const finalActive = res?.isSellerActive ?? (wantSeller && !prev.isShopSuspended);
-        const finalMode = finalActive ? 'SELLER' : 'BUYER';
-        setStoredActiveMode(prev.id, finalMode);
         return {
           ...prev,
-          isSellerActive: finalActive,
-          currentMode: finalMode,
+          isSellerActive: wantSeller && !prev.isShopSuspended,
+          currentMode: mode,
         };
       });
-    } catch (error) {
-      throw error;
-    }
-  }, []);
+      try {
+        await toggleSellerMode(wantSeller);
+      } catch (error) {
+        console.warn('[AuthContext] toggleSellerMode BE warning:', error);
+      }
+    },
+    [user?.id],
+  );
 
   const refreshProfile = useCallback(async (): Promise<UserProfile | null> => {
     const currentToken = getStoredToken();

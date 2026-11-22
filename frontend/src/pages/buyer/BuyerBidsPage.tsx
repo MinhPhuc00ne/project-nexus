@@ -372,9 +372,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
       {/* SECTION 1: SECOND CHANCE OFFERS (TOP 2 BIDDER) */}
       {secondChanceOffers.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 border border-blue-200 rounded-2xl p-4 shadow-xs space-y-3">
+        <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-4 shadow-xs space-y-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-white font-bold">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
               <Sparkles size={16} />
             </span>
             <div>
@@ -400,14 +400,14 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
               return (
                 <div
                   key={award.id}
-                  className="bg-white border border-blue-200/90 rounded-xl p-3.5 flex flex-col justify-between shadow-xs space-y-3"
+                  className="bg-white border border-blue-200/90 rounded-lg p-3.5 flex flex-col justify-between shadow-xs space-y-3"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
                         Dành riêng cho Bạn (Top 2)
                       </span>
-                      <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
                         Cọc 30%: {deposit.toLocaleString('vi-VN')} ₫
                       </span>
                     </div>

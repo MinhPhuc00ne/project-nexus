@@ -100,6 +100,9 @@ function SettingsWorkspace(): ReactElement {
                 <div className="min-w-0">
                   <strong className="block text-sm">{user.fullName}</strong>
                   <p className="mt-1 break-all text-xs text-slate-500">{user.email}</p>
+                  <p className="mt-1 text-[11px] text-blue-600 font-medium">
+                    Ảnh đại diện tài khoản cá nhân (tách biệt hoàn toàn với Logo gian hàng)
+                  </p>
                 </div>
               </div>
               <dl className="grid gap-4 text-sm sm:grid-cols-2">

@@ -13,6 +13,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { clearAuthSession } from '../../../services/auth';
 import type { UserProfile } from '../../../services/users';
 import AdminNotifications from './AdminNotifications';
+import { useToast } from '../../ToastNotification';
+import LogoutConfirmDialog from '../../auth/LogoutConfirmDialog';
 
 // Header nhận tài khoản đã được AdminLayout xác minh qua /users/me; không tự gọi API lần nữa.
 // onMenu mở sidebar mobile; thông báo lấy từ API theo tài khoản hiện tại.
@@ -27,7 +29,9 @@ export default function AdminHeader({
   // State cục bộ chỉ để mở/đóng danh sách thông báo, không sửa dữ liệu nghiệp vụ.
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const toast = useToast();
   const userButtonRef = useRef<HTMLButtonElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuId = useId();
@@ -72,9 +76,7 @@ export default function AdminHeader({
 
   const handleLogout = () => {
     setShowUserMenu(false);
-    // Dùng cùng hàm với HomeHeader: xóa user/token và gửi yêu cầu thu hồi refresh token.
-    clearAuthSession();
-    navigate('/login', { replace: true });
+    setIsLogoutConfirmOpen(true);
   };
 
   return (
@@ -190,6 +192,17 @@ export default function AdminHeader({
           )}
         </div>
       </div>
+      <LogoutConfirmDialog
+        open={isLogoutConfirmOpen}
+        accountName={displayName}
+        onCancel={() => setIsLogoutConfirmOpen(false)}
+        onConfirm={() => {
+          setIsLogoutConfirmOpen(false);
+          clearAuthSession();
+          toast.success('Đăng xuất thành công. Hẹn gặp lại bạn!');
+          navigate('/login', { replace: true });
+        }}
+      />
     </header>
   );
 }

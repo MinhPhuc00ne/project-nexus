@@ -6,6 +6,11 @@ import './index.css';
 
 const oauthUser = consumeOAuthCallbackFromUrl();
 if (oauthUser) {
+  try {
+    sessionStorage.setItem('nexus:login-toast', oauthUser.fullName || oauthUser.email);
+  } catch {
+    // Ignore storage errors
+  }
   const destination =
     oauthUser.role === 'ADMIN'
       ? '/admin'

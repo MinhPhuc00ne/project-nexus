@@ -27,6 +27,7 @@ import SellerNotifications from '../components/seller/SellerNotifications';
 import { SellerWorkspaceContext } from '../components/seller/SellerWorkspace';
 import type { SellerDraft } from '../components/seller/sellerData';
 import { useToast } from '../components/ToastNotification';
+import LogoutConfirmDialog from '../components/auth/LogoutConfirmDialog';
 
 const links = [
   { to: '/seller', label: 'Trung tâm người bán', icon: ShopOutlined },
@@ -71,6 +72,7 @@ function SellerWorkspace() {
   const [sidebar, setSidebar] = useState(false);
   const [account, setAccount] = useState(false);
   const [notifications, setNotifications] = useState(false);
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
   const [preview, setPreview] = useState(false);
   const [search, setSearch] = useState('');
   const store = useSellerStore(user.id);
@@ -366,9 +368,8 @@ function SellerWorkspace() {
                       className=""
                       data-seller="logout"
                       onClick={() => {
-                        clearAuthSession();
-                        toast.success('Đăng xuất thành công.');
-                        navigate('/login', { replace: true });
+                        setAccount(false);
+                        setLogoutConfirmationOpen(true);
                       }}
                     >
                       <LogoutOutlined className="text-[16px]" aria-hidden="true" />
@@ -410,6 +411,17 @@ function SellerWorkspace() {
             </span>
           </footer>
         </div>
+        <LogoutConfirmDialog
+          open={logoutConfirmationOpen}
+          accountName={user.fullName || user.email}
+          onCancel={() => setLogoutConfirmationOpen(false)}
+          onConfirm={() => {
+            setLogoutConfirmationOpen(false);
+            clearAuthSession();
+            toast.success('Đăng xuất thành công. Hẹn gặp lại bạn!');
+            navigate('/login', { replace: true });
+          }}
+        />
       </div>
     </SellerWorkspaceContext.Provider>
   );

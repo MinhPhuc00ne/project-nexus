@@ -32,13 +32,16 @@ export default function SellerReviewsPage() {
 
   useEffect(() => {
     let active = true;
-    void Promise.all([getSellerProductReviewsApi(), getSellerShopReviewsApi()])
-      .then(([productResponse, shopResponse]) => {
+    void Promise.allSettled([getSellerProductReviewsApi(), getSellerShopReviewsApi()])
+      .then(([productResult, shopResult]) => {
         if (!active) return;
-        const productReviews: SellerReview[] = Array.isArray(productResponse.items)
+        const productResponse = productResult.status === 'fulfilled' ? productResult.value : null;
+        const shopResponse = shopResult.status === 'fulfilled' ? shopResult.value : null;
+
+        const productReviews: SellerReview[] = Array.isArray(productResponse?.items)
           ? productResponse.items.map((review) => ({ ...review, kind: 'PRODUCT' as const }))
           : [];
-        const shopReviews: SellerReview[] = Array.isArray(shopResponse.items)
+        const shopReviews: SellerReview[] = Array.isArray(shopResponse?.items)
           ? shopResponse.items.map((review) => ({ ...review, kind: 'SHOP' as const }))
           : [];
         setReviews(
@@ -47,7 +50,7 @@ export default function SellerReviewsPage() {
               new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
           ),
         );
-        setReviewCounts({ product: productResponse.total ?? 0, shop: shopResponse.total ?? 0 });
+        setReviewCounts({ product: productResponse?.total ?? 0, shop: shopResponse?.total ?? 0 });
       })
       .catch((requestError: unknown) => {
         if (!active) return;
@@ -167,7 +170,10 @@ export default function SellerReviewsPage() {
         </Panel>
       </div>
 
-      <Panel title="Phản hồi từ khách hàng" subtitle="Dữ liệu lấy từ GET /seller/product-reviews">
+      <Panel
+        title="Phản hồi từ khách hàng"
+        subtitle="Dữ liệu lấy từ đánh giá sản phẩm và đánh giá gian hàng của Seller"
+      >
         <div className="flex flex-wrap gap-2 border-b border-slate-100 pb-4">
           {tabs.map((item) => (
             <button

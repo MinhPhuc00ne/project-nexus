@@ -23,16 +23,23 @@ export default function SellerNotifications({
     notificationId: string,
     targetUrl?: string | null,
     type?: string,
+    title?: string,
+    content?: string,
   ): void => {
     void state.markRead(notificationId);
     const sellerAuctionPath = targetUrl?.match(/^\/auction\/([^/?#]+)/);
     const resolvedUrl = sellerAuctionPath ? `/seller/auctions/${sellerAuctionPath[1]}` : targetUrl;
+    const notificationText = `${title ?? ''} ${content ?? ''}`.toLocaleLowerCase('vi-VN');
+    const isReviewNotification =
+      type?.toUpperCase().includes('REVIEW') || notificationText.includes('đánh giá');
     navigate(
       resolvedUrl?.startsWith('/seller/')
         ? resolvedUrl
         : type === 'DISPUTE'
           ? '/seller/disputes'
-          : '/seller/auctions',
+          : isReviewNotification
+            ? '/seller/reviews'
+            : '/seller/auctions',
     );
   };
 
@@ -132,10 +139,23 @@ export default function SellerNotifications({
                           >
                             {new Date(item.createdAt).toLocaleString('vi-VN')}
                           </time>
-                          {(item.targetUrl || item.type === 'DISPUTE') && (
+                          {(item.targetUrl ||
+                            item.type === 'DISPUTE' ||
+                            item.type?.toUpperCase().includes('REVIEW') ||
+                            `${item.title} ${item.content}`
+                              .toLocaleLowerCase('vi-VN')
+                              .includes('đánh giá')) && (
                             <button
                               type="button"
-                              onClick={() => openNotification(item.id, item.targetUrl, item.type)}
+                              onClick={() =>
+                                openNotification(
+                                  item.id,
+                                  item.targetUrl,
+                                  item.type,
+                                  item.title,
+                                  item.content,
+                                )
+                              }
                               className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
                             >
                               {item.type === 'DISPUTE' ? 'Xem xử lý' : 'Mở nội dung'}

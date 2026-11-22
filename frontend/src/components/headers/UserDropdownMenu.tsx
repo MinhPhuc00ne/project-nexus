@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import {
@@ -16,6 +16,8 @@ import {
 import type { UserProfile } from '../../types';
 import { clearAuthSession } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../ToastNotification';
+import LogoutConfirmDialog from '../auth/LogoutConfirmDialog';
 
 interface UserDropdownMenuProps {
   isOpen: boolean;
@@ -37,9 +39,11 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
   onLogoutClick,
 }) => {
   const navigate = useNavigate();
+  const toast = useToast();
   const { switchActiveMode } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen && !showLogoutConfirm) return null;
 
   const isSellerAccount = profile?.role === Role.SELLER;
   const isSellerModeActive =
@@ -217,16 +221,31 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         type="button"
         className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
         onClick={() => {
-          onClose();
-          clearAuthSession();
-          if (onLogoutClick) {
-            onLogoutClick();
-          }
+          setShowLogoutConfirm(true);
         }}
       >
         <LogOut size={15} />
         <span>Đăng xuất</span>
       </button>
+
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        accountName={displayUserName}
+        onCancel={() => {
+          setShowLogoutConfirm(false);
+        }}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          onClose();
+          clearAuthSession();
+          toast.success('Đăng xuất thành công. Hẹn gặp lại bạn!');
+          if (onLogoutClick) {
+            onLogoutClick();
+          } else {
+            navigate('/login', { replace: true });
+          }
+        }}
+      />
     </div>
   );
 };

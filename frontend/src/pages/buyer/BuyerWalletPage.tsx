@@ -134,21 +134,21 @@ export default function BuyerWalletPage() {
       )}
 
       {/* Balance Card */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-[#f24e1e] p-6 text-white shadow-lg shadow-orange-500/25">
+      <div className="relative overflow-hidden rounded-lg bg-[#1c3973] border border-blue-900 p-6 text-white shadow-xs">
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Wallet size={16} className="text-white/80" />
-              <p className="text-xs font-semibold text-white/80 uppercase tracking-widest">
+              <Wallet size={16} className="text-blue-200" />
+              <p className="text-xs font-semibold text-blue-200 uppercase tracking-widest">
                 Ví điện tử NEXUS Pay
               </p>
             </div>
             <p className="text-3xl font-extrabold mb-0.5">{balance.toLocaleString('vi-VN')} ₫</p>
-            <p className="text-xs text-white/70">Số dư khả dụng</p>
+            <p className="text-xs text-blue-200/80">Số dư khả dụng</p>
 
-            <div className="mt-3 flex items-center gap-2 bg-white/15 rounded-xl px-3 py-1.5 w-fit">
-              <Lock size={12} className="text-white/80" />
-              <span className="text-xs text-white/90">
+            <div className="mt-3 flex items-center gap-2 bg-white/10 rounded-md px-3 py-1.5 w-fit border border-white/20">
+              <Lock size={12} className="text-blue-200" />
+              <span className="text-xs text-white">
                 Ký quỹ đang giữ: <strong>{lockedBalance.toLocaleString('vi-VN')} ₫</strong>
               </span>
             </div>
@@ -157,20 +157,20 @@ export default function BuyerWalletPage() {
           <button
             type="button"
             onClick={() => setShowTopUp(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-orange-600 shadow-md hover:bg-orange-50 transition cursor-pointer self-start sm:self-center"
+            className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer self-start sm:self-center"
           >
             <Plus size={15} /> Nạp tiền ví
           </button>
         </div>
 
         <div className="relative z-10 mt-4 flex items-center gap-2">
-          <span className="font-mono text-[11px] text-white/60">
+          <span className="font-mono text-[11px] text-blue-200/70">
             NEXUS-{user?.id?.slice(0, 8).toUpperCase() ?? 'USER'}
           </span>
           <button
             type="button"
             onClick={() => void navigator.clipboard.writeText(user?.id ?? '')}
-            className="text-white/50 hover:text-white transition"
+            className="text-blue-200/60 hover:text-white transition"
             title="Sao chép ID ví"
           >
             <Copy size={11} />
@@ -180,7 +180,7 @@ export default function BuyerWalletPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center gap-2 mb-1">
             <ArrowDownLeft size={13} className="text-emerald-600" />
             <span className="text-[11px] font-semibold text-slate-500">Tổng nạp</span>
@@ -189,7 +189,7 @@ export default function BuyerWalletPage() {
             +{totalIn.toLocaleString('vi-VN')} ₫
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center gap-2 mb-1">
             <ArrowUpRight size={13} className="text-red-500" />
             <span className="text-[11px] font-semibold text-slate-500">Tổng chi tiêu</span>
@@ -213,7 +213,7 @@ export default function BuyerWalletPage() {
       />
 
       {/* Transaction History */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
           <h2 className="text-sm font-bold text-slate-900">Lịch sử giao dịch</h2>
           <div className="flex flex-wrap gap-1.5">
@@ -222,9 +222,9 @@ export default function BuyerWalletPage() {
                 key={t.key}
                 type="button"
                 onClick={() => setFilter(t.key)}
-                className={`rounded-lg px-3 py-1 text-xs font-semibold transition ${
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
                   filter === t.key
-                    ? 'bg-slate-900 text-white'
+                    ? 'bg-[#1c3973] text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
@@ -236,7 +236,7 @@ export default function BuyerWalletPage() {
 
         {loading ? (
           <div className="py-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <Loader2 size={16} className="animate-spin text-orange-500" /> Đang tải lịch sử ví…
+            <Loader2 size={16} className="animate-spin text-blue-600" /> Đang tải lịch sử ví…
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-10 text-center text-xs text-slate-400">
@@ -268,7 +268,7 @@ export default function BuyerWalletPage() {
                       {Number(tx.amount).toLocaleString('vi-VN')} ₫
                     </p>
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badge.cls}`}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${badge.cls}`}
                     >
                       {badge.icon} {tx.status}
                     </span>
