@@ -852,6 +852,8 @@
       "statusAria": "Filter return status",
       "allStatuses": "All statuses",
       "statuses": {
+        "REQUESTED": "Pending review",
+        "APPROVING": "Processing return",
         "PENDING": "Pending review",
         "APPROVED": "Approved",
         "REJECTED": "Rejected",

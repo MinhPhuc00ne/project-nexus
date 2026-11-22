@@ -852,6 +852,8 @@
       "statusAria": "Lọc trạng thái trả hàng",
       "allStatuses": "Tất cả trạng thái",
       "statuses": {
+        "REQUESTED": "Chờ duyệt",
+        "APPROVING": "Đang xử lý chuyển hoàn",
         "PENDING": "Chờ duyệt",
         "APPROVED": "Đã duyệt",
         "REJECTED": "Từ chối",
