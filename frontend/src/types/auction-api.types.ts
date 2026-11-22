@@ -308,6 +308,17 @@ export interface AuctionIntroShowcaseResponse {
   items: AuctionConsignmentItem[];
 }
 
+export interface StaffAuctionOverviewResponse {
+  auctions: Array<{
+    id: string;
+    title: string;
+    status: AuctionStatus;
+    startTime: string;
+    endTime: string;
+    items?: AuctionConsignmentItem[];
+  }>;
+}
+
 export type AuctionAwardTierType = 'PRIMARY_WINNER' | 'SECOND_CHANCE';
 
 export type AuctionAwardStatusType =
