@@ -5,22 +5,28 @@
     "broadcastReady": "PHÁT SÓNG 3D: SẴN SÀNG",
     "openMenu": "Mở menu"
   },
+  "groups": {
+    "operations": "ĐIỀU HÀNH TRỰC TIẾP",
+    "members": "THÀNH VIÊN & PHÊ DUYỆT",
+    "content": "NỘI DUNG & HIỂN THỊ",
+    "financeTech": "TÀI CHÍNH & KỸ THUẬT"
+  },
   "nav": {
     "overview": "Tổng quan",
-    "users": "Người dùng",
-    "sellers": "Duyệt Seller",
-    "stores": "Cửa hàng",
-    "categories": "Danh mục",
-    "products": "Sản phẩm",
-    "orders": "Đơn hàng",
-    "auctions": "Đấu giá",
-    "banners": "Banner sự kiện",
-    "refunds": "Hoàn tiền",
-    "finance": "Tài chính",
-    "reports": "Báo cáo vi phạm",
-    "chat": "Tin nhắn tự động",
-    "studio": "3D Studio",
-    "system": "Hệ thống",
-    "settings": "Cài đặt"
+    "users": "Quản trị người dùng",
+    "sellers": "Phê duyệt nâng cấp Seller",
+    "stores": "Seller & cửa hàng",
+    "categories": "Quản lý danh mục",
+    "products": "Quản lý sản phẩm",
+    "orders": "Quản lý đơn hàng",
+    "auctions": "Quản lí đấu giá",
+    "banners": "Quản lý banner",
+    "refunds": "Phê duyệt hoàn tiền",
+    "finance": "Tài chính & phí sàn",
+    "reports": "Khiếu nại & báo cáo",
+    "chat": "Quản lý Chat",
+    "studio": "Studio phát trực tiếp",
+    "system": "Hệ thống & nhật ký",
+    "settings": "Cài đặt & kiểm duyệt"
   }
 }
