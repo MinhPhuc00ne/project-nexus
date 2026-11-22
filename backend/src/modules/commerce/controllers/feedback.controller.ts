@@ -116,9 +116,9 @@ export class FeedbackController {
   @Get('admin/reviews')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @ApiOperation({
-    summary: 'Admin tra cứu danh sách bình luận/đánh giá toàn sàn kèm điểm uy tín tác giả',
+    summary: 'Admin/Staff tra cứu danh sách bình luận/đánh giá toàn sàn kèm điểm uy tín tác giả',
   })
   adminListReviews(@Query() query: QueryAdminReviewsDto): Promise<unknown> {
     return this.reviews.adminListReviews(query);
@@ -127,33 +127,33 @@ export class FeedbackController {
   @Delete('admin/reviews/product/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
+    summary: 'Admin/Staff xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
   })
   adminDeleteProductReview(
-    @CurrentUser('id') adminId: string,
+    @CurrentUser('role') actorRole: string,
     @Param('id') id: string,
     @Body() dto: AdminDeleteReviewDto,
   ): Promise<unknown> {
-    return this.reviews.adminDeleteReview(id, 'product', dto);
+    return this.reviews.adminDeleteReview(id, 'product', dto, actorRole);
   }
 
   @Delete('admin/reviews/shop/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Admin xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
+    summary: 'Admin/Staff xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
   })
   adminDeleteShopReview(
-    @CurrentUser('id') adminId: string,
+    @CurrentUser('role') actorRole: string,
     @Param('id') id: string,
     @Body() dto: AdminDeleteReviewDto,
   ): Promise<unknown> {
-    return this.reviews.adminDeleteReview(id, 'shop', dto);
+    return this.reviews.adminDeleteReview(id, 'shop', dto, actorRole);
   }
   @Post('seller/orders/:orderId/customer-review')
   @ApiBearerAuth()

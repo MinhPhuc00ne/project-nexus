@@ -120,3 +120,65 @@ test('recommendation history is user-scoped and candidate queries exclude own/su
     assert.ok(args.take <= 100);
   }
 });
+
+test('admin can reassign product category, validates existence, and notifies seller only on change', async () => {
+  const notifications = [];
+  let productRecord = {
+    id: 'prod-1',
+    title: 'Đồng hồ cổ',
+    sellerId: 'seller-1',
+    categoryId: 'cat-old',
+    category: { id: 'cat-old', name: 'Chưa phân loại', slug: 'uncategorized' },
+  };
+  const categories = new Map([
+    ['cat-old', { id: 'cat-old', name: 'Chưa phân loại', slug: 'uncategorized', level: 1 }],
+    ['cat-new', { id: 'cat-new', name: 'Đồng hồ sưu tầm', slug: 'dong-ho', level: 2 }],
+  ]);
+  const tx = {
+    product: {
+      update: mock.fn(async ({ data }) => ({
+        id: productRecord.id,
+        title: productRecord.title,
+        categoryId: data.categoryId,
+        category: categories.get(data.categoryId) ?? null,
+      })),
+    },
+    notification: { create: async ({ data }) => notifications.push(data) },
+  };
+  const service = new AdminProductsService({
+    product: {
+      findUnique: async ({ where }) => (productRecord?.id === where.id ? productRecord : null),
+    },
+    category: { findUnique: async ({ where }) => categories.get(where.id) ?? null },
+    $transaction: (fn) => fn(tx),
+  });
+
+  const unchanged = await service.updateProductCategory('prod-1', 'admin-1', {
+    categoryId: 'cat-old',
+  });
+  assert.equal(unchanged.success, true);
+  assert.equal(tx.product.update.mock.callCount(), 0);
+  assert.equal(notifications.length, 0);
+
+  const updated = await service.updateProductCategory('prod-1', 'admin-1', {
+    categoryId: 'cat-new',
+    reason: 'Phân loại vào danh mục mới',
+  });
+  assert.equal(updated.success, true);
+  assert.equal(updated.product.categoryId, 'cat-new');
+  assert.equal(tx.product.update.mock.callCount(), 1);
+  assert.equal(notifications.length, 1);
+  assert.equal(notifications[0].userId, 'seller-1');
+  assert.match(notifications[0].content, /Đồng hồ sưu tầm/);
+
+  await assert.rejects(
+    service.updateProductCategory('prod-1', 'admin-1', { categoryId: 'missing-cat' }),
+    /danh mục/,
+  );
+
+  productRecord = null;
+  await assert.rejects(
+    service.updateProductCategory('missing-prod', 'admin-1', { categoryId: 'cat-new' }),
+    /sản phẩm/,
+  );
+});

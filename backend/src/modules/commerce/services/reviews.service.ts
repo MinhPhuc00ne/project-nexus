@@ -511,11 +511,26 @@ export class ReviewsService {
     };
   }
 
+  private validatePointsToDeduct(pointsToDeduct: number, currentScore: number): void {
+    if (pointsToDeduct <= 0) {
+      throw new BadRequestException('Số điểm uy tín trừ phải lớn hơn 0.');
+    }
+    if (pointsToDeduct > currentScore) {
+      throw new BadRequestException(
+        `Không thể trừ quá số điểm hiện có của người dùng (tối đa ${currentScore} điểm).`,
+      );
+    }
+  }
+
   async adminDeleteReview(
     id: string,
     type: 'product' | 'shop',
     dto: AdminDeleteReviewDto,
+    actorRole?: string,
   ): Promise<{ success: boolean; message: string }> {
+    const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
+    const refPrefix = actorRole === 'SUPPORT_STAFF' ? 'STAFF_DELETE' : 'ADMIN_DELETE';
+
     return this.prisma.$transaction(async (tx) => {
       if (type === 'product') {
         const review = await tx.productReview.findUnique({
@@ -524,21 +539,14 @@ export class ReviewsService {
         });
         if (!review) throw new NotFoundException('Không tìm thấy đánh giá sản phẩm.');
 
-        if (dto.pointsToDeduct <= 0) {
-          throw new BadRequestException('Số điểm uy tín trừ phải lớn hơn 0.');
-        }
-        if (dto.pointsToDeduct > review.reviewer.reputationScore) {
-          throw new BadRequestException(
-            `Không thể trừ quá số điểm hiện có của người dùng (tối đa ${review.reviewer.reputationScore} điểm).`,
-          );
-        }
+        this.validatePointsToDeduct(dto.pointsToDeduct, review.reviewer.reputationScore);
 
         await this.reputationService.adjustScore(
           {
             userId: review.reviewerId,
             deltaPoints: -dto.pointsToDeduct,
-            reason: `Bình luận sản phẩm "${review.product.title}" bị Admin xóa do vi phạm: ${dto.reason.trim()}`,
-            referenceId: `ADMIN_DELETE_REVIEW:${id}`,
+            reason: `Bình luận sản phẩm "${review.product.title}" bị ${actorLabel} xóa do vi phạm: ${dto.reason.trim()}`,
+            referenceId: `${refPrefix}_REVIEW:${id}`,
           },
           tx,
         );
@@ -562,7 +570,7 @@ export class ReviewsService {
             data: {
               userId: review.reviewerId,
               title: 'Đánh giá của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
-              content: `Bình luận của bạn tại sản phẩm "${review.product.title}" đã bị Admin xóa với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
+              content: `Bình luận của bạn tại sản phẩm "${review.product.title}" đã bị ${actorLabel} xóa với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
               type: NotificationType.SYSTEM,
               channel: NotificationChannel.IN_APP,
             },
@@ -581,21 +589,14 @@ export class ReviewsService {
       });
       if (!review) throw new NotFoundException('Không tìm thấy đánh giá gian hàng.');
 
-      if (dto.pointsToDeduct <= 0) {
-        throw new BadRequestException('Số điểm uy tín trừ phải lớn hơn 0.');
-      }
-      if (dto.pointsToDeduct > review.reviewer.reputationScore) {
-        throw new BadRequestException(
-          `Không thể trừ quá số điểm hiện có của người dùng (tối đa ${review.reviewer.reputationScore} điểm).`,
-        );
-      }
+      this.validatePointsToDeduct(dto.pointsToDeduct, review.reviewer.reputationScore);
 
       await this.reputationService.adjustScore(
         {
           userId: review.reviewerId,
           deltaPoints: -dto.pointsToDeduct,
-          reason: `Đánh giá gian hàng bị Admin xóa do vi phạm: ${dto.reason.trim()}`,
-          referenceId: `ADMIN_DELETE_SHOP_REVIEW:${id}`,
+          reason: `Đánh giá gian hàng bị ${actorLabel} xóa do vi phạm: ${dto.reason.trim()}`,
+          referenceId: `${refPrefix}_SHOP_REVIEW:${id}`,
         },
         tx,
       );
@@ -607,7 +608,7 @@ export class ReviewsService {
           data: {
             userId: review.reviewerId,
             title: 'Đánh giá gian hàng của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
-            content: `Đánh giá gian hàng của bạn đã bị Admin xóa với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
+            content: `Đánh giá gian hàng của bạn đã bị ${actorLabel} xóa với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
