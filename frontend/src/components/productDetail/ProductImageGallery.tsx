@@ -1,4 +1,5 @@
 ﻿import { Image as PictureOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { ProductDetail } from '../../types/product.types';
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
   onSelectImage: (index: number) => void;
 }
 export default function ProductImageGallery({ product, selectedImgIdx, onSelectImage }: Props) {
+  const { t } = useTranslation('guest');
   const image = product.images[selectedImgIdx] || product.images[0];
   return (
     <div className="flex flex-col gap-4 lg:col-span-5">
@@ -16,7 +18,7 @@ export default function ProductImageGallery({ product, selectedImgIdx, onSelectI
         ) : (
           <div className="space-y-3 text-center text-slate-400">
             <PictureOutlined className="text-4xl" />
-            <p>Chưa có hình ảnh sản phẩm</p>
+            <p>{t('product.noProductImages')}</p>
           </div>
         )}
       </div>
@@ -26,13 +28,13 @@ export default function ProductImageGallery({ product, selectedImgIdx, onSelectI
             key={`${index}-${url}`}
             type="button"
             onClick={() => onSelectImage(index)}
-            aria-label={`Xem ảnh ${index + 1}`}
+            aria-label={t('product.viewImageAria', { index: index + 1 })}
             aria-pressed={selectedImgIdx === index}
             className={`h-20 w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white ${selectedImgIdx === index ? 'border-blue-600' : 'border-slate-200'}`}
           >
             <img
               src={url}
-              alt={`${product.name} - ảnh ${index + 1}`}
+              alt={t('product.imageAlt', { name: product.name, index: index + 1 })}
               className="h-full w-full object-contain p-1"
             />
           </button>

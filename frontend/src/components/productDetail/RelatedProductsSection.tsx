@@ -1,28 +1,30 @@
 ﻿import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Image as PictureOutlined } from 'lucide-react';
 import { getRelatedProducts } from '../../services/products.service';
 import useProductResource from './useProductResource';
 
 export default function RelatedProductsSection({ currentProductId }: { currentProductId: string }) {
+  const { t } = useTranslation('guest');
   const load = useCallback(() => getRelatedProducts(currentProductId), [currentProductId]);
   const { data: products, loading, error, retry } = useProductResource(load);
   return (
     <section className="pb-12">
-      <h2 className="mb-5 text-lg font-bold text-slate-900">Sản phẩm khác</h2>
+      <h2 className="mb-5 text-lg font-bold text-slate-900">{t('product.relatedTitle')}</h2>
       {loading ? (
         <p role="status" className="text-sm text-slate-500">
-          Đang tải sản phẩm…
+          {t('product.loadingProduct')}
         </p>
       ) : error ? (
         <div role="alert" className="rounded-xl border border-red-100 bg-white p-4 text-sm">
           <p>{error}</p>
           <button type="button" onClick={retry} className="mt-2 text-blue-600">
-            Thử lại
+            {t('product.retry')}
           </button>
         </div>
       ) : !products?.length ? (
-        <p className="text-sm text-slate-500">Chưa có sản phẩm khác để hiển thị.</p>
+        <p className="text-sm text-slate-500">{t('product.relatedEmpty')}</p>
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {products.map((product) => (

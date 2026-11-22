@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Package, Eye, ShoppingCart } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import type { CatalogProduct } from '../../services/products.service';
 
 interface ShopProductGridProps {
@@ -20,32 +22,29 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
   onPageChange,
   onAddToCart,
 }) => {
+  const { t } = useTranslation('guest');
   return (
     <main className="max-w-screen-2xl mx-auto px-6 py-10">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">Sản Phẩm Của Gian Hàng</h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Tất cả đồng hồ và tài sản xa xỉ được bảo chứng bởi gian hàng này
-          </p>
+          <h2 className="text-xl font-bold text-slate-900">{t('shop.gridTitle')}</h2>
+          <p className="text-xs text-slate-500 mt-1">{t('shop.gridSubtitle')}</p>
         </div>
         <span className="text-xs font-bold text-slate-400">
-          HIỂN THỊ {products.length} / {totalProducts} SẢN PHẨM
+          {t('shop.gridShowing', { shown: products.length, total: totalProducts })}
         </span>
       </div>
 
       {products.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-lg mx-auto shadow-sm">
           <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800 mb-1">Chưa có sản phẩm nào</h3>
-          <p className="text-xs text-slate-500 mb-6">
-            Gian hàng này hiện chưa niêm yết sản phẩm mới nào hoặc các sản phẩm đã được bán hết.
-          </p>
+          <h3 className="text-base font-bold text-slate-800 mb-1">{t('shop.gridEmptyTitle')}</h3>
+          <p className="text-xs text-slate-500 mb-6">{t('shop.gridEmptyDesc')}</p>
           <Link
             to="/search"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
           >
-            Khám phá sản phẩm khác
+            {t('shop.exploreOtherProducts')}
           </Link>
         </div>
       ) : (
@@ -92,10 +91,10 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
                 <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-slate-400 block font-medium">
-                      Giá niêm yết
+                      {t('shop.listedPrice')}
                     </span>
                     <span className="text-base font-extrabold text-blue-600">
-                      {product.basePrice.toLocaleString('vi-VN')} ₫
+                      {formatCurrency(product.basePrice)}
                     </span>
                   </div>
 
@@ -103,7 +102,7 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
                     <Link
                       to={`/product/${product.id}`}
                       className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 transition"
-                      title="Xem chi tiết"
+                      title={t('shop.viewDetails')}
                     >
                       <Eye className="w-4 h-4" />
                     </Link>
@@ -111,7 +110,7 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
                       type="button"
                       onClick={(e) => onAddToCart(product, e)}
                       className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm"
-                      title="Thêm vào giỏ"
+                      title={t('shop.addToCartShort')}
                     >
                       <ShoppingCart className="w-4 h-4" />
                     </button>
@@ -131,10 +130,10 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
             onClick={() => onPageChange(Math.max(1, page - 1))}
             className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Trang trước
+            {t('shop.prevPage')}
           </button>
           <span className="text-xs font-semibold text-slate-500 px-3">
-            Trang {page} / {totalPages}
+            {t('shop.pageOf', { page, totalPages })}
           </span>
           <button
             type="button"
@@ -142,7 +141,7 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
             onClick={() => onPageChange(Math.min(totalPages, page + 1))}
             className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
-            Trang sau
+            {t('shop.nextPage')}
           </button>
         </div>
       )}
