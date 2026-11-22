@@ -572,7 +572,7 @@ export const AuctionShowcaseHUD: React.FC<AuctionShowcaseHUDProps> = ({
                           accentColor={activeVisual.preset.accentColor}
                           secondaryColor={activeVisual.preset.secondaryColor}
                           modelLabel={
-                            i18n.language === 'en'
+                            (i18n.resolvedLanguage ?? i18n.language).startsWith('en')
                               ? activeVisual.preset.englishLabel
                               : activeVisual.preset.label
                           }

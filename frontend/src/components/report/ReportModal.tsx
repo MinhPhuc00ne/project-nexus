@@ -28,8 +28,13 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   onReported,
 }) => {
   const { t } = useTranslation('common');
-  const reasons = targetType === 'PRODUCT' ? PRODUCT_REPORT_REASONS : SHOP_REPORT_REASONS;
-  const [selectedReason, setSelectedReason] = useState(reasons[0]);
+  const rawReasons = targetType === 'PRODUCT' ? PRODUCT_REPORT_REASONS : SHOP_REPORT_REASONS;
+  const reasonsKey = targetType === 'PRODUCT' ? 'productReasons' : 'shopReasons';
+  const reasons = rawReasons.map((fallback, idx) =>
+    t(`reportModal.${reasonsKey}.${idx}`, { defaultValue: fallback }),
+  );
+  const [selectedReasonIdx, setSelectedReasonIdx] = useState(0);
+  const selectedReason = reasons[selectedReasonIdx] ?? reasons[0];
   const [description, setDescription] = useState('');
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -46,7 +51,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
     setError('');
     setDescription('');
     setEvidenceFiles([]);
-    setSelectedReason(reasons[0]);
+    setSelectedReasonIdx(0);
     onClose();
   };
 
@@ -137,11 +142,11 @@ export const ReportModal: React.FC<ReportModalProps> = ({
               {t('reportModal.reasonLabel')} <span className="text-red-500">*</span>
             </label>
             <div className="space-y-1.5">
-              {reasons.map((r) => (
+              {reasons.map((r, idx) => (
                 <label
                   key={r}
                   className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition ${
-                    selectedReason === r
+                    selectedReasonIdx === idx
                       ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-semibold'
                       : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                   }`}
@@ -150,8 +155,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
                     type="radio"
                     name="report-reason"
                     value={r}
-                    checked={selectedReason === r}
-                    onChange={() => setSelectedReason(r)}
+                    checked={selectedReasonIdx === idx}
+                    onChange={() => setSelectedReasonIdx(idx)}
                     className="accent-blue-600"
                   />
                   <span>{r}</span>

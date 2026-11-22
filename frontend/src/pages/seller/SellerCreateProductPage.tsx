@@ -245,16 +245,26 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                   <span className="text-xs font-semibold text-slate-600">
                     {t('productForm.quickAddLabel')}
                   </span>
-                  {PRESET_OPTION_GROUPS.map((preset) => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => handleAddPresetOption(preset.name, preset.sampleValues)}
-                      className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
-                    >
-                      <PlusOutlined /> {preset.name}
-                    </button>
-                  ))}
+                  {PRESET_OPTION_GROUPS.map((preset, idx) => {
+                    const localizedName = t(`productForm.presetGroups.${idx}.name`, {
+                      defaultValue: preset.name,
+                    });
+                    const localizedValues = preset.sampleValues.map((val, valIdx) =>
+                      t(`productForm.presetGroups.${idx}.sampleValues.${valIdx}`, {
+                        defaultValue: val,
+                      }),
+                    );
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => handleAddPresetOption(localizedName, localizedValues)}
+                        className="inline-flex items-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
+                      >
+                        <PlusOutlined /> {localizedName}
+                      </button>
+                    );
+                  })}
                   <button
                     type="button"
                     onClick={handleAddCustomOptionGroup}

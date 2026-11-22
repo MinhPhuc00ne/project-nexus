@@ -289,7 +289,23 @@
     "uploadEvidence": "Upload evidence image",
     "cancel": "Cancel",
     "submitting": "Submitting report…",
-    "submit": "Submit Report"
+    "submit": "Submit Report",
+    "productReasons": [
+      "Counterfeit / Not authentic",
+      "Misleading description or specifications",
+      "Abnormal pricing or suspected fraud",
+      "Offensive imagery or copyright infringement",
+      "Prohibited product category",
+      "Other reason"
+    ],
+    "shopReasons": [
+      "Suspected scam / Off-platform bank transfer request",
+      "Unprofessional service / Offensive language",
+      "Repeated wrong item deliveries / No warranty support",
+      "Brand or authorized store impersonation",
+      "Message spam or unauthorized advertising",
+      "Other reason"
+    ]
   },
   "disputeModal": {
     "reasons": {

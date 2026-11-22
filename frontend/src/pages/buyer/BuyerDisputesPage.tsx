@@ -145,7 +145,10 @@ export default function BuyerDisputesPage() {
 
     setSubmitting(true);
     try {
-      await disputeOrderApi(selectedOrderId, `[${reasonLabels[reason]}] ${description.trim()}`);
+      await disputeOrderApi(
+        selectedOrderId,
+        `[${t(`disputeModal.reasons.${reason}`, { ns: 'common', defaultValue: reasonLabels[reason] })}] ${description.trim()}`,
+      );
       showToast(t('disputesPage.submitSuccessToast'));
       setShowCreateModal(false);
       setSelectedOrderId('');

@@ -874,6 +874,12 @@
     "optionsTitle": "Variants & Buyer Options (Color, Size…)",
     "optionsSubtitle": "Allow buyers to choose Color, Size, or Edition when ordering",
     "quickAddLabel": "Quick add option group:",
+    "presetGroups": [
+      { "name": "Color", "sampleValues": ["Black", "White", "Navy Blue", "Silver", "Rose Gold"] },
+      { "name": "Size", "sampleValues": ["S", "M", "L", "XL"] },
+      { "name": "Case / Diameter", "sampleValues": ["38mm", "40mm", "42mm", "44mm"] },
+      { "name": "Edition", "sampleValues": ["Standard", "Premium (Fullbox)", "Limited Edition"] }
+    ],
     "customOptionBtn": "Custom option",
     "noOptionsHint": "No option groups yet. Click the buttons above (e.g. + Color, + Size) so buyers can select variants.",
     "groupNameLabel": "Option group name (e.g. Color, Size, Material)",

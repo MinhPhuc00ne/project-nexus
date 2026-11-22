@@ -289,7 +289,23 @@
     "uploadEvidence": "Tải ảnh bằng chứng",
     "cancel": "Hủy",
     "submitting": "Đang gửi báo cáo…",
-    "submit": "Gửi báo cáo"
+    "submit": "Gửi báo cáo",
+    "productReasons": [
+      "Sản phẩm giả mạo / Không chính hãng",
+      "Thông tin mô tả hoặc thông số sai sự thật",
+      "Giá bán bất thường hoặc có dấu hiệu gian lận",
+      "Hình ảnh phản cảm hoặc vi phạm bản quyền",
+      "Sản phẩm thuộc danh mục cấm kinh doanh",
+      "Lý do khác"
+    ],
+    "shopReasons": [
+      "Gian hàng có dấu hiệu lừa đảo / Yêu cầu chuyển khoản ngoài sàn",
+      "Thái độ phục vụ thiếu chuẩn mực / Ngôn từ xúc phạm",
+      "Giao hàng sai sản phẩm nhiều lần / Không hỗ trợ bảo hành",
+      "Mạo danh thương hiệu hoặc cửa hàng ủy quyền",
+      "Spam tin nhắn hoặc quảng cáo trái phép",
+      "Lý do khác"
+    ]
   },
   "disputeModal": {
     "reasons": {

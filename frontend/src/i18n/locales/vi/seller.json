@@ -874,6 +874,12 @@
     "optionsTitle": "Phân loại hàng & Tùy chọn cho người mua (Màu sắc, Size…)",
     "optionsSubtitle": "Cho phép người mua chọn Màu sắc, Kích thước (Size), Phiên bản khi đặt hàng",
     "quickAddLabel": "Thêm nhanh nhóm tùy chọn:",
+    "presetGroups": [
+      { "name": "Màu sắc", "sampleValues": ["Đen", "Trắng", "Xanh Navy", "Bạc", "Vàng Hồng"] },
+      { "name": "Kích thước (Size)", "sampleValues": ["S", "M", "L", "XL"] },
+      { "name": "Cỡ mặt / Đường kính", "sampleValues": ["38mm", "40mm", "42mm", "44mm"] },
+      { "name": "Phiên bản", "sampleValues": ["Tiêu chuẩn", "Cao cấp (Fullbox)", "Bản giới hạn"] }
+    ],
     "customOptionBtn": "Tùy chọn tự đặt",
     "noOptionsHint": "Chưa có nhóm phân loại nào. Bấm vào các nút phía trên (VD: + Màu sắc, + Kích thước (Size)) để người mua có thể chọn khi mua sản phẩm.",
     "groupNameLabel": "Tên nhóm tùy chọn (VD: Màu sắc, Size, Chất liệu)",

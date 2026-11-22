@@ -26,7 +26,7 @@ export type { SupportTicket, TicketStatus };
 function formatConversationTime(
   value?: string | null,
   includeTimeForOlderDates = false,
-  locale = 'vi-VN',
+  locale = getIntlLocale(),
 ): string {
   if (!value) return '';
   const date = new Date(value);
