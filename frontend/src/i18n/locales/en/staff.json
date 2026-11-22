@@ -13,5 +13,8 @@
     "banners": "Banner Management",
     "history": "History & CSAT",
     "performance": "Performance"
+  },
+  "layout": {
+    "forbiddenDesc": "Only Support Staff or Administrators (Admin) can access this area."
   }
 }

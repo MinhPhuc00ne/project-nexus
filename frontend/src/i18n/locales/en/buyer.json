@@ -16,5 +16,19 @@
     "lockedBalance": "Locked Balance",
     "deposit": "Deposit",
     "withdraw": "Withdraw"
+  },
+  "layout": {
+    "defaultName": "NEXUS Customer",
+    "noEmail": "Email not updated",
+    "roleBadge": "Buyer",
+    "hasShop": "Has Shop",
+    "walletBalance": "Wallet balance",
+    "reputationScore": "Reputation",
+    "sellerCenterTitle": "Seller Center",
+    "sellerCenterDesc": "You are currently in Buyer mode. Switch to Seller mode to manage your shop and products.",
+    "switchToSeller": "Switch to Seller Center",
+    "openShopTitle": "Open a business shop",
+    "openShopDesc": "Upgrade to a Seller account to open a shop and host 3D live auctions.",
+    "registerSeller": "Register as a Seller"
   }
 }

@@ -28,5 +28,13 @@
     "studio": "Live Studio",
     "system": "System & Logs",
     "settings": "Settings & Moderation"
+  },
+  "layout": {
+    "forbiddenDesc": "Only accounts with the ADMIN role can access the administration area.",
+    "sampleDataUpdated": "Sample data updated. Changes will reset when you reload the page.",
+    "breadcrumbRoot": "Administration",
+    "fallbackTitle": "Admin",
+    "footerOps": "© 2026 NEXUS • Admin Operations",
+    "footerPlatform": "3D Auction & Commerce Platform"
   }
 }

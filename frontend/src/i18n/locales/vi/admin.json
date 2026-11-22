@@ -28,5 +28,13 @@
     "studio": "Studio phát trực tiếp",
     "system": "Hệ thống & nhật ký",
     "settings": "Cài đặt & kiểm duyệt"
+  },
+  "layout": {
+    "forbiddenDesc": "Chỉ tài khoản có vai trò ADMIN mới được truy cập khu vực quản trị.",
+    "sampleDataUpdated": "Đã cập nhật dữ liệu mẫu. Thay đổi sẽ mất khi tải lại trang.",
+    "breadcrumbRoot": "Quản trị",
+    "fallbackTitle": "Admin",
+    "footerOps": "© 2026 NEXUS • Admin Operations",
+    "footerPlatform": "3D Auction & Commerce Platform"
   }
 }

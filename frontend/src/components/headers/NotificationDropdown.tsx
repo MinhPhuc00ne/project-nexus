@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Bell,
   CheckCheck,
@@ -34,6 +36,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   onClose,
   onCountChange,
 }) => {
+  const { t, i18n } = useTranslation('common');
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -177,10 +180,11 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   const formatTime = (timeStr: string) => {
     try {
       const d = new Date(timeStr);
+      const locale = getIntlLocale(i18n.language);
       return (
-        d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+        d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) +
         ' ' +
-        d.toLocaleDateString('vi-VN')
+        d.toLocaleDateString(locale)
       );
     } catch {
       return timeStr;
@@ -195,10 +199,12 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
           <div className="flex items-center gap-2">
-            <h4 className="m-0 text-sm font-bold text-slate-800">Thông báo</h4>
+            <h4 className="m-0 text-sm font-bold text-slate-800">
+              {t('header.notificationsTitle')}
+            </h4>
             {unreadCount > 0 && (
               <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                {unreadCount} mới
+                {t('header.newCount', { count: unreadCount })}
               </span>
             )}
           </div>
@@ -209,10 +215,10 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 type="button"
                 onClick={handleMarkAll}
                 className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
-                title="Đánh dấu tất cả là đã đọc"
+                title={t('header.markAllRead')}
               >
                 <CheckCheck size={13} />
-                <span>Đã đọc hết</span>
+                <span>{t('header.markAllReadShort')}</span>
               </button>
             )}
 
@@ -220,7 +226,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               type="button"
               onClick={() => setShowPrefsModal(true)}
               className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition cursor-pointer"
-              title="Tùy chọn nhận thông báo (Email, Push, In-App)"
+              title={t('header.notificationPrefsTitle')}
             >
               <Settings size={15} />
             </button>
@@ -231,18 +237,20 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-100">
           {!token ? (
             <div className="p-6 text-center text-xs text-slate-500">
-              <p className="mb-3 font-semibold text-slate-700">Đăng nhập để xem thông báo</p>
+              <p className="mb-3 font-semibold text-slate-700">
+                {t('header.loginToViewNotifications')}
+              </p>
               <Link
                 to="/login"
                 className="inline-flex items-center gap-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-3.5 py-1.5 rounded-xl transition"
               >
-                Đăng nhập ngay
+                {t('header.loginNow')}
               </Link>
             </div>
           ) : loading ? (
             <div className="py-10 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-2">
               <Loader2 size={18} className="animate-spin text-blue-600" />
-              <span>Đang tải thông báo…</span>
+              <span>{t('header.loadingNotifications')}</span>
             </div>
           ) : notifications.length > 0 ? (
             notifications.map((item) => (
@@ -279,7 +287,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                       <span>{formatTime(item.createdAt)}</span>
                     </span>
                     <span className="text-blue-600 font-semibold text-[10px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                      <span>Mở</span>
+                      <span>{t('header.open')}</span>
                       <ArrowRight size={10} />
                     </span>
                   </div>
@@ -289,7 +297,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
           ) : (
             <div className="py-10 text-center text-xs text-slate-400">
               <Bell size={24} className="mx-auto mb-2 text-slate-300 opacity-60" />
-              <span>Chưa có thông báo nào</span>
+              <span>{t('header.noNotifications')}</span>
             </div>
           )}
         </div>
@@ -302,7 +310,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               onClick={onClose}
               className="inline-flex items-center justify-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 transition"
             >
-              <span>Xem tất cả thông báo & Cài đặt</span>
+              <span>{t('header.viewAllNotificationsAndSettings')}</span>
               <ArrowRight size={13} />
             </Link>
           </div>

@@ -128,9 +128,16 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           selections: i.selections,
         }));
 
+  const { t, i18n } = useTranslation('common');
+  const currentLang = normalizeLanguage(i18n.resolvedLanguage || i18n.language);
+
   const effectiveLoggedIn = isLoggedIn ?? authIsLoggedIn;
   const displayUserName =
-    userName || profile?.fullName || storedUser?.fullName || storedUser?.email || 'Tài khoản';
+    userName ||
+    profile?.fullName ||
+    storedUser?.fullName ||
+    storedUser?.email ||
+    t('header.accountFallback');
   const displayUserEmail = userEmail ?? profile?.email ?? storedUser?.email;
   const displayUserAvatar =
     userAvatar !== undefined ? userAvatar : (profile?.avatarUrl ?? storedUser?.avatarUrl);
@@ -158,10 +165,10 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     setIsTogglingSeller(true);
     try {
       await switchActiveMode('SELLER');
-      showToast('Đã kích hoạt chế độ Người bán (Seller).');
+      showToast(t('header.sellerModeActivated'));
       if (profile.role === Role.SELLER) window.location.assign('/seller');
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Chuyển đổi chế độ thất bại.');
+      showToast(err instanceof Error ? err.message : t('header.modeSwitchFailed'));
     } finally {
       setIsTogglingSeller(false);
     }
@@ -179,22 +186,22 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           window.location.assign('/seller/settings');
         })
         .catch((err: unknown) => {
-          showToast(err instanceof Error ? err.message : 'Không thể chuyển sang chế độ Người bán.');
+          showToast(err instanceof Error ? err.message : t('header.cannotSwitchSellerMode'));
         });
       return;
     }
     setShowUpgradeModal(true);
   };
 
-  const { t, i18n } = useTranslation('common');
-  const currentLang = normalizeLanguage(i18n.resolvedLanguage || i18n.language);
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showAppQrModal, setShowAppQrModal] = useState(false);
 
-  const [selectedFloor, setSelectedFloor] = useState('Tất Cả Sàn');
+  const [selectedFloorKey, setSelectedFloorKey] = useState<
+    'all' | 'liveAuction' | 'buyNow' | 'tech' | 'collectibles'
+  >('all');
   const [showFloorMenu, setShowFloorMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -212,13 +219,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     flag: item.code === 'vi' ? '🇻🇳' : '🇺🇸',
   }));
 
-  const floors = [
-    'Tất Cả Sàn',
-    'Sàn Đấu Giá Live',
-    'Sàn Mua Ngay',
-    'Thiết Bị Công Nghệ',
-    'Đồ Cổ & Độc Bản',
-  ];
+  const floorKeys = ['all', 'liveAuction', 'buyNow', 'tech', 'collectibles'] as const;
+  const selectedFloor = t(`header.floors.${selectedFloorKey}`);
 
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
@@ -274,8 +276,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer whitespace-nowrap"
               title={
                 profile?.role === 'SELLER' || profile?.role === 'ADMIN'
-                  ? 'Bấm để Bật/Tắt chế độ Người bán'
-                  : 'Đăng ký trở thành Người bán'
+                  ? t('header.toggleSellerTitle')
+                  : t('header.becomeSellerTitle')
               }
             >
               <Store size={14} className="shrink-0" />
@@ -289,7 +291,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       : 'bg-slate-200 text-slate-600'
                   }`}
                 >
-                  {isTogglingSeller ? '...' : profile.isSellerActive ? 'BẬT' : 'TẮT'}
+                  {isTogglingSeller
+                    ? '...'
+                    : profile.isSellerActive
+                      ? t('header.on')
+                      : t('header.off')}
                 </span>
               )}
             </button>
@@ -330,7 +336,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       </div>
                     </div>
 
-                    <p className="my-2 text-[11px] text-slate-500">Quét mã QR để tải App NEXUS</p>
+                    <p className="my-2 text-[11px] text-slate-500">
+                      {t('header.scanQrToDownload')}
+                    </p>
 
                     <div className="flex justify-center gap-1.5">
                       <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[9px] font-semibold text-white">
@@ -377,7 +385,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 type="button"
                 className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer whitespace-nowrap"
                 onClick={() => setShowNotifMenu(!showNotifMenu)}
-                title="Thông Báo"
+                title={t('nav.notifications')}
               >
                 <div className="relative inline-flex">
                   <Bell size={14} />
@@ -404,7 +412,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <a
               href="#help"
               className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap"
-              title="Trợ Giúp"
+              title={t('header.helpCenter')}
             >
               <HelpCircle size={14} className="shrink-0" />
               <span className="hidden lg:inline">{t('header.helpCenter')}</span>
@@ -417,7 +425,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 type="button"
                 className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap"
                 onClick={() => setShowLangMenu(!showLangMenu)}
-                title="Ngôn ngữ"
+                title={t('language.label')}
               >
                 <Globe size={14} className="shrink-0" />
 
@@ -508,7 +516,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   className="inline-flex items-center rounded-md px-1 sm:px-1.5 py-1 text-[12px] sm:text-[13px] font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
                   onClick={onLoginClick}
                 >
-                  Đăng Nhập
+                  {t('nav.login')}
                 </button>
 
                 <span className="text-xs text-slate-300">|</span>
@@ -518,7 +526,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   className="inline-flex items-center rounded-md px-1 sm:px-1.5 py-1 text-[12px] sm:text-[13px] font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
                   onClick={onRegisterClick}
                 >
-                  Đăng Ký
+                  {t('nav.register')}
                 </button>
               </div>
             )}
@@ -566,21 +574,21 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
                 {showFloorMenu && (
                   <div className="animate-home-popover-enter motion-reduce:animate-none absolute left-[-12px] top-[calc(100%+12px)] z-[1200] w-[200px] rounded-[10px] border border-slate-200 bg-white p-1.5 shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
-                    {floors.map((floor, idx) => (
+                    {floorKeys.map((floorKey) => (
                       <button
-                        key={idx}
+                        key={floorKey}
                         type="button"
                         className={`w-full rounded-md border-0 bg-transparent px-3 py-2.5 text-left text-[13px] transition-colors hover:bg-slate-100 ${
-                          selectedFloor === floor
+                          selectedFloorKey === floorKey
                             ? 'bg-orange-50 font-bold text-[#f24e1e]'
                             : 'text-slate-800'
                         }`}
                         onClick={() => {
-                          setSelectedFloor(floor);
+                          setSelectedFloorKey(floorKey);
                           setShowFloorMenu(false);
                         }}
                       >
-                        {floor}
+                        {t(`header.floors.${floorKey}`)}
                       </button>
                     ))}
                   </div>
@@ -593,7 +601,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 <input
                   type="text"
                   className="w-full border-0 bg-transparent px-1.5 py-2 pr-8 text-[13px] text-slate-800 outline-none placeholder:text-slate-400"
-                  placeholder="Tìm kiếm hơn 50.000+ sản phẩm công nghệ, gear, nghệ thuật hoặc phiên đấu..."
+                  placeholder={t('header.searchFullPlaceholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -620,7 +628,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
             {trendingKeywords.length > 0 && (
               <div className="flex items-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pl-2 text-xs">
-                <span className="shrink-0 text-slate-400">Xu hướng:</span>
+                <span className="shrink-0 text-slate-400">{t('header.trending')}</span>
 
                 <div className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {trendingKeywords.map((kw, idx) => (
@@ -666,7 +674,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               </div>
 
               <span className="text-xs sm:text-sm font-bold text-[#1c3973] whitespace-nowrap">
-                Giỏ Hàng
+                {t('nav.cart')}
               </span>
             </button>
 

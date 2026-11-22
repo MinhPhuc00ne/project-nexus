@@ -13,5 +13,8 @@
     "banners": "Quản Lý Banner",
     "history": "Lịch Sử & CSAT",
     "performance": "Hiệu Suất Cá Nhân"
+  },
+  "layout": {
+    "forbiddenDesc": "Chỉ nhân sự hỗ trợ (Staff) hoặc Quản trị viên (Admin) mới được truy cập khu vực này."
   }
 }

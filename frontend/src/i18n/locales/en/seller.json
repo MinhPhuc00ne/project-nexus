@@ -13,6 +13,34 @@
   },
   "drafts": {
     "saved": "Draft saved on this device.",
-    "saveFailed": "Unable to save draft. Please check browser storage."
+    "saveFailed": "Unable to save draft. Please check browser storage.",
+    "deleted": "Draft deleted from this device.",
+    "deleteFailed": "Unable to delete draft. Please try again."
+  },
+  "layout": {
+    "sidebarLabel": "STORE MANAGEMENT",
+    "navAria": "Seller navigation",
+    "closeMenu": "Close menu",
+    "openMenu": "Open seller menu",
+    "studioTitle": "NEXUS Seller Studio",
+    "studioDesc": "One workspace. All of your business operations.",
+    "exploreAuctions": "Explore auctions",
+    "supportCenter": "Support Center",
+    "searchAria": "Search in shop",
+    "searchPlaceholder": "Search products in shop…",
+    "shopSuspended": "Shop suspended",
+    "shopActive": "Shop active",
+    "buyerMode": "Buyer mode",
+    "sellerIdPrefix": "Seller · {{id}}",
+    "accountSettings": "Account settings",
+    "switching": "Switching…",
+    "switchToBuyer": "Switch to Buyer",
+    "switchedToBuyer": "Switched to Buyer mode.",
+    "switchModeFailed": "Unable to switch mode.",
+    "logoutSuccess": "Signed out successfully.",
+    "suspendedBanner": "Your shop has been suspended. You can still view information and switch to Buyer mode.",
+    "suspendedReason": "Reason: {{reason}}",
+    "recheckStatus": "Recheck status",
+    "footerTagline": "Sell with peace of mind, build lasting connections"
   }
 }

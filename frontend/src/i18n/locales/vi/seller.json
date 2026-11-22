@@ -13,6 +13,34 @@
   },
   "drafts": {
     "saved": "Đã lưu bản nháp trên thiết bị này.",
-    "saveFailed": "Không thể lưu bản nháp. Vui lòng kiểm tra bộ nhớ trình duyệt."
+    "saveFailed": "Không thể lưu bản nháp. Vui lòng kiểm tra bộ nhớ trình duyệt.",
+    "deleted": "Đã xóa bản nháp trên thiết bị.",
+    "deleteFailed": "Không thể xóa bản nháp. Vui lòng thử lại."
+  },
+  "layout": {
+    "sidebarLabel": "QUẢN TRỊ CỬA HÀNG",
+    "navAria": "Điều hướng người bán",
+    "closeMenu": "Đóng menu",
+    "openMenu": "Mở menu người bán",
+    "studioTitle": "NEXUS Seller Studio",
+    "studioDesc": "Một không gian. Toàn bộ hoạt động kinh doanh của bạn.",
+    "exploreAuctions": "Khám phá đấu giá",
+    "supportCenter": "Trung tâm hỗ trợ",
+    "searchAria": "Tìm trong gian hàng",
+    "searchPlaceholder": "Tìm sản phẩm trong gian hàng...",
+    "shopSuspended": "Gian hàng bị đình chỉ",
+    "shopActive": "Gian hàng hoạt động",
+    "buyerMode": "Chế độ người mua",
+    "sellerIdPrefix": "Người bán · {{id}}",
+    "accountSettings": "Cài đặt tài khoản",
+    "switching": "Đang chuyển…",
+    "switchToBuyer": "Chuyển sang người mua",
+    "switchedToBuyer": "Đã chuyển sang chế độ Khách hàng (Buyer).",
+    "switchModeFailed": "Không thể chuyển chế độ.",
+    "logoutSuccess": "Đăng xuất thành công.",
+    "suspendedBanner": "Gian hàng đã bị đình chỉ. Bạn vẫn có thể xem thông tin và chuyển sang người mua.",
+    "suspendedReason": "Lý do: {{reason}}",
+    "recheckStatus": "Kiểm tra lại trạng thái",
+    "footerTagline": "Kinh doanh an tâm, kết nối bền vững"
   }
 }

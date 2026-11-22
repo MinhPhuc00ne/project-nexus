@@ -16,5 +16,19 @@
     "lockedBalance": "Số dư đang giữ",
     "deposit": "Nạp tiền",
     "withdraw": "Rút tiền"
+  },
+  "layout": {
+    "defaultName": "Khách hàng NEXUS",
+    "noEmail": "Chưa cập nhật email",
+    "roleBadge": "Khách hàng (Buyer)",
+    "hasShop": "Có Gian hàng",
+    "walletBalance": "Số dư ví",
+    "reputationScore": "Điểm uy tín",
+    "sellerCenterTitle": "Kênh Người Bán (Seller Center)",
+    "sellerCenterDesc": "Bạn đang ở chế độ Mua hàng (Buyer). Chuyển sang chế độ Người bán để quản lý gian hàng và sản phẩm.",
+    "switchToSeller": "Chuyển sang Kênh Người Bán",
+    "openShopTitle": "Mở gian hàng kinh doanh",
+    "openShopDesc": "Nâng cấp lên tài khoản Người bán để mở gian hàng và tổ chức đấu giá trực tiếp 3D.",
+    "registerSeller": "Đăng ký trở thành Seller"
   }
 }
