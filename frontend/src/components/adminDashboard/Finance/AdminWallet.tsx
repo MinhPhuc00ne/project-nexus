@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, Wallet } from 'lucide-react';
 import {
   depositToAdminWallet,
@@ -10,28 +11,10 @@ import type {
   AdminWalletTransaction,
   AdminWalletTransactionType,
 } from '../../../types/admin-wallet.types';
+import { getIntlLocale } from '../../../i18n/config';
 import { formatMoney } from '../shared/adminData';
 import { Button, Panel } from '../shared/AdminUI';
-
-const typeLabels: Record<AdminWalletTransaction['type'], string> = {
-  DEPOSIT: 'Nạp tiền',
-  WITHDRAW: 'Rút tiền',
-  ESCROW_LOCK: 'Khóa ký quỹ',
-  ESCROW_PAYOUT: 'Thanh toán ký quỹ',
-  ESCROW_REFUND: 'Hoàn ký quỹ',
-  ORDER_PAYMENT: 'Thanh toán đơn hàng',
-  PLATFORM_FEE: 'Phí sàn',
-};
-
-const statusLabels: Record<AdminWalletTransaction['status'], string> = {
-  PENDING: 'Đang xử lý',
-  SUCCESS: 'Thành công',
-  FAILED: 'Thất bại',
-};
-
-function formatDate(value: string) {
-  return new Date(value).toLocaleString('vi-VN');
-}
+import { TRANSACTION_TYPES } from './transactionPresentation';
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
@@ -43,6 +26,9 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 export default function AdminWallet() {
+  const { t, i18n } = useTranslation('admin');
+  const formatDate = (value: string) =>
+    new Date(value).toLocaleString(getIntlLocale(i18n.language));
   const [summary, setSummary] = useState<AdminWalletSummary | null>(null);
   const [transactions, setTransactions] = useState<AdminWalletTransaction[]>([]);
   const [total, setTotal] = useState(0);
@@ -73,20 +59,20 @@ export default function AdminWallet() {
       })
       .catch((cause) => {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : 'Không thể tải dữ liệu ví nền tảng.');
+          setError(cause instanceof Error ? cause.message : t('finance.wallet.loadErr'));
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [page, refreshKey, type]);
+  }, [page, refreshKey, type, t]);
 
   const submitDeposit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = Number(amount);
     if (!Number.isSafeInteger(value) || value < 10000) {
-      setDepositError('Số tiền nạp tối thiểu là 10.000 ₫ và phải là số nguyên.');
+      setDepositError(t('finance.wallet.invalidAmountErr'));
       return;
     }
 
@@ -104,7 +90,7 @@ export default function AdminWallet() {
       setPage(1);
       setRefreshKey((current) => current + 1);
     } catch (cause) {
-      setDepositError(cause instanceof Error ? cause.message : 'Không thể nạp tiền vào ví.');
+      setDepositError(cause instanceof Error ? cause.message : t('finance.wallet.depositErr'));
     } finally {
       setDepositPending(false);
     }
@@ -115,8 +101,8 @@ export default function AdminWallet() {
   return (
     <div className="space-y-5">
       <Panel
-        title="Ví nền tảng"
-        subtitle="Số dư ví hệ thống, phí sàn đã thu và tiền nạp"
+        title={t('finance.wallet.title')}
+        subtitle={t('finance.wallet.subtitle')}
         icon={<Wallet size={19} />}
         action={
           <Button
@@ -124,7 +110,7 @@ export default function AdminWallet() {
             disabled={loading}
             onClick={() => setRefreshKey((current) => current + 1)}
           >
-            <RefreshCw size={14} aria-hidden="true" /> Làm mới
+            <RefreshCw size={14} aria-hidden="true" /> {t('finance.wallet.refresh')}
           </Button>
         }
       >
@@ -135,43 +121,48 @@ export default function AdminWallet() {
           >
             <p>{error}</p>
             <Button variant="secondary" onClick={() => setRefreshKey((current) => current + 1)}>
-              Thử lại
+              {t('finance.wallet.retry')}
             </Button>
           </div>
         )}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Metric label="Số dư hiện tại" value={summary ? formatMoney(summary.balance) : '—'} />
           <Metric
-            label="Số dư đang khóa"
+            label={t('finance.wallet.balanceLabel')}
+            value={summary ? formatMoney(summary.balance) : '—'}
+          />
+          <Metric
+            label={t('finance.wallet.lockedLabel')}
             value={summary ? formatMoney(summary.lockedBalance) : '—'}
           />
           <Metric
-            label="Tổng phí sàn đã thu"
+            label={t('finance.wallet.feeCollectedLabel')}
             value={summary ? formatMoney(summary.totalPlatformFeeCollected) : '—'}
           />
           <Metric
-            label="Tổng tiền đã nạp"
+            label={t('finance.wallet.totalDepositedLabel')}
             value={summary ? formatMoney(summary.totalDeposited) : '—'}
           />
         </div>
         {summary && (
           <p className="mt-3 text-xs text-slate-500">
-            {summary.totalTransactions} giao dịch · Cập nhật lần cuối{' '}
-            {formatDate(summary.updatedAt)}
+            {t('finance.wallet.summaryFooter', {
+              count: summary.totalTransactions,
+              date: formatDate(summary.updatedAt),
+            })}
           </p>
         )}
       </Panel>
 
       <Panel
-        title="Nạp tiền vào ví hệ thống"
-        subtitle="Ghi nhận khoản nạp vào số dư ví và lịch sử giao dịch"
+        title={t('finance.wallet.depositTitle')}
+        subtitle={t('finance.wallet.depositSubtitle')}
       >
         <form
           onSubmit={submitDeposit}
           className="grid gap-3 md:grid-cols-[1fr_2fr_auto] md:items-end"
         >
           <label className="block text-xs font-medium text-slate-700">
-            Số tiền (VND)
+            {t('finance.wallet.amountLabel')}
             <input
               required
               type="number"
@@ -181,11 +172,11 @@ export default function AdminWallet() {
               disabled={depositPending}
               onChange={(event) => setAmount(event.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-200 p-3 text-sm"
-              placeholder="Tối thiểu 10.000"
+              placeholder={t('finance.wallet.amountPlaceholder')}
             />
           </label>
           <label className="block text-xs font-medium text-slate-700">
-            Ghi chú (không bắt buộc)
+            {t('finance.wallet.noteLabel')}
             <input
               type="text"
               maxLength={500}
@@ -193,11 +184,11 @@ export default function AdminWallet() {
               disabled={depositPending}
               onChange={(event) => setDescription(event.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-200 p-3 text-sm"
-              placeholder="Lý do nạp tiền"
+              placeholder={t('finance.wallet.notePlaceholder')}
             />
           </label>
           <Button type="submit" disabled={depositPending}>
-            {depositPending ? 'Đang nạp…' : 'Nạp vào ví'}
+            {depositPending ? t('finance.wallet.depositing') : t('finance.wallet.depositSubmit')}
           </Button>
         </form>
         {depositError && (
@@ -213,12 +204,12 @@ export default function AdminWallet() {
       </Panel>
 
       <Panel
-        title="Lịch sử biến động ví"
-        subtitle="Các khoản nạp và giao dịch ghi nhận vào ví hệ thống"
+        title={t('finance.wallet.historyTitle')}
+        subtitle={t('finance.wallet.historySubtitle')}
       >
         <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
           <label className="text-xs text-slate-500">
-            Loại giao dịch
+            {t('finance.wallet.typeFilterLabel')}
             <select
               value={type}
               onChange={(event) => {
@@ -227,39 +218,46 @@ export default function AdminWallet() {
               }}
               className="mt-1 block rounded-lg border border-slate-200 bg-white p-2 text-slate-800"
             >
-              <option value="">Tất cả</option>
-              {Object.entries(typeLabels).map(([value, label]) => (
+              <option value="">{t('finance.wallet.allTypes')}</option>
+              {TRANSACTION_TYPES.map((value) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t(`finance.types.${value}`)}
                 </option>
               ))}
             </select>
           </label>
-          <span className="text-xs text-slate-500">Tổng {total} giao dịch</span>
+          <span className="text-xs text-slate-500">
+            {t('finance.wallet.totalCount', { count: total })}
+          </span>
         </div>
         {loading ? (
           <p role="status" className="py-8 text-center text-sm text-slate-500">
-            Đang tải lịch sử ví…
+            {t('finance.wallet.loadingHistory')}
           </p>
         ) : transactions.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] text-left text-xs">
               <thead className="bg-slate-50 text-slate-500">
                 <tr>
-                  {['Thời gian', 'Loại', 'Mô tả', 'Mã tham chiếu', 'Số tiền', 'Trạng thái'].map(
-                    (heading) => (
-                      <th key={heading} scope="col" className="p-3 font-semibold">
-                        {heading}
-                      </th>
-                    ),
-                  )}
+                  {[
+                    t('finance.wallet.cols.time'),
+                    t('finance.wallet.cols.type'),
+                    t('finance.wallet.cols.description'),
+                    t('finance.wallet.cols.reference'),
+                    t('finance.wallet.cols.amount'),
+                    t('finance.wallet.cols.status'),
+                  ].map((heading) => (
+                    <th key={heading} scope="col" className="p-3 font-semibold">
+                      {heading}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {transactions.map((transaction) => (
                   <tr key={transaction.id} className="align-top">
                     <td className="whitespace-nowrap p-3">{formatDate(transaction.createdAt)}</td>
-                    <td className="p-3">{typeLabels[transaction.type]}</td>
+                    <td className="p-3">{t(`finance.types.${transaction.type}`)}</td>
                     <td className="max-w-64 break-words p-3">{transaction.description || '—'}</td>
                     <td className="max-w-48 break-all p-3">{transaction.referenceId || '—'}</td>
                     <td className="whitespace-nowrap p-3 font-semibold">
@@ -268,7 +266,7 @@ export default function AdminWallet() {
                         : '−'}
                       {formatMoney(transaction.amount)}
                     </td>
-                    <td className="p-3">{statusLabels[transaction.status]}</td>
+                    <td className="p-3">{t(`finance.statuses.${transaction.status}`)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -276,27 +274,25 @@ export default function AdminWallet() {
           </div>
         ) : (
           <p className="py-8 text-center text-sm text-slate-500">
-            {error ? 'Không tải được lịch sử ví.' : 'Chưa có giao dịch ví.'}
+            {error ? t('finance.wallet.historyLoadErr') : t('finance.wallet.emptyHistory')}
           </p>
         )}
         <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500">
-          <span>
-            Trang {page}/{totalPages}
-          </span>
+          <span>{t('finance.wallet.pageLabel', { page, totalPages })}</span>
           <div className="flex gap-2">
             <Button
               variant="secondary"
               disabled={page <= 1 || loading}
               onClick={() => setPage(page - 1)}
             >
-              Trước
+              {t('finance.wallet.prev')}
             </Button>
             <Button
               variant="secondary"
               disabled={page >= totalPages || loading}
               onClick={() => setPage(page + 1)}
             >
-              Sau
+              {t('finance.wallet.next')}
             </Button>
           </div>
         </div>
