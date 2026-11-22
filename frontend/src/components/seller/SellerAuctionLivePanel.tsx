@@ -1,5 +1,8 @@
 import { useEffect, useState, type ReactElement } from 'react';
 import { Box } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
+import { formatCurrency } from '../../i18n/formatters';
 import type {
   AuctionConsignmentItem,
   AuctionEntity,
@@ -20,22 +23,7 @@ export interface SellerAuctionLivePanelProps {
   showcase: AuctionIntroShowcaseResponse | null;
 }
 
-const money = (value?: number | string | null): string =>
-  `${Number(value ?? 0).toLocaleString('vi-VN')} đ`;
-
-function auctionStatusLabel(status: AuctionEntity['status']): string {
-  const labels: Record<AuctionEntity['status'], string> = {
-    DRAFT: 'Bản nháp',
-    SCHEDULED: 'Sắp diễn ra',
-    ACTIVE: 'Đang diễn ra',
-    EXTENDED: 'Được gia hạn',
-    ENDED: 'Đã kết thúc',
-    SETTLED: 'Đã quyết toán',
-    CANCELLED: 'Đã hủy',
-    FAILED: 'Thất bại',
-  };
-  return labels[status] ?? status;
-}
+const money = (value?: number | string | null): string => formatCurrency(Number(value ?? 0));
 
 function statusTone(status: AuctionEntity['status']): 'blue' | 'green' | 'amber' | 'gray' | 'red' {
   if (status === 'ACTIVE' || status === 'EXTENDED') return 'green';
@@ -57,6 +45,10 @@ export default function SellerAuctionLivePanel({
   onLiveLotChange,
   showcase,
 }: SellerAuctionLivePanelProps): ReactElement {
+  const { t, i18n } = useTranslation('seller');
+  const locale = getIntlLocale(i18n.language);
+  const auctionStatusLabel = (status: AuctionEntity['status']): string =>
+    t(`auctions.entityStatuses.${status}`, { defaultValue: status });
   const [showLiveShowcase, setShowLiveShowcase] = useState(false);
   const isLive = auction.status === 'ACTIVE' || auction.status === 'EXTENDED';
   const activeLiveLot = approvedItems[liveLotIndex] ?? approvedItems[0];
@@ -90,7 +82,9 @@ export default function SellerAuctionLivePanel({
           <div className="min-w-0 space-y-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={statusTone(auction.status)}>{auctionStatusLabel(auction.status)}</Badge>
-              {auction.isExtended && <Badge tone="amber">Đã gia hạn thời gian</Badge>}
+              {auction.isExtended && (
+                <Badge tone="amber">{t('auctions.livePanel.extendedBadge')}</Badge>
+              )}
             </div>
             <div>
               <h2 className="text-xl font-bold text-slate-900">{auction.title}</h2>
@@ -100,36 +94,38 @@ export default function SellerAuctionLivePanel({
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Bắt đầu</p>
+                <p className="text-xs text-slate-500">{t('auctions.livePanel.startsAt')}</p>
                 <p className="mt-1 text-sm font-semibold text-slate-800">
-                  {new Date(auction.startTime).toLocaleString('vi-VN')}
+                  {new Date(auction.startTime).toLocaleString(locale)}
                 </p>
               </div>
               <div className="rounded-lg border border-slate-100 bg-slate-50 p-3">
-                <p className="text-xs text-slate-500">Kết thúc</p>
+                <p className="text-xs text-slate-500">{t('auctions.livePanel.endsAt')}</p>
                 <p className="mt-1 text-sm font-semibold text-slate-800">
-                  {new Date(auction.endTime).toLocaleString('vi-VN')}
+                  {new Date(auction.endTime).toLocaleString(locale)}
                 </p>
               </div>
             </div>
-            {isLive && <Badge tone="green">Dữ liệu trả giá đang cập nhật trực tiếp</Badge>}
+            {isLive && <Badge tone="green">{t('auctions.livePanel.liveUpdatingBadge')}</Badge>}
           </div>
         </div>
       </section>
       {isLive && (
         <Panel
-          title="Live showcase của phiên"
-          subtitle="Giao diện theo dõi dành cho Seller. Không có chức năng đặt giá."
-          action={<Badge tone="red">LIVE</Badge>}
+          title={t('auctions.livePanel.panelTitle')}
+          subtitle={t('auctions.livePanel.panelSubtitle')}
+          action={<Badge tone="red">{t('auctions.livePanel.liveTag')}</Badge>}
         >
           <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-950 shadow-lg">
             <div className="flex items-center justify-between gap-3 border-b border-slate-700 px-4 py-3 text-white">
               <div className="flex min-w-0 items-center gap-2">
                 <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-500" />
-                <strong className="truncate text-sm">Đang phát trực tiếp: {auction.title}</strong>
+                <strong className="truncate text-sm">
+                  {t('auctions.livePanel.streamingPrefix', { title: auction.title })}
+                </strong>
               </div>
               <span className="shrink-0 text-xs text-slate-300">
-                {auction.totalBidsCount} lượt trả giá
+                {t('auctions.livePanel.bidsCount', { count: auction.totalBidsCount })}
               </span>
             </div>
             <div className="grid min-h-[330px] lg:grid-cols-[minmax(0,1.55fr)_minmax(280px,0.9fr)]">
@@ -158,30 +154,38 @@ export default function SellerAuctionLivePanel({
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-300">
-                      {activeLiveLot ? 'Giá cao nhất lô đang chọn' : 'Giá cao nhất'}
+                      {activeLiveLot
+                        ? t('auctions.livePanel.highestLotBid')
+                        : t('auctions.livePanel.highestBid')}
                     </p>
-                    {activeLotExtended && <Badge tone="amber">Gia hạn +2p</Badge>}
+                    {activeLotExtended && (
+                      <Badge tone="amber">{t('auctions.livePanel.extendBadge')}</Badge>
+                    )}
                   </div>
                   <p className="mt-1 text-3xl font-bold text-amber-300">
                     {money(activeLotHighestBid)}
                   </p>
                   <p className="mt-2 text-xs text-slate-300">
-                    {activeLotBidsCount} lượt trả giá · Kết thúc:{' '}
-                    {new Date(activeLotEndTime).toLocaleString('vi-VN')}
+                    {t('auctions.livePanel.lotBidsAndEnd', {
+                      count: activeLotBidsCount,
+                      date: new Date(activeLotEndTime).toLocaleString(locale),
+                    })}
                   </p>
                 </div>
                 <div className="border-t border-slate-700 pt-4">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                    Vật phẩm đang hiển thị
+                    {t('auctions.livePanel.displayedItem')}
                   </p>
                   <p className="mt-1 text-base font-semibold">
-                    {activeLiveLot?.title ?? 'Chờ vật phẩm được duyệt'}
+                    {activeLiveLot?.title ?? t('auctions.livePanel.awaitingLot')}
                   </p>
                   {activeLiveLot && (
                     <p className="mt-1 text-xs text-slate-300">
-                      Lô #{activeLiveLot.lotNumber ?? liveLotIndex + 1} ·{' '}
-                      {auctionStatusLabel(activeLiveLot.lotStatus ?? auction.status)} · Khởi điểm{' '}
-                      {money(activeLiveLot.startingPrice)}
+                      {t('auctions.livePanel.lotMeta', {
+                        lot: activeLiveLot.lotNumber ?? liveLotIndex + 1,
+                        status: auctionStatusLabel(activeLiveLot.lotStatus ?? auction.status),
+                        price: money(activeLiveLot.startingPrice),
+                      })}
                     </p>
                   )}
                 </div>
@@ -194,14 +198,14 @@ export default function SellerAuctionLivePanel({
                         onClick={() => onLiveLotChange(index)}
                         className={`rounded-md px-2.5 py-1.5 text-xs font-semibold ${index === liveLotIndex ? 'bg-blue-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                       >
-                        Lô {item.lotNumber ?? index + 1}
+                        {t('auctions.livePanel.lotTab', { lot: item.lotNumber ?? index + 1 })}
                       </button>
                     ))}
                   </div>
                 )}
                 {showcase?.isIntroActive && (
                   <SellerButton className="w-full" onClick={() => setShowLiveShowcase(true)}>
-                    Mở live showcase đồng bộ
+                    {t('auctions.livePanel.openSyncShowcase')}
                   </SellerButton>
                 )}
               </aside>

@@ -5,7 +5,8 @@ import {
   Plus as PlusOutlined,
   ShieldCheck as SafetyCertificateOutlined,
 } from 'lucide-react';
-import { auctionStatuses, money, type SellerAuction } from './sellerData';
+import { useTranslation } from 'react-i18next';
+import { money, type SellerAuction } from './sellerData';
 import { canSubmitConsignment } from './sellerConsignmentHelpers';
 import { Badge, SellerLink } from './SellerUI';
 
@@ -23,6 +24,7 @@ export interface SellerAuctionCardProps {
  * @returns Auction summary card with navigation and consignment action.
  */
 export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
+  const { t } = useTranslation('seller');
   return (
     <article
       className="bg-white [border:1px_solid_#e5ebf4] rounded-[12px] overflow-hidden [&:hover_[data-seller~=auction-image]_img]:[transform:scale(1.04)] [&_h2]:text-[14px] [&_h2]:font-[650] [&_h2]:leading-[1.6] [&_h2]:my-[7px] [&_h2]:mx-0 max-[1250px]:[&_h2]:text-[12px] max-[1050px]:[&_h2]:text-[15px] max-[540px]:[&_h2]:text-[12px]"
@@ -41,7 +43,7 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
           {auction.status === 'live' && (
             <PlayCircleOutlined className="text-[12px]" aria-hidden="true" />
           )}
-          {auctionStatuses[auction.status]}
+          {t(`auctions.statuses.${auction.status}`)}
         </Badge>
         <span>
           <CodeSandboxOutlined className="text-[13px]" aria-hidden="true" />
@@ -61,10 +63,10 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
           ) : (
             <CodeSandboxOutlined className="text-[34px] text-[#8fa4ca]" aria-hidden="true" />
           )}
-          <span>BỘ SƯU TẬP ĐẤU GIÁ</span>
+          <span>{t('auctions.card.collectionLabel')}</span>
         </div>
         <div>
-          <small>LÔ #{auction.id}</small>
+          <small>{t('auctions.card.lotPrefix', { id: auction.id })}</small>
           <h2>{auction.title}</h2>
           <p>{auction.description}</p>
           <div
@@ -73,13 +75,15 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
           >
             <div>
               <small>
-                {auction.status === 'ended' ? 'Giá kết thúc' : 'Giá hiện tại / khởi điểm'}
+                {auction.status === 'ended'
+                  ? t('auctions.card.endedPrice')
+                  : t('auctions.card.currentPrice')}
               </small>
               <strong>{money(auction.price)}</strong>
             </div>
             <div>
               <strong>{auction.bids}</strong>
-              <small>lượt trả giá</small>
+              <small>{t('auctions.card.bidsUnit')}</small>
             </div>
           </div>
         </div>
@@ -91,8 +95,8 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
         <SafetyCertificateOutlined className="text-[16px]" aria-hidden="true" />
         <span>
           {auction.itemCount
-            ? `${auction.itemCount} vật phẩm đã được duyệt trong phiên.`
-            : 'Chưa có vật phẩm được duyệt trong phiên. Bạn có thể gửi sản phẩm để Admin thẩm định.'}
+            ? t('auctions.card.approvedItemsCount', { count: auction.itemCount })
+            : t('auctions.card.noApprovedItems')}
         </span>
       </div>
       <div
@@ -101,17 +105,19 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
       >
         <span>
           <FieldTimeOutlined className="text-[14px]" aria-hidden="true" />
-          {auction.itemCount ? 'Danh sách vật phẩm của phiên' : 'Đang chờ Seller gửi vật phẩm'}
+          {auction.itemCount
+            ? t('auctions.card.itemsListLabel')
+            : t('auctions.card.waitingItemsLabel')}
         </span>
         <div className="ml-auto flex items-center gap-2">
           <SellerLink secondary to={`/seller/auctions/${encodeURIComponent(auction.id)}`}>
             <PlayCircleOutlined className="text-[15px]" aria-hidden="true" />
-            Xem phiên
+            {t('auctions.card.viewSession')}
           </SellerLink>
           {canSubmitConsignment(auction) && (
             <SellerLink to={`/seller/auctions/new?auctionId=${encodeURIComponent(auction.id)}`}>
               <PlusOutlined className="text-[15px]" aria-hidden="true" />
-              Thêm sản phẩm
+              {t('auctions.card.addProduct')}
             </SellerLink>
           )}
         </div>
