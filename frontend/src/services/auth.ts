@@ -189,7 +189,7 @@ export function resetPassword(
 export function refreshToken(): Promise<{ accessToken: string; refreshToken: string }> {
   const currentRefreshToken = getStoredRefreshToken();
   if (!currentRefreshToken) {
-    throw new Error('Không tìm thấy refresh token.');
+    throw new Error(i18n.t('errors:services.missingRefreshToken'));
   }
   return post('refresh', { refreshToken: currentRefreshToken });
 }

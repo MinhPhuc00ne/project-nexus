@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import api, { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import {
@@ -57,7 +58,7 @@ export async function getAdminAuctionLotsApi(id: string): Promise<AdminAuctionLo
     getAuctionIntroShowcaseApi(id),
   ]);
   if (!Array.isArray(room.lots) || !Array.isArray(consignments.items))
-    throw new Error('Dữ liệu lô đấu giá không hợp lệ.');
+    throw new Error(i18n.t('errors:services.invalidAuctionLotData'));
   return {
     ...room,
     serverTime: intro.serverTime,

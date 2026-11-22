@@ -96,6 +96,7 @@
     "specWeight": "Khối lượng",
     "specLength": "Chiều dài",
     "specWidth": "Chiều rộng",
-    "specHeight": "Chiều cao"
+    "specHeight": "Chiều cao",
+    "missingRefreshToken": "Không tìm thấy refresh token."
   }
 }

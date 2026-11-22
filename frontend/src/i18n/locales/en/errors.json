@@ -96,6 +96,7 @@
     "specWeight": "Weight",
     "specLength": "Length",
     "specWidth": "Width",
-    "specHeight": "Height"
+    "specHeight": "Height",
+    "missingRefreshToken": "Refresh token not found."
   }
 }

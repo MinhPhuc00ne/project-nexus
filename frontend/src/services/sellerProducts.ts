@@ -227,7 +227,7 @@ export function updateProductSale(
 }
 
 export function hideSellerProduct(id: string): Promise<{ success: boolean; message: string }> {
-  if (!id.trim()) return Promise.reject(new Error('Thiếu mã sản phẩm.'));
+  if (!id.trim()) return Promise.reject(new Error(i18n.t('errors:services.missingProductId')));
   return apiRequest(`/catalog/products/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     requireAuth: true,

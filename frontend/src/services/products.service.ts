@@ -206,10 +206,8 @@ function mapProduct(product: CatalogProduct): ProductDetail {
     brand: product?.category?.name || 'NEXUS',
     price: sale.effectivePrice,
     originalPrice: rawBasePrice,
-    formattedPrice: `${sale.effectivePrice.toLocaleString('vi-VN')} ₫`,
-    formattedOldPrice: sale.isOnSale
-      ? `${sale.originalPrice.toLocaleString('vi-VN')} ₫`
-      : undefined,
+    formattedPrice: formatCurrency(sale.effectivePrice),
+    formattedOldPrice: sale.isOnSale ? formatCurrency(sale.originalPrice) : undefined,
     discount: sale.isOnSale ? sale.discountPercent : undefined,
     saleLabel: sale.isOnSale ? sale.label : undefined,
     saleInfo,
