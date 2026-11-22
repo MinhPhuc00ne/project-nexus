@@ -21,6 +21,7 @@ import type {
   CreateAuctionInput,
   PlaceBidInput,
   AdminCreateAuctionInput,
+  AdminUpdateAuctionInput,
   AdminAuctionEntity,
   RegisterAuctionItemInput,
   AdminAuctionItem,
@@ -168,6 +169,26 @@ export function adminCreateAuctionApi(data: AdminCreateAuctionInput): Promise<Ad
   return apiRequest<AdminAuctionEntity>('/auctions/admin', {
     method: 'POST',
     body: data,
+    requireAuth: true,
+  });
+}
+
+export function adminUpdateAuctionApi(
+  id: string,
+  data: AdminUpdateAuctionInput,
+): Promise<AdminAuctionEntity> {
+  return apiRequest(`/auctions/admin/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: data,
+    requireAuth: true,
+  });
+}
+
+export function adminDeleteAuctionApi(
+  id: string,
+): Promise<{ success: boolean; deletedId: string }> {
+  return apiRequest(`/auctions/admin/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
     requireAuth: true,
   });
 }

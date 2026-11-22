@@ -1,32 +1,48 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ImagePlus, X } from 'lucide-react';
 import { apiRequest } from '../../../services/api';
-import { adminCreateAuctionApi, type AdminAuctionEntity } from '../../../services/auction.service';
+import {
+  adminCreateAuctionApi,
+  adminUpdateAuctionApi,
+  type AdminAuctionEntity,
+} from '../../../services/auction.service';
 import { getStoredToken } from '../../../services/auth';
 import { useToast } from '../../ToastNotification';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
 import { minEndDateTime } from '../../../utils/date-time';
 import ConsignmentDeadlineField from './ConsignmentDeadlineField';
+import { auctionEditReason } from './auctionManagementAvailability';
+
+function localDateTime(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+}
 
 export default function CreateAuctionDialog({
   onClose,
   onCreated,
+  auction,
 }: {
   onClose: () => void;
   onCreated: (auction: AdminAuctionEntity) => void;
+  auction?: AdminAuctionEntity;
 }) {
   const toast = useToast();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
+  const [title, setTitle] = useState(auction?.title ?? '');
+  const [description, setDescription] = useState(auction?.description ?? '');
+  const [imageUrl, setImageUrl] = useState(auction?.imageUrl ?? '');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
-  const [consignmentDeadline, setConsignmentDeadline] = useState('');
-  const [buyerScore, setBuyerScore] = useState('100');
-  const [sellerScore, setSellerScore] = useState('80');
+  const [startTime, setStartTime] = useState(localDateTime(auction?.startTime));
+  const [endTime, setEndTime] = useState(localDateTime(auction?.endTime));
+  const [consignmentDeadline, setConsignmentDeadline] = useState(
+    localDateTime(auction?.consignmentDeadline),
+  );
+  const [buyerScore, setBuyerScore] = useState(String(auction?.minBuyerReputation ?? 100));
+  const [sellerScore, setSellerScore] = useState(String(auction?.minSellerReputation ?? 80));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const lock = useRef(false);
@@ -49,6 +65,10 @@ export default function CreateAuctionDialog({
     event.preventDefault();
     if (lock.current) return;
     setError('');
+    if (auction && auctionEditReason(auction)) {
+      setError(auctionEditReason(auction));
+      return;
+    }
     const start = new Date(startTime);
     const end = new Date(endTime);
     if (!title.trim()) {
@@ -107,25 +127,39 @@ export default function CreateAuctionDialog({
         uploadedImageUrl = imageUrl.trim();
       }
 
-      const auction = await adminCreateAuctionApi({
+      const payload = {
         title: title.trim(),
-        description: description.trim() || undefined,
-        imageUrl: uploadedImageUrl,
-        startTime: start.toISOString(),
-        endTime: end.toISOString(),
+        description: description.trim(),
+        imageUrl: uploadedImageUrl ?? null,
+        startTime:
+          auction && startTime === localDateTime(auction.startTime)
+            ? auction.startTime
+            : start.toISOString(),
+        endTime:
+          auction && endTime === localDateTime(auction.endTime)
+            ? auction.endTime
+            : end.toISOString(),
         consignmentDeadline: consignmentDeadline
-          ? new Date(consignmentDeadline).toISOString()
-          : undefined,
+          ? auction && consignmentDeadline === localDateTime(auction.consignmentDeadline)
+            ? auction.consignmentDeadline
+            : new Date(consignmentDeadline).toISOString()
+          : null,
         minBuyerReputation: Number(buyerScore),
         minSellerReputation: Number(sellerScore),
-      });
+      };
+      const saved = auction
+        ? await adminUpdateAuctionApi(auction.id, payload)
+        : await adminCreateAuctionApi({
+            ...payload,
+            consignmentDeadline: payload.consignmentDeadline ?? undefined,
+          });
       if (active.current && token === getStoredToken()) {
-        toast.success('Đã tạo phiên đấu giá.');
-        onCreated(auction);
+        toast.success(auction ? 'Đã cập nhật phiên đấu giá.' : 'Đã tạo phiên đấu giá.');
+        onCreated(saved);
       }
     } catch (cause) {
       if (active.current && token === getStoredToken())
-        setError(cause instanceof Error ? cause.message : 'Không thể tạo phiên đấu giá.');
+        setError(cause instanceof Error ? cause.message : 'Không thể lưu phiên đấu giá.');
     } finally {
       lock.current = false;
       if (active.current) setSaving(false);
@@ -137,11 +171,14 @@ export default function CreateAuctionDialog({
   return (
     <Popup
       isOpen
-      title="Tạo phiên đấu giá"
+      title={auction ? 'Sửa phiên đấu giá' : 'Tạo phiên đấu giá'}
       size="lg"
       onClose={() => {
         if (!lock.current) onClose();
       }}
+      closeOnOverlay={!saving}
+      closeOnEsc={!saving}
+      showCloseButton={!saving}
     >
       <form onSubmit={(event) => void submit(event)} className="space-y-5">
         <fieldset disabled={saving} className="space-y-5 disabled:opacity-60">
@@ -223,7 +260,8 @@ export default function CreateAuctionDialog({
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-slate-400 shrink-0">hoặc URL ảnh:</span>
               <input
-                type="url"
+                type="text"
+                inputMode="url"
                 value={imageUrl}
                 onChange={(event) => {
                   setImageUrl(event.target.value);
@@ -265,7 +303,9 @@ export default function CreateAuctionDialog({
             </label>
           </div>
           <p className="text-xs text-slate-500">
-            Thời gian theo múi giờ thiết bị. Phiên bắt đầu ngay nếu giờ bắt đầu đã tới.
+            {auction
+              ? 'Thời gian theo múi giờ thiết bị. Lịch của các lô đã duyệt không tự thay đổi theo lịch phiên.'
+              : 'Thời gian theo múi giờ thiết bị. Phiên bắt đầu ngay nếu giờ bắt đầu đã tới.'}
           </p>
           <ConsignmentDeadlineField
             value={consignmentDeadline}
@@ -310,7 +350,7 @@ export default function CreateAuctionDialog({
             Hủy
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Đang tạo…' : 'Tạo phiên đấu giá'}
+            {saving ? 'Đang lưu…' : auction ? 'Lưu thay đổi' : 'Tạo phiên đấu giá'}
           </Button>
         </div>
       </form>

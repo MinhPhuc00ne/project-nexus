@@ -188,8 +188,14 @@ export interface AdminAuctionEntity extends AdminCreateAuctionInput {
   totalBidsCount: number;
   product?: AuctionProduct | null;
   startingPrice: number | string;
-  _count?: { items: number; bids: number };
+  _count?: { items: number; bids: number; awards?: number };
 }
+
+export type AdminUpdateAuctionInput = Partial<
+  Omit<AdminCreateAuctionInput, 'consignmentDeadline'>
+> & {
+  consignmentDeadline?: string | null;
+};
 
 export interface RegisterAuctionItemInput {
   title: string;

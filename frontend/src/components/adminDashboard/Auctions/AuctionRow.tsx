@@ -1,10 +1,11 @@
-import { Film, Gavel, LockKeyhole, Play } from 'lucide-react';
+import { Film, Gavel, LockKeyhole, Play, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { resolveAuctionImageUrl, type AdminAuctionEntity } from '../../../services/auction.service';
 import { Badge, Button } from '../shared/AdminUI';
 import type { useAdminAuctions } from './useAdminAuctions';
 import { statuses } from './auctionStatuses';
 import { consignmentLockReason } from './consignmentAvailability';
+import { auctionEditReason, auctionDeleteReason } from './auctionManagementAvailability';
 
 type Props = Pick<
   ReturnType<typeof useAdminAuctions>,
@@ -16,7 +17,11 @@ type Props = Pick<
   | 'openShowcaseForAuction'
   | 'handleStartAuction'
   | 'now'
-> & { item: AdminAuctionEntity };
+> & {
+  item: AdminAuctionEntity;
+  onEdit: (auction: AdminAuctionEntity) => void;
+  onDelete: (auction: AdminAuctionEntity) => void;
+};
 
 export default function AuctionRow({
   item,
@@ -28,7 +33,11 @@ export default function AuctionRow({
   openShowcaseForAuction,
   handleStartAuction,
   now,
+  onEdit,
+  onDelete,
 }: Props) {
+  const editReason = auctionEditReason(item);
+  const deleteReason = auctionDeleteReason(item);
   const lockReason = consignmentLockReason(item, now);
   const deadlinePassed =
     !!item.consignmentDeadline && new Date(item.consignmentDeadline).getTime() <= now;
@@ -101,6 +110,22 @@ export default function AuctionRow({
       </td>
       <td className="p-4">
         <div className="flex w-32 flex-col items-stretch gap-2 [&>button]:whitespace-nowrap">
+          <Button
+            variant="secondary"
+            disabled={!!editReason || !!startingId || locking}
+            title={editReason || 'Chỉnh sửa phiên đấu giá'}
+            onClick={() => onEdit(item)}
+          >
+            <Pencil size={14} /> Sửa
+          </Button>
+          <Button
+            variant="danger"
+            disabled={!!deleteReason || !!startingId || locking}
+            title={deleteReason || 'Xóa phiên đấu giá'}
+            onClick={() => onDelete(item)}
+          >
+            <Trash2 size={14} /> Xóa
+          </Button>
           <Button
             variant="secondary"
             disabled={!!lockReason || !!startingId || locking}

@@ -1,4 +1,5 @@
 import { Gavel, Plus, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 import Popup from '../../components/Popup';
 import { AuctionShowcaseHUD } from '../../components/auction/showcase/AuctionShowcaseHUD';
 import {
@@ -12,8 +13,12 @@ import AuctionItemsDialog from '../../components/adminDashboard/Auctions/Auction
 import { useAdminAuctions } from '../../components/adminDashboard/Auctions/useAdminAuctions';
 import AuctionRow from '../../components/adminDashboard/Auctions/AuctionRow';
 import { statuses } from '../../components/adminDashboard/Auctions/auctionStatuses';
+import DeleteAuctionDialog from '../../components/adminDashboard/Auctions/DeleteAuctionDialog';
+import type { AdminAuctionEntity } from '../../services/auction.service';
 
 export default function AdminAuctionsPage() {
+  const [editingAuction, setEditingAuction] = useState<AdminAuctionEntity | null>(null);
+  const [deletingAuction, setDeletingAuction] = useState<AdminAuctionEntity | null>(null);
   const {
     now,
     lockDisabledReason,
@@ -140,6 +145,8 @@ export default function AdminAuctionsPage() {
                       setLockError={setLockError}
                       openShowcaseForAuction={openShowcaseForAuction}
                       handleStartAuction={handleStartAuction}
+                      onEdit={setEditingAuction}
+                      onDelete={setDeletingAuction}
                     />
                   ))}
                 </tbody>
@@ -204,6 +211,29 @@ export default function AdminAuctionsPage() {
           </p>
         )}
       </Popup>
+      {editingAuction && (
+        <CreateAuctionDialog
+          key={`edit:${token}:${editingAuction.id}`}
+          auction={editingAuction}
+          onClose={() => setEditingAuction(null)}
+          onCreated={() => {
+            setEditingAuction(null);
+            setRevision((value) => value + 1);
+          }}
+        />
+      )}
+      {deletingAuction && (
+        <DeleteAuctionDialog
+          key={`delete:${token}:${deletingAuction.id}`}
+          auction={deletingAuction}
+          onClose={() => setDeletingAuction(null)}
+          onDeleted={() => {
+            setDeletingAuction(null);
+            if (data?.items.length === 1 && page > 1) setPage((value) => value - 1);
+            else setRevision((value) => value + 1);
+          }}
+        />
+      )}
       {creating && (
         <CreateAuctionDialog
           key={token}
