@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { listUsers } from '../../../services/admin';
 import type { PaginatedResult } from '../../../types/admin.types';
 import type { AdminUser, QueryUsersParams } from '../../../types/user.types';
 import { useAuth } from '../../../contexts/AuthContext';
 
 export function useAdminUsers(preview: boolean) {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState<QueryUsersParams>({ page: 1 });
@@ -41,7 +43,7 @@ export function useAdminUsers(preview: boolean) {
       })
       .catch((cause) => {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : 'Không thể tải danh sách người dùng.');
+          setError(cause instanceof Error ? cause.message : t('users.loadErr'));
         }
       })
       .finally(() => {

@@ -1,7 +1,9 @@
 import { RefreshCw, Store } from 'lucide-react';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { useToast } from '../../ToastNotification';
+import { getIntlLocale } from '../../../i18n/config';
 import { API_BASE_URL } from '../../../services/api';
 import {
   approveSellerRequest,
@@ -12,12 +14,6 @@ import type { SellerUpgradeRequest } from '../../../services/users';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { useAdminSellerRequests, type SellerRequestFilter } from './AdminSellerRequests';
 import type { AdminTabProps } from '../shared/adminTypes';
-
-const labels: Record<SellerUpgradeRequest['status'], string> = {
-  PENDING: 'Chờ duyệt',
-  APPROVED: 'Đã duyệt',
-  REJECTED: 'Đã từ chối',
-};
 
 function attachmentLink(value: string | null): string | null {
   if (!value) return null;
@@ -39,6 +35,8 @@ export default function SellerApplicationsPanel({
   actions,
   preview = false,
 }: Pick<AdminTabProps, 'actions'> & { preview?: boolean }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
   const state = useAdminSellerRequests();
   const toast = useToast();
   const [search, setSearch] = useState('');
@@ -85,7 +83,7 @@ export default function SellerApplicationsPanel({
       if (current === detailRevision.current) setDetail(request);
     } catch (cause) {
       if (current === detailRevision.current)
-        setDetailError(cause instanceof Error ? cause.message : 'Không thể tải hồ sơ.');
+        setDetailError(cause instanceof Error ? cause.message : t('sellers.loadDetailErr'));
     } finally {
       if (current === detailRevision.current) setDetailLoading(false);
     }
@@ -96,7 +94,7 @@ export default function SellerApplicationsPanel({
     event.preventDefault();
     if (!decision || inFlight.current) return;
     if (!decision.approve && !reason.trim()) {
-      setActionError('Vui lòng nhập lý do từ chối.');
+      setActionError(t('sellers.rejectReasonRequired'));
       return;
     }
     inFlight.current = true;
@@ -115,7 +113,7 @@ export default function SellerApplicationsPanel({
       setDetailOpen(false);
     } catch (cause) {
       if (active.current) {
-        const message = cause instanceof Error ? cause.message : 'Không thể xử lý hồ sơ.';
+        const message = cause instanceof Error ? cause.message : t('sellers.processErr');
         setActionError(message);
         toast.error(message);
       }
@@ -133,10 +131,10 @@ export default function SellerApplicationsPanel({
   const documentUrl = attachmentLink(detail?.attachmentUrl ?? null);
   return (
     <Panel
-      title="Phê duyệt nâng cấp Seller"
-      subtitle="Admin xét duyệt hồ sơ Buyer đăng ký trở thành người bán"
+      title={t('sellers.title')}
+      subtitle={t('sellers.subtitle')}
       icon={<Store size={19} />}
-      action={<Badge>{state.pendingTotal} hồ sơ chờ</Badge>}
+      action={<Badge>{t('sellers.pendingBadge', { count: state.pendingTotal })}</Badge>}
     >
       {/* Đổi bộ lọc sẽ nhờ provider gọi lại API; ALL nghĩa là không gửi tham số status. */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -147,11 +145,11 @@ export default function SellerApplicationsPanel({
             aria-pressed={state.status === value}
             onClick={() => state.changeStatus(value)}
           >
-            {value === 'ALL' ? 'Tất cả' : labels[value]}
+            {value === 'ALL' ? t('sellers.allFilter') : t(`sellers.statuses.${value}`)}
           </Button>
         ))}
         <Button variant="secondary" disabled={state.loading} onClick={state.refresh}>
-          <RefreshCw size={14} /> Làm mới
+          <RefreshCw size={14} /> {t('sellers.refresh')}
         </Button>
       </div>
       {!preview && (
@@ -159,20 +157,20 @@ export default function SellerApplicationsPanel({
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Tìm gian hàng, người nộp hoặc email trong trang này..."
+            placeholder={t('sellers.searchPlaceholder')}
           />
         </div>
       )}
       {/* Ưu tiên hiện trạng thái tải/lỗi, sau đó mới hiện danh sách hồ sơ. */}
       {state.loading ? (
         <p role="status" className="py-8 text-center text-slate-500">
-          Đang tải hồ sơ…
+          {t('sellers.loading')}
         </p>
       ) : state.error ? (
         <div role="alert" className="space-y-3 rounded-lg bg-red-50 p-4 text-sm text-red-700">
           <p>{state.error}</p>
           <Button variant="secondary" onClick={state.refresh}>
-            Thử lại
+            {t('sellers.retry')}
           </Button>
         </div>
       ) : (
@@ -188,7 +186,9 @@ export default function SellerApplicationsPanel({
                   <div className="min-w-0">
                     <h3 className="break-words text-sm font-bold">{request.storeName}</h3>
                     <p className="mt-1 break-words text-xs text-slate-600">
-                      Người nộp: {request.user?.fullName || request.user?.email || request.userId}
+                      {t('sellers.applicant', {
+                        name: request.user?.fullName || request.user?.email || request.userId,
+                      })}
                     </p>
                     <p className="mt-1 break-all text-xs text-slate-500">{request.user?.email}</p>
                   </div>
@@ -201,25 +201,27 @@ export default function SellerApplicationsPanel({
                           : 'amber'
                     }
                   >
-                    {labels[request.status]}
+                    {t(`sellers.statuses.${request.status}`)}
                   </Badge>
                 </div>
                 <dl className="grid gap-2 text-xs sm:grid-cols-2">
                   <div>
-                    <dt className="text-slate-500">Liên hệ</dt>
+                    <dt className="text-slate-500">{t('sellers.contact')}</dt>
                     <dd>{request.phone}</dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Ngày gửi</dt>
-                    <dd>{new Date(request.createdAt).toLocaleString('vi-VN')}</dd>
+                    <dt className="text-slate-500">{t('sellers.submittedAt')}</dt>
+                    <dd>{new Date(request.createdAt).toLocaleString(locale)}</dd>
                   </div>
                 </dl>
                 {request.rejectionReason && (
-                  <p className="text-xs text-red-700">Lý do từ chối: {request.rejectionReason}</p>
+                  <p className="text-xs text-red-700">
+                    {t('sellers.rejectionReason', { reason: request.rejectionReason })}
+                  </p>
                 )}
                 <div className="flex flex-wrap gap-2">
                   <Button variant="secondary" onClick={() => void openDetail(request.id)}>
-                    Xem hồ sơ
+                    {t('sellers.viewApp')}
                   </Button>
                   {/* Chỉ hồ sơ chờ duyệt mới có nút đồng ý/từ chối. */}
                   {request.status === 'PENDING' && (
@@ -229,10 +231,10 @@ export default function SellerApplicationsPanel({
                         disabled={submitting}
                         onClick={() => chooseDecision(request, false)}
                       >
-                        Từ chối
+                        {t('sellers.rejectBtn')}
                       </Button>
                       <Button disabled={submitting} onClick={() => chooseDecision(request, true)}>
-                        Phê duyệt & mở gian hàng
+                        {t('sellers.approveBtn')}
                       </Button>
                     </>
                   )}
@@ -240,13 +242,16 @@ export default function SellerApplicationsPanel({
               </article>
             ))}
           </div>
-          {visible.length === 0 && <EmptyState text="Không có hồ sơ phù hợp." />}
+          {visible.length === 0 && <EmptyState text={t('sellers.empty')} />}
           {/* Đổi page trong context sẽ tải trang kế tiếp từ backend. */}
           {!preview && (
             <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-xs">
               <span>
-                {state.result.total} hồ sơ • Trang {state.page}/
-                {Math.max(1, state.result.totalPages)}
+                {t('sellers.pagination', {
+                  total: state.result.total,
+                  page: state.page,
+                  totalPages: Math.max(1, state.result.totalPages),
+                })}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -254,14 +259,14 @@ export default function SellerApplicationsPanel({
                   disabled={state.page <= 1}
                   onClick={() => state.setPage(state.page - 1)}
                 >
-                  Trang trước
+                  {t('sellers.prevPage')}
                 </Button>
                 <Button
                   variant="secondary"
                   disabled={state.page >= state.result.totalPages}
                   onClick={() => state.setPage(state.page + 1)}
                 >
-                  Trang sau
+                  {t('sellers.nextPage')}
                 </Button>
               </div>
             </div>
@@ -273,7 +278,7 @@ export default function SellerApplicationsPanel({
           onClick={() => actions.navigate('sellers')}
           className="mt-4 text-xs font-semibold text-primary hover:underline"
         >
-          Xem tất cả hồ sơ →
+          {t('sellers.viewAll')}
         </button>
       )}
       {/* Popup 1: hiển thị chi tiết được tải riêng theo ID hồ sơ. */}
@@ -283,11 +288,11 @@ export default function SellerApplicationsPanel({
           detailRevision.current++;
           setDetailOpen(false);
         }}
-        title="Hồ sơ đăng ký người bán"
+        title={t('sellers.detailTitle')}
         size="lg"
       >
         {detailLoading ? (
-          <p role="status">Đang tải chi tiết…</p>
+          <p role="status">{t('sellers.loadingDetail')}</p>
         ) : detailError ? (
           <p role="alert">{detailError}</p>
         ) : (
@@ -296,34 +301,37 @@ export default function SellerApplicationsPanel({
               <h3 className="font-bold">{detail.storeName}</h3>
               <dl className="grid gap-3 break-words sm:grid-cols-2">
                 {[
-                  ['Người nộp', detail.user?.fullName || detail.userId],
-                  ['Email tài khoản', detail.user?.email],
-                  ['Điện thoại', detail.phone],
-                  ['Email kinh doanh', detail.businessEmail],
+                  [t('sellers.fields.applicant'), detail.user?.fullName || detail.userId],
+                  [t('sellers.fields.accountEmail'), detail.user?.email],
+                  [t('sellers.fields.phone'), detail.phone],
+                  [t('sellers.fields.businessEmail'), detail.businessEmail],
                   [
-                    'Địa chỉ cửa hàng / kho lấy hàng',
+                    t('sellers.fields.address'),
                     detail.formattedAddress?.trim() ||
                       [detail.street, detail.ward, detail.district, detail.city]
                         .map((part) => part?.trim())
                         .filter(Boolean)
                         .join(', '),
                   ],
-                  ['CCCD / Mã doanh nghiệp', detail.identityCardNumber],
-                  ['Ngày gửi', new Date(detail.createdAt).toLocaleString('vi-VN')],
-                  ['Trạng thái', labels[detail.status]],
+                  [t('sellers.fields.identity'), detail.identityCardNumber],
                   [
-                    'Ngày xét duyệt',
-                    detail.reviewedAt ? new Date(detail.reviewedAt).toLocaleString('vi-VN') : null,
+                    t('sellers.fields.submittedAt'),
+                    new Date(detail.createdAt).toLocaleString(locale),
+                  ],
+                  [t('sellers.fields.status'), t(`sellers.statuses.${detail.status}`)],
+                  [
+                    t('sellers.fields.reviewedAt'),
+                    detail.reviewedAt ? new Date(detail.reviewedAt).toLocaleString(locale) : null,
                   ],
                 ].map(([label, value]) => (
-                  <div key={label}>
+                  <div key={String(label)}>
                     <dt className="text-xs text-slate-500">{label}</dt>
-                    <dd>{value || 'Chưa cung cấp'}</dd>
+                    <dd>{value || t('sellers.notProvided')}</dd>
                   </div>
                 ))}
               </dl>
               <p className="whitespace-pre-wrap">
-                {detail.storeDescription || 'Chưa có mô tả gian hàng.'}
+                {detail.storeDescription || t('sellers.noDescription')}
               </p>
               {documentUrl ? (
                 <a
@@ -332,13 +340,15 @@ export default function SellerApplicationsPanel({
                   rel="noreferrer"
                   className="inline-block font-semibold text-blue-700 underline"
                 >
-                  Mở tài liệu chứng minh đính kèm
+                  {t('sellers.openAttachment')}
                 </a>
               ) : (
-                <p>Chưa có tài liệu đính kèm hợp lệ.</p>
+                <p>{t('sellers.noAttachment')}</p>
               )}
               {detail.rejectionReason && (
-                <p className="text-red-700">Lý do từ chối: {detail.rejectionReason}</p>
+                <p className="text-red-700">
+                  {t('sellers.rejectionReason', { reason: detail.rejectionReason })}
+                </p>
               )}
               {detail.status === 'PENDING' && (
                 <div className="flex flex-wrap gap-2">
@@ -347,10 +357,10 @@ export default function SellerApplicationsPanel({
                     disabled={submitting}
                     onClick={() => chooseDecision(detail, false)}
                   >
-                    Từ chối
+                    {t('sellers.rejectBtn')}
                   </Button>
                   <Button disabled={submitting} onClick={() => chooseDecision(detail, true)}>
-                    Phê duyệt & mở gian hàng
+                    {t('sellers.approveBtn')}
                   </Button>
                 </div>
               )}
@@ -364,17 +374,23 @@ export default function SellerApplicationsPanel({
         onClose={() => {
           if (!inFlight.current) setDecision(null);
         }}
-        title={decision?.approve ? 'Phê duyệt người bán' : 'Từ chối hồ sơ'}
+        title={
+          decision?.approve ? t('sellers.decisionApproveTitle') : t('sellers.decisionRejectTitle')
+        }
       >
         <form onSubmit={submit} className="space-y-4">
           <p>
             {decision?.approve
-              ? `Cấp quyền SELLER cho người nộp hồ sơ gian hàng “${decision.request.storeName}”?`
-              : `Nhập lý do từ chối hồ sơ “${decision?.request.storeName}”.`}
+              ? t('sellers.decisionApproveConfirm', {
+                  storeName: decision.request.storeName,
+                })
+              : t('sellers.decisionRejectConfirm', {
+                  storeName: decision?.request.storeName ?? '',
+                })}
           </p>
           {!decision?.approve && (
             <label className="block text-sm">
-              Lý do từ chối
+              {t('sellers.rejectReasonLabel')}
               <textarea
                 required
                 disabled={submitting}
@@ -392,10 +408,10 @@ export default function SellerApplicationsPanel({
           )}
           <div className="flex justify-end gap-2">
             <Button variant="secondary" disabled={submitting} onClick={() => setDecision(null)}>
-              Hủy
+              {t('sellers.cancel')}
             </Button>
             <Button type="submit" disabled={submitting || (!decision?.approve && !reason.trim())}>
-              {submitting ? 'Đang xử lý…' : 'Xác nhận'}
+              {submitting ? t('sellers.processing') : t('sellers.confirm')}
             </Button>
           </div>
         </form>

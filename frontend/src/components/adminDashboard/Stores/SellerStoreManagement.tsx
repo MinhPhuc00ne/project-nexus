@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, Store } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { listAdminShops, updateAdminShopStatus, warnAdminShop } from '../../../services/admin';
@@ -9,6 +10,7 @@ import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI
 import ShopDetail from './ShopDetail';
 
 export default function SellerStoreManagement() {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const toast = useToast();
   const [search, setSearch] = useState('');
@@ -49,22 +51,22 @@ export default function SellerStoreManagement() {
       })
       .catch((cause) => {
         if (!controller.signal.aborted)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải danh sách cửa hàng.');
+          setError(cause instanceof Error ? cause.message : t('stores.loadErr'));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [query, revision, token]);
+  }, [query, revision, token, t]);
 
   return (
     <Panel
-      title="Quản lý cửa hàng"
-      subtitle="Xem danh sách cửa hàng, đình chỉ hoặc khôi phục hoạt động bán hàng"
+      title={t('stores.title')}
+      subtitle={t('stores.subtitle')}
       icon={<Store size={19} />}
       action={
         <Button variant="secondary" disabled={loading} onClick={refresh}>
-          <RefreshCw size={14} aria-hidden="true" /> Làm mới
+          <RefreshCw size={14} aria-hidden="true" /> {t('stores.refresh')}
         </Button>
       }
     >
@@ -73,11 +75,11 @@ export default function SellerStoreManagement() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Tìm tên shop, tên chủ shop, email hoặc số điện thoại…"
+            placeholder={t('stores.searchPlaceholder')}
           />
         </div>
         <select
-          aria-label="Lọc trạng thái bán hàng"
+          aria-label={t('stores.statusAria')}
           value={query.status ?? ''}
           onChange={(event) =>
             setQuery((current) => ({
@@ -88,20 +90,20 @@ export default function SellerStoreManagement() {
           }
           className="min-h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs"
         >
-          <option value="">Tất cả trạng thái</option>
-          <option value="ACTIVE">Đang mở bán</option>
-          <option value="SUSPENDED">Đang ngừng bán</option>
+          <option value="">{t('stores.allStatuses')}</option>
+          <option value="ACTIVE">{t('stores.statusActive')}</option>
+          <option value="SUSPENDED">{t('stores.statusSuspended')}</option>
         </select>
       </div>
       {loading ? (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
-          Đang tải cửa hàng…
+          {t('stores.loading')}
         </p>
       ) : error ? (
         <div role="alert" className="space-y-3 rounded-lg bg-red-50 p-4 text-sm text-red-700">
           <p>{error}</p>
           <Button variant="secondary" onClick={refresh}>
-            Thử lại
+            {t('stores.retry')}
           </Button>
         </div>
       ) : (
@@ -113,12 +115,12 @@ export default function SellerStoreManagement() {
                   <thead className="bg-blue-50 text-slate-500">
                     <tr>
                       {[
-                        'Cửa hàng',
-                        'Chủ shop',
-                        'Địa chỉ',
-                        'Sản phẩm',
-                        'Trạng thái',
-                        'Thao tác',
+                        t('stores.cols.store'),
+                        t('stores.cols.owner'),
+                        t('stores.cols.address'),
+                        t('stores.cols.products'),
+                        t('stores.cols.status'),
+                        t('stores.cols.actions'),
                       ].map((title) => (
                         <th key={title} scope="col" className="p-3 font-semibold">
                           {title}
@@ -137,7 +139,7 @@ export default function SellerStoreManagement() {
                           <p>{shop.sellerFullName}</p>
                           <p className="mt-1 break-all text-slate-500">{shop.sellerEmail}</p>
                           <p className="mt-1 text-slate-500">
-                            {shop.sellerPhone || 'Chưa có số điện thoại'}
+                            {shop.sellerPhone || t('stores.noPhone')}
                           </p>
                         </td>
                         <td className="max-w-60 break-words p-3">
@@ -151,27 +153,31 @@ export default function SellerStoreManagement() {
                               ]
                                 .filter(Boolean)
                                 .join(', ')
-                            : 'Chưa có địa chỉ'}
+                            : t('stores.noAddress')}
                         </td>
                         <td className="p-3">{shop.totalProducts}</td>
                         <td className="p-3">
                           <Badge tone={shop.isSellerActive ? 'green' : 'red'}>
-                            {shop.isSellerActive ? 'Đang mở bán' : 'Đang ngừng bán'}
+                            {shop.isSellerActive
+                              ? t('stores.statusActive')
+                              : t('stores.statusSuspended')}
                           </Badge>
                         </td>
                         <td className="p-3">
                           <div className="flex flex-wrap gap-2">
                             <Button variant="secondary" onClick={() => setDetailId(shop.id)}>
-                              Xem chi tiết
+                              {t('stores.viewDetails')}
                             </Button>
                             <Button variant="danger" onClick={() => setWarningTarget(shop)}>
-                              Cảnh báo
+                              {t('stores.warnBtn')}
                             </Button>
                             <Button
                               variant={shop.isSellerActive ? 'danger' : 'primary'}
                               onClick={() => setTarget(shop)}
                             >
-                              {shop.isSellerActive ? 'Đình chỉ' : 'Khôi phục'}
+                              {shop.isSellerActive
+                                ? t('stores.suspendBtn')
+                                : t('stores.restoreBtn')}
                             </Button>
                           </div>
                         </td>
@@ -181,11 +187,15 @@ export default function SellerStoreManagement() {
                 </table>
               </div>
             ) : (
-              <EmptyState text="Không có cửa hàng phù hợp với bộ lọc." />
+              <EmptyState text={t('stores.empty')} />
             )}
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
               <span>
-                {result.total} cửa hàng · Trang {result.page}/{Math.max(1, result.totalPages)}
+                {t('stores.pagination', {
+                  total: result.total,
+                  page: result.page,
+                  totalPages: Math.max(1, result.totalPages),
+                })}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -193,14 +203,14 @@ export default function SellerStoreManagement() {
                   disabled={result.page <= 1}
                   onClick={() => setQuery((current) => ({ ...current, page: result.page - 1 }))}
                 >
-                  Trước
+                  {t('stores.prev')}
                 </Button>
                 <Button
                   variant="secondary"
                   disabled={result.page >= result.totalPages}
                   onClick={() => setQuery((current) => ({ ...current, page: result.page + 1 }))}
                 >
-                  Sau
+                  {t('stores.next')}
                 </Button>
               </div>
             </div>
@@ -252,6 +262,7 @@ function ShopWarningDialog({
   onClose: () => void;
   onSuccess: (message: string) => void;
 }) {
+  const { t } = useTranslation('admin');
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [penaltyPoints, setPenaltyPoints] = useState('');
@@ -267,13 +278,13 @@ function ShopWarningDialog({
     event.preventDefault();
     if (inFlight.current) return;
     if (!reason.trim()) {
-      setError('Vui lòng nhập lý do cảnh báo.');
+      setError(t('stores.warningDialog.reasonRequiredErr'));
       return;
     }
 
     const points = penaltyPoints.trim() ? Number(penaltyPoints) : 0;
     if (!Number.isInteger(points) || points < 0) {
-      setError('Điểm phạt phải là số nguyên không âm.');
+      setError(t('stores.warningDialog.invalidPointsErr'));
       return;
     }
 
@@ -287,7 +298,7 @@ function ShopWarningDialog({
       });
       onSuccess(result.message);
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Không thể gửi cảnh báo shop.';
+      const message = cause instanceof Error ? cause.message : t('stores.warningDialog.sendErr');
       setError(message);
       toast.error(message);
     } finally {
@@ -299,17 +310,18 @@ function ShopWarningDialog({
   return (
     <Popup
       isOpen
-      title="Cảnh báo shop"
+      title={t('stores.warningDialog.title')}
       onClose={close}
       closeOnEsc={!pending}
       closeOnOverlay={!pending}
     >
       <form onSubmit={submit} className="space-y-4">
         <p className="break-words text-sm text-slate-600">
-          Gửi cảnh báo cho <strong>{shop.storeName}</strong>?
+          {t('stores.warningDialog.confirmPrefix')}
+          <strong>{shop.storeName}</strong>?
         </p>
         <label className="block text-sm font-medium">
-          Lý do cảnh báo
+          {t('stores.warningDialog.reasonLabel')}
           <textarea
             autoFocus
             required
@@ -319,11 +331,11 @@ function ShopWarningDialog({
             disabled={pending}
             onChange={(event) => setReason(event.target.value)}
             className="mt-2 w-full rounded-lg border border-slate-200 p-3"
-            placeholder="Nêu rõ hành vi vi phạm và yêu cầu shop khắc phục"
+            placeholder={t('stores.warningDialog.reasonPlaceholder')}
           />
         </label>
         <label className="block text-sm font-medium">
-          Điểm uy tín cần trừ (không bắt buộc)
+          {t('stores.warningDialog.penaltyLabel')}
           <input
             type="number"
             min={0}
@@ -342,10 +354,10 @@ function ShopWarningDialog({
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={close} disabled={pending}>
-            Hủy
+            {t('stores.warningDialog.cancel')}
           </Button>
           <Button type="submit" variant="danger" disabled={pending}>
-            {pending ? 'Đang gửi…' : 'Xác nhận cảnh báo'}
+            {pending ? t('stores.warningDialog.sending') : t('stores.warningDialog.submit')}
           </Button>
         </div>
       </form>
@@ -362,13 +374,16 @@ function ShopStatusDialog({
   onClose: () => void;
   onSuccess: (message: string) => void;
 }) {
+  const { t } = useTranslation('admin');
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const inFlight = useRef(false);
   const suspending = shop.isSellerActive;
-  const title = suspending ? 'Đình chỉ bán hàng' : 'Khôi phục bán hàng';
+  const title = suspending
+    ? t('stores.statusDialog.suspendTitle')
+    : t('stores.statusDialog.restoreTitle');
   const close = () => {
     if (!inFlight.current) onClose();
   };
@@ -376,7 +391,7 @@ function ShopStatusDialog({
     event.preventDefault();
     if (inFlight.current) return;
     if (suspending && !reason.trim()) {
-      setError('Vui lòng nhập lý do đình chỉ.');
+      setError(t('stores.statusDialog.reasonRequiredErr'));
       return;
     }
     inFlight.current = true;
@@ -389,8 +404,7 @@ function ShopStatusDialog({
       });
       onSuccess(result.message);
     } catch (cause) {
-      const message =
-        cause instanceof Error ? cause.message : 'Không thể cập nhật trạng thái cửa hàng.';
+      const message = cause instanceof Error ? cause.message : t('stores.statusDialog.updateErr');
       setError(message);
       toast.error(message);
     } finally {
@@ -402,15 +416,19 @@ function ShopStatusDialog({
     <Popup isOpen title={title} onClose={close} closeOnEsc={!pending} closeOnOverlay={!pending}>
       <form onSubmit={submit} className="space-y-4">
         <p className="break-words text-sm text-slate-600">
-          {title} cho <strong>{shop.storeName}</strong>?
+          {title}
+          {t('stores.statusDialog.confirmSuffix')}
+          <strong>{shop.storeName}</strong>?
         </p>
         <p className="rounded-lg bg-blue-50 p-3 text-sm text-slate-600">
           {suspending
-            ? 'Sản phẩm đang hoạt động của shop sẽ bị ẩn. Tài khoản cá nhân vẫn có thể mua hàng.'
-            : 'Shop sẽ được mở bán trở lại. Các sản phẩm đã bị ẩn cần được kích hoạt lại riêng.'}
+            ? t('stores.statusDialog.suspendNotice')
+            : t('stores.statusDialog.restoreNotice')}
         </p>
         <label className="block text-sm font-medium">
-          {suspending ? 'Lý do đình chỉ' : 'Ghi chú (không bắt buộc)'}
+          {suspending
+            ? t('stores.statusDialog.suspendReasonLabel')
+            : t('stores.statusDialog.restoreNoteLabel')}
           <textarea
             autoFocus
             required={suspending}
@@ -429,10 +447,10 @@ function ShopStatusDialog({
         )}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={close} disabled={pending}>
-            Hủy
+            {t('stores.statusDialog.cancel')}
           </Button>
           <Button type="submit" variant={suspending ? 'danger' : 'primary'} disabled={pending}>
-            {pending ? 'Đang xử lý…' : 'Xác nhận'}
+            {pending ? t('stores.statusDialog.processing') : t('stores.statusDialog.confirm')}
           </Button>
         </div>
       </form>
