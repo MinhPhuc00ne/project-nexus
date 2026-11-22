@@ -397,5 +397,142 @@
   "pagination": {
     "showing": "Showing {{from}}–{{to}} of {{total}}",
     "page": "Page {{page}} / {{totalPages}}"
+  },
+  "pagePlaceholder": {
+    "defaultDescription": "This page is under development."
+  },
+  "popup": {
+    "close": "Close"
+  },
+  "addressSelect": {
+    "provinceLabel": "Province / City",
+    "loadingProvinces": "Loading provinces/cities…",
+    "selectProvince": "-- Select Province / City --",
+    "districtLabel": "District",
+    "selectProvinceFirst": "Please select a province/city first",
+    "loadingDistricts": "Loading districts…",
+    "selectDistrict": "-- Select District --",
+    "wardLabel": "Ward / Commune",
+    "selectDistrictFirst": "Please select a district first",
+    "loadingWards": "Loading wards/communes…",
+    "selectWard": "-- Select Ward / Commune --"
+  },
+  "chat": {
+    "avatarAlt": "{{name}}'s avatar",
+    "imageLoadError": "Unable to load image · Open original",
+    "imageAlt": "Conversation image attachment",
+    "loadMessagesError": "Unable to load messages.",
+    "you": "You",
+    "widget": {
+      "closeAssistant": "Close assistant",
+      "openAssistant": "Open NEXUS assistant",
+      "close": "Close",
+      "nexusSupport": "NEXUS Support",
+      "chatbotAria": "NEXUS Chatbot",
+      "openMessages": "Open messages",
+      "messagesAndSupport": "Messages & Support",
+      "messages": "Messages",
+      "inboxAria": "Message inbox",
+      "title": "Nexus Chat",
+      "subtitle": "Connecting buyers, sellers and support",
+      "closeChat": "Close chat",
+      "navAria": "Messages and support",
+      "tabBot": "NEXUS Assistant",
+      "tabSupport": "Support Staff",
+      "tabChat": "Messages",
+      "dismissError": "Dismiss notice",
+      "chatWithTitle": "Chat with {{name}}",
+      "chatbotSupportCategory": "Chatbot support"
+    },
+    "supportMenu": {
+      "badge": "Nexus Support Center",
+      "heading": "How can we help you?",
+      "subheading": "Choose an issue to prepare your request for support staff.",
+      "backToTopics": "Support topics",
+      "orderIdLabel": "Order ID",
+      "optional": "(optional)",
+      "orderIdPlaceholder": "Enter related order ID",
+      "descriptionLabel": "Support details",
+      "descriptionPlaceholder": "Describe your issue and details for support staff…",
+      "notice": "Your message will be sent in a conversation with our support team. The order ID, if provided, will be included.",
+      "sending": "Sending…",
+      "submit": "Send support message",
+      "yourSupportChats": "Your support conversations",
+      "continueWithStaff": "Continue chatting with staff",
+      "noSupportChats": "No support conversations in the loaded list yet.",
+      "categories": {
+        "shippingTitle": "Shipping",
+        "shippingDesc": "Delayed delivery, tracking, lost packages",
+        "returnTitle": "Returns & Refunds",
+        "returnDesc": "Item returns, refund status checks",
+        "complaintTitle": "Complaints",
+        "complaintDesc": "Products, transactions or policy violations",
+        "liveChatTitle": "Live Chat with Staff",
+        "liveChatDesc": "Discuss other issues with our support staff"
+      }
+    },
+    "conversations": {
+      "searchAria": "Search conversations",
+      "searchPlaceholder": "Search conversations…",
+      "newConversation": "New conversation",
+      "recipientIdAria": "Recipient ID",
+      "recipientIdPlaceholder": "Recipient account ID",
+      "typeAria": "Conversation type",
+      "types": {
+        "buyerSeller": "Buyer – Seller",
+        "staffBuyer": "Support – Buyer",
+        "staffSeller": "Support – Seller",
+        "general": "General"
+      },
+      "opening": "Opening…",
+      "startChat": "Start chat",
+      "empty": "No conversations yet. Start chatting with another account.",
+      "startChatting": "Start chatting",
+      "loadMore": "Load more conversations"
+    },
+    "messageArea": {
+      "emptyTitle": "Your messages",
+      "emptyDesc": "Select a conversation to start chatting.",
+      "backToList": "Back to list",
+      "historyAria": "Message history",
+      "loadingOlder": "Loading…",
+      "loadOlder": "Load older messages",
+      "loadingMessages": "Loading messages…",
+      "sendFirstGreeting": "Send the first greeting!",
+      "read": " · Read",
+      "sent": " · Sent",
+      "typing": "Typing…",
+      "inputAria": "Message content",
+      "inputPlaceholder": "Type a message…",
+      "sendAria": "Send message"
+    },
+    "chatbot": {
+      "title": "NEXUS Assistant",
+      "guestSubtitle": "Policy answers · Sign in to track orders",
+      "userSubtitle": "Policy answers and order tracking",
+      "clearHistoryAria": "Clear chat history",
+      "clearHistory": "Clear history",
+      "logAria": "Chatbot conversation",
+      "greeting": "Hello! I'm the NEXUS automated assistant. Need help with payments, shipping, or cancellations/returns?",
+      "sources": "Sources:",
+      "waybillCode": "Waybill code:",
+      "loginToContinue": "Sign in to continue",
+      "navigateFallback": "Go to page",
+      "connecting": "Connecting…",
+      "contactStaff": "Contact support staff",
+      "replying": "Assistant is replying…",
+      "retry": "Retry",
+      "inputAria": "Question for chatbot",
+      "inputPlaceholder": "Type your question…",
+      "sendAria": "Send question",
+      "footerHint": "Automated assistant · Still need help? Contact support staff.",
+      "defaultSupportRequest": "I need support staff assistance.",
+      "suggestions": {
+        "shipping": "Shipping policy",
+        "returns": "Returns and refunds",
+        "cancel": "Cancel order",
+        "payment": "Payment methods"
+      }
+    }
   }
 }

@@ -1,5 +1,6 @@
 import ChatMessageContent from './ChatMessageContent';
 import { type FormEvent, type JSX, type KeyboardEvent, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
 import type { ChatConversation, ChatMessage } from '../../types/chat.types';
 import { formatChatTime } from './chatUtils';
@@ -34,6 +35,7 @@ export default function ChatMessageArea({
   onDraftChange,
   onSend,
 }: ChatMessageAreaProps): JSX.Element {
+  const { t } = useTranslation('common');
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,8 +60,8 @@ export default function ChatMessageArea({
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-slate-50 p-8 text-center max-sm:hidden">
         <MessageCircle size={48} className="text-blue-200" />
-        <h3 className="font-semibold">Tin nhắn của bạn</h3>
-        <p className="text-sm text-slate-500">Chọn một hội thoại để bắt đầu trao đổi.</p>
+        <h3 className="font-semibold">{t('chat.messageArea.emptyTitle')}</h3>
+        <p className="text-sm text-slate-500">{t('chat.messageArea.emptyDesc')}</p>
       </div>
     );
   }
@@ -67,7 +69,11 @@ export default function ChatMessageArea({
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col" data-chat-conversation-id={active.id}>
       <div className="flex shrink-0 items-center gap-2 border-b border-slate-100 px-4 py-3">
-        <button aria-label="Về danh sách" onClick={onBack} className="sm:hidden">
+        <button
+          aria-label={t('chat.messageArea.backToList')}
+          onClick={onBack}
+          className="sm:hidden"
+        >
           <ArrowLeft size={20} />
         </button>
         <ChatAvatar src={active.partner.avatarUrl} name={active.partner.fullName} size={36} />
@@ -79,7 +85,7 @@ export default function ChatMessageArea({
       </div>
       <div
         role="log"
-        aria-label="Lịch sử tin nhắn"
+        aria-label={t('chat.messageArea.historyAria')}
         className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-slate-50 p-4"
       >
         {hasOlder && (
@@ -88,16 +94,18 @@ export default function ChatMessageArea({
             onClick={onLoadOlder}
             className="block w-full text-xs text-blue-600"
           >
-            {older ? 'Đang tải…' : 'Xem tin nhắn cũ hơn'}
+            {older ? t('chat.messageArea.loadingOlder') : t('chat.messageArea.loadOlder')}
           </button>
         )}
         {loading && (
           <p role="status" className="text-center text-sm text-slate-500">
-            Đang tải tin nhắn…
+            {t('chat.messageArea.loadingMessages')}
           </p>
         )}
         {!loading && messages.length === 0 && (
-          <p className="py-10 text-center text-sm text-slate-400">Gửi lời chào đầu tiên!</p>
+          <p className="py-10 text-center text-sm text-slate-400">
+            {t('chat.messageArea.sendFirstGreeting')}
+          </p>
         )}
         {messages.map((message) => (
           <div
@@ -121,15 +129,23 @@ export default function ChatMessageArea({
               </div>
               <p className="mt-1 text-right text-[10px] text-slate-400">
                 {formatChatTime(message.createdAt)}
-                {message.isMe ? (message.isRead ? ' · Đã đọc' : ' · Đã gửi') : ''}
+                {message.isMe
+                  ? message.isRead
+                    ? t('chat.messageArea.read')
+                    : t('chat.messageArea.sent')
+                  : ''}
               </p>
             </div>
             {message.isMe && (
-              <ChatAvatar src={message.senderAvatar} name={message.senderName || 'Bạn'} size={28} />
+              <ChatAvatar
+                src={message.senderAvatar}
+                name={message.senderName || t('chat.you')}
+                size={28}
+              />
             )}
           </div>
         ))}
-        {typing && <p className="text-xs italic text-slate-500">Đang nhập…</p>}
+        {typing && <p className="text-xs italic text-slate-500">{t('chat.messageArea.typing')}</p>}
         <div ref={endRef} />
       </div>
       <form
@@ -137,8 +153,8 @@ export default function ChatMessageArea({
         className="flex shrink-0 items-end gap-2 border-t border-slate-100 p-3"
       >
         <textarea
-          aria-label="Nội dung tin nhắn"
-          placeholder="Nhập tin nhắn…"
+          aria-label={t('chat.messageArea.inputAria')}
+          placeholder={t('chat.messageArea.inputPlaceholder')}
           rows={2}
           value={draft}
           disabled={loading || sending}
@@ -149,7 +165,7 @@ export default function ChatMessageArea({
         <button
           type="submit"
           disabled={loading || sending || !draft.trim()}
-          aria-label="Gửi tin nhắn"
+          aria-label={t('chat.messageArea.sendAria')}
           className="rounded-xl bg-blue-600 p-3 text-white hover:bg-blue-700 disabled:opacity-40"
         >
           <Send size={20} />

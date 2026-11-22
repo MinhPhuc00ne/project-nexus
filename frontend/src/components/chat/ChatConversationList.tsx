@@ -1,4 +1,5 @@
 import type { FormEvent, JSX } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import ChatAvatar from './ChatAvatar';
 import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
@@ -36,6 +37,7 @@ export default function ChatConversationList({
   onLoadMore,
   hiddenOnMobile,
 }: ChatConversationListProps): JSX.Element {
+  const { t } = useTranslation('common');
   const handleSubmit = (e: FormEvent): void => {
     e.preventDefault();
     onCreateConversation();
@@ -47,50 +49,48 @@ export default function ChatConversationList({
     >
       <div className="space-y-3 border-b border-slate-100 p-3">
         <input
-          aria-label="Tìm hội thoại"
-          placeholder="Tìm cuộc trò chuyện…"
+          aria-label={t('chat.conversations.searchAria')}
+          placeholder={t('chat.conversations.searchPlaceholder')}
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full rounded-lg bg-slate-100 px-3 py-2 text-sm outline-blue-500"
         />
         <details>
           <summary className="flex cursor-pointer items-center gap-1 text-sm font-medium text-blue-600">
-            <Plus size={16} /> Cuộc trò chuyện mới
+            <Plus size={16} /> {t('chat.conversations.newConversation')}
           </summary>
           <form className="mt-3 space-y-2" onSubmit={handleSubmit}>
             <input
               required
-              aria-label="ID người nhận"
-              placeholder="ID tài khoản người nhận"
+              aria-label={t('chat.conversations.recipientIdAria')}
+              placeholder={t('chat.conversations.recipientIdPlaceholder')}
               value={participantId}
               onChange={(e) => onParticipantIdChange(e.target.value)}
               className="w-full rounded-lg border border-slate-200 px-2 py-2 text-sm"
             />
             <select
-              aria-label="Loại hội thoại"
+              aria-label={t('chat.conversations.typeAria')}
               value={type}
               onChange={(e) => onTypeChange(e.target.value as ChatConversationType)}
               className="w-full rounded-lg border border-slate-200 p-2 text-sm"
             >
-              <option value="BUYER_SELLER">Người mua – Người bán</option>
-              <option value="STAFF_BUYER">Hỗ trợ – Người mua</option>
-              <option value="STAFF_SELLER">Hỗ trợ – Người bán</option>
-              <option value="GENERAL">Trao đổi chung</option>
+              <option value="BUYER_SELLER">{t('chat.conversations.types.buyerSeller')}</option>
+              <option value="STAFF_BUYER">{t('chat.conversations.types.staffBuyer')}</option>
+              <option value="STAFF_SELLER">{t('chat.conversations.types.staffSeller')}</option>
+              <option value="GENERAL">{t('chat.conversations.types.general')}</option>
             </select>
             <button
               disabled={creating}
               className="w-full rounded-lg bg-blue-600 py-2 text-sm text-white disabled:opacity-50"
             >
-              {creating ? 'Đang mở…' : 'Bắt đầu chat'}
+              {creating ? t('chat.conversations.opening') : t('chat.conversations.startChat')}
             </button>
           </form>
         </details>
       </div>
       <div className="flex-1 overflow-y-auto">
         {conversations.length === 0 && (
-          <p className="p-5 text-center text-sm text-slate-500">
-            Chưa có cuộc trò chuyện. Bắt đầu chat với một tài khoản khác.
-          </p>
+          <p className="p-5 text-center text-sm text-slate-500">{t('chat.conversations.empty')}</p>
         )}
         {conversations.map((c) => (
           <button
@@ -105,7 +105,7 @@ export default function ChatConversationList({
                 {c.partner.storeName || c.partner.fullName}
               </span>
               <span className="block truncate text-xs text-slate-500">
-                {c.lastMessage || 'Bắt đầu trò chuyện'}
+                {c.lastMessage || t('chat.conversations.startChatting')}
               </span>
             </span>
             {c.unreadCount > 0 && (
@@ -117,7 +117,7 @@ export default function ChatConversationList({
         ))}
         {hasMorePages && (
           <button onClick={onLoadMore} className="w-full p-3 text-sm text-blue-600">
-            Xem thêm hội thoại
+            {t('chat.conversations.loadMore')}
           </button>
         )}
       </div>

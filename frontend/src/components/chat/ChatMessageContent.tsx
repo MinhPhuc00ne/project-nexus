@@ -1,4 +1,5 @@
 ﻿import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 export function splitChatImages(body: string, attachments: string[] = []) {
   const images = new Set(
     attachments.filter((url) => /^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url)),
@@ -15,6 +16,7 @@ export function splitChatImages(body: string, attachments: string[] = []) {
   return { text, images: [...images] };
 }
 function ChatImage({ url }: { url: string }) {
+  const { t } = useTranslation('common');
   const [failed, setFailed] = useState(false);
   return (
     <a
@@ -25,12 +27,12 @@ function ChatImage({ url }: { url: string }) {
     >
       {failed ? (
         <span className="block rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 underline">
-          Không tải được ảnh · Mở ảnh gốc
+          {t('chat.imageLoadError')}
         </span>
       ) : (
         <img
           src={url}
-          alt="Ảnh đính kèm trong hội thoại"
+          alt={t('chat.imageAlt')}
           loading="lazy"
           className="max-h-64 max-w-full rounded-xl object-contain"
           onError={() => setFailed(true)}

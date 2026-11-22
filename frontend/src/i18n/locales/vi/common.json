@@ -397,5 +397,142 @@
   "pagination": {
     "showing": "Hiển thị {{from}}–{{to}} / {{total}}",
     "page": "Trang {{page}} / {{totalPages}}"
+  },
+  "pagePlaceholder": {
+    "defaultDescription": "Trang này đang được phát triển."
+  },
+  "popup": {
+    "close": "Đóng"
+  },
+  "addressSelect": {
+    "provinceLabel": "Tỉnh / Thành phố",
+    "loadingProvinces": "Đang tải tỉnh/thành...",
+    "selectProvince": "-- Chọn Tỉnh / Thành phố --",
+    "districtLabel": "Quận / Huyện",
+    "selectProvinceFirst": "Vui lòng chọn Tỉnh/Thành",
+    "loadingDistricts": "Đang tải quận/huyện...",
+    "selectDistrict": "-- Chọn Quận / Huyện --",
+    "wardLabel": "Phường / Xã",
+    "selectDistrictFirst": "Vui lòng chọn Quận/Huyện",
+    "loadingWards": "Đang tải phường/xã...",
+    "selectWard": "-- Chọn Phường / Xã --"
+  },
+  "chat": {
+    "avatarAlt": "Ảnh đại diện {{name}}",
+    "imageLoadError": "Không tải được ảnh · Mở ảnh gốc",
+    "imageAlt": "Ảnh đính kèm trong hội thoại",
+    "loadMessagesError": "Không thể tải tin nhắn.",
+    "you": "Bạn",
+    "widget": {
+      "closeAssistant": "Đóng trợ lý",
+      "openAssistant": "Mở trợ lý NEXUS",
+      "close": "Đóng",
+      "nexusSupport": "Hỗ trợ NEXUS",
+      "chatbotAria": "Chatbot NEXUS",
+      "openMessages": "Mở tin nhắn",
+      "messagesAndSupport": "Tin nhắn & Hỗ trợ",
+      "messages": "Tin nhắn",
+      "inboxAria": "Hộp tin nhắn",
+      "title": "Nexus Chat",
+      "subtitle": "Kết nối người mua, người bán và hỗ trợ",
+      "closeChat": "Đóng chat",
+      "navAria": "Tin nhắn và hỗ trợ",
+      "tabBot": "Trợ lý NEXUS",
+      "tabSupport": "Nhân viên hỗ trợ",
+      "tabChat": "Tin nhắn",
+      "dismissError": "Đóng thông báo",
+      "chatWithTitle": "Chat với {{name}}",
+      "chatbotSupportCategory": "Hỗ trợ từ chatbot"
+    },
+    "supportMenu": {
+      "badge": "Trung tâm hỗ trợ Nexus",
+      "heading": "Bạn cần hỗ trợ điều gì?",
+      "subheading": "Chọn vấn đề để chuẩn bị yêu cầu gửi đến nhân viên hỗ trợ.",
+      "backToTopics": "Các mục hỗ trợ",
+      "orderIdLabel": "Mã đơn hàng",
+      "optional": "(không bắt buộc)",
+      "orderIdPlaceholder": "Nhập mã đơn liên quan",
+      "descriptionLabel": "Nội dung cần hỗ trợ",
+      "descriptionPlaceholder": "Mô tả vấn đề và thông tin cần nhân viên hỗ trợ…",
+      "notice": "Nội dung sẽ được gửi thành tin nhắn trong hội thoại với bộ phận hỗ trợ. Mã đơn hàng, nếu có, sẽ được đính kèm trong nội dung tin nhắn.",
+      "sending": "Đang gửi…",
+      "submit": "Gửi tin nhắn hỗ trợ",
+      "yourSupportChats": "Hội thoại hỗ trợ của bạn",
+      "continueWithStaff": "Tiếp tục trao đổi với nhân viên",
+      "noSupportChats": "Chưa có hội thoại hỗ trợ trong danh sách đã tải.",
+      "categories": {
+        "shippingTitle": "Giao hàng",
+        "shippingDesc": "Chậm giao, theo dõi vận chuyển, thất lạc hàng",
+        "returnTitle": "Trả hàng & hoàn tiền",
+        "returnDesc": "Đổi trả sản phẩm, kiểm tra hoàn tiền",
+        "complaintTitle": "Khiếu nại",
+        "complaintDesc": "Sản phẩm, giao dịch hoặc hành vi vi phạm",
+        "liveChatTitle": "Chat trực tiếp với Staff",
+        "liveChatDesc": "Trao đổi với nhân viên về vấn đề khác"
+      }
+    },
+    "conversations": {
+      "searchAria": "Tìm hội thoại",
+      "searchPlaceholder": "Tìm cuộc trò chuyện…",
+      "newConversation": "Cuộc trò chuyện mới",
+      "recipientIdAria": "ID người nhận",
+      "recipientIdPlaceholder": "ID tài khoản người nhận",
+      "typeAria": "Loại hội thoại",
+      "types": {
+        "buyerSeller": "Người mua – Người bán",
+        "staffBuyer": "Hỗ trợ – Người mua",
+        "staffSeller": "Hỗ trợ – Người bán",
+        "general": "Trao đổi chung"
+      },
+      "opening": "Đang mở…",
+      "startChat": "Bắt đầu chat",
+      "empty": "Chưa có cuộc trò chuyện. Bắt đầu chat với một tài khoản khác.",
+      "startChatting": "Bắt đầu trò chuyện",
+      "loadMore": "Xem thêm hội thoại"
+    },
+    "messageArea": {
+      "emptyTitle": "Tin nhắn của bạn",
+      "emptyDesc": "Chọn một hội thoại để bắt đầu trao đổi.",
+      "backToList": "Về danh sách",
+      "historyAria": "Lịch sử tin nhắn",
+      "loadingOlder": "Đang tải…",
+      "loadOlder": "Xem tin nhắn cũ hơn",
+      "loadingMessages": "Đang tải tin nhắn…",
+      "sendFirstGreeting": "Gửi lời chào đầu tiên!",
+      "read": " · Đã đọc",
+      "sent": " · Đã gửi",
+      "typing": "Đang nhập…",
+      "inputAria": "Nội dung tin nhắn",
+      "inputPlaceholder": "Nhập tin nhắn…",
+      "sendAria": "Gửi tin nhắn"
+    },
+    "chatbot": {
+      "title": "Trợ lý NEXUS",
+      "guestSubtitle": "Giải đáp chính sách · Đăng nhập để tra cứu đơn",
+      "userSubtitle": "Giải đáp chính sách và tra cứu đơn hàng của bạn",
+      "clearHistoryAria": "Xóa lịch sử trò chuyện",
+      "clearHistory": "Xóa lịch sử",
+      "logAria": "Hội thoại với chatbot",
+      "greeting": "Xin chào! Mình là trợ lý tự động NEXUS. Bạn cần hỗ trợ về thanh toán, giao hàng hay hủy/trả hàng?",
+      "sources": "Nguồn:",
+      "waybillCode": "Mã vận đơn:",
+      "loginToContinue": "Đăng nhập để tiếp tục",
+      "navigateFallback": "Chuyển trang",
+      "connecting": "Đang kết nối…",
+      "contactStaff": "Liên hệ nhân viên",
+      "replying": "Trợ lý đang trả lời…",
+      "retry": "Thử lại",
+      "inputAria": "Câu hỏi cho chatbot",
+      "inputPlaceholder": "Nhập câu hỏi của bạn…",
+      "sendAria": "Gửi câu hỏi",
+      "footerHint": "Trợ lý tự động · Chưa giải quyết được vấn đề? Liên hệ nhân viên hỗ trợ.",
+      "defaultSupportRequest": "Tôi cần nhân viên hỗ trợ.",
+      "suggestions": {
+        "shipping": "Chính sách giao hàng",
+        "returns": "Trả hàng và hoàn tiền",
+        "cancel": "Hủy đơn hàng",
+        "payment": "Phương thức thanh toán"
+      }
+    }
   }
 }
