@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest, ApiRequestError } from './api';
 import { getStoredUser } from './auth';
 import { getSellerResource } from './sellerResources';
@@ -22,10 +23,11 @@ export async function getSellerOrderDetail(
   id: string,
   sellerId: string,
 ): Promise<SellerOrderDetail> {
-  if (!id.trim()) throw new Error('Thiếu mã đơn hàng.');
-  if (getStoredUser()?.id !== sellerId) throw new Error('Phiên người bán đã thay đổi.');
+  if (!id.trim()) throw new Error(i18n.t('errors:services.missingOrderId'));
+  if (getStoredUser()?.id !== sellerId)
+    throw new Error(i18n.t('errors:services.sellerSessionChanged'));
   const order = await getSellerResource<SellerOrderDetail>(`${base}/${encodeURIComponent(id)}`);
-  if (order.id !== id) throw new Error('Thông tin đơn hàng không hợp lệ.');
+  if (order.id !== id) throw new Error(i18n.t('errors:services.invalidOrderInfo'));
   return order;
 }
 export async function confirmSellerOrder(
@@ -35,7 +37,8 @@ export async function confirmSellerOrder(
     `${base}/${encodeURIComponent(id)}/confirm`,
     { method: 'POST', requireAuth: true },
   );
-  if (!result.success) throw new Error(result.message || 'Chưa xác nhận được đơn hàng.');
+  if (!result.success)
+    throw new Error(result.message || i18n.t('errors:services.orderConfirmFailed'));
   return result;
 }
 export function getGhnDiagnostic(): Promise<GhnDiagnostic> {
@@ -62,9 +65,7 @@ export function isVerifiedGhnShipment(shipment: SellerShipment | null): boolean 
 }
 export class GhnDispatchUnverifiedError extends Error {
   constructor() {
-    super(
-      'Chưa xác minh được vận đơn với GHN. Không gửi lại yêu cầu; hãy đóng cửa sổ, kiểm tra trạng thái đơn và liên hệ hỗ trợ.',
-    );
+    super(i18n.t('errors:services.ghnWaybillUnverified'));
     this.name = 'GhnDispatchUnverifiedError';
   }
 }
@@ -75,22 +76,24 @@ export async function dispatchSellerOrder(
 ): Promise<SellerOrderDetail> {
   const current = await getSellerOrderDetail(id, sellerId);
   if (!['PAID', 'PREPARING'].includes(current.status))
-    throw new Error('Chỉ có thể bàn giao đơn đã thanh toán hoặc đang chuẩn bị.');
+    throw new Error(i18n.t('errors:services.orderHandoverStatus'));
   const diagnostic = await getGhnDiagnostic();
   if (
     !diagnostic.tokenConfigured ||
     !diagnostic.shopIdConfigured ||
     diagnostic.ping.status !== 'CONNECTED'
   )
-    throw new Error('Kết nối GHN chưa sẵn sàng. Vui lòng kiểm tra cấu hình vận chuyển.');
-  if (getStoredUser()?.id !== sellerId) throw new Error('Phiên người bán đã thay đổi.');
+    throw new Error(i18n.t('errors:services.ghnNotReady'));
+  if (getStoredUser()?.id !== sellerId)
+    throw new Error(i18n.t('errors:services.sellerSessionChanged'));
   // Once the mutation is sent, an uncertain outcome must never be retried automatically.
   try {
     const result = await apiRequest<{ success: boolean; message: string }>(
       `${base}/${encodeURIComponent(id)}/dispatch-ghn`,
       { method: 'POST', body, requireAuth: true },
     );
-    if (!result.success) throw new Error(result.message || 'Chưa bàn giao được đơn hàng.');
+    if (!result.success)
+      throw new Error(result.message || i18n.t('errors:services.orderHandoverFailed'));
     const order = await getSellerOrderDetail(id, sellerId);
     if (!['PREPARING', 'SHIPPING'].includes(order.status) || !isVerifiedGhnShipment(order.shipment))
       throw new GhnDispatchUnverifiedError();
@@ -105,13 +108,14 @@ export async function dispatchSellerOrder(
 export async function getSellerWaybill(id: string, sellerId: string): Promise<SellerWaybill> {
   const order = await getSellerOrderDetail(id, sellerId);
   if (!isVerifiedGhnShipment(order.shipment))
-    throw new Error('Đơn hàng chưa có vận đơn được GHN xác nhận. Chưa thể in phiếu giao hàng.');
-  if (getStoredUser()?.id !== sellerId) throw new Error('Phiên người bán đã thay đổi.');
+    throw new Error(i18n.t('errors:services.waybillMissingForPrint'));
+  if (getStoredUser()?.id !== sellerId)
+    throw new Error(i18n.t('errors:services.sellerSessionChanged'));
   const bill = await getSellerResource<SellerWaybill>(
     `${base}/${encodeURIComponent(id)}/print-waybill`,
   );
   if (bill.orderId !== id || bill.waybillCode !== order.shipment?.waybillCode)
-    throw new Error('Mã vận đơn không khớp với đơn hàng. Vui lòng tải lại.');
+    throw new Error(i18n.t('errors:services.waybillMismatch'));
   return bill;
 }
 

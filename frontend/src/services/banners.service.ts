@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import api from './api';
 import { isAxiosError } from 'axios';
 import { getApiErrorMessage } from '../lib/apiErrors';
@@ -29,9 +30,7 @@ async function bannerRequest<T>(request: () => Promise<{ data: BannerResponse<T>
   } catch (error) {
     if (isAxiosError(error)) {
       throw new Error(
-        error.response
-          ? getApiErrorMessage(error.response.data)
-          : 'Không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ backend.',
+        error.response ? getApiErrorMessage(error.response.data) : i18n.t('errors:network'),
       );
     }
     throw error;
@@ -91,17 +90,17 @@ export async function saveBannerOrder(ordered: Banner[]): Promise<Banner[]> {
 
 export async function uploadBannerImage(file: File): Promise<string> {
   if (!/\.(jpe?g|png|webp|gif|svg)$/i.test(file.name)) {
-    throw new Error('Vui lòng chọn ảnh JPG, PNG, WEBP, GIF hoặc SVG.');
+    throw new Error(i18n.t('errors:services.invalidImageFormatBanner'));
   }
   if (file.size > 25 * 1024 * 1024) {
-    throw new Error('Ảnh không được vượt quá 25MB.');
+    throw new Error(i18n.t('errors:services.imageTooLarge25'));
   }
   const body = new FormData();
   body.append('file', file);
   const result = await bannerRequest(() =>
     api.post<BannerResponse<{ url: string }>>('/media/upload', body),
   );
-  if (!result?.url) throw new Error('Máy chủ chưa trả về đường dẫn ảnh banner hợp lệ.');
+  if (!result?.url) throw new Error(i18n.t('errors:services.invalidBannerUrl'));
   return normalizeBannerImageUrl(result.url);
 }
 

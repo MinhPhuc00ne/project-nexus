@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import type { CategoryTreeItem } from '../types/category.types';
 
 export function flattenCategories(
@@ -22,10 +23,10 @@ export function categoryMoveError(
   parent: CategoryTreeItem | null,
 ): string | null {
   if (parent && flattenCategories([category]).some((item) => item.category.id === parent.id)) {
-    return 'Không thể chuyển danh mục vào chính nó hoặc danh mục con của nó.';
+    return i18n.t('errors:services.categoryMoveSelfOrChild');
   }
   if ((parent?.level ?? 0) + subtreeDepth(category) > 3) {
-    return 'Không thể chuyển vì cả nhánh danh mục sẽ vượt quá 3 cấp.';
+    return i18n.t('errors:services.categoryMoveMaxDepth');
   }
   return null;
 }

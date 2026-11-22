@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest } from './api';
 
 export type ReportTargetType = 'PRODUCT' | 'SHOP';
@@ -43,16 +44,16 @@ export async function uploadReportEvidence(file: File): Promise<string> {
     isFormData: true,
     requireAuth: true,
   });
-  if (!uploaded?.url) throw new Error('Máy chủ chưa trả về đường dẫn ảnh bằng chứng hợp lệ.');
+  if (!uploaded?.url) throw new Error(i18n.t('errors:services.invalidEvidenceUrl'));
   return uploaded.url;
 }
 
 export async function submitReportApi(payload: CreateReportPayload): Promise<SubmittedReport> {
   const reason = payload.reason.trim();
   const description = payload.description.trim();
-  if (!reason) throw new Error('Vui lòng chọn lý do báo cáo.');
+  if (!reason) throw new Error(i18n.t('errors:services.reportReasonRequired'));
   if (description.length < 10) {
-    throw new Error('Vui lòng mô tả chi tiết vấn đề (tối thiểu 10 ký tự).');
+    throw new Error(i18n.t('errors:services.reportDescriptionMin'));
   }
 
   const endpoint =

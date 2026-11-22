@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import type {
@@ -19,7 +20,7 @@ export function getAdminNotificationSummary(): Promise<AdminNotificationSummary>
 
 function getNotificationResource<T>(path: string): Promise<T> {
   const token = getStoredToken();
-  if (!token) return Promise.reject(new Error('Vui lòng đăng nhập để xem thông báo.'));
+  if (!token) return Promise.reject(new Error(i18n.t('errors:services.notificationsAuthRequired')));
   const key = JSON.stringify([token, path]);
   const existing = pending.get(key);
   if (existing) return existing as Promise<T>;
@@ -47,7 +48,8 @@ export async function markNotificationRead(id: string): Promise<ReadNotification
     `/notifications/${encodeURIComponent(id)}/read`,
     { method: 'PATCH', requireAuth: true },
   );
-  if (!result?.success) throw new Error(result?.message || 'Chưa đánh dấu được thông báo.');
+  if (!result?.success)
+    throw new Error(result?.message || i18n.t('errors:services.notificationMarkFailed'));
   return result;
 }
 
@@ -56,7 +58,8 @@ export async function markAllNotificationsRead(): Promise<ReadAllNotificationsRe
     method: 'PATCH',
     requireAuth: true,
   });
-  if (!result?.success) throw new Error(result?.message || 'Chưa đánh dấu được các thông báo.');
+  if (!result?.success)
+    throw new Error(result?.message || i18n.t('errors:services.notificationsMarkAllFailed'));
   return result;
 }
 
@@ -72,6 +75,7 @@ export async function saveNotificationPreferences(
     body: { preferences },
     requireAuth: true,
   });
-  if (!result.success) throw new Error(result.message || 'Chưa lưu được tùy chọn thông báo.');
+  if (!result.success)
+    throw new Error(result.message || i18n.t('errors:services.notificationPrefsSaveFailed'));
   return result;
 }
