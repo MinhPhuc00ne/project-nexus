@@ -1,0 +1,29 @@
+{
+  "title": "Live Auctions",
+  "status": {
+    "DRAFT": "Draft",
+    "SCHEDULED": "Scheduled",
+    "ACTIVE": "Live",
+    "EXTENDED": "Extended (Anti-Sniping)",
+    "ENDED": "Ended",
+    "SETTLED": "Settled",
+    "CANCELLED": "Cancelled",
+    "FAILED": "Failed"
+  },
+  "bidding": {
+    "currentBid": "Current Highest Bid",
+    "startingPrice": "Starting Price",
+    "bidIncrement": "Minimum Increment",
+    "placeBid": "Place Bid",
+    "bidHistory": "Bid History",
+    "timeRemaining": "Time Remaining",
+    "antiSnipingNotice": "Bids placed in the final 2 minutes automatically extend the clock by 2 minutes."
+  },
+  "awards": {
+    "primaryWinner": "Primary Winner",
+    "secondChance": "Second Chance",
+    "acceptOffer": "Accept Offer",
+    "declineOffer": "Decline",
+    "proceedCheckout": "Proceed to Checkout"
+  }
+}

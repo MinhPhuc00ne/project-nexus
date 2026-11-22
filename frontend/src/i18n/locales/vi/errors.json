@@ -1,0 +1,20 @@
+{
+  "default": "Yêu cầu thất bại.",
+  "network": "Không thể kết nối tới máy chủ backend. Vui lòng kiểm tra lại dịch vụ backend.",
+  "authRequired": "Vui lòng đăng nhập để thực hiện thao tác này.",
+  "sessionExpired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+  "forbidden": "Bạn không có quyền thực hiện thao tác này.",
+  "notFound": "Không tìm thấy dữ liệu yêu cầu.",
+  "codes": {
+    "INTERNAL_SERVER_ERROR": "Lỗi hệ thống nội bộ. Vui lòng thử lại sau.",
+    "UNAUTHORIZED": "Phiên đăng nhập không hợp lệ hoặc đã hết hạn.",
+    "FORBIDDEN": "Bạn không có quyền truy cập tài nguyên này.",
+    "NOT_FOUND": "Không tìm thấy tài nguyên yêu cầu.",
+    "BAD_REQUEST": "Dữ liệu gửi lên không hợp lệ.",
+    "CONFLICT": "Dữ liệu bị xung đột hoặc đã tồn tại.",
+    "CANNOT_PURCHASE_OWN_PRODUCT": "Bạn không thể tự mua sản phẩm do chính shop của mình đăng bán.",
+    "AUCTION_BID_SELF_FORBIDDEN": "Người bán không thể tự đặt giá trong phiên đấu giá của chính mình.",
+    "INSUFFICIENT_BALANCE": "Số dư ví không đủ để thực hiện giao dịch này.",
+    "INVALID_OTP": "Mã OTP không chính xác hoặc đã hết hạn."
+  }
+}

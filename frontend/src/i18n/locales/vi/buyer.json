@@ -1,0 +1,20 @@
+{
+  "nav": {
+    "dashboard": "Tổng quan",
+    "orders": "Đơn hàng của tôi",
+    "bids": "Đấu giá của tôi",
+    "wallet": "Ví NEXUS Pay",
+    "addresses": "Sổ địa chỉ",
+    "wishlist": "Sản phẩm yêu thích",
+    "disputes": "Khiếu nại & Trả hàng",
+    "reputation": "Điểm uy tín",
+    "notifications": "Thông báo",
+    "profile": "Hồ sơ cá nhân"
+  },
+  "wallet": {
+    "availableBalance": "Số dư khả dụng",
+    "lockedBalance": "Số dư đang giữ",
+    "deposit": "Nạp tiền",
+    "withdraw": "Rút tiền"
+  }
+}

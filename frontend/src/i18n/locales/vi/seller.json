@@ -1,0 +1,18 @@
+{
+  "nav": {
+    "center": "Trung tâm người bán",
+    "overview": "Tổng quan",
+    "orders": "Đơn hàng & GHN",
+    "auctions": "Đấu giá",
+    "products": "Kho & Sản phẩm",
+    "finance": "Tài chính & Ví Escrow",
+    "reviews": "Đánh giá & Khách hàng",
+    "disputes": "Khiếu nại",
+    "settings": "Cài đặt Shop",
+    "profile": "Hồ sơ cá nhân"
+  },
+  "drafts": {
+    "saved": "Đã lưu bản nháp trên thiết bị này.",
+    "saveFailed": "Không thể lưu bản nháp. Vui lòng kiểm tra bộ nhớ trình duyệt."
+  }
+}

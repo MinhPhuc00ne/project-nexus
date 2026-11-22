@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import {
   LayoutDashboard,
@@ -18,69 +19,40 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UpgradeSellerModal } from '../components/headers/UpgradeSellerModal';
+import { formatCurrency } from '../i18n/formatters';
 
 interface NavItem {
   to: string;
-  label: string;
+  key:
+    | 'nav.dashboard'
+    | 'nav.profile'
+    | 'nav.orders'
+    | 'nav.addresses'
+    | 'nav.wallet'
+    | 'nav.wishlist'
+    | 'nav.bids'
+    | 'nav.reputation'
+    | 'nav.notifications'
+    | 'nav.disputes';
   icon: React.ReactNode;
   end?: boolean;
 }
 
 const navItems: NavItem[] = [
-  {
-    to: '/buyer',
-    label: 'Tổng quan tài khoản',
-    icon: <LayoutDashboard size={17} />,
-    end: true,
-  },
-  {
-    to: '/buyer/profile',
-    label: 'Hồ sơ cá nhân',
-    icon: <User size={17} />,
-  },
-  {
-    to: '/buyer/orders',
-    label: 'Đơn hàng của tôi',
-    icon: <Package size={17} />,
-  },
-  {
-    to: '/buyer/addresses',
-    label: 'Sổ địa chỉ nhận hàng',
-    icon: <MapPin size={17} />,
-  },
-  {
-    to: '/buyer/wallet',
-    label: 'Ví NEXUS Pay',
-    icon: <Wallet size={17} />,
-  },
-  {
-    to: '/buyer/wishlist',
-    label: 'Sản phẩm yêu thích',
-    icon: <Heart size={17} />,
-  },
-  {
-    to: '/buyer/bids',
-    label: 'Phiên đấu giá',
-    icon: <Gavel size={17} />,
-  },
-  {
-    to: '/buyer/reputation',
-    label: 'Điểm uy tín & Xếp hạng',
-    icon: <Award size={17} />,
-  },
-  {
-    to: '/buyer/notifications',
-    label: 'Thông báo & Tùy chọn',
-    icon: <Bell size={17} />,
-  },
-  {
-    to: '/buyer/disputes',
-    label: 'Khiếu nại & Tranh chấp',
-    icon: <ShieldAlert size={17} />,
-  },
+  { to: '/buyer', key: 'nav.dashboard', icon: <LayoutDashboard size={17} />, end: true },
+  { to: '/buyer/profile', key: 'nav.profile', icon: <User size={17} /> },
+  { to: '/buyer/orders', key: 'nav.orders', icon: <Package size={17} /> },
+  { to: '/buyer/addresses', key: 'nav.addresses', icon: <MapPin size={17} /> },
+  { to: '/buyer/wallet', key: 'nav.wallet', icon: <Wallet size={17} /> },
+  { to: '/buyer/wishlist', key: 'nav.wishlist', icon: <Heart size={17} /> },
+  { to: '/buyer/bids', key: 'nav.bids', icon: <Gavel size={17} /> },
+  { to: '/buyer/reputation', key: 'nav.reputation', icon: <Award size={17} /> },
+  { to: '/buyer/notifications', key: 'nav.notifications', icon: <Bell size={17} /> },
+  { to: '/buyer/disputes', key: 'nav.disputes', icon: <ShieldAlert size={17} /> },
 ];
 
 export default function BuyerLayout() {
+  const { t } = useTranslation(['buyer', 'common']);
   const { user: profile, switchActiveMode } = useAuth();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const location = useLocation();
@@ -106,15 +78,18 @@ export default function BuyerLayout() {
         {/* Breadcrumb Navigation */}
         <nav className="mb-5 flex items-center gap-2 text-xs text-slate-500">
           <NavLink to="/" className="hover:text-blue-600 transition-colors font-medium">
-            Trang chủ
+            {t('common:nav.home')}
           </NavLink>
           <ChevronRight size={13} />
-          <span className="font-semibold text-[#1c3973]">Tài khoản Khách hàng (Buyer)</span>
+          <span className="font-semibold text-[#1c3973]">{t('common:nav.buyerPortal')}</span>
           {location.pathname !== '/buyer' && (
             <>
               <ChevronRight size={13} />
               <span className="text-slate-700 font-medium">
-                {navItems.find((item) => item.to === location.pathname)?.label || 'Chi tiết'}
+                {(() => {
+                  const found = navItems.find((item) => item.to === location.pathname);
+                  return found ? t(`buyer:${found.key}`) : t('common:actions.viewDetails');
+                })()}
               </span>
             </>
           )}
@@ -166,9 +141,7 @@ export default function BuyerLayout() {
                     <span>Số dư ví</span>
                   </div>
                   <span className="font-bold text-blue-700 text-xs truncate block">
-                    {profile?.wallet?.balance
-                      ? `${Number(profile.wallet.balance).toLocaleString('vi-VN')} ₫`
-                      : '0 ₫'}
+                    {formatCurrency(Number(profile?.wallet?.balance ?? 0))}
                   </span>
                 </div>
                 <div className="rounded-md bg-slate-50 p-2.5 border border-slate-200/80">
@@ -199,7 +172,7 @@ export default function BuyerLayout() {
                   }
                 >
                   {item.icon}
-                  <span className="flex-1">{item.label}</span>
+                  <span className="flex-1">{t(`buyer:${item.key}`)}</span>
                 </NavLink>
               ))}
             </nav>

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import {
   Store,
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { getCartItems } from '../../services/cart';
 import { useAuth } from '../../contexts/AuthContext';
+import { SUPPORTED_LANGUAGES, normalizeLanguage } from '../../i18n/config';
 import { getNotificationUnreadCount } from '../../services/notifications';
 import type { CartItem as StoredCartItem, NotificationItem } from '../../types';
 import NotificationDropdown from './NotificationDropdown';
@@ -184,7 +186,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     setShowUpgradeModal(true);
   };
 
-  const [currentLang, setCurrentLang] = useState<'vi' | 'en' | 'jp'>('vi');
+  const { t, i18n } = useTranslation('common');
+  const currentLang = normalizeLanguage(i18n.resolvedLanguage || i18n.language);
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   const [showNotifMenu, setShowNotifMenu] = useState(false);
@@ -203,11 +206,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   const floorRef = useRef<HTMLDivElement>(null);
   const cartRef = useRef<HTMLDivElement>(null);
 
-  const languages = [
-    { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
-    { code: 'en', label: 'English', flag: '🇺🇸' },
-    { code: 'jp', label: '日本語', flag: '🇯🇵' },
-  ];
+  const languages = SUPPORTED_LANGUAGES.map((item) => ({
+    code: item.code,
+    label: item.label,
+    flag: item.code === 'vi' ? '🇻🇳' : '🇺🇸',
+  }));
 
   const floors = [
     'Tất Cả Sàn',
@@ -276,8 +279,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               }
             >
               <Store size={14} className="shrink-0" />
-              <span className="hidden lg:inline">Kênh Người Bán</span>
-              <span className="lg:hidden">Người Bán</span>
+              <span className="hidden lg:inline">{t('header.sellerChannel')}</span>
+              <span className="lg:hidden">{t('header.sellerShort')}</span>
               {(profile?.role === 'SELLER' || profile?.role === 'ADMIN') && (
                 <span
                   className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-bold ${
@@ -300,7 +303,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             >
               <ShoppingBag size={14} className="shrink-0" />
               <span className="hidden lg:inline">
-                {profile?.role === 'SELLER' ? 'Hồ sơ Người Bán' : 'Trở thành Seller'}
+                {profile?.role === 'SELLER' ? t('header.sellerProfile') : t('header.becomeSeller')}
               </span>
               <span className="lg:hidden">Seller</span>
             </button>
@@ -313,8 +316,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               onMouseLeave={() => setShowAppQrModal(false)}
             >
               <Smartphone size={14} className="shrink-0" />
-              <span className="hidden lg:inline">Tải Ứng Dụng</span>
-              <span className="lg:hidden">Tải App</span>
+              <span className="hidden lg:inline">{t('header.downloadApp')}</span>
+              <span className="lg:hidden">{t('header.downloadAppShort')}</span>
 
               {showAppQrModal && (
                 <div className="absolute left-0 top-full z-[1010] mt-2">
@@ -346,7 +349,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <span className="text-xs text-slate-300">|</span>
 
             <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
-              <span className="text-xs text-slate-500 hidden xl:inline">Kết nối:</span>
+              <span className="text-xs text-slate-500 hidden xl:inline">{t('header.connect')}</span>
 
               <a
                 href="https://facebook.com"
@@ -386,7 +389,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   )}
                 </div>
 
-                <span className="hidden lg:inline">Thông Báo</span>
+                <span className="hidden lg:inline">{t('nav.notifications')}</span>
               </button>
 
               <NotificationDropdown
@@ -404,7 +407,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               title="Trợ Giúp"
             >
               <HelpCircle size={14} className="shrink-0" />
-              <span className="hidden lg:inline">Trợ Giúp</span>
+              <span className="hidden lg:inline">{t('header.helpCenter')}</span>
             </a>
 
             <span className="text-xs text-slate-300">|</span>
@@ -441,7 +444,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                           : 'text-slate-800'
                       }`}
                       onClick={() => {
-                        setCurrentLang(lang.code as 'vi' | 'en' | 'jp');
+                        void i18n.changeLanguage(lang.code);
                         setShowLangMenu(false);
                       }}
                     >

@@ -1,0 +1,17 @@
+{
+  "sidebar": {
+    "subtitle": "Trung tâm hỗ trợ",
+    "sectionTitle": "NGHIỆP VỤ HỖ TRỢ",
+    "closeMenu": "Đóng menu"
+  },
+  "nav": {
+    "team": "Quản Lý Nhân Viên",
+    "inbox": "Hộp Thư Trực Tuyến",
+    "disputes": "Khiếu Nại & Tranh Chấp",
+    "auctionSupport": "Hỗ Trợ Đấu Giá 3D",
+    "faq": "Hướng Dẫn & FAQ Sàn",
+    "banners": "Quản Lý Banner",
+    "history": "Lịch Sử & CSAT",
+    "performance": "Hiệu Suất Cá Nhân"
+  }
+}

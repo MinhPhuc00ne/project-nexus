@@ -1,0 +1,20 @@
+{
+  "nav": {
+    "dashboard": "Overview",
+    "orders": "My Orders",
+    "bids": "My Bids",
+    "wallet": "NEXUS Pay Wallet",
+    "addresses": "Address Book",
+    "wishlist": "Wishlist",
+    "disputes": "Disputes & Returns",
+    "reputation": "Reputation Score",
+    "notifications": "Notifications",
+    "profile": "Profile"
+  },
+  "wallet": {
+    "availableBalance": "Available Balance",
+    "lockedBalance": "Locked Balance",
+    "deposit": "Deposit",
+    "withdraw": "Withdraw"
+  }
+}

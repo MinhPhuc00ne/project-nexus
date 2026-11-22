@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import LanguageSwitcher from '../../components/common/LanguageSwitcher';
 import {
   Menu,
   Search,
@@ -313,6 +314,7 @@ export default function StaffHeader({
       </div>
 
       <div className="ml-auto flex items-center gap-3">
+        <LanguageSwitcher compact />
         <div ref={notificationsRef} className="relative">
           <button
             type="button"

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { navigation, staffSectionPaths, type StaffSection } from './staffNavigationData';
 
@@ -17,6 +18,7 @@ export default function StaffSidebar({
   isSidebarOpen,
   onCloseSidebar,
 }: StaffSidebarProps) {
+  const { t } = useTranslation('staff');
   const navigate = useNavigate();
 
   return (
@@ -36,23 +38,23 @@ export default function StaffSidebar({
                 STAFF
               </span>
             </div>
-            <div className="mt-[2px] [color:#818ba0] text-[10px]">Trung tâm hỗ trợ</div>
+            <div className="mt-[2px] [color:#818ba0] text-[10px]">{t('sidebar.subtitle')}</div>
           </div>
           <button
             className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] hidden [margin-left:auto] max-[760px]:[display:inline-grid]"
-            aria-label="Đóng menu"
+            aria-label={t('sidebar.closeMenu')}
             onClick={onCloseSidebar}
           >
             <X size={18} />
           </button>
         </div>
         <div className="[padding:22px_18px_10px] [color:#9aa2b4] text-[10px] font-extrabold [letter-spacing:0.11em]">
-          NGHIỆP VỤ HỖ TRỢ
+          {t('sidebar.sectionTitle')}
         </div>
         <nav className="grid [gap:5px] [padding:0_10px]" aria-label="Điều hướng nhân viên">
           {navigation
             .filter(({ label }) => label !== 'Quản Lý Nhân Viên' || managementAccess === 'allowed')
-            .map(({ label, icon: Icon }) => (
+            .map(({ label, i18nKey, icon: Icon }) => (
               <button
                 className={`flex [min-height:42px] items-center gap-2.5 [padding:0_11px] [border:0] [border-radius:8px] [color:#665f68] [background:transparent] cursor-pointer text-left [transition:0.15s_ease] [&_>_span:nth-child(2)]:[flex:1] [&_>_span:nth-child(2)]:text-xs [&_>_span:nth-child(2)]:[font-weight:650] [&_>_span:nth-child(2)]:whitespace-nowrap hover:[background:#fff2ef] hover:[color:var(--staff-accent)] [&.is-active]:[color:white] [&.is-active]:[background:var(--staff-accent)] [&.is-active]:[box-shadow:0_7px_16px_rgb(217_52_27_/_18%)] ${activeNavigation === label ? 'is-active' : ''}`}
                 key={label}
@@ -64,7 +66,7 @@ export default function StaffSidebar({
                 }}
               >
                 <Icon size={17} />
-                <span>{label}</span>
+                <span>{t(i18nKey)}</span>
               </button>
             ))}
         </nav>
