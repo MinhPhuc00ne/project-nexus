@@ -237,5 +237,25 @@
       "submitting": "Submitting review…",
       "submitNow": "Submit Review"
     }
+  },
+  "cartExtra": {
+    "voucher500kApplied": "Applied code NEXUS500K for 500,000 VND off!",
+    "voucherFreeshipApplied": "Applied code FREESHIP for free shipping!"
+  },
+  "checkoutExtra": {
+    "addressSavedToast": "Shipping address saved and updated.",
+    "addressIncompleteToast": "Please provide complete shipping address details.",
+    "checkoutFailedToast": "Checkout failed. Please try again!"
+  },
+  "paymentSuccess": {
+    "title": "Payment Successful!",
+    "descWithCode": "Transaction code: {{code}} • Escrow recorded safely",
+    "descDefault": "PayOS VietQR transfer has been confirmed successfully.",
+    "escrowTitle": "Your payment is held safely in NEXUS Escrow.",
+    "syncing": "Syncing order status...",
+    "sellerNotified": "The seller has received your order and is preparing it for shipment.",
+    "viewOrderDetail": "View order details",
+    "ordersList": "Order list",
+    "continueShopping": "Continue shopping"
   }
 }

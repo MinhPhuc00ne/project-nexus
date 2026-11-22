@@ -237,5 +237,25 @@
       "submitting": "Đang gửi đánh giá...",
       "submitNow": "Gửi đánh giá ngay"
     }
+  },
+  "cartExtra": {
+    "voucher500kApplied": "Áp dụng mã NEXUS500K giảm 500.000đ thành công!",
+    "voucherFreeshipApplied": "Áp dụng mã FREESHIP miễn phí vận chuyển thành công!"
+  },
+  "checkoutExtra": {
+    "addressSavedToast": "Đã lưu và cập nhật địa chỉ giao hàng.",
+    "addressIncompleteToast": "Vui lòng cung cấp đầy đủ thông tin địa chỉ giao hàng.",
+    "checkoutFailedToast": "Thanh toán thất bại. Vui lòng thử lại!"
+  },
+  "paymentSuccess": {
+    "title": "Thanh Toán Thành Công!",
+    "descWithCode": "Mã giao dịch: {{code}} • Đã ghi nhận ký quỹ an toàn",
+    "descDefault": "Giao dịch chuyển khoản PayOS VietQR đã được xác nhận thành công.",
+    "escrowTitle": "Tiền thanh toán đang được giữ ký quỹ tại NEXUS Escrow.",
+    "syncing": "Đang đồng bộ trạng thái đơn hàng...",
+    "sellerNotified": "Người bán đã nhận được đơn hàng và đang tiến hành đóng gói để giao hàng.",
+    "viewOrderDetail": "Xem chi tiết đơn này",
+    "ordersList": "Danh sách đơn hàng",
+    "continueShopping": "Tiếp tục mua sắm"
   }
 }

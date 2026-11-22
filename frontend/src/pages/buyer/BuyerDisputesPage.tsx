@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ShieldAlert,
   Plus,
@@ -32,40 +33,38 @@ export interface BuyerDisputeItem {
   sellerName: string;
 }
 
-const statusConfig: Record<
-  Exclude<BuyerDisputeStatus, 'ALL'>,
-  { label: string; icon: React.ReactNode; cls: string }
-> = {
+const statusConfig = {
   OPEN: {
-    label: 'Đang chờ xử lý',
+    labelKey: 'disputesPage.status.open',
     icon: <Clock size={11} />,
     cls: 'bg-amber-50 text-amber-700 border-amber-200',
   },
   UNDER_REVIEW: {
-    label: 'Đang xem xét',
+    labelKey: 'disputesPage.status.underReview',
     icon: <AlertTriangle size={11} />,
     cls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
   RESOLVED: {
-    label: 'Đã giải quyết',
+    labelKey: 'disputesPage.status.resolved',
     icon: <CheckCircle size={11} />,
     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   },
   REJECTED: {
-    label: 'Bị từ chối',
+    labelKey: 'disputesPage.status.rejected',
     icon: <XCircle size={11} />,
     cls: 'bg-red-50 text-red-700 border-red-200',
   },
-};
+} as const;
 
-const tabs: { key: BuyerDisputeStatus; label: string }[] = [
-  { key: 'ALL', label: 'Tất cả' },
-  { key: 'OPEN', label: 'Đang xử lý' },
-  { key: 'RESOLVED', label: 'Đã giải quyết' },
-  { key: 'REJECTED', label: 'Bị từ chối' },
-];
+const tabs = [
+  { key: 'ALL', labelKey: 'disputesPage.tabs.all' },
+  { key: 'OPEN', labelKey: 'disputesPage.tabs.open' },
+  { key: 'RESOLVED', labelKey: 'disputesPage.tabs.resolved' },
+  { key: 'REJECTED', labelKey: 'disputesPage.tabs.rejected' },
+] as const satisfies { key: BuyerDisputeStatus; labelKey: string }[];
 
 export default function BuyerDisputesPage() {
+  const { t } = useTranslation('buyer');
   const [searchParams] = useSearchParams();
   const queryOrderId = searchParams.get('orderId');
 
@@ -90,9 +89,9 @@ export default function BuyerDisputesPage() {
     if (queryOrderId) {
       setSelectedOrderId(queryOrderId);
       setShowCreateModal(true);
-      showToast('Đã chọn đơn hàng cần khiếu nại. Vui lòng nhập lý do và mô tả.');
+      showToast(t('disputesPage.preselectedOrderToast'));
     }
-  }, [queryOrderId]);
+  }, [queryOrderId, t]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -106,7 +105,9 @@ export default function BuyerDisputesPage() {
             id: `disp-${o.id}`,
             orderId: o.id,
             orderNumber: o.orderNumber ?? '',
-            productName: o?.items?.[0]?.product?.title || `Đơn hàng #${o?.orderNumber ?? ''}`,
+            productName:
+              o?.items?.[0]?.product?.title ||
+              t('disputesPage.orderTitleFallback', { number: o?.orderNumber ?? '' }),
             img:
               o?.items?.[0]?.product?.thumbnail ||
               o?.items?.[0]?.product?.images?.[0]?.imageUrl ||
@@ -116,8 +117,8 @@ export default function BuyerDisputesPage() {
             status: 'OPEN',
             createdAt: o?.updatedAt || o?.createdAt || '',
             updatedAt: o?.updatedAt || o?.createdAt || '',
-            description: 'Đơn hàng đang trong quy trình hòa giải Escrow NEXUS',
-            sellerName: o?.seller?.fullName || 'Gian Hàng NEXUS',
+            description: t('disputesPage.escrowMediationDesc'),
+            sellerName: o?.seller?.fullName || t('disputesPage.defaultShopName'),
           }));
         setDisputes(mappedDisputes);
       }
@@ -126,7 +127,7 @@ export default function BuyerDisputesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void loadData();
@@ -134,24 +135,24 @@ export default function BuyerDisputesPage() {
 
   const handleSubmitDispute = async () => {
     if (!selectedOrderId) {
-      showToast('Vui lòng chọn đơn hàng cần khiếu nại.');
+      showToast(t('disputesPage.selectOrderError'));
       return;
     }
     if (!description.trim()) {
-      showToast('Vui lòng nhập mô tả chi tiết lý do khiếu nại.');
+      showToast(t('disputesPage.enterDescriptionError'));
       return;
     }
 
     setSubmitting(true);
     try {
       await disputeOrderApi(selectedOrderId, `[${reasonLabels[reason]}] ${description.trim()}`);
-      showToast('Đã gửi khiếu nại thành công! Tiền ký quỹ đã được phong tỏa để hòa giải.');
+      showToast(t('disputesPage.submitSuccessToast'));
       setShowCreateModal(false);
       setSelectedOrderId('');
       setDescription('');
       void loadData();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Không thể gửi khiếu nại.';
+      const msg = err instanceof Error ? err.message : t('disputesPage.submitError');
       showToast(msg);
     } finally {
       setSubmitting(false);
@@ -173,11 +174,9 @@ export default function BuyerDisputesPage() {
         <div>
           <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
             <ShieldAlert size={18} className="text-red-500" />
-            Khiếu nại & Tranh chấp Escrow
+            {t('disputesPage.title')}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Bảo vệ quyền lợi người mua, bảo chứng giải ngân an toàn bởi NEXUS
-          </p>
+          <p className="text-xs text-slate-500 mt-0.5">{t('disputesPage.subtitle')}</p>
         </div>
         <button
           type="button"
@@ -185,7 +184,7 @@ export default function BuyerDisputesPage() {
           className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition shadow-sm cursor-pointer"
         >
           <Plus size={14} />
-          Tạo khiếu nại mới
+          {t('disputesPage.createButton')}
         </button>
       </div>
 
@@ -202,7 +201,7 @@ export default function BuyerDisputesPage() {
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
             }`}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -225,24 +224,23 @@ export default function BuyerDisputesPage() {
       {/* List */}
       {loading ? (
         <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-          <Loader2 size={16} className="animate-spin text-red-600" /> Đang tải khiếu nại…
+          <Loader2 size={16} className="animate-spin text-red-600" /> {t('disputesPage.loading')}
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
           <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center text-red-400 mb-4">
             <ShieldAlert size={28} />
           </div>
-          <h3 className="text-sm font-bold text-slate-800 mb-1">Chưa có khiếu nại nào</h3>
+          <h3 className="text-sm font-bold text-slate-800 mb-1">{t('disputesPage.emptyTitle')}</h3>
           <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
-            Tất cả giao dịch của bạn đều diễn ra thuận lợi. Nếu có bất kỳ vấn đề nào về sản phẩm,
-            bạn có thể mở khiếu nại để được hỗ trợ.
+            {t('disputesPage.emptyDesc')}
           </p>
           <Link
             to="/buyer/orders"
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm"
           >
             <ShoppingBag size={14} />
-            Xem danh sách đơn hàng
+            {t('disputesPage.viewOrdersButton')}
           </Link>
         </div>
       ) : (
@@ -256,12 +254,12 @@ export default function BuyerDisputesPage() {
               >
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <span className="text-xs font-bold text-slate-800">
-                    Đơn hàng #{d.orderNumber}
+                    {t('disputesPage.orderNumberLabel', { number: d.orderNumber })}
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.cls}`}
                   >
-                    {s.icon} {s.label}
+                    {s.icon} {t(s.labelKey)}
                   </span>
                 </div>
                 <div className="pt-3 flex items-start gap-3">
