@@ -3,7 +3,24 @@
     "heroTitle": "Mua sắm & Đấu giá Trực tuyến Thế hệ Mới",
     "featuredAuctions": "Phiên đấu giá nổi bật",
     "featuredProducts": "Sản phẩm đề xuất",
-    "categories": "Danh mục sản phẩm"
+    "categories": "Danh mục sản phẩm",
+    "freeShippingTag": "Miễn Phí Vận Chuyển",
+    "freeShippingTitle": "Voucher GNM 0Đ",
+    "freeShippingDesc": "Áp dụng cho mọi đơn hàng đầu tiên",
+    "claimCode": "Lấy Mã Ngay →",
+    "escrowTag": "Cổng Thanh Toán Ký Quỹ",
+    "payosGiftTitle": "Hoàn 5% Quà PayOS",
+    "payosGiftDesc": "Giao dịch bảo mật, sớm nhận ưu đãi",
+    "explore": "Khám Phá →",
+    "benefits": {
+      "freeship": "Freeship Đơn Đầu",
+      "flashSale": "Flash Sale Giá Vàng",
+      "liveAuction": "Đấu Giá Trực Tiếp",
+      "mall": "Chính Hãng Mall",
+      "loyalty": "Khách Hàng Thân Thiết",
+      "payosRefund": "Hoàn Tiền PayOS"
+    },
+    "viewAllPromos": "Xem Tất Cả Khuyến Mãi →"
   },
   "search": {
     "title": "Kết quả tìm kiếm",
@@ -24,8 +41,18 @@
     "productsCount": "{{count}} sản phẩm"
   },
   "notFound": {
-    "title": "Không tìm thấy trang",
-    "description": "Đường dẫn bạn truy cập không tồn tại hoặc đã bị di chuyển.",
-    "backHome": "Về trang chủ"
+    "title": "Trang không tồn tại",
+    "description": "Đường dẫn bạn yêu cầu không tìm thấy hoặc đã được di chuyển.",
+    "backHome": "Quay lại Trang Chủ"
+  },
+  "staticPages": {
+    "aboutTitle": "Giới thiệu về Project Nexus",
+    "aboutDesc": "Sàn thương mại điện tử tích hợp đấu giá thời gian thực với trải nghiệm 3D WebGL đột phá.",
+    "contactTitle": "Liên hệ & Hỗ trợ khách hàng",
+    "contactDesc": "Tổng đài CSKH 24/7 (1900 8822), gửi câu hỏi hoặc yêu cầu hỗ trợ trực tuyến.",
+    "termsTitle": "Điều khoản sử dụng & Quy chế hoạt động",
+    "termsDesc": "Quy định giao dịch, cơ chế bảo vệ ký quỹ (escrow), tính điểm uy tín và nghĩa vụ các bên.",
+    "privacyTitle": "Chính sách bảo mật",
+    "privacyDesc": "Cam kết bảo vệ dữ liệu cá nhân, thông tin thanh toán và quyền riêng tư người dùng."
   }
 }
