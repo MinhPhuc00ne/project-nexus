@@ -6,27 +6,32 @@ title: Code Standards, Naming & Sonar Quality
 
 ## 1. Clean Code Rules (`eslint.config.mjs`)
 
-- **No `any`**: `@typescript-eslint/no-explicit-any` is enforced as an error.
-- **Explicit Return Types**: Public methods, controllers, and utilities declare explicit return types.
-- **Null Safety**: Prefer `?.` and `??`; restrict `!` to root DOM mounting in `main.tsx`.
-- **No Trivial Inline Comments**: `no-inline-comments` warns against self-evident comments; use TSDoc/JSDoc (`/** ... */`) for public symbols and `///` in Prisma schemas.
-- **Complexity & Size**: Target files under ~300 lines, functions under ~30 lines, max 3 parameters (use typed DTOs beyond that), and early returns.
+- **No `any`**: `@typescript-eslint/no-explicit-any` is enforced at `error` level. Use `unknown` with type narrowing or explicit generics.
+- **Explicit Return Types**: Public service methods, controller endpoints, and exported helpers must declare explicit return types.
+- **Null/Undefined Safety**: Prefer `?.` and `??`; avoid `!` non-null assertions (permitted only in `main.tsx` root mount).
+- **No Redundant Inline Comments**: Avoid narrating obvious syntax; write TSDoc/JSDoc (`/** ... */`) on public classes, interfaces, and functions, and `///` doc comments in Prisma schema.
+- **Complexity & Size**:
+  - Keep files focused (target `< 300` lines), functions concise (`~30` lines), and parameters $\le 3$ (bundle into DTO/options objects otherwise).
+  - Favor early returns to minimize nesting and cognitive complexity (`sonarjs/cognitive-complexity`).
 
 ## 2. Naming Conventions
 
-| Element                    | Convention                      | Example                             |
-| :------------------------- | :------------------------------ | :---------------------------------- |
-| Backend files & folders    | `kebab-case`                    | `order-escrow.service.ts`           |
-| React Components           | `PascalCase`                    | `LanguageSwitcher.tsx`              |
-| React Custom Hooks         | `camelCase` (`use*`)            | `useAuth.ts`, `useToast.ts`         |
-| Classes, Interfaces, Types | `PascalCase`                    | `UserProfile`, `OrderSummaryDto`    |
-| Database Tables & Columns  | `snake_case`                    | `escrow_records`, `seller_payout`   |
-| REST Routes                | `kebab-case`                    | `/api/v1/users/toggle-seller`       |
-| WebSocket Events           | `domain:action`                 | `auction:bid:placed`                |
-| Boolean Variables          | `is` / `has` / `can` / `should` | `isSellerActive`, `hasPriceChanged` |
+| Artifact                       | Convention                      | Example                                                |
+| :----------------------------- | :------------------------------ | :----------------------------------------------------- |
+| **Backend files & folders**    | `kebab-case`                    | `order-escrow.service.ts`, `ghn-order-api.service.ts`  |
+| **React Components**           | `PascalCase`                    | `LanguageSwitcher.tsx`, `ProtectedRoute.tsx`           |
+| **React Custom Hooks**         | `camelCase` (`use*`)            | `useAuth.ts`, `useToast.ts`, `useAdminContext.ts`      |
+| **Classes, Interfaces, Types** | `PascalCase`                    | `UserProfile`, `AuthContextType`, `OrderSummaryDto`    |
+| **Database Tables & Columns**  | `snake_case`                    | `escrow_records`, `seller_payout`, `locked_balance`    |
+| **REST Routes**                | `kebab-case`                    | `/api/v1/users/toggle-seller`, `/api/v1/after-sales`   |
+| **WebSocket Events**           | `domain:action`                 | `auction:bid:placed`, `notification:unread_count`      |
+| **Boolean Variables**          | `is` / `has` / `can` / `should` | `isSellerActive`, `isShopSuspended`, `hasPriceChanged` |
 
-## 3. 3-Tier Sonar Quality Gate
+## 3. 3-Tier Quality Control (Zero-Server Sonar)
 
-1. **Tier 1 (IDE Realtime)**: VS Code recommends `SonarSource.sonarlint-vscode` via `.vscode/extensions.json` & `.vscode/settings.json`.
-2. **Tier 2 (Lint & Pre-commit Gate)**: `eslint.config.mjs` integrates `eslint-plugin-sonarjs` alongside Prettier, Husky (`lint-staged`), and `commitlint`.
-3. **Tier 3 (Online Dashboard Ready)**: `sonar-project.properties` + `infra/templates/sonarcloud.yml.example` are ready for SonarQube Server or SonarQube Cloud.
+1. **Tier 1 (IDE Realtime)**: `.vscode/extensions.json` & `.vscode/settings.json` recommend `SonarSource.sonarlint-vscode` for live editor feedback.
+2. **Tier 2 (Lint, Format & Git Hooks)**:
+   - `eslint.config.mjs` integrates `eslint-plugin-sonarjs` + `typescript-eslint`.
+   - Husky `pre-commit` runs `lint-staged` (ESLint `--fix` + Prettier `--write`).
+   - Husky `commit-msg` runs `@commitlint/cli` enforcing Conventional Commits (`<type>(<scope>): <subject>`, max 100 chars, spell out "and" instead of `&`).
+3. **Tier 3 (Online Dashboard Ready)**: `sonar-project.properties` and `infra/templates/sonarcloud.yml.example` consume `backend/coverage/lcov.info` and `frontend/coverage/lcov.info`.
