@@ -51,7 +51,6 @@ export { default as AdminStoresPage } from './admin/AdminStoresPage';
 export { default as AdminReportsPage } from './admin/AdminReportsPage';
 export { default as AdminDashboardPage } from './admin/AdminDashboardPage';
 export { default as AdminAuctionsPage } from './admin/AdminAuctionsPage';
-export { default as AdminStudioPage } from './admin/AdminStudioPage';
 export { default as AdminUsersPage } from './admin/AdminUsersPage';
 export { default as AdminSellersPage } from './admin/AdminSellersPage';
 export { default as AdminRefundsPage } from './admin/AdminRefundsPage';

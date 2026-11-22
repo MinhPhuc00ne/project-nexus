@@ -1,4 +1,4 @@
-import { BadgeDollarSign, Gavel, Radio, RefreshCw, ShieldCheck, Users } from 'lucide-react';
+import { BadgeDollarSign, Gavel, RefreshCw, ShieldCheck, Users } from 'lucide-react';
 import { Badge, Button, Panel } from '../../components/adminDashboard/shared/AdminUI';
 import { formatMoney } from '../../components/adminDashboard/shared/adminData';
 import { useAdminContext } from '../../components/adminDashboard/shared/useAdminContext';
@@ -41,10 +41,6 @@ export default function AdminDashboardPage() {
           <Button variant="secondary" disabled={loading} onClick={refresh}>
             <RefreshCw size={14} />
             {loading ? 'Đang tải…' : 'Làm mới'}
-          </Button>
-          <Button variant="secondary" onClick={() => actions.navigate('studio')}>
-            <Radio size={14} />
-            Đi đến Studio
           </Button>
         </div>
       </section>

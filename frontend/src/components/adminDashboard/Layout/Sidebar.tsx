@@ -8,7 +8,6 @@ import {
   Flag,
   Layers,
   LayoutDashboard,
-  Radio,
   Settings2,
   ShieldCheck,
   Store,
@@ -35,7 +34,6 @@ export const adminNavigation: {
       { id: 'auctions', label: 'Quản lí đấu giá', icon: Gavel },
       // Mở trang quản lý danh mục tại /admin/categories.
       { id: 'categories', label: 'Quản lý danh mục', icon: Layers },
-      { id: 'studio', label: 'Studio phát trực tiếp', icon: Radio },
     ],
   },
   {
