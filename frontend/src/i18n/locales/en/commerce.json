@@ -257,5 +257,20 @@
     "viewOrderDetail": "View order details",
     "ordersList": "Order list",
     "continueShopping": "Continue shopping"
+  },
+  "productPurchase": {
+    "noReviews": "No reviews yet",
+    "reviewsLabel": "Reviews",
+    "soldLabel": "Sold",
+    "inStock": "{{count}} items in stock",
+    "outOfStock": "This product is currently out of stock",
+    "categoryLabel": "Category:",
+    "uncategorized": "Uncategorized",
+    "quantityLabel": "Quantity",
+    "addingToCart": "Adding…",
+    "addToCart": "Add to Cart",
+    "buyNow": "Buy Now",
+    "removeWishlist": "Remove from wishlist",
+    "addWishlist": "Add to wishlist"
   }
 }

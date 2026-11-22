@@ -257,5 +257,20 @@
     "viewOrderDetail": "Xem chi tiết đơn này",
     "ordersList": "Danh sách đơn hàng",
     "continueShopping": "Tiếp tục mua sắm"
+  },
+  "productPurchase": {
+    "noReviews": "Chưa có đánh giá",
+    "reviewsLabel": "Đánh Giá",
+    "soldLabel": "Đã bán",
+    "inStock": "Còn {{count}} sản phẩm",
+    "outOfStock": "Sản phẩm hiện không có hàng để bán",
+    "categoryLabel": "Danh mục:",
+    "uncategorized": "Chưa phân loại",
+    "quantityLabel": "Số lượng",
+    "addingToCart": "Đang thêm…",
+    "addToCart": "Thêm vào giỏ hàng",
+    "buyNow": "Mua ngay",
+    "removeWishlist": "Xóa khỏi yêu thích",
+    "addWishlist": "Thêm vào yêu thích"
   }
 }
