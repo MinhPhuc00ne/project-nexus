@@ -100,6 +100,7 @@
     "bidFreqTooltip": "{{label}}: {{count}} lượt trả giá",
     "noData": "Chưa có dữ liệu",
     "hourlyMatchTitle": "Tần suất khớp lệnh theo giờ",
+    "hourlyMatchSubtitle": "Tải WebGL 6 nodes & khung giờ vàng",
     "demoBidTooltip": "{{label}}: {{count}} lượt trả giá (demo)",
     "peakWindowPrefix": "Khung {{window}} đạt:",
     "bidsPerMin": "{{count}} bids/phút",
@@ -544,6 +545,7 @@
       "Đang hiển thị": "Đang hiển thị",
       "Đã lên lịch": "Đã lên lịch",
       "Đã tắt": "Đã tắt",
+      "Đã hết hạn": "Đã hết hạn",
       "Hết hạn": "Hết hạn"
     },
     "form": {
@@ -592,6 +594,7 @@
       "subtitle": "Tự động kích hoạt webhook khi đấu giá gõ chốt phiên thành công",
       "webhookEndpoint": "Webhook endpoint",
       "autoShipment": "Tạo vận đơn tự động",
+      "activeStatus": "Hoạt động",
       "latencyPrefix": "Độ trễ phản hồi:",
       "demoNotice": "Chưa kết nối API GHN. Đây là trạng thái minh họa.",
       "retryFailed": "Tạo lại vận đơn lỗi"
@@ -599,7 +602,14 @@
     "events": {
       "title": "Nhật ký sự kiện thời gian thực",
       "subtitle": "Theo dõi hoạt động hệ thống (dữ liệu demo)",
-      "exportJson": "Xuất event log (JSON)"
+      "exportJson": "Xuất event log (JSON)",
+      "items": {
+        "0": "Admin Alex Tran bật Stream Broadcast 3D #AUCT-109.",
+        "1": "Atomic Bid #9802 khớp lệnh thành công 128.5M (Queue: 0ms).",
+        "2": "Vận đơn GHN #VN88231 đã giao thành công.",
+        "3": "Support Staff đã gửi hồ sơ hoàn tiền #NX-ORD-991204.",
+        "4": "WebGL node #06 hoàn tất kiểm tra trạng thái."
+      }
     }
   },
   "settings": {

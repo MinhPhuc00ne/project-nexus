@@ -100,6 +100,7 @@
     "bidFreqTooltip": "{{label}}: {{count}} bids",
     "noData": "No data yet",
     "hourlyMatchTitle": "Hourly order matching frequency",
+    "hourlyMatchSubtitle": "6-node WebGL load & prime hours",
     "demoBidTooltip": "{{label}}: {{count}} bids (demo)",
     "peakWindowPrefix": "Window {{window}} reached:",
     "bidsPerMin": "{{count}} bids/min",
@@ -544,6 +545,7 @@
       "Đang hiển thị": "Active",
       "Đã lên lịch": "Scheduled",
       "Đã tắt": "Disabled",
+      "Đã hết hạn": "Expired",
       "Hết hạn": "Expired"
     },
     "form": {
@@ -592,6 +594,7 @@
       "subtitle": "Automatically triggers webhook when an auction session closes successfully",
       "webhookEndpoint": "Webhook endpoint",
       "autoShipment": "Auto waybill creation",
+      "activeStatus": "Active",
       "latencyPrefix": "Response latency:",
       "demoNotice": "GHN API not connected yet. This is a sample status.",
       "retryFailed": "Retry failed shipments"
@@ -599,7 +602,14 @@
     "events": {
       "title": "Real-Time Event Log",
       "subtitle": "Monitor system activity (demo data)",
-      "exportJson": "Export event log (JSON)"
+      "exportJson": "Export event log (JSON)",
+      "items": {
+        "0": "Admin Alex Tran started Stream Broadcast 3D #AUCT-109.",
+        "1": "Atomic Bid #9802 matched successfully at 128.5M (Queue: 0ms).",
+        "2": "GHN waybill #VN88231 delivered successfully.",
+        "3": "Support Staff submitted refund case #NX-ORD-991204.",
+        "4": "WebGL node #06 completed health check."
+      }
     }
   },
   "settings": {

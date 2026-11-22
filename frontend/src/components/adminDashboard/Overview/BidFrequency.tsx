@@ -14,7 +14,7 @@ export default function BidFrequency() {
   return (
     <Panel
       title={t('overview.hourlyMatchTitle')}
-      subtitle={mockBidFrequencySummary.subtitle}
+      subtitle={t('overview.hourlyMatchSubtitle')}
       icon={<TrendingUp size={19} />}
       action={<Badge>● LIVE</Badge>}
     >

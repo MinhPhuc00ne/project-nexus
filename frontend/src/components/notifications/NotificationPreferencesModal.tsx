@@ -13,25 +13,10 @@ interface NotificationPreferencesModalProps {
   onSaved?: () => void;
 }
 
-const channelMeta: Record<
-  NotificationChannel,
-  { label: string; desc: string; icon: React.ReactNode }
-> = {
-  IN_APP: {
-    label: 'Thông báo trên hệ thống (In-App)',
-    desc: 'Hiển thị quả chuông đỏ và thông báo trực tiếp khi hoạt động trên NEXUS.',
-    icon: <Bell size={18} className="text-blue-600" />,
-  },
-  EMAIL: {
-    label: 'Hộp thư điện tử (Email)',
-    desc: 'Gửi email xác nhận đơn hàng, cập nhật lượt trả giá và thay đổi điểm uy tín.',
-    icon: <Mail size={18} className="text-amber-600" />,
-  },
-  PUSH: {
-    label: 'Thông báo đẩy trình duyệt (Web Push)',
-    desc: 'Nhận thông báo khi bị vượt giá hoặc sắp hết giờ đấu giá ngay cả khi rời tab.',
-    icon: <BellRing size={18} className="text-purple-600" />,
-  },
+const channelIcons: Record<NotificationChannel, React.ReactNode> = {
+  IN_APP: <Bell size={18} className="text-blue-600" />,
+  EMAIL: <Mail size={18} className="text-amber-600" />,
+  PUSH: <BellRing size={18} className="text-purple-600" />,
 };
 
 export const NotificationPreferencesModal: React.FC<NotificationPreferencesModalProps> = ({
@@ -147,7 +132,7 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
           ) : (
             <div className="space-y-3">
               {(['IN_APP', 'EMAIL', 'PUSH'] as NotificationChannel[]).map((channel) => {
-                const meta = channelMeta[channel];
+                const icon = channelIcons[channel];
                 const currentPref = preferences.find((p) => p.channel === channel);
                 const isChecked = currentPref?.isEnabled ?? true;
 
@@ -158,7 +143,7 @@ export const NotificationPreferencesModal: React.FC<NotificationPreferencesModal
                     className="flex items-start justify-between gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/20 transition cursor-pointer select-none"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="mt-0.5 p-2 bg-slate-50 rounded-lg shrink-0">{meta.icon}</div>
+                      <div className="mt-0.5 p-2 bg-slate-50 rounded-lg shrink-0">{icon}</div>
                       <div>
                         <h4 className="text-xs font-bold text-slate-900 m-0">
                           {t(`notificationPrefs.channels.${channel}.label`)}

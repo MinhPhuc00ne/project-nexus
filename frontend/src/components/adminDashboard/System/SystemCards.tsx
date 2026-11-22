@@ -25,7 +25,11 @@ export function LogisticsCard({ actions }: Pick<AdminTabProps, 'actions'>) {
         </div>
         <div className="flex justify-between">
           <span className="text-slate-500">{t('system.logistics.autoShipment')}</span>
-          <Badge tone="green">{mockLogistics.automaticShipmentStatus}</Badge>
+          <Badge tone="green">
+            {t('system.logistics.activeStatus', {
+              defaultValue: mockLogistics.automaticShipmentStatus,
+            })}
+          </Badge>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[10px]">
@@ -76,12 +80,13 @@ export function EventLog({ compact = false }: { compact?: boolean }) {
       action={<span className="mt-3 size-2 shrink-0 rounded-full bg-blue-500" />}
     >
       <div className="space-y-2">
-        {mockSystemEvents.slice(0, compact ? 3 : mockSystemEvents.length).map((event) => (
+        {mockSystemEvents.slice(0, compact ? 3 : mockSystemEvents.length).map((event, index) => (
           <p
             key={event.time}
             className="rounded-lg bg-slate-50 p-3 font-mono text-[10px] leading-5 text-slate-600"
           >
-            <span className={`font-bold ${event.tone}`}>[{event.time}]</span> {event.message}
+            <span className={`font-bold ${event.tone}`}>[{event.time}]</span>{' '}
+            {t(`system.events.items.${index}`, { defaultValue: event.message })}
           </p>
         ))}
       </div>
