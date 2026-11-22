@@ -5,11 +5,13 @@ import {
   Lock as LockOutlined,
   WalletCards as WalletOutlined,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { SellerRevenue } from '../../types/seller-finance.types';
 import { EmptyState, Panel, StatCard } from './SellerUI';
 import { financeMoney } from './financeFormat';
 
 export default function SellerFinanceSummary({ data }: { data: SellerRevenue }): ReactElement {
+  const { t } = useTranslation('seller');
   const { wallet, metrics } = data;
   const months = [...data.monthlyBreakdown].sort((a, b) => a.month.localeCompare(b.month));
   const maxGross = Math.max(1, ...months.map((item) => item.gross));
@@ -17,39 +19,42 @@ export default function SellerFinanceSummary({ data }: { data: SellerRevenue }):
     <>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Có thể rút"
+          label={t('finance.summary.availableLabel')}
           value={financeMoney(wallet.availableToWithdraw)}
-          detail="Số dư khả dụng trong ví"
+          detail={t('finance.summary.availableDetail')}
           icon={<WalletOutlined />}
         />
         <StatCard
-          label="Số dư đang khóa"
+          label={t('finance.summary.lockedLabel')}
           value={financeMoney(wallet.lockedBalance)}
-          detail="Theo thông tin ví trên hệ thống"
+          detail={t('finance.summary.lockedDetail')}
           icon={<LockOutlined />}
         />
         <StatCard
-          label="Tổng doanh số"
+          label={t('finance.summary.grossLabel')}
           value={financeMoney(metrics.totalGrossRevenue)}
-          detail={`${metrics.totalOrders} đơn hàng ghi nhận`}
+          detail={t('finance.summary.grossDetail', { count: metrics.totalOrders })}
           icon={<LineChartOutlined />}
         />
         <StatCard
-          label="Doanh thu thuần ước tính"
+          label={t('finance.summary.netLabel')}
           value={financeMoney(metrics.netRevenue)}
-          detail={`Đã trừ phí sàn ước tính ${metrics.platformFeeRatePercentage}%`}
+          detail={t('finance.summary.netDetail', { rate: metrics.platformFeeRatePercentage })}
           icon={<BankOutlined />}
         />
       </div>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <Panel title="Doanh số theo tháng" subtitle="Các tháng có dữ liệu gần nhất, tối đa 6 tháng">
+        <Panel
+          title={t('finance.summary.monthlyTitle')}
+          subtitle={t('finance.summary.monthlySubtitle')}
+        >
           {months.length ? (
             <div className="space-y-5">
               {months.map((item) => (
                 <div key={item.month}>
                   <div className="mb-2 flex flex-wrap justify-between gap-2 text-xs">
                     <span className="text-slate-500">
-                      {item.month} · {item.ordersCount} đơn
+                      {item.month} · {item.ordersCount} {t('finance.summary.ordersSuffix')}
                     </span>
                     <strong className="font-semibold text-blue-700">
                       {financeMoney(item.gross)}
@@ -70,20 +75,26 @@ export default function SellerFinanceSummary({ data }: { data: SellerRevenue }):
             </div>
           ) : (
             <EmptyState
-              title="Chưa có doanh số"
-              description="Doanh số sẽ được cập nhật khi gian hàng có đơn hàng."
+              title={t('finance.summary.emptyTitle')}
+              description={t('finance.summary.emptyDesc')}
             />
           )}
         </Panel>
-        <Panel title="Đối soát doanh thu" subtitle="Doanh thu ước tính khác với số dư có thể rút">
+        <Panel
+          title={t('finance.summary.reconcileTitle')}
+          subtitle={t('finance.summary.reconcileSubtitle')}
+        >
           <dl className="divide-y divide-slate-100 text-xs">
             {[
-              ['Đơn hoàn tất', String(metrics.completedOrdersCount)],
-              ['Đơn đang xử lý', String(metrics.pendingOrdersCount)],
-              ['Đơn hủy / hoàn tiền', String(metrics.cancelledOrdersCount)],
-              ['Doanh thu đơn hoàn tất', financeMoney(metrics.completedRevenue)],
-              ['Doanh thu đang chờ hoàn tất', financeMoney(metrics.pendingEscrowRevenue)],
-              ['Phí sàn ước tính', financeMoney(metrics.estimatedPlatformFee)],
+              [t('finance.summary.completedOrders'), String(metrics.completedOrdersCount)],
+              [t('finance.summary.pendingOrders'), String(metrics.pendingOrdersCount)],
+              [t('finance.summary.cancelledOrders'), String(metrics.cancelledOrdersCount)],
+              [t('finance.summary.completedRevenue'), financeMoney(metrics.completedRevenue)],
+              [
+                t('finance.summary.pendingEscrowRevenue'),
+                financeMoney(metrics.pendingEscrowRevenue),
+              ],
+              [t('finance.summary.estimatedFee'), financeMoney(metrics.estimatedPlatformFee)],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between gap-4 py-3">
                 <dt className="text-slate-500">{label}</dt>

@@ -1,6 +1,7 @@
 import { useCallback, useState, type ReactElement } from 'react';
 import { Landmark as BankOutlined } from 'lucide-react';
 import { RefreshCw as ReloadOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerRevenue } from '../../services/sellerFinance';
 import useProductResource from '../../components/productDetail/useProductResource';
@@ -18,6 +19,7 @@ export default function SellerFinancePage(): ReactElement {
 }
 
 function FinanceWorkspace(): ReactElement {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const { refreshProfile } = useAuth();
   const [revision, setRevision] = useState(0);
@@ -38,12 +40,12 @@ function FinanceWorkspace(): ReactElement {
   return (
     <div className="space-y-5">
       <PageHeading
-        title="Tài chính & ví Escrow"
-        description="Theo dõi doanh thu, quản lý dòng tiền và yêu cầu rút tiền về ngân hàng."
+        title={t('finance.pageTitle')}
+        description={t('finance.pageDesc')}
         actions={
           <>
             <SellerButton secondary onClick={refresh} disabled={revenue.loading}>
-              <ReloadOutlined /> Làm mới
+              <ReloadOutlined /> {t('finance.refresh')}
             </SellerButton>
             <SellerButton
               onClick={() => setWithdrawOpen(true)}
@@ -55,7 +57,7 @@ function FinanceWorkspace(): ReactElement {
                 balance < 50000
               }
             >
-              <BankOutlined /> Yêu cầu rút tiền
+              <BankOutlined /> {t('finance.requestWithdraw')}
             </SellerButton>
           </>
         }
@@ -65,8 +67,10 @@ function FinanceWorkspace(): ReactElement {
           role="alert"
           className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
         >
-          Gian hàng đang bị đình chỉ. Bạn có thể xem lịch sử tài chính nhưng chưa thể gửi yêu cầu
-          rút tiền.{user.suspensionReason ? ` Lý do: ${user.suspensionReason}` : ''}
+          {t('finance.suspendedAlert')}
+          {user.suspensionReason
+            ? ` ${t('finance.suspendedReason', { reason: user.suspensionReason })}`
+            : ''}
         </p>
       )}
       <SellerResourceState loading={revenue.loading} error={revenue.error} retry={revenue.retry}>
@@ -74,19 +78,16 @@ function FinanceWorkspace(): ReactElement {
       </SellerResourceState>
       {!revenue.loading && revenue.data && balance < 50000 && !user.isShopSuspended && (
         <p className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs leading-6 text-blue-800">
-          Số tiền rút tối thiểu là 50.000đ. Nút yêu cầu rút tiền sẽ khả dụng khi ví có đủ số dư.
+          {t('finance.minWithdrawNotice')}
         </p>
       )}
       <SellerFinanceHistory revision={revision} />
-      <Panel
-        title="Quy trình xử lý rút tiền"
-        subtitle="Tiến độ được cập nhật trong mục Yêu cầu rút tiền"
-      >
+      <Panel title={t('finance.processTitle')} subtitle={t('finance.processSubtitle')}>
         <ol className="grid gap-4 text-xs sm:grid-cols-3">
           {[
-            'Gửi yêu cầu với thông tin ngân hàng chính xác.',
-            'Số tiền được tạm khóa để chờ Quản trị viên xét duyệt.',
-            'Theo dõi trạng thái xử lý và kết quả trong lịch sử.',
+            t('finance.processSteps.step1'),
+            t('finance.processSteps.step2'),
+            t('finance.processSteps.step3'),
           ].map((text, index) => (
             <li
               key={text}
