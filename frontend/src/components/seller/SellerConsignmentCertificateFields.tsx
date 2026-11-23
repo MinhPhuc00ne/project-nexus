@@ -1,4 +1,5 @@
 import { type ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import ConsignmentImagePicker from './ConsignmentImagePicker';
 import type { ConsignmentFormState } from './sellerConsignmentHelpers';
 import { Panel } from './SellerUI';
@@ -27,30 +28,31 @@ export default function SellerConsignmentCertificateFields({
   onCertificateImagesChange,
   onError,
 }: SellerConsignmentCertificateFieldsProps): ReactElement {
+  const { t } = useTranslation('seller');
   return (
     <Panel
-      title="Chứng thư thẩm định"
-      subtitle="Chứng thư, hóa đơn hoặc giấy xác thực sẽ được Admin kiểm tra."
+      title={t('auctions.consignment.certTitle')}
+      subtitle={t('auctions.consignment.certSubtitle')}
     >
       <div className="grid gap-4 md:grid-cols-2 [&_label]:space-y-1.5 [&_label]:text-sm [&_label]:font-medium [&_label]:text-slate-700 [&_input]:w-full [&_input]:rounded-lg [&_input]:border [&_input]:border-slate-200 [&_input]:bg-white [&_input]:px-3 [&_input]:py-2.5 [&_input]:text-sm">
         <label>
-          Số chứng thư
+          {t('auctions.consignment.certNumberLabel')}
           <input
             value={form.appraisalCertificateNumber}
             onChange={(event) => updateForm('appraisalCertificateNumber', event.target.value)}
-            placeholder="Ví dụ: GIA-2026-001"
+            placeholder={t('auctions.consignment.certNumberPlaceholder')}
           />
         </label>
         <label>
-          Đơn vị thẩm định
+          {t('auctions.consignment.certAgencyLabel')}
           <input
             value={form.appraisalAgency}
             onChange={(event) => updateForm('appraisalAgency', event.target.value)}
-            placeholder="Ví dụ: GIA"
+            placeholder={t('auctions.consignment.certAgencyPlaceholder')}
           />
         </label>
         <label>
-          Ngày cấp chứng thư
+          {t('auctions.consignment.certDateLabel')}
           <input
             type="date"
             value={form.certificateIssueDate}
@@ -62,8 +64,8 @@ export default function SellerConsignmentCertificateFields({
         files={certificateImages}
         onFilesChange={onCertificateImagesChange}
         onError={onError}
-        label="Chọn ảnh chứng thư / giấy tờ *"
-        previewLabel="ảnh chứng thư"
+        label={t('auctions.consignment.chooseCertPhotos')}
+        previewLabel={t('auctions.consignment.certPhotosLabel')}
         previewDescription=""
       />
     </Panel>

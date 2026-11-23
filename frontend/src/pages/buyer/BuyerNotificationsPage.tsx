@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Bell,
   CheckCheck,
@@ -34,6 +36,7 @@ import type {
 import { resolveNotificationTargetUrl } from '../../utils/notificationNavigation';
 
 export const BuyerNotificationsPage: React.FC = () => {
+  const { t, i18n } = useTranslation('buyer');
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'list' | 'preferences'>('list');
   const [filterRead, setFilterRead] = useState<'ALL' | 'UNREAD'>('ALL');
@@ -126,7 +129,7 @@ export const BuyerNotificationsPage: React.FC = () => {
       await markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      setToastMessage('Đã đánh dấu tất cả thông báo là đã đọc!');
+      setToastMessage(t('notificationsPage.markedAllToast'));
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
       console.warn('Failed to mark all as read:', err);
@@ -143,10 +146,10 @@ export const BuyerNotificationsPage: React.FC = () => {
     setSavingPrefs(true);
     try {
       const res = await saveNotificationPreferences(preferences);
-      setToastMessage(res.message || 'Đã lưu tùy chọn nhận thông báo!');
+      setToastMessage(res.message || t('notificationsPage.prefsSavedToast'));
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err) {
-      setToastMessage(err instanceof Error ? err.message : 'Lỗi khi lưu cài đặt.');
+      setToastMessage(err instanceof Error ? err.message : t('notificationsPage.prefsSaveError'));
       setTimeout(() => setToastMessage(null), 3000);
     } finally {
       setSavingPrefs(false);
@@ -193,11 +196,13 @@ export const BuyerNotificationsPage: React.FC = () => {
   const formatTime = (timeStr: string) => {
     try {
       const d = new Date(timeStr);
-      return (
-        d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
-        ' ngày ' +
-        d.toLocaleDateString('vi-VN')
-      );
+      return d.toLocaleString(getIntlLocale(i18n.language), {
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      });
     } catch {
       return timeStr;
     }
@@ -217,11 +222,9 @@ export const BuyerNotificationsPage: React.FC = () => {
         <div>
           <h1 className="text-lg font-black text-slate-900 flex items-center gap-2">
             <Bell size={20} className="text-blue-600" />
-            Trung Tâm Thông Báo & Tùy Chọn
+            {t('notificationsPage.title')}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Theo dõi cảnh báo đơn hàng, diễn biến đấu giá và quản lý kênh nhận thông báo cá nhân
-          </p>
+          <p className="text-xs text-slate-500 mt-0.5">{t('notificationsPage.subtitle')}</p>
         </div>
 
         {activeTab === 'list' && unreadCount > 0 && (
@@ -231,7 +234,7 @@ export const BuyerNotificationsPage: React.FC = () => {
             className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition cursor-pointer"
           >
             <CheckCheck size={14} />
-            <span>Đánh dấu tất cả là đã đọc ({unreadCount})</span>
+            <span>{t('notificationsPage.markAllRead', { count: unreadCount })}</span>
           </button>
         )}
       </div>
@@ -248,7 +251,7 @@ export const BuyerNotificationsPage: React.FC = () => {
           }`}
         >
           <Bell size={14} />
-          <span>Danh sách thông báo</span>
+          <span>{t('notificationsPage.tabList')}</span>
           {unreadCount > 0 && (
             <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
               {unreadCount}
@@ -266,7 +269,7 @@ export const BuyerNotificationsPage: React.FC = () => {
           }`}
         >
           <Settings size={14} />
-          <span>Tùy chọn nhận tin (Email, Push, In-App)</span>
+          <span>{t('notificationsPage.tabPreferences')}</span>
         </button>
       </div>
 
@@ -277,7 +280,7 @@ export const BuyerNotificationsPage: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs">
               <span className="text-slate-400 font-semibold flex items-center gap-1">
-                <Filter size={12} /> Bộ lọc:
+                <Filter size={12} /> {t('notificationsPage.filterLabel')}
               </span>
               <button
                 type="button"
@@ -291,7 +294,7 @@ export const BuyerNotificationsPage: React.FC = () => {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                Tất cả
+                {t('notificationsPage.filterAll')}
               </button>
               <button
                 type="button"
@@ -305,7 +308,7 @@ export const BuyerNotificationsPage: React.FC = () => {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                Chưa đọc ({unreadCount})
+                {t('notificationsPage.filterUnread', { count: unreadCount })}
               </button>
             </div>
           </div>
@@ -313,19 +316,18 @@ export const BuyerNotificationsPage: React.FC = () => {
           {loading ? (
             <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-slate-200">
               <Loader2 size={24} className="animate-spin text-blue-600" />
-              <span>Đang tải thông báo của bạn…</span>
+              <span>{t('notificationsPage.loading')}</span>
             </div>
           ) : notifications.length === 0 ? (
             <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
               <Bell size={36} className="mx-auto mb-3 text-slate-300" />
               <h3 className="text-sm font-bold text-slate-800 mb-1">
                 {filterRead === 'UNREAD'
-                  ? 'Tuyệt vời! Bạn không có thông báo nào chưa đọc'
-                  : 'Hộp thư thông báo đang trống'}
+                  ? t('notificationsPage.emptyUnreadTitle')
+                  : t('notificationsPage.emptyAllTitle')}
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                Khi có đơn hàng mới, cập nhật phiên đấu giá hoặc thay đổi điểm uy tín, thông báo sẽ
-                hiển thị tại đây.
+                {t('notificationsPage.emptyDesc')}
               </p>
             </div>
           ) : (
@@ -352,11 +354,11 @@ export const BuyerNotificationsPage: React.FC = () => {
                       <div className="flex items-center gap-2">
                         {!item.isRead && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
-                            Chưa đọc
+                            {t('notificationsPage.unreadBadge')}
                           </span>
                         )}
                         <span className="text-[11px] font-semibold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
-                          <span>Mở trang</span>
+                          <span>{t('notificationsPage.openPage')}</span>
                           <ArrowRight size={12} />
                         </span>
                       </div>
@@ -370,7 +372,7 @@ export const BuyerNotificationsPage: React.FC = () => {
                       </span>
                       {item.channel && (
                         <span className="bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-mono text-[10px]">
-                          Kênh: {item.channel}
+                          {t('notificationsPage.channelLabel', { channel: item.channel })}
                         </span>
                       )}
                     </div>
@@ -384,7 +386,7 @@ export const BuyerNotificationsPage: React.FC = () => {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-2 pt-2">
               <span className="text-xs text-slate-500">
-                Trang {page} / {totalPages}
+                {t('notificationsPage.pageLabel', { page, totalPages })}
               </span>
               <div className="flex items-center gap-1.5">
                 <button
@@ -412,16 +414,17 @@ export const BuyerNotificationsPage: React.FC = () => {
       {/* TAB 2: PREFERENCES */}
       {activeTab === 'preferences' && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs max-w-2xl">
-          <h3 className="text-sm font-bold text-slate-900 mb-1">Cài Đặt Kênh Nhận Thông Báo</h3>
+          <h3 className="text-sm font-bold text-slate-900 mb-1">
+            {t('notificationsPage.prefsTitle')}
+          </h3>
           <p className="text-xs text-slate-500 mb-6 leading-relaxed">
-            Chọn các kênh truyền dẫn bạn đồng ý cho hệ thống NEXUS gửi cập nhật tức thì (In-App,
-            Email, Web Push).
+            {t('notificationsPage.prefsDesc')}
           </p>
 
           {loadingPrefs ? (
             <div className="py-12 flex flex-col items-center justify-center text-slate-400 text-xs gap-2">
               <Loader2 size={20} className="animate-spin text-blue-600" />
-              <span>Đang tải tùy chọn…</span>
+              <span>{t('notificationsPage.loadingPrefs')}</span>
             </div>
           ) : (
             <div className="space-y-4">
@@ -436,11 +439,10 @@ export const BuyerNotificationsPage: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 m-0">
-                      Thông Báo Trong Ứng Dụng (In-App)
+                      {t('notificationsPage.inAppTitle')}
                     </h4>
                     <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
-                      Hiển thị trực tiếp trên thanh công cụ quả chuông khi đăng nhập vào hệ thống
-                      NEXUS.
+                      {t('notificationsPage.inAppDesc')}
                     </p>
                   </div>
                 </div>
@@ -466,9 +468,11 @@ export const BuyerNotificationsPage: React.FC = () => {
                     <Mail size={20} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 m-0">Thông Báo Qua Email</h4>
+                    <h4 className="text-xs font-bold text-slate-900 m-0">
+                      {t('notificationsPage.emailTitle')}
+                    </h4>
                     <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
-                      Gửi email thông báo đơn hàng thành công, biến động giá đấu và mã OTP bảo mật.
+                      {t('notificationsPage.emailDesc')}
                     </p>
                   </div>
                 </div>
@@ -495,11 +499,10 @@ export const BuyerNotificationsPage: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-slate-900 m-0">
-                      Thông Báo Đẩy Trình Duyệt (Web Push)
+                      {t('notificationsPage.pushTitle')}
                     </h4>
                     <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
-                      Cảnh báo tức thì trên màn hình khi bạn bị vượt giá đấu hoặc có tin nhắn hỗ trợ
-                      khẩn cấp.
+                      {t('notificationsPage.pushDesc')}
                     </p>
                   </div>
                 </div>
@@ -527,7 +530,11 @@ export const BuyerNotificationsPage: React.FC = () => {
                   ) : (
                     <Save size={16} />
                   )}
-                  <span>{savingPrefs ? 'Đang lưu…' : 'Lưu Tùy Chọn Cài Đặt'}</span>
+                  <span>
+                    {savingPrefs
+                      ? t('notificationsPage.savingPrefs')
+                      : t('notificationsPage.savePrefs')}
+                  </span>
                 </button>
               </div>
             </div>

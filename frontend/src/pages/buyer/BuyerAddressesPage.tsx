@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MapPin, Plus, AlertCircle, Home, CheckCircle2 } from 'lucide-react';
 import AddressFormModal, { type AddressFormData } from '../../components/address/AddressFormModal';
 import AddressCard from '../../components/address/AddressCard';
@@ -23,6 +24,7 @@ const initialForm: AddressFormData = {
 };
 
 export default function BuyerAddressesPage() {
+  const { t } = useTranslation('buyer');
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export default function BuyerAddressesPage() {
       const data = await getAddresses();
       setAddresses(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Không thể tải sổ địa chỉ.');
+      setError(err instanceof Error ? err.message : t('addresses.loadError'));
     } finally {
       setLoading(false);
     }
@@ -91,12 +93,12 @@ export default function BuyerAddressesPage() {
       !form.street.trim() ||
       !form.city.trim()
     ) {
-      setFormError('Vui lòng điền đầy đủ họ tên, số điện thoại, tỉnh/thành phố và địa chỉ cụ thể.');
+      setFormError(t('addresses.requiredFieldsError'));
       return;
     }
 
     if (!/^\+?[0-9]{9,15}$/.test(form.phone.trim())) {
-      setFormError('Số điện thoại không hợp lệ (cần từ 9 - 15 chữ số).');
+      setFormError(t('addresses.invalidPhoneError'));
       return;
     }
 
@@ -123,7 +125,7 @@ export default function BuyerAddressesPage() {
             return a;
           }),
         );
-        showToast('Đã cập nhật địa chỉ thành công!');
+        showToast(t('addresses.updatedToast'));
       } else {
         const created = await createAddress(dto);
         setAddresses((prev) => {
@@ -132,11 +134,11 @@ export default function BuyerAddressesPage() {
           }
           return [created, ...prev];
         });
-        showToast('Đã thêm địa chỉ nhận hàng mới thành công!');
+        showToast(t('addresses.addedToast'));
       }
       setIsModalOpen(false);
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Thao tác thất bại. Vui lòng thử lại.');
+      setFormError(err instanceof Error ? err.message : t('addresses.actionFailed'));
     } finally {
       setSaving(false);
     }
@@ -151,9 +153,9 @@ export default function BuyerAddressesPage() {
           isDefault: addr.id === id,
         })),
       );
-      showToast('Đã đặt làm địa chỉ nhận hàng mặc định!');
+      showToast(t('addresses.setDefaultToast'));
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Không thể đặt mặc định.');
+      showToast(err instanceof Error ? err.message : t('addresses.setDefaultError'));
     }
   };
 
@@ -162,9 +164,9 @@ export default function BuyerAddressesPage() {
     try {
       await deleteAddress(id);
       setAddresses((prev) => prev.filter((addr) => addr.id !== id));
-      showToast('Đã xóa địa chỉ nhận hàng.');
+      showToast(t('addresses.deletedToast'));
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Không thể xóa địa chỉ.');
+      showToast(err instanceof Error ? err.message : t('addresses.deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -177,11 +179,9 @@ export default function BuyerAddressesPage() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
             <MapPin className="text-blue-600" size={22} />
-            Sổ địa chỉ nhận hàng
+            {t('addresses.title')}
           </h1>
-          <p className="mt-1 text-xs text-slate-500">
-            Quản lý danh sách địa chỉ giao hàng của bạn để thanh toán và đặt hàng nhanh chóng.
-          </p>
+          <p className="mt-1 text-xs text-slate-500">{t('addresses.subtitle')}</p>
         </div>
         <button
           type="button"
@@ -189,7 +189,7 @@ export default function BuyerAddressesPage() {
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm cursor-pointer"
         >
           <Plus size={16} />
-          <span>Thêm địa chỉ mới</span>
+          <span>{t('addresses.addNew')}</span>
         </button>
       </div>
 
@@ -213,7 +213,7 @@ export default function BuyerAddressesPage() {
             onClick={() => void fetchAddresses()}
             className="font-bold underline hover:no-underline"
           >
-            Thử lại
+            {t('addresses.retry')}
           </button>
         </div>
       )}
@@ -222,7 +222,7 @@ export default function BuyerAddressesPage() {
       {loading ? (
         <div className="py-16 text-center text-slate-500">
           <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-          <p className="text-xs">Đang tải sổ địa chỉ…</p>
+          <p className="text-xs">{t('addresses.loading')}</p>
         </div>
       ) : addresses.length === 0 ? (
         /* Empty State */
@@ -230,12 +230,9 @@ export default function BuyerAddressesPage() {
           <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
             <Home size={28} />
           </div>
-          <h3 className="text-sm font-bold text-slate-800 mb-1">
-            Bạn chưa có địa chỉ nhận hàng nào
-          </h3>
+          <h3 className="text-sm font-bold text-slate-800 mb-1">{t('addresses.emptyTitle')}</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5 leading-relaxed">
-            Thêm địa chỉ nhận hàng ngay bây giờ để tiết kiệm thời gian khi mua sắm và chốt đơn đấu
-            giá.
+            {t('addresses.emptyDesc')}
           </p>
           <button
             type="button"
@@ -243,7 +240,7 @@ export default function BuyerAddressesPage() {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm cursor-pointer"
           >
             <Plus size={16} />
-            <span>Thêm địa chỉ ngay</span>
+            <span>{t('addresses.addNow')}</span>
           </button>
         </div>
       ) : (

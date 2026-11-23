@@ -1,4 +1,6 @@
 import { Loader2, Building2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
 
 interface WalletTopUpModalProps {
   isOpen: boolean;
@@ -10,10 +12,6 @@ interface WalletTopUpModalProps {
   onConfirm: () => void;
   submitting: boolean;
 }
-
-const topUpMethods = [
-  { id: 'PAYOS', icon: Building2, label: 'PayOS VietQR', desc: 'Chuyển khoản QR ngân hàng 24/7' },
-];
 
 const quickAmounts = [200000, 500000, 1000000, 2000000];
 
@@ -27,13 +25,23 @@ export default function WalletTopUpModal({
   onConfirm,
   submitting,
 }: WalletTopUpModalProps) {
+  const { t } = useTranslation('common');
   if (!isOpen) return null;
+
+  const topUpMethods = [
+    {
+      id: 'PAYOS',
+      icon: Building2,
+      label: t('walletTopUp.payosLabel'),
+      desc: t('walletTopUp.payosDesc'),
+    },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <h3 className="text-base font-bold text-slate-900 mb-1">Nạp tiền vào ví NEXUS</h3>
-        <p className="text-xs text-slate-500 mb-4">Chọn số tiền và phương thức thanh toán</p>
+        <h3 className="text-base font-bold text-slate-900 mb-1">{t('walletTopUp.title')}</h3>
+        <p className="text-xs text-slate-500 mb-4">{t('walletTopUp.subtitle')}</p>
 
         <div className="grid grid-cols-2 gap-2 mb-3">
           {quickAmounts.map((amt) => (
@@ -47,21 +55,21 @@ export default function WalletTopUpModal({
                   : 'border-slate-200 hover:border-slate-300 text-slate-700'
               }`}
             >
-              {amt.toLocaleString('vi-VN')} ₫
+              {formatCurrency(amt)}
             </button>
           ))}
         </div>
 
         <input
           type="number"
-          placeholder="Nhập số tiền khác (VNĐ)"
+          placeholder={t('walletTopUp.otherAmountPlaceholder')}
           value={topUpAmount}
           onChange={(e) => setTopUpAmount(e.target.value)}
           className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-orange-500 mb-4"
         />
 
         <div className="space-y-2 mb-5">
-          <p className="text-xs font-bold text-slate-700">Phương thức nạp</p>
+          <p className="text-xs font-bold text-slate-700">{t('walletTopUp.methodTitle')}</p>
           {topUpMethods.map((m) => (
             <div
               key={m.id}
@@ -89,7 +97,7 @@ export default function WalletTopUpModal({
             onClick={onClose}
             className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
           >
-            Hủy
+            {t('walletTopUp.cancel')}
           </button>
           <button
             type="button"
@@ -98,7 +106,7 @@ export default function WalletTopUpModal({
             className="px-5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
           >
             {submitting ? <Loader2 size={13} className="animate-spin" /> : null}
-            Xác nhận nạp
+            {t('walletTopUp.confirm')}
           </button>
         </div>
       </div>

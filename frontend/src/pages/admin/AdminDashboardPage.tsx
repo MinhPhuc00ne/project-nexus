@@ -1,4 +1,6 @@
 import { BadgeDollarSign, Gavel, Radio, RefreshCw, ShieldCheck, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
 import { Badge, Button, Panel } from '../../components/adminDashboard/shared/AdminUI';
 import { formatMoney } from '../../components/adminDashboard/shared/adminData';
 import { useAdminContext } from '../../components/adminDashboard/shared/useAdminContext';
@@ -13,6 +15,8 @@ const roleLabels = {
 } as const;
 
 export default function AdminDashboardPage() {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
   const { actions } = useAdminContext();
   const { data, loading, errors, refresh } = useOverviewData();
   const monthlyRevenue = data.analytics?.revenuePeriods.find(
@@ -23,86 +27,98 @@ export default function AdminDashboardPage() {
       <section className="flex flex-col justify-between gap-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm xl:flex-row xl:items-center">
         <div>
           <div className="mb-3 flex flex-wrap items-center gap-3">
-            <Badge>TỔNG QUAN HỆ THỐNG</Badge>
+            <Badge>{t('overview.badge')}</Badge>
             {data.ghn && (
               <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
                 <span
                   className={`size-1.5 rounded-full ${data.ghn.ping.status === 'CONNECTED' ? 'bg-emerald-500' : 'bg-amber-500'}`}
                 />
-                GHN {data.ghn.ping.status === 'CONNECTED' ? 'đã kết nối' : 'chưa kết nối'}
+                {data.ghn.ping.status === 'CONNECTED'
+                  ? t('overview.ghnConnected')
+                  : t('overview.ghnDisconnected')}
               </span>
             )}
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Trung tâm điều hành NEXUS
+            {t('overview.title')}
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" disabled={loading} onClick={refresh}>
             <RefreshCw size={14} />
-            {loading ? 'Đang tải…' : 'Làm mới'}
+            {loading ? t('overview.loading') : t('overview.refresh')}
           </Button>
           <Button variant="secondary" onClick={() => actions.navigate('studio')}>
             <Radio size={14} />
-            Đi đến Studio
+            {t('overview.goToStudio')}
           </Button>
         </div>
       </section>
       {!!errors.length && (
         <p role="alert" className="rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-800">
-          Một số số liệu chưa tải được. Vui lòng thử làm mới.
+          {t('overview.partialLoadError')}
         </p>
       )}
       <section
-        aria-label="Chỉ số tổng quan"
+        aria-label={t('overview.metricsAria')}
         aria-busy={loading}
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 [&>section]:p-4 [&>section_h2]:text-sm"
       >
-        <Panel title="Doanh thu phí sàn" subtitle="THÁNG NÀY" icon={<BadgeDollarSign size={19} />}>
+        <Panel
+          title={t('overview.revenueTitle')}
+          subtitle={t('overview.revenueSubtitle')}
+          icon={<BadgeDollarSign size={19} />}
+        >
           <p className="break-words text-2xl font-bold tracking-tight">
             {formatMoney(monthlyRevenue?.total ?? 0)}
           </p>
-          <p className="mt-2 text-[10px] text-slate-500">Phí đơn thường và đấu giá 3D</p>
+          <p className="mt-2 text-[10px] text-slate-500">{t('overview.revenueDesc')}</p>
           <div className="mt-5 flex justify-between gap-2 rounded-lg bg-blue-50/80 p-3 text-[11px]">
-            <span className="text-slate-500">Tỷ lệ phí sàn</span>
+            <span className="text-slate-500">{t('overview.feeRateLabel')}</span>
             <b className="text-primary">
               {data.settings ? `${data.settings.platformFeePercentage}%` : '—'}
             </b>
           </div>
         </Panel>
-        <Panel title="Phiên đấu giá 3D" subtitle="ĐANG DIỄN RA" icon={<Gavel size={19} />}>
-          <p className="text-2xl font-bold">{data.live ?? 0} phiên live</p>
-          <p className="mt-2 text-[10px] text-slate-500">Bao gồm phiên đang gia hạn</p>
+        <Panel
+          title={t('overview.auctionsTitle')}
+          subtitle={t('overview.auctionsSubtitle')}
+          icon={<Gavel size={19} />}
+        >
+          <p className="text-2xl font-bold">{t('overview.liveCount', { count: data.live ?? 0 })}</p>
+          <p className="mt-2 text-[10px] text-slate-500">{t('overview.auctionsDesc')}</p>
           <div className="mt-5 flex justify-between gap-2 rounded-lg bg-blue-50/80 p-3 text-[11px]">
-            <span className="text-slate-500">Gia hạn chống trả giá sát giờ</span>
+            <span className="text-slate-500">{t('overview.antiSnipingLabel')}</span>
             <b className="text-primary">
-              {data.settings ? `${data.settings.antiSnipingExtendMinutes} phút` : '—'}
+              {data.settings
+                ? t('overview.minutesUnit', { count: data.settings.antiSnipingExtendMinutes })
+                : '—'}
             </b>
           </div>
         </Panel>
         <Panel
-          title="Yêu cầu chờ quyết định"
-          subtitle="CHỜ ADMIN XỬ LÝ"
+          title={t('overview.queuesTitle')}
+          subtitle={t('overview.queuesSubtitle')}
           icon={<ShieldCheck size={19} />}
         >
           <p className="text-2xl font-bold text-primary">
-            {data.queues?.totalPendingActions ?? 0} yêu cầu
+            {t('overview.requestsCount', { count: data.queues?.totalPendingActions ?? 0 })}
           </p>
-          <p className="mt-2 text-[10px] text-slate-500">Tổng các yêu cầu đang chờ</p>
+          <p className="mt-2 text-[10px] text-slate-500">{t('overview.queuesDesc')}</p>
           <div className="mt-5 grid grid-cols-3 gap-2">
             {[
               {
-                label: 'Seller',
+                label: t('overview.queueSeller'),
                 count: data.queues?.pendingQueues.sellerUpgradeRequests ?? 0,
                 tab: 'sellers' as const,
               },
               {
-                label: 'Khiếu nại',
+                label: t('overview.queueDispute'),
                 count: data.queues?.pendingQueues.openDisputes ?? 0,
                 tab: 'refunds' as const,
               },
               {
-                label: 'Vật phẩm 3D',
+                label: t('overview.queue3d'),
                 count: data.queues?.pendingQueues.auctionConsignments ?? 0,
                 tab: 'auctions' as const,
               },
@@ -119,15 +135,15 @@ export default function AdminDashboardPage() {
           </div>
         </Panel>
         <Panel
-          title="Người dùng & phân quyền"
-          subtitle="THÀNH VIÊN NỀN TẢNG"
+          title={t('overview.usersTitle')}
+          subtitle={t('overview.usersSubtitle')}
           icon={<Users size={19} />}
         >
           <p className="text-2xl font-bold">
-            {(data.users?.total ?? 0).toLocaleString('vi-VN')}{' '}
-            <span className="text-base font-medium">users</span>
+            {(data.users?.total ?? 0).toLocaleString(locale)}{' '}
+            <span className="text-base font-medium">{t('overview.usersUnit')}</span>
           </p>
-          <p className="mt-2 text-[10px] text-slate-500">Tổng tài khoản trong hệ thống</p>
+          <p className="mt-2 text-[10px] text-slate-500">{t('overview.usersDesc')}</p>
           <div className="mt-5 grid grid-cols-4 gap-1 rounded-lg bg-blue-50/80 p-3 text-center text-[10px]">
             {Object.entries(roleLabels).map(([role, label]) => (
               <div key={role}>

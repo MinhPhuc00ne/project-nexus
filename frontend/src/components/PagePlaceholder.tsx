@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardDescription, CardHeader, CardTitle } from './ui/card';
 
 export interface PagePlaceholderProps {
@@ -6,11 +7,9 @@ export interface PagePlaceholderProps {
   description?: string;
 }
 
-export default function PagePlaceholder({
-  area,
-  title,
-  description = 'Trang này đang được phát triển.',
-}: PagePlaceholderProps) {
+export default function PagePlaceholder({ area, title, description }: PagePlaceholderProps) {
+  const { t } = useTranslation('common');
+  const resolvedDescription = description ?? t('pagePlaceholder.defaultDescription');
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-8">
       <Card className="mx-auto w-full max-w-4xl border-slate-200 shadow-sm">
@@ -21,7 +20,9 @@ export default function PagePlaceholder({
             </span>
           </div>
           <CardTitle className="text-xl font-bold text-slate-900">{title}</CardTitle>
-          <CardDescription className="text-sm text-slate-500">{description}</CardDescription>
+          <CardDescription className="text-sm text-slate-500">
+            {resolvedDescription}
+          </CardDescription>
         </CardHeader>
       </Card>
     </main>

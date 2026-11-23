@@ -1,6 +1,7 @@
 import { cn } from '../../lib/utils';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ExternalLink as ExportOutlined } from 'lucide-react';
 import {
   ChevronRight as RightOutlined,
@@ -117,14 +118,15 @@ export function PageHeading({
   description?: string;
   actions?: ReactNode;
 }) {
+  const { t } = useTranslation('seller');
   return (
     <header className="space-y-3">
       <nav
         className="flex flex-wrap items-center gap-2 text-[#8a9ebf] text-[10px] [&>a]:text-[#8a9ebf] [&>span:not(.anticon)]:text-[#627495]"
         data-seller="breadcrumb"
-        aria-label="Đường dẫn"
+        aria-label={t('ui.breadcrumbAria')}
       >
-        <Link to="/seller">Kênh người bán</Link>
+        <Link to="/seller">{t('ui.sellerCenter')}</Link>
         <RightOutlined className="text-[13px]" aria-hidden="true" />
         <span>{title}</span>
       </nav>
@@ -144,6 +146,7 @@ export function PageHeading({
   );
 }
 export function ModuleNotice({ label }: { label: string }) {
+  const { t } = useTranslation('seller');
   const { preview, setPreview } = useSellerWorkspace();
   return (
     <div
@@ -153,20 +156,16 @@ export function ModuleNotice({ label }: { label: string }) {
       data-seller="module-notice"
     >
       <DatabaseOutlined className="text-[16px]" aria-hidden="true" />
-      <span>
-        {preview
-          ? `${label}: dữ liệu minh họa, không phải giao dịch thật.`
-          : `${label} chưa có dữ liệu từ hệ thống.`}
-      </span>
+      <span>{preview ? t('ui.previewActive', { label }) : t('ui.previewEmpty', { label })}</span>
       <button type="button" onClick={() => setPreview(!preview)}>
-        {preview ? 'Tắt dữ liệu mẫu' : 'Xem dữ liệu mẫu'}
+        {preview ? t('ui.hideSampleData') : t('ui.viewSampleData')}
         <ExportOutlined className="text-[14px]" aria-hidden="true" />
       </button>
     </div>
   );
 }
 export function EmptyState({
-  title = 'Chưa có dữ liệu',
+  title,
   description,
   action,
 }: {
@@ -174,6 +173,7 @@ export function EmptyState({
   description?: string;
   action?: ReactNode;
 }) {
+  const { t } = useTranslation('seller');
   return (
     <div
       className="text-center flex items-center justify-center flex-col min-h-[195px] py-[25px] px-4 gap-2 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:m-0 [&_p]:text-[10px] [&_p]:leading-[1.8] [&_p]:text-[#95a3b8] [&_p]:max-w-[310px] [&_p]:[margin:0_0_8px]"
@@ -185,8 +185,8 @@ export function EmptyState({
       >
         <InboxOutlined className="text-[28px]" aria-hidden="true" />
       </div>
-      <h3>{title}</h3>
-      <p>{description || 'Dữ liệu sẽ xuất hiện tại đây khi có hoạt động mới.'}</p>
+      <h3>{title || t('ui.emptyTitle')}</h3>
+      <p>{description || t('ui.emptyDesc')}</p>
       {action}
     </div>
   );
@@ -235,24 +235,16 @@ export function StatCard({
   );
 }
 export function PolicyCards() {
+  const { t } = useTranslation('seller');
   return (
     <div
       className="grid [grid-template-columns:repeat(3,_minmax(0,_1fr))] gap-4.5 max-[1050px]:gap-3 max-[540px]:[grid-template-columns:1fr]"
       data-seller="policy-grid"
     >
       {[
-        [
-          'Bảo vệ giao dịch',
-          'Thanh toán được giữ trong Escrow và giải ngân theo trạng thái hoàn tất đơn hàng.',
-        ],
-        [
-          'Đóng gói & đồng kiểm',
-          'Kiểm tra sản phẩm, lưu bằng chứng đóng gói và niêm phong trước khi bàn giao.',
-        ],
-        [
-          'Uy tín người bán',
-          'Thông tin chính xác, giao hàng đúng hẹn và phản hồi khách hàng giúp bảo vệ uy tín gian hàng.',
-        ],
+        [t('ui.policies.escrowTitle'), t('ui.policies.escrowBody')],
+        [t('ui.policies.packagingTitle'), t('ui.policies.packagingBody')],
+        [t('ui.policies.reputationTitle'), t('ui.policies.reputationBody')],
       ].map(([title, body]) => (
         <div
           className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>.anticon]:text-[#7291d7]! [&>.anticon]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>.anticon]:[grid-row:1/3] max-[540px]:[&>.anticon]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"

@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+import { formatCurrency } from '../i18n/formatters';
 import { apiRequest } from './api';
 import { getStoredToken, getStoredUser } from './auth';
 import type { CartItem } from '../types/cart.types';
@@ -127,7 +129,7 @@ export function mapBackendItemToCartItem(
     productId: backendItem.productId,
     name: backendItem.name,
     price: backendItem.currentPrice,
-    formattedPrice: `${Number(backendItem.currentPrice).toLocaleString('vi-VN')} ₫`,
+    formattedPrice: formatCurrency(Number(backendItem.currentPrice)),
     qty: backendItem.quantity,
     img: backendItem.thumbnail || '/placeholder-product.png',
     shopName: backendItem.shop?.name || 'NEXUS Official',
@@ -266,7 +268,7 @@ export async function synchronizeCart(scope: CartScope): Promise<void> {
       requireAuth: true,
     });
     if (!response || !Array.isArray(response.items))
-      throw new Error('Máy chủ chưa xác nhận kết quả gộp giỏ hàng.');
+      throw new Error(i18n.t('errors:services.cartMergeUnconfirmed'));
     if (!isCurrent(mergingScope)) return;
     applyRemoteCart(response, mergingScope);
     localStorage.removeItem(GUEST_CART_STORAGE_KEY);

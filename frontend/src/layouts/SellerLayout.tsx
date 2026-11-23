@@ -65,7 +65,7 @@ export default function SellerLayout() {
   return <SellerWorkspace key={user.id} />;
 }
 function SellerWorkspace() {
-  const { t } = useTranslation('seller');
+  const { t } = useTranslation(['seller', 'common']);
   const user = useSellerSession();
   const { switchActiveMode, token, refreshProfile } = useAuth();
   const toast = useToast();
@@ -114,10 +114,10 @@ function SellerWorkspace() {
     try {
       localStorage.setItem(draftKey, JSON.stringify(next));
       setDrafts(next);
-      toast.success('Đã lưu bản nháp trên thiết bị này.');
+      toast.success(t('drafts.saved'));
       return true;
     } catch {
-      toast.error('Không thể lưu bản nháp. Vui lòng kiểm tra bộ nhớ trình duyệt.');
+      toast.error(t('drafts.saveFailed'));
       return false;
     }
   };
@@ -126,9 +126,9 @@ function SellerWorkspace() {
     try {
       localStorage.setItem(draftKey, JSON.stringify(next));
       setDrafts(next);
-      toast.success('Đã xóa bản nháp trên thiết bị.');
+      toast.success(t('drafts.deleted'));
     } catch {
-      toast.error('Không thể xóa bản nháp. Vui lòng thử lại.');
+      toast.error(t('drafts.deleteFailed'));
     }
   };
   const switchToBuyer = async () => {
@@ -137,10 +137,10 @@ function SellerWorkspace() {
     setPending(true);
     try {
       await switchActiveMode('BUYER');
-      toast.success('Đã chuyển sang chế độ Khách hàng (Buyer).');
+      toast.success(t('layout.switchedToBuyer'));
       navigate('/buyer');
     } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : 'Không thể chuyển chế độ.');
+      toast.error(cause instanceof Error ? cause.message : t('layout.switchModeFailed'));
     } finally {
       toggleLock.current = false;
       setPending(false);
@@ -180,7 +180,7 @@ function SellerWorkspace() {
           <button
             className="hidden max-[760px]:block max-[760px]:fixed max-[760px]:[inset:0] max-[760px]:[border:0] max-[760px]:bg-[#1b315c45] max-[760px]:[backdrop-filter:blur(2px)] max-[760px]:z-[39]"
             data-seller="sidebar-backdrop"
-            aria-label="Đóng menu"
+            aria-label={t('layout.closeMenu')}
             onClick={() => setSidebar(false)}
           />
         )}
@@ -212,9 +212,9 @@ function SellerWorkspace() {
             className="text-[10px] tracking-[1.1px] text-[#94a2b9] [margin:27px_23px_12px]"
             data-seller="sidebar-label"
           >
-            QUẢN TRỊ CỬA HÀNG
+            {t('layout.sidebarLabel')}
           </div>
-          <nav aria-label="Điều hướng người bán">
+          <nav aria-label={t('layout.navAria')}>
             {linkDefs.map(({ to, key, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -242,12 +242,13 @@ function SellerWorkspace() {
                   className="w-1.5 h-1.5 inline-block rounded-full bg-[#14b58a] shrink-0"
                   data-seller="dot"
                 />{' '}
-                NEXUS Seller Studio{' '}
+                {t('layout.studioTitle')}{' '}
                 <CodeSandboxOutlined className="text-[15px]" aria-hidden="true" />
               </div>
-              <p>Một không gian. Toàn bộ hoạt động kinh doanh của bạn.</p>
+              <p>{t('layout.studioDesc')}</p>
               <Link to="/seller/auctions">
-                Khám phá đấu giá <DownOutlined className="text-[13px]" aria-hidden="true" />
+                {t('layout.exploreAuctions')}{' '}
+                <DownOutlined className="text-[13px]" aria-hidden="true" />
               </Link>
             </div>
             <button
@@ -256,7 +257,7 @@ function SellerWorkspace() {
               onClick={() => navigate('/seller/disputes')}
             >
               <QuestionCircleOutlined className="text-[17px]" aria-hidden="true" />
-              Trung tâm hỗ trợ
+              {t('layout.supportCenter')}
               <SwapOutlined className="text-[14px]" aria-hidden="true" />
             </button>
           </div>
@@ -272,7 +273,7 @@ function SellerWorkspace() {
             <button
               className="[border:0] bg-transparent p-[7px] text-[#7f8ca4] [place-items:center] rounded-[7px] [&:hover]:bg-[#edf3ff] [&:hover]:text-[#315eea] hidden max-[760px]:grid"
               data-seller="icon-button mobile-menu"
-              aria-label="Mở menu người bán"
+              aria-label={t('layout.openMenu')}
               aria-expanded={sidebar}
               aria-controls="seller-navigation"
               onClick={() => setSidebar(!sidebar)}
@@ -289,8 +290,8 @@ function SellerWorkspace() {
             >
               <SearchOutlined className="text-[17px]" aria-hidden="true" />
               <input
-                aria-label="Tìm trong gian hàng"
-                placeholder="Tìm sản phẩm trong gian hàng..."
+                aria-label={t('layout.searchAria')}
+                placeholder={t('layout.searchPlaceholder')}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -311,10 +312,10 @@ function SellerWorkspace() {
                   data-seller="dot"
                 />
                 {user.isShopSuspended
-                  ? 'Gian hàng bị đình chỉ'
+                  ? t('layout.shopSuspended')
                   : user.isSellerActive
-                    ? 'Gian hàng hoạt động'
-                    : 'Chế độ người mua'}
+                    ? t('layout.shopActive')
+                    : t('layout.buyerMode')}
               </span>
               <LanguageSwitcher compact />
               <div className="relative" data-seller="popover-anchor" ref={noticeRef}>
@@ -349,7 +350,7 @@ function SellerWorkspace() {
                     data-seller="account-copy"
                   >
                     <strong>{user.fullName}</strong>
-                    <small>Người bán · {user.id.slice(0, 8)}</small>
+                    <small>{t('layout.sellerIdPrefix', { id: user.id.slice(0, 8) })}</small>
                   </span>
                   <DownOutlined className="text-[14px]" aria-hidden="true" />
                 </button>
@@ -362,11 +363,11 @@ function SellerWorkspace() {
                     <p>{user.email}</p>
                     <button onClick={() => navigate('/seller/settings')}>
                       <SettingOutlined className="text-[16px]" aria-hidden="true" />
-                      Cài đặt tài khoản
+                      {t('layout.accountSettings')}
                     </button>
                     <button disabled={pending} onClick={() => void switchToBuyer()}>
                       <SwapOutlined className="text-[16px]" aria-hidden="true" />
-                      {pending ? 'Đang chuyển…' : 'Chuyển sang người mua'}
+                      {pending ? t('layout.switching') : t('layout.switchToBuyer')}
                     </button>
                     <button
                       className=""
@@ -377,7 +378,7 @@ function SellerWorkspace() {
                       }}
                     >
                       <LogoutOutlined className="text-[16px]" aria-hidden="true" />
-                      Đăng xuất
+                      {t('common:nav.logout')}
                     </button>
                   </div>
                 )}
@@ -393,12 +394,12 @@ function SellerWorkspace() {
                 role="alert"
                 className="mb-5 space-y-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
               >
-                <p className="font-semibold">
-                  Gian hàng đã bị đình chỉ. Bạn vẫn có thể xem thông tin và chuyển sang người mua.
-                </p>
-                {user.suspensionReason && <p>Lý do: {user.suspensionReason}</p>}
+                <p className="font-semibold">{t('layout.suspendedBanner')}</p>
+                {user.suspensionReason && (
+                  <p>{t('layout.suspendedReason', { reason: user.suspensionReason })}</p>
+                )}
                 <button type="button" className="underline" onClick={() => void refreshProfile()}>
-                  Kiểm tra lại trạng thái
+                  {t('layout.recheckStatus')}
                 </button>
               </div>
             )}
@@ -410,8 +411,8 @@ function SellerWorkspace() {
           >
             <span>© {new Date().getFullYear()} NEXUS · Seller Center</span>
             <span>
-              <SafetyCertificateOutlined className="text-[13px]" aria-hidden="true" /> Kinh doanh an
-              tâm, kết nối bền vững
+              <SafetyCertificateOutlined className="text-[13px]" aria-hidden="true" />{' '}
+              {t('layout.footerTagline')}
             </span>
           </footer>
         </div>

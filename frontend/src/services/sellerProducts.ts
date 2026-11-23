@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import type { ProductOptionGroup } from './productExtras';
@@ -56,27 +57,25 @@ export interface CreateSellerProduct {
 }
 export function validateProductImages(files: File[]): void {
   if (!files.length || files.length > PRODUCT_IMAGE_LIMIT)
-    throw new Error('Chọn từ 1 đến 5 ảnh sản phẩm.');
+    throw new Error(i18n.t('errors:services.productImagesCount'));
   if (files.some((file) => !PRODUCT_IMAGE_TYPES.includes(file.type)))
-    throw new Error('Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.');
+    throw new Error(i18n.t('errors:services.imageJpgPngWebp'));
   if (files.some((file) => file.size <= 0 || file.size > PRODUCT_IMAGE_MAX_BYTES))
-    throw new Error('Mỗi ảnh phải lớn hơn 0 và không quá 25 MB.');
+    throw new Error(i18n.t('errors:services.imageSize1To25'));
 }
 export function buildProductPayload(
   form: SellerProductForm,
   editing = false,
 ): Omit<CreateSellerProduct, 'images'> {
   if (!form.title.trim() || !form.description.trim() || !form.categoryId)
-    throw new Error('Nhập tên, mô tả và chọn danh mục sản phẩm.');
+    throw new Error(i18n.t('errors:services.productFieldsRequired'));
   const basePrice = Number(form.price);
   if (!Number.isFinite(basePrice) || basePrice < 1000 || basePrice > 999999999999)
-    throw new Error('Giá bán phải từ 1.000đ đến 999.999.999.999đ.');
+    throw new Error(i18n.t('errors:services.productPriceRange'));
   const positiveInteger = (value: string, minimum = 1) => {
     const number = Number(value);
     if (!value.trim() || !Number.isInteger(number) || number < minimum || number > 2147483647)
-      throw new Error(
-        'Số lượng phải là số nguyên không âm khi sửa sản phẩm; các kích thước và khối lượng phải là số nguyên dương.',
-      );
+      throw new Error(i18n.t('errors:services.productDimensionsInvalid'));
     return number;
   };
   const payload: Omit<CreateSellerProduct, 'images'> = {
@@ -116,7 +115,7 @@ export function getProductCategories(): Promise<ProductCategory[]> {
 const productRequests = new Map<string, Promise<SellerProduct[]>>();
 export function getMyProducts(): Promise<SellerProduct[]> {
   const token = getStoredToken();
-  if (!token) return Promise.reject(new Error('Vui lòng đăng nhập bằng tài khoản Seller.'));
+  if (!token) return Promise.reject(new Error(i18n.t('errors:services.sellerLoginRequired')));
   const existing = productRequests.get(token);
   if (existing) return existing;
   const promise = apiRequest<SellerProduct[]>('/catalog/products/seller/my-products', {
@@ -134,7 +133,7 @@ export async function reactivateSellerProduct(id: string): Promise<SellerProduct
     requireAuth: true,
   });
   if (product.id !== id || product.status !== 'ACTIVE')
-    throw new Error('Máy chủ chưa xác nhận bán lại sản phẩm.');
+    throw new Error(i18n.t('errors:services.relistUnconfirmed'));
   return product;
 }
 export async function publishSellerProduct(
@@ -147,24 +146,29 @@ export async function publishSellerProduct(
 ): Promise<{ id: string; title: string }> {
   const payload = buildProductPayload(form, Boolean(edit));
   if (edit && payload.quantity < edit.product.totalQty - edit.product.availableQty)
-    throw new Error('Tổng tồn kho không được thấp hơn số lượng đang được giữ cho đơn hàng.');
+    throw new Error(i18n.t('errors:services.stockBelowReserved'));
   const existingImages = edit?.images ?? [];
   if (files.length) validateProductImages(files);
   if (
     files.length + existingImages.length < 1 ||
     files.length + existingImages.length > PRODUCT_IMAGE_LIMIT
   )
-    throw new Error('Sản phẩm phải có từ 1 đến 5 ảnh.');
+    throw new Error(i18n.t('errors:services.productImagesCount'));
   const token = getStoredToken();
   const assertSession = () => {
     if (!token || getStoredToken() !== token)
-      throw new Error('Phiên đăng nhập đã thay đổi. Vui lòng tải lại trang trước khi đăng bán.');
+      throw new Error(i18n.t('errors:services.sessionChangedReload'));
   };
   assertSession();
   const images: string[] = [...existingImages];
   for (const [index, file] of files.entries()) {
     assertSession();
-    onProgress(`Đang tải ảnh ${index + 1}/${files.length}…`);
+    onProgress(
+      i18n.t('errors:services.uploadingImageProgress', {
+        current: index + 1,
+        total: files.length,
+      }),
+    );
     let url = uploaded.get(file);
     if (!url) {
       const body = new FormData();
@@ -176,14 +180,18 @@ export async function publishSellerProduct(
         requireAuth: true,
       });
       if (!result?.url || !/^https?:\/\//i.test(result.url))
-        throw new Error('Máy chủ chưa trả về URL ảnh hợp lệ. Vui lòng thử lại.');
+        throw new Error(i18n.t('errors:services.invalidImageUrl'));
       url = result.url;
       uploaded.set(file, url);
     }
     images.push(url);
   }
   assertSession();
-  onProgress(edit ? 'Đang lưu thay đổi…' : 'Đang đăng bán sản phẩm…');
+  onProgress(
+    edit
+      ? i18n.t('errors:services.savingChangesProgress')
+      : i18n.t('errors:services.publishingProductProgress'),
+  );
   const cleanedOptions = options
     ?.map((option) => ({
       name: option.name.trim(),
@@ -219,7 +227,7 @@ export function updateProductSale(
 }
 
 export function hideSellerProduct(id: string): Promise<{ success: boolean; message: string }> {
-  if (!id.trim()) return Promise.reject(new Error('Thiếu mã sản phẩm.'));
+  if (!id.trim()) return Promise.reject(new Error(i18n.t('errors:services.missingProductId')));
   return apiRequest(`/catalog/products/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     requireAuth: true,

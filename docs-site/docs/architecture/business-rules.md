@@ -4,26 +4,50 @@ title: Quy tắc Nghiệp vụ (Đã đối chiếu Code)
 
 # Quy tắc Nghiệp vụ Cốt lõi
 
-Toàn bộ các hằng số và quy tắc dưới đây đã được đối chiếu trực tiếp với mã nguồn thực tế (`reputation-policy.ts`, `schema.prisma`, `cart.service.ts`, `order-escrow.service.ts`, `auction.service.ts`):
+Toàn bộ các hằng số, ngưỡng kiểm tra và quy tắc dưới đây được đối chiếu trực tiếp từ mã nguồn thực tế trong `backend/src/modules/*` và `backend/prisma/schema.prisma`.
 
-## 1. Uy tín người dùng (`reputation-policy.ts`)
+## 1. Hệ thống Uy tín Người dùng (`reputation-policy.ts`)
 
-- **Điểm khởi tạo tài khoản mới**: `INITIAL_REPUTATION_SCORE = 50` (trạng thái `PROBATION`), phù hợp với `@default(50)` và `@default(PROBATION)` trong `schema.prisma`.
-- **Phân hạng Trust Level (`trustLevelFor`)**:
-  - `EXCELLENT`: $\ge 120$ điểm
-  - `GOOD`: $100 - 119$ điểm
-  - `STANDARD`: $80 - 99$ điểm
-  - `PROBATION`: $40 - 79$ điểm
-  - `SUSPENDED`: $< 40$ điểm
+- **Điểm khởi tạo tài khoản mới**: `INITIAL_REPUTATION_SCORE = 50` với trạng thái mặc định `ReputationTrustLevel.PROBATION`, khớp hoàn toàn với `@default(50)` và `@default(PROBATION)` trong `schema.prisma`.
+- **Bảng phân hạng Trust Level (`trustLevelFor`)**:
 
-## 2. Thương mại, Giỏ hàng & Chống tự mua
+| Hạng uy tín (`ReputationTrustLevel`) | Khoảng điểm | Ý nghĩa vận hành                                              |
+| :----------------------------------- | :---------- | :------------------------------------------------------------ |
+| `EXCELLENT`                          | ≥ 120       | Uy tín xuất sắc                                               |
+| `GOOD`                               | 100 – 119   | Uy tín tốt                                                    |
+| `STANDARD`                           | 80 – 99     | Mức chuẩn giao dịch bình thường                               |
+| `PROBATION`                          | 40 – 79     | Đang theo dõi / tài khoản mới (`50`)                          |
+| `SUSPENDED`                          | < 40        | Bị hạn chế quyền giao dịch/đặt giá do vi phạm (`PenaltyType`) |
 
-- **Chống tự mua hàng**: `CartService.purchasable()` chặn tuyệt đối việc người bán tự thêm hoặc mua sản phẩm của chính mình (`product.sellerId === userId` → HTTP 400).
-- **Kiểm soát tồn kho & giá khuyến mãi**: `effectivePrice()` chỉ áp dụng `salePrice` khi `salePrice >= 1000`, `salePrice < basePrice` và đang nằm trong khung giờ `[saleStartsAt, saleEndsAt)`.
-- **Escrow & Phí sàn**: Khi đơn hàng thanh toán thành công, tiền được giữ ở `EscrowRecord` (`HELD`). Phí sàn mặc định `7%` tính trên `subtotal` (không tính trên `shippingFee`).
+## 2. Thương mại, Giỏ hàng & Định giá (`cart.service.ts`, `product-price.ts`)
 
-## 3. Đấu giá nhiều Lô (Session → Lots) & Trao giải
+- **Chặn tự mua hàng (Anti-self-purchase)**: `CartService.purchasable()` kiểm tra `product.sellerId === userId` và từ chối ngay với mã lỗi `CANNOT_PURCHASE_OWN_PRODUCT` (HTTP `400`).
+- **Tính giá khuyến mãi (`effectivePrice`)**: Giá `salePrice` chỉ có hiệu lực khi thỏa mãn **cả 3 điều kiện**:
+  1. `salePrice >= 1000` (VND)
+  2. `salePrice < basePrice`
+  3. Thời điểm hiện tại nằm trong khung `[saleStartsAt, saleEndsAt)`
+- **Giữ chỗ & Tồn kho**: Khi tạo đơn hàng, hệ thống tạo `InventoryReservation` từ `availableQty` sang `reservedQty` và ghi `InventoryLedger`. Nếu hết hạn thanh toán, reservation tự động nhả lại kho.
 
-- Một phiên `Auction` chứa nhiều `AuctionItem` (lots) có thể đính kèm chứng thư giám định và được duyệt qua quy trình `PENDING_REVIEW` → `APPROVED` / `REJECTED`.
-- Khi kết thúc lô, hệ thống tạo `AuctionAward` cho `PRIMARY_WINNER`; nếu quá hạn hoặc từ chối/rút lui, hệ thống có thể chuyển sang `SECOND_CHANCE` hoặc xử lý tịch thu/bồi thường cọc (`AUCTION_DEPOSIT_FORFEIT` / `AUCTION_DEPOSIT_COMPENSATION`).
-- **Chống bắn tỉa (Anti-sniping)**: Đặt giá hợp lệ trong 2 phút cuối tự động gia hạn thêm 2 phút.
+## 3. Ký quỹ (Escrow), Phí sàn & Ví `NEXUS Pay` (`order-escrow.service.ts`, `seller-finance.service.ts`)
+
+- **Phí sàn mặc định**: `PLATFORM_FEE_PERCENTAGE = 7.0%`, chỉ tính trên **`subtotal`** (giá trị hàng hóa), **không** tính trên `shippingFee`.
+- **Giải ngân Escrow**: Tiền được giữ ở `EscrowRecord` trạng thái `HELD` ngay khi thanh toán thành công (`PAYOS` hoặc `WALLET`). Chỉ giải ngân (`DISBURSED`) vào ví Seller khi Buyer xác nhận đã nhận hàng hoặc hết cửa sổ kiểm tra 3 ngày mà không có tranh chấp.
+- **Rút tiền (`WithdrawalRequest`)**:
+  - Mỗi tài khoản chỉ được có **tối đa 3 yêu cầu `PENDING`** cùng lúc.
+  - Số tiền rút bị chuyển ngay từ `Wallet.balance` sang `Wallet.lockedBalance` để chống rút trùng; chỉ giải phóng khi Admin duyệt chi hoặc từ chối hoàn lại `balance`.
+
+## 4. Đấu giá 3D nhiều Lô & Chống bắn tỉa (`auction.service.ts`, `auction.gateway.ts`)
+
+- **Cấu trúc Phiên → Lô**: Một `Auction` chứa nhiều `AuctionItem` (lots). Mỗi lô có thể gắn model `.glb` và chứng thư giám định, đi qua quy trình kiểm duyệt ký gửi (`PENDING_REVIEW` → `APPROVED` / `REJECTED`).
+- **Quyền đặt giá (Bidding RBAC)**:
+  - Tài khoản `SELLER` đang bật chế độ Người bán (`isSellerActive = true`) **chỉ được xem**, không được đặt giá (Server trả lỗi `403 Forbidden`). Phải tắt chế độ Seller về Buyer mới được tham gia trả giá.
+  - Chủ sở hữu lô đấu giá không được tự đặt giá lên vật phẩm của mình.
+- **Chống bắn tỉa (Anti-sniping)**: Khi có lượt đặt giá hợp lệ trong `2 phút cuối` trước giờ kết thúc (`AUCTION_ANTI_SNIPING_TRIGGER_MINUTES = 2`), thời gian kết thúc tự động gia hạn và phát sự kiện `auction:time_extended` tới toàn phòng.
+- **Trao giải & Cơ hội thứ hai (`AuctionAward`)**:
+  - Người thắng chính (`PRIMARY_WINNER`) nhận quyền checkout trong thời hạn quy định.
+  - Nếu người thắng từ chối (`DECLINED`), rút lui (`BUYER_WITHDRAWN`) hoặc quá hạn (`PAYMENT_DEFAULT`), hệ thống xử lý tịch thu/bồi thường cọc (`AUCTION_DEPOSIT_FORFEIT` / `AUCTION_DEPOSIT_COMPENSATION`) và có thể kích hoạt `SECOND_CHANCE` cho người trả giá cao kế tiếp.
+
+## 5. Danh mục 3 Cấp & Chuyển đổi Chế độ Seller
+
+- **Danh mục (`Category`)**: Giới hạn tối đa **3 cấp** (`level` 1 → 2 → 3). Khi di chuyển node danh mục, cả Backend (`CategoryService`) và Frontend (`categoryMoveError`) đều chặn tự tham chiếu vào con cháu và chặn vượt quá độ sâu 3.
+- **Chuyển đổi Buyer/Seller**: Endpoint `/api/v1/users/toggle-seller` cho phép Seller chuyển đổi chế độ hoạt động không cần đăng xuất; tuy nhiên nếu `isShopSuspended = true`, `AuthContext` luôn ép về chế độ `BUYER`.

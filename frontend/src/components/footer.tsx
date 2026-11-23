@@ -25,20 +25,20 @@ const commitmentDefs = [
 ] as const;
 
 const customerCareLinks = [
-  { label: 'Trung Tâm Trợ Giúp 24/7', href: '/help' },
-  { label: 'Hướng Dẫn Đấu Giá Trực Tuyến', href: '/guide' },
-  { label: 'Quy Trình Hoàn Tiền & Trả Hàng', href: '/refund-policy' },
-  { label: 'Bảo Hiểm Hàng Hóa Giá Trị Cao', href: '/insurance' },
-  { label: 'Chính Sách Bảo Hành NEXUS CARE', href: '/warranty' },
-];
+  { key: 'footer.customerCareLinks.help', href: '/help' },
+  { key: 'footer.customerCareLinks.guide', href: '/guide' },
+  { key: 'footer.customerCareLinks.refundPolicy', href: '/refund-policy' },
+  { key: 'footer.customerCareLinks.insurance', href: '/insurance' },
+  { key: 'footer.customerCareLinks.warranty', href: '/warranty' },
+] as const;
 
 const platformLegalLinks = [
-  { label: 'Giới Thiệu Tập Đoàn NEXUS', href: '/about' },
-  { label: 'Quy Chế Hoạt Động Sàn Đấu Giá', href: '/auction-guidelines' },
-  { label: 'Chính Sách Bảo Mật Thông Tin', href: '/privacy' },
-  { label: 'Điều Khoản Giao Dịch Escrow', href: '/escrow-terms' },
-  { label: 'Liên Hệ Hợp Tác Doanh Nghiệp', href: '/contact' },
-];
+  { key: 'footer.legalLinks.about', href: '/about' },
+  { key: 'footer.legalLinks.auctionGuidelines', href: '/auction-guidelines' },
+  { key: 'footer.legalLinks.privacy', href: '/privacy' },
+  { key: 'footer.legalLinks.escrowTerms', href: '/escrow-terms' },
+  { key: 'footer.legalLinks.contact', href: '/contact' },
+] as const;
 
 export interface FooterProps {
   className?: string;
@@ -120,13 +120,13 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
             {t('footer.customerCare')}
           </h4>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {customerCareLinks.map(({ label, href }) => (
-              <li key={label}>
+            {customerCareLinks.map(({ key, href }) => (
+              <li key={key}>
                 <a
                   className="text-[11px] leading-4 text-slate-600 no-underline transition-colors hover:text-[#ee4d2d] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:text-xs"
                   href={href}
                 >
-                  {label}
+                  {t(key)}
                 </a>
               </li>
             ))}
@@ -139,13 +139,13 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
             {t('footer.aboutNexus')}
           </h4>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
-            {platformLegalLinks.map(({ label, href }) => (
-              <li key={label}>
+            {platformLegalLinks.map(({ key, href }) => (
+              <li key={key}>
                 <a
                   className="text-[11px] leading-4 text-slate-600 no-underline transition-colors hover:text-[#ee4d2d] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:text-xs"
                   href={href}
                 >
-                  {label}
+                  {t(key)}
                 </a>
               </li>
             ))}
@@ -155,7 +155,7 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
         {/* Partners & Payment column */}
         <div className="col-span-full flex min-w-0 flex-col sm:col-span-1 lg:col-span-1">
           <h4 className="mb-3 mt-0 text-xs font-bold leading-5 tracking-wider text-slate-800">
-            ĐỐI TÁC THANH TOÁN & VẬN CHUYỂN
+            {t('footer.partnersTitle')}
           </h4>
           <div className="mb-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5">
@@ -163,18 +163,18 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
                 PayOS VietQR
               </span>
               <span className="inline-flex items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm">
-                Ví NEXUS Pay
+                {t('footer.nexusPayWallet')}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="inline-flex items-center justify-center rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-700 shadow-sm">
-                COD (Tiền mặt)
+                {t('footer.codCash')}
               </span>
             </div>
           </div>
 
           <p className="mb-1.5 text-[11px] font-medium text-slate-500">
-            Đơn vị vận chuyển hỏa tốc:
+            {t('footer.expressShippingLabel')}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-1.5 rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-sm">
@@ -193,9 +193,9 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-3 text-xs text-slate-500 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
             <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>Chứng Nhận Bộ Công Thương</span>
+            <span>{t('footer.bctCertified')}</span>
             <span className="text-slate-300">•</span>
-            <span>Mã số doanh nghiệp: 0109988234 do Sở KH&ĐT cấp</span>
+            <span>{t('footer.businessLicense')}</span>
           </div>
           <div className="text-xs text-slate-500">
             <span>{t('footer.copyright', { year })}</span>

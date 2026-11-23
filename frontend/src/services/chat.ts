@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig } from 'axios';
+import i18n from '../i18n';
 import api, { ApiRequestError } from './api';
 import { getStoredToken, getStoredUser } from './auth';
 import type {
@@ -19,7 +20,7 @@ import type {
 
 // The controller wraps detail/messages in { data }, inside the global envelope.
 async function chatRequest<T>(config: AxiosRequestConfig, nestedData = false): Promise<T> {
-  if (!getStoredToken()) throw new Error('Vui lòng đăng nhập để sử dụng chat.');
+  if (!getStoredToken()) throw new Error(i18n.t('errors:services.chatAuthRequired'));
   try {
     const response = await api.request<{ data: T | { data: T } }>(config);
     const payload = response.data.data;
@@ -31,7 +32,7 @@ async function chatRequest<T>(config: AxiosRequestConfig, nestedData = false): P
       throw new ApiRequestError(
         Array.isArray(message)
           ? message.join(' · ')
-          : message || 'Không thể kết nối dịch vụ chat. Vui lòng thử lại.',
+          : message || i18n.t('errors:services.chatConnectFailed'),
         error.response?.status ?? 0,
       );
     }
@@ -70,7 +71,8 @@ type RawChatMessage = Omit<Partial<ChatMessage>, 'attachments'> & {
 function normalizeParticipant(participant?: RawChatParticipant | null): ChatParticipant {
   return {
     id: participant?.id ?? '',
-    fullName: participant?.fullName || participant?.email || 'Tài khoản',
+    fullName:
+      participant?.fullName || participant?.email || i18n.t('errors:services.fallbackAccount'),
     email: participant?.email ?? '',
     avatarUrl: participant?.avatarUrl ?? null,
     role: participant?.role ?? 'UNKNOWN',

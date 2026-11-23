@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../ToastNotification';
 import { useSellerSession } from './SellerSession';
 import { useSellerWorkspace } from './SellerWorkspace';
@@ -33,6 +34,7 @@ function withOptionIds(options: ProductOptionGroup[]): ProductOptionGroup[] {
 }
 
 export default function useSellerProductForm(productId?: string) {
+  const { t } = useTranslation('seller');
   const navigate = useNavigate();
   const toast = useToast();
   const user = useSellerSession();
@@ -73,7 +75,7 @@ export default function useSellerProductForm(productId?: string) {
       .then((products) => {
         if (!current) return;
         const found = products.find((item) => item.id === productId);
-        if (!found) throw new Error('Sản phẩm không tồn tại hoặc không thuộc gian hàng của bạn.');
+        if (!found) throw new Error(t('productForm.loadNotFound'));
         setProduct(found);
         setForm(sellerProductToForm(found));
         setExistingImages(found.images.map((image) => image.imageUrl));
@@ -92,7 +94,7 @@ export default function useSellerProductForm(productId?: string) {
       })
       .catch((cause) => {
         if (current)
-          setProductError(cause instanceof Error ? cause.message : 'Không tải được sản phẩm.');
+          setProductError(cause instanceof Error ? cause.message : t('productForm.loadErr'));
       })
       .finally(() => {
         if (current) setProductLoading(false);
@@ -113,7 +115,9 @@ export default function useSellerProductForm(productId?: string) {
         },
         (cause) => {
           if (current)
-            setCategoryError(cause instanceof Error ? cause.message : 'Không tải được danh mục.');
+            setCategoryError(
+              cause instanceof Error ? cause.message : t('productForm.categoryLoadErr'),
+            );
         },
       )
       .finally(() => {
@@ -145,7 +149,7 @@ export default function useSellerProductForm(productId?: string) {
   async function submit() {
     if (lock.current) return;
     if (user.isShopSuspended || !user.isSellerActive) {
-      setError('Gian hàng chưa được phép đăng bán. Vui lòng kiểm tra trạng thái người bán.');
+      setError(t('productForm.notAllowedErr'));
       return;
     }
     if (productLoading || productError || (productId && !product)) return;
@@ -154,7 +158,7 @@ export default function useSellerProductForm(productId?: string) {
       categoryError ||
       !categoryOptions.some((category) => category.id === form.categoryId)
     ) {
-      setError('Vui lòng chọn danh mục hợp lệ từ hệ thống.');
+      setError(t('productForm.invalidCategoryErr'));
       return;
     }
 
@@ -162,7 +166,7 @@ export default function useSellerProductForm(productId?: string) {
     if (saleConfig.enabled) {
       const pct = Number(saleConfig.discountPercent);
       if (!Number.isFinite(pct) || pct < 1 || pct > 95) {
-        setError('Phần trăm giảm giá (Sale) phải từ 1% đến 95%.');
+        setError(t('productForm.invalidSalePctErr'));
         return;
       }
     }
@@ -181,10 +185,7 @@ export default function useSellerProductForm(productId?: string) {
         product ? { product, images: existingImages } : undefined,
         optionGroups,
       );
-      if (!saved?.id)
-        throw new Error(
-          'Chưa xác nhận được kết quả đăng bán. Hãy kiểm tra danh sách sản phẩm trước khi gửi lại.',
-        );
+      if (!saved?.id) throw new Error(t('productForm.publishUnconfirmed'));
 
       const computedSalePrice =
         saleConfig.enabled && Number.isFinite(basePrice) && basePrice > 0
@@ -205,15 +206,15 @@ export default function useSellerProductForm(productId?: string) {
       if (active.current) {
         toast.success(
           product
-            ? `Đã cập nhật sản phẩm ${saved.title}.`
-            : `Đã đăng bán sản phẩm ${saved.title} thành công.`,
+            ? t('productForm.updatedToast', { title: saved.title })
+            : t('productForm.publishedToast', { title: saved.title }),
         );
         navigate('/seller/products', { replace: true });
         refreshShop();
       }
     } catch (cause) {
       if (active.current) {
-        const message = cause instanceof Error ? cause.message : 'Không thể đăng bán sản phẩm.';
+        const message = cause instanceof Error ? cause.message : t('productForm.publishErr');
         setError(message);
         toast.error(message);
       }

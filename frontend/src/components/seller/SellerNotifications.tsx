@@ -4,6 +4,8 @@ import {
   RefreshCw as ReloadOutlined,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
 import useSellerNotifications from './useSellerNotifications';
 
 export default function SellerNotifications({
@@ -15,6 +17,7 @@ export default function SellerNotifications({
   isOpen: boolean;
   onToggle: () => void;
 }) {
+  const { t, i18n } = useTranslation('seller');
   const navigate = useNavigate();
   const state = useSellerNotifications(userId, isOpen);
   const busy = state.loading || Boolean(state.pending);
@@ -48,7 +51,11 @@ export default function SellerNotifications({
       <button
         type="button"
         className="relative grid place-items-center rounded-lg border-0 bg-transparent p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
-        aria-label={`Thông báo người bán${state.unreadCount !== null ? `, ${state.unreadCount} chưa đọc` : ''}`}
+        aria-label={
+          state.unreadCount !== null
+            ? t('notifications.bellAriaUnread', { count: state.unreadCount })
+            : t('notifications.bellAria')
+        }
         aria-expanded={isOpen}
         aria-controls="seller-notifications"
         onClick={onToggle}
@@ -63,15 +70,15 @@ export default function SellerNotifications({
       {isOpen && (
         <section
           id="seller-notifications"
-          aria-label="Thông báo gian hàng"
+          aria-label={t('notifications.panelTitle')}
           aria-busy={busy}
           className="absolute right-0 top-[calc(100%+16px)] z-[60] w-[360px] max-w-[calc(100vw-28px)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
         >
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 p-4">
-            <strong className="text-sm">Thông báo gian hàng</strong>
+            <strong className="text-sm">{t('notifications.panelTitle')}</strong>
             <button
               type="button"
-              aria-label="Làm mới thông báo"
+              aria-label={t('notifications.refreshAria')}
               onClick={state.refresh}
               disabled={busy}
               className="rounded p-1 text-blue-600 hover:bg-blue-50 disabled:opacity-50"
@@ -88,30 +95,30 @@ export default function SellerNotifications({
                 disabled={busy}
                 className="mt-2 font-semibold underline"
               >
-                Thử lại
+                {t('notifications.retry')}
               </button>
             </div>
           )}
           {state.loading && (
             <p role="status" className="p-5 text-center text-xs text-slate-500">
-              Đang tải thông báo…
+              {t('notifications.loading')}
             </p>
           )}
           {!state.loading && state.data && (
             <>
               <div className="flex items-center justify-between gap-2 px-4 py-3 text-xs text-slate-500">
-                <span>{state.data.total} thông báo</span>
+                <span>{t('notifications.totalCount', { count: state.data.total })}</span>
                 <button
                   type="button"
                   onClick={() => void state.markRead()}
                   disabled={busy || !state.unreadCount}
                   className="text-blue-600 hover:underline disabled:text-slate-400 disabled:no-underline"
                 >
-                  Đọc tất cả
+                  {t('notifications.markAllRead')}
                 </button>
               </div>
               {state.data.items.length === 0 ? (
-                <p className="p-5 text-center text-xs text-slate-500">Chưa có thông báo.</p>
+                <p className="p-5 text-center text-xs text-slate-500">{t('notifications.empty')}</p>
               ) : (
                 <ul className="m-0 max-h-[360px] list-none overflow-y-auto p-0">
                   {state.data.items.map((item) => (
@@ -123,7 +130,7 @@ export default function SellerNotifications({
                         {!item.isRead && (
                           <span
                             className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600"
-                            aria-label="Chưa đọc"
+                            aria-label={t('notifications.unreadDotAria')}
                           />
                         )}
                         <div className="min-w-0 flex-1 space-y-2">
@@ -137,7 +144,7 @@ export default function SellerNotifications({
                             dateTime={item.createdAt}
                             className="block text-[10px] text-slate-400"
                           >
-                            {new Date(item.createdAt).toLocaleString('vi-VN')}
+                            {new Date(item.createdAt).toLocaleString(getIntlLocale(i18n.language))}
                           </time>
                           {(item.targetUrl ||
                             item.type === 'DISPUTE' ||
@@ -158,7 +165,9 @@ export default function SellerNotifications({
                               }
                               className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
                             >
-                              {item.type === 'DISPUTE' ? 'Xem xử lý' : 'Mở nội dung'}
+                              {item.type === 'DISPUTE'
+                                ? t('notifications.viewDispute')
+                                : t('notifications.openContent')}
                             </button>
                           )}
                           {!item.isRead && (
@@ -168,7 +177,7 @@ export default function SellerNotifications({
                               onClick={() => void state.markRead(item.id)}
                               className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline disabled:opacity-50"
                             >
-                              <CheckOutlined /> Đánh dấu đã đọc
+                              <CheckOutlined /> {t('notifications.markRead')}
                             </button>
                           )}
                         </div>
@@ -179,7 +188,7 @@ export default function SellerNotifications({
               )}
               {state.data.totalPages > 1 && (
                 <nav
-                  aria-label="Phân trang thông báo"
+                  aria-label={t('notifications.paginationAria')}
                   className="flex items-center justify-between border-t border-slate-100 p-3 text-xs"
                 >
                   <button
@@ -188,7 +197,7 @@ export default function SellerNotifications({
                     onClick={() => state.changePage(state.page - 1)}
                     className="text-blue-600 disabled:text-slate-400"
                   >
-                    Trước
+                    {t('notifications.prev')}
                   </button>
                   <span>
                     {state.page} / {state.data.totalPages}
@@ -199,7 +208,7 @@ export default function SellerNotifications({
                     onClick={() => state.changePage(state.page + 1)}
                     className="text-blue-600 disabled:text-slate-400"
                   >
-                    Sau
+                    {t('notifications.next')}
                   </button>
                 </nav>
               )}

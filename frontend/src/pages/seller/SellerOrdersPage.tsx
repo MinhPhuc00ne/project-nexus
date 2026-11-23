@@ -2,6 +2,7 @@ import { useCallback, useState, type FormEvent, type ReactElement } from 'react'
 import { Link } from 'react-router-dom';
 import { RefreshCw as ReloadOutlined } from 'lucide-react';
 import { Search as SearchOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerOrders } from '../../services/sellerOrders';
 import type { SellerOrderStatus } from '../../types/order.types';
@@ -18,7 +19,10 @@ import {
 import SellerResourceState from '../../components/seller/SellerResourceState';
 import SellerOrderActions from '../../components/seller/SellerOrderActions';
 import SellerPagination from '../../components/seller/SellerPagination';
-import { sellerOrderLabels } from '../../components/seller/orderPresentation';
+import {
+  getSellerOrderLabel,
+  sellerOrderLabelKeys,
+} from '../../components/seller/orderPresentation';
 import { financeDate, financeMoney } from '../../components/seller/financeFormat';
 
 export default function SellerOrdersPage(): ReactElement {
@@ -27,6 +31,7 @@ export default function SellerOrdersPage(): ReactElement {
   return <OrdersWorkspace key={`${user.id}:${token}`} />;
 }
 function OrdersWorkspace(): ReactElement {
+  const { t } = useTranslation('seller');
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<SellerOrderStatus | ''>('');
   const [search, setSearch] = useState('');
@@ -46,38 +51,35 @@ function OrdersWorkspace(): ReactElement {
   return (
     <div className="space-y-5">
       <PageHeading
-        title="Đơn hàng & vận chuyển GHN"
-        description="Xác nhận đơn, chuẩn bị kiện hàng và theo dõi vận đơn của gian hàng."
+        title={t('orders.pageTitle')}
+        description={t('orders.pageDesc')}
         actions={
           <>
             <SellerLink secondary to="/seller/shipping">
-              Tính phí vận chuyển
+              {t('orders.calcShipping')}
             </SellerLink>
             <SellerButton secondary onClick={refresh} disabled={resource.loading}>
               <ReloadOutlined />
-              Làm mới
+              {t('orders.refresh')}
             </SellerButton>
           </>
         }
       />
-      <Panel
-        title="Đơn bán của gian hàng"
-        subtitle="Tìm theo mã đơn, tên hoặc số điện thoại người mua"
-      >
+      <Panel title={t('orders.panelTitle')} subtitle={t('orders.panelSubtitle')}>
         <form onSubmit={submit} className="mb-5 flex flex-wrap gap-3">
           <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
             <SearchOutlined className="text-slate-400" />
             <input
               className="min-w-0 flex-1 text-sm outline-none"
-              aria-label="Tìm đơn hàng"
-              placeholder="Mã đơn, tên hoặc số điện thoại..."
+              aria-label={t('orders.searchAria')}
+              placeholder={t('orders.searchPlaceholder')}
               maxLength={150}
               value={draftSearch}
               onChange={(e) => setDraftSearch(e.target.value)}
             />
           </label>
           <select
-            aria-label="Trạng thái đơn hàng"
+            aria-label={t('orders.statusAria')}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs"
             value={status}
             onChange={(e) => {
@@ -85,14 +87,14 @@ function OrdersWorkspace(): ReactElement {
               setPage(1);
             }}
           >
-            <option value="">Tất cả trạng thái</option>
-            {Object.entries(sellerOrderLabels).map(([key, label]) => (
+            <option value="">{t('orders.allStatuses')}</option>
+            {Object.entries(sellerOrderLabelKeys).map(([key, labelKey]) => (
               <option value={key} key={key}>
-                {label}
+                {t(labelKey)}
               </option>
             ))}
           </select>
-          <SellerButton type="submit">Tìm kiếm</SellerButton>
+          <SellerButton type="submit">{t('orders.searchBtn')}</SellerButton>
         </form>
         <SellerResourceState
           loading={resource.loading}
@@ -103,35 +105,39 @@ function OrdersWorkspace(): ReactElement {
             <>
               <div className="mb-5 flex flex-wrap gap-2 text-xs">
                 {[
-                  { key: '' as const, label: 'Tất cả', count: resource.data.counters.all },
+                  {
+                    key: '' as const,
+                    label: t('orders.tabs.all'),
+                    count: resource.data.counters.all,
+                  },
                   {
                     key: 'PAID' as const,
-                    label: 'Chờ xác nhận',
+                    label: t('orders.tabs.paid'),
                     count: resource.data.counters.paid,
                   },
                   {
                     key: 'PREPARING' as const,
-                    label: 'Chờ bàn giao',
+                    label: t('orders.tabs.preparing'),
                     count: resource.data.counters.preparing,
                   },
                   {
                     key: 'SHIPPING' as const,
-                    label: 'Đang giao',
+                    label: t('orders.tabs.shipping'),
                     count: resource.data.counters.shipping,
                   },
                   {
                     key: 'DELIVERED' as const,
-                    label: 'Đã giao',
+                    label: t('orders.tabs.delivered'),
                     count: resource.data.counters.delivered,
                   },
                   {
                     key: 'CONFIRMED' as const,
-                    label: 'Hoàn tất',
+                    label: t('orders.tabs.confirmed'),
                     count: resource.data.counters.confirmed,
                   },
                   {
                     key: 'CANCELLED' as const,
-                    label: 'Đã hủy',
+                    label: t('orders.tabs.cancelled'),
                     count: resource.data.counters.cancelled,
                   },
                 ].map((tab) => {
@@ -161,11 +167,11 @@ function OrdersWorkspace(): ReactElement {
                     <thead className="border-y border-blue-100 bg-blue-50/60 text-slate-500">
                       <tr>
                         {[
-                          'Đơn hàng / Người mua',
-                          'Sản phẩm',
-                          'Thanh toán',
-                          'Trạng thái',
-                          'Thao tác',
+                          t('orders.cols.orderBuyer'),
+                          t('orders.cols.products'),
+                          t('orders.cols.payment'),
+                          t('orders.cols.status'),
+                          t('orders.cols.actions'),
                         ].map((label) => (
                           <th key={label} className="px-3 py-3 font-medium">
                             {label}
@@ -185,7 +191,7 @@ function OrdersWorkspace(): ReactElement {
                             </Link>
                             <p className="mt-2 font-medium">{order.buyer.fullName}</p>
                             <p className="mt-1 text-slate-500">
-                              {order.buyer.phoneNumber || 'Chưa có SĐT'}
+                              {order.buyer.phoneNumber || t('orders.noPhone')}
                             </p>
                             <small className="mt-2 block text-slate-400">
                               {financeDate(order.createdAt)}
@@ -209,7 +215,7 @@ function OrdersWorkspace(): ReactElement {
                               ))}
                             </ul>
                             {!order.items.length && (
-                              <span className="text-slate-500">Chưa có sản phẩm</span>
+                              <span className="text-slate-500">{t('orders.noProducts')}</span>
                             )}
                           </td>
                           <td className="whitespace-nowrap px-3 py-4 font-semibold text-blue-700">
@@ -227,11 +233,11 @@ function OrdersWorkspace(): ReactElement {
                                       : 'blue'
                               }
                             >
-                              {sellerOrderLabels[order.status] || order.status}
+                              {getSellerOrderLabel(order.status)}
                             </Badge>
                             {order.shipment?.waybillCode && (
                               <p className="mt-2 break-all text-slate-500">
-                                Mã lưu trên đơn: {order.shipment.waybillCode}
+                                {t('orders.waybillOnOrder', { code: order.shipment.waybillCode })}
                               </p>
                             )}
                           </td>
@@ -246,7 +252,7 @@ function OrdersWorkspace(): ReactElement {
                               className="mt-3 inline-block text-blue-600 hover:underline"
                               to={`/seller/orders/${order.id}`}
                             >
-                              Xem chi tiết
+                              {t('orders.viewDetail')}
                             </Link>
                           </td>
                         </tr>
@@ -255,10 +261,7 @@ function OrdersWorkspace(): ReactElement {
                   </table>
                 </div>
               ) : (
-                <EmptyState
-                  title="Không có đơn hàng phù hợp"
-                  description="Đơn bán sẽ xuất hiện khi có người mua đặt hàng."
-                />
+                <EmptyState title={t('orders.emptyTitle')} description={t('orders.emptyDesc')} />
               )}
               <SellerPagination
                 page={resource.data.page}

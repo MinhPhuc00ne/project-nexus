@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { register, RegistrationError, verifyEmail } from '../../services/auth';
 import {
   ArrowRight,
@@ -17,9 +19,10 @@ type FieldErrors = Partial<Record<RegistrationField, string[]>>;
 function validatePasswordConfirmation(
   password: string,
   confirmPassword: string,
+  t: TFunction<'auth'>,
 ): string[] | undefined {
-  if (!confirmPassword) return ['Vui lòng nhập lại mật khẩu.'];
-  if (confirmPassword !== password) return ['Mật khẩu nhập lại không khớp.'];
+  if (!confirmPassword) return [t('registerForm.errors.confirmRequired')];
+  if (confirmPassword !== password) return [t('registerForm.errors.confirmMismatch')];
   return undefined;
 }
 
@@ -29,27 +32,28 @@ function validateRegistration(
   password: string,
   confirmPassword: string,
   agreement: boolean,
+  t: TFunction<'auth'>,
 ) {
   const errors: FieldErrors = {};
-  if (!fullName.trim()) errors.fullName = ['Họ và tên không được để trống.'];
+  if (!fullName.trim()) errors.fullName = [t('registerForm.errors.fullNameRequired')];
   if (!email.trim()) {
-    errors.email = ['Email không được để trống.'];
+    errors.email = [t('registerForm.errors.emailRequired')];
   } else if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/i.test(email.trim())) {
-    errors.email = ['Vui lòng nhập địa chỉ email @gmail.com hợp lệ.'];
+    errors.email = [t('registerForm.errors.emailInvalid')];
   }
   if (!password) {
-    errors.password = ['Mật khẩu không được để trống.'];
+    errors.password = [t('registerForm.errors.passwordRequired')];
   } else {
     const passwordErrors = [];
-    if (password.length < 8) passwordErrors.push('Mật khẩu phải có ít nhất 8 ký tự.');
+    if (password.length < 8) passwordErrors.push(t('registerForm.errors.passwordMinLength'));
     if (!/[A-Z]/.test(password) || !/[^a-zA-Z0-9\s]/.test(password)) {
-      passwordErrors.push('Mật khẩu phải có ít nhất 1 chữ hoa và 1 ký tự đặc biệt.');
+      passwordErrors.push(t('registerForm.errors.passwordComplexity'));
     }
     if (passwordErrors.length) errors.password = passwordErrors;
   }
-  const confirmationErrors = validatePasswordConfirmation(password, confirmPassword);
+  const confirmationErrors = validatePasswordConfirmation(password, confirmPassword, t);
   if (confirmationErrors) errors.confirmPassword = confirmationErrors;
-  if (!agreement) errors.agreement = ['Vui lòng đồng ý với điều khoản dịch vụ.'];
+  if (!agreement) errors.agreement = [t('registerForm.errors.agreementRequired')];
   return errors;
 }
 
@@ -82,6 +86,7 @@ function FieldError({ field, errors }: { field: RegistrationField; errors: Field
 }
 
 export default function RegisterForm() {
+  const { t } = useTranslation('auth');
   const [contact, setContact] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
@@ -117,7 +122,7 @@ export default function RegisterForm() {
   function validateDetailsField(
     field: 'fullName' | 'email' | 'password' | 'confirmPassword',
   ): void {
-    const errors = validateRegistration(fullName, contact, password, confirmPassword, agreement);
+    const errors = validateRegistration(fullName, contact, password, confirmPassword, agreement, t);
     setFieldErrors((previous) => ({ ...previous, [field]: errors[field] }));
   }
 
@@ -131,7 +136,9 @@ export default function RegisterForm() {
         else generalMessages.push(message);
       }
     } else {
-      generalMessages.push(error instanceof Error ? error.message : 'Yêu cầu thất bại.');
+      generalMessages.push(
+        error instanceof Error ? error.message : t('registerForm.errors.requestFailed'),
+      );
     }
     setFieldErrors(errors);
     setFailed(true);
@@ -157,6 +164,7 @@ export default function RegisterForm() {
       password,
       confirmPassword,
       agreement,
+      t,
     );
     setFieldErrors(validationErrors);
     setFeedback('');
@@ -191,15 +199,17 @@ export default function RegisterForm() {
     event.preventDefault();
     if (requestInFlight.current || verified) return;
     if (!sentEmail || sentEmail !== contact.trim()) {
-      setFieldErrors({ email: ['Vui lòng gửi mã OTP cho email này trước khi xác thực.'] });
+      setFieldErrors({ email: [t('registerForm.errors.sendOtpFirst')] });
       setFeedback('');
       return;
     }
     const validationErrors: FieldErrors = {};
     if (!/^[0-9]{6}$/.test(code)) {
-      validationErrors.code = [code ? 'Mã OTP phải gồm 6 chữ số.' : 'Vui lòng nhập mã OTP.'];
+      validationErrors.code = [
+        code ? t('registerForm.errors.otpSixDigits') : t('registerForm.errors.otpRequired'),
+      ];
     }
-    if (!agreement) validationErrors.agreement = ['Vui lòng đồng ý với điều khoản dịch vụ.'];
+    if (!agreement) validationErrors.agreement = [t('registerForm.errors.agreementRequired')];
     setFieldErrors(validationErrors);
     setFeedback('');
     if (Object.keys(validationErrors).length) {
@@ -237,11 +247,9 @@ export default function RegisterForm() {
       aria-labelledby="register-form-title"
     >
       <h2 id="register-form-title" className="text-xl leading-7 font-bold">
-        Tạo tài khoản NEXUS
+        {t('registerForm.title')}
       </h2>
-      <p className="mt-1 text-xs leading-5 text-slate-500">
-        Đăng ký nhanh chóng để khám phá các phiên đấu giá độc quyền
-      </p>
+      <p className="mt-1 text-xs leading-5 text-slate-500">{t('registerForm.subtitle')}</p>
 
       <form
         noValidate
@@ -254,7 +262,7 @@ export default function RegisterForm() {
             className="mb-1 block text-xs leading-5 font-medium text-slate-700"
             htmlFor="register-name"
           >
-            Họ và tên <span className="text-red-500">*</span>
+            {t('registerForm.fullNameLabel')} <span className="text-red-500">*</span>
           </label>
           <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
             <UserRound size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
@@ -273,7 +281,7 @@ export default function RegisterForm() {
                 fieldErrors.fullName?.length ? 'register-fullName-error' : undefined
               }
               autoComplete="name"
-              placeholder="VD: Nguyễn Văn An"
+              placeholder={t('registerForm.fullNamePlaceholder')}
               required
               maxLength={100}
               pattern=".*\S.*"
@@ -288,7 +296,7 @@ export default function RegisterForm() {
             className="mb-1 block text-xs leading-5 font-medium text-slate-700"
             htmlFor="register-contact"
           >
-            Email <span className="text-red-500">*</span>
+            {t('registerForm.emailLabel')} <span className="text-red-500">*</span>
           </label>
           <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
             <Mail size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
@@ -298,7 +306,7 @@ export default function RegisterForm() {
               type="email"
               disabled={pending || Boolean(sentEmail)}
               autoComplete="username"
-              placeholder="example@gmail.com"
+              placeholder={t('registerForm.emailPlaceholder')}
               required
               value={contact}
               onChange={(event) => {
@@ -318,12 +326,12 @@ export default function RegisterForm() {
               disabled={pending || verified || resendSeconds > 0}
             >
               {pending
-                ? 'Đang xử lý…'
+                ? t('registerForm.processing')
                 : resendSeconds > 0
-                  ? `Gửi lại sau ${resendSeconds}s`
+                  ? t('registerForm.resendIn', { seconds: resendSeconds })
                   : sentEmail
-                    ? 'Gửi lại OTP'
-                    : 'Gửi mã OTP'}
+                    ? t('registerForm.resendOtp')
+                    : t('registerForm.sendOtp')}
             </button>
           </div>
           <FieldError field="email" errors={fieldErrors} />
@@ -331,16 +339,14 @@ export default function RegisterForm() {
 
         {sentEmail && !verified && (
           <div className="rounded-lg bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-700">
-            <p className="mb-2">
-              Mã OTP đã gửi đến {sentEmail}. Mã có hiệu lực 10 phút. Kiểm tra cả thư mục spam.
-            </p>
+            <p className="mb-2">{t('registerForm.otpSentBanner', { email: sentEmail })}</p>
             <button
               type="button"
               className="shrink-0 cursor-pointer rounded-md bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-600 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
               disabled={pending}
               onClick={editDetails}
             >
-              Sửa email hoặc thông tin đăng ký
+              {t('registerForm.editDetails')}
             </button>
           </div>
         )}
@@ -351,7 +357,7 @@ export default function RegisterForm() {
               className="mb-1 block text-xs leading-5 font-medium text-slate-700"
               htmlFor="register-password"
             >
-              Mật khẩu <span className="text-red-500">*</span>
+              {t('registerForm.passwordLabel')} <span className="text-red-500">*</span>
             </label>
             <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
               <LockKeyhole size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
@@ -367,7 +373,7 @@ export default function RegisterForm() {
                     ...previous,
                     password: undefined,
                     confirmPassword: confirmPassword
-                      ? validatePasswordConfirmation(nextPassword, confirmPassword)
+                      ? validatePasswordConfirmation(nextPassword, confirmPassword, t)
                       : previous.confirmPassword,
                   }));
                 }}
@@ -376,14 +382,16 @@ export default function RegisterForm() {
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 aria-describedby={`register-password-hint${fieldErrors.password?.length ? ' register-password-error' : ''}`}
-                placeholder="Tối thiểu 8 ký tự"
+                placeholder={t('registerForm.passwordPlaceholder')}
                 minLength={8}
                 required
                 className="min-w-0 flex-1 bg-transparent py-2 text-xs text-slate-900 outline-none placeholder:text-slate-500"
               />
               <button
                 type="button"
-                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                aria-label={
+                  showPassword ? t('registerForm.hidePassword') : t('registerForm.showPassword')
+                }
                 aria-pressed={showPassword}
                 aria-controls="register-password"
                 disabled={pending || verified}
@@ -399,7 +407,7 @@ export default function RegisterForm() {
             </div>
             <FieldError field="password" errors={fieldErrors} />
             <p id="register-password-hint" className="mt-1 text-[10px] leading-4 text-slate-500">
-              Ít nhất 8 ký tự, có một chữ hoa và một ký tự đặc biệt.
+              {t('registerForm.passwordHint')}
             </p>
           </div>
           <div>
@@ -407,7 +415,7 @@ export default function RegisterForm() {
               className="mb-1 block text-xs leading-5 font-medium text-slate-700"
               htmlFor="register-confirm-password"
             >
-              Nhập lại mật khẩu <span className="text-red-500">*</span>
+              {t('registerForm.confirmPasswordLabel')} <span className="text-red-500">*</span>
             </label>
             <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
               <LockKeyhole size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
@@ -427,13 +435,17 @@ export default function RegisterForm() {
                   fieldErrors.confirmPassword?.length ? 'register-confirmPassword-error' : undefined
                 }
                 autoComplete="new-password"
-                placeholder="Nhập lại mật khẩu"
+                placeholder={t('registerForm.confirmPasswordPlaceholder')}
                 required
                 className="min-w-0 flex-1 bg-transparent py-2 text-xs text-slate-900 outline-none placeholder:text-slate-500"
               />
               <button
                 type="button"
-                aria-label={showConfirmPassword ? 'Ẩn mật khẩu nhập lại' : 'Hiện mật khẩu nhập lại'}
+                aria-label={
+                  showConfirmPassword
+                    ? t('registerForm.hideConfirmPassword')
+                    : t('registerForm.showConfirmPassword')
+                }
                 aria-pressed={showConfirmPassword}
                 aria-controls="register-confirm-password"
                 disabled={pending || verified}
@@ -454,7 +466,7 @@ export default function RegisterForm() {
               className="mb-1 block text-xs leading-5 font-medium text-slate-700"
               htmlFor="register-otp"
             >
-              Mã xác thực OTP <span className="text-red-500">*</span>
+              {t('registerForm.otpLabel')} <span className="text-red-500">*</span>
             </label>
             <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
               <RectangleEllipsis size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
@@ -473,10 +485,10 @@ export default function RegisterForm() {
                 aria-describedby={fieldErrors.code?.length ? 'register-code-error' : undefined}
                 autoComplete="one-time-code"
                 inputMode="numeric"
-                placeholder="Mã 6 chữ số"
+                placeholder={t('registerForm.otpPlaceholder')}
                 pattern="[0-9]{6}"
                 maxLength={6}
-                title="Nhập mã OTP gồm 6 chữ số"
+                title={t('registerForm.otpTitle')}
                 required
                 className="min-w-0 flex-1 bg-transparent py-2 font-mono text-xs tracking-wider text-slate-900 outline-none placeholder:text-slate-500"
               />
@@ -504,8 +516,9 @@ export default function RegisterForm() {
             className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-blue-600 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
           />
           <label className="[&_a]:text-blue-600 [&_a:hover]:underline" htmlFor="register-agreement">
-            Tôi đồng ý với <a href="/terms">Điều khoản dịch vụ</a> và{' '}
-            <a href="/privacy">Chính sách bảo mật</a> của NEXUS.
+            {t('registerForm.agreementPrefix')} <a href="/terms">{t('registerForm.termsLink')}</a>{' '}
+            {t('registerForm.agreementAnd')} <a href="/privacy">{t('registerForm.privacyLink')}</a>{' '}
+            {t('registerForm.agreementSuffix')}
           </label>
         </div>
         <FieldError field="agreement" errors={fieldErrors} />
@@ -525,15 +538,19 @@ export default function RegisterForm() {
           type="submit"
           disabled={pending || !sentEmail || verified}
         >
-          {pending ? 'Đang xử lý…' : verified ? 'Đã xác thực' : 'Xác Thực Tài Khoản'}{' '}
+          {pending
+            ? t('registerForm.processing')
+            : verified
+              ? t('registerForm.verified')
+              : t('registerForm.submitVerify')}{' '}
           <ArrowRight size={16} aria-hidden="true" />
         </button>
       </form>
 
       <p className="mt-[18px] border-t border-slate-100 pt-4 text-center text-xs leading-5 text-slate-500">
-        Đã có tài khoản NEXUS?{' '}
+        {t('registerForm.alreadyHaveAccount')}{' '}
         <a className="ml-1 font-medium text-blue-600 hover:underline" href="/login">
-          Đăng nhập ngay
+          {t('registerForm.loginNow')}
         </a>
       </p>
     </section>

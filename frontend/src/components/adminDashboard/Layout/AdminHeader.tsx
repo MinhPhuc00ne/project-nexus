@@ -120,7 +120,7 @@ export default function AdminHeader({
           <button
             ref={userButtonRef}
             type="button"
-            aria-label="Mở tùy chọn tài khoản"
+            aria-label={t('admin:header.accountOptionsAria')}
             aria-expanded={showUserMenu}
             aria-controls={userMenuId}
             onClick={() => {
@@ -168,7 +168,7 @@ export default function AdminHeader({
                 onClick={() => setShowUserMenu(false)}
               >
                 <Settings2 size={16} />
-                Cài đặt quản trị
+                {t('admin:header.settingsLink')}
               </Link>
               <div className="my-1.5 border-t border-slate-100" />
               <button
@@ -177,7 +177,7 @@ export default function AdminHeader({
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-red-500 hover:bg-red-50"
               >
                 <LogOut size={16} />
-                Đăng xuất
+                {t('admin:header.logout')}
               </button>
             </div>
           )}

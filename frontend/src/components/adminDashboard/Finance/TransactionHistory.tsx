@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Wallet } from 'lucide-react';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';
@@ -9,11 +10,12 @@ import type {
   AdminWalletTransactionPage,
   AdminWalletTransactionType,
 } from '../../../types/admin-wallet.types';
-import { typeLabels, statusLabels, date } from './transactionPresentation';
+import { TRANSACTION_TYPES, date } from './transactionPresentation';
 import { buildTransactionCsv } from './transactionCsv';
 import TransactionDetailDialog from './TransactionDetailDialog';
 
 export default function TransactionHistory() {
+  const { t } = useTranslation('admin');
   const [params, setParams] = useSearchParams();
   const orderId = params.get('order') ?? '';
   const [search, setSearch] = useState(orderId);
@@ -67,14 +69,14 @@ export default function TransactionHistory() {
       .catch((cause: unknown) => {
         if (!controller.signal.aborted) {
           setResult(null);
-          setError(cause instanceof Error ? cause.message : 'Không thể tải lịch sử giao dịch.');
+          setError(cause instanceof Error ? cause.message : t('finance.transactions.loadErr'));
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [page, term, type, from, to, invalidRange, refresh]);
+  }, [page, term, type, from, to, invalidRange, refresh, t]);
 
   function exportCsv() {
     if (!result?.items.length || loading || invalidRange || error) return;
@@ -95,8 +97,8 @@ export default function TransactionHistory() {
   return (
     <div className="space-y-5">
       <Panel
-        title="Lịch sử giao dịch & đối soát"
-        subtitle="Tra cứu các giao dịch của ví nền tảng và thông tin đơn hàng liên quan"
+        title={t('finance.transactions.title')}
+        subtitle={t('finance.transactions.subtitle')}
         icon={<Wallet size={19} />}
         action={
           <Button
@@ -104,7 +106,7 @@ export default function TransactionHistory() {
             disabled={loading || invalidRange}
             onClick={() => setRefresh((value) => value + 1)}
           >
-            Tải lại
+            {t('finance.transactions.reload')}
           </Button>
         }
       >
@@ -113,11 +115,11 @@ export default function TransactionHistory() {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Tìm mã tham chiếu hoặc mô tả giao dịch..."
+              placeholder={t('finance.transactions.searchPlaceholder')}
             />
           </div>
           <label className="text-xs text-slate-500">
-            Loại giao dịch
+            {t('finance.transactions.typeLabel')}
             <select
               className={inputClass}
               value={type}
@@ -126,16 +128,16 @@ export default function TransactionHistory() {
                 setPage(1);
               }}
             >
-              <option value="">Tất cả loại giao dịch</option>
-              {Object.entries(typeLabels).map(([value, label]) => (
+              <option value="">{t('finance.transactions.allTypes')}</option>
+              {TRANSACTION_TYPES.map((value) => (
                 <option key={value} value={value}>
-                  {label}
+                  {t(`finance.types.${value}`)}
                 </option>
               ))}
             </select>
           </label>
           <label className="text-xs text-slate-500">
-            Từ ngày
+            {t('finance.transactions.fromDate')}
             <input
               type="date"
               value={from}
@@ -149,7 +151,7 @@ export default function TransactionHistory() {
             />
           </label>
           <label className="text-xs text-slate-500">
-            Đến ngày
+            {t('finance.transactions.toDate')}
             <input
               type="date"
               value={to}
@@ -167,7 +169,7 @@ export default function TransactionHistory() {
             disabled={loading || invalidRange || !!error || !result?.items.length}
             onClick={exportCsv}
           >
-            Xuất CSV trang hiện tại
+            {t('finance.transactions.exportCsv')}
           </Button>
           {(from || to || type || search || orderId) && (
             <Button
@@ -184,23 +186,23 @@ export default function TransactionHistory() {
                 setParams(next, { replace: true });
               }}
             >
-              Xóa bộ lọc
+              {t('finance.transactions.clearFilters')}
             </Button>
           )}
         </div>
         {invalidRange ? (
           <p id="transaction-date-error" role="alert" className="text-sm text-red-600">
-            Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.
+            {t('finance.transactions.invalidRangeErr')}
           </p>
         ) : loading ? (
           <p role="status" className="py-12 text-center text-sm text-slate-500">
-            Đang tải lịch sử giao dịch…
+            {t('finance.transactions.loading')}
           </p>
         ) : error ? (
           <div role="alert" className="space-y-3 text-sm text-red-600">
             <p>{error}</p>
             <Button variant="secondary" onClick={() => setRefresh((value) => value + 1)}>
-              Thử lại
+              {t('finance.transactions.retry')}
             </Button>
           </div>
         ) : (
@@ -212,12 +214,12 @@ export default function TransactionHistory() {
                     <thead className="bg-blue-50 text-slate-500">
                       <tr>
                         {[
-                          'Giao dịch / Tham chiếu',
-                          'Loại / Thời gian',
-                          'Đơn hàng / Người bán',
-                          'Số tiền',
-                          'Trạng thái',
-                          'Thao tác',
+                          t('finance.transactions.cols.tx'),
+                          t('finance.transactions.cols.typeTime'),
+                          t('finance.transactions.cols.orderSeller'),
+                          t('finance.transactions.cols.amount'),
+                          t('finance.transactions.cols.status'),
+                          t('finance.transactions.cols.actions'),
                         ].map((title) => (
                           <th scope="col" key={title} className="p-3 font-semibold">
                             {title}
@@ -233,7 +235,7 @@ export default function TransactionHistory() {
                             <p className="text-slate-500">{row.referenceId || '—'}</p>
                           </td>
                           <td className="p-3 leading-5">
-                            <p>{typeLabels[row.type] ?? row.type}</p>
+                            <p>{t(`finance.types.${row.type}`, { defaultValue: row.type })}</p>
                             <p className="text-slate-500">{date(row.createdAt)}</p>
                           </td>
                           <td className="max-w-64 break-words p-3 leading-5">
@@ -259,12 +261,12 @@ export default function TransactionHistory() {
                                     : 'amber'
                               }
                             >
-                              {statusLabels[row.status] ?? row.status}
+                              {t(`finance.statuses.${row.status}`, { defaultValue: row.status })}
                             </Badge>
                           </td>
                           <td className="p-3">
                             <Button variant="secondary" onClick={() => setDetail(row)}>
-                              Chi tiết
+                              {t('finance.transactions.detailsBtn')}
                             </Button>
                           </td>
                         </tr>
@@ -273,11 +275,15 @@ export default function TransactionHistory() {
                   </table>
                 </div>
               ) : (
-                <EmptyState text="Không có giao dịch phù hợp với bộ lọc." />
+                <EmptyState text={t('finance.transactions.empty')} />
               )}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
                 <span>
-                  {result.total} giao dịch · Trang {result.page}/{Math.max(1, result.totalPages)}
+                  {t('finance.transactions.pagination', {
+                    total: result.total,
+                    page: result.page,
+                    totalPages: Math.max(1, result.totalPages),
+                  })}
                 </span>
                 <div className="flex gap-2">
                   <Button
@@ -285,14 +291,14 @@ export default function TransactionHistory() {
                     disabled={page <= 1}
                     onClick={() => setPage((value) => value - 1)}
                   >
-                    Trước
+                    {t('finance.transactions.prev')}
                   </Button>
                   <Button
                     variant="secondary"
                     disabled={page >= result.totalPages}
                     onClick={() => setPage((value) => value + 1)}
                   >
-                    Sau
+                    {t('finance.transactions.next')}
                   </Button>
                 </div>
               </div>

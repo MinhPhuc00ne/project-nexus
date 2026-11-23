@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest } from './api';
 import { getSellerResource } from './sellerResources';
 import type {
@@ -37,6 +38,7 @@ export async function createSellerWithdrawal(body: CreateWithdrawal): Promise<Wi
     body,
     requireAuth: true,
   });
-  if (!result.success) throw new Error(result.message || 'Chưa gửi được yêu cầu rút tiền.');
+  if (!result.success)
+    throw new Error(result.message || i18n.t('errors:services.withdrawSubmitFailed'));
   return result;
 }

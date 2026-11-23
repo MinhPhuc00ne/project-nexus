@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Truck, QrCode, Clock, Banknote, CreditCard, CheckCircle2 } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import {
   checkPaymentStatusApi,
   type BuyerOrder,
@@ -28,6 +30,7 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
   secondaryAction,
   onPaymentCompleted,
 }) => {
+  const { t } = useTranslation('commerce');
   const [isPaid, setIsPaid] = useState(false);
   const targetOrderId = payosPayment?.orderId || orders[0]?.id;
 
@@ -40,7 +43,7 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
         const res = await checkPaymentStatusApi(targetOrderId);
         if (!isCancelled && res.paid) {
           setIsPaid(true);
-          showToast('Thanh toán đơn hàng qua PayOS VietQR thành công!');
+          showToast(t('checkout.payosSuccessToast'));
           if (onPaymentCompleted) onPaymentCompleted();
         }
       } catch {
@@ -56,7 +59,7 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
       isCancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [targetOrderId, isCod, isPaid, payosPayment, showToast, onPaymentCompleted]);
+  }, [targetOrderId, isCod, isPaid, payosPayment, showToast, onPaymentCompleted, t]);
 
   const orderCodes = orders
     .map((o) => o.orderNumber)
@@ -97,12 +100,12 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
       return (
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
-            Thanh Toán Thành Công!
+            {t('checkout.paidTitle')}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {orderCodes
-              ? `Mã đơn hàng: ${orderCodes} • Đã ghi nhận ký quỹ an toàn`
-              : 'Đơn hàng của bạn đã được thanh toán và lưu vào hệ thống ký quỹ NEXUS Escrow.'}
+              ? t('checkout.paidDescWithCode', { codes: orderCodes })
+              : t('checkout.paidDescDefault')}
           </p>
         </div>
       );
@@ -111,12 +114,12 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
       return (
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
-            Đặt Hàng COD Thành Công!
+            {t('checkout.codTitle')}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {orderCodes
-              ? `Mã đơn hàng: ${orderCodes}`
-              : 'Đơn hàng của bạn đã được tiếp nhận và thông báo cho người bán chuẩn bị.'}
+              ? t('checkout.codDescWithCode', { codes: orderCodes })
+              : t('checkout.codDescDefault')}
           </p>
         </div>
       );
@@ -125,23 +128,25 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
       return (
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
-            Khởi Tạo Đơn Hàng Thành Công!
+            {t('checkout.qrCreatedTitle')}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
             {orderCodes
-              ? `Mã đơn hàng: ${orderCodes} • Quét mã PayOS VietQR để thanh toán`
-              : 'Vui lòng quét mã VietQR bên dưới bằng ứng dụng ngân hàng để thanh toán.'}
+              ? t('checkout.qrCreatedDescWithCode', { codes: orderCodes })
+              : t('checkout.qrCreatedDescDefault')}
           </p>
         </div>
       );
     }
     return (
       <div>
-        <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">Đặt Hàng Thành Công!</h2>
+        <h2 className="text-xl font-extrabold text-slate-900 sm:text-2xl">
+          {t('checkout.orderCreatedTitle')}
+        </h2>
         <p className="mt-1 text-xs text-slate-500">
           {orderCodes
-            ? `Mã đơn hàng: ${orderCodes} • Trạng thái: Chờ thanh toán`
-            : 'Đơn hàng đã được lưu trên hệ thống và đang chờ thanh toán.'}
+            ? t('checkout.orderCreatedDescWithCode', { codes: orderCodes })
+            : t('checkout.orderCreatedDescDefault')}
         </p>
       </div>
     );
@@ -157,12 +162,10 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
           <div className="flex items-center justify-between border-b border-emerald-200/80 pb-3">
             <div className="flex items-center gap-2">
               <Banknote className="text-emerald-700" size={20} />
-              <span className="font-bold text-emerald-950">
-                Số tiền cần thanh toán khi nhận hàng:
-              </span>
+              <span className="font-bold text-emerald-950">{t('checkout.codAmountDue')}</span>
             </div>
             <span className="text-base font-black text-[#f24e1e] sm:text-lg">
-              {Number(grandTotal || 0).toLocaleString('vi-VN')} ₫
+              {formatCurrency(Number(grandTotal || 0))}
             </span>
           </div>
 
@@ -170,22 +173,21 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
             <div className="flex items-start gap-2">
               <span className="font-bold text-emerald-700">•</span>
               <span>
-                <strong>Hình thức:</strong> Thanh toán tiền mặt trực tiếp cho nhân viên giao hàng
-                GHN Express.
+                <strong>{t('checkout.codBulletMethod')}</strong> {t('checkout.codBulletMethodDesc')}
               </span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-emerald-700">•</span>
               <span>
-                <strong>Chuẩn bị:</strong> Quý khách vui lòng chuẩn bị số tiền mặt tương ứng khi bưu
-                tá liên hệ phát hàng.
+                <strong>{t('checkout.codBulletPrepare')}</strong>{' '}
+                {t('checkout.codBulletPrepareDesc')}
               </span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-bold text-emerald-700">•</span>
               <span>
-                <strong>Quyền lợi đồng kiểm:</strong> Bạn được kiểm tra bao bì và kiện hàng trước
-                khi thanh toán tiền mặt.
+                <strong>{t('checkout.codBulletInspect')}</strong>{' '}
+                {t('checkout.codBulletInspectDesc')}
               </span>
             </div>
           </div>
@@ -195,26 +197,21 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
           <div className="flex items-center justify-between border-b border-emerald-200/80 pb-3">
             <div className="flex items-center gap-2">
               <CreditCard className="text-emerald-700" size={20} />
-              <span className="font-bold text-emerald-950">Phương thức: PayOS VietQR 24/7</span>
+              <span className="font-bold text-emerald-950">{t('checkout.payosMethod247')}</span>
             </div>
             <span className="rounded-full border border-emerald-300 bg-emerald-100 px-3 py-0.5 text-[11px] font-extrabold text-emerald-800">
-              Đã thanh toán
+              {t('checkout.paidBadge')}
             </span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-600">Số tiền đã thanh toán:</span>
+            <span className="text-slate-600">{t('checkout.amountPaid')}</span>
             <span className="text-base font-black text-emerald-700">
-              {Number(grandTotal || 0).toLocaleString('vi-VN')} ₫
+              {formatCurrency(Number(grandTotal || 0))}
             </span>
           </div>
           <div className="space-y-1.5 pt-1 text-[11px] leading-relaxed text-emerald-900">
-            <p>
-              • Tiền thanh toán của bạn đang được giữ ký quỹ an toàn tại{' '}
-              <strong>NEXUS Escrow</strong>.
-            </p>
-            <p>
-              • Người bán đã nhận được đơn hàng và đang tiến hành đóng gói để giao cho GHN Express.
-            </p>
+            <p>• {t('checkout.paidBulletEscrow')}</p>
+            <p>• {t('checkout.paidBulletShipping')}</p>
           </div>
         </div>
       ) : payosPayment ? (
@@ -224,22 +221,20 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
           <div className="flex items-center justify-between border-b border-blue-200/80 pb-3">
             <div className="flex items-center gap-2">
               <CreditCard className="text-blue-700" size={20} />
-              <span className="font-bold text-blue-950">Phương thức: PayOS VietQR</span>
+              <span className="font-bold text-blue-950">{t('checkout.payosMethodLabel')}</span>
             </div>
             <span className="rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800">
-              Chờ thanh toán
+              {t('checkout.pendingPaymentBadge')}
             </span>
           </div>
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-600">Tổng tiền đơn hàng:</span>
+            <span className="text-slate-600">{t('checkout.orderTotalAmount')}</span>
             <span className="text-base font-extrabold text-[#f24e1e]">
-              {Number(grandTotal || 0).toLocaleString('vi-VN')} ₫
+              {formatCurrency(Number(grandTotal || 0))}
             </span>
           </div>
           <p className="pt-1 text-[11px] leading-relaxed text-blue-900">
-            Đơn hàng đã được tạo thành công trên hệ thống. Quý khách có thể vào mục{' '}
-            <strong>"Xem đơn hàng của tôi"</strong> để quét mã QR PayOS hoặc kiểm tra tiến trình
-            đơn.
+            {t('checkout.pendingPaymentNote')}
           </p>
         </div>
       )}

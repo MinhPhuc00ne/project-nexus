@@ -1,4 +1,5 @@
 import { MapPin, Edit2, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { UserAddress } from '../../services/address';
 
 interface AddressCardProps {
@@ -16,6 +17,7 @@ export default function AddressCard({
   onDelete,
   deletingId,
 }: AddressCardProps) {
+  const { t } = useTranslation('common');
   return (
     <div
       className={`rounded-2xl border p-4 sm:p-5 transition bg-white ${
@@ -32,7 +34,7 @@ export default function AddressCard({
             <span className="text-xs text-slate-600 font-medium">{addr.phone}</span>
             {addr.isDefault && (
               <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
-                <MapPin size={11} /> Mặc định
+                <MapPin size={11} /> {t('address.defaultBadge')}
               </span>
             )}
           </div>
@@ -52,7 +54,7 @@ export default function AddressCard({
             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
           >
             <Edit2 size={13} />
-            <span>Sửa</span>
+            <span>{t('address.edit')}</span>
           </button>
 
           {!addr.isDefault && (
@@ -62,7 +64,7 @@ export default function AddressCard({
                 onClick={() => onSetDefault(addr.id)}
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 text-slate-600 text-xs font-semibold transition"
               >
-                Thiết lập mặc định
+                {t('address.setDefault')}
               </button>
 
               <button
@@ -70,7 +72,7 @@ export default function AddressCard({
                 onClick={() => onDelete(addr.id)}
                 disabled={deletingId === addr.id}
                 className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 text-slate-400 text-xs transition disabled:opacity-50"
-                title="Xóa địa chỉ"
+                title={t('address.deleteTitle')}
               >
                 <Trash2 size={14} />
               </button>

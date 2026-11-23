@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Store } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getAdminShopById } from '../../../services/admin';
 import type { AdminShopDetail } from '../../../types/admin.types';
 import { Badge, Button } from '../shared/AdminUI';
-
-const statusLabels = {
-  ACTIVE: 'Đang mở bán',
-  SUSPENDED: 'Đang đình chỉ',
-  INACTIVE: 'Ngừng hoạt động',
-};
 
 export default function UserShopSummary({
   userId,
@@ -18,6 +13,7 @@ export default function UserShopSummary({
   userId: string;
   onView: () => void;
 }) {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [shop, setShop] = useState<AdminShopDetail['shop'] | null>(null);
   const [error, setError] = useState('');
@@ -33,22 +29,22 @@ export default function UserShopSummary({
       })
       .catch((cause: unknown) => {
         if (!controller.signal.aborted) {
-          setError(cause instanceof Error ? cause.message : 'Không thể tải thông tin cửa hàng.');
+          setError(cause instanceof Error ? cause.message : t('users.shopSummary.loadErr'));
         }
       });
     return () => controller.abort();
-  }, [userId, token, revision]);
+  }, [userId, token, revision, t]);
 
   return (
-    <section aria-label="Cửa hàng" className="border-t border-slate-100 pt-5">
+    <section aria-label={t('users.shopSummary.title')} className="border-t border-slate-100 pt-5">
       <h3 className="mb-4 flex items-center gap-2 text-sm font-bold text-slate-900">
-        <Store size={17} aria-hidden="true" /> Cửa hàng
+        <Store size={17} aria-hidden="true" /> {t('users.shopSummary.title')}
       </h3>
       {error ? (
         <div role="alert" className="space-y-3 text-sm text-red-600">
           <p>{error}</p>
           <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-            Thử lại
+            {t('users.shopSummary.retry')}
           </Button>
         </div>
       ) : shop ? (
@@ -64,16 +60,16 @@ export default function UserShopSummary({
                     : 'gray'
               }
             >
-              {statusLabels[shop.status.currentStatus]}
+              {t(`users.shopSummary.statuses.${shop.status.currentStatus}`)}
             </Badge>
           </div>
           <Button variant="secondary" onClick={onView}>
-            Xem chi tiết cửa hàng
+            {t('users.shopSummary.viewShop')}
           </Button>
         </div>
       ) : (
         <p role="status" className="text-sm text-slate-500">
-          Đang tải thông tin cửa hàng…
+          {t('users.shopSummary.loading')}
         </p>
       )}
     </section>

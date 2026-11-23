@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest } from './api';
 import type {
   ShopDetail,
@@ -10,10 +11,10 @@ import { getSellerResource } from './sellerResources';
 export async function uploadShopAvatarFile(file: File): Promise<string> {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
   if (!validTypes.includes(file.type)) {
-    throw new Error('Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP cho ảnh đại diện gian hàng.');
+    throw new Error(i18n.t('errors:services.shopAvatarFormat'));
   }
   if (file.size <= 0 || file.size > 10 * 1024 * 1024) {
-    throw new Error('Ảnh đại diện gian hàng không được vượt quá 10 MB.');
+    throw new Error(i18n.t('errors:services.shopAvatarSize'));
   }
   const formData = new FormData();
   formData.append('file', file);
@@ -23,14 +24,14 @@ export async function uploadShopAvatarFile(file: File): Promise<string> {
     isFormData: true,
     requireAuth: true,
   });
-  if (!uploaded?.url) throw new Error('Máy chủ chưa trả về URL ảnh đại diện hợp lệ.');
+  if (!uploaded?.url) throw new Error(i18n.t('errors:services.invalidImageUrl'));
   return uploaded.url;
 }
 
 const pending = new Map<string, Promise<ShopDetail>>();
 
 export function getShopDetail(sellerId: string, page = 1, limit = 1): Promise<ShopDetail> {
-  if (!sellerId.trim()) return Promise.reject(new Error('Thiếu mã gian hàng.'));
+  if (!sellerId.trim()) return Promise.reject(new Error(i18n.t('errors:services.missingShopId')));
   const params = new URLSearchParams({ page: String(page), limit: String(limit) });
   const path = `/catalog/shops/${encodeURIComponent(sellerId)}?${params}`;
   const existing = pending.get(path);
@@ -54,6 +55,7 @@ export async function updateSellerShopProfile(
     body,
     requireAuth: true,
   });
-  if (!result.success) throw new Error(result.message || 'Chưa cập nhật được gian hàng.');
+  if (!result.success)
+    throw new Error(result.message || i18n.t('errors:services.shopUpdateFailed'));
   return result;
 }

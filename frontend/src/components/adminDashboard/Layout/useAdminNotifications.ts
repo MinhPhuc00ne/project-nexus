@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import {
   WS_NOTIFICATION_EVENTS,
@@ -22,6 +23,7 @@ import {
 } from '../Auctions/adminAuctionRealtime';
 
 export default function useAdminNotifications(userId: string, isOpen: boolean) {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const toast = useToast();
   const [unreadCount, setUnreadCount] = useState<number | null>(null);
@@ -77,7 +79,7 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
         }
       } catch (cause) {
         if (canApply())
-          setError(cause instanceof Error ? cause.message : 'Không thể tải thông báo.');
+          setError(cause instanceof Error ? cause.message : t('notifications.loadErr'));
       } finally {
         fetching = false;
         if (canApply()) setLoading(false);
@@ -172,7 +174,7 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
       // The backend broadcasts the authoritative count to every connected session.
     } catch (cause) {
       if (isCurrentSession()) {
-        const message = cause instanceof Error ? cause.message : 'Không thể cập nhật thông báo.';
+        const message = cause instanceof Error ? cause.message : t('notifications.updateErr');
         setError(message);
         toast.error(message);
       }

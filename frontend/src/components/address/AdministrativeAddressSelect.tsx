@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import {
   getShippingProvinces,
@@ -154,6 +155,7 @@ export default function AdministrativeAddressSelect({
   required = true,
   size = 'md',
 }: AdministrativeAddressSelectProps) {
+  const { t } = useTranslation('common');
   const [provinces, setProvinces] = useState<GhnProvince[]>([]);
   const [districts, setDistricts] = useState<GhnDistrict[]>([]);
   const [wards, setWards] = useState<GhnWard[]>([]);
@@ -328,7 +330,7 @@ export default function AdministrativeAddressSelect({
       {/* 1. Tỉnh / Thành phố */}
       <div>
         <label className={labelClasses}>
-          Tỉnh / Thành phố {required && <span className="text-red-500">*</span>}
+          {t('addressSelect.provinceLabel')} {required && <span className="text-red-500">*</span>}
         </label>
         <div className="relative">
           <select
@@ -339,7 +341,9 @@ export default function AdministrativeAddressSelect({
             className={selectClasses}
           >
             <option value="">
-              {loadingProvinces ? 'Đang tải tỉnh/thành...' : '-- Chọn Tỉnh / Thành phố --'}
+              {loadingProvinces
+                ? t('addressSelect.loadingProvinces')
+                : t('addressSelect.selectProvince')}
             </option>
             {provinces.map((p) => (
               <option key={p.provinceId} value={p.provinceName}>
@@ -360,7 +364,7 @@ export default function AdministrativeAddressSelect({
       {/* 2. Quận / Huyện */}
       <div>
         <label className={labelClasses}>
-          Quận / Huyện {required && <span className="text-red-500">*</span>}
+          {t('addressSelect.districtLabel')} {required && <span className="text-red-500">*</span>}
         </label>
         <div className="relative">
           <select
@@ -372,10 +376,10 @@ export default function AdministrativeAddressSelect({
           >
             <option value="">
               {!city
-                ? 'Vui lòng chọn Tỉnh/Thành'
+                ? t('addressSelect.selectProvinceFirst')
                 : loadingDistricts
-                  ? 'Đang tải quận/huyện...'
-                  : '-- Chọn Quận / Huyện --'}
+                  ? t('addressSelect.loadingDistricts')
+                  : t('addressSelect.selectDistrict')}
             </option>
             {districts.map((d) => (
               <option key={d.districtId} value={d.districtName}>
@@ -396,7 +400,7 @@ export default function AdministrativeAddressSelect({
       {/* 3. Phường / Xã */}
       <div>
         <label className={labelClasses}>
-          Phường / Xã {required && <span className="text-red-500">*</span>}
+          {t('addressSelect.wardLabel')} {required && <span className="text-red-500">*</span>}
         </label>
         <div className="relative">
           <select
@@ -408,10 +412,10 @@ export default function AdministrativeAddressSelect({
           >
             <option value="">
               {!district
-                ? 'Vui lòng chọn Quận/Huyện'
+                ? t('addressSelect.selectDistrictFirst')
                 : loadingWards
-                  ? 'Đang tải phường/xã...'
-                  : '-- Chọn Phường / Xã --'}
+                  ? t('addressSelect.loadingWards')
+                  : t('addressSelect.selectWard')}
             </option>
             {wards.map((w) => (
               <option key={w.wardCode} value={w.wardName}>

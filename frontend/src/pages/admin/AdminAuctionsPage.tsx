@@ -1,4 +1,5 @@
 import { Gavel, Plus, RefreshCw } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import Popup from '../../components/Popup';
 import { AuctionShowcaseHUD } from '../../components/auction/showcase/AuctionShowcaseHUD';
 import {
@@ -11,9 +12,21 @@ import CreateAuctionDialog from '../../components/adminDashboard/Auctions/Create
 import AuctionItemsDialog from '../../components/adminDashboard/Auctions/AuctionItemsDialog';
 import { useAdminAuctions } from '../../components/adminDashboard/Auctions/useAdminAuctions';
 import AuctionRow from '../../components/adminDashboard/Auctions/AuctionRow';
-import { statuses } from '../../components/adminDashboard/Auctions/auctionStatuses';
+import { AUCTION_STATUS_KEYS } from '../../components/adminDashboard/Auctions/auctionStatuses';
+
+const COLUMN_KEYS = [
+  'session',
+  'start',
+  'end',
+  'minReputation',
+  'bids',
+  'status',
+  'products',
+  'actions',
+] as const;
 
 export default function AdminAuctionsPage() {
+  const { t } = useTranslation('admin');
   const {
     now,
     lockDisabledReason,
@@ -47,13 +60,13 @@ export default function AdminAuctionsPage() {
   } = useAdminAuctions();
   return (
     <Panel
-      title="Quản lí đấu giá"
-      subtitle="Tạo phiên, thiết lập thời gian và điều kiện uy tín cho người tham gia."
+      title={t('auctions.page.title')}
+      subtitle={t('auctions.page.subtitle')}
       icon={<Gavel size={19} />}
       action={
         <Button onClick={() => setCreating(true)}>
           <Plus size={15} />
-          Tạo phiên đấu giá
+          {t('auctions.page.createBtn')}
         </Button>
       }
     >
@@ -62,11 +75,11 @@ export default function AdminAuctionsPage() {
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Tìm theo tên phiên đấu giá..."
+            placeholder={t('auctions.page.searchPlaceholder')}
           />
         </div>
         <select
-          aria-label="Trạng thái phiên đấu giá"
+          aria-label={t('auctions.page.statusAria')}
           value={status}
           onChange={(event) => {
             setStatus(event.target.value);
@@ -74,10 +87,10 @@ export default function AdminAuctionsPage() {
           }}
           className="rounded-lg border border-slate-200 bg-white p-3 text-xs"
         >
-          <option value="">Tất cả trạng thái</option>
-          {statuses.map(([value, label]) => (
+          <option value="">{t('auctions.page.allStatuses')}</option>
+          {AUCTION_STATUS_KEYS.map((value) => (
             <option key={value} value={value}>
-              {label}
+              {t(`auctions.statuses.${value}`)}
             </option>
           ))}
         </select>
@@ -87,19 +100,19 @@ export default function AdminAuctionsPage() {
           onClick={() => setRevision((value) => value + 1)}
         >
           <RefreshCw size={14} />
-          Làm mới
+          {t('auctions.common.refresh')}
         </Button>
       </div>
       {loading && (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
-          Đang tải phiên đấu giá…
+          {t('auctions.page.loading')}
         </p>
       )}
       {error && (
         <div role="alert" className="space-y-3 rounded-lg bg-red-50 p-4 text-sm text-red-700">
           <p>{error}</p>
           <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-            Thử lại
+            {t('auctions.common.retry')}
           </Button>
         </div>
       )}
@@ -111,18 +124,9 @@ export default function AdminAuctionsPage() {
               <table className="w-full min-w-[850px] text-left text-xs">
                 <thead className="bg-blue-50 text-slate-500">
                   <tr>
-                    {[
-                      'Phiên đấu giá',
-                      'Bắt đầu',
-                      'Kết thúc',
-                      'Điểm uy tín tối thiểu',
-                      'Lượt trả giá',
-                      'Trạng thái',
-                      'Sản phẩm',
-                      'Thao tác',
-                    ].map((label) => (
-                      <th key={label} className="p-4 font-semibold">
-                        {label}
+                    {COLUMN_KEYS.map((key) => (
+                      <th key={key} className="p-4 font-semibold">
+                        {t(`auctions.page.columns.${key}`)}
                       </th>
                     ))}
                   </tr>
@@ -147,8 +151,11 @@ export default function AdminAuctionsPage() {
             </div>
             <div className="mt-5 flex items-center justify-between gap-3 text-xs text-slate-500">
               <span>
-                {data.pagination.total} phiên · Trang {data.pagination.page}/
-                {Math.max(1, data.pagination.totalPages)}
+                {t('auctions.page.pagination', {
+                  total: data.pagination.total,
+                  page: data.pagination.page,
+                  totalPages: Math.max(1, data.pagination.totalPages),
+                })}
               </span>
               <div className="flex gap-2">
                 <Button
@@ -156,24 +163,24 @@ export default function AdminAuctionsPage() {
                   disabled={page <= 1}
                   onClick={() => setPage((value) => value - 1)}
                 >
-                  Trước
+                  {t('auctions.page.prev')}
                 </Button>
                 <Button
                   variant="secondary"
                   disabled={page >= data.pagination.totalPages}
                   onClick={() => setPage((value) => value + 1)}
                 >
-                  Sau
+                  {t('auctions.page.next')}
                 </Button>
               </div>
             </div>
           </>
         ) : (
-          <EmptyState text="Chưa có phiên đấu giá phù hợp." />
+          <EmptyState text={t('auctions.page.empty')} />
         ))}
       <Popup
         isOpen={!!lockingAuction}
-        title="Xác nhận chốt ký gửi"
+        title={t('auctions.page.lockModalTitle')}
         onClose={() => {
           if (!locking) setLockingAuction(null);
         }}
@@ -183,20 +190,24 @@ export default function AdminAuctionsPage() {
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" disabled={locking} onClick={() => setLockingAuction(null)}>
-              Hủy
+              {t('auctions.common.cancel')}
             </Button>
             <Button
               disabled={locking || !!startingId || !!lockDisabledReason}
               onClick={() => void handleLockConsignment()}
             >
-              {locking ? 'Đang chốt…' : 'Xác nhận chốt ký gửi'}
+              {locking ? t('auctions.page.lockingBtn') : t('auctions.page.lockConfirmBtn')}
             </Button>
           </div>
         }
       >
         <p className="text-sm leading-relaxed text-slate-600">
-          Bạn muốn chốt ký gửi phiên <strong>{lockingAuction?.title}</strong>? Sau khi chốt, seller
-          sẽ không thể gửi thêm sản phẩm vào phiên. Phiên chỉ bắt đầu khi bạn bấm “Bắt đầu”.
+          <Trans
+            i18nKey="auctions.page.lockModalBody"
+            ns="admin"
+            values={{ title: lockingAuction?.title ?? '' }}
+            components={{ strong: <strong /> }}
+          />
         </p>
         {(lockError || lockDisabledReason) && (
           <p role="alert" className="mt-3 text-sm text-red-600">

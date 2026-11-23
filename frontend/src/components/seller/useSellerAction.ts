@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getStoredToken, getStoredUser } from '../../services/auth';
 import { useSellerSession } from './SellerSession';
 import { useToast } from '../ToastNotification';
@@ -10,6 +11,7 @@ interface SellerAction {
 }
 
 export default function useSellerAction(): SellerAction {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const toast = useToast();
   const [pending, setPending] = useState(false);
@@ -36,8 +38,7 @@ export default function useSellerAction(): SellerAction {
       if (current()) onSuccess(result);
     } catch (cause) {
       if (current()) {
-        const message =
-          cause instanceof Error ? cause.message : 'Không thể lưu thay đổi. Vui lòng thử lại.';
+        const message = cause instanceof Error ? cause.message : t('session.saveFailed');
         setError(message);
         toast.error(message);
       }

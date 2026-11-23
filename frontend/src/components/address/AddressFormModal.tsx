@@ -1,4 +1,5 @@
 import { type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertCircle } from 'lucide-react';
 import Popup from '../Popup';
 import type { UserAddress } from '../../services/address';
@@ -35,11 +36,12 @@ export default function AddressFormModal({
   saving,
   onSubmit,
 }: AddressFormModalProps) {
+  const { t } = useTranslation('common');
   return (
     <Popup
       isOpen={isOpen}
       onClose={onClose}
-      title={editingAddress ? 'Cập nhật địa chỉ nhận hàng' : 'Thêm địa chỉ nhận hàng mới'}
+      title={editingAddress ? t('address.modalEditTitle') : t('address.modalAddTitle')}
       size="md"
     >
       <form onSubmit={onSubmit} className="space-y-4 pt-2">
@@ -53,13 +55,13 @@ export default function AddressFormModal({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Họ và tên người nhận <span className="text-red-500">*</span>
+              {t('address.recipientNameLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={form.recipientName}
               onChange={(e) => setForm({ ...form, recipientName: e.target.value })}
-              placeholder="Ví dụ: Nguyễn Văn A"
+              placeholder={t('address.recipientNamePlaceholder')}
               className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               required
             />
@@ -67,13 +69,13 @@ export default function AddressFormModal({
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Số điện thoại <span className="text-red-500">*</span>
+              {t('address.phoneLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="tel"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="Ví dụ: 0912345678"
+              placeholder={t('address.phonePlaceholder')}
               className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               required
             />
@@ -89,13 +91,13 @@ export default function AddressFormModal({
 
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">
-            Địa chỉ chi tiết (Số nhà, tên đường, tòa nhà) <span className="text-red-500">*</span>
+            {t('address.streetLabel')} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             value={form.street}
             onChange={(e) => setForm({ ...form, street: e.target.value })}
-            placeholder="Ví dụ: Tòa Landmark 81, 720A Điện Biên Phủ"
+            placeholder={t('address.streetPlaceholder')}
             className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             required
           />
@@ -110,7 +112,7 @@ export default function AddressFormModal({
               className="h-4 w-4 rounded accent-blue-600 focus:ring-blue-400 cursor-pointer"
             />
             <span className="text-xs font-medium text-slate-700">
-              Đặt làm địa chỉ nhận hàng mặc định
+              {t('address.setDefaultCheckbox')}
             </span>
           </label>
         </div>
@@ -121,14 +123,18 @@ export default function AddressFormModal({
             onClick={onClose}
             className="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
           >
-            Hủy
+            {t('address.cancel')}
           </button>
           <button
             type="submit"
             disabled={saving}
             className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center gap-1.5"
           >
-            {saving ? 'Đang lưu…' : editingAddress ? 'Lưu thay đổi' : 'Thêm địa chỉ'}
+            {saving
+              ? t('address.saving')
+              : editingAddress
+                ? t('address.saveChanges')
+                : t('address.addAddress')}
           </button>
         </div>
       </form>

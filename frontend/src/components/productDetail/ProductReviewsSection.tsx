@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, MessageSquare, CheckCircle, ShieldCheck, AlertCircle, Store } from 'lucide-react';
 import {
   getProductReviewsApi,
@@ -26,6 +27,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   productRating = 0,
   reviewsCount = 0,
 }) => {
+  const { t } = useTranslation('guest');
   const [reviews, setReviews] = useState<ProductReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [userRating, setUserRating] = useState<number>(5);
@@ -57,12 +59,12 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
     if (!comment.trim() || isSubmitting) return;
 
     if (userRating === 0) {
-      setErrorMsg('Vui lòng chọn số sao đánh giá sản phẩm (từ 1 đến 5 sao).');
+      setErrorMsg(t('product.selectStarError'));
       return;
     }
 
     if (!getStoredToken()) {
-      setErrorMsg('Vui lòng đăng nhập để gửi đánh giá cho sản phẩm và gian hàng.');
+      setErrorMsg(t('product.loginToReviewError'));
       return;
     }
 
@@ -88,7 +90,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
       }
 
       if (!confirmedOrderId) {
-        throw new Error('Bạn chỉ có thể đánh giá sau khi đơn hàng đã hoàn tất.');
+        throw new Error(t('product.completedOrderRequired'));
       }
 
       await submitProductReviewApi(confirmedOrderId, productId, {
@@ -109,15 +111,15 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
       setShopRating(5);
       setSuccessMsg(
         includeShopReview && sellerId
-          ? 'Đã gửi đánh giá sản phẩm và đánh giá gian hàng tới Người bán thành công!'
-          : 'Đánh giá sản phẩm của bạn đã được gửi tới Người bán thành công!',
+          ? t('product.reviewProductAndShopSuccess')
+          : t('product.reviewProductSuccess'),
       );
       setTimeout(() => setSuccessMsg(null), 4000);
 
       const refreshed = await getProductReviewsApi(productId);
       setReviews(Array.isArray(refreshed?.items) ? refreshed.items : []);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Không thể gửi đánh giá lúc này.';
+      const msg = err instanceof Error ? err.message : t('product.submitReviewFailed');
       setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
@@ -155,19 +157,16 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
           </div>
           <p className="text-xs font-semibold text-slate-600 mt-1">
             {totalReviewsCount > 0
-              ? `${totalReviewsCount} lượt đánh giá thực tế`
-              : 'Chưa có đánh giá nào'}
+              ? t('product.actualReviewsCount', { count: totalReviewsCount })
+              : t('product.noReviewsAtAll')}
           </p>
         </div>
         <div className="text-xs text-slate-600 space-y-1">
           <p className="font-bold text-[#1c3973] flex items-center gap-1.5">
             <ShieldCheck size={16} className="text-blue-600" />
-            Đánh giá Sản phẩm & Gian hàng gửi trực tiếp tới Người bán
+            {t('product.reviewsSyncedTitle')}
           </p>
-          <p className="text-slate-600 leading-relaxed">
-            Mỗi đánh giá về chất lượng sản phẩm và dịch vụ của gian hàng được đồng bộ trực tiếp vào
-            Trung tâm Người bán (Seller Center) để chủ shop tiếp nhận và phản hồi.
-          </p>
+          <p className="text-slate-600 leading-relaxed">{t('product.reviewsSyncedDesc')}</p>
         </div>
       </div>
 
@@ -178,7 +177,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
       >
         <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
           <MessageSquare size={16} className="text-blue-600" />
-          Gửi đánh giá sản phẩm & gian hàng
+          {t('product.submitReviewHeading')}
         </h4>
 
         {successMsg && (
@@ -198,7 +197,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-md border border-slate-200 bg-slate-50/70 p-3 space-y-2">
             <span className="block text-xs font-semibold text-slate-700">
-              1. Đánh giá chất lượng sản phẩm:
+              {t('product.rateProductQuality')}
             </span>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -221,7 +220,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                 </button>
               ))}
               <span className="text-xs font-bold text-blue-700 ml-1.5">
-                {hoverRating || userRating} / 5 sao
+                {t('product.starsOutOfFive', { rating: hoverRating || userRating })}
               </span>
             </div>
           </div>
@@ -231,7 +230,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
               <label className="flex items-center justify-between text-xs font-semibold text-[#1c3973] cursor-pointer">
                 <span className="flex items-center gap-1.5">
                   <Store size={14} className="text-blue-600" />
-                  2. Đánh giá dịch vụ Gian hàng ({shopName || 'Shop'})
+                  {t('product.rateShopService', { shop: shopName || 'Shop' })}
                 </span>
                 <input
                   type="checkbox"
@@ -258,7 +257,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                     </button>
                   ))}
                   <span className="text-xs font-bold text-blue-700 ml-1.5">
-                    {shopRating} / 5 sao
+                    {t('product.starsOutOfFive', { rating: shopRating })}
                   </span>
                 </div>
               )}
@@ -271,7 +270,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
           required
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Chia sẻ cảm nhận thực tế của bạn về sản phẩm (chất lượng, màu sắc, kích thước)..."
+          placeholder={t('product.reviewPlaceholder')}
           className="w-full text-xs p-3 rounded-md border border-slate-300 bg-white text-slate-800 focus:border-blue-600 focus:outline-none"
         />
 
@@ -280,7 +279,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
             type="text"
             value={shopComment}
             onChange={(e) => setShopComment(e.target.value)}
-            placeholder="Nhận xét thêm về thái độ phục vụ & đóng gói của Gian hàng (tùy chọn)..."
+            placeholder={t('product.shopReviewPlaceholder')}
             className="w-full text-xs px-3 py-2.5 rounded-md border border-slate-300 bg-white text-slate-800 focus:border-blue-600 focus:outline-none"
           />
         )}
@@ -291,7 +290,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
             disabled={isSubmitting || !comment.trim()}
             className="px-5 py-2.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition disabled:opacity-40 cursor-pointer"
           >
-            {isSubmitting ? 'Đang gửi...' : 'Gửi Đánh Giá'}
+            {isSubmitting ? t('product.submittingReview') : t('product.submitReviewButton')}
           </button>
         </div>
       </form>
@@ -299,15 +298,13 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
       {/* 3. Danh sách đánh giá & Phản hồi của Seller */}
       <div className="space-y-4">
         <h4 className="text-sm font-bold text-slate-900">
-          Nhận xét từ khách hàng ({reviews.length})
+          {t('product.customerReviewsHeading', { count: reviews.length })}
         </h4>
 
         {loading ? (
-          <p className="text-xs text-slate-400 italic">Đang tải các đánh giá...</p>
+          <p className="text-xs text-slate-400 italic">{t('product.loadingReviews')}</p>
         ) : reviews.length === 0 ? (
-          <p className="text-xs text-slate-500 py-4 text-center">
-            Chưa có đánh giá nào cho sản phẩm này. Hãy là người đầu tiên gửi đánh giá!
-          </p>
+          <p className="text-xs text-slate-500 py-4 text-center">{t('product.emptyReviews')}</p>
         ) : (
           <div className="divide-y divide-slate-100">
             {reviews.map((rev) => (

@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ClipboardList, MessageCircle, Plus, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Badge, Button, EmptyState, Panel } from '../../components/adminDashboard/shared/AdminUI';
 import { useToast } from '../../components/ToastNotification';
+import { getIntlLocale } from '../../i18n/config';
 import {
   auditAdminChatConversation,
   cancelSellerAutoReply,
@@ -22,17 +24,14 @@ import type {
   AdminChatConversationPage,
 } from '../../types/admin-chat.types';
 
-const triggerLabels: Record<AdminAutoReplyTrigger, string> = {
-  WELCOME: 'Lời chào đầu tiên',
-  OFFLINE: 'Ngoài giờ',
-  KEYWORD: 'Từ khóa',
-  DEFAULT: 'Mặc định',
-};
-const time = (value?: string | null) =>
+const TRIGGER_KEYS: AdminAutoReplyTrigger[] = ['WELCOME', 'OFFLINE', 'KEYWORD', 'DEFAULT'];
+
+const formatDateTime = (value: string | null | undefined, language: string) =>
   value
-    ? new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(
-        new Date(value),
-      )
+    ? new Intl.DateTimeFormat(getIntlLocale(language), {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }).format(new Date(value))
     : '—';
 const errorText = (cause: unknown, fallback: string) =>
   cause instanceof Error ? cause.message : fallback;
@@ -46,21 +45,20 @@ function Pager({
   totalPages: number;
   onChange: (page: number) => void;
 }) {
+  const { t } = useTranslation('admin');
   return (
     <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500">
-      <span>
-        Trang {page} / {Math.max(totalPages, 1)}
-      </span>
+      <span>{t('chat.pager.pageOf', { page, total: Math.max(totalPages, 1) })}</span>
       <div className="flex gap-2">
         <Button variant="secondary" disabled={page <= 1} onClick={() => onChange(page - 1)}>
-          Trước
+          {t('chat.pager.prev')}
         </Button>
         <Button
           variant="secondary"
           disabled={page >= totalPages}
           onClick={() => onChange(page + 1)}
         >
-          Sau
+          {t('chat.pager.next')}
         </Button>
       </div>
     </div>
@@ -76,6 +74,7 @@ function Overlay({
   children: ReactNode;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('admin');
   return (
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 p-4"
@@ -96,7 +95,7 @@ function Overlay({
             onClick={onClose}
             className="rounded-lg px-3 py-2 text-sm text-slate-500 hover:bg-slate-100"
           >
-            Đóng
+            {t('chat.close')}
           </button>
         </div>
         {children}
@@ -106,6 +105,7 @@ function Overlay({
 }
 
 function AutoReplyPanel() {
+  const { t, i18n } = useTranslation('admin');
   const toast = useToast();
   const [scope, setScope] = useState<'' | AdminAutoReplyScope>('');
   const [status, setStatus] = useState<'' | AdminAutoReplyStatus>('');
@@ -151,14 +151,14 @@ function AutoReplyPanel() {
       .catch((cause) => {
         if (!controller.signal.aborted) {
           setResult(null);
-          setError(errorText(cause, 'Không tải được danh sách tin nhắn tự động.'));
+          setError(errorText(cause, t('chat.errors.loadReplies')));
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [page, scope, status, shopId, revision]);
+  }, [page, scope, status, shopId, revision, t]);
 
   async function submitCreate(event: FormEvent) {
     event.preventDefault();
@@ -180,9 +180,9 @@ function AutoReplyPanel() {
       setIsActive(true);
       setPage(1);
       setRevision((value) => value + 1);
-      toast.success('Đã tạo tin nhắn tự động hệ thống.');
+      toast.success(t('chat.toasts.created'));
     } catch (cause) {
-      setActionError(errorText(cause, 'Không tạo được tin nhắn tự động.'));
+      setActionError(errorText(cause, t('chat.errors.createReply')));
     } finally {
       setSaving(false);
     }
@@ -198,9 +198,9 @@ function AutoReplyPanel() {
       setCancelTarget(null);
       setCancelReason('');
       setRevision((value) => value + 1);
-      toast.success('Đã khóa tin nhắn tự động của shop.');
+      toast.success(t('chat.toasts.locked'));
     } catch (cause) {
-      setActionError(errorText(cause, 'Không khóa được tin nhắn tự động.'));
+      setActionError(errorText(cause, t('chat.errors.lockReply')));
     } finally {
       setSaving(false);
     }
@@ -213,7 +213,7 @@ function AutoReplyPanel() {
       const response = await getAdminAutoReplyHistory(reply.id);
       setHistory(response.data);
     } catch (cause) {
-      setActionError(errorText(cause, 'Không tải được lịch sử xử lý.'));
+      setActionError(errorText(cause, t('chat.errors.loadHistory')));
     } finally {
       setHistoryLoading(false);
     }
@@ -222,38 +222,38 @@ function AutoReplyPanel() {
   return (
     <div className="space-y-5">
       <Panel
-        title="Tạo tin nhắn tự động hệ thống"
-        subtitle="Cấu hình lời chào và phản hồi tự động cho hội thoại hỗ trợ của sàn."
+        title={t('chat.create.title')}
+        subtitle={t('chat.create.subtitle')}
         icon={<Plus size={18} />}
       >
         <form className="grid gap-3 md:grid-cols-2" onSubmit={(event) => void submitCreate(event)}>
           <label className="grid gap-1.5 text-xs font-medium text-slate-600">
-            Tên cấu hình
+            {t('chat.create.nameLabel')}
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               maxLength={100}
               className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
-              placeholder="Tin nhắn chào mừng CSKH"
+              placeholder={t('chat.create.namePlaceholder')}
             />
           </label>
           <label className="grid gap-1.5 text-xs font-medium text-slate-600">
-            Kiểu kích hoạt
+            {t('chat.create.triggerLabel')}
             <select
               value={triggerType}
               onChange={(event) => setTriggerType(event.target.value as AdminAutoReplyTrigger)}
               className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm"
             >
-              {Object.entries(triggerLabels).map(([key, label]) => (
+              {TRIGGER_KEYS.map((key) => (
                 <option key={key} value={key}>
-                  {label}
+                  {t(`chat.triggers.${key}`)}
                 </option>
               ))}
             </select>
           </label>
           {triggerType === 'KEYWORD' && (
             <label className="grid gap-1.5 text-xs font-medium text-slate-600 md:col-span-2">
-              Từ khóa
+              {t('chat.create.keywordLabel')}
               <input
                 required
                 value={keyword}
@@ -264,7 +264,7 @@ function AutoReplyPanel() {
             </label>
           )}
           <label className="grid gap-1.5 text-xs font-medium text-slate-600 md:col-span-2">
-            Nội dung phản hồi
+            {t('chat.create.contentLabel')}
             <textarea
               required
               value={content}
@@ -272,7 +272,7 @@ function AutoReplyPanel() {
               maxLength={1000}
               rows={3}
               className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              placeholder="Nhập nội dung tin nhắn tự động"
+              placeholder={t('chat.create.contentPlaceholder')}
             />
           </label>
           <label className="flex items-center gap-2 text-xs text-slate-600">
@@ -281,14 +281,14 @@ function AutoReplyPanel() {
               checked={isActive}
               onChange={(event) => setIsActive(event.target.checked)}
             />{' '}
-            Kích hoạt ngay
+            {t('chat.create.activateNow')}
           </label>
           <div className="flex justify-end">
             <Button
               type="submit"
               disabled={saving || !content.trim() || (triggerType === 'KEYWORD' && !keyword.trim())}
             >
-              <Plus size={14} /> Tạo cấu hình
+              <Plus size={14} /> {t('chat.create.submit')}
             </Button>
           </div>
           {actionError && !cancelTarget && !history && (
@@ -300,8 +300,8 @@ function AutoReplyPanel() {
       </Panel>
 
       <Panel
-        title="Tin nhắn tự động toàn sàn"
-        subtitle="Theo dõi cấu hình của hệ thống và seller; có thể khóa tin nhắn vi phạm và xem lịch sử."
+        title={t('chat.list.title')}
+        subtitle={t('chat.list.subtitle')}
         icon={<MessageCircle size={18} />}
         action={
           <Button
@@ -309,13 +309,13 @@ function AutoReplyPanel() {
             disabled={loading}
             onClick={() => setRevision((value) => value + 1)}
           >
-            <RefreshCw size={14} /> Làm mới
+            <RefreshCw size={14} /> {t('chat.refresh')}
           </Button>
         }
       >
         <div className="mb-4 grid gap-2 sm:grid-cols-3">
           <select
-            aria-label="Lọc phạm vi"
+            aria-label={t('chat.list.scopeAria')}
             value={scope}
             onChange={(event) => {
               setScope(event.target.value as '' | AdminAutoReplyScope);
@@ -323,12 +323,12 @@ function AutoReplyPanel() {
             }}
             className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs"
           >
-            <option value="">Tất cả phạm vi</option>
-            <option value="SYSTEM">Hệ thống</option>
-            <option value="SHOP">Shop</option>
+            <option value="">{t('chat.list.allScopes')}</option>
+            <option value="SYSTEM">{t('chat.list.systemScope')}</option>
+            <option value="SHOP">{t('chat.list.shopScope')}</option>
           </select>
           <select
-            aria-label="Lọc trạng thái"
+            aria-label={t('chat.list.statusAria')}
             value={status}
             onChange={(event) => {
               setStatus(event.target.value as '' | AdminAutoReplyStatus);
@@ -336,36 +336,36 @@ function AutoReplyPanel() {
             }}
             className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs"
           >
-            <option value="">Tất cả trạng thái</option>
-            <option value="ACTIVE">Đang hoạt động</option>
-            <option value="CANCELLED_BY_ADMIN">Đã khóa</option>
+            <option value="">{t('chat.list.allStatuses')}</option>
+            <option value="ACTIVE">{t('chat.list.activeStatus')}</option>
+            <option value="CANCELLED_BY_ADMIN">{t('chat.list.lockedStatus')}</option>
           </select>
           <input
-            aria-label="Lọc theo mã shop"
+            aria-label={t('chat.list.shopIdAria')}
             value={shopId}
             onChange={(event) => {
               setShopId(event.target.value);
               setPage(1);
             }}
-            placeholder="Mã shop (tùy chọn)"
+            placeholder={t('chat.list.shopIdPlaceholder')}
             className="h-10 rounded-lg border border-slate-200 px-3 text-xs"
           />
         </div>
         {loading ? (
           <p role="status" className="py-10 text-center text-sm text-slate-500">
-            Đang tải cấu hình…
+            {t('chat.list.loading')}
           </p>
         ) : error ? (
           <div role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
             {error}
             <div className="mt-3">
               <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-                Thử lại
+                {t('chat.retry')}
               </Button>
             </div>
           </div>
         ) : !result?.items.length ? (
-          <EmptyState text="Chưa có tin nhắn tự động phù hợp." />
+          <EmptyState text={t('chat.list.empty')} />
         ) : (
           <>
             <div className="space-y-3">
@@ -375,22 +375,30 @@ function AutoReplyPanel() {
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-semibold text-slate-900">
-                          {reply.name || 'Tin nhắn tự động'}
+                          {reply.name || t('chat.list.defaultName')}
                         </h3>
                         <Badge tone={reply.scope === 'SYSTEM' ? 'blue' : 'amber'}>
-                          {reply.scope === 'SYSTEM' ? 'Hệ thống' : 'Shop'}
+                          {reply.scope === 'SYSTEM'
+                            ? t('chat.list.systemScope')
+                            : t('chat.list.shopScope')}
                         </Badge>
                         <Badge tone={reply.status === 'ACTIVE' ? 'green' : 'red'}>
-                          {reply.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã khóa'}
+                          {reply.status === 'ACTIVE'
+                            ? t('chat.list.activeStatus')
+                            : t('chat.list.lockedStatus')}
                         </Badge>
                       </div>
                       <p className="mt-1 text-xs text-slate-500">
-                        {triggerLabels[reply.triggerType]}
-                        {reply.keyword ? ` · ${reply.keyword}` : ''} · Tạo {time(reply.createdAt)}
+                        {t(`chat.triggers.${reply.triggerType}`)}
+                        {reply.keyword ? ` · ${reply.keyword}` : ''} ·{' '}
+                        {t('chat.list.createdAt', {
+                          time: formatDateTime(reply.createdAt, i18n.language),
+                        })}
                       </p>
                       {reply.shop && (
                         <p className="mt-1 break-all text-xs text-slate-500">
-                          Shop: {reply.shop.fullName} · {reply.shop.email} · {reply.shop.id}
+                          {t('chat.list.shopPrefix')} {reply.shop.fullName} · {reply.shop.email} ·{' '}
+                          {reply.shop.id}
                         </p>
                       )}
                     </div>
@@ -401,7 +409,7 @@ function AutoReplyPanel() {
                           disabled={historyLoading}
                           onClick={() => void showHistory(reply)}
                         >
-                          <ClipboardList size={14} /> Lịch sử
+                          <ClipboardList size={14} /> {t('chat.list.historyBtn')}
                         </Button>
                       )}
                       {reply.scope === 'SHOP' && reply.status === 'ACTIVE' && (
@@ -412,7 +420,7 @@ function AutoReplyPanel() {
                             setActionError('');
                           }}
                         >
-                          <ShieldAlert size={14} /> Khóa
+                          <ShieldAlert size={14} /> {t('chat.list.lockBtn')}
                         </Button>
                       )}
                     </div>
@@ -433,19 +441,19 @@ function AutoReplyPanel() {
       </Panel>
       {cancelTarget && (
         <Overlay
-          title="Khóa tin nhắn tự động của shop"
+          title={t('chat.lockModal.title')}
           onClose={() => {
             setCancelTarget(null);
             setActionError('');
           }}
         >
           <p className="mb-3 text-sm text-slate-600">
-            {cancelTarget.name || 'Tin nhắn tự động'} ·{' '}
+            {cancelTarget.name || t('chat.list.defaultName')} ·{' '}
             {cancelTarget.shop?.fullName || cancelTarget.shopId}
           </p>
           <form onSubmit={(event) => void submitCancel(event)}>
             <label className="grid gap-1.5 text-xs font-medium text-slate-600">
-              Lý do khóa
+              {t('chat.lockModal.reasonLabel')}
               <textarea
                 autoFocus
                 required
@@ -463,43 +471,49 @@ function AutoReplyPanel() {
             )}
             <div className="mt-4 flex justify-end gap-2">
               <Button type="button" variant="secondary" onClick={() => setCancelTarget(null)}>
-                Hủy
+                {t('chat.cancel')}
               </Button>
               <Button type="submit" variant="danger" disabled={saving || !cancelReason.trim()}>
-                {saving ? 'Đang lưu…' : 'Xác nhận khóa'}
+                {saving ? t('chat.saving') : t('chat.lockModal.confirm')}
               </Button>
             </div>
           </form>
         </Overlay>
       )}
       {history && (
-        <Overlay title="Lịch sử tin nhắn tự động" onClose={() => setHistory(null)}>
+        <Overlay title={t('chat.historyModal.title')} onClose={() => setHistory(null)}>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div>
-              <dt className="text-xs text-slate-500">Trạng thái</dt>
+              <dt className="text-xs text-slate-500">{t('chat.historyModal.status')}</dt>
               <dd className="mt-1 font-medium">
-                {history.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã khóa bởi quản trị viên'}
+                {history.status === 'ACTIVE'
+                  ? t('chat.list.activeStatus')
+                  : t('chat.historyModal.lockedByAdmin')}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Thời điểm khóa</dt>
-              <dd className="mt-1 font-medium">{time(history.cancelledAt)}</dd>
+              <dt className="text-xs text-slate-500">{t('chat.historyModal.lockedAt')}</dt>
+              <dd className="mt-1 font-medium">
+                {formatDateTime(history.cancelledAt, i18n.language)}
+              </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Người xử lý</dt>
+              <dt className="text-xs text-slate-500">{t('chat.historyModal.actor')}</dt>
               <dd className="mt-1 font-medium">
                 {history.cancelledBy?.fullName || '—'}{' '}
                 {history.cancelledBy?.email ? `(${history.cancelledBy.email})` : ''}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-slate-500">Shop</dt>
-              <dd className="mt-1 font-medium">{history.shop?.fullName || 'Hệ thống'}</dd>
+              <dt className="text-xs text-slate-500">{t('chat.historyModal.shop')}</dt>
+              <dd className="mt-1 font-medium">
+                {history.shop?.fullName || t('chat.list.systemScope')}
+              </dd>
             </div>
             <div className="sm:col-span-2">
-              <dt className="text-xs text-slate-500">Lý do</dt>
+              <dt className="text-xs text-slate-500">{t('chat.historyModal.reason')}</dt>
               <dd className="mt-1 whitespace-pre-wrap">
-                {history.cancelReason || 'Không có lý do được ghi nhận.'}
+                {history.cancelReason || t('chat.historyModal.noReason')}
               </dd>
             </div>
           </dl>
@@ -510,6 +524,7 @@ function AutoReplyPanel() {
 }
 
 function ConversationAuditPanel() {
+  const { t, i18n } = useTranslation('admin');
   const [type, setType] = useState('');
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);
@@ -532,14 +547,14 @@ function ConversationAuditPanel() {
       .catch((cause) => {
         if (!controller.signal.aborted) {
           setResult(null);
-          setError(errorText(cause, 'Không tải được danh sách hội thoại.'));
+          setError(errorText(cause, t('chat.errors.loadConversations')));
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [page, type, revision]);
+  }, [page, type, revision, t]);
 
   async function openAudit(conversation: AdminChatConversation) {
     setSelected(conversation);
@@ -550,7 +565,7 @@ function ConversationAuditPanel() {
       const response = await auditAdminChatConversation(conversation.id, { limit: 50 });
       setAudit(response.data);
     } catch (cause) {
-      setAuditError(errorText(cause, 'Không tải được nhật ký hội thoại.'));
+      setAuditError(errorText(cause, t('chat.errors.loadAudit')));
     } finally {
       setAuditLoading(false);
     }
@@ -561,11 +576,11 @@ function ConversationAuditPanel() {
       .filter(Boolean)
       .join(' · ') ||
     conversation.title ||
-    'Hội thoại';
+    t('chat.audit.fallbackTitle');
   return (
     <Panel
-      title="Audit hội thoại"
-      subtitle="Xem nội dung tin nhắn và danh tính tài khoản staff đã gửi trong hội thoại."
+      title={t('chat.audit.title')}
+      subtitle={t('chat.audit.subtitle')}
       icon={<ClipboardList size={18} />}
       action={
         <Button
@@ -573,13 +588,13 @@ function ConversationAuditPanel() {
           disabled={loading}
           onClick={() => setRevision((value) => value + 1)}
         >
-          <RefreshCw size={14} /> Làm mới
+          <RefreshCw size={14} /> {t('chat.refresh')}
         </Button>
       }
     >
       <div className="mb-4 flex justify-end">
         <select
-          aria-label="Lọc loại hội thoại"
+          aria-label={t('chat.audit.filterAria')}
           value={type}
           onChange={(event) => {
             setType(event.target.value);
@@ -587,38 +602,40 @@ function ConversationAuditPanel() {
           }}
           className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs sm:max-w-xs"
         >
-          <option value="">Tất cả hội thoại</option>
-          <option value="STAFF_BUYER">Staff – Buyer</option>
-          <option value="STAFF_SELLER">Staff – Seller</option>
-          <option value="SUPPORT_TICKET">Yêu cầu hỗ trợ</option>
-          <option value="BUYER_SELLER">Buyer – Seller</option>
+          <option value="">{t('chat.audit.allTypes')}</option>
+          <option value="STAFF_BUYER">{t('chat.audit.types.STAFF_BUYER')}</option>
+          <option value="STAFF_SELLER">{t('chat.audit.types.STAFF_SELLER')}</option>
+          <option value="SUPPORT_TICKET">{t('chat.audit.types.SUPPORT_TICKET')}</option>
+          <option value="BUYER_SELLER">{t('chat.audit.types.BUYER_SELLER')}</option>
         </select>
       </div>
       {loading ? (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
-          Đang tải hội thoại…
+          {t('chat.audit.loading')}
         </p>
       ) : error ? (
         <div role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
           {error}
           <div className="mt-3">
             <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-              Thử lại
+              {t('chat.retry')}
             </Button>
           </div>
         </div>
       ) : !result?.items.length ? (
-        <EmptyState text="Không tìm thấy hội thoại." />
+        <EmptyState text={t('chat.audit.empty')} />
       ) : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[680px] text-left text-xs">
               <thead className="text-slate-500">
                 <tr>
-                  <th className="px-3 py-2 font-semibold">Người tham gia</th>
-                  <th className="px-3 py-2 font-semibold">Loại</th>
-                  <th className="px-3 py-2 font-semibold">Cập nhật</th>
-                  <th className="px-3 py-2 font-semibold">Tin nhắn gần nhất</th>
+                  <th className="px-3 py-2 font-semibold">
+                    {t('chat.audit.columns.participants')}
+                  </th>
+                  <th className="px-3 py-2 font-semibold">{t('chat.audit.columns.type')}</th>
+                  <th className="px-3 py-2 font-semibold">{t('chat.audit.columns.updated')}</th>
+                  <th className="px-3 py-2 font-semibold">{t('chat.audit.columns.lastMessage')}</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -634,13 +651,15 @@ function ConversationAuditPanel() {
                     <td className="px-3 py-3">
                       <Badge tone="gray">{conversation.type}</Badge>
                     </td>
-                    <td className="px-3 py-3 text-slate-500">{time(conversation.updatedAt)}</td>
+                    <td className="px-3 py-3 text-slate-500">
+                      {formatDateTime(conversation.updatedAt, i18n.language)}
+                    </td>
                     <td className="max-w-64 truncate px-3 py-3 text-slate-500">
-                      {conversation.lastMessage || 'Chưa có tin nhắn'}
+                      {conversation.lastMessage || t('chat.audit.noMessage')}
                     </td>
                     <td className="px-3 py-3 text-right">
                       <Button variant="secondary" onClick={() => void openAudit(conversation)}>
-                        Xem audit
+                        {t('chat.audit.viewAudit')}
                       </Button>
                     </td>
                   </tr>
@@ -656,26 +675,26 @@ function ConversationAuditPanel() {
         </>
       )}
       {selected && (
-        <Overlay title="Audit hội thoại" onClose={() => setSelected(null)}>
+        <Overlay title={t('chat.audit.modalTitle')} onClose={() => setSelected(null)}>
           <div className="mb-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
             <p className="font-semibold text-slate-800">{participantNames(selected)}</p>
-            <p className="mt-1 break-all">Mã hội thoại: {selected.id}</p>
+            <p className="mt-1 break-all">{t('chat.audit.conversationId', { id: selected.id })}</p>
           </div>
           {auditLoading ? (
             <p role="status" className="py-8 text-center text-sm text-slate-500">
-              Đang tải nhật ký…
+              {t('chat.audit.loadingLog')}
             </p>
           ) : auditError ? (
             <div role="alert" className="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">
               {auditError}
               <div className="mt-3">
                 <Button variant="secondary" onClick={() => void openAudit(selected)}>
-                  Thử lại
+                  {t('chat.retry')}
                 </Button>
               </div>
             </div>
           ) : !audit?.messages.length ? (
-            <EmptyState text="Hội thoại chưa có tin nhắn." />
+            <EmptyState text={t('chat.audit.emptyMessages')} />
           ) : (
             <div className="max-h-[55dvh] space-y-3 overflow-y-auto">
               {[...audit.messages].reverse().map((message) => (
@@ -683,14 +702,16 @@ function ConversationAuditPanel() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <span className="font-semibold text-slate-800">
-                        {message.sender?.fullName || 'Tài khoản'}
+                        {message.sender?.fullName || t('chat.audit.fallbackSender')}
                       </span>
                       <span className="ml-2 text-xs text-slate-500">
                         {message.sender?.role || '—'}
                         {message.sender?.email ? ` · ${message.sender.email}` : ''}
                       </span>
                     </div>
-                    <time className="text-[10px] text-slate-400">{time(message.createdAt)}</time>
+                    <time className="text-[10px] text-slate-400">
+                      {formatDateTime(message.createdAt, i18n.language)}
+                    </time>
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">
                     {message.body}
@@ -722,23 +743,22 @@ function ConversationAuditPanel() {
 }
 
 export default function AdminChatPage() {
+  const { t } = useTranslation('admin');
   const [tab, setTab] = useState<'replies' | 'audit'>('replies');
   return (
     <main className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Quản lý Chat</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Quản lý auto-reply hệ thống, kiểm duyệt phản hồi của shop và audit hội thoại hỗ trợ.
-        </p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('chat.title')}</h1>
+        <p className="mt-1 text-sm text-slate-500">{t('chat.subtitle')}</p>
       </header>
-      <div role="tablist" aria-label="Quản lý chat" className="flex flex-wrap gap-2">
+      <div role="tablist" aria-label={t('chat.tablistAria')} className="flex flex-wrap gap-2">
         <button
           role="tab"
           aria-selected={tab === 'replies'}
           onClick={() => setTab('replies')}
           className={`rounded-lg px-4 py-2.5 text-xs font-semibold ${tab === 'replies' ? 'bg-primary text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'}`}
         >
-          Tin nhắn tự động
+          {t('chat.tabs.replies')}
         </button>
         <button
           role="tab"
@@ -746,7 +766,7 @@ export default function AdminChatPage() {
           onClick={() => setTab('audit')}
           className={`rounded-lg px-4 py-2.5 text-xs font-semibold ${tab === 'audit' ? 'bg-primary text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200'}`}
         >
-          Audit hội thoại
+          {t('chat.tabs.audit')}
         </button>
       </div>
       {tab === 'replies' ? <AutoReplyPanel /> : <ConversationAuditPanel />}

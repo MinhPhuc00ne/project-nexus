@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { listAdminProducts } from '../../../services/admin';
 import type { AdminProduct, QueryAdminProductsParams } from '../../../types/admin-product.types';
 import type { PaginatedResult } from '../../../types/admin.types';
 
 export function useAdminProducts() {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState<QueryAdminProductsParams>({ page: 1, limit: 10 });
@@ -40,7 +42,7 @@ export function useAdminProducts() {
       })
       .catch((cause) => {
         if (!controller.signal.aborted)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải sản phẩm.');
+          setError(cause instanceof Error ? cause.message : t('products.loadErr'));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);

@@ -1,4 +1,6 @@
 import { ApiRequestError, apiRequest } from '../../services/api';
+import { getIntlLocale } from '../../i18n/config';
+import i18n from '../../i18n/index';
 
 /**
  * Auction fields used to decide whether a seller can still submit a consignment.
@@ -82,7 +84,10 @@ export function parseConsignmentParcel(
   const widthCm = Number(form.widthCm);
   const heightCm = Number(form.heightCm);
   if (!Number.isInteger(weightGrams) || weightGrams < 1 || weightGrams > 50000) {
-    return { ok: false, message: 'Cân nặng đóng gói phải là số nguyên từ 1 đến 50.000 gram.' };
+    return {
+      ok: false,
+      message: i18n.t('auctions.consignment.weightErr', { ns: 'seller' }),
+    };
   }
   const dimensionsValid = [lengthCm, widthCm, heightCm].every(
     (value) => Number.isInteger(value) && value >= 1 && value <= 200,
@@ -90,22 +95,23 @@ export function parseConsignmentParcel(
   if (!dimensionsValid) {
     return {
       ok: false,
-      message: 'Kích thước Dài, Rộng, Cao phải là số nguyên từ 1 đến 200 cm.',
+      message: i18n.t('auctions.consignment.dimensionsErr', { ns: 'seller' }),
     };
   }
   return { ok: true, parcel: { weightGrams, lengthCm, widthCm, heightCm } };
 }
 
 /**
- * Formats ISO date-time string into Vietnamese regional medium date and short time format.
+ * Formats ISO date-time string into localized medium date and short time format.
  *
  * @param value - ISO 8601 date string.
  * @returns Human-readable localized formatted date.
  */
 export const formatConsignmentDate = (value: string): string =>
-  new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium', timeStyle: 'short' }).format(
-    new Date(value),
-  );
+  new Intl.DateTimeFormat(getIntlLocale(i18n.language), {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
 
 /**
  * Normalizes unknown rejection or error instances into user-friendly message strings.
@@ -115,7 +121,9 @@ export const formatConsignmentDate = (value: string): string =>
  */
 export function getConsignmentErrorMessage(error: unknown): string {
   if (error instanceof ApiRequestError) return `${error.message} (HTTP ${error.status})`;
-  return error instanceof Error ? error.message : 'Có lỗi không xác định. Vui lòng thử lại.';
+  return error instanceof Error
+    ? error.message
+    : i18n.t('auctions.consignment.unknownErr', { ns: 'seller' });
 }
 
 /**
@@ -137,7 +145,7 @@ export async function uploadConsignmentFiles(files: File[], label: string): Prom
       requireAuth: true,
     });
     if (!result?.url || !/^https?:\/\//i.test(result.url)) {
-      throw new Error(`Máy chủ chưa trả URL hợp lệ cho ${label}.`);
+      throw new Error(i18n.t('auctions.consignment.invalidUploadUrl', { ns: 'seller', label }));
     }
     urls.push(result.url);
   }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { QrCode, Truck, ShieldCheck, Banknote } from 'lucide-react';
 import type { CheckoutPaymentMethodType } from '../../services/orders';
 
@@ -12,10 +13,11 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
   paymentMethod,
   onSelectPaymentMethod,
 }) => {
+  const { t } = useTranslation('commerce');
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-bold text-slate-900">Phương thức thanh toán</h2>
+        <h2 className="mb-3 text-sm font-bold text-slate-900">{t('checkout.paymentMethod')}</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {/* Lựa chọn 1: Thanh toán ngay qua PayOS */}
           <button
@@ -30,15 +32,16 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
             <div className="mb-1.5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <QrCode size={18} className="text-blue-600" />
-                <span className="text-xs font-bold text-slate-900">1. Thanh toán ngay</span>
+                <span className="text-xs font-bold text-slate-900">
+                  {t('checkout.payosOptionTitle')}
+                </span>
               </div>
               <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-extrabold text-blue-700">
                 PayOS VietQR
               </span>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-600">
-              Quét mã QR qua app ngân hàng 24/7, tự động đối soát và tạm giữ bảo đảm tại NEXUS
-              Escrow.
+              {t('checkout.payosOptionDesc')}
             </p>
           </button>
 
@@ -59,7 +62,7 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
                   className={paymentMethod === 'COD' ? 'text-emerald-600' : 'text-slate-600'}
                 />
                 <span className="text-xs font-bold text-slate-900">
-                  2. Thanh toán sau khi nhận hàng
+                  {t('checkout.codOptionTitle')}
                 </span>
               </div>
               <span
@@ -69,11 +72,11 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
                     : 'bg-slate-100 text-slate-600'
                 }`}
               >
-                COD Tiền mặt
+                {t('checkout.codOptionBadge')}
               </span>
             </div>
             <p className="text-[11px] leading-relaxed text-slate-600">
-              Đồng kiểm và thanh toán tiền mặt trực tiếp cho nhân viên giao hàng khi nhận bưu phẩm.
+              {t('checkout.codOptionDesc')}
             </p>
           </button>
         </div>
@@ -84,12 +87,9 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
         <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs text-emerald-950">
           <Truck size={20} className="mt-0.5 shrink-0 text-emerald-600" />
           <div>
-            <h4 className="mb-0.5 font-bold text-emerald-900">
-              Giao hàng & Thu tiền tận nơi (COD GHN Express)
-            </h4>
+            <h4 className="mb-0.5 font-bold text-emerald-900">{t('checkout.codBannerTitle')}</h4>
             <p className="text-[11px] leading-relaxed text-emerald-800">
-              Quý khách vui lòng chuẩn bị sẵn số tiền mặt tương ứng khi shipper liên hệ phát hàng.
-              Bạn hoàn toàn được kiểm tra bưu kiện nguyên vẹn trước khi thanh toán tiền mặt.
+              {t('checkout.codBannerDesc')}
             </p>
           </div>
         </div>
@@ -97,10 +97,9 @@ export const CheckoutPaymentMethod: React.FC<CheckoutPaymentMethodProps> = ({
         <div className="flex items-start gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-xs text-indigo-900">
           <ShieldCheck size={20} className="mt-0.5 shrink-0 text-indigo-600" />
           <div>
-            <h4 className="mb-0.5 font-bold">Bảo chứng Ký quỹ NEXUS Escrow</h4>
+            <h4 className="mb-0.5 font-bold">{t('checkout.escrowBannerTitle')}</h4>
             <p className="text-[11px] leading-relaxed text-indigo-700">
-              Khoản thanh toán được ký quỹ an toàn. Người bán chỉ được giải ngân sau khi bạn đã nhận
-              hàng, kiểm định sản phẩm và xác nhận hài lòng với chất lượng.
+              {t('checkout.escrowBannerDesc')}
             </p>
           </div>
         </div>

@@ -160,10 +160,10 @@ export default function CartPage() {
               onApplyVoucher={(code) => {
                 if (code === 'NEXUS500K') {
                   setAppliedVoucher({ code: 'NEXUS500K', discount: 500000 });
-                  showToast('Áp dụng mã NEXUS500K giảm 500.000đ thành công!');
+                  showToast(t('commerce:cartExtra.voucher500kApplied'));
                 } else if (code === 'FREESHIP') {
                   setAppliedVoucher({ code: 'FREESHIP', discount: 150000 });
-                  showToast('Áp dụng mã FREESHIP miễn phí vận chuyển thành công!');
+                  showToast(t('commerce:cartExtra.voucherFreeshipApplied'));
                 }
               }}
               onRemoveVoucher={() => setAppliedVoucher(null)}
@@ -174,12 +174,12 @@ export default function CartPage() {
                 }
                 const hasOutOfStock = selectedItems.some((i) => i.isOutOfStock);
                 if (hasOutOfStock) {
-                  showToast('Vui lòng bỏ chọn sản phẩm đã hết hàng trước khi thanh toán.');
+                  showToast(t('commerce:cart.outOfStockError'));
                   return;
                 }
                 const hasInsufficient = selectedItems.some((i) => i.isStockInsufficient);
                 if (hasInsufficient) {
-                  showToast('Một số sản phẩm vượt quá tồn kho khả dụng. Vui lòng giảm số lượng.');
+                  showToast(t('commerce:cart.insufficientStockError'));
                   return;
                 }
                 setShowCheckoutModal(true);

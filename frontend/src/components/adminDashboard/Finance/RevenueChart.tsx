@@ -1,18 +1,20 @@
 import { ChartNoAxesCombined, CircleDollarSign } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AdminOverviewAnalytics, RevenuePeriod } from '../../../types/admin-analytics.types';
 import { Badge, Panel } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';
 
 export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics }) {
+  const { t } = useTranslation('admin');
   const [periodIndex, setPeriodIndex] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
   const periods = analytics.revenuePeriods;
   const current: RevenuePeriod | undefined = periods[periodIndex];
   if (!current)
     return (
-      <Panel title="Doanh thu">
-        <p className="text-sm text-slate-500">Chưa có dữ liệu doanh thu.</p>
+      <Panel title={t('finance.chart.emptyTitle')}>
+        <p className="text-sm text-slate-500">{t('finance.chart.emptyText')}</p>
       </Panel>
     );
   const xAt = (index: number) =>
@@ -28,8 +30,8 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
 
   return (
     <Panel
-      title="Xu hướng doanh thu phí sàn"
-      subtitle="Phí đơn hàng thường và phí đấu giá theo kỳ"
+      title={t('finance.chart.title')}
+      subtitle={t('finance.chart.subtitle')}
       icon={<ChartNoAxesCombined size={19} />}
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
@@ -52,22 +54,27 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
       </div>
       <div className="mb-7 grid gap-4 rounded-xl bg-blue-50/70 p-4 sm:grid-cols-3">
         <div>
-          <p className="text-[9px] uppercase text-slate-500">Tổng phí sàn · {current.unit}</p>
+          <p className="text-[9px] uppercase text-slate-500">
+            {t('finance.chart.totalUnit', { unit: current.unit })}
+          </p>
           <p className="mt-1 text-base font-bold tracking-tight">{formatMoney(current.total)}</p>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-slate-500">Phí đấu giá 3D</p>
+          <p className="text-[9px] uppercase text-slate-500">{t('finance.chart.auctionFee')}</p>
           <p className="mt-1 text-base font-bold text-primary">{formatMoney(current.auction)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
-            Tỷ trọng: {current.total ? ((current.auction / current.total) * 100).toFixed(1) : '0.0'}
-            %
+            {t('finance.chart.share', {
+              percent: current.total ? ((current.auction / current.total) * 100).toFixed(1) : '0.0',
+            })}
           </p>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-slate-500">Phí đơn hàng thường</p>
+          <p className="text-[9px] uppercase text-slate-500">{t('finance.chart.normalFee')}</p>
           <p className="mt-1 text-base font-bold text-blue-500">{formatMoney(current.normal)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
-            Tỷ trọng: {current.total ? ((current.normal / current.total) * 100).toFixed(1) : '0.0'}%
+            {t('finance.chart.share', {
+              percent: current.total ? ((current.normal / current.total) * 100).toFixed(1) : '0.0',
+            })}
           </p>
         </div>
       </div>
@@ -75,20 +82,20 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
         <div className="flex gap-4">
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-sm bg-primary" />
-            Phí đấu giá 3D
+            {t('finance.chart.auctionFee')}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-sm bg-blue-400" />
-            Phí đơn hàng thường
+            {t('finance.chart.normalFee')}
           </span>
         </div>
-        <span>Biểu đồ chỉ số tương đối</span>
+        <span>{t('finance.chart.relativeChart')}</span>
       </div>
       <div className="relative overflow-hidden rounded-xl bg-slate-50/80 p-2">
         <svg
           viewBox="0 0 550 275"
           role="img"
-          aria-label={`Biểu đồ phí sàn ${current.label}`}
+          aria-label={t('finance.chart.ariaLabel', { label: current.label })}
           className="w-full"
           onMouseLeave={() => setHovered(null)}
         >
@@ -170,8 +177,8 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
         {hovered !== null && (
           <div className="pointer-events-none absolute right-4 top-3 rounded-xl bg-primary p-3 text-[10px] leading-5 text-white shadow-lg">
             <p className="font-bold">{current.labels[hovered]}</p>
-            <p>Phí đấu giá kỳ này: {formatMoney(current.auction)}</p>
-            <p>Phí đơn thường kỳ này: {formatMoney(current.normal)}</p>
+            <p>{t('finance.chart.hoverAuction', { amount: formatMoney(current.auction) })}</p>
+            <p>{t('finance.chart.hoverNormal', { amount: formatMoney(current.normal) })}</p>
           </div>
         )}
       </div>
@@ -180,6 +187,7 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
 }
 
 export function RevenueComposition({ analytics }: { analytics: AdminOverviewAnalytics }) {
+  const { t } = useTranslation('admin');
   const composition = analytics.revenueComposition;
   const items = composition.items ?? [];
   const firstPercentage = Math.max(
@@ -188,8 +196,8 @@ export function RevenueComposition({ analytics }: { analytics: AdminOverviewAnal
   );
   return (
     <Panel
-      title="Cơ cấu nguồn thu phí sàn"
-      subtitle="Tỷ lệ đóng góp theo nguồn"
+      title={t('finance.chart.compositionTitle')}
+      subtitle={t('finance.chart.compositionSubtitle')}
       icon={<CircleDollarSign size={19} />}
     >
       <div
@@ -199,7 +207,7 @@ export function RevenueComposition({ analytics }: { analytics: AdminOverviewAnal
         }}
       >
         <div className="flex size-29 flex-col items-center justify-center rounded-full bg-white">
-          <span className="text-[9px] text-slate-500">TỔNG PHÍ SÀN</span>
+          <span className="text-[9px] text-slate-500">{t('finance.chart.totalFeeUpper')}</span>
           <strong className="my-1 text-xl text-slate-900">{composition.totalLabel}</strong>
           <span className="text-[9px] text-primary">VND</span>
         </div>

@@ -115,18 +115,18 @@ export default function BuyerLayout() {
                 )}
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate text-sm font-bold text-slate-900">
-                    {profile?.fullName || 'Khách hàng NEXUS'}
+                    {profile?.fullName || t('buyer:layout.defaultName')}
                   </h3>
                   <p className="truncate text-xs text-slate-500">
-                    {profile?.email || 'Chưa cập nhật email'}
+                    {profile?.email || t('buyer:layout.noEmail')}
                   </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                     <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-600 text-white">
-                      Khách hàng (Buyer)
+                      {t('buyer:layout.roleBadge')}
                     </span>
                     {hasSellerRole && (
                       <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
-                        Có Gian hàng
+                        {t('buyer:layout.hasShop')}
                       </span>
                     )}
                   </div>
@@ -138,7 +138,7 @@ export default function BuyerLayout() {
                 <div className="rounded-md bg-blue-50/60 p-2.5 border border-blue-100">
                   <div className="flex items-center gap-1 text-[11px] text-slate-600 mb-0.5">
                     <Wallet size={12} className="text-blue-600" />
-                    <span>Số dư ví</span>
+                    <span>{t('buyer:layout.walletBalance')}</span>
                   </div>
                   <span className="font-bold text-blue-700 text-xs truncate block">
                     {formatCurrency(Number(profile?.wallet?.balance ?? 0))}
@@ -147,7 +147,7 @@ export default function BuyerLayout() {
                 <div className="rounded-md bg-slate-50 p-2.5 border border-slate-200/80">
                   <div className="flex items-center gap-1 text-[11px] text-slate-600 mb-0.5">
                     <Award size={12} className="text-blue-600" />
-                    <span>Điểm uy tín</span>
+                    <span>{t('buyer:layout.reputationScore')}</span>
                   </div>
                   <span className="font-bold text-slate-800 text-xs truncate block">
                     {profile?.reputationScore ?? 100} ({profile?.trustLevel ?? 'STANDARD'})
@@ -182,18 +182,17 @@ export default function BuyerLayout() {
               <div className="rounded-lg border border-blue-200 bg-white p-4 shadow-xs">
                 <div className="flex items-center gap-2 text-[#1c3973] font-bold text-xs mb-1">
                   <Store size={15} className="text-blue-600" />
-                  <span>Kênh Người Bán (Seller Center)</span>
+                  <span>{t('buyer:layout.sellerCenterTitle')}</span>
                 </div>
                 <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
-                  Bạn đang ở chế độ Mua hàng (Buyer). Chuyển sang chế độ Người bán để quản lý gian
-                  hàng và sản phẩm.
+                  {t('buyer:layout.sellerCenterDesc')}
                 </p>
                 <button
                   type="button"
                   onClick={() => void handleGoToSellerCenter()}
                   className="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <span>Chuyển sang Kênh Người Bán</span>
+                  <span>{t('buyer:layout.switchToSeller')}</span>
                   <ArrowRight size={13} />
                 </button>
               </div>
@@ -201,17 +200,17 @@ export default function BuyerLayout() {
               <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 shadow-xs">
                 <div className="flex items-center gap-2 text-[#1c3973] font-bold text-xs mb-1">
                   <Store size={15} className="text-blue-600" />
-                  <span>Mở gian hàng kinh doanh</span>
+                  <span>{t('buyer:layout.openShopTitle')}</span>
                 </div>
                 <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
-                  Nâng cấp lên tài khoản Người bán để mở gian hàng và tổ chức đấu giá trực tiếp 3D.
+                  {t('buyer:layout.openShopDesc')}
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowUpgradeModal(true)}
                   className="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer"
                 >
-                  Đăng ký trở thành Seller
+                  {t('buyer:layout.registerSeller')}
                 </button>
               </div>
             )}

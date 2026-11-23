@@ -5,6 +5,7 @@ import {
   BellRing as NotificationOutlined,
   Save as SaveOutlined,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   getNotificationPreferences,
   saveNotificationPreferences,
@@ -26,6 +27,7 @@ export default function SellerNotificationPreferences(): ReactElement {
 }
 
 function PreferencesForm({ initial }: { initial: NotificationPreferences }): ReactElement {
+  const { t } = useTranslation('seller');
   const [preferences, setPreferences] = useState(initial.preferences);
   const [saved, setSaved] = useState(initial.preferences);
   const action = useSellerAction();
@@ -44,18 +46,26 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }): Rea
   }
   return (
     <form className="space-y-5" onSubmit={submit}>
-      <p className="text-xs leading-6 text-slate-500">
-        Chọn kênh bạn muốn nhận thông tin hoạt động của tài khoản.
-      </p>
+      <p className="text-xs leading-6 text-slate-500">{t('notifications.prefsIntro')}</p>
       <fieldset disabled={action.pending} className="space-y-3 disabled:opacity-60">
         {(
           [
-            ['IN_APP', 'Trong ứng dụng', 'Tùy chọn nhận thông báo trong NEXUS.', BellOutlined],
-            ['EMAIL', 'Email', 'Tùy chọn nhận thông tin qua email của tài khoản.', MailOutlined],
+            [
+              'IN_APP',
+              t('notifications.channels.inAppLabel'),
+              t('notifications.channels.inAppDesc'),
+              BellOutlined,
+            ],
+            [
+              'EMAIL',
+              t('notifications.channels.emailLabel'),
+              t('notifications.channels.emailDesc'),
+              MailOutlined,
+            ],
             [
               'PUSH',
-              'Thông báo đẩy',
-              'Tùy chọn nhận thông báo đẩy khi dịch vụ hỗ trợ.',
+              t('notifications.channels.pushLabel'),
+              t('notifications.channels.pushDesc'),
               NotificationOutlined,
             ],
           ] as const
@@ -107,10 +117,11 @@ function PreferencesForm({ initial }: { initial: NotificationPreferences }): Rea
           disabled={action.pending || !dirty}
           onClick={() => setPreferences(saved)}
         >
-          Hủy thay đổi
+          {t('notifications.cancelChanges')}
         </SellerButton>
         <SellerButton type="submit" disabled={action.pending || !dirty}>
-          <SaveOutlined /> {action.pending ? 'Đang lưu…' : 'Lưu tùy chọn'}
+          <SaveOutlined />{' '}
+          {action.pending ? t('notifications.saving') : t('notifications.savePrefs')}
         </SellerButton>
       </div>
     </form>

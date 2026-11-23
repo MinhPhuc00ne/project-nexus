@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { EyeOff as EyeInvisibleOutlined } from 'lucide-react';
 import { Eye as EyeOutlined, Lock as LockOutlined, Mail as MailOutlined } from 'lucide-react';
 import Popup from '../Popup';
@@ -19,6 +20,7 @@ export default function ChangePasswordModal({
   userId: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('common');
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [visible, setVisible] = useState(false);
@@ -36,7 +38,7 @@ export default function ChangePasswordModal({
     <Popup
       isOpen
       onClose={state.close}
-      title="Đổi mật khẩu"
+      title={t('profileEditor.changePasswordModal.title')}
       closeOnOverlay={!busy}
       closeOnEsc={!busy}
       showCloseButton={!busy}
@@ -50,8 +52,7 @@ export default function ChangePasswordModal({
         aria-busy={busy}
       >
         <p className="text-xs leading-5 text-slate-600">
-          Nhận mã OTP qua email để xác nhận đổi mật khẩu. Sau khi đổi thành công, bạn cần đăng nhập
-          lại.
+          {t('profileEditor.changePasswordModal.desc')}
         </p>
         <div className="space-y-2.5 rounded-lg border border-blue-200 bg-blue-50/70 p-4">
           <button
@@ -62,12 +63,14 @@ export default function ChangePasswordModal({
           >
             <MailOutlined />{' '}
             {state.pending === 'request'
-              ? 'Đang gửi mã…'
+              ? t('profileEditor.changePasswordModal.sendingCode')
               : state.resendWait > 0
-                ? `Gửi lại sau ${state.resendWait}s`
+                ? t('profileEditor.changePasswordModal.resendAfter', {
+                    seconds: state.resendWait,
+                  })
                 : state.sent
-                  ? 'Gửi lại mã OTP'
-                  : 'Gửi mã OTP qua email'}
+                  ? t('profileEditor.changePasswordModal.resendOtp')
+                  : t('profileEditor.changePasswordModal.sendOtpEmail')}
           </button>
           {state.message && (
             <p role="status" className="break-words text-xs leading-5 text-blue-800">
@@ -77,15 +80,18 @@ export default function ChangePasswordModal({
           {state.sent && (
             <p className="text-[11px] text-slate-600">
               {state.remaining > 0
-                ? `Mã có hiệu lực còn ${Math.floor(state.remaining / 60)} phút ${state.remaining % 60} giây.`
-                : 'Mã OTP đã hết hạn. Vui lòng gửi lại mã.'}
+                ? t('profileEditor.changePasswordModal.remainingTime', {
+                    minutes: Math.floor(state.remaining / 60),
+                    seconds: state.remaining % 60,
+                  })
+                : t('profileEditor.changePasswordModal.expiredOtp')}
             </p>
           )}
         </div>
         {state.sent && (
           <fieldset disabled={busy} className="space-y-3.5">
             <label className="block text-xs font-semibold text-slate-700">
-              Mã OTP
+              {t('profileEditor.changePasswordModal.otpLabel')}
               <input
                 type="text"
                 required
@@ -98,11 +104,11 @@ export default function ChangePasswordModal({
                   state.setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
                 }
                 className={inputClass}
-                placeholder="Nhập 6 chữ số trong email"
+                placeholder={t('profileEditor.changePasswordModal.otpPlaceholder')}
               />
             </label>
             <label className="block text-xs font-semibold text-slate-700">
-              Mật khẩu mới
+              {t('profileEditor.changePasswordModal.newPasswordLabel')}
               <div className="relative">
                 <input
                   type={visible ? 'text' : 'password'}
@@ -115,7 +121,11 @@ export default function ChangePasswordModal({
                 />
                 <button
                   type="button"
-                  aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  aria-label={
+                    visible
+                      ? t('profileEditor.changePasswordModal.hidePassword')
+                      : t('profileEditor.changePasswordModal.showPassword')
+                  }
                   aria-pressed={visible}
                   onClick={() => setVisible((value) => !value)}
                   className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center text-slate-500"
@@ -124,11 +134,11 @@ export default function ChangePasswordModal({
                 </button>
               </div>
               <span className="mt-1.5 block text-[11px] font-normal text-slate-500">
-                Ít nhất 8 ký tự, có chữ hoa và ký tự đặc biệt.
+                {t('profileEditor.changePasswordModal.passwordHint')}
               </span>
             </label>
             <label className="block text-xs font-semibold text-slate-700">
-              Xác nhận mật khẩu mới
+              {t('profileEditor.changePasswordModal.confirmPasswordLabel')}
               <input
                 type={visible ? 'text' : 'password'}
                 required
@@ -153,11 +163,14 @@ export default function ChangePasswordModal({
             onClick={state.close}
             className="rounded-md border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
           >
-            Hủy
+            {t('profileEditor.changePasswordModal.cancel')}
           </button>
           {state.sent && (
             <button type="submit" disabled={busy || state.remaining === 0} className={buttonClass}>
-              <LockOutlined /> {state.pending === 'confirm' ? 'Đang đổi mật khẩu…' : 'Đổi mật khẩu'}
+              <LockOutlined />{' '}
+              {state.pending === 'confirm'
+                ? t('profileEditor.changePasswordModal.changing')
+                : t('profileEditor.changePasswordModal.title')}
             </button>
           )}
         </div>

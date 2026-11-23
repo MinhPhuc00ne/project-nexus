@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Gavel,
   Truck,
@@ -45,6 +48,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
   requiredReputationScore,
   hasItems: _hasItems,
 }) => {
+  const { t, i18n } = useTranslation('auction');
   const rawIncrement =
     selectedItem?.bidIncrement !== undefined &&
     selectedItem?.bidIncrement !== null &&
@@ -115,7 +119,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
 
   const formatVND = (amount: number) => {
     const val = Number(amount) || 0;
-    return new Intl.NumberFormat('vi-VN').format(val) + ' đ';
+    return formatCurrency(val, i18n.language);
   };
 
   const formatUSD = (vnd: number) => {
@@ -142,7 +146,10 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
 
   const quickButtons = isFirstBid
     ? [
-        { label: 'Khởi điểm', targetAmount: startPriceVal > 0 ? startPriceVal : minIncrement },
+        {
+          label: t('terminal.quickStart'),
+          targetAmount: startPriceVal > 0 ? startPriceVal : minIncrement,
+        },
         {
           label: `+${formatVND(minIncrement)}`,
           targetAmount: (startPriceVal > 0 ? startPriceVal : 0) + minIncrement,
@@ -196,16 +203,13 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
     Boolean(selectedItem || auction?.product || (auction?.items && auction.items.length > 0));
 
   const displayTitle =
-    selectedItem?.title ||
-    auction?.product?.title ||
-    auction?.title ||
-    'Phiên Đấu Giá Mới Khởi Tạo';
+    selectedItem?.title || auction?.product?.title || auction?.title || t('terminal.defaultTitle');
 
   const lotNumber = selectedItem?.lotNumber
-    ? `LÔ #${selectedItem.lotNumber}`
+    ? t('terminal.lotPrefix', { number: selectedItem.lotNumber })
     : auction?.id
-      ? `PHÂN ĐỢT #${auction.id.slice(0, 8).toUpperCase()}`
-      : 'CHỜ NIÊM YẾT';
+      ? t('terminal.batchPrefix', { code: auction.id.slice(0, 8).toUpperCase() })
+      : t('terminal.awaitingListing');
 
   return (
     <div className="flex flex-col gap-5">
@@ -213,7 +217,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <span className="text-xs font-extrabold tracking-wider text-blue-600 uppercase">
-            {auction?.product?.id ? 'NEXUS VERIFIED COLLECTION' : 'OFFICIAL AUCTION ROOM'}
+            {auction?.product?.id ? t('terminal.verifiedCollection') : t('terminal.officialRoom')}
           </span>
           <span className="text-[11px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
             {lotNumber}
@@ -237,19 +241,23 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
       >
         <div className="flex flex-col gap-1">
           <span className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">
-            {isScheduled ? 'Sắp Khởi Tranh Sau:' : 'Thời Gian Còn Lại:'}
+            {isScheduled ? t('terminal.startsIn') : t('terminal.timeLeft')}
           </span>
           <span
             className={`font-mono text-2xl sm:text-3xl font-extrabold tracking-wider ${
               isEnded ? 'text-slate-400' : isScheduled ? 'text-amber-400' : 'text-rose-400'
             }`}
           >
-            {timeLeft > 0 ? formatTimer(timeLeft) : isScheduled ? 'CHUẨN BỊ MỞ' : 'ĐÃ KẾT THÚC'}
+            {timeLeft > 0
+              ? formatTimer(timeLeft)
+              : isScheduled
+                ? t('terminal.preparing')
+                : t('terminal.ended')}
           </span>
         </div>
         <div className="text-right flex flex-col gap-1">
           <span className="text-sm font-bold text-white">
-            {isScheduled ? 'Chưa mở trả giá' : `${bidsCount} lượt trả giá`}
+            {isScheduled ? t('terminal.notOpenYet') : t('terminal.bidsCount', { count: bidsCount })}
           </span>
           <span
             className={`text-[11px] flex items-center gap-1.5 justify-end ${
@@ -261,7 +269,11 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                 isEnded ? 'bg-slate-500' : isScheduled ? 'bg-amber-400' : 'bg-cyan-400 animate-ping'
               }`}
             />
-            {isEnded ? 'Đã Kết Thúc' : isScheduled ? 'Sắp Diễn Ra' : 'Trực Tiếp'}
+            {isEnded
+              ? t('terminal.statusEnded')
+              : isScheduled
+                ? t('terminal.statusUpcoming')
+                : t('terminal.statusLive')}
           </span>
         </div>
       </div>
@@ -270,31 +282,33 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
       {!hasItems ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[13px] font-semibold text-slate-600">Trạng Thái Phiên:</span>
+            <span className="text-[13px] font-semibold text-slate-600">
+              {t('terminal.sessionStatus')}
+            </span>
             <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
-              Chờ Niêm Yết Hiện Vật
+              {t('terminal.awaitingListingTag')}
             </span>
           </div>
 
           <div className="mb-3">
             <span className="text-2xl sm:text-3xl font-black text-slate-700 leading-none">
-              Chưa Có Sản Phẩm
+              {t('terminal.noProductTitle')}
             </span>
             <p className="text-xs text-slate-500 mt-2 m-0">
               {startPriceVal > 0 ? (
                 <>
-                  Giá khởi điểm dự kiến của phiên:{' '}
+                  {t('terminal.expectedStartPrice')}{' '}
                   <strong className="text-slate-800">{formatVND(startPriceVal)}</strong>
                 </>
               ) : (
-                <>Mức giá khởi điểm sẽ được công bố khi có hồ sơ ký gửi sản phẩm từ Seller.</>
+                <>{t('terminal.pendingStartPriceNote')}</>
               )}
             </p>
           </div>
 
           <div className="bg-slate-50 rounded-xl p-3 text-xs text-slate-600 flex items-center gap-2 mb-4 border border-slate-200/80">
             <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>Phiên này chưa có sản phẩm nào được niêm yết. Chức năng đặt giá chưa mở.</span>
+            <span>{t('terminal.biddingDisabledNote')}</span>
           </div>
 
           <div className="flex flex-col gap-2.5 mt-4">
@@ -304,7 +318,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
               className="w-full py-3 px-5 bg-slate-200 text-slate-500 font-extrabold text-sm rounded-xl cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Lock className="w-4 h-4" />
-              <span>Chưa Có Sản Phẩm Để Đặt Giá</span>
+              <span>{t('terminal.noProductButton')}</span>
             </button>
 
             <button
@@ -322,9 +336,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                 }`}
               />
               <span>
-                {isReminderSet
-                  ? '✓ Đã Bật Nhắc Nhở Khi Có Hàng'
-                  : 'Nhắc Tôi Khi Có Sản Phẩm Niêm Yết'}
+                {isReminderSet ? t('terminal.reminderActive') : t('terminal.reminderSet')}
               </span>
             </button>
           </div>
@@ -333,10 +345,10 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
         <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[13px] font-semibold text-slate-600">
-              Giá Đặt Hiện Tại (Leading Bid):
+              {t('terminal.currentBidLabel')}
             </span>
             <span className="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-              Live FX: $1 ≈ 24.000đ
+              {t('terminal.liveFx')}
             </span>
           </div>
 
@@ -348,13 +360,13 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           </div>
 
           <div className="text-xs text-slate-500 mb-4">
-            Khởi điểm: <strong>{formatVND(startPriceVal)}</strong> • Bước giá tối thiểu:{' '}
-            <strong>+{formatVND(minIncrement)}</strong>
+            {t('terminal.startingPriceLabel')} <strong>{formatVND(startPriceVal)}</strong> •{' '}
+            {t('terminal.minIncrementLabel')} <strong>+{formatVND(minIncrement)}</strong>
           </div>
 
           {/* Leading Bidder */}
           <div className="bg-slate-50 rounded-lg p-2.5 text-xs text-slate-600 flex items-center justify-between mb-4 border-l-3 border-emerald-500">
-            <span>Người đang giữ giá:</span>
+            <span>{t('terminal.leadingBidderLabel')}</span>
             <span className="font-bold text-slate-900">{leadingBidder} 👑</span>
           </div>
 
@@ -364,22 +376,22 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
               <div className="flex items-center gap-2">
                 <Award className="w-4 h-4 text-amber-500 shrink-0" />
                 <div>
-                  <span className="text-slate-600">Uy tín của bạn: </span>
+                  <span className="text-slate-600">{t('terminal.yourReputation')} </span>
                   <strong className="text-slate-900 font-extrabold">
-                    {buyerReputationScore} điểm
+                    {t('terminal.pointsUnit', { score: buyerReputationScore })}
                   </strong>
                   <span className="text-[11px] text-slate-400 font-mono ml-1.5">
-                    (Yêu cầu: ≥ {requiredReputationScore ?? 40})
+                    {t('terminal.requiredScore', { score: requiredReputationScore ?? 40 })}
                   </span>
                 </div>
               </div>
               {buyerReputationScore >= (requiredReputationScore ?? 40) && !isFlaggedViewOnly ? (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đủ điều kiện
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600" /> {t('terminal.eligible')}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                  <AlertTriangle className="w-3 h-3 text-amber-600" /> View-Only
+                  <AlertTriangle className="w-3 h-3 text-amber-600" /> {t('terminal.viewOnlyBadge')}
                 </span>
               )}
             </div>
@@ -390,10 +402,9 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
             <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-3 text-xs flex items-start gap-2.5">
               <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">Chế độ Chỉ Xem (View-Only)</p>
+                <p className="font-bold">{t('terminal.viewOnlyTitle')}</p>
                 <p className="text-[11px] text-amber-700 mt-0.5">
-                  {eligibilityReason ||
-                    'Điểm uy tín tài khoản của bạn chưa đáp ứng yêu cầu tối thiểu của phiên này.'}
+                  {eligibilityReason || t('terminal.viewOnlyFallback')}
                 </p>
               </div>
             </div>
@@ -404,15 +415,18 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
             <div className="mb-4 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl p-3.5 text-xs flex items-start gap-2.5">
               <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">Phiên Đấu Giá Chưa Mở</p>
+                <p className="font-bold">{t('terminal.scheduledTitle')}</p>
                 <p className="text-[11px] text-amber-700 mt-0.5">
-                  Phiên đấu giá được lên lịch mở lúc{' '}
-                  <strong>
-                    {auction?.startTime
-                      ? new Date(auction.startTime).toLocaleString('vi-VN')
-                      : 'thời gian sắp tới'}
-                  </strong>
-                  . Quý khách có thể xem trước hình ảnh thực tế và hồ sơ kiểm định của từng lô hàng.
+                  <Trans
+                    ns="auction"
+                    i18nKey="terminal.scheduledDesc"
+                    values={{
+                      time: auction?.startTime
+                        ? new Date(auction.startTime).toLocaleString(getIntlLocale(i18n.language))
+                        : t('terminal.upcomingTimeFallback'),
+                    }}
+                    components={{ bold: <strong /> }}
+                  />
                 </p>
               </div>
             </div>
@@ -462,7 +476,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                   }}
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                  VNĐ
+                  {t('terminal.currencyUnit')}
                 </span>
               </div>
 
@@ -481,19 +495,18 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                 <Gavel className="w-4 h-4" />
                 <span>
                   {isScheduled
-                    ? 'Phiên Chưa Mở'
+                    ? t('terminal.btnScheduled')
                     : isEnded
-                      ? 'Phiên Đã Kết Thúc'
+                      ? t('terminal.btnEnded')
                       : isFlaggedViewOnly
-                        ? 'Chỉ Xem'
-                        : 'Đặt Giá Ngay'}
+                        ? t('terminal.btnViewOnly')
+                        : t('terminal.btnPlaceBid')}
                 </span>
               </button>
             </div>
 
             <p className="text-[11px] text-slate-500 m-0 text-center">
-              🔒 Ký quỹ an toàn qua ví (AUCTION_BID_LOCK) • Tự động hoàn tiền 100%
-              (AUCTION_BID_REFUND) khi có người trả giá cao hơn.
+              {t('terminal.escrowLockNote')}
             </p>
           </div>
         </div>
@@ -507,11 +520,10 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           </div>
           <div>
             <h4 className="text-[13px] font-bold text-slate-900 m-0">
-              Vận chuyển Hỏa Tốc GHN Express Bảo Hiểm 100%
+              {t('terminal.shippingTitle')}
             </h4>
             <p className="text-xs text-slate-500 leading-relaxed m-0 mt-0.5">
-              Đóng gói bảo mật chống va đập, bảo hiểm toàn phần giá trị và đồng kiểm trực tiếp khi
-              nhận hàng.
+              {t('terminal.shippingDesc')}
             </p>
           </div>
         </div>
@@ -522,11 +534,10 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           </div>
           <div>
             <h4 className="text-[13px] font-bold text-slate-900 m-0">
-              Bảo Chứng Ký Quỹ PayOS Escrow & Hoàn Tiền 100%
+              {t('terminal.escrowTitle')}
             </h4>
             <p className="text-xs text-slate-500 leading-relaxed m-0 mt-0.5">
-              Cọc được khóa an toàn trong ví. Tự động hoàn lại 100% ngay khi có người trả giá cao
-              hơn.
+              {t('terminal.escrowDesc')}
             </p>
           </div>
         </div>
@@ -544,7 +555,7 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
           >
             <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
               <h3 className="text-base font-extrabold text-slate-900 m-0">
-                Xác Nhận Đặt Giá Đấu Giá
+                {t('terminal.modalTitle')}
               </h3>
               <button
                 type="button"
@@ -562,26 +573,27 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
 
             <div className="space-y-3 mb-5 text-sm">
               <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-600">Mức giá bạn đặt:</span>
+                <span className="text-slate-600">{t('terminal.modalBidAmount')}</span>
                 <span className="font-bold text-rose-600 text-base">
                   {formatVND(customBidAmount)}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-600">Cần khóa cọc trong ví (10%):</span>
+                <span className="text-slate-600">{t('terminal.modalDepositLock')}</span>
                 <span className="font-bold text-blue-600">
                   {formatVND(Math.round(customBidAmount * 0.1))}
                 </span>
               </div>
               <div className="flex justify-between py-2 border-b border-slate-100">
-                <span className="text-slate-600">Bảo chứng ký quỹ:</span>
-                <span className="font-semibold text-emerald-600">Ví NEXUS Pay Escrow</span>
+                <span className="text-slate-600">{t('terminal.modalEscrowProvider')}</span>
+                <span className="font-semibold text-emerald-600">
+                  {t('terminal.modalEscrowName')}
+                </span>
               </div>
             </div>
 
             <p className="text-[11px] text-slate-500 mb-5 leading-relaxed bg-slate-50 p-2.5 rounded-lg">
-              * Khoản cọc sẽ được tạm khóa trong ví. Nếu có người trả giá cao hơn, hệ thống sẽ tự
-              động mở khóa hoàn tiền 100% về ví khả dụng ngay lập tức.
+              {t('terminal.modalFootnote')}
             </p>
 
             <div className="flex gap-2.5">
@@ -590,14 +602,14 @@ export const AuctionBidTerminal: React.FC<AuctionBidTerminalProps> = ({
                 className="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50 cursor-pointer"
                 onClick={() => setShowBidModal(false)}
               >
-                Hủy Bỏ
+                {t('terminal.modalCancel')}
               </button>
               <button
                 type="button"
                 className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-rose-600 text-white font-bold text-xs shadow-md hover:opacity-95 cursor-pointer"
                 onClick={handleConfirmBid}
               >
-                Khóa Cọc & Đặt Giá Ngay
+                {t('terminal.modalConfirm')}
               </button>
             </div>
           </div>

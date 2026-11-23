@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X as CloseOutlined } from 'lucide-react';
 
 export type PopupSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -57,6 +58,7 @@ const Popup: React.FC<PopupProps> = ({
   showCloseButton = true,
   className = '',
 }) => {
+  const { t } = useTranslation('common');
   const dialogRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   const titleId = useId();
@@ -137,7 +139,7 @@ const Popup: React.FC<PopupProps> = ({
                 type="button"
                 className="ml-auto inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-transparent p-0 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
                 onClick={onClose}
-                aria-label="Đóng"
+                aria-label={t('popup.close')}
               >
                 <CloseOutlined className="text-2xl" aria-hidden="true" />
               </button>

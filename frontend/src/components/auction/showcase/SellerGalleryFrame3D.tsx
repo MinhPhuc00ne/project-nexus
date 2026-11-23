@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Image as ImageIcon, Layers } from 'lucide-react';
 import { formatAuctionImage } from '../../../services/auction.service';
 
@@ -23,6 +24,7 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
   lotNumber,
   images,
 }) => {
+  const { t } = useTranslation('auction');
   const resolvedImages = (images.length > 0 ? images : [FALLBACK_GALLERY_IMG]).map(
     (url) => formatAuctionImage(url) || FALLBACK_GALLERY_IMG,
   );
@@ -52,7 +54,7 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
           <div className="museum-frame-wing museum-frame-wing-left hidden sm:block">
             <img
               src={leftPreview}
-              alt={`${title} - góc phụ`}
+              alt={t('showcase.frameWingLeftAlt', { title })}
               className="w-full h-full object-cover"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = FALLBACK_GALLERY_IMG;
@@ -85,7 +87,10 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
             <div className="absolute bottom-2 right-2 z-20 flex items-center gap-1 rounded-md bg-slate-950/85 px-2 py-0.5 text-[10px] font-mono text-amber-200 border border-amber-400/30">
               <ImageIcon className="w-3 h-3 text-amber-400" />
               <span>
-                ẢNH {activeImgIdx + 1}/{resolvedImages.length}
+                {t('showcase.framePhotoBadge', {
+                  current: activeImgIdx + 1,
+                  total: resolvedImages.length,
+                })}
               </span>
             </div>
           </div>
@@ -93,7 +98,7 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
           {/* Bảng đồng khắc tên dưới chân khung */}
           <div className="mx-auto -mt-1 w-4/5 rounded-b-md border border-amber-400/50 bg-gradient-to-r from-amber-950 via-amber-800 to-amber-950 px-3 py-1 text-center shadow-lg">
             <p className="truncate text-[10px] font-bold tracking-widest text-amber-100 uppercase">
-              {lotNumber ? `LÔ #${lotNumber} • ` : ''}
+              {lotNumber ? t('showcase.frameLotPrefix', { number: lotNumber }) : ''}
               {sellerName || 'SELLER ARCHIVE'}
             </p>
           </div>
@@ -104,7 +109,7 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
           <div className="museum-frame-wing museum-frame-wing-right hidden sm:block">
             <img
               src={rightPreview}
-              alt={`${title} - góc chi tiết`}
+              alt={t('showcase.frameWingRightAlt', { title })}
               className="w-full h-full object-cover"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = FALLBACK_GALLERY_IMG;
@@ -116,7 +121,7 @@ export const SellerGalleryFrame3D: React.FC<SellerGalleryFrame3DProps> = ({
 
       <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-amber-400/35 bg-slate-950/80 px-3.5 py-1 text-[11px] font-mono font-semibold tracking-wider text-amber-200 shadow-lg backdrop-blur-md">
         <Layers className="w-3.5 h-3.5 text-amber-400" />
-        <span>TƯ LIỆU HÌNH ẢNH THỰC TẾ • {resolvedImages.length} GÓC CHỤP</span>
+        <span>{t('showcase.frameFooterTag', { count: resolvedImages.length })}</span>
       </div>
     </div>
   );

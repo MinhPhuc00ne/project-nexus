@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest } from './api';
 import { getSellerResource } from './sellerResources';
 import type { SellerDisputesPage, SellerDisputeStatus } from '../types/seller-dispute.types';
@@ -15,7 +16,7 @@ export async function respondSellerDispute(
   responseNotes: string,
   evidenceUrls: string[],
 ): Promise<{ success: boolean; message: string }> {
-  if (!responseNotes.trim()) throw new Error('Vui lòng nhập nội dung giải trình.');
+  if (!responseNotes.trim()) throw new Error(i18n.t('errors:services.disputeResponseRequired'));
   const result = await apiRequest<{ success: boolean; message: string }>(
     `/seller/disputes/${encodeURIComponent(id)}/respond`,
     {
@@ -24,7 +25,8 @@ export async function respondSellerDispute(
       requireAuth: true,
     },
   );
-  if (!result.success) throw new Error(result.message || 'Chưa gửi được giải trình.');
+  if (!result.success)
+    throw new Error(result.message || i18n.t('errors:services.disputeSubmitFailed'));
   return result;
 }
 export function safeEvidenceUrls(value: unknown): string[] {
@@ -43,9 +45,9 @@ export async function uploadDisputeEvidence(file: File): Promise<string> {
     !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
     !/\.(jpe?g|png|webp)$/i.test(file.name)
   )
-    throw new Error('Chỉ hỗ trợ ảnh JPG, PNG hoặc WEBP.');
+    throw new Error(i18n.t('errors:services.imageJpgPngWebp'));
   if (!file.size || file.size > 25 * 1024 * 1024)
-    throw new Error('Ảnh phải có dung lượng từ 1 byte đến 25 MB.');
+    throw new Error(i18n.t('errors:services.imageSize1To25'));
   const body = new FormData();
   body.append('file', file);
   const result = await apiRequest<{ url: string }>('/media/upload', {
@@ -55,6 +57,6 @@ export async function uploadDisputeEvidence(file: File): Promise<string> {
     requireAuth: true,
   });
   const url = safeEvidenceUrls([result.url])[0];
-  if (!url) throw new Error('Máy chủ chưa trả về đường dẫn ảnh hợp lệ.');
+  if (!url) throw new Error(i18n.t('errors:services.invalidImageUrl'));
   return url;
 }

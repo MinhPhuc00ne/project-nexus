@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   deleteAdminProduct,
@@ -6,11 +7,11 @@ import {
   updateAdminProductStatus,
 } from '../../../services/admin';
 import type { AdminProduct, AdminProductDetail } from '../../../types/admin-product.types';
+import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
 import { formatMoney } from '../shared/adminData';
-import { adminProductLabels } from './adminProductData';
 
 export function ProductDetailDialog({
   productId,
@@ -19,6 +20,8 @@ export function ProductDetailDialog({
   productId: string;
   onClose: () => void;
 }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
   const { token } = useAuth();
   const [detail, setDetail] = useState<AdminProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,36 +39,36 @@ export function ProductDetailDialog({
       })
       .catch((cause) => {
         if (!controller.signal.aborted)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải chi tiết sản phẩm.');
+          setError(cause instanceof Error ? cause.message : t('products.detail.loadErr'));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [productId, token, revision]);
+  }, [productId, token, revision, t]);
 
   return (
     <Popup
       isOpen
       onClose={onClose}
-      title="Chi tiết sản phẩm"
+      title={t('products.detail.title')}
       size="xl"
       footer={
         <Button variant="secondary" onClick={onClose}>
-          Đóng
+          {t('products.detail.close')}
         </Button>
       }
     >
       {loading && (
         <p role="status" className="py-8 text-center text-sm text-slate-500">
-          Đang tải chi tiết sản phẩm…
+          {t('products.detail.loading')}
         </p>
       )}
       {!loading && error && (
         <div role="alert" className="space-y-3 text-sm text-red-700">
           <p>{error}</p>
           <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-            Thử lại
+            {t('products.detail.retry')}
           </Button>
         </div>
       )}
@@ -83,47 +86,61 @@ export function ProductDetailDialog({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-slate-500">Sản phẩm chưa có ảnh.</p>
+            <p className="text-sm text-slate-500">{t('products.detail.noImages')}</p>
           )}
           <DetailFields
             fields={[
-              ['Mã sản phẩm', detail.id],
-              ['Tên sản phẩm', detail.title],
-              ['Seller', detail.seller.fullName],
-              ['Email seller', detail.seller.email],
-              ['Điện thoại seller', detail.seller.phoneNumber],
+              [t('products.detail.fields.id'), detail.id],
+              [t('products.detail.fields.title'), detail.title],
+              [t('products.detail.fields.seller'), detail.seller.fullName],
+              [t('products.detail.fields.sellerEmail'), detail.seller.email],
+              [t('products.detail.fields.sellerPhone'), detail.seller.phoneNumber],
               [
-                'Danh mục',
+                t('products.detail.fields.category'),
                 [detail.category.parent?.name, detail.category.name].filter(Boolean).join(' / '),
               ],
-              ['Giá niêm yết', formatMoney(detail.basePrice)],
-              ['Trạng thái', adminProductLabels[detail.status]],
-              ['Số lượng có thể bán', String(detail.stockSummary.availableQty)],
-              ['Tổng tồn kho', String(detail.stockSummary.totalQty)],
-              ['Khối lượng', `${detail.weightGrams} g`],
+              [t('products.detail.fields.price'), formatMoney(detail.basePrice)],
+              [t('products.detail.fields.status'), t(`products.statuses.${detail.status}`)],
+              [t('products.detail.fields.available'), String(detail.stockSummary.availableQty)],
+              [t('products.detail.fields.totalStock'), String(detail.stockSummary.totalQty)],
+              [t('products.detail.fields.weight'), `${detail.weightGrams} g`],
               [
-                'Kích thước (dài × rộng × cao)',
+                t('products.detail.fields.dimensions'),
                 `${detail.dimensions.lengthCm} × ${detail.dimensions.widthCm} × ${detail.dimensions.heightCm} cm`,
               ],
-              ['Mô hình 3D', detail.threeModelKey ? 'Có mô hình 3D' : 'Chưa có'],
-              ['Ngày tạo', new Date(detail.createdAt).toLocaleString('vi-VN')],
-              ['Cập nhật lần cuối', new Date(detail.updatedAt).toLocaleString('vi-VN')],
+              [
+                t('products.detail.fields.model3d'),
+                detail.threeModelKey ? t('products.detail.has3d') : t('products.detail.no3d'),
+              ],
+              [
+                t('products.detail.fields.createdAt'),
+                new Date(detail.createdAt).toLocaleString(locale),
+              ],
+              [
+                t('products.detail.fields.updatedAt'),
+                new Date(detail.updatedAt).toLocaleString(locale),
+              ],
             ]}
           />
           <section className="border-t border-slate-100 pt-4">
-            <h3 className="mb-2 text-sm font-bold">Mô tả</h3>
+            <h3 className="mb-2 text-sm font-bold">{t('products.detail.descTitle')}</h3>
             <p className="break-words whitespace-pre-wrap text-sm text-slate-600">
-              {detail.description || 'Chưa có mô tả.'}
+              {detail.description || t('products.detail.noDesc')}
             </p>
           </section>
           <section className="border-t border-slate-100 pt-4">
-            <h3 className="mb-3 text-sm font-bold">Tồn kho theo kho hàng</h3>
+            <h3 className="mb-3 text-sm font-bold">{t('products.detail.inventoryTitle')}</h3>
             {detail.inventories.length ? (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[440px] text-left text-xs">
                   <thead className="bg-blue-50">
                     <tr>
-                      {['Kho hàng', 'Tổng', 'Có thể bán', 'Đang giữ'].map((label) => (
+                      {[
+                        t('products.detail.inventoryCols.warehouse'),
+                        t('products.detail.inventoryCols.total'),
+                        t('products.detail.inventoryCols.available'),
+                        t('products.detail.inventoryCols.reserved'),
+                      ].map((label) => (
                         <th scope="col" key={label} className="p-3">
                           {label}
                         </th>
@@ -137,7 +154,7 @@ export function ProductDetailDialog({
                           {inventory.warehouse.name}
                           <p className="mt-1 text-slate-500">
                             {inventory.warehouse.code} ·{' '}
-                            {inventory.warehouse.address || 'Chưa có địa chỉ'}
+                            {inventory.warehouse.address || t('products.detail.noAddress')}
                           </p>
                         </td>
                         <td className="p-3">{inventory.totalQty}</td>
@@ -149,7 +166,7 @@ export function ProductDetailDialog({
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-slate-500">Chưa có dữ liệu tồn kho.</p>
+              <p className="text-sm text-slate-500">{t('products.detail.noInventory')}</p>
             )}
           </section>
         </div>
@@ -169,12 +186,17 @@ export function ProductActionDialog({
   onClose: () => void;
   onSuccess: (message: string) => void;
 }) {
+  const { t } = useTranslation('admin');
   const [reason, setReason] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const inFlight = useRef(false);
   const title =
-    kind === 'delete' ? 'Xóa sản phẩm' : kind === 'hide' ? 'Ẩn sản phẩm' : 'Cho phép bán sản phẩm';
+    kind === 'delete'
+      ? t('products.actionDialog.deleteTitle')
+      : kind === 'hide'
+        ? t('products.actionDialog.hideTitle')
+        : t('products.actionDialog.activateTitle');
   const close = () => {
     if (!inFlight.current) onClose();
   };
@@ -182,7 +204,7 @@ export function ProductActionDialog({
     event.preventDefault();
     if (inFlight.current) return;
     if (kind === 'hide' && !reason.trim()) {
-      setError('Vui lòng nhập lý do ẩn sản phẩm.');
+      setError(t('products.actionDialog.hideReasonRequired'));
       return;
     }
     inFlight.current = true;
@@ -198,7 +220,7 @@ export function ProductActionDialog({
             });
       onSuccess(result.message);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể cập nhật sản phẩm.');
+      setError(cause instanceof Error ? cause.message : t('products.actionDialog.updateErr'));
     } finally {
       inFlight.current = false;
       setPending(false);
@@ -212,12 +234,13 @@ export function ProductActionDialog({
         </p>
         {kind === 'delete' ? (
           <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-            Sản phẩm chưa có đơn hàng sẽ bị xóa vĩnh viễn. Nếu đã có lịch sử đơn hàng, hệ thống sẽ
-            ẩn sản phẩm để giữ lại lịch sử giao dịch.
+            {t('products.actionDialog.deleteWarning')}
           </p>
         ) : (
           <label className="block text-sm font-medium">
-            {kind === 'hide' ? 'Lý do ẩn sản phẩm' : 'Ghi chú (không bắt buộc)'}
+            {kind === 'hide'
+              ? t('products.actionDialog.hideReasonLabel')
+              : t('products.actionDialog.activateNoteLabel')}
             <textarea
               autoFocus
               required={kind === 'hide'}
@@ -237,14 +260,14 @@ export function ProductActionDialog({
         )}
         <div className="flex justify-end gap-2">
           <Button variant="secondary" disabled={pending} onClick={close}>
-            Hủy
+            {t('products.actionDialog.cancel')}
           </Button>
           <Button
             type="submit"
             variant={kind === 'activate' ? 'primary' : 'danger'}
             disabled={pending}
           >
-            {pending ? 'Đang xử lý…' : 'Xác nhận'}
+            {pending ? t('products.actionDialog.processing') : t('products.actionDialog.confirm')}
           </Button>
         </div>
       </form>

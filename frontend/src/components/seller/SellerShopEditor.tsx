@@ -6,6 +6,7 @@ import {
   Store as ShopOutlined,
   Trash2 as DeleteOutlined,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { SellerShopProfile } from '../../types/shop.types';
 import { VIETNAM_PROVINCES } from '../../constants/vietnamProvinces';
 import { updateSellerShopProfile, uploadShopAvatarFile } from '../../services/shops';
@@ -24,6 +25,7 @@ export default function SellerShopEditor({
   section: 'store' | 'shipping';
   onSaved: () => void;
 }): ReactElement {
+  const { t } = useTranslation('seller');
   const initial = shopFormFromProfile(profile);
   const [form, setForm] = useState(initial);
   const initialShopAvatar = profile.shopAvatarUrl ?? '';
@@ -52,8 +54,7 @@ export default function SellerShopEditor({
     event.preventDefault();
     void action.run(
       async () => {
-        if (profile.isShopSuspended)
-          throw new Error('Gian hàng đang bị đình chỉ, chưa thể cập nhật thông tin.');
+        if (profile.isShopSuspended) throw new Error(t('settings.editor.suspendedErr'));
 
         let finalShopAvatar: string | null = shopAvatarUrl || null;
 
@@ -85,8 +86,10 @@ export default function SellerShopEditor({
           role="alert"
           className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800"
         >
-          Gian hàng đang bị đình chỉ.
-          {profile.suspensionReason ? ` Lý do: ${profile.suspensionReason}` : ''}
+          {t('settings.editor.suspendedBanner')}
+          {profile.suspensionReason
+            ? ` ${t('settings.editor.suspendedReason', { reason: profile.suspensionReason })}`
+            : ''}
         </p>
       )}
       <fieldset
@@ -100,11 +103,10 @@ export default function SellerShopEditor({
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <p className="text-xs font-bold text-[#1c3973]">
-                    Ảnh đại diện Gian hàng (Logo Shop)
+                    {t('settings.editor.logoTitle')}
                   </p>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    Ảnh đại diện của Shop hiển thị riêng biệt trên trang Gian hàng & Sản phẩm (không
-                    dùng chung với ảnh cá nhân của chủ shop).
+                    {t('settings.editor.logoDesc')}
                   </p>
                 </div>
               </div>
@@ -113,7 +115,7 @@ export default function SellerShopEditor({
                   {displayedShopAvatar ? (
                     <img
                       src={displayedShopAvatar}
-                      alt={form.storeName || 'Logo gian hàng'}
+                      alt={form.storeName || t('settings.editor.logoAlt')}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -123,7 +125,7 @@ export default function SellerShopEditor({
                 <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-blue-700 transition">
-                      <UploadOutlined /> Tải ảnh đại diện Shop
+                      <UploadOutlined /> {t('settings.editor.uploadLogo')}
                       <input
                         type="file"
                         accept="image/jpeg,image/png,image/webp"
@@ -144,19 +146,17 @@ export default function SellerShopEditor({
                         }}
                         className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
                       >
-                        <DeleteOutlined /> Gỡ logo shop
+                        <DeleteOutlined /> {t('settings.editor.removeLogo')}
                       </button>
                     )}
                   </div>
-                  <p className="text-[11px] text-slate-500">
-                    Định dạng JPG, PNG hoặc WEBP (Tối đa 10 MB).
-                  </p>
+                  <p className="text-[11px] text-slate-500">{t('settings.editor.logoFormat')}</p>
                 </div>
               </div>
             </div>
 
             <label className={sellerLabelClass}>
-              Tên gian hàng
+              {t('settings.editor.storeName')}
               <input
                 className={sellerInputClass}
                 required
@@ -166,19 +166,19 @@ export default function SellerShopEditor({
               />
             </label>
             <label className={sellerLabelClass}>
-              Giới thiệu gian hàng
+              {t('settings.editor.storeDesc')}
               <textarea
                 className={sellerInputClass}
                 rows={5}
                 maxLength={3000}
                 value={form.storeDescription}
                 onChange={(e) => setField('storeDescription', e.target.value)}
-                placeholder="Giới thiệu thương hiệu và sản phẩm của bạn"
+                placeholder={t('settings.editor.storeDescPlaceholder')}
               />
             </label>
             <div className="grid gap-5 sm:grid-cols-2">
               <label className={sellerLabelClass}>
-                Số điện thoại liên hệ
+                {t('settings.editor.phone')}
                 <input
                   className={sellerInputClass}
                   required
@@ -189,7 +189,7 @@ export default function SellerShopEditor({
                 />
               </label>
               <label className={sellerLabelClass}>
-                Email kinh doanh
+                {t('settings.editor.businessEmail')}
                 <input
                   className={sellerInputClass}
                   type="email"
@@ -200,26 +200,25 @@ export default function SellerShopEditor({
               </label>
             </div>
             <p className="rounded-lg border border-blue-100 bg-blue-50 p-3.5 text-xs leading-6 text-blue-800">
-              Email kinh doanh và Logo Shop là thông tin thương hiệu riêng của gian hàng. Thông tin
-              cá nhân của chủ tài khoản được quản lý độc lập ở mục Tài khoản.
+              {t('settings.editor.brandHint')}
             </p>
           </>
         ) : (
           <>
             <label className={sellerLabelClass}>
-              Số nhà, tên đường
+              {t('settings.editor.street')}
               <input
                 className={sellerInputClass}
                 required
                 maxLength={300}
                 value={form.street}
                 onChange={(e) => setField('street', e.target.value)}
-                placeholder="Nhập địa chỉ cụ thể của shop / kho"
+                placeholder={t('settings.editor.streetPlaceholder')}
               />
             </label>
             <div className="grid gap-5 sm:grid-cols-2">
               <label className={sellerLabelClass}>
-                Phường / xã
+                {t('settings.editor.ward')}
                 <input
                   className={sellerInputClass}
                   maxLength={150}
@@ -228,7 +227,7 @@ export default function SellerShopEditor({
                 />
               </label>
               <label className={sellerLabelClass}>
-                Quận / huyện
+                {t('settings.editor.district')}
                 <input
                   className={sellerInputClass}
                   maxLength={150}
@@ -238,16 +237,18 @@ export default function SellerShopEditor({
               </label>
             </div>
             <label className={sellerLabelClass}>
-              Tỉnh / thành phố
+              {t('settings.editor.city')}
               <select
                 className={sellerInputClass}
                 required
                 value={form.city}
                 onChange={(e) => setField('city', e.target.value)}
               >
-                <option value="">Chọn tỉnh / thành phố</option>
+                <option value="">{t('settings.editor.selectCity')}</option>
                 {form.city && !VIETNAM_PROVINCES.includes(form.city) && (
-                  <option value={form.city}>{form.city} (đã lưu)</option>
+                  <option value={form.city}>
+                    {t('settings.editor.savedSuffix', { city: form.city })}
+                  </option>
                 )}
                 {VIETNAM_PROVINCES.map((city) => (
                   <option value={city} key={city}>
@@ -258,11 +259,11 @@ export default function SellerShopEditor({
             </label>
             <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
               <p className="mb-4 flex items-center gap-2 text-xs font-medium text-blue-800">
-                <EnvironmentOutlined /> Vị trí dùng tính khoảng cách vận chuyển
+                <EnvironmentOutlined /> {t('settings.editor.coordsTitle')}
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className={sellerLabelClass}>
-                  Vĩ độ
+                  {t('settings.editor.latitude')}
                   <input
                     className={sellerInputClass}
                     type="number"
@@ -271,11 +272,11 @@ export default function SellerShopEditor({
                     max={90}
                     value={form.latitude}
                     onChange={(e) => setField('latitude', e.target.value)}
-                    placeholder="Ví dụ: 10.795"
+                    placeholder={t('settings.editor.latPlaceholder')}
                   />
                 </label>
                 <label className={sellerLabelClass}>
-                  Kinh độ
+                  {t('settings.editor.longitude')}
                   <input
                     className={sellerInputClass}
                     type="number"
@@ -284,12 +285,12 @@ export default function SellerShopEditor({
                     max={180}
                     value={form.longitude}
                     onChange={(e) => setField('longitude', e.target.value)}
-                    placeholder="Ví dụ: 106.721"
+                    placeholder={t('settings.editor.lonPlaceholder')}
                   />
                 </label>
               </div>
               <p className="mt-3 text-xs leading-6 text-slate-500">
-                Kiểm tra lại tọa độ khi thay đổi địa chỉ để cước vận chuyển được tính chính xác.
+                {t('settings.editor.coordsHint')}
               </p>
             </div>
           </>
@@ -310,10 +311,11 @@ export default function SellerShopEditor({
             setShopAvatarUrl(initialShopAvatar);
           }}
         >
-          Hủy thay đổi
+          {t('settings.editor.cancelChanges')}
         </SellerButton>
         <SellerButton type="submit" disabled={action.pending || profile.isShopSuspended}>
-          <SaveOutlined /> {action.pending ? 'Đang lưu…' : 'Lưu thay đổi'}
+          <SaveOutlined />{' '}
+          {action.pending ? t('settings.editor.saving') : t('settings.editor.saveChanges')}
         </SellerButton>
       </div>
     </form>

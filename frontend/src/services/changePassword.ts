@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest } from './api';
 
 export interface ChangePasswordResult {
@@ -15,10 +16,10 @@ export function validatePasswordChange(
   newPassword: string,
   confirmation: string,
 ): ChangePasswordPayload {
-  if (!/^\d{6}$/.test(otp.trim())) throw new Error('Nhập mã OTP gồm đúng 6 chữ số.');
+  if (!/^\d{6}$/.test(otp.trim())) throw new Error(i18n.t('errors:services.otpSixDigits'));
   if (newPassword.length < 8 || !/^(?=.*[A-Z])(?=.*[^a-zA-Z0-9\s]).+$/.test(newPassword))
-    throw new Error('Mật khẩu mới cần ít nhất 8 ký tự, có chữ hoa và ký tự đặc biệt.');
-  if (newPassword !== confirmation) throw new Error('Mật khẩu xác nhận không khớp.');
+    throw new Error(i18n.t('errors:services.passwordRequirements'));
+  if (newPassword !== confirmation) throw new Error(i18n.t('errors:services.passwordMismatch'));
   return { otp: otp.trim(), newPassword };
 }
 
@@ -27,8 +28,7 @@ export async function requestChangePasswordOtp(): Promise<ChangePasswordResult> 
     method: 'POST',
     requireAuth: true,
   });
-  if (!result?.success)
-    throw new Error(result?.message || 'Chưa gửi được mã OTP. Vui lòng thử lại.');
+  if (!result?.success) throw new Error(result?.message || i18n.t('errors:services.otpSendFailed'));
   return result;
 }
 
@@ -41,6 +41,6 @@ export async function confirmChangePasswordOtp(
     requireAuth: true,
   });
   if (!result?.success)
-    throw new Error(result?.message || 'Chưa đổi được mật khẩu. Vui lòng thử lại.');
+    throw new Error(result?.message || i18n.t('errors:services.passwordChangeFailed'));
   return result;
 }

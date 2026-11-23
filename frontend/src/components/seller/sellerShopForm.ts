@@ -1,3 +1,4 @@
+import i18n from '../../i18n/index';
 import type { SellerShopProfile, UpdateSellerShop } from '../../types/shop.types';
 
 export interface ShopForm {
@@ -43,15 +44,17 @@ export function shopFormPayload(
     if (value !== initial[key].trim()) body[key] = value;
   }
   if (section === 'store') {
-    if (!form.storeName.trim()) throw new Error('Vui lòng nhập tên gian hàng.');
-    if (!form.phone.trim()) throw new Error('Vui lòng nhập số điện thoại liên hệ.');
+    if (!form.storeName.trim())
+      throw new Error(i18n.t('settings.formValidation.storeNameRequired', { ns: 'seller' }));
+    if (!form.phone.trim())
+      throw new Error(i18n.t('settings.formValidation.phoneRequired', { ns: 'seller' }));
     if (body.businessEmail === '')
-      throw new Error('Email kinh doanh không được để trống khi cập nhật.');
+      throw new Error(i18n.t('settings.formValidation.businessEmailEmpty', { ns: 'seller' }));
     if (form.businessEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.businessEmail.trim()))
-      throw new Error('Email kinh doanh không hợp lệ.');
+      throw new Error(i18n.t('settings.formValidation.businessEmailInvalid', { ns: 'seller' }));
   } else {
     if (!form.street.trim() || !form.city.trim())
-      throw new Error('Vui lòng nhập số nhà, tên đường và chọn tỉnh / thành phố.');
+      throw new Error(i18n.t('settings.formValidation.addressRequired', { ns: 'seller' }));
     // Send both fields so BE can synchronize the default pickup address.
     if (Object.keys(body).length) {
       body.street = form.street.trim();
@@ -63,12 +66,12 @@ export function shopFormPayload(
       body.placeId = '';
     }
     if (Boolean(form.latitude.trim()) !== Boolean(form.longitude.trim()))
-      throw new Error('Vui lòng nhập đủ cả vĩ độ và kinh độ.');
+      throw new Error(i18n.t('settings.formValidation.coordsPairRequired', { ns: 'seller' }));
     if (
       (!form.latitude.trim() && initial.latitude) ||
       (!form.longitude.trim() && initial.longitude)
     )
-      throw new Error('Không thể xóa tọa độ đã lưu. Hãy nhập tọa độ mới chính xác.');
+      throw new Error(i18n.t('settings.formValidation.coordsDeleteBlocked', { ns: 'seller' }));
     if (form.latitude.trim() && form.longitude.trim()) {
       const latitude = Number(form.latitude);
       const longitude = Number(form.longitude);
@@ -80,7 +83,7 @@ export function shopFormPayload(
         longitude < -180 ||
         longitude > 180
       )
-        throw new Error('Tọa độ không hợp lệ: vĩ độ từ -90 đến 90, kinh độ từ -180 đến 180.');
+        throw new Error(i18n.t('settings.formValidation.coordsInvalid', { ns: 'seller' }));
       if (
         Object.keys(body).length ||
         form.latitude !== initial.latitude ||
@@ -94,6 +97,7 @@ export function shopFormPayload(
       }
     }
   }
-  if (!Object.keys(body).length) throw new Error('Bạn chưa thay đổi thông tin.');
+  if (!Object.keys(body).length)
+    throw new Error(i18n.t('settings.formValidation.noChanges', { ns: 'seller' }));
   return body;
 }

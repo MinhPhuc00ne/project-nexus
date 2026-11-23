@@ -1,12 +1,11 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GripVertical, Image, Pencil, Plus, Power, RefreshCw, Search } from 'lucide-react';
 import { useCategoryDragScroll } from '../Categories/useCategoryDragScroll';
 import { bannerLink, bannerStatus, type Banner } from '../../../services/banners';
+import { getIntlLocale } from '../../../i18n/config';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { Input } from '../../ui/input';
-
-const displayDate = (value: string | null) =>
-  value ? new Date(value).toLocaleString('vi-VN') : 'Không giới hạn';
 
 interface BannerListProps {
   banners: Banner[];
@@ -35,28 +34,32 @@ export default function BannerList({
   onToggle,
   onReorder,
 }: BannerListProps) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
+  const displayDate = (value: string | null) =>
+    value ? new Date(value).toLocaleString(locale) : t('banners.unlimited');
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   useCategoryDragScroll(!!draggedId, containerRef);
   const canReorder = !loading && !saving && !editing && !search.trim() && banners.length > 1;
   const filteredBanners = banners.filter((banner) =>
-    banner.title.toLocaleLowerCase('vi').includes(search.toLocaleLowerCase('vi')),
+    banner.title.toLocaleLowerCase(locale).includes(search.toLocaleLowerCase(locale)),
   );
 
   return (
     <Panel
-      title="Banner trang chủ"
+      title={t('banners.title')}
       icon={<Image size={19} />}
-      subtitle="Quản lý ảnh quảng bá trên homepage. Banner bật chỉ hiển thị trong khoảng thời gian đã đặt."
+      subtitle={t('banners.subtitle')}
       className="[&>div:first-child]:flex-wrap"
       action={
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" disabled={loading || saving || editing} onClick={onRefresh}>
-            <RefreshCw size={14} /> Làm mới
+            <RefreshCw size={14} /> {t('banners.refresh')}
           </Button>
           <Button disabled={saving || editing} onClick={() => onEdit()}>
-            <Plus size={14} /> Thêm banner
+            <Plus size={14} /> {t('banners.addBtn')}
           </Button>
         </div>
       }
@@ -64,48 +67,42 @@ export default function BannerList({
       <label className="mb-5 flex max-w-sm items-center gap-2">
         <Search size={16} className="text-slate-400" />
         <Input
-          aria-label="Tìm banner"
-          placeholder="Tìm theo tiêu đề..."
+          aria-label={t('banners.searchAria')}
+          placeholder={t('banners.searchPlaceholder')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
       </label>
       <p className="mb-4 text-xs text-slate-500" role="status">
         {saving
-          ? 'Đang lưu thay đổi…'
+          ? t('banners.saving')
           : search.trim()
-            ? 'Xóa từ khóa tìm kiếm để kéo thả sắp xếp banner.'
-            : 'Kéo biểu tượng ⋮⋮ để đổi thứ tự banner. Thứ tự được tự động lưu; banner trên cùng hiển thị trước.'}
+            ? t('banners.clearSearchHint')
+            : t('banners.dragHint')}
       </p>
       {loading ? (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
-          Đang tải banner…
+          {t('banners.loading')}
         </p>
       ) : error ? (
         <p role="alert" className="py-6 text-sm text-rose-600">
           {error}
         </p>
       ) : filteredBanners.length === 0 ? (
-        <EmptyState
-          text={
-            search
-              ? 'Không tìm thấy banner phù hợp.'
-              : 'Chưa có banner. Thêm banner đầu tiên cho trang chủ.'
-          }
-        />
+        <EmptyState text={search ? t('banners.emptySearch') : t('banners.emptyAll')} />
       ) : (
         <div ref={containerRef} className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="border-b border-slate-200 text-slate-500">
               <tr>
                 <th className="w-12 p-3">
-                  <span className="sr-only">Sắp xếp</span>
+                  <span className="sr-only">{t('banners.cols.sort')}</span>
                 </th>
-                <th className="p-3">Banner</th>
-                <th className="p-3">Lịch hiển thị</th>
-                <th className="p-3">Ưu tiên</th>
-                <th className="p-3">Trạng thái</th>
-                <th className="p-3">Thao tác</th>
+                <th className="p-3">{t('banners.cols.banner')}</th>
+                <th className="p-3">{t('banners.cols.schedule')}</th>
+                <th className="p-3">{t('banners.cols.priority')}</th>
+                <th className="p-3">{t('banners.cols.status')}</th>
+                <th className="p-3">{t('banners.cols.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -140,8 +137,8 @@ export default function BannerList({
                         variant="secondary"
                         draggable={canReorder}
                         disabled={!canReorder}
-                        aria-label={`Kéo để sắp xếp banner ${banner.title}`}
-                        title="Kéo để đổi thứ tự banner"
+                        aria-label={t('banners.dragAria', { title: banner.title })}
+                        title={t('banners.dragTitle')}
                         className="cursor-grab active:cursor-grabbing"
                         onDragStart={(event) => {
                           if (!canReorder) {
@@ -174,13 +171,13 @@ export default function BannerList({
                           rel="noopener noreferrer"
                           className="mt-1 inline-block text-blue-600 underline"
                         >
-                          Mở link đích ↗
+                          {t('banners.openTargetLink')}
                         </a>
                       )}
                     </td>
                     <td className="space-y-2 p-3">
-                      <p>Từ: {displayDate(banner.startsAt)}</p>
-                      <p>Đến: {displayDate(banner.endsAt)}</p>
+                      <p>{t('banners.fromDate', { date: displayDate(banner.startsAt) })}</p>
+                      <p>{t('banners.toDate', { date: displayDate(banner.endsAt) })}</p>
                     </td>
                     <td className="p-3">{banner.priority}</td>
                     <td className="p-3">
@@ -193,7 +190,7 @@ export default function BannerList({
                               : 'gray'
                         }
                       >
-                        {status}
+                        {t(`banners.statuses.${status}`, { defaultValue: status })}
                       </Badge>
                     </td>
                     <td className="p-3">
@@ -203,7 +200,7 @@ export default function BannerList({
                           disabled={saving || editing}
                           onClick={() => onEdit(banner)}
                         >
-                          <Pencil size={13} /> Sửa
+                          <Pencil size={13} /> {t('banners.editBtn')}
                         </Button>
                         <Button
                           variant={banner.isActive ? 'danger' : 'secondary'}
@@ -211,7 +208,7 @@ export default function BannerList({
                           onClick={() => void onToggle(banner)}
                         >
                           <Power size={13} />
-                          {banner.isActive ? 'Tắt' : 'Bật'}
+                          {banner.isActive ? t('banners.disableBtn') : t('banners.enableBtn')}
                         </Button>
                       </div>
                     </td>

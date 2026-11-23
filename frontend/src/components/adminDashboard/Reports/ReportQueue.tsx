@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
@@ -9,28 +11,35 @@ import type {
   AdminReportStatus,
 } from '../../../types/admin-report.types';
 
-const labels: Record<AdminReportStatus, string> = {
-  PENDING: 'Chờ xử lý',
-  INVESTIGATING: 'Đang điều tra',
-  CONFIRMED: 'Đã xác nhận vi phạm',
-  DISMISSED: 'Đã bác bỏ',
-};
+const REPORT_STATUSES: AdminReportStatus[] = ['PENDING', 'INVESTIGATING', 'CONFIRMED', 'DISMISSED'];
 
-const shopName = (report: AdminReport) =>
-  report.shopName || report.shop?.storeName || report.shop?.fullName || 'Chưa có tên gian hàng';
-const productName = (report: AdminReport) =>
-  report.productTitle || report.productName || report.product?.title || 'Chưa có tên sản phẩm';
-
-function ReportIdentity({ name, id }: { name: string; id: string | null }) {
+function ReportIdentity({
+  name,
+  id,
+  idLabel,
+}: {
+  name: string;
+  id: string | null;
+  idLabel: string;
+}) {
   return (
     <div>
       <p className="font-medium">{name}</p>
-      {id && <p className="mt-1 break-all text-xs text-slate-500">Mã: {id}</p>}
+      {id && <p className="mt-1 break-all text-xs text-slate-500">{idLabel}</p>}
     </div>
   );
 }
 
 export default function ReportQueue() {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
+  const shopName = (report: AdminReport) =>
+    report.shopName || report.shop?.storeName || report.shop?.fullName || t('reports.noShopName');
+  const productName = (report: AdminReport) =>
+    report.productTitle ||
+    report.productName ||
+    report.product?.title ||
+    t('reports.noProductName');
   const [status, setStatus] = useState<AdminReportStatus | ''>('');
   const [page, setPage] = useState(1);
   const [result, setResult] = useState<AdminReportPage | null>(null);
@@ -57,14 +66,14 @@ export default function ReportQueue() {
       .catch((cause: unknown) => {
         if (!controller.signal.aborted) {
           setResult(null);
-          setError(cause instanceof Error ? cause.message : 'Không thể tải báo cáo.');
+          setError(cause instanceof Error ? cause.message : t('reports.loadErr'));
         }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [page, status, refresh]);
+  }, [page, status, refresh, t]);
 
   async function submitReview() {
     if (!detail || !decision || saving || reason.trim().length < 5) return;
@@ -76,7 +85,7 @@ export default function ReportQueue() {
       setDetail(null);
       setRefresh((value) => value + 1);
     } catch (cause) {
-      setSaveError(cause instanceof Error ? cause.message : 'Không thể xử lý báo cáo.');
+      setSaveError(cause instanceof Error ? cause.message : t('reports.processErr'));
     } finally {
       setSaving(false);
     }
@@ -89,16 +98,16 @@ export default function ReportQueue() {
 
   return (
     <Panel
-      title="Báo cáo vi phạm"
-      subtitle="Báo cáo sản phẩm và gian hàng"
+      title={t('reports.title')}
+      subtitle={t('reports.subtitle')}
       action={
         <Button variant="secondary" disabled={loading} onClick={() => setRefresh((v) => v + 1)}>
-          Tải lại
+          {t('reports.reload')}
         </Button>
       }
     >
       <select
-        aria-label="Lọc trạng thái báo cáo"
+        aria-label={t('reports.statusAria')}
         className="mb-4 rounded-lg border border-slate-200 px-3 py-2 text-sm"
         value={status}
         onChange={(event) => {
@@ -106,33 +115,38 @@ export default function ReportQueue() {
           setPage(1);
         }}
       >
-        <option value="">Tất cả trạng thái</option>
-        {Object.entries(labels).map(([value, label]) => (
+        <option value="">{t('reports.allStatuses')}</option>
+        {REPORT_STATUSES.map((value) => (
           <option key={value} value={value}>
-            {label}
+            {t(`reports.statuses.${value}`)}
           </option>
         ))}
       </select>
       {loading ? (
         <p role="status" className="py-12 text-center text-sm text-slate-500">
-          Đang tải báo cáo…
+          {t('reports.loading')}
         </p>
       ) : error ? (
         <div role="alert" className="space-y-3 text-sm text-rose-700">
           <p>{error}</p>
           <Button variant="secondary" onClick={() => setRefresh((v) => v + 1)}>
-            Thử lại
+            {t('reports.retry')}
           </Button>
         </div>
       ) : !result?.items.length ? (
-        <EmptyState text="Không tìm thấy báo cáo phù hợp." />
+        <EmptyState text={t('reports.empty')} />
       ) : (
         <>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs text-slate-500">
                 <tr>
-                  {['Báo cáo', 'Đối tượng', 'Trạng thái', 'Thao tác'].map((label) => (
+                  {[
+                    t('reports.cols.report'),
+                    t('reports.cols.target'),
+                    t('reports.cols.status'),
+                    t('reports.cols.actions'),
+                  ].map((label) => (
                     <th key={label} className="p-3">
                       {label}
                     </th>
@@ -145,19 +159,24 @@ export default function ReportQueue() {
                     <td className="max-w-xs break-words p-3">
                       <p className="font-semibold">{item.title}</p>
                       <p className="mt-1 text-xs text-slate-500">
-                        {new Date(item.createdAt).toLocaleString('vi-VN')}
+                        {new Date(item.createdAt).toLocaleString(locale)}
                       </p>
                     </td>
                     <td className="max-w-56 break-words p-3">
                       <p className="mb-1 text-xs text-slate-500">
-                        {item.productId ? 'Sản phẩm' : 'Gian hàng'}
+                        {item.productId ? t('reports.targetProduct') : t('reports.targetShop')}
                       </p>
                       <ReportIdentity
                         name={item.productId ? productName(item) : shopName(item)}
                         id={item.productId || item.shopId}
+                        idLabel={t('reports.codePrefix', {
+                          id: item.productId || item.shopId || '',
+                        })}
                       />
                       {item.productId && (
-                        <p className="mt-2 text-xs text-slate-500">Gian hàng: {shopName(item)}</p>
+                        <p className="mt-2 text-xs text-slate-500">
+                          {t('reports.shopPrefix', { name: shopName(item) })}
+                        </p>
                       )}
                     </td>
                     <td className="p-3">
@@ -172,7 +191,7 @@ export default function ReportQueue() {
                                 : 'blue'
                         }
                       >
-                        {labels[item.status]}
+                        {t(`reports.statuses.${item.status}`)}
                       </Badge>
                     </td>
                     <td className="p-3">
@@ -185,7 +204,7 @@ export default function ReportQueue() {
                           setSaveError('');
                         }}
                       >
-                        Xem chi tiết
+                        {t('reports.viewDetails')}
                       </Button>
                     </td>
                   </tr>
@@ -195,8 +214,11 @@ export default function ReportQueue() {
           </div>
           <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500">
             <p>
-              {result.total} báo cáo · Trang {page}/
-              {Math.max(1, Math.ceil(result.total / result.limit))}
+              {t('reports.pagination', {
+                total: result.total,
+                page,
+                totalPages: Math.max(1, Math.ceil(result.total / result.limit)),
+              })}
             </p>
             <div className="flex gap-2">
               <Button
@@ -204,14 +226,14 @@ export default function ReportQueue() {
                 disabled={page <= 1}
                 onClick={() => setPage((v) => v - 1)}
               >
-                Trước
+                {t('reports.prev')}
               </Button>
               <Button
                 variant="secondary"
                 disabled={page * result.limit >= result.total}
                 onClick={() => setPage((v) => v + 1)}
               >
-                Sau
+                {t('reports.next')}
               </Button>
             </div>
           </div>
@@ -227,9 +249,9 @@ export default function ReportQueue() {
         title={
           decision
             ? decision === 'CONFIRMED'
-              ? 'Xác nhận khiếu nại'
-              : 'Bác bỏ khiếu nại'
-            : 'Chi tiết báo cáo'
+              ? t('reports.modalConfirmTitle')
+              : t('reports.modalDismissTitle')
+            : t('reports.modalDetailTitle')
         }
         size="lg"
       >
@@ -237,41 +259,56 @@ export default function ReportQueue() {
           <div className="space-y-4">
             <DetailFields
               fields={[
-                ['Mã báo cáo', detail.id],
-                ['Tiêu đề', detail.title],
-                ['Nội dung', detail.description],
-                ['Loại báo cáo', detail.productId ? 'Báo cáo sản phẩm' : 'Báo cáo gian hàng'],
-                ['Gian hàng', <ReportIdentity name={shopName(detail)} id={detail.shopId} />],
+                [t('reports.fields.id'), detail.id],
+                [t('reports.fields.title'), detail.title],
+                [t('reports.fields.content'), detail.description],
+                [
+                  t('reports.fields.type'),
+                  detail.productId ? t('reports.typeProduct') : t('reports.typeShop'),
+                ],
+                [
+                  t('reports.fields.shop'),
+                  <ReportIdentity
+                    name={shopName(detail)}
+                    id={detail.shopId}
+                    idLabel={t('reports.codePrefix', { id: detail.shopId ?? '' })}
+                  />,
+                ],
                 ...(detail.productId
                   ? [
                       [
-                        'Sản phẩm',
-                        <ReportIdentity name={productName(detail)} id={detail.productId} />,
+                        t('reports.fields.product'),
+                        <ReportIdentity
+                          name={productName(detail)}
+                          id={detail.productId}
+                          idLabel={t('reports.codePrefix', { id: detail.productId })}
+                        />,
                       ] satisfies [string, React.ReactNode],
                     ]
                   : []),
                 [
-                  'Người báo cáo',
+                  t('reports.fields.reporter'),
                   <ReportIdentity
                     name={
                       detail.reporterName ||
                       detail.reporter?.fullName ||
-                      'Chưa có tên người báo cáo'
+                      t('reports.noReporterName')
                     }
                     id={detail.reporterId}
+                    idLabel={t('reports.codePrefix', { id: detail.reporterId ?? '' })}
                   />,
                 ],
-                ['Trạng thái', labels[detail.status]],
-                ['Kết luận / ghi chú', detail.resolutionNotes],
-                ['Người xử lý', detail.handledByAdminId],
+                [t('reports.fields.status'), t(`reports.statuses.${detail.status}`)],
+                [t('reports.fields.resolution'), detail.resolutionNotes],
+                [t('reports.fields.handledBy'), detail.handledByAdminId],
                 [
-                  'Ngày xử lý',
-                  detail.handledAt ? new Date(detail.handledAt).toLocaleString('vi-VN') : '—',
+                  t('reports.fields.handledAt'),
+                  detail.handledAt ? new Date(detail.handledAt).toLocaleString(locale) : '—',
                 ],
               ]}
             />
             <section>
-              <h3 className="mb-2 text-sm font-semibold">Bằng chứng</h3>
+              <h3 className="mb-2 text-sm font-semibold">{t('reports.evidenceTitle')}</h3>
               {evidence.length ? (
                 evidence.map((url, index) =>
                   /^https?:\/\//i.test(url) ? (
@@ -282,7 +319,7 @@ export default function ReportQueue() {
                       rel="noopener noreferrer"
                       className="mb-2 block break-all text-sm text-primary underline"
                     >
-                      Bằng chứng {index + 1}
+                      {t('reports.evidenceIndex', { index: index + 1 })}
                     </a>
                   ) : (
                     <p key={`${index}-${url}`} className="break-all text-sm">
@@ -291,13 +328,13 @@ export default function ReportQueue() {
                   ),
                 )
               ) : (
-                <p className="text-sm text-slate-500">Chưa có bằng chứng đính kèm.</p>
+                <p className="text-sm text-slate-500">{t('reports.noEvidence')}</p>
               )}
             </section>
             {canReview && (
               <div className="space-y-3 border-t pt-4">
                 <label className="block text-sm">
-                  Lý do xử lý
+                  {t('reports.reasonLabel')}
                   <textarea
                     required
                     minLength={5}
@@ -308,9 +345,7 @@ export default function ReportQueue() {
                     className="mt-1 block min-h-24 w-full rounded-lg border p-2"
                   />
                 </label>
-                <p className="text-xs text-slate-500">
-                  Nhập lý do ít nhất 5 ký tự, sau đó chọn xác nhận hoặc bác bỏ khiếu nại.
-                </p>
+                <p className="text-xs text-slate-500">{t('reports.reasonHint')}</p>
                 {saveError && (
                   <p role="alert" className="text-sm text-rose-700">
                     {saveError}
@@ -325,7 +360,7 @@ export default function ReportQueue() {
                       setDecision('CONFIRMED');
                     }}
                   >
-                    Xác nhận khiếu nại
+                    {t('reports.confirmBtn')}
                   </Button>
                   <Button
                     type="button"
@@ -336,7 +371,7 @@ export default function ReportQueue() {
                       setDecision('DISMISSED');
                     }}
                   >
-                    Bác bỏ khiếu nại
+                    {t('reports.dismissBtn')}
                   </Button>
                 </div>
               </div>
@@ -346,16 +381,18 @@ export default function ReportQueue() {
         {detail && decision && (
           <div className="space-y-4">
             <p className="text-sm text-slate-700">
-              Bạn có chắc muốn <strong>{decision === 'CONFIRMED' ? 'xác nhận' : 'bác bỏ'}</strong>{' '}
-              khiếu nại <strong>{detail.title}</strong>?
+              {t('reports.confirmPromptPrefix')}
+              <strong>
+                {decision === 'CONFIRMED' ? t('reports.confirmVerb') : t('reports.dismissVerb')}
+              </strong>
+              {t('reports.confirmPromptMid')}
+              <strong>{detail.title}</strong>?
             </p>
             <div className="rounded-lg bg-slate-50 p-3 text-sm">
-              <p className="mb-1 font-semibold">Lý do xử lý</p>
+              <p className="mb-1 font-semibold">{t('reports.reasonLabel')}</p>
               <p className="whitespace-pre-wrap break-words">{reason.trim()}</p>
             </div>
-            <p className="text-sm text-amber-700">
-              Đây là kết luận cuối cùng. Sau khi lưu, bạn không thể thay đổi kết quả xử lý.
-            </p>
+            <p className="text-sm text-amber-700">{t('reports.finalWarning')}</p>
             {saveError && (
               <p role="alert" className="text-sm text-rose-700">
                 {saveError}
@@ -371,7 +408,7 @@ export default function ReportQueue() {
                   setSaveError('');
                 }}
               >
-                Quay lại
+                {t('reports.backBtn')}
               </Button>
               <Button
                 type="button"
@@ -380,10 +417,10 @@ export default function ReportQueue() {
                 onClick={() => void submitReview()}
               >
                 {saving
-                  ? 'Đang xử lý…'
+                  ? t('reports.processing')
                   : decision === 'CONFIRMED'
-                    ? 'Đồng ý xác nhận'
-                    : 'Đồng ý bác bỏ'}
+                    ? t('reports.agreeConfirm')
+                    : t('reports.agreeDismiss')}
               </Button>
             </div>
           </div>

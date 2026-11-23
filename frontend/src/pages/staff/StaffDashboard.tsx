@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronRight, Headphones, Inbox, Check } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { sectionContent, type StaffSection } from './staffNavigationData';
+import { sectionContent, sectionKeyMap, type StaffSection } from './staffNavigationData';
 import StaffSidebar from './StaffSidebar';
 import StaffHeader from './StaffHeader';
 import StaffTeamManagementPanel from './StaffTeamManagementPanel';
@@ -18,6 +19,7 @@ export default function StaffDashboard({
 }: {
   initialSection?: StaffSection;
 }) {
+  const { t } = useTranslation('staff');
   const navigate = useNavigate();
   const { user, storedUser, isAdmin, isLoading } = useAuth();
   const account = user || storedUser;
@@ -37,10 +39,22 @@ export default function StaffDashboard({
     window.setTimeout(() => setToast(''), 2800);
   };
 
-  const content = sectionContent[activeNavigation];
+  const sectionKey = sectionKeyMap[activeNavigation];
+  const fallbackContent = sectionContent[activeNavigation];
+  const sectionTitle = t(`sections.${sectionKey}.title`, { defaultValue: fallbackContent.title });
+  const sectionDescription = t(`sections.${sectionKey}.description`, {
+    defaultValue: fallbackContent.description,
+  });
+  const sectionTopics: string[] =
+    sectionKey === 'auctionSupport' ||
+    sectionKey === 'faq' ||
+    sectionKey === 'history' ||
+    sectionKey === 'performance'
+      ? (t(`sections.${sectionKey}.topics`, { returnObjects: true }) as string[])
+      : [];
   const unavailableApiMessage: Partial<Record<StaffSection, string>> = {
-    'Lịch Sử & CSAT': 'Backend hiện chưa có API lịch sử xử lý và đánh giá CSAT của Staff.',
-    'Hiệu Suất Cá Nhân': 'Backend hiện chưa có API thống kê hiệu suất theo nhân viên.',
+    'Lịch Sử & CSAT': t('dashboard.unavailableHistory'),
+    'Hiệu Suất Cá Nhân': t('dashboard.unavailablePerformance'),
   };
 
   if (activeNavigation === 'Quản Lý Nhân Viên' && managementAccess !== 'allowed') {
@@ -48,15 +62,15 @@ export default function StaffDashboard({
       <main className="p-8">
         <p role="status">
           {managementAccess === 'loading'
-            ? 'Đang kiểm tra quyền…'
-            : 'Chỉ Admin có quyền quản lý và cấp tài khoản Staff.'}
+            ? t('dashboard.checkingPermission')
+            : t('dashboard.adminOnlyNotice')}
         </p>
         {managementAccess === 'denied' && (
           <button
             onClick={() => navigate('/staff/inbox')}
             className="mt-4 text-primary cursor-pointer"
           >
-            Về hộp thư hỗ trợ
+            {t('dashboard.backToInbox')}
           </button>
         )}
       </main>
@@ -91,35 +105,35 @@ export default function StaffDashboard({
           {activeNavigation === 'Hộp Thư Trực Tuyến' ? (
             <div className="flex items-center justify-between pb-2 shrink-0">
               <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                <span>Kênh Nhân Viên</span>
+                <span>{t('dashboard.channelBreadcrumb')}</span>
                 <ChevronRight size={12} />
-                <b className="font-semibold text-slate-700">{content.title}</b>
+                <b className="font-semibold text-slate-700">{sectionTitle}</b>
               </div>
               <div className="flex items-center gap-2">
                 <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 shadow-xs">
                   <Headphones size={13} className="text-blue-600" />
-                  <span>Phiên làm việc Staff</span>
+                  <span>{t('dashboard.staffSession')}</span>
                 </div>
               </div>
             </div>
           ) : (
             <>
               <div className="staff-breadcrumb flex items-center gap-1.5 text-[10px] text-slate-400">
-                <span>Kênh Nhân Viên</span>
+                <span>{t('dashboard.channelBreadcrumb')}</span>
                 <ChevronRight size={13} />
-                <b className="font-semibold text-slate-600">{content.title}</b>
+                <b className="font-semibold text-slate-600">{sectionTitle}</b>
               </div>
               <div className="[&_h1]:[max-width:500px] [&_h1]:[line-height:1.16] [&_p]:mb-0 max-[760px]:flex-col mt-2.5 flex items-start justify-between gap-4">
                 <div>
                   <h1 className="m-0 text-[clamp(20px,2vw,27px)] font-black tracking-[-0.035em] text-slate-900">
-                    {content.title}
+                    {sectionTitle}
                   </h1>
-                  <p className="mt-1.5 text-[11px] text-slate-500">{content.description}</p>
+                  <p className="mt-1.5 text-[11px] text-slate-500">{sectionDescription}</p>
                 </div>
                 <div className="max-[760px]:w-full max-[760px]:flex-wrap max-[420px]:[&_>_*]:[flex:1_1_auto] flex items-center gap-2">
                   <div className="inline-flex items-center gap-1.5 [padding:7px_9px] [border:1px_solid_#e8eaf3] [border-radius:8px] [color:#33405a] [background:white] [font-size:9px] leading-tight text-left cursor-pointer [&_>_svg]:[color:var(--staff-primary)] [&_b]:[color:var(--staff-primary)]">
                     <Headphones size={16} />
-                    <span>Phiên làm việc</span>
+                    <span>{t('dashboard.workSession')}</span>
                   </div>
                 </div>
               </div>
@@ -137,15 +151,15 @@ export default function StaffDashboard({
           ) : activeNavigation !== 'Hộp Thư Trực Tuyến' ? (
             <section
               className="mt-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-              aria-label={content.title}
+              aria-label={sectionTitle}
             >
               <h2 className="text-base font-bold text-slate-800">
                 {activeNavigation === 'Hướng Dẫn & FAQ Sàn'
-                  ? 'Quy trình hỗ trợ'
-                  : 'Phạm vi theo dõi'}
+                  ? t('dashboard.faqProcessTitle')
+                  : t('dashboard.trackingScopeTitle')}
               </h2>
               <ul className="mt-4 grid gap-3 md:grid-cols-3">
-                {content.topics.map((topic) => (
+                {sectionTopics.map((topic) => (
                   <li
                     key={topic}
                     className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm leading-6 text-slate-700"
@@ -160,10 +174,10 @@ export default function StaffDashboard({
                   className="mt-6 rounded-xl border border-dashed border-slate-200 px-6 py-12 text-center"
                 >
                   <Inbox className="mx-auto mb-3 text-slate-400" size={28} />
-                  <h3 className="font-semibold text-slate-700">Chưa có dữ liệu để hiển thị</h3>
+                  <h3 className="font-semibold text-slate-700">{t('dashboard.noDataTitle')}</h3>
                   <p className="mt-2 text-sm text-slate-500">
                     {unavailableApiMessage[activeNavigation] ||
-                      `Dữ liệu ${content.title.toLowerCase()} sẽ hiển thị khi được hệ thống cung cấp.`}
+                      t('dashboard.noDataFallback', { title: sectionTitle.toLowerCase() })}
                   </p>
                 </div>
               )}

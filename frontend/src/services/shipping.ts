@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 import { apiRequest } from './api';
 import type {
   DirectDistanceRequest,
@@ -48,9 +49,7 @@ export function parseCoordinate(value: string, latitude: boolean): number {
   const number = Number(value);
   if (!value.trim() || !Number.isFinite(number) || Math.abs(number) > (latitude ? 90 : 180)) {
     throw new Error(
-      latitude
-        ? 'Vĩ độ phải nằm trong khoảng -90 đến 90.'
-        : 'Kinh độ phải nằm trong khoảng -180 đến 180.',
+      latitude ? i18n.t('errors:services.latitudeRange') : i18n.t('errors:services.longitudeRange'),
     );
   }
   return number;

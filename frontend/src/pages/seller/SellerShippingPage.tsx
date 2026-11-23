@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import { Calculator as CalculatorOutlined, MapPin as EnvironmentOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastNotification';
 import { useSellerSession } from '../../components/seller/SellerSession';
@@ -31,6 +32,7 @@ export default function SellerShippingPage(): ReactElement {
   return <ShippingCalculator key={`${user.id}:${token}`} />;
 }
 function ShippingCalculator(): ReactElement {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const { token } = useAuth();
   const toast = useToast();
@@ -70,10 +72,10 @@ function ShippingCalculator(): ReactElement {
     if (lock.current) return;
     invalidate();
     try {
-      if (!product) throw new Error('Chọn sản phẩm của gian hàng để tính khối lượng vận chuyển.');
+      if (!product) throw new Error(t('shipping.selectProductErr'));
       const qty = Number(quantity);
       if (!Number.isSafeInteger(qty) || qty < 1 || qty > 2147483647)
-        throw new Error('Số lượng phải là số nguyên dương hợp lệ.');
+        throw new Error(t('shipping.invalidQtyErr'));
       const destLat = parseCoordinate(coords.destLat, true);
       const destLon = parseCoordinate(coords.destLon, false);
       const hasOrigin = Boolean(coords.originLat.trim() || coords.originLon.trim());
@@ -83,8 +85,7 @@ function ShippingCalculator(): ReactElement {
             originLon: parseCoordinate(coords.originLon, false),
           }
         : null;
-      if (mode === 'distance' && !origin)
-        throw new Error('Nhập tọa độ điểm gửi để đo khoảng cách trực tiếp.');
+      if (mode === 'distance' && !origin) throw new Error(t('shipping.missingOriginErr'));
       lock.current = true;
       setPending(true);
       if (mode === 'distance' && origin) {
@@ -120,7 +121,7 @@ function ShippingCalculator(): ReactElement {
       }
     } catch (cause) {
       if (active.current && token === getStoredToken()) {
-        const message = cause instanceof Error ? cause.message : 'Không thể tính phí vận chuyển.';
+        const message = cause instanceof Error ? cause.message : t('shipping.calcFailed');
         setError(message);
         toast.error(message);
       }
@@ -132,19 +133,19 @@ function ShippingCalculator(): ReactElement {
   return (
     <div className="space-y-6">
       <PageHeading
-        title="Tra cứu phí vận chuyển"
-        description="Tính cước dự kiến cho sản phẩm của gian hàng theo địa điểm gửi và nhận."
+        title={t('shipping.pageTitle')}
+        description={t('shipping.pageDesc')}
         actions={
           <SellerLink to="/seller/orders" secondary>
-            <ArrowLeftOutlined /> Đơn hàng & GHN
+            <ArrowLeftOutlined /> {t('shipping.backToOrders')}
           </SellerLink>
         }
       />
-      <Panel title="Thông tin kiện hàng" subtitle="Tra cứu cước không tạo đơn hàng hay vận đơn.">
+      <Panel title={t('shipping.panelTitle')} subtitle={t('shipping.panelSubtitle')}>
         <fieldset disabled={pending} className="space-y-5 text-sm disabled:opacity-70">
           <div className="grid gap-4 sm:grid-cols-2">
             <label>
-              Sản phẩm
+              {t('shipping.productLabel')}
               <select
                 value={productId}
                 className={inputClass}
@@ -155,7 +156,7 @@ function ShippingCalculator(): ReactElement {
                 }}
               >
                 <option value="">
-                  {products.loading ? 'Đang tải sản phẩm…' : 'Chọn sản phẩm'}
+                  {products.loading ? t('shipping.loadingProducts') : t('shipping.selectProduct')}
                 </option>
                 {products.data?.map((item) => (
                   <option key={item.id} value={item.id}>
@@ -165,7 +166,7 @@ function ShippingCalculator(): ReactElement {
               </select>
             </label>
             <label>
-              Số lượng
+              {t('shipping.quantityLabel')}
               <input
                 type="number"
                 min="1"
@@ -181,15 +182,15 @@ function ShippingCalculator(): ReactElement {
           </div>
           {(products.error || (!products.loading && !products.data?.length)) && (
             <p role="alert" className="text-amber-700">
-              {products.error || 'Chưa có sản phẩm để tính phí.'}{' '}
+              {products.error || t('shipping.noProducts')}{' '}
               <button type="button" className="text-blue-700 underline" onClick={products.retry}>
-                Tải lại
+                {t('shipping.reload')}
               </button>
             </p>
           )}
           <div className="grid gap-4 md:grid-cols-2">
             <GhnLocationPicker
-              label="Địa phương gửi hàng"
+              label={t('shipping.fromLocation')}
               value={from}
               onChange={(value) => {
                 setFrom(value);
@@ -197,7 +198,7 @@ function ShippingCalculator(): ReactElement {
               }}
             />
             <GhnLocationPicker
-              label="Địa phương nhận hàng"
+              label={t('shipping.toLocation')}
               value={to}
               onChange={(value) => {
                 setTo(value);
@@ -205,17 +206,14 @@ function ShippingCalculator(): ReactElement {
               }}
             />
           </div>
-          <p className="text-xs text-slate-500">
-            Để đối soát giá GHN, chọn quận gửi, quận nhận và phường nhận. Tọa độ bên dưới dùng để
-            tính quãng đường; chọn địa phương không tự xác định tọa độ.
-          </p>
+          <p className="text-xs text-slate-500">{t('shipping.ghnHint')}</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {(
               [
-                ['originLat', 'Vĩ độ điểm gửi'],
-                ['originLon', 'Kinh độ điểm gửi'],
-                ['destLat', 'Vĩ độ điểm nhận'],
-                ['destLon', 'Kinh độ điểm nhận'],
+                ['originLat', t('shipping.originLat')],
+                ['originLon', t('shipping.originLon')],
+                ['destLat', t('shipping.destLat')],
+                ['destLon', t('shipping.destLon')],
               ] as const
             ).map(([key, label]) => (
               <label key={key}>
@@ -235,20 +233,17 @@ function ShippingCalculator(): ReactElement {
               </label>
             ))}
           </div>
-          <p className="text-xs text-slate-500">
-            Báo giá: bỏ trống tọa độ gửi để hệ thống dùng vị trí gian hàng hoặc kho mặc định. Đo
-            khoảng cách trực tiếp: nhập đủ tọa độ gửi và nhận.
-          </p>
+          <p className="text-xs text-slate-500">{t('shipping.coordsHint')}</p>
           <div className="flex flex-wrap gap-3">
             <SellerButton disabled={pending || !product} onClick={() => void calculate('quote')}>
-              <CalculatorOutlined /> {pending ? 'Đang tính…' : 'Tính phí vận chuyển'}
+              <CalculatorOutlined /> {pending ? t('shipping.calculating') : t('shipping.calcQuote')}
             </SellerButton>
             <SellerButton
               secondary
               disabled={pending || !product}
               onClick={() => void calculate('distance')}
             >
-              <EnvironmentOutlined /> Đo khoảng cách
+              <EnvironmentOutlined /> {t('shipping.measureDistance')}
             </SellerButton>
           </div>
         </fieldset>
@@ -260,16 +255,16 @@ function ShippingCalculator(): ReactElement {
       </Panel>
       {from.districtId && to.districtId && (
         <Panel
-          title="Dịch vụ GHN khả dụng"
+          title={t('shipping.availableServices')}
           action={
             <SellerButton secondary disabled={services.loading} onClick={services.retry}>
-              Làm mới
+              {t('shipping.refresh')}
             </SellerButton>
           }
         >
           <div className="text-sm text-slate-600">
             {services.loading ? (
-              <p role="status">Đang tra cứu…</p>
+              <p role="status">{t('shipping.lookingUp')}</p>
             ) : services.error ? (
               <p role="alert">{services.error}</p>
             ) : services.data?.length ? (
@@ -279,7 +274,7 @@ function ShippingCalculator(): ReactElement {
                 ))}
               </ul>
             ) : (
-              <p>GHN chưa trả về dịch vụ cho tuyến này. Chưa xác nhận được khả năng giao hàng.</p>
+              <p>{t('shipping.noServices')}</p>
             )}
           </div>
         </Panel>

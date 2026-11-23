@@ -1,5 +1,6 @@
 import type { ReactElement } from 'react';
 import { ChevronLeft as LeftOutlined, ChevronRight as RightOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SellerButton } from './SellerUI';
 
 export default function SellerPagination({
@@ -13,15 +14,14 @@ export default function SellerPagination({
   total: number;
   onPage: (page: number) => void;
 }): ReactElement {
+  const { t } = useTranslation('seller');
   return (
     <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4 text-xs text-slate-500">
-      <span>
-        {total} bản ghi · Trang {page}/{Math.max(1, totalPages)}
-      </span>
+      <span>{t('ui.paginationSummary', { total, page, totalPages: Math.max(1, totalPages) })}</span>
       <div className="flex gap-2">
         <SellerButton
           secondary
-          aria-label="Trang trước"
+          aria-label={t('ui.prevPage')}
           disabled={page <= 1}
           onClick={() => onPage(page - 1)}
         >
@@ -29,7 +29,7 @@ export default function SellerPagination({
         </SellerButton>
         <SellerButton
           secondary
-          aria-label="Trang sau"
+          aria-label={t('ui.nextPage')}
           disabled={page >= totalPages}
           onClick={() => onPage(page + 1)}
         >

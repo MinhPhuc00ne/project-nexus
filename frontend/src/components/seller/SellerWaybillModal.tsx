@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import { Printer as PrinterOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Popup from '../Popup';
 import useProductResource from '../productDetail/useProductResource';
 import { useToast } from '../ToastNotification';
@@ -18,11 +19,12 @@ export default function SellerWaybillModal({
   id: string;
   onClose: () => void;
 }): ReactElement {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const load = useCallback(() => getSellerWaybill(id, user.id), [id, user.id]);
   const resource = useProductResource(load);
   return (
-    <Popup isOpen onClose={onClose} title="Xem trước phiếu giao hàng" size="lg">
+    <Popup isOpen onClose={onClose} title={t('orders.waybill.previewTitle')} size="lg">
       <SellerResourceState loading={resource.loading} error={resource.error} retry={resource.retry}>
         {resource.data && <PrintableWaybill bill={resource.data} onClose={onClose} />}
       </SellerResourceState>
@@ -37,6 +39,7 @@ function PrintableWaybill({
   bill: SellerWaybill;
   onClose: () => void;
 }): ReactElement {
+  const { t } = useTranslation('seller');
   const toast = useToast();
   const printRef = useRef<HTMLDivElement>(null);
   const [barcodeReady, setBarcodeReady] = useState(false);
@@ -84,7 +87,7 @@ function PrintableWaybill({
       />
       {barcodeFailed && (
         <p role="alert" className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-          Mã vạch chưa tải được. Kiểm tra kết nối và tải lại trước khi in.
+          {t('orders.waybill.barcodeError')}
         </p>
       )}
       <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
@@ -97,18 +100,18 @@ function PrintableWaybill({
               setImageRevision((value) => value + 1);
             }}
           >
-            Tải lại mã vạch
+            {t('orders.waybill.reloadBarcode')}
           </SellerButton>
         )}
         <SellerButton
           disabled={!barcodeReady}
           onClick={() => {
-            toast.success(`Đã in phiếu giao hàng thành công (Mã vận đơn: ${copy.waybillCode})!`);
+            toast.success(t('orders.waybill.printSuccess', { code: copy.waybillCode }));
             onClose();
           }}
         >
           <PrinterOutlined />
-          {barcodeReady ? 'In phiếu giao hàng' : 'Đang tải mã vạch…'}
+          {barcodeReady ? t('orders.waybill.printLabel') : t('orders.waybill.loadingBarcode')}
         </SellerButton>
       </div>
       {createPortal(

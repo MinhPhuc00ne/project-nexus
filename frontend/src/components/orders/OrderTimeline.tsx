@@ -1,5 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clock, CheckCircle, Package } from 'lucide-react';
+import { getIntlLocale } from '../../i18n/config';
 
 interface TimelineStep {
   label: string;
@@ -21,6 +23,8 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
   updatedAt,
   isCod = false,
 }) => {
+  const { t, i18n } = useTranslation('commerce');
+  const locale = getIntlLocale(i18n.language);
   const isDeliveredOrDone = ['DELIVERED', 'CONFIRMED', 'COMPLETED'].includes(status);
   const isAllPreparingOrLater = [
     'PREPARING',
@@ -32,8 +36,8 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
 
   const steps: TimelineStep[] = [
     {
-      label: 'Đơn Hàng Đã Đặt',
-      time: new Date(createdAt).toLocaleString('vi-VN', {
+      label: t('orders.timeline.orderPlaced'),
+      time: new Date(createdAt).toLocaleString(locale, {
         dateStyle: 'short',
         timeStyle: 'short',
       }),
@@ -41,18 +45,18 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
       active: status === 'PENDING_PAYMENT' && !isCod,
     },
     {
-      label: isCod ? 'Thanh toán (COD)' : 'Đã Thanh Toán',
+      label: isCod ? t('orders.timeline.codPayment') : t('orders.timeline.paid'),
       time: isCod
         ? isDeliveredOrDone
-          ? 'Đã thu tiền khi giao'
-          : 'Thu tiền khi giao hàng'
+          ? t('orders.timeline.codCollected')
+          : t('orders.timeline.codCollectOnDelivery')
         : status !== 'PENDING_PAYMENT' && status !== 'CANCELLED'
           ? updatedAt
-            ? new Date(updatedAt).toLocaleString('vi-VN', {
+            ? new Date(updatedAt).toLocaleString(locale, {
                 dateStyle: 'short',
                 timeStyle: 'short',
               })
-            : 'Hoàn tất'
+            : t('orders.timeline.completedStep')
           : undefined,
       done: isCod
         ? isDeliveredOrDone
@@ -60,17 +64,19 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
       active: !isCod && status === 'PAID',
     },
     {
-      label: 'Đang Chuẩn Bị',
+      label: t('orders.timeline.preparing'),
       done: isAllPreparingOrLater,
       active: status === 'PREPARING',
     },
     {
-      label: 'Đang Giao Hàng',
+      label: t('orders.timeline.shipping'),
       done: ['SHIPPING', 'DELIVERED', 'CONFIRMED', 'COMPLETED'].includes(status),
       active: status === 'SHIPPING',
     },
     {
-      label: ['CONFIRMED', 'COMPLETED'].includes(status) ? 'Hoàn Thành' : 'Đã Giao Hàng',
+      label: ['CONFIRMED', 'COMPLETED'].includes(status)
+        ? t('orders.timeline.completed')
+        : t('orders.timeline.delivered'),
       done: isDeliveredOrDone,
       active: isDeliveredOrDone,
     },
@@ -81,9 +87,11 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
       <div className="bg-white rounded-2xl border border-rose-200 p-5 shadow-sm flex items-center gap-3 text-rose-800">
         <Clock className="w-5 h-5 text-rose-600 shrink-0" />
         <div>
-          <h4 className="font-bold text-sm">Đơn hàng đã huỷ</h4>
+          <h4 className="font-bold text-sm">{t('orders.timeline.cancelledTitle')}</h4>
           <p className="text-xs text-rose-600 mt-0.5">
-            Đơn hàng này đã bị huỷ vào {new Date(updatedAt || createdAt).toLocaleString('vi-VN')}.
+            {t('orders.timeline.cancelledDesc', {
+              date: new Date(updatedAt || createdAt).toLocaleString(locale),
+            })}
           </p>
         </div>
       </div>
@@ -94,7 +102,7 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
     <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
       <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2">
         <Package size={16} className="text-blue-600" />
-        <span>Trạng thái đơn hàng</span>
+        <span>{t('orders.timeline.statusTitle')}</span>
       </h3>
       <div className="relative">
         <div className="hidden sm:block absolute top-4 left-6 right-6 h-0.5 bg-slate-100" />

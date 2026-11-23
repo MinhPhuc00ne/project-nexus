@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Lock as LockOutlined } from 'lucide-react';
 import { Save as SaveOutlined, User as UserOutlined } from 'lucide-react';
 import { Role } from '@nexus/types';
@@ -16,6 +17,7 @@ const inputClass =
 type ProfileForm = Required<ProfileChanges>;
 
 export default function ProfileEditor({ profile }: { profile: UserProfile }) {
+  const { t } = useTranslation('common');
   const { refreshProfile, setProfile } = useAuth();
   const location = useLocation();
   const toast = useToast();
@@ -36,10 +38,10 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
   const canEdit = profile.role === Role.BUYER || seller;
   const onSellerArea = location.pathname.startsWith('/seller');
   const roleLabel = onSellerArea
-    ? 'Người bán (Seller)'
+    ? t('profileEditor.roleSeller')
     : profile.role === Role.ADMIN
-      ? 'Quản trị viên (Admin)'
-      : 'Khách hàng (Buyer)';
+      ? t('profileEditor.roleAdmin')
+      : t('profileEditor.roleBuyer');
 
   async function save(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -51,11 +53,11 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
     };
     setError('');
     if (normalizedForm.fullName.length < 2 || normalizedForm.fullName.length > 100) {
-      setError('Họ tên cần từ 2 đến 100 ký tự.');
+      setError(t('profileEditor.nameLengthError'));
       return;
     }
     if (normalizedForm.phoneNumber && !/^\+?[0-9]{9,15}$/.test(normalizedForm.phoneNumber)) {
-      setError('Số điện thoại cần từ 9 đến 15 chữ số.');
+      setError(t('profileEditor.phoneFormatError'));
       return;
     }
     const changes: ProfileChanges = {};
@@ -66,7 +68,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
       changes.avatarUrl = normalizedForm.avatarUrl;
 
     if (Object.keys(changes).length === 0) {
-      setError('Chưa có thông tin nào thay đổi.');
+      setError(t('profileEditor.noChangesError'));
       return;
     }
 
@@ -80,9 +82,9 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
       setAvatarFile(null);
       setProfile((current) => (current?.id === profile.id ? { ...current, ...saved } : current));
       await refreshProfile();
-      toast.success('Đã cập nhật hồ sơ cá nhân.');
+      toast.success(t('profileEditor.updateSuccess'));
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Không thể cập nhật hồ sơ.';
+      const message = cause instanceof Error ? cause.message : t('profileEditor.updateFailed');
       setError(message);
       toast.error(message);
     } finally {
@@ -99,7 +101,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
           {profile.avatarUrl ? (
             <img
               src={profile.avatarUrl}
-              alt="Ảnh đại diện cá nhân"
+              alt={t('profileEditor.avatarAlt')}
               className="h-full w-full object-cover"
             />
           ) : (
@@ -111,21 +113,18 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
           <p className="mt-1 text-xs text-slate-500">
             <span className="font-semibold text-blue-700">{roleLabel}</span> · {profile.email}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-400">
-            Ảnh đại diện cá nhân được dùng riêng cho tài khoản của bạn (tách biệt với logo gian
-            hàng).
-          </p>
+          <p className="mt-0.5 text-[11px] text-slate-400">{t('profileEditor.avatarNote')}</p>
         </div>
       </div>
       {!canEdit && (
         <p className="mb-5 rounded-md bg-blue-50 border border-blue-200 p-3.5 text-xs text-blue-800">
-          Vai trò của bạn chỉ được xem thông tin cá nhân.
+          {t('profileEditor.readOnlyNotice')}
         </p>
       )}
       <form onSubmit={(event) => void save(event)} className="space-y-5">
         <fieldset disabled={pending || !canEdit} className="grid gap-4 sm:grid-cols-2">
           <label className="text-xs font-semibold text-slate-700">
-            Họ và tên
+            {t('profileEditor.fullNameLabel')}
             <input
               required
               maxLength={100}
@@ -136,7 +135,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
             />
           </label>
           <label className="text-xs font-semibold text-slate-700">
-            Số điện thoại
+            {t('profileEditor.phoneLabel')}
             <input
               type="tel"
               maxLength={16}
@@ -149,24 +148,24 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
           <AvatarPicker savedUrl={form.avatarUrl} file={avatarFile} onChange={setAvatarFile} />
         </fieldset>
         <label className="block text-xs font-semibold text-slate-700">
-          Email đăng nhập
+          {t('profileEditor.emailLabel')}
           <input
             value={profile.email}
             readOnly
             className={`${inputClass} bg-slate-50 text-slate-500`}
           />
           <span className="mt-1.5 block text-[11px] font-normal text-slate-500">
-            Email đăng nhập được cố định để bảo mật tài khoản.
+            {t('profileEditor.emailNote')}
           </span>
         </label>
         {seller && (
           <div className="rounded-lg border border-blue-200 bg-blue-50/70 p-4">
             <p className="mb-2.5 text-xs font-semibold text-[#1c3973]">
               <LockOutlined className="mr-1.5" />
-              Xác minh mật khẩu trước khi lưu thay đổi hồ sơ.
+              {t('profileEditor.verifyPasswordPrompt')}
             </p>
             <label className="block text-xs font-semibold text-slate-700">
-              Mật khẩu hiện tại
+              {t('profileEditor.currentPasswordLabel')}
               <input
                 type="password"
                 required
@@ -195,7 +194,11 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
               className="rounded-md bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition cursor-pointer"
             >
               <SaveOutlined className="mr-1.5" />
-              {pending ? 'Đang xác minh và lưu…' : seller ? 'Xác minh và lưu' : 'Lưu thay đổi'}
+              {pending
+                ? t('profileEditor.savingAndVerifying')
+                : seller
+                  ? t('profileEditor.verifyAndSave')
+                  : t('profileEditor.saveChanges')}
             </button>
             <button
               type="button"
@@ -208,7 +211,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
               }}
               className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
             >
-              Hủy thay đổi
+              {t('profileEditor.cancelChanges')}
             </button>
           </div>
         )}
@@ -216,10 +219,8 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
       {canEdit && (
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5">
           <div>
-            <h3 className="text-xs font-bold text-slate-900">Bảo mật tài khoản</h3>
-            <p className="mt-0.5 text-xs text-slate-500">
-              Đổi mật khẩu bằng mã xác minh OTP gửi qua email.
-            </p>
+            <h3 className="text-xs font-bold text-slate-900">{t('profileEditor.securityTitle')}</h3>
+            <p className="mt-0.5 text-xs text-slate-500">{t('profileEditor.securityDesc')}</p>
           </div>
           <button
             type="button"
@@ -227,7 +228,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
             onClick={() => setShowChangePassword(true)}
             className="rounded-md border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50 transition cursor-pointer"
           >
-            <LockOutlined className="mr-1.5" /> Đổi mật khẩu
+            <LockOutlined className="mr-1.5" /> {t('profileEditor.changePassword')}
           </button>
         </div>
       )}

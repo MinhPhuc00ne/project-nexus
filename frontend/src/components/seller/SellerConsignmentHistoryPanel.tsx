@@ -1,5 +1,7 @@
 import type { ReactElement } from 'react';
 import { LoaderCircle, RefreshCw, ShieldCheck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
 import type { SellerAuctionConsignment } from '../../services/auction.service';
 import { Badge, EmptyState, Panel, SellerButton } from './SellerUI';
 
@@ -7,18 +9,6 @@ export interface SellerConsignmentHistoryPanelProps {
   consignments: SellerAuctionConsignment[];
   isLoading: boolean;
   onRefresh: () => void;
-}
-
-const formatMoney = (value: number): string =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-
-function statusPresentation(status: SellerAuctionConsignment['status']): {
-  label: string;
-  tone: 'amber' | 'green' | 'red';
-} {
-  if (status === 'APPROVED') return { label: 'Đã được duyệt', tone: 'green' };
-  if (status === 'REJECTED') return { label: 'Bị từ chối', tone: 'red' };
-  return { label: 'Chờ Admin duyệt', tone: 'amber' };
 }
 
 /**
@@ -32,53 +22,63 @@ export default function SellerConsignmentHistoryPanel({
   isLoading,
   onRefresh,
 }: SellerConsignmentHistoryPanelProps): ReactElement {
+  const { t } = useTranslation('seller');
+  const statusPresentation = (
+    status: SellerAuctionConsignment['status'],
+  ): { label: string; tone: 'amber' | 'green' | 'red' } => {
+    if (status === 'APPROVED')
+      return { label: t('auctions.consignmentStatuses.APPROVED'), tone: 'green' };
+    if (status === 'REJECTED')
+      return { label: t('auctions.consignmentStatuses.REJECTED'), tone: 'red' };
+    return { label: t('auctions.consignmentStatuses.PENDING_REVIEW'), tone: 'amber' };
+  };
   return (
     <aside className="space-y-5">
       <Panel
-        title="Quy trình phê duyệt"
-        subtitle="Hồ sơ không được hiển thị công khai trước khi được duyệt."
+        title={t('auctions.consignment.historyProcessTitle')}
+        subtitle={t('auctions.consignment.historyProcessSubtitle')}
       >
         <ol className="space-y-4 text-sm text-slate-600">
           <li className="flex gap-3">
             <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
               1
             </span>
-            Seller gửi vật phẩm và chứng thư.
+            {t('auctions.consignment.step1')}
           </li>
           <li className="flex gap-3">
             <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
               2
             </span>
-            Admin kiểm tra thông tin và chứng cứ.
+            {t('auctions.consignment.step2')}
           </li>
           <li className="flex gap-3">
             <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
               3
             </span>
-            Vật phẩm được duyệt hoặc trả lý do từ chối.
+            {t('auctions.consignment.step3')}
           </li>
         </ol>
       </Panel>
 
       <Panel
-        title="Hồ sơ đã gửi"
-        subtitle="Trạng thái được lấy trực tiếp từ máy chủ."
+        title={t('auctions.consignment.submittedTitle')}
+        subtitle={t('auctions.consignment.submittedSubtitle')}
         action={
           <SellerButton secondary onClick={onRefresh} disabled={isLoading}>
             <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
-            Làm mới
+            {t('auctions.consignment.refresh')}
           </SellerButton>
         }
       >
         {isLoading ? (
           <div className="flex items-center gap-2 py-6 text-sm text-slate-500">
             <LoaderCircle className="animate-spin" size={18} />
-            Đang tải hồ sơ…
+            {t('auctions.consignment.loadingHistory')}
           </div>
         ) : consignments.length === 0 ? (
           <EmptyState
-            title="Chưa có hồ sơ ký gửi"
-            description="Hồ sơ bạn gửi sẽ xuất hiện ở đây để theo dõi quyết định của Admin."
+            title={t('auctions.consignment.emptyHistoryTitle')}
+            description={t('auctions.consignment.emptyHistoryDesc')}
           />
         ) : (
           <div className="space-y-3">
@@ -97,11 +97,11 @@ export default function SellerConsignmentHistoryPanel({
                     <Badge tone={display.tone}>{display.label}</Badge>
                   </div>
                   <p className="mt-2 text-sm font-semibold text-blue-700">
-                    {formatMoney(item.proposedStartingPrice)}
+                    {formatCurrency(item.proposedStartingPrice)}
                   </p>
                   {item.status === 'REJECTED' && item.rejectionReason && (
                     <p className="mt-2 rounded-lg bg-rose-50 p-2 text-xs leading-5 text-rose-700">
-                      Lý do: {item.rejectionReason}
+                      {t('auctions.consignment.reasonPrefix', { reason: item.rejectionReason })}
                     </p>
                   )}
                 </article>
@@ -113,8 +113,7 @@ export default function SellerConsignmentHistoryPanel({
 
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
         <ShieldCheck className="mb-2 text-blue-600" size={22} aria-hidden="true" />
-        Admin sẽ đối chiếu mô tả, ảnh và chứng thư trước khi phê duyệt. Hãy dùng thông tin chính xác
-        để tránh bị từ chối.
+        {t('auctions.consignment.historyTip')}
       </div>
     </aside>
   );

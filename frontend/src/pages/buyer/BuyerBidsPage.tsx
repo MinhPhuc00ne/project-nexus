@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Trans, useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Gavel,
   Clock,
@@ -51,58 +54,56 @@ export interface BuyerBidItem {
   shopName: string;
 }
 
-const statusConfig: Record<
-  Exclude<BuyerBidStatus, 'ALL'>,
-  { label: string; icon: React.ReactNode; cls: string; desc: string }
-> = {
+const statusConfig = {
   WINNING: {
-    label: 'Đang dẫn đầu',
+    labelKey: 'bidsPage.status.winningLabel',
     icon: <Trophy size={11} />,
     cls: 'bg-amber-50 text-amber-700 border-amber-200',
-    desc: 'Giá thầu của bạn cao nhất',
+    descKey: 'bidsPage.status.winningDesc',
   },
   ACTIVE: {
-    label: 'Đang tham gia',
+    labelKey: 'bidsPage.status.activeLabel',
     icon: <TrendingUp size={11} />,
     cls: 'bg-blue-50 text-blue-700 border-blue-200',
-    desc: 'Phiên đang diễn ra',
+    descKey: 'bidsPage.status.activeDesc',
   },
   OUTBID: {
-    label: 'Bị vượt giá',
+    labelKey: 'bidsPage.status.outbidLabel',
     icon: <AlertCircle size={11} />,
     cls: 'bg-red-50 text-red-700 border-red-200',
-    desc: 'Người khác đặt cao hơn',
+    descKey: 'bidsPage.status.outbidDesc',
   },
   WON: {
-    label: 'Đã thắng',
+    labelKey: 'bidsPage.status.wonLabel',
     icon: <CheckCircle size={11} />,
     cls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    desc: 'Chúc mừng! Bạn đã thắng đấu giá',
+    descKey: 'bidsPage.status.wonDesc',
   },
   LOST: {
-    label: 'Đã thua',
+    labelKey: 'bidsPage.status.lostLabel',
     icon: <XCircle size={11} />,
     cls: 'bg-slate-50 text-slate-500 border-slate-200',
-    desc: 'Phiên đã kết thúc',
+    descKey: 'bidsPage.status.lostDesc',
   },
   ENDED: {
-    label: 'Đã kết thúc',
+    labelKey: 'bidsPage.status.endedLabel',
     icon: <Clock size={11} />,
     cls: 'bg-slate-50 text-slate-500 border-slate-200',
-    desc: 'Phiên đấu giá đã kết thúc',
+    descKey: 'bidsPage.status.endedDesc',
   },
-};
+} as const;
 
-const tabs: { key: BuyerBidStatus; label: string }[] = [
-  { key: 'ALL', label: 'Tất cả' },
-  { key: 'WINNING', label: 'Đang dẫn đầu' },
-  { key: 'ACTIVE', label: 'Đang tham gia' },
-  { key: 'OUTBID', label: 'Bị vượt giá' },
-  { key: 'WON', label: 'Đã thắng' },
-  { key: 'LOST', label: 'Đã thua' },
-];
+const tabs = [
+  { key: 'ALL', labelKey: 'bidsPage.tabs.all' },
+  { key: 'WINNING', labelKey: 'bidsPage.tabs.winning' },
+  { key: 'ACTIVE', labelKey: 'bidsPage.tabs.active' },
+  { key: 'OUTBID', labelKey: 'bidsPage.tabs.outbid' },
+  { key: 'WON', labelKey: 'bidsPage.tabs.won' },
+  { key: 'LOST', labelKey: 'bidsPage.tabs.lost' },
+] as const satisfies { key: BuyerBidStatus; labelKey: string }[];
 
 export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly?: boolean }) {
+  const { t, i18n } = useTranslation('buyer');
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -188,7 +189,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
           totalBids: (b.auction as unknown as { totalBidsCount?: number })?.totalBidsCount || 0,
           shopName:
             (b.auction as unknown as { seller?: { fullName?: string } })?.seller?.fullName ||
-            'NEXUS Official Live Auction',
+            t('bidsPage.defaultShopName'),
         };
       });
       setBids(mapped);
@@ -196,13 +197,13 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
       setActionError(
         getApiErrorMessage(
           (err as { response?: { data?: unknown } })?.response?.data,
-          'Không thể tải quyền mua đấu giá. Vui lòng thử làm mới.',
+          t('bidsPage.loadError'),
         ),
       );
     } finally {
       setLoading(false);
     }
-  }, [purchasesOnly]);
+  }, [purchasesOnly, t]);
 
   useEffect(() => {
     void loadData();
@@ -219,7 +220,11 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
     if (accept && walletBalance < requiredDeposit) {
       const missing = requiredDeposit - walletBalance;
       const confirmTopup = window.confirm(
-        `Số dư ví hiện tại (${walletBalance.toLocaleString('vi-VN')} ₫) không đủ để cọc 30% (${requiredDeposit.toLocaleString('vi-VN')} ₫).\nBạn cần nạp thêm ${missing.toLocaleString('vi-VN')} ₫.\nBạn có muốn chuyển sang trang nạp tiền ví ngay bây giờ không?`,
+        t('bidsPage.insufficientDepositConfirm', {
+          balance: formatCurrency(walletBalance, i18n.language),
+          deposit: formatCurrency(requiredDeposit, i18n.language),
+          missing: formatCurrency(missing, i18n.language),
+        }),
       );
       if (confirmTopup) {
         navigate('/buyer/wallet');
@@ -228,9 +233,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
     }
 
     if (!accept) {
-      const confirmDecline = window.confirm(
-        'Bạn có chắc chắn muốn từ chối mua món hàng này? Thao tác này sẽ kết thúc quyền mua của bạn và bạn KHÔNG bị trừ điểm uy tín hay mất bất kỳ chi phí nào.',
-      );
+      const confirmDecline = window.confirm(t('bidsPage.declineConfirm'));
       if (!confirmDecline) return;
     }
 
@@ -241,24 +244,22 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
       if (accept) {
         if (res?.status === 'AWAITING_DEPOSIT') {
           toast.error(
-            `Bạn cần nạp đủ 30% cọc (${Number(award.depositAmount).toLocaleString('vi-VN')} ₫) để kích hoạt 24h thanh toán.`,
+            t('bidsPage.awaitingDepositToast', {
+              deposit: formatCurrency(Number(award.depositAmount), i18n.language),
+            }),
             { targetUrl: '/buyer/wallet' },
           );
         } else {
-          toast.success(
-            'Kích hoạt quyền mua thành công! Đã khóa 30% tiền cọc và mở thời hạn 24h thanh toán.',
-          );
+          toast.success(t('bidsPage.acceptSuccessToast'));
         }
       } else {
-        toast.success(
-          'Bạn đã từ chối nhận mua món hàng. Phiên đấu giá kết thúc mà không ảnh hưởng tới uy tín của bạn.',
-        );
+        toast.success(t('bidsPage.declineSuccessToast'));
       }
       void loadData();
     } catch (err: unknown) {
       const msg = getApiErrorMessage(
         (err as { response?: { data?: unknown } })?.response?.data,
-        'Không thể xử lý phản hồi lời mời mua. Vui lòng thử lại.',
+        t('bidsPage.respondError'),
       );
       setActionError(msg);
       setTimeout(() => setActionError(null), 5000);
@@ -272,9 +273,11 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
     try {
       await requestAuctionSupportChatApi(
         auctionId,
-        `Yêu cầu trao đổi thông tin về hiện vật ${shopTitle || 'đấu giá'}`,
+        t('bidsPage.supportChatMessage', {
+          title: shopTitle || t('bidsPage.auctionItemFallback'),
+        }),
       );
-      toast.success('Đã kết nối với hỗ trợ và người bán! Mở hộp thoại tin nhắn.', {
+      toast.success(t('bidsPage.supportChatToast'), {
         targetUrl: '/buyer/chat',
       });
       navigate('/buyer/chat');
@@ -307,12 +310,10 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
         <div>
           <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
             <Gavel size={18} className="text-violet-600" />
-            {purchasesOnly ? 'Xác nhận mua đấu giá' : 'Phiên đấu giá của tôi'}
+            {purchasesOnly ? t('bidsPage.purchasesOnlyTitle') : t('bidsPage.myAuctionsTitle')}
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            {purchasesOnly
-              ? 'Xác nhận lời mời cơ hội thứ hai, giữ cọc 30% và tiếp tục thanh toán.'
-              : 'Theo dõi các lượt đặt giá, quyền mua giải thưởng 24h và ưu đãi cơ hội thứ hai'}
+            {purchasesOnly ? t('bidsPage.purchasesOnlySubtitle') : t('bidsPage.myAuctionsSubtitle')}
           </p>
         </div>
         <button
@@ -320,7 +321,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
           onClick={() => void loadData()}
           disabled={loading}
           className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition cursor-pointer"
-          title="Làm mới dữ liệu"
+          title={t('bidsPage.refreshTitle')}
         >
           <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -333,21 +334,21 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3.5">
               <div className="flex items-center gap-1.5 text-amber-700 text-xs font-semibold mb-1">
                 <Trophy size={13} />
-                Đang dẫn đầu
+                {t('bidsPage.status.winningLabel')}
               </div>
               <p className="text-xl font-extrabold text-amber-800">{winningCount}</p>
             </div>
             <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5">
               <div className="flex items-center gap-1.5 text-blue-700 text-xs font-semibold mb-1">
                 <Flame size={13} />
-                Đang tham gia
+                {t('bidsPage.status.activeLabel')}
               </div>
               <p className="text-xl font-extrabold text-blue-800">{activeCount}</p>
             </div>
             <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5">
               <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-semibold mb-1">
                 <CheckCircle size={13} />
-                Đã thắng / Quyền mua
+                {t('bidsPage.wonOrRightsCard')}
               </div>
               <p className="text-xl font-extrabold text-emerald-800">
                 {wonCount + pendingCheckoutAwards.length}
@@ -379,12 +380,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             </span>
             <div>
               <h2 className="text-sm font-bold text-slate-900 m-0">
-                Lời Mời Nhận Quyền Mua - Cơ Hội Thứ Hai ({secondChanceOffers.length})
+                {t('bidsPage.secondChanceTitle', { count: secondChanceOffers.length })}
               </h2>
-              <p className="text-[11px] text-slate-600 m-0">
-                Người thắng trước đó không hoàn tất thanh toán trong 24h. Hệ thống mở quyền mua độc
-                quyền cho bạn với mức giá thầu của bạn!
-              </p>
+              <p className="text-[11px] text-slate-600 m-0">{t('bidsPage.secondChanceDesc')}</p>
             </div>
           </div>
 
@@ -395,7 +393,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
               const missingDeposit = Math.max(0, deposit - walletBalance);
               const isResponding = respondingAwardId === award.id;
               const lotTitle =
-                award.auctionItem?.title || award.auction?.title || 'Hiện vật đấu giá';
+                award.auctionItem?.title || award.auction?.title || t('bidsPage.lotFallback');
 
               return (
                 <div
@@ -405,10 +403,12 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
-                        Dành riêng cho Bạn (Top 2)
+                        {t('bidsPage.top2Badge')}
                       </span>
                       <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                        Cọc 30%: {deposit.toLocaleString('vi-VN')} ₫
+                        {t('bidsPage.deposit30', {
+                          amount: formatCurrency(deposit, i18n.language),
+                        })}
                       </span>
                     </div>
 
@@ -418,34 +418,40 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
                     <p className="mb-2 text-[11px] text-slate-500">{award.auction?.title}</p>
                     <p className="mb-2 text-[11px] font-semibold text-amber-700">
-                      Hạn phản hồi: {new Date(award.expiresAt).toLocaleString('vi-VN')}
+                      {t('bidsPage.responseDeadline', {
+                        date: new Date(award.expiresAt).toLocaleString(
+                          getIntlLocale(i18n.language),
+                        ),
+                      })}
                     </p>
 
                     <p className="text-[11px] text-slate-600">
-                      Tổng giá mua đề xuất:{' '}
+                      {t('bidsPage.proposedTotal')}{' '}
                       <strong className="text-slate-900">
-                        {Number(award.offerAmount || award.bid?.bidAmount || 0).toLocaleString(
-                          'vi-VN',
-                        )}{' '}
-                        ₫
+                        {formatCurrency(
+                          Number(award.offerAmount || award.bid?.bidAmount || 0),
+                          i18n.language,
+                        )}
                       </strong>
                     </p>
 
                     {isAwaitingDeposit ? (
                       <div className="mt-2 p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-[11px] text-amber-800 space-y-1">
                         <div className="flex items-center gap-1 font-bold text-amber-900">
-                          <AlertTriangle size={12} /> Số dư ví chưa đủ cọc 30%
+                          <AlertTriangle size={12} /> {t('bidsPage.insufficientWalletTitle')}
                         </div>
                         <p>
-                          Bạn cần nạp thêm tối thiểu{' '}
-                          <strong>{missingDeposit.toLocaleString('vi-VN')} ₫</strong> để khóa cọc và
-                          mở thời hạn 24h thanh toán.
+                          <Trans
+                            ns="buyer"
+                            i18nKey="bidsPage.insufficientWalletDesc"
+                            values={{ amount: formatCurrency(missingDeposit, i18n.language) }}
+                            components={{ bold: <strong /> }}
+                          />
                         </p>
                       </div>
                     ) : (
                       <p className="text-[10px] text-slate-500 mt-1">
-                        Sau khi xác nhận, 30% tiền cọc sẽ được giữ từ ví và bạn có 24 giờ để thanh
-                        toán 70% còn lại cùng phí vận chuyển GHN.
+                        {t('bidsPage.secondChanceNote')}
                       </p>
                     )}
                   </div>
@@ -456,7 +462,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                       onClick={() => handleOpenSupportChat(award.auctionId, lotTitle)}
                       className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:text-violet-700 rounded-lg hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
                     >
-                      <MessageSquare size={12} /> Nhắn với Shop
+                      <MessageSquare size={12} /> {t('bidsPage.chatWithShop')}
                     </button>
 
                     <div className="flex items-center gap-1.5">
@@ -465,9 +471,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                         disabled={isResponding}
                         onClick={() => handleRespondSecondChance(award, false)}
                         className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition flex items-center gap-1 cursor-pointer"
-                        title="Từ chối không bị trừ điểm uy tín"
+                        title={t('bidsPage.declineTitle')}
                       >
-                        <Ban size={12} /> Từ chối
+                        <Ban size={12} /> {t('bidsPage.decline')}
                       </button>
 
                       {isAwaitingDeposit ? (
@@ -476,7 +482,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                           onClick={() => navigate('/buyer/wallet')}
                           className="px-3 py-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                         >
-                          <Wallet size={12} /> Nạp tiền ví ngay
+                          <Wallet size={12} /> {t('bidsPage.topUpNow')}
                         </button>
                       ) : (
                         <button
@@ -490,7 +496,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                           ) : (
                             <Check size={12} />
                           )}
-                          Xác nhận mua (Cọc 30%)
+                          {t('bidsPage.confirmBuyDeposit')}
                         </button>
                       )}
                     </div>
@@ -511,12 +517,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             </span>
             <div>
               <h2 className="text-sm font-bold text-slate-900 m-0">
-                Quyền Mua Thắng Đấu Giá Chờ Thanh Toán ({pendingCheckoutAwards.length})
+                {t('bidsPage.pendingCheckoutTitle', { count: pendingCheckoutAwards.length })}
               </h2>
-              <p className="text-[11px] text-slate-600 m-0">
-                Đã giữ 30% tiền cọc (70% cọc phiên đã hoàn lại ví). Bạn có 24 giờ để xác nhận địa
-                chỉ và thanh toán 70% còn lại cùng phí GHN.
-              </p>
+              <p className="text-[11px] text-slate-600 m-0">{t('bidsPage.pendingCheckoutDesc')}</p>
             </div>
           </div>
 
@@ -525,8 +528,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
               const deposit = Number(award.depositAmount);
               const totalAmount = Number(award.offerAmount || award.order?.totalAmount || 0);
               const lotTitle =
-                award.auctionItem?.title || award.auction?.title || 'Hiện vật đấu giá số hóa 3D';
+                award.auctionItem?.title || award.auction?.title || t('bidsPage.lot3dFallback');
               const expiresDate = new Date(award.expiresAt);
+              const intlLocale = getIntlLocale(i18n.language);
 
               return (
                 <div
@@ -537,11 +541,15 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-[11px] font-bold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-md flex items-center gap-1">
                         <Clock size={11} />
-                        Hạn chót: {expiresDate.toLocaleTimeString('vi-VN')}{' '}
-                        {expiresDate.toLocaleDateString('vi-VN')}
+                        {t('bidsPage.deadline', {
+                          time: expiresDate.toLocaleTimeString(intlLocale),
+                          date: expiresDate.toLocaleDateString(intlLocale),
+                        })}
                       </span>
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        Đã giữ cọc {deposit.toLocaleString('vi-VN')} ₫ (30%)
+                        {t('bidsPage.depositHeldBadge', {
+                          amount: formatCurrency(deposit, i18n.language),
+                        })}
                       </span>
                     </div>
 
@@ -551,14 +559,12 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
                     <div className="text-[11px] text-slate-600 space-y-0.5">
                       <p>
-                        Giá trúng thầu:{' '}
+                        {t('bidsPage.winningPrice')}{' '}
                         <strong className="text-slate-900">
-                          {totalAmount.toLocaleString('vi-VN')} ₫
+                          {formatCurrency(totalAmount, i18n.language)}
                         </strong>
                       </p>
-                      <p className="text-[10px] text-slate-500">
-                        Chỉ cần thanh toán: ~70% còn lại + Phí vận chuyển tiêu chuẩn GHN
-                      </p>
+                      <p className="text-[10px] text-slate-500">{t('bidsPage.remainingNote')}</p>
                     </div>
                   </div>
 
@@ -568,7 +574,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                       onClick={() => handleOpenSupportChat(award.auctionId, lotTitle)}
                       className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:text-violet-700 rounded-lg hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
                     >
-                      <MessageSquare size={12} /> Nhắn với Shop
+                      <MessageSquare size={12} /> {t('bidsPage.chatWithShop')}
                     </button>
 
                     <button
@@ -576,7 +582,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                       onClick={() => setActiveCheckoutAward(award)}
                       className="px-3.5 py-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
-                      <CreditCard size={12} /> Thanh toán nhận hàng (70% + Ship)
+                      <CreditCard size={12} /> {t('bidsPage.payAndReceive')}
                     </button>
                   </div>
                 </div>
@@ -595,19 +601,16 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             </span>
             <div>
               <h2 className="text-sm font-bold text-slate-900 m-0">
-                Hiện Vật Bị Hủy Quyền Mua Do Quá Hạn 24 Giờ ({defaultedAwards.length})
+                {t('bidsPage.defaultedTitle', { count: defaultedAwards.length })}
               </h2>
-              <p className="text-[11px] text-rose-700 m-0">
-                Do không hoàn tất thanh toán trong 24h, bạn bị trừ 10 điểm uy tín và mất 30% tiền
-                cọc theo quy chế sàn.
-              </p>
+              <p className="text-[11px] text-rose-700 m-0">{t('bidsPage.defaultedDesc')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {defaultedAwards.map((award) => {
               const lotTitle =
-                award.auctionItem?.title || award.auction?.title || 'Hiện vật đấu giá';
+                award.auctionItem?.title || award.auction?.title || t('bidsPage.lotFallback');
               return (
                 <div
                   key={award.id}
@@ -616,11 +619,13 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                        Đã quá hạn thanh toán
+                        {t('bidsPage.overdueBadge')}
                       </span>
                       <span className="text-[10px] text-slate-400">
                         {award.completedAt
-                          ? new Date(award.completedAt).toLocaleDateString('vi-VN')
+                          ? new Date(award.completedAt).toLocaleDateString(
+                              getIntlLocale(i18n.language),
+                            )
                           : ''}
                       </span>
                     </div>
@@ -630,14 +635,15 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                     </h4>
 
                     <p className="text-[11px] text-slate-500">
-                      Tịch thu cọc: {Number(award.depositAmount).toLocaleString('vi-VN')} ₫ • Trừ 10
-                      điểm uy tín
+                      {t('bidsPage.forfeitedDeposit', {
+                        amount: formatCurrency(Number(award.depositAmount), i18n.language),
+                      })}
                     </p>
                   </div>
 
                   <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
                     <span className="text-[10px] text-slate-400 italic">
-                      Nếu có lý do khách quan, bạn có thể gửi khiếu nại.
+                      {t('bidsPage.complaintHint')}
                     </span>
                     <button
                       type="button"
@@ -650,7 +656,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                       }
                       className="px-2.5 py-1 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200 cursor-pointer"
                     >
-                      Khiếu nại lên Admin
+                      {t('bidsPage.complainToAdmin')}
                     </button>
                   </div>
                 </div>
@@ -678,7 +684,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                       : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  {tab.label}
+                  {t(tab.labelKey)}
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                       activeTab === tab.key
@@ -695,8 +701,8 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
           {loading ? (
             <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-              <Loader2 size={16} className="animate-spin text-violet-600" /> Đang tải danh sách đấu
-              giá…
+              <Loader2 size={16} className="animate-spin text-violet-600" />{' '}
+              {t('bidsPage.loadingBids')}
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
@@ -704,18 +710,17 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                 <Gavel size={28} />
               </div>
               <h3 className="text-sm font-bold text-slate-800 mb-1">
-                Bạn chưa tham gia phiên đấu giá nào
+                {t('bidsPage.emptyBidsTitle')}
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
-                Khám phá các phiên đấu giá trực tiếp với công nghệ xoay mô hình 3D thực tế trên
-                NEXUS.
+                {t('bidsPage.emptyBidsDesc')}
               </p>
               <Link
                 to="/auction"
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs transition shadow-sm"
               >
                 <ShoppingBag size={14} />
-                Tham gia đấu giá ngay
+                {t('bidsPage.joinAuctionNow')}
               </Link>
             </div>
           ) : (
@@ -732,7 +737,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                       <span
                         className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.cls}`}
                       >
-                        {s.icon} {s.label}
+                        {s.icon} {t(s.labelKey)}
                       </span>
                     </div>
                     <div className="flex items-start gap-4 px-4 py-4">
@@ -749,15 +754,19 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                         </p>
                         <div className="mt-2.5 grid grid-cols-2 gap-2">
                           <div className="rounded-lg bg-slate-50 p-2">
-                            <p className="text-[10px] text-slate-400 mb-0.5">Giá thầu của tôi</p>
+                            <p className="text-[10px] text-slate-400 mb-0.5">
+                              {t('bidsPage.myBidLabel')}
+                            </p>
                             <p className="text-xs font-extrabold text-violet-700">
-                              {bid.myBid.toLocaleString('vi-VN')} ₫
+                              {formatCurrency(bid.myBid, i18n.language)}
                             </p>
                           </div>
                           <div className="rounded-lg bg-slate-50 p-2">
-                            <p className="text-[10px] text-slate-400 mb-0.5">Giá hiện tại</p>
+                            <p className="text-[10px] text-slate-400 mb-0.5">
+                              {t('bidsPage.currentBidLabel')}
+                            </p>
                             <p className="text-xs font-extrabold text-slate-800">
-                              {bid.currentBid.toLocaleString('vi-VN')} ₫
+                              {formatCurrency(bid.currentBid, i18n.language)}
                             </p>
                           </div>
                         </div>
@@ -768,7 +777,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                         to={`/auction/${bid.auctionId}`}
                         className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition flex items-center gap-1"
                       >
-                        Xem phiên đấu giá <ArrowRight size={11} />
+                        {t('bidsPage.viewAuction')} <ArrowRight size={11} />
                       </Link>
                     </div>
                   </div>
@@ -781,7 +790,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
       {purchasesOnly && loading && (
         <p role="status" className="py-8 text-center text-sm text-slate-500">
-          Đang tải quyền mua…
+          {t('bidsPage.loadingRights')}
         </p>
       )}
       {purchasesOnly &&
@@ -790,10 +799,8 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
         secondChanceOffers.length === 0 &&
         pendingCheckoutAwards.length === 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-            <p className="font-semibold text-slate-800">Chưa có lời mời mua cần xác nhận</p>
-            <p className="mt-2 text-sm text-slate-500">
-              Khi bạn được chuyển quyền mua sau người thắng trước, lời mời sẽ xuất hiện tại đây.
-            </p>
+            <p className="font-semibold text-slate-800">{t('bidsPage.noOffersTitle')}</p>
+            <p className="mt-2 text-sm text-slate-500">{t('bidsPage.noOffersDesc')}</p>
           </div>
         )}
 

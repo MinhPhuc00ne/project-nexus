@@ -1,4 +1,5 @@
 import { type ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AuctionEntity } from '../../services/auction.service';
 import { formatConsignmentDate, type ConsignmentFormState } from './sellerConsignmentHelpers';
 import { Panel } from './SellerUI';
@@ -25,15 +26,16 @@ export default function SellerConsignmentFields({
   isLoading,
   updateForm,
 }: SellerConsignmentFieldsProps): ReactElement {
+  const { t } = useTranslation('seller');
   return (
     <>
       <Panel
-        title="Thông tin ký gửi"
-        subtitle="Các trường có dấu * là bắt buộc cho bước thẩm định."
+        title={t('auctions.consignment.fieldsTitle')}
+        subtitle={t('auctions.consignment.fieldsSubtitle')}
       >
         <div className="grid gap-4 md:grid-cols-2 [&_label]:space-y-1.5 [&_label]:text-sm [&_label]:font-medium [&_label]:text-slate-700 [&_input]:w-full [&_input]:rounded-lg [&_input]:border [&_input]:border-slate-200 [&_input]:bg-white [&_input]:px-3 [&_input]:py-2.5 [&_input]:text-sm [&_select]:w-full [&_select]:rounded-lg [&_select]:border [&_select]:border-slate-200 [&_select]:bg-white [&_select]:px-3 [&_select]:py-2.5 [&_select]:text-sm [&_textarea]:w-full [&_textarea]:rounded-lg [&_textarea]:border [&_textarea]:border-slate-200 [&_textarea]:bg-white [&_textarea]:px-3 [&_textarea]:py-2.5 [&_textarea]:text-sm">
           <label className="md:col-span-2">
-            Phiên đấu giá nhận ký gửi *
+            {t('auctions.consignment.sessionLabel')}
             <select
               required
               value={form.auctionId}
@@ -41,17 +43,22 @@ export default function SellerConsignmentFields({
               disabled={isLoading || !eligibleAuctions.length}
             >
               <option value="">
-                {isLoading ? 'Đang tải phiên đấu giá…' : 'Chọn phiên đấu giá'}
+                {isLoading
+                  ? t('auctions.consignment.loadingSessions')
+                  : t('auctions.consignment.selectSession')}
               </option>
               {eligibleAuctions.map((auction) => (
                 <option key={auction.id} value={auction.id}>
-                  {auction.title} · Bắt đầu {formatConsignmentDate(auction.startTime)}
+                  {t('auctions.consignment.sessionOption', {
+                    title: auction.title,
+                    date: formatConsignmentDate(auction.startTime),
+                  })}
                 </option>
               ))}
             </select>
             {!isLoading && !eligibleAuctions.length && (
               <small className="block font-normal text-amber-700">
-                Hiện chưa có phiên ở trạng thái nhận ký gửi. Hãy chờ Admin mở phiên mới.
+                {t('auctions.consignment.noEligibleSessions')}
               </small>
             )}
             {form.auctionId &&
@@ -61,34 +68,36 @@ export default function SellerConsignmentFields({
                 );
                 return selectedAuction?.consignmentDeadline ? (
                   <small className="mt-1 block font-normal text-slate-500">
-                    Hạn nhận ký gửi: {formatConsignmentDate(selectedAuction.consignmentDeadline)}
+                    {t('auctions.consignment.deadline', {
+                      date: formatConsignmentDate(selectedAuction.consignmentDeadline),
+                    })}
                   </small>
                 ) : null;
               })()}
           </label>
           <label className="md:col-span-2">
-            Tên vật phẩm *
+            {t('auctions.consignment.itemTitleLabel')}
             <input
               required
               maxLength={160}
               value={form.title}
               onChange={(event) => updateForm('title', event.target.value)}
-              placeholder="Ví dụ: Đồng hồ cơ vintage, đầy đủ hộp và giấy tờ"
+              placeholder={t('auctions.consignment.itemTitlePlaceholder')}
             />
           </label>
           <label className="md:col-span-2">
-            Mô tả, nguồn gốc và tình trạng *
+            {t('auctions.consignment.itemDescLabel')}
             <textarea
               required
               rows={5}
               maxLength={5000}
               value={form.description}
               onChange={(event) => updateForm('description', event.target.value)}
-              placeholder="Mô tả chi tiết tình trạng, năm sản xuất, phụ kiện, nguồn gốc và các điểm cần lưu ý…"
+              placeholder={t('auctions.consignment.itemDescPlaceholder')}
             />
           </label>
           <label>
-            Giá khởi điểm (₫) *
+            {t('auctions.consignment.startPriceLabel')}
             <input
               required
               min="10000"
@@ -99,7 +108,7 @@ export default function SellerConsignmentFields({
             />
           </label>
           <label>
-            Bước giá (₫) *
+            {t('auctions.consignment.incrementLabel')}
             <input
               required
               min="1000"
@@ -109,24 +118,24 @@ export default function SellerConsignmentFields({
             />
           </label>
           <label>
-            Giá sàn (₫)
+            {t('auctions.consignment.reservePriceLabel')}
             <input
               min="10000"
               type="number"
               value={form.proposedReservePrice}
               onChange={(event) => updateForm('proposedReservePrice', event.target.value)}
-              placeholder="Không bắt buộc"
+              placeholder={t('auctions.consignment.optionalPlaceholder')}
             />
           </label>
         </div>
       </Panel>
       <Panel
-        title="Kích thước đóng gói & vận chuyển GHN"
-        subtitle="Nhập cân nặng và kích thước kiện hàng thực tế để tính cước Giao Hàng Nhanh chính xác khi bàn giao."
+        title={t('auctions.consignment.parcelTitle')}
+        subtitle={t('auctions.consignment.parcelSubtitle')}
       >
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 [&_label]:space-y-1.5 [&_label]:text-sm [&_label]:font-medium [&_label]:text-slate-700 [&_input]:w-full [&_input]:rounded-lg [&_input]:border [&_input]:border-slate-200 [&_input]:bg-white [&_input]:px-3 [&_input]:py-2.5 [&_input]:text-sm">
           <label>
-            Cân nặng (gram) *
+            {t('auctions.consignment.weightGrams')}
             <input
               required
               min="1"
@@ -138,7 +147,7 @@ export default function SellerConsignmentFields({
             />
           </label>
           <label>
-            Dài (cm) *
+            {t('auctions.consignment.lengthCm')}
             <input
               required
               min="1"
@@ -150,7 +159,7 @@ export default function SellerConsignmentFields({
             />
           </label>
           <label>
-            Rộng (cm) *
+            {t('auctions.consignment.widthCm')}
             <input
               required
               min="1"
@@ -162,7 +171,7 @@ export default function SellerConsignmentFields({
             />
           </label>
           <label>
-            Cao (cm) *
+            {t('auctions.consignment.heightCm')}
             <input
               required
               min="1"
