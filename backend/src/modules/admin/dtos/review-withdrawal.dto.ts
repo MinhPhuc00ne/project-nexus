@@ -1,15 +1,23 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { WithdrawalStatus } from '@prisma/client';
+
+const REVIEWABLE_WITHDRAWAL_STATUSES = [
+  WithdrawalStatus.APPROVED,
+  WithdrawalStatus.REJECTED,
+  WithdrawalStatus.COMPLETED,
+] as const;
 
 export class ReviewWithdrawalDto {
   @ApiProperty({
-    enum: [WithdrawalStatus.APPROVED, WithdrawalStatus.REJECTED, WithdrawalStatus.COMPLETED],
+    enum: REVIEWABLE_WITHDRAWAL_STATUSES,
     example: WithdrawalStatus.COMPLETED,
     description:
       'Trạng thái xét duyệt: APPROVED (chấp thuận), REJECTED (từ chối hoàn tiền ví), COMPLETED (đã chuyển khoản thành công)',
   })
-  @IsEnum(WithdrawalStatus)
+  @IsIn(REVIEWABLE_WITHDRAWAL_STATUSES, {
+    message: 'Trạng thái xét duyệt chỉ chấp nhận APPROVED, REJECTED hoặc COMPLETED',
+  })
   @IsNotEmpty()
   status: WithdrawalStatus;
 

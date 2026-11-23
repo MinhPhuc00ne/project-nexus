@@ -374,6 +374,7 @@ export class AdminService {
               fullName: true,
               email: true,
               phoneNumber: true,
+              role: true,
               sellerUpgradeRequests: {
                 where: { status: SellerRequestStatus.APPROVED },
                 take: 1,
@@ -396,6 +397,7 @@ export class AdminService {
       items: items.map((w) => ({
         id: w.id,
         userId: w.userId,
+        userRole: w.user.role,
         sellerName: w.user.sellerUpgradeRequests[0]?.storeName || w.user.fullName,
         sellerEmail: w.user.email,
         sellerPhone: w.user.phoneNumber,
@@ -441,6 +443,10 @@ export class AdminService {
 
     if (req.status !== WithdrawalStatus.PENDING) {
       throw new BadRequestException('Yêu cầu rút tiền này đã được xử lý trước đó.');
+    }
+
+    if (dto.status === WithdrawalStatus.PENDING) {
+      throw new BadRequestException('Trạng thái xét duyệt không hợp lệ.');
     }
 
     const wallet = req.user.wallet;
