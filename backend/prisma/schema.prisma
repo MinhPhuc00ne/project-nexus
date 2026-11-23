@@ -240,6 +240,7 @@ model User {
   auctionComplaints          AuctionComplaint[] @relation("AuctionComplaintReporter")
   handledAuctionComplaints   AuctionComplaint[] @relation("AuctionComplaintAdmin")
   cart                       Cart?
+  wishlistItems              WishlistItem[]
   reputationLogs             ReputationLog[]
   notifications              Notification[]
   notificationPreferences    NotificationPreference[]
@@ -406,6 +407,7 @@ model Product {
   auctions       Auction[]
   options        ProductOption[]
   productReviews ProductReview[]
+  wishlistItems  WishlistItem[]
   reports        ShopViolation[]
 
   @@map("products")
@@ -555,6 +557,20 @@ model CartItem {
 
   @@unique([cartId, productId, optionKey])
   @@map("cart_items")
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
+  @@map("wishlist_items")
 }
 
 model Order {

@@ -17,6 +17,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService, UserProfileResponse } from '../services/users.service';
 import { AddressService } from '../services/address.service';
+import { WishlistService } from '../services/wishlist.service';
+import { SyncWishlistDto } from '../dtos/wishlist.dto';
+import type { WishlistItemDto } from '@nexus/types';
 import {
   UpdateBuyerProfileDto,
   ApplySellerUpgradeDto,
@@ -34,6 +37,7 @@ export class BuyerController {
   constructor(
     private readonly usersService: UsersService,
     private readonly addressService: AddressService,
+    private readonly wishlistService: WishlistService,
   ) {}
 
   @ApiOperation({
@@ -231,5 +235,66 @@ export class BuyerController {
   @Delete('addresses/:id')
   async deleteAddress(@CurrentUser('id') userId: string, @Param('id') addressId: string) {
     return this.addressService.deleteAddress(userId, addressId);
+  }
+
+  // --- QUẢN LÝ DANH SÁCH YÊU THÍCH (BUYER WISHLIST) ---
+
+  @ApiOperation({
+    summary: '[BUYER] Lấy danh sách sản phẩm yêu thích kèm thông tin chi tiết',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('wishlist')
+  async getWishlist(@CurrentUser('id') userId: string): Promise<WishlistItemDto[]> {
+    return this.wishlistService.getWishlist(userId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Lấy danh sách Product IDs đang yêu thích để kiểm tra nhanh trạng thái',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('wishlist/ids')
+  async getWishlistIds(@CurrentUser('id') userId: string): Promise<string[]> {
+    return this.wishlistService.getWishlistIds(userId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Đồng bộ danh sách sản phẩm yêu thích từ khách (guest) khi đăng nhập',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('wishlist/sync')
+  async syncWishlist(
+    @CurrentUser('id') userId: string,
+    @Body() dto: SyncWishlistDto,
+  ): Promise<WishlistItemDto[]> {
+    return this.wishlistService.syncGuestWishlist(userId, dto.productIds);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Thêm sản phẩm vào danh sách yêu thích',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('wishlist/:productId')
+  async addToWishlist(
+    @CurrentUser('id') userId: string,
+    @Param('productId') productId: string,
+  ): Promise<WishlistItemDto> {
+    return this.wishlistService.addToWishlist(userId, productId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Xóa sản phẩm khỏi danh sách yêu thích',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Delete('wishlist/:productId')
+  async removeFromWishlist(
+    @CurrentUser('id') userId: string,
+    @Param('productId') productId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.wishlistService.removeFromWishlist(userId, productId);
   }
 }
