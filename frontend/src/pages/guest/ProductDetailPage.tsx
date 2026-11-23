@@ -25,6 +25,33 @@ import CheckoutModal from '../../components/cart/CheckoutModal';
 import { useToast } from '../../components/ToastNotification';
 import { recordBuyerProductView } from '../../utils/buyerProductInterest';
 
+async function buildBuyNowCartItem(
+  product: ProductDetail,
+  displayNameWithOptions: string,
+  quantity: number,
+): Promise<CartItem> {
+  const cart = await fetchCart({ force: true });
+  const cartItem = cart.find(
+    (item) =>
+      String(item.productId) === String(product.id) || String(item.id) === String(product.id),
+  );
+  if (cartItem) {
+    return { ...cartItem, qty: quantity, selected: true };
+  }
+  return {
+    id: product.id,
+    productId: product.id,
+    name: displayNameWithOptions,
+    price: product.price,
+    formattedPrice: product.formattedPrice,
+    img: product.images[0] || '',
+    qty: quantity,
+    shopName: product.shop.name,
+    brand: product.brand,
+    selected: true,
+  };
+}
+
 export default function ProductDetailPage() {
   const { t } = useTranslation('guest');
   const { id = '' } = useParams<{ id: string }>();
@@ -161,27 +188,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
         quantity,
       );
       if (buyNow) {
-        const cart = await fetchCart({ force: true });
-        const cartItem = cart.find(
-          (item) =>
-            String(item.productId) === String(product.id) || String(item.id) === String(product.id),
-        );
-
-        const directItem: CartItem = cartItem
-          ? { ...cartItem, qty: quantity, selected: true }
-          : {
-              id: product.id,
-              productId: product.id,
-              name: displayNameWithOptions,
-              price: product.price,
-              formattedPrice: product.formattedPrice,
-              img: product.images[0] || '',
-              qty: quantity,
-              shopName: product.shop.name,
-              brand: product.brand,
-              selected: true,
-            };
-
+        const directItem = await buildBuyNowCartItem(product, displayNameWithOptions, quantity);
         setCheckoutItems([directItem]);
         setShowCheckoutModal(true);
       } else {

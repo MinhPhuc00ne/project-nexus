@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Popup from '../Popup';
 import { clearCart, type CartItem } from '../../services/cart';
 import { getStoredToken } from '../../services/auth';
@@ -28,6 +29,38 @@ interface CheckoutModalProps {
   grandTotal?: number;
   onCheckoutSuccess?: () => void;
   showToast: (msg: string, variant?: 'success' | 'error') => void;
+}
+
+function getCheckoutErrorMessage(err: unknown, fallback: string): string {
+  const resMsg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
+    ?.message;
+  if (Array.isArray(resMsg)) return resMsg.join(', ');
+  if (typeof resMsg === 'string') return resMsg;
+  return fallback;
+}
+
+function getCheckoutModalTitle(
+  checkoutSuccess: boolean,
+  paymentMethod: CheckoutPaymentMethodType,
+  isPaid: boolean,
+  payosPayment: PayosPaymentInfo | null,
+  t: TFunction<'commerce'>,
+): string {
+  if (!checkoutSuccess) return t('checkout.modalTitleConfirm');
+  if (paymentMethod === 'COD') return t('checkout.modalTitleCodSuccess');
+  if (isPaid) return t('checkout.modalTitlePaidSuccess');
+  if (payosPayment) return t('checkout.modalTitleScanPayos');
+  return t('checkout.modalTitleOrderSuccess');
+}
+
+function getCheckoutButtonLabel(
+  isProcessingOrder: boolean,
+  isCalculatingFee: boolean,
+  t: TFunction<'commerce'>,
+): string {
+  if (isProcessingOrder) return t('checkout.processingOrder');
+  if (isCalculatingFee) return t('checkout.calculatingGhn');
+  return t('checkout.confirmOrder');
 }
 
 export default function CheckoutModal({
@@ -176,16 +209,7 @@ export default function CheckoutModal({
       if (onCheckoutSuccess) onCheckoutSuccess();
     } catch (err: unknown) {
       console.error('Checkout failed:', err);
-      const resMsg = (err as { response?: { data?: { message?: string | string[] } } })?.response
-        ?.data?.message;
-      showToast(
-        Array.isArray(resMsg)
-          ? resMsg.join(', ')
-          : typeof resMsg === 'string'
-            ? resMsg
-            : t('checkout.failed'),
-        'error',
-      );
+      showToast(getCheckoutErrorMessage(err, t('checkout.failed')), 'error');
     } finally {
       setIsProcessingOrder(false);
     }
@@ -199,21 +223,14 @@ export default function CheckoutModal({
     onClose();
   };
 
+  const modalTitle = getCheckoutModalTitle(checkoutSuccess, paymentMethod, isPaid, payosPayment, t);
+  const submitButtonLabel = getCheckoutButtonLabel(isProcessingOrder, isCalculatingFee, t);
+
   return (
     <Popup
       isOpen={isOpen}
       onClose={handleClose}
-      title={
-        checkoutSuccess
-          ? paymentMethod === 'COD'
-            ? t('checkout.modalTitleCodSuccess')
-            : isPaid
-              ? t('checkout.modalTitlePaidSuccess')
-              : payosPayment
-                ? t('checkout.modalTitleScanPayos')
-                : t('checkout.modalTitleOrderSuccess')
-          : t('checkout.modalTitleConfirm')
-      }
+      title={modalTitle}
       size={checkoutSuccess ? 'lg' : 'xl'}
     >
       <div className="space-y-6 text-slate-800">
@@ -287,13 +304,7 @@ export default function CheckoutModal({
                 {(isProcessingOrder || isCalculatingFee) && (
                   <Loader2 size={14} className="animate-spin" />
                 )}
-                <span>
-                  {isProcessingOrder
-                    ? t('checkout.processingOrder')
-                    : isCalculatingFee
-                      ? t('checkout.calculatingGhn')
-                      : t('checkout.confirmOrder')}
-                </span>
+                <span>{submitButtonLabel}</span>
               </button>
             </div>
           </div>

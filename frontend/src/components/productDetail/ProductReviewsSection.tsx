@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   Star,
   MessageSquare,
@@ -51,6 +52,49 @@ function getReviewSubmitErrorMessage(
   if (!orderId) return messages.orderRequired;
   if (hasLoadError) return messages.loadFailed;
   return null;
+}
+
+function buildReviewSuccessMessage(
+  updatedExistingReview: boolean,
+  includeShopReview: boolean,
+  canReviewShop: boolean,
+  sellerId: string | undefined,
+  t: TFunction<'guest'>,
+): string {
+  if (updatedExistingReview) return t('product.reviewUpdatedSuccess');
+  if (includeShopReview && canReviewShop && sellerId) {
+    return t('product.reviewProductAndShopSuccess');
+  }
+  return t('product.reviewProductSuccess');
+}
+
+function getReviewEligibilityMessage(
+  params: {
+    loadingReviewEligibility: boolean;
+    reviewEligibilityError: boolean;
+    hasToken: boolean;
+    reviewableOrderId: string | null;
+    sellerId?: string;
+    canReviewShop: boolean;
+  },
+  t: TFunction<'guest'>,
+): string | null {
+  if (params.loadingReviewEligibility) return t('product.checkingReviewEligibility');
+  if (params.reviewEligibilityError) return t('product.reviewEligibilityUnavailable');
+  if (!params.hasToken) return t('product.loginToReviewError');
+  if (!params.reviewableOrderId) return t('product.completedOrderRequired');
+  if (params.sellerId && !params.canReviewShop) return t('product.shopReviewRequiresTwoProducts');
+  return null;
+}
+
+function getSubmitReviewLabel(
+  isSubmitting: boolean,
+  hasOwnProductReview: boolean,
+  t: TFunction<'guest'>,
+): string {
+  if (isSubmitting) return t('product.submittingReview');
+  if (hasOwnProductReview) return t('product.updateReview');
+  return t('product.submitReviewButton');
 }
 
 export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
@@ -208,15 +252,16 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         );
       }
 
-      const updatedExistingReview = ownProductReview || (includeShopReview && ownShopReview);
-      let successMessage: string;
-      if (updatedExistingReview) {
-        successMessage = t('product.reviewUpdatedSuccess');
-      } else if (includeShopReview && canReviewShop && sellerId) {
-        successMessage = t('product.reviewProductAndShopSuccess');
-      } else {
-        successMessage = t('product.reviewProductSuccess');
-      }
+      const updatedExistingReview = Boolean(
+        ownProductReview || (includeShopReview && ownShopReview),
+      );
+      const successMessage = buildReviewSuccessMessage(
+        updatedExistingReview,
+        includeShopReview,
+        canReviewShop,
+        sellerId,
+        t,
+      );
       setSuccessMsg(successMessage);
       toast.success(successMessage);
       setTimeout(() => setSuccessMsg(null), 4000);
@@ -291,24 +336,18 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
 
   const currentDisplayRating = currentRatingNumber > 0 ? currentRatingNumber.toFixed(1) : '0.0';
   const totalReviewsCount = hasReviews ? reviews.length : reviewsCount;
-  let reviewEligibilityMessage: string | null = null;
-  if (loadingReviewEligibility) {
-    reviewEligibilityMessage = t('product.checkingReviewEligibility');
-  } else if (reviewEligibilityError) {
-    reviewEligibilityMessage = t('product.reviewEligibilityUnavailable');
-  } else if (!getStoredToken()) {
-    reviewEligibilityMessage = t('product.loginToReviewError');
-  } else if (!reviewableOrderId) {
-    reviewEligibilityMessage = t('product.completedOrderRequired');
-  } else if (sellerId && !canReviewShop) {
-    reviewEligibilityMessage = t('product.shopReviewRequiresTwoProducts');
-  }
-  let submitReviewLabel = t('product.submitReviewButton');
-  if (isSubmitting) {
-    submitReviewLabel = t('product.submittingReview');
-  } else if (ownProductReview) {
-    submitReviewLabel = t('product.updateReview');
-  }
+  const reviewEligibilityMessage = getReviewEligibilityMessage(
+    {
+      loadingReviewEligibility,
+      reviewEligibilityError,
+      hasToken: Boolean(getStoredToken()),
+      reviewableOrderId,
+      sellerId,
+      canReviewShop,
+    },
+    t,
+  );
+  const submitReviewLabel = getSubmitReviewLabel(isSubmitting, Boolean(ownProductReview), t);
   let reviewListContent;
   if (loading) {
     reviewListContent = (

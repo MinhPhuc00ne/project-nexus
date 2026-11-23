@@ -140,10 +140,11 @@ export default function BuyerDisputesPage() {
 
     setSubmitting(true);
     try {
-      await disputeOrderApi(
-        selectedOrderId,
-        `[${t(`disputeModal.reasons.${reason}`, { ns: 'common', defaultValue: reasonLabels[reason] })}] ${description.trim()}`,
-      );
+      const reasonText = t(`disputeModal.reasons.${reason}`, {
+        ns: 'common',
+        defaultValue: reasonLabels[reason],
+      });
+      await disputeOrderApi(selectedOrderId, `[${reasonText}] ${description.trim()}`);
       toast.success(t('disputesPage.submitSuccessToast'));
       setShowCreateModal(false);
       setSelectedOrderId('');
@@ -214,11 +215,12 @@ export default function BuyerDisputesPage() {
       />
 
       {/* List */}
-      {loading ? (
+      {loading && (
         <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
           <Loader2 size={16} className="animate-spin text-red-600" /> {t('disputesPage.loading')}
         </div>
-      ) : filtered.length === 0 ? (
+      )}
+      {!loading && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
           <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center text-red-400 mb-4">
             <ShieldAlert size={28} />
@@ -235,7 +237,8 @@ export default function BuyerDisputesPage() {
             {t('disputesPage.viewOrdersButton')}
           </Link>
         </div>
-      ) : (
+      )}
+      {!loading && filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((d) => {
             const s = statusConfig[d.status] ?? statusConfig.OPEN;

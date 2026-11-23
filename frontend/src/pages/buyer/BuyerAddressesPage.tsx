@@ -93,7 +93,7 @@ export default function BuyerAddressesPage() {
       return;
     }
 
-    if (!/^\+?[0-9]{9,15}$/.test(form.phone.trim())) {
+    if (!/^\+?\d{9,15}$/.test(form.phone.trim())) {
       setFormError(t('addresses.invalidPhoneError'));
       return;
     }
@@ -207,12 +207,13 @@ export default function BuyerAddressesPage() {
       )}
 
       {/* Loading state */}
-      {loading ? (
+      {loading && (
         <div className="py-16 text-center text-slate-500">
           <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           <p className="text-xs">{t('addresses.loading')}</p>
         </div>
-      ) : addresses.length === 0 ? (
+      )}
+      {!loading && addresses.length === 0 && (
         /* Empty State */
         <div className="rounded-2xl border border-dashed border-slate-200 p-12 text-center my-4">
           <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
@@ -231,7 +232,8 @@ export default function BuyerAddressesPage() {
             <span>{t('addresses.addNow')}</span>
           </button>
         </div>
-      ) : (
+      )}
+      {!loading && addresses.length > 0 && (
         /* Address List */
         <div className="space-y-4">
           {addresses.map((addr) => (

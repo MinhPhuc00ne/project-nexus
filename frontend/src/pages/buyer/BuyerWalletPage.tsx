@@ -209,12 +209,9 @@ export default function BuyerWalletPage() {
     if (paymentWindow) paymentWindow.opener = null;
     setSubmittingTopUp(true);
     try {
-      const res = await depositBuyerWalletApi({
-        amount,
-        provider: selectedMethod,
-      });
+      const res = await depositBuyerWalletApi({ amount, provider: selectedMethod });
       if (res.checkoutUrl) {
-        if (paymentWindow) paymentWindow.location.assign(res.checkoutUrl);
+        paymentWindow?.location.assign(res.checkoutUrl);
         if (res.orderCode) setPendingDepositOrderCode(res.orderCode);
       } else {
         paymentWindow?.close();
@@ -226,8 +223,7 @@ export default function BuyerWalletPage() {
       void fetchWallet();
     } catch (err) {
       paymentWindow?.close();
-      const msg = err instanceof Error ? err.message : t('walletPage.depositConnectError');
-      toast.error(msg);
+      toast.error(err instanceof Error ? err.message : t('walletPage.depositConnectError'));
     } finally {
       setSubmittingTopUp(false);
     }
@@ -419,11 +415,12 @@ export default function BuyerWalletPage() {
             {t('walletPage.refresh')}
           </button>
         </div>
-        {loadingWithdrawals ? (
+        {loadingWithdrawals && (
           <div className="flex items-center justify-center gap-2 px-5 py-10 text-xs text-slate-400">
             <Loader2 size={15} className="animate-spin" /> {t('walletPage.loadingWithdrawals')}
           </div>
-        ) : withdrawals.length === 0 ? (
+        )}
+        {!loadingWithdrawals && withdrawals.length === 0 && (
           <div className="flex flex-col items-center px-5 py-8 text-center">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 text-slate-400">
               <ArrowDownToLine size={19} />
@@ -443,7 +440,8 @@ export default function BuyerWalletPage() {
               <ArrowDownToLine size={14} /> {t('walletPage.withdrawButton')}
             </button>
           </div>
-        ) : (
+        )}
+        {!loadingWithdrawals && withdrawals.length > 0 && (
           <div className="divide-y divide-slate-100 px-5 sm:px-6">
             {withdrawals.map((request) => {
               const badge = statusBadge[request.status] ?? statusBadge.PENDING;
@@ -509,16 +507,18 @@ export default function BuyerWalletPage() {
           </div>
         </div>
 
-        {loading ? (
+        {loading && (
           <div className="flex items-center justify-center gap-2 px-5 py-12 text-xs text-slate-400">
             <Loader2 size={16} className="animate-spin text-orange-500" />{' '}
             {t('walletPage.loadingHistory')}
           </div>
-        ) : filtered.length === 0 ? (
+        )}
+        {!loading && filtered.length === 0 && (
           <div className="px-5 py-10 text-center text-xs text-slate-400">
             {t('walletPage.emptyHistory')}
           </div>
-        ) : (
+        )}
+        {!loading && filtered.length > 0 && (
           <div className="divide-y divide-slate-100 px-5 sm:px-6">
             {filtered.map((tx) => {
               const amount = Number(tx.amount);

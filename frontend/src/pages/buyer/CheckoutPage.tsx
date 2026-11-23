@@ -188,7 +188,7 @@ export default function CheckoutPage() {
           <span className="font-semibold text-slate-800">{t('commerce:checkout.title')}</span>
         </div>
 
-        {checkoutDone ? (
+        {checkoutDone && (
           <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <CheckoutSuccessCard
               orders={createdOrders}
@@ -215,7 +215,8 @@ export default function CheckoutPage() {
               }
             />
           </div>
-        ) : items.length === 0 ? (
+        )}
+        {!checkoutDone && items.length === 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto shadow-sm">
             <Package size={40} className="text-slate-300 mx-auto mb-3" />
             <h2 className="text-lg font-bold text-slate-800 mb-1">
@@ -230,7 +231,8 @@ export default function CheckoutPage() {
               <span>{t('commerce:checkout.backToCart')}</span>
             </Link>
           </div>
-        ) : (
+        )}
+        {!checkoutDone && items.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-7 space-y-6">
               <CheckoutAddressSection

@@ -320,12 +320,13 @@ export const BuyerNotificationsPage: React.FC = () => {
             </div>
           </div>
 
-          {loading ? (
+          {loading && (
             <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-slate-200">
               <Loader2 size={24} className="animate-spin text-blue-600" />
               <span>{t('notificationsPage.loading')}</span>
             </div>
-          ) : notifications.length === 0 ? (
+          )}
+          {!loading && notifications.length === 0 && (
             <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
               <Bell size={36} className="mx-auto mb-3 text-slate-300" />
               <h3 className="text-sm font-bold text-slate-800 mb-1">
@@ -337,7 +338,8 @@ export const BuyerNotificationsPage: React.FC = () => {
                 {t('notificationsPage.emptyDesc')}
               </p>
             </div>
-          ) : (
+          )}
+          {!loading && notifications.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-xs">
               {notifications.map((item) => (
                 <div

@@ -170,7 +170,7 @@ export async function getCategoriesApi(): Promise<CategoryNode[]> {
   return Array.isArray(items) ? (items as CategoryNode[]) : [];
 }
 
-function mapProduct(product: CatalogProduct): ProductDetail {
+function buildProductSpecs(product: CatalogProduct): Record<string, string> {
   const specs: Record<string, string> = {};
   if (product?.category?.name)
     specs[i18n.t('errors:services.specCategory')] = product.category.name;
@@ -183,6 +183,17 @@ function mapProduct(product: CatalogProduct): ProductDetail {
   if (product?.heightCm !== undefined)
     specs[i18n.t('errors:services.specHeight')] = `${product.heightCm} cm`;
 
+  for (const opt of product?.options ?? []) {
+    if (opt.name && opt.values.length > 0) {
+      specs[opt.name] = opt.values.join(', ');
+    }
+  }
+  return specs;
+}
+
+function mapProduct(product: CatalogProduct): ProductDetail {
+  const specs = buildProductSpecs(product);
+
   const rawBasePrice = Number(product?.basePrice ?? 0);
   const saleInfo = saleConfigFromApi(
     rawBasePrice,
@@ -191,14 +202,6 @@ function mapProduct(product: CatalogProduct): ProductDetail {
     product?.saleEndsAt,
   );
   const sale = computeEffectiveSale(rawBasePrice, saleInfo);
-
-  if (product?.options && product.options.length > 0) {
-    for (const opt of product.options) {
-      if (opt.name && opt.values.length > 0) {
-        specs[opt.name] = opt.values.join(', ');
-      }
-    }
-  }
 
   return {
     id: product?.id ?? '',

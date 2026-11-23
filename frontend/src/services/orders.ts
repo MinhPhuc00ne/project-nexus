@@ -251,13 +251,11 @@ export async function checkPaymentStatusApi(orderId: string): Promise<PaymentSta
   >(`/commerce/orders/${encodeURIComponent(orderId)}/payment-status`);
 
   const payload = response?.data;
-  return (
-    payload && typeof payload === 'object' && 'paid' in payload
-      ? payload
-      : payload && typeof payload === 'object' && 'data' in payload
-        ? (payload as { data: PaymentStatusResponse }).data
-        : payload
-  ) as PaymentStatusResponse;
+  if (payload && typeof payload === 'object') {
+    if ('paid' in payload) return payload as PaymentStatusResponse;
+    if ('data' in payload) return (payload as { data: PaymentStatusResponse }).data;
+  }
+  return payload as PaymentStatusResponse;
 }
 
 export const DEFAULT_SHIPPING_ADDRESS: ShippingAddressInput = {

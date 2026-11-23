@@ -226,12 +226,13 @@ export default function BuyerOrdersPage() {
         })}
       </div>
 
-      {loading ? (
+      {loading && (
         <div className="py-16 flex flex-col items-center justify-center text-slate-400 text-xs">
           <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
           <span>{t('ordersPage.loading')}</span>
         </div>
-      ) : filtered.length === 0 ? (
+      )}
+      {!loading && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-slate-200 bg-white">
           <ShoppingBag size={36} className="text-slate-300 mb-3" />
           <p className="text-sm font-semibold text-slate-500">{t('ordersPage.emptyTitle')}</p>
@@ -247,7 +248,8 @@ export default function BuyerOrdersPage() {
             </Link>
           )}
         </div>
-      ) : (
+      )}
+      {!loading && filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((order) => (
             <OrderCard

@@ -60,6 +60,8 @@ const statusMap = {
   },
 } as const;
 
+const QUICK_LINK_BLUE_CLASS = 'text-blue-600';
+
 const quickLinks = [
   {
     to: '/buyer/reputation',
@@ -71,20 +73,25 @@ const quickLinks = [
     to: '/buyer/addresses',
     icon: MapPin,
     labelKey: 'dashboard.quickLinks.addresses',
-    color: 'text-blue-600',
+    color: QUICK_LINK_BLUE_CLASS,
   },
   {
     to: '/buyer/disputes',
     icon: ShieldAlert,
     labelKey: 'dashboard.quickLinks.disputes',
-    color: 'text-blue-600',
+    color: QUICK_LINK_BLUE_CLASS,
   },
-  { to: '/buyer/bids', icon: Gavel, labelKey: 'dashboard.quickLinks.bids', color: 'text-blue-600' },
+  {
+    to: '/buyer/bids',
+    icon: Gavel,
+    labelKey: 'dashboard.quickLinks.bids',
+    color: QUICK_LINK_BLUE_CLASS,
+  },
   {
     to: '/search',
     icon: ShoppingBag,
     labelKey: 'dashboard.quickLinks.shop',
-    color: 'text-blue-600',
+    color: QUICK_LINK_BLUE_CLASS,
   },
 ] as const;
 
@@ -235,12 +242,13 @@ export default function BuyerDashboardPage() {
           </Link>
         </div>
 
-        {loading ? (
+        {loading && (
           <div className="py-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
             <Loader2 size={16} className="animate-spin text-blue-600" />{' '}
             {t('dashboard.loadingOrders')}
           </div>
-        ) : orders.length === 0 ? (
+        )}
+        {!loading && orders.length === 0 && (
           <div className="p-8 text-center space-y-2">
             <p className="text-xs text-slate-500">{t('dashboard.noOrders')}</p>
             <Link
@@ -250,7 +258,8 @@ export default function BuyerDashboardPage() {
               {t('dashboard.exploreNow')}
             </Link>
           </div>
-        ) : (
+        )}
+        {!loading && orders.length > 0 && (
           <div className="divide-y divide-slate-100">
             {orders.slice(0, 5).map((order) => {
               const firstItem = order.items?.[0];

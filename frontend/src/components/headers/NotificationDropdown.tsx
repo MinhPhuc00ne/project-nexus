@@ -247,7 +247,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
         {/* Content */}
         <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-100">
-          {!token ? (
+          {!token && (
             <div className="p-6 text-center text-xs text-slate-500">
               <p className="mb-3 font-semibold text-slate-700">
                 {t('header.loginToViewNotifications')}
@@ -259,12 +259,16 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 {t('header.loginNow')}
               </Link>
             </div>
-          ) : loading ? (
+          )}
+          {token && loading && (
             <div className="py-10 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-2">
               <Loader2 size={18} className="animate-spin text-blue-600" />
               <span>{t('header.loadingNotifications')}</span>
             </div>
-          ) : notifications.length > 0 ? (
+          )}
+          {token &&
+            !loading &&
+            notifications.length > 0 &&
             notifications.map((item) => (
               <div
                 key={item.id}
@@ -305,8 +309,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
+            ))}
+          {token && !loading && notifications.length === 0 && (
             <div className="py-10 text-center text-xs text-slate-400">
               <Bell size={24} className="mx-auto mb-2 text-slate-300 opacity-60" />
               <span>{t('header.noNotifications')}</span>
