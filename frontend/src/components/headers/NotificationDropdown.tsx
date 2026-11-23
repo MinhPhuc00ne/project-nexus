@@ -21,9 +21,13 @@ import {
 } from '../../services/notifications';
 import { getStoredToken, getStoredUser } from '../../services/auth';
 import { createNotificationConnection } from '../../services/notificationSocket';
+import { getBuyerOrdersApi } from '../../services/orders';
 import type { UserNotification } from '../../types/notification.types';
 import NotificationPreferencesModal from '../notifications/NotificationPreferencesModal';
-import { resolveNotificationTargetUrl } from '../../utils/notificationNavigation';
+import {
+  getNotificationOrderReference,
+  resolveNotificationTargetUrl,
+} from '../../utils/notificationNavigation';
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -129,9 +133,17 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     }
   };
 
-  const handleNotificationClick = (item: UserNotification) => {
+  const handleNotificationClick = async (item: UserNotification) => {
     void handleMarkOne(item);
-    const destination = resolveNotificationTargetUrl(item);
+    let buyerOrders: Awaited<ReturnType<typeof getBuyerOrdersApi>> | undefined;
+    if (getNotificationOrderReference(item)) {
+      try {
+        buyerOrders = await getBuyerOrdersApi();
+      } catch (error) {
+        console.warn('Unable to resolve abbreviated order reference:', error);
+      }
+    }
+    const destination = resolveNotificationTargetUrl(item, buyerOrders);
     if (destination.startsWith('/') && !destination.startsWith('//')) {
       navigate(destination);
     } else {
@@ -256,7 +268,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
             notifications.map((item) => (
               <div
                 key={item.id}
-                onClick={() => handleNotificationClick(item)}
+                onClick={() => void handleNotificationClick(item)}
                 className={`group flex gap-3 px-4 py-3 transition-colors hover:bg-slate-50/80 cursor-pointer ${
                   !item.isRead ? 'bg-orange-50/40' : ''
                 }`}

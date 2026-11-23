@@ -263,10 +263,12 @@
     "payosDesc": "Chuyển khoản QR ngân hàng 24/7",
     "title": "Nạp tiền vào ví NEXUS",
     "subtitle": "Chọn số tiền và phương thức thanh toán",
+    "amountLabel": "Số tiền muốn nạp",
     "otherAmountPlaceholder": "Nhập số tiền khác (VNĐ)",
     "methodTitle": "Phương thức nạp",
     "cancel": "Hủy",
-    "confirm": "Xác nhận nạp"
+    "confirm": "Xác nhận nạp",
+    "submitting": "Đang tạo thanh toán…"
   },
   "reportModal": {
     "titleProduct": "Báo cáo vi phạm sản phẩm",

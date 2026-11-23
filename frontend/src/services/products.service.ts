@@ -338,6 +338,36 @@ export async function getShopDetailApi(
   };
 }
 
+export async function getShopProductsApi(
+  sellerId: string,
+  search: string,
+  page = 1,
+  limit = 12,
+): Promise<CatalogPage> {
+  const response = await api.get<{
+    statusCode: number;
+    message: string;
+    data: CatalogPage;
+  }>('/catalog/products', {
+    params: {
+      sellerId,
+      search: search.trim() || undefined,
+      page,
+      limit,
+    },
+  });
+  const payload = response?.data;
+  const data = payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload;
+  const pageData = data as CatalogPage;
+  return {
+    items: Array.isArray(pageData?.items) ? pageData.items : [],
+    total: pageData?.total ?? 0,
+    page: pageData?.page ?? page,
+    limit: pageData?.limit ?? limit,
+    totalPages: pageData?.totalPages ?? 1,
+  };
+}
+
 export interface RecommendedProduct extends CatalogProduct {
   recommendationReason?: 'CATEGORY_INTEREST' | 'POPULAR_OR_RECENT';
 }
@@ -345,6 +375,27 @@ export interface RecommendedProduct extends CatalogProduct {
 export interface RecommendationsResult {
   items: RecommendedProduct[];
   personalized: boolean;
+}
+
+export interface TrendingProduct extends CatalogProduct {
+  purchaseCount: number;
+  lastPurchaseAt: string | null;
+  isTrending: boolean;
+}
+
+export interface TrendingProductsResult {
+  items: TrendingProduct[];
+  total: number;
+}
+
+export async function getTrendingProductsApi(limit = 10): Promise<TrendingProductsResult> {
+  const result = await apiRequest<TrendingProductsResult>(
+    `/catalog/products/trending?limit=${encodeURIComponent(String(limit))}`,
+  );
+  return {
+    items: Array.isArray(result?.items) ? result.items : [],
+    total: result?.total ?? 0,
+  };
 }
 
 export async function getRecommendationsApi(limit = 12): Promise<RecommendationsResult> {

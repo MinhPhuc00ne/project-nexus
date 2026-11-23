@@ -11,8 +11,12 @@ export interface HomeLiveAuctionProps {
 }
 
 export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
-  const { t } = useTranslation('guest');
   if (!auctions || auctions.length === 0) return null;
+  return <HomeLiveAuctionContent auctions={auctions} />;
+}
+
+function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
+  const { t } = useTranslation('guest');
 
   const featuredAuction = auctions[0];
   const isLive = featuredAuction.status === 'ACTIVE' || featuredAuction.status === 'EXTENDED';

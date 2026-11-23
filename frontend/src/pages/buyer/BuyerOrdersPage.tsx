@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Package, Search, ShoppingBag, Loader2 } from 'lucide-react';
+import { useToast } from '../../components/ToastNotification';
 import { formatCurrency } from '../../i18n/formatters';
 import { getIntlLocale } from '../../i18n/config';
 import {
@@ -30,8 +31,12 @@ const tabs = [
 
 export default function BuyerOrdersPage() {
   const { t, i18n } = useTranslation('buyer');
-  const [activeTab, setActiveTab] = useState<TabStatus>('ALL');
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const toast = useToast();
+  const requestedStatus = searchParams.get('status')?.toUpperCase();
+  const initialTab = tabs.find((tab) => tab.key === requestedStatus)?.key ?? 'ALL';
+  const [activeTab, setActiveTab] = useState<TabStatus>(initialTab);
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [realOrders, setRealOrders] = useState<BuyerOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [payingOrderId, setPayingOrderId] = useState<string | null>(null);
@@ -55,6 +60,22 @@ export default function BuyerOrdersPage() {
     void fetchOrders();
   }, [fetchOrders]);
 
+  useEffect(() => {
+    const status = searchParams.get('status')?.toUpperCase();
+    setActiveTab(tabs.find((tab) => tab.key === status)?.key ?? 'ALL');
+    setSearch(searchParams.get('search') ?? '');
+  }, [searchParams]);
+
+  const selectTab = (tab: TabStatus) => {
+    setActiveTab(tab);
+    setSearchParams((current) => {
+      const next = new URLSearchParams(current);
+      if (tab === 'ALL') next.delete('status');
+      else next.set('status', tab.toLowerCase());
+      return next;
+    });
+  };
+
   const handlePayNow = async (orderId: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -66,7 +87,7 @@ export default function BuyerOrdersPage() {
       }
     } catch (err) {
       console.error('Lỗi khởi tạo cổng PayOS:', err);
-      alert(t('ordersPage.paymentLinkError'));
+      toast.error(err instanceof Error ? err.message : t('ordersPage.paymentLinkError'));
     } finally {
       setPayingOrderId(null);
     }
@@ -81,15 +102,11 @@ export default function BuyerOrdersPage() {
     setConfirmingOrderId(orderId);
     try {
       await confirmDeliveryOrderApi(orderId);
+      toast.success(t('ordersPage.confirmDeliverySuccess'));
       await fetchOrders();
     } catch (err: unknown) {
       console.error('Lỗi xác nhận nhận hàng:', err);
-      const msg =
-        err &&
-        typeof err === 'object' &&
-        'response' in err &&
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message;
-      alert(msg || t('ordersPage.confirmDeliveryError'));
+      toast.error(err instanceof Error ? err.message : t('ordersPage.confirmDeliveryError'));
     } finally {
       setConfirmingOrderId(null);
     }
@@ -160,7 +177,19 @@ export default function BuyerOrdersPage() {
           type="text"
           placeholder={t('ordersPage.searchPlaceholder')}
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearch(value);
+            setSearchParams(
+              (current) => {
+                const next = new URLSearchParams(current);
+                if (value.trim()) next.set('search', value);
+                else next.delete('search');
+                return next;
+              },
+              { replace: true },
+            );
+          }}
           className="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 placeholder:text-slate-400 transition"
         />
       </div>
@@ -175,7 +204,7 @@ export default function BuyerOrdersPage() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => selectTab(tab.key)}
               className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'

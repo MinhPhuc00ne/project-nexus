@@ -44,6 +44,7 @@ export interface OrderItemDetail {
   product: {
     id: string;
     title: string;
+    category?: { id: string; name?: string } | null;
     thumbnail?: string | null;
     images?: Array<{ id: string; url?: string; imageUrl?: string }>;
   };

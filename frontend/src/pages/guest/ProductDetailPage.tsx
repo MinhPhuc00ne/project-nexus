@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Role } from '@nexus/types';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
@@ -21,6 +22,8 @@ import RelatedProductsSection from '../../components/productDetail/RelatedProduc
 import useProductResource from '../../components/productDetail/useProductResource';
 import ReportModal from '../../components/report/ReportModal';
 import CheckoutModal from '../../components/cart/CheckoutModal';
+import { useToast } from '../../components/ToastNotification';
+import { recordBuyerProductView } from '../../utils/buyerProductInterest';
 
 export default function ProductDetailPage() {
   const { t } = useTranslation('guest');
@@ -59,6 +62,7 @@ export default function ProductDetailPage() {
 function ProductContent({ product }: { product: ProductDetail }) {
   const { t } = useTranslation('guest');
   const { user } = useAuth();
+  const globalToast = useToast();
   const navigate = useNavigate();
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -84,6 +88,16 @@ function ProductContent({ product }: { product: ProductDetail }) {
   });
 
   const canBuy = product.stock > 0;
+
+  useEffect(() => {
+    if (user?.role !== Role.BUYER || !product.category?.id) return;
+    try {
+      recordBuyerProductView(user.id, { id: product.id, categoryId: product.category.id });
+    } catch (error) {
+      console.error('Unable to save Buyer product interest:', error);
+      globalToast.error(t('product.interestSaveFailed'));
+    }
+  }, [globalToast, product.category?.id, product.id, t, user?.id, user?.role]);
 
   const toggleWishlist = () => {
     if (isInWishlist) {

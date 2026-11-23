@@ -1,14 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import {
-  ArrowLeft,
-  ShoppingBag,
-  ArrowRight,
-  CheckCircle2,
-  ChevronRight,
-  Loader2,
-} from 'lucide-react';
+import { ArrowLeft, ShoppingBag, ArrowRight, ChevronRight, Loader2 } from 'lucide-react';
+import { useToast } from '../../components/ToastNotification';
 import {
   getCartItems,
   fetchCart,
@@ -18,24 +12,32 @@ import {
   toggleSelectAll,
   type CartItem,
 } from '../../services/cart';
+import { getAddresses } from '../../services/address';
 import CheckoutModal from '../../components/cart/CheckoutModal';
 import CartOrderSummary from '../../components/cart/CartOrderSummary';
 import CartItemList from '../../components/cart/CartItemList';
 import { getStoredToken } from '../../services/auth';
-import type { ShippingAddressInput as DeliveryAddress } from '../../services/orders';
+import {
+  getCheckoutQuoteApi,
+  type ShippingAddressInput as DeliveryAddress,
+} from '../../services/orders';
 
 export type { DeliveryAddress };
 
 export default function CartPage() {
   const { t } = useTranslation(['commerce', 'common']);
   const navigate = useNavigate();
+  const toast = useToast();
   const [items, setItems] = useState<CartItem[]>(() => getCartItems());
   const [loading, setLoading] = useState(false);
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discount: number } | null>(
     null,
   );
-  const [toast, setToast] = useState<string | null>(null);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress | null>(null);
+  const [shippingQuote, setShippingQuote] = useState<number | null>(null);
+  const [isQuotingShipping, setIsQuotingShipping] = useState(false);
+  const [shippingQuoteFailed, setShippingQuoteFailed] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -63,23 +65,82 @@ export default function CartPage() {
     };
   }, []);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+  useEffect(() => {
+    if (!getStoredToken()) return;
+    let isMounted = true;
+    getAddresses()
+      .then((addresses) => {
+        if (!isMounted) return;
+        const address = addresses.find((item) => item.isDefault) || addresses[0];
+        if (address) {
+          setDeliveryAddress({
+            recipientName: address.recipientName,
+            phone: address.phone,
+            city: address.city,
+            district: address.district || '',
+            ward: address.ward || '',
+            street: address.street,
+          });
+        }
+      })
+      .catch((err: unknown) => {
+        console.error('Lỗi tải địa chỉ mặc định để báo giá vận chuyển:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const showToast = (msg: string, variant: 'success' | 'error' = 'success') => {
+    toast[variant](msg);
   };
 
-  const selectedItems = items.filter((i) => i.selected);
+  const selectedItems = useMemo(() => items.filter((i) => i.selected), [items]);
   const totalQuantity = items.reduce((sum, i) => sum + i.qty, 0);
   const rawSubtotal = selectedItems.reduce((sum, i) => sum + i.price * i.qty, 0);
   const discountAmount = appliedVoucher ? appliedVoucher.discount : 0;
-  const grandTotal = Math.max(0, rawSubtotal - discountAmount);
+  const isFreeShipping = appliedVoucher?.code === 'FREESHIP';
+  const effectiveShippingFee = isFreeShipping ? 0 : shippingQuote;
+  const grandTotal = Math.max(0, rawSubtotal - discountAmount) + (effectiveShippingFee ?? 0);
   const isAllSelected = items.length > 0 && selectedItems.length === items.length;
+
+  useEffect(() => {
+    if (selectedItems.length === 0 || !deliveryAddress || isFreeShipping) {
+      setShippingQuote(null);
+      setIsQuotingShipping(false);
+      setShippingQuoteFailed(false);
+      return;
+    }
+
+    let isCurrent = true;
+    setShippingQuote(null);
+    setIsQuotingShipping(true);
+    setShippingQuoteFailed(false);
+    getCheckoutQuoteApi({
+      shippingAddress: deliveryAddress,
+      itemIds: selectedItems.map((item) => String(item.id)),
+    })
+      .then((quote) => {
+        if (isCurrent) setShippingQuote(quote.totalShippingFee);
+      })
+      .catch((err: unknown) => {
+        console.error('Lỗi tính phí vận chuyển trong giỏ hàng:', err);
+        if (isCurrent) setShippingQuoteFailed(true);
+      })
+      .finally(() => {
+        if (isCurrent) setIsQuotingShipping(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [deliveryAddress, isFreeShipping, selectedItems]);
 
   const handleUpdateQty = async (id: string | number, qty: number) => {
     try {
       await updateCartQty(id, qty);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : t('commerce:cart.updateFailed'));
+      showToast(err instanceof Error ? err.message : t('commerce:cart.updateFailed'), 'error');
     }
   };
 
@@ -88,19 +149,12 @@ export default function CartPage() {
       await removeFromCart(id);
       showToast(t('commerce:cart.removedToast'));
     } catch (err) {
-      showToast(err instanceof Error ? err.message : t('commerce:cart.removeFailed'));
+      showToast(err instanceof Error ? err.message : t('commerce:cart.removeFailed'), 'error');
     }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 rounded-xl bg-slate-900 px-5 py-3.5 text-white shadow-2xl animate-fade-in">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
-          <span className="text-sm font-semibold">{toast}</span>
-        </div>
-      )}
-
       <div className="max-w-[1280px] mx-auto px-4">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <nav className="flex items-center gap-2 text-xs text-slate-500">
@@ -156,6 +210,10 @@ export default function CartPage() {
               selectedItems={selectedItems}
               rawSubtotal={rawSubtotal}
               grandTotal={grandTotal}
+              shippingFee={effectiveShippingFee}
+              isQuotingShipping={isQuotingShipping}
+              shippingQuoteFailed={shippingQuoteFailed}
+              hasDeliveryAddress={Boolean(deliveryAddress)}
               appliedVoucher={appliedVoucher}
               onApplyVoucher={(code) => {
                 if (code === 'NEXUS500K') {
@@ -174,12 +232,12 @@ export default function CartPage() {
                 }
                 const hasOutOfStock = selectedItems.some((i) => i.isOutOfStock);
                 if (hasOutOfStock) {
-                  showToast(t('commerce:cart.outOfStockError'));
+                  showToast(t('commerce:cart.outOfStockError'), 'error');
                   return;
                 }
                 const hasInsufficient = selectedItems.some((i) => i.isStockInsufficient);
                 if (hasInsufficient) {
-                  showToast(t('commerce:cart.insufficientStockError'));
+                  showToast(t('commerce:cart.insufficientStockError'), 'error');
                   return;
                 }
                 setShowCheckoutModal(true);
@@ -194,8 +252,8 @@ export default function CartPage() {
         onClose={() => setShowCheckoutModal(false)}
         onCheckoutSuccess={() => setItems([])}
         selectedItems={selectedItems}
-        shippingFee={appliedVoucher?.code === 'FREESHIP' ? 0 : 30000}
-        grandTotal={appliedVoucher?.code === 'FREESHIP' ? grandTotal : grandTotal + 30000}
+        shippingFee={effectiveShippingFee ?? 30000}
+        grandTotal={effectiveShippingFee === null ? grandTotal + 30000 : grandTotal}
         showToast={showToast}
       />
     </div>

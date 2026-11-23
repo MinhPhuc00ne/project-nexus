@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Role } from '@nexus/types';
 import { formatCurrency } from '../../i18n/formatters';
 import { getIntlLocale } from '../../i18n/config';
 import {
@@ -24,6 +25,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { getBuyerOrdersApi, type BuyerOrder } from '../../services/orders';
 import { getBuyerWalletApi, type BuyerWalletResponse } from '../../services/wallet.service';
+import BuyerInterestRecommendations from '../../components/buyer/BuyerInterestRecommendations';
 
 const statusMap = {
   PENDING_PAYMENT: {
@@ -197,6 +199,8 @@ export default function BuyerDashboardPage() {
           </div>
         </div>
       </div>
+
+      {user?.role === Role.BUYER && <BuyerInterestRecommendations buyerId={user.id} />}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Heart, ShoppingCart, Trash2, Search, Tag, ShoppingBag } from 'lucide-react';
 import { addToCart } from '../../services/cart';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../components/ToastNotification';
 import {
   getBuyerWishlist,
   removeBuyerWishlistItem,
@@ -14,27 +15,21 @@ import { formatCurrency } from '../../i18n/formatters';
 export default function BuyerWishlistPage() {
   const { t, i18n } = useTranslation('buyer');
   const { user } = useAuth();
+  const toast = useToast();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [search, setSearch] = useState('');
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setItems(getBuyerWishlist(user?.id));
   }, [user?.id]);
 
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3000);
-  };
-
   const removeItem = (id: string) => {
     const updated = removeBuyerWishlistItem(user?.id, id);
     setItems(updated);
-    showToast(t('wishlist.removedToast'));
+    toast.success(t('wishlist.removedToast'));
   };
 
-  const handleAddToCart = (item: WishlistItem) => {
-    if (!item.inStock) return;
+  const addWishlistItemToCart = (item: WishlistItem) =>
     addToCart({
       id: item.id,
       name: item.name,
@@ -45,7 +40,41 @@ export default function BuyerWishlistPage() {
       selected: true,
       category: item.category,
     });
-    showToast(t('wishlist.addedToCartToast', { name: item.name.slice(0, 40) }));
+
+  const handleAddToCart = async (item: WishlistItem) => {
+    if (!item.inStock) {
+      toast.error(t('wishlist.outOfStockToast'));
+      return;
+    }
+    try {
+      await addWishlistItemToCart(item);
+      toast.success(t('wishlist.addedToCartToast', { name: item.name.slice(0, 40) }));
+    } catch (error) {
+      console.error('Unable to add wishlist item to cart:', error);
+      toast.error(error instanceof Error ? error.message : t('wishlist.addToCartFailed'));
+    }
+  };
+
+  const handleAddAllToCart = async () => {
+    const availableItems = items.filter((item) => item.inStock);
+    if (availableItems.length === 0) {
+      toast.error(t('wishlist.outOfStockToast'));
+      return;
+    }
+    const results = await Promise.allSettled(availableItems.map(addWishlistItemToCart));
+    const addedCount = results.filter((result) => result.status === 'fulfilled').length;
+    const failedResult = results.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
+    if (addedCount > 0) toast.success(t('wishlist.addedAllToCartToast'));
+    if (failedResult) {
+      console.error('Unable to add all wishlist items to cart:', failedResult.reason);
+      toast.error(
+        failedResult.reason instanceof Error
+          ? failedResult.reason.message
+          : t('wishlist.addToCartFailed'),
+      );
+    }
   };
 
   const filtered = items.filter(
@@ -59,14 +88,6 @@ export default function BuyerWishlistPage() {
 
   return (
     <div className="space-y-5">
-      {/* Toast */}
-      {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 rounded-xl bg-slate-900 px-5 py-3.5 text-white shadow-2xl animate-fade-in">
-          <Heart size={14} className="text-rose-400 shrink-0" />
-          <span className="text-xs font-semibold">{toastMsg}</span>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -81,10 +102,7 @@ export default function BuyerWishlistPage() {
         {items.length > 0 && (
           <button
             type="button"
-            onClick={() => {
-              items.forEach((item) => handleAddToCart(item));
-              showToast(t('wishlist.addedAllToCartToast'));
-            }}
+            onClick={() => void handleAddAllToCart()}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition"
           >
             <ShoppingCart size={13} />

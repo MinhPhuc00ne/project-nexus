@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Plus, AlertCircle, Home, CheckCircle2 } from 'lucide-react';
+import { MapPin, Plus, AlertCircle, Home } from 'lucide-react';
+import { useToast } from '../../components/ToastNotification';
 import AddressFormModal, { type AddressFormData } from '../../components/address/AddressFormModal';
 import AddressCard from '../../components/address/AddressCard';
 import {
@@ -25,10 +26,10 @@ const initialForm: AddressFormData = {
 
 export default function BuyerAddressesPage() {
   const { t } = useTranslation('buyer');
+  const toast = useToast();
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<UserAddress | null>(null);
@@ -37,11 +38,6 @@ export default function BuyerAddressesPage() {
   const [saving, setSaving] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3500);
-  };
 
   const fetchAddresses = async () => {
     setLoading(true);
@@ -125,7 +121,7 @@ export default function BuyerAddressesPage() {
             return a;
           }),
         );
-        showToast(t('addresses.updatedToast'));
+        toast.success(t('addresses.updatedToast'));
       } else {
         const created = await createAddress(dto);
         setAddresses((prev) => {
@@ -134,7 +130,7 @@ export default function BuyerAddressesPage() {
           }
           return [created, ...prev];
         });
-        showToast(t('addresses.addedToast'));
+        toast.success(t('addresses.addedToast'));
       }
       setIsModalOpen(false);
     } catch (err: unknown) {
@@ -153,9 +149,9 @@ export default function BuyerAddressesPage() {
           isDefault: addr.id === id,
         })),
       );
-      showToast(t('addresses.setDefaultToast'));
+      toast.success(t('addresses.setDefaultToast'));
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : t('addresses.setDefaultError'));
+      toast.error(err instanceof Error ? err.message : t('addresses.setDefaultError'));
     }
   };
 
@@ -164,9 +160,9 @@ export default function BuyerAddressesPage() {
     try {
       await deleteAddress(id);
       setAddresses((prev) => prev.filter((addr) => addr.id !== id));
-      showToast(t('addresses.deletedToast'));
+      toast.success(t('addresses.deletedToast'));
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : t('addresses.deleteError'));
+      toast.error(err instanceof Error ? err.message : t('addresses.deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -192,14 +188,6 @@ export default function BuyerAddressesPage() {
           <span>{t('addresses.addNew')}</span>
         </button>
       </div>
-
-      {/* Toast Alert */}
-      {toast && (
-        <div className="mb-6 flex items-center gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-800">
-          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-          <span>{toast}</span>
-        </div>
-      )}
 
       {/* Error state */}
       {error && (

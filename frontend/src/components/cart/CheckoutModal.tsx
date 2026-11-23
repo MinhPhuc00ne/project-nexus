@@ -27,7 +27,7 @@ interface CheckoutModalProps {
   shippingFee?: number;
   grandTotal?: number;
   onCheckoutSuccess?: () => void;
-  showToast: (msg: string) => void;
+  showToast: (msg: string, variant?: 'success' | 'error') => void;
 }
 
 export default function CheckoutModal({
@@ -142,7 +142,7 @@ export default function CheckoutModal({
   const handleConfirmCheckout = async () => {
     const { recipientName, phone, street, city, district, ward } = currentAddress;
     if (!recipientName.trim() || !phone.trim() || !street.trim()) {
-      showToast(t('checkout.addressMissing'));
+      showToast(t('checkout.addressMissing'), 'error');
       return;
     }
 
@@ -184,6 +184,7 @@ export default function CheckoutModal({
           : typeof resMsg === 'string'
             ? resMsg
             : t('checkout.failed'),
+        'error',
       );
     } finally {
       setIsProcessingOrder(false);
