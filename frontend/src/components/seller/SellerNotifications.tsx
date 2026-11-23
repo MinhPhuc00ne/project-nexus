@@ -38,17 +38,21 @@ export default function SellerNotifications({
       type?.toUpperCase().includes('REVIEW') || notificationText.includes('đánh giá');
     const isTrendingNotification =
       notificationText.includes('xu hướng') || notificationText.includes('trending');
-    const destination = resolvedUrl?.startsWith('/seller/')
-      ? isTrendingNotification && !resolvedUrl.includes('tab=')
-        ? '/seller/products?tab=trending'
-        : resolvedUrl
-      : isTrendingNotification
-        ? '/seller/products?tab=trending'
-        : type === 'DISPUTE'
-          ? '/seller/disputes'
-          : isReviewNotification
-            ? '/seller/reviews'
-            : '/seller/auctions';
+
+    let destination = '/seller/auctions';
+    if (resolvedUrl?.startsWith('/seller/')) {
+      destination =
+        isTrendingNotification && !resolvedUrl.includes('tab=')
+          ? '/seller/products?tab=trending'
+          : resolvedUrl;
+    } else if (isTrendingNotification) {
+      destination = '/seller/products?tab=trending';
+    } else if (type === 'DISPUTE') {
+      destination = '/seller/disputes';
+    } else if (isReviewNotification) {
+      destination = '/seller/reviews';
+    }
+
     navigate(destination);
   };
 
@@ -152,7 +156,7 @@ export default function SellerNotifications({
                                     size={10}
                                     className="text-orange-500 fill-orange-500"
                                   />{' '}
-                                  Xu Hướng
+                                  {t('notifications.trendingBadge')}
                                 </span>
                                 <p className="break-words text-xs font-semibold text-slate-800">
                                   {item.title}
@@ -194,11 +198,13 @@ export default function SellerNotifications({
                                 }
                                 className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
                               >
-                                {isTrendingItem
-                                  ? 'Xem sản phẩm Xu hướng →'
-                                  : item.type === 'DISPUTE'
-                                    ? t('notifications.viewDispute')
-                                    : t('notifications.openContent')}
+                                {isTrendingItem && t('notifications.viewTrending')}
+                                {!isTrendingItem &&
+                                  item.type === 'DISPUTE' &&
+                                  t('notifications.viewDispute')}
+                                {!isTrendingItem &&
+                                  item.type !== 'DISPUTE' &&
+                                  t('notifications.openContent')}
                               </button>
                             )}
                             {!item.isRead && (

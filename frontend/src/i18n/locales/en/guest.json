@@ -37,6 +37,15 @@
       "subcategoriesCount": "{{count}} subcategories",
       "manyProducts": "Many products"
     },
+    "trending": {
+      "title": "Trending Now",
+      "subtitle": "Top products most sought after and purchased across the platform",
+      "empty": "No trending products yet",
+      "emptyDesc": "Products with the highest sales will appear here.",
+      "top1Badge": "Top 1 Trending",
+      "salesCount": "{{count}} sold",
+      "outOfStock": "Out of Stock"
+    },
     "auctionCard": {
       "noData": "No data",
       "noImage": "No image",

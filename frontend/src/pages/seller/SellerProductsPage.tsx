@@ -44,6 +44,60 @@ const statusKeys = {
   DRAFT: 'products.statuses.DRAFT',
 } as const;
 
+function SellerTrendingBadge({
+  trendingInfo,
+  trendingNotifiedAt,
+  trendingExcluded,
+}: {
+  trendingInfo?: { rank: number; purchaseCount: number };
+  trendingNotifiedAt?: string | null;
+  trendingExcluded?: boolean;
+}) {
+  const { t } = useTranslation('seller');
+
+  if (trendingExcluded) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
+        title={t('products.trendingExcludedBadge')}
+      >
+        <AlertTriangleOutlined size={10} /> {t('products.trendingExcludedBadge')}
+      </span>
+    );
+  }
+
+  if (trendingInfo) {
+    if (trendingInfo.rank === 1) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-black text-white shadow-xs">
+          <FlameOutlined size={11} className="fill-white" />{' '}
+          {t('products.trendingRankBadge', { rank: 1 })}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+        <FlameOutlined size={11} className="text-orange-500 fill-orange-500" /> #{trendingInfo.rank}{' '}
+        ({trendingInfo.purchaseCount})
+      </span>
+    );
+  }
+
+  if (trendingNotifiedAt) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700"
+        title={t('products.trendingNotifiedTooltip')}
+      >
+        <FlameOutlined size={11} className="text-amber-500" />{' '}
+        {t('products.trendingNotifiedTooltip')}
+      </span>
+    );
+  }
+
+  return null;
+}
+
 export default function SellerProductsPage({ inventory = false }: { inventory?: boolean }) {
   const { t, i18n } = useTranslation('seller');
   const [searchParams] = useSearchParams();
@@ -193,13 +247,9 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
           icon={<InboxOutlined />}
         />
         <StatCard
-          label="Lên Xu Hướng 🔥"
+          label={t('products.statTrending')}
           value={unavailable ? '—' : trendingCount}
-          detail={
-            trendingCount > 0
-              ? `${trendingCount} sản phẩm lọt Top xu hướng`
-              : 'Chưa có sản phẩm đạt Top'
-          }
+          detail={t('products.statTrendingDetail')}
           icon={<FlameOutlined className={trendingCount > 0 ? 'text-orange-500' : ''} />}
         />
         <StatCard
@@ -249,7 +299,9 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
             className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-600 font-medium"
           >
             <option value="all">{t('products.allStatuses')}</option>
-            <option value="trending">🔥 Sản phẩm Xu hướng ({trendingCount})</option>
+            <option value="trending">
+              {t('products.filterTrending')} ({trendingCount})
+            </option>
             {Object.entries(statusKeys).map(([value, labelKey]) => (
               <option key={value} value={value}>
                 {t(labelKey)}
@@ -334,36 +386,11 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                               >
                                 {product.title}
                               </Link>
-                              {trendingInfo ? (
-                                trendingInfo.rank === 1 ? (
-                                  <span className="inline-flex items-center gap-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-black text-white shadow-xs">
-                                    <FlameOutlined size={11} className="fill-white" /> Top 1 Xu
-                                    hướng
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
-                                    <FlameOutlined
-                                      size={11}
-                                      className="text-orange-500 fill-orange-500"
-                                    />{' '}
-                                    #{trendingInfo.rank} Xu hướng ({trendingInfo.purchaseCount} lượt
-                                    mua)
-                                  </span>
-                                )
-                              ) : product.trendingNotifiedAt ? (
-                                <span className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
-                                  <FlameOutlined size={11} className="text-amber-500" /> Từng đạt
-                                  Top Xu hướng
-                                </span>
-                              ) : null}
-                              {product.trendingExcluded && (
-                                <span
-                                  className="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
-                                  title="Sản phẩm đã bị Quản trị viên gỡ khỏi danh sách Xu hướng"
-                                >
-                                  <AlertTriangleOutlined size={10} /> Đã gỡ khỏi Xu hướng
-                                </span>
-                              )}
+                              <SellerTrendingBadge
+                                trendingInfo={trendingInfo}
+                                trendingNotifiedAt={product.trendingNotifiedAt}
+                                trendingExcluded={product.trendingExcluded}
+                              />
                             </div>
                             <p className="mt-1 text-slate-400">{product.category?.name}</p>
                             {options.length > 0 && (

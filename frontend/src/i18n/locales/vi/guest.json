@@ -37,6 +37,15 @@
       "subcategoriesCount": "{{count}} nhóm con",
       "manyProducts": "Nhiều sản phẩm"
     },
+    "trending": {
+      "title": "Xu Hướng Thịnh Hành",
+      "subtitle": "Top sản phẩm được cộng đồng săn đón và có lượt mua cao nhất hiện tại",
+      "empty": "Chưa có sản phẩm xu hướng nào",
+      "emptyDesc": "Các sản phẩm có lượt mua cao nhất sẽ xuất hiện tại đây.",
+      "top1Badge": "Top 1 Xu Hướng",
+      "salesCount": "{{count}} lượt mua",
+      "outOfStock": "Hết hàng"
+    },
     "auctionCard": {
       "noData": "Chưa có dữ liệu",
       "noImage": "Chưa có hình ảnh",

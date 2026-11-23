@@ -332,6 +332,35 @@
       "processing": "Đang xử lý…",
       "confirm": "Xác nhận"
     },
+    "trending": {
+      "tabAll": "Tất cả sản phẩm sàn",
+      "tabTrending": "Bảng Xếp Hạng Xu Hướng",
+      "tabTrendingCount": "Bảng Xếp Hạng Xu Hướng ({{count}})",
+      "loading": "Đang tải danh sách sản phẩm xu hướng…",
+      "empty": "Chưa có sản phẩm nào đạt tiêu chí Xu hướng. Sản phẩm sẽ tự động lọt vào danh sách khi có đủ lượt mua thành công.",
+      "cols": {
+        "rank": "Thứ hạng",
+        "product": "Sản phẩm",
+        "seller": "Gian hàng (Seller)",
+        "purchaseCount": "Lượt mua",
+        "price": "Giá bán",
+        "status": "Trạng thái Xu hướng",
+        "actions": "Thao tác Kiểm duyệt"
+      },
+      "uncategorized": "Chưa phân loại",
+      "defaultSeller": "NEXUS Seller",
+      "purchasesBadge": "{{count}} lượt mua",
+      "statusActive": "Đang hiển thị Xu hướng 🔥",
+      "statusExcluded": "Đã bị Admin gỡ khỏi Xu hướng",
+      "statusExcludedShort": "Đã loại trừ",
+      "removeBtn": "Gỡ khỏi Xu hướng",
+      "processing": "Đang xử lý…",
+      "removePrompt": "Nhập lý do gỡ sản phẩm \"{{title}}\" khỏi danh sách Xu hướng (Hệ thống sẽ gửi thông báo đến Seller):",
+      "removePromptDefault": "Không đáp ứng tiêu chuẩn chất lượng trang chủ",
+      "removeSuccess": "Đã gỡ sản phẩm khỏi Xu hướng thành công và gửi thông báo cho Seller.",
+      "loadErr": "Không thể tải danh sách xu hướng",
+      "removeErr": "Không thể gỡ sản phẩm khỏi xu hướng"
+    },
     "detail": {
       "labels": {
         "ACTIVE": "Đang mở bán",
@@ -743,6 +772,35 @@
       "cancel": "Hủy",
       "processing": "Đang xử lý…",
       "confirm": "Xác nhận"
+    },
+    "trending": {
+      "tabAll": "Tất cả sản phẩm sàn",
+      "tabTrending": "Bảng Xếp Hạng Xu Hướng",
+      "tabTrendingCount": "Bảng Xếp Hạng Xu Hướng ({{count}})",
+      "loading": "Đang tải danh sách sản phẩm xu hướng…",
+      "empty": "Chưa có sản phẩm nào đạt tiêu chí Xu hướng. Sản phẩm sẽ tự động lọt vào danh sách khi có đủ lượt mua thành công.",
+      "cols": {
+        "rank": "Thứ hạng",
+        "product": "Sản phẩm",
+        "seller": "Gian hàng (Seller)",
+        "purchaseCount": "Lượt mua",
+        "price": "Giá bán",
+        "status": "Trạng thái Xu hướng",
+        "actions": "Thao tác Kiểm duyệt"
+      },
+      "uncategorized": "Chưa phân loại",
+      "defaultSeller": "NEXUS Seller",
+      "purchasesBadge": "{{count}} lượt mua",
+      "statusActive": "Đang hiển thị Xu hướng 🔥",
+      "statusExcluded": "Đã bị Admin gỡ khỏi Xu hướng",
+      "statusExcludedShort": "Đã loại trừ",
+      "removeBtn": "Gỡ khỏi Xu hướng",
+      "processing": "Đang xử lý…",
+      "removePrompt": "Nhập lý do gỡ sản phẩm \"{{title}}\" khỏi danh sách Xu hướng (Hệ thống sẽ gửi thông báo đến Seller):",
+      "removePromptDefault": "Không đáp ứng tiêu chuẩn chất lượng trang chủ",
+      "removeSuccess": "Đã gỡ sản phẩm khỏi Xu hướng thành công và gửi thông báo cho Seller.",
+      "loadErr": "Không thể tải danh sách xu hướng",
+      "removeErr": "Không thể gỡ sản phẩm khỏi xu hướng"
     }
   },
   "orders": {
