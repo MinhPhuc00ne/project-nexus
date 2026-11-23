@@ -14,6 +14,10 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
 import { ProductSaleService } from '../services/product-sale.service';
+import {
+  ProductTrendingService,
+  TrendingProductsResult,
+} from '../services/product-trending.service';
 import { UpdateProductSaleDto } from '../dtos/product-features.dto';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
@@ -34,6 +38,7 @@ export class ProductController {
   constructor(
     private readonly productService: ProductService,
     private readonly sale: ProductSaleService,
+    private readonly trendingService: ProductTrendingService,
   ) {}
 
   @Patch(':id/sale')
@@ -75,6 +80,19 @@ export class ProductController {
   @ApiResponse({ status: 200, description: 'Lấy danh sách sản phẩm của Seller thành công' })
   async getMyProducts(@CurrentUser('id') sellerId: string) {
     return this.productService.getSellerProducts(sellerId);
+  }
+
+  @Public()
+  @Get('trending')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[GUEST / BUYER] Lấy danh sách sản phẩm Xu hướng trên HomePage',
+    description:
+      'Xếp hạng các sản phẩm đang bán chạy nhất dựa trên tổng số lượt mua (không bao gồm sản phẩm đã bị Admin gỡ khỏi xu hướng).',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy danh sách sản phẩm xu hướng thành công' })
+  async getTrendingProducts(@Query('limit') limit?: string): Promise<TrendingProductsResult> {
+    return this.trendingService.getTrendingProducts(limit ? Number(limit) : 10);
   }
 
   @Public()

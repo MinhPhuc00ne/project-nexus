@@ -35,6 +35,7 @@ import {
   GhnShippingQuote,
 } from '../../fulfillment/services/ghn-shipping.service';
 import { InventoryService } from '../../catalog/services/inventory.service';
+import { ProductTrendingService } from '../../catalog/services/product-trending.service';
 import { AuctionCheckoutService } from './auction-checkout.service';
 
 export interface PayosPaymentResponse {
@@ -82,7 +83,18 @@ export class OrderService {
     private readonly refunds?: RefundService,
     private readonly finance?: AdminFinanceService,
     @Optional() private readonly auctionCheckout?: AuctionCheckoutService,
+    @Optional() private readonly trendingService?: ProductTrendingService,
   ) {}
+
+  private async syncTrendingSafely(): Promise<void> {
+    if (!this.trendingService) return;
+    try {
+      await this.trendingService.syncTopOneTrendingNotification();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Đồng bộ thông báo Top 1 Xu hướng thất bại: ${message}`);
+    }
+  }
 
   /**
    * Tạo đơn hàng từ giỏ hàng hiện tại (Price Revalidation + Anti-Self-Purchase)
@@ -692,6 +704,8 @@ export class OrderService {
       };
     });
 
+    await this.syncTrendingSafely();
+
     return {
       success: true,
       message: 'Thanh toán đơn hàng bằng ví NEXUS Pay thành công!',
@@ -972,6 +986,7 @@ export class OrderService {
       });
 
       this.logger.log(`Đơn ${payment.orderId} đã thanh toán PayOS; tiền được giữ ký quỹ.`);
+      await this.syncTrendingSafely();
     }
 
     return {
@@ -1071,6 +1086,7 @@ export class OrderService {
         this.logger.log(
           `Đồng bộ trực tiếp: Đơn ${order.id} đã thanh toán PayOS; tiền được giữ ký quỹ.`,
         );
+        await this.syncTrendingSafely();
 
         return {
           paid: true,

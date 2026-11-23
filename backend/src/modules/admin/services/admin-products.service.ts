@@ -1,7 +1,15 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { ProductTrendingService } from '../../catalog/services/product-trending.service';
 import { QueryAdminProductsDto } from '../dtos/query-admin-products.dto';
+import { RemoveTrendingProductDto } from '../dtos/remove-trending-product.dto';
 import { UpdateProductCategoryDto } from '../dtos/update-product-category.dto';
 import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
 
@@ -9,7 +17,10 @@ import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
 export class AdminProductsService {
   private readonly logger = new Logger(AdminProductsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly trendingService?: ProductTrendingService,
+  ) {}
 
   /**
    * Retrieves paginated platform products with moderation and seller filters.
@@ -401,6 +412,104 @@ export class AdminProductsService {
     return {
       success: true,
       message: `Đã xóa vĩnh viễn sản phẩm "${product.title}" thành công.`,
+    };
+  }
+
+  /**
+   * Lists current trending products ranked by total purchases for Admin moderation.
+   *
+   * @param limit - Maximum number of trending products to return
+   * @returns Trending product list with purchase counts
+   */
+  async listTrendingProducts(
+    limit = 20,
+  ): Promise<Awaited<ReturnType<ProductTrendingService['getTrendingProducts']>>> {
+    if (!this.trendingService) {
+      return { items: [], total: 0 };
+    }
+    return this.trendingService.getTrendingProducts(limit);
+  }
+
+  /**
+   * Removes a product from the HomePage trending list and notifies the seller.
+   * Admin cannot manually add products to trending; only removal is permitted.
+   *
+   * @param id - Unique identifier of the product
+   * @param adminId - Unique identifier of the administrator
+   * @param dto - Optional removal reason
+   * @returns Confirmation of trending exclusion
+   * @throws NotFoundException when the product does not exist
+   */
+  async removeProductFromTrending(
+    id: string,
+    adminId: string,
+    dto?: RemoveTrendingProductDto,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    product: {
+      id: string;
+      title: string;
+      trendingExcluded: boolean;
+      trendingExcludedAt?: Date | null;
+    };
+  }> {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      select: { id: true, title: true, sellerId: true, trendingExcluded: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Không tìm thấy sản phẩm.');
+    }
+
+    if (product.trendingExcluded) {
+      return {
+        success: true,
+        message: `Sản phẩm "${product.title}" đã được gỡ khỏi Xu hướng trước đó.`,
+        product: { id: product.id, title: product.title, trendingExcluded: true },
+      };
+    }
+
+    const note = dto?.reason?.trim() ? ` Lý do: ${dto.reason.trim()}` : '';
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.product.update({
+        where: { id },
+        data: {
+          trendingExcluded: true,
+          trendingExcludedAt: new Date(),
+        },
+        select: { id: true, title: true, trendingExcluded: true, trendingExcludedAt: true },
+      });
+
+      if (tx.notification?.create) {
+        await tx.notification.create({
+          data: {
+            userId: product.sellerId,
+            title: 'Sản phẩm đã bị gỡ khỏi Xu hướng',
+            content: `Sản phẩm "${product.title}" của bạn đã bị Quản trị viên gỡ khỏi danh sách Xu hướng trên trang chủ.${note}`,
+            targetUrl: '/seller/products',
+            type: NotificationType.SYSTEM,
+            channel: NotificationChannel.IN_APP,
+          },
+        });
+      }
+
+      return result;
+    });
+
+    this.logger.log(
+      `Admin (${adminId}) đã gỡ sản phẩm ${product.title} (${product.id}) khỏi Xu hướng.`,
+    );
+
+    if (this.trendingService) {
+      await this.trendingService.syncTopOneTrendingNotification();
+    }
+
+    return {
+      success: true,
+      message: `Đã gỡ sản phẩm "${product.title}" khỏi danh sách Xu hướng.`,
+      product: updated,
     };
   }
 }
