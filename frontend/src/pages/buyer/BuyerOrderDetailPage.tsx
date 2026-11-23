@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
 import { getIntlLocale } from '../../i18n/config';
@@ -26,6 +26,7 @@ import OrderTimeline from '../../components/orders/OrderTimeline';
 import OrderAddressCard from '../../components/orders/OrderAddressCard';
 import OrderItemsSummary from '../../components/orders/OrderItemsSummary';
 import OrderReviewModal from '../../components/orders/OrderReviewModal';
+import { useToast } from '../../components/ToastNotification';
 
 const statusMap = {
   PENDING_PAYMENT: {
@@ -89,12 +90,18 @@ const statusMap = {
 export default function BuyerOrderDetailPage() {
   const { t, i18n } = useTranslation('buyer');
   const { id } = useParams<{ id: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const toast = useToast();
   const [order, setOrder] = useState<BuyerOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(() => searchParams.get('review') === '1');
+
+  useEffect(() => {
+    setShowReviewModal(searchParams.get('review') === '1' && order?.status === 'CONFIRMED');
+  }, [order?.status, searchParams]);
 
   const fetchOrderDetail = useCallback(async () => {
     if (!id) return;
@@ -123,8 +130,8 @@ export default function BuyerOrderDetailPage() {
       if (paymentInfo.checkoutUrl) {
         window.open(paymentInfo.checkoutUrl, '_blank');
       }
-    } catch {
-      alert(t('orderDetailPage.paymentLinkError'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('orderDetailPage.paymentLinkError'));
     } finally {
       setIsPaying(false);
     }
@@ -138,15 +145,11 @@ export default function BuyerOrderDetailPage() {
     setIsConfirming(true);
     try {
       await confirmDeliveryOrderApi(order.id);
+      toast.success(t('ordersPage.confirmDeliverySuccess'));
       await fetchOrderDetail();
     } catch (err: unknown) {
       console.error('Lỗi xác nhận nhận hàng:', err);
-      const msg =
-        err &&
-        typeof err === 'object' &&
-        'response' in err &&
-        (err as { response?: { data?: { message?: string } } }).response?.data?.message;
-      alert(msg || t('orderDetailPage.confirmDeliveryError'));
+      toast.error(err instanceof Error ? err.message : t('orderDetailPage.confirmDeliveryError'));
     } finally {
       setIsConfirming(false);
     }
@@ -290,7 +293,7 @@ export default function BuyerOrderDetailPage() {
         </div>
       )}
 
-      {(order.status === 'CONFIRMED' || order.status === 'COMPLETED') && (
+      {order.status === 'CONFIRMED' && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
@@ -307,7 +310,14 @@ export default function BuyerOrderDetailPage() {
           </div>
           <button
             type="button"
-            onClick={() => setShowReviewModal(true)}
+            onClick={() => {
+              setShowReviewModal(true);
+              setSearchParams((current) => {
+                const next = new URLSearchParams(current);
+                next.set('review', '1');
+                return next;
+              });
+            }}
             className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
           >
             {t('orderDetailPage.rateProducts')}
@@ -318,7 +328,14 @@ export default function BuyerOrderDetailPage() {
       {order && (
         <OrderReviewModal
           isOpen={showReviewModal}
-          onClose={() => setShowReviewModal(false)}
+          onClose={() => {
+            setShowReviewModal(false);
+            setSearchParams((current) => {
+              const next = new URLSearchParams(current);
+              next.delete('review');
+              return next;
+            });
+          }}
           order={order}
           onSuccess={() => void fetchOrderDetail()}
         />

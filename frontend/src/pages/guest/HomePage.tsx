@@ -20,6 +20,7 @@ import {
 import { AuctionStatus } from '@nexus/types';
 import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
 import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
+import HomeTrendingProducts from '../../components/home/HomeTrendingProducts';
 
 function HomePage() {
   const { t } = useTranslation('guest');
@@ -208,6 +209,10 @@ function HomePage() {
       </section>
 
       <HomeLiveAuction auctions={liveAuctions} />
+
+      <div className="mt-6">
+        <HomeTrendingProducts />
+      </div>
 
       {/* TÍNH NĂNG ĐỀ XUẤT SẢN PHẨM CÁ NHÂN HÓA (AI RECOMMENDATIONS) */}
       <HomeRecommendationsSection

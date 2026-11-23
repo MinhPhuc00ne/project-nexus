@@ -13,6 +13,7 @@ import {
 import { Link, useSearchParams } from 'react-router-dom';
 import { getBuyerOrdersApi, disputeOrderApi, type BuyerOrder } from '../../services/orders';
 import CreateDisputeModal, { reasonLabels } from '../../components/disputes/CreateDisputeModal';
+import { useToast } from '../../components/ToastNotification';
 
 export type BuyerDisputeStatus = 'ALL' | 'OPEN' | 'UNDER_REVIEW' | 'RESOLVED' | 'REJECTED';
 export type BuyerDisputeReason =
@@ -65,6 +66,7 @@ const tabs = [
 
 export default function BuyerDisputesPage() {
   const { t } = useTranslation('buyer');
+  const toast = useToast();
   const [searchParams] = useSearchParams();
   const queryOrderId = searchParams.get('orderId');
 
@@ -77,21 +79,14 @@ export default function BuyerDisputesPage() {
   const [reason, setReason] = useState<BuyerDisputeReason>('NOT_RECEIVED');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3500);
-  };
-
   // Tự động mở form khiếu nại và gán sẵn đơn hàng khi có orderId từ query param
   useEffect(() => {
     if (queryOrderId) {
       setSelectedOrderId(queryOrderId);
       setShowCreateModal(true);
-      showToast(t('disputesPage.preselectedOrderToast'));
+      toast.success(t('disputesPage.preselectedOrderToast'));
     }
-  }, [queryOrderId, t]);
+  }, [queryOrderId, t, toast]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -135,28 +130,29 @@ export default function BuyerDisputesPage() {
 
   const handleSubmitDispute = async () => {
     if (!selectedOrderId) {
-      showToast(t('disputesPage.selectOrderError'));
+      toast.error(t('disputesPage.selectOrderError'));
       return;
     }
     if (!description.trim()) {
-      showToast(t('disputesPage.enterDescriptionError'));
+      toast.error(t('disputesPage.enterDescriptionError'));
       return;
     }
 
     setSubmitting(true);
     try {
-      await disputeOrderApi(
-        selectedOrderId,
-        `[${t(`disputeModal.reasons.${reason}`, { ns: 'common', defaultValue: reasonLabels[reason] })}] ${description.trim()}`,
-      );
-      showToast(t('disputesPage.submitSuccessToast'));
+      const reasonText = t(`disputeModal.reasons.${reason}`, {
+        ns: 'common',
+        defaultValue: reasonLabels[reason],
+      });
+      await disputeOrderApi(selectedOrderId, `[${reasonText}] ${description.trim()}`);
+      toast.success(t('disputesPage.submitSuccessToast'));
       setShowCreateModal(false);
       setSelectedOrderId('');
       setDescription('');
       void loadData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('disputesPage.submitError');
-      showToast(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -166,12 +162,6 @@ export default function BuyerDisputesPage() {
 
   return (
     <div className="space-y-5">
-      {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-[9999] rounded-xl bg-slate-900 px-5 py-3 text-xs font-semibold text-white shadow-xl animate-fade-in">
-          {toastMsg}
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -225,11 +215,12 @@ export default function BuyerDisputesPage() {
       />
 
       {/* List */}
-      {loading ? (
+      {loading && (
         <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
           <Loader2 size={16} className="animate-spin text-red-600" /> {t('disputesPage.loading')}
         </div>
-      ) : filtered.length === 0 ? (
+      )}
+      {!loading && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
           <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center text-red-400 mb-4">
             <ShieldAlert size={28} />
@@ -246,7 +237,8 @@ export default function BuyerDisputesPage() {
             {t('disputesPage.viewOrdersButton')}
           </Link>
         </div>
-      ) : (
+      )}
+      {!loading && filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((d) => {
             const s = statusConfig[d.status] ?? statusConfig.OPEN;

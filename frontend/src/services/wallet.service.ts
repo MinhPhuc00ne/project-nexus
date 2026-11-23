@@ -1,4 +1,5 @@
-import api from './api';
+import api, { apiRequest } from './api';
+import type { FinancePage, SellerWithdrawal } from '../types/seller-finance.types';
 
 export interface WalletTransactionItem {
   id: string;
@@ -23,15 +24,62 @@ export interface BuyerWalletResponse {
   transactions: WalletTransactionItem[];
 }
 
+export type WalletDepositProvider = 'PAYOS' | 'DIRECT';
+
 export interface DepositWalletInput {
   amount: number;
-  paymentMethod?: string;
+  provider?: WalletDepositProvider;
 }
 
 export interface DepositWalletResult {
+  success?: boolean;
   message?: string;
   checkoutUrl?: string;
   newBalance?: number;
+  balance?: number;
+  orderCode?: number;
+  transaction?: WalletTransactionItem;
+}
+
+export interface WalletDepositStatus {
+  orderCode: number;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED';
+  amount: number;
+  description?: string | null;
+  createdAt: string;
+  balance: number;
+}
+
+export interface BuyerWithdrawalInput {
+  amount: number;
+  bankName?: string;
+  accountNumber?: string;
+  accountHolderName?: string;
+  note?: string;
+}
+
+export interface BuyerWithdrawalResult {
+  success: boolean;
+  message: string;
+  withdrawalRequest: Pick<
+    SellerWithdrawal,
+    'id' | 'amount' | 'bankName' | 'accountNumber' | 'accountHolderName' | 'status' | 'createdAt'
+  >;
+  wallet: {
+    balance: number;
+    lockedBalance: number;
+    currency: string;
+  };
+}
+
+export interface BuyerFinanceTransaction {
+  id: string;
+  amount: number;
+  type: string;
+  status: string;
+  referenceId: string | null;
+  description: string | null;
+  createdAt: string;
 }
 
 /**
@@ -73,4 +121,41 @@ export async function depositBuyerWalletApi(dto: DepositWalletInput): Promise<De
   return (
     payload && typeof payload === 'object' && 'data' in payload ? payload.data : payload
   ) as DepositWalletResult;
+}
+
+export function checkBuyerDepositStatusApi(orderCode: number): Promise<WalletDepositStatus> {
+  return apiRequest<WalletDepositStatus>(
+    `/commerce/wallet/deposit/${encodeURIComponent(String(orderCode))}/status`,
+    { requireAuth: true },
+  );
+}
+
+export function createBuyerWithdrawalApi(
+  input: BuyerWithdrawalInput,
+): Promise<BuyerWithdrawalResult> {
+  return apiRequest<BuyerWithdrawalResult>('/buyer/finance/withdraw', {
+    method: 'POST',
+    body: input,
+    requireAuth: true,
+  });
+}
+
+export function getBuyerWithdrawalsApi(
+  page = 1,
+  limit = 10,
+): Promise<FinancePage<SellerWithdrawal>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return apiRequest<FinancePage<SellerWithdrawal>>(`/buyer/finance/withdrawals?${params}`, {
+    requireAuth: true,
+  });
+}
+
+export function getBuyerTransactionsApi(
+  page = 1,
+  limit = 50,
+): Promise<FinancePage<BuyerFinanceTransaction>> {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return apiRequest<FinancePage<BuyerFinanceTransaction>>(`/buyer/finance/transactions?${params}`, {
+    requireAuth: true,
+  });
 }

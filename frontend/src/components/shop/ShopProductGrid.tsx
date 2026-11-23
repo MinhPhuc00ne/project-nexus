@@ -1,13 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Package, Eye, ShoppingCart } from 'lucide-react';
+import { Package, Eye, Search, ShoppingCart } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
 import type { CatalogProduct } from '../../services/products.service';
 
 interface ShopProductGridProps {
   products: CatalogProduct[];
   totalProducts: number;
+  search: string;
+  onSearchChange: (value: string) => void;
   page: number;
   totalPages: number;
   onPageChange: (p: number) => void;
@@ -17,6 +19,8 @@ interface ShopProductGridProps {
 export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
   products,
   totalProducts,
+  search,
+  onSearchChange,
   page,
   totalPages,
   onPageChange,
@@ -25,27 +29,57 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
   const { t } = useTranslation('guest');
   return (
     <main className="max-w-screen-2xl mx-auto px-6 py-10">
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-slate-900">{t('shop.gridTitle')}</h2>
           <p className="text-xs text-slate-500 mt-1">{t('shop.gridSubtitle')}</p>
         </div>
-        <span className="text-xs font-bold text-slate-400">
-          {t('shop.gridShowing', { shown: products.length, total: totalProducts })}
-        </span>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
+          <label className="relative block sm:w-72">
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder={t('shop.productSearchPlaceholder')}
+              aria-label={t('shop.productSearchPlaceholder')}
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-xs text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+            />
+          </label>
+          <span className="text-xs font-bold text-slate-400 sm:text-right">
+            {t('shop.gridShowing', { shown: products.length, total: totalProducts })}
+          </span>
+        </div>
       </div>
 
       {products.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-lg mx-auto shadow-sm">
           <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800 mb-1">{t('shop.gridEmptyTitle')}</h3>
-          <p className="text-xs text-slate-500 mb-6">{t('shop.gridEmptyDesc')}</p>
-          <Link
-            to="/search"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
-          >
-            {t('shop.exploreOtherProducts')}
-          </Link>
+          <h3 className="text-base font-bold text-slate-800 mb-1">
+            {search ? t('shop.searchEmptyTitle') : t('shop.gridEmptyTitle')}
+          </h3>
+          <p className="text-xs text-slate-500 mb-6">
+            {search ? t('shop.searchEmptyDesc', { search }) : t('shop.gridEmptyDesc')}
+          </p>
+          {search ? (
+            <button
+              type="button"
+              onClick={() => onSearchChange('')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
+            >
+              {t('shop.clearProductSearch')}
+            </button>
+          ) : (
+            <Link
+              to="/search"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
+            >
+              {t('shop.exploreOtherProducts')}
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
