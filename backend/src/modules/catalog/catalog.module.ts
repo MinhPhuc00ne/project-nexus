@@ -6,6 +6,7 @@ import { InventoryService } from './services/inventory.service';
 import { ShopService } from './services/shop.service';
 import { ProductSaleService } from './services/product-sale.service';
 import { ProductSearchService } from './services/product-search.service';
+import { ProductTrendingService } from './services/product-trending.service';
 import { CategoryController } from './controllers/category.controller';
 import { ProductController } from './controllers/product.controller';
 import { ShopController } from './controllers/shop.controller';
@@ -33,10 +34,18 @@ import { AuctionStockService } from './services/auction-stock.service';
     ShopService,
     ProductSaleService,
     ProductSearchService,
+    ProductTrendingService,
     BannerService,
     BannerHistoryService,
     RecommendationsService,
   ],
-  exports: [CategoryService, ProductService, InventoryService, ShopService, AuctionStockService],
+  exports: [
+    CategoryService,
+    ProductService,
+    ProductTrendingService,
+    InventoryService,
+    ShopService,
+    AuctionStockService,
+  ],
 })
 export class CatalogModule {}

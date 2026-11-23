@@ -7,7 +7,11 @@ import {
   WalletTransactionType,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { DepositAdminWalletDto, QueryAdminWalletTransactionsDto } from '../dtos/admin-wallet.dto';
+import {
+  DepositAdminWalletDto,
+  QueryAdminWalletTransactionsDto,
+  QueryPlatformUserWalletTransactionsDto,
+} from '../dtos/admin-wallet.dto';
 
 @Injectable()
 export class AdminFinanceService {
@@ -145,16 +149,9 @@ export class AdminFinanceService {
       where.type = query.type;
     }
 
-    if (query.startDate || query.endDate) {
-      where.createdAt = {};
-      if (query.startDate) {
-        where.createdAt.gte = new Date(query.startDate);
-      }
-      if (query.endDate) {
-        const end = new Date(query.endDate);
-        end.setHours(23, 59, 59, 999);
-        where.createdAt.lte = end;
-      }
+    const createdAtFilter = this.buildDateRangeFilter(query.startDate, query.endDate);
+    if (createdAtFilter) {
+      where.createdAt = createdAtFilter;
     }
 
     if (query.search?.trim()) {
@@ -241,6 +238,136 @@ export class AdminFinanceService {
         };
       }),
     };
+  }
+
+  /**
+   * Retrieves paginated wallet transactions across all platform users (Buyers & Sellers).
+   *
+   * @param query - Filters for type, status, role, userId, date range, and keyword search
+   * @returns Paginated user wallet transactions with account details
+   */
+  async getPlatformUserWalletTransactions(query: QueryPlatformUserWalletTransactionsDto) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.max(1, Math.min(100, Number(query.limit) || 10));
+    const skip = (page - 1) * limit;
+
+    const where = this.buildUserWalletTransactionWhere(query);
+
+    const [total, transactions] = await Promise.all([
+      this.prisma.walletTransaction.count({ where }),
+      this.prisma.walletTransaction.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          wallet: {
+            select: {
+              id: true,
+              balance: true,
+              lockedBalance: true,
+              currency: true,
+              user: {
+                select: {
+                  id: true,
+                  fullName: true,
+                  email: true,
+                  phoneNumber: true,
+                  role: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      items: transactions.map((tx) => ({
+        id: tx.id,
+        walletId: tx.walletId,
+        amount: Number(tx.amount),
+        type: tx.type,
+        status: tx.status,
+        referenceId: tx.referenceId,
+        description: tx.description,
+        createdAt: tx.createdAt,
+        user: tx.wallet?.user
+          ? {
+              id: tx.wallet.user.id,
+              fullName: tx.wallet.user.fullName,
+              email: tx.wallet.user.email,
+              phoneNumber: tx.wallet.user.phoneNumber,
+              role: tx.wallet.user.role,
+              walletBalance: Number(tx.wallet.balance),
+              walletLockedBalance: Number(tx.wallet.lockedBalance),
+              currency: tx.wallet.currency,
+            }
+          : null,
+      })),
+    };
+  }
+
+  private buildDateRangeFilter(
+    startDate?: string,
+    endDate?: string,
+  ): Prisma.DateTimeFilter | undefined {
+    if (!startDate && !endDate) {
+      return undefined;
+    }
+
+    const filter: Prisma.DateTimeFilter = {};
+    if (startDate) {
+      filter.gte = new Date(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filter.lte = end;
+    }
+    return filter;
+  }
+
+  private buildUserWalletTransactionWhere(
+    query: QueryPlatformUserWalletTransactionsDto,
+  ): Prisma.WalletTransactionWhereInput {
+    const where: Prisma.WalletTransactionWhereInput = {};
+
+    if (query.type) {
+      where.type = query.type;
+    }
+
+    if (query.status) {
+      where.status = query.status;
+    }
+
+    const createdAtFilter = this.buildDateRangeFilter(query.startDate, query.endDate);
+    if (createdAtFilter) {
+      where.createdAt = createdAtFilter;
+    }
+
+    if (query.userId || query.role) {
+      where.wallet = {
+        ...(query.userId ? { userId: query.userId } : {}),
+        ...(query.role ? { user: { role: query.role } } : {}),
+      };
+    }
+
+    const search = query.search?.trim();
+    if (search) {
+      where.OR = [
+        { referenceId: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { wallet: { user: { fullName: { contains: search, mode: 'insensitive' } } } },
+        { wallet: { user: { email: { contains: search, mode: 'insensitive' } } } },
+      ];
+    }
+
+    return where;
   }
 
   /**
