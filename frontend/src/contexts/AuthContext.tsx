@@ -12,6 +12,7 @@ import { Role } from '@nexus/types';
 import { clearAuthSession, getStoredToken, getStoredUser, saveAuthSession } from '../services/auth';
 import { getMe, toggleSellerMode } from '../services/users';
 import { mergeGuestCartAfterLogin, resetCartSync } from '../services/cart';
+import { syncGuestWishlistAfterLogin } from '../services/wishlist.service';
 import type { AuthUser, UserProfile } from '../types/user.types';
 
 const ACTIVE_MODE_PREFIX = 'nexus:active-mode:';
@@ -209,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cartOwnerChanged || !cartInitialized.current) {
           cartInitialized.current = true;
           void mergeGuestCartAfterLogin();
+          void syncGuestWishlistAfterLogin(nextStoredUser?.id);
         }
       } else {
         cartInitialized.current = false;
@@ -238,6 +240,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await refreshProfile();
       if (authUser.role !== Role.SUPPORT_STAFF && authUser.role !== Role.ADMIN) {
         await mergeGuestCartAfterLogin();
+        await syncGuestWishlistAfterLogin(authUser.id);
       }
     },
     [refreshProfile],

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Heart, ShoppingCart, Trash2, Search, Tag, ShoppingBag } from 'lucide-react';
+import { Heart, ShoppingCart, Trash2, Search, Tag, ShoppingBag, Loader2 } from 'lucide-react';
 import { addToCart } from '../../services/cart';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastNotification';
 import {
-  getBuyerWishlist,
-  removeBuyerWishlistItem,
+  fetchBuyerWishlist,
+  removeBuyerWishlist,
   type WishlistItem,
 } from '../../services/wishlist.service';
 import { formatCurrency } from '../../i18n/formatters';
@@ -17,16 +17,32 @@ export default function BuyerWishlistPage() {
   const { user } = useAuth();
   const toast = useToast();
   const [items, setItems] = useState<WishlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    setItems(getBuyerWishlist(user?.id));
+    let active = true;
+    void (async () => {
+      try {
+        const data = await fetchBuyerWishlist(user?.id);
+        if (active) setItems(data);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, [user?.id]);
 
-  const removeItem = (id: string) => {
-    const updated = removeBuyerWishlistItem(user?.id, id);
-    setItems(updated);
-    toast.success(t('wishlist.removedToast'));
+  const removeItem = async (id: string) => {
+    try {
+      const updated = await removeBuyerWishlist(user?.id, id);
+      setItems(updated);
+      toast.success(t('wishlist.removedToast'));
+    } catch {
+      toast.error(t('wishlist.removeFailed', { defaultValue: 'Không thể xóa sản phẩm.' }));
+    }
   };
 
   const addWishlistItemToCart = (item: WishlistItem) =>
@@ -129,7 +145,14 @@ export default function BuyerWishlistPage() {
       )}
 
       {/* Grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border border-slate-200">
+          <Loader2 size={32} className="animate-spin text-blue-500 mb-3" />
+          <p className="text-xs text-slate-500">
+            {t('states.loading', { defaultValue: 'Đang tải danh sách yêu thích...' })}
+          </p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
           <div className="h-16 w-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-400 mb-4">
             <Heart size={28} />

@@ -14,6 +14,7 @@ import {
   getBuyerWishlist,
   addBuyerWishlistItem,
   removeBuyerWishlistItem,
+  fetchBuyerWishlistIds,
 } from '../../services/wishlist.service';
 import ProductImageGallery from '../../components/productDetail/ProductImageGallery';
 import ProductShopBanner from '../../components/productDetail/ProductShopBanner';
@@ -125,6 +126,23 @@ function ProductContent({ product }: { product: ProductDetail }) {
       globalToast.error(t('product.interestSaveFailed'));
     }
   }, [globalToast, product.category?.id, product.id, t, user?.id, user?.role]);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const ids = await fetchBuyerWishlistIds();
+        if (active && ids.includes(product.id)) {
+          setIsInWishlist(true);
+        }
+      } catch {
+        // Fallback to initial local state
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [product.id, user?.id]);
 
   const toggleWishlist = () => {
     if (isInWishlist) {
