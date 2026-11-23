@@ -201,7 +201,36 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
 
   const prisma = {
     orderItem: {
-      findMany: mock.fn(async () => orderItems),
+      groupBy: mock.fn(async ({ take }) => {
+        const byProduct = new Map();
+        for (const item of orderItems) {
+          const prod = products.find((p) => p.id === item.productId);
+          if (
+            !prod ||
+            prod.status !== 'ACTIVE' ||
+            prod.hiddenByShopSuspension ||
+            prod.trendingExcluded
+          ) {
+            continue;
+          }
+          const cur = byProduct.get(item.productId) ?? {
+            productId: item.productId,
+            qty: 0,
+            maxAt: new Date(0),
+          };
+          cur.qty += item.quantity;
+          if (item.createdAt > cur.maxAt) cur.maxAt = item.createdAt;
+          byProduct.set(item.productId, cur);
+        }
+        return Array.from(byProduct.values())
+          .sort((a, b) => b.qty - a.qty || a.maxAt.getTime() - b.maxAt.getTime())
+          .slice(0, take ?? 10)
+          .map((row) => ({
+            productId: row.productId,
+            _sum: { quantity: row.qty },
+            _max: { createdAt: row.maxAt },
+          }));
+      }),
     },
     product: {
       findMany: mock.fn(async ({ where }) =>
@@ -255,7 +284,7 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
   };
 
   const trendingService = new ProductTrendingService(prisma, inventoryService);
-  const firstFetch = await trendingService.getTrendingProducts(10, true);
+  const firstFetch = await trendingService.getTrendingProducts(10);
   assert.equal(firstFetch.total, 3);
   assert.equal(firstFetch.items[0].id, topProductId);
   assert.equal(firstFetch.items[0].purchaseCount, 5);
@@ -267,13 +296,15 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
   assert.equal(firstFetch.items[1].purchaseCount, 3);
   assert.equal(firstFetch.items[2].id, 'p-tie-reached-second');
   assert.equal(firstFetch.items[2].purchaseCount, 3);
+  assert.equal(notifications.length, 0);
+
+  await trendingService.syncTopOneTrendingNotification();
   assert.equal(notifications.length, 1);
   assert.equal(notifications[0].userId, 'seller-1');
   assert.match(notifications[0].title, /Top 1 Xu hướng/);
   assert.match(notifications[0].content, /5 lượt mua/);
 
-  const secondFetch = await trendingService.getTrendingProducts(10, true);
-  assert.equal(secondFetch.total, 3);
+  await trendingService.syncTopOneTrendingNotification();
   assert.equal(notifications.length, 1);
 
   const adminProducts = new AdminProductsService(prisma, trendingService);
@@ -287,15 +318,14 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
   });
   assert.equal(removed.success, true);
   assert.equal(removed.product.trendingExcluded, true);
-  assert.equal(notifications.length, 2);
+  assert.equal(notifications.length, 3);
   assert.equal(notifications[1].userId, 'seller-1');
   assert.match(notifications[1].title, /gỡ khỏi Xu hướng/);
   assert.match(notifications[1].content, /Không phù hợp hiển thị/);
-
-  const afterRemoval = await trendingService.getTrendingProducts(10, true);
-  assert.equal(afterRemoval.total, 2);
-  assert.equal(afterRemoval.items[0].id, tieFirstId);
-  assert.equal(notifications.length, 3);
   assert.equal(notifications[2].userId, 'seller-2');
   assert.match(notifications[2].title, /Top 1 Xu hướng/);
+
+  const afterRemoval = await trendingService.getTrendingProducts(10);
+  assert.equal(afterRemoval.total, 2);
+  assert.equal(afterRemoval.items[0].id, tieFirstId);
 });

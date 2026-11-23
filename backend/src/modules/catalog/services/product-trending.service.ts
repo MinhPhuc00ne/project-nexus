@@ -32,7 +32,6 @@ export type TrendingProductItem = Omit<ReturnType<typeof formatProductSummary>, 
   seller: TrendingSellerInfo | null;
   shopName: string | null;
   reputationScore: number;
-  buyerCount: number;
   purchaseCount: number;
   lastPurchaseAt: Date | null;
   isTrending: boolean;
@@ -44,7 +43,7 @@ export interface TrendingProductsResult {
   total: number;
 }
 
-/** Computes storefront trending products by purchase count then earliest milestone timestamp, and notifies the #1 shop. */
+/** Computes storefront trending products via database aggregation and synchronizes #1 trending notifications. */
 @Injectable()
 export class ProductTrendingService {
   constructor(
@@ -54,44 +53,39 @@ export class ProductTrendingService {
 
   /**
    * Lists top active products ranked by purchase count descending, then earliest timestamp reaching that count ascending.
+   * Purely read-only: performs aggregation in PostgreSQL without mutating database state.
    * @param rawLimit Maximum number of trending items to return (1..50, default 10).
-   * @param notifyTopOne Whether to send an in-app notification when a product holds the #1 trending spot.
    * @returns Ranked trending products with shop name, reputation score, review count, `purchaseCount`, and `isTrending` metadata.
    */
-  async getTrendingProducts(rawLimit = 10, notifyTopOne = true): Promise<TrendingProductsResult> {
+  async getTrendingProducts(rawLimit = 10): Promise<TrendingProductsResult> {
     const limit = Math.max(1, Math.min(50, Number(rawLimit) || 10));
-    const orderItems = await this.prisma.orderItem.findMany({
+    const grouped = await this.prisma.orderItem.groupBy({
+      by: ['productId'],
       where: {
         productId: { not: null },
+        quantity: { gt: 0 },
         order: { status: { in: QUALIFYING_ORDER_STATUSES } },
+        product: {
+          status: ProductStatus.ACTIVE,
+          hiddenByShopSuspension: false,
+          trendingExcluded: false,
+          seller: { isShopSuspended: false },
+        },
       },
-      select: {
-        productId: true,
-        quantity: true,
-        createdAt: true,
-        order: { select: { buyerId: true, createdAt: true } },
-      },
+      _sum: { quantity: true },
+      _max: { createdAt: true },
+      orderBy: [{ _sum: { quantity: 'desc' } }, { _max: { createdAt: 'asc' } }],
+      take: limit,
     });
 
-    const stats = new Map<
-      string,
-      { buyers: Set<string>; purchaseCount: number; lastPurchaseAtMs: number }
-    >();
-    for (const item of orderItems) {
-      if (!item.productId || item.quantity <= 0) continue;
-      let entry = stats.get(item.productId);
-      if (!entry) {
-        entry = { buyers: new Set<string>(), purchaseCount: 0, lastPurchaseAtMs: 0 };
-        stats.set(item.productId, entry);
-      }
-      if (item.order?.buyerId) {
-        entry.buyers.add(item.order.buyerId);
-      }
-      entry.purchaseCount += item.quantity;
-      const itemTime = item.createdAt?.getTime() ?? item.order?.createdAt?.getTime() ?? 0;
-      if (itemTime > entry.lastPurchaseAtMs) {
-        entry.lastPurchaseAtMs = itemTime;
-      }
+    const stats = new Map<string, { purchaseCount: number; lastPurchaseAtMs: number }>();
+    for (const row of grouped) {
+      const purchaseCount = Number(row._sum?.quantity ?? 0);
+      if (!row.productId || purchaseCount <= 0) continue;
+      stats.set(row.productId, {
+        purchaseCount,
+        lastPurchaseAtMs: row._max?.createdAt?.getTime() ?? 0,
+      });
     }
 
     if (stats.size === 0) {
@@ -135,7 +129,6 @@ export class ProductTrendingService {
         const entry = stats.get(product.id);
         return {
           product,
-          buyerCount: entry?.buyers.size ?? 0,
           purchaseCount: entry?.purchaseCount ?? 0,
           lastPurchaseAtMs: entry?.lastPurchaseAtMs ?? 0,
         };
@@ -150,11 +143,7 @@ export class ProductTrendingService {
       )
       .slice(0, limit);
 
-    if (notifyTopOne && ranked.length > 0) {
-      await this.notifyTopOneTrending(ranked[0]);
-    }
-
-    const items = ranked.map(({ product, buyerCount, purchaseCount, lastPurchaseAtMs }) => {
+    const items = ranked.map(({ product, purchaseCount, lastPurchaseAtMs }) => {
       const availableQty = this.inventoryService.calculateAvailable(product.inventories);
       const storeName =
         product.seller?.sellerUpgradeRequests?.[0]?.storeName ?? product.seller?.fullName ?? null;
@@ -173,7 +162,6 @@ export class ProductTrendingService {
           : null,
         shopName: storeName,
         reputationScore: product.seller?.reputationScore ?? 0,
-        buyerCount,
         purchaseCount,
         lastPurchaseAt: lastPurchaseAtMs > 0 ? new Date(lastPurchaseAtMs) : null,
         isTrending: true,
@@ -184,15 +172,49 @@ export class ProductTrendingService {
     return { items, total: items.length };
   }
 
-  private async notifyTopOneTrending(top: {
-    product: { id: string; sellerId: string; title: string; trendingNotifiedAt: Date | null };
-    purchaseCount: number;
-  }): Promise<void> {
-    if (top.product.trendingNotifiedAt) return;
+  /**
+   * Synchronizes the #1 trending product notification after purchase or moderation events.
+   * Sends an in-app notification to the seller only when a product newly holds the #1 spot.
+   */
+  async syncTopOneTrendingNotification(): Promise<void> {
+    const topRows = await this.prisma.orderItem.groupBy({
+      by: ['productId'],
+      where: {
+        productId: { not: null },
+        quantity: { gt: 0 },
+        order: { status: { in: QUALIFYING_ORDER_STATUSES } },
+        product: {
+          status: ProductStatus.ACTIVE,
+          hiddenByShopSuspension: false,
+          trendingExcluded: false,
+          seller: { isShopSuspended: false },
+        },
+      },
+      _sum: { quantity: true },
+      _max: { createdAt: true },
+      orderBy: [{ _sum: { quantity: 'desc' } }, { _max: { createdAt: 'asc' } }],
+      take: 1,
+    });
+
+    const topRow = topRows[0];
+    const purchaseCount = Number(topRow?._sum?.quantity ?? 0);
+    if (!topRow?.productId || purchaseCount <= 0) return;
+
+    const topProduct = await this.prisma.product.findUnique({
+      where: { id: topRow.productId },
+      select: {
+        id: true,
+        sellerId: true,
+        title: true,
+        trendingNotifiedAt: true,
+        trendingExcluded: true,
+      },
+    });
+    if (!topProduct || topProduct.trendingExcluded || topProduct.trendingNotifiedAt) return;
 
     await this.prisma.product.updateMany({
       where: {
-        id: { not: top.product.id },
+        id: { not: topProduct.id },
         trendingNotifiedAt: { not: null },
       },
       data: { trendingNotifiedAt: null },
@@ -200,21 +222,20 @@ export class ProductTrendingService {
 
     const now = new Date();
     const claimed = await this.prisma.product.updateMany({
-      where: { id: top.product.id, trendingNotifiedAt: null, trendingExcluded: false },
+      where: { id: topProduct.id, trendingNotifiedAt: null, trendingExcluded: false },
       data: { trendingNotifiedAt: now },
     });
     if (claimed.count === 1 && this.prisma.notification?.create) {
       await this.prisma.notification.create({
         data: {
-          userId: top.product.sellerId,
+          userId: topProduct.sellerId,
           title: 'Sản phẩm của bạn đã đạt Top 1 Xu hướng',
-          content: `Chúc mừng! Sản phẩm "${top.product.title}" đang đứng thứ nhất trên Xu hướng với ${top.purchaseCount} lượt mua.`,
+          content: `Chúc mừng! Sản phẩm "${topProduct.title}" đang đứng thứ nhất trên Xu hướng với ${purchaseCount} lượt mua.`,
           targetUrl: '/seller/products',
           type: NotificationType.SYSTEM,
           channel: NotificationChannel.IN_APP,
         },
       });
-      top.product.trendingNotifiedAt = now;
     }
   }
 }

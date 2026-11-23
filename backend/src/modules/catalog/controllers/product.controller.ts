@@ -14,7 +14,10 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
 import { ProductSaleService } from '../services/product-sale.service';
-import { ProductTrendingService } from '../services/product-trending.service';
+import {
+  ProductTrendingService,
+  TrendingProductsResult,
+} from '../services/product-trending.service';
 import { UpdateProductSaleDto } from '../dtos/product-features.dto';
 import { CreateProductDto } from '../dtos/create-product.dto';
 import { UpdateProductDto } from '../dtos/update-product.dto';
@@ -88,8 +91,8 @@ export class ProductController {
       'Xếp hạng các sản phẩm đang bán chạy nhất dựa trên tổng số lượt mua (không bao gồm sản phẩm đã bị Admin gỡ khỏi xu hướng).',
   })
   @ApiResponse({ status: 200, description: 'Lấy danh sách sản phẩm xu hướng thành công' })
-  async getTrendingProducts(@Query('limit') limit?: string) {
-    return this.trendingService.getTrendingProducts(limit ? Number(limit) : 10, true);
+  async getTrendingProducts(@Query('limit') limit?: string): Promise<TrendingProductsResult> {
+    return this.trendingService.getTrendingProducts(limit ? Number(limit) : 10);
   }
 
   @Public()

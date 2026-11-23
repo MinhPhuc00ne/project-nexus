@@ -421,11 +421,13 @@ export class AdminProductsService {
    * @param limit - Maximum number of trending products to return
    * @returns Trending product list with purchase counts
    */
-  async listTrendingProducts(limit = 20) {
+  async listTrendingProducts(
+    limit = 20,
+  ): Promise<Awaited<ReturnType<ProductTrendingService['getTrendingProducts']>>> {
     if (!this.trendingService) {
       return { items: [], total: 0 };
     }
-    return this.trendingService.getTrendingProducts(limit, false);
+    return this.trendingService.getTrendingProducts(limit);
   }
 
   /**
@@ -438,7 +440,20 @@ export class AdminProductsService {
    * @returns Confirmation of trending exclusion
    * @throws NotFoundException when the product does not exist
    */
-  async removeProductFromTrending(id: string, adminId: string, dto?: RemoveTrendingProductDto) {
+  async removeProductFromTrending(
+    id: string,
+    adminId: string,
+    dto?: RemoveTrendingProductDto,
+  ): Promise<{
+    success: boolean;
+    message: string;
+    product: {
+      id: string;
+      title: string;
+      trendingExcluded: boolean;
+      trendingExcludedAt?: Date | null;
+    };
+  }> {
     const product = await this.prisma.product.findUnique({
       where: { id },
       select: { id: true, title: true, sellerId: true, trendingExcluded: true },
@@ -486,6 +501,10 @@ export class AdminProductsService {
     this.logger.log(
       `Admin (${adminId}) đã gỡ sản phẩm ${product.title} (${product.id}) khỏi Xu hướng.`,
     );
+
+    if (this.trendingService) {
+      await this.trendingService.syncTopOneTrendingNotification();
+    }
 
     return {
       success: true,

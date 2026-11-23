@@ -286,7 +286,9 @@ export class AdminController {
       'Returns active products ranked by purchase count. Admin can only view and remove products from trending.',
   })
   @ApiResponse({ status: 200, description: 'Trending products retrieved successfully' })
-  async listTrendingProducts(@Query('limit') limit?: string) {
+  async listTrendingProducts(
+    @Query('limit') limit?: string,
+  ): Promise<ReturnType<AdminProductsService['listTrendingProducts']>> {
     return this.adminProductsService.listTrendingProducts(limit ? Number(limit) : 20);
   }
 
@@ -347,7 +349,7 @@ export class AdminController {
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @Body() dto?: RemoveTrendingProductDto,
-  ) {
+  ): Promise<ReturnType<AdminProductsService['removeProductFromTrending']>> {
     return this.adminProductsService.removeProductFromTrending(id, admin.id, dto);
   }
 
