@@ -2,6 +2,7 @@ import {
   Bell as BellOutlined,
   Check as CheckOutlined,
   RefreshCw as ReloadOutlined,
+  Flame as FlameOutlined,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -35,15 +36,20 @@ export default function SellerNotifications({
     const notificationText = `${title ?? ''} ${content ?? ''}`.toLocaleLowerCase('vi-VN');
     const isReviewNotification =
       type?.toUpperCase().includes('REVIEW') || notificationText.includes('đánh giá');
-    navigate(
-      resolvedUrl?.startsWith('/seller/')
-        ? resolvedUrl
+    const isTrendingNotification =
+      notificationText.includes('xu hướng') || notificationText.includes('trending');
+    const destination = resolvedUrl?.startsWith('/seller/')
+      ? isTrendingNotification && !resolvedUrl.includes('tab=')
+        ? '/seller/products?tab=trending'
+        : resolvedUrl
+      : isTrendingNotification
+        ? '/seller/products?tab=trending'
         : type === 'DISPUTE'
           ? '/seller/disputes'
           : isReviewNotification
             ? '/seller/reviews'
-            : '/seller/auctions',
-    );
+            : '/seller/auctions';
+    navigate(destination);
   };
 
   return (
@@ -121,69 +127,95 @@ export default function SellerNotifications({
                 <p className="p-5 text-center text-xs text-slate-500">{t('notifications.empty')}</p>
               ) : (
                 <ul className="m-0 max-h-[360px] list-none overflow-y-auto p-0">
-                  {state.data.items.map((item) => (
-                    <li
-                      key={item.id}
-                      className={`border-t border-slate-100 p-4 ${item.isRead ? 'bg-white' : 'bg-blue-50/70'}`}
-                    >
-                      <div className="flex items-start gap-2">
-                        {!item.isRead && (
-                          <span
-                            className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600"
-                            aria-label={t('notifications.unreadDotAria')}
-                          />
-                        )}
-                        <div className="min-w-0 flex-1 space-y-2">
-                          <p className="break-words text-xs font-semibold text-slate-800">
-                            {item.title}
-                          </p>
-                          <p className="whitespace-pre-wrap break-words text-xs text-slate-600">
-                            {item.content}
-                          </p>
-                          <time
-                            dateTime={item.createdAt}
-                            className="block text-[10px] text-slate-400"
-                          >
-                            {new Date(item.createdAt).toLocaleString(getIntlLocale(i18n.language))}
-                          </time>
-                          {(item.targetUrl ||
-                            item.type === 'DISPUTE' ||
-                            item.type?.toUpperCase().includes('REVIEW') ||
-                            `${item.title} ${item.content}`
-                              .toLocaleLowerCase('vi-VN')
-                              .includes('đánh giá')) && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                openNotification(
-                                  item.id,
-                                  item.targetUrl,
-                                  item.type,
-                                  item.title,
-                                  item.content,
-                                )
-                              }
-                              className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
-                            >
-                              {item.type === 'DISPUTE'
-                                ? t('notifications.viewDispute')
-                                : t('notifications.openContent')}
-                            </button>
-                          )}
+                  {state.data.items.map((item) => {
+                    const isTrendingItem = `${item.title} ${item.content}`
+                      .toLocaleLowerCase('vi-VN')
+                      .includes('xu hướng');
+
+                    return (
+                      <li
+                        key={item.id}
+                        className={`border-t border-slate-100 p-4 ${item.isRead ? 'bg-white' : 'bg-blue-50/70'}`}
+                      >
+                        <div className="flex items-start gap-2">
                           {!item.isRead && (
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() => void state.markRead(item.id)}
-                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline disabled:opacity-50"
-                            >
-                              <CheckOutlined /> {t('notifications.markRead')}
-                            </button>
+                            <span
+                              className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600"
+                              aria-label={t('notifications.unreadDotAria')}
+                            />
                           )}
+                          <div className="min-w-0 flex-1 space-y-2">
+                            {isTrendingItem ? (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="inline-flex items-center gap-1 rounded bg-orange-50 border border-orange-200 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+                                  <FlameOutlined
+                                    size={10}
+                                    className="text-orange-500 fill-orange-500"
+                                  />{' '}
+                                  Xu Hướng
+                                </span>
+                                <p className="break-words text-xs font-semibold text-slate-800">
+                                  {item.title}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="break-words text-xs font-semibold text-slate-800">
+                                {item.title}
+                              </p>
+                            )}
+                            <p className="whitespace-pre-wrap break-words text-xs text-slate-600">
+                              {item.content}
+                            </p>
+                            <time
+                              dateTime={item.createdAt}
+                              className="block text-[10px] text-slate-400"
+                            >
+                              {new Date(item.createdAt).toLocaleString(
+                                getIntlLocale(i18n.language),
+                              )}
+                            </time>
+                            {(item.targetUrl ||
+                              item.type === 'DISPUTE' ||
+                              item.type?.toUpperCase().includes('REVIEW') ||
+                              isTrendingItem ||
+                              `${item.title} ${item.content}`
+                                .toLocaleLowerCase('vi-VN')
+                                .includes('đánh giá')) && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  openNotification(
+                                    item.id,
+                                    item.targetUrl,
+                                    item.type,
+                                    item.title,
+                                    item.content,
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
+                              >
+                                {isTrendingItem
+                                  ? 'Xem sản phẩm Xu hướng →'
+                                  : item.type === 'DISPUTE'
+                                    ? t('notifications.viewDispute')
+                                    : t('notifications.openContent')}
+                              </button>
+                            )}
+                            {!item.isRead && (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void state.markRead(item.id)}
+                                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline disabled:opacity-50"
+                              >
+                                <CheckOutlined /> {t('notifications.markRead')}
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               {state.data.totalPages > 1 && (

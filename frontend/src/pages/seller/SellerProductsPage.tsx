@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
 import { getIntlLocale } from '../../i18n/config';
@@ -14,6 +14,8 @@ import {
   CircleStop as StopOutlined,
   Zap as ThunderboltOutlined,
   Tag as TagOutlined,
+  Flame as FlameOutlined,
+  AlertTriangle as AlertTriangleOutlined,
 } from 'lucide-react';
 import {
   Badge,
@@ -34,6 +36,7 @@ import {
   type ProductSaleConfig,
 } from '../../services/productExtras';
 import { updateProductSale, type SellerProduct } from '../../services/sellerProducts';
+import { getTrendingProducts } from '../../services/products.service';
 
 const statusKeys = {
   ACTIVE: 'products.statuses.ACTIVE',
@@ -43,10 +46,12 @@ const statusKeys = {
 
 export default function SellerProductsPage({ inventory = false }: { inventory?: boolean }) {
   const { t, i18n } = useTranslation('seller');
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'trending' ? 'trending' : 'all';
   const user = useSellerSession();
   const toast = useToast();
   const canManage = user.isSellerActive && !user.isShopSuspended;
-  const [status, setStatus] = useState('all');
+  const [status, setStatus] = useState(initialTab);
   const [query, setQuery] = useState('');
   const [saleSaving, setSaleSaving] = useState(false);
   const [saleModalProduct, setSaleModalProduct] = useState<SellerProduct | null>(null);
@@ -56,6 +61,26 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
     salePrice: 0,
     label: 'FLASH SALE',
   });
+  const [trendingMap, setTrendingMap] = useState<
+    Map<string, { rank: number; purchaseCount: number }>
+  >(new Map());
+
+  useEffect(() => {
+    let mounted = true;
+    void getTrendingProducts(50)
+      .then((res) => {
+        if (!mounted || !res?.items) return;
+        const map = new Map<string, { rank: number; purchaseCount: number }>();
+        res.items.forEach((item, index) => {
+          map.set(item.id, { rank: index + 1, purchaseCount: item.purchaseCount });
+        });
+        setTrendingMap(map);
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const {
     products,
@@ -70,11 +95,18 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
     confirmHide,
   } = useSellerProducts();
 
-  const filtered = products.filter(
-    (product) =>
-      (status === 'all' || product.status === status) &&
-      product.title.toLocaleLowerCase('vi-VN').includes(query.trim().toLocaleLowerCase('vi-VN')),
-  );
+  const trendingCount = products.filter((p) => trendingMap.has(p.id)).length;
+
+  const filtered = products.filter((product) => {
+    const matchesQuery = product.title
+      .toLocaleLowerCase('vi-VN')
+      .includes(query.trim().toLocaleLowerCase('vi-VN'));
+    if (!matchesQuery) return false;
+    if (status === 'trending') {
+      return trendingMap.has(product.id) || Boolean(product.trendingNotifiedAt);
+    }
+    return status === 'all' || product.status === status;
+  });
   const available = products.reduce((sum, product) => sum + product.availableQty, 0);
   const onSaleCount = products.filter((p) => {
     return computeEffectiveSale(
@@ -145,7 +177,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
           </SellerLink>
         }
       />
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
         <StatCard
           label={t('products.statTotal')}
           value={unavailable ? '—' : products.length}
@@ -159,6 +191,16 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
           }
           detail={t('products.statActiveDetail')}
           icon={<InboxOutlined />}
+        />
+        <StatCard
+          label="Lên Xu Hướng 🔥"
+          value={unavailable ? '—' : trendingCount}
+          detail={
+            trendingCount > 0
+              ? `${trendingCount} sản phẩm lọt Top xu hướng`
+              : 'Chưa có sản phẩm đạt Top'
+          }
+          icon={<FlameOutlined className={trendingCount > 0 ? 'text-orange-500' : ''} />}
         />
         <StatCard
           label={t('products.statOnSale')}
@@ -204,9 +246,10 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
             aria-label={t('products.statusAria')}
             value={status}
             onChange={(event) => setStatus(event.target.value)}
-            className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-600"
+            className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-600 font-medium"
           >
             <option value="all">{t('products.allStatuses')}</option>
+            <option value="trending">🔥 Sản phẩm Xu hướng ({trendingCount})</option>
             {Object.entries(statusKeys).map(([value, labelKey]) => (
               <option key={value} value={value}>
                 {t(labelKey)}
@@ -268,6 +311,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                     ),
                   );
                   const options = product.options ?? [];
+                  const trendingInfo = trendingMap.get(product.id);
 
                   return (
                     <tr key={product.id}>
@@ -283,12 +327,44 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
                             <PictureOutlined className="p-3 text-2xl text-slate-300" />
                           )}
                           <div className="min-w-0">
-                            <Link
-                              to={`/product/${product.id}`}
-                              className="font-semibold text-blue-700 hover:underline"
-                            >
-                              {product.title}
-                            </Link>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Link
+                                to={`/product/${product.id}`}
+                                className="font-semibold text-blue-700 hover:underline"
+                              >
+                                {product.title}
+                              </Link>
+                              {trendingInfo ? (
+                                trendingInfo.rank === 1 ? (
+                                  <span className="inline-flex items-center gap-1 rounded bg-gradient-to-r from-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-black text-white shadow-xs">
+                                    <FlameOutlined size={11} className="fill-white" /> Top 1 Xu
+                                    hướng
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded border border-orange-200 bg-orange-50 px-1.5 py-0.5 text-[10px] font-bold text-orange-700">
+                                    <FlameOutlined
+                                      size={11}
+                                      className="text-orange-500 fill-orange-500"
+                                    />{' '}
+                                    #{trendingInfo.rank} Xu hướng ({trendingInfo.purchaseCount} lượt
+                                    mua)
+                                  </span>
+                                )
+                              ) : product.trendingNotifiedAt ? (
+                                <span className="inline-flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                                  <FlameOutlined size={11} className="text-amber-500" /> Từng đạt
+                                  Top Xu hướng
+                                </span>
+                              ) : null}
+                              {product.trendingExcluded && (
+                                <span
+                                  className="inline-flex items-center gap-1 rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700"
+                                  title="Sản phẩm đã bị Quản trị viên gỡ khỏi danh sách Xu hướng"
+                                >
+                                  <AlertTriangleOutlined size={10} /> Đã gỡ khỏi Xu hướng
+                                </span>
+                              )}
+                            </div>
                             <p className="mt-1 text-slate-400">{product.category?.name}</p>
                             {options.length > 0 && (
                               <div className="mt-1.5 flex flex-wrap gap-1">

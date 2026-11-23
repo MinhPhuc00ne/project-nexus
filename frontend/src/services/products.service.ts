@@ -387,3 +387,52 @@ export async function getRecommendationsApi(limit = 12): Promise<Recommendations
     personalized: false,
   };
 }
+
+export interface TrendingProductItem {
+  id: string;
+  title: string;
+  description: string;
+  basePrice: number;
+  salePrice?: number | null;
+  saleStartsAt?: string | null;
+  saleEndsAt?: string | null;
+  availableQty: number;
+  images: { imageUrl: string; isThumbnail?: boolean }[];
+  thumbnail?: string | null;
+  category: { id: string; name: string; slug?: string } | null;
+  seller: {
+    id: string;
+    fullName: string;
+    storeName: string | null;
+    avatarUrl: string | null;
+    shopAvatarUrl: string | null;
+    reputationScore: number;
+    trustLevel: string | null;
+  } | null;
+  shopName: string | null;
+  reputationScore: number;
+  purchaseCount: number;
+  lastPurchaseAt: string | null;
+  isTrending: boolean;
+  trendingNotifiedAt: string | null;
+}
+
+export interface TrendingProductsResponse {
+  items: TrendingProductItem[];
+  total: number;
+}
+
+export async function getTrendingProducts(limit = 10): Promise<TrendingProductsResponse> {
+  try {
+    const res = await apiRequest<{ items: TrendingProductItem[]; total: number }>(
+      `/catalog/products/trending?limit=${encodeURIComponent(String(limit))}`,
+    );
+    return {
+      items: Array.isArray(res?.items) ? res.items : [],
+      total: res?.total ?? 0,
+    };
+  } catch (error) {
+    console.warn('Không thể tải danh sách sản phẩm xu hướng:', error);
+    return { items: [], total: 0 };
+  }
+}

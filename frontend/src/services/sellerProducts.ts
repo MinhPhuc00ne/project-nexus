@@ -29,6 +29,9 @@ export interface SellerProduct {
   salePrice?: number | null;
   saleStartsAt?: string | null;
   saleEndsAt?: string | null;
+  trendingExcluded?: boolean;
+  trendingExcludedAt?: string | null;
+  trendingNotifiedAt?: string | null;
 }
 export const emptyProductForm = {
   title: '',
