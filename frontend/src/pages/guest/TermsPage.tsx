@@ -1,11 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import PagePlaceholder from '../../components/PagePlaceholder';
 
 export default function TermsPage() {
+  const { t } = useTranslation('guest');
   return (
     <PagePlaceholder
       area="Guest"
-      title="Điều khoản sử dụng & Quy chế hoạt động"
-      description="Quy định giao dịch, cơ chế bảo vệ ký quỹ (escrow), tính điểm uy tín và nghĩa vụ các bên."
+      title={t('staticPages.termsTitle')}
+      description={t('staticPages.termsDesc')}
     />
   );
 }

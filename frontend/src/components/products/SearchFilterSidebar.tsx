@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Filter,
   Star,
@@ -101,11 +102,11 @@ const ALL_CITIES = [
 ];
 
 const PRICE_PRESETS = [
-  { label: 'Dưới 100k', min: undefined, max: 100000 },
-  { label: '100k - 500k', min: 100000, max: 500000 },
-  { label: '500k - 2Tr', min: 500000, max: 2000000 },
-  { label: 'Trên 2Tr', min: 2000000, max: undefined },
-];
+  { key: 'filters.presetUnder100k', min: undefined, max: 100000 },
+  { key: 'filters.preset100kTo500k', min: 100000, max: 500000 },
+  { key: 'filters.preset500kTo2m', min: 500000, max: 2000000 },
+  { key: 'filters.presetOver2m', min: 2000000, max: undefined },
+] as const;
 
 export default function SearchFilterSidebar({
   categories,
@@ -115,6 +116,7 @@ export default function SearchFilterSidebar({
   isOpenMobile = false,
   onCloseMobile,
 }: SearchFilterSidebarProps) {
+  const { t } = useTranslation('guest');
   const [fromPrice, setFromPrice] = useState<string>(
     filters.minPrice !== undefined ? String(filters.minPrice) : '',
   );
@@ -222,17 +224,17 @@ export default function SearchFilterSidebar({
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
         <h2 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-slate-800">
           <Filter className="h-4 w-4 text-blue-600" />
-          Bộ Lọc Tìm Kiếm
+          {t('filters.title')}
         </h2>
         {hasActiveFilters && (
           <button
             type="button"
             onClick={onReset}
             className="flex items-center gap-1 text-xs font-semibold text-rose-500 hover:text-rose-600 transition cursor-pointer"
-            title="Đặt lại toàn bộ bộ lọc"
+            title={t('filters.clearAllTitle')}
           >
             <RotateCcw className="h-3 w-3" />
-            Xóa hết
+            {t('filters.clearAll')}
           </button>
         )}
       </div>
@@ -245,7 +247,7 @@ export default function SearchFilterSidebar({
           className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <Boxes className="h-3.5 w-3.5 text-blue-500" /> Theo Danh Mục
+            <Boxes className="h-3.5 w-3.5 text-blue-500" /> {t('filters.byCategory')}
           </span>
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
@@ -275,7 +277,7 @@ export default function SearchFilterSidebar({
                         <Check className="h-3.5 w-3.5 text-white shrink-0 ml-1" />
                       ) : (
                         <span className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition">
-                          Chọn
+                          {t('filters.select')}
                         </span>
                       )}
                     </button>
@@ -290,9 +292,9 @@ export default function SearchFilterSidebar({
                 className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline cursor-pointer px-2"
               >
                 {showAllCategories ? (
-                  <>Thu gọn bớt</>
+                  <>{t('filters.collapse')}</>
                 ) : (
-                  <>Xem thêm (+{categories.length - 6} danh mục)</>
+                  <>{t('filters.showMoreCategories', { count: categories.length - 6 })}</>
                 )}
               </button>
             )}
@@ -308,7 +310,7 @@ export default function SearchFilterSidebar({
           className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 text-emerald-500" /> Nơi Bán
+            <MapPin className="h-3.5 w-3.5 text-emerald-500" /> {t('filters.location')}
           </span>
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
@@ -327,7 +329,7 @@ export default function SearchFilterSidebar({
                   type="text"
                   value={citySearch}
                   onChange={(e) => setCitySearch(e.target.value)}
-                  placeholder="Tìm kiếm tỉnh / thành..."
+                  placeholder={t('filters.searchProvincePlaceholder')}
                   className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-blue-500 focus:outline-none transition placeholder:text-slate-400"
                 />
                 {citySearch && (
@@ -346,7 +348,7 @@ export default function SearchFilterSidebar({
             <div className={`space-y-1 ${showAllCities ? 'max-h-52 overflow-y-auto pr-1' : ''}`}>
               {displayedCities.length === 0 ? (
                 <div className="py-2 text-center text-xs text-slate-400 italic">
-                  Không tìm thấy tỉnh thành phù hợp
+                  {t('filters.noProvinceFound')}
                 </div>
               ) : (
                 displayedCities.map((cityName) => {
@@ -387,11 +389,11 @@ export default function SearchFilterSidebar({
             >
               {showAllCities ? (
                 <>
-                  Thu gọn <ChevronDown className="h-3 w-3 rotate-180" />
+                  {t('filters.showLess')} <ChevronDown className="h-3 w-3 rotate-180" />
                 </>
               ) : (
                 <>
-                  Thêm (Toàn bộ 63 tỉnh thành) <ChevronDown className="h-3 w-3" />
+                  {t('filters.showAllProvinces')} <ChevronDown className="h-3 w-3" />
                 </>
               )}
             </button>
@@ -407,7 +409,7 @@ export default function SearchFilterSidebar({
           className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <Tag className="h-3.5 w-3.5 text-amber-500" /> Khoảng Giá (VNĐ)
+            <Tag className="h-3.5 w-3.5 text-amber-500" /> {t('filters.priceRange')}
           </span>
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
@@ -433,7 +435,7 @@ export default function SearchFilterSidebar({
                         : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200/80'
                     }`}
                   >
-                    {preset.label}
+                    {t(preset.key)}
                   </button>
                 );
               })}
@@ -452,7 +454,7 @@ export default function SearchFilterSidebar({
                     step="1000"
                     value={fromPrice}
                     onChange={(e) => setFromPrice(e.target.value)}
-                    placeholder="TỐI THIỂU"
+                    placeholder={t('filters.minPlaceholder')}
                     className="w-full rounded-lg border border-slate-200 bg-white pl-6 pr-2 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition"
                   />
                 </div>
@@ -467,7 +469,7 @@ export default function SearchFilterSidebar({
                     step="1000"
                     value={toPrice}
                     onChange={(e) => setToPrice(e.target.value)}
-                    placeholder="TỐI ĐA"
+                    placeholder={t('filters.maxPlaceholder')}
                     className="w-full rounded-lg border border-slate-200 bg-white pl-6 pr-2 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition"
                   />
                 </div>
@@ -476,7 +478,7 @@ export default function SearchFilterSidebar({
                 type="submit"
                 className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.99] py-1.5 text-xs font-bold uppercase tracking-wider text-white transition shadow-xs cursor-pointer"
               >
-                Áp Dụng
+                {t('filters.apply')}
               </button>
             </form>
           </div>
@@ -491,7 +493,7 @@ export default function SearchFilterSidebar({
           className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> Đánh Giá Sao
+            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> {t('filters.starRating')}
           </span>
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
@@ -527,7 +529,9 @@ export default function SearchFilterSidebar({
                       ))}
                     </div>
                     <span className="ml-1 text-[11px]">
-                      {stars === 5 ? '5 sao tuyệt đối' : `từ ${stars} sao trở lên`}
+                      {stars === 5
+                        ? t('filters.fiveStarsExact')
+                        : t('filters.starsAndUp', { stars })}
                     </span>
                   </div>
                   {isSelected && <Check className="h-3 w-3 text-amber-600" />}
@@ -546,7 +550,8 @@ export default function SearchFilterSidebar({
           className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <SlidersHorizontal className="h-3.5 w-3.5 text-purple-500" /> Dịch Vụ & Khuyến Mại
+            <SlidersHorizontal className="h-3.5 w-3.5 text-purple-500" />{' '}
+            {t('filters.serviceAndPromo')}
           </span>
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
@@ -565,10 +570,10 @@ export default function SearchFilterSidebar({
                   onChange={handleToggleInStock}
                   className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                 />
-                <span>Chỉ hiện sản phẩm còn hàng</span>
+                <span>{t('filters.inStockOnly')}</span>
               </span>
               <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                Sẵn hàng
+                {t('filters.inStockBadge')}
               </span>
             </label>
           </div>
@@ -596,7 +601,7 @@ export default function SearchFilterSidebar({
           <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-white p-5 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-left duration-200">
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                <span className="text-sm font-bold text-slate-800">LỌC SẢN PHẨM</span>
+                <span className="text-sm font-bold text-slate-800">{t('filters.mobileTitle')}</span>
                 <button
                   type="button"
                   onClick={onCloseMobile}
@@ -614,14 +619,14 @@ export default function SearchFilterSidebar({
                 onClick={onReset}
                 className="flex-1 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
               >
-                Xóa tất cả
+                {t('filters.clearAll')}
               </button>
               <button
                 type="button"
                 onClick={onCloseMobile}
                 className="flex-1 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs cursor-pointer"
               >
-                Xem kết quả
+                {t('filters.viewResults')}
               </button>
             </div>
           </div>

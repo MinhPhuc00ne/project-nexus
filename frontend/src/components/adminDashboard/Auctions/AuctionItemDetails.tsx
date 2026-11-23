@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../../i18n/config';
+import { formatCurrency } from '../../../i18n/formatters';
 import type { AdminAuctionItem } from '../../../services/auction.service';
 import { getShopDetailApi, type ShopDetailResult } from '../../../services/products.service';
 import { Badge, Button } from '../shared/AdminUI';
 
-const money = (value: number | string | null | undefined) =>
-  value === null || value === undefined ? 'Không có' : `${Number(value).toLocaleString('vi-VN')} ₫`;
-const date = (value?: string | null) => (value ? new Date(value).toLocaleString('vi-VN') : '—');
-
 function Gallery({ urls, title }: { urls: string[]; title: string }) {
+  const { t } = useTranslation('admin');
   const images = urls.filter((url) => /^https?:\/\//i.test(url));
   return (
     <section className="space-y-3">
@@ -29,13 +29,13 @@ function Gallery({ urls, title }: { urls: string[]; title: string }) {
                 className="h-64 w-full object-contain"
               />
               <span className="mt-2 block text-center text-xs text-blue-600">
-                Mở ảnh {index + 1}
+                {t('auctions.itemDetails.openImage', { index: index + 1 })}
               </span>
             </a>
           ))}
         </div>
       ) : (
-        <p className="text-sm text-slate-500">Chưa có ảnh.</p>
+        <p className="text-sm text-slate-500">{t('auctions.itemDetails.noImages')}</p>
       )}
     </section>
   );
@@ -52,6 +52,13 @@ export default function AuctionItemDetails({
   minimumScore: number;
   onBack: () => void;
 }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
+  const money = (value: number | string | null | undefined) =>
+    value === null || value === undefined
+      ? t('auctions.common.none')
+      : formatCurrency(Number(value), i18n.language);
+  const date = (value?: string | null) => (value ? new Date(value).toLocaleString(locale) : '—');
   const [shop, setShop] = useState<ShopDetailResult['shop'] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -68,7 +75,9 @@ export default function AuctionItemDetails({
       })
       .catch((cause: unknown) => {
         if (active)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải chi tiết shop.');
+          setError(
+            cause instanceof Error ? cause.message : t('auctions.itemDetails.loadShopError'),
+          );
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -76,30 +85,30 @@ export default function AuctionItemDetails({
     return () => {
       active = false;
     };
-  }, [item.seller.id, view, revision]);
+  }, [item.seller.id, view, revision, t]);
 
   const score = shop?.reputationScore ?? item.seller.reputationScore;
   return (
     <div className="space-y-5">
       <Button variant="secondary" onClick={onBack}>
-        ← Quay lại danh sách duyệt
+        {t('auctions.itemDetails.backToList')}
       </Button>
       <h3 className="text-lg font-semibold">
-        {view === 'shop' ? 'Chi tiết shop / seller' : item.title}
+        {view === 'shop' ? t('auctions.itemDetails.shopTitle') : item.title}
       </h3>
       {view === 'shop' ? (
         <>
           {loading && (
             <p role="status" className="text-sm text-slate-500">
-              Đang tải thông tin shop…
+              {t('auctions.itemDetails.loadingShop')}
             </p>
           )}
           {error && (
             <div role="alert" className="space-y-2 rounded-lg bg-red-50 p-3 text-sm text-red-700">
               <p>{error}</p>
-              <p>Thông tin seller trong hồ sơ ký gửi vẫn hiển thị bên dưới.</p>
+              <p>{t('auctions.itemDetails.fallbackNotice')}</p>
               <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-                Thử lại
+                {t('auctions.common.retry')}
               </Button>
             </div>
           )}
@@ -108,56 +117,61 @@ export default function AuctionItemDetails({
               {(shop?.avatarUrl || item.seller.shopAvatarUrl) && (
                 <img
                   src={shop?.avatarUrl || item.seller.shopAvatarUrl || ''}
-                  alt="Ảnh shop"
+                  alt={t('auctions.itemDetails.shopAvatarAlt')}
                   className="size-16 rounded-lg object-cover"
                 />
               )}
               <div>
                 <p className="font-semibold">{shop?.name || item.seller.fullName}</p>
                 <p className="text-sm text-slate-500">
-                  Người bán: {shop?.sellerFullName || item.seller.fullName}
+                  {t('auctions.itemDetails.sellerName', {
+                    name: shop?.sellerFullName || item.seller.fullName,
+                  })}
                 </p>
               </div>
             </div>
             <dl className="grid gap-4 text-sm sm:grid-cols-2">
               <div>
-                <dt className="text-slate-500">Điểm uy tín</dt>
+                <dt className="text-slate-500">{t('auctions.itemDetails.reputationScore')}</dt>
                 <dd className="mt-1 font-semibold">
-                  {score ?? 'Chưa có dữ liệu'} / Yêu cầu phiên: {minimumScore}
+                  {t('auctions.itemDetails.reputationSummary', {
+                    score: score ?? t('auctions.itemsDialog.noData'),
+                    min: minimumScore,
+                  })}
                 </dd>
               </div>
               <div>
-                <dt className="text-slate-500">Mức uy tín</dt>
+                <dt className="text-slate-500">{t('auctions.itemDetails.trustLevel')}</dt>
                 <dd>{shop?.trustLevel || item.seller.trustLevel || '—'}</dd>
               </div>
               <div>
-                <dt className="text-slate-500">Email tài khoản</dt>
+                <dt className="text-slate-500">{t('auctions.itemDetails.accountEmail')}</dt>
                 <dd className="break-all">{item.seller.platformEmail || '—'}</dd>
               </div>
               <div>
-                <dt className="text-slate-500">Trạng thái shop</dt>
+                <dt className="text-slate-500">{t('auctions.itemDetails.shopStatus')}</dt>
                 <dd>
                   {item.seller.isShopSuspended
-                    ? 'Đang bị đình chỉ'
+                    ? t('auctions.itemDetails.suspended')
                     : shop
                       ? shop.isSellerActive
-                        ? 'Đã kích hoạt bán hàng'
-                        : 'Chưa kích hoạt bán hàng'
-                      : 'Chưa có thông tin kích hoạt'}
+                        ? t('auctions.itemDetails.sellerActive')
+                        : t('auctions.itemDetails.sellerInactive')
+                      : t('auctions.itemDetails.noActivationInfo')}
                 </dd>
               </div>
               {shop && (
                 <>
                   <div>
-                    <dt className="text-slate-500">Địa chỉ</dt>
+                    <dt className="text-slate-500">{t('auctions.itemDetails.address')}</dt>
                     <dd>
                       {shop.address?.formattedAddress ||
                         [shop.address?.district, shop.address?.city].filter(Boolean).join(', ') ||
-                        'Chưa cập nhật'}
+                        t('auctions.itemDetails.notUpdated')}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-slate-500">Sản phẩm đang bán</dt>
+                    <dt className="text-slate-500">{t('auctions.itemDetails.activeProducts')}</dt>
                     <dd>{shop.stats.totalProducts}</dd>
                   </div>
                 </>
@@ -165,22 +179,28 @@ export default function AuctionItemDetails({
             </dl>
             {score !== undefined && (
               <Badge tone={score >= minimumScore ? 'green' : 'red'}>
-                {score >= minimumScore ? 'Đạt điểm uy tín yêu cầu' : 'Chưa đạt điểm uy tín yêu cầu'}
+                {score >= minimumScore
+                  ? t('auctions.itemDetails.meetsReputation')
+                  : t('auctions.itemDetails.belowReputation')}
               </Badge>
             )}
             {item.seller.isShopSuspended && (
-              <p className="text-sm text-red-700">Shop đang bị đình chỉ.</p>
+              <p className="text-sm text-red-700">
+                {t('auctions.itemDetails.shopSuspendedNotice')}
+              </p>
             )}
             {item.isSellerFlagged && (
               <p className="text-sm text-amber-700">
-                Cảnh báo hồ sơ: {item.flagReason || 'Seller được gắn cờ lưu ý.'}
+                {t('auctions.itemDetails.profileWarning', {
+                  reason: item.flagReason || t('auctions.itemDetails.defaultFlagReason'),
+                })}
               </p>
             )}
             {shop && (
               <div>
-                <h4 className="font-semibold">Giới thiệu shop</h4>
+                <h4 className="font-semibold">{t('auctions.itemDetails.shopIntro')}</h4>
                 <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-600">
-                  {shop.description || 'Chưa có mô tả.'}
+                  {shop.description || t('auctions.itemDetails.noDescription')}
                 </p>
               </div>
             )}
@@ -189,54 +209,59 @@ export default function AuctionItemDetails({
       ) : (
         <>
           <p className="text-sm text-slate-500">
-            Người gửi: {item.seller.fullName} · Số lô: {item.lotNumber ?? 'Chưa gán'} · Trạng thái:{' '}
-            {
-              { PENDING_REVIEW: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Đã từ chối' }[
-                item.status
-              ]
-            }
+            {t('auctions.itemDetails.itemMeta', {
+              seller: item.seller.fullName,
+              lot: item.lotNumber ?? t('auctions.itemDetails.unassigned'),
+              status: t(`auctions.itemStates.${item.status}`),
+            })}
           </p>
           <section>
-            <h4 className="font-semibold">Mô tả, nguồn gốc & tình trạng</h4>
+            <h4 className="font-semibold">{t('auctions.itemDetails.descOriginCondition')}</h4>
             <p className="mt-2 whitespace-pre-wrap break-words text-sm text-slate-600">
               {item.description}
             </p>
           </section>
-          <Gallery urls={item.images} title="Ảnh vật phẩm" />
+          <Gallery urls={item.images} title={t('auctions.itemDetails.itemImages')} />
           <section className="rounded-lg bg-slate-50 p-4 text-sm">
-            <h4 className="mb-3 font-semibold">Giá seller đề xuất</h4>
+            <h4 className="mb-3 font-semibold">{t('auctions.itemDetails.sellerProposedPrice')}</h4>
             <dl className="grid gap-3 sm:grid-cols-3">
               <div>
-                <dt>Giá khởi điểm</dt>
+                <dt>{t('auctions.reviewForm.startingPrice')}</dt>
                 <dd>{money(item.proposedStartingPrice)}</dd>
               </div>
               <div>
-                <dt>Giá bảo lưu</dt>
+                <dt>{t('auctions.reviewForm.reservePrice')}</dt>
                 <dd>
                   {Number(item.proposedReservePrice) > 0
                     ? money(item.proposedReservePrice)
-                    : 'Không có'}
+                    : t('auctions.common.none')}
                 </dd>
               </div>
               <div>
-                <dt>Bước giá</dt>
+                <dt>{t('auctions.reviewForm.bidIncrement')}</dt>
                 <dd>{money(item.proposedBidIncrement)}</dd>
               </div>
             </dl>
             {item.status === 'APPROVED' && (
               <>
-                <h4 className="mb-3 mt-4 font-semibold">Giá đã duyệt</h4>
+                <h4 className="mb-3 mt-4 font-semibold">
+                  {t('auctions.itemDetails.approvedPrice')}
+                </h4>
                 <dl className="grid gap-3 sm:grid-cols-3">
                   <div>
-                    <dt>Giá khởi điểm</dt>
+                    <dt>{t('auctions.reviewForm.startingPrice')}</dt>
                     <dd>{money(item.startingPrice)}</dd>
                   </div>
                   <div>
-                    <dt>Giá bảo lưu</dt>
-                    <dd>{Number(item.reservePrice) > 0 ? money(item.reservePrice) : 'Không có'}</dd>
+                    <dt>{t('auctions.reviewForm.reservePrice')}</dt>
+                    <dd>
+                      {Number(item.reservePrice) > 0
+                        ? money(item.reservePrice)
+                        : t('auctions.common.none')}
+                    </dd>
                   </div>
                   <div>
-                    <dt>Bước giá</dt>
+                    <dt>{t('auctions.reviewForm.bidIncrement')}</dt>
                     <dd>{money(item.bidIncrement)}</dd>
                   </div>
                 </dl>
@@ -244,31 +269,48 @@ export default function AuctionItemDetails({
             )}
           </section>
           <section className="space-y-3 text-sm">
-            <h4 className="font-semibold">Hồ sơ kiểm định</h4>
-            <p>Đơn vị cấp: {item.appraisalAgency || '—'}</p>
-            <p>Số chứng thư: {item.appraisalCertificateNumber || '—'}</p>
-            <p>Ngày cấp: {date(item.certificateIssueDate)}</p>
+            <h4 className="font-semibold">{t('auctions.itemDetails.appraisalSection')}</h4>
+            <p>
+              {t('auctions.itemDetails.appraisalAgency', {
+                agency: item.appraisalAgency || '—',
+              })}
+            </p>
+            <p>
+              {t('auctions.itemDetails.certificateNumber', {
+                number: item.appraisalCertificateNumber || '—',
+              })}
+            </p>
+            <p>
+              {t('auctions.itemDetails.issueDate', {
+                date: date(item.certificateIssueDate),
+              })}
+            </p>
           </section>
-          <Gallery urls={item.certificateImages} title="Ảnh chứng thư kiểm định" />
+          <Gallery
+            urls={item.certificateImages}
+            title={t('auctions.itemDetails.certificateImages')}
+          />
           <dl className="space-y-2 text-xs text-slate-500">
             <div>
-              <dt>Ngày gửi</dt>
+              <dt>{t('auctions.itemDetails.submittedAt')}</dt>
               <dd>{date(item.createdAt)}</dd>
             </div>
             <div>
-              <dt>Người duyệt</dt>
+              <dt>{t('auctions.itemDetails.reviewedBy')}</dt>
               <dd>
                 {item.reviewedByAdmin?.fullName || '—'} · {date(item.reviewedAt)}
               </dd>
             </div>
           </dl>
           {item.rejectionReason && (
-            <p className="text-sm text-red-700">Lý do từ chối: {item.rejectionReason}</p>
+            <p className="text-sm text-red-700">
+              {t('auctions.itemsDialog.rejectionReason', { reason: item.rejectionReason })}
+            </p>
           )}
         </>
       )}
       <Button variant="secondary" onClick={onBack}>
-        ← Quay lại danh sách duyệt
+        {t('auctions.itemDetails.backToList')}
       </Button>
     </div>
   );

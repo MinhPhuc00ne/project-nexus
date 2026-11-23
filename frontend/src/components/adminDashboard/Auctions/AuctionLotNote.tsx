@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { saveAdminAuctionLotNoteApi } from '../../../services/auction.service';
 import { Button } from '../shared/AdminUI';
 
@@ -11,6 +12,7 @@ export default function AuctionLotNote({
   note?: string | null;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation('admin');
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -23,9 +25,12 @@ export default function AuctionLotNote({
     };
   }, []);
   return (
-    <section className="space-y-2 border-t border-slate-100 pt-4" aria-label="Ghi chú hỗ trợ lô">
+    <section
+      className="space-y-2 border-t border-slate-100 pt-4"
+      aria-label={t('auctions.lotNote.sectionAria')}
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-xs font-semibold text-slate-600">Ghi chú hỗ trợ</h3>
+        <h3 className="text-xs font-semibold text-slate-600">{t('auctions.lotNote.heading')}</h3>
         {!editing && (
           <button
             type="button"
@@ -35,13 +40,13 @@ export default function AuctionLotNote({
               setEditing(true);
             }}
           >
-            {note ? 'Chỉnh sửa' : 'Thêm ghi chú'}
+            {note ? t('auctions.lotNote.edit') : t('auctions.lotNote.add')}
           </button>
         )}
       </div>
       {!editing && (
         <p className="whitespace-pre-wrap break-words text-xs text-slate-500">
-          {note || 'Chưa có ghi chú.'}
+          {note || t('auctions.lotNote.empty')}
         </p>
       )}
       {editing && (
@@ -63,7 +68,9 @@ export default function AuctionLotNote({
               })
               .catch((cause: unknown) => {
                 if (active.current)
-                  setError(cause instanceof Error ? cause.message : 'Không thể lưu ghi chú.');
+                  setError(
+                    cause instanceof Error ? cause.message : t('auctions.lotNote.saveError'),
+                  );
               })
               .finally(() => {
                 busy.current = false;
@@ -72,7 +79,7 @@ export default function AuctionLotNote({
           }}
         >
           <label className="block text-xs">
-            Nội dung ghi chú
+            {t('auctions.lotNote.contentLabel')}
             <textarea
               name="staffNote"
               maxLength={2000}
@@ -84,7 +91,7 @@ export default function AuctionLotNote({
           </label>
           <div className="flex gap-2">
             <Button type="submit" disabled={saving}>
-              {saving ? 'Đang lưu…' : 'Lưu ghi chú'}
+              {saving ? t('auctions.lotNote.saving') : t('auctions.lotNote.saveBtn')}
             </Button>
             <Button
               type="button"
@@ -92,7 +99,7 @@ export default function AuctionLotNote({
               disabled={saving}
               onClick={() => setEditing(false)}
             >
-              Hủy
+              {t('auctions.common.cancel')}
             </Button>
           </div>
         </form>

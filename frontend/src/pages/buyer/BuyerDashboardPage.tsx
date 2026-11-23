@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Role } from '@nexus/types';
+import { formatCurrency } from '../../i18n/formatters';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Package,
   Heart,
@@ -21,52 +25,81 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { getBuyerOrdersApi, type BuyerOrder } from '../../services/orders';
 import { getBuyerWalletApi, type BuyerWalletResponse } from '../../services/wallet.service';
+import BuyerInterestRecommendations from '../../components/buyer/BuyerInterestRecommendations';
 
-const statusMap: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
+const statusMap = {
   PENDING_PAYMENT: {
-    label: 'Chờ thanh toán',
+    labelKey: 'dashboard.status.pendingPayment',
     icon: <Clock size={12} />,
     cls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
   PAID: {
-    label: 'Đã thanh toán',
+    labelKey: 'dashboard.status.paid',
     icon: <CheckCircle size={12} />,
     cls: 'bg-blue-50 text-blue-800 border-blue-200',
   },
   PREPARING: {
-    label: 'Chuẩn bị hàng',
+    labelKey: 'dashboard.status.preparing',
     icon: <Package size={12} />,
     cls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
   SHIPPING: {
-    label: 'Đang giao hàng',
+    labelKey: 'dashboard.status.shipping',
     icon: <Truck size={12} />,
     cls: 'bg-blue-50 text-blue-700 border-blue-200',
   },
   COMPLETED: {
-    label: 'Hoàn thành',
+    labelKey: 'dashboard.status.completed',
     icon: <CheckCircle size={12} />,
     cls: 'bg-blue-600 text-white border-blue-600',
   },
   CANCELLED: {
-    label: 'Đã huỷ',
+    labelKey: 'dashboard.status.cancelled',
     icon: <AlertCircle size={12} />,
     cls: 'bg-slate-100 text-slate-600 border-slate-200',
   },
-};
+} as const;
+
+const QUICK_LINK_BLUE_CLASS = 'text-blue-600';
 
 const quickLinks = [
-  { to: '/buyer/reputation', icon: Award, label: 'Điểm uy tín', color: 'text-indigo-600' },
-  { to: '/buyer/addresses', icon: MapPin, label: 'Sổ địa chỉ', color: 'text-blue-600' },
-  { to: '/buyer/disputes', icon: ShieldAlert, label: 'Khiếu nại', color: 'text-blue-600' },
-  { to: '/buyer/bids', icon: Gavel, label: 'Đấu giá', color: 'text-blue-600' },
-  { to: '/search', icon: ShoppingBag, label: 'Mua sắm', color: 'text-blue-600' },
-];
+  {
+    to: '/buyer/reputation',
+    icon: Award,
+    labelKey: 'dashboard.quickLinks.reputation',
+    color: 'text-indigo-600',
+  },
+  {
+    to: '/buyer/addresses',
+    icon: MapPin,
+    labelKey: 'dashboard.quickLinks.addresses',
+    color: QUICK_LINK_BLUE_CLASS,
+  },
+  {
+    to: '/buyer/disputes',
+    icon: ShieldAlert,
+    labelKey: 'dashboard.quickLinks.disputes',
+    color: QUICK_LINK_BLUE_CLASS,
+  },
+  {
+    to: '/buyer/bids',
+    icon: Gavel,
+    labelKey: 'dashboard.quickLinks.bids',
+    color: QUICK_LINK_BLUE_CLASS,
+  },
+  {
+    to: '/search',
+    icon: ShoppingBag,
+    labelKey: 'dashboard.quickLinks.shop',
+    color: QUICK_LINK_BLUE_CLASS,
+  },
+] as const;
 
 export default function BuyerDashboardPage() {
+  const { t, i18n } = useTranslation('buyer');
   const { user, storedUser } = useAuth();
   const profile = user || storedUser;
-  const firstName = profile?.fullName?.split(' ').slice(-1)[0] ?? 'Bạn';
+  const firstName = profile?.fullName?.split(' ').slice(-1)[0] ?? t('dashboard.defaultFirstName');
 
   const [orders, setOrders] = useState<BuyerOrder[]>([]);
   const [wallet, setWallet] = useState<BuyerWalletResponse | null>(null);
@@ -108,33 +141,33 @@ export default function BuyerDashboardPage() {
   const dashboardStats = [
     {
       key: 'orders',
-      label: 'Đơn hàng của tôi',
+      label: t('dashboard.stats.ordersLabel'),
       value: String(safeOrders.length),
-      sub: `${activeOrdersCount} đơn đang xử lý`,
+      sub: t('dashboard.stats.ordersSub', { count: activeOrdersCount }),
       icon: Package,
       link: '/buyer/orders',
     },
     {
       key: 'wallet',
-      label: 'Ví NEXUS Pay',
-      value: `${walletBalance.toLocaleString('vi-VN')} ₫`,
-      sub: 'Số dư ví khả dụng',
+      label: t('dashboard.stats.walletLabel'),
+      value: formatCurrency(walletBalance, i18n.language),
+      sub: t('dashboard.stats.walletSub'),
       icon: Wallet,
       link: '/buyer/wallet',
     },
     {
       key: 'wishlist',
-      label: 'Yêu thích',
-      value: 'Sản phẩm đã lưu',
-      sub: 'Khám phá bộ sưu tập',
+      label: t('dashboard.stats.wishlistLabel'),
+      value: t('dashboard.stats.wishlistValue'),
+      sub: t('dashboard.stats.wishlistSub'),
       icon: Heart,
       link: '/buyer/wishlist',
     },
     {
       key: 'bids',
-      label: 'Đấu giá trực tiếp',
-      value: 'Phiên đấu giá',
-      sub: 'Theo dõi giá thầu',
+      label: t('dashboard.stats.bidsLabel'),
+      value: t('dashboard.stats.bidsValue'),
+      sub: t('dashboard.stats.bidsSub'),
       icon: Gavel,
       link: '/buyer/bids',
     },
@@ -146,12 +179,10 @@ export default function BuyerDashboardPage() {
       <div className="relative overflow-hidden rounded-lg bg-[#1c3973] p-6 text-white shadow-xs">
         <div className="relative z-10">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-200 mb-1">
-            Trung tâm Khách hàng NEXUS
+            {t('dashboard.bannerBadge')}
           </p>
-          <h1 className="text-xl font-bold mb-1">Xin chào, {firstName}!</h1>
-          <p className="text-xs text-blue-100">
-            Theo dõi đơn hàng, quản lý ví NEXUS Pay và khám phá sản phẩm chính hãng.
-          </p>
+          <h1 className="text-xl font-bold mb-1">{t('dashboard.greeting', { name: firstName })}</h1>
+          <p className="text-xs text-blue-100">{t('dashboard.bannerDesc')}</p>
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
             <Link
               to="/buyer/reputation"
@@ -159,9 +190,9 @@ export default function BuyerDashboardPage() {
             >
               <Star size={12} className="text-amber-300 fill-amber-300" />
               <span>
-                Điểm uy tín: <strong>{user?.reputationScore ?? 100}</strong>
+                {t('dashboard.reputationLabel')} <strong>{user?.reputationScore ?? 100}</strong>
               </span>
-              <span className="text-[10px] text-blue-200 ml-1">Xem chi tiết →</span>
+              <span className="text-[10px] text-blue-200 ml-1">{t('dashboard.viewDetails')}</span>
             </Link>
             <Link
               to="/buyer/reputation"
@@ -169,12 +200,14 @@ export default function BuyerDashboardPage() {
             >
               <TrendingUp size={12} className="text-emerald-300" />
               <span>
-                Hạng: <strong>{user?.trustLevel ?? 'EXCELLENT'}</strong>
+                {t('dashboard.tierLabel')} <strong>{user?.trustLevel ?? 'EXCELLENT'}</strong>
               </span>
             </Link>
           </div>
         </div>
       </div>
+
+      {user?.role === Role.BUYER && <BuyerInterestRecommendations buyerId={user.id} />}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -199,41 +232,47 @@ export default function BuyerDashboardPage() {
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
             <Package size={15} className="text-blue-600" />
-            Đơn hàng gần đây
+            {t('dashboard.recentOrdersTitle')}
           </h2>
           <Link
             to="/buyer/orders"
             className="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
           >
-            Xem tất cả <ArrowRight size={12} />
+            {t('dashboard.viewAll')} <ArrowRight size={12} />
           </Link>
         </div>
 
-        {loading ? (
+        {loading && (
           <div className="py-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <Loader2 size={16} className="animate-spin text-blue-600" /> Đang tải đơn hàng…
+            <Loader2 size={16} className="animate-spin text-blue-600" />{' '}
+            {t('dashboard.loadingOrders')}
           </div>
-        ) : orders.length === 0 ? (
+        )}
+        {!loading && orders.length === 0 && (
           <div className="p-8 text-center space-y-2">
-            <p className="text-xs text-slate-500">Bạn chưa có đơn hàng nào.</p>
+            <p className="text-xs text-slate-500">{t('dashboard.noOrders')}</p>
             <Link
               to="/search"
               className="inline-block text-xs font-bold text-blue-600 hover:underline"
             >
-              Khám phá sản phẩm ngay →
+              {t('dashboard.exploreNow')}
             </Link>
           </div>
-        ) : (
+        )}
+        {!loading && orders.length > 0 && (
           <div className="divide-y divide-slate-100">
             {orders.slice(0, 5).map((order) => {
               const firstItem = order.items?.[0];
-              const title = firstItem?.product?.title || `Đơn hàng #${order.orderNumber}`;
+              const title =
+                firstItem?.product?.title ||
+                t('dashboard.orderTitleFallback', { number: order.orderNumber });
               const img =
                 firstItem?.product?.thumbnail ||
                 firstItem?.product?.images?.[0]?.imageUrl ||
                 firstItem?.product?.images?.[0]?.url ||
                 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
-              const s = statusMap[order.status] ?? statusMap['PENDING_PAYMENT'];
+              const s =
+                statusMap[order.status as keyof typeof statusMap] ?? statusMap['PENDING_PAYMENT'];
 
               return (
                 <Link
@@ -257,17 +296,18 @@ export default function BuyerDashboardPage() {
                       {title}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      #{order.orderNumber} • {new Date(order.createdAt).toLocaleDateString('vi-VN')}
+                      #{order.orderNumber} •{' '}
+                      {new Date(order.createdAt).toLocaleDateString(getIntlLocale(i18n.language))}
                     </p>
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-bold text-blue-700">
-                      {Number(order.totalAmount).toLocaleString('vi-VN')} ₫
+                      {formatCurrency(Number(order.totalAmount), i18n.language)}
                     </p>
                     <span
                       className={`mt-1 inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${s.cls}`}
                     >
-                      {s.icon} {s.label}
+                      {s.icon} {t(s.labelKey)}
                     </span>
                   </div>
                 </Link>
@@ -288,7 +328,7 @@ export default function BuyerDashboardPage() {
             <div className="h-9 w-9 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center">
               <ql.icon size={17} className={ql.color} />
             </div>
-            <span className="text-xs font-semibold text-slate-700">{ql.label}</span>
+            <span className="text-xs font-semibold text-slate-700">{t(ql.labelKey)}</span>
           </Link>
         ))}
       </div>

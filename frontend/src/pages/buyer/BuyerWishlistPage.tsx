@@ -1,48 +1,80 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Heart, ShoppingCart, Trash2, Search, Tag, ShoppingBag } from 'lucide-react';
 import { addToCart } from '../../services/cart';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../components/ToastNotification';
 import {
   getBuyerWishlist,
   removeBuyerWishlistItem,
   type WishlistItem,
 } from '../../services/wishlist.service';
+import { formatCurrency } from '../../i18n/formatters';
 
 export default function BuyerWishlistPage() {
+  const { t, i18n } = useTranslation('buyer');
   const { user } = useAuth();
+  const toast = useToast();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [search, setSearch] = useState('');
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   useEffect(() => {
     setItems(getBuyerWishlist(user?.id));
   }, [user?.id]);
 
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(null), 3000);
-  };
-
   const removeItem = (id: string) => {
     const updated = removeBuyerWishlistItem(user?.id, id);
     setItems(updated);
-    showToast('Đã xoá khỏi danh sách yêu thích');
+    toast.success(t('wishlist.removedToast'));
   };
 
-  const handleAddToCart = (item: WishlistItem) => {
-    if (!item.inStock) return;
+  const addWishlistItemToCart = (item: WishlistItem) =>
     addToCart({
       id: item.id,
       name: item.name,
       price: item.price,
-      formattedPrice: item.price.toLocaleString('vi-VN') + ' ₫',
+      formattedPrice: formatCurrency(item.price, i18n.language),
       img: item.img,
       shopName: item.shopName,
       selected: true,
       category: item.category,
     });
-    showToast(`Đã thêm "${item.name.slice(0, 40)}…" vào giỏ hàng!`);
+
+  const handleAddToCart = async (item: WishlistItem) => {
+    if (!item.inStock) {
+      toast.error(t('wishlist.outOfStockToast'));
+      return;
+    }
+    try {
+      await addWishlistItemToCart(item);
+      toast.success(t('wishlist.addedToCartToast', { name: item.name.slice(0, 40) }));
+    } catch (error) {
+      console.error('Unable to add wishlist item to cart:', error);
+      toast.error(error instanceof Error ? error.message : t('wishlist.addToCartFailed'));
+    }
+  };
+
+  const handleAddAllToCart = async () => {
+    const availableItems = items.filter((item) => item.inStock);
+    if (availableItems.length === 0) {
+      toast.error(t('wishlist.outOfStockToast'));
+      return;
+    }
+    const results = await Promise.allSettled(availableItems.map(addWishlistItemToCart));
+    const addedCount = results.filter((result) => result.status === 'fulfilled').length;
+    const failedResult = results.find(
+      (result): result is PromiseRejectedResult => result.status === 'rejected',
+    );
+    if (addedCount > 0) toast.success(t('wishlist.addedAllToCartToast'));
+    if (failedResult) {
+      console.error('Unable to add all wishlist items to cart:', failedResult.reason);
+      toast.error(
+        failedResult.reason instanceof Error
+          ? failedResult.reason.message
+          : t('wishlist.addToCartFailed'),
+      );
+    }
   };
 
   const filtered = items.filter(
@@ -56,34 +88,25 @@ export default function BuyerWishlistPage() {
 
   return (
     <div className="space-y-5">
-      {/* Toast */}
-      {toastMsg && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 rounded-xl bg-slate-900 px-5 py-3.5 text-white shadow-2xl animate-fade-in">
-          <Heart size={14} className="text-rose-400 shrink-0" />
-          <span className="text-xs font-semibold">{toastMsg}</span>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
             <Heart size={18} className="text-rose-500" />
-            Sản phẩm yêu thích
+            {t('wishlist.title')}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">{items.length} sản phẩm đã lưu</p>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {t('wishlist.savedCount', { count: items.length })}
+          </p>
         </div>
         {items.length > 0 && (
           <button
             type="button"
-            onClick={() => {
-              items.forEach((item) => handleAddToCart(item));
-              showToast('Đã thêm tất cả vào giỏ hàng!');
-            }}
+            onClick={() => void handleAddAllToCart()}
             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition"
           >
             <ShoppingCart size={13} />
-            Thêm tất cả vào giỏ
+            {t('wishlist.addAllToCart')}
           </button>
         )}
       </div>
@@ -97,7 +120,7 @@ export default function BuyerWishlistPage() {
           />
           <input
             type="text"
-            placeholder="Tìm trong danh sách yêu thích…"
+            placeholder={t('wishlist.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 placeholder:text-slate-400 transition"
@@ -112,19 +135,17 @@ export default function BuyerWishlistPage() {
             <Heart size={28} />
           </div>
           <h3 className="text-sm font-bold text-slate-800 mb-1">
-            {search ? 'Không tìm thấy sản phẩm phù hợp' : 'Danh sách yêu thích trống'}
+            {search ? t('wishlist.emptySearchTitle') : t('wishlist.emptyTitle')}
           </h3>
           <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
-            {search
-              ? 'Thử tìm với từ khoá khác'
-              : 'Hãy lưu lại những sản phẩm bạn quan tâm để dễ dàng theo dõi và mua sắm sau.'}
+            {search ? t('wishlist.emptySearchDesc') : t('wishlist.emptyDesc')}
           </p>
           <Link
             to="/search"
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm"
           >
             <ShoppingBag size={14} />
-            Khám phá sản phẩm ngay
+            {t('wishlist.exploreNow')}
           </Link>
         </div>
       ) : (
@@ -152,7 +173,7 @@ export default function BuyerWishlistPage() {
                     type="button"
                     onClick={() => removeItem(item.id)}
                     className="absolute top-3 right-3 h-8 w-8 rounded-xl bg-white/90 hover:bg-red-50 text-slate-400 hover:text-red-500 shadow-sm flex items-center justify-center transition"
-                    title="Xoá khỏi yêu thích"
+                    title={t('wishlist.removeTitle')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -173,11 +194,11 @@ export default function BuyerWishlistPage() {
                   <div>
                     <div className="flex items-baseline gap-2 mb-3">
                       <span className="text-sm font-extrabold text-[#f24e1e]">
-                        {item.price.toLocaleString('vi-VN')} ₫
+                        {formatCurrency(item.price, i18n.language)}
                       </span>
                       {hasDiscount && (
                         <span className="text-[11px] text-slate-400 line-through">
-                          {item.originalPrice!.toLocaleString('vi-VN')} ₫
+                          {formatCurrency(item.originalPrice!, i18n.language)}
                         </span>
                       )}
                     </div>
@@ -193,7 +214,7 @@ export default function BuyerWishlistPage() {
                       }`}
                     >
                       <ShoppingCart size={13} />
-                      {item.inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
+                      {item.inStock ? t('wishlist.addToCart') : t('wishlist.outOfStock')}
                     </button>
                   </div>
                 </div>

@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../../components/common/LanguageSwitcher';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Menu,
   Search,
@@ -51,6 +54,8 @@ export default function StaffHeader({
   onSearchChange,
   onOpenSidebar,
 }: StaffHeaderProps) {
+  const { t, i18n } = useTranslation('staff');
+  const locale = getIntlLocale(i18n.language);
   const navigate = useNavigate();
   const toast = useToast();
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
@@ -92,11 +97,13 @@ export default function StaffHeader({
       setNotifications(page.items);
       setUnreadCount(count.unreadCount);
     } catch (error) {
-      setNotificationError(error instanceof Error ? error.message : 'Không tải được thông báo.');
+      setNotificationError(
+        error instanceof Error ? error.message : t('header.loadNotificationsErr'),
+      );
     } finally {
       setNotificationLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,7 +113,7 @@ export default function StaffHeader({
       })
       .catch((error: unknown) => {
         if (!cancelled)
-          setProfileError(error instanceof Error ? error.message : 'Không tải được hồ sơ Staff.');
+          setProfileError(error instanceof Error ? error.message : t('header.loadProfileErr'));
       });
     void getNotificationUnreadCount()
       .then((result) => {
@@ -183,7 +190,7 @@ export default function StaffHeader({
     };
   }, [isAccountOpen]);
 
-  const accountName = profile?.fullName || account?.fullName || 'Tài khoản Staff';
+  const accountName = profile?.fullName || account?.fullName || t('header.defaultAccountName');
   const accountEmail = profile?.email || account?.email || '';
   const accountAvatar = profile?.avatarUrl || account?.avatarUrl;
   const canEditProfile = (profile?.role || account?.role) === 'SUPPORT_STAFF';
@@ -207,11 +214,11 @@ export default function StaffHeader({
 
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!validTypes.includes(file.type)) {
-      setProfileFormError('Chỉ hỗ trợ file ảnh định dạng JPG, PNG, WEBP hoặc GIF.');
+      setProfileFormError(t('header.invalidImageTypeErr'));
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setProfileFormError('Kích thước ảnh đại diện không được vượt quá 10 MB.');
+      setProfileFormError(t('header.imageTooLargeErr'));
       return;
     }
 
@@ -251,7 +258,7 @@ export default function StaffHeader({
       setProfile(updated);
       setIsProfileEditorOpen(false);
     } catch (error) {
-      setProfileFormError(error instanceof Error ? error.message : 'Không cập nhật được hồ sơ.');
+      setProfileFormError(error instanceof Error ? error.message : t('header.updateProfileErr'));
     } finally {
       setProfileSaving(false);
       setIsUploadingAvatar(false);
@@ -268,7 +275,7 @@ export default function StaffHeader({
       clearAuthSession();
       navigate('/login', { replace: true, state: { passwordChanged: true } });
     } catch (error) {
-      setPasswordFormError(error instanceof Error ? error.message : 'Không đổi được mật khẩu.');
+      setPasswordFormError(error instanceof Error ? error.message : t('header.changePasswordErr'));
     } finally {
       setPasswordSaving(false);
     }
@@ -285,7 +292,7 @@ export default function StaffHeader({
     <header className="[min-height:64px] [gap:9px] px-4 max-[760px]:[min-height:58px] max-[760px]:px-2.5 sticky top-0 z-20 flex min-h-[70px] items-center gap-3 border-b border-slate-200 bg-white/95 px-5 backdrop-blur-sm">
       <button
         className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] hidden max-[760px]:[display:inline-grid]"
-        aria-label="Mở menu"
+        aria-label={t('header.openMenuAria')}
         onClick={onOpenSidebar}
       >
         <Menu size={20} />
@@ -294,8 +301,8 @@ export default function StaffHeader({
       <div className="flex h-11 min-w-0 max-w-xl flex-1 items-center gap-3 rounded-xl border border-transparent bg-slate-100 px-4 text-slate-500 transition focus-within:border-blue-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-50">
         <Search size={18} className="shrink-0" />
         <input
-          aria-label="Tìm kiếm yêu cầu hỗ trợ"
-          placeholder="Tìm khách hàng, mã hội thoại…"
+          aria-label={t('header.searchAria')}
+          placeholder={t('header.searchPlaceholder')}
           value={searchText}
           onChange={(event) => onSearchChange(event.target.value)}
           className="w-full min-w-0 border-0 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
@@ -303,7 +310,7 @@ export default function StaffHeader({
         {searchText && (
           <button
             type="button"
-            aria-label="Xóa tìm kiếm"
+            aria-label={t('header.clearSearchAria')}
             onClick={() => onSearchChange('')}
             className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-400 transition hover:bg-white hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-600"
           >
@@ -313,6 +320,7 @@ export default function StaffHeader({
       </div>
 
       <div className="ml-auto flex items-center gap-3">
+        <LanguageSwitcher compact />
         <div ref={notificationsRef} className="relative">
           <button
             type="button"
@@ -325,7 +333,7 @@ export default function StaffHeader({
               if (nextOpen) void loadNotifications();
             }}
             className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] [&_i]:absolute [&_i]:[top:7px] [&_i]:[right:7px] [&_i]:w-1.5 [&_i]:h-1.5 [&_i]:[border:1px_solid_white] [&_i]:rounded-full [&_i]:[background:var(--staff-accent)]"
-            aria-label="Thông báo"
+            aria-label={t('header.notificationsAria')}
           >
             <Bell size={18} />
             {unreadCount > 0 && <i />}
@@ -333,13 +341,17 @@ export default function StaffHeader({
           {isNotificationsOpen && (
             <section
               id="staff-notifications-panel"
-              aria-label="Thông báo của bạn"
+              aria-label={t('header.yourNotificationsAria')}
               className="absolute right-0 top-full z-40 mt-3 w-80 max-w-[calc(100vw-24px)] rounded-2xl border border-slate-100 bg-white shadow-xl max-[480px]:fixed max-[480px]:right-3 max-[480px]:top-[70px] max-[480px]:mt-0"
             >
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <div>
-                  <h2 className="text-sm font-bold text-slate-800">Thông báo</h2>
-                  <p className="text-[11px] text-slate-500">{unreadCount} chưa đọc</p>
+                  <h2 className="text-sm font-bold text-slate-800">
+                    {t('header.notificationsTitle')}
+                  </h2>
+                  <p className="text-[11px] text-slate-500">
+                    {t('header.unreadCount', { count: unreadCount })}
+                  </p>
                 </div>
                 {unreadCount > 0 && (
                   <button
@@ -354,17 +366,19 @@ export default function StaffHeader({
                         setUnreadCount(0);
                       } catch (error) {
                         setNotificationError(
-                          error instanceof Error ? error.message : 'Không cập nhật được thông báo.',
+                          error instanceof Error
+                            ? error.message
+                            : t('header.updateNotificationErr'),
                         );
                       }
                     }}
                   >
-                    Đọc tất cả
+                    {t('header.markAllRead')}
                   </button>
                 )}
                 <button
                   type="button"
-                  aria-label="Đóng thông báo"
+                  aria-label={t('header.closeNotificationsAria')}
                   onClick={() => setIsNotificationsOpen(false)}
                   className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                 >
@@ -378,7 +392,7 @@ export default function StaffHeader({
                   </p>
                 ) : notificationLoading ? (
                   <p role="status" className="p-6 text-center text-xs text-slate-500">
-                    Đang tải thông báo…
+                    {t('header.loadingNotifications')}
                   </p>
                 ) : notifications.length ? (
                   notifications.map((item) => (
@@ -399,7 +413,7 @@ export default function StaffHeader({
                             setNotificationError(
                               error instanceof Error
                                 ? error.message
-                                : 'Không cập nhật được thông báo.',
+                                : t('header.updateNotificationErr'),
                             );
                           }
                         }
@@ -417,12 +431,14 @@ export default function StaffHeader({
                         {item.content}
                       </span>
                       <span className="mt-1 block text-[10px] text-slate-400">
-                        {new Date(item.createdAt).toLocaleString('vi-VN')}
+                        {new Date(item.createdAt).toLocaleString(locale)}
                       </span>
                     </button>
                   ))
                 ) : (
-                  <p className="p-6 text-center text-xs text-slate-500">Chưa có thông báo.</p>
+                  <p className="p-6 text-center text-xs text-slate-500">
+                    {t('header.noNotifications')}
+                  </p>
                 )}
               </div>
             </section>
@@ -432,7 +448,7 @@ export default function StaffHeader({
         <div ref={accountRef} className="relative border-l border-slate-100 pl-3">
           <button
             type="button"
-            aria-label="Tài khoản Staff"
+            aria-label={t('header.staffAccountAria')}
             aria-expanded={isAccountOpen}
             aria-controls="staff-account-panel"
             onClick={() => {
@@ -452,7 +468,9 @@ export default function StaffHeader({
               <span className="block max-w-40 truncate text-xs font-bold text-slate-800">
                 {accountName}
               </span>
-              <span className="mt-1 block text-[10px] text-slate-400">Nhân viên hỗ trợ</span>
+              <span className="mt-1 block text-[10px] text-slate-400">
+                {t('header.supportStaffRole')}
+              </span>
             </span>
             <ChevronDown
               size={14}
@@ -477,10 +495,10 @@ export default function StaffHeader({
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-[13px] text-slate-900 truncate m-0">{accountName}</p>
                   <p className="mt-0.5 break-all text-[11px] text-slate-500 truncate m-0">
-                    {accountEmail || 'Chưa có thông tin email'}
+                    {accountEmail || t('header.noEmail')}
                   </p>
                   <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-blue-100/70 px-2 py-0.5 text-[9.5px] font-bold text-blue-700">
-                    <ShieldCheck size={11} /> Nhân viên hỗ trợ
+                    <ShieldCheck size={11} /> {t('header.supportStaffRole')}
                   </span>
                 </div>
               </div>
@@ -501,7 +519,7 @@ export default function StaffHeader({
                       className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100/80 hover:text-slate-900"
                     >
                       <User size={15} className="text-slate-500" />
-                      <span>Chỉnh sửa hồ sơ</span>
+                      <span>{t('header.editProfile')}</span>
                     </button>
                     <button
                       type="button"
@@ -515,7 +533,7 @@ export default function StaffHeader({
                       className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100/80 hover:text-slate-900"
                     >
                       <KeyRound size={15} className="text-slate-500" />
-                      <span>Đổi mật khẩu</span>
+                      <span>{t('header.changePassword')}</span>
                     </button>
                   </>
                 )}
@@ -533,7 +551,7 @@ export default function StaffHeader({
                 className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-left text-xs font-semibold text-red-600 transition hover:bg-red-50 hover:text-red-700 cursor-pointer"
               >
                 <LogOut size={15} />
-                <span>Đăng xuất</span>
+                <span>{t('header.logout')}</span>
               </button>
             </div>
           )}
@@ -554,14 +572,16 @@ export default function StaffHeader({
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Hồ sơ Staff</h2>
+                  <h2 className="text-base font-bold text-slate-900">
+                    {t('header.profileModalTitle')}
+                  </h2>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    Cập nhật thông tin cá nhân và ảnh đại diện của bạn
+                    {t('header.profileModalSubtitle')}
                   </p>
                 </div>
                 <button
                   type="button"
-                  aria-label="Đóng"
+                  aria-label={t('header.closeAria')}
                   disabled={profileSaving || isUploadingAvatar}
                   onClick={() => setIsProfileEditorOpen(false)}
                   className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer disabled:opacity-50"
@@ -581,7 +601,7 @@ export default function StaffHeader({
                       {avatarPreview ? (
                         <img
                           src={avatarPreview}
-                          alt="Avatar xem trước"
+                          alt={t('header.avatarPreviewAlt')}
                           className="h-full w-full object-cover"
                           onError={() => setAvatarPreview('')}
                         />
@@ -597,11 +617,13 @@ export default function StaffHeader({
                       type="button"
                       disabled={profileSaving || isUploadingAvatar}
                       onClick={() => fileInputRef.current?.click()}
-                      title="Bấm để chọn ảnh từ máy"
+                      title={t('header.choosePhotoTitle')}
                       className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-slate-950/50 text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-pointer disabled:cursor-not-allowed"
                     >
                       <Camera size={20} />
-                      <span className="mt-0.5 text-[10px] font-medium">Đổi ảnh</span>
+                      <span className="mt-0.5 text-[10px] font-medium">
+                        {t('header.changePhoto')}
+                      </span>
                     </button>
                   </div>
 
@@ -623,7 +645,9 @@ export default function StaffHeader({
                         className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 cursor-pointer disabled:opacity-50"
                       >
                         <Upload size={13} />
-                        <span>{avatarFile ? 'Chọn ảnh khác' : 'Tải ảnh từ máy'}</span>
+                        <span>
+                          {avatarFile ? t('header.chooseOtherPhoto') : t('header.uploadFromDevice')}
+                        </span>
                       </button>
 
                       <button
@@ -633,14 +657,14 @@ export default function StaffHeader({
                         className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition cursor-pointer"
                       >
                         <Link2 size={13} className="inline mr-1" />
-                        {showManualUrl ? 'Ẩn link' : 'Dán link URL'}
+                        {showManualUrl ? t('header.hideUrl') : t('header.pasteUrl')}
                       </button>
                     </div>
 
                     <p className="text-[11px] text-slate-400">
                       {avatarFile
-                        ? `Đã chọn: ${avatarFile.name}`
-                        : 'Hỗ trợ JPG, PNG, WEBP (tối đa 10MB)'}
+                        ? t('header.selectedFile', { name: avatarFile.name })
+                        : t('header.photoHint')}
                     </p>
                   </div>
 
@@ -648,7 +672,7 @@ export default function StaffHeader({
                   {showManualUrl && (
                     <div className="w-full mt-2 pt-2 border-t border-slate-200/60 animate-in fade-in duration-150">
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Đường dẫn ảnh đại diện (URL):
+                        {t('header.avatarUrlLabel')}
                       </label>
                       <input
                         type="url"
@@ -667,7 +691,7 @@ export default function StaffHeader({
                 {/* Form Input: Họ tên */}
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    Họ và tên <span className="text-red-500">*</span>
+                    {t('header.fullNameLabel')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <User
@@ -680,7 +704,7 @@ export default function StaffHeader({
                       maxLength={100}
                       value={profileName}
                       onChange={(event) => setProfileName(event.target.value)}
-                      placeholder="Nguyễn Văn A"
+                      placeholder={t('header.fullNamePlaceholder')}
                       className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-900 transition placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
@@ -689,7 +713,7 @@ export default function StaffHeader({
                 {/* Form Input: Số điện thoại */}
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    Số điện thoại
+                    {t('header.phoneLabel')}
                   </label>
                   <div className="relative">
                     <Phone
@@ -724,7 +748,7 @@ export default function StaffHeader({
                     onClick={() => setIsProfileEditorOpen(false)}
                     className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 cursor-pointer disabled:opacity-50"
                   >
-                    Hủy
+                    {t('header.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -734,17 +758,17 @@ export default function StaffHeader({
                     {isUploadingAvatar ? (
                       <>
                         <Loader2 size={13} className="animate-spin" />
-                        <span>Đang tải ảnh...</span>
+                        <span>{t('header.uploadingPhoto')}</span>
                       </>
                     ) : profileSaving ? (
                       <>
                         <Loader2 size={13} className="animate-spin" />
-                        <span>Đang lưu...</span>
+                        <span>{t('header.saving')}</span>
                       </>
                     ) : (
                       <>
                         <CheckCircle2 size={13} />
-                        <span>Lưu hồ sơ</span>
+                        <span>{t('header.saveProfile')}</span>
                       </>
                     )}
                   </button>
@@ -770,14 +794,16 @@ export default function StaffHeader({
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Đổi mật khẩu Staff</h2>
+                  <h2 className="text-base font-bold text-slate-900">
+                    {t('header.passwordModalTitle')}
+                  </h2>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    Sau khi đổi, bạn sẽ cần đăng nhập lại với mật khẩu mới
+                    {t('header.passwordModalSubtitle')}
                   </p>
                 </div>
                 <button
                   type="button"
-                  aria-label="Đóng"
+                  aria-label={t('header.closeAria')}
                   disabled={passwordSaving}
                   onClick={() => setIsPasswordEditorOpen(false)}
                   className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer disabled:opacity-50"
@@ -792,7 +818,7 @@ export default function StaffHeader({
               >
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    Mật khẩu hiện tại <span className="text-red-500">*</span>
+                    {t('header.currentPasswordLabel')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <KeyRound
@@ -813,7 +839,7 @@ export default function StaffHeader({
 
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    Mật khẩu mới <span className="text-red-500">*</span>
+                    {t('header.newPasswordLabel')} <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Lock
@@ -827,7 +853,7 @@ export default function StaffHeader({
                       autoComplete="new-password"
                       value={newPassword}
                       onChange={(event) => setNewPassword(event.target.value)}
-                      placeholder="Tối thiểu 6 ký tự"
+                      placeholder={t('header.newPasswordPlaceholder')}
                       className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-900 transition placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
@@ -850,7 +876,7 @@ export default function StaffHeader({
                     onClick={() => setIsPasswordEditorOpen(false)}
                     className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 cursor-pointer disabled:opacity-50"
                   >
-                    Hủy
+                    {t('header.cancel')}
                   </button>
                   <button
                     type="submit"
@@ -860,12 +886,12 @@ export default function StaffHeader({
                     {passwordSaving ? (
                       <>
                         <Loader2 size={13} className="animate-spin" />
-                        <span>Đang lưu…</span>
+                        <span>{t('header.saving')}</span>
                       </>
                     ) : (
                       <>
                         <CheckCircle2 size={13} />
-                        <span>Đổi mật khẩu</span>
+                        <span>{t('header.changePasswordSubmit')}</span>
                       </>
                     )}
                   </button>
@@ -892,10 +918,12 @@ export default function StaffHeader({
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 ring-8 ring-red-50/50 mb-4">
                   <LogOut size={22} />
                 </div>
-                <h3 className="text-base font-bold text-slate-900">Xác nhận đăng xuất</h3>
+                <h3 className="text-base font-bold text-slate-900">
+                  {t('header.logoutModalTitle')}
+                </h3>
                 <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-                  Bạn có chắc chắn muốn kết thúc phiên làm việc của nhân viên{' '}
-                  <strong className="text-slate-700 font-semibold">{accountName}</strong> không?
+                  {t('header.logoutModalBody')}
+                  <strong className="text-slate-700 font-semibold">{accountName}</strong>?
                 </p>
               </div>
 
@@ -905,19 +933,19 @@ export default function StaffHeader({
                   onClick={() => setIsLogoutConfirmOpen(false)}
                   className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 cursor-pointer"
                 >
-                  Ở lại làm việc
+                  {t('header.stayWorking')}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setIsLogoutConfirmOpen(false);
                     clearAuthSession();
-                    toast.success('Đăng xuất thành công. Hẹn gặp lại bạn!');
+                    toast.success(t('header.logoutSuccess'));
                     navigate('/login', { replace: true });
                   }}
                   className="flex-1 rounded-xl bg-red-600 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 cursor-pointer"
                 >
-                  Đăng xuất ngay
+                  {t('header.logoutConfirm')}
                 </button>
               </div>
             </div>

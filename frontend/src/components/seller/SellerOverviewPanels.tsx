@@ -1,6 +1,7 @@
 import { cn } from '../../lib/utils';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Download as DownloadOutlined } from 'lucide-react';
 import {
   ArrowRight as ArrowRightOutlined,
@@ -19,9 +20,10 @@ import {
 import { useSellerSession } from './SellerSession';
 import { useSellerWorkspace } from './SellerWorkspace';
 import { Badge, EmptyState, Panel, SellerLink, StatCard, exportCsv } from './SellerUI';
-import { money, previewAuctions, previewOrders, trustLabels } from './sellerData';
+import { money, previewAuctions, previewOrders } from './sellerData';
 
 export function StoreIdentity() {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const { storeName, storeLoading, storeError } = useSellerWorkspace();
   return (
@@ -49,10 +51,13 @@ export function StoreIdentity() {
           data-seller="store-title"
         >
           <h2>
-            {storeLoading ? 'Đang tải gian hàng…' : storeName || `Gian hàng của ${user.fullName}`}
+            {storeLoading
+              ? t('dashboard.identity.loading')
+              : storeName || t('dashboard.identity.fallbackName', { name: user.fullName })}
           </h2>
           <Badge>
-            <SafetyCertificateOutlined className="text-[12px]" aria-hidden="true" /> NEXUS SELLER
+            <SafetyCertificateOutlined className="text-[12px]" aria-hidden="true" />{' '}
+            {t('dashboard.identity.badge')}
           </Badge>
         </div>
         <div
@@ -60,15 +65,18 @@ export function StoreIdentity() {
           data-seller="store-meta"
         >
           <span>
-            <StarOutlined className="text-[14px]" aria-hidden="true" /> Uy tín{' '}
-            <b>{user.reputationScore}</b>
+            <StarOutlined className="text-[14px]" aria-hidden="true" />{' '}
+            {t('dashboard.identity.reputation')} <b>{user.reputationScore}</b>
           </span>
           <span>
-            Mức tín nhiệm: <b>{trustLabels[user.trustLevel] || user.trustLevel}</b>
+            {t('dashboard.identity.trustLevel')}{' '}
+            <b>{t(`reviews.trustLevels.${user.trustLevel}`, { defaultValue: user.trustLevel })}</b>
           </span>
           <span className="text-[#16a085]!" data-seller="text-green">
             <SafetyCertificateOutlined className="text-[13px]" aria-hidden="true" />
-            {user.isVerified ? 'Tài khoản đã xác thực' : 'Chưa xác thực'}
+            {user.isVerified
+              ? t('dashboard.identity.verified')
+              : t('dashboard.identity.unverified')}
           </span>
         </div>
         {storeError && (
@@ -80,11 +88,11 @@ export function StoreIdentity() {
       <div className="flex items-center gap-[9px] flex-wrap" data-seller="actions">
         <SellerLink to="/seller/auctions/new" secondary>
           <CodeSandboxOutlined className="text-[16px]" aria-hidden="true" />
-          Gửi vật phẩm đấu giá
+          {t('dashboard.identity.submitAuction')}
         </SellerLink>
         <SellerLink to="/seller/products/new">
           <PlusOutlined className="text-[17px]" aria-hidden="true" />
-          Thêm sản phẩm
+          {t('dashboard.identity.addProduct')}
         </SellerLink>
       </div>
     </section>
@@ -92,6 +100,7 @@ export function StoreIdentity() {
 }
 
 export function SellerStats() {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const { preview } = useSellerWorkspace();
   return (
@@ -100,44 +109,51 @@ export function SellerStats() {
       data-seller="stats-grid"
     >
       <StatCard
-        label="Doanh thu thuần"
+        label={t('dashboard.stats.netRevenue')}
         value={preview ? money(348600000) : '—'}
         icon={<DollarOutlined className="text-[20px]" aria-hidden="true" />}
         detail={
           preview ? (
             <span className="text-[#16a085]!" data-seller="text-green">
-              <RiseOutlined className="text-[13px]" aria-hidden="true" /> +16,8% so với kỳ trước
+              <RiseOutlined className="text-[13px]" aria-hidden="true" />{' '}
+              {t('dashboard.stats.netRevenueTrend')}
             </span>
           ) : (
-            'Chưa có dữ liệu doanh thu'
+            t('dashboard.stats.noRevenueData')
           )
         }
-        note={preview ? 'Dữ liệu doanh thu minh họa' : 'Theo dõi hiệu quả bán hàng'}
+        note={
+          preview ? t('dashboard.stats.sampleRevenueNote') : t('dashboard.stats.trackSalesNote')
+        }
       />
       <StatCard
-        label="Số dư ví khả dụng"
+        label={t('dashboard.stats.availableBalance')}
         value={money(user.wallet?.balance ?? 0)}
         icon={<WalletOutlined className="text-[20px]" aria-hidden="true" />}
-        detail="Số dư từ tài khoản của bạn"
+        detail={t('dashboard.stats.balanceDetail')}
         note={
           <Link to="/seller/finance">
-            Quản lý tài chính <ExportOutlined className="text-[13px]" aria-hidden="true" />
+            {t('dashboard.stats.manageFinance')}{' '}
+            <ExportOutlined className="text-[13px]" aria-hidden="true" />
           </Link>
         }
       />
       <StatCard
-        label="Đơn hàng cần xử lý"
+        label={t('dashboard.stats.pendingOrders')}
         value={preview ? '03' : '—'}
         icon={<TruckOutlined className="text-[20px]" aria-hidden="true" />}
-        detail={preview ? '2 đơn chờ bàn giao GHN' : 'Chưa có dữ liệu đơn hàng'}
+        detail={
+          preview ? t('dashboard.stats.pendingOrdersDetail') : t('dashboard.stats.noOrdersData')
+        }
         note={
           <Link to="/seller/orders">
-            Quản lý đơn hàng <ExportOutlined className="text-[13px]" aria-hidden="true" />
+            {t('dashboard.stats.manageOrders')}{' '}
+            <ExportOutlined className="text-[13px]" aria-hidden="true" />
           </Link>
         }
       />
       <StatCard
-        label="Phiên đấu giá đang diễn ra"
+        label={t('dashboard.stats.liveAuctions')}
         value={preview ? '02' : '—'}
         icon={<CodeSandboxOutlined className="text-[20px]" aria-hidden="true" />}
         detail={
@@ -147,15 +163,16 @@ export function SellerStats() {
                 className="w-1.5 h-1.5 inline-block rounded-full bg-[#14b58a] shrink-0"
                 data-seller="dot"
               />{' '}
-              27 lượt trả giá minh họa
+              {t('dashboard.stats.liveAuctionsDetail')}
             </span>
           ) : (
-            'Chưa có dữ liệu phiên đấu giá'
+            t('dashboard.stats.noAuctionsData')
           )
         }
         note={
           <Link to="/seller/auctions">
-            Khám phá phòng đấu giá <ExportOutlined className="text-[13px]" aria-hidden="true" />
+            {t('dashboard.stats.exploreAuctions')}{' '}
+            <ExportOutlined className="text-[13px]" aria-hidden="true" />
           </Link>
         }
       />
@@ -205,24 +222,26 @@ const barHeights: Record<number, string> = {
 };
 
 export function RevenuePanels({ compact = false }: { compact?: boolean }) {
-  const [period, setPeriod] = useState('7 ngày');
+  const { t } = useTranslation('seller');
+  const [period, setPeriod] = useState<'7d' | '30d' | 'month'>('7d');
   const { preview, notify } = useSellerWorkspace();
-  const datasets: Record<string, number[]> = {
-    '7 ngày': [38, 53, 44, 71, 60, 82, 75],
-    '30 ngày': [26, 42, 37, 60, 74, 68, 92],
-    'Tháng này': [30, 38, 51, 46, 72, 83, 96],
+  const datasets: Record<'7d' | '30d' | 'month', number[]> = {
+    '7d': [38, 53, 44, 71, 60, 82, 75],
+    '30d': [26, 42, 37, 60, 74, 68, 92],
+    month: [30, 38, 51, 46, 72, 83, 96],
   };
+  const weekdays = t('dashboard.revenue.weekdays', { returnObjects: true }) as string[];
   return (
     <div
       className="grid [grid-template-columns:minmax(0,_1.9fr)_minmax(240px,_1fr)] gap-5 max-[1250px]:[grid-template-columns:minmax(0,_1.6fr)_minmax(230px,_1fr)] max-[1050px]:[grid-template-columns:minmax(0,_1.5fr)_minmax(200px,_1fr)] max-[760px]:[grid-template-columns:minmax(0,_1.8fr)_minmax(200px,_1fr)] max-[540px]:[grid-template-columns:1fr]"
       data-seller="chart-grid"
     >
       <Panel
-        title="Tăng trưởng dòng tiền & doanh số"
-        subtitle="So sánh doanh thu đấu giá và bán lẻ trực tiếp"
+        title={t('dashboard.revenue.title')}
+        subtitle={t('dashboard.revenue.subtitle')}
         action={
           <span className="text-[9px] text-[#8c9bb4] whitespace-nowrap" data-seller="unit">
-            VND triệu
+            {t('dashboard.revenue.unit')}
           </span>
         }
       >
@@ -230,13 +249,13 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           className="gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:font-[650] [&_button>span:not(.anticon)]:text-[9px] [&_button>span:not(.anticon)]:bg-[#edf1f8] [&_button>span:not(.anticon)]:py-0 [&_button>span:not(.anticon)]:px-[5px] [&_button>span:not(.anticon)]:rounded-[4px] [&_button.is-active>span:not(.anticon)]:bg-[#315eea] [&_button.is-active>span:not(.anticon)]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px] inline-flex bg-[#f5f7fb] rounded-[7px] p-[3px] mb-5.5 [&_button]:py-[5px] [&_button]:px-[11px] [&_button.is-active]:bg-white [&_button.is-active]:[box-shadow:0_1px_4px_#2039640b] [&_button.is-active]:text-[#465570]"
           data-seller="tabs chart-tabs"
         >
-          {Object.keys(datasets).map((item) => (
+          {(['7d', '30d', 'month'] as const).map((item) => (
             <button
               key={item}
               className={cn(period === item ? 'is-active' : '')}
               onClick={() => setPeriod(item)}
             >
-              {item}
+              {t(`dashboard.revenue.periods.${item}`)}
             </button>
           ))}
         </div>
@@ -269,7 +288,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
                 >
                   <div className={barHeights[value]} />
                   <div className={barHeights[value * 0.61]} />
-                  <small>{['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'][index]}</small>
+                  <small>{weekdays[index]}</small>
                 </div>
               ))}
             </div>
@@ -279,8 +298,8 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
               data-seller="chart-placeholder"
             >
               <RiseOutlined className="text-[28px]" aria-hidden="true" />
-              <strong>Doanh thu sẽ được hiển thị tại đây</strong>
-              <span>Chưa có số liệu trong kỳ đã chọn</span>
+              <strong>{t('dashboard.revenue.emptyTitle')}</strong>
+              <span>{t('dashboard.revenue.emptyDesc')}</span>
             </div>
           )}
         </div>
@@ -290,11 +309,13 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
         >
           <span>
             <i />
-            Đấu giá <b>{preview ? '218,2 triệu' : '—'}</b>
+            {t('dashboard.revenue.auctionLabel')}{' '}
+            <b>{preview ? t('dashboard.revenue.auctionSample') : '—'}</b>
           </span>
           <span>
             <i />
-            Bán lẻ trực tiếp <b>{preview ? '130,4 triệu' : '—'}</b>
+            {t('dashboard.revenue.retailLabel')}{' '}
+            <b>{preview ? t('dashboard.revenue.retailSample') : '—'}</b>
           </span>
         </div>
         {!compact && (
@@ -303,22 +324,22 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
             data-seller="text-button"
             onClick={() =>
               preview
-                ? exportCsv('doanh-thu-minh-hoa.csv', [
-                    ['Dữ liệu minh họa', period],
-                    ['Đấu giá', 218200000],
-                    ['Bán lẻ', 130400000],
+                ? exportCsv(t('dashboard.revenue.csvFilename'), [
+                    [t('dashboard.revenue.csvHeader'), t(`dashboard.revenue.periods.${period}`)],
+                    [t('dashboard.revenue.auctionLabel'), 218200000],
+                    [t('dashboard.revenue.retailLabel'), 130400000],
                   ])
-                : notify('Chưa có dữ liệu để xuất báo cáo.', 'error')
+                : notify(t('dashboard.revenue.exportErr'), 'error')
             }
           >
             <DownloadOutlined className="text-[14px]" aria-hidden="true" />
-            Xuất báo cáo doanh thu
+            {t('dashboard.revenue.exportBtn')}
           </button>
         )}
       </Panel>
       <Panel
-        title="Tỷ trọng nguồn thu"
-        subtitle="Phân bổ doanh thu theo kênh"
+        title={t('dashboard.revenue.shareTitle')}
+        subtitle={t('dashboard.revenue.shareSubtitle')}
         action={<DollarOutlined className="text-[17px]" aria-hidden="true" />}
       >
         <div
@@ -328,7 +349,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           data-seller="donut"
         >
           <div>
-            <small>TỔNG DOANH THU</small>
+            <small>{t('dashboard.revenue.totalRevenueLabel')}</small>
             <strong>{preview ? '348,6M' : '—'}</strong>
             {preview && <span>+16,8%</span>}
           </div>
@@ -340,14 +361,14 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           <div>
             <span>
               <i />
-              Đấu giá
+              {t('dashboard.revenue.auctionLabel')}
             </span>
             <b>{preview ? '62,6%' : '—'}</b>
           </div>
           <div>
             <span>
               <i />
-              Bán lẻ trực tiếp
+              {t('dashboard.revenue.retailLabel')}
             </span>
             <b>{preview ? '37,4%' : '—'}</b>
           </div>
@@ -357,8 +378,8 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           data-seller="chart-footnote"
         >
           {preview
-            ? 'Số liệu minh họa cho giao diện báo cáo.'
-            : 'Tự động tổng hợp khi có dữ liệu bán hàng.'}
+            ? t('dashboard.revenue.shareFootnotePreview')
+            : t('dashboard.revenue.shareFootnoteEmpty')}
         </p>
       </Panel>
     </div>
@@ -366,18 +387,20 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
 }
 
 export function OrdersPreview() {
+  const { t } = useTranslation('seller');
   const { preview } = useSellerWorkspace();
   return (
     <Panel
-      title="Đơn hàng chờ bàn giao GHN"
-      subtitle="Chuẩn bị, đóng gói và theo dõi vận chuyển"
+      title={t('dashboard.ordersPreview.title')}
+      subtitle={t('dashboard.ordersPreview.subtitle')}
       action={
         <Link
           className="inline-flex items-center gap-1.5 p-0 [border:0] bg-transparent text-[#315eea] text-[10px] font-[550]"
           data-seller="text-button"
           to="/seller/orders"
         >
-          Xem tất cả <ArrowRightOutlined className="text-[14px]" aria-hidden="true" />
+          {t('dashboard.ordersPreview.viewAll')}{' '}
+          <ArrowRightOutlined className="text-[14px]" aria-hidden="true" />
         </Link>
       }
     >
@@ -403,7 +426,9 @@ export function OrdersPreview() {
               >
                 <b>{money(order.price)}</b>
                 <Badge tone={order.status === 'packing' ? 'amber' : 'blue'}>
-                  {order.status === 'packing' ? 'Chờ giao GHN' : 'Chờ xác nhận'}
+                  {order.status === 'packing'
+                    ? t('dashboard.ordersPreview.packing')
+                    : t('dashboard.ordersPreview.pending')}
                 </Badge>
               </div>
             </Link>
@@ -411,8 +436,8 @@ export function OrdersPreview() {
         </div>
       ) : (
         <EmptyState
-          title="Chưa có đơn hàng cần xử lý"
-          description="Đơn hàng của gian hàng sẽ được tập trung tại đây."
+          title={t('dashboard.ordersPreview.emptyTitle')}
+          description={t('dashboard.ordersPreview.emptyDesc')}
         />
       )}
     </Panel>
@@ -420,18 +445,20 @@ export function OrdersPreview() {
 }
 
 export function AuctionsPreview({ full = false }: { full?: boolean }) {
+  const { t } = useTranslation('seller');
   const { preview } = useSellerWorkspace();
   return (
     <Panel
-      title="Không gian đấu giá"
-      subtitle="Quản lý phiên và vật phẩm sưu tầm của gian hàng"
+      title={t('dashboard.auctionsPreview.title')}
+      subtitle={t('dashboard.auctionsPreview.subtitle')}
       action={
         <Link
           className="inline-flex items-center gap-1.5 p-0 [border:0] bg-transparent text-[#315eea] text-[10px] font-[550]"
           data-seller="text-button"
           to="/seller/auctions"
         >
-          Tất cả phiên <ArrowRightOutlined className="text-[14px]" aria-hidden="true" />
+          {t('dashboard.auctionsPreview.allSessions')}{' '}
+          <ArrowRightOutlined className="text-[14px]" aria-hidden="true" />
         </Link>
       }
     >
@@ -462,7 +489,9 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
                 >
                   <img src={auction.image} alt={auction.title} />
                   <Badge tone={auction.status === 'live' ? 'green' : 'gray'}>
-                    {auction.status === 'live' ? '● ĐANG DIỄN RA' : 'Đã kết thúc'}
+                    {auction.status === 'live'
+                      ? t('dashboard.auctionsPreview.liveBadge')
+                      : t('dashboard.auctionsPreview.endedBadge')}
                   </Badge>
                 </div>
               ) : (
@@ -470,17 +499,18 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
               )}
               <div>
                 <strong>{auction.title}</strong>
-                <small>{auction.bids} lượt trả giá · Dữ liệu mẫu</small>
+                <small>{t('dashboard.auctionsPreview.bidsSample', { count: auction.bids })}</small>
               </div>
               <div
                 className="ml-auto [&_small]:text-[9px] [&_small]:text-[#96a4bb] [&_small]:block [&_b]:text-[11px] [&_b]:block [&>span:not(.anticon)]:flex [&>span:not(.anticon)]:items-center [&>span:not(.anticon)]:justify-between [&>span:not(.anticon)]:text-[9px] [&>span:not(.anticon)]:text-[#315eea] [&>span:not(.anticon)]:mt-[9px]"
                 data-seller="preview-price"
               >
-                <small>Giá hiện tại</small>
+                <small>{t('dashboard.auctionsPreview.currentPrice')}</small>
                 <b>{money(auction.price)}</b>
                 {full && (
                   <span>
-                    Khám phá phiên <ExportOutlined className="text-[14px]" aria-hidden="true" />
+                    {t('dashboard.auctionsPreview.exploreSession')}{' '}
+                    <ExportOutlined className="text-[14px]" aria-hidden="true" />
                   </span>
                 )}
               </div>
@@ -489,12 +519,12 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
         </div>
       ) : (
         <EmptyState
-          title="Sẵn sàng cho phiên đấu giá đầu tiên?"
-          description="Chuẩn bị thông tin và hình ảnh vật phẩm của bạn."
+          title={t('dashboard.auctionsPreview.emptyTitle')}
+          description={t('dashboard.auctionsPreview.emptyDesc')}
           action={
             <SellerLink to="/seller/auctions/new" secondary>
               <PlusOutlined className="text-[15px]" aria-hidden="true" />
-              Tạo bản nháp phiên
+              {t('dashboard.auctionsPreview.createDraft')}
             </SellerLink>
           }
         />
@@ -504,11 +534,12 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
 }
 
 export function WalletPanel() {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   return (
     <Panel
-      title="Ví tài chính & ký quỹ Escrow"
-      subtitle="Theo dõi số dư ví trên tài khoản NEXUS"
+      title={t('dashboard.walletPanel.title')}
+      subtitle={t('dashboard.walletPanel.subtitle')}
       action={<SafetyCertificateOutlined className="text-[19px]" aria-hidden="true" />}
     >
       <div
@@ -516,9 +547,9 @@ export function WalletPanel() {
         data-seller="wallet-highlight"
       >
         <div>
-          <small>SỐ DƯ KHẢ DỤNG</small>
+          <small>{t('dashboard.walletPanel.availableLabel')}</small>
           <strong>{money(user.wallet?.balance ?? 0)}</strong>
-          <p>Số dư được đồng bộ từ hệ thống</p>
+          <p>{t('dashboard.walletPanel.syncedNote')}</p>
         </div>
         <WalletOutlined className="text-[34px]" aria-hidden="true" />
       </div>
@@ -528,7 +559,7 @@ export function WalletPanel() {
       >
         <span>
           <LockOutlined className="text-[16px]" aria-hidden="true" />
-          Số dư đang khóa
+          {t('dashboard.walletPanel.lockedLabel')}
         </span>
         <b>{money(user.wallet?.lockedBalance ?? 0)}</b>
       </div>
@@ -536,11 +567,12 @@ export function WalletPanel() {
         className="flex items-center justify-between text-[10px] py-[11px] px-0 text-[#90a0b9] [border-bottom:1px_solid_#f0f3f8] [&_span:not(.anticon)]:flex [&_span:not(.anticon)]:items-center [&_span:not(.anticon)]:gap-2 [&_b]:text-[#4b5f80]"
         data-seller="wallet-details"
       >
-        <span>Đơn vị tiền tệ</span>
+        <span>{t('dashboard.walletPanel.currencyLabel')}</span>
         <b>{user.wallet?.currency ?? 'VND'}</b>
       </div>
       <SellerLink to="/seller/finance" secondary>
-        Chi tiết ví & giao dịch <ArrowRightOutlined className="text-[15px]" aria-hidden="true" />
+        {t('dashboard.walletPanel.detailsLink')}{' '}
+        <ArrowRightOutlined className="text-[15px]" aria-hidden="true" />
       </SellerLink>
     </Panel>
   );

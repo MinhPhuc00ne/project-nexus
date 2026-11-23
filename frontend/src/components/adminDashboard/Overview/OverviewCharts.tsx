@@ -1,6 +1,8 @@
 import { useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChartNoAxesCombined, CircleDollarSign, TrendingUp } from 'lucide-react';
 import type { AdminOverviewAnalytics } from '../../../types/admin-analytics.types';
+import { getIntlLocale } from '../../../i18n/config';
 import { Panel } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';
 
@@ -13,6 +15,8 @@ export default function OverviewCharts({
   data?: AdminOverviewAnalytics;
   loading: boolean;
 }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
   const [selected, setSelected] = useState(0);
   const gradientId = useId().replace(/:/g, '');
   const periods = data?.revenuePeriods ?? [];
@@ -32,13 +36,13 @@ export default function OverviewCharts({
   });
   const bids = data?.bidFrequency;
   const maxBids = Math.max(1, ...(bids?.rawCounts ?? []));
-  const emptyText = loading ? 'Đang tải…' : 'Chưa có dữ liệu';
+  const emptyText = loading ? t('overview.loading') : t('overview.noData');
 
   return (
     <div className="grid items-start gap-5 xl:grid-cols-[2fr_1fr]">
       <Panel
-        title="Xu hướng doanh thu phí sàn"
-        subtitle="THEO THỜI GIAN"
+        title={t('overview.trendTitle')}
+        subtitle={t('overview.trendSubtitle')}
         icon={<ChartNoAxesCombined size={19} />}
       >
         <div className="mb-5 flex flex-wrap gap-1 rounded-lg bg-slate-50 p-1">
@@ -56,11 +60,11 @@ export default function OverviewCharts({
         </div>
         <div className="grid gap-3 rounded-xl bg-blue-50/80 p-4 sm:grid-cols-3">
           {[
-            ['Tổng phí sàn', period?.total ?? 0],
-            ['Đấu giá 3D', period?.auction ?? 0],
-            ['Đơn thường', period?.normal ?? 0],
+            [t('overview.totalFee'), period?.total ?? 0],
+            [t('overview.auction3d'), period?.auction ?? 0],
+            [t('overview.normalOrders'), period?.normal ?? 0],
           ].map(([label, value]) => (
-            <div key={label}>
+            <div key={String(label)}>
               <p className="text-[10px] text-slate-500">{label}</p>
               <p className="mt-1 break-words text-base font-bold">{formatMoney(Number(value))}</p>
             </div>
@@ -69,10 +73,11 @@ export default function OverviewCharts({
         <div className="mt-5 flex flex-wrap justify-between gap-2 text-[10px] text-slate-500">
           <span>
             <span className="mr-1 inline-block size-2 rounded-full bg-blue-600" />
-            Đấu giá 3D <span className="ml-3 mr-1 inline-block size-2 rounded-full bg-blue-400" />
-            Đơn thường
+            {t('overview.auction3d')}{' '}
+            <span className="ml-3 mr-1 inline-block size-2 rounded-full bg-blue-400" />
+            {t('overview.normalOrders')}
           </span>
-          <span>Xu hướng tương đối theo từng nguồn</span>
+          <span>{t('overview.relativeTrend')}</span>
         </div>
         {period?.labels.length ? (
           <div className="mt-3 rounded-xl bg-slate-50/80 p-2">
@@ -80,7 +85,7 @@ export default function OverviewCharts({
               viewBox="0 0 552 236"
               className="w-full"
               role="img"
-              aria-label={`Xu hướng phí sàn ${period.label}`}
+              aria-label={t('overview.trendAria', { label: period.label })}
             >
               <defs>
                 <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -143,7 +148,7 @@ export default function OverviewCharts({
         )}
       </Panel>
       <div className="space-y-5">
-        <Panel title="Cơ cấu nguồn thu phí sàn" icon={<CircleDollarSign size={19} />}>
+        <Panel title={t('overview.compositionTitle')} icon={<CircleDollarSign size={19} />}>
           <div
             className="relative mx-auto my-5 flex size-36 items-center justify-center rounded-full"
             style={{
@@ -151,7 +156,7 @@ export default function OverviewCharts({
             }}
           >
             <div className="flex size-27 flex-col items-center justify-center rounded-full bg-white px-2 text-center">
-              <span className="text-[9px] text-slate-500">TỔNG PHÍ SÀN</span>
+              <span className="text-[9px] text-slate-500">{t('overview.totalFeeUpper')}</span>
               <strong className="mt-1 break-words text-sm">
                 {formatMoney(composition?.totalAmount ?? 0)}
               </strong>
@@ -177,10 +182,10 @@ export default function OverviewCharts({
           </div>
           {!sources.length && <p className="text-center text-xs text-slate-400">{emptyText}</p>}
         </Panel>
-        <Panel title="Tần suất trả giá theo giờ" icon={<TrendingUp size={19} />}>
+        <Panel title={t('overview.bidFreqTitle')} icon={<TrendingUp size={19} />}>
           <p className="text-2xl font-bold">
-            {(bids?.totalBids ?? 0).toLocaleString('vi-VN')}{' '}
-            <span className="text-base font-medium">lượt</span>
+            {(bids?.totalBids ?? 0).toLocaleString(locale)}{' '}
+            <span className="text-base font-medium">{t('overview.turnsUnit')}</span>
           </p>
           {bids?.labels.length ? (
             <div className="mt-4 flex h-32 items-end gap-1 rounded-xl bg-blue-50/70 px-2 pt-3">
@@ -192,7 +197,10 @@ export default function OverviewCharts({
                   <div
                     className="rounded-t bg-blue-400 hover:bg-blue-600"
                     style={{ height: `${((bids.rawCounts[i] ?? 0) / maxBids) * 85}%` }}
-                    title={`${label}: ${bids.rawCounts[i] ?? 0} lượt trả giá`}
+                    title={t('overview.bidFreqTooltip', {
+                      label,
+                      count: bids.rawCounts[i] ?? 0,
+                    })}
                   />
                   <span className="pb-2 text-center text-[8px] text-slate-500">{label}</span>
                 </div>

@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, CheckCircle2, AlertCircle, Loader2, Store, Package } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import Popup from '../Popup';
-import { submitProductReviewApi, submitShopReviewApi } from '../../services/reviews.service';
-import type { BuyerOrder } from '../../services/orders';
+import {
+  getProductReviewsApi,
+  getShopReviewsApi,
+  saveBuyerProductReviewApi,
+  saveBuyerShopReviewApi,
+} from '../../services/reviews.service';
+import { getBuyerOrdersApi, type BuyerOrder } from '../../services/orders';
+import { getStoredUser } from '../../services/auth';
+import { canBuyerReviewShop, getBuyerReviewEligibility } from '../../utils/buyerReviewEligibility';
+import { useToast } from '../ToastNotification';
 
 interface OrderReviewModalProps {
   isOpen: boolean;
@@ -11,12 +21,39 @@ interface OrderReviewModalProps {
   onSuccess?: () => void;
 }
 
+async function submitOrderProductReviews(
+  items: BuyerOrder['items'],
+  ratings: Record<string, number>,
+  comments: Record<string, string>,
+  orderId: string,
+  existingReviews: Record<string, boolean>,
+  reviewOrderIds: Record<string, string[]>,
+  defaultComment: string,
+): Promise<void> {
+  for (const item of items) {
+    const productId = item.productId || item.product?.id;
+    if (!productId) continue;
+    await saveBuyerProductReviewApi(
+      Boolean(existingReviews[productId]),
+      orderId,
+      reviewOrderIds[productId] ?? [orderId],
+      productId,
+      {
+        rating: ratings[productId] || 5,
+        comment: comments[productId]?.trim() || defaultComment,
+      },
+    );
+  }
+}
+
 export default function OrderReviewModal({
   isOpen,
   onClose,
   order,
   onSuccess,
 }: OrderReviewModalProps) {
+  const { t } = useTranslation('commerce');
+  const toast = useToast();
   const items = Array.isArray(order.items) ? order.items : [];
 
   // Ratings for each product
@@ -39,43 +76,138 @@ export default function OrderReviewModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [canReviewShop, setCanReviewShop] = useState(false);
+  const [loadingShopEligibility, setLoadingShopEligibility] = useState(false);
+  const [shopEligibilityError, setShopEligibilityError] = useState(false);
+  const [productReviewOrderIds, setProductReviewOrderIds] = useState<Record<string, string[]>>({});
+  const [existingProductReviews, setExistingProductReviews] = useState<Record<string, boolean>>({});
+  const [shopReviewOrderIds, setShopReviewOrderIds] = useState<string[]>([]);
+  const [hasExistingShopReview, setHasExistingShopReview] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!isOpen) return;
+    setCanReviewShop(false);
+    setShopEligibilityError(false);
+    setExistingProductReviews({});
+    setLoadingShopEligibility(true);
+    getBuyerOrdersApi()
+      .then(async (orders) => {
+        const buyerId = getStoredUser()?.id;
+        const completedOrders = orders.filter((candidate) => candidate.status === 'CONFIRMED');
+        const productOrderIds = Object.fromEntries(
+          items.map((item) => {
+            const productId = item.productId || item.product?.id;
+            return [
+              productId || '',
+              productId
+                ? getBuyerReviewEligibility(orders, productId, order.sellerId).productOrderIds
+                : [],
+            ];
+          }),
+        );
+        const productReviewResponses = await Promise.all(
+          items.map((item) => {
+            const productId = item.productId || item.product?.id;
+            return productId ? getProductReviewsApi(productId, 1, 100) : Promise.resolve(null);
+          }),
+        );
+        const shopReviews = await getShopReviewsApi(order.sellerId, 1, 100);
+        if (!active) return;
+        const existingRatings: Record<string, number> = {};
+        const existingComments: Record<string, string> = {};
+        items.forEach((item, index) => {
+          const productId = item.productId || item.product?.id || item.id;
+          const matchingReview = productReviewResponses[index]?.items?.find(
+            (review) => review.reviewer?.id === buyerId,
+          );
+          if (matchingReview) {
+            existingRatings[productId] = matchingReview.rating;
+            existingComments[productId] = matchingReview.comment || '';
+          }
+        });
+        setProductRatings((current) => ({ ...current, ...existingRatings }));
+        setProductComments((current) => ({ ...current, ...existingComments }));
+        const existingShopReview = shopReviews.items?.find(
+          (review) => review.reviewer?.id === buyerId,
+        );
+        if (existingShopReview) {
+          setShopRating(existingShopReview.rating);
+          setShopComment(existingShopReview.comment || '');
+        }
+        setCanReviewShop(canBuyerReviewShop(orders, order.sellerId));
+        setProductReviewOrderIds(productOrderIds);
+        setExistingProductReviews(
+          Object.fromEntries(
+            items.map((item, index) => {
+              const productId = item.productId || item.product?.id || item.id;
+              return [
+                productId,
+                Boolean(
+                  productReviewResponses[index]?.items?.some(
+                    (review) => review.reviewer?.id === buyerId,
+                  ),
+                ),
+              ];
+            }),
+          ),
+        );
+        setShopReviewOrderIds(
+          completedOrders
+            .filter((candidate) => candidate.sellerId === order.sellerId)
+            .map((candidate) => candidate.id),
+        );
+        setHasExistingShopReview(Boolean(existingShopReview));
+      })
+      .catch((lookupError) => {
+        console.warn('Unable to verify shop review eligibility:', lookupError);
+        if (active) setShopEligibilityError(true);
+      })
+      .finally(() => {
+        if (active) setLoadingShopEligibility(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isOpen, order.id, order.sellerId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitting) return;
     setError(null);
+    if (order.status !== 'CONFIRMED') {
+      setError(t('orders.reviewModal.completedOrderRequired'));
+      return;
+    }
     setSubmitting(true);
 
     try {
-      // Gửi đánh giá cho từng sản phẩm trong đơn hàng
-      for (const item of items) {
-        const productId = item.productId || item.product?.id;
-        if (!productId) continue;
-        const rating = productRatings[productId] || 5;
-        const comment = (productComments[productId] || '').trim();
-
-        await submitProductReviewApi(order.id, productId, {
-          rating,
-          comment: comment || 'Sản phẩm rất tốt, giao hàng nhanh và đúng mô tả.',
-        });
-      }
+      await submitOrderProductReviews(
+        items,
+        productRatings,
+        productComments,
+        order.id,
+        existingProductReviews,
+        productReviewOrderIds,
+        t('orders.reviewModal.defaultProductComment'),
+      );
 
       // Gửi đánh giá gian hàng nếu có chọn
-      if (includeShop) {
-        await submitShopReviewApi(order.id, {
+      if (includeShop && canReviewShop) {
+        await saveBuyerShopReviewApi(hasExistingShopReview, order.id, shopReviewOrderIds, {
           rating: shopRating,
-          comment: shopComment.trim() || 'Gian hàng uy tín, đóng gói cẩn thận và phục vụ chu đáo.',
+          comment: shopComment.trim() || t('orders.reviewModal.defaultShopComment'),
         });
       }
 
       setSuccess(true);
+      toast.success(t('orders.reviewModal.reviewUpdatedToast'));
       if (onSuccess) onSuccess();
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : 'Không thể gửi đánh giá lúc này. Vui lòng kiểm tra lại trạng thái đơn hàng.';
+      const msg = err instanceof Error ? err.message : t('orders.reviewModal.submitFailed');
       setError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -95,7 +227,9 @@ export default function OrderReviewModal({
       title={
         <div className="flex items-center gap-2 text-base font-bold text-slate-900">
           <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
-          <span>Đánh giá đơn hàng #{order.orderNumber || order.id?.slice(0, 8)}</span>
+          <span>
+            {t('orders.reviewModal.title', { code: order.orderNumber || order.id?.slice(0, 8) })}
+          </span>
         </div>
       }
       size="lg"
@@ -107,10 +241,10 @@ export default function OrderReviewModal({
           </div>
           <div className="space-y-1">
             <h3 className="text-base font-bold text-slate-900">
-              Cảm ơn bạn đã gửi đánh giá sản phẩm!
+              {t('orders.reviewModal.thankYouTitle')}
             </h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Đánh giá của bạn đã được ghi nhận vào hệ thống và điểm uy tín của gian hàng NEXUS.
+              {t('orders.reviewModal.thankYouDesc')}
             </p>
           </div>
           <button
@@ -118,7 +252,7 @@ export default function OrderReviewModal({
             onClick={handleClose}
             className="px-6 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition"
           >
-            Đóng
+            {t('orders.reviewModal.close')}
           </button>
         </div>
       ) : (
@@ -134,12 +268,12 @@ export default function OrderReviewModal({
           <div className="space-y-4">
             <h4 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-slate-700">
               <Package size={14} className="text-blue-600" />
-              <span>Đánh giá chất lượng sản phẩm</span>
+              <span>{t('orders.reviewModal.rateProductsTitle')}</span>
             </h4>
 
             {items.map((item) => {
               const pid = item.productId || item.product?.id || item.id;
-              const title = item.product?.title || 'Sản phẩm NEXUS';
+              const title = item.product?.title || t('orders.reviewModal.defaultProductName');
               const firstImage = item.product?.images?.[0];
               const img =
                 item.product?.thumbnail ||
@@ -163,7 +297,7 @@ export default function OrderReviewModal({
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-xs font-bold text-slate-900">{title}</p>
                       <p className="text-[11px] text-slate-500">
-                        {Number(item.unitPrice || item.subtotal || 0).toLocaleString('vi-VN')} ₫ x{' '}
+                        {formatCurrency(Number(item.unitPrice || item.subtotal || 0))} x{' '}
                         {item.quantity}
                       </p>
                     </div>
@@ -171,7 +305,9 @@ export default function OrderReviewModal({
 
                   {/* Chọn sao */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-slate-700">Đánh giá:</span>
+                    <span className="text-xs font-semibold text-slate-700">
+                      {t('orders.reviewModal.ratingLabel')}
+                    </span>
                     <div className="flex items-center gap-1">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -192,15 +328,17 @@ export default function OrderReviewModal({
                       ))}
                     </div>
                     <span className="text-xs font-bold text-amber-600 ml-1">
-                      {currentRating === 5
-                        ? 'Tuyệt vời'
-                        : currentRating === 4
-                          ? 'Hài lòng'
-                          : currentRating === 3
-                            ? 'Bình thường'
-                            : currentRating === 2
-                              ? 'Không hài lòng'
-                              : 'Rất tệ'}
+                      {t(
+                        (
+                          {
+                            1: 'orders.reviewModal.rating1',
+                            2: 'orders.reviewModal.rating2',
+                            3: 'orders.reviewModal.rating3',
+                            4: 'orders.reviewModal.rating4',
+                            5: 'orders.reviewModal.rating5',
+                          } as const
+                        )[currentRating] ?? 'orders.reviewModal.rating5',
+                      )}
                     </span>
                   </div>
 
@@ -212,7 +350,7 @@ export default function OrderReviewModal({
                       onChange={(e) =>
                         setProductComments((prev) => ({ ...prev, [pid]: e.target.value }))
                       }
-                      placeholder="Hãy chia sẻ nhận xét của bạn về chất lượng sản phẩm, độ hoàn thiện, đóng gói..."
+                      placeholder={t('orders.reviewModal.productCommentPlaceholder')}
                       className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
                     />
                   </div>
@@ -222,53 +360,68 @@ export default function OrderReviewModal({
           </div>
 
           {/* Đánh giá gian hàng (Shop) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-slate-800 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={includeShop}
-                  onChange={(e) => setIncludeShop(e.target.checked)}
-                  className="rounded text-blue-600 focus:ring-blue-500"
-                />
-                <Store size={14} className="text-sky-600" />
-                <span>Đánh giá dịch vụ của người bán / gian hàng</span>
-              </label>
-            </div>
-
-            {includeShop && (
-              <div className="space-y-3 pt-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-slate-700">Độ uy tín shop:</span>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setShopRating(star)}
-                        className="p-1 text-slate-300 hover:text-amber-400 transition cursor-pointer"
-                      >
-                        <Star
-                          size={18}
-                          className={
-                            star <= shopRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'
-                          }
-                        />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <textarea
-                  rows={2}
-                  value={shopComment}
-                  onChange={(e) => setShopComment(e.target.value)}
-                  placeholder="Nhận xét về thái độ tư vấn, tốc độ chuẩn bị hàng của shop..."
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
-                />
+          {canReviewShop && !loadingShopEligibility && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={includeShop}
+                    onChange={(e) => setIncludeShop(e.target.checked)}
+                    className="rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <Store size={14} className="text-sky-600" />
+                  <span>{t('orders.reviewModal.rateShopLabel')}</span>
+                </label>
               </div>
-            )}
-          </div>
+              {includeShop && (
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-700">
+                      {t('orders.reviewModal.shopTrustLabel')}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setShopRating(star)}
+                          className="p-1 text-slate-300 hover:text-amber-400 transition cursor-pointer"
+                        >
+                          <Star
+                            size={18}
+                            className={
+                              star <= shopRating
+                                ? 'fill-amber-400 text-amber-400'
+                                : 'text-slate-300'
+                            }
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <textarea
+                    rows={2}
+                    value={shopComment}
+                    onChange={(e) => setShopComment(e.target.value)}
+                    placeholder={t('orders.reviewModal.shopCommentPlaceholder')}
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+          {shopEligibilityError && (
+            <p className="rounded-lg bg-amber-50 p-3 text-[11px] leading-5 text-amber-700">
+              {t('orders.reviewModal.shopReviewEligibilityUnavailable')}
+            </p>
+          )}
+          {!canReviewShop && !shopEligibilityError && !loadingShopEligibility && (
+            <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-5 text-slate-500">
+              {t('orders.reviewModal.shopReviewRequiresTwoProducts')}
+            </p>
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
             <button
@@ -277,20 +430,20 @@ export default function OrderReviewModal({
               onClick={handleClose}
               className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
             >
-              Hủy
+              {t('orders.reviewModal.cancel')}
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || loadingShopEligibility || shopEligibilityError}
               className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition shadow-sm disabled:opacity-50"
             >
               {submitting ? (
                 <>
                   <Loader2 size={13} className="animate-spin" />
-                  <span>Đang gửi đánh giá...</span>
+                  <span>{t('orders.reviewModal.submitting')}</span>
                 </>
               ) : (
-                <span>Gửi đánh giá ngay</span>
+                <span>{t('orders.reviewModal.submitNow')}</span>
               )}
             </button>
           </div>

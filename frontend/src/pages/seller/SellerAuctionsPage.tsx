@@ -1,5 +1,8 @@
 import { cn } from '../../lib/utils';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
+import i18n from '../../i18n/index';
 import {
   Box as CodeSandboxOutlined,
   Clock as ClockCircleOutlined,
@@ -23,14 +26,14 @@ import {
   SellerLink,
   StatCard,
 } from '../../components/seller/SellerUI';
-import { auctionStatuses, money, type SellerAuction } from '../../components/seller/sellerData';
+import { money, type SellerAuction } from '../../components/seller/sellerData';
 import {
   getAuctionsApi,
   resolveAuctionImageUrl,
   type AuctionEntity,
 } from '../../services/auction.service';
 
-function toSellerAuction(auction: AuctionEntity): SellerAuction {
+function toSellerAuction(auction: AuctionEntity, locale: string): SellerAuction {
   const status: SellerAuction['status'] =
     auction.status === 'ACTIVE' || auction.status === 'EXTENDED'
       ? 'live'
@@ -47,23 +50,34 @@ function toSellerAuction(auction: AuctionEntity): SellerAuction {
 
   return {
     id: auction.id,
-    title: auction.title || auction.product?.title || 'Phiên đấu giá',
+    title:
+      auction.title ||
+      auction.product?.title ||
+      i18n.t('auctions.list.defaultTitle', { ns: 'seller' }),
     description:
       status === 'scheduled'
-        ? `Mở phiên: ${new Date(auction.startTime).toLocaleString('vi-VN')}`
-        : `Kết thúc: ${new Date(auction.endTime).toLocaleString('vi-VN')}`,
+        ? i18n.t('auctions.list.startsAt', {
+            ns: 'seller',
+            date: new Date(auction.startTime).toLocaleString(locale),
+          })
+        : i18n.t('auctions.list.endsAt', {
+            ns: 'seller',
+            date: new Date(auction.endTime).toLocaleString(locale),
+          }),
     image,
     price: Number(auction.currentHighestBid || auction.startingPrice || 0),
     bids: auction.totalBidsCount ?? 0,
     itemCount: auction.items?.length ?? (auction.product ? 1 : 0),
     status,
-    model: 'Sản phẩm',
+    model: i18n.t('auctions.list.productModel', { ns: 'seller' }),
     consignmentDeadline: auction.consignmentDeadline,
     isConsignmentLocked: auction.isConsignmentLocked,
   };
 }
 
 export default function SellerAuctionsPage() {
+  const { t, i18n: i18nInstance } = useTranslation('seller');
+  const locale = getIntlLocale(i18nInstance.language);
   const { drafts } = useSellerWorkspace();
   const [tab, setTab] = useState('all');
   const [search, setSearch] = useState('');
@@ -75,11 +89,11 @@ export default function SellerAuctionsPage() {
     let active = true;
     void getAuctionsApi({ limit: 100 })
       .then((response) => {
-        if (active) setAuctions(response.items.map(toSellerAuction));
+        if (active) setAuctions(response.items.map((item) => toSellerAuction(item, locale)));
       })
       .catch((error: unknown) => {
         if (active) {
-          setLoadError(error instanceof Error ? error.message : 'Không thể tải các phiên đấu giá.');
+          setLoadError(error instanceof Error ? error.message : t('auctions.list.loadErr'));
         }
       })
       .finally(() => {
@@ -88,7 +102,7 @@ export default function SellerAuctionsPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [locale, t]);
 
   const rows = auctions.filter(
     (auction) =>
@@ -105,48 +119,48 @@ export default function SellerAuctionsPage() {
       data-seller="page-stack"
     >
       <PageHeading
-        title="Quản trị đấu giá"
-        description="Một không gian cho vật phẩm độc bản và những phiên đấu giá của bạn."
+        title={t('auctions.list.pageTitle')}
+        description={t('auctions.list.pageDesc')}
         actions={
           <>
             <SellerButton secondary onClick={() => setTab('ended')}>
               <HistoryOutlined className="text-[15px]" aria-hidden="true" />
-              Lịch sử đấu giá
+              {t('auctions.list.historyBtn')}
             </SellerButton>
             <SellerLink to="/seller/auctions/new">
               <PlusOutlined className="text-[16px]" aria-hidden="true" />
-              Gửi vật phẩm đấu giá
+              {t('auctions.list.submitBtn')}
             </SellerLink>
           </>
         }
       />
-      <ModuleNotice label="Phiên đấu giá" />
+      <ModuleNotice label={t('auctions.list.noticeLabel')} />
       <div
         className="grid [grid-template-columns:repeat(4,_minmax(0,_1fr))] gap-4 min-[1600px]:gap-5 max-[1250px]:gap-3 max-[1050px]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] max-[540px]:gap-2.5"
         data-seller="stats-grid"
       >
         <StatCard
-          label="Phiên đang diễn ra"
+          label={t('auctions.list.statLive')}
           value={isLoading ? '…' : activeCount.toString().padStart(2, '0')}
-          detail="Phòng đấu giá trực tiếp"
+          detail={t('auctions.list.statLiveDetail')}
           icon={<PlayCircleOutlined className="text-[20px]" aria-hidden="true" />}
         />
         <StatCard
-          label="Chờ thẩm định"
+          label={t('auctions.list.statPending')}
           value={isLoading ? '…' : pendingCount.toString().padStart(2, '0')}
-          detail="Vật phẩm & mô hình GLB"
+          detail={t('auctions.list.statPendingDetail')}
           icon={<BuildOutlined className="text-[20px]" aria-hidden="true" />}
         />
         <StatCard
-          label="Phiên sắp diễn ra"
+          label={t('auctions.list.statScheduled')}
           value={isLoading ? '…' : scheduledCount.toString().padStart(2, '0')}
-          detail="Theo dõi lịch mở phiên"
+          detail={t('auctions.list.statScheduledDetail')}
           icon={<ClockCircleOutlined className="text-[20px]" aria-hidden="true" />}
         />
         <StatCard
-          label="Bản nháp trên thiết bị"
+          label={t('auctions.list.statDrafts')}
           value={auctionDrafts.length.toString().padStart(2, '0')}
-          detail="Chưa gửi lên hệ thống"
+          detail={t('auctions.list.statDraftsDetail')}
           icon={<CodeSandboxOutlined className="text-[20px]" aria-hidden="true" />}
         />
       </div>
@@ -158,7 +172,15 @@ export default function SellerAuctionsPage() {
           className="flex gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:py-2 [&_button]:px-3 [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:text-[#315eea] [&_button.is-active]:bg-[#edf3ff] [&_button.is-active]:font-[650] [&_button>span:not(.anticon)]:text-[9px] [&_button>span:not(.anticon)]:bg-[#edf1f8] [&_button>span:not(.anticon)]:py-0 [&_button>span:not(.anticon)]:px-[5px] [&_button>span:not(.anticon)]:rounded-[4px] [&_button.is-active>span:not(.anticon)]:bg-[#315eea] [&_button.is-active>span:not(.anticon)]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px]"
           data-seller="tabs"
         >
-          {[['all', 'Tất cả'], ...Object.entries(auctionStatuses)].map(([key, label]) => (
+          {(
+            [
+              ['all', t('auctions.list.tabAll')],
+              ['live', t('auctions.statuses.live')],
+              ['pending', t('auctions.statuses.pending')],
+              ['scheduled', t('auctions.statuses.scheduled')],
+              ['ended', t('auctions.statuses.ended')],
+            ] as const
+          ).map(([key, label]) => (
             <button
               key={key}
               className={cn(tab === key ? 'is-active' : '')}
@@ -174,8 +196,8 @@ export default function SellerAuctionsPage() {
         >
           <SearchOutlined className="text-[16px]" aria-hidden="true" />
           <input
-            aria-label="Tìm phiên đấu giá"
-            placeholder="Tìm theo lô, tên vật phẩm..."
+            aria-label={t('auctions.list.searchAria')}
+            placeholder={t('auctions.list.searchPlaceholder')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -183,16 +205,16 @@ export default function SellerAuctionsPage() {
         <div className="ml-auto whitespace-nowrap">
           <SellerLink to="/seller/auctions/new">
             <PlusOutlined className="text-[15px]" aria-hidden="true" />
-            Gửi vật phẩm đấu giá
+            {t('auctions.list.submitBtn')}
           </SellerLink>
         </div>
       </div>
       {isLoading ? (
-        <Panel title="Các phiên đấu giá">
-          <p className="py-8 text-center text-sm text-slate-500">Đang tải các phiên đấu giá…</p>
+        <Panel title={t('auctions.list.panelTitle')}>
+          <p className="py-8 text-center text-sm text-slate-500">{t('auctions.list.loading')}</p>
         </Panel>
       ) : loadError ? (
-        <Panel title="Các phiên đấu giá">
+        <Panel title={t('auctions.list.panelTitle')}>
           <div role="alert" className="py-8 text-center text-sm text-red-600">
             {loadError}
           </div>
@@ -207,28 +229,25 @@ export default function SellerAuctionsPage() {
           ))}
         </div>
       ) : (
-        <Panel title="Các phiên đấu giá">
+        <Panel title={t('auctions.list.panelTitle')}>
           <EmptyState
-            title={auctions.length ? 'Không có phiên phù hợp' : 'Chưa có phiên đấu giá nào'}
+            title={
+              auctions.length ? t('auctions.list.emptyMatchTitle') : t('auctions.list.emptyTitle')
+            }
             description={
-              auctions.length
-                ? 'Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.'
-                : 'Hiện chưa có phiên đấu giá được mở. Bạn có thể gửi vật phẩm để chờ phiên phù hợp.'
+              auctions.length ? t('auctions.list.emptyMatchDesc') : t('auctions.list.emptyDesc')
             }
             action={
               <SellerLink to="/seller/auctions/new">
                 <PlusOutlined className="text-[15px]" aria-hidden="true" />
-                Gửi vật phẩm đấu giá
+                {t('auctions.list.submitBtn')}
               </SellerLink>
             }
           />
         </Panel>
       )}
       {auctionDrafts.length > 0 && (
-        <Panel
-          title="Bản nháp phiên đấu giá"
-          subtitle="Được lưu trên trình duyệt này, chưa phát hành"
-        >
+        <Panel title={t('auctions.list.draftsTitle')} subtitle={t('auctions.list.draftsSubtitle')}>
           <div className="flex flex-col gap-2.5" data-seller="mini-list">
             {auctionDrafts.map((draft) => (
               <div
@@ -240,10 +259,11 @@ export default function SellerAuctionsPage() {
                 <div>
                   <strong>{draft.title}</strong>
                   <small>
-                    {money(draft.price)} · Bước giá {money(draft.increment)}
+                    {money(draft.price)} ·{' '}
+                    {t('auctions.list.draftIncrement', { amount: money(draft.increment) })}
                   </small>
                 </div>
-                <Badge tone="gray">Bản nháp</Badge>
+                <Badge tone="gray">{t('auctions.list.draftBadge')}</Badge>
               </div>
             ))}
           </div>
@@ -258,30 +278,24 @@ export default function SellerAuctionsPage() {
           data-seller="policy"
         >
           <FieldTimeOutlined className="text-[22px]" aria-hidden="true" />
-          <h3>Chống trả giá phút cuối</h3>
-          <p>
-            Theo đặc tả dự án: lượt trả giá hợp lệ trong 2 phút cuối sẽ gia hạn phiên thêm 5 phút.
-          </p>
+          <h3>{t('auctions.list.policy1Title')}</h3>
+          <p>{t('auctions.list.policy1Body')}</p>
         </div>
         <div
           className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>.anticon]:text-[#7291d7]! [&>.anticon]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>.anticon]:[grid-row:1/3] max-[540px]:[&>.anticon]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
           data-seller="policy"
         >
           <SafetyCertificateOutlined className="text-[22px]" aria-hidden="true" />
-          <h3>Bảo vệ thanh toán Escrow</h3>
-          <p>
-            Theo dõi ký quỹ và trạng thái thanh toán trước khi bàn giao vật phẩm cho người thắng.
-          </p>
+          <h3>{t('auctions.list.policy2Title')}</h3>
+          <p>{t('auctions.list.policy2Body')}</p>
         </div>
         <div
           className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>.anticon]:text-[#7291d7]! [&>.anticon]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>.anticon]:[grid-row:1/3] max-[540px]:[&>.anticon]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
           data-seller="policy"
         >
           <CodeSandboxOutlined className="text-[22px]" aria-hidden="true" />
-          <h3>Chuẩn bị vật phẩm</h3>
-          <p>
-            Chuẩn bị thông tin vật phẩm rõ ràng và hình ảnh có chất lượng trước khi gửi thẩm định.
-          </p>
+          <h3>{t('auctions.list.policy3Title')}</h3>
+          <p>{t('auctions.list.policy3Body')}</p>
         </div>
       </div>
     </div>

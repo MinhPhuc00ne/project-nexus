@@ -1,4 +1,5 @@
 import axios, { type AxiosRequestConfig } from 'axios';
+import i18n from '../i18n';
 import api, { ApiRequestError, apiRequest } from './api';
 import { getApiErrorMessage } from '../lib/apiErrors';
 
@@ -127,10 +128,7 @@ async function staffRequest<T>(config: AxiosRequestConfig): Promise<T> {
   } catch (error) {
     if (axios.isAxiosError<{ errors?: string[]; message?: string }>(error)) {
       throw new ApiRequestError(
-        getApiErrorMessage(
-          error.response?.data,
-          'Không thể kết nối tới máy chủ. Vui lòng thử lại.',
-        ),
+        getApiErrorMessage(error.response?.data, i18n.t('errors:network')),
         error.response?.status ?? 0,
       );
     }
@@ -170,10 +168,10 @@ export function updateStaffProfile(
 export async function uploadStaffAvatarFile(file: File): Promise<string> {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
   if (!validTypes.includes(file.type)) {
-    throw new Error('Chỉ hỗ trợ file ảnh định dạng JPG, PNG, WEBP hoặc GIF.');
+    throw new Error(i18n.t('errors:services.staffAvatarFormat'));
   }
   if (file.size <= 0 || file.size > 10 * 1024 * 1024) {
-    throw new Error('Kích thước ảnh đại diện không được vượt quá 10 MB.');
+    throw new Error(i18n.t('errors:services.staffAvatarSize'));
   }
   const formData = new FormData();
   formData.append('file', file);
@@ -183,7 +181,7 @@ export async function uploadStaffAvatarFile(file: File): Promise<string> {
     isFormData: true,
     requireAuth: true,
   });
-  if (!uploaded?.url) throw new Error('Máy chủ chưa trả về URL ảnh đại diện hợp lệ.');
+  if (!uploaded?.url) throw new Error(i18n.t('errors:services.invalidImageUrl'));
 
   let url = uploaded.url.trim();
   if (url.startsWith('/')) {

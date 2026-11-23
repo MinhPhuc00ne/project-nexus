@@ -1,10 +1,16 @@
-export const statuses = [
-  ['SCHEDULED', 'Đã lên lịch'],
-  ['ACTIVE', 'Đang diễn ra'],
-  ['EXTENDED', 'Đang gia hạn'],
-  ['ENDED', 'Đã kết thúc'],
-  ['SETTLED', 'Đã quyết toán'],
-  ['FAILED', 'Không thành công'],
-  ['CANCELLED', 'Đã hủy'],
-  ['DRAFT', 'Bản nháp'],
+export const AUCTION_STATUS_KEYS = [
+  'SCHEDULED',
+  'ACTIVE',
+  'EXTENDED',
+  'ENDED',
+  'SETTLED',
+  'FAILED',
+  'CANCELLED',
+  'DRAFT',
 ] as const;
+
+export type AdminAuctionStatusKey = (typeof AUCTION_STATUS_KEYS)[number];
+
+export function isKnownAuctionStatus(value: string): value is AdminAuctionStatusKey {
+  return (AUCTION_STATUS_KEYS as readonly string[]).includes(value);
+}

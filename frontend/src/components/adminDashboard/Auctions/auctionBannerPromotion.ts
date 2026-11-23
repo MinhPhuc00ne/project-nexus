@@ -1,3 +1,4 @@
+import i18n from '../../../i18n';
 import {
   createBannerFromAuction,
   listBanners,
@@ -10,8 +11,8 @@ export const BANNER_LIST_LIMIT = 100;
 
 export function auctionBannerReason(auction: AdminAuctionEntity): string {
   if (['DRAFT', 'CANCELLED'].includes(auction.status))
-    return 'Chỉ được đưa phiên đấu giá công khai lên banner.';
-  if (!auction.imageUrl?.trim()) return 'Thêm ảnh cho phiên đấu giá trước khi đưa lên banner.';
+    return i18n.t('admin:management.publicAuctionOnly');
+  if (!auction.imageUrl?.trim()) return i18n.t('admin:management.addImageFirst');
   return '';
 }
 
@@ -25,9 +26,7 @@ export async function promoteAuctionBanner(
   const existing = banners.find((banner) => banner.auctionId === auction.id);
   if (existing) return { banner: existing, created: false };
   if (banners.length >= BANNER_LIST_LIMIT)
-    throw new Error(
-      'Chưa xác định được phiên đã có banner vì danh sách quá lớn. Vui lòng kiểm tra tại Quản lý banner.',
-    );
+    throw new Error(i18n.t('admin:management.bannerListTooLarge'));
   const banner = await createBannerFromAuction(auction.id);
   return { banner, created: true };
 }

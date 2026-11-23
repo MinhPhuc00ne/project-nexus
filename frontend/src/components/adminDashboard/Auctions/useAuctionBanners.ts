@@ -1,7 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { listBanners, type Banner } from '../../../services/banners.service';
 
 export default function useAuctionBanners(token: string | null, revision: number) {
+  const { t } = useTranslation('admin');
   const [data, setData] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,7 +17,8 @@ export default function useAuctionBanners(token: string | null, revision: number
         if (active) setData(banners);
       })
       .catch((cause) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Không thể kiểm tra banner.');
+        if (active)
+          setError(cause instanceof Error ? cause.message : t('management.checkBannerError'));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -23,6 +26,6 @@ export default function useAuctionBanners(token: string | null, revision: number
     return () => {
       active = false;
     };
-  }, [token, revision]);
+  }, [token, revision, t]);
   return { data, loading, error };
 }

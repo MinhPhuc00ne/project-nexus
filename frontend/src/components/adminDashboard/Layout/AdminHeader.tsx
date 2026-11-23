@@ -1,17 +1,10 @@
-import {
-  ChevronDown,
-  Languages,
-  Menu,
-  ShieldCheck,
-  Radio,
-  LogOut,
-  Settings2,
-  UserRound,
-} from 'lucide-react';
+import { ChevronDown, Menu, ShieldCheck, Radio, LogOut, Settings2, UserRound } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { clearAuthSession } from '../../../services/auth';
 import type { UserProfile } from '../../../services/users';
+import LanguageSwitcher from '../../common/LanguageSwitcher';
 import AdminNotifications from './AdminNotifications';
 
 // Header nhận tài khoản đã được AdminLayout xác minh qua /users/me; không tự gọi API lần nữa.
@@ -25,6 +18,7 @@ export default function AdminHeader({
   pendingCount?: number;
 }) {
   // State cục bộ chỉ để mở/đóng danh sách thông báo, không sửa dữ liệu nghiệp vụ.
+  const { t } = useTranslation(['admin', 'common']);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -82,29 +76,26 @@ export default function AdminHeader({
       <div className="flex items-center gap-3">
         <button
           onClick={onMenu}
-          aria-label="Mở menu"
+          aria-label={t('admin:header.openMenu')}
           className="rounded-lg p-2 text-primary hover:bg-blue-50 lg:hidden"
         >
           <Menu size={20} />
         </button>
         <span className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-2 text-[10px] font-bold text-primary">
           <ShieldCheck size={13} />
-          NEXUS ADMIN PANEL
+          {t('admin:header.panelTitle')}
         </span>
         <span className="hidden items-center gap-2 text-[11px] text-slate-500 xl:flex">
           <span className="size-1.5 rounded-full bg-emerald-500" />
-          Cụm máy chủ: 99.98%
+          {t('admin:header.clusterStatus')}
         </span>
         <span className="hidden items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-[10px] font-semibold text-primary 2xl:flex">
           <Radio size={13} />
-          PHÁT SÓNG 3D: SẴN SÀNG
+          {t('admin:header.broadcastReady')}
         </span>
       </div>
       <div className="flex items-center gap-4">
-        <span className="hidden items-center gap-2 text-xs text-slate-500 sm:flex">
-          <Languages size={16} />
-          VIE
-        </span>
+        <LanguageSwitcher compact />
         <div ref={notificationRef} className="relative">
           <AdminNotifications
             key={user.id}
@@ -127,7 +118,7 @@ export default function AdminHeader({
           <button
             ref={userButtonRef}
             type="button"
-            aria-label="Mở tùy chọn tài khoản"
+            aria-label={t('admin:header.accountOptionsAria')}
             aria-expanded={showUserMenu}
             aria-controls={userMenuId}
             onClick={() => {
@@ -175,7 +166,7 @@ export default function AdminHeader({
                 onClick={() => setShowUserMenu(false)}
               >
                 <Settings2 size={16} />
-                Cài đặt quản trị
+                {t('admin:header.settingsLink')}
               </Link>
               <div className="my-1.5 border-t border-slate-100" />
               <button
@@ -184,7 +175,7 @@ export default function AdminHeader({
                 className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-xs font-medium text-red-500 hover:bg-red-50"
               >
                 <LogOut size={16} />
-                Đăng xuất
+                {t('admin:header.logout')}
               </button>
             </div>
           )}

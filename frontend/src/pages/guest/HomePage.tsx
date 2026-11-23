@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Truck, Zap, Gavel, ShieldCheck, Tag, WalletCards } from 'lucide-react';
 import {
   HomeBenefit,
@@ -19,8 +20,10 @@ import {
 import { AuctionStatus } from '@nexus/types';
 import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
 import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
+import HomeTrendingProducts from '../../components/home/HomeTrendingProducts';
 
 function HomePage() {
+  const { t } = useTranslation('guest');
   const [banners, setBanners] = useState<HomeHeroSlide[]>([]);
   const [isLoadingBanners, setIsLoadingBanners] = useState(true);
 
@@ -131,9 +134,11 @@ function HomePage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-                Miễn Phí Vận Chuyển
+                {t('home.freeShippingTag')}
               </p>
-              <h3 className="mt-2 text-[18px] font-bold text-slate-800">Voucher GNM 0Đ</h3>
+              <h3 className="mt-2 text-[18px] font-bold text-slate-800">
+                {t('home.freeShippingTitle')}
+              </h3>
             </div>
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-green-500">
@@ -141,18 +146,20 @@ function HomePage() {
             </div>
           </div>
 
-          <p className="mt-3 text-sm text-slate-500">Áp dụng cho mọi đơn hàng đầu tiên</p>
+          <p className="mt-3 text-sm text-slate-500">{t('home.freeShippingDesc')}</p>
 
-          <button className="mt-4 text-sm font-semibold text-sky-500">Lấy Mã Ngay →</button>
+          <button className="mt-4 text-sm font-semibold text-sky-500">{t('home.claimCode')}</button>
         </div>
 
         <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
-                Cổng Thanh Toán Ký Quỹ
+                {t('home.escrowTag')}
               </p>
-              <h3 className="mt-2 text-[18px] font-bold text-slate-800">Hoàn 5% Quà PayOS</h3>
+              <h3 className="mt-2 text-[18px] font-bold text-slate-800">
+                {t('home.payosGiftTitle')}
+              </h3>
             </div>
 
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
@@ -160,20 +167,20 @@ function HomePage() {
             </div>
           </div>
 
-          <p className="mt-3 text-sm text-slate-500">Giao dịch bảo mật, sớm nhận ưu đãi</p>
+          <p className="mt-3 text-sm text-slate-500">{t('home.payosGiftDesc')}</p>
 
-          <button className="mt-4 text-sm font-semibold text-sky-500">Khám Phá →</button>
+          <button className="mt-4 text-sm font-semibold text-sky-500">{t('home.explore')}</button>
         </div>
       </section>
 
       <section className="mt-4 rounded-[18px] border border-slate-200 bg-white px-3 py-3">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-          <HomeBenefit icon={<Truck />} title="Freeship Đơn Đầu" />
-          <HomeBenefit icon={<Zap />} title="Flash Sale Giá Vàng" />
-          <HomeBenefit icon={<Gavel />} title="Đấu Giá Trực Tiếp" />
-          <HomeBenefit icon={<ShieldCheck />} title="Chính Hãng Mall" />
-          <HomeBenefit icon={<Tag />} title="Khách Hàng Thân Thiết" />
-          <HomeBenefit icon={<WalletCards />} title="Hoàn Tiền PayOS" />
+          <HomeBenefit icon={<Truck />} title={t('home.benefits.freeship')} />
+          <HomeBenefit icon={<Zap />} title={t('home.benefits.flashSale')} />
+          <HomeBenefit icon={<Gavel />} title={t('home.benefits.liveAuction')} />
+          <HomeBenefit icon={<ShieldCheck />} title={t('home.benefits.mall')} />
+          <HomeBenefit icon={<Tag />} title={t('home.benefits.loyalty')} />
+          <HomeBenefit icon={<WalletCards />} title={t('home.benefits.payosRefund')} />
         </div>
       </section>
 
@@ -189,7 +196,9 @@ function HomePage() {
             <HomeCountdown />
           </div>
 
-          <button className="text-xs font-semibold text-[#f36a22]">Xem Tất Cả Khuyến Mãi →</button>
+          <button className="text-xs font-semibold text-[#f36a22]">
+            {t('home.viewAllPromos')}
+          </button>
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -200,6 +209,10 @@ function HomePage() {
       </section>
 
       <HomeLiveAuction auctions={liveAuctions} />
+
+      <div className="mt-6">
+        <HomeTrendingProducts />
+      </div>
 
       {/* TÍNH NĂNG ĐỀ XUẤT SẢN PHẨM CÁ NHÂN HÓA (AI RECOMMENDATIONS) */}
       <HomeRecommendationsSection

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WS_AUCTION_EVENTS, type WsTimerSyncPayload } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import { canEndAuctionLot } from '../../../types/admin-auction-operations.types';
@@ -11,6 +12,7 @@ import {
 } from '../../../services/auction.service';
 
 export function useAdminAuctionLots(auctionId: string) {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [data, setData] = useState<AdminAuctionLotsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,14 +50,14 @@ export function useAdminAuctionLots(auctionId: string) {
     void getAdminAuctionLotsApi(auctionId)
       .then((result) => {
         if (!active) return;
-        if (!Array.isArray(result.lots)) throw new Error('Dữ liệu lô đấu giá không hợp lệ.');
+        if (!Array.isArray(result.lots)) throw new Error(t('auctions.lotsPage.invalidDataError'));
         setData(result);
         const serverTime = new Date(result.serverTime ?? '').getTime();
         setClockOffset(Number.isFinite(serverTime) ? serverTime - Date.now() : 0);
       })
       .catch((cause: unknown) => {
         if (active)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải các lô đấu giá.');
+          setError(cause instanceof Error ? cause.message : t('auctions.lotsPage.loadError'));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -63,7 +65,7 @@ export function useAdminAuctionLots(auctionId: string) {
     return () => {
       active = false;
     };
-  }, [auctionId, token, revision]);
+  }, [auctionId, token, revision, t]);
 
   useEffect(() => {
     if (!token) return;
@@ -105,7 +107,7 @@ export function useAdminAuctionLots(auctionId: string) {
     };
     const onSocketError = (event: { message?: string }) => {
       onDisconnect();
-      setRealtimeError(event.message || 'Không thể đồng bộ trực tiếp.');
+      setRealtimeError(event.message || t('auctions.lotsPage.realtimeError'));
     };
     const onTimer = (event: WsTimerSyncPayload) => {
       if (event.auctionId !== auctionId) return;
@@ -179,7 +181,7 @@ export function useAdminAuctionLots(auctionId: string) {
     if (busy.current || !session.current.active) return false;
     const lot = data?.lots.find((item) => item.id === itemId);
     if (!lot || !canEndAuctionLot(lot)) {
-      setActionError('Lô chưa bắt đầu hoặc đã kết thúc. Hãy làm mới để kiểm tra trạng thái.');
+      setActionError(t('auctions.lotsPage.invalidLotActionError'));
       return false;
     }
     const current = session.current;
@@ -190,14 +192,14 @@ export function useAdminAuctionLots(auctionId: string) {
     try {
       await adminEndAuctionLotApi(auctionId, itemId);
       if (!current.active) return false;
-      setNotice('Đã kết thúc lô. Đang cập nhật kết quả từ máy chủ.');
+      setNotice(t('auctions.lotsPage.endLotNotice'));
       setRevision((value) => value + 1);
       setOperationsRevision((value) => value + 1);
       return true;
     } catch (cause) {
       if (current.active) {
         setActionError(
-          `${cause instanceof Error ? cause.message : 'Không thể kết thúc lô.'} Hãy làm mới để kiểm tra trạng thái trước khi thử lại.`,
+          `${cause instanceof Error ? cause.message : t('auctions.lotsPage.endLotError')} ${t('auctions.lotsPage.retryRefreshSuffix')}`,
         );
         setRevision((value) => value + 1);
         setOperationsRevision((value) => value + 1);

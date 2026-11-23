@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
 import {
   Star,
   MessageSquare,
@@ -17,6 +19,7 @@ interface ShopReviewsSectionProps {
 }
 
 export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) => {
+  const { t, i18n } = useTranslation('guest');
   const [reviews, setReviews] = useState<ShopReviewItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [page, setPage] = useState<number>(1);
@@ -74,16 +77,13 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
 
             <div>
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <span>Đánh giá & Uy tín Gian Hàng</span>
+                <span>{t('shop.reviewsHeading')}</span>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  Điểm uy tín: {shop.reputationScore}/100
+                  {t('shop.reputationScore')} {shop.reputationScore}/100
                 </span>
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Dựa trên {total} lượt đánh giá thực tế từ người mua đã hoàn thành đơn hàng bảo chứng
-                Escrow.
-              </p>
+              <p className="text-xs text-slate-500 mt-1">{t('shop.reviewsSubtitle', { total })}</p>
             </div>
           </div>
 
@@ -98,7 +98,7 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
                   : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
-              Tất cả ({total})
+              {t('shop.filterAll', { count: total })}
             </button>
             {[5, 4, 3, 2, 1].map((star) => (
               <button
@@ -125,24 +125,22 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
           <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
             <Store className="w-5 h-5 text-blue-600 shrink-0" />
             <div>
-              <p className="font-semibold text-slate-900">100% Đơn bảo chứng</p>
-              <p className="text-[11px] text-slate-400">Tiền được giữ an toàn tại PayOS Escrow</p>
+              <p className="font-semibold text-slate-900">{t('shop.highlightEscrowTitle')}</p>
+              <p className="text-[11px] text-slate-400">{t('shop.highlightEscrowDesc')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <div>
-              <p className="font-semibold text-slate-900">Đồng kiểm khi nhận</p>
-              <p className="text-[11px] text-slate-400">Kiểm tra bưu phẩm trước khi thanh toán</p>
+              <p className="font-semibold text-slate-900">{t('shop.highlightInspectTitle')}</p>
+              <p className="text-[11px] text-slate-400">{t('shop.highlightInspectDesc')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
             <MessageSquare className="w-5 h-5 text-indigo-600 shrink-0" />
             <div>
-              <p className="font-semibold text-slate-900">Hỗ trợ & Khiếu nại</p>
-              <p className="text-[11px] text-slate-400">
-                Phản hồi và hoàn tiền minh bạch trong 7 ngày
-              </p>
+              <p className="font-semibold text-slate-900">{t('shop.highlightSupportTitle')}</p>
+              <p className="text-[11px] text-slate-400">{t('shop.highlightSupportDesc')}</p>
             </div>
           </div>
         </div>
@@ -151,10 +149,10 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
       {/* Reviews List */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h4 className="text-sm font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100 flex items-center justify-between">
-          <span>Nhận xét từ khách hàng ({filteredReviews.length})</span>
+          <span>{t('product.customerReviewsHeading', { count: filteredReviews.length })}</span>
           {selectedStar && (
             <span className="text-xs text-blue-600 font-medium">
-              Đang lọc theo: {selectedStar} sao
+              {t('shop.filteringByStars', { stars: selectedStar })}
             </span>
           )}
         </h4>
@@ -162,18 +160,15 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
         {loading ? (
           <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
             <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
-            <span className="text-xs">Đang tải đánh giá gian hàng...</span>
+            <span className="text-xs">{t('shop.loadingReviews')}</span>
           </div>
         ) : filteredReviews.length === 0 ? (
           <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center">
             <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 mb-3">
               <MessageSquare className="w-6 h-6" />
             </div>
-            <p className="text-xs font-semibold text-slate-600">Chưa có đánh giá nào</p>
-            <p className="text-[11px] text-slate-400 mt-1 max-w-sm">
-              Gian hàng hiện chưa có đánh giá nào ở mức sao này. Hãy đặt mua sản phẩm để trở thành
-              người đầu tiên đánh giá!
-            </p>
+            <p className="text-xs font-semibold text-slate-600">{t('shop.emptyReviewsTitle')}</p>
+            <p className="text-[11px] text-slate-400 mt-1 max-w-sm">{t('shop.emptyReviewsDesc')}</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -183,7 +178,7 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
                   {rev.reviewer?.avatarUrl ? (
                     <img
                       src={rev.reviewer.avatarUrl}
-                      alt={rev.reviewer.fullName || 'Khách hàng'}
+                      alt={rev.reviewer.fullName || t('shop.customerFallback')}
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -195,16 +190,16 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-900">
-                        {rev.reviewer?.fullName || 'Người mua ẩn danh'}
+                        {rev.reviewer?.fullName || t('product.anonymousBuyer')}
                       </span>
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded-full border border-emerald-200">
                         <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                        Đã mua hàng
+                        {t('shop.verifiedPurchase')}
                       </span>
                     </div>
                     <span className="text-[11px] text-slate-400">
                       {rev.createdAt
-                        ? new Date(rev.createdAt).toLocaleDateString('vi-VN', {
+                        ? new Date(rev.createdAt).toLocaleDateString(getIntlLocale(i18n.language), {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric',
@@ -247,7 +242,7 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
               <ChevronLeft className="w-4 h-4 text-slate-600" />
             </button>
             <span className="text-xs font-semibold text-slate-600">
-              Trang {page} / {totalPages}
+              {t('shop.pageOf', { page, totalPages })}
             </span>
             <button
               type="button"

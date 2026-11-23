@@ -10,6 +10,8 @@ import {
   Truck as TruckOutlined,
   WalletCards as WalletOutlined,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../i18n/config';
 import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
 import { ModuleNotice, Panel, PolicyCards, SellerButton } from '../../components/seller/SellerUI';
 import {
@@ -22,6 +24,7 @@ import {
 } from '../../components/seller/SellerOverviewPanels';
 
 export default function SellerDashboardPage({ home = false }: { home?: boolean }) {
+  const { t, i18n } = useTranslation('seller');
   const { preview, setPreview } = useSellerWorkspace();
   return (
     <div
@@ -37,21 +40,17 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
             className="text-[9px] tracking-[1.7px] text-[#315eea] font-bold max-[540px]:text-[8px]"
             data-seller="eyebrow"
           >
-            NEXUS SELLER CENTER
+            {t('dashboard.eyebrow')}
           </span>
-          <h1>{home ? 'Mọi hoạt động, một điểm chạm.' : 'Bảng điều khiển tổng quan'}</h1>
-          <p>
-            {home
-              ? 'Chào ngày mới. Cùng phát triển gian hàng của bạn.'
-              : 'Nắm bắt hiệu quả kinh doanh và các công việc cần xử lý.'}
-          </p>
+          <h1>{home ? t('dashboard.homeTitle') : t('dashboard.overviewTitle')}</h1>
+          <p>{home ? t('dashboard.homeSubtitle') : t('dashboard.overviewSubtitle')}</p>
         </div>
         <span
           className="flex items-center gap-2 bg-white [border:1px_solid_#e5ebf4] rounded-[8px] py-2 px-3 text-[#7889a6] text-[11px] whitespace-nowrap max-[760px]:text-[9px] max-[760px]:p-[7px] max-[540px]:hidden"
           data-seller="date"
         >
           <CalendarOutlined className="text-[15px]" aria-hidden="true" />
-          {new Date().toLocaleDateString('vi-VN')}
+          {new Date().toLocaleDateString(getIntlLocale(i18n.language))}
         </span>
       </div>
       <StoreIdentity />
@@ -61,10 +60,30 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
           data-seller="quick-links"
         >
           {[
-            ['/seller/orders', TruckOutlined, 'Quản lý đơn hàng', 'Đóng gói & vận chuyển'],
-            ['/seller/auctions', CodeSandboxOutlined, 'Đấu giá', 'Vật phẩm & phiên đấu giá'],
-            ['/seller/products', ShopOutlined, 'Kho & Sản phẩm', 'Danh mục & tồn kho'],
-            ['/seller/finance', WalletOutlined, 'Ví & Tài chính', 'Số dư & ký quỹ'],
+            [
+              '/seller/orders',
+              TruckOutlined,
+              t('dashboard.quickLinks.ordersTitle'),
+              t('dashboard.quickLinks.ordersDesc'),
+            ],
+            [
+              '/seller/auctions',
+              CodeSandboxOutlined,
+              t('dashboard.quickLinks.auctionsTitle'),
+              t('dashboard.quickLinks.auctionsDesc'),
+            ],
+            [
+              '/seller/products',
+              ShopOutlined,
+              t('dashboard.quickLinks.productsTitle'),
+              t('dashboard.quickLinks.productsDesc'),
+            ],
+            [
+              '/seller/finance',
+              WalletOutlined,
+              t('dashboard.quickLinks.financeTitle'),
+              t('dashboard.quickLinks.financeDesc'),
+            ],
           ].map(([to, Icon, title, text]) => {
             const ItemIcon = Icon as typeof TruckOutlined;
             return (
@@ -82,7 +101,7 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
           })}
         </div>
       )}
-      <ModuleNotice label="Báo cáo, đơn hàng và đấu giá" />
+      <ModuleNotice label={t('dashboard.moduleNoticeLabel')} />
       <SellerStats />
       <RevenuePanels compact={home} />
       <div
@@ -99,8 +118,8 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
       >
         <WalletPanel />
         <Panel
-          title="Đồng hành cùng người bán"
-          subtitle="Xây dựng gian hàng uy tín, vận hành hiệu quả"
+          title={t('dashboard.partnerTitle')}
+          subtitle={t('dashboard.partnerSubtitle')}
           action={<SafetyCertificateOutlined className="text-[19px]" aria-hidden="true" />}
         >
           <div
@@ -110,22 +129,22 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
             <div>
               <SafetyCertificateOutlined className="text-[18px]" aria-hidden="true" />
               <span>
-                <strong>Thông tin minh bạch</strong>
-                <p>Mô tả chính xác sản phẩm và chuẩn bị chứng từ khi cần.</p>
+                <strong>{t('dashboard.partner.infoTitle')}</strong>
+                <p>{t('dashboard.partner.infoDesc')}</p>
               </span>
             </div>
             <div>
               <TruckOutlined className="text-[18px]" aria-hidden="true" />
               <span>
-                <strong>Giao hàng đúng hẹn</strong>
-                <p>Đóng gói cẩn thận, lưu bằng chứng và theo dõi trạng thái giao.</p>
+                <strong>{t('dashboard.partner.shippingTitle')}</strong>
+                <p>{t('dashboard.partner.shippingDesc')}</p>
               </span>
             </div>
             <div>
               <ClockCircleOutlined className="text-[18px]" aria-hidden="true" />
               <span>
-                <strong>Chăm sóc khách hàng</strong>
-                <p>Phản hồi kịp thời và chủ động xử lý các vấn đề phát sinh.</p>
+                <strong>{t('dashboard.partner.supportTitle')}</strong>
+                <p>{t('dashboard.partner.supportDesc')}</p>
               </span>
             </div>
           </div>
@@ -134,7 +153,8 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
             data-seller="text-button"
             to="/seller/settings"
           >
-            Hoàn thiện gian hàng <ArrowRightOutlined className="text-[14px]" aria-hidden="true" />
+            {t('dashboard.completeShop')}{' '}
+            <ArrowRightOutlined className="text-[14px]" aria-hidden="true" />
           </Link>
         </Panel>
       </div>
@@ -145,13 +165,11 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
       >
         <SafetyCertificateOutlined className="text-[15px]" aria-hidden="true" />
         <span>
-          Thông tin tài khoản và số dư ví được lấy từ API.{' '}
-          {preview
-            ? 'Các giao dịch đang hiển thị là dữ liệu mẫu.'
-            : 'Bạn có thể xem trước bố cục với dữ liệu mẫu.'}
+          {t('dashboard.bottomNoteApi')}{' '}
+          {preview ? t('dashboard.bottomNotePreviewOn') : t('dashboard.bottomNotePreviewOff')}
         </span>
         <SellerButton secondary onClick={() => setPreview(!preview)}>
-          {preview ? 'Tắt dữ liệu mẫu' : 'Xem dữ liệu mẫu'}
+          {preview ? t('dashboard.hideSample') : t('dashboard.viewSample')}
         </SellerButton>
       </div>
     </div>

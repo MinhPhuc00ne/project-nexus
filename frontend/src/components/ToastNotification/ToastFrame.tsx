@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, CircleX, X, ArrowRight } from 'lucide-react';
 import type { ToastItemProps, ToastItem } from '../../types/toast.types';
 import { Button } from '../ui/button';
@@ -13,6 +14,7 @@ export default function ToastFrame({
   onClick,
   actionLabel,
 }: ToastItemProps & Pick<ToastItem, 'variant'>) {
+  const { t } = useTranslation('common');
   const success = variant === 'success';
 
   useEffect(() => {
@@ -50,13 +52,13 @@ export default function ToastFrame({
         className={`min-w-0 flex-1 ${isClickable ? 'cursor-pointer group' : ''}`}
         onClick={isClickable ? handleAction : undefined}
       >
-        <p className="text-sm font-semibold">{success ? 'Thành công' : 'Thất bại'}</p>
+        <p className="text-sm font-semibold">{success ? t('toast.success') : t('toast.failed')}</p>
         <p className="mt-1 break-words whitespace-pre-line text-sm leading-relaxed">{message}</p>
 
         {isClickable && (
           <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-white/80 px-2.5 py-1 text-xs font-bold shadow-xs transition group-hover:bg-white">
             <span className={success ? 'text-emerald-800' : 'text-red-800'}>
-              {actionLabel || 'Xem chi tiết'}
+              {actionLabel || t('toast.viewDetails')}
             </span>
             <ArrowRight size={13} className={success ? 'text-emerald-700' : 'text-red-700'} />
           </div>
@@ -65,7 +67,7 @@ export default function ToastFrame({
       <Button
         variant="ghost"
         size="icon"
-        aria-label="Đóng thông báo"
+        aria-label={t('toast.dismissAria')}
         onClick={(e) => {
           e.stopPropagation();
           onDismiss(id);

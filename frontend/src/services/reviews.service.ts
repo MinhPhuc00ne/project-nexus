@@ -1,4 +1,4 @@
-import { apiRequest } from './api';
+import { ApiRequestError, apiRequest } from './api';
 
 export interface ProductReviewItem {
   id: string;
@@ -92,6 +92,73 @@ export function submitProductReviewApi(
   );
 }
 
+export function updateProductReviewApi(
+  orderId: string,
+  productId: string,
+  data: { rating: number; comment: string },
+): Promise<ProductReviewItem> {
+  return apiRequest<ProductReviewItem>(
+    `/commerce/orders/${encodeURIComponent(orderId)}/products/${encodeURIComponent(productId)}/review`,
+    {
+      method: 'PATCH',
+      requireAuth: true,
+      body: { rating: data.rating, comment: data.comment.trim() },
+    },
+  );
+}
+
+export function deleteProductReviewApi(orderId: string, productId: string): Promise<unknown> {
+  return apiRequest<unknown>(
+    `/commerce/orders/${encodeURIComponent(orderId)}/products/${encodeURIComponent(productId)}/review`,
+    { method: 'DELETE', requireAuth: true },
+  );
+}
+
+export async function updateBuyerProductReviewApi(
+  orderIds: string[],
+  productId: string,
+  data: { rating: number; comment: string },
+): Promise<ProductReviewItem> {
+  let notFound: ApiRequestError | undefined;
+  for (const orderId of orderIds) {
+    try {
+      return await updateProductReviewApi(orderId, productId, data);
+    } catch (error) {
+      if (!(error instanceof ApiRequestError) || error.status !== 404) throw error;
+      notFound = error;
+    }
+  }
+  throw notFound ?? new Error('No completed order found for this product review.');
+}
+
+export function saveBuyerProductReviewApi(
+  existing: boolean,
+  orderId: string,
+  orderIds: string[],
+  productId: string,
+  data: { rating: number; comment: string },
+): Promise<ProductReviewItem> {
+  return existing
+    ? updateBuyerProductReviewApi(orderIds, productId, data)
+    : submitProductReviewApi(orderId, productId, data);
+}
+
+export async function deleteBuyerProductReviewApi(
+  orderIds: string[],
+  productId: string,
+): Promise<unknown> {
+  let notFound: ApiRequestError | undefined;
+  for (const orderId of orderIds) {
+    try {
+      return await deleteProductReviewApi(orderId, productId);
+    } catch (error) {
+      if (!(error instanceof ApiRequestError) || error.status !== 404) throw error;
+      notFound = error;
+    }
+  }
+  throw notFound ?? new Error('No completed order found for this product review.');
+}
+
 export function submitShopReviewApi(
   orderId: string,
   data: { rating: number; comment: string },
@@ -101,4 +168,60 @@ export function submitShopReviewApi(
     requireAuth: true,
     body: { rating: data.rating, comment: data.comment.trim() },
   });
+}
+
+export function updateShopReviewApi(
+  orderId: string,
+  data: { rating: number; comment: string },
+): Promise<ShopReviewItem> {
+  return apiRequest<ShopReviewItem>(`/commerce/orders/${encodeURIComponent(orderId)}/shop-review`, {
+    method: 'PATCH',
+    requireAuth: true,
+    body: { rating: data.rating, comment: data.comment.trim() },
+  });
+}
+
+export function deleteShopReviewApi(orderId: string): Promise<unknown> {
+  return apiRequest<unknown>(`/commerce/orders/${encodeURIComponent(orderId)}/shop-review`, {
+    method: 'DELETE',
+    requireAuth: true,
+  });
+}
+
+export async function updateBuyerShopReviewApi(
+  orderIds: string[],
+  data: { rating: number; comment: string },
+): Promise<ShopReviewItem> {
+  let notFound: ApiRequestError | undefined;
+  for (const orderId of orderIds) {
+    try {
+      return await updateShopReviewApi(orderId, data);
+    } catch (error) {
+      if (!(error instanceof ApiRequestError) || error.status !== 404) throw error;
+      notFound = error;
+    }
+  }
+  throw notFound ?? new Error('No completed order found for this shop review.');
+}
+
+export function saveBuyerShopReviewApi(
+  existing: boolean,
+  orderId: string,
+  orderIds: string[],
+  data: { rating: number; comment: string },
+): Promise<ShopReviewItem> {
+  return existing ? updateBuyerShopReviewApi(orderIds, data) : submitShopReviewApi(orderId, data);
+}
+
+export async function deleteBuyerShopReviewApi(orderIds: string[]): Promise<unknown> {
+  let notFound: ApiRequestError | undefined;
+  for (const orderId of orderIds) {
+    try {
+      return await deleteShopReviewApi(orderId);
+    } catch (error) {
+      if (!(error instanceof ApiRequestError) || error.status !== 404) throw error;
+      notFound = error;
+    }
+  }
+  throw notFound ?? new Error('No completed order found for this shop review.');
 }

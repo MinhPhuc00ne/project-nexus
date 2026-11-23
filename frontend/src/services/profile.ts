@@ -1,4 +1,5 @@
 import { Role } from '@nexus/types';
+import i18n from '../i18n';
 import { apiRequest } from './api';
 import { getStoredToken } from './auth';
 import { getMe } from './users';
@@ -16,9 +17,9 @@ export function validateAvatarFile(file: File): void {
     'image/webp': /\.webp$/i,
   };
   if (!extensions[file.type]?.test(file.name))
-    throw new Error('Chọn ảnh đại diện định dạng JPG, PNG hoặc WEBP.');
+    throw new Error(i18n.t('errors:services.avatarInvalidFormat'));
   if (file.size <= 0 || file.size > 25 * 1024 * 1024)
-    throw new Error('Ảnh đại diện phải lớn hơn 0 và không quá 25 MB.');
+    throw new Error(i18n.t('errors:services.avatarTooLarge25'));
 }
 
 const uploadedAvatars = new WeakMap<File, string>();
@@ -40,18 +41,18 @@ export async function updateMyProfile(
   const checkedToken = getStoredToken();
   const assertSession = () => {
     if (!checkedToken || checkedToken !== getStoredToken())
-      throw new Error('Phiên đăng nhập đã thay đổi. Vui lòng thử lại.');
+      throw new Error(i18n.t('errors:services.sessionChanged'));
   };
   assertSession();
   const current = await getMe();
   assertSession();
   if (current.role !== Role.BUYER && current.role !== Role.SELLER) {
-    throw new Error('Chỉ Buyer và Seller được sửa hồ sơ cá nhân.');
+    throw new Error(i18n.t('errors:services.profileRoleRestricted'));
   }
 
   let verificationToken: string | undefined;
   if (current.role === Role.SELLER) {
-    if (!password) throw new Error('Nhập mật khẩu hiện tại để xác minh người bán.');
+    if (!password) throw new Error(i18n.t('errors:services.sellerPasswordRequired'));
     const reauth = await apiRequest<{ verificationToken: string }>('/auth/profile/reauthenticate', {
       method: 'POST',
       body: { password },
@@ -74,7 +75,7 @@ export async function updateMyProfile(
         requireAuth: true,
       });
       if (!result?.url || !/^https?:\/\/\S+$/i.test(result.url))
-        throw new Error('Máy chủ chưa trả về đường dẫn ảnh hợp lệ. Vui lòng thử lại.');
+        throw new Error(i18n.t('errors:services.invalidImageUrl'));
       url = result.url;
       uploadedAvatars.set(avatarFile, url);
     }

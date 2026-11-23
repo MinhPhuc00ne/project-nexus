@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Store, ChevronRight } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import type { BuyerOrder } from '../../services/orders';
 
 interface OrderItemsSummaryProps {
@@ -8,6 +10,7 @@ interface OrderItemsSummaryProps {
 }
 
 export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) => {
+  const { t } = useTranslation('commerce');
   const items = Array.isArray(order?.items) ? order.items : [];
   const rawSubtotal = items.reduce(
     (sum, item) => sum + Number(item?.unitPrice ?? 0) * (item?.quantity ?? 0),
@@ -26,9 +29,9 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
           </div>
           <div>
             <h4 className="text-xs font-bold text-slate-900">
-              {order?.seller?.fullName || 'Gian Hàng NEXUS'}
+              {order?.seller?.fullName || t('orders.itemsSummary.defaultShop')}
             </h4>
-            <p className="text-[11px] text-slate-400">Người bán đối tác đã xác thực</p>
+            <p className="text-[11px] text-slate-400">{t('orders.itemsSummary.verifiedPartner')}</p>
           </div>
         </div>
         {order?.seller?.id && (
@@ -36,7 +39,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
             to={`/shop/${order.seller.id}`}
             className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1"
           >
-            <span>Xem gian hàng</span>
+            <span>{t('orders.itemsSummary.viewShop')}</span>
             <ChevronRight size={13} />
           </Link>
         )}
@@ -45,7 +48,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
       {/* Items list */}
       <div className="divide-y divide-slate-100">
         {items.map((item) => {
-          const title = item?.product?.title || 'Sản phẩm mua sắm';
+          const title = item?.product?.title || t('orders.itemsSummary.defaultProductTitle');
           const thumbnail =
             item?.product?.thumbnail ||
             item?.product?.images?.[0]?.imageUrl ||
@@ -82,7 +85,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                     if (!selections || Object.keys(selections).length === 0) return null;
                     return (
                       <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                        Phân loại:{' '}
+                        {t('orders.itemsSummary.variantLabel')}{' '}
                         {Object.entries(selections)
                           .map(([k, v]) => `${k}: ${v}`)
                           .join(' • ')}
@@ -90,16 +93,18 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                     );
                   })()}
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Số lượng: x{item?.quantity ?? 1}
+                    {t('orders.itemsSummary.qtyLabel', { qty: item?.quantity ?? 1 })}
                   </p>
                 </div>
               </div>
               <div className="text-right shrink-0">
                 <p className="font-extrabold text-slate-900 text-sm">
-                  {(Number(item?.unitPrice ?? 0) * (item?.quantity ?? 1)).toLocaleString('vi-VN')} ₫
+                  {formatCurrency(Number(item?.unitPrice ?? 0) * (item?.quantity ?? 1))}
                 </p>
                 <p className="text-[10px] text-slate-400">
-                  {Number(item?.unitPrice ?? 0).toLocaleString('vi-VN')} ₫ / sản phẩm
+                  {t('orders.itemsSummary.perItem', {
+                    price: formatCurrency(Number(item?.unitPrice ?? 0)),
+                  })}
                 </p>
               </div>
             </div>
@@ -110,21 +115,19 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
       {/* Price breakdown */}
       <div className="pt-4 border-t border-slate-100 space-y-2.5 text-xs text-slate-600">
         <div className="flex justify-between">
-          <span>Tổng tiền hàng:</span>
-          <span className="font-semibold text-slate-900">
-            {rawSubtotal.toLocaleString('vi-VN')} ₫
-          </span>
+          <span>{t('orders.itemsSummary.subtotalMerchandise')}</span>
+          <span className="font-semibold text-slate-900">{formatCurrency(rawSubtotal)}</span>
         </div>
         <div className="flex justify-between">
-          <span>Phí vận chuyển (GHN Express):</span>
+          <span>{t('orders.itemsSummary.ghnShipping')}</span>
           <span className="font-semibold text-slate-900">
-            {shippingFee > 0 ? `${shippingFee.toLocaleString('vi-VN')} ₫` : 'Miễn phí'}
+            {shippingFee > 0 ? formatCurrency(shippingFee) : t('orders.itemsSummary.freeShipping')}
           </span>
         </div>
         <div className="flex justify-between items-baseline pt-3 border-t border-slate-100 text-slate-900">
-          <span className="text-sm font-bold">Tổng thanh toán:</span>
+          <span className="text-sm font-bold">{t('orders.itemsSummary.grandTotal')}</span>
           <span className="text-xl font-extrabold text-blue-600">
-            {totalAmount.toLocaleString('vi-VN')} ₫
+            {formatCurrency(totalAmount)}
           </span>
         </div>
       </div>

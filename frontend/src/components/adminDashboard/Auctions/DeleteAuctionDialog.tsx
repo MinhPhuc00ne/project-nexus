@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
@@ -15,6 +16,7 @@ export default function DeleteAuctionDialog({
   onClose: () => void;
   onDeleted: () => void;
 }) {
+  const { t } = useTranslation('admin');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const lock = useRef(false);
@@ -37,14 +39,14 @@ export default function DeleteAuctionDialog({
     try {
       const result = await adminDeleteAuctionApi(auction.id);
       if (!result.success || result.deletedId !== auction.id)
-        throw new Error('Máy chủ chưa xác nhận xóa phiên đấu giá.');
+        throw new Error(t('management.deleteUnconfirmed'));
       if (active.current && token === getStoredToken()) {
-        toast.success('Đã xóa phiên đấu giá.');
+        toast.success(t('management.auctionDeleted'));
         onDeleted();
       }
     } catch (cause) {
       if (active.current && token === getStoredToken())
-        setError(cause instanceof Error ? cause.message : 'Không thể xóa phiên đấu giá.');
+        setError(cause instanceof Error ? cause.message : t('management.deleteAuctionError'));
     } finally {
       lock.current = false;
       if (active.current) setSaving(false);
@@ -54,7 +56,7 @@ export default function DeleteAuctionDialog({
   return (
     <Popup
       isOpen
-      title="Xóa phiên đấu giá"
+      title={t('management.deleteAuction')}
       onClose={() => {
         if (!lock.current) onClose();
       }}
@@ -64,21 +66,23 @@ export default function DeleteAuctionDialog({
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" disabled={saving} onClick={onClose}>
-            Hủy
+            {t('management.cancel')}
           </Button>
           <Button variant="danger" disabled={saving || !!reason} onClick={() => void remove()}>
-            {saving ? 'Đang xóa…' : 'Xác nhận xóa'}
+            {saving ? t('management.deleting') : t('management.confirmDelete')}
           </Button>
         </div>
       }
     >
       <p className="text-sm text-slate-700">
-        Bạn muốn xóa phiên <strong>{auction.title}</strong>?
+        <Trans
+          t={t}
+          i18nKey="management.deletePrompt"
+          values={{ title: auction.title }}
+          components={{ strong: <strong /> }}
+        />
       </p>
-      <p className="mt-3 text-sm text-slate-600">
-        Phiên, các lô ký gửi và khiếu nại liên quan sẽ bị xóa vĩnh viễn. Thao tác này không thể hoàn
-        tác.
-      </p>
+      <p className="mt-3 text-sm text-slate-600">{t('management.deleteWarning')}</p>
       {(reason || error) && (
         <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
           {reason || error}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ShoppingCart as ShoppingCartOutlined } from 'lucide-react';
 import { Star, Tag, Heart } from 'lucide-react';
@@ -27,6 +28,7 @@ export const ProductPurchaseSection: React.FC<ProductPurchaseSectionProps> = ({
   isInWishlist,
   onToggleWishlist,
 }) => {
+  const { t } = useTranslation('commerce');
   return (
     <div className="space-y-6 lg:col-span-7">
       <div>
@@ -53,21 +55,25 @@ export const ProductPurchaseSection: React.FC<ProductPurchaseSectionProps> = ({
               </div>
             </div>
           ) : (
-            <span className="font-medium text-slate-400">Chưa có đánh giá</span>
+            <span className="font-medium text-slate-400">{t('productPurchase.noReviews')}</span>
           )}
           <span className="text-slate-300">|</span>
           <span className="text-slate-600">
-            <strong className="text-slate-900">{product.reviewsCount ?? 0}</strong> Đánh Giá
+            <strong className="text-slate-900">{product.reviewsCount ?? 0}</strong>{' '}
+            {t('productPurchase.reviewsLabel')}
           </span>
           <span className="text-slate-300">|</span>
           <span className="text-slate-600">
-            Đã bán <strong className="text-slate-900">{product.soldCount ?? 0}</strong>
+            {t('productPurchase.soldLabel')}{' '}
+            <strong className="text-slate-900">{product.soldCount ?? 0}</strong>
           </span>
         </div>
       </div>
 
       <p className={canBuy ? 'text-emerald-700' : 'text-slate-500'}>
-        {canBuy ? `Còn ${product.stock} sản phẩm` : 'Sản phẩm hiện không có hàng để bán'}
+        {canBuy
+          ? t('productPurchase.inStock', { count: product.stock })
+          : t('productPurchase.outOfStock')}
       </p>
 
       <p className="rounded-xl bg-blue-50 p-5 text-3xl font-bold text-blue-600">
@@ -75,7 +81,7 @@ export const ProductPurchaseSection: React.FC<ProductPurchaseSectionProps> = ({
       </p>
 
       <div className="flex items-center gap-2.5 text-sm">
-        <span className="font-medium text-slate-500">Danh mục:</span>
+        <span className="font-medium text-slate-500">{t('productPurchase.categoryLabel')}</span>
         {product.category?.id ? (
           <Link
             to={`/search?categoryId=${product.category.id}&categoryName=${encodeURIComponent(product.category.name)}`}
@@ -84,18 +90,18 @@ export const ProductPurchaseSection: React.FC<ProductPurchaseSectionProps> = ({
             <Tag size={13} />
             {product.category?.parent?.name
               ? `${product.category.parent.name} › ${product.category.name}`
-              : product.categoryName || 'Chưa phân loại'}
+              : product.categoryName || t('productPurchase.uncategorized')}
           </Link>
         ) : (
           <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
             <Tag size={13} />
-            {product.categoryName || 'Chưa phân loại'}
+            {product.categoryName || t('productPurchase.uncategorized')}
           </span>
         )}
       </div>
 
       <label className="block space-y-2 text-sm font-medium text-slate-700">
-        <span>Số lượng</span>
+        <span>{t('productPurchase.quantityLabel')}</span>
         <input
           type="number"
           min={1}
@@ -120,7 +126,8 @@ export const ProductPurchaseSection: React.FC<ProductPurchaseSectionProps> = ({
           onClick={onAddToCart}
           className="rounded-xl border border-blue-600 px-5 py-3 font-semibold text-blue-600 transition hover:bg-blue-50 disabled:opacity-40"
         >
-          <ShoppingCartOutlined /> {isSubmitting ? 'Đang thêm…' : 'Thêm vào giỏ hàng'}
+          <ShoppingCartOutlined />{' '}
+          {isSubmitting ? t('productPurchase.addingToCart') : t('productPurchase.addToCart')}
         </button>
         <button
           type="button"
@@ -128,13 +135,17 @@ export const ProductPurchaseSection: React.FC<ProductPurchaseSectionProps> = ({
           onClick={onBuyNow}
           className="rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:opacity-40"
         >
-          Mua ngay
+          {t('productPurchase.buyNow')}
         </button>
         <button
           type="button"
           onClick={onToggleWishlist}
-          title={isInWishlist ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
-          aria-label={isInWishlist ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+          title={
+            isInWishlist ? t('productPurchase.removeWishlist') : t('productPurchase.addWishlist')
+          }
+          aria-label={
+            isInWishlist ? t('productPurchase.removeWishlist') : t('productPurchase.addWishlist')
+          }
           className={`flex cursor-pointer items-center justify-center rounded-xl border p-3 transition ${
             isInWishlist
               ? 'border-rose-200 bg-rose-50 text-rose-600'

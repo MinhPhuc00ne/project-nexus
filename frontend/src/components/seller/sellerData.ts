@@ -1,3 +1,5 @@
+import { formatCurrency } from '../../i18n/formatters';
+
 // These records are opt-in previews, never backend transactions.
 export interface SellerOrder {
   id: string;
@@ -165,7 +167,7 @@ export interface SellerDraft {
   increment: number;
   createdAt: string;
 }
-export const money = (value: number) => `${value.toLocaleString('vi-VN')} ₫`;
+export const money = (value: number) => formatCurrency(value);
 export const trustLabels: Record<string, string> = {
   EXCELLENT: 'Xuất sắc',
   GOOD: 'Tốt',

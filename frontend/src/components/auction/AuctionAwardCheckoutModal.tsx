@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
+import { getIntlLocale } from '../../i18n/config';
 import {
   X,
   CreditCard,
@@ -46,6 +49,7 @@ export default function AuctionAwardCheckoutModal({
   onClose,
   onSuccess,
 }: AuctionAwardCheckoutModalProps): React.ReactElement | null {
+  const { t, i18n } = useTranslation('auction');
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -82,9 +86,7 @@ export default function AuctionAwardCheckoutModal({
         }
       } catch (err: unknown) {
         if (isMounted) {
-          setErrorMsg(
-            err instanceof Error ? err.message : 'Không thể tải thông tin địa chỉ hoặc ví.',
-          );
+          setErrorMsg(err instanceof Error ? err.message : t('awardCheckout.loadInfoError'));
         }
       } finally {
         if (isMounted) setLoadingInitial(false);
@@ -95,7 +97,7 @@ export default function AuctionAwardCheckoutModal({
     return () => {
       isMounted = false;
     };
-  }, [isOpen, award.id]);
+  }, [isOpen, award.id, t]);
 
   const fetchQuote = useCallback(
     async (addressId: string): Promise<void> => {
@@ -106,13 +108,13 @@ export default function AuctionAwardCheckoutModal({
         const res = await quoteAuctionAwardApi(award.id, { addressId });
         setQuote(res);
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Không thể lấy báo giá vận chuyển GHN.';
+        const msg = err instanceof Error ? err.message : t('awardCheckout.ghnQuoteError');
         setErrorMsg(msg);
       } finally {
         setLoadingQuote(false);
       }
     },
-    [award.id],
+    [award.id, t],
   );
 
   useEffect(() => {
@@ -124,7 +126,7 @@ export default function AuctionAwardCheckoutModal({
   if (!isOpen) return null;
 
   const itemTitle =
-    award.auctionItem?.title || award.auction?.title || 'Hiện vật đấu giá trực tiếp 3D';
+    award.auctionItem?.title || award.auction?.title || t('awardCheckout.lotFallback');
   const itemImage = award.auctionItem?.images?.[0]
     ? formatAuctionImage(award.auctionItem.images[0])
     : 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=400&q=80';
@@ -136,16 +138,18 @@ export default function AuctionAwardCheckoutModal({
 
   const handleCheckout = async (): Promise<void> => {
     if (!selectedAddressId) {
-      setErrorMsg('Vui lòng chọn hoặc thêm địa chỉ nhận hàng.');
+      setErrorMsg(t('awardCheckout.selectAddressError'));
       return;
     }
     if (!quote) {
-      setErrorMsg('Hệ thống đang kết nối tính phí vận chuyển GHN. Vui lòng thử lại sau giây lát.');
+      setErrorMsg(t('awardCheckout.waitingQuoteError'));
       return;
     }
     if (!isBalanceSufficient) {
       setErrorMsg(
-        `Số dư ví không đủ. Vui lòng nạp thêm tối thiểu ${missingAmount.toLocaleString('vi-VN')} ₫.`,
+        t('awardCheckout.insufficientBalanceError', {
+          amount: formatCurrency(missingAmount, i18n.language),
+        }),
       );
       return;
     }
@@ -155,7 +159,7 @@ export default function AuctionAwardCheckoutModal({
     try {
       const res = await checkoutAuctionAwardApi(award.id, { addressId: selectedAddressId });
       const orderId = res?.id ?? res?.order?.id;
-      toast.success('Thanh toán thành công! Đơn hàng đấu giá đã được khởi tạo.', {
+      toast.success(t('awardCheckout.checkoutSuccessToast'), {
         targetUrl: orderId ? `/buyer/orders/${orderId}` : '/buyer/orders',
       });
       onSuccess(orderId);
@@ -164,7 +168,7 @@ export default function AuctionAwardCheckoutModal({
         navigate(`/buyer/orders/${orderId}`);
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Thanh toán thất bại, vui lòng thử lại.';
+      const msg = err instanceof Error ? err.message : t('awardCheckout.checkoutError');
       setErrorMsg(msg);
     } finally {
       setSubmitting(false);
@@ -181,10 +185,8 @@ export default function AuctionAwardCheckoutModal({
               <Sparkles size={16} />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">Thanh toán nhận hiện vật đấu giá</h3>
-              <p className="text-[11px] text-slate-500">
-                Thời hạn 24 giờ • Thanh toán 70% còn lại + Phí vận chuyển GHN
-              </p>
+              <h3 className="text-sm font-bold text-slate-900">{t('awardCheckout.title')}</h3>
+              <p className="text-[11px] text-slate-500">{t('awardCheckout.subtitle')}</p>
             </div>
           </div>
           <button
@@ -215,15 +217,15 @@ export default function AuctionAwardCheckoutModal({
             <div className="min-w-0 flex-1">
               <span className="inline-block text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-md border border-violet-200 mb-1">
                 {award.tier === 'SECOND_CHANCE'
-                  ? 'Cơ hội thứ hai (Top 2)'
-                  : 'Thắng đấu giá (Top 1)'}
+                  ? t('awardCheckout.secondChanceBadge')
+                  : t('awardCheckout.winnerBadge')}
               </span>
               <h4 className="text-xs font-bold text-slate-900 truncate">{itemTitle}</h4>
               <p className="text-[11px] text-slate-500">
-                Hạn chót thanh toán:{' '}
+                {t('awardCheckout.paymentDeadline')}{' '}
                 <strong className="text-amber-700">
-                  {new Date(award.expiresAt).toLocaleTimeString('vi-VN')}{' '}
-                  {new Date(award.expiresAt).toLocaleDateString('vi-VN')}
+                  {new Date(award.expiresAt).toLocaleTimeString(getIntlLocale(i18n.language))}{' '}
+                  {new Date(award.expiresAt).toLocaleDateString(getIntlLocale(i18n.language))}
                 </strong>
               </p>
             </div>
@@ -234,31 +236,31 @@ export default function AuctionAwardCheckoutModal({
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                 <MapPin size={14} className="text-violet-600" />
-                Địa chỉ nhận hàng (GHN Express)
+                {t('awardCheckout.shippingAddressTitle')}
               </label>
               <button
                 type="button"
                 onClick={() => navigate('/buyer/addresses')}
                 className="text-[11px] font-semibold text-violet-600 hover:underline flex items-center gap-0.5"
               >
-                Quản lý địa chỉ <ArrowUpRight size={11} />
+                {t('awardCheckout.manageAddresses')} <ArrowUpRight size={11} />
               </button>
             </div>
 
             {loadingInitial ? (
               <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                <Loader2 size={14} className="animate-spin text-violet-600" /> Đang tải địa chỉ nhận
-                hàng...
+                <Loader2 size={14} className="animate-spin text-violet-600" />{' '}
+                {t('awardCheckout.loadingAddresses')}
               </div>
             ) : addresses.length === 0 ? (
               <div className="p-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 text-xs text-amber-800 flex items-center justify-between">
-                <span>Bạn chưa có địa chỉ nhận hàng nào.</span>
+                <span>{t('awardCheckout.noAddresses')}</span>
                 <button
                   type="button"
                   onClick={() => navigate('/buyer/addresses')}
                   className="px-2.5 py-1 text-[11px] font-bold bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                 >
-                  Thêm địa chỉ
+                  {t('awardCheckout.addAddress')}
                 </button>
               </div>
             ) : (
@@ -288,7 +290,7 @@ export default function AuctionAwardCheckoutModal({
                             <span className="text-slate-500 font-normal">({addr.phone})</span>
                             {addr.isDefault && (
                               <span className="text-[9px] font-bold text-violet-700 bg-violet-100 px-1.5 py-0.2 rounded">
-                                Mặc định
+                                {t('awardCheckout.defaultBadge')}
                               </span>
                             )}
                           </div>
@@ -310,48 +312,56 @@ export default function AuctionAwardCheckoutModal({
           <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2 text-xs">
             <h5 className="font-bold text-slate-800 flex items-center gap-1.5 pb-1 border-b border-slate-200">
               <CreditCard size={13} className="text-slate-600" />
-              Chi tiết thanh toán
+              {t('awardCheckout.breakdownTitle')}
             </h5>
 
             <div className="flex justify-between text-slate-600">
-              <span>Tổng giá trúng thầu:</span>
+              <span>{t('awardCheckout.totalWinningPrice')}</span>
               <span className="font-semibold text-slate-900">
-                {(quote?.offerAmount ?? Number(award.offerAmount || 0)).toLocaleString('vi-VN')} ₫
+                {formatCurrency(
+                  quote?.offerAmount ?? Number(award.offerAmount || 0),
+                  i18n.language,
+                )}
               </span>
             </div>
 
             <div className="flex justify-between text-emerald-700">
               <span className="flex items-center gap-1">
-                <CheckCircle2 size={12} /> Tiền cọc đã giữ (30%):
+                <CheckCircle2 size={12} /> {t('awardCheckout.depositHeld')}
               </span>
               <span className="font-semibold">
-                -{(quote?.depositAmount ?? Number(award.depositAmount)).toLocaleString('vi-VN')} ₫
+                -
+                {formatCurrency(quote?.depositAmount ?? Number(award.depositAmount), i18n.language)}
               </span>
             </div>
 
             <div className="flex justify-between text-slate-600">
-              <span>Tiền hàng 70% còn lại:</span>
+              <span>{t('awardCheckout.remaining70')}</span>
               <span className="font-semibold text-slate-900">
-                {(quote?.remainingProductAmount ?? quote?.dueNow ?? 0).toLocaleString('vi-VN')} ₫
+                {formatCurrency(quote?.remainingProductAmount ?? quote?.dueNow ?? 0, i18n.language)}
               </span>
             </div>
 
             <div className="flex justify-between text-slate-600">
               <span className="flex items-center gap-1">
-                <Truck size={12} className="text-slate-500" /> Phí giao hàng GHN Express:
+                <Truck size={12} className="text-slate-500" /> {t('awardCheckout.ghnFee')}
               </span>
               <span className="font-semibold text-slate-900">
                 {loadingQuote ? (
-                  <span className="text-slate-400 text-[11px]">Đang tính...</span>
+                  <span className="text-slate-400 text-[11px]">
+                    {t('awardCheckout.calculating')}
+                  </span>
                 ) : (
-                  `${(quote?.shippingFee ?? 0).toLocaleString('vi-VN')} ₫`
+                  formatCurrency(quote?.shippingFee ?? 0, i18n.language)
                 )}
               </span>
             </div>
 
             <div className="pt-2 border-t border-slate-200 flex justify-between items-center font-bold text-sm">
-              <span className="text-slate-900">Cần thanh toán ngay:</span>
-              <span className="text-violet-700 text-base">{dueNow.toLocaleString('vi-VN')} ₫</span>
+              <span className="text-slate-900">{t('awardCheckout.dueNow')}</span>
+              <span className="text-violet-700 text-base">
+                {formatCurrency(dueNow, i18n.language)}
+              </span>
             </div>
           </div>
 
@@ -370,11 +380,14 @@ export default function AuctionAwardCheckoutModal({
               />
               <div>
                 <p className="font-semibold">
-                  Số dư ví khả dụng: <strong>{walletBalance.toLocaleString('vi-VN')} ₫</strong>
+                  {t('awardCheckout.availableBalance')}{' '}
+                  <strong>{formatCurrency(walletBalance, i18n.language)}</strong>
                 </p>
                 {!isBalanceSufficient && (
                   <p className="text-[11px] text-amber-700 mt-0.5">
-                    Thiếu {missingAmount.toLocaleString('vi-VN')} ₫ để thanh toán đơn hàng này.
+                    {t('awardCheckout.missingAmount', {
+                      amount: formatCurrency(missingAmount, i18n.language),
+                    })}
                   </p>
                 )}
               </div>
@@ -386,7 +399,7 @@ export default function AuctionAwardCheckoutModal({
                 onClick={() => navigate('/buyer/wallet')}
                 className="px-2.5 py-1 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition shrink-0"
               >
-                Nạp tiền ví ngay
+                {t('awardCheckout.topUpNow')}
               </button>
             )}
           </div>
@@ -400,7 +413,7 @@ export default function AuctionAwardCheckoutModal({
             disabled={submitting}
             className="px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
           >
-            Đóng
+            {t('awardCheckout.close')}
           </button>
           <button
             type="button"
@@ -410,11 +423,14 @@ export default function AuctionAwardCheckoutModal({
           >
             {submitting ? (
               <>
-                <Loader2 size={13} className="animate-spin" /> Đang xử lý...
+                <Loader2 size={13} className="animate-spin" /> {t('awardCheckout.processing')}
               </>
             ) : (
               <>
-                <CreditCard size={13} /> Xác nhận thanh toán ({dueNow.toLocaleString('vi-VN')} ₫)
+                <CreditCard size={13} />{' '}
+                {t('awardCheckout.confirmPay', {
+                  amount: formatCurrency(dueNow, i18n.language),
+                })}
               </>
             )}
           </button>

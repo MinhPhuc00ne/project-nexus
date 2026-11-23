@@ -1,3 +1,5 @@
+import { Trans, useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../../i18n/config';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Popup from '../../Popup';
@@ -16,6 +18,7 @@ export default function PromoteAuctionDialog({
   onClose: () => void;
   onPromoted: () => void;
 }) {
+  const { t, i18n } = useTranslation('admin');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const lock = useRef(false);
@@ -37,16 +40,12 @@ export default function PromoteAuctionDialog({
     try {
       const result = await promoteAuctionBanner(auction);
       if (active.current && token === getStoredToken()) {
-        toast.success(
-          result.created
-            ? 'Đã đưa phiên đấu giá lên banner theo lịch hiển thị.'
-            : 'Phiên đấu giá đã có banner.',
-        );
+        toast.success(result.created ? t('management.promoted') : t('management.bannerExists'));
         onPromoted();
       }
     } catch (cause) {
       if (active.current && token === getStoredToken())
-        setError(cause instanceof Error ? cause.message : 'Không thể đưa phiên lên banner.');
+        setError(cause instanceof Error ? cause.message : t('management.promoteAuctionError'));
     } finally {
       lock.current = false;
       if (active.current) setSaving(false);
@@ -55,7 +54,7 @@ export default function PromoteAuctionDialog({
   return (
     <Popup
       isOpen
-      title="Đưa phiên đấu giá lên banner"
+      title={t('management.promoteAuctionTitle')}
       onClose={() => {
         if (!lock.current) onClose();
       }}
@@ -65,10 +64,10 @@ export default function PromoteAuctionDialog({
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" disabled={saving} onClick={onClose}>
-            Hủy
+            {t('management.cancel')}
           </Button>
           <Button disabled={saving || !!reason} onClick={() => void confirm()}>
-            {saving ? 'Đang đưa lên…' : 'Xác nhận đưa lên banner'}
+            {saving ? t('management.promoting') : t('management.confirmPromote')}
           </Button>
         </div>
       }
@@ -82,20 +81,26 @@ export default function PromoteAuctionDialog({
           />
         )}
         <p>
-          Bạn muốn đưa phiên <strong className="text-slate-900">{auction.title}</strong> lên banner
-          trang chủ?
+          <Trans
+            t={t}
+            i18nKey="management.promotePrompt"
+            values={{ title: auction.title }}
+            components={{ strong: <strong className="text-slate-900" /> }}
+          />
         </p>
-        <p>Banner sử dụng tên và ảnh của phiên. Người xem bấm banner sẽ mở đúng phiên đấu giá.</p>
+        <p>{t('management.bannerContentHint')}</p>
         <dl className="space-y-2 rounded-lg bg-blue-50 p-3">
           <div>
-            <dt className="font-medium">Bắt đầu hiển thị</dt>
+            <dt className="font-medium">{t('management.displayStart')}</dt>
             <dd>
-              {new Date(auction.consignmentDeadline || auction.startTime).toLocaleString('vi-VN')}
+              {new Date(auction.consignmentDeadline || auction.startTime).toLocaleString(
+                getIntlLocale(i18n.language),
+              )}
             </dd>
           </div>
           <div>
-            <dt className="font-medium">Kết thúc hiển thị</dt>
-            <dd>{new Date(auction.endTime).toLocaleString('vi-VN')}</dd>
+            <dt className="font-medium">{t('management.displayEnd')}</dt>
+            <dd>{new Date(auction.endTime).toLocaleString(getIntlLocale(i18n.language))}</dd>
           </div>
         </dl>
         <Link
@@ -105,7 +110,7 @@ export default function PromoteAuctionDialog({
             if (lock.current) event.preventDefault();
           }}
         >
-          Quản lý banner
+          {t('management.manageBanners')}
         </Link>
         {(error || reason) && (
           <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-700">

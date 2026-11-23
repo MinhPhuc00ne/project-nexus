@@ -1,15 +1,16 @@
 import { useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { Badge, Button, EmptyState, SearchInput } from './AdminUI';
 
 export function DemoNotice() {
+  const { t } = useTranslation('admin');
   return (
     <p
       role="note"
       className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800"
     >
-      Dữ liệu minh họa. Thao tác chỉ áp dụng trong phiên hiện tại, chưa thay đổi dữ liệu trên hệ
-      thống hoặc thực hiện chuyển tiền.
+      {t('shared.demoNotice')}
     </p>
   );
 }
@@ -48,7 +49,7 @@ export function ManagementTable<T extends { id: string }>({
   columns,
   searchText,
   filters = [],
-  searchPlaceholder = 'Tìm theo mã hoặc tên...',
+  searchPlaceholder,
   onExport,
   paginate = true,
 }: {
@@ -60,6 +61,7 @@ export function ManagementTable<T extends { id: string }>({
   paginate?: boolean;
   filters?: { key: keyof T; label: string; options: { value: string; label: string }[] }[];
 }) {
+  const { t } = useTranslation('admin');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [page, setPage] = useState(1);
@@ -84,7 +86,7 @@ export function ManagementTable<T extends { id: string }>({
               setSearch(value);
               setPage(1);
             }}
-            placeholder={searchPlaceholder}
+            placeholder={searchPlaceholder ?? t('shared.searchCodeOrName')}
           />
         </div>
         {filters.map((filter) => (
@@ -108,7 +110,7 @@ export function ManagementTable<T extends { id: string }>({
         ))}
         {onExport && (
           <Button variant="secondary" disabled={!visible.length} onClick={() => onExport(visible)}>
-            Xuất CSV
+            {t('shared.exportCsv')}
           </Button>
         )}
       </div>
@@ -138,12 +140,12 @@ export function ManagementTable<T extends { id: string }>({
           </table>
         </div>
       ) : (
-        <EmptyState text="Không có dữ liệu khớp với bộ lọc." />
+        <EmptyState text={t('shared.emptyFiltered')} />
       )}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
         <span>
-          {visible.length} kết quả
-          {paginate ? ` • Trang ${currentPage}/${pages}` : ' trong trang hiện tại'}
+          {t('shared.resultsCount', { count: visible.length })}
+          {paginate ? t('shared.pageOf', { page: currentPage, pages }) : t('shared.inCurrentPage')}
         </span>
         {paginate && (
           <div className="flex gap-2">
@@ -152,14 +154,14 @@ export function ManagementTable<T extends { id: string }>({
               disabled={currentPage === 1}
               onClick={() => setPage(currentPage - 1)}
             >
-              Trước
+              {t('shared.prev')}
             </Button>
             <Button
               variant="secondary"
               disabled={currentPage === pages}
               onClick={() => setPage(currentPage + 1)}
             >
-              Sau
+              {t('shared.next')}
             </Button>
           </div>
         )}
@@ -185,6 +187,7 @@ export function DecisionDialog({
   onConfirm: (reason: string) => void;
   requireReason?: boolean;
 }) {
+  const { t } = useTranslation('admin');
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   return (
@@ -194,7 +197,7 @@ export function DecisionDialog({
         onSubmit={(event) => {
           event.preventDefault();
           if (requireReason && !reason.trim()) {
-            setError('Vui lòng nhập lý do xử lý.');
+            setError(t('shared.reasonRequiredErr'));
             return;
           }
           onConfirm(reason.trim());
@@ -202,7 +205,7 @@ export function DecisionDialog({
       >
         <p className="mb-4 text-sm leading-6 text-slate-600">{description}</p>
         <label className="block text-xs font-semibold">
-          {requireReason ? 'Lý do xử lý *' : 'Ghi chú đối chiếu'}
+          {requireReason ? t('shared.reasonLabel') : t('shared.reconcileNoteLabel')}
           <textarea
             value={reason}
             rows={3}
@@ -223,9 +226,9 @@ export function DecisionDialog({
         )}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            Hủy
+            {t('shared.cancel')}
           </Button>
-          <Button type="submit">Xác nhận</Button>
+          <Button type="submit">{t('shared.confirm')}</Button>
         </div>
       </form>
     </Popup>

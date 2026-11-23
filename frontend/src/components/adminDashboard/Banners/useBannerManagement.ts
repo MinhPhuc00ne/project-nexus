@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../../ToastNotification';
 import {
   listBanners,
@@ -17,9 +18,10 @@ const blank: BannerInput = {
   isActive: true,
   priority: 1,
 };
-const message = (error: unknown) =>
-  error instanceof Error ? error.message : 'Không thể cập nhật banner.';
 export function useBannerManagement() {
+  const { t } = useTranslation('admin');
+  const errorMessage = (error: unknown) =>
+    error instanceof Error ? error.message : t('banners.hook.updateErr');
   const toast = useToast();
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ export function useBannerManagement() {
         if (active) setBanners(items);
       })
       .catch((cause) => {
-        if (active) setError(message(cause));
+        if (active) setError(errorMessage(cause));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -85,11 +87,11 @@ export function useBannerManagement() {
         },
         editor.id,
       );
-      toast.success(editor.id ? 'Đã cập nhật banner.' : 'Đã thêm banner.');
+      toast.success(editor.id ? t('banners.hook.updatedToast') : t('banners.hook.createdToast'));
       setEditor(null);
       setRevision((current) => current + 1);
     } catch (cause) {
-      setFormError(message(cause));
+      setFormError(errorMessage(cause));
     } finally {
       setSaving(false);
     }
@@ -109,10 +111,12 @@ export function useBannerManagement() {
         },
         banner.id,
       );
-      toast.success(banner.isActive ? 'Đã tắt banner.' : 'Đã bật banner.');
+      toast.success(
+        banner.isActive ? t('banners.hook.disabledToast') : t('banners.hook.enabledToast'),
+      );
       setRevision((current) => current + 1);
     } catch (cause) {
-      toast.error(message(cause));
+      toast.error(errorMessage(cause));
     } finally {
       setSaving(false);
     }
@@ -130,9 +134,9 @@ export function useBannerManagement() {
     setBanners(ordered);
     try {
       setBanners(await saveBannerOrder(ordered));
-      toast.success('Đã lưu thứ tự banner.');
+      toast.success(t('banners.hook.reorderedToast'));
     } catch (cause) {
-      toast.error(`Chưa lưu xong thứ tự banner: ${message(cause)} Danh sách sẽ được tải lại.`);
+      toast.error(t('banners.hook.reorderErr', { message: errorMessage(cause) }));
     } finally {
       setSaving(false);
       setRevision((current) => current + 1);

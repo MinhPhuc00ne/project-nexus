@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   createAdminShopViolation,
@@ -8,31 +9,12 @@ import {
   resolveAdminShopAppeal,
 } from '../../../services/admin';
 import type { AdminShopDetail } from '../../../types/admin.types';
+import { getIntlLocale } from '../../../i18n/config';
+import { formatCurrency } from '../../../i18n/formatters';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';
 import { useToast } from '../../ToastNotification';
 import ShopOrdersPanel from './ShopOrdersPanel';
-
-const labels: Record<string, string> = {
-  ACTIVE: 'Đang mở bán',
-  SUSPENDED: 'Đang đình chỉ',
-  INACTIVE: 'Ngừng hoạt động',
-  DRAFT: 'Bản nháp',
-  PENDING: 'Chờ xử lý',
-  INVESTIGATING: 'Đang xác minh',
-  CONFIRMED: 'Đã xác nhận',
-  DISMISSED: 'Đã bác bỏ',
-  WARN: 'Cảnh cáo',
-  SUSPEND: 'Đình chỉ',
-  RESTORE: 'Khôi phục',
-  EXCELLENT: 'Rất tốt',
-  GOOD: 'Tốt',
-  STANDARD: 'Tiêu chuẩn',
-  PROBATION: 'Đang theo dõi',
-};
-const date = (value: string) => new Date(value).toLocaleString('vi-VN');
-const money = (value: number) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
 function Section({
   title,
@@ -54,11 +36,19 @@ function Section({
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function Field({
+  label,
+  children,
+  emptyLabel,
+}: {
+  label: string;
+  children: ReactNode;
+  emptyLabel: string;
+}) {
   return (
     <div className="min-w-0">
       <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="mt-1 break-words text-sm">{children || 'Chưa có thông tin'}</dd>
+      <dd className="mt-1 break-words text-sm">{children || emptyLabel}</dd>
     </div>
   );
 }
@@ -87,6 +77,11 @@ export default function ShopDetail({
   onClose: () => void;
   onMutation?: () => void;
 }) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
+  const emptyInfo = t('stores.detail.noInfo');
+  const formatDate = (value: string) => new Date(value).toLocaleString(locale);
+  const translateLabel = (key: string) => t(`stores.detail.labels.${key}`, { defaultValue: key });
   const { token } = useAuth();
   const toast = useToast();
   const [detail, setDetail] = useState<AdminShopDetail | null>(null);
@@ -123,13 +118,13 @@ export default function ShopDetail({
       })
       .catch((cause) => {
         if (!controller.signal.aborted)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải chi tiết cửa hàng.');
+          setError(cause instanceof Error ? cause.message : t('stores.detail.loadErr'));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [shopId, token, revision]);
+  }, [shopId, token, revision, t]);
 
   const shop = detail?.shop;
   const address = shop?.contact.address;
@@ -143,23 +138,23 @@ export default function ShopDetail({
     <Popup
       isOpen
       onClose={onClose}
-      title="Chi tiết cửa hàng"
+      title={t('stores.detail.title')}
       size="xl"
       footer={
         <Button variant="secondary" onClick={onClose}>
-          Đóng
+          {t('stores.detail.close')}
         </Button>
       }
     >
       {loading ? (
         <p role="status" className="py-10 text-center text-sm text-slate-500">
-          Đang tải chi tiết cửa hàng…
+          {t('stores.detail.loading')}
         </p>
       ) : error ? (
         <div role="alert" className="space-y-3 rounded-lg bg-red-50 p-4 text-sm text-red-700">
           <p>{error}</p>
           <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-            Thử lại
+            {t('stores.detail.retry')}
           </Button>
         </div>
       ) : (
@@ -178,11 +173,11 @@ export default function ShopDetail({
                         : 'gray'
                   }
                 >
-                  {labels[shop.status.currentStatus]}
+                  {translateLabel(shop.status.currentStatus)}
                 </Badge>
                 {shop.status.isShopSuspended && (
                   <Button variant="primary" onClick={() => setAppealOpen(true)}>
-                    Khôi phục theo kháng nghị
+                    {t('stores.detail.restoreByAppeal')}
                   </Button>
                 )}
               </div>
@@ -193,40 +188,51 @@ export default function ShopDetail({
               )}
               {shop.status.suspensionReason && (
                 <p className="mt-2 break-words text-sm text-red-700">
-                  Lý do đình chỉ: {shop.status.suspensionReason}
+                  {t('stores.detail.suspensionReason', { reason: shop.status.suspensionReason })}
                 </p>
               )}
             </div>
-            <Section title="Thông tin cửa hàng">
+            <Section title={t('stores.detail.infoSection')}>
               <dl className="grid gap-4 sm:grid-cols-2">
-                <Field label="Chủ cửa hàng">{shop.owner.fullName}</Field>
-                <Field label="Email chủ cửa hàng">{shop.owner.email}</Field>
-                <Field label="Số điện thoại liên hệ">{shop.contact.phone}</Field>
-                <Field label="Email kinh doanh">{shop.contact.businessEmail}</Field>
-                <Field label="Ngày mở cửa hàng">{date(shop.openedAt)}</Field>
-                <Field label="Giấy tờ định danh">{shop.contact.identityCardNumber}</Field>
-                <Field label="Địa chỉ">
+                <Field label={t('stores.detail.ownerName')} emptyLabel={emptyInfo}>
+                  {shop.owner.fullName}
+                </Field>
+                <Field label={t('stores.detail.ownerEmail')} emptyLabel={emptyInfo}>
+                  {shop.owner.email}
+                </Field>
+                <Field label={t('stores.detail.contactPhone')} emptyLabel={emptyInfo}>
+                  {shop.contact.phone}
+                </Field>
+                <Field label={t('stores.detail.businessEmail')} emptyLabel={emptyInfo}>
+                  {shop.contact.businessEmail}
+                </Field>
+                <Field label={t('stores.detail.openedAt')} emptyLabel={emptyInfo}>
+                  {formatDate(shop.openedAt)}
+                </Field>
+                <Field label={t('stores.detail.identityDoc')} emptyLabel={emptyInfo}>
+                  {shop.contact.identityCardNumber}
+                </Field>
+                <Field label={t('stores.detail.address')} emptyLabel={emptyInfo}>
                   {address &&
                     (address.formattedAddress ||
                       [address.street, address.ward, address.district, address.city]
                         .filter(Boolean)
                         .join(', '))}
                 </Field>
-                <Field label="Uy tín / Mức tin cậy">
-                  {shop.status.reputationScore} /{' '}
-                  {labels[shop.status.trustLevel] || shop.status.trustLevel}
+                <Field label={t('stores.detail.reputationTrust')} emptyLabel={emptyInfo}>
+                  {shop.status.reputationScore} / {translateLabel(shop.status.trustLevel)}
                 </Field>
               </dl>
             </Section>
-            <Section title="Sản phẩm">
+            <Section title={t('stores.detail.productsSection')}>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {(
                   [
-                    ['Tổng sản phẩm', detail.products.breakdown.total],
-                    ['Đang hiển thị', detail.products.breakdown.active],
-                    ['Hết hàng', detail.products.breakdown.outOfStock],
-                    ['Đã ẩn', detail.products.breakdown.inactive],
-                    ['Bản nháp', detail.products.breakdown.draft],
+                    [t('stores.detail.totalProducts'), detail.products.breakdown.total],
+                    [t('stores.detail.activeProducts'), detail.products.breakdown.active],
+                    [t('stores.detail.outOfStock'), detail.products.breakdown.outOfStock],
+                    [t('stores.detail.hiddenProducts'), detail.products.breakdown.inactive],
+                    [t('stores.detail.draftProducts'), detail.products.breakdown.draft],
                   ] as const
                 ).map(([label, value]) => (
                   <div key={label} className="rounded-lg bg-slate-50 p-3">
@@ -238,20 +244,26 @@ export default function ShopDetail({
               {detail.products.sampleList.length ? (
                 <>
                   <p className="text-xs text-slate-500">
-                    Hiển thị {detail.products.sampleList.length} sản phẩm mới nhất /{' '}
-                    {detail.products.breakdown.total} sản phẩm.
+                    {t('stores.detail.sampleCount', {
+                      shown: detail.products.sampleList.length,
+                      total: detail.products.breakdown.total,
+                    })}
                   </p>
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[600px] text-left text-xs">
                       <thead className="bg-slate-50">
                         <tr>
-                          {['Sản phẩm', 'Danh mục', 'Giá', 'Tồn khả dụng / Tổng', 'Trạng thái'].map(
-                            (title) => (
-                              <th key={title} scope="col" className="p-3">
-                                {title}
-                              </th>
-                            ),
-                          )}
+                          {[
+                            t('stores.detail.productCols.product'),
+                            t('stores.detail.productCols.category'),
+                            t('stores.detail.productCols.price'),
+                            t('stores.detail.productCols.stock'),
+                            t('stores.detail.productCols.status'),
+                          ].map((title) => (
+                            <th key={title} scope="col" className="p-3">
+                              {title}
+                            </th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -270,8 +282,10 @@ export default function ShopDetail({
                                 <span className="break-words font-medium">{product.title}</span>
                               </div>
                             </td>
-                            <td className="p-3">{product.category?.name || 'Chưa phân loại'}</td>
-                            <td className="p-3">{money(product.basePrice)}</td>
+                            <td className="p-3">
+                              {product.category?.name || t('stores.detail.uncategorized')}
+                            </td>
+                            <td className="p-3">{formatCurrency(product.basePrice)}</td>
                             <td className="p-3">
                               {product.availableQty} / {product.totalQty}
                             </td>
@@ -287,11 +301,11 @@ export default function ShopDetail({
                               >
                                 {product.status === 'ACTIVE'
                                   ? product.isOutOfStock
-                                    ? 'Hết hàng'
-                                    : 'Đang hiển thị'
+                                    ? t('stores.detail.outOfStock')
+                                    : t('stores.detail.activeProducts')
                                   : product.status === 'INACTIVE'
-                                    ? 'Đã ẩn'
-                                    : labels[product.status] || product.status}
+                                    ? t('stores.detail.hiddenProducts')
+                                    : translateLabel(product.status)}
                               </Badge>
                             </td>
                           </tr>
@@ -301,22 +315,24 @@ export default function ShopDetail({
                   </div>
                 </>
               ) : (
-                <p className="text-sm text-slate-500">Cửa hàng chưa có sản phẩm.</p>
+                <p className="text-sm text-slate-500">{t('stores.detail.noProducts')}</p>
               )}
             </Section>
             <ShopOrdersPanel shopId={shopId} />
             <Section
-              title="Vi phạm và báo cáo"
+              title={t('stores.detail.violationsSection')}
               action={
                 <Button variant="secondary" onClick={() => setViolationOpen(true)}>
-                  Ghi nhận vi phạm
+                  {t('stores.detail.recordViolationBtn')}
                 </Button>
               }
             >
               <p className="text-xs text-slate-500">
-                Tổng: {detail.violations.summary.total} · Chờ xử lý / xác minh:{' '}
-                {detail.violations.summary.pending} · Đã xác nhận:{' '}
-                {detail.violations.summary.confirmed}
+                {t('stores.detail.violationsSummary', {
+                  total: detail.violations.summary.total,
+                  pending: detail.violations.summary.pending,
+                  confirmed: detail.violations.summary.confirmed,
+                })}
               </p>
               {detail.violations.items.length ? (
                 detail.violations.items.map((item) => (
@@ -335,24 +351,28 @@ export default function ShopDetail({
                               : 'amber'
                         }
                       >
-                        {labels[item.status] || item.status}
+                        {translateLabel(item.status)}
                       </Badge>
                     </div>
                     <p className="whitespace-pre-wrap break-words">{item.description}</p>
                     <p className="text-xs text-slate-500">
-                      {date(item.createdAt)} · Người báo cáo:{' '}
-                      {item.reporter?.fullName || 'Không có thông tin'}
+                      {formatDate(item.createdAt)} ·{' '}
+                      {t('stores.detail.reportedBy', {
+                        name: item.reporter?.fullName || emptyInfo,
+                      })}
                     </p>
-                    {item.penaltyLevel && <p>Mức xử lý: {item.penaltyLevel}</p>}
+                    {item.penaltyLevel && (
+                      <p>{t('stores.detail.penaltyLevel', { level: item.penaltyLevel })}</p>
+                    )}
                     {item.resolutionNotes && (
                       <p className="whitespace-pre-wrap break-words">
-                        Kết quả xử lý: {item.resolutionNotes}
+                        {t('stores.detail.resolutionNotes', { notes: item.resolutionNotes })}
                       </p>
                     )}
                     {item.handledBy && (
                       <p className="text-xs text-slate-500">
-                        Xử lý bởi: {item.handledBy.fullName}
-                        {item.handledAt && ` · ${date(item.handledAt)}`}
+                        {t('stores.detail.handledBy', { name: item.handledBy.fullName })}
+                        {item.handledAt && ` · ${formatDate(item.handledAt)}`}
                       </p>
                     )}
                     {!!evidenceUrls(item.evidenceUrls).length && (
@@ -367,7 +387,7 @@ export default function ShopDetail({
                               rel="noopener noreferrer"
                               className="text-xs text-blue-700 underline"
                             >
-                              Bằng chứng {index + 1}
+                              {t('stores.detail.evidenceIndex', { index: index + 1 })}
                             </a>
                           ) : null;
                         })}
@@ -376,10 +396,10 @@ export default function ShopDetail({
                   </article>
                 ))
               ) : (
-                <p className="text-sm text-slate-500">Chưa có vi phạm hoặc báo cáo.</p>
+                <p className="text-sm text-slate-500">{t('stores.detail.noViolations')}</p>
               )}
             </Section>
-            <Section title="Lịch sử quản trị">
+            <Section title={t('stores.detail.moderationSection')}>
               {detail.moderationHistory.length ? (
                 <ul className="space-y-3">
                   {detail.moderationHistory.map((log) => (
@@ -394,19 +414,19 @@ export default function ShopDetail({
                                 : 'amber'
                           }
                         >
-                          {labels[log.action] || log.action}
+                          {translateLabel(log.action)}
                         </Badge>
                         <span>{log.admin.fullName}</span>
-                        <span className="text-xs text-slate-500">{date(log.createdAt)}</span>
+                        <span className="text-xs text-slate-500">{formatDate(log.createdAt)}</span>
                       </div>
                       <p className="mt-2 whitespace-pre-wrap break-words text-slate-600">
-                        {log.reason || 'Không có ghi chú'}
+                        {log.reason || t('stores.detail.noNote')}
                       </p>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-slate-500">Chưa có lịch sử quản trị.</p>
+                <p className="text-sm text-slate-500">{t('stores.detail.noModeration')}</p>
               )}
             </Section>
             {violationOpen && (
@@ -449,6 +469,7 @@ function CreateShopViolationDialog({
   onClose: () => void;
   onSuccess: (message: string) => void;
 }) {
+  const { t } = useTranslation('admin');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [evidenceText, setEvidenceText] = useState('');
@@ -486,7 +507,7 @@ function CreateShopViolationDialog({
       });
       onSuccess(result.message);
     } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : 'Không ghi nhận được vi phạm shop.');
+      setError(cause instanceof Error ? cause.message : t('stores.detail.violationModal.saveErr'));
     } finally {
       inFlightRef.current = false;
       setPending(false);
@@ -496,17 +517,18 @@ function CreateShopViolationDialog({
   return (
     <Popup
       isOpen
-      title="Ghi nhận vi phạm shop"
+      title={t('stores.detail.violationModal.title')}
       onClose={close}
       closeOnEsc={!pending}
       closeOnOverlay={!pending}
     >
       <form onSubmit={submit} className="space-y-4">
         <p className="text-sm text-slate-600">
-          Ghi nhận hồ sơ vi phạm cho <strong>{shopName}</strong>.
+          {t('stores.detail.violationModal.subtitlePrefix')}
+          <strong>{shopName}</strong>.
         </p>
         <label className="block text-sm font-medium">
-          Tiêu đề vi phạm
+          {t('stores.detail.violationModal.titleLabel')}
           <input
             required
             maxLength={200}
@@ -517,7 +539,7 @@ function CreateShopViolationDialog({
           />
         </label>
         <label className="block text-sm font-medium">
-          Mô tả
+          {t('stores.detail.violationModal.descLabel')}
           <textarea
             required
             maxLength={5000}
@@ -529,7 +551,7 @@ function CreateShopViolationDialog({
           />
         </label>
         <label className="block text-sm font-medium">
-          Link bằng chứng (mỗi dòng một link)
+          {t('stores.detail.violationModal.evidenceLabel')}
           <textarea
             rows={2}
             value={evidenceText}
@@ -541,21 +563,27 @@ function CreateShopViolationDialog({
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-sm font-medium">
-            Mức xử lý
+            {t('stores.detail.violationModal.penaltyLabel')}
             <select
               value={penaltyLevel}
               disabled={pending}
               onChange={(event) => setPenaltyLevel(event.target.value)}
               className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3"
             >
-              <option value="WARNING">Cảnh cáo</option>
-              <option value="PENALTY_POINTS">Trừ điểm uy tín</option>
-              <option value="TEMPORARY_SUSPENSION">Đình chỉ tạm thời</option>
-              <option value="PERMANENT_BAN">Cấm vĩnh viễn</option>
+              <option value="WARNING">{t('stores.detail.violationModal.penalties.WARNING')}</option>
+              <option value="PENALTY_POINTS">
+                {t('stores.detail.violationModal.penalties.PENALTY_POINTS')}
+              </option>
+              <option value="TEMPORARY_SUSPENSION">
+                {t('stores.detail.violationModal.penalties.TEMPORARY_SUSPENSION')}
+              </option>
+              <option value="PERMANENT_BAN">
+                {t('stores.detail.violationModal.penalties.PERMANENT_BAN')}
+              </option>
             </select>
           </label>
           <label className="block text-sm font-medium">
-            Trạng thái hồ sơ
+            {t('stores.detail.violationModal.statusLabel')}
             <select
               value={status}
               disabled={pending}
@@ -566,15 +594,15 @@ function CreateShopViolationDialog({
               }
               className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3"
             >
-              <option value="PENDING">Chờ xử lý</option>
-              <option value="INVESTIGATING">Đang xác minh</option>
-              <option value="CONFIRMED">Đã xác nhận</option>
-              <option value="DISMISSED">Đã bác bỏ</option>
+              <option value="PENDING">{t('stores.detail.labels.PENDING')}</option>
+              <option value="INVESTIGATING">{t('stores.detail.labels.INVESTIGATING')}</option>
+              <option value="CONFIRMED">{t('stores.detail.labels.CONFIRMED')}</option>
+              <option value="DISMISSED">{t('stores.detail.labels.DISMISSED')}</option>
             </select>
           </label>
         </div>
         <label className="block text-sm font-medium">
-          Ghi chú xử lý (không bắt buộc)
+          {t('stores.detail.violationModal.notesLabel')}
           <textarea
             rows={2}
             value={resolutionNotes}
@@ -590,10 +618,12 @@ function CreateShopViolationDialog({
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={close} disabled={pending}>
-            Hủy
+            {t('stores.detail.violationModal.cancel')}
           </Button>
           <Button type="submit" variant="danger" disabled={pending}>
-            {pending ? 'Đang lưu…' : 'Ghi nhận vi phạm'}
+            {pending
+              ? t('stores.detail.violationModal.saving')
+              : t('stores.detail.violationModal.submit')}
           </Button>
         </div>
       </form>
@@ -612,6 +642,7 @@ function ResolveShopAppealDialog({
   onClose: () => void;
   onSuccess: (message: string) => void;
 }) {
+  const { t } = useTranslation('admin');
   const [reason, setReason] = useState('');
   const [restoredScore, setRestoredScore] = useState('100');
   const [pending, setPending] = useState(false);
@@ -627,7 +658,7 @@ function ResolveShopAppealDialog({
     if (inFlightRef.current) return;
     const score = Number(restoredScore);
     if (!Number.isInteger(score) || score < 50 || score > 2147483647) {
-      setError('Điểm uy tín phải là số nguyên từ 50 trở lên.');
+      setError(t('stores.detail.appealModal.invalidScoreErr'));
       return;
     }
 
@@ -641,7 +672,7 @@ function ResolveShopAppealDialog({
       });
       onSuccess(result.message);
     } catch (cause: unknown) {
-      setError(cause instanceof Error ? cause.message : 'Không xử lý được kháng nghị shop.');
+      setError(cause instanceof Error ? cause.message : t('stores.detail.appealModal.resolveErr'));
     } finally {
       inFlightRef.current = false;
       setPending(false);
@@ -651,18 +682,18 @@ function ResolveShopAppealDialog({
   return (
     <Popup
       isOpen
-      title="Chấp nhận kháng nghị shop"
+      title={t('stores.detail.appealModal.title')}
       onClose={close}
       closeOnEsc={!pending}
       closeOnOverlay={!pending}
     >
       <form onSubmit={submit} className="space-y-4">
         <p className="text-sm text-slate-600">
-          Thao tác này mở lại hoạt động bán và kích hoạt lại sản phẩm INACTIVE của{' '}
+          {t('stores.detail.appealModal.subtitlePrefix')}
           <strong>{shopName}</strong>.
         </p>
         <label className="block text-sm font-medium">
-          Lý do chấp nhận
+          {t('stores.detail.appealModal.reasonLabel')}
           <textarea
             required
             maxLength={1000}
@@ -674,7 +705,7 @@ function ResolveShopAppealDialog({
           />
         </label>
         <label className="block text-sm font-medium">
-          Điểm uy tín khôi phục
+          {t('stores.detail.appealModal.scoreLabel')}
           <input
             required
             type="number"
@@ -694,10 +725,12 @@ function ResolveShopAppealDialog({
         )}
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={close} disabled={pending}>
-            Hủy
+            {t('stores.detail.appealModal.cancel')}
           </Button>
           <Button type="submit" variant="primary" disabled={pending}>
-            {pending ? 'Đang khôi phục…' : 'Chấp nhận & khôi phục shop'}
+            {pending
+              ? t('stores.detail.appealModal.restoring')
+              : t('stores.detail.appealModal.submit')}
           </Button>
         </div>
       </form>

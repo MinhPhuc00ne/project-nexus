@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ChevronRight,
   CreditCard,
@@ -107,7 +108,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onConfirmDelivery,
   isConfirming,
 }) => {
+  const { t } = useTranslation('commerce');
   const s = statusConfig[order.status] || statusConfig.PENDING_PAYMENT;
+  const statusLabel =
+    order.status === 'COMPLETED'
+      ? t('orders.card.completed')
+      : t(`orders.status.${order.status}`, { defaultValue: s.label });
 
   return (
     <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition">
@@ -122,7 +128,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${s.cls}`}
         >
           {s.icon}
-          {s.label}
+          {statusLabel}
         </span>
       </div>
 
@@ -138,7 +144,11 @@ export const OrderCard: React.FC<OrderCardProps> = ({
             {order.product}
           </p>
           <p className="text-[11px] text-slate-400 mt-1">
-            Mã đơn: {order.orderNumber} • {order.date} • x{order.qty} sản phẩm
+            {t('orders.card.orderCodeMeta', {
+              code: order.orderNumber,
+              date: order.date,
+              qty: order.qty,
+            })}
           </p>
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-1">
@@ -152,7 +162,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           (order.isCod ? (
             <span className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
               <Banknote size={13} className="text-emerald-600" />
-              <span>Tiền mặt khi nhận hàng (COD)</span>
+              <span>{t('orders.card.codLabel')}</span>
             </span>
           ) : (
             <button
@@ -164,12 +174,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               {isPaying ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
-                  <span>Đang mở PayOS...</span>
+                  <span>{t('orders.card.openingPayos')}</span>
                 </>
               ) : (
                 <>
                   <CreditCard size={12} />
-                  <span>Thanh toán PayOS</span>
+                  <span>{t('orders.card.payWithPayos')}</span>
                   <ExternalLink size={11} />
                 </>
               )}
@@ -182,7 +192,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               to={`/buyer/disputes?orderId=${order.id}`}
               className="flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
             >
-              <span>Khiếu nại / Trả hàng</span>
+              <span>{t('orders.card.disputeOrReturn')}</span>
             </Link>
             <button
               type="button"
@@ -193,24 +203,24 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               {isConfirming ? (
                 <>
                   <Loader2 size={12} className="animate-spin" />
-                  <span>Đang xác nhận...</span>
+                  <span>{t('orders.card.confirming')}</span>
                 </>
               ) : (
                 <>
                   <CheckCircle size={12} />
-                  <span>Đã nhận được hàng</span>
+                  <span>{t('orders.card.confirmReceived')}</span>
                 </>
               )}
             </button>
           </>
         )}
 
-        {(order.status === 'CONFIRMED' || order.status === 'COMPLETED') && (
+        {order.status === 'CONFIRMED' && (
           <Link
-            to={`/buyer/reviews?orderId=${order.id}`}
+            to={`/buyer/orders/${order.id}?review=1`}
             className="flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
           >
-            <span>Đánh giá sản phẩm</span>
+            <span>{t('orders.card.reviewProduct')}</span>
           </Link>
         )}
 
@@ -218,7 +228,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           to={`/buyer/orders/${order.id}`}
           className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-600 transition hover:bg-blue-100"
         >
-          Xem chi tiết <ChevronRight size={11} />
+          {t('orders.card.viewDetails')} <ChevronRight size={11} />
         </Link>
       </div>
     </div>

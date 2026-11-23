@@ -1,5 +1,7 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Role } from '@nexus/types';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import { ShoppingCart as ShoppingCartOutlined } from 'lucide-react';
 import { Star, Tag, Heart, Flag, Zap, Check } from 'lucide-react';
@@ -20,15 +22,45 @@ import RelatedProductsSection from '../../components/productDetail/RelatedProduc
 import useProductResource from '../../components/productDetail/useProductResource';
 import ReportModal from '../../components/report/ReportModal';
 import CheckoutModal from '../../components/cart/CheckoutModal';
+import { useToast } from '../../components/ToastNotification';
+import { recordBuyerProductView } from '../../utils/buyerProductInterest';
+
+async function buildBuyNowCartItem(
+  product: ProductDetail,
+  displayNameWithOptions: string,
+  quantity: number,
+): Promise<CartItem> {
+  const cart = await fetchCart({ force: true });
+  const cartItem = cart.find(
+    (item) =>
+      String(item.productId) === String(product.id) || String(item.id) === String(product.id),
+  );
+  if (cartItem) {
+    return { ...cartItem, qty: quantity, selected: true };
+  }
+  return {
+    id: product.id,
+    productId: product.id,
+    name: displayNameWithOptions,
+    price: product.price,
+    formattedPrice: product.formattedPrice,
+    img: product.images[0] || '',
+    qty: quantity,
+    shopName: product.shop.name,
+    brand: product.brand,
+    selected: true,
+  };
+}
 
 export default function ProductDetailPage() {
+  const { t } = useTranslation('guest');
   const { id = '' } = useParams<{ id: string }>();
   const load = useCallback(() => getProductByIdAsync(id), [id]);
   const { data: product, loading, error, retry } = useProductResource(load);
   if (loading)
     return (
       <div role="status" className="p-12 text-center text-slate-600">
-        Đang tải sản phẩm…
+        {t('product.loadingProduct')}
       </div>
     );
   if (error || !product)
@@ -37,17 +69,17 @@ export default function ProductDetailPage() {
         role="alert"
         className="mx-auto my-12 max-w-xl space-y-4 rounded-xl border border-red-100 bg-white p-8 text-center"
       >
-        <h1 className="text-xl font-bold">Không thể tải sản phẩm</h1>
-        <p>{error || 'Sản phẩm không tồn tại.'}</p>
+        <h1 className="text-xl font-bold">{t('product.loadErrorTitle')}</h1>
+        <p>{error || t('product.notFound')}</p>
         <button
           type="button"
           onClick={retry}
           className="rounded-lg bg-blue-600 px-4 py-2 text-white"
         >
-          Thử lại
+          {t('product.retry')}
         </button>
         <Link to="/" className="ml-4 text-blue-600">
-          Về trang chủ
+          {t('product.backHome')}
         </Link>
       </div>
     );
@@ -55,7 +87,9 @@ export default function ProductDetailPage() {
 }
 
 function ProductContent({ product }: { product: ProductDetail }) {
+  const { t } = useTranslation('guest');
   const { user } = useAuth();
+  const globalToast = useToast();
   const navigate = useNavigate();
   const [selectedImgIdx, setSelectedImgIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -82,11 +116,21 @@ function ProductContent({ product }: { product: ProductDetail }) {
 
   const canBuy = product.stock > 0;
 
+  useEffect(() => {
+    if (user?.role !== Role.BUYER || !product.category?.id) return;
+    try {
+      recordBuyerProductView(user.id, { id: product.id, categoryId: product.category.id });
+    } catch (error) {
+      console.error('Unable to save Buyer product interest:', error);
+      globalToast.error(t('product.interestSaveFailed'));
+    }
+  }, [globalToast, product.category?.id, product.id, t, user?.id, user?.role]);
+
   const toggleWishlist = () => {
     if (isInWishlist) {
       removeBuyerWishlistItem(user?.id, product.id);
       setIsInWishlist(false);
-      setToast({ type: 'success', message: 'Đã xóa khỏi danh sách yêu thích.' });
+      setToast({ type: 'success', message: t('product.wishlistRemoved') });
     } else {
       addBuyerWishlistItem(user?.id, {
         id: product.id,
@@ -98,7 +142,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
         inStock: product.stock > 0,
       });
       setIsInWishlist(true);
-      setToast({ type: 'success', message: 'Đã lưu vào danh sách yêu thích.' });
+      setToast({ type: 'success', message: t('product.wishlistAdded') });
     }
   };
 
@@ -114,7 +158,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
       if (!selectedOptions[grp.name]) {
         setToast({
           type: 'error',
-          message: `Vui lòng chọn "${grp.name}" trước khi đặt mua sản phẩm.`,
+          message: t('product.selectOptionError', { name: grp.name }),
         });
         return;
       }
@@ -144,39 +188,22 @@ function ProductContent({ product }: { product: ProductDetail }) {
         quantity,
       );
       if (buyNow) {
-        const cart = await fetchCart({ force: true });
-        const cartItem = cart.find(
-          (item) =>
-            String(item.productId) === String(product.id) || String(item.id) === String(product.id),
-        );
-
-        const directItem: CartItem = cartItem
-          ? { ...cartItem, qty: quantity, selected: true }
-          : {
-              id: product.id,
-              productId: product.id,
-              name: displayNameWithOptions,
-              price: product.price,
-              formattedPrice: product.formattedPrice,
-              img: product.images[0] || '',
-              qty: quantity,
-              shopName: product.shop.name,
-              brand: product.brand,
-              selected: true,
-            };
-
+        const directItem = await buildBuyNowCartItem(product, displayNameWithOptions, quantity);
         setCheckoutItems([directItem]);
         setShowCheckoutModal(true);
       } else {
         setToast({
           type: 'success',
-          message: `Đã thêm ${quantity} sản phẩm${optionSummary ? ` [${optionSummary}]` : ''} vào giỏ hàng.`,
+          message: t('product.addedToCartToast', {
+            count: quantity,
+            options: optionSummary ? ` [${optionSummary}]` : '',
+          }),
         });
       }
     } catch (err: unknown) {
       setToast({
         type: 'error',
-        message: err instanceof Error ? err.message : 'Không thể thêm sản phẩm vào giỏ hàng.',
+        message: err instanceof Error ? err.message : t('product.addToCartFailed'),
       });
     } finally {
       setIsSubmitting(false);
@@ -188,10 +215,10 @@ function ProductContent({ product }: { product: ProductDetail }) {
       <div className="mx-auto max-w-[1280px] space-y-6 px-4">
         <nav className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
           <Link to="/" className="text-blue-600 font-medium">
-            <ArrowLeftOutlined /> Trang chủ
+            <ArrowLeftOutlined /> {t('product.breadcrumbHome')}
           </Link>
           <span>/</span>
-          <span>{product.categoryName || 'Sản phẩm'}</span>
+          <span>{product.categoryName || t('product.breadcrumbProductFallback')}</span>
           <span>/</span>
           <span className="text-slate-800 font-medium">{product.name}</span>
         </nav>
@@ -230,10 +257,10 @@ function ProductContent({ product }: { product: ProductDetail }) {
                   type="button"
                   onClick={() => setShowReportProductModal(true)}
                   className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:border-red-200 hover:bg-red-50/50 hover:text-red-600 transition cursor-pointer"
-                  title="Báo cáo sản phẩm vi phạm"
+                  title={t('product.reportProductTitle')}
                 >
                   <Flag size={13} />
-                  <span>Báo cáo sản phẩm</span>
+                  <span>{t('product.reportProduct')}</span>
                 </button>
               </div>
 
@@ -259,15 +286,17 @@ function ProductContent({ product }: { product: ProductDetail }) {
                     </div>
                   </div>
                 ) : (
-                  <span className="font-medium text-slate-400">Chưa có đánh giá</span>
+                  <span className="font-medium text-slate-400">{t('product.noReviewsYet')}</span>
                 )}
                 <span className="text-slate-300">|</span>
                 <span className="text-slate-600">
-                  <strong className="text-slate-900">{product.reviewsCount ?? 0}</strong> Đánh Giá
+                  <strong className="text-slate-900">{product.reviewsCount ?? 0}</strong>{' '}
+                  {t('product.reviewsCountLabel')}
                 </span>
                 <span className="text-slate-300">|</span>
                 <span className="text-slate-600">
-                  Đã bán <strong className="text-slate-900">{product.soldCount ?? 0}</strong>
+                  {t('product.soldLabel')}{' '}
+                  <strong className="text-slate-900">{product.soldCount ?? 0}</strong>
                 </span>
               </div>
             </div>
@@ -281,7 +310,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
                     {product.saleLabel || 'FLASH SALE'} -{product.discount}%
                   </span>
                   <span className="text-xs font-medium text-blue-700">
-                    Đang áp dụng chương trình ưu đãi từ Gian hàng
+                    {t('product.shopPromoApplying')}
                   </span>
                 </div>
               )}
@@ -299,7 +328,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
 
             <div className="flex items-center justify-between flex-wrap gap-3 text-sm">
               <div className="flex items-center gap-2.5">
-                <span className="font-medium text-slate-500">Danh mục:</span>
+                <span className="font-medium text-slate-500">{t('product.categoryLabel')}</span>
                 {product.category?.id ? (
                   <Link
                     to={`/search?categoryId=${product.category.id}&categoryName=${encodeURIComponent(product.category.name)}`}
@@ -308,17 +337,19 @@ function ProductContent({ product }: { product: ProductDetail }) {
                     <Tag size={13} />
                     {product.category?.parent?.name
                       ? `${product.category.parent.name} › ${product.category.name}`
-                      : product.categoryName || 'Chưa phân loại'}
+                      : product.categoryName || t('product.uncategorized')}
                   </Link>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
                     <Tag size={13} />
-                    {product.categoryName || 'Chưa phân loại'}
+                    {product.categoryName || t('product.uncategorized')}
                   </span>
                 )}
               </div>
               <p className={`text-xs font-semibold ${canBuy ? 'text-blue-700' : 'text-slate-500'}`}>
-                {canBuy ? `Còn ${product.stock} sản phẩm trong kho` : 'Sản phẩm tạm hết hàng'}
+                {canBuy
+                  ? t('product.inStockDetailed', { count: product.stock })
+                  : t('product.temporarilyOutOfStock')}
               </p>
             </div>
 
@@ -331,7 +362,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
                       <span className="font-semibold text-slate-700">{group.name}:</span>
                       {selectedOptions[group.name] && (
                         <span className="font-bold text-blue-700">
-                          Đã chọn: {selectedOptions[group.name]}
+                          {t('product.selectedOption', { value: selectedOptions[group.name] })}
                         </span>
                       )}
                     </div>
@@ -363,7 +394,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
             )}
 
             <label className="block space-y-2 text-sm font-medium text-slate-700">
-              <span>Số lượng</span>
+              <span>{t('product.quantityLabel')}</span>
               <input
                 type="number"
                 min={1}
@@ -387,7 +418,8 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 onClick={() => void add(false)}
                 className="rounded-lg border border-blue-600 bg-white px-5 py-3 text-sm font-semibold text-blue-600 transition hover:bg-blue-50 disabled:opacity-40 cursor-pointer"
               >
-                <ShoppingCartOutlined /> {isSubmitting ? 'Đang thêm…' : 'Thêm vào giỏ hàng'}
+                <ShoppingCartOutlined />{' '}
+                {isSubmitting ? t('product.addingToCart') : t('product.addToCart')}
               </button>
               <button
                 type="button"
@@ -395,13 +427,15 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 onClick={() => void add(true)}
                 className="rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-40 cursor-pointer"
               >
-                Mua ngay
+                {t('product.buyNow')}
               </button>
               <button
                 type="button"
                 onClick={toggleWishlist}
-                title={isInWishlist ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
-                aria-label={isInWishlist ? 'Xóa khỏi yêu thích' : 'Thêm vào yêu thích'}
+                title={isInWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')}
+                aria-label={
+                  isInWishlist ? t('product.removeFromWishlist') : t('product.addToWishlist')
+                }
                 className={`p-3 rounded-lg border transition flex items-center justify-center cursor-pointer ${
                   isInWishlist
                     ? 'border-blue-600 bg-blue-50 text-blue-600'

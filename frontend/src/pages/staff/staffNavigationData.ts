@@ -10,17 +10,28 @@ import {
 } from 'lucide-react';
 
 export const navigation = [
-  { label: 'Quản Lý Nhân Viên', icon: BadgeCheck },
-  { label: 'Hộp Thư Trực Tuyến', icon: Inbox },
-  { label: 'Khiếu Nại & Tranh Chấp', icon: ShieldCheck },
-  { label: 'Hỗ Trợ Đấu Giá 3D', icon: Gavel },
-  { label: 'Hướng Dẫn & FAQ Sàn', icon: BookOpen },
-  { label: 'Quản Lý Banner', icon: Image },
-  { label: 'Lịch Sử & CSAT', icon: History },
-  { label: 'Hiệu Suất Cá Nhân', icon: Activity },
+  { label: 'Quản Lý Nhân Viên', i18nKey: 'nav.team', icon: BadgeCheck },
+  { label: 'Hộp Thư Trực Tuyến', i18nKey: 'nav.inbox', icon: Inbox },
+  { label: 'Khiếu Nại & Tranh Chấp', i18nKey: 'nav.disputes', icon: ShieldCheck },
+  { label: 'Hỗ Trợ Đấu Giá 3D', i18nKey: 'nav.auctionSupport', icon: Gavel },
+  { label: 'Hướng Dẫn & FAQ Sàn', i18nKey: 'nav.faq', icon: BookOpen },
+  { label: 'Quản Lý Banner', i18nKey: 'nav.banners', icon: Image },
+  { label: 'Lịch Sử & CSAT', i18nKey: 'nav.history', icon: History },
+  { label: 'Hiệu Suất Cá Nhân', i18nKey: 'nav.performance', icon: Activity },
 ] as const;
 
 export type StaffSection = (typeof navigation)[number]['label'];
+
+export const sectionKeyMap = {
+  'Quản Lý Nhân Viên': 'team',
+  'Hộp Thư Trực Tuyến': 'inbox',
+  'Khiếu Nại & Tranh Chấp': 'disputes',
+  'Hỗ Trợ Đấu Giá 3D': 'auctionSupport',
+  'Hướng Dẫn & FAQ Sàn': 'faq',
+  'Quản Lý Banner': 'banners',
+  'Lịch Sử & CSAT': 'history',
+  'Hiệu Suất Cá Nhân': 'performance',
+} as const satisfies Record<StaffSection, string>;
 
 export const sectionContent: Record<
   StaffSection,

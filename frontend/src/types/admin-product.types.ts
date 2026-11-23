@@ -1,5 +1,29 @@
 export type AdminProductStatus = 'ACTIVE' | 'INACTIVE' | 'DRAFT';
 
+export interface AdminTrendingProduct {
+  id: string;
+  title: string;
+  purchaseCount: number;
+  lastPurchaseAt: string | null;
+  isTrending: boolean;
+}
+
+export interface AdminTrendingProductsResult {
+  items: AdminTrendingProduct[];
+  total: number;
+}
+
+export interface RemoveAdminProductTrendingResult {
+  success: boolean;
+  message: string;
+  product: {
+    id: string;
+    title: string;
+    trendingExcluded: boolean;
+    trendingExcludedAt?: string | null;
+  };
+}
+
 export interface QueryAdminProductsParams {
   page?: number;
   limit?: number;

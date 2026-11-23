@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   RefreshCw,
   Store,
@@ -39,6 +40,7 @@ export default function CatalogListing({
   onOpenMobileFilter,
   activeFilterCount = 0,
 }: CatalogListingProps) {
+  const { t } = useTranslation('guest');
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<NonNullable<CatalogQuery['sortBy']>>('newest');
   const limit = preview ? 8 : 12;
@@ -81,7 +83,7 @@ export default function CatalogListing({
                 className="lg:hidden flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 border border-slate-300 shadow-2xs hover:bg-slate-50 cursor-pointer"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5 text-blue-600" />
-                <span>Bộ lọc</span>
+                <span>{t('catalog.filtersButton')}</span>
                 {activeFilterCount > 0 && (
                   <span className="ml-1 rounded-full bg-blue-600 px-1.5 py-0.2 text-[10px] font-bold text-white">
                     {activeFilterCount}
@@ -91,7 +93,7 @@ export default function CatalogListing({
             )}
 
             <span className="hidden sm:inline-block text-xs font-bold text-slate-500 uppercase tracking-wide mr-1">
-              Sắp xếp theo:
+              {t('catalog.sortByLabel')}
             </span>
 
             <button
@@ -106,7 +108,7 @@ export default function CatalogListing({
                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
               }`}
             >
-              Mới Nhất
+              {t('catalog.newest')}
             </button>
 
             {/* Price Sorting Selector */}
@@ -126,13 +128,13 @@ export default function CatalogListing({
                 }`}
               >
                 <option value="" disabled className="bg-white text-slate-700">
-                  Giá: Chọn thứ tự
+                  {t('catalog.pricePlaceholder')}
                 </option>
                 <option value="price_asc" className="bg-white text-slate-700">
-                  Giá: Thấp đến Cao
+                  {t('catalog.priceAsc')}
                 </option>
                 <option value="price_desc" className="bg-white text-slate-700">
-                  Giá: Cao đến Thấp
+                  {t('catalog.priceDesc')}
                 </option>
               </select>
               <ArrowUpDown
@@ -148,15 +150,11 @@ export default function CatalogListing({
           {/* Right Side: Total Count and Mini Pager */}
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-500 font-medium hidden sm:inline" role="status">
-              {loading ? (
-                'Đang tìm...'
-              ) : data ? (
-                <>
-                  Tìm thấy <strong className="text-slate-800">{data.total}</strong> sản phẩm
-                </>
-              ) : (
-                ''
-              )}
+              {loading
+                ? t('catalog.searching')
+                : data
+                  ? t('catalog.foundCount', { count: data.total })
+                  : ''}
             </span>
 
             {/* Shopee-style Mini Pager (1/17 < >) */}
@@ -169,7 +167,7 @@ export default function CatalogListing({
                 disabled={page <= 1 || loading}
                 onClick={() => setPage((prev) => Math.max(1, prev - 1))}
                 className="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
-                title="Trang trước"
+                title={t('catalog.prevPageTitle')}
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -178,7 +176,7 @@ export default function CatalogListing({
                 disabled={page >= totalPages || loading}
                 onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
                 className="rounded p-1 text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer"
-                title="Trang sau"
+                title={t('catalog.nextPageTitle')}
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -189,7 +187,7 @@ export default function CatalogListing({
               onClick={retry}
               disabled={loading}
               className="hidden sm:inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 disabled:opacity-50 transition cursor-pointer"
-              title="Làm mới kết quả"
+              title={t('catalog.refreshTitle')}
             >
               <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -209,7 +207,7 @@ export default function CatalogListing({
             onClick={retry}
             className="rounded-lg bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700 cursor-pointer"
           >
-            Thử lại
+            {t('catalog.retry')}
           </button>
         </div>
       )}
@@ -220,11 +218,8 @@ export default function CatalogListing({
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-500">
             <Store className="h-7 w-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-800">Không tìm thấy sản phẩm phù hợp</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Hãy thử nới lỏng khoảng giá, bỏ chọn bộ lọc địa điểm hoặc tìm kiếm với từ khóa ngắn gọn
-            hơn.
-          </p>
+          <h3 className="text-base font-bold text-slate-800">{t('catalog.emptyTitle')}</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">{t('catalog.emptyDesc')}</p>
         </div>
       )}
 
@@ -240,7 +235,7 @@ export default function CatalogListing({
           {/* Full Bottom Pagination */}
           {!preview && totalPages > 1 && (
             <nav
-              aria-label="Phân trang sản phẩm"
+              aria-label={t('catalog.paginationAria')}
               className="flex items-center justify-center gap-2 pt-8"
             >
               <button
@@ -252,7 +247,7 @@ export default function CatalogListing({
                 }}
                 className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-40 transition shadow-2xs cursor-pointer"
               >
-                <ChevronLeft className="h-4 w-4" /> Trang trước
+                <ChevronLeft className="h-4 w-4" /> {t('catalog.prevPage')}
               </button>
 
               <div className="flex items-center gap-1">
@@ -291,7 +286,7 @@ export default function CatalogListing({
                 }}
                 className="flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-40 transition shadow-2xs cursor-pointer"
               >
-                Trang sau <ChevronRight className="h-4 w-4" />
+                {t('catalog.nextPage')} <ChevronRight className="h-4 w-4" />
               </button>
             </nav>
           )}
@@ -302,6 +297,7 @@ export default function CatalogListing({
 }
 
 function CatalogProductCard({ product }: { product: ProductDetail }) {
+  const { t } = useTranslation('guest');
   const ratingValue = product.rating && product.rating > 0 ? product.rating : 5.0;
 
   return (
@@ -319,7 +315,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <span className="text-xs text-slate-400">Chưa có ảnh</span>
+          <span className="text-xs text-slate-400">{t('catalog.noImage')}</span>
         )}
 
         {/* Top-Left Shopee Mall / Yêu thích Badge */}
@@ -329,7 +325,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
           </span>
           {product.is3d && (
             <span className="rounded-md bg-blue-600/90 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold uppercase text-white shadow-xs">
-              THẨM ĐỊNH
+              {t('catalog.verifiedBadge')}
             </span>
           )}
         </div>
@@ -360,7 +356,9 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
           </div>
           <span className="text-slate-300">•</span>
           <span className="text-slate-500 text-[10px]">
-            {product.reviewsCount ? `${product.reviewsCount} đánh giá` : 'Chính hãng'}
+            {product.reviewsCount
+              ? t('catalog.reviewsCount', { count: product.reviewsCount })
+              : t('catalog.authentic')}
           </span>
         </div>
 

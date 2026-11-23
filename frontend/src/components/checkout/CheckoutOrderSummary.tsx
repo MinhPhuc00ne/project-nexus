@@ -1,5 +1,7 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import type { CartItem } from '../../services/cart';
 
 interface CheckoutOrderSummaryProps {
@@ -19,10 +21,11 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
   isSubmitting,
   onCheckout,
 }) => {
+  const { t } = useTranslation('commerce');
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
       <h3 className="text-sm font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100">
-        Danh sách sản phẩm thanh toán ({items.length})
+        {t('checkout.checkoutListTitle', { count: items.length })}
       </h3>
 
       <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto mb-4">
@@ -51,7 +54,7 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
                   <span className="font-bold text-slate-900 line-clamp-1">{cleanTitle}</span>
                   {hasSelections && (
                     <span className="text-[10px] text-slate-500 font-medium block truncate mt-0.5">
-                      Phân loại:{' '}
+                      {t('cart.variantLabel')}{' '}
                       {Object.entries(effectiveSelections)
                         .map(([k, v]) => `${k}: ${v}`)
                         .join(' • ')}
@@ -59,14 +62,16 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
                   )}
                   {it.shopName && (
                     <span className="text-[10px] text-blue-600 font-semibold block">
-                      Shop: {it.shopName}
+                      {t('checkout.shopLabel', { name: it.shopName })}
                     </span>
                   )}
-                  <span className="text-slate-400 text-[11px]">Số lượng: x{it.qty}</span>
+                  <span className="text-slate-400 text-[11px]">
+                    {t('checkout.qtyLabel', { qty: it.qty })}
+                  </span>
                 </div>
               </div>
               <span className="font-extrabold text-slate-900 shrink-0">
-                {Number(it.price * it.qty).toLocaleString('vi-VN')} ₫
+                {formatCurrency(Number(it.price * it.qty))}
               </span>
             </div>
           );
@@ -75,22 +80,16 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
 
       <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-600">
         <div className="flex justify-between">
-          <span>Tổng tiền hàng:</span>
-          <span className="font-semibold text-slate-900">
-            {rawSubtotal.toLocaleString('vi-VN')} ₫
-          </span>
+          <span>{t('checkout.subtotalMerchandise')}</span>
+          <span className="font-semibold text-slate-900">{formatCurrency(rawSubtotal)}</span>
         </div>
         <div className="flex justify-between">
-          <span>Phí vận chuyển (GHN):</span>
-          <span className="font-semibold text-slate-900">
-            {shippingFee.toLocaleString('vi-VN')} ₫
-          </span>
+          <span>{t('checkout.ghnShippingLabel')}</span>
+          <span className="font-semibold text-slate-900">{formatCurrency(shippingFee)}</span>
         </div>
         <div className="flex justify-between items-baseline pt-2 border-t border-slate-100 text-slate-900">
-          <span className="text-sm font-bold">Tổng thanh toán:</span>
-          <span className="text-xl font-extrabold text-blue-600">
-            {grandTotal.toLocaleString('vi-VN')} ₫
-          </span>
+          <span className="text-sm font-bold">{t('checkout.total')}:</span>
+          <span className="text-xl font-extrabold text-blue-600">{formatCurrency(grandTotal)}</span>
         </div>
       </div>
 
@@ -103,10 +102,10 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
         {isSubmitting ? (
           <>
             <Loader2 size={16} className="animate-spin" />
-            <span>Đang tạo giao dịch PayOS...</span>
+            <span>{t('checkout.creatingPayos')}</span>
           </>
         ) : (
-          'Xác Nhận Đặt Hàng & Thanh Toán'
+          t('checkout.confirmAndPay')
         )}
       </button>
     </div>

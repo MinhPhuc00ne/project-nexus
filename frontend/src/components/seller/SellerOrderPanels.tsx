@@ -1,8 +1,10 @@
 import { ShieldCheck as SafetyCertificateOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Badge, Panel } from './SellerUI';
-import { money, orderStatuses, type SellerOrder } from './sellerData';
+import { money, type SellerOrder } from './sellerData';
 
 export function OrderDetail({ order }: { order: SellerOrder }) {
+  const { t } = useTranslation('seller');
   return (
     <div
       className="flex flex-col gap-5 text-[#566b8c] text-[13px] [&_h3]:font-[650] [&_h3]:text-[17px] [&_h3]:text-[#1e355b] [&_h3]:m-0 [&_p]:leading-[1.9] [&_p]:m-0 [&_p]:text-[#8192ac]"
@@ -14,9 +16,9 @@ export function OrderDetail({ order }: { order: SellerOrder }) {
       >
         <img src={order.image} alt={order.product} />
         <div>
-          <Badge tone="amber">Dữ liệu minh họa</Badge>
+          <Badge tone="amber">{t('orders.previewPanel.sampleBadge')}</Badge>
           <h3>{order.product}</h3>
-          <p>#{order.id} · Số lượng: 01</p>
+          <p>{t('orders.previewPanel.qtyPrefix', { id: order.id })}</p>
           <strong>{money(order.price)}</strong>
         </div>
       </div>
@@ -25,22 +27,26 @@ export function OrderDetail({ order }: { order: SellerOrder }) {
         data-seller="detail-grid"
       >
         <div>
-          <small>NGƯỜI NHẬN</small>
+          <small>{t('orders.previewPanel.recipient')}</small>
           <strong>{order.buyer}</strong>
           <p>{order.city}</p>
         </div>
         <div>
-          <small>THANH TOÁN</small>
+          <small>{t('orders.previewPanel.payment')}</small>
           <strong>{order.payment}</strong>
-          <p>Không phải giao dịch thật</p>
+          <p>{t('orders.previewPanel.notRealTx')}</p>
         </div>
         <div>
-          <small>TRẠNG THÁI</small>
-          <strong>{orderStatuses[order.status]}</strong>
+          <small>{t('orders.previewPanel.status')}</small>
+          <strong>{t(`orders.previewStatuses.${order.status}`)}</strong>
         </div>
         <div>
-          <small>HÌNH THỨC</small>
-          <strong>{order.type === 'auction' ? 'Đấu giá' : 'Mua ngay'}</strong>
+          <small>{t('orders.previewPanel.type')}</small>
+          <strong>
+            {order.type === 'auction'
+              ? t('orders.previewPanel.auction')
+              : t('orders.previewPanel.buyNow')}
+          </strong>
         </div>
       </div>
       <div
@@ -48,17 +54,18 @@ export function OrderDetail({ order }: { order: SellerOrder }) {
         data-seller="info-note"
       >
         <SafetyCertificateOutlined className="text-[18px]" aria-hidden="true" />
-        Lưu bằng chứng đóng gói và kiểm tra thông tin trước khi bàn giao cho đơn vị vận chuyển.
+        {t('orders.previewPanel.note')}
       </div>
     </div>
   );
 }
 
 export function ShippingGuide() {
+  const { t } = useTranslation('seller');
   return (
     <Panel
-      title="Quy chuẩn đóng gói & bàn giao"
-      subtitle="Bảo vệ vật phẩm trong từng chuyến đi"
+      title={t('orders.previewPanel.guideTitle')}
+      subtitle={t('orders.previewPanel.guideSubtitle')}
       action={<SafetyCertificateOutlined className="text-[20px]" aria-hidden="true" />}
     >
       <div
@@ -66,9 +73,9 @@ export function ShippingGuide() {
         data-seller="steps"
       >
         {[
-          ['Kiểm tra vật phẩm', 'Đối chiếu sản phẩm, phụ kiện và thông tin người nhận.'],
-          ['Lưu bằng chứng đóng gói', 'Chụp ảnh hoặc quay video sản phẩm và quá trình đóng gói.'],
-          ['Niêm phong & bàn giao', 'Gia cố kiện hàng, dán tem và lưu biên bản bàn giao.'],
+          [t('orders.previewPanel.step1Title'), t('orders.previewPanel.step1Body')],
+          [t('orders.previewPanel.step2Title'), t('orders.previewPanel.step2Body')],
+          [t('orders.previewPanel.step3Title'), t('orders.previewPanel.step3Body')],
         ].map(([title, text], index) => (
           <div key={title}>
             <b>{index + 1}</b>

@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { DetailFields } from '../shared/CommerceUI';
 import { formatMoney } from '../shared/adminData';
 import type { AdminWalletTransaction } from '../../../types/admin-wallet.types';
-import { typeLabels, statusLabels, date } from './transactionPresentation';
+import { date } from './transactionPresentation';
 
 export default function TransactionDetailDialog({
   detail,
@@ -12,53 +13,80 @@ export default function TransactionDetailDialog({
   detail: AdminWalletTransaction | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('admin');
   return (
-    <Popup isOpen={!!detail} onClose={onClose} title="Chi tiết giao dịch" size="lg">
+    <Popup
+      isOpen={!!detail}
+      onClose={onClose}
+      title={t('finance.transactions.detail.title')}
+      size="lg"
+    >
       {detail && (
         <div className="space-y-5">
           <DetailFields
             fields={[
-              ['Mã giao dịch', detail.id],
-              ['Mã ví', detail.walletId],
-              ['Mã tham chiếu', detail.referenceId],
-              ['Loại giao dịch', typeLabels[detail.type] ?? detail.type],
-              ['Số tiền', formatMoney(detail.amount)],
-              ['Trạng thái giao dịch', statusLabels[detail.status] ?? detail.status],
-              ['Thời gian', date(detail.createdAt)],
-              ['Mô tả', detail.description],
+              [t('finance.transactions.detail.txId'), detail.id],
+              [t('finance.transactions.detail.walletId'), detail.walletId],
+              [t('finance.transactions.detail.refId'), detail.referenceId],
+              [
+                t('finance.transactions.detail.type'),
+                t(`finance.types.${detail.type}`, { defaultValue: detail.type }),
+              ],
+              [t('finance.transactions.detail.amount'), formatMoney(detail.amount)],
+              [
+                t('finance.transactions.detail.status'),
+                t(`finance.statuses.${detail.status}`, { defaultValue: detail.status }),
+              ],
+              [t('finance.transactions.detail.time'), date(detail.createdAt)],
+              [t('finance.transactions.detail.desc'), detail.description],
             ]}
           />
           {detail.orderDetails && (
             <>
               <DetailFields
                 fields={[
-                  ['Mã đơn hàng', detail.orderDetails.orderId],
+                  [t('finance.transactions.detail.orderId'), detail.orderDetails.orderId],
                   [
-                    'Người mua',
+                    t('finance.transactions.detail.buyer'),
                     [detail.orderDetails.buyerName, detail.orderDetails.buyerEmail]
                       .filter(Boolean)
                       .join(' · '),
                   ],
                   [
-                    'Người bán',
+                    t('finance.transactions.detail.seller'),
                     [detail.orderDetails.shopName, detail.orderDetails.sellerEmail]
                       .filter(Boolean)
                       .join(' · '),
                   ],
-                  ['Tiền hàng', formatMoney(detail.orderDetails.subtotal)],
-                  ['Phí vận chuyển', formatMoney(detail.orderDetails.shippingFee)],
-                  ['Tổng tiền đơn', formatMoney(detail.orderDetails.totalAmount)],
-                  ['Phí sàn của đơn', formatMoney(detail.orderDetails.platformFee)],
-                  ['Tiền giải ngân người bán', formatMoney(detail.orderDetails.sellerPayout)],
-                  ['Đơn vị vận chuyển', detail.orderDetails.carrier],
-                  ['Mã vận đơn', detail.orderDetails.waybillCode],
+                  [
+                    t('finance.transactions.detail.subtotal'),
+                    formatMoney(detail.orderDetails.subtotal),
+                  ],
+                  [
+                    t('finance.transactions.detail.shippingFee'),
+                    formatMoney(detail.orderDetails.shippingFee),
+                  ],
+                  [
+                    t('finance.transactions.detail.orderTotal'),
+                    formatMoney(detail.orderDetails.totalAmount),
+                  ],
+                  [
+                    t('finance.transactions.detail.platformFee'),
+                    formatMoney(detail.orderDetails.platformFee),
+                  ],
+                  [
+                    t('finance.transactions.detail.sellerPayout'),
+                    formatMoney(detail.orderDetails.sellerPayout),
+                  ],
+                  [t('finance.transactions.detail.carrier'), detail.orderDetails.carrier],
+                  [t('finance.transactions.detail.waybill'), detail.orderDetails.waybillCode],
                 ]}
               />
               <Link
                 className="text-sm font-semibold text-primary underline"
                 to={`/admin/orders?order=${encodeURIComponent(detail.orderDetails.orderId)}`}
               >
-                Xem đơn hàng liên quan
+                {t('finance.transactions.detail.viewRelatedOrder')}
               </Link>
             </>
           )}

@@ -30,6 +30,7 @@ import { QueryUsersDto } from '../dtos/query-users.dto';
 import { RejectSellerRequestDto } from '../dtos/reject-seller-request.dto';
 import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';
 import { QueryAdminProductsDto } from '../dtos/query-admin-products.dto';
+import { RemoveTrendingProductDto } from '../dtos/remove-trending-product.dto';
 import { UpdateProductCategoryDto } from '../dtos/update-product-category.dto';
 import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
 import { QueryAdminShopsDto } from '../dtos/query-admin-shops.dto';
@@ -42,6 +43,7 @@ import { UpdateSystemSettingsDto } from '../dtos/update-system-settings.dto';
 import {
   DepositAdminWalletDto,
   QueryAdminWalletTransactionsDto,
+  QueryPlatformUserWalletTransactionsDto,
   AdminWalletResponseDto,
   AdminWalletTransactionsResponseDto,
 } from '../dtos/admin-wallet.dto';
@@ -277,6 +279,19 @@ export class AdminController {
     return this.adminProductsService.listProducts(query);
   }
 
+  @Get('products/trending')
+  @ApiOperation({
+    summary: 'List current HomePage trending products for moderation',
+    description:
+      'Returns active products ranked by purchase count. Admin can only view and remove products from trending.',
+  })
+  @ApiResponse({ status: 200, description: 'Trending products retrieved successfully' })
+  async listTrendingProducts(
+    @Query('limit') limit?: string,
+  ): Promise<ReturnType<AdminProductsService['listTrendingProducts']>> {
+    return this.adminProductsService.listTrendingProducts(limit ? Number(limit) : 20);
+  }
+
   @Get('products/:id')
   @ApiOperation({
     summary: 'Retrieve product details with inventory breakdown and seller profile',
@@ -319,6 +334,23 @@ export class AdminController {
     @Body() dto: UpdateProductCategoryDto,
   ) {
     return this.adminProductsService.updateProductCategory(id, admin.id, dto);
+  }
+
+  @Delete('products/:id/trending')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Remove a product from HomePage trending',
+    description:
+      'Excludes a product from the HomePage trending list and notifies the seller. Admin cannot manually add products to trending.',
+  })
+  @ApiResponse({ status: 200, description: 'Product removed from trending successfully' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  async removeProductFromTrending(
+    @Param('id') id: string,
+    @CurrentUser() admin: AuthenticatedUserPayload,
+    @Body() dto?: RemoveTrendingProductDto,
+  ): Promise<ReturnType<AdminProductsService['removeProductFromTrending']>> {
+    return this.adminProductsService.removeProductFromTrending(id, admin.id, dto);
   }
 
   @Delete('products/:id')
@@ -566,6 +598,20 @@ export class AdminController {
     @Query() query: QueryAdminWalletTransactionsDto,
   ) {
     return this.adminFinanceService.getAdminWalletTransactions(adminId, query);
+  }
+
+  @Get('wallet/user-transactions')
+  @ApiOperation({
+    summary: 'List platform-wide user wallet transactions (deposits, withdrawals, escrow, refunds)',
+    description:
+      'Queries wallet transaction history across Buyer and Seller accounts with filters for type (DEPOSIT, WITHDRAW...), status, role, userId, date range, and keyword search.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Platform user wallet transactions retrieved successfully',
+  })
+  async getPlatformUserWalletTransactions(@Query() query: QueryPlatformUserWalletTransactionsDto) {
+    return this.adminFinanceService.getPlatformUserWalletTransactions(query);
   }
 
   @Post('wallet/deposit')

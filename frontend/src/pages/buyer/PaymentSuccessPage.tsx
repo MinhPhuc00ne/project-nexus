@@ -1,9 +1,11 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { checkPaymentStatusApi } from '../../services/orders';
 
 export default function PaymentSuccessPage(): ReactNode {
+  const { t } = useTranslation('commerce');
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId');
   const orderCode = searchParams.get('orderCode');
@@ -35,22 +37,18 @@ export default function PaymentSuccessPage(): ReactNode {
         </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl font-extrabold text-slate-900">Thanh Toán Thành Công!</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">{t('paymentSuccess.title')}</h1>
           <p className="text-xs text-slate-500">
             {orderCode
-              ? `Mã giao dịch: ${orderCode} • Đã ghi nhận ký quỹ an toàn`
-              : 'Giao dịch chuyển khoản PayOS VietQR đã được xác nhận thành công.'}
+              ? t('paymentSuccess.descWithCode', { code: orderCode })
+              : t('paymentSuccess.descDefault')}
           </p>
         </div>
 
         <div className="space-y-2 rounded-xl bg-emerald-50/70 p-4 text-left text-xs text-emerald-900 border border-emerald-200">
-          <p className="font-semibold text-emerald-950">
-            Tiền thanh toán đang được giữ ký quỹ tại NEXUS Escrow.
-          </p>
+          <p className="font-semibold text-emerald-950">{t('paymentSuccess.escrowTitle')}</p>
           <p className="text-[11px] text-emerald-800">
-            {loading
-              ? 'Đang đồng bộ trạng thái đơn hàng...'
-              : 'Người bán đã nhận được đơn hàng và đang tiến hành đóng gói để giao hàng.'}
+            {loading ? t('paymentSuccess.syncing') : t('paymentSuccess.sellerNotified')}
           </p>
         </div>
 
@@ -59,7 +57,9 @@ export default function PaymentSuccessPage(): ReactNode {
             to={orderId ? `/buyer/orders/${encodeURIComponent(orderId)}` : '/buyer/orders'}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition cursor-pointer"
           >
-            <span>{orderId ? 'Xem chi tiết đơn này' : 'Danh sách đơn hàng'}</span>
+            <span>
+              {orderId ? t('paymentSuccess.viewOrderDetail') : t('paymentSuccess.ordersList')}
+            </span>
             <ArrowRight size={14} />
           </Link>
           <Link
@@ -67,7 +67,7 @@ export default function PaymentSuccessPage(): ReactNode {
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
           >
             <ShoppingBag size={14} />
-            <span>Tiếp tục mua sắm</span>
+            <span>{t('paymentSuccess.continueShopping')}</span>
           </Link>
         </div>
       </div>

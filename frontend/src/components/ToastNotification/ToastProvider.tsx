@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import type { ToastApi, ToastItem, ToastOptions } from '../../types/toast.types';
 import Fail from './Fail';
 import Success from './Success';
 import { ToastContext } from './ToastContext';
 
 export default function ToastProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('common');
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const sequence = useRef(0);
   const dismiss = useCallback((id: number) => {
@@ -50,7 +52,7 @@ export default function ToastProvider({ children }: { children: ReactNode }) {
       {createPortal(
         <div
           role="region"
-          aria-label="Thông báo"
+          aria-label={t('toast.regionAria')}
           className="pointer-events-none fixed top-4 right-4 z-[1100] flex w-[calc(100vw-2rem)] max-w-sm flex-col gap-3 sm:top-6 sm:right-6"
         >
           {toasts.map(({ variant, ...toast }) =>

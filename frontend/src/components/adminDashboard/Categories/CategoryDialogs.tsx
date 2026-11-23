@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createCategory, deleteCategory, updateCategory } from '../../../services/admin';
 import { categoryMoveError, flattenCategories } from '../../../utils/category-tree';
 import type { CategoryTreeItem } from '../../../types/category.types';
@@ -24,6 +25,7 @@ export default function CategoryDialogs({
   onClose: () => void;
   onSuccess: (message: string) => void;
 }) {
+  const { t } = useTranslation('admin');
   const toast = useToast();
   const [name, setName] = useState(action.kind === 'edit' ? action.category.name : '');
   const [slug, setSlug] = useState(action.kind === 'edit' ? action.category.slug : '');
@@ -36,12 +38,12 @@ export default function CategoryDialogs({
   const isCreate = action.kind === 'create';
   const isEdit = action.kind === 'edit';
   const title = isCreate
-    ? 'Thêm danh mục'
+    ? t('categories.dialogs.createTitle')
     : isEdit
-      ? 'Sửa danh mục'
+      ? t('categories.dialogs.editTitle')
       : action.kind === 'move'
-        ? 'Xác nhận chuyển danh mục'
-        : 'Xóa danh mục';
+        ? t('categories.dialogs.moveTitle')
+        : t('categories.dialogs.deleteTitle');
   const parentOptions = flattenCategories(categories);
 
   const close = () => {
@@ -52,7 +54,7 @@ export default function CategoryDialogs({
     event.preventDefault();
     if (inFlight.current) return;
     if ((isCreate || isEdit) && !name.trim()) {
-      setError('Vui lòng nhập tên danh mục.');
+      setError(t('categories.dialogs.nameRequiredErr'));
       return;
     }
     if (action.kind === 'edit' || action.kind === 'move') {
@@ -61,7 +63,7 @@ export default function CategoryDialogs({
           ? action.parent
           : (parentOptions.find((item) => item.category.id === parentId)?.category ?? null);
       if (action.kind === 'edit' && parentId && !parent) {
-        setError('Danh mục cha không còn tồn tại. Vui lòng tải lại danh sách.');
+        setError(t('categories.dialogs.parentMissingErr'));
         return;
       }
       const moveError = categoryMoveError(action.category, parent);
@@ -80,25 +82,30 @@ export default function CategoryDialogs({
           slug: slug.trim() || undefined,
           parentId: action.parent?.id,
         });
-        onSuccess(`Đã thêm danh mục "${created.name}".`);
+        onSuccess(t('categories.dialogs.createdToast', { name: created.name }));
       } else if (action.kind === 'edit') {
         const updated = await updateCategory(action.category.id, {
           name: name.trim(),
           slug: slug.trim() || undefined,
           parentId: parentId || null,
         });
-        onSuccess(`Đã cập nhật danh mục "${updated.name}".`);
+        onSuccess(t('categories.dialogs.updatedToast', { name: updated.name }));
       } else if (action.kind === 'move') {
         await updateCategory(action.category.id, { parentId: action.parent?.id ?? null });
         onSuccess(
-          `Đã chuyển "${action.category.name}" ${action.parent ? `vào "${action.parent.name}"` : 'về cấp gốc'}.`,
+          action.parent
+            ? t('categories.dialogs.movedToParentToast', {
+                name: action.category.name,
+                parent: action.parent.name,
+              })
+            : t('categories.dialogs.movedToRootToast', { name: action.category.name }),
         );
       } else {
         const result = await deleteCategory(action.category.id);
         onSuccess(result.message);
       }
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Không thể cập nhật danh mục.';
+      const message = cause instanceof Error ? cause.message : t('categories.dialogs.updateErr');
       setError(message);
       toast.error(message);
     } finally {
@@ -121,13 +128,16 @@ export default function CategoryDialogs({
           <>
             <p className="break-words rounded-lg bg-blue-50 p-3 text-sm text-slate-600">
               {action.kind === 'edit'
-                ? 'Chỉnh sửa thông tin và chọn danh mục cha. Cả nhánh con sẽ được chuyển theo.'
+                ? t('categories.dialogs.editDesc')
                 : action.parent
-                  ? `Thêm danh mục cấp ${action.parent.level + 1} vào "${action.parent.name}".`
-                  : 'Tạo danh mục gốc (cấp 1) cho toàn sàn.'}
+                  ? t('categories.dialogs.createChildDesc', {
+                      level: action.parent.level + 1,
+                      name: action.parent.name,
+                    })
+                  : t('categories.dialogs.createRootDesc')}
             </p>
             <label className="block text-sm font-medium">
-              Tên danh mục
+              {t('categories.dialogs.nameLabel')}
               <Input
                 autoFocus
                 required
@@ -139,25 +149,25 @@ export default function CategoryDialogs({
               />
             </label>
             <label className="block text-sm font-medium">
-              Slug (không bắt buộc)
+              {t('categories.dialogs.slugLabel')}
               <Input
                 value={slug}
                 disabled={pending}
                 onChange={(event) => setSlug(event.target.value)}
-                placeholder="Để trống để tự tạo từ tên"
+                placeholder={t('categories.dialogs.slugPlaceholder')}
                 className="mt-2"
               />
             </label>
             {action.kind === 'edit' && (
               <label className="block text-sm font-medium">
-                Danh mục cha
+                {t('categories.dialogs.parentLabel')}
                 <select
                   value={parentId}
                   disabled={pending}
                   onChange={(event) => setParentId(event.target.value)}
                   className="mt-2 w-full rounded-lg border border-slate-200 bg-white p-3 text-sm"
                 >
-                  <option value="">Không có cha (danh mục gốc)</option>
+                  <option value="">{t('categories.dialogs.noParent')}</option>
                   {parentOptions
                     .filter(({ category }) => !categoryMoveError(action.category, category))
                     .map(({ category, path }) => (
@@ -172,30 +182,30 @@ export default function CategoryDialogs({
         ) : action.kind === 'move' ? (
           <div className="space-y-3 text-sm text-slate-600">
             <p className="break-words">
-              Chuyển <strong>{action.category.name}</strong> từ{' '}
+              {t('categories.dialogs.movePrefix')}
+              <strong>{action.category.name}</strong>
+              {t('categories.dialogs.moveFrom')}
               <strong>
                 {parentOptions.find((item) => item.category.id === action.category.parentId)
-                  ?.path ?? 'Cấp gốc'}
-              </strong>{' '}
-              sang{' '}
+                  ?.path ?? t('categories.dialogs.rootLevel')}
+              </strong>
+              {t('categories.dialogs.moveTo')}
               <strong>
                 {action.parent
                   ? parentOptions.find((item) => item.category.id === action.parent?.id)?.path
-                  : 'Cấp gốc'}
+                  : t('categories.dialogs.rootLevel')}
               </strong>
               ?
             </p>
-            <p>
-              Các danh mục con và sản phẩm vẫn thuộc nhánh này. Thay đổi chỉ được lưu khi bạn xác
-              nhận.
-            </p>
+            <p>{t('categories.dialogs.moveNote')}</p>
           </div>
         ) : (
           <div className="space-y-3 text-sm text-slate-600">
             <p className="break-words">
-              Bạn muốn xóa danh mục <strong>{action.category.name}</strong>?
+              {t('categories.dialogs.deleteConfirmPrefix')}
+              <strong>{action.category.name}</strong>?
             </p>
-            <p>Chỉ xóa được danh mục không có danh mục con và không có sản phẩm liên kết.</p>
+            <p>{t('categories.dialogs.deleteNote')}</p>
           </div>
         )}
         {error && (
@@ -205,7 +215,7 @@ export default function CategoryDialogs({
         )}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" disabled={pending} onClick={close}>
-            Hủy
+            {t('categories.dialogs.cancel')}
           </Button>
           <Button
             type="submit"
@@ -213,11 +223,11 @@ export default function CategoryDialogs({
             disabled={pending}
           >
             {pending
-              ? 'Đang xử lý…'
+              ? t('categories.dialogs.processing')
               : action.kind === 'move'
-                ? 'Xác nhận chuyển'
+                ? t('categories.dialogs.confirmMove')
                 : isEdit
-                  ? 'Lưu thay đổi'
+                  ? t('categories.dialogs.saveChanges')
                   : title}
           </Button>
         </div>

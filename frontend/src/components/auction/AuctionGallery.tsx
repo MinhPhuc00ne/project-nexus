@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Scan,
   Eye,
@@ -71,6 +72,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
   hasVideo: _hasVideo,
   timeLeft,
 }) => {
+  const { t } = useTranslation('auction');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(true);
@@ -203,7 +205,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
     '';
 
   const sellerName =
-    auction?.seller?.fullName || auction?.product?.category?.name || 'Ban Quản Trị NEXUS';
+    auction?.seller?.fullName || auction?.product?.category?.name || t('gallery.defaultSeller');
 
   const sellerAvatar = auction?.seller?.avatarUrl;
 
@@ -219,34 +221,34 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           {isSessionEmpty ? (
             <div className="inline-flex items-center gap-1.5 bg-amber-500/90 text-slate-950 text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-amber-900/40 backdrop-blur-md">
               <Clock className="w-3.5 h-3.5" />
-              <span>CHỜ NIÊM YẾT HIỆN VẬT</span>
+              <span>{t('gallery.awaitingListingBadge')}</span>
             </div>
           ) : isLive ? (
             <div className="inline-flex items-center gap-2 bg-rose-600/90 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-rose-900/40 backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-white animate-ping" />
-              <span>LIVE: ĐANG DIỄN RA</span>
+              <span>{t('gallery.liveBadge')}</span>
             </div>
           ) : isScheduled ? (
             <div className="inline-flex items-center gap-1.5 bg-blue-600/90 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-blue-900/40 backdrop-blur-md">
               <Clock className="w-3.5 h-3.5" />
-              <span>SẮP DIỄN RA • ĐÃ LÊN LỊCH</span>
+              <span>{t('gallery.scheduledBadge')}</span>
             </div>
           ) : isEnded ? (
             <div className="inline-flex items-center gap-1.5 bg-slate-700/90 text-slate-200 text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg backdrop-blur-md">
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>ĐÃ KẾT THÚC</span>
+              <span>{t('gallery.endedBadge')}</span>
             </div>
           ) : (
             <div className="inline-flex items-center gap-1.5 bg-blue-600/90 text-white text-[11px] font-extrabold px-3 py-1 rounded-full shadow-lg shadow-blue-900/40 backdrop-blur-md">
               <Clock className="w-3.5 h-3.5" />
-              <span>SẮP DIỄN RA</span>
+              <span>{t('gallery.upcomingBadge')}</span>
             </div>
           )}
 
           {!isSessionEmpty && (
             <div className="inline-flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 text-slate-300 text-[11px] font-medium px-3 py-1 rounded-full w-fit">
               <Scan className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Độ phân giải 4K Ultra-HD</span>
+              <span>{t('gallery.resolutionBadge')}</span>
             </div>
           )}
         </div>
@@ -256,7 +258,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-md border border-slate-700/60 rounded-xl p-1 text-slate-300">
             <button
               type="button"
-              title="Thu nhỏ"
+              title={t('gallery.zoomOutTitle')}
               disabled={zoomLevel <= 0.8}
               onClick={() => setZoomLevel((prev) => Math.max(0.8, prev - 0.2))}
               className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition disabled:opacity-30 cursor-pointer"
@@ -268,7 +270,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
             </span>
             <button
               type="button"
-              title="Phóng to"
+              title={t('gallery.zoomInTitle')}
               disabled={zoomLevel >= 2.2}
               onClick={() => setZoomLevel((prev) => Math.min(2.2, prev + 0.2))}
               className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition disabled:opacity-30 cursor-pointer"
@@ -278,7 +280,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
             {currentImage && (
               <button
                 type="button"
-                title="Mở toàn màn hình"
+                title={t('gallery.fullscreenTitle')}
                 onClick={() => window.open(currentImage, '_blank')}
                 className="p-1.5 hover:text-white hover:bg-slate-800 rounded-lg transition cursor-pointer"
               >
@@ -297,17 +299,15 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-bold mb-2">
               <Clock className="w-3.5 h-3.5" />
-              <span>Chưa Có Hiện Vật Niêm Yết</span>
+              <span>{t('gallery.emptyStageBadge')}</span>
             </div>
 
             <h3 className="text-base sm:text-lg font-black text-white m-0 max-w-sm">
-              Khung Trưng Bày Đang Chờ Ký Gửi
+              {t('gallery.emptyStageTitle')}
             </h3>
 
             <p className="text-xs text-slate-400 max-w-md mt-2 mb-5 leading-relaxed">
-              Ban Quản Trị NEXUS đã khởi tạo phòng đấu giá. Hiện tại chưa có hình ảnh và sản phẩm
-              nào được niêm yết chính thức. Các Người Bán (Seller) được kiểm duyệt đang chuẩn bị ký
-              gửi hiện vật.
+              {t('gallery.emptyStageDesc')}
             </p>
 
             <div className="flex items-center gap-3 flex-wrap justify-center">
@@ -316,7 +316,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold text-xs shadow-lg shadow-orange-600/30 transition hover:scale-105 active:scale-95"
               >
                 <Package className="w-4 h-4" />
-                <span>Ký Gửi Hiện Vật Vào Phiên Này</span>
+                <span>{t('gallery.consignButton')}</span>
               </Link>
             </div>
           </div>
@@ -327,14 +327,10 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
               <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center select-none">
                 <Film className="w-12 h-12 text-slate-700 mb-3" />
                 <h4 className="text-sm font-bold text-white mb-1">
-                  {videoError
-                    ? 'Không thể phát video giới thiệu'
-                    : 'Phiên này chưa có video giới thiệu'}
+                  {videoError ? t('gallery.videoErrorTitle') : t('gallery.noVideoTitle')}
                 </h4>
                 <p className="text-xs text-slate-400 max-w-xs mb-4">
-                  {videoError
-                    ? 'Định dạng video không được hỗ trợ hoặc đường dẫn video bị gián đoạn.'
-                    : 'Admin chưa đăng tải video trailer cho phiên đấu giá này.'}
+                  {videoError ? t('gallery.videoErrorDesc') : t('gallery.noVideoDesc')}
                 </p>
                 <button
                   type="button"
@@ -344,7 +340,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                   }}
                   className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
                 >
-                  Quay lại xem ảnh
+                  {t('gallery.backToPhotos')}
                 </button>
               </div>
             ) : isYouTube ? (
@@ -384,7 +380,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                     className="absolute top-16 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 text-amber-300 border border-amber-500/40 text-xs font-semibold backdrop-blur-md shadow-lg hover:bg-slate-800 cursor-pointer transition animate-pulse"
                   >
                     <VolumeX className="w-3.5 h-3.5" />
-                    <span>Bấm để bật âm thanh</span>
+                    <span>{t('gallery.unmutePrompt')}</span>
                   </button>
                 )}
 
@@ -419,7 +415,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                         type="button"
                         onClick={togglePlay}
                         className="p-1 hover:text-rose-400 transition cursor-pointer"
-                        title={isVideoPlaying ? 'Tạm dừng' : 'Phát tiếp'}
+                        title={isVideoPlaying ? t('gallery.pauseTitle') : t('gallery.playTitle')}
                       >
                         {isVideoPlaying ? (
                           <Pause className="w-4 h-4" />
@@ -432,7 +428,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                         type="button"
                         onClick={handleRestart}
                         className="p-1 hover:text-slate-300 transition cursor-pointer"
-                        title="Phát lại từ đầu"
+                        title={t('gallery.restartTitle')}
                       >
                         <RotateCcw className="w-3.5 h-3.5" />
                       </button>
@@ -441,7 +437,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                         type="button"
                         onClick={toggleMute}
                         className="p-1 hover:text-slate-300 transition cursor-pointer"
-                        title={isVideoMuted ? 'Bật tiếng' : 'Tắt tiếng'}
+                        title={isVideoMuted ? t('gallery.unmuteTitle') : t('gallery.muteTitle')}
                       >
                         {isVideoMuted ? (
                           <VolumeX className="w-4 h-4 text-amber-400" />
@@ -461,7 +457,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-600/90 hover:bg-rose-600 text-white font-bold text-[11px] shadow-md transition cursor-pointer"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
-                      <span>Rạp Chiếu Fullscreen</span>
+                      <span>{t('gallery.fullscreenCinema')}</span>
                     </button>
                   </div>
                 </div>
@@ -501,13 +497,13 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
                   {certCode ? (
                     <>
                       <Sparkles className="w-4 h-4 text-cyan-400 animate-spin" />
-                      <span>HỒ SƠ THẨM ĐỊNH: XÁC THỰC 100% HIỆN VẬT [{certCode}]</span>
+                      <span>{t('gallery.lidarVerified', { code: certCode })}</span>
                     </>
                   ) : (
                     <>
                       <AlertCircle className="w-4 h-4 text-amber-400" />
                       <span className="text-amber-300 font-sans font-bold">
-                        CHƯA CÓ HỒ SƠ THẨM ĐỊNH (CHỜ SELLER KÝ GỬI HIỆN VẬT)
+                        {t('gallery.lidarMissing')}
                       </span>
                     </>
                   )}
@@ -532,7 +528,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           }}
         >
           <Eye className="w-4 h-4 text-slate-700" />
-          <span className="truncate">Ảnh Hiện Vật HD</span>
+          <span className="truncate">{t('gallery.modeHdPhoto')}</span>
         </button>
 
         <button
@@ -545,7 +541,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
           onClick={() => setViewerMode('lidar')}
         >
           <Scan className="w-4 h-4 text-cyan-500" />
-          <span className="truncate">Hồ Sơ Thẩm Định</span>
+          <span className="truncate">{t('gallery.modeAppraisal')}</span>
         </button>
       </div>
 
@@ -581,10 +577,10 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
         <div className="p-3.5 bg-slate-100/80 border border-slate-200 rounded-2xl flex items-center justify-between text-xs text-slate-500 shadow-2xs">
           <span className="flex items-center gap-2 font-medium">
             <Layers className="w-4 h-4 text-slate-400" />
-            <span>Chưa có hình ảnh hiện vật nào được tải lên (Chờ Seller niêm yết)</span>
+            <span>{t('gallery.noThumbnails')}</span>
           </span>
           <span className="text-[11px] font-bold text-slate-400 bg-slate-200/60 px-2.5 py-0.5 rounded-md">
-            0 Ảnh
+            {t('gallery.zeroPhotos')}
           </span>
         </div>
       )}
@@ -608,7 +604,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
               <span className="text-amber-500 font-bold">★ 4.98/5</span>
               <span>•</span>
               <span className="text-emerald-700 font-medium flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-600" /> Đã xác thực KYC
+                <ShieldCheck className="w-3 h-3 text-emerald-600" /> {t('gallery.kycVerified')}
               </span>
             </p>
           </div>
@@ -621,7 +617,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold transition shrink-0 cursor-pointer"
           >
             <MessageCircle className="w-3.5 h-3.5 text-blue-600" />
-            <span>Hỏi Seller</span>
+            <span>{t('gallery.askSeller')}</span>
           </button>
         )}
       </div>

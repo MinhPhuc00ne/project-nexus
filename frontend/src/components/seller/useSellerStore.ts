@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getShopDetail } from '../../services/shops';
 import useProductResource from '../productDetail/useProductResource';
@@ -13,13 +14,14 @@ type Store = {
 };
 
 export function useSellerStore(userId: string): Store {
+  const { t } = useTranslation('seller');
   const { token } = useAuth();
   const load = useCallback(async () => {
-    if (!token) throw new Error('Vui lòng đăng nhập để xem gian hàng.');
+    if (!token) throw new Error(t('session.loginToViewShop'));
     const result = await getShopDetail(userId);
-    if (result.shop?.id !== userId) throw new Error('Thông tin gian hàng không hợp lệ.');
+    if (result.shop?.id !== userId) throw new Error(t('session.invalidShopInfo'));
     return result.shop;
-  }, [token, userId]);
+  }, [t, token, userId]);
   const { data, loading, error, retry } = useProductResource(load);
   return { name: data?.name || '', shop: data, loading, error, refresh: retry };
 }

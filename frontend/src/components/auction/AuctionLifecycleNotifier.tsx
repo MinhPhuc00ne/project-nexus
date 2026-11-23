@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuctionStatus, Role } from '@nexus/types';
 import { Gavel, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -22,6 +23,7 @@ interface AuctionLiveAlert {
  * @returns Floating live auction alert banner or null when inactive.
  */
 export default function AuctionLifecycleNotifier(): React.ReactElement | null {
+  const { t } = useTranslation('auction');
   const { user } = useAuth();
   const toast = useToast();
   const location = useLocation();
@@ -76,27 +78,24 @@ export default function AuctionLifecycleNotifier(): React.ReactElement | null {
       }
 
       if (role === Role.ADMIN) {
-        toast.success(`Phiên đấu giá “${event.title}” đã bắt đầu.`, {
+        toast.success(t('notifier.adminStarted', { title: event.title }), {
           targetUrl: `/admin/auctions`,
-          actionLabel: 'Quản trị phiên',
+          actionLabel: t('notifier.adminAction'),
         });
       } else if (role === Role.SUPPORT_STAFF) {
-        toast.success(`Phiên “${event.title}” đã bắt đầu. Hãy theo dõi hỗ trợ phiên.`, {
+        toast.success(t('notifier.staffStarted', { title: event.title }), {
           targetUrl: `/staff/auction-support`,
-          actionLabel: 'Hỗ trợ phiên',
+          actionLabel: t('notifier.staffAction'),
         });
       } else if (role === Role.SELLER || user?.isSellerActive) {
-        toast.success(
-          `Phiên “${event.title}” đang diễn ra. Bạn có thể theo dõi trong Seller Center.`,
-          {
-            targetUrl: `/seller/auctions/${event.auctionId}`,
-            actionLabel: 'Vào phiên đấu giá',
-          },
-        );
+        toast.success(t('notifier.sellerStarted', { title: event.title }), {
+          targetUrl: `/seller/auctions/${event.auctionId}`,
+          actionLabel: t('notifier.sellerAction'),
+        });
       } else {
-        toast.success(`Phiên đấu giá “${event.title}” đang diễn ra trực tiếp!`, {
+        toast.success(t('notifier.buyerStarted', { title: event.title }), {
           targetUrl: `/auction/${event.auctionId}`,
-          actionLabel: 'Vào sàn ngay',
+          actionLabel: t('notifier.buyerAction'),
         });
       }
     });
@@ -111,19 +110,19 @@ export default function AuctionLifecycleNotifier(): React.ReactElement | null {
         setActiveAlert((curr) => (curr?.auctionId === event.auctionId ? null : curr));
 
         if (user && event.winningBidderId === user.id) {
-          toast.success('Phiên đấu giá đã kết thúc. Chúc mừng, bạn là người chiến thắng!', {
+          toast.success(t('notifier.endedWinner'), {
             targetUrl: `/auction/${event.auctionId}`,
-            actionLabel: 'Xem chi tiết',
+            actionLabel: t('notifier.viewDetails'),
           });
         } else if (role === Role.SELLER || user?.isSellerActive) {
-          toast.success('Phiên đấu giá đã kết thúc. Kiểm tra kết quả trong Seller Center.', {
+          toast.success(t('notifier.endedSeller'), {
             targetUrl: `/seller/auctions/${event.auctionId}`,
-            actionLabel: 'Xem kết quả',
+            actionLabel: t('notifier.viewResults'),
           });
         } else {
-          toast.success('Phiên đấu giá bạn đang theo dõi đã kết thúc.', {
+          toast.success(t('notifier.endedViewer'), {
             targetUrl: `/auction/${event.auctionId}`,
-            actionLabel: 'Xem kết quả',
+            actionLabel: t('notifier.viewResults'),
           });
         }
       },
@@ -135,13 +134,13 @@ export default function AuctionLifecycleNotifier(): React.ReactElement | null {
       joinedAuctions.current.clear();
       connection.disconnect();
     };
-  }, [toast, user]);
+  }, [toast, user, t]);
 
   if (!activeAlert) return null;
 
   return (
     <aside
-      aria-label="Thông báo phiên đấu giá trực tiếp"
+      aria-label={t('notifier.bannerAria')}
       className="fixed bottom-6 right-6 z-[2600] flex w-[calc(100vw-2rem)] max-w-md items-center gap-3.5 rounded-2xl border border-amber-400/50 bg-slate-950/95 p-4 text-white shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-md animate-fade-in"
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 shadow-md">
@@ -155,15 +154,13 @@ export default function AuctionLifecycleNotifier(): React.ReactElement | null {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
           </span>
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
-            ĐẤU GIÁ TRỰC TIẾP
+            {t('notifier.liveBadge')}
           </span>
         </div>
         <p className="mt-0.5 truncate text-xs font-bold text-slate-100" title={activeAlert.title}>
           {activeAlert.title}
         </p>
-        <p className="text-[11px] text-slate-400">
-          Phiên đã chính thức mở sàn trực tiếp. Tham gia ngay!
-        </p>
+        <p className="text-[11px] text-slate-400">{t('notifier.bannerDesc')}</p>
       </div>
 
       <div className="flex items-center gap-1.5 shrink-0">
@@ -175,7 +172,7 @@ export default function AuctionLifecycleNotifier(): React.ReactElement | null {
           }}
           className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-3 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:from-amber-400 hover:to-amber-300 cursor-pointer"
         >
-          <span>Vào sàn</span>
+          <span>{t('notifier.enterRoom')}</span>
           <ArrowRight size={13} />
         </button>
 
@@ -183,7 +180,7 @@ export default function AuctionLifecycleNotifier(): React.ReactElement | null {
           type="button"
           onClick={() => setActiveAlert(null)}
           className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-800 hover:text-white cursor-pointer"
-          title="Đóng thông báo"
+          title={t('notifier.dismissTitle')}
         >
           <X size={15} />
         </button>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Bot, Send, Headphones, LoaderCircle, ArrowUpRight, Trash2 } from 'lucide-react';
 import {
   getChatbotCapabilities,
@@ -74,25 +75,27 @@ function writeStoredEntries(key: string, entries: Entry[]): void {
     return;
   }
 }
-const suggestions = [
-  'Chính sách giao hàng',
-  'Trả hàng và hoàn tiền',
-  'Hủy đơn hàng',
-  'Phương thức thanh toán',
-];
+const suggestionKeys = [
+  'chat.chatbot.suggestions.shipping',
+  'chat.chatbot.suggestions.returns',
+  'chat.chatbot.suggestions.cancel',
+  'chat.chatbot.suggestions.payment',
+] as const;
 export default function ChatbotPanel({
   guest = false,
   storageKey,
   onRequestSupport,
   creating,
 }: Props) {
+  const { t } = useTranslation('common');
   const historyKey = storageKey ?? (guest ? 'guest' : 'user');
   const navigate = useNavigate();
   const [entries, setEntries] = useState<Entry[]>(() => readStoredEntries(historyKey));
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
-  const [topics, setTopics] = useState(suggestions);
+  const [apiTopics, setApiTopics] = useState<string[] | null>(null);
+  const topics = apiTopics ?? suggestionKeys.map((key) => t(key));
   const [retry, setRetry] = useState<{ message: string }>();
   const controller = useRef<AbortController | null>(null);
   const busy = useRef(false);
@@ -108,7 +111,7 @@ export default function ChatbotPanel({
     const abort = new AbortController();
     if (!guest)
       void getChatbotCapabilities(abort.signal)
-        .then((result) => setTopics(result.topics.map((t) => t.title)))
+        .then((result) => setApiTopics(result.topics.map((item) => item.title)))
         .catch(() => {});
     return () => {
       abort.abort();
@@ -189,7 +192,7 @@ export default function ChatbotPanel({
     if (!onRequestSupport || creating) return;
     setError('');
     try {
-      await onRequestSupport(entry.question || 'Tôi cần nhân viên hỗ trợ.');
+      await onRequestSupport(entry.question || t('chat.chatbot.defaultSupportRequest'));
     } catch (err) {
       setError(getChatErrorMessage(err));
     }
@@ -202,11 +205,9 @@ export default function ChatbotPanel({
             <Bot size={22} />
           </span>
           <div>
-            <h3 className="text-sm font-bold">Trợ lý NEXUS</h3>
+            <h3 className="text-sm font-bold">{t('chat.chatbot.title')}</h3>
             <p className="text-xs text-slate-500">
-              {guest
-                ? 'Giải đáp chính sách · Đăng nhập để tra cứu đơn'
-                : 'Giải đáp chính sách và tra cứu đơn hàng của bạn'}
+              {guest ? t('chat.chatbot.guestSubtitle') : t('chat.chatbot.userSubtitle')}
             </p>
           </div>
         </div>
@@ -219,22 +220,21 @@ export default function ChatbotPanel({
               setError('');
               setRetry(undefined);
             }}
-            aria-label="Xóa lịch sử trò chuyện"
+            aria-label={t('chat.chatbot.clearHistoryAria')}
             className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-slate-500 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
           >
             <Trash2 size={14} />
-            Xóa lịch sử
+            {t('chat.chatbot.clearHistory')}
           </button>
         )}
       </div>
       <div
         className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain [overflow-wrap:anywhere] p-4 sm:p-5"
         role="log"
-        aria-label="Hội thoại với chatbot"
+        aria-label={t('chat.chatbot.logAria')}
       >
         <div className="w-fit max-w-[90%] rounded-2xl rounded-tl-sm border border-slate-200 bg-white p-4 text-sm leading-6 text-slate-700">
-          Xin chào! Mình là trợ lý tự động NEXUS. Bạn cần hỗ trợ về thanh toán, giao hàng hay
-          hủy/trả hàng?
+          {t('chat.chatbot.greeting')}
           <div className="mt-3 flex flex-wrap gap-2">
             {topics.map((topic) => (
               <button
@@ -256,11 +256,13 @@ export default function ChatbotPanel({
             <p className="whitespace-pre-wrap break-words">{entry.text}</p>
             {entry.response?.sources.length ? (
               <p className="mt-2 border-t border-slate-100 pt-2 text-xs text-slate-400">
-                Nguồn: {entry.response.sources.map((s) => s.title).join(' · ')}
+                {t('chat.chatbot.sources')} {entry.response.sources.map((s) => s.title).join(' · ')}
               </p>
             ) : null}
             {entry.response?.order?.waybillCode && (
-              <p className="mt-2 text-xs">Mã vận đơn: {entry.response.order.waybillCode}</p>
+              <p className="mt-2 text-xs">
+                {t('chat.chatbot.waybillCode')} {entry.response.order.waybillCode}
+              </p>
             )}
             <div className="mt-2 flex flex-wrap gap-2 empty:hidden">
               {visibleActions(entry.response?.actions).map((action) =>
@@ -270,7 +272,7 @@ export default function ChatbotPanel({
                     to="/login"
                     className="text-xs font-semibold text-blue-600 underline"
                   >
-                    Đăng nhập để tiếp tục
+                    {t('chat.chatbot.loginToContinue')}
                   </Link>
                 ) : action.type === 'NAVIGATE' && action.path ? (
                   <Link
@@ -279,7 +281,7 @@ export default function ChatbotPanel({
                     className="flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100"
                   >
                     <ArrowUpRight size={14} />
-                    {action.label || 'Chuyển trang'}
+                    {action.label || t('chat.chatbot.navigateFallback')}
                   </Link>
                 ) : (
                   onRequestSupport && (
@@ -290,7 +292,7 @@ export default function ChatbotPanel({
                       className="flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700 disabled:opacity-50"
                     >
                       <Headphones size={14} />
-                      {creating ? 'Đang kết nối…' : 'Liên hệ nhân viên'}
+                      {creating ? t('chat.chatbot.connecting') : t('chat.chatbot.contactStaff')}
                     </button>
                   )
                 ),
@@ -301,7 +303,7 @@ export default function ChatbotPanel({
         {pending && (
           <p role="status" className="flex items-center gap-2 text-xs text-slate-500">
             <LoaderCircle size={15} className="animate-spin" />
-            Trợ lý đang trả lời…
+            {t('chat.chatbot.replying')}
           </p>
         )}
         <div ref={end} />
@@ -318,7 +320,7 @@ export default function ChatbotPanel({
               onClick={() => void send(retry.message, true)}
               className="shrink-0 font-semibold underline"
             >
-              Thử lại
+              {t('chat.chatbot.retry')}
             </button>
           )}
         </div>
@@ -326,13 +328,13 @@ export default function ChatbotPanel({
       <form onSubmit={submit} className="shrink-0 border-t border-slate-200 bg-white p-3 sm:p-4">
         <div className="flex items-end gap-2">
           <textarea
-            aria-label="Câu hỏi cho chatbot"
+            aria-label={t('chat.chatbot.inputAria')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             maxLength={2000}
             disabled={pending || creating}
             rows={2}
-            placeholder="Nhập câu hỏi của bạn…"
+            placeholder={t('chat.chatbot.inputPlaceholder')}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
@@ -343,16 +345,14 @@ export default function ChatbotPanel({
           />
           <button
             type="submit"
-            aria-label="Gửi câu hỏi"
+            aria-label={t('chat.chatbot.sendAria')}
             disabled={pending || creating || !draft.trim()}
             className="shrink-0 rounded-xl bg-blue-600 p-3 text-white hover:bg-blue-700 disabled:opacity-40"
           >
             <Send size={19} />
           </button>
         </div>
-        <p className="mt-2 text-[10px] text-slate-400">
-          Trợ lý tự động · Chưa giải quyết được vấn đề? Liên hệ nhân viên hỗ trợ.
-        </p>
+        <p className="mt-2 text-[10px] text-slate-400">{t('chat.chatbot.footerHint')}</p>
       </form>
     </div>
   );

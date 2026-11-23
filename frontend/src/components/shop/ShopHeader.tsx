@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ChevronRight,
   Award,
@@ -21,6 +22,7 @@ interface ShopHeaderProps {
 }
 
 export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact, onReported }) => {
+  const { t } = useTranslation('guest');
   const [showReportModal, setShowReportModal] = useState(false);
 
   // Avatar của Shop là riêng biệt hoàn toàn với Avatar cá nhân của Seller
@@ -29,16 +31,22 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
   const getTrustBadge = (trustLevel: string) => {
     const level = (trustLevel || '').toUpperCase();
     if (level === 'DIAMOND') {
-      return { label: 'Kim Cương', color: 'bg-blue-50 text-blue-700 border-blue-200' };
+      return {
+        label: t('product.trustDiamond'),
+        color: 'bg-blue-50 text-blue-700 border-blue-200',
+      };
     }
     if (level === 'PLATINUM') {
-      return { label: 'Bạch Kim', color: 'bg-slate-100 text-slate-800 border-slate-300' };
+      return {
+        label: t('product.trustPlatinum'),
+        color: 'bg-slate-100 text-slate-800 border-slate-300',
+      };
     }
     if (level === 'GOLD') {
-      return { label: 'Hoàng Gia / Vàng', color: 'bg-blue-50 text-blue-700 border-blue-200' };
+      return { label: t('shop.trustGoldLabel'), color: 'bg-blue-50 text-blue-700 border-blue-200' };
     }
     return {
-      label: 'Đối Tác Xác Thực',
+      label: t('shop.trustPartnerLabel'),
       color: 'bg-blue-50 text-blue-700 border-blue-200',
     };
   };
@@ -50,11 +58,11 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
       <div className="max-w-screen-2xl mx-auto px-6 py-9 relative z-10">
         <div className="flex items-center gap-2 text-xs text-blue-200 mb-5">
           <Link to="/" className="hover:text-white transition">
-            Trang chủ
+            {t('shop.breadcrumbHome')}
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <Link to="/search" className="hover:text-white transition">
-            Gian hàng
+            {t('shop.breadcrumbShops')}
           </Link>
           <ChevronRight className="w-3.5 h-3.5" />
           <span className="text-white font-semibold">{shop.name}</span>
@@ -84,13 +92,13 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
                 {shop.isSellerActive && (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-white/15 text-white border border-white/25">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    Đang hoạt động
+                    {t('product.online')}
                   </span>
                 )}
               </div>
 
               <p className="text-xs text-blue-100 font-medium mb-2">
-                Chủ gian hàng:{' '}
+                {t('shop.ownerLabel')}{' '}
                 <span className="text-white font-semibold">{shop.sellerFullName}</span>
               </p>
 
@@ -105,16 +113,17 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
                   <span className="inline-flex items-center gap-1.5">
                     <MapPin className="w-3.5 h-3.5 text-blue-200" />
                     {shop.address.district ? `${shop.address.district}, ` : ''}
-                    {shop.address.city || 'Việt Nam'}
+                    {shop.address.city || t('shop.defaultCountry')}
                   </span>
                 )}
                 <span className="inline-flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-200" />
-                  Điểm uy tín: <strong className="text-white">{shop.reputationScore}/100</strong>
+                  {t('shop.reputationScore')}{' '}
+                  <strong className="text-white">{shop.reputationScore}/100</strong>
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-blue-200" />
-                  Phản hồi: <strong className="text-white">99%</strong>
+                  {t('shop.responseRate')} <strong className="text-white">99%</strong>
                 </span>
               </div>
             </div>
@@ -127,7 +136,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
               className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 transition cursor-pointer"
             >
               <Share2 className="w-3.5 h-3.5" />
-              <span>Chia sẻ</span>
+              <span>{t('shop.share')}</span>
             </button>
             <button
               type="button"
@@ -135,16 +144,16 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[#1c3973] hover:bg-blue-50 text-xs font-bold shadow-xs transition cursor-pointer"
             >
               <MessageCircle className="w-3.5 h-3.5" />
-              <span>Liên hệ Shop</span>
+              <span>{t('shop.contactShop')}</span>
             </button>
             <button
               type="button"
               onClick={() => setShowReportModal(true)}
               className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-red-500/20 text-blue-100 hover:text-white text-xs font-semibold border border-white/20 transition cursor-pointer"
-              title="Báo cáo vi phạm gian hàng"
+              title={t('product.reportShopTitle')}
             >
               <Flag className="w-3.5 h-3.5" />
-              <span>Báo cáo Shop</span>
+              <span>{t('product.reportShop')}</span>
             </button>
           </div>
         </div>

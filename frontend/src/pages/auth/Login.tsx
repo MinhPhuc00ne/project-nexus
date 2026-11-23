@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, type FormEvent } from 'react';
 import { GoogleOutlined } from '@ant-design/icons';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { login, startGoogleLogin } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { clearPasswordChangedNotice, hasPasswordChangedNotice } from '../../services/authNotice';
@@ -12,6 +13,7 @@ import { ArrowLeft, Lock, Eye, EyeOff, Gift, Shield, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Login: React.FC = () => {
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const { login: establishSession } = useAuth();
   const location = useLocation();
@@ -32,9 +34,9 @@ const Login: React.FC = () => {
   const [feedback, setFeedback] = useState(() =>
     (location.state as { passwordChanged?: boolean } | null)?.passwordChanged ||
     hasPasswordChangedNotice()
-      ? 'Đổi mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới.'
+      ? t('login.passwordChangedNotice')
       : searchParams.get('verified') === '1'
-        ? 'Email đã được xác thực. Vui lòng đăng nhập.'
+        ? t('login.emailVerifiedNotice')
         : '',
   );
   const [failed, setFailed] = useState(false);
@@ -78,7 +80,7 @@ const Login: React.FC = () => {
       const sessionPromise = establishSession(result.user, result.accessToken, result.refreshToken);
 
       // Hiển thị thông báo Toast thành công ngay lập tức
-      toast.success(`Đăng nhập thành công! Xin chào ${result.user.fullName || result.user.email}.`);
+      toast.success(t('login.successToast', { name: result.user.fullName || result.user.email }));
 
       // Xác định ngay trang đích trực tiếp không qua redirect trung gian
       const redirectPath = (location.state as { from?: string })?.from;
@@ -97,7 +99,7 @@ const Login: React.FC = () => {
       navigate(target, { replace: true });
     } catch (error: unknown) {
       setFailed(true);
-      const msg = error instanceof Error ? error.message : 'Đăng nhập thất bại.';
+      const msg = error instanceof Error ? error.message : t('login.failedDefault');
       setFeedback(msg);
       toast.error(msg);
     } finally {
@@ -118,13 +120,15 @@ const Login: React.FC = () => {
 
               <div className="mb-6">
                 <h2 className="[font-size:1.75rem] font-extrabold text-slate-900 [letter-spacing:-0.025em]">
-                  Đăng nhập NEXUS
+                  {t('login.title')}
                 </h2>
               </div>
 
               <form onSubmit={handleLogin} className="flex flex-col gap-4" aria-busy={pending}>
                 <div className="flex flex-col">
-                  <label className="text-xs font-semibold text-slate-700 mb-1.5">Email</label>
+                  <label className="text-xs font-semibold text-slate-700 mb-1.5">
+                    {t('login.emailLabel')}
+                  </label>
                   <div className="relative">
                     <div className="absolute [inset-block:0] left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 [&_svg]:w-4 [&_svg]:h-4">
                       <User />
@@ -137,7 +141,7 @@ const Login: React.FC = () => {
                       autoComplete="username"
                       disabled={pending}
                       className="block w-full [padding:0.625rem_0.875rem_0.625rem_2.5rem] [background-color:rgba(248,_250,_252,_0.5)] [border:1px_solid_#e2e8f0] rounded-xl text-sm text-slate-800 [outline:none] [transition:all_0.15s_ease] [&::placeholder]:text-slate-400 focus:bg-white focus:border-blue-600 focus:[box-shadow:0_0_0_3px_rgba(37,_99,_235,_0.15)]"
-                      placeholder="user@gmail.com"
+                      placeholder={t('login.emailPlaceholder')}
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
@@ -154,14 +158,14 @@ const Login: React.FC = () => {
                       htmlFor="password"
                       className="text-xs font-semibold text-slate-700 mb-1.5"
                     >
-                      Mật khẩu
+                      {t('login.passwordLabel')}
                     </label>
                     <button
                       type="button"
                       className="text-xs font-semibold text-blue-600 no-underline hover:underline bg-transparent border-0 cursor-pointer text-indigo-600 hover:text-indigo-800"
                       onClick={() => setShowForgotModal(true)}
                     >
-                      Quên mật khẩu?
+                      {t('login.forgotPassword')}
                     </button>
                   </div>
                   <div className="relative">
@@ -173,7 +177,7 @@ const Login: React.FC = () => {
                       name="password"
                       type={showPassword ? 'text' : 'password'}
                       className="block w-full [padding:0.625rem_0.875rem_0.625rem_2.5rem] [background-color:rgba(248,_250,_252,_0.5)] [border:1px_solid_#e2e8f0] rounded-xl text-sm text-slate-800 [outline:none] [transition:all_0.15s_ease] [&::placeholder]:text-slate-400 focus:bg-white focus:border-blue-600 focus:[box-shadow:0_0_0_3px_rgba(37,_99,_235,_0.15)]"
-                      placeholder="Nhập mật khẩu an toàn của bạn"
+                      placeholder={t('login.passwordPlaceholder')}
                       required
                       minLength={6}
                       autoComplete="current-password"
@@ -198,7 +202,7 @@ const Login: React.FC = () => {
                 <div className="flex items-center justify-between pt-1">
                   <div className="flex items-center gap-1 text-slate-400 text-xs">
                     <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Mã hóa SSL 256-bit</span>
+                    <span>{t('login.sslNotice')}</span>
                   </div>
                 </div>
 
@@ -217,7 +221,7 @@ const Login: React.FC = () => {
                   className="w-full mt-2 h-11 bg-[#2f54eb] hover:bg-[#2040c7] text-white text-sm font-bold rounded-xl shadow-[0_10px_15px_-3px_rgba(47,84,235,0.25)] flex justify-center items-center gap-2 transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={pending}
                 >
-                  {pending ? 'ĐANG ĐĂNG NHẬP…' : 'ĐĂNG NHẬP'}{' '}
+                  {pending ? t('login.submitting') : t('login.submit')}{' '}
                   <ArrowLeft className="w-4 h-4 rotate-180" />
                 </Button>
               </form>
@@ -228,7 +232,7 @@ const Login: React.FC = () => {
                 </div>
                 <div className="relative flex justify-center text-[11px]">
                   <span className="[padding:0_0.75rem] bg-white text-slate-400 font-medium [letter-spacing:0.05em]">
-                    HOẶC TIẾP TỤC VỚI
+                    {t('login.orContinueWith')}
                   </span>
                 </div>
               </div>
@@ -242,24 +246,24 @@ const Login: React.FC = () => {
                   disabled={pending}
                 >
                   <GoogleOutlined className="text-base" />
-                  Đăng nhập với Google
+                  {t('login.googleButton')}
                 </Button>
               </div>
 
               <div className="mt-6 text-center text-xs">
-                <span className="text-slate-500">Bạn mới tham gia NEXUS?</span>
+                <span className="text-slate-500">{t('login.noAccount')}</span>
                 <Link
                   to={ROUTES.REGISTER}
                   className="font-bold [color:#2f54eb] no-underline ml-1 hover:underline"
                 >
-                  Tạo tài khoản ngay
+                  {t('login.registerLink')}
                 </Link>
               </div>
 
               <div className="mt-5 [background-color:#fffbeb] [border:1px_solid_#fef3c7] rounded-xl [padding:0.625rem_0.75rem] flex items-center justify-center gap-2">
                 <Gift className="w-4 h-4 text-amber-500 [flex-shrink:0]" />
                 <span className="text-xs font-semibold [color:#92400e]">
-                  Tặng ngay Voucher 500.000đ trải nghiệm đấu giá 3D
+                  {t('login.voucherBanner')}
                 </span>
               </div>
             </div>

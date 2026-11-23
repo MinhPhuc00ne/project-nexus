@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Mail, ShieldBan, UserPlus } from 'lucide-react';
 import { useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { inviteStaff, lockUser, unlockUser } from '../../../services/admin';
 import type { AdminUser, AdminUserRole, AdminUserStatus } from '../../../types/user.types';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
@@ -8,6 +9,7 @@ import { useAdminUsers } from './useAdminUsers';
 import UserAccountDetail from './UserAccountDetail';
 
 export function StaffInvite({ actions }: AdminTabProps) {
+  const { t } = useTranslation('admin');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -20,7 +22,7 @@ export function StaffInvite({ actions }: AdminTabProps) {
     event.preventDefault();
     if (inFlight.current) return;
     if (!name.trim()) {
-      setError('Vui lòng nhập họ và tên.');
+      setError(t('users.invite.nameRequiredErr'));
       return;
     }
     inFlight.current = true;
@@ -39,7 +41,7 @@ export function StaffInvite({ actions }: AdminTabProps) {
       setEmail('');
       setPhoneNumber('');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể gửi lời mời Staff.');
+      setError(cause instanceof Error ? cause.message : t('users.invite.sendErr'));
     } finally {
       inFlight.current = false;
       setPending(false);
@@ -48,52 +50,39 @@ export function StaffInvite({ actions }: AdminTabProps) {
 
   return (
     <Panel
-      title="Cấp tài khoản Support Staff"
-      subtitle="Nhân viên hỗ trợ được quản trị viên cấp quyền"
+      title={t('users.invite.title')}
+      subtitle={t('users.invite.subtitle')}
       icon={<UserPlus size={19} />}
     >
       <p className="mb-4 rounded-lg bg-blue-50 p-3 text-[11px] leading-relaxed text-slate-500">
-        Nhập email cá nhân để nhận lời mời. Hệ thống cấp email @staff.com; nhân viên mở link trong
-        email để xác nhận thông tin và tự đặt mật khẩu trước khi đăng nhập.
+        {t('users.invite.hint')}
       </p>
       <form onSubmit={submit} className="space-y-3">
         <label className="block text-[11px] font-medium">
-          Email cá nhân nhận lời mời
+          {t('users.invite.emailLabel')}
           <input
             required
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            placeholder="nhanvien@gmail.com"
+            placeholder={t('users.invite.emailPlaceholder')}
             className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs outline-none focus:border-blue-400"
           />
         </label>
         <div className="grid gap-3">
           <label className="text-[11px] font-medium">
-            Họ và tên Staff
+            {t('users.invite.fullNameLabel')}
             <input
               required
               value={name}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Nguyễn Văn A"
+              placeholder={t('users.invite.fullNamePlaceholder')}
               className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs outline-none focus:border-blue-400"
             />
           </label>
-          {/* <label className="text-[11px] font-medium">
-            Bộ phận phụ trách
-            <select
-              value={department}
-              onChange={(event) => setDepartment(event.target.value)}
-              className="mt-1.5 w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs outline-none focus:border-blue-400"
-            >
-              <option>Thẩm định hoàn tiền</option>
-              <option>Hỗ trợ đấu giá</option>
-              <option>Chăm sóc khách hàng</option>
-            </select>
-          </label> */}
         </div>
         <label className="block text-[11px] font-medium">
-          Số điện thoại
+          {t('users.invite.phoneLabel')}
           <input
             type="tel"
             value={phoneNumber}
@@ -108,12 +97,14 @@ export function StaffInvite({ actions }: AdminTabProps) {
         )}
         <Button type="submit" disabled={pending} className="w-full">
           <Mail size={16} />
-          {pending ? 'Đang gửi lời mời…' : 'Gửi lời mời Staff'}
+          {pending ? t('users.invite.sending') : t('users.invite.submit')}
         </Button>
       </form>
       {assignedEmail && (
         <p role="status" className="mt-4 break-all text-xs text-primary">
-          Tài khoản được cấp: <b>{assignedEmail}</b>. Đang chờ nhân viên kích hoạt.
+          {t('users.invite.assignedPrefix')}
+          <b>{assignedEmail}</b>
+          {t('users.invite.assignedSuffix')}
         </p>
       )}
     </Panel>
@@ -129,6 +120,7 @@ const roleLabels: Record<AdminUserRole, string> = {
 
 // Cả trang người dùng và preview tổng quan đều lấy dữ liệu thật từ backend.
 export function UserSecurity({ actions, preview = false }: AdminTabProps & { preview?: boolean }) {
+  const { t } = useTranslation('admin');
   const { search, setSearch, query, setQuery, result, loading, error, refresh } =
     useAdminUsers(preview);
   const [target, setTarget] = useState<AdminUser | null>(null);
@@ -136,8 +128,8 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
 
   return (
     <Panel
-      title="Quản lí tài khoản"
-      subtitle="Quản lý tài khoản Buyer / Seller / Staff / Admin trong hệ thống"
+      title={t('users.security.title')}
+      subtitle={t('users.security.subtitle')}
       icon={<ShieldBan size={19} />}
       className={
         preview
@@ -150,13 +142,13 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
           <SearchInput
             value={search}
             onChange={setSearch}
-            placeholder="Tìm theo tên, email hoặc số điện thoại..."
+            placeholder={t('users.security.searchPlaceholder')}
           />
         </div>
         {!preview && (
           <>
             <select
-              aria-label="Lọc vai trò"
+              aria-label={t('users.security.roleAria')}
               value={query.role ?? ''}
               onChange={(event) =>
                 setQuery((current) => ({
@@ -167,7 +159,7 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
               }
               className="rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs"
             >
-              <option value="">Tất cả vai trò</option>
+              <option value="">{t('users.security.allRoles')}</option>
               {Object.entries(roleLabels).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -175,7 +167,7 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
               ))}
             </select>
             <select
-              aria-label="Lọc trạng thái tài khoản"
+              aria-label={t('users.security.statusAria')}
               value={query.status ?? 'ALL'}
               onChange={(event) =>
                 setQuery((current) => ({
@@ -186,30 +178,30 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
               }
               className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs"
             >
-              <option value="ALL">Tất cả trạng thái</option>
-              <option value="ACTIVE">Đang hoạt động</option>
-              <option value="LOCKED">Đã khóa</option>
+              <option value="ALL">{t('users.security.allStatuses')}</option>
+              <option value="ACTIVE">{t('users.security.activeStatus')}</option>
+              <option value="LOCKED">{t('users.security.lockedStatus')}</option>
             </select>
           </>
         )}
       </div>
       {loading && (
         <p role="status" className="py-8 text-center text-xs text-slate-500">
-          Đang tải người dùng…
+          {t('users.security.loading')}
         </p>
       )}
       {error && (
         <div role="alert" className="space-y-3 py-4 text-xs text-red-700">
           <p>{error}</p>
           <Button variant="secondary" onClick={refresh}>
-            Thử lại
+            {t('users.security.retry')}
           </Button>
         </div>
       )}
       {!loading && !error && (
         <div
           role="region"
-          aria-label="Danh sách tài khoản"
+          aria-label={t('users.security.listAria')}
           tabIndex={preview ? undefined : 0}
           className={
             preview
@@ -230,41 +222,47 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
                   <p className="break-words text-xs font-semibold">{user.fullName || user.email}</p>
                   <Badge>{roleLabels[user.role]}</Badge>
                   <Badge tone={user.isLocked ? 'red' : 'green'}>
-                    {user.isLocked ? 'Đã khóa' : 'Hoạt động'}
+                    {user.isLocked
+                      ? t('users.security.lockedBadge')
+                      : t('users.security.activeBadge')}
                   </Badge>
                 </div>
                 <p className="mt-1 break-all text-xs text-slate-600">{user.email}</p>
                 <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
-                  {user.phoneNumber || 'Chưa có số điện thoại'} •{' '}
-                  {user.isVerified ? 'Đã xác minh' : 'Chưa xác minh'}
+                  {user.phoneNumber || t('users.security.noPhone')} •{' '}
+                  {user.isVerified ? t('users.security.verified') : t('users.security.unverified')}
                 </p>
               </div>
               <Button variant="secondary" onClick={() => setDetailUserId(user.id)}>
-                Xem chi tiết
+                {t('users.security.viewDetails')}
               </Button>
               {user.role !== 'ADMIN' && (
                 <Button
                   variant={user.isLocked ? 'secondary' : 'danger'}
                   onClick={() => setTarget(user)}
                 >
-                  {user.isLocked ? 'Mở khóa' : 'Khóa tài khoản'}
+                  {user.isLocked ? t('users.security.unlockBtn') : t('users.security.lockBtn')}
                 </Button>
               )}
             </article>
           ))}
-          {result?.items.length === 0 && <EmptyState text="Không tìm thấy tài khoản phù hợp." />}
+          {result?.items.length === 0 && <EmptyState text={t('users.security.empty')} />}
         </div>
       )}
       {!loading && !error && result && !preview && (
         <div className="mt-4 flex shrink-0 flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
           <span>
-            {result.total} người dùng • Trang {result.page}/{Math.max(1, result.totalPages)}
+            {t('users.security.pagination', {
+              total: result.total,
+              page: result.page,
+              totalPages: Math.max(1, result.totalPages),
+            })}
           </span>
           <div className="flex gap-2">
             <Button
               variant="secondary"
               disabled={result.page <= 1}
-              aria-label="Trang trước"
+              aria-label={t('users.security.prevPageAria')}
               onClick={() => setQuery((current) => ({ ...current, page: result.page - 1 }))}
             >
               <ChevronLeft size={16} aria-hidden="true" />
@@ -272,7 +270,7 @@ export function UserSecurity({ actions, preview = false }: AdminTabProps & { pre
             <Button
               variant="secondary"
               disabled={result.page >= result.totalPages}
-              aria-label="Trang sau"
+              aria-label={t('users.security.nextPageAria')}
               onClick={() => setQuery((current) => ({ ...current, page: result.page + 1 }))}
             >
               <ChevronRight size={16} aria-hidden="true" />
@@ -312,11 +310,14 @@ function UserStatusDialog({
   onClose: () => void;
   onSuccess: (message: string) => void;
 }) {
+  const { t } = useTranslation('admin');
   const [reason, setReason] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const inFlight = useRef(false);
-  const title = user.isLocked ? 'Mở khóa tài khoản' : 'Khóa tài khoản';
+  const title = user.isLocked
+    ? t('users.statusDialog.unlockTitle')
+    : t('users.statusDialog.lockTitle');
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -331,7 +332,7 @@ function UserStatusDialog({
       );
       onSuccess(result.message);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể cập nhật trạng thái tài khoản.');
+      setError(cause instanceof Error ? cause.message : t('users.statusDialog.updateErr'));
     } finally {
       inFlight.current = false;
       setPending(false);
@@ -355,7 +356,7 @@ function UserStatusDialog({
         </p>
         <form onSubmit={submit} className="space-y-4">
           <label className="block text-xs font-medium">
-            Lý do (không bắt buộc)
+            {t('users.statusDialog.reasonLabel')}
             <textarea
               autoFocus
               maxLength={500}
@@ -372,10 +373,10 @@ function UserStatusDialog({
           )}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" disabled={pending} onClick={onClose}>
-              Hủy
+              {t('users.statusDialog.cancel')}
             </Button>
             <Button type="submit" variant={user.isLocked ? 'primary' : 'danger'} disabled={pending}>
-              {pending ? 'Đang xử lý…' : title}
+              {pending ? t('users.statusDialog.processing') : title}
             </Button>
           </div>
         </form>

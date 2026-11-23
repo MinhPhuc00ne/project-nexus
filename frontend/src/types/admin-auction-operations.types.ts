@@ -42,21 +42,22 @@ export interface AdminAuctionComplaint {
   auctionItem: { id: string; title: string; lotNumber: number | null } | null;
 }
 
-export const awardLabels: Record<AuctionAwardState, string> = {
-  AWAITING_ACCEPTANCE: 'Chờ xác nhận mua',
-  AWAITING_DEPOSIT: 'Chờ nạp đủ tiền cọc',
-  AWAITING_CHECKOUT: 'Chờ thanh toán',
-  PAID: 'Đã thanh toán',
-  PAYMENT_DEFAULT: 'Đã xử phạt quá hạn thanh toán',
-  DECLINED: 'Đã từ chối mua',
-  BUYER_WITHDRAWN: 'Khách không mua nữa',
-  EXPIRED: 'Đã hết hạn',
-};
-export const complaintLabels: Record<AuctionComplaintState, string> = {
-  OPEN: 'Chờ xử lý',
-  ACCEPTED: 'Đã chấp thuận',
-  REJECTED: 'Đã từ chối',
-};
+export const AUCTION_AWARD_STATES: readonly AuctionAwardState[] = [
+  'AWAITING_ACCEPTANCE',
+  'AWAITING_DEPOSIT',
+  'AWAITING_CHECKOUT',
+  'PAID',
+  'PAYMENT_DEFAULT',
+  'DECLINED',
+  'BUYER_WITHDRAWN',
+  'EXPIRED',
+] as const;
+
+export const AUCTION_COMPLAINT_STATES: readonly AuctionComplaintState[] = [
+  'OPEN',
+  'ACCEPTED',
+  'REJECTED',
+] as const;
 export function canConfirmAwardAction(award: AdminAuctionAward, action: AwardAction) {
   return action === 'payment-default'
     ? award.canConfirmPaymentDefault === true

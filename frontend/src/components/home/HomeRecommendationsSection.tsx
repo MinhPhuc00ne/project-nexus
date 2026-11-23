@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Sparkles, Star } from 'lucide-react';
+import { formatCurrency } from '../../i18n/formatters';
 import type { RecommendedProduct } from '../../services/products.service';
 
 interface HomeRecommendationsSectionProps {
@@ -13,6 +15,7 @@ export function HomeRecommendationsSection({
   isPersonalized,
   isLoading,
 }: HomeRecommendationsSectionProps) {
+  const { t } = useTranslation('guest');
   return (
     <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
@@ -23,22 +26,22 @@ export function HomeRecommendationsSection({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base font-extrabold uppercase tracking-wide text-slate-900">
-                Gợi Ý Dành Riêng Cho Bạn
+                {t('home.recommendationsSection.title')}
               </h2>
               {isPersonalized ? (
                 <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
-                  ✨ Cá nhân hóa theo gu của bạn
+                  {t('home.recommendationsSection.personalizedBadge')}
                 </span>
               ) : (
                 <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                  Xu hướng nổi bật
+                  {t('home.recommendationsSection.trendingBadge')}
                 </span>
               )}
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               {isPersonalized
-                ? 'Được thuật toán AI đề xuất dựa trên sản phẩm trong giỏ hàng & lịch sử đơn hàng của bạn'
-                : 'Sản phẩm được mua nhiều và đánh giá cao nhất hôm nay'}
+                ? t('home.recommendationsSection.personalizedDesc')
+                : t('home.recommendationsSection.trendingDesc')}
             </p>
           </div>
         </div>
@@ -47,7 +50,7 @@ export function HomeRecommendationsSection({
           to="/search"
           className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1 group"
         >
-          <span>Khám phá toàn bộ sàn</span>
+          <span>{t('home.recommendationsSection.exploreAll')}</span>
           <span className="group-hover:translate-x-0.5 transition-transform">→</span>
         </Link>
       </div>
@@ -67,7 +70,7 @@ export function HomeRecommendationsSection({
         </div>
       ) : products.length === 0 ? (
         <div className="py-12 text-center text-xs text-slate-500">
-          Chưa có sản phẩm gợi ý nào lúc này.
+          {t('home.recommendationsSection.empty')}
         </div>
       ) : (
         <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4">
@@ -102,7 +105,7 @@ export function HomeRecommendationsSection({
                     <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
                       {isInterest && (
                         <span className="rounded-md bg-emerald-600/90 backdrop-blur-xs px-2 py-0.5 text-[9px] font-bold text-white shadow-xs">
-                          🎯 Theo gu bạn
+                          {t('home.recommendationsSection.forYouBadge')}
                         </span>
                       )}
 
@@ -116,7 +119,7 @@ export function HomeRecommendationsSection({
 
                   <div className="p-3">
                     <p className="truncate text-[10px] font-medium text-slate-400">
-                      {p.seller?.fullName || 'Gian hàng Nexus'}
+                      {p.seller?.fullName || t('home.recommendationsSection.defaultShopName')}
                     </p>
                     <h3 className="mt-1 line-clamp-2 min-h-[32px] text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition">
                       {p.title}
@@ -124,11 +127,11 @@ export function HomeRecommendationsSection({
 
                     <div className="mt-2.5 flex items-baseline gap-1.5">
                       <span className="text-sm font-extrabold text-blue-600">
-                        {price.toLocaleString('vi-VN')}₫
+                        {formatCurrency(price)}
                       </span>
                       {hasDiscount && (
                         <span className="text-[11px] text-slate-400 line-through">
-                          {p.basePrice.toLocaleString('vi-VN')}₫
+                          {formatCurrency(p.basePrice)}
                         </span>
                       )}
                     </div>
@@ -143,11 +146,15 @@ export function HomeRecommendationsSection({
                           <span className="text-[10px] text-slate-400">({p.reviewCount || 0})</span>
                         </div>
                       ) : (
-                        <span className="text-[10px] text-slate-400">Chưa có đánh giá</span>
+                        <span className="text-[10px] text-slate-400">
+                          {t('home.recommendationsSection.noReviews')}
+                        </span>
                       )}
 
                       {p.reviewCount && p.reviewCount > 0 ? (
-                        <span className="text-[10px] text-slate-400">Đã bán {p.reviewCount}</span>
+                        <span className="text-[10px] text-slate-400">
+                          {t('home.recommendationsSection.soldCount', { count: p.reviewCount })}
+                        </span>
                       ) : null}
                     </div>
                   </div>

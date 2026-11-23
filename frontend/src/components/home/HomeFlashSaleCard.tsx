@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '../../i18n/formatters';
 import type { HomeProduct } from './home.types';
 
 export interface HomeFlashSaleCardProps {
@@ -6,6 +8,7 @@ export interface HomeFlashSaleCardProps {
 }
 
 export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
+  const { t } = useTranslation('guest');
   const prodId =
     typeof product.id === 'string' && product.id.length > 5
       ? product.id
@@ -30,7 +33,7 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
             className="h-full w-full rounded-md object-cover hover:scale-105 transition duration-300"
           />
         ) : (
-          <span className="text-xs text-slate-400">Chưa có hình ảnh</span>
+          <span className="text-xs text-slate-400">{t('home.flashSale.noImage')}</span>
         )}
         {product.discount ? (
           <span className="absolute left-2 top-2 rounded bg-[#f24e1e] px-2 py-1 text-[10px] font-bold text-white shadow-sm">
@@ -46,11 +49,11 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
 
         <div className="mt-1 flex items-baseline gap-2">
           <p className="text-sm font-extrabold text-[#f24e1e]">
-            {product.price ? `${product.price.toLocaleString()} đ` : '--'}
+            {product.price ? formatCurrency(product.price) : '--'}
           </p>
           {product.oldPrice ? (
             <p className="truncate text-[10px] text-slate-400 line-through">
-              {product.oldPrice.toLocaleString()} đ
+              {formatCurrency(product.oldPrice)}
             </p>
           ) : null}
         </div>
@@ -61,7 +64,7 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
             style={{ width: `${Math.min(((product.saleSold ?? 0) / 50) * 100, 100)}%` }}
           />
           <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold leading-none text-white drop-shadow">
-            ĐÃ BÁN {product.saleSold ?? 0}/50
+            {t('home.flashSale.soldProgress', { sold: product.saleSold ?? 0 })}
           </span>
         </div>
       </div>

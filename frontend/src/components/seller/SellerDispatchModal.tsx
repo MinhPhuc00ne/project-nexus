@@ -1,6 +1,7 @@
 import { useCallback, useState, type FormEvent, type ReactElement } from 'react';
 import { Send as SendOutlined } from 'lucide-react';
 import { ShieldCheck as SafetyCertificateOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import Popup from '../Popup';
 import useProductResource from '../productDetail/useProductResource';
 import { useToast } from '../ToastNotification';
@@ -25,6 +26,7 @@ export default function SellerDispatchModal({
   onClose: () => void;
   onChanged: () => void;
 }): ReactElement {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const load = useCallback(async () => {
     const [order, diagnostic] = await Promise.all([
@@ -38,7 +40,7 @@ export default function SellerDispatchModal({
     <Popup
       isOpen
       onClose={onClose}
-      title="Tạo vận đơn & bàn giao GHN"
+      title={t('orders.dispatch.modalTitle')}
       size="lg"
       showCloseButton={false}
       closeOnEsc={false}
@@ -52,7 +54,7 @@ export default function SellerDispatchModal({
       {!resource.data && (
         <div className="mt-4 flex justify-end">
           <SellerButton secondary onClick={onClose}>
-            Đóng
+            {t('orders.dispatch.close')}
           </SellerButton>
         </div>
       )}
@@ -71,6 +73,7 @@ function DispatchForm({
   onClose: () => void;
   onChanged: () => void;
 }): ReactElement {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const action = useSellerAction();
   const toast = useToast();
@@ -110,9 +113,7 @@ function DispatchForm({
     void action.run(
       async () => {
         if (uncertain || !ready || !recipientReady || !eligible || !consent)
-          throw new Error(
-            'Kiểm tra trạng thái đơn, địa chỉ người nhận và kết nối GHN trước khi bàn giao.',
-          );
+          throw new Error(t('orders.dispatch.validationErr'));
         const values = {
           weightGrams: Number(form.weightGrams),
           lengthCm: Number(form.lengthCm),
@@ -125,9 +126,7 @@ function DispatchForm({
             value < (key === 'weightGrams' ? 50 : 1) ||
             value > 2147483647
           )
-            throw new Error(
-              'Khối lượng phải là số nguyên từ 50g; kích thước là số nguyên dương hợp lệ.',
-            );
+            throw new Error(t('orders.dispatch.dimensionsErr'));
         }
         try {
           return await dispatchSellerOrder(order.id, user.id, {
@@ -140,7 +139,9 @@ function DispatchForm({
         }
       },
       (result) => {
-        toast.success(`GHN đã xác nhận vận đơn ${result.shipment?.waybillCode}.`);
+        toast.success(
+          t('orders.dispatch.ghnSuccess', { code: result.shipment?.waybillCode ?? '' }),
+        );
         onChanged();
         onClose();
       },
@@ -149,15 +150,17 @@ function DispatchForm({
   return (
     <form onSubmit={submit} className="space-y-5">
       <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-xs leading-6 text-slate-600">
-        <strong className="block break-all text-blue-800">Đơn #{order.id}</strong>
+        <strong className="block break-all text-blue-800">
+          {t('orders.dispatch.orderId', { id: order.id })}
+        </strong>
         <p>
           {address?.recipientName || order.buyer.fullName} ·{' '}
-          {address?.phone || order.buyer.phoneNumber || 'Thiếu số điện thoại'}
+          {address?.phone || order.buyer.phoneNumber || t('orders.dispatch.missingPhone')}
         </p>
         <p>
           {[address?.street, address?.ward, address?.district, address?.city]
             .filter(Boolean)
-            .join(', ') || 'Thiếu địa chỉ giao hàng'}
+            .join(', ') || t('orders.dispatch.missingAddress')}
         </p>
       </div>
       <p
@@ -165,21 +168,21 @@ function DispatchForm({
         className={`rounded-lg p-3 text-xs leading-6 ${ready && recipientReady && eligible ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'}`}
       >
         {!eligible
-          ? 'Trạng thái đơn chưa cho phép bàn giao.'
+          ? t('orders.dispatch.notEligible')
           : !recipientReady
-            ? 'Đơn thiếu địa chỉ, thành phố hoặc số điện thoại người nhận. Vui lòng kiểm tra trước khi bàn giao.'
+            ? t('orders.dispatch.missingRecipient')
             : ready
-              ? 'Kết nối GHN sẵn sàng. Kiểm tra kiện hàng trước khi gửi yêu cầu.'
-              : 'Kết nối GHN chưa sẵn sàng. Chưa thể tạo vận đơn; vui lòng kiểm tra cấu hình vận chuyển.'}
+              ? t('orders.dispatch.ghnReady')
+              : t('orders.dispatch.ghnNotReady')}
       </p>
       <fieldset disabled={action.pending || uncertain} className="space-y-4 disabled:opacity-60">
         <div className="grid gap-4 sm:grid-cols-2">
           {(
             [
-              ['weightGrams', 'Khối lượng (gram)', 50],
-              ['lengthCm', 'Chiều dài (cm)', 1],
-              ['widthCm', 'Chiều rộng (cm)', 1],
-              ['heightCm', 'Chiều cao (cm)', 1],
+              ['weightGrams', t('orders.dispatch.weightGrams'), 50],
+              ['lengthCm', t('orders.dispatch.lengthCm'), 1],
+              ['widthCm', t('orders.dispatch.widthCm'), 1],
+              ['heightCm', t('orders.dispatch.heightCm'), 1],
             ] as const
           ).map(([key, label, min]) => (
             <label className={sellerLabelClass} key={key}>
@@ -198,7 +201,7 @@ function DispatchForm({
           ))}
         </div>
         <label className={sellerLabelClass}>
-          Ghi chú giao hàng
+          {t('orders.dispatch.note')}
           <textarea
             className={sellerInputClass}
             rows={2}
@@ -217,7 +220,7 @@ function DispatchForm({
           />
           <span>
             <SafetyCertificateOutlined className="mr-1 text-blue-600" />
-            Tôi đã kiểm tra thông tin người nhận, đóng gói và niêm phong kiện hàng để bàn giao GHN.
+            {t('orders.dispatch.consent')}
           </span>
         </label>
       </fieldset>
@@ -228,7 +231,7 @@ function DispatchForm({
       )}
       <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
         <SellerButton secondary disabled={action.pending} onClick={close}>
-          {uncertain ? 'Đóng và tải lại đơn' : 'Hủy'}
+          {uncertain ? t('orders.dispatch.closeAndReload') : t('orders.dispatch.cancel')}
         </SellerButton>
         <SellerButton
           type="submit"
@@ -237,7 +240,7 @@ function DispatchForm({
           }
         >
           <SendOutlined />
-          {action.pending ? 'Đang gửi GHN…' : 'Xác nhận bàn giao'}
+          {action.pending ? t('orders.dispatch.submitting') : t('orders.dispatch.submit')}
         </SellerButton>
       </div>
     </form>

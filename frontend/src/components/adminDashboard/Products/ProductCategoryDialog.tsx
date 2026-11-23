@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Plus } from 'lucide-react';
 import {
@@ -33,6 +34,7 @@ export default function ProductCategoryDialog({
   onSaved: (message: string) => void;
   onCategoriesChanged: () => void;
 }) {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [categories, setCategories] = useState<CategoryTreeItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,23 +69,25 @@ export default function ProductCategoryDialog({
       })
       .catch((cause) => {
         if (!controller.signal.aborted)
-          setLoadError(cause instanceof Error ? cause.message : 'Không thể tải danh mục.');
+          setLoadError(
+            cause instanceof Error ? cause.message : t('management.loadCategoriesError'),
+          );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [token, revision]);
+  }, [token, revision, t]);
 
   async function addCategory() {
     if (lock.current || loading || loadError) return;
     if (!name.trim()) {
-      setError('Vui lòng nhập tên danh mục mới.');
+      setError(t('management.newCategoryNameRequired'));
       return;
     }
     const parent = options.find((entry) => entry.category.id === parentId)?.category;
     if (parentId && (!parent || parent.level >= 3)) {
-      setError('Vui lòng chọn danh mục cha cấp 1 hoặc cấp 2.');
+      setError(t('management.parentCategoryRequired'));
       return;
     }
     lock.current = true;
@@ -97,12 +101,12 @@ export default function ProductCategoryDialog({
         setCreating(false);
         setName('');
         setParentId('');
-        setNotice(`Đã tạo danh mục “${created.name}”. Nhấn “Lưu danh mục” để gắn vào sản phẩm.`);
+        setNotice(t('management.categoryCreatedHint', { value1: created.name }));
         onCategoriesChanged();
       }
     } catch (cause) {
       if (currentSession())
-        setError(cause instanceof Error ? cause.message : 'Không thể tạo danh mục.');
+        setError(cause instanceof Error ? cause.message : t('management.createCategoryError'));
     } finally {
       lock.current = false;
       if (currentSession()) setPending(null);
@@ -113,7 +117,7 @@ export default function ProductCategoryDialog({
     event.preventDefault();
     if (lock.current || loading || loadError || creating) return;
     if (!categoryId || !options.some((entry) => entry.category.id === categoryId)) {
-      setError('Vui lòng chọn danh mục hợp lệ cho sản phẩm.');
+      setError(t('management.validCategoryRequired'));
       return;
     }
     lock.current = true;
@@ -124,11 +128,11 @@ export default function ProductCategoryDialog({
         categoryId,
         reason: reason.trim() || undefined,
       });
-      if (!result.success) throw new Error(result.message || 'Không thể cập nhật danh mục.');
+      if (!result.success) throw new Error(result.message || t('management.updateCategoryError'));
       if (currentSession()) onSaved(result.message);
     } catch (cause) {
       if (currentSession())
-        setError(cause instanceof Error ? cause.message : 'Không thể cập nhật danh mục.');
+        setError(cause instanceof Error ? cause.message : t('management.updateCategoryError'));
     } finally {
       lock.current = false;
       if (currentSession()) setPending(null);
@@ -139,7 +143,11 @@ export default function ProductCategoryDialog({
   return (
     <Popup
       isOpen
-      title={product.category ? 'Đổi danh mục sản phẩm' : 'Gắn danh mục sản phẩm'}
+      title={
+        product.category
+          ? t('management.changeProductCategory')
+          : t('management.assignProductCategory')
+      }
       onClose={() => {
         if (!lock.current) onClose();
       }}
@@ -151,12 +159,13 @@ export default function ProductCategoryDialog({
         <div className="rounded-lg bg-blue-50 p-3 text-sm">
           <p className="break-words font-semibold text-slate-800">{product.title}</p>
           <p className="mt-1 text-slate-600">
-            Danh mục hiện tại: {product.category?.name || 'Chưa phân loại'}
+            {t('management.currentCategory')}{' '}
+            {product.category?.name || t('management.uncategorized')}
           </p>
         </div>
         {loading && (
           <p role="status" className="text-sm text-slate-500">
-            Đang tải danh mục…
+            {t('management.loadingCategories')}
           </p>
         )}
         {loadError && (
@@ -167,7 +176,7 @@ export default function ProductCategoryDialog({
               variant="secondary"
               onClick={() => setRevision((value) => value + 1)}
             >
-              Thử lại
+              {t('management.retry')}
             </Button>
           </div>
         )}
@@ -176,7 +185,7 @@ export default function ProductCategoryDialog({
           className="space-y-4 disabled:opacity-60"
         >
           <label className="block text-sm font-medium">
-            Danh mục sản phẩm
+            {t('management.productCategory')}
             <select
               required
               value={categoryId}
@@ -186,7 +195,7 @@ export default function ProductCategoryDialog({
               }}
               className={inputClass}
             >
-              <option value="">Chọn danh mục</option>
+              <option value="">{t('management.selectCategory')}</option>
               {options.map(({ category, path }) => (
                 <option key={category.id} value={category.id}>
                   {path}
@@ -204,15 +213,15 @@ export default function ProductCategoryDialog({
                 setNotice('');
               }}
             >
-              <Plus size={15} aria-hidden="true" /> Thêm danh mục mới
+              <Plus size={15} aria-hidden="true" /> {t('management.addCategory')}
             </Button>
           ) : (
             <section
-              aria-label="Thêm danh mục mới"
+              aria-label={t('management.addCategory')}
               className="space-y-3 rounded-lg border border-slate-200 p-3"
             >
               <label className="block text-sm font-medium">
-                Tên danh mục mới
+                {t('management.newCategoryName')}
                 <input
                   autoFocus
                   value={name}
@@ -222,13 +231,13 @@ export default function ProductCategoryDialog({
                 />
               </label>
               <label className="block text-sm font-medium">
-                Danh mục cha
+                {t('management.parentCategory')}
                 <select
                   value={parentId}
                   onChange={(event) => setParentId(event.target.value)}
                   className={inputClass}
                 >
-                  <option value="">Không có cha (danh mục gốc)</option>
+                  <option value="">{t('management.rootCategory')}</option>
                   {options
                     .filter(({ category }) => category.level < 3)
                     .map(({ category, path }) => (
@@ -240,7 +249,9 @@ export default function ProductCategoryDialog({
               </label>
               <div className="flex gap-2">
                 <Button type="button" onClick={() => void addCategory()}>
-                  {pending === 'create' ? 'Đang tạo…' : 'Tạo và chọn'}
+                  {pending === 'create'
+                    ? t('management.creating')
+                    : t('management.createAndSelect')}
                 </Button>
                 <Button
                   type="button"
@@ -250,13 +261,13 @@ export default function ProductCategoryDialog({
                     setError('');
                   }}
                 >
-                  Hủy tạo
+                  {t('management.cancelCreate')}
                 </Button>
               </div>
             </section>
           )}
           <label className="block text-sm font-medium">
-            Ghi chú cho seller (không bắt buộc)
+            {t('management.sellerNote')}
             <textarea
               value={reason}
               maxLength={500}
@@ -276,12 +287,10 @@ export default function ProductCategoryDialog({
             {error}
           </p>
         )}
-        <p className="text-xs text-slate-500">
-          Seller sẽ nhận thông báo khi danh mục sản phẩm thay đổi.
-        </p>
+        <p className="text-xs text-slate-500">{t('management.sellerCategoryNotice')}</p>
         <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
           <Button type="button" variant="secondary" disabled={!!pending} onClick={onClose}>
-            Đóng
+            {t('management.close')}
           </Button>
           <Button
             type="submit"
@@ -294,7 +303,7 @@ export default function ProductCategoryDialog({
               categoryId === product.category?.id
             }
           >
-            {pending === 'save' ? 'Đang lưu…' : 'Lưu danh mục'}
+            {pending === 'save' ? t('management.saving') : t('management.saveCategory')}
           </Button>
         </div>
       </form>

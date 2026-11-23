@@ -1,11 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import PagePlaceholder from '../../components/PagePlaceholder';
 
 export default function PrivacyPage() {
+  const { t } = useTranslation('guest');
   return (
     <PagePlaceholder
       area="Guest"
-      title="Chính sách bảo mật"
-      description="Cam kết bảo vệ dữ liệu cá nhân, thông tin thanh toán và quyền riêng tư người dùng."
+      title={t('staticPages.privacyTitle')}
+      description={t('staticPages.privacyDesc')}
     />
   );
 }

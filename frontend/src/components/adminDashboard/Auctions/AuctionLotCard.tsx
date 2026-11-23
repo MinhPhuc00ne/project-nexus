@@ -1,12 +1,18 @@
 import { useId, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Ellipsis, Gavel, Timer, Trophy } from 'lucide-react';
+import { getIntlLocale } from '../../../i18n/config';
+import { formatCurrency } from '../../../i18n/formatters';
 import { resolveAuctionImageUrl, type AdminAuctionLot } from '../../../services/auction.service';
 import { Badge, Button } from '../shared/AdminUI';
-import { statuses } from './auctionStatuses';
+import { isKnownAuctionStatus } from './auctionStatuses';
 import AuctionLotBidders from './AuctionLotBidders';
 import Popup from '../../Popup';
 import AuctionLotNote from './AuctionLotNote';
-import { awardLabels, type AuctionAwardState } from '../../../types/admin-auction-operations.types';
+import {
+  AUCTION_AWARD_STATES,
+  type AuctionAwardState,
+} from '../../../types/admin-auction-operations.types';
 
 type Props = {
   lot: AdminAuctionLot;
@@ -21,10 +27,6 @@ type Props = {
   onViewAwards: () => void;
 };
 
-const money = (value: number | string | null | undefined) =>
-  value === null || value === undefined ? '—' : `${Number(value).toLocaleString('vi-VN')} ₫`;
-const date = (value: string) => new Date(value).toLocaleString('vi-VN');
-
 export default function AuctionLotCard({
   lot,
   now,
@@ -37,6 +39,12 @@ export default function AuctionLotCard({
   onRefresh,
   onViewAwards,
 }: Props) {
+  const { t, i18n } = useTranslation('admin');
+  const locale = getIntlLocale(i18n.language);
+  const money = (value: number | string | null | undefined) =>
+    value === null || value === undefined ? '—' : formatCurrency(Number(value), i18n.language);
+  const date = (value: string) => new Date(value).toLocaleString(locale);
+
   const [showBids, setShowBids] = useState(false);
   const bidsPanelId = useId();
   const live = lot.lotStatus === 'ACTIVE' || lot.lotStatus === 'EXTENDED';
@@ -48,7 +56,7 @@ export default function AuctionLotCard({
           .padStart(2, '0')}:${Math.floor((remaining % 3600) / 60)
           .toString()
           .padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}`
-      : 'Chờ máy chủ chốt kết quả';
+      : t('auctions.lotCard.waitingServer');
   const leader = lot.bids.find((bid) => bid.bidder.id === lot.currentHighestBidderId)?.bidder;
   const award = lot.activeAward;
   const imageUrl = resolveAuctionImageUrl(lot.images?.[0]);
@@ -70,35 +78,41 @@ export default function AuctionLotCard({
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">
             {lot.lotNumber === null || lot.lotNumber === undefined
-              ? 'Chưa gán số lô'
-              : `Lô ${lot.lotNumber}`}
+              ? t('auctions.common.unassignedLot')
+              : t('auctions.common.lotPrefix', { number: lot.lotNumber })}
           </p>
           <h2 className="mt-1 break-words text-base font-bold text-slate-900">{lot.title}</h2>
-          <p className="mt-1 text-xs text-slate-500">Seller: {lot.seller?.fullName ?? '—'}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {t('auctions.common.seller')}: {lot.seller?.fullName ?? '—'}
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge tone={live ? 'green' : lot.lotStatus === 'FAILED' ? 'red' : 'gray'}>
-              {statuses.find(([status]) => status === lot.lotStatus)?.[1] ?? lot.lotStatus}
+              {isKnownAuctionStatus(lot.lotStatus)
+                ? t(`auctions.statuses.${lot.lotStatus}`)
+                : lot.lotStatus}
             </Badge>
-            {lot.isExtended && <Badge tone="amber">Đã gia hạn</Badge>}
+            {lot.isExtended && <Badge tone="amber">{t('auctions.lotCard.extended')}</Badge>}
           </div>
         </div>
       </div>
       <div className="space-y-5 p-5">
         <div className="grid grid-cols-2 gap-4 rounded-xl bg-slate-50 p-4">
           <div>
-            <p className="text-xs text-slate-500">Giá cao nhất</p>
+            <p className="text-xs text-slate-500">{t('auctions.lotCard.highestBid')}</p>
             <p className="mt-1 break-words text-lg font-bold text-primary">
-              {lot.totalBidsCount > 0 ? money(lot.currentHighestBid) : 'Chưa có lượt đặt giá'}
+              {lot.totalBidsCount > 0
+                ? money(lot.currentHighestBid)
+                : t('auctions.lotCard.noBidsYet')}
             </p>
           </div>
           <div>
-            <p className="text-xs text-slate-500">Lượt đặt giá</p>
+            <p className="text-xs text-slate-500">{t('auctions.lotCard.bidCount')}</p>
             <div className="mt-1 flex items-center justify-between gap-2">
               <p className="text-lg font-bold text-slate-900">{lot.totalBidsCount}</p>
               <button
                 type="button"
-                aria-label={`Xem lịch sử đặt giá: ${lot.title}`}
-                title="Xem lịch sử đặt giá"
+                aria-label={t('auctions.lotCard.viewBidsAria', { title: lot.title })}
+                title={t('auctions.lotCard.viewBidsTitle')}
                 aria-haspopup="dialog"
                 aria-expanded={showBids}
                 aria-controls={bidsPanelId}
@@ -114,16 +128,23 @@ export default function AuctionLotCard({
           <Popup
             isOpen
             size="xl"
-            title={`Lịch sử đặt giá · ${lot.lotNumber ? `Lô ${lot.lotNumber}` : lot.title}`}
+            title={t('auctions.lotCard.bidsModalTitle', {
+              target: lot.lotNumber
+                ? t('auctions.common.lotPrefix', { number: lot.lotNumber })
+                : lot.title,
+            })}
             onClose={() => setShowBids(false)}
             footer={
               <Button variant="secondary" onClick={() => setShowBids(false)}>
-                Đóng
+                {t('auctions.common.close')}
               </Button>
             }
           >
             <p className="mb-4 text-sm font-semibold text-slate-800">
-              {lot.title} · {lot.totalBidsCount} lượt đặt giá
+              {t('auctions.lotCard.bidsModalSummary', {
+                title: lot.title,
+                count: lot.totalBidsCount,
+              })}
             </p>
             <AuctionLotBidders
               id={bidsPanelId}
@@ -134,16 +155,17 @@ export default function AuctionLotCard({
         )}
         <dl className="grid gap-4 text-xs sm:grid-cols-2">
           {[
-            ['Giá khởi điểm', money(lot.startingPrice)],
-            ['Giá bảo lưu', money(lot.reservePrice)],
-            ['Bước giá', money(lot.bidIncrement)],
-            ['Giá đặt tiếp theo tối thiểu', money(lot.minimumNextBid)],
+            [t('auctions.lotCard.startingPrice'), money(lot.startingPrice)],
+            [t('auctions.lotCard.reservePrice'), money(lot.reservePrice)],
+            [t('auctions.lotCard.bidIncrement'), money(lot.bidIncrement)],
+            [t('auctions.lotCard.minNextBid'), money(lot.minimumNextBid)],
             [
-              'Người dẫn đầu',
-              leader?.fullName ?? (lot.currentHighestBidderId ? 'Đang có người dẫn đầu' : '—'),
+              t('auctions.lotCard.leader'),
+              leader?.fullName ??
+                (lot.currentHighestBidderId ? t('auctions.lotCard.hasLeader') : '—'),
             ],
-            ['Bắt đầu', date(lot.startTime)],
-            ['Kết thúc', date(lot.endTime)],
+            [t('auctions.lotCard.startTime'), date(lot.startTime)],
+            [t('auctions.lotCard.endTime'), date(lot.endTime)],
           ].map(([label, value]) => (
             <div key={label}>
               <dt className="text-slate-500">{label}</dt>
@@ -153,7 +175,9 @@ export default function AuctionLotCard({
         </dl>
         {lot.hasReservePrice && (
           <p className={`text-xs ${lot.reserveMet ? 'text-emerald-700' : 'text-amber-700'}`}>
-            {lot.reserveMet ? 'Đã đạt giá bảo lưu.' : 'Chưa đạt giá bảo lưu.'}
+            {lot.reserveMet
+              ? t('auctions.lotCard.reserveMet')
+              : t('auctions.lotCard.reserveNotMet')}
           </p>
         )}
         {live && (
@@ -163,41 +187,50 @@ export default function AuctionLotCard({
         )}
         {award && (
           <div className="rounded-lg bg-emerald-50 p-3 text-xs text-emerald-800">
-            <p className="font-semibold">Quyền mua: {award.buyer?.fullName ?? '—'}</p>
-            <p className="mt-1">Giá chốt: {money(award.offerAmount)}</p>
-            <p className="mt-1">{awardLabels[award.status as AuctionAwardState] ?? award.status}</p>
+            <p className="font-semibold">
+              {t('auctions.lotCard.awardBuyer', { name: award.buyer?.fullName ?? '—' })}
+            </p>
+            <p className="mt-1">
+              {t('auctions.lotCard.awardOffer', { amount: money(award.offerAmount) })}
+            </p>
+            <p className="mt-1">
+              {(AUCTION_AWARD_STATES as readonly string[]).includes(award.status)
+                ? t(`auctions.awardStates.${award.status as AuctionAwardState}`)
+                : award.status}
+            </p>
           </div>
         )}
         {lot.lotStatus === 'FAILED' && (
-          <p className="text-xs text-slate-500">Lô không có người thắng hợp lệ.</p>
+          <p className="text-xs text-slate-500">{t('auctions.lotCard.noValidWinner')}</p>
         )}
         <Button variant="secondary" disabled={busy} onClick={onViewAwards}>
-          <Trophy size={15} /> Xem quyền mua của lô <ArrowRight size={14} />
+          <Trophy size={15} /> {t('auctions.lotCard.viewLotAwards')} <ArrowRight size={14} />
         </Button>
         <AuctionLotNote itemId={lot.id} note={lot.staffNote} onSaved={onRefresh} />
         {live &&
           (confirming ? (
             <section
-              aria-label={`Xác nhận kết thúc ${lot.title}`}
+              aria-label={t('auctions.lotCard.confirmEndAria', { title: lot.title })}
               className="space-y-3 rounded-xl border border-rose-200 bg-rose-50 p-4"
             >
-              <p className="text-sm font-semibold text-rose-900">Kết thúc lô này ngay?</p>
+              <p className="text-sm font-semibold text-rose-900">
+                {t('auctions.lotCard.confirmEndTitle')}
+              </p>
               <p className="text-xs leading-5 text-rose-800">
-                Lô sẽ ngừng nhận giá và máy chủ chốt kết quả. Nếu có người thắng hợp lệ, hệ thống
-                giữ 30% tiền cọc và hoàn 70% tiền giữ chỗ. Lô cuối kết thúc sẽ đóng phiên.
+                {t('auctions.lotCard.confirmEndBody')}
               </p>
               <div className="flex flex-wrap gap-2">
                 <Button variant="danger" disabled={busy || refreshing} onClick={onEnd}>
-                  {busy ? 'Đang kết thúc…' : 'Xác nhận kết thúc lô'}
+                  {busy ? t('auctions.lotCard.ending') : t('auctions.lotCard.confirmEndBtn')}
                 </Button>
                 <Button variant="secondary" disabled={busy} onClick={onCancel}>
-                  Hủy
+                  {t('auctions.common.cancel')}
                 </Button>
               </div>
             </section>
           ) : (
             <Button variant="danger" disabled={busy || refreshing} onClick={onConfirm}>
-              Kết thúc lô
+              {t('auctions.lotCard.endLotBtn')}
             </Button>
           ))}
       </div>

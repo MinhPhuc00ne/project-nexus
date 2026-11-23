@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Popup from '../Popup';
 import { clearCart, type CartItem } from '../../services/cart';
 import { getStoredToken } from '../../services/auth';
@@ -26,7 +28,39 @@ interface CheckoutModalProps {
   shippingFee?: number;
   grandTotal?: number;
   onCheckoutSuccess?: () => void;
-  showToast: (msg: string) => void;
+  showToast: (msg: string, variant?: 'success' | 'error') => void;
+}
+
+function getCheckoutErrorMessage(err: unknown, fallback: string): string {
+  const resMsg = (err as { response?: { data?: { message?: string | string[] } } })?.response?.data
+    ?.message;
+  if (Array.isArray(resMsg)) return resMsg.join(', ');
+  if (typeof resMsg === 'string') return resMsg;
+  return fallback;
+}
+
+function getCheckoutModalTitle(
+  checkoutSuccess: boolean,
+  paymentMethod: CheckoutPaymentMethodType,
+  isPaid: boolean,
+  payosPayment: PayosPaymentInfo | null,
+  t: TFunction<'commerce'>,
+): string {
+  if (!checkoutSuccess) return t('checkout.modalTitleConfirm');
+  if (paymentMethod === 'COD') return t('checkout.modalTitleCodSuccess');
+  if (isPaid) return t('checkout.modalTitlePaidSuccess');
+  if (payosPayment) return t('checkout.modalTitleScanPayos');
+  return t('checkout.modalTitleOrderSuccess');
+}
+
+function getCheckoutButtonLabel(
+  isProcessingOrder: boolean,
+  isCalculatingFee: boolean,
+  t: TFunction<'commerce'>,
+): string {
+  if (isProcessingOrder) return t('checkout.processingOrder');
+  if (isCalculatingFee) return t('checkout.calculatingGhn');
+  return t('checkout.confirmOrder');
 }
 
 export default function CheckoutModal({
@@ -38,6 +72,7 @@ export default function CheckoutModal({
   onCheckoutSuccess,
   showToast,
 }: CheckoutModalProps) {
+  const { t } = useTranslation('commerce');
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [customAddress, setCustomAddress] =
@@ -126,7 +161,7 @@ export default function CheckoutModal({
 
   const handleSaveNewAddress = async (addr: ShippingAddressInput) => {
     setCustomAddress(addr);
-    showToast('Đã lưu và cập nhật địa chỉ giao hàng.');
+    showToast(t('checkout.addressSaved'));
     createAddress({ ...addr, isDefault: true })
       .then((created) => {
         if (created) {
@@ -140,7 +175,7 @@ export default function CheckoutModal({
   const handleConfirmCheckout = async () => {
     const { recipientName, phone, street, city, district, ward } = currentAddress;
     if (!recipientName.trim() || !phone.trim() || !street.trim()) {
-      showToast('Vui lòng cung cấp đầy đủ thông tin địa chỉ giao hàng.');
+      showToast(t('checkout.addressMissing'), 'error');
       return;
     }
 
@@ -174,15 +209,7 @@ export default function CheckoutModal({
       if (onCheckoutSuccess) onCheckoutSuccess();
     } catch (err: unknown) {
       console.error('Checkout failed:', err);
-      const resMsg = (err as { response?: { data?: { message?: string | string[] } } })?.response
-        ?.data?.message;
-      showToast(
-        Array.isArray(resMsg)
-          ? resMsg.join(', ')
-          : typeof resMsg === 'string'
-            ? resMsg
-            : 'Thanh toán thất bại. Vui lòng thử lại!',
-      );
+      showToast(getCheckoutErrorMessage(err, t('checkout.failed')), 'error');
     } finally {
       setIsProcessingOrder(false);
     }
@@ -196,21 +223,14 @@ export default function CheckoutModal({
     onClose();
   };
 
+  const modalTitle = getCheckoutModalTitle(checkoutSuccess, paymentMethod, isPaid, payosPayment, t);
+  const submitButtonLabel = getCheckoutButtonLabel(isProcessingOrder, isCalculatingFee, t);
+
   return (
     <Popup
       isOpen={isOpen}
       onClose={handleClose}
-      title={
-        checkoutSuccess
-          ? paymentMethod === 'COD'
-            ? 'Đặt Hàng COD Thành Công'
-            : isPaid
-              ? 'Thanh Toán Thành Công'
-              : payosPayment
-                ? 'Quét Mã PayOS Để Thanh Toán'
-                : 'Đặt Hàng Thành Công'
-          : 'Xác Nhận Đặt Hàng & Thanh Toán'
-      }
+      title={modalTitle}
       size={checkoutSuccess ? 'lg' : 'xl'}
     >
       <div className="space-y-6 text-slate-800">
@@ -228,7 +248,7 @@ export default function CheckoutModal({
                 onClick={handleClose}
                 className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800"
               >
-                Xem đơn hàng của tôi
+                {t('checkout.viewMyOrders')}
               </Link>
             }
             secondaryAction={
@@ -237,7 +257,7 @@ export default function CheckoutModal({
                 onClick={handleClose}
                 className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-blue-700"
               >
-                Hoàn tất
+                {t('checkout.done')}
               </button>
             }
           />
@@ -273,7 +293,7 @@ export default function CheckoutModal({
                 disabled={isProcessingOrder}
                 className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
               >
-                Hủy
+                {t('checkout.cancel')}
               </button>
               <button
                 type="button"
@@ -284,13 +304,7 @@ export default function CheckoutModal({
                 {(isProcessingOrder || isCalculatingFee) && (
                   <Loader2 size={14} className="animate-spin" />
                 )}
-                <span>
-                  {isProcessingOrder
-                    ? 'Đang xử lý đơn hàng...'
-                    : isCalculatingFee
-                      ? 'Đang tính cước GHN...'
-                      : 'Xác nhận đặt hàng'}
-                </span>
+                <span>{submitButtonLabel}</span>
               </button>
             </div>
           </div>

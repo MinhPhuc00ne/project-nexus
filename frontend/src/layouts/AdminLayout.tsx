@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useToast } from '../components/ToastNotification';
 import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar, { adminNavigation } from '../components/adminDashboard/Layout/Sidebar';
@@ -18,6 +19,7 @@ import { listAdminDisputes, listAdminReports } from '../services/admin';
 
 // Every admin route uses the profile verified by AuthContext; no separate /me call.
 export default function AdminLayout() {
+  const { t } = useTranslation(['admin', 'common']);
   const { token, user, isLoading, refreshProfile } = useAuth();
   const [retrying, setRetrying] = useState(false);
 
@@ -26,7 +28,7 @@ export default function AdminLayout() {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
         <p role="status" className="text-sm text-slate-600">
-          Đang kiểm tra quyền truy cập…
+          {t('common:states.checkingAccess')}
         </p>
       </main>
     );
@@ -52,26 +54,24 @@ export default function AdminLayout() {
     <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
         <h1 className="text-xl font-bold text-primary">
-          {user ? '403 — Không có quyền truy cập' : 'Không thể kiểm tra quyền truy cập'}
+          {user ? t('common:access.forbiddenTitle') : t('common:access.cannotVerifyTitle')}
         </h1>
         <p role={!user ? 'alert' : undefined} className="mt-3 text-sm leading-6 text-slate-500">
-          {user
-            ? 'Chỉ tài khoản có vai trò ADMIN mới được truy cập khu vực quản trị.'
-            : 'Chưa thể lấy thông tin tài khoản từ máy chủ. Vui lòng thử lại.'}
+          {user ? t('admin:layout.forbiddenDesc') : t('common:access.cannotVerifyDesc')}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          {!user && <Button onClick={() => void retry()}>Thử lại</Button>}
+          {!user && <Button onClick={() => void retry()}>{t('common:actions.retry')}</Button>}
           <Link
             to="/"
             className="rounded-lg bg-blue-50 px-4 py-2.5 text-xs font-semibold text-primary"
           >
-            Về trang chủ
+            {t('common:access.backHome')}
           </Link>
           <Link
             to="/login"
             className="rounded-lg bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-600"
           >
-            Đổi tài khoản
+            {t('common:access.switchAccount')}
           </Link>
         </div>
       </section>
@@ -82,6 +82,7 @@ export default function AdminLayout() {
 // Layout là khung chung: sidebar, header, footer và state tồn tại khi chuyển trang admin.
 // Khung này chỉ được tạo sau khi API xác nhận role ADMIN; page con chưa mount trước đó.
 function AdminWorkspace({ user }: { user: UserProfile }) {
+  const { t } = useTranslation(['admin', 'common']);
   const sellerRequests = useAdminSellerRequests();
   const { pathname } = useLocation();
   // Lấy tên trang từ URL, ví dụ /admin/users -> users, để chọn tiêu đề tương ứng.
@@ -130,15 +131,18 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   const actions: AdminActions = {
     updateCommerce: (change) => {
       setData((current) => applyCommerceChange(current, change));
-      notify('Đã cập nhật dữ liệu mẫu. Thay đổi sẽ mất khi tải lại trang.');
+      notify(t('admin:layout.sampleDataUpdated'));
     },
     navigate: (target) => navigate(`/admin/${target}`),
     notify,
     showDetail: (title, content) => setDetail({ title, content }),
   };
-  const title =
-    adminNavigation.flatMap((group) => group.items).find((item) => item.id === tab)?.label ??
-    (tab === 'categories' ? 'Danh mục hàng hóa' : 'Admin');
+  const navItem = adminNavigation.flatMap((group) => group.items).find((item) => item.id === tab);
+  const title = navItem
+    ? t(`admin:nav.${navItem.id}`, { defaultValue: navItem.label })
+    : tab === 'categories'
+      ? t('admin:nav.categories')
+      : t('admin:layout.fallbackTitle');
   // Tính số đếm từ dữ liệu hiện tại; duyệt hồ sơ xong badge sẽ tự giảm sau lần render tiếp.
   const sellerCount = sellerRequests.pendingTotal;
   const productCount = data.products.filter((item) => item.status === 'pending').length;
@@ -174,7 +178,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
             {/* Thanh đường dẫn: Quản trị > tên trang hiện tại. */}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
-                <span>Quản trị</span>
+                <span>{t('admin:layout.breadcrumbRoot')}</span>
                 <ChevronRight size={12} />
                 <span className="font-medium text-slate-600">{title}</span>
               </div>
@@ -190,8 +194,8 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         </main>
         {/* Đây là footer dùng chung ở cuối khung admin. */}
         <footer className="flex shrink-0 flex-wrap justify-between gap-2 border-t border-slate-200 bg-white px-4 py-3 text-[10px] text-slate-400 sm:px-7">
-          <span>© 2026 NEXUS • Admin Operations</span>
-          <span>3D Auction & Commerce Platform</span>
+          <span>{t('admin:layout.footerOps')}</span>
+          <span>{t('admin:layout.footerPlatform')}</span>
         </footer>
       </div>
       {/* Hộp thoại thông tin chỉ để xem. */}
@@ -212,6 +216,7 @@ function DetailDialog({
   content: string;
   onClose: () => void;
 }) {
+  const { t } = useTranslation('common');
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
@@ -233,14 +238,14 @@ function DetailDialog({
             autoFocus
             type="button"
             onClick={onClose}
-            aria-label="Đóng"
+            aria-label={t('actions.close')}
             className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
           >
             <X size={18} />
           </button>
         </div>
         <p className="my-5 whitespace-pre-line text-sm leading-7 text-slate-600">{content}</p>
-        <Button onClick={onClose}>Đóng</Button>
+        <Button onClick={onClose}>{t('actions.close')}</Button>
       </section>
     </div>
   );

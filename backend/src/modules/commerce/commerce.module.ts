@@ -8,8 +8,10 @@ import { CartService } from './services/cart.service';
 import { PayosService } from './services/payos.service';
 import { OrderService } from './services/order.service';
 import { SellerFinanceService } from './services/seller-finance.service';
+import { WithdrawalService } from './services/withdrawal.service';
 import { SellerOrdersService } from './services/seller-orders.service';
 import { SellerEngagementService } from './services/seller-engagement.service';
+import { BuyerFinanceController } from './controllers/buyer-finance.controller';
 import { CartController } from './controllers/cart.controller';
 import { OrderController } from './controllers/order.controller';
 import { PayosWebhookController } from './controllers/payos-webhook.controller';
@@ -41,6 +43,7 @@ import { AuctionCheckoutService } from './services/auction-checkout.service';
     CartController,
     OrderController,
     PayosWebhookController,
+    BuyerFinanceController,
     SellerFinanceController,
     SellerOrdersController,
     SellerEngagementController,
@@ -59,6 +62,7 @@ import { AuctionCheckoutService } from './services/auction-checkout.service';
     PayosService,
     OrderService,
     SellerFinanceService,
+    WithdrawalService,
     SellerOrdersService,
     SellerEngagementService,
     OrderEscrowService,
@@ -69,6 +73,7 @@ import { AuctionCheckoutService } from './services/auction-checkout.service';
     PayosService,
     OrderService,
     SellerFinanceService,
+    WithdrawalService,
     SellerOrdersService,
     SellerEngagementService,
   ],

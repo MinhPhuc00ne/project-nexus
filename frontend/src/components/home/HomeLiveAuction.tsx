@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import { formatCurrency } from '../../i18n/formatters';
 import { HomeCountdown } from './HomeCountdown';
 import { HomeAuctionCard } from './HomeAuctionCard';
 import { formatAuctionImage, type AuctionEntity } from '../../services/auction.service';
@@ -10,6 +13,31 @@ export interface HomeLiveAuctionProps {
 
 export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
   if (!auctions || auctions.length === 0) return null;
+  return <HomeLiveAuctionContent auctions={auctions} />;
+}
+
+function resolveRealImage(auc: AuctionEntity): string {
+  if (auc.imageUrl?.trim()) {
+    return formatAuctionImage(auc.imageUrl);
+  }
+  const itemImg = auc.items
+    ?.flatMap((item) => item.images ?? [])
+    .find((u) => typeof u === 'string' && u.trim().length > 0);
+  if (itemImg) return formatAuctionImage(itemImg);
+
+  const productImg = auc.product?.images?.find((img) => img?.imageUrl?.trim());
+  return productImg?.imageUrl ? formatAuctionImage(productImg.imageUrl) : '';
+}
+
+function getAuctionLotLabel(auc: AuctionEntity, t: TFunction<'guest'>): string {
+  const lotNumber = auc.items?.[0]?.lotNumber;
+  if (lotNumber) return t('home.liveAuction.lotNumber', { num: lotNumber });
+  if (auc.id) return `LOT #${auc.id.slice(0, 8).toUpperCase()}`;
+  return t('home.liveAuction.specialLot');
+}
+
+function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
+  const { t } = useTranslation('guest');
 
   const featuredAuction = auctions[0];
   const isLive = featuredAuction.status === 'ACTIVE' || featuredAuction.status === 'EXTENDED';
@@ -24,31 +52,10 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
     featuredAuction.title ||
     featuredAuction.product?.title ||
     featuredAuction.items?.[0]?.title ||
-    'Phòng Đấu Giá Trực Tiếp';
-
-  const resolveRealImage = (auc: AuctionEntity): string => {
-    if (auc.imageUrl && auc.imageUrl.trim().length > 0) {
-      return formatAuctionImage(auc.imageUrl);
-    }
-    if (auc.items && auc.items.length > 0) {
-      for (const item of auc.items) {
-        if (item.images && item.images.length > 0) {
-          const valid = item.images.find((u) => typeof u === 'string' && u.trim().length > 0);
-          if (valid) return formatAuctionImage(valid);
-        }
-      }
-    }
-    if (auc.product && Array.isArray(auc.product.images) && auc.product.images.length > 0) {
-      for (const img of auc.product.images) {
-        if (img?.imageUrl && img.imageUrl.trim().length > 0) {
-          return formatAuctionImage(img.imageUrl);
-        }
-      }
-    }
-    return '';
-  };
+    t('home.liveAuction.defaultTitle');
 
   const featuredImage = resolveRealImage(featuredAuction);
+  const lotLabel = getAuctionLotLabel(featuredAuction, t);
 
   const itemsCount = featuredAuction.items?.length || 0;
 
@@ -88,22 +95,20 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
         <div className="flex items-center gap-2 text-sky-500">
           <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" />
           <span className="text-[11px] font-bold uppercase tracking-[0.12em]">
-            Tính Năng Độc Quyền
+            {t('home.liveAuction.exclusiveFeature')}
           </span>
         </div>
 
         <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-600">
-          Người đang xem: 1,42k
+          {t('home.liveAuction.viewersCount')}
         </div>
       </div>
 
       <div className="mt-4">
         <h2 className="text-[15px] font-extrabold uppercase tracking-[0.04em] text-slate-800">
-          NEXUS LIVE AUCTION - Phòng Đấu Giá Trực Tiếp
+          {t('home.liveAuction.heading')}
         </h2>
-        <p className="mt-2 text-sm text-slate-500">
-          Bảo vệ Anti-Sniping, hàng đợi Atomic Queue và ký quỹ minh bạch.
-        </p>
+        <p className="mt-2 text-sm text-slate-500">{t('home.liveAuction.subheading')}</p>
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
@@ -120,7 +125,7 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center bg-slate-900 text-xs text-slate-400">
-              Chưa có hình ảnh
+              {t('home.liveAuction.noImage')}
             </div>
           )}
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
@@ -129,30 +134,30 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
                 isUpcoming ? 'bg-amber-500' : 'bg-red-500'
               }`}
             >
-              {isUpcoming ? 'SẮP DIỄN RA' : 'LIVE TRỰC TIẾP'}
+              {isUpcoming ? t('home.liveAuction.upcomingBadge') : t('home.liveAuction.liveBadge')}
             </span>
             {itemsCount > 1 && (
               <span className="rounded bg-indigo-600 px-2.5 py-1 text-[10px] font-bold text-white shadow-xs">
-                {itemsCount} LÔ SẢN PHẨM
+                {t('home.liveAuction.lotsCount', { count: itemsCount })}
               </span>
             )}
             <span className="rounded border border-sky-200 bg-white/95 px-2.5 py-1 text-[10px] font-semibold text-sky-600">
-              Thẩm Định Thực Tế
+              {t('home.liveAuction.realInspection')}
             </span>
           </div>
           <span className="absolute right-3 top-3 rounded bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700">
-            Cọc 10% (Hoàn tự động)
+            {t('home.liveAuction.depositBadge')}
           </span>
           <div className="absolute inset-x-3 bottom-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/70 bg-white/90 p-2 backdrop-blur-sm">
             <span className="text-[10px] font-medium text-slate-600">
-              Chế độ xem: Ảnh Studio & Hồ sơ thẩm định
+              {t('home.liveAuction.viewMode')}
             </span>
             <div className="flex gap-2">
               <Link
                 to={targetUrl}
                 className="rounded border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
-                Vào Phòng Đấu Giá
+                {t('home.liveAuction.enterRoom')}
               </Link>
             </div>
           </div>
@@ -161,11 +166,7 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
         <div className="rounded-[18px] border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-              {featuredAuction.items?.[0]?.lotNumber
-                ? `LÔ #${featuredAuction.items[0].lotNumber}`
-                : featuredAuction.id
-                  ? `LOT #${featuredAuction.id.slice(0, 8).toUpperCase()}`
-                  : 'Lô đặc biệt #01'}
+              {lotLabel}
             </span>
 
             <span className="rounded bg-green-50 px-2 py-1 text-[10px] font-semibold text-green-500">
@@ -178,33 +179,33 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
           </h3>
 
           <p className="mt-2 text-sm text-slate-500">
-            {isUpcoming
-              ? 'Phiên đấu giá đã được lên lịch. Người mua có thể xem trước sản phẩm, hồ sơ kiểm định và đặt lịch.'
-              : 'Mẫu đang được người mua theo dõi ngay trong phòng đấu giá tương tác 3D.'}
+            {isUpcoming ? t('home.liveAuction.upcomingDesc') : t('home.liveAuction.liveDesc')}
           </p>
 
           <div className="mt-5 grid grid-cols-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                {isUpcoming ? 'Giá Khởi Điểm' : 'Giá Hiện Tại'}
+                {isUpcoming
+                  ? t('home.liveAuction.startingPrice')
+                  : t('home.liveAuction.currentPrice')}
               </p>
               <p className="mt-2 text-[24px] font-extrabold text-sky-600">
-                {featuredPrice.toLocaleString('vi-VN')} đ
+                {formatCurrency(featuredPrice)}
               </p>
               <p className="text-[11px] text-slate-400">
-                Tiền cọc: {depositVal.toLocaleString('vi-VN')} đ
+                {t('home.liveAuction.depositAmount', { amount: formatCurrency(depositVal) })}
               </p>
             </div>
 
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
-                {isUpcoming ? 'Khởi Tranh Sau' : 'Đếm Ngược Kết Thúc'}
+                {isUpcoming ? t('home.liveAuction.startsIn') : t('home.liveAuction.endsIn')}
               </p>
               <div className="mt-2 flex justify-end">
                 <HomeCountdown values={[h, m, s]} />
               </div>
               <p className="mt-2 text-[11px] text-red-500">
-                {isUpcoming ? 'Trạng Thái: Đã Lên Lịch' : 'Anti-Sniping: Active'}
+                {isUpcoming ? t('home.liveAuction.statusScheduled') : 'Anti-Sniping: Active'}
               </p>
             </div>
           </div>
@@ -218,14 +219,16 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
                   : 'bg-[#1a8bff] hover:bg-[#1277eb] shadow-sky-200'
               }`}
             >
-              {isUpcoming ? 'Xem Chi Tiết & Đặt Lịch' : 'Đặt Giá Ngay'}
+              {isUpcoming
+                ? t('home.liveAuction.viewAndSchedule')
+                : t('home.liveAuction.placeBidNow')}
             </Link>
 
             <Link
               to={targetUrl}
               className="rounded-xl border border-slate-200 bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
             >
-              Chi Tiết Phòng
+              {t('home.liveAuction.roomDetails')}
             </Link>
           </div>
         </div>

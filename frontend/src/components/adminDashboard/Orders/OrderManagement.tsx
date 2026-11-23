@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ShoppingBag } from 'lucide-react';
 import Popup from '../../Popup';
 import { Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { listAdminOrders } from '../../../services/admin';
 import type { AdminOrder, AdminOrderPage } from '../../../types/admin-order.types';
 import type { SellerOrderStatus } from '../../../types/order.types';
-import { orderLabels, shipmentLabels, money, date, message, OrderBadge } from './orderPresentation';
+import { ORDER_STATUS_KEYS, money, date, message, OrderBadge } from './orderPresentation';
 import OrderDetail from './OrderDetail';
 import CancelOrder from './CancelOrder';
 
 export default function OrderManagement() {
+  const { t } = useTranslation('admin');
   const [params, setParams] = useSearchParams();
   const detailId = params.get('order');
   const [search, setSearch] = useState('');
@@ -75,8 +77,8 @@ export default function OrderManagement() {
         </p>
       )}
       <Panel
-        title="Đơn hàng toàn sàn"
-        subtitle="Tra cứu đơn hàng, thanh toán, vận chuyển và hậu mãi"
+        title={t('orders.title')}
+        subtitle={t('orders.subtitle')}
         icon={<ShoppingBag size={19} />}
         action={
           <Button
@@ -84,7 +86,7 @@ export default function OrderManagement() {
             disabled={loading}
             onClick={() => setRefresh((value) => value + 1)}
           >
-            Tải lại
+            {t('orders.reload')}
           </Button>
         }
       >
@@ -93,11 +95,11 @@ export default function OrderManagement() {
             <SearchInput
               value={search}
               onChange={setSearch}
-              placeholder="Tìm mã đơn, mã vận đơn, tên/email người mua hoặc người bán..."
+              placeholder={t('orders.searchPlaceholder')}
             />
           </div>
           <select
-            aria-label="Lọc trạng thái đơn hàng"
+            aria-label={t('orders.statusAria')}
             className="max-w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
             value={status}
             onChange={(event) => {
@@ -105,23 +107,23 @@ export default function OrderManagement() {
               setPage(1);
             }}
           >
-            <option value="">Tất cả trạng thái đơn</option>
-            {Object.entries(orderLabels).map(([value, label]) => (
+            <option value="">{t('orders.allStatuses')}</option>
+            {ORDER_STATUS_KEYS.map((value) => (
               <option key={value} value={value}>
-                {label}
+                {t(`orders.orderStatuses.${value}`)}
               </option>
             ))}
           </select>
         </div>
         {loading ? (
           <p role="status" className="py-12 text-center text-sm text-slate-500">
-            Đang tải danh sách đơn hàng…
+            {t('orders.loading')}
           </p>
         ) : error ? (
           <div role="alert" className="space-y-3 text-sm text-red-600">
             <p>{error}</p>
             <Button variant="secondary" onClick={() => setRefresh((value) => value + 1)}>
-              Thử lại
+              {t('orders.retry')}
             </Button>
           </div>
         ) : (
@@ -133,12 +135,12 @@ export default function OrderManagement() {
                     <thead className="bg-blue-50 text-slate-500">
                       <tr>
                         {[
-                          'Đơn hàng',
-                          'Người mua / Người bán',
-                          'Tổng tiền',
-                          'Vận chuyển',
-                          'Trạng thái',
-                          'Thao tác',
+                          t('orders.cols.order'),
+                          t('orders.cols.parties'),
+                          t('orders.cols.total'),
+                          t('orders.cols.shipping'),
+                          t('orders.cols.status'),
+                          t('orders.cols.actions'),
                         ].map((title) => (
                           <th scope="col" key={title} className="p-3 font-semibold">
                             {title}
@@ -151,7 +153,7 @@ export default function OrderManagement() {
                         <tr key={row.id} className="align-top hover:bg-slate-50/70">
                           <td className="p-3 leading-5">
                             <p className="max-w-56 break-all font-semibold">{row.id}</p>
-                            <p>{row._count.items} dòng sản phẩm</p>
+                            <p>{t('orders.itemLines', { count: row._count.items })}</p>
                             <span className="text-slate-400">{date(row.createdAt)}</span>
                           </td>
                           <td className="p-3 leading-5">
@@ -164,11 +166,15 @@ export default function OrderManagement() {
                           <td className="p-3 leading-5">
                             {row.shipment ? (
                               <>
-                                <p>{shipmentLabels[row.shipment.status] ?? row.shipment.status}</p>
-                                <p>{row.shipment.waybillCode || 'Chưa có mã vận đơn'}</p>
+                                <p>
+                                  {t(`orders.shipmentStatuses.${row.shipment.status}`, {
+                                    defaultValue: row.shipment.status,
+                                  })}
+                                </p>
+                                <p>{row.shipment.waybillCode || t('orders.noWaybillCode')}</p>
                               </>
                             ) : (
-                              'Chưa có vận đơn'
+                              t('orders.noWaybill')
                             )}
                           </td>
                           <td className="p-3">
@@ -177,7 +183,7 @@ export default function OrderManagement() {
                           <td className="p-3">
                             <div className="flex flex-wrap gap-2">
                               <Button variant="secondary" onClick={() => selectOrder(row.id)}>
-                                Chi tiết
+                                {t('orders.detailsBtn')}
                               </Button>
                               {['PENDING_PAYMENT', 'PAID', 'PREPARING'].includes(row.status) &&
                                 !row.dispute &&
@@ -191,7 +197,7 @@ export default function OrderManagement() {
                                       setCancelOrder(row);
                                     }}
                                   >
-                                    Hủy đơn
+                                    {t('orders.cancelBtn')}
                                   </Button>
                                 )}
                             </div>
@@ -202,11 +208,15 @@ export default function OrderManagement() {
                   </table>
                 </div>
               ) : (
-                <EmptyState text="Không có đơn hàng khớp với bộ lọc." />
+                <EmptyState text={t('orders.empty')} />
               )}
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
                 <span>
-                  {result.total} kết quả · Trang {result.page}/{Math.max(1, result.totalPages)}
+                  {t('orders.pagination', {
+                    total: result.total,
+                    page: result.page,
+                    totalPages: Math.max(1, result.totalPages),
+                  })}
                 </span>
                 <div className="flex gap-2">
                   <Button
@@ -214,14 +224,14 @@ export default function OrderManagement() {
                     disabled={page <= 1}
                     onClick={() => setPage((value) => value - 1)}
                   >
-                    Trước
+                    {t('orders.prev')}
                   </Button>
                   <Button
                     variant="secondary"
                     disabled={page >= result.totalPages}
                     onClick={() => setPage((value) => value + 1)}
                   >
-                    Sau
+                    {t('orders.next')}
                   </Button>
                 </div>
               </div>
@@ -232,7 +242,7 @@ export default function OrderManagement() {
       <Popup
         isOpen={!!detailId}
         onClose={() => selectOrder(null)}
-        title="Chi tiết đơn hàng"
+        title={t('orders.detailTitle')}
         size="lg"
       >
         {detailId && <OrderDetail key={`${detailId}:${refresh}`} id={detailId} />}
@@ -244,9 +254,7 @@ export default function OrderManagement() {
           onClose={() => setCancelOrder(null)}
           onSuccess={() => {
             setCancelOrder(null);
-            setNotice(
-              'Đã xử lý yêu cầu hủy đơn. Hãy kiểm tra trạng thái đơn và hoàn tiền trong chi tiết.',
-            );
+            setNotice(t('orders.cancelSuccessNotice'));
             setRefresh((value) => value + 1);
           }}
         />

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   activateStaff,
   getStaffInvitationInfo,
@@ -8,6 +9,7 @@ import {
 
 // Link trong thư mời mở trang này; không đặt trong layout yêu cầu đăng nhập.
 export default function StaffActivationPage() {
+  const { t } = useTranslation('staff');
   const [params] = useSearchParams();
   const token = params.get('token')?.trim() ?? '';
   const [info, setInfo] = useState<StaffInvitationInfo | null>(null);
@@ -31,7 +33,7 @@ export default function StaffActivationPage() {
     setError('');
     setLoading(true);
     if (!token) {
-      setError('Link kích hoạt thiếu mã token. Vui lòng mở đúng link trong email mời.');
+      setError(t('activation.missingTokenErr'));
       setLoading(false);
       return;
     }
@@ -43,7 +45,8 @@ export default function StaffActivationPage() {
         setPhoneNumber(result.phoneNumber ?? '');
       })
       .catch((cause) => {
-        if (active) setError(cause instanceof Error ? cause.message : 'Không thể tải lời mời.');
+        if (active)
+          setError(cause instanceof Error ? cause.message : t('activation.loadInviteErr'));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -51,17 +54,17 @@ export default function StaffActivationPage() {
     return () => {
       active = false;
     };
-  }, [token, retry]);
+  }, [token, retry, t]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (inFlight.current || !info) return;
     if (!fullName.trim() || !phoneNumber.trim()) {
-      setError('Vui lòng nhập họ tên và số điện thoại.');
+      setError(t('activation.missingFieldsErr'));
       return;
     }
     if (password !== confirmation) {
-      setError('Mật khẩu xác nhận không khớp.');
+      setError(t('activation.passwordMismatchErr'));
       return;
     }
     inFlight.current = true;
@@ -79,7 +82,7 @@ export default function StaffActivationPage() {
       setPassword('');
       setConfirmation('');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể kích hoạt tài khoản.');
+      setError(cause instanceof Error ? cause.message : t('activation.activateErr'));
     } finally {
       inFlight.current = false;
       setPending(false);
@@ -90,16 +93,18 @@ export default function StaffActivationPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
       <section className="w-full max-w-lg space-y-5 rounded-2xl border bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-bold text-primary">Kích hoạt tài khoản Staff</h1>
+        <h1 className="text-xl font-bold text-primary">{t('activation.title')}</h1>
         {loading ? (
-          <p role="status">Đang kiểm tra lời mời…</p>
+          <p role="status">{t('activation.checkingInvite')}</p>
         ) : assignedEmail ? (
           <div role="status" className="space-y-3">
             <p>
-              Kích hoạt thành công. Đăng nhập bằng <b>{assignedEmail}</b> và mật khẩu vừa tạo.
+              {t('activation.successPrefix')}
+              <b>{assignedEmail}</b>
+              {t('activation.successSuffix')}
             </p>
             <Link to="/login" className="text-primary underline">
-              Đến trang đăng nhập
+              {t('activation.goToLogin')}
             </Link>
           </div>
         ) : (
@@ -110,19 +115,22 @@ export default function StaffActivationPage() {
               </p>
             )}
             {!info && token && (
-              <button onClick={() => setRetry((value) => value + 1)}>Thử lại</button>
+              <button onClick={() => setRetry((value) => value + 1)}>
+                {t('activation.retry')}
+              </button>
             )}
             {info && (
               <form onSubmit={submit} className="space-y-4">
                 <p className="break-all text-sm">
-                  Tài khoản được cấp: <b>{info.assignedEmail || 'Được cấp khi kích hoạt'}</b>
+                  {t('activation.assignedEmailLabel')}{' '}
+                  <b>{info.assignedEmail || t('activation.assignedOnActivation')}</b>
                 </p>
                 <p className="break-all text-sm text-slate-500">
-                  Email nhận lời mời: {info.personalEmail}
+                  {t('activation.personalEmailLabel', { email: info.personalEmail })}
                 </p>
                 <fieldset disabled={pending} className="space-y-4">
                   <label className="block text-sm">
-                    Họ và tên
+                    {t('activation.fullNameLabel')}
                     <input
                       required
                       value={fullName}
@@ -132,7 +140,7 @@ export default function StaffActivationPage() {
                     />
                   </label>
                   <label className="block text-sm">
-                    Số điện thoại
+                    {t('activation.phoneLabel')}
                     <input
                       required
                       type="tel"
@@ -143,7 +151,7 @@ export default function StaffActivationPage() {
                     />
                   </label>
                   <label className="block text-sm">
-                    Mật khẩu mới
+                    {t('activation.newPasswordLabel')}
                     <input
                       required
                       type="password"
@@ -155,7 +163,7 @@ export default function StaffActivationPage() {
                     />
                   </label>
                   <label className="block text-sm">
-                    Xác nhận mật khẩu
+                    {t('activation.confirmPasswordLabel')}
                     <input
                       required
                       type="password"
@@ -170,7 +178,7 @@ export default function StaffActivationPage() {
                     type="submit"
                     className="w-full rounded-lg bg-primary p-3 text-sm font-semibold text-white disabled:opacity-50"
                   >
-                    {pending ? 'Đang kích hoạt…' : 'Kích hoạt tài khoản'}
+                    {pending ? t('activation.activating') : t('activation.activateBtn')}
                   </button>
                 </fieldset>
               </form>

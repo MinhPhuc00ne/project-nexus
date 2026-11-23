@@ -1,4 +1,5 @@
 import { type JSX, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MessageCircle, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -35,19 +36,21 @@ export default function ChatWidget(): JSX.Element | null {
 }
 
 function GuestChatbotWidget(): JSX.Element {
+  const { t } = useTranslation('common');
   const [open, setOpen] = useState(false);
   return (
     <div className="fixed bottom-4 right-4 z-[1300] font-sans max-sm:bottom-3 max-sm:right-3">
       <button
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
-        aria-label={open ? 'Đóng trợ lý' : 'Mở trợ lý NEXUS'}
+        aria-label={open ? t('chat.widget.closeAssistant') : t('chat.widget.openAssistant')}
         className="ml-auto flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white shadow-xl"
       >
-        {open ? <X size={22} /> : <MessageCircle size={22} />} {open ? 'Đóng' : 'Hỗ trợ NEXUS'}
+        {open ? <X size={22} /> : <MessageCircle size={22} />}{' '}
+        {open ? t('chat.widget.close') : t('chat.widget.nexusSupport')}
       </button>
       <section
-        aria-label="Chatbot NEXUS"
+        aria-label={t('chat.widget.chatbotAria')}
         className={`${open ? 'flex' : 'hidden'} mt-3 h-[min(560px,calc(100dvh-32px))] w-[min(460px,calc(100vw-32px))] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl`}
       >
         <ChatbotPanel guest storageKey="guest" />
@@ -63,6 +66,7 @@ function ChatPanel({
   userId: string;
   canRequestSupport: boolean;
 }): JSX.Element {
+  const { t } = useTranslation('common');
   const [view, setView] = useState<'chat' | 'support' | 'bot'>(canRequestSupport ? 'bot' : 'chat');
   const [open, setOpen] = useState(false);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
@@ -93,7 +97,9 @@ function ChatPanel({
       void createChatConversation({
         participantId: request.userId,
         type: 'BUYER_SELLER',
-        ...(request.userName ? { title: `Chat với ${request.userName}` } : {}),
+        ...(request.userName
+          ? { title: t('chat.widget.chatWithTitle', { name: request.userName }) }
+          : {}),
       })
         .then((conversation) => {
           setActive(conversation);
@@ -277,27 +283,28 @@ function ChatPanel({
         <button
           onClick={() => setOpen(true)}
           className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-3 font-semibold text-white shadow-xl hover:bg-blue-700"
-          aria-label="Mở tin nhắn"
+          aria-label={t('chat.widget.openMessages')}
         >
-          <MessageCircle size={22} /> {canRequestSupport ? 'Tin nhắn & Hỗ trợ' : 'Tin nhắn'}{' '}
+          <MessageCircle size={22} />{' '}
+          {canRequestSupport ? t('chat.widget.messagesAndSupport') : t('chat.widget.messages')}{' '}
           {unread > 0 && <span className="rounded-full bg-red-500 px-2 text-xs">{unread}</span>}
         </button>
       )}
       <section
-        aria-label="Hộp tin nhắn"
+        aria-label={t('chat.widget.inboxAria')}
         className={`${open ? 'flex' : 'hidden'} h-[min(560px,calc(100dvh-32px))] w-[min(560px,calc(100vw-32px))] max-sm:h-[calc(100dvh-24px)] max-sm:w-[calc(100vw-24px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-2xl`}
       >
         <header className="flex shrink-0 items-center justify-between gap-2 bg-blue-600 px-5 py-4 text-white">
           <div className="flex items-center gap-3">
             <MessageCircle />
             <div>
-              <h2 className="font-bold">Nexus Chat</h2>
-              <p className="text-xs text-blue-100">Kết nối người mua, người bán và hỗ trợ</p>
+              <h2 className="font-bold">{t('chat.widget.title')}</h2>
+              <p className="text-xs text-blue-100">{t('chat.widget.subtitle')}</p>
             </div>
           </div>
           <button
             onClick={() => setOpen(false)}
-            aria-label="Đóng chat"
+            aria-label={t('chat.widget.closeChat')}
             className="rounded-lg p-2 hover:bg-blue-500"
           >
             <X size={20} />
@@ -306,7 +313,7 @@ function ChatPanel({
 
         {canRequestSupport && (
           <nav
-            aria-label="Tin nhắn và hỗ trợ"
+            aria-label={t('chat.widget.navAria')}
             className="flex shrink-0 flex-wrap gap-1 border-b border-slate-100 px-3 py-2"
           >
             {(['bot', 'support', 'chat'] as const).map((tab) => (
@@ -317,10 +324,10 @@ function ChatPanel({
                 className={`rounded-lg px-3 py-2 text-sm font-semibold max-sm:flex-1 max-sm:px-2 max-sm:text-xs ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
               >
                 {tab === 'bot'
-                  ? 'Trợ lý NEXUS'
+                  ? t('chat.widget.tabBot')
                   : tab === 'support'
-                    ? 'Nhân viên hỗ trợ'
-                    : 'Tin nhắn'}
+                    ? t('chat.widget.tabSupport')
+                    : t('chat.widget.tabChat')}
               </button>
             ))}
           </nav>
@@ -331,7 +338,7 @@ function ChatPanel({
             className="flex items-center justify-between gap-2 bg-red-50 px-4 py-2 text-sm text-red-700"
           >
             {displayError}
-            <button onClick={clearError} aria-label="Đóng thông báo">
+            <button onClick={clearError} aria-label={t('chat.widget.dismissError')}>
               <X size={16} />
             </button>
           </div>
@@ -343,7 +350,11 @@ function ChatPanel({
               storageKey={userId}
               creating={creating}
               onRequestSupport={(description, orderId) =>
-                handleSendSupportMessage({ category: 'Hỗ trợ từ chatbot', description, orderId })
+                handleSendSupportMessage({
+                  category: t('chat.widget.chatbotSupportCategory'),
+                  description,
+                  orderId,
+                })
               }
             />
           </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export default function SellerCategoryPicker({
   disabled?: boolean;
   loading?: boolean;
 }) {
+  const { t } = useTranslation('seller');
   const id = useId();
   const container = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -61,8 +63,8 @@ export default function SellerCategoryPicker({
   }
 
   useEffect(() => {
-    input.current?.setCustomValidity(selected ? '' : 'Vui lòng chọn danh mục từ danh sách.');
-  }, [selected]);
+    input.current?.setCustomValidity(selected ? '' : t('categoryPicker.categoryFromList'));
+  }, [selected, t]);
   useEffect(() => {
     if (active) highlighted.current?.scrollIntoView({ block: 'nearest' });
   }, [active]);
@@ -110,7 +112,7 @@ export default function SellerCategoryPicker({
       }}
     >
       <label htmlFor={id} className="block text-sm font-medium text-slate-700">
-        Danh mục sản phẩm <span className="text-red-500">*</span>
+        {t('categoryPicker.productCategory')} <span className="text-red-500">*</span>
       </label>
       <div className="relative">
         <input
@@ -127,7 +129,9 @@ export default function SellerCategoryPicker({
           disabled={disabled}
           autoComplete="off"
           value={expanded ? (query ?? selected?.label ?? '') : (selected?.label ?? '')}
-          placeholder={loading ? 'Đang tải danh mục…' : 'Chọn hoặc nhập để tìm danh mục'}
+          placeholder={
+            loading ? t('categoryPicker.loadingCategories') : t('categoryPicker.searchCategory')
+          }
           onFocus={(event) => {
             reveal();
             event.currentTarget.select();
@@ -153,7 +157,9 @@ export default function SellerCategoryPicker({
           type="button"
           disabled={disabled}
           tabIndex={-1}
-          aria-label={expanded ? 'Đóng danh sách danh mục' : 'Mở danh sách danh mục'}
+          aria-label={
+            expanded ? t('categoryPicker.closeCategories') : t('categoryPicker.openCategories')
+          }
           onMouseDown={(event) => event.preventDefault()}
           onClick={() => {
             if (expanded) close();
@@ -171,7 +177,7 @@ export default function SellerCategoryPicker({
             <ul
               id={`${id}-options`}
               role="listbox"
-              aria-label="Danh mục sản phẩm"
+              aria-label={t('categoryPicker.productCategory')}
               className="max-h-64 overflow-y-auto py-1"
             >
               {matches.map((option, index) => (
@@ -195,19 +201,21 @@ export default function SellerCategoryPicker({
             </ul>
             {!matches.length && (
               <p role="status" className="px-3 py-4 text-sm text-slate-500">
-                Không tìm thấy danh mục phù hợp. Thử từ khóa khác.
+                {t('categoryPicker.noCategoryMatch')}
               </p>
             )}
           </div>
         )}
       </div>
       <p id={`${id}-hint`} className="text-xs text-slate-500">
-        {expanded && selected ? `Đã chọn: ${selected.label}. ` : ''}Nhập để tìm, sau đó chọn danh
-        mục trong danh sách.
+        {expanded && selected
+          ? t('categoryPicker.selectedCategory', { value1: selected.label })
+          : ''}
+        {t('categoryPicker.categorySearchHint')}
       </p>
       {invalid && (
         <p id={`${id}-error`} role="alert" className="text-xs text-red-600">
-          Vui lòng chọn danh mục từ danh sách.
+          {t('categoryPicker.categoryFromList')}
         </p>
       )}
     </div>

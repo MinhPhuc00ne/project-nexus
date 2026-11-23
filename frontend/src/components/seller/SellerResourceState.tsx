@@ -1,5 +1,6 @@
 import type { ReactElement, ReactNode } from 'react';
 import { RefreshCw as ReloadOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { SellerButton } from './SellerUI';
 
 export const sellerInputClass =
@@ -17,10 +18,11 @@ export default function SellerResourceState({
   retry: () => void;
   children: ReactNode;
 }): ReactElement {
+  const { t } = useTranslation('seller');
   if (loading)
     return (
       <p role="status" className="py-10 text-center text-sm text-slate-500">
-        Đang tải dữ liệu…
+        {t('ui.loadingData')}
       </p>
     );
   if (error)
@@ -31,7 +33,7 @@ export default function SellerResourceState({
       >
         <p>{error}</p>
         <SellerButton secondary onClick={retry}>
-          <ReloadOutlined /> Thử lại
+          <ReloadOutlined /> {t('ui.retry')}
         </SellerButton>
       </div>
     );

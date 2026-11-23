@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { listAdminProducts } from '../../../services/admin';
+import { listAdminProducts, listAdminTrendingProducts } from '../../../services/admin';
+import type { AdminTrendingProduct } from '../../../types/admin-product.types';
 import type { AdminProduct, QueryAdminProductsParams } from '../../../types/admin-product.types';
 import type { PaginatedResult } from '../../../types/admin.types';
 
 export function useAdminProducts() {
+  const { t } = useTranslation('admin');
   const { token } = useAuth();
   const [search, setSearch] = useState('');
   const [query, setQuery] = useState<QueryAdminProductsParams>({ page: 1, limit: 10 });
@@ -12,6 +15,26 @@ export function useAdminProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
+  const [trendingProducts, setTrendingProducts] = useState<AdminTrendingProduct[]>([]);
+  const [trendingError, setTrendingError] = useState('');
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setTrendingProducts([]);
+    setTrendingError('');
+    void listAdminTrendingProducts(controller.signal)
+      .then((value) => {
+        if (!controller.signal.aborted)
+          setTrendingProducts(value.items.filter((item) => item.isTrending));
+      })
+      .catch((cause) => {
+        if (!controller.signal.aborted)
+          setTrendingError(
+            cause instanceof Error ? cause.message : t('products.trending.loadError'),
+          );
+      });
+    return () => controller.abort();
+  }, [revision, token, t]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -40,7 +63,7 @@ export function useAdminProducts() {
       })
       .catch((cause) => {
         if (!controller.signal.aborted)
-          setError(cause instanceof Error ? cause.message : 'Không thể tải sản phẩm.');
+          setError(cause instanceof Error ? cause.message : t('products.loadErr'));
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -56,6 +79,8 @@ export function useAdminProducts() {
     result,
     loading,
     error,
+    trendingProducts,
+    trendingError,
     refresh: () => setRevision((value) => value + 1),
   };
 }

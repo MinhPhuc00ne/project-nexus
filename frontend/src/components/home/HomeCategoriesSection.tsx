@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
@@ -6,6 +7,7 @@ import { FALLBACK_CATEGORY_TREE, getCategoryImageUrl } from '../../mocks/categor
 import { ROUTES } from '../../routes/paths';
 
 export default function HomeCategoriesSection() {
+  const { t } = useTranslation('guest');
   const [categories, setCategories] = useState<CategoryNode[]>(FALLBACK_CATEGORY_TREE);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function HomeCategoriesSection() {
             <ShoppingCart size={18} />
           </span>
           <h2 className="text-[15px] font-extrabold uppercase tracking-[0.05em] text-slate-800">
-            Danh Mục Sản Phẩm
+            {t('home.categoriesSection.title')}
           </h2>
         </div>
 
@@ -45,7 +47,7 @@ export default function HomeCategoriesSection() {
           to={ROUTES.CATEGORY}
           className="text-xs font-semibold text-sky-500 hover:text-sky-600 transition"
         >
-          Xem tất cả danh mục →
+          {t('home.categoriesSection.viewAll')}
         </Link>
       </div>
 
@@ -73,8 +75,10 @@ export default function HomeCategoriesSection() {
 
               <p className="mt-1 text-[11px] text-slate-400">
                 {category.children && category.children.length > 0
-                  ? `${category.children.length} nhóm con`
-                  : 'Nhiều sản phẩm'}
+                  ? t('home.categoriesSection.subcategoriesCount', {
+                      count: category.children.length,
+                    })
+                  : t('home.categoriesSection.manyProducts')}
               </p>
             </Link>
           );

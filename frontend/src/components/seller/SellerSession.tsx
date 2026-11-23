@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import { useAuth } from '../../contexts/AuthContext';
 import type { UserProfile } from '../../services/users';
@@ -13,6 +14,7 @@ export function useSellerSession() {
 }
 
 export default function SellerSession({ children }: { children: ReactNode }) {
+  const { t } = useTranslation('seller');
   const location = useLocation();
   const { token, user, isLoading, refreshProfile, switchActiveMode } = useAuth();
   const [retrying, setRetrying] = useState(false);
@@ -30,33 +32,31 @@ export default function SellerSession({ children }: { children: ReactNode }) {
     if (!needsSellerMode || modeError) return;
     void switchActiveMode('SELLER').catch((error: unknown) => {
       if (!cancelled) {
-        setModeError(
-          error instanceof Error ? error.message : 'Không thể chuyển sang chế độ Người bán.',
-        );
+        setModeError(error instanceof Error ? error.message : t('session.switchModeFailed'));
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [modeError, needsSellerMode, switchActiveMode]);
+  }, [modeError, needsSellerMode, switchActiveMode, t]);
 
   if (!token) return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   if (isLoading || retrying || (needsSellerMode && !modeError))
     return (
       <p role="status" className="p-8 text-center">
-        Đang xác thực người bán…
+        {t('session.verifying')}
       </p>
     );
   if (user && user.role !== Role.SELLER) return <Navigate to="/" replace />;
   if (modeError) {
     return (
       <div role="alert" className="p-8 text-center">
-        <p>Không thể đồng bộ chế độ Người bán: {modeError}</p>
+        <p>{t('session.syncModeFailed', { error: modeError })}</p>
         <button
           className="mt-4 rounded bg-blue-700 px-4 py-2 text-white"
           onClick={() => setModeError(null)}
         >
-          Thử lại
+          {t('session.retry')}
         </button>
       </div>
     );
@@ -72,12 +72,12 @@ export default function SellerSession({ children }: { children: ReactNode }) {
     };
     return (
       <div role="alert" className="p-8 text-center">
-        <p>Không thể tải hồ sơ người bán từ máy chủ.</p>
+        <p>{t('session.loadProfileFailed')}</p>
         <button
           className="mt-4 rounded bg-blue-700 px-4 py-2 text-white"
           onClick={() => void retry()}
         >
-          Thử lại
+          {t('session.retry')}
         </button>
       </div>
     );
