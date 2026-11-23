@@ -42,6 +42,7 @@ import { UpdateSystemSettingsDto } from '../dtos/update-system-settings.dto';
 import {
   DepositAdminWalletDto,
   QueryAdminWalletTransactionsDto,
+  QueryPlatformUserWalletTransactionsDto,
   AdminWalletResponseDto,
   AdminWalletTransactionsResponseDto,
 } from '../dtos/admin-wallet.dto';
@@ -566,6 +567,20 @@ export class AdminController {
     @Query() query: QueryAdminWalletTransactionsDto,
   ) {
     return this.adminFinanceService.getAdminWalletTransactions(adminId, query);
+  }
+
+  @Get('wallet/user-transactions')
+  @ApiOperation({
+    summary: 'List platform-wide user wallet transactions (deposits, withdrawals, escrow, refunds)',
+    description:
+      'Queries wallet transaction history across Buyer and Seller accounts with filters for type (DEPOSIT, WITHDRAW...), status, role, userId, date range, and keyword search.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Platform user wallet transactions retrieved successfully',
+  })
+  async getPlatformUserWalletTransactions(@Query() query: QueryPlatformUserWalletTransactionsDto) {
+    return this.adminFinanceService.getPlatformUserWalletTransactions(query);
   }
 
   @Post('wallet/deposit')

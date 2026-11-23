@@ -14,6 +14,7 @@ const { BadRequestException, ForbiddenException } = load('@nestjs/common');
 const { WithdrawalService } = load('../src/modules/commerce/services/withdrawal.service.ts');
 const { SellerFinanceService } = load('../src/modules/commerce/services/seller-finance.service.ts');
 const { AdminService } = load('../src/modules/admin/services/admin.service.ts');
+const { AdminFinanceService } = load('../src/modules/admin/services/admin-finance.service.ts');
 
 function createWithdrawalPrismaMock(overrides = {}) {
   const notifications = [];
@@ -298,4 +299,69 @@ test('AdminService.reviewWithdrawalRequest handles COMPLETED approval and REJECT
   assert.equal(txUpdates[1].data.status, 'SUCCESS');
   assert.equal(notifications[1].userId, 'buyer-1');
   assert.match(notifications[1].title, /phê duyệt thành công/);
+});
+
+test('AdminFinanceService.getPlatformUserWalletTransactions filters deposits and user roles with pagination', async () => {
+  const capturedQueries = [];
+  const prismaMock = {
+    walletTransaction: {
+      count: async ({ where }) => {
+        capturedQueries.push({ op: 'count', where });
+        return 1;
+      },
+      findMany: async (args) => {
+        capturedQueries.push({ op: 'findMany', args });
+        return [
+          {
+            id: 'tx-deposit-1',
+            walletId: 'wallet-buyer-1',
+            amount: 500000,
+            type: 'DEPOSIT',
+            status: 'SUCCESS',
+            referenceId: 'PAYOS-12345',
+            description: 'Nạp tiền vào ví qua PayOS',
+            createdAt: new Date('2026-11-23T09:00:00Z'),
+            wallet: {
+              id: 'wallet-buyer-1',
+              balance: 500000,
+              lockedBalance: 0,
+              currency: 'VND',
+              user: {
+                id: 'buyer-1',
+                fullName: 'Nguyen Van Buyer',
+                email: 'buyer@nexus.com',
+                phoneNumber: '0901234567',
+                role: 'BUYER',
+              },
+            },
+          },
+        ];
+      },
+    },
+  };
+
+  const adminFinance = new AdminFinanceService(prismaMock);
+  const result = await adminFinance.getPlatformUserWalletTransactions({
+    page: 1,
+    limit: 20,
+    type: 'DEPOSIT',
+    status: 'SUCCESS',
+    role: 'BUYER',
+    search: 'buyer@nexus.com',
+  });
+
+  assert.equal(result.total, 1);
+  assert.equal(result.totalPages, 1);
+  assert.equal(result.items.length, 1);
+  assert.equal(result.items[0].type, 'DEPOSIT');
+  assert.equal(result.items[0].amount, 500000);
+  assert.equal(result.items[0].user.role, 'BUYER');
+  assert.equal(result.items[0].user.email, 'buyer@nexus.com');
+  assert.equal(result.items[0].user.walletBalance, 500000);
+
+  const findWhere = capturedQueries[1].args.where;
+  assert.equal(findWhere.type, 'DEPOSIT');
+  assert.equal(findWhere.status, 'SUCCESS');
+  assert.deepEqual(findWhere.wallet, { user: { role: 'BUYER' } });
+  assert.equal(findWhere.OR.length, 4);
 });

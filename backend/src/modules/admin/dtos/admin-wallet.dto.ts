@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { WalletTransactionType } from '@prisma/client';
+import { Role, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
@@ -58,6 +58,29 @@ export class QueryAdminWalletTransactionsDto {
   @IsOptional()
   @IsString()
   search?: string;
+}
+
+export class QueryPlatformUserWalletTransactionsDto extends QueryAdminWalletTransactionsDto {
+  @ApiPropertyOptional({
+    enum: WalletTransactionStatus,
+    description: 'Lọc theo trạng thái giao dịch (PENDING, SUCCESS, FAILED)',
+  })
+  @IsOptional()
+  @IsEnum(WalletTransactionStatus)
+  status?: WalletTransactionStatus;
+
+  @ApiPropertyOptional({
+    enum: Role,
+    description: 'Lọc theo vai trò người dùng (BUYER, SELLER, SUPPORT_STAFF, ADMIN)',
+  })
+  @IsOptional()
+  @IsEnum(Role)
+  role?: Role;
+
+  @ApiPropertyOptional({ description: 'Lọc theo ID người dùng cụ thể' })
+  @IsOptional()
+  @IsString()
+  userId?: string;
 }
 
 export class AdminWalletResponseDto {
