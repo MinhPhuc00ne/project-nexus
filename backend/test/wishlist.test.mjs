@@ -88,7 +88,9 @@ test('WishlistService.addToWishlist checks product existence and upserts item', 
 
   const prisma = {
     product: {
-      findUnique: mock.fn(async ({ where }) => (where.id === 'prod-1' ? { id: 'prod-1' } : null)),
+      findFirst: mock.fn(async ({ where }) =>
+        where.id === 'prod-1' && where.status === 'ACTIVE' ? { id: 'prod-1' } : null,
+      ),
     },
     wishlistItem: {
       upsert: mock.fn(async () => sampleWishlistItem),
@@ -105,7 +107,7 @@ test('WishlistService.addToWishlist checks product existence and upserts item', 
   // Not found product
   await assert.rejects(
     async () => service.addToWishlist('user-1', 'non-existent'),
-    /Sản phẩm không tồn tại/,
+    /Product not found or unavailable/,
   );
 });
 

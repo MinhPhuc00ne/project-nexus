@@ -13,6 +13,7 @@ import {
   FeedbackPageDto,
   QueryAdminReviewsDto,
   ReviewDto,
+  SellerReplyReviewDto,
 } from '../dtos/feedback.dto';
 
 @Injectable()
@@ -106,8 +107,9 @@ export class ReviewsService {
             throw new BadRequestException('Sản phẩm không thuộc đơn hàng này.');
           }
           await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
+          const mediaUrls = (dto.mediaUrls ?? []).map((url) => url.trim()).filter(Boolean);
           createdReview = await tx.productReview.create({
-            data: { ...values, reviewerId: userId, productId },
+            data: { ...values, mediaUrls, reviewerId: userId, productId },
           });
           const product = await tx.product.update({
             where: { id: productId },
@@ -241,6 +243,10 @@ export class ReviewsService {
           productId: true,
           rating: true,
           comment: true,
+          mediaUrls: true,
+          sellerReply: true,
+          sellerRepliedAt: true,
+          helpfulCount: true,
           createdAt: true,
           reviewer: author,
         },
@@ -284,9 +290,18 @@ export class ReviewsService {
         },
       });
 
+      const mediaUrls =
+        dto.mediaUrls !== undefined
+          ? dto.mediaUrls.map((url) => url.trim()).filter(Boolean)
+          : undefined;
+
       const updatedReview = await tx.productReview.update({
         where: { orderId_productId: { orderId, productId } },
-        data: { rating: dto.rating, comment: dto.comment?.trim() || null },
+        data: {
+          rating: dto.rating,
+          comment: dto.comment?.trim() || null,
+          ...(mediaUrls !== undefined ? { mediaUrls } : {}),
+        },
       });
 
       const bonusReference = `REVIEW_BONUS:${orderId}`;
@@ -616,6 +631,114 @@ export class ReviewsService {
       }
 
       return { success: true, message: 'Đã xóa đánh giá gian hàng và trừ điểm uy tín người dùng.' };
+    });
+  }
+
+  async replyToProductReview(
+    sellerId: string,
+    reviewId: string,
+    dto: SellerReplyReviewDto,
+  ): Promise<{
+    id: string;
+    sellerReply: string | null;
+    sellerRepliedAt: Date | null;
+  }> {
+    return this.prisma.$transaction(async (tx) => {
+      const review = await tx.productReview.findUnique({
+        where: { id: reviewId },
+        include: {
+          product: { select: { id: true, title: true, sellerId: true } },
+        },
+      });
+
+      if (!review) {
+        throw new NotFoundException('Không tìm thấy đánh giá sản phẩm.');
+      }
+
+      if (review.product.sellerId !== sellerId) {
+        throw new ForbiddenException(
+          'Bạn chỉ có thể phản hồi đánh giá cho sản phẩm của gian hàng mình.',
+        );
+      }
+
+      const updated = await tx.productReview.update({
+        where: { id: reviewId },
+        data: {
+          sellerReply: dto.reply.trim(),
+          sellerRepliedAt: new Date(),
+        },
+        select: {
+          id: true,
+          sellerReply: true,
+          sellerRepliedAt: true,
+        },
+      });
+
+      if (tx.notification?.create) {
+        await tx.notification.create({
+          data: {
+            userId: review.reviewerId,
+            title: 'Người bán đã phản hồi đánh giá của bạn 💬',
+            content: `Người bán vừa trả lời đánh giá của bạn cho sản phẩm "${review.product.title}": "${updated.sellerReply}".`,
+            type: NotificationType.SYSTEM,
+            channel: NotificationChannel.IN_APP,
+          },
+        });
+      }
+
+      return updated;
+    });
+  }
+
+  async toggleHelpfulProductReview(
+    userId: string,
+    reviewId: string,
+  ): Promise<{ reviewId: string; helpful: boolean; helpfulCount: number }> {
+    return this.prisma.$transaction(async (tx) => {
+      const review = await tx.productReview.findUnique({
+        where: { id: reviewId },
+        select: { id: true, reviewerId: true, helpfulCount: true },
+      });
+
+      if (!review) {
+        throw new NotFoundException('Không tìm thấy đánh giá sản phẩm.');
+      }
+
+      const existingVote = await tx.productReviewHelpfulVote.findUnique({
+        where: { reviewId_userId: { reviewId, userId } },
+      });
+
+      if (existingVote) {
+        await tx.productReviewHelpfulVote.delete({
+          where: { id: existingVote.id },
+        });
+        const nextCount = Math.max(0, review.helpfulCount - 1);
+        const updated = await tx.productReview.update({
+          where: { id: reviewId },
+          data: { helpfulCount: nextCount },
+          select: { helpfulCount: true },
+        });
+        return {
+          reviewId,
+          helpful: false,
+          helpfulCount: updated.helpfulCount,
+        };
+      }
+
+      await tx.productReviewHelpfulVote.create({
+        data: { reviewId, userId },
+      });
+      const updated = await tx.productReview.update({
+        where: { id: reviewId },
+        data: { helpfulCount: { increment: 1 } },
+        select: { helpfulCount: true },
+      });
+
+      return {
+        reviewId,
+        helpful: true,
+        helpfulCount: updated.helpfulCount,
+      };
     });
   }
 }

@@ -19,9 +19,12 @@ const ALLOWED_EXTENSIONS = new Set([
   '.svg',
   '.bmp',
   '.tiff',
+  '.mp4',
+  '.webm',
+  '.mov',
 ]);
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 @Injectable()
 export class MediaService {
@@ -52,13 +55,13 @@ export class MediaService {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      throw new BadRequestException('Kích thước file vượt quá giới hạn cho phép (tối đa 25MB).');
+      throw new BadRequestException('Kích thước file vượt quá giới hạn cho phép (tối đa 50MB).');
     }
 
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
     if (!ALLOWED_EXTENSIONS.has(ext)) {
       throw new BadRequestException(
-        `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file hình ảnh (JPG, PNG, WEBP, GIF, SVG).`,
+        `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file hình ảnh hoặc video (JPG, PNG, WEBP, GIF, SVG, MP4, WEBM, MOV).`,
       );
     }
 

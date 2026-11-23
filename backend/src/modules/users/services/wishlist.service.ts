@@ -1,8 +1,39 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { effectivePrice } from '../../catalog/utils/product-price';
-import { SellerRequestStatus } from '@prisma/client';
+import { Prisma, ProductStatus, SellerRequestStatus } from '@prisma/client';
 import type { WishlistItemDto } from '@nexus/types';
+
+const wishlistProductInclude = {
+  product: {
+    include: {
+      images: {
+        orderBy: { sortOrder: 'asc' },
+      },
+      category: true,
+      seller: {
+        select: {
+          id: true,
+          fullName: true,
+          avatarUrl: true,
+          shopAvatarUrl: true,
+          sellerUpgradeRequests: {
+            where: { status: SellerRequestStatus.APPROVED },
+            select: { storeName: true },
+            take: 1,
+          },
+        },
+      },
+      inventories: {
+        select: { availableQty: true },
+      },
+    },
+  },
+} satisfies Prisma.WishlistItemInclude;
+
+type WishlistItemWithProduct = Prisma.WishlistItemGetPayload<{
+  include: typeof wishlistProductInclude;
+}>;
 
 /**
  * Service managing user wishlists with database persistence and guest migration.
@@ -10,6 +41,29 @@ import type { WishlistItemDto } from '@nexus/types';
 @Injectable()
 export class WishlistService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private mapWishlistItem(item: WishlistItemWithProduct): WishlistItemDto {
+    const { product } = item;
+    const primaryImage = product.images[0]?.imageUrl ?? '';
+    const approvedStore = product.seller.sellerUpgradeRequests[0]?.storeName;
+    const shopName = approvedStore || product.seller.fullName || 'Shop';
+    const inStock = product.inventories.reduce((acc, inv) => acc + inv.availableQty, 0) > 0;
+    const currentPrice = effectivePrice(product);
+    const isSale = product.salePrice !== null && currentPrice < Number(product.basePrice);
+
+    return {
+      id: product.id,
+      wishlistId: item.id,
+      name: product.title,
+      price: currentPrice,
+      originalPrice: isSale ? Number(product.basePrice) : undefined,
+      img: primaryImage,
+      shopName,
+      category: product.category?.name,
+      inStock,
+      addedAt: item.createdAt.toISOString(),
+    };
+  }
 
   /**
    * Retrieves all wishlisted products for a user ordered by most recently added.
@@ -19,58 +73,15 @@ export class WishlistService {
    */
   async getWishlist(userId: string): Promise<WishlistItemDto[]> {
     const items = await this.prisma.wishlistItem.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        product: {
-          include: {
-            images: {
-              orderBy: { sortOrder: 'asc' },
-            },
-            category: true,
-            seller: {
-              select: {
-                id: true,
-                fullName: true,
-                avatarUrl: true,
-                shopAvatarUrl: true,
-                sellerUpgradeRequests: {
-                  where: { status: SellerRequestStatus.APPROVED },
-                  select: { storeName: true },
-                  take: 1,
-                },
-              },
-            },
-            inventories: {
-              select: { availableQty: true },
-            },
-          },
-        },
+      where: {
+        userId,
+        product: { status: ProductStatus.ACTIVE },
       },
+      orderBy: { createdAt: 'desc' },
+      include: wishlistProductInclude,
     });
 
-    return items.map((item) => {
-      const { product } = item;
-      const primaryImage = product.images[0]?.imageUrl ?? '';
-      const approvedStore = product.seller.sellerUpgradeRequests[0]?.storeName;
-      const shopName = approvedStore || product.seller.fullName || 'Shop';
-      const inStock = product.inventories.reduce((acc, inv) => acc + inv.availableQty, 0) > 0;
-      const currentPrice = effectivePrice(product);
-      const isSale = product.salePrice !== null && currentPrice < Number(product.basePrice);
-
-      return {
-        id: product.id,
-        wishlistId: item.id,
-        name: product.title,
-        price: currentPrice,
-        originalPrice: isSale ? Number(product.basePrice) : undefined,
-        img: primaryImage,
-        shopName,
-        category: product.category?.name,
-        inStock,
-        addedAt: item.createdAt.toISOString(),
-      };
-    });
+    return items.map((item) => this.mapWishlistItem(item));
   }
 
   /**
@@ -81,7 +92,10 @@ export class WishlistService {
    */
   async getWishlistIds(userId: string): Promise<string[]> {
     const items = await this.prisma.wishlistItem.findMany({
-      where: { userId },
+      where: {
+        userId,
+        product: { status: ProductStatus.ACTIVE },
+      },
       select: { productId: true },
     });
     return items.map((item) => item.productId);
@@ -95,13 +109,13 @@ export class WishlistService {
    * @returns Added or existing wishlist item DTO.
    */
   async addToWishlist(userId: string, productId: string): Promise<WishlistItemDto> {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, status: ProductStatus.ACTIVE },
       select: { id: true },
     });
 
     if (!product) {
-      throw new NotFoundException('Sản phẩm không tồn tại.');
+      throw new NotFoundException('Product not found or unavailable.');
     }
 
     const item = await this.prisma.wishlistItem.upsert({
@@ -113,48 +127,10 @@ export class WishlistService {
         productId,
       },
       update: {},
-      include: {
-        product: {
-          include: {
-            images: { orderBy: { sortOrder: 'asc' } },
-            category: true,
-            seller: {
-              select: {
-                id: true,
-                fullName: true,
-                sellerUpgradeRequests: {
-                  where: { status: SellerRequestStatus.APPROVED },
-                  select: { storeName: true },
-                  take: 1,
-                },
-              },
-            },
-            inventories: {
-              select: { availableQty: true },
-            },
-          },
-        },
-      },
+      include: wishlistProductInclude,
     });
 
-    const currentPrice = effectivePrice(item.product);
-    const approvedStore = item.product.seller.sellerUpgradeRequests[0]?.storeName;
-
-    return {
-      id: item.product.id,
-      wishlistId: item.id,
-      name: item.product.title,
-      price: currentPrice,
-      originalPrice:
-        item.product.salePrice !== null && currentPrice < Number(item.product.basePrice)
-          ? Number(item.product.basePrice)
-          : undefined,
-      img: item.product.images[0]?.imageUrl ?? '',
-      shopName: approvedStore || item.product.seller.fullName || 'Shop',
-      category: item.product.category?.name,
-      inStock: item.product.inventories.reduce((acc, inv) => acc + inv.availableQty, 0) > 0,
-      addedAt: item.createdAt.toISOString(),
-    };
+    return this.mapWishlistItem(item);
   }
 
   /**
@@ -174,7 +150,7 @@ export class WishlistService {
 
     return {
       success: true,
-      message: 'Đã xóa sản phẩm khỏi danh sách yêu thích.',
+      message: 'Product removed from wishlist.',
     };
   }
 
@@ -196,7 +172,7 @@ export class WishlistService {
     }
 
     const validProducts = await this.prisma.product.findMany({
-      where: { id: { in: uniqueIds } },
+      where: { id: { in: uniqueIds }, status: ProductStatus.ACTIVE },
       select: { id: true },
     });
 

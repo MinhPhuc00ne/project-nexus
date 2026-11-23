@@ -237,10 +237,8 @@ export class BuyerController {
     return this.addressService.deleteAddress(userId, addressId);
   }
 
-  // --- QUẢN LÝ DANH SÁCH YÊU THÍCH (BUYER WISHLIST) ---
-
   @ApiOperation({
-    summary: '[BUYER] Lấy danh sách sản phẩm yêu thích kèm thông tin chi tiết',
+    summary: '[BUYER] Get wishlist items with product details',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -250,7 +248,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Lấy danh sách Product IDs đang yêu thích để kiểm tra nhanh trạng thái',
+    summary: '[BUYER] Get wishlisted product IDs for quick membership checks',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -260,7 +258,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Đồng bộ danh sách sản phẩm yêu thích từ khách (guest) khi đăng nhập',
+    summary: '[BUYER] Sync guest wishlist product IDs after login',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -273,7 +271,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Thêm sản phẩm vào danh sách yêu thích',
+    summary: '[BUYER] Add a product to wishlist',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
@@ -286,7 +284,7 @@ export class BuyerController {
   }
 
   @ApiOperation({
-    summary: '[BUYER] Xóa sản phẩm khỏi danh sách yêu thích',
+    summary: '[BUYER] Remove a product from wishlist',
   })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
