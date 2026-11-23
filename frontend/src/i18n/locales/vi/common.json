@@ -1,0 +1,105 @@
+{
+  "brand": {
+    "name": "NEXUS",
+    "tagline": "Sàn Thương Mại Điện Tử & Đấu Giá Trực Tuyến",
+    "pageTitle": "NEXUS - Sàn Thương Mại Điện Tử & Đấu Giá Trực Tuyến"
+  },
+  "language": {
+    "label": "Ngôn ngữ",
+    "switchAria": "Chuyển ngôn ngữ giao diện",
+    "vi": "Tiếng Việt",
+    "en": "English"
+  },
+  "actions": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "confirm": "Xác nhận",
+    "close": "Đóng",
+    "delete": "Xóa",
+    "edit": "Chỉnh sửa",
+    "create": "Tạo mới",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "reset": "Đặt lại",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước",
+    "submit": "Gửi",
+    "retry": "Thử lại",
+    "viewDetails": "Xem chi tiết",
+    "viewAll": "Xem tất cả",
+    "copy": "Sao chép",
+    "copied": "Đã sao chép",
+    "upload": "Tải lên",
+    "download": "Tải xuống",
+    "refresh": "Làm mới"
+  },
+  "states": {
+    "loading": "Đang tải…",
+    "loadingPage": "Đang tải trang…",
+    "checkingAccess": "Đang kiểm tra quyền truy cập…",
+    "empty": "Chưa có dữ liệu.",
+    "noResults": "Không tìm thấy kết quả phù hợp.",
+    "success": "Thành công",
+    "error": "Đã xảy ra lỗi"
+  },
+  "nav": {
+    "home": "Trang chủ",
+    "auctions": "Đấu giá",
+    "cart": "Giỏ hàng",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "logout": "Đăng xuất",
+    "profile": "Hồ sơ cá nhân",
+    "notifications": "Thông báo",
+    "buyerPortal": "Kênh người mua",
+    "sellerPortal": "Kênh người bán",
+    "staffPortal": "Cổng hỗ trợ",
+    "adminPortal": "Quản trị hệ thống",
+    "about": "Giới thiệu",
+    "contact": "Liên hệ",
+    "terms": "Điều khoản",
+    "privacy": "Bảo mật"
+  },
+  "header": {
+    "searchPlaceholder": "Tìm kiếm sản phẩm, thương hiệu hoặc phiên đấu giá…",
+    "sellerChannel": "Kênh Người Bán",
+    "sellerShort": "Người Bán",
+    "sellerProfile": "Hồ sơ Người Bán",
+    "becomeSeller": "Trở thành Seller",
+    "switchToSeller": "Chuyển sang Chế độ Bán hàng",
+    "switchToBuyer": "Chuyển sang Chế độ Mua hàng",
+    "helpCenter": "Trợ Giúp",
+    "backToHome": "Quay lại Trang Chủ",
+    "downloadApp": "Tải Ứng Dụng",
+    "downloadAppShort": "Tải App",
+    "connect": "Kết nối:",
+    "hotline": "Hotline 24/7",
+    "noNotifications": "Bạn chưa có thông báo nào.",
+    "emptyCart": "Giỏ hàng của bạn đang trống.",
+    "viewCart": "Xem giỏ hàng"
+  },
+  "footer": {
+    "description": "Hệ sinh thái sàn giao dịch thương mại điện tử kết hợp công nghệ đấu giá thực tế ảo 3D thời gian thực. Đảm bảo bảo chứng ký gửi, minh bạch kiểm định và giao nhận an toàn toàn quốc.",
+    "assurances": {
+      "authenticTitle": "100% Chính Hãng",
+      "authenticDesc": "Bảo chứng Bộ Công Thương & PCI-DSS",
+      "paymentTitle": "Thanh Toán Bảo Mật",
+      "paymentDesc": "Bảo mật PayOS, Ví NEXUS & COD",
+      "shippingTitle": "Đồng Kiểm Tận Nơi",
+      "shippingDesc": "Vận hành GHN Express an toàn",
+      "videoTitle": "Video Thẩm Định Thực Tế",
+      "videoDesc": "Showcase chi tiết chất lượng 4K"
+    },
+    "association": "Bảo chứng bởi Hiệp Hội Thương Mại Điện Tử & Đấu Giá Trực Tuyến",
+    "customerCare": "Chăm sóc khách hàng",
+    "aboutNexus": "Về NEXUS & Pháp lý",
+    "paymentMethods": "Thanh toán",
+    "logistics": "Vận chuyển",
+    "copyright": "© {{year}} Project Nexus. Bảo lưu mọi quyền."
+  },
+  "pagination": {
+    "showing": "Hiển thị {{from}}–{{to}} / {{total}}",
+    "page": "Trang {{page}} / {{totalPages}}"
+  }
+}

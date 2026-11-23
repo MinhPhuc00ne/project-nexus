@@ -109,12 +109,34 @@ export class OrderController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '[BUYER / USER] Nạp tiền vào ví cá nhân (NEXUS Pay)',
-    description: 'Nạp tiền vào ví để mua sắm và thanh toán đơn hàng bằng số dư ví.',
+    description:
+      'Nạp tiền vào ví để mua sắm và thanh toán đơn hàng bằng số dư ví. Hỗ trợ tạo liên kết PayOS VietQR hoặc nạp trực tiếp.',
   })
-  @ApiResponse({ status: 200, description: 'Nạp tiền thành công' })
+  @ApiResponse({
+    status: 200,
+    description: 'Nạp tiền thành công hoặc trả về thông tin VietQR PayOS',
+  })
   @ApiResponse({ status: 400, description: 'Số tiền nạp không hợp lệ' })
   async depositMyWallet(@CurrentUser('id') userId: string, @Body() dto: DepositWalletDto) {
-    return this.orderService.depositToUserWallet(userId, dto);
+    return this.orderService.depositToUserWallet(userId, {
+      ...dto,
+      provider: dto.provider || 'PAYOS',
+    });
+  }
+
+  @Get('wallet/deposit/:orderCode/status')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[BUYER / USER] Kiểm tra trạng thái nạp tiền ví qua PayOS',
+    description:
+      'Kiểm tra trạng thái giao dịch nạp tiền ví theo orderCode và đồng bộ với cổng PayOS.',
+  })
+  @ApiResponse({ status: 200, description: 'Lấy trạng thái nạp tiền thành công' })
+  async checkWalletDepositStatus(
+    @CurrentUser('id') userId: string,
+    @Param('orderCode') orderCode: string,
+  ) {
+    return this.orderService.checkPayosWalletDepositStatus(Number(orderCode), userId);
   }
 
   @Get('orders')

@@ -1,6 +1,7 @@
 import { cn } from '../lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeftRight as SwapOutlined } from 'lucide-react';
 import {
   Box as CodeSandboxOutlined,
@@ -28,19 +29,20 @@ import { SellerWorkspaceContext } from '../components/seller/SellerWorkspace';
 import type { SellerDraft } from '../components/seller/sellerData';
 import { useToast } from '../components/ToastNotification';
 import LogoutConfirmDialog from '../components/auth/LogoutConfirmDialog';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
-const links = [
-  { to: '/seller', label: 'Trung tâm người bán', icon: ShopOutlined },
-  { to: '/seller/overview', label: 'Tổng quan', icon: DashboardOutlined },
-  { to: '/seller/orders', label: 'Đơn hàng & GHN', icon: TruckOutlined },
-  { to: '/seller/auctions', label: 'Đấu giá', icon: CodeSandboxOutlined },
-  { to: '/seller/products', label: 'Kho & Sản phẩm', icon: InboxOutlined },
-  { to: '/seller/finance', label: 'Tài chính & Ví Escrow', icon: WalletOutlined },
-  { to: '/seller/reviews', label: 'Đánh giá & Khách hàng', icon: StarOutlined },
-  { to: '/seller/disputes', label: 'Khiếu nại', icon: SafetyCertificateOutlined },
-  { to: '/seller/settings', label: 'Cài đặt Shop', icon: SettingOutlined },
-  { to: '/seller/profile', label: 'Hồ sơ cá nhân', icon: UserOutlined },
-];
+const linkDefs = [
+  { to: '/seller', key: 'nav.center', icon: ShopOutlined },
+  { to: '/seller/overview', key: 'nav.overview', icon: DashboardOutlined },
+  { to: '/seller/orders', key: 'nav.orders', icon: TruckOutlined },
+  { to: '/seller/auctions', key: 'nav.auctions', icon: CodeSandboxOutlined },
+  { to: '/seller/products', key: 'nav.products', icon: InboxOutlined },
+  { to: '/seller/finance', key: 'nav.finance', icon: WalletOutlined },
+  { to: '/seller/reviews', key: 'nav.reviews', icon: StarOutlined },
+  { to: '/seller/disputes', key: 'nav.disputes', icon: SafetyCertificateOutlined },
+  { to: '/seller/settings', key: 'nav.settings', icon: SettingOutlined },
+  { to: '/seller/profile', key: 'nav.profile', icon: UserOutlined },
+] as const;
 function readDrafts(key: string): SellerDraft[] {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(key) || '[]');
@@ -63,6 +65,7 @@ export default function SellerLayout() {
   return <SellerWorkspace key={user.id} />;
 }
 function SellerWorkspace() {
+  const { t } = useTranslation('seller');
   const user = useSellerSession();
   const { switchActiveMode, token, refreshProfile } = useAuth();
   const toast = useToast();
@@ -212,7 +215,7 @@ function SellerWorkspace() {
             QUẢN TRỊ CỬA HÀNG
           </div>
           <nav aria-label="Điều hướng người bán">
-            {links.map(({ to, label, icon: Icon }) => (
+            {linkDefs.map(({ to, key, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -225,7 +228,7 @@ function SellerWorkspace() {
                 data-seller="nav-link"
               >
                 <Icon className="text-[19px]" aria-hidden="true" />
-                <span>{label}</span>
+                <span>{t(key)}</span>
               </NavLink>
             ))}
           </nav>
@@ -313,6 +316,7 @@ function SellerWorkspace() {
                     ? 'Gian hàng hoạt động'
                     : 'Chế độ người mua'}
               </span>
+              <LanguageSwitcher compact />
               <div className="relative" data-seller="popover-anchor" ref={noticeRef}>
                 <SellerNotifications
                   key={`${user.id}:${token}`}

@@ -87,6 +87,7 @@ const AdminStudioPage = lazy(() => import('../pages/admin/AdminStudioPage'));
 const AdminFinancePage = lazy(() => import('../pages/admin/AdminFinancePage'));
 const AdminSystemPage = lazy(() => import('../pages/admin/AdminSystemPage'));
 const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'));
+const AdminChatPage = lazy(() => import('../pages/admin/AdminChatPage'));
 const AdminCategoriesPage = lazy(() => import('../pages/admin/AdminCategoriesPage'));
 const AdminBannersPage = lazy(() => import('../pages/admin/AdminBannersPage'));
 
@@ -234,6 +235,7 @@ function AppRouter() {
                 <Route path="finance" element={<AdminFinancePage />} />
                 <Route path="system" element={<AdminSystemPage />} />
                 <Route path="settings" element={<AdminSettingsPage />} />
+                <Route path="chat" element={<AdminChatPage />} />
                 <Route path="*" element={<Navigate to="/admin/overview" replace />} />
               </Route>
             </Route>

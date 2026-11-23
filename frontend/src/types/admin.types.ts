@@ -1,4 +1,4 @@
-import type { Role } from '@nexus/types';
+import type { OrderStatus, Role } from '@nexus/types';
 import type { SellerUpgradeRequest } from './user.types.ts';
 
 export interface StaffUser {
@@ -173,6 +173,89 @@ export interface AdminShopDetail {
     createdAt: string;
     admin: { id: string; fullName: string; email: string };
   }[];
+}
+
+export interface AdminShopOrder {
+  id: string;
+  buyer: {
+    id: string;
+    fullName: string;
+    email: string;
+    phoneNumber: string | null;
+    avatarUrl: string | null;
+  } | null;
+  subtotal: number;
+  shippingFee: number;
+  totalAmount: number;
+  status: OrderStatus;
+  shippingAddress: unknown;
+  itemsCount: number;
+  items: Array<{
+    id: string;
+    productId: string | null;
+    selections: unknown;
+    title: string;
+    thumbnail: string | null;
+    unitPrice: number;
+    quantity: number;
+    totalPrice: number;
+  }>;
+  shipment: {
+    carrier: string | null;
+    trackingNumber: string | null;
+    waybillCode: string | null;
+    status: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminShopOrderPage {
+  items: AdminShopOrder[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface AdminShopViolation {
+  id: string;
+  shopId?: string;
+  productId?: string | null;
+  title: string;
+  description: string;
+  evidenceUrls: string[];
+  penaltyLevel: string | null;
+  status: 'PENDING' | 'INVESTIGATING' | 'CONFIRMED' | 'DISMISSED';
+  resolutionNotes: string | null;
+  handledAt: string | null;
+  handledBy: { id: string; fullName: string; email: string } | null;
+  reporter: { id: string; fullName: string; email: string } | null;
+  createdAt: string;
+}
+
+export interface AdminShopActionLog {
+  id: string;
+  shopId?: string;
+  adminId?: string;
+  action: 'WARN' | 'SUSPEND' | 'RESTORE';
+  reason: string | null;
+  createdAt: string;
+  admin: { id: string; fullName: string; email: string };
+}
+
+export interface CreateAdminShopViolationDto {
+  title: string;
+  description: string;
+  evidenceUrls?: string[];
+  penaltyLevel?: string;
+  status?: AdminShopViolation['status'];
+  resolutionNotes?: string;
+}
+
+export interface ResolveAdminShopAppealDto {
+  reason: string;
+  restoredScore?: number;
 }
 
 export interface UpdateShopStatusResult {

@@ -11,6 +11,7 @@ import {
 import {
   AuctionItemStatus,
   AuctionStatus,
+  BannerCreatorRole,
   NotificationChannel,
   NotificationType,
   Prisma,
@@ -533,6 +534,23 @@ export class AuctionService implements OnModuleInit {
         },
       });
 
+      if (created.imageUrl?.trim()) {
+        await tx.eventBanner.create({
+          data: {
+            title: created.title.trim().slice(0, 150),
+            imageUrl: created.imageUrl.trim(),
+            targetUrl: auctionTargetUrl(created.id),
+            auctionId: created.id,
+            startsAt: consignmentDeadline ?? startTime,
+            endsAt: endTime,
+            isActive: true,
+            priority: 0,
+            creatorId: adminId,
+            creatorRole: BannerCreatorRole.ADMIN,
+          },
+        });
+      }
+
       const eligibleSellers = await tx.user.findMany({
         where: {
           id: { not: adminId },
@@ -607,7 +625,7 @@ export class AuctionService implements OnModuleInit {
       );
     }
 
-    return this.prisma.auction.update({
+    const updated = await this.prisma.auction.update({
       where: { id: auctionId },
       data: {
         ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
@@ -625,6 +643,54 @@ export class AuctionService implements OnModuleInit {
           : {}),
       },
     });
+
+    try {
+      const consignedItems = await this.prisma.auctionItem.findMany({
+        where: { auctionId },
+        select: { sellerId: true },
+        distinct: ['sellerId'],
+      });
+
+      if (consignedItems.length > 0) {
+        const deadlineLabel = consignmentDeadline
+          ? consignmentDeadline.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })
+          : startTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        const endTimeLabel = endTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+        await this.prisma.notification.createMany({
+          data: consignedItems.map((s) => ({
+            userId: s.sellerId,
+            auctionId: updated.id,
+            targetUrl: auctionTargetUrl(updated.id),
+            title: `Thay đổi lịch phiên đấu giá: ${updated.title} ⏰`,
+            content: `Phiên đấu giá "${updated.title}" mà bạn tham gia ký gửi vừa được Admin điều chỉnh thời gian. Hạn chót ký gửi: ${deadlineLabel}, kết thúc lúc: ${endTimeLabel}. Vui lòng kiểm tra lại lịch trình.`,
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+            metadata: {
+              actionType: 'AUCTION_SCHEDULE_UPDATED',
+              auctionId: updated.id,
+              consignmentDeadline: consignmentDeadline?.toISOString() ?? null,
+              endTime: endTime.toISOString(),
+            },
+          })),
+        });
+      }
+
+      await this.prisma.eventBanner.updateMany({
+        where: { auctionId },
+        data: {
+          ...(dto.title !== undefined ? { title: dto.title.trim().slice(0, 150) } : {}),
+          ...(dto.imageUrl !== undefined && dto.imageUrl ? { imageUrl: dto.imageUrl.trim() } : {}),
+          startsAt: consignmentDeadline ?? startTime,
+          endsAt: endTime,
+        },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Đồng bộ notification / banner khi update auction thất bại: ${(err as Error).message}`,
+      );
+    }
+
+    return updated;
   }
 
   /**
@@ -785,6 +851,39 @@ export class AuctionService implements OnModuleInit {
     }
     if (existing._count.bids > 0 || existing._count.awards > 0) {
       throw new BadRequestException('Không thể xóa phòng đấu giá đã phát sinh lượt đặt giá.');
+    }
+
+    try {
+      const consignedItems = await this.prisma.auctionItem.findMany({
+        where: { auctionId },
+        select: { sellerId: true },
+        distinct: ['sellerId'],
+      });
+
+      if (consignedItems.length > 0) {
+        await this.prisma.notification.createMany({
+          data: consignedItems.map((s) => ({
+            userId: s.sellerId,
+            title: `Phiên đấu giá đã bị hủy: ${existing.title} ⚠️`,
+            content: `Phiên đấu giá "${existing.title}" đã bị Admin hủy bỏ. Các vật phẩm bạn đã gửi ký gửi vào phiên này đã được hoàn trả về kho của bạn.`,
+            type: NotificationType.AUCTION,
+            channel: NotificationChannel.IN_APP,
+            metadata: {
+              actionType: 'AUCTION_CANCELLED_BY_ADMIN',
+              auctionTitle: existing.title,
+            },
+          })),
+        });
+      }
+
+      await this.prisma.eventBanner.updateMany({
+        where: { auctionId },
+        data: { isActive: false },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Xử lý notification / banner khi xóa auction thất bại: ${(err as Error).message}`,
+      );
     }
 
     await this.prisma.auction.delete({ where: { id: auctionId } });

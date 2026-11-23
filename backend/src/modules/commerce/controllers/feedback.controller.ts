@@ -1,10 +1,28 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@nexus/types';
 import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { FeedbackPageDto, ReportDto, ReviewDto } from '../dtos/feedback.dto';
+import {
+  AdminDeleteReviewDto,
+  FeedbackPageDto,
+  QueryAdminReviewsDto,
+  ReportDto,
+  ReviewDto,
+} from '../dtos/feedback.dto';
 import { ReviewsService } from '../services/reviews.service';
 import { ReportsService } from '../services/reports.service';
 
@@ -20,6 +38,7 @@ export class FeedbackController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
+  @ApiOperation({ summary: 'Đánh giá gian hàng sau khi mua thành công từ 2 sản phẩm' })
   shopReview(
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
@@ -27,10 +46,37 @@ export class FeedbackController {
   ): Promise<unknown> {
     return this.reviews.create(id, orderId, dto, 'shop');
   }
+
+  @Patch('commerce/orders/:orderId/shop-review')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @ApiOperation({ summary: 'Chỉnh sửa đánh giá gian hàng của chính mình' })
+  updateShopReview(
+    @CurrentUser('id') id: string,
+    @Param('orderId') orderId: string,
+    @Body() dto: ReviewDto,
+  ): Promise<unknown> {
+    return this.reviews.updateShopReview(id, orderId, dto);
+  }
+
+  @Delete('commerce/orders/:orderId/shop-review')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @ApiOperation({ summary: 'Xóa đánh giá gian hàng của chính mình' })
+  deleteShopReview(
+    @CurrentUser('id') id: string,
+    @Param('orderId') orderId: string,
+  ): Promise<unknown> {
+    return this.reviews.deleteShopReview(id, orderId);
+  }
+
   @Post('commerce/orders/:orderId/products/:productId/review')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
+  @ApiOperation({ summary: 'Đánh giá sản phẩm đã mua' })
   productReview(
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
@@ -38,6 +84,76 @@ export class FeedbackController {
     @Body() dto: ReviewDto,
   ): Promise<unknown> {
     return this.reviews.create(id, orderId, dto, 'product', productId);
+  }
+
+  @Patch('commerce/orders/:orderId/products/:productId/review')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @ApiOperation({ summary: 'Chỉnh sửa đánh giá sản phẩm của chính mình' })
+  updateProductReview(
+    @CurrentUser('id') id: string,
+    @Param('orderId') orderId: string,
+    @Param('productId') productId: string,
+    @Body() dto: ReviewDto,
+  ): Promise<unknown> {
+    return this.reviews.updateProductReview(id, orderId, productId, dto);
+  }
+
+  @Delete('commerce/orders/:orderId/products/:productId/review')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @ApiOperation({ summary: 'Xóa đánh giá sản phẩm của chính mình' })
+  deleteProductReview(
+    @CurrentUser('id') id: string,
+    @Param('orderId') orderId: string,
+    @Param('productId') productId: string,
+  ): Promise<unknown> {
+    return this.reviews.deleteProductReview(id, orderId, productId);
+  }
+
+  @Get('admin/reviews')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @ApiOperation({
+    summary: 'Admin/Staff tra cứu danh sách bình luận/đánh giá toàn sàn kèm điểm uy tín tác giả',
+  })
+  adminListReviews(@Query() query: QueryAdminReviewsDto): Promise<unknown> {
+    return this.reviews.adminListReviews(query);
+  }
+
+  @Delete('admin/reviews/product/:id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin/Staff xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
+  })
+  adminDeleteProductReview(
+    @CurrentUser('role') actorRole: string,
+    @Param('id') id: string,
+    @Body() dto: AdminDeleteReviewDto,
+  ): Promise<unknown> {
+    return this.reviews.adminDeleteReview(id, 'product', dto, actorRole);
+  }
+
+  @Delete('admin/reviews/shop/:id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin/Staff xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo',
+  })
+  adminDeleteShopReview(
+    @CurrentUser('role') actorRole: string,
+    @Param('id') id: string,
+    @Body() dto: AdminDeleteReviewDto,
+  ): Promise<unknown> {
+    return this.reviews.adminDeleteReview(id, 'shop', dto, actorRole);
   }
   @Post('seller/orders/:orderId/customer-review')
   @ApiBearerAuth()

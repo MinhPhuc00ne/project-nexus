@@ -1,0 +1,17 @@
+{
+  "sidebar": {
+    "subtitle": "Support Center",
+    "sectionTitle": "SUPPORT OPERATIONS",
+    "closeMenu": "Close menu"
+  },
+  "nav": {
+    "team": "Team Management",
+    "inbox": "Live Inbox",
+    "disputes": "Disputes & Claims",
+    "auctionSupport": "3D Auction Support",
+    "faq": "Guides & FAQ",
+    "banners": "Banner Management",
+    "history": "History & CSAT",
+    "performance": "Performance"
+  }
+}

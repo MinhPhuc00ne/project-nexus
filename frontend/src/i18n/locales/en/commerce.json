@@ -1,0 +1,49 @@
+{
+  "cart": {
+    "title": "Your Shopping Cart",
+    "heading": "Shopping Cart ({{count}} items)",
+    "empty": "Your shopping cart is empty",
+    "emptyDesc": "Discover premium products and exclusive 3D live auctions on NEXUS today!",
+    "continueShopping": "Continue shopping",
+    "subtotal": "Subtotal",
+    "checkout": "Proceed to Checkout",
+    "remove": "Remove",
+    "removedToast": "Item removed from cart.",
+    "updateFailed": "Unable to update item quantity.",
+    "removeFailed": "Unable to remove item.",
+    "outOfStockError": "Please deselect out-of-stock items before checking out.",
+    "insufficientStockError": "Some items exceed available inventory. Please reduce quantities."
+  },
+  "checkout": {
+    "title": "Order Checkout",
+    "loading": "Loading checkout details…",
+    "shippingAddress": "Shipping Address",
+    "addressMissing": "Please provide a complete shipping address.",
+    "addressSaved": "Shipping address saved and updated.",
+    "paymentMethod": "Payment Method",
+    "payos": "VietQR Bank Transfer (PayOS)",
+    "wallet": "NEXUS Pay Wallet",
+    "cod": "Cash on Delivery (COD)",
+    "shippingFee": "Shipping Fee",
+    "total": "Total Amount",
+    "placeOrder": "Place Order",
+    "failed": "Checkout failed. Please try again!",
+    "viewMyOrders": "View My Orders",
+    "noItemsTitle": "No items to check out",
+    "noItemsDesc": "Please return to your cart and select items.",
+    "backToCart": "Back to Cart"
+  },
+  "orders": {
+    "title": "Orders",
+    "status": {
+      "PENDING_PAYMENT": "Pending Payment",
+      "PAID": "Paid",
+      "PREPARING": "Preparing",
+      "SHIPPING": "Shipping",
+      "DELIVERED": "Delivered",
+      "CONFIRMED": "Completed",
+      "CANCELLED": "Cancelled",
+      "REFUNDED": "Refunded"
+    }
+  }
+}

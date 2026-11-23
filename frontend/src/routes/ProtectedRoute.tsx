@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -9,6 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ allowedRoles, children }: ProtectedRouteProps) {
+  const { t } = useTranslation('common');
   const { token, user, storedUser, isLoading } = useAuth();
   const location = useLocation();
 
@@ -20,7 +22,7 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
     return (
       <main className="flex min-h-dvh items-center justify-center bg-slate-50 p-6">
         <p role="status" className="text-sm font-medium text-slate-600">
-          Đang kiểm tra quyền truy cập…
+          {t('states.checkingAccess')}
         </p>
       </main>
     );

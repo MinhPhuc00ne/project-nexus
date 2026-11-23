@@ -1,0 +1,49 @@
+{
+  "cart": {
+    "title": "Giỏ hàng của bạn",
+    "heading": "Giỏ Hàng ({{count}} sản phẩm)",
+    "empty": "Giỏ hàng của bạn đang trống",
+    "emptyDesc": "Khám phá các sản phẩm thương mại cao cấp và phiên đấu giá 3D độc quyền trên NEXUS ngay hôm nay!",
+    "continueShopping": "Tiếp tục mua sắm",
+    "subtotal": "Tạm tính",
+    "checkout": "Tiến hành thanh toán",
+    "remove": "Xóa",
+    "removedToast": "Đã xóa sản phẩm khỏi giỏ hàng.",
+    "updateFailed": "Không thể cập nhật số lượng.",
+    "removeFailed": "Không thể xóa sản phẩm.",
+    "outOfStockError": "Vui lòng bỏ chọn sản phẩm đã hết hàng trước khi thanh toán.",
+    "insufficientStockError": "Một số sản phẩm vượt quá tồn kho khả dụng. Vui lòng giảm số lượng."
+  },
+  "checkout": {
+    "title": "Thanh toán đơn hàng",
+    "loading": "Đang tải thông tin thanh toán…",
+    "shippingAddress": "Địa chỉ nhận hàng",
+    "addressMissing": "Vui lòng cung cấp đầy đủ thông tin địa chỉ giao hàng.",
+    "addressSaved": "Đã lưu và cập nhật địa chỉ giao hàng.",
+    "paymentMethod": "Phương thức thanh toán",
+    "payos": "Chuyển khoản VietQR (PayOS)",
+    "wallet": "Ví NEXUS Pay",
+    "cod": "Thanh toán khi nhận hàng (COD)",
+    "shippingFee": "Phí vận chuyển",
+    "total": "Tổng thanh toán",
+    "placeOrder": "Đặt hàng",
+    "failed": "Thanh toán thất bại. Vui lòng thử lại!",
+    "viewMyOrders": "Xem Đơn Hàng Của Tôi",
+    "noItemsTitle": "Không có sản phẩm nào để thanh toán",
+    "noItemsDesc": "Vui lòng quay lại giỏ hàng và chọn sản phẩm.",
+    "backToCart": "Quay lại giỏ hàng"
+  },
+  "orders": {
+    "title": "Đơn hàng",
+    "status": {
+      "PENDING_PAYMENT": "Chờ thanh toán",
+      "PAID": "Đã thanh toán",
+      "PREPARING": "Đang chuẩn bị",
+      "SHIPPING": "Đang giao hàng",
+      "DELIVERED": "Đã giao hàng",
+      "CONFIRMED": "Hoàn thành",
+      "CANCELLED": "Đã hủy",
+      "REFUNDED": "Đã hoàn tiền"
+    }
+  }
+}

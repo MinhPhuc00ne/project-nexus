@@ -21,6 +21,11 @@ import type {
   UpdateShopStatusResult,
   WarnAdminShopDto,
   WarnAdminShopResult,
+  AdminShopOrderPage,
+  AdminShopViolation,
+  AdminShopActionLog,
+  CreateAdminShopViolationDto,
+  ResolveAdminShopAppealDto,
 } from '../types/admin.types';
 import type {
   AdminWalletSummary,
@@ -139,6 +144,63 @@ export function getAdminShopById(id: string, signal?: AbortSignal): Promise<Admi
     url: `/admin/shops/${encodeURIComponent(id)}`,
     method: 'GET',
     signal,
+  });
+}
+
+export function getAdminShopOrders(
+  shopId: string,
+  params: { status?: string; page?: number; limit?: number } = {},
+  signal?: AbortSignal,
+): Promise<AdminShopOrderPage> {
+  return adminRequest<AdminShopOrderPage>({
+    url: `/admin/shops/${encodeURIComponent(shopId)}/orders`,
+    method: 'GET',
+    params,
+    signal,
+  });
+}
+
+export function createAdminShopViolation(
+  shopId: string,
+  dto: CreateAdminShopViolationDto,
+): Promise<{ success: boolean; message: string; violation: AdminShopViolation }> {
+  return adminRequest({
+    url: `/admin/shops/${encodeURIComponent(shopId)}/violations`,
+    method: 'POST',
+    data: dto,
+  });
+}
+
+export function getAdminShopViolations(
+  shopId: string,
+  signal?: AbortSignal,
+): Promise<{ total: number; items: AdminShopViolation[] }> {
+  return adminRequest({
+    url: `/admin/shops/${encodeURIComponent(shopId)}/violations`,
+    method: 'GET',
+    signal,
+  });
+}
+
+export function getAdminShopActionLogs(
+  shopId: string,
+  signal?: AbortSignal,
+): Promise<{ total: number; items: AdminShopActionLog[] }> {
+  return adminRequest({
+    url: `/admin/shops/${encodeURIComponent(shopId)}/action-logs`,
+    method: 'GET',
+    signal,
+  });
+}
+
+export function resolveAdminShopAppeal(
+  shopId: string,
+  dto: ResolveAdminShopAppealDto,
+): Promise<{ success: boolean; message: string; shop: { id: string; storeName: string } }> {
+  return adminRequest({
+    url: `/admin/shops/${encodeURIComponent(shopId)}/resolve-appeal`,
+    method: 'POST',
+    data: dto,
   });
 }
 

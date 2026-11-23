@@ -62,3 +62,43 @@ export class FeedbackPageDto {
   @Max(100)
   limit = 20;
 }
+
+export class AdminDeleteReviewDto {
+  @ApiProperty({ example: 'Bình luận dùng ngôn từ thô tục, xúc phạm người bán' })
+  @IsString()
+  @MinLength(5, { message: 'Lý do xóa phải có ít nhất 5 ký tự' })
+  @MaxLength(1000)
+  reason!: string;
+
+  @ApiProperty({ example: 10, description: 'Số điểm uy tín muốn trừ của người đánh giá' })
+  @IsInt()
+  @Min(1, { message: 'Điểm uy tín trừ phải lớn hơn hoặc bằng 1' })
+  pointsToDeduct!: number;
+}
+
+export class QueryAdminReviewsDto {
+  @ApiPropertyOptional({ default: 1, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page = 1;
+
+  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit = 20;
+
+  @ApiPropertyOptional({ enum: ['PRODUCT', 'SHOP'] })
+  @IsOptional()
+  @IsString()
+  type?: 'PRODUCT' | 'SHOP';
+
+  @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm theo nội dung bình luận' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}

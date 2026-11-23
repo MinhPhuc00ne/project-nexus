@@ -1,79 +1,73 @@
-import {
-  mockRevenuePeriods,
-  mockRevenueCompositionItems,
-  mockRevenueComposition,
-} from './mockData/revenue';
-import { mockOverviewMetrics } from '../Overview/mockData/dashboard';
-import { mockSettings } from '../Settings/mockData/settings';
-// Biểu đồ dùng chung cho Tổng quan và Tài chính: đường doanh thu + vòng tròn cơ cấu nguồn thu.
-
-import { ChartNoAxesCombined, CircleDollarSign, TrendingUp } from 'lucide-react';
+import { ChartNoAxesCombined, CircleDollarSign } from 'lucide-react';
 import { useState } from 'react';
+import type { AdminOverviewAnalytics, RevenuePeriod } from '../../../types/admin-analytics.types';
 import { Badge, Panel } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';
 
-// Mỗi phần tử là một kỳ thống kê mẫu. total/auction/normal tính bằng VND.
-// auctionValues/normalValues tính bằng triệu VND để vẽ SVG, là chuỗi minh họa riêng
-// và chưa được tính từ các tổng ở trên. Khi nối API cần trả về chuỗi và tổng đồng nhất.
-
-export function RevenueChart() {
-  // period là vị trí kỳ được chọn trong mảng; hovered là vị trí điểm đang được rê chuột.
-  const [period, setPeriod] = useState(0);
+export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics }) {
+  const [periodIndex, setPeriodIndex] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
-  const current = mockRevenuePeriods[period];
-  // Chuyển số liệu thành chuỗi tọa độ SVG "x,y x,y ..." cho polyline/polygon.
-  // x bắt đầu 48 và cách nhau 76; y=236-value vì trục y của SVG tăng từ trên xuống.
-  // Hàm hiện thiết kế cho 7 điểm, giá trị 0–200; đổi số điểm/thang đo cần tính lại tọa độ.
+  const periods = analytics.revenuePeriods;
+  const current: RevenuePeriod | undefined = periods[periodIndex];
+  if (!current)
+    return (
+      <Panel title="Doanh thu">
+        <p className="text-sm text-slate-500">Chưa có dữ liệu doanh thu.</p>
+      </Panel>
+    );
+  const xAt = (index: number) =>
+    current.labels.length <= 1 ? 276 : 48 + (index * 456) / (current.labels.length - 1);
   const coords = (values: number[]) =>
-    values.map((value, index) => `${48 + index * 76},${236 - value}`).join(' ');
+    values.map((value, index) => `${xAt(index)},${236 - value}`).join(' ');
+  const auctionPoints = current.auctionValues.length
+    ? current.auctionValues
+    : current.labels.map(() => 0);
+  const normalPoints = current.normalValues.length
+    ? current.normalValues
+    : current.labels.map(() => 0);
 
   return (
     <Panel
-      title="Biểu đồ xu hướng doanh thu phí sàn & tỷ trọng"
-      subtitle={`Phân tích dòng tiền phí ${mockSettings.auctionFee}% (đấu giá 3D) và phí ${mockSettings.normalFee}% (đơn TMĐT) theo thời gian`}
+      title="Xu hướng doanh thu phí sàn"
+      subtitle="Phí đơn hàng thường và phí đấu giá theo kỳ"
       icon={<ChartNoAxesCombined size={19} />}
     >
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1 rounded-lg bg-slate-50 p-1">
-          {mockRevenuePeriods.map((item, index) => (
+        <div className="flex flex-wrap gap-1 rounded-lg bg-slate-50 p-1">
+          {periods.map((item, index) => (
             <button
+              type="button"
               key={item.label}
               onClick={() => {
-                setPeriod(index);
+                setPeriodIndex(index);
                 setHovered(null);
               }}
-              className={`rounded-md px-3 py-2 text-[11px] ${period === index ? 'bg-white font-bold text-primary shadow-sm' : 'text-slate-500 hover:text-primary'}`}
+              className={`rounded-md px-3 py-2 text-[11px] ${periodIndex === index ? 'bg-white font-bold text-primary shadow-sm' : 'text-slate-500 hover:text-primary'}`}
             >
               {item.label}
             </button>
           ))}
         </div>
-        <Badge>₫ VND</Badge>
+        <Badge>VND</Badge>
       </div>
       <div className="mb-7 grid gap-4 rounded-xl bg-blue-50/70 p-4 sm:grid-cols-3">
         <div>
-          <p className="text-[9px] uppercase text-slate-500">Tổng phí sàn {current.unit}</p>
+          <p className="text-[9px] uppercase text-slate-500">Tổng phí sàn · {current.unit}</p>
           <p className="mt-1 text-base font-bold tracking-tight">{formatMoney(current.total)}</p>
-          <span className="mt-1 flex items-center gap-1 text-[10px] text-primary">
-            <TrendingUp size={12} />+{mockOverviewMetrics.revenueGrowth} so với kỳ trước
-          </span>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-slate-500">
-            Phí đấu giá 3D ({mockSettings.auctionFee}%)
-          </p>
+          <p className="text-[9px] uppercase text-slate-500">Phí đấu giá 3D</p>
           <p className="mt-1 text-base font-bold text-primary">{formatMoney(current.auction)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
-            Tỷ trọng: {((current.auction / current.total) * 100).toFixed(1)}%
+            Tỷ trọng: {current.total ? ((current.auction / current.total) * 100).toFixed(1) : '0.0'}
+            %
           </p>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-slate-500">
-            Phí đơn thường ({mockSettings.normalFee}%)
-          </p>
+          <p className="text-[9px] uppercase text-slate-500">Phí đơn hàng thường</p>
           <p className="mt-1 text-base font-bold text-blue-500">{formatMoney(current.normal)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
-            Tỷ trọng: {((current.normal / current.total) * 100).toFixed(1)}%
+            Tỷ trọng: {current.total ? ((current.normal / current.total) * 100).toFixed(1) : '0.0'}%
           </p>
         </div>
       </div>
@@ -81,17 +75,16 @@ export function RevenueChart() {
         <div className="flex gap-4">
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-sm bg-primary" />
-            Phí đấu giá 3D ({mockSettings.auctionFee}%)
+            Phí đấu giá 3D
           </span>
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-sm bg-blue-400" />
-            Phí đơn thường ({mockSettings.normalFee}%)
+            Phí đơn hàng thường
           </span>
         </div>
-        <span>Đơn vị: Triệu VND</span>
+        <span>Biểu đồ chỉ số tương đối</span>
       </div>
-      {/* viewBox giữ hệ tọa độ cố định; w-full co biểu đồ theo chiều rộng card. */}
-      <div className="relative rounded-xl bg-slate-50/80 p-2">
+      <div className="relative overflow-hidden rounded-xl bg-slate-50/80 p-2">
         <svg
           viewBox="0 0 550 275"
           role="img"
@@ -99,7 +92,6 @@ export function RevenueChart() {
           className="w-full"
           onMouseLeave={() => setHovered(null)}
         >
-          {/* Gradient dùng cho vùng tô dưới đường biểu đồ; màu primary lấy từ theme chung. */}
           <defs>
             <linearGradient id="admin-chart-auction" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--color-primary)" stopOpacity=".2" />
@@ -121,60 +113,65 @@ export function RevenueChart() {
                 strokeDasharray="3 4"
               />
               <text x="37" y={240 - value} textAnchor="end" fill="#94a3b8" fontSize="10">
-                {value === 0 ? '0' : `${value}M`}
+                {value === 0 ? '0' : `${value}`}
               </text>
             </g>
           ))}
-          <polygon
-            points={`48,236 ${coords(current.normalValues)} 504,236`}
-            fill="url(#admin-chart-normal)"
-          />
-          <polygon
-            points={`48,236 ${coords(current.auctionValues)} 504,236`}
-            fill="url(#admin-chart-auction)"
-          />
+          {current.labels.length > 1 && (
+            <>
+              <polygon
+                points={`48,236 ${coords(normalPoints)} 504,236`}
+                fill="url(#admin-chart-normal)"
+              />
+              <polygon
+                points={`48,236 ${coords(auctionPoints)} 504,236`}
+                fill="url(#admin-chart-auction)"
+              />
+            </>
+          )}
           <polyline
-            points={coords(current.auctionValues)}
+            points={coords(auctionPoints)}
             fill="none"
             stroke="var(--color-primary)"
             strokeWidth="2.5"
           />
-          <polyline
-            points={coords(current.normalValues)}
-            fill="none"
-            stroke="#60a5fa"
-            strokeWidth="2.5"
-          />
+          <polyline points={coords(normalPoints)} fill="none" stroke="#60a5fa" strokeWidth="2.5" />
           {current.labels.map((label, index) => (
-            <g key={label} onMouseEnter={() => setHovered(index)}>
+            <g key={`${label}-${index}`} onMouseEnter={() => setHovered(index)}>
               <circle
-                cx={48 + index * 76}
-                cy={236 - current.auctionValues[index]}
+                cx={xAt(index)}
+                cy={236 - (auctionPoints[index] ?? 0)}
                 r="3.5"
                 fill="white"
                 stroke="var(--color-primary)"
                 strokeWidth="2"
               />
               <circle
-                cx={48 + index * 76}
-                cy={236 - current.normalValues[index]}
+                cx={xAt(index)}
+                cy={236 - (normalPoints[index] ?? 0)}
                 r="3.5"
                 fill="white"
                 stroke="#60a5fa"
                 strokeWidth="2"
               />
-              <text x={48 + index * 76} y="260" textAnchor="middle" fill="#64748b" fontSize="10">
+              <text
+                x={xAt(index)}
+                y="260"
+                textAnchor="middle"
+                fill="#64748b"
+                fontSize={current.labels.length > 8 ? 8 : 10}
+              >
                 {label}
               </text>
-              <rect x={28 + index * 76} y="22" width="40" height="220" fill="transparent" />
+              <rect x={xAt(index) - 15} y="22" width="30" height="220" fill="transparent" />
             </g>
           ))}
         </svg>
         {hovered !== null && (
-          <div className="pointer-events-none absolute right-4 top-3 rounded-xl bg-primary p-3 text-[10px] leading-6 text-white shadow-lg">
+          <div className="pointer-events-none absolute right-4 top-3 rounded-xl bg-primary p-3 text-[10px] leading-5 text-white shadow-lg">
             <p className="font-bold">{current.labels[hovered]}</p>
-            <p>Đấu giá: {current.auctionValues[hovered]} triệu ₫</p>
-            <p>Đơn thường: {current.normalValues[hovered]} triệu ₫</p>
+            <p>Phí đấu giá kỳ này: {formatMoney(current.auction)}</p>
+            <p>Phí đơn thường kỳ này: {formatMoney(current.normal)}</p>
           </div>
         )}
       </div>
@@ -182,34 +179,36 @@ export function RevenueChart() {
   );
 }
 
-// Biểu đồ vòng tròn dùng CSS conic-gradient, chưa cần thư viện chart bên ngoài.
-// Lớp tròn trắng bên trong tạo lỗ donut; tỷ trọng và tổng hiện là số liệu mẫu cố định.
-export function RevenueComposition() {
+export function RevenueComposition({ analytics }: { analytics: AdminOverviewAnalytics }) {
+  const composition = analytics.revenueComposition;
+  const items = composition.items ?? [];
+  const firstPercentage = Math.max(
+    0,
+    Math.min(100, Number.parseFloat(items[0]?.percentage ?? '0') || 0),
+  );
   return (
     <Panel
       title="Cơ cấu nguồn thu phí sàn"
-      subtitle="Tỷ lệ đóng góp theo danh mục"
+      subtitle="Tỷ lệ đóng góp theo nguồn"
       icon={<CircleDollarSign size={19} />}
     >
       <div
         className="relative mx-auto my-6 flex size-40 items-center justify-center rounded-full"
         style={{
-          background: `conic-gradient(var(--color-primary) 0% ${mockRevenueComposition.primaryPercentage}%, #60a5fa ${mockRevenueComposition.primaryPercentage}% 100%)`,
+          background: `conic-gradient(var(--color-primary) 0% ${firstPercentage}%, #60a5fa ${firstPercentage}% 100%)`,
         }}
       >
         <div className="flex size-29 flex-col items-center justify-center rounded-full bg-white">
           <span className="text-[9px] text-slate-500">TỔNG PHÍ SÀN</span>
-          <strong className="my-1 text-xl text-slate-900">
-            {mockRevenueComposition.totalLabel}
-          </strong>
-          <span className="text-[9px] text-primary">VND / Tháng</span>
+          <strong className="my-1 text-xl text-slate-900">{composition.totalLabel}</strong>
+          <span className="text-[9px] text-primary">VND</span>
         </div>
       </div>
       <div className="space-y-2">
-        {mockRevenueCompositionItems.map((item) => (
+        {items.map((item) => (
           <div key={item.name} className="flex items-start gap-2 rounded-lg bg-slate-50 p-3">
-            <span className={`mt-1 size-2 shrink-0 rounded-full ${item.color}`} />
-            <div className="flex-1">
+            <span className={`mt-1 size-2 shrink-0 rounded-full ${item.color || 'bg-primary'}`} />
+            <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold">{item.name}</p>
               <p className="mt-0.5 text-[10px] text-slate-400">{item.description}</p>
             </div>

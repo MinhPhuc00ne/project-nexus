@@ -1,23 +1,28 @@
 import { Film, CheckCircle2, ShieldCheck, ShieldHalf, Truck } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-const commitments = [
+const commitmentDefs = [
   {
     icon: ShieldCheck,
-    title: '100% Chính Hãng',
-    description: 'Bảo chứng Bộ Công Thương & PCI-DSS',
+    titleKey: 'footer.assurances.authenticTitle',
+    descKey: 'footer.assurances.authenticDesc',
   },
   {
     icon: ShieldHalf,
-    title: 'Thanh Toán Bảo Mật',
-    description: 'Bảo mật PayOS, Ví NEXUS & COD',
+    titleKey: 'footer.assurances.paymentTitle',
+    descKey: 'footer.assurances.paymentDesc',
   },
-  { icon: Truck, title: 'Đồng Kiểm Tận Nơi', description: 'Vận hành GHN Express an toàn' },
+  {
+    icon: Truck,
+    titleKey: 'footer.assurances.shippingTitle',
+    descKey: 'footer.assurances.shippingDesc',
+  },
   {
     icon: Film,
-    title: 'Video Thẩm Định Thực Tế',
-    description: 'Showcase chi tiết chất lượng 4K',
+    titleKey: 'footer.assurances.videoTitle',
+    descKey: 'footer.assurances.videoDesc',
   },
-];
+] as const;
 
 const customerCareLinks = [
   { label: 'Trung Tâm Trợ Giúp 24/7', href: '/help' },
@@ -41,7 +46,8 @@ export interface FooterProps {
   year?: number;
 }
 
-export function Footer({ className = '', showAssurances = true, year = 2025 }: FooterProps) {
+export function Footer({ className = '', showAssurances = true, year = 2026 }: FooterProps) {
+  const { t } = useTranslation('common');
   return (
     <footer
       className={`w-full border-t border-slate-200 bg-white font-sans text-slate-900 ${className}`}
@@ -49,16 +55,19 @@ export function Footer({ className = '', showAssurances = true, year = 2025 }: F
       {showAssurances && (
         <div className="border-b border-slate-200 bg-slate-50">
           <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-x-3 gap-y-3 px-4 py-4 sm:gap-x-6 sm:gap-y-5 sm:px-8 sm:py-5 lg:grid-cols-4">
-            {commitments.map(({ icon: Icon, title, description }) => (
-              <div className="flex min-w-0 items-start gap-2 sm:items-center sm:gap-3" key={title}>
+            {commitmentDefs.map(({ icon: Icon, titleKey, descKey }) => (
+              <div
+                className="flex min-w-0 items-start gap-2 sm:items-center sm:gap-3"
+                key={titleKey}
+              >
                 <Icon
                   className="size-5 shrink-0 text-blue-600 sm:size-6"
                   aria-hidden="true"
                   strokeWidth={2}
                 />
                 <div className="min-w-0">
-                  <p className="m-0 text-xs font-semibold leading-4">{title}</p>
-                  <p className="m-0 text-[10px] leading-4 text-slate-500">{description}</p>
+                  <p className="m-0 text-xs font-semibold leading-4">{t(titleKey)}</p>
+                  <p className="m-0 text-[10px] leading-4 text-slate-500">{t(descKey)}</p>
                 </div>
               </div>
             ))}
@@ -96,21 +105,19 @@ export function Footer({ className = '', showAssurances = true, year = 2025 }: F
           </div>
 
           <p className="mt-2.5 mb-0 max-w-xs text-xs leading-[1.65] text-slate-600 max-sm:mt-2 max-sm:max-w-none max-sm:leading-normal">
-            Hệ sinh thái sàn giao dịch thương mại điện tử kết hợp công nghệ đấu giá thực tế ảo 3D
-            thời gian thực. Đảm bảo bảo chứng ký gửi, minh bạch kiểm định và giao nhận an toàn toàn
-            quốc.
+            {t('footer.description')}
           </p>
 
           <div className="mt-3.5 flex items-center gap-2 text-[11px] font-medium text-slate-600">
             <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-            <span>Bảo chứng bởi Hiệp Hội Thương Mại Điện Tử & Đấu Giá Trực Tuyến</span>
+            <span>{t('footer.association')}</span>
           </div>
         </div>
 
         {/* Customer Care column */}
-        <nav className="min-w-0" aria-label="Chăm Sóc Khách Hàng">
-          <h4 className="mb-3 mt-0 text-xs font-bold leading-5 tracking-wider text-slate-800">
-            CHĂM SÓC KHÁCH HÀNG
+        <nav className="min-w-0" aria-label={t('footer.customerCare')}>
+          <h4 className="mb-3 mt-0 text-xs font-bold uppercase leading-5 tracking-wider text-slate-800">
+            {t('footer.customerCare')}
           </h4>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {customerCareLinks.map(({ label, href }) => (
@@ -127,9 +134,9 @@ export function Footer({ className = '', showAssurances = true, year = 2025 }: F
         </nav>
 
         {/* Legal & About column */}
-        <nav className="min-w-0" aria-label="Về NEXUS & Pháp Lý">
-          <h4 className="mb-3 mt-0 text-xs font-bold leading-5 tracking-wider text-slate-800">
-            VỀ NEXUS & PHÁP LÝ
+        <nav className="min-w-0" aria-label={t('footer.aboutNexus')}>
+          <h4 className="mb-3 mt-0 text-xs font-bold uppercase leading-5 tracking-wider text-slate-800">
+            {t('footer.aboutNexus')}
           </h4>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {platformLegalLinks.map(({ label, href }) => (
@@ -191,9 +198,7 @@ export function Footer({ className = '', showAssurances = true, year = 2025 }: F
             <span>Mã số doanh nghiệp: 0109988234 do Sở KH&ĐT cấp</span>
           </div>
           <div className="text-xs text-slate-500">
-            <span>
-              © {year} NEXUS Ecommerce & 3D Auction Inc. Bản quyền được bảo lưu toàn diện.
-            </span>
+            <span>{t('footer.copyright', { year })}</span>
           </div>
         </div>
       </div>

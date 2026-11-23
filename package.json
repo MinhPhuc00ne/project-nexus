@@ -8,12 +8,19 @@
   "workspaces": [
     "packages/*",
     "backend",
-    "frontend"
+    "frontend",
+    "docs-site"
   ],
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test",
+    "test:e2e:smoke": "playwright test",
+    "docs:openapi": "npm run docs:openapi --workspace=backend",
+    "docs:dev": "npm run start --workspace=docs-site",
+    "docs:build": "npm run build --workspace=docs-site",
+    "i18n:check": "node frontend/scripts/check-i18n-parity.mjs",
+    "test:coverage": "npm run test:coverage --workspace=backend --if-present && npm run test:coverage --workspace=frontend --if-present",
     "build:types": "npm run build --workspace=@nexus/types --if-present",
     "dev:backend": "npm run start:dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
@@ -41,7 +48,9 @@
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
+    "@playwright/test": "^1.65.1",
     "eslint": "^10.12.0",
+    "eslint-plugin-sonarjs": "^4.2.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",

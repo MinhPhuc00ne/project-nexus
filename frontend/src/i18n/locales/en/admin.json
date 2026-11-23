@@ -1,0 +1,32 @@
+{
+  "header": {
+    "panelTitle": "NEXUS ADMIN PANEL",
+    "clusterStatus": "Cluster uptime: 99.98%",
+    "broadcastReady": "3D BROADCAST: READY",
+    "openMenu": "Open menu"
+  },
+  "groups": {
+    "operations": "LIVE OPERATIONS",
+    "members": "MEMBERS & APPROVALS",
+    "content": "CONTENT & DISPLAY",
+    "financeTech": "FINANCE & INFRASTRUCTURE"
+  },
+  "nav": {
+    "overview": "Overview",
+    "users": "User Management",
+    "sellers": "Seller Approvals",
+    "stores": "Sellers & Stores",
+    "categories": "Category Management",
+    "products": "Product Management",
+    "orders": "Order Management",
+    "auctions": "Auction Management",
+    "banners": "Banner Management",
+    "refunds": "Refund Approvals",
+    "finance": "Finance & Fees",
+    "reports": "Reports & Claims",
+    "chat": "Chat Management",
+    "studio": "Live Studio",
+    "system": "System & Logs",
+    "settings": "Settings & Moderation"
+  }
+}

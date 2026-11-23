@@ -1,0 +1,32 @@
+{
+  "header": {
+    "panelTitle": "NEXUS ADMIN PANEL",
+    "clusterStatus": "Cụm máy chủ: 99.98%",
+    "broadcastReady": "PHÁT SÓNG 3D: SẴN SÀNG",
+    "openMenu": "Mở menu"
+  },
+  "groups": {
+    "operations": "ĐIỀU HÀNH TRỰC TIẾP",
+    "members": "THÀNH VIÊN & PHÊ DUYỆT",
+    "content": "NỘI DUNG & HIỂN THỊ",
+    "financeTech": "TÀI CHÍNH & KỸ THUẬT"
+  },
+  "nav": {
+    "overview": "Tổng quan",
+    "users": "Quản trị người dùng",
+    "sellers": "Phê duyệt nâng cấp Seller",
+    "stores": "Seller & cửa hàng",
+    "categories": "Quản lý danh mục",
+    "products": "Quản lý sản phẩm",
+    "orders": "Quản lý đơn hàng",
+    "auctions": "Quản lí đấu giá",
+    "banners": "Quản lý banner",
+    "refunds": "Phê duyệt hoàn tiền",
+    "finance": "Tài chính & phí sàn",
+    "reports": "Khiếu nại & báo cáo",
+    "chat": "Quản lý Chat",
+    "studio": "Studio phát trực tiếp",
+    "system": "Hệ thống & nhật ký",
+    "settings": "Cài đặt & kiểm duyệt"
+  }
+}

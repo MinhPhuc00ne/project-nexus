@@ -164,17 +164,33 @@ export class BannerService {
   async createFromAuction(actorId: string, auctionId: string): Promise<EventBanner> {
     const auction = await this.prisma.auction.findUnique({
       where: { id: auctionId },
-      select: { title: true, imageUrl: true, status: true },
+      select: {
+        title: true,
+        imageUrl: true,
+        status: true,
+        consignmentDeadline: true,
+        startTime: true,
+        endTime: true,
+      },
     });
     if (!auction) throw new NotFoundException('Không tìm thấy phiên đấu giá.');
     if (['DRAFT', 'CANCELLED'].includes(auction.status))
       throw new BadRequestException('Banner chỉ được dẫn tới phiên đấu giá công khai.');
     if (!auction.imageUrl?.trim())
       throw new BadRequestException('Vui lòng thêm ảnh cho phiên đấu giá trước khi tạo banner.');
+    const startsAt = auction.consignmentDeadline
+      ? new Date(auction.consignmentDeadline).toISOString()
+      : auction.startTime
+        ? new Date(auction.startTime).toISOString()
+        : null;
+    const endsAt = auction.endTime ? new Date(auction.endTime).toISOString() : null;
+
     return this.save(actorId, {
       title: auction.title.trim().slice(0, 150),
       imageUrl: auction.imageUrl.trim(),
       auctionId,
+      startsAt,
+      endsAt,
       isActive: true,
     });
   }

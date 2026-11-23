@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   ShoppingBag,
@@ -26,6 +27,7 @@ import type { ShippingAddressInput as DeliveryAddress } from '../../services/ord
 export type { DeliveryAddress };
 
 export default function CartPage() {
+  const { t } = useTranslation(['commerce', 'common']);
   const navigate = useNavigate();
   const [items, setItems] = useState<CartItem[]>(() => getCartItems());
   const [loading, setLoading] = useState(false);
@@ -77,16 +79,16 @@ export default function CartPage() {
     try {
       await updateCartQty(id, qty);
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Không thể cập nhật số lượng.');
+      showToast(err instanceof Error ? err.message : t('commerce:cart.updateFailed'));
     }
   };
 
   const handleRemove = async (id: string | number) => {
     try {
       await removeFromCart(id);
-      showToast('Đã xóa sản phẩm khỏi giỏ hàng.');
+      showToast(t('commerce:cart.removedToast'));
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Không thể xóa sản phẩm.');
+      showToast(err instanceof Error ? err.message : t('commerce:cart.removeFailed'));
     }
   };
 
@@ -103,10 +105,10 @@ export default function CartPage() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <nav className="flex items-center gap-2 text-xs text-slate-500">
             <Link to="/" className="hover:text-indigo-600 transition">
-              Trang Chủ
+              {t('common:nav.home')}
             </Link>
             <ChevronRight size={13} />
-            <span className="font-semibold text-slate-800">Giỏ Hàng Của Bạn</span>
+            <span className="font-semibold text-slate-800">{t('commerce:cart.title')}</span>
           </nav>
           <button
             type="button"
@@ -114,13 +116,13 @@ export default function CartPage() {
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition shadow-sm cursor-pointer"
           >
             <ArrowLeft size={14} />
-            Tiếp tục mua sắm
+            {t('commerce:cart.continueShopping')}
           </button>
         </div>
 
         <h1 className="text-2xl font-extrabold text-slate-900 mb-6 flex items-center gap-3">
           <ShoppingBag className="text-[#f24e1e]" size={28} />
-          Giỏ Hàng ({totalQuantity} sản phẩm)
+          {t('commerce:cart.heading', { count: totalQuantity })}
           {loading && <Loader2 size={18} className="animate-spin text-slate-400 ml-2" />}
         </h1>
 
@@ -129,16 +131,13 @@ export default function CartPage() {
             <div className="w-20 h-20 bg-orange-50 text-[#f24e1e] rounded-full flex items-center justify-center mx-auto mb-4">
               <ShoppingBag size={36} />
             </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">Giỏ hàng của bạn đang trống</h2>
-            <p className="text-sm text-slate-500 mb-6">
-              Khám phá các sản phẩm thương mại cao cấp và phiên đấu giá 3D độc quyền trên NEXUS ngay
-              hôm nay!
-            </p>
+            <h2 className="text-xl font-bold text-slate-800 mb-2">{t('commerce:cart.empty')}</h2>
+            <p className="text-sm text-slate-500 mb-6">{t('commerce:cart.emptyDesc')}</p>
             <Link
               to="/search"
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#f24e1e] hover:bg-[#d63b0e] text-white font-bold text-sm transition shadow-md"
             >
-              Tiếp tục mua sắm
+              {t('commerce:cart.continueShopping')}
               <ArrowRight size={16} />
             </Link>
           </div>

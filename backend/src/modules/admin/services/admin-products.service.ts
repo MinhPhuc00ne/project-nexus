@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { NotificationType, Prisma, ProductStatus } from '@prisma/client';
+import { NotificationChannel, NotificationType, Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { QueryAdminProductsDto } from '../dtos/query-admin-products.dto';
+import { UpdateProductCategoryDto } from '../dtos/update-product-category.dto';
 import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
 
 @Injectable()
@@ -259,6 +260,94 @@ export class AdminProductsService {
         id: updated.id,
         title: updated.title,
         status: updated.status,
+      },
+    };
+  }
+
+  /**
+   * Assigns or updates a product's catalog category and notifies the seller when changed.
+   *
+   * @param id - Unique identifier of the product
+   * @param adminId - Unique identifier of the administrator
+   * @param dto - Target category payload and optional explanation note
+   * @returns Updated product and category assignment details
+   * @throws NotFoundException when the product or target category does not exist
+   */
+  async updateProductCategory(id: string, adminId: string, dto: UpdateProductCategoryDto) {
+    const [product, targetCategory] = await Promise.all([
+      this.prisma.product.findUnique({
+        where: { id },
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+        },
+      }),
+      this.prisma.category.findUnique({
+        where: { id: dto.categoryId },
+        select: { id: true, name: true, slug: true, level: true },
+      }),
+    ]);
+
+    if (!product) {
+      throw new NotFoundException('Không tìm thấy sản phẩm.');
+    }
+
+    if (!targetCategory) {
+      throw new NotFoundException('Không tìm thấy danh mục cần gắn cho sản phẩm.');
+    }
+
+    if (product.categoryId === targetCategory.id) {
+      return {
+        success: true,
+        message: `Sản phẩm đã thuộc danh mục "${targetCategory.name}".`,
+        product: {
+          id: product.id,
+          title: product.title,
+          categoryId: product.categoryId,
+          category: targetCategory,
+        },
+      };
+    }
+
+    const oldCategoryName = product.category?.name || 'Chưa phân loại';
+    const note = dto.reason?.trim() ? ` Ghi chú: ${dto.reason.trim()}` : '';
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.product.update({
+        where: { id },
+        data: { categoryId: targetCategory.id },
+        include: {
+          category: { select: { id: true, name: true, slug: true, level: true } },
+        },
+      });
+
+      if (tx.notification?.create) {
+        await tx.notification.create({
+          data: {
+            userId: product.sellerId,
+            title: 'Sản phẩm đã được cập nhật danh mục 🏷️',
+            content: `Sản phẩm "${product.title}" của bạn đã được Quản trị viên phân loại lại từ danh mục "${oldCategoryName}" sang "${targetCategory.name}".${note}`,
+            targetUrl: '/seller/products',
+            type: NotificationType.SYSTEM,
+            channel: NotificationChannel.IN_APP,
+          },
+        });
+      }
+
+      return result;
+    });
+
+    this.logger.log(
+      `Admin (${adminId}) đã gắn danh mục "${targetCategory.name}" (${targetCategory.id}) cho sản phẩm ${product.title} (${product.id}).`,
+    );
+
+    return {
+      success: true,
+      message: `Đã gắn danh mục "${targetCategory.name}" cho sản phẩm thành công.`,
+      product: {
+        id: updated.id,
+        title: updated.title,
+        categoryId: updated.categoryId,
+        category: updated.category,
       },
     };
   }

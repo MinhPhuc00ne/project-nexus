@@ -31,6 +31,7 @@ import type {
   PlaceBidResponse,
   SellerAuctionConsignment,
   AuctionIntroShowcaseResponse,
+  StaffAuctionOverviewResponse,
   AuctionAwardItem,
   AuctionAwardQuote,
   CheckoutAuctionAwardInput,
@@ -220,6 +221,25 @@ export async function getAuctionIntroShowcaseApi(
   ) as AuctionIntroShowcaseResponse;
 }
 
+/** Returns auction sessions that staff can monitor from the support workspace. */
+export function getStaffAuctionOverviewApi(): Promise<StaffAuctionOverviewResponse> {
+  return apiRequest<StaffAuctionOverviewResponse>('/auctions/staff/overview', {
+    requireAuth: true,
+  });
+}
+
+/** Opens a staff support conversation linked to this auction room. */
+export function requestAuctionSupportChatApi(
+  auctionId: string,
+  message: string,
+): Promise<{ id: string }> {
+  return apiRequest<{ id: string }>(`/auctions/${encodeURIComponent(auctionId)}/support-chat`, {
+    method: 'POST',
+    body: { message },
+    requireAuth: true,
+  });
+}
+
 /**
  * Retrieves full details and live bidding transcripts for a specific auction room.
  */
@@ -339,23 +359,6 @@ export async function createAuctionComplaintApi(
     `/auctions/${auctionId}/complaints`,
     data,
   );
-  return res.data;
-}
-
-/**
- * Initiates or retrieves a support chat conversation for a specific auction session.
- *
- * @param auctionId - Identifier of the auction session.
- * @param message - Optional initial inquiry message.
- * @returns Resolves with the support chat session metadata.
- */
-export async function requestAuctionSupportChatApi(
-  auctionId: string,
-  message?: string,
-): Promise<{ conversationId?: string }> {
-  const res = await api.post<{ conversationId?: string }>(`/auctions/${auctionId}/support-chat`, {
-    message: message || 'Yêu cầu hỗ trợ về phiên đấu giá',
-  });
   return res.data;
 }
 

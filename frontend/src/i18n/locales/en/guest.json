@@ -1,0 +1,58 @@
+{
+  "home": {
+    "heroTitle": "Next-Gen Shopping & Live Auctions",
+    "featuredAuctions": "Featured Auctions",
+    "featuredProducts": "Recommended Products",
+    "categories": "Product Categories",
+    "freeShippingTag": "Free Shipping",
+    "freeShippingTitle": "0 VND Shipping Voucher",
+    "freeShippingDesc": "Valid on your very first order",
+    "claimCode": "Claim Now →",
+    "escrowTag": "Escrow Payment Gateway",
+    "payosGiftTitle": "5% PayOS Cashback",
+    "payosGiftDesc": "Secure transactions with instant rewards",
+    "explore": "Explore →",
+    "benefits": {
+      "freeship": "First Order Freeship",
+      "flashSale": "Golden Flash Sale",
+      "liveAuction": "Live Auctions",
+      "mall": "Official Mall",
+      "loyalty": "Loyalty Rewards",
+      "payosRefund": "PayOS Cashback"
+    },
+    "viewAllPromos": "View All Promotions →"
+  },
+  "search": {
+    "title": "Search Results",
+    "placeholder": "Search products or shops…",
+    "sortBy": "Sort by"
+  },
+  "product": {
+    "addToCart": "Add to cart",
+    "buyNow": "Buy now",
+    "outOfStock": "Out of stock",
+    "inStock": "{{count}} in stock",
+    "reviews": "Product Reviews",
+    "description": "Product Description"
+  },
+  "shop": {
+    "visitShop": "Visit shop",
+    "chatWithShop": "Chat with shop",
+    "productsCount": "{{count}} products"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "The page you requested could not be found or has been moved.",
+    "backHome": "Back to Home"
+  },
+  "staticPages": {
+    "aboutTitle": "About Project Nexus",
+    "aboutDesc": "E-commerce marketplace integrated with real-time live auctions and interactive 3D WebGL showcases.",
+    "contactTitle": "Contact & Customer Support",
+    "contactDesc": "24/7 Support Hotline (1900 8822), submit inquiries, or request live assistance.",
+    "termsTitle": "Terms of Use & Platform Rules",
+    "termsDesc": "Trading regulations, escrow protection rules, reputation scoring, and participant obligations.",
+    "privacyTitle": "Privacy Policy",
+    "privacyDesc": "Our commitment to protecting personal data, payment information, and user privacy."
+  }
+}

@@ -8,6 +8,7 @@ import {
   Flag,
   Layers,
   LayoutDashboard,
+  MessageCircle,
   Radio,
   Settings2,
   ShieldCheck,
@@ -17,7 +18,15 @@ import {
   X,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { AdminTab } from '../shared/adminTypes';
+
+const groupKeys: Record<string, 'operations' | 'members' | 'content' | 'financeTech'> = {
+  'ĐIỀU HÀNH TRỰC TIẾP': 'operations',
+  'THÀNH VIÊN & PHÊ DUYỆT': 'members',
+  'NỘI DUNG & HIỂN THỊ': 'content',
+  'TÀI CHÍNH & KỸ THUẬT': 'financeTech',
+};
 
 // Cấu hình menu: id phải trùng đường dẫn con trong AppRouter và union AdminTab.
 // label là nhãn tiếng Việt, icon là component của thư viện lucide-react.
@@ -58,6 +67,7 @@ export const adminNavigation: {
       { id: 'finance', label: 'Tài chính & phí sàn', icon: Wallet },
       { id: 'system', label: 'Hệ thống & nhật ký', icon: Activity },
       { id: 'settings', label: 'Cài đặt & kiểm duyệt', icon: Settings2 },
+      { id: 'chat', label: 'Quản lý Chat', icon: MessageCircle },
     ],
   },
 ];
@@ -78,6 +88,7 @@ export default function Sidebar({
   productCount: number;
   reportCount: number;
 }) {
+  const { t } = useTranslation('admin');
   return (
     <>
       {/* Lớp nền tối chỉ xuất hiện khi mở menu mobile; bấm nền sẽ đóng menu. */}
@@ -117,7 +128,7 @@ export default function Sidebar({
           {adminNavigation.map((group) => (
             <div key={group.label}>
               <p className="mb-2 px-3 text-[10px] font-semibold tracking-wider text-slate-400">
-                {group.label}
+                {groupKeys[group.label] ? t(`groups.${groupKeys[group.label]}`) : group.label}
               </p>
               <div className="space-y-1">
                 {group.items.map(({ id, label, icon: Icon }) => (
@@ -132,7 +143,7 @@ export default function Sidebar({
                     }
                   >
                     <Icon size={17} />
-                    <span className="flex-1">{label}</span>
+                    <span className="flex-1">{t(`nav.${id}`, { defaultValue: label })}</span>
                     {['sellers', 'refunds', 'products', 'reports'].includes(id) && (
                       <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-primary">
                         {id === 'sellers'
