@@ -43,6 +43,15 @@
     "success": "Success",
     "error": "An error occurred"
   },
+  "logoutDialog": {
+    "title": "Confirm Logout",
+    "descriptionWithAccount": "Are you sure you want to log out of {{accountName}}?",
+    "descriptionDefault": "Are you sure you want to log out of this account?",
+    "stay": "Stay",
+    "confirm": "Log out",
+    "closeAria": "Close logout confirmation",
+    "successToast": "Logged out successfully. See you again!"
+  },
   "nav": {
     "home": "Home",
     "auctions": "Auctions",

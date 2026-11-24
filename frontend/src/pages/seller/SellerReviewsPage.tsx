@@ -32,13 +32,23 @@ export default function SellerReviewsPage() {
 
   useEffect(() => {
     let active = true;
-    void Promise.all([getSellerProductReviewsApi(), getSellerShopReviewsApi()])
-      .then(([productResponse, shopResponse]) => {
+    void Promise.allSettled([getSellerProductReviewsApi(), getSellerShopReviewsApi()])
+      .then(([productResult, shopResult]) => {
         if (!active) return;
-        const productReviews: SellerReview[] = Array.isArray(productResponse.items)
+        if (productResult.status === 'rejected' && shopResult.status === 'rejected') {
+          const firstErr = productResult.reason;
+          setError(firstErr instanceof Error ? firstErr.message : t('reviews.loadFailed'));
+          return;
+        }
+
+        setError(null);
+        const productResponse = productResult.status === 'fulfilled' ? productResult.value : null;
+        const shopResponse = shopResult.status === 'fulfilled' ? shopResult.value : null;
+
+        const productReviews: SellerReview[] = Array.isArray(productResponse?.items)
           ? productResponse.items.map((review) => ({ ...review, kind: 'PRODUCT' as const }))
           : [];
-        const shopReviews: SellerReview[] = Array.isArray(shopResponse.items)
+        const shopReviews: SellerReview[] = Array.isArray(shopResponse?.items)
           ? shopResponse.items.map((review) => ({ ...review, kind: 'SHOP' as const }))
           : [];
         setReviews(
@@ -47,11 +57,7 @@ export default function SellerReviewsPage() {
               new Date(second.createdAt).getTime() - new Date(first.createdAt).getTime(),
           ),
         );
-        setReviewCounts({ product: productResponse.total ?? 0, shop: shopResponse.total ?? 0 });
-      })
-      .catch((requestError: unknown) => {
-        if (!active) return;
-        setError(requestError instanceof Error ? requestError.message : t('reviews.loadFailed'));
+        setReviewCounts({ product: productResponse?.total ?? 0, shop: shopResponse?.total ?? 0 });
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -59,7 +65,7 @@ export default function SellerReviewsPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [t]);
 
   const averageRating = useMemo(() => {
     if (!reviews.length) return 0;
@@ -187,46 +193,65 @@ export default function SellerReviewsPage() {
           ))}
         </div>
 
-        {loading ? (
-          <EmptyState title={t('reviews.loadingTitle')} description={t('reviews.loadingDesc')} />
-        ) : error ? (
-          <EmptyState title={t('reviews.errorTitle')} description={error} />
-        ) : visibleReviews.length === 0 ? (
-          <EmptyState title={t('reviews.emptyTitle')} description={t('reviews.emptyDesc')} />
-        ) : (
-          <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white px-4">
-            {visibleReviews.map((review) => (
-              <article key={review.id} className="py-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <strong className="flex items-center gap-2 text-sm text-slate-800">
-                    <MessageOutlined className="text-blue-600" />
-                    {review.reviewer.fullName}
-                  </strong>
-                  <span
-                    className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
-                      review.kind === 'SHOP'
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
-                    {review.kind === 'SHOP'
-                      ? t('reviews.shopReviewBadge')
-                      : t('reviews.productReviewBadge')}
-                  </span>
-                  <span className="text-sm font-semibold text-blue-700">
-                    {'★'.repeat(review.rating)}
-                    {'☆'.repeat(5 - review.rating)}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-slate-600">
-                  {review.comment || t('reviews.noComment')}
-                </p>
-                <p className="mt-2 text-xs text-slate-400">{formatDate(review.createdAt)}</p>
-              </article>
-            ))}
-          </div>
-        )}
+        <ReviewsContent
+          loading={loading}
+          error={error}
+          reviews={visibleReviews}
+          formatDate={formatDate}
+        />
       </Panel>
+    </div>
+  );
+}
+
+function ReviewsContent({
+  loading,
+  error,
+  reviews,
+  formatDate,
+}: {
+  loading: boolean;
+  error: string | null;
+  reviews: SellerReview[];
+  formatDate: (val: string) => string;
+}) {
+  const { t } = useTranslation('seller');
+  if (loading) {
+    return <EmptyState title={t('reviews.loadingTitle')} description={t('reviews.loadingDesc')} />;
+  }
+  if (error) {
+    return <EmptyState title={t('reviews.errorTitle')} description={error} />;
+  }
+  if (reviews.length === 0) {
+    return <EmptyState title={t('reviews.emptyTitle')} description={t('reviews.emptyDesc')} />;
+  }
+  return (
+    <div className="mt-4 divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white px-4">
+      {reviews.map((review) => (
+        <article key={review.id} className="py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <strong className="flex items-center gap-2 text-sm text-slate-800">
+              <MessageOutlined className="text-blue-600" />
+              {review.reviewer.fullName}
+            </strong>
+            <span
+              className={`rounded-md px-2 py-1 text-[11px] font-semibold ${
+                review.kind === 'SHOP' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
+              }`}
+            >
+              {review.kind === 'SHOP'
+                ? t('reviews.shopReviewBadge')
+                : t('reviews.productReviewBadge')}
+            </span>
+            <span className="text-sm font-semibold text-blue-700">
+              {'★'.repeat(review.rating)}
+              {'☆'.repeat(5 - review.rating)}
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-slate-600">{review.comment || t('reviews.noComment')}</p>
+          <p className="mt-2 text-xs text-slate-400">{formatDate(review.createdAt)}</p>
+        </article>
+      ))}
     </div>
   );
 }

@@ -235,6 +235,48 @@ export function getAdminWalletTransactions(
   });
 }
 
+export interface AdminTrendingProductItem {
+  id: string;
+  title: string;
+  description: string;
+  basePrice: number;
+  availableQty: number;
+  purchaseCount: number;
+  images: { imageUrl: string }[];
+  category: { id: string; name: string } | null;
+  seller: { id: string; fullName: string; email: string } | null;
+  shopName: string | null;
+  trendingExcluded: boolean;
+  trendingNotifiedAt: string | null;
+}
+
+export function listAdminTrendingProducts(
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<{ items: AdminTrendingProductItem[]; total: number }> {
+  return adminRequest<{ items: AdminTrendingProductItem[]; total: number }>({
+    url: '/admin/products/trending',
+    method: 'GET',
+    params: { limit },
+    signal,
+  });
+}
+
+export function removeAdminTrendingProduct(
+  id: string,
+  reason?: string,
+): Promise<{
+  success: boolean;
+  message: string;
+  product: { id: string; title: string; trendingExcluded: boolean };
+}> {
+  return adminRequest({
+    url: `/admin/products/${encodeURIComponent(id)}/trending`,
+    method: 'DELETE',
+    data: { reason },
+  });
+}
+
 export function depositToAdminWallet(
   dto: DepositAdminWalletDto,
 ): Promise<DepositAdminWalletResult> {

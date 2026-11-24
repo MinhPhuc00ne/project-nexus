@@ -9,18 +9,20 @@ import {
   HomeLiveAuction,
   HomeCategoriesSection,
   HomeRecommendationsSection,
+  HomeTrendingSection,
 } from '../../components/home';
 import { flashSaleProducts } from '../../mocks/home.mock';
 import { getEventBannersApi } from '../../services/banners.service';
 import {
   getRecommendationsApi,
   getProductsCatalog,
+  getTrendingProducts,
   type RecommendedProduct,
+  type TrendingProductItem,
 } from '../../services/products.service';
 import { AuctionStatus } from '@nexus/types';
 import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
 import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
-import HomeTrendingProducts from '../../components/home/HomeTrendingProducts';
 
 function HomePage() {
   const { t } = useTranslation('guest');
@@ -33,6 +35,8 @@ function HomePage() {
 
   const [liveAuctions, setLiveAuctions] = useState<AuctionEntity[]>([]);
   const [flashProducts, setFlashProducts] = useState<HomeProduct[]>([]);
+  const [trendingProducts, setTrendingProducts] = useState<TrendingProductItem[]>([]);
+  const [isLoadingTrending, setIsLoadingTrending] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -95,6 +99,21 @@ function HomePage() {
         console.warn('Không thể tải danh sách phiên đấu giá từ API:', err);
       }
     })();
+
+    // Lấy danh sách sản phẩm Xu hướng từ API
+    setIsLoadingTrending(true);
+    void getTrendingProducts(10)
+      .then((res) => {
+        if (isMounted && res?.items) {
+          setTrendingProducts(res.items);
+        }
+      })
+      .catch((err) => {
+        console.warn('Không thể tải sản phẩm xu hướng:', err);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoadingTrending(false);
+      });
 
     // Lấy sản phẩm thật từ database cho mục Flash Sale thay vì dữ liệu mẫu
     void getProductsCatalog({ limit: 4, sortBy: 'newest' })
@@ -210,9 +229,8 @@ function HomePage() {
 
       <HomeLiveAuction auctions={liveAuctions} />
 
-      <div className="mt-6">
-        <HomeTrendingProducts />
-      </div>
+      {/* SẢN PHẨM XU HƯỚNG BÁN CHẠY (TRENDING PRODUCTS) */}
+      <HomeTrendingSection products={trendingProducts} isLoading={isLoadingTrending} />
 
       {/* TÍNH NĂNG ĐỀ XUẤT SẢN PHẨM CÁ NHÂN HÓA (AI RECOMMENDATIONS) */}
       <HomeRecommendationsSection

@@ -25,7 +25,8 @@ import { money, previewAuctions, previewOrders } from './sellerData';
 export function StoreIdentity() {
   const { t } = useTranslation('seller');
   const user = useSellerSession();
-  const { storeName, storeLoading, storeError } = useSellerWorkspace();
+  const { storeName, storeLoading, storeError, shop } = useSellerWorkspace();
+  const shopAvatar = shop?.avatarUrl;
   return (
     <section
       className="flex items-center gap-[17px] [border:1px_solid_#e5ebf4] rounded-[12px] bg-white py-[23px] px-5.5 min-[1600px]:p-[27px] max-[1250px]:flex-wrap max-[1250px]:[&>[data-seller~=actions]]:ml-[77px] max-[760px]:p-4.5 max-[760px]:gap-[13px] max-[760px]:[&>[data-seller~=actions]]:ml-0 max-[760px]:[&>[data-seller~=actions]]:w-full max-[760px]:[&>[data-seller~=actions]]:pt-2.5 max-[760px]:[&>[data-seller~=actions]]:[border-top:1px_solid_#edf2f9] max-[540px]:[&>[data-seller~=actions]]:justify-between max-[540px]:[&>[data-seller~=actions]]:gap-2 max-[540px]:[&_[data-seller~=button]]:flex-1 max-[540px]:[&_[data-seller~=button]]:text-[10px]! max-[540px]:[&_[data-seller~=button]]:p-[9px]"
@@ -35,8 +36,8 @@ export function StoreIdentity() {
         className="relative grid [place-items:center] w-15 h-15 [background:linear-gradient(140deg,_#edf3ff,_#f7faff)] [border:1px_solid_#e2e9f8] rounded-[13px] text-[#315eea] shrink-0 [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:rounded-[13px] [&>[data-seller~=dot]]:absolute [&>[data-seller~=dot]]:bottom-0 [&>[data-seller~=dot]]:right-0 [&>[data-seller~=dot]]:w-3 [&>[data-seller~=dot]]:h-3 [&>[data-seller~=dot]]:[border:3px_solid_white] max-[760px]:h-[49px] max-[760px]:w-[49px] max-[760px]:rounded-[10px]"
         data-seller="store-emblem"
       >
-        {user.avatarUrl ? (
-          <img src={user.avatarUrl} alt="" />
+        {shopAvatar ? (
+          <img src={shopAvatar} alt="Logo gian hàng" />
         ) : (
           <ShopOutlined className="text-[29px]" aria-hidden="true" />
         )}

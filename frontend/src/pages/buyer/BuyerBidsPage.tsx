@@ -141,13 +141,14 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
       }
 
       const mapped: BuyerBidItem[] = (Array.isArray(bidsData) ? bidsData : []).map((b) => {
-        let status: Exclude<BuyerBidStatus, 'ALL'> = 'ACTIVE';
+        const isLeadingOrWinning = Boolean(b.auction.isLeading || b.status === 'WINNING');
+        let bidStatus: Exclude<BuyerBidStatus, 'ALL'>;
         if (b.auction.status === 'ENDED' || b.auction.status === 'CANCELLED') {
-          status = b.auction.isLeading || b.status === 'WINNING' ? 'WON' : 'LOST';
+          bidStatus = isLeadingOrWinning ? 'WON' : 'LOST';
         } else if (b.auction.status === 'ACTIVE' || b.auction.status === 'EXTENDED') {
-          status = b.auction.isLeading || b.status === 'WINNING' ? 'WINNING' : 'OUTBID';
+          bidStatus = isLeadingOrWinning ? 'WINNING' : 'OUTBID';
         } else {
-          status = 'ACTIVE';
+          bidStatus = 'ACTIVE';
         }
 
         const lotItem = (
@@ -184,7 +185,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             Number(b.auction.currentHighestBid) ||
             Number(b.bidAmount),
           startPrice: Number(b.auction.product?.basePrice || 0),
-          status,
+          status: bidStatus,
           endTime: b.auction.endTime,
           totalBids: (b.auction as unknown as { totalBidsCount?: number })?.totalBidsCount || 0,
           shopName:
@@ -373,9 +374,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
       {/* SECTION 1: SECOND CHANCE OFFERS (TOP 2 BIDDER) */}
       {secondChanceOffers.length > 0 && (
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-violet-50 border border-blue-200 rounded-2xl p-4 shadow-xs space-y-3">
+        <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-4 shadow-xs space-y-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-blue-600 text-white font-bold">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
               <Sparkles size={16} />
             </span>
             <div>
@@ -398,14 +399,14 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
               return (
                 <div
                   key={award.id}
-                  className="bg-white border border-blue-200/90 rounded-xl p-3.5 flex flex-col justify-between shadow-xs space-y-3"
+                  className="bg-white border border-blue-200/90 rounded-lg p-3.5 flex flex-col justify-between shadow-xs space-y-3"
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
                         {t('bidsPage.top2Badge')}
                       </span>
-                      <span className="text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
                         {t('bidsPage.deposit30', {
                           amount: formatCurrency(deposit, i18n.language),
                         })}
@@ -699,12 +700,14 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             })}
           </div>
 
-          {loading ? (
+          {loading && (
             <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
               <Loader2 size={16} className="animate-spin text-violet-600" />{' '}
               {t('bidsPage.loadingBids')}
             </div>
-          ) : filtered.length === 0 ? (
+          )}
+
+          {!loading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
               <div className="h-16 w-16 rounded-2xl bg-violet-50 flex items-center justify-center text-violet-400 mb-4">
                 <Gavel size={28} />
@@ -723,7 +726,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                 {t('bidsPage.joinAuctionNow')}
               </Link>
             </div>
-          ) : (
+          )}
+
+          {!loading && filtered.length > 0 && (
             <div className="space-y-3">
               {filtered.map((bid) => {
                 const s = statusConfig[bid.status] ?? statusConfig.ACTIVE;
