@@ -43,7 +43,7 @@ export interface TrendingProductsResult {
   total: number;
 }
 
-/** Computes storefront trending products via database aggregation and synchronizes #1 trending notifications. */
+/** Computes storefront trending products via database aggregation and synchronizes Top 10 & #1 trending notifications. */
 @Injectable()
 export class ProductTrendingService {
   constructor(
@@ -174,8 +174,8 @@ export class ProductTrendingService {
 
   /**
    * Synchronizes trending notifications for the top `limit` (default 10) trending products
-   * after purchase or moderation events. Sends an in-app notification to each seller whose
-   * product newly enters the top trending list.
+   * after purchase or moderation events. Notifies sellers when entering Top 10 and when
+   * reaching or climbing to the #1 spot.
    * @param rawLimit Number of top trending products to notify (1..50, default 10).
    */
   async syncTopTrendingNotifications(rawLimit = 10): Promise<void> {
@@ -213,57 +213,98 @@ export class ProductTrendingService {
     const topIds = rankedEntries.map((entry) => entry.productId);
     if (topIds.length === 0) {
       await this.prisma.product.updateMany({
-        where: { trendingNotifiedAt: { not: null } },
-        data: { trendingNotifiedAt: null },
+        where: {
+          OR: [{ trendingNotifiedAt: { not: null } }, { trendingTopOneNotifiedAt: { not: null } }],
+        },
+        data: { trendingNotifiedAt: null, trendingTopOneNotifiedAt: null },
       });
       return;
     }
 
-    await this.prisma.product.updateMany({
-      where: {
-        id: { notIn: topIds },
-        trendingNotifiedAt: { not: null },
-      },
-      data: { trendingNotifiedAt: null },
-    });
+    const topOneId = rankedEntries[0].productId;
+    await Promise.all([
+      this.prisma.product.updateMany({
+        where: {
+          id: { notIn: topIds },
+          OR: [{ trendingNotifiedAt: { not: null } }, { trendingTopOneNotifiedAt: { not: null } }],
+        },
+        data: { trendingNotifiedAt: null, trendingTopOneNotifiedAt: null },
+      }),
+      this.prisma.product.updateMany({
+        where: {
+          id: { not: topOneId },
+          trendingTopOneNotifiedAt: { not: null },
+        },
+        data: { trendingTopOneNotifiedAt: null },
+      }),
+    ]);
 
-    const unnotifiedProducts = await this.prisma.product.findMany({
+    const candidates = await this.prisma.product.findMany({
       where: {
         id: { in: topIds },
-        trendingNotifiedAt: null,
         trendingExcluded: false,
+        OR: [{ trendingNotifiedAt: null }, { id: topOneId, trendingTopOneNotifiedAt: null }],
       },
       select: {
         id: true,
         sellerId: true,
         title: true,
+        trendingNotifiedAt: true,
+        trendingTopOneNotifiedAt: true,
       },
     });
-    if (unnotifiedProducts.length === 0) return;
+    if (candidates.length === 0) return;
 
-    const productMap = new Map(unnotifiedProducts.map((product) => [product.id, product]));
+    const productMap = new Map(candidates.map((product) => [product.id, product]));
     const now = new Date();
 
-    for (const entry of rankedEntries) {
-      const product = productMap.get(entry.productId);
-      if (!product) continue;
+    await Promise.all(
+      rankedEntries.map(async (entry) => {
+        const product = productMap.get(entry.productId);
+        if (!product) return;
 
-      const claimed = await this.prisma.product.updateMany({
-        where: { id: product.id, trendingNotifiedAt: null, trendingExcluded: false },
-        data: { trendingNotifiedAt: now },
-      });
-      if (claimed.count === 1 && this.prisma.notification?.create) {
-        await this.prisma.notification.create({
-          data: {
-            userId: product.sellerId,
-            title: 'Sản phẩm của bạn đã lên Xu hướng',
-            content: `Chúc mừng! Sản phẩm "${product.title}" đang đứng Top ${entry.rank} Xu hướng trên trang chủ với ${entry.purchaseCount} lượt mua.`,
-            targetUrl: '/seller/products',
-            type: NotificationType.SYSTEM,
-            channel: NotificationChannel.IN_APP,
-          },
-        });
-      }
-    }
+        if (entry.rank === 1 && !product.trendingTopOneNotifiedAt) {
+          const claimed = await this.prisma.product.updateMany({
+            where: { id: product.id, trendingTopOneNotifiedAt: null, trendingExcluded: false },
+            data: {
+              trendingNotifiedAt: product.trendingNotifiedAt ?? now,
+              trendingTopOneNotifiedAt: now,
+            },
+          });
+          if (claimed.count === 1 && this.prisma.notification?.create) {
+            await this.prisma.notification.create({
+              data: {
+                userId: product.sellerId,
+                title: 'Sản phẩm của bạn đã đạt Top 1 Xu hướng',
+                content: `Chúc mừng! Sản phẩm "${product.title}" đã đạt Top 1 Xu hướng trên trang chủ với ${entry.purchaseCount} lượt mua.`,
+                targetUrl: '/seller/products',
+                type: NotificationType.SYSTEM,
+                channel: NotificationChannel.IN_APP,
+              },
+            });
+          }
+          return;
+        }
+
+        if (!product.trendingNotifiedAt) {
+          const claimed = await this.prisma.product.updateMany({
+            where: { id: product.id, trendingNotifiedAt: null, trendingExcluded: false },
+            data: { trendingNotifiedAt: now },
+          });
+          if (claimed.count === 1 && this.prisma.notification?.create) {
+            await this.prisma.notification.create({
+              data: {
+                userId: product.sellerId,
+                title: 'Sản phẩm của bạn đã lên Xu hướng',
+                content: `Chúc mừng! Sản phẩm "${product.title}" đang đứng Top ${entry.rank} Xu hướng trên trang chủ với ${entry.purchaseCount} lượt mua.`,
+                targetUrl: '/seller/products',
+                type: NotificationType.SYSTEM,
+                channel: NotificationChannel.IN_APP,
+              },
+            });
+          }
+        }
+      }),
+    );
   }
 }
