@@ -5,6 +5,7 @@ import { Flame, Store } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
 import { getTrendingProductsApi, type TrendingProduct } from '../../services/products.service';
 import { useToast } from '../ToastNotification';
+import { HOME_TRENDING_LIMIT } from '../../constants/trending';
 
 export default function HomeTrendingProducts() {
   const { t, i18n } = useTranslation('guest');
@@ -14,7 +15,7 @@ export default function HomeTrendingProducts() {
 
   useEffect(() => {
     let active = true;
-    getTrendingProductsApi(6)
+    getTrendingProductsApi(HOME_TRENDING_LIMIT)
       .then(({ items }) => {
         if (active) setProducts(items);
       })
@@ -35,7 +36,7 @@ export default function HomeTrendingProducts() {
   if (loading) {
     content = (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {Array.from({ length: 6 }, (_, index) => (
+        {Array.from({ length: HOME_TRENDING_LIMIT }, (_, index) => (
           <div key={index} className="aspect-square animate-pulse rounded-lg bg-slate-100" />
         ))}
       </div>

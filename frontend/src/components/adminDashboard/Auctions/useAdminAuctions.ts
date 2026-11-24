@@ -48,34 +48,36 @@ async function resolveApprovedShowcaseItems(
     const approvedItems: AuctionConsignmentItem[] = itemsRes.items
       .filter((lot) => lot.status === 'APPROVED')
       .sort((a, b) => (a.lotNumber ?? 999) - (b.lotNumber ?? 999))
-      .map((lot) => ({
-        id: lot.id,
-        title: lot.title,
-        description: lot.description,
-        images: lot.images,
-        threeModelKey: lot.threeModelKey,
-        appraisalCertificateNumber: lot.appraisalCertificateNumber,
-        appraisalAgency: lot.appraisalAgency,
-        certificateImages: lot.certificateImages,
-        certificateIssueDate: lot.certificateIssueDate,
-        status: lot.status,
-        lotNumber: lot.lotNumber,
-        startingPrice: lot.startingPrice
-          ? Number(lot.startingPrice)
-          : Number(lot.proposedStartingPrice),
-        proposedStartingPrice: Number(lot.proposedStartingPrice),
-        reservePrice: lot.reservePrice
-          ? Number(lot.reservePrice)
-          : lot.proposedReservePrice
-            ? Number(lot.proposedReservePrice)
-            : null,
-        proposedReservePrice: lot.proposedReservePrice ? Number(lot.proposedReservePrice) : null,
-        bidIncrement: lot.bidIncrement
-          ? Number(lot.bidIncrement)
-          : Number(lot.proposedBidIncrement),
-        proposedBidIncrement: Number(lot.proposedBidIncrement),
-        seller: lot.seller,
-      }));
+      .map((lot) => {
+        let reservePrice: number | null = null;
+        if (lot.reservePrice) reservePrice = Number(lot.reservePrice);
+        else if (lot.proposedReservePrice) reservePrice = Number(lot.proposedReservePrice);
+
+        return {
+          id: lot.id,
+          title: lot.title,
+          description: lot.description,
+          images: lot.images,
+          threeModelKey: lot.threeModelKey,
+          appraisalCertificateNumber: lot.appraisalCertificateNumber,
+          appraisalAgency: lot.appraisalAgency,
+          certificateImages: lot.certificateImages,
+          certificateIssueDate: lot.certificateIssueDate,
+          status: lot.status,
+          lotNumber: lot.lotNumber,
+          startingPrice: lot.startingPrice
+            ? Number(lot.startingPrice)
+            : Number(lot.proposedStartingPrice),
+          proposedStartingPrice: Number(lot.proposedStartingPrice),
+          reservePrice,
+          proposedReservePrice: lot.proposedReservePrice ? Number(lot.proposedReservePrice) : null,
+          bidIncrement: lot.bidIncrement
+            ? Number(lot.bidIncrement)
+            : Number(lot.proposedBidIncrement),
+          proposedBidIncrement: Number(lot.proposedBidIncrement),
+          seller: lot.seller,
+        };
+      });
 
     return approvedItems.length > 0 ? approvedItems : buildLegacyProductFallback(item);
   } catch {
@@ -244,6 +246,7 @@ export function useAdminAuctions() {
     page,
     setPage,
     setRevision,
+    revision,
     loading,
     error,
     creating,

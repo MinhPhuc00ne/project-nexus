@@ -96,8 +96,10 @@ export function ProductDetailDialog({
               [t('products.detail.fields.sellerEmail'), detail.seller.email],
               [t('products.detail.fields.sellerPhone'), detail.seller.phoneNumber],
               [
-                t('products.detail.fields.category'),
-                [detail.category.parent?.name, detail.category.name].filter(Boolean).join(' / '),
+                t('management.category'),
+                [detail.category?.parent?.name, detail.category?.name]
+                  .filter(Boolean)
+                  .join(' / ') || t('management.uncategorized'),
               ],
               [t('products.detail.fields.price'), formatMoney(detail.basePrice)],
               [t('products.detail.fields.status'), t(`products.statuses.${detail.status}`)],
@@ -191,12 +193,17 @@ export function ProductActionDialog({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const inFlight = useRef(false);
-  const title =
-    kind === 'delete'
-      ? t('products.actionDialog.deleteTitle')
-      : kind === 'hide'
-        ? t('products.actionDialog.hideTitle')
-        : t('products.actionDialog.activateTitle');
+
+  function getDialogTitle() {
+    if (kind === 'delete') {
+      return t('products.actionDialog.deleteTitle');
+    }
+    if (kind === 'hide') {
+      return t('products.actionDialog.hideTitle');
+    }
+    return t('products.actionDialog.activateTitle');
+  }
+  const title = getDialogTitle();
   const close = () => {
     if (!inFlight.current) onClose();
   };

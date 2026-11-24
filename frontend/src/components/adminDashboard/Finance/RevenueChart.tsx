@@ -52,15 +52,11 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
         </div>
         <Badge>VND</Badge>
       </div>
-      <div className="mb-7 grid gap-4 rounded-xl bg-blue-50/70 p-4 sm:grid-cols-3">
+      <div className="mb-7 grid gap-4 rounded-xl bg-blue-50/70 p-4 sm:grid-cols-2">
         <div>
           <p className="text-[9px] uppercase text-slate-500">
-            {t('finance.chart.totalUnit', { unit: current.unit })}
+            {t('management.auctionPlatformFee')}
           </p>
-          <p className="mt-1 text-base font-bold tracking-tight">{formatMoney(current.total)}</p>
-        </div>
-        <div>
-          <p className="text-[9px] uppercase text-slate-500">{t('finance.chart.auctionFee')}</p>
           <p className="mt-1 text-base font-bold text-primary">{formatMoney(current.auction)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
             {t('finance.chart.share', {
@@ -69,7 +65,7 @@ export function RevenueChart({ analytics }: { analytics: AdminOverviewAnalytics 
           </p>
         </div>
         <div>
-          <p className="text-[9px] uppercase text-slate-500">{t('finance.chart.normalFee')}</p>
+          <p className="text-[9px] uppercase text-slate-500">{t('management.normalPlatformFee')}</p>
           <p className="mt-1 text-base font-bold text-blue-500">{formatMoney(current.normal)}</p>
           <p className="mt-1 text-[10px] text-slate-500">
             {t('finance.chart.share', {

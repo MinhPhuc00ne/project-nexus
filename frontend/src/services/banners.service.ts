@@ -15,8 +15,17 @@ export interface BannerInput {
 
 export interface Banner extends BannerInput {
   id: string;
+  auctionId?: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export function createBannerFromAuction(auctionId: string): Promise<Banner> {
+  return bannerRequest(() =>
+    api.post<BannerResponse<Banner>>(
+      `/staff/banners/from-auction/${encodeURIComponent(auctionId)}`,
+    ),
+  );
 }
 
 type BannerResponse<T> = T | { data: T };

@@ -1,4 +1,14 @@
-import { Film, Gavel, LockKeyhole, Play } from 'lucide-react';
+import {
+  Film,
+  Gavel,
+  Image as ImageIcon,
+  ImagePlus,
+  LoaderCircle,
+  LockKeyhole,
+  Play,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getIntlLocale } from '../../../i18n/config';
@@ -8,6 +18,9 @@ import { Badge, Button } from '../shared/AdminUI';
 import type { useAdminAuctions } from './useAdminAuctions';
 import { isKnownAuctionStatus } from './auctionStatuses';
 import { consignmentLockReason } from './consignmentAvailability';
+import { auctionEditReason, auctionDeleteReason } from './auctionManagementAvailability';
+import type useAuctionBanners from './useAuctionBanners';
+import { auctionBannerReason, BANNER_LIST_LIMIT } from './auctionBannerPromotion';
 
 type Props = Pick<
   ReturnType<typeof useAdminAuctions>,
@@ -19,7 +32,13 @@ type Props = Pick<
   | 'openShowcaseForAuction'
   | 'handleStartAuction'
   | 'now'
-> & { item: AdminAuctionEntity };
+> & {
+  item: AdminAuctionEntity;
+  onEdit: (auction: AdminAuctionEntity) => void;
+  onDelete: (auction: AdminAuctionEntity) => void;
+  onPromote: (auction: AdminAuctionEntity) => void;
+  banners: ReturnType<typeof useAuctionBanners>;
+};
 
 export default function AuctionRow({
   item,
@@ -31,14 +50,67 @@ export default function AuctionRow({
   openShowcaseForAuction,
   handleStartAuction,
   now,
+  onEdit,
+  onDelete,
+  onPromote,
+  banners,
 }: Props) {
   const { t, i18n } = useTranslation('admin');
   const locale = getIntlLocale(i18n.language);
+  const hasBanner = banners.data.some((banner) => banner.auctionId === item.id);
+
+  function getBannerReason() {
+    if (banners.loading) {
+      return t('management.bannerChecking');
+    }
+    if (banners.error) {
+      return t('management.bannerLoadError');
+    }
+    if (!hasBanner && banners.data.length >= BANNER_LIST_LIMIT) {
+      return t('management.bannerUnknown');
+    }
+    return auctionBannerReason(item);
+  }
+  const bannerReason = getBannerReason();
+  const editReason = auctionEditReason(item);
+  const deleteReason = auctionDeleteReason(item);
   const lockReasonKey = consignmentLockReason(item, now);
   const lockReason = lockReasonKey ? t(`auctions.lockReasons.${lockReasonKey}`) : '';
   const deadlinePassed =
     !!item.consignmentDeadline && new Date(item.consignmentDeadline).getTime() <= now;
   const ended = new Date(item.endTime).getTime() <= now;
+
+  function getStartTitle(): string {
+    if (ended) return t('auctions.row.pastEndTime');
+    if (!item.isConsignmentLocked && !deadlinePassed) return t('management.lockBeforeStart');
+    if (startingId === item.id) return t('management.starting');
+    return t('management.startAuction');
+  }
+
+  function renderStartButton() {
+    if (['DRAFT', 'SCHEDULED'].includes(item.status)) {
+      return (
+        <>
+          <Button
+            disabled={
+              !!startingId || locking || ended || (!item.isConsignmentLocked && !deadlinePassed)
+            }
+            title={getStartTitle()}
+            aria-label={t('management.startAuctionAria', { value1: item.title })}
+            aria-busy={startingId === item.id}
+            onClick={() => void handleStartAuction(item)}
+          >
+            {startingId === item.id ? (
+              <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Play size={16} aria-hidden="true" />
+            )}
+          </Button>
+        </>
+      );
+    }
+    return null;
+  }
   return (
     <tr>
       <td className="max-w-72 p-4">
@@ -91,8 +163,12 @@ export default function AuctionRow({
       <td className="whitespace-nowrap p-4">{new Date(item.startTime).toLocaleString(locale)}</td>
       <td className="whitespace-nowrap p-4">{new Date(item.endTime).toLocaleString(locale)}</td>
       <td className="p-4">
-        <p>Buyer: {item.minBuyerReputation}</p>
-        <p className="mt-1">Seller: {item.minSellerReputation}</p>
+        <p>
+          {t('management.buyer')}: {item.minBuyerReputation}
+        </p>
+        <p className="mt-1">
+          {t('auctions.common.seller')}: {item.minSellerReputation}
+        </p>
       </td>
       <td className="p-4">{item.totalBidsCount}</td>
       <td className="w-px whitespace-nowrap p-4 align-middle [&>span]:w-max [&>span]:leading-none">
@@ -102,23 +178,80 @@ export default function AuctionRow({
       </td>
       <td className="p-4">
         <div className="flex flex-col items-start gap-2">
-          <Button variant="secondary" onClick={() => setSelectedAuction(item)}>
-            {t('auctions.row.viewProducts', { count: item._count?.items ?? 0 })}
+          <Button
+            variant="secondary"
+            aria-label={t('management.viewProductsAria', {
+              value1: item.title,
+              value2: item._count?.items ?? 0,
+            })}
+            title={t('management.viewProducts', { value1: item._count?.items ?? 0 })}
+            onClick={() => setSelectedAuction(item)}
+          >
+            {t('management.viewProducts', { value1: item._count?.items ?? 0 })}
           </Button>
           <Link
             to={`/admin/auctions/${item.id}/lots`}
-            className="inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-primary-dark"
+            aria-label={t('management.manageLotsAria', { value1: item.title })}
+            title={t('management.manageLots')}
+            className="inline-flex min-h-10 items-center gap-2 whitespace-nowrap rounded-lg bg-primary px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-primary-dark focus-visible:outline-2 focus-visible:outline-blue-600"
           >
-            <Gavel size={14} /> {t('auctions.row.manageLots')}
+            <Gavel size={16} aria-hidden="true" /> {t('management.manageLots')}
           </Link>
         </div>
       </td>
-      <td className="p-4">
-        <div className="flex w-32 flex-col items-stretch gap-2 [&>button]:whitespace-nowrap">
+      <td className="p-4 align-middle">
+        <div className="flex w-max flex-nowrap items-center gap-2 [&>button]:size-10 [&>button]:shrink-0 [&>button]:p-0">
+          {hasBanner ? (
+            <Link
+              to="/admin/banners"
+              className="inline-flex size-10 items-center justify-center rounded-lg bg-blue-50 text-primary hover:bg-blue-100 focus-visible:outline-2 focus-visible:outline-blue-600"
+              aria-label={t('management.manageBannerAria', { value1: item.title })}
+              title={t('management.bannerExistsLink')}
+            >
+              <ImageIcon size={16} aria-hidden="true" />
+            </Link>
+          ) : (
+            <Button
+              variant="secondary"
+              disabled={!!bannerReason || !!startingId || locking}
+              title={bannerReason || t('management.promoteTooltip')}
+              aria-label={t('management.promoteAria', { value1: item.title })}
+              aria-busy={banners.loading}
+              onClick={() => onPromote(item)}
+            >
+              {banners.loading ? (
+                <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <ImagePlus size={16} aria-hidden="true" />
+              )}
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            disabled={!!editReason || !!startingId || locking}
+            title={editReason || t('management.editAuction')}
+            aria-label={t('management.editAuctionAria', { value1: item.title })}
+            onClick={() => onEdit(item)}
+          >
+            <Pencil size={16} aria-hidden="true" />
+          </Button>
+          <Button
+            variant="danger"
+            disabled={!!deleteReason || !!startingId || locking}
+            title={deleteReason || t('management.deleteAuction')}
+            aria-label={t('management.deleteAuctionAria', { value1: item.title })}
+            onClick={() => onDelete(item)}
+          >
+            <Trash2 size={16} aria-hidden="true" />
+          </Button>
           <Button
             variant="secondary"
             disabled={!!lockReason || !!startingId || locking}
-            title={lockReason || t('auctions.row.lockTooltip')}
+            title={lockReason || t('management.lockTooltip')}
+            aria-label={t(
+              item.isConsignmentLocked ? 'management.lockedAria' : 'management.lockAria',
+              { title: item.title },
+            )}
             className="disabled:bg-slate-200 disabled:text-slate-500 disabled:opacity-100"
             onClick={() => {
               if (consignmentLockReason(item, Date.now())) return;
@@ -126,31 +259,9 @@ export default function AuctionRow({
               setLockingAuction(item);
             }}
           >
-            <LockKeyhole size={14} />
-            {item.isConsignmentLocked
-              ? t('auctions.row.consignmentLocked')
-              : t('auctions.row.lockConsignment')}
+            <LockKeyhole size={16} aria-hidden="true" />
           </Button>
-          {['DRAFT', 'SCHEDULED'].includes(item.status) ? (
-            <>
-              <Button
-                disabled={
-                  !!startingId || locking || ended || (!item.isConsignmentLocked && !deadlinePassed)
-                }
-                title={
-                  ended
-                    ? t('auctions.row.pastEndTime')
-                    : !item.isConsignmentLocked && !deadlinePassed
-                      ? t('auctions.row.lockBeforeStart')
-                      : undefined
-                }
-                onClick={() => void handleStartAuction(item)}
-              >
-                <Play size={14} />
-                {startingId === item.id ? t('auctions.row.starting') : t('auctions.row.start')}
-              </Button>
-            </>
-          ) : null}
+          {renderStartButton()}
         </div>
       </td>
     </tr>

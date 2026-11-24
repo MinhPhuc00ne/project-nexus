@@ -70,7 +70,6 @@ export const ROUTES = {
   ADMIN_SELLERS: '/admin/sellers',
   ADMIN_AUCTIONS: '/admin/auctions',
   ADMIN_REFUNDS: '/admin/refunds',
-  ADMIN_STUDIO: '/admin/studio',
   ADMIN_FINANCE: '/admin/finance',
   ADMIN_SYSTEM: '/admin/system',
   ADMIN_SETTINGS: '/admin/settings',

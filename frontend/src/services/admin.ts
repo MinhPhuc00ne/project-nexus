@@ -36,6 +36,33 @@ import type {
   StaffUser,
 } from '../types/admin.types';
 import { adminRequest } from './adminRequest';
+import { HOME_TRENDING_LIMIT } from '../constants/trending';
+import type {
+  AdminTrendingProductsResult,
+  RemoveAdminProductTrendingResult,
+} from '../types/admin-product.types';
+
+export function listAdminTrendingProducts(
+  signal?: AbortSignal,
+): Promise<AdminTrendingProductsResult> {
+  return adminRequest({
+    url: '/admin/products/trending',
+    method: 'GET',
+    params: { limit: HOME_TRENDING_LIMIT },
+    signal,
+  });
+}
+
+export function removeAdminProductFromTrending(
+  id: string,
+  reason?: string,
+): Promise<RemoveAdminProductTrendingResult> {
+  return adminRequest({
+    url: `/admin/products/${encodeURIComponent(id)}/trending`,
+    method: 'DELETE',
+    data: reason?.trim() ? { reason: reason.trim() } : {},
+  });
+}
 
 export function listAdminOrders(
   params: QueryAdminOrders,

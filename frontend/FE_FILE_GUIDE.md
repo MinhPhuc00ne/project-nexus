@@ -335,7 +335,6 @@ The `pages/staff` directory contains both page routes and nested panel component
 | [pages/admin/AdminAuctionsPage.tsx](src/pages/admin/AdminAuctionsPage.tsx)     | Route `/admin/auctions`: auction lot approval and catalog audit panel.                                                 | Mock Data                             |
 | [pages/admin/AdminRefundsPage.tsx](src/pages/admin/AdminRefundsPage.tsx)       | Route `/admin/refunds`: escrow refund claims and arbitration decision triggers.                                        | Mock Data                             |
 | [pages/admin/AdminFinancePage.tsx](src/pages/admin/AdminFinancePage.tsx)       | Route `/admin/finance`: platform commission reports and settlement transaction tables.                                 | Mock Data                             |
-| [pages/admin/AdminStudioPage.tsx](src/pages/admin/AdminStudioPage.tsx)         | Route `/admin/studio`: live auction broadcast controls and stream health monitors.                                     | Simulated UI                          |
 | [pages/admin/AdminSystemPage.tsx](src/pages/admin/AdminSystemPage.tsx)         | Route `/admin/system`: WebSocket connection monitors, logistics bridge status, and system event logs.                  | Static UI                             |
 | [pages/admin/AdminSettingsPage.tsx](src/pages/admin/AdminSettingsPage.tsx)     | Route `/admin/settings`: platform configuration values and moderation keyword lists.                                   | Simulated UI                          |
 
