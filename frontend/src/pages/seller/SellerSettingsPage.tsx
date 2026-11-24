@@ -23,6 +23,7 @@ import {
 import SellerResourceState from '../../components/seller/SellerResourceState';
 import SellerShopEditor from '../../components/seller/SellerShopEditor';
 import SellerNotificationPreferences from '../../components/seller/SellerNotificationPreferences';
+import SellerLinkedBankCard from '../../components/seller/SellerLinkedBankCard';
 
 type SettingsTab = 'store' | 'shipping' | 'notifications' | 'account';
 const tabs = [
@@ -80,6 +81,7 @@ function AccountSettingsSection({ user }: { user: ReturnType<typeof useSellerSes
       </dl>
       <p className="text-xs leading-6 text-slate-500">{t('settings.account.hint')}</p>
       <SellerLink to="/seller/profile">{t('settings.account.openProfile')}</SellerLink>
+      <SellerLinkedBankCard />
     </div>
   );
 }
