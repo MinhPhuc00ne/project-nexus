@@ -12,6 +12,8 @@ import {
   Role,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
+import { auctionTargetUrlForRole } from '../../../core/navigation/auction-navigation';
 import {
   CreateAuctionComplaintDto,
   ResolveAuctionComplaintDecision,
@@ -104,32 +106,23 @@ export class AuctionComplaintService {
         },
       });
 
-      const admins = await tx.user.findMany({
-        where: { role: Role.ADMIN },
-        select: { id: true },
+      await notifyAdminsAndStaff(tx, {
+        title: `Khiếu nại đấu giá mới từ ${reporterRole === Role.SELLER ? 'Người bán' : 'Người mua'}`,
+        content: `Phiên "${auction.title}": ${dto.reason.trim()}`,
+        type: NotificationType.DISPUTE,
+        adminTargetUrl: '/admin/auctions',
+        staffTargetUrl: auctionTargetUrlForRole(auctionId, Role.SUPPORT_STAFF),
+        auctionId,
+        metadata: {
+          entityType: 'AUCTION_COMPLAINT',
+          actionType: 'AUCTION_COMPLAINT_CREATED',
+          complaintId: created.id,
+          auctionId,
+          auctionItemId: dto.auctionItemId ?? null,
+          reporterId,
+          reporterRole,
+        },
       });
-
-      if (admins.length > 0) {
-        await tx.notification.createMany({
-          data: admins.map((admin) => ({
-            userId: admin.id,
-            auctionId,
-            targetUrl: '/admin/auctions',
-            title: `Khiếu nại đấu giá mới từ ${reporterRole === Role.SELLER ? 'Người bán' : 'Người mua'}`,
-            content: `Phiên "${auction.title}": ${dto.reason.trim()}`,
-            type: NotificationType.DISPUTE,
-            channel: NotificationChannel.IN_APP,
-            metadata: {
-              actionType: 'AUCTION_COMPLAINT_CREATED',
-              complaintId: created.id,
-              auctionId,
-              auctionItemId: dto.auctionItemId ?? null,
-              reporterId,
-              reporterRole,
-            },
-          })),
-        });
-      }
 
       return created;
     });

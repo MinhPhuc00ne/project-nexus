@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
+import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
 import { ReportDto } from '../dtos/feedback.dto';
 
 @Injectable()
@@ -60,12 +60,20 @@ export class ReportsService {
         },
         select: { id: true, shopId: true, productId: true, status: true, createdAt: true },
       });
-      await notifyAllAdmins(tx, {
+      await notifyAdminsAndStaff(tx, {
         title:
           kind === 'product' ? 'Báo cáo vi phạm sản phẩm mới' : 'Báo cáo vi phạm gian hàng mới',
         content: `Tiêu đề: ${dto.title.trim()} (${kind === 'product' ? 'Sản phẩm' : 'Shop'} #${targetId.slice(0, 8)}).`,
         type: NotificationType.DISPUTE,
-        targetUrl: '/admin/reports',
+        adminTargetUrl: '/admin/reports',
+        staffTargetUrl: '/staff/disputes',
+        metadata: {
+          entityType: 'VIOLATION_REPORT',
+          reportId: report.id,
+          shopId,
+          productId,
+          kind,
+        },
       });
       return report;
     });

@@ -17,7 +17,7 @@ import {
 } from '@prisma/client';
 import { RefundService } from './refund.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
+import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
 import { AdminSettingsService } from '../../admin/services/admin-settings.service';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
 import { ReputationService } from '../../users/services/reputation.service';
@@ -379,11 +379,17 @@ export class OrderEscrowService {
         data: { orderId, openedByUserId: buyerId, reason: reason.trim() },
       });
       await tx.escrowRecord.update({ where: { orderId }, data: { status: EscrowStatus.DISPUTED } });
-      await notifyAllAdmins(tx, {
+      await notifyAdminsAndStaff(tx, {
         title: 'Khiếu nại đơn hàng mới ⚠️',
         content: `Đơn #${orderId.slice(0, 8)} vừa có khiếu nại từ người mua: ${reason.trim()}`,
         type: NotificationType.DISPUTE,
-        targetUrl: '/admin/reports',
+        adminTargetUrl: '/admin/reports',
+        staffTargetUrl: '/staff/disputes',
+        metadata: {
+          entityType: 'ORDER_DISPUTE',
+          disputeId: dispute.id,
+          orderId,
+        },
       });
       return { success: true, dispute };
     });
