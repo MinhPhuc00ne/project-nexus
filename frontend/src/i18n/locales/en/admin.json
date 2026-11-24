@@ -656,6 +656,7 @@
   },
   "products": {
     "trending": {
+      "filterTrending": "Trending",
       "tag": "Trending",
       "manageTag": "View and manage Trending tag",
       "manageAria": "Manage Trending tag for product {{title}}",

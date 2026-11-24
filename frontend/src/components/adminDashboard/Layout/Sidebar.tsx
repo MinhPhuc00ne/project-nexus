@@ -156,7 +156,7 @@ export default function Sidebar({
                     >
                       <Icon size={17} />
                       <span className="flex-1">{t(`nav.${id}`, { defaultValue: label })}</span>
-                      {['sellers', 'refunds', 'products', 'reports'].includes(id) && (
+                      {['sellers', 'refunds', 'reports'].includes(id) && (
                         <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-primary">
                           {getPendingCount()}
                         </span>

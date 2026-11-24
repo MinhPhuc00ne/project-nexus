@@ -14,6 +14,8 @@ import ProductManagement from '../ProductManagement';
 
 const trendingAria = 'Quản lý tag Xu hướng của sản phẩm Product trending';
 const trendingTitle = 'Product trending';
+const normalTitle = 'Product normal';
+const trendingFilterLabel = 'Lọc trạng thái sản phẩm';
 
 vi.mock('../../../../contexts/AuthContext', () => ({ useAuth: () => ({ token: 'admin-token' }) }));
 vi.mock('../../../../services/auth', async (importOriginal) => ({
@@ -106,6 +108,85 @@ describe('admin product Trending moderation', () => {
     });
   });
 
+  it('filters trending products and restores all products', async () => {
+    renderProducts();
+    await screen.findByText(normalTitle);
+    fireEvent.change(screen.getByLabelText(trendingFilterLabel), {
+      target: { value: 'trending' },
+    });
+    expect(await screen.findByText(trendingTitle)).toBeInTheDocument();
+    expect(screen.queryByText(normalTitle)).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(trendingFilterLabel), {
+      target: { value: '' },
+    });
+    expect(await screen.findByText(trendingTitle)).toBeInTheDocument();
+    expect(screen.getByText(normalTitle)).toBeInTheDocument();
+  });
+
+  it('finds trending products beyond the current server page and clears the previous selling status', async () => {
+    vi.mocked(listAdminProducts).mockImplementation(async (query) => ({
+      items: query.limit === 100 && query.page === 2 ? [product('trending')] : [product('normal')],
+      total: 101,
+      page: query.page ?? 1,
+      limit: query.limit ?? 10,
+      totalPages: query.limit === 100 ? 2 : 11,
+    }));
+    renderProducts();
+    await screen.findByText(normalTitle);
+    fireEvent.change(screen.getByLabelText(i18n.t('products.statusAria', { ns: 'admin' })), {
+      target: { value: 'ACTIVE' },
+    });
+    fireEvent.change(screen.getByLabelText(trendingFilterLabel), {
+      target: { value: 'trending' },
+    });
+    expect(await screen.findByText(trendingTitle)).toBeInTheDocument();
+    expect(screen.queryByText(normalTitle)).not.toBeInTheDocument();
+    expect(listAdminProducts).toHaveBeenCalledWith(
+      expect.objectContaining({ page: 2, limit: 100, status: undefined }),
+      expect.any(AbortSignal),
+    );
+    expect(
+      screen.getByRole('button', { name: i18n.t('products.next', { ns: 'admin' }) }),
+    ).toBeDisabled();
+  });
+
+  it('switches from trending back to a selling status using the same dropdown', async () => {
+    renderProducts();
+    await screen.findByText(normalTitle);
+    expect(screen.getAllByRole('combobox')).toHaveLength(2);
+    fireEvent.change(screen.getByLabelText(trendingFilterLabel), { target: { value: 'trending' } });
+    await screen.findByText(trendingTitle);
+    fireEvent.change(screen.getByLabelText(trendingFilterLabel), { target: { value: 'INACTIVE' } });
+    expect(await screen.findByText(normalTitle)).toBeInTheDocument();
+    expect(screen.getByLabelText(trendingFilterLabel)).toHaveValue('INACTIVE');
+    expect(listAdminProducts).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, limit: 10, status: 'INACTIVE' }),
+      expect.any(AbortSignal),
+    );
+  });
+
+  it('shows an empty trending list when the Top 10 is empty', async () => {
+    vi.mocked(listAdminTrendingProducts).mockResolvedValue({ items: [], total: 0 });
+    renderProducts();
+    await screen.findByText(normalTitle);
+    fireEvent.change(screen.getByLabelText(trendingFilterLabel), {
+      target: { value: 'trending' },
+    });
+    expect(await screen.findByText(i18n.t('products.empty', { ns: 'admin' }))).toBeInTheDocument();
+    expect(screen.queryByText(normalTitle)).not.toBeInTheDocument();
+  });
+
+  it('does not misclassify products when the trending request fails', async () => {
+    vi.mocked(listAdminTrendingProducts).mockRejectedValue(new Error('Trending unavailable'));
+    renderProducts();
+    await screen.findByText(normalTitle);
+    fireEvent.change(screen.getByLabelText(trendingFilterLabel), {
+      target: { value: 'trending' },
+    });
+    expect(await screen.findByText('Trending unavailable')).toBeInTheDocument();
+    expect(screen.queryByText(normalTitle)).not.toBeInTheDocument();
+  });
+
   it('shows the tag only for trending products, sends the reason, and refreshes tags after removal', async () => {
     const dialog = await openTrendingDialog();
     expect(
@@ -150,7 +231,7 @@ describe('admin product Trending moderation', () => {
   it('retains product management and offers retry when Trending cannot be loaded', async () => {
     vi.mocked(listAdminTrendingProducts).mockRejectedValue(new Error('Unavailable'));
     renderProducts();
-    expect(await screen.findByText('Product normal')).toBeInTheDocument();
+    expect(await screen.findByText(normalTitle)).toBeInTheDocument();
     expect(
       await screen.findByText('Chưa kiểm tra được tag Xu hướng. Bấm Thử lại để cập nhật.'),
     ).toBeInTheDocument();

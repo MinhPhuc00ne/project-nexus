@@ -656,6 +656,7 @@
   },
   "products": {
     "trending": {
+      "filterTrending": "Đang xu hướng",
       "tag": "Xu hướng",
       "manageTag": "Xem và quản lý tag Xu hướng",
       "manageAria": "Quản lý tag Xu hướng của sản phẩm {{title}}",
