@@ -7,9 +7,16 @@ type Props = {
   startTime: string;
   endTime: string;
   onChange: (value: string) => void;
+  required?: boolean;
 };
 
-export default function ConsignmentDeadlineField({ value, startTime, endTime, onChange }: Props) {
+export default function ConsignmentDeadlineField({
+  value,
+  startTime,
+  endTime,
+  onChange,
+  required = false,
+}: Props) {
   const { t } = useTranslation('admin');
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -36,7 +43,13 @@ export default function ConsignmentDeadlineField({ value, startTime, endTime, on
     <div className="space-y-2">
       <label htmlFor={id} className="block text-xs font-medium">
         {t('auctions.create.deadline.label')}{' '}
-        <span className="font-normal text-slate-500">{t('auctions.create.deadline.optional')}</span>
+        {required ? (
+          <span className="text-red-600">*</span>
+        ) : (
+          <span className="font-normal text-slate-500">
+            {t('auctions.create.deadline.optional')}
+          </span>
+        )}
       </label>
       <input
         ref={input}
@@ -44,6 +57,7 @@ export default function ConsignmentDeadlineField({ value, startTime, endTime, on
         name="consignmentDeadline"
         type="datetime-local"
         step={60}
+        required={required}
         value={value}
         min={min}
         max={max}

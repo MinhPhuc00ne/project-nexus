@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useState, useMemo, type FormEvent, type JSX } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type JSX,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -17,6 +25,7 @@ import {
   Plus,
   RotateCcw,
   Sparkles,
+  Upload,
   X,
 } from 'lucide-react';
 import {
@@ -28,6 +37,7 @@ import {
   type StaffBanner,
 } from '../../services/staff';
 import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
+import { uploadBannerImage } from '../../services/banners.service';
 import { minEndDateTime } from '../../utils/date-time';
 import { getIntlLocale } from '../../i18n/config';
 
@@ -78,6 +88,9 @@ export default function StaffBannersPanel(): JSX.Element {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState('');
+  const [uploadedFileName, setUploadedFileName] = useState('');
   const [targetUrl, setTargetUrl] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
@@ -91,6 +104,7 @@ export default function StaffBannersPanel(): JSX.Element {
   const [showHistory, setShowHistory] = useState(false);
   const [historyItems, setHistoryItems] = useState<StaffBannerDisableHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -131,6 +145,8 @@ export default function StaffBannersPanel(): JSX.Element {
     setEditingId(null);
     setTitle('');
     setImageUrl('');
+    setImageUploadError('');
+    setUploadedFileName('');
     setTargetUrl('');
     setStartsAt('');
     setEndsAt('');
@@ -146,6 +162,8 @@ export default function StaffBannersPanel(): JSX.Element {
     setEditingId(item.id);
     setTitle(item.title);
     setImageUrl(item.imageUrl);
+    setImageUploadError('');
+    setUploadedFileName('');
     setTargetUrl(item.targetUrl || '');
     setStartsAt(toLocalDateTime(item.startsAt));
     setEndsAt(toLocalDateTime(item.endsAt));
@@ -157,13 +175,32 @@ export default function StaffBannersPanel(): JSX.Element {
   }
 
   function closeModal(): void {
+    if (uploadingImage) return;
     setIsModalOpen(false);
     setEditingId(null);
   }
 
+  async function uploadImage(file: File): Promise<void> {
+    setUploadingImage(true);
+    setImageUploadError('');
+    setUploadedFileName('');
+    try {
+      const uploadedUrl = await uploadBannerImage(file);
+      setImageUrl(uploadedUrl);
+      setImageError(false);
+      setUploadedFileName(file.name);
+    } catch (cause) {
+      setImageUploadError(
+        cause instanceof Error ? cause.message : t('banners.imageUploadErr'),
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
-    if (saving) return;
+    if (saving || uploadingImage || imageUploadError || !imageUrl.trim()) return;
     setSaving(true);
     setError('');
     try {
@@ -180,7 +217,8 @@ export default function StaffBannersPanel(): JSX.Element {
         },
         editingId || undefined,
       );
-      closeModal();
+      setIsModalOpen(false);
+      setEditingId(null);
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : t('banners.saveErr'));
@@ -481,6 +519,7 @@ export default function StaffBannersPanel(): JSX.Element {
               <button
                 type="button"
                 onClick={closeModal}
+                disabled={saving || uploadingImage}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
               >
                 <X size={18} />
@@ -514,25 +553,56 @@ export default function StaffBannersPanel(): JSX.Element {
                   />
                 </div>
 
-                {/* Field: URL Hình ảnh */}
+                {/* Banner image upload */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {t('banners.imageUrlLabel')} <span className="text-red-500">*</span>
+                    {t('banners.imageLabel')} <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative flex items-center">
-                    <ImageIcon size={15} className="absolute left-3 text-slate-400" />
-                    <input
-                      required
-                      type="url"
-                      value={imageUrl}
-                      onChange={(event) => {
-                        setImageUrl(event.target.value);
-                        setImageError(false);
-                      }}
-                      placeholder="https://domain.com/banner-image.jpg"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2 pl-9 pr-3 text-xs text-slate-800 placeholder-slate-400 outline-none transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/15"
-                    />
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.webp,.gif,.svg"
+                    aria-label={t('banners.chooseImage')}
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      if (file) void uploadImage(file);
+                    }}
+                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={saving || uploadingImage}
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <Upload size={15} aria-hidden="true" />
+                      {uploadingImage
+                        ? t('banners.uploadingImage')
+                        : imageUrl
+                          ? t('banners.changeImage')
+                          : t('banners.uploadImage')}
+                    </button>
+                    <span className="text-[10.5px] text-slate-500">
+                      {t('banners.imageUploadHint')}
+                    </span>
                   </div>
+                  {uploadingImage && (
+                    <p role="status" className="mt-2 text-xs text-slate-500">
+                      {t('banners.uploadingImage')}
+                    </p>
+                  )}
+                  {uploadedFileName && !uploadingImage && (
+                    <p className="mt-2 break-all text-xs text-slate-500">
+                      {t('banners.uploadedImage', { name: uploadedFileName })}
+                    </p>
+                  )}
+                  {imageUploadError && (
+                    <p role="alert" className="mt-2 text-xs text-red-600">
+                      {imageUploadError}
+                    </p>
+                  )}
                 </div>
 
                 {/* LIVE IMAGE PREVIEW (Embedded inside Modal) */}
@@ -735,7 +805,7 @@ export default function StaffBannersPanel(): JSX.Element {
                 <button
                   type="button"
                   onClick={closeModal}
-                  disabled={saving}
+                  disabled={saving || uploadingImage}
                   className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   {t('banners.cancel')}
@@ -743,7 +813,7 @@ export default function StaffBannersPanel(): JSX.Element {
 
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploadingImage || !!imageUploadError || !imageUrl.trim()}
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {saving ? (

@@ -29,6 +29,7 @@ export default function SellerNotifications({
     type?: string,
     title?: string,
     content?: string,
+    auctionId?: string | null,
   ): void => {
     void state.markRead(notificationId);
     const sellerAuctionPath = targetUrl?.match(/^\/auction\/([^/?#]+)/);
@@ -47,10 +48,12 @@ export default function SellerNotifications({
           : resolvedUrl;
     } else if (isTrendingNotification) {
       destination = '/seller/products?tab=trending';
-    } else if (type === 'DISPUTE') {
+    } else if (type?.toUpperCase().includes('DISPUTE')) {
       destination = '/seller/disputes';
     } else if (isReviewNotification) {
       destination = '/seller/reviews';
+    } else if (auctionId) {
+      destination = `/seller/auctions/${encodeURIComponent(auctionId)}`;
     }
 
     navigate(destination);
@@ -179,7 +182,8 @@ export default function SellerNotifications({
                               )}
                             </time>
                             {(item.targetUrl ||
-                              item.type === 'DISPUTE' ||
+                              item.auctionId ||
+                              item.type.toUpperCase().includes('DISPUTE') ||
                               item.type?.toUpperCase().includes('REVIEW') ||
                               isTrendingItem ||
                               `${item.title} ${item.content}`
@@ -194,16 +198,17 @@ export default function SellerNotifications({
                                     item.type,
                                     item.title,
                                     item.content,
+                                    item.auctionId,
                                   )
                                 }
                                 className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline"
                               >
                                 {isTrendingItem && t('notifications.viewTrending')}
                                 {!isTrendingItem &&
-                                  item.type === 'DISPUTE' &&
+                                  item.type.toUpperCase().includes('DISPUTE') &&
                                   t('notifications.viewDispute')}
                                 {!isTrendingItem &&
-                                  item.type !== 'DISPUTE' &&
+                                  !item.type.toUpperCase().includes('DISPUTE') &&
                                   t('notifications.openContent')}
                               </button>
                             )}

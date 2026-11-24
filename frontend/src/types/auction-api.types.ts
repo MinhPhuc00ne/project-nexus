@@ -173,13 +173,18 @@ export interface AdminCreateAuctionInput {
   imageUrl?: string | null;
   startTime: string;
   endTime: string;
-  consignmentDeadline?: string;
+  consignmentDeadline: string;
   minBuyerReputation: number;
   minSellerReputation: number;
 }
 
-export interface AdminAuctionEntity extends AdminCreateAuctionInput {
+export type AdminUpdateAuctionInput = Partial<
+  Omit<AdminCreateAuctionInput, 'consignmentDeadline'>
+> & { consignmentDeadline?: string | null };
+
+export interface AdminAuctionEntity extends Omit<AdminCreateAuctionInput, 'consignmentDeadline'> {
   id: string;
+  consignmentDeadline?: string | null;
   status: AuctionStatus;
   isConsignmentLocked: boolean;
   consignmentLockedAt?: string | null;
@@ -323,6 +328,8 @@ export interface StaffAuctionOverviewResponse {
     status: AuctionStatus;
     startTime: string;
     endTime: string;
+    isConsignmentLocked: boolean;
+    consignmentLockedAt?: string | null;
     items?: AuctionConsignmentItem[];
   }>;
 }

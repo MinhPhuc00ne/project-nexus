@@ -1,4 +1,4 @@
-import { type JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageCircle, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -9,7 +9,8 @@ import {
   getChatUnreadCount,
   requestChatSupport,
 } from '../../services/chat';
-import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
+import type { ChatConversation, ChatConversationType, ChatMessage } from '../../types/chat.types';
+import { createChatConnection, type ChatConnectionClient } from '../../services/chatSocket';
 import ChatConversationList from './ChatConversationList';
 import ChatMessageArea from './ChatMessageArea';
 import { getChatErrorMessage } from './chatUtils';
@@ -21,6 +22,14 @@ import {
   OPEN_CHAT_WITH_USER_EVENT,
   type OpenChatWithUserRequest,
 } from './chatEvents';
+
+function orderByLastMessage(items: ChatConversation[]): ChatConversation[] {
+  return [...items].sort((left, right) => {
+    const leftTime = Date.parse(left.lastMessageAt ?? left.createdAt) || 0;
+    const rightTime = Date.parse(right.lastMessageAt ?? right.createdAt) || 0;
+    return rightTime - leftTime || left.id.localeCompare(right.id);
+  });
+}
 
 export default function ChatWidget(): JSX.Element | null {
   const { token, storedUser } = useAuth();
@@ -80,6 +89,10 @@ function ChatPanel({
   const [participantId, setParticipantId] = useState('');
   const [type, setType] = useState<ChatConversationType>('BUYER_SELLER');
   const [revision, setRevision] = useState(0);
+  const chatConnectionRef = useRef<ChatConnectionClient | null>(null);
+  const activeChatStateRef = useRef<{ id?: string; isVisible: boolean }>({
+    isVisible: false,
+  });
 
   useEffect(() => {
     const handleOpenChat = (event: Event): void => {
@@ -138,6 +151,10 @@ function ChatPanel({
   }, []);
 
   const activeId = active?.id;
+  activeChatStateRef.current = {
+    id: activeId,
+    isVisible: open && view === 'chat',
+  };
 
   const room = useChatRoom({
     activeId,
@@ -150,6 +167,9 @@ function ChatPanel({
           conversation.id === conversationId ? { ...conversation, unreadCount: 0 } : conversation,
         ),
       );
+      void getChatUnreadCount()
+        .then(setUnread)
+        .catch(() => {});
     },
   });
 
@@ -192,20 +212,103 @@ function ChatPanel({
 
   useEffect(() => {
     let cancelled = false;
-    const refresh = (): void => {
+    const connection = createChatConnection();
+    chatConnectionRef.current = connection;
+    const joinedConversationIds = new Set<string>();
+    const seenMessageIds = new Set<string>();
+
+    const refreshUnreadCount = (): void => {
       void getChatUnreadCount()
         .then((count) => {
           if (!cancelled) setUnread(count);
         })
         .catch(() => {});
     };
-    refresh();
-    const timer = window.setInterval(refresh, 15000);
+
+    const handleNewMessage = (message: ChatMessage): void => {
+      if (!message?.id || message.isMe || seenMessageIds.has(message.id)) return;
+      seenMessageIds.add(message.id);
+      const activeChat = activeChatStateRef.current;
+      const isReadingThisConversation =
+        activeChat.isVisible &&
+        activeChat.id === message.conversationId &&
+        document.visibilityState === 'visible';
+
+      if (!isReadingThisConversation) {
+        setUnread((count) => count + 1);
+        setConversations((current) =>
+          orderByLastMessage(
+            current.map((conversation) => {
+              if (conversation.id !== message.conversationId) return conversation;
+              const isNewer =
+                (Date.parse(message.createdAt) || 0) >=
+                (Date.parse(conversation.lastMessageAt ?? conversation.createdAt) || 0);
+              return {
+                ...conversation,
+                unreadCount: conversation.unreadCount + 1,
+                ...(isNewer
+                  ? {
+                      lastMessage: message.body || (message.attachments.length ? '📎' : ''),
+                      lastMessageAt: message.createdAt,
+                    }
+                  : {}),
+              };
+            }),
+          ),
+        );
+      }
+    };
+
+    const handleMessagesRead = (event: { conversationId: string; readBy: string }): void => {
+      if (event.readBy !== userId) return;
+      setConversations((current) =>
+        current.map((conversation) =>
+          conversation.id === event.conversationId
+            ? { ...conversation, unreadCount: 0 }
+            : conversation,
+        ),
+      );
+      refreshUnreadCount();
+    };
+
+    connection.socket.on('new_message', handleNewMessage);
+    connection.socket.on('messages_read', handleMessagesRead);
+    connection.socket.on('connect', refreshUnreadCount);
+    connection.connect();
+    refreshUnreadCount();
+
+    const joinAllUserConversations = async (): Promise<void> => {
+      try {
+        let page = 1;
+        let totalPages = 1;
+        while (!cancelled && page <= totalPages) {
+          const result = await getChatConversations({ page, limit: 100 });
+          for (const conversation of result.items) {
+            if (joinedConversationIds.has(conversation.id)) continue;
+            joinedConversationIds.add(conversation.id);
+            connection.joinConversation(conversation.id);
+          }
+          totalPages = Math.max(1, result.pagination.totalPages);
+          page += 1;
+        }
+        if (!cancelled) refreshUnreadCount();
+      } catch {
+        // The visible inbox can still load conversations when opened; retry joining those below.
+      }
+    };
+    void joinAllUserConversations();
+
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      connection.socket.off('new_message', handleNewMessage);
+      connection.socket.off('messages_read', handleMessagesRead);
+      connection.socket.off('connect', refreshUnreadCount);
+      connection.disconnect();
+      joinedConversationIds.clear();
+      seenMessageIds.clear();
+      chatConnectionRef.current = null;
     };
-  }, [revision]);
+  }, [userId]);
 
   useEffect(() => {
     if (!open) return;
@@ -214,10 +317,15 @@ function ChatPanel({
       void getChatConversations({ search, page, limit: 20 })
         .then((result) => {
           if (cancelled) return;
+          for (const conversation of result.items) {
+            chatConnectionRef.current?.joinConversation(conversation.id);
+          }
           setConversations((current) =>
-            page === 1
-              ? result.items
-              : [...new Map([...current, ...result.items].map((c) => [c.id, c])).values()],
+            orderByLastMessage(
+              page === 1
+                ? result.items
+                : [...new Map([...current, ...result.items].map((c) => [c.id, c])).values()],
+            ),
           );
           setTotalPages(result.pagination.totalPages);
         })
@@ -287,7 +395,14 @@ function ChatPanel({
         >
           <MessageCircle size={22} />{' '}
           {canRequestSupport ? t('chat.widget.messagesAndSupport') : t('chat.widget.messages')}{' '}
-          {unread > 0 && <span className="rounded-full bg-red-500 px-2 text-xs">{unread}</span>}
+          {unread > 0 && (
+            <span
+              className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs leading-none text-white"
+              aria-label={t('chat.widget.unreadCount', { count: unread })}
+            >
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
         </button>
       )}
       <section
@@ -323,11 +438,21 @@ function ChatPanel({
                 aria-pressed={view === tab}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold max-sm:flex-1 max-sm:px-2 max-sm:text-xs ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
               >
-                {tab === 'bot'
-                  ? t('chat.widget.tabBot')
-                  : tab === 'support'
-                    ? t('chat.widget.tabSupport')
-                    : t('chat.widget.tabChat')}
+                <span className="inline-flex items-center gap-2">
+                  {tab === 'bot'
+                    ? t('chat.widget.tabBot')
+                    : tab === 'support'
+                      ? t('chat.widget.tabSupport')
+                      : t('chat.widget.tabChat')}
+                  {tab === 'chat' && unread > 0 && (
+                    <span
+                      className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs leading-none text-white"
+                      aria-label={t('chat.widget.unreadCount', { count: unread })}
+                    >
+                      {unread > 99 ? '99+' : unread}
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </nav>

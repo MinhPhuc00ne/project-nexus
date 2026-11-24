@@ -459,6 +459,7 @@
       "openMessages": "Open messages",
       "messagesAndSupport": "Messages & Support",
       "messages": "Messages",
+      "unreadCount": "{{count}} unread messages",
       "inboxAria": "Message inbox",
       "title": "Nexus Chat",
       "subtitle": "Connecting buyers, sellers and support",

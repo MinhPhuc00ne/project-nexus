@@ -1580,6 +1580,10 @@
       "startError": "Không thể bắt đầu phiên đấu giá."
     },
     "row": {
+      "edit": "Chỉnh sửa",
+      "delete": "Xóa phiên",
+      "deleteActive": "Không thể xóa phiên đang diễn ra.",
+      "deleteHasBids": "Không thể xóa phiên đã có lượt trả giá.",
       "view3dAria": "Xem video 3D phiên {{title}}",
       "view3dTitle": "Xem video 3D",
       "createdBy": "Người tạo: {{name}}",
@@ -1596,6 +1600,7 @@
       "start": "Bắt đầu"
     },
     "create": {
+      "errDeadlineRequired": "Vui lòng chọn hạn ký gửi cho phiên đấu giá.",
       "title": "Tạo phiên đấu giá",
       "errTitle": "Vui lòng nhập tên phiên đấu giá.",
       "errSchedule": "Vui lòng chọn lịch hợp lệ, thời gian kết thúc phải sau thời gian bắt đầu.",
@@ -1632,6 +1637,20 @@
         "hintTooShort": "Lịch phiên cần cách nhau ít nhất 2 phút để chọn hạn ký gửi ở giữa.",
         "hintValid": "Chọn hạn ký gửi sau giờ bắt đầu và trước giờ kết thúc phiên, tối thiểu 1 phút mỗi phía."
       }
+    },
+    "edit": {
+      "title": "Chỉnh sửa phiên đấu giá",
+      "save": "Lưu thay đổi",
+      "toastSuccess": "Đã cập nhật phiên đấu giá.",
+      "errSave": "Không thể cập nhật phiên đấu giá."
+    },
+    "delete": {
+      "title": "Xóa phiên đấu giá",
+      "body": "Bạn có chắc muốn xóa phiên \"{{title}}\"? Thao tác này không thể hoàn tác.",
+      "confirm": "Xóa phiên",
+      "deleting": "Đang xóa…",
+      "toastSuccess": "Đã xóa phiên đấu giá.",
+      "errDelete": "Không thể xóa phiên đấu giá."
     },
     "itemsDialog": {
       "title": "Sản phẩm · {{title}}",

@@ -1,6 +1,6 @@
 import './staffSupportChat.css';
 import { RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../../i18n/config';
 import StaffMetricCards from './StaffMetricCards';
@@ -18,7 +18,9 @@ import {
 } from '../../services/chat';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChatRoom } from '../../components/chat/useChatRoom';
-import type { ChatConversation, SupportConversationStatus } from '../../types/chat.types';
+import { normalizeChatMessage } from '../../services/chat';
+import { createChatConnection, type ChatConnectionClient } from '../../services/chatSocket';
+import type { ChatConversation, ChatMessage, SupportConversationStatus } from '../../types/chat.types';
 
 export type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
 export type { SupportTicket, TicketStatus };
@@ -61,11 +63,15 @@ export default function StaffTicketChatPanel({
   const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | TicketStatus>('all');
   const refresh = useCallback(() => setRevision((value) => value + 1), []);
+  const activeTicketIdRef = useRef(activeTicketId);
+  const chatConnectionRef = useRef<ChatConnectionClient | null>(null);
+  const joinedConversationIdsRef = useRef(new Set<string>());
+  activeTicketIdRef.current = activeTicketId;
   const room = useChatRoom({
     activeId: activeTicketId ?? undefined,
     userId: storedUser?.id ?? '',
     isOpen: Boolean(storedUser),
-    onRevisionChange: refresh,
+    onRevisionChange: () => {},
   });
   const reply = room.draft;
   const setReply = room.setDraft;
@@ -111,12 +117,88 @@ export default function StaffTicketChatPanel({
       }
     };
     void load();
-    const timer = window.setInterval(() => void load(), 15000);
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
     };
   }, [revision]);
+
+  useEffect(() => {
+    const userId = storedUser?.id;
+    if (!userId) return;
+
+    const connection = createChatConnection();
+    chatConnectionRef.current = connection;
+    const handleMessage = (payload: ChatMessage): void => {
+      const message = normalizeChatMessage(payload, userId);
+      setConversations((current) => {
+        if (!current) return current;
+        const hasConversation = current.some((conversation) => conversation.id === message.conversationId);
+        if (!hasConversation) return current;
+
+        const shouldCountUnread =
+          message.senderId !== userId &&
+          (activeTicketIdRef.current !== message.conversationId ||
+            document.visibilityState !== 'visible');
+        const updated = current.map((conversation) => {
+          if (conversation.id !== message.conversationId) return conversation;
+          const currentLastMessageTime = Date.parse(
+            conversation.lastMessageAt ?? conversation.createdAt,
+          ) || 0;
+          if (Date.parse(message.createdAt) < currentLastMessageTime) return conversation;
+          return {
+            ...conversation,
+            lastMessage: message.body || (message.attachments.length ? '📎' : ''),
+            lastMessageAt: message.createdAt,
+            updatedAt: message.createdAt,
+            unreadCount: conversation.unreadCount + (shouldCountUnread ? 1 : 0),
+          };
+        });
+        return updated.sort(
+          (left, right) =>
+            (Date.parse(right.lastMessageAt ?? right.createdAt) || 0) -
+              (Date.parse(left.lastMessageAt ?? left.createdAt) || 0) ||
+            left.id.localeCompare(right.id),
+        );
+      });
+    };
+    const handleMessagesRead = (event: { conversationId: string; readBy: string }): void => {
+      if (event.readBy !== userId) return;
+      setConversations((current) =>
+        current?.map((conversation) =>
+          conversation.id === event.conversationId
+            ? { ...conversation, unreadCount: 0 }
+            : conversation,
+        ) ?? current,
+      );
+    };
+
+    connection.socket.on('new_message', handleMessage);
+    connection.socket.on('messages_read', handleMessagesRead);
+    connection.socket.on('conversation_status_changed', refresh);
+    connection.socket.on('ticket_assigned', refresh);
+    connection.socket.on('new_queue_ticket', refresh);
+    connection.connect();
+
+    return () => {
+      connection.socket.off('new_message', handleMessage);
+      connection.socket.off('messages_read', handleMessagesRead);
+      connection.socket.off('conversation_status_changed', refresh);
+      connection.socket.off('ticket_assigned', refresh);
+      connection.socket.off('new_queue_ticket', refresh);
+      connection.disconnect();
+      chatConnectionRef.current = null;
+      joinedConversationIdsRef.current.clear();
+    };
+  }, [refresh, storedUser?.id]);
+
+  useEffect(() => {
+    if (!conversations || !chatConnectionRef.current) return;
+    for (const conversation of conversations) {
+      if (joinedConversationIdsRef.current.has(conversation.id)) continue;
+      chatConnectionRef.current.joinConversation(conversation.id);
+      joinedConversationIdsRef.current.add(conversation.id);
+    }
+  }, [conversations]);
 
   const tickets: SupportTicket[] | null =
     conversations?.map((c) => ({
@@ -284,6 +366,7 @@ export default function StaffTicketChatPanel({
           typing={room.typing}
           hasOlder={room.hasOlder}
           loadingOlder={room.older}
+          scrollVersion={room.scrollVersion}
           onLoadOlder={() => void room.loadOlder()}
           activeTicket={activeTicket}
           reply={reply}

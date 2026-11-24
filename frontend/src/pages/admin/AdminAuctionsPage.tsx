@@ -32,8 +32,6 @@ const COLUMN_KEYS = [
 
 export default function AdminAuctionsPage() {
   const { t } = useTranslation('admin');
-  const [editingAuction, setEditingAuction] = useState<AdminAuctionEntity | null>(null);
-  const [deletingAuction, setDeletingAuction] = useState<AdminAuctionEntity | null>(null);
   const [promotingAuction, setPromotingAuction] = useState<AdminAuctionEntity | null>(null);
   const {
     now,
@@ -55,6 +53,10 @@ export default function AdminAuctionsPage() {
     setCreating,
     selectedAuction,
     setSelectedAuction,
+    editingAuction,
+    setEditingAuction,
+    deletingAuction,
+    setDeletingAuction,
     startingId,
     lockingAuction,
     setLockingAuction,
@@ -270,7 +272,7 @@ export default function AdminAuctionsPage() {
       )}
       {creating && (
         <CreateAuctionDialog
-          key={token}
+          key={`${token}:create`}
           onClose={() => setCreating(false)}
           onCreated={(auction) => {
             setCreating(false);

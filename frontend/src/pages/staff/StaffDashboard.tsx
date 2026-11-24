@@ -9,8 +9,10 @@ import StaffHeader from './StaffHeader';
 import StaffTeamManagementPanel from './StaffTeamManagementPanel';
 import StaffTicketChatPanel from './StaffTicketChatPanel';
 import StaffDisputesPanel from './StaffDisputesPanel';
+import StaffOrdersPanel from './StaffOrdersPanel';
 import StaffBannersPanel from './StaffBannersPanel';
 import StaffAuctionSupportPanel from './StaffAuctionSupportPanel';
+import StaffReviewsPanel from './StaffReviewsPanel';
 
 export type { StaffSection };
 
@@ -144,8 +146,12 @@ export default function StaffDashboard({
             <StaffTeamManagementPanel notify={notify} />
           ) : activeNavigation === 'Khiếu Nại & Tranh Chấp' ? (
             <StaffDisputesPanel />
+          ) : activeNavigation === 'Đơn hàng & Hậu mãi' ? (
+            <StaffOrdersPanel />
           ) : activeNavigation === 'Quản Lý Banner' ? (
             <StaffBannersPanel />
+          ) : activeNavigation === 'Kiểm Duyệt Đánh Giá' ? (
+            <StaffReviewsPanel />
           ) : activeNavigation === 'Hỗ Trợ Đấu Giá 3D' ? (
             <StaffAuctionSupportPanel />
           ) : activeNavigation !== 'Hộp Thư Trực Tuyến' ? (

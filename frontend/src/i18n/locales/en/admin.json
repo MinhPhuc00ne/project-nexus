@@ -1580,6 +1580,10 @@
       "startError": "Unable to start auction session."
     },
     "row": {
+      "edit": "Edit",
+      "delete": "Delete Session",
+      "deleteActive": "An active session cannot be deleted.",
+      "deleteHasBids": "A session with bids cannot be deleted.",
       "view3dAria": "View 3D showcase for {{title}}",
       "view3dTitle": "View 3D showcase",
       "createdBy": "Created by: {{name}}",
@@ -1596,6 +1600,7 @@
       "start": "Start"
     },
     "create": {
+      "errDeadlineRequired": "Please choose a consignment deadline for the auction session.",
       "title": "Create Auction Session",
       "errTitle": "Please enter an auction session title.",
       "errSchedule": "Please select a valid schedule; end time must be after start time.",
@@ -1632,6 +1637,20 @@
         "hintTooShort": "Session schedule must span at least 2 minutes to set a consignment deadline in between.",
         "hintValid": "Choose a consignment deadline after start time and before end time, with at least 1 minute on each side."
       }
+    },
+    "edit": {
+      "title": "Edit Auction Session",
+      "save": "Save Changes",
+      "toastSuccess": "Auction session updated.",
+      "errSave": "Unable to update auction session."
+    },
+    "delete": {
+      "title": "Delete Auction Session",
+      "body": "Are you sure you want to delete the session \"{{title}}\"? This cannot be undone.",
+      "confirm": "Delete Session",
+      "deleting": "Deleting…",
+      "toastSuccess": "Auction session deleted.",
+      "errDelete": "Unable to delete auction session."
     },
     "itemsDialog": {
       "title": "Products · {{title}}",
