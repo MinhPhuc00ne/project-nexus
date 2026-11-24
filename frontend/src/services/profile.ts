@@ -88,11 +88,17 @@ export async function updateMyProfile<T extends ProfileChanges & BankProfileChan
     savedChanges.avatarUrl = url;
   }
   assertSession();
+  let authPayload: { verificationToken?: string; password?: string } = {};
+  if (verificationToken) {
+    authPayload = { verificationToken };
+  } else if (password) {
+    authPayload = { password };
+  }
   await apiRequest('/buyer/profile', {
     method: 'PATCH',
     body: {
       ...savedChanges,
-      ...(verificationToken ? { verificationToken } : password ? { password } : {}),
+      ...authPayload,
     },
     requireAuth: true,
   });

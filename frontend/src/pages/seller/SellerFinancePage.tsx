@@ -46,7 +46,7 @@ function FinanceWorkspace(): ReactElement {
   const [pendingDepositOrderCode, setPendingDepositOrderCode] = useState<number | null>(null);
 
   const load = useCallback(() => {
-    void revision;
+    if (revision < 0) return Promise.reject(new Error('Invalid revision'));
     return getSellerRevenue();
   }, [revision]);
   const revenue = useProductResource(load);
