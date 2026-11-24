@@ -26,6 +26,7 @@ export interface UseChatRoomResult {
   older: boolean;
   hasOlder: boolean;
   connected: boolean;
+  scrollVersion: number;
   typing: boolean;
   error: string;
   setError: (value: string) => void;
@@ -49,6 +50,7 @@ export function useChatRoom({
   const [hasOlder, setHasOlder] = useState(false);
   const [connected, setConnected] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [scrollVersion, setScrollVersion] = useState(0);
 
   const connection = useRef<ChatConnectionClient | null>(null);
   const callbacks = useRef({ onRevisionChange, onRead });
@@ -78,7 +80,6 @@ export function useChatRoom({
         .then(() => {
           if (cancelled) return;
           callbacks.current.onRead?.(activeId);
-          callbacks.current.onRevisionChange();
         })
         .catch((err) => {
           if (!cancelled) setError(getChatErrorMessage(err));
@@ -104,6 +105,7 @@ export function useChatRoom({
     client.socket.on('new_message', (message) => {
       if (message.conversationId !== activeId) return;
       setMessages((current) => mergeMessages(current, [normalizeChatMessage(message, userId)]));
+      setScrollVersion((current) => current + 1);
       onRevisionChange();
       if (message.senderId !== userId && document.visibilityState === 'visible') read();
     });
@@ -190,6 +192,7 @@ export function useChatRoom({
       const message = await sendChatMessage(id, { body, attachments });
       if (connection.current && id === currentConversation.current) {
         setMessages((current) => mergeMessages(current, [message]));
+        setScrollVersion((current) => current + 1);
         setDraft((current) => (current.trim() === body ? '' : current));
       }
       onRevisionChange();
@@ -227,6 +230,7 @@ export function useChatRoom({
     older,
     hasOlder,
     connected,
+    scrollVersion,
     typing,
     error,
     setError,

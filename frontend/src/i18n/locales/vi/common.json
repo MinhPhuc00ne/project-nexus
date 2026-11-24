@@ -43,6 +43,15 @@
     "success": "Thành công",
     "error": "Đã xảy ra lỗi"
   },
+  "logoutDialog": {
+    "title": "Xác nhận đăng xuất",
+    "descriptionWithAccount": "Bạn có chắc muốn đăng xuất khỏi tài khoản {{accountName}}?",
+    "descriptionDefault": "Bạn có chắc muốn đăng xuất khỏi tài khoản này?",
+    "stay": "Ở lại",
+    "confirm": "Đăng xuất",
+    "closeAria": "Đóng xác nhận đăng xuất",
+    "successToast": "Đăng xuất thành công. Hẹn gặp lại bạn!"
+  },
   "nav": {
     "home": "Trang chủ",
     "auctions": "Đấu giá",
@@ -450,6 +459,7 @@
       "openMessages": "Mở tin nhắn",
       "messagesAndSupport": "Tin nhắn & Hỗ trợ",
       "messages": "Tin nhắn",
+      "unreadCount": "{{count}} tin nhắn chưa đọc",
       "inboxAria": "Hộp tin nhắn",
       "title": "Nexus Chat",
       "subtitle": "Kết nối người mua, người bán và hỗ trợ",

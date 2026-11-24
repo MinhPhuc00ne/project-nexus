@@ -10,7 +10,9 @@ tsNode.register({
 });
 
 const load = createRequire(import.meta.url);
-const { notifyAllAdmins } = load('../src/core/notifications/admin-notification.util.ts');
+const { notifyAllAdmins, notifyAdminsAndStaff } = load(
+  '../src/core/notifications/admin-notification.util.ts',
+);
 const { NotificationsService } = load(
   '../src/modules/notifications/services/notifications.service.ts',
 );
@@ -302,4 +304,119 @@ test('PrismaService initializes wrapped notification delegate on instance', asyn
   );
 
   await prisma.onModuleDestroy();
+});
+
+test('notifyAdminsAndStaff assigns role-specific targetUrl and metadata for Admin and Support Staff', async () => {
+  const createdBatches = [];
+  const prismaMock = {
+    user: {
+      findMany: mock.fn(async () => [
+        { id: 'admin-1', role: 'ADMIN' },
+        { id: 'staff-1', role: 'SUPPORT_STAFF' },
+      ]),
+    },
+    notification: {
+      createMany: mock.fn(async (input) => {
+        createdBatches.push(input.data);
+        return { count: input.data.length };
+      }),
+    },
+  };
+
+  const count = await notifyAdminsAndStaff(prismaMock, {
+    title: 'Khiếu nại đơn hàng mới',
+    content: 'Đơn #12345678 vừa có khiếu nại.',
+    type: 'DISPUTE',
+    adminTargetUrl: '/admin/reports',
+    staffTargetUrl: '/staff/disputes',
+    metadata: {
+      entityType: 'ORDER_DISPUTE',
+      disputeId: 'disp-1',
+      orderId: 'order-1',
+    },
+  });
+
+  assert.equal(count, 2);
+  assert.equal(createdBatches.length, 1);
+  assert.deepEqual(createdBatches[0], [
+    {
+      userId: 'admin-1',
+      title: 'Khiếu nại đơn hàng mới',
+      content: 'Đơn #12345678 vừa có khiếu nại.',
+      type: 'DISPUTE',
+      channel: 'IN_APP',
+      targetUrl: '/admin/reports',
+      metadata: {
+        entityType: 'ORDER_DISPUTE',
+        disputeId: 'disp-1',
+        orderId: 'order-1',
+      },
+    },
+    {
+      userId: 'staff-1',
+      title: 'Khiếu nại đơn hàng mới',
+      content: 'Đơn #12345678 vừa có khiếu nại.',
+      type: 'DISPUTE',
+      channel: 'IN_APP',
+      targetUrl: '/staff/disputes',
+      metadata: {
+        entityType: 'ORDER_DISPUTE',
+        disputeId: 'disp-1',
+        orderId: 'order-1',
+      },
+    },
+  ]);
+});
+
+test('ReportsService.create notifies Support Staff with /staff/disputes targetUrl and metadata', async () => {
+  const notifications = [];
+  const prismaMock = {
+    $transaction: async (run) =>
+      run({
+        $queryRaw: async () => [],
+        product: { findFirst: async () => null },
+        user: {
+          findFirst: async () => ({ id: 'shop-1' }),
+          findMany: async () => [
+            { id: 'admin-1', role: 'ADMIN' },
+            { id: 'staff-1', role: 'SUPPORT_STAFF' },
+          ],
+        },
+        shopViolation: {
+          findFirst: async () => null,
+          create: async ({ data }) => ({
+            id: 'rep-2',
+            shopId: data.shopId,
+            productId: data.productId,
+            status: 'PENDING',
+            createdAt: new Date(),
+          }),
+        },
+        notification: {
+          createMany: async ({ data }) => {
+            notifications.push(...data);
+            return { count: data.length };
+          },
+        },
+      }),
+  };
+
+  const service = new ReportsService(prismaMock);
+  await service.create('buyer-1', 'shop-1', 'shop', {
+    title: 'Bán hàng giả',
+    description: 'Chi tiết vi phạm',
+    evidenceUrls: [],
+  });
+
+  const adminNotice = notifications.find((n) => n.userId === 'admin-1');
+  const staffNotice = notifications.find((n) => n.userId === 'staff-1');
+  assert.equal(adminNotice?.targetUrl, '/admin/reports');
+  assert.equal(staffNotice?.targetUrl, '/staff/disputes');
+  assert.deepEqual(staffNotice?.metadata, {
+    entityType: 'VIOLATION_REPORT',
+    reportId: 'rep-2',
+    shopId: 'shop-1',
+    productId: null,
+    kind: 'shop',
+  });
 });

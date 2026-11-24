@@ -41,7 +41,7 @@ export class NotificationsController {
     status: 200,
     type: NotificationPageDto,
     description:
-      'Notifications retrieved successfully. Actionable Admin notifications include targetUrl routes such as /admin/sellers, /admin/auctions, /admin/finance, /admin/reports, /admin/refunds, /admin/products, /admin/stores, and /admin/banners.',
+      'Notifications retrieved successfully. Actionable Admin notifications include targetUrl routes such as /admin/sellers, /admin/auctions, /admin/finance, /admin/reports, /admin/refunds, /admin/products, /admin/stores, and /admin/banners. Actionable Staff notifications include /staff/disputes, /staff/auction-support, /staff/inbox, and /staff/banners alongside metadata.',
   })
   async getMyNotifications(
     @CurrentUser('id') userId: string,

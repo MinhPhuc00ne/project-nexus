@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
@@ -18,6 +18,8 @@ import {
 import type { UserProfile } from '../../types';
 import { clearAuthSession } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../ToastNotification';
+import LogoutConfirmDialog from '../auth/LogoutConfirmDialog';
 
 interface UserDropdownMenuProps {
   isOpen: boolean;
@@ -40,22 +42,23 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
 }) => {
   const { t } = useTranslation('common');
   const navigate = useNavigate();
+  const toast = useToast();
   const { switchActiveMode } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  if (!isOpen) return null;
+  if (!isOpen && !showLogoutConfirm) return null;
 
   const isSellerAccount = profile?.role === Role.SELLER;
   const isSellerModeActive =
     isSellerAccount && Boolean(profile?.isSellerActive) && profile?.currentMode === 'SELLER';
 
-  const roleBadgeLabel =
-    profile?.role === Role.ADMIN
-      ? t('header.roleBadges.admin')
-      : profile?.role === Role.SUPPORT_STAFF
-        ? t('header.roleBadges.staff')
-        : isSellerModeActive
-          ? t('header.roleBadges.seller')
-          : t('header.roleBadges.buyer');
+  const getRoleBadgeLabel = () => {
+    if (profile?.role === Role.ADMIN) return t('header.roleBadges.admin');
+    if (profile?.role === Role.SUPPORT_STAFF) return t('header.roleBadges.staff');
+    if (isSellerModeActive) return t('header.roleBadges.seller');
+    return t('header.roleBadges.buyer');
+  };
+  const roleBadgeLabel = getRoleBadgeLabel();
 
   const handleSwitchMode = async () => {
     onClose();
@@ -220,16 +223,31 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
         type="button"
         className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-[13px] text-red-600 transition-colors hover:bg-red-50 cursor-pointer"
         onClick={() => {
-          onClose();
-          clearAuthSession();
-          if (onLogoutClick) {
-            onLogoutClick();
-          }
+          setShowLogoutConfirm(true);
         }}
       >
         <LogOut size={15} />
         <span>{t('nav.logout')}</span>
       </button>
+
+      <LogoutConfirmDialog
+        open={showLogoutConfirm}
+        accountName={displayUserName}
+        onCancel={() => {
+          setShowLogoutConfirm(false);
+        }}
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          onClose();
+          clearAuthSession();
+          toast.success('Đăng xuất thành công. Hẹn gặp lại bạn!');
+          if (onLogoutClick) {
+            onLogoutClick();
+          } else {
+            navigate('/login', { replace: true });
+          }
+        }}
+      />
     </div>
   );
 };

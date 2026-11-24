@@ -28,6 +28,7 @@ import SellerNotifications from '../components/seller/SellerNotifications';
 import { SellerWorkspaceContext } from '../components/seller/SellerWorkspace';
 import type { SellerDraft } from '../components/seller/sellerData';
 import { useToast } from '../components/ToastNotification';
+import LogoutConfirmDialog from '../components/auth/LogoutConfirmDialog';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 const linkDefs = [
@@ -74,6 +75,7 @@ function SellerWorkspace() {
   const [sidebar, setSidebar] = useState(false);
   const [account, setAccount] = useState(false);
   const [notifications, setNotifications] = useState(false);
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
   const [preview, setPreview] = useState(false);
   const [search, setSearch] = useState('');
   const store = useSellerStore(user.id);
@@ -309,11 +311,11 @@ function SellerWorkspace() {
                   className="w-1.5 h-1.5 inline-block rounded-full bg-[#14b58a] shrink-0"
                   data-seller="dot"
                 />
-                {user.isShopSuspended
-                  ? t('layout.shopSuspended')
-                  : user.isSellerActive
-                    ? t('layout.shopActive')
-                    : t('layout.buyerMode')}
+                {(() => {
+                  if (user.isShopSuspended) return t('layout.shopSuspended');
+                  if (user.isSellerActive) return t('layout.shopActive');
+                  return t('layout.buyerMode');
+                })()}
               </span>
               <LanguageSwitcher compact />
               <div className="relative" data-seller="popover-anchor" ref={noticeRef}>
@@ -371,9 +373,8 @@ function SellerWorkspace() {
                       className=""
                       data-seller="logout"
                       onClick={() => {
-                        clearAuthSession();
-                        toast.success(t('layout.logoutSuccess'));
-                        navigate('/login', { replace: true });
+                        setAccount(false);
+                        setLogoutConfirmationOpen(true);
                       }}
                     >
                       <LogoutOutlined className="text-[16px]" aria-hidden="true" />
@@ -415,6 +416,17 @@ function SellerWorkspace() {
             </span>
           </footer>
         </div>
+        <LogoutConfirmDialog
+          open={logoutConfirmationOpen}
+          accountName={user.fullName || user.email}
+          onCancel={() => setLogoutConfirmationOpen(false)}
+          onConfirm={() => {
+            setLogoutConfirmationOpen(false);
+            clearAuthSession();
+            toast.success('Đăng xuất thành công. Hẹn gặp lại bạn!');
+            navigate('/login', { replace: true });
+          }}
+        />
       </div>
     </SellerWorkspaceContext.Provider>
   );

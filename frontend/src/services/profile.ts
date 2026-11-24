@@ -10,6 +10,12 @@ export interface ProfileChanges {
   avatarUrl?: string;
 }
 
+export interface BankProfileChanges {
+  bankName?: string;
+  accountNumber?: string;
+  accountHolderName?: string;
+}
+
 export function validateAvatarFile(file: File): void {
   const extensions: Record<string, RegExp> = {
     'image/jpeg': /\.jpe?g$/i,
@@ -32,11 +38,11 @@ const uploadedAvatars = new WeakMap<File, string>();
  * @param avatarFile Optional uploaded image file.
  * @returns Updated profile changes.
  */
-export async function updateMyProfile(
-  changes: ProfileChanges,
+export async function updateMyProfile<T extends ProfileChanges & BankProfileChanges>(
+  changes: T,
   password: string,
   avatarFile?: File | null,
-): Promise<ProfileChanges> {
+): Promise<T> {
   if (avatarFile) validateAvatarFile(avatarFile);
   const checkedToken = getStoredToken();
   const assertSession = () => {
@@ -82,15 +88,46 @@ export async function updateMyProfile(
     savedChanges.avatarUrl = url;
   }
   assertSession();
+  let authPayload: { verificationToken?: string; password?: string } = {};
+  if (verificationToken) {
+    authPayload = { verificationToken };
+  } else if (password) {
+    authPayload = { password };
+  }
   await apiRequest('/buyer/profile', {
     method: 'PATCH',
     body: {
       ...savedChanges,
-      ...(verificationToken ? { verificationToken } : password ? { password } : {}),
+      ...authPayload,
     },
     requireAuth: true,
   });
   assertSession();
   window.dispatchEvent(new Event('nexus:profile-change'));
   return savedChanges;
+}
+
+/**
+ * Updates the authenticated Seller's payout bank account without requiring password re-authentication.
+ *
+ * @param bank Bank account details to save.
+ * @returns Saved bank account details.
+ */
+export async function updateSellerBankAccount(
+  bank: BankProfileChanges,
+): Promise<BankProfileChanges> {
+  const checkedToken = getStoredToken();
+  if (!checkedToken || checkedToken !== getStoredToken()) {
+    throw new Error(i18n.t('errors:services.sessionChanged'));
+  }
+  await apiRequest('/buyer/profile', {
+    method: 'PATCH',
+    body: bank,
+    requireAuth: true,
+  });
+  if (!checkedToken || checkedToken !== getStoredToken()) {
+    throw new Error(i18n.t('errors:services.sessionChanged'));
+  }
+  window.dispatchEvent(new Event('nexus:profile-change'));
+  return bank;
 }

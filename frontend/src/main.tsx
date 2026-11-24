@@ -5,16 +5,21 @@ import App from './App.tsx';
 import { consumeOAuthCallbackFromUrl } from './services/auth';
 import './index.css';
 
+const ROLE_DESTINATIONS: Record<string, string> = {
+  ADMIN: '/admin',
+  SUPPORT_STAFF: '/staff',
+  SELLER: '/seller',
+};
+
 const oauthUser = consumeOAuthCallbackFromUrl();
 if (oauthUser) {
-  const destination =
-    oauthUser.role === 'ADMIN'
-      ? '/admin'
-      : oauthUser.role === 'SUPPORT_STAFF'
-        ? '/staff'
-        : oauthUser.role === 'SELLER'
-          ? '/seller'
-          : '/';
+  try {
+    sessionStorage.setItem('nexus:login-toast', oauthUser.fullName || oauthUser.email);
+  } catch {
+    // Ignore storage errors
+  }
+  const role = oauthUser.role;
+  const destination = (role && ROLE_DESTINATIONS[role]) || '/';
   const url = new URL(window.location.href);
   url.pathname = destination;
   window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);

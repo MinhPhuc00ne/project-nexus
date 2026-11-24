@@ -13,6 +13,7 @@ import { clearAuthSession, getStoredToken, getStoredUser, saveAuthSession } from
 import { getMe, toggleSellerMode } from '../services/users';
 import { mergeGuestCartAfterLogin, resetCartSync } from '../services/cart';
 import type { AuthUser, UserProfile } from '../types/user.types';
+import { useToast } from '../components/ToastNotification';
 
 const ACTIVE_MODE_PREFIX = 'nexus:active-mode:';
 
@@ -95,10 +96,24 @@ export interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const toast = useToast();
   const [token, setToken] = useState<string | null>(() => getStoredToken());
   const [storedUser, setStoredUser] = useState<AuthUser | null>(() => getStoredUser());
   const [user, setUserState] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(() => Boolean(getStoredToken()));
+
+  // Trigger login toast notification if queued from OAuth login redirect
+  useEffect(() => {
+    try {
+      const pendingToastName = sessionStorage.getItem('nexus:login-toast');
+      if (pendingToastName) {
+        sessionStorage.removeItem('nexus:login-toast');
+        toast.success(`Đăng nhập thành công! Chào mừng ${pendingToastName} quay trở lại.`);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [toast]);
 
   const inFlightPromiseRef = useRef<{ token: string; promise: Promise<UserProfile | null> } | null>(
     null,
@@ -131,22 +146,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchActiveMode = useCallback(async (mode: 'SELLER' | 'BUYER'): Promise<void> => {
     const wantSeller = mode === 'SELLER';
-    try {
-      const res = await toggleSellerMode(wantSeller);
-      setUserState((prev) => {
-        if (!prev) return prev;
-        const finalActive = res?.isSellerActive ?? (wantSeller && !prev.isShopSuspended);
-        const finalMode = finalActive ? 'SELLER' : 'BUYER';
-        setStoredActiveMode(prev.id, finalMode);
-        return {
-          ...prev,
-          isSellerActive: finalActive,
-          currentMode: finalMode,
-        };
-      });
-    } catch (error) {
-      throw error;
-    }
+    const res = await toggleSellerMode(wantSeller);
+    setUserState((prev) => {
+      if (!prev) return prev;
+      const finalActive = res?.isSellerActive ?? (wantSeller && !prev.isShopSuspended);
+      const finalMode = finalActive ? 'SELLER' : 'BUYER';
+      setStoredActiveMode(prev.id, finalMode);
+      return {
+        ...prev,
+        isSellerActive: finalActive,
+        currentMode: finalMode,
+      };
+    });
   }, []);
 
   const refreshProfile = useCallback(async (): Promise<UserProfile | null> => {

@@ -62,6 +62,7 @@ interface Props {
   hasOlder?: boolean;
   loadingOlder?: boolean;
   onLoadOlder?: () => void;
+  scrollVersion?: number;
 }
 
 export default function StaffTicketConversationView({
@@ -79,6 +80,7 @@ export default function StaffTicketConversationView({
   hasOlder,
   loadingOlder,
   onLoadOlder,
+  scrollVersion = 0,
 }: Props) {
   const { t } = useTranslation('staff');
   const quickCannedTemplates = t('inbox.conversation.canned', {
@@ -86,20 +88,19 @@ export default function StaffTicketConversationView({
   }) as Array<{ label: string; text: string }>;
   const fileInput = useRef<HTMLInputElement>(null);
   const scrollArea = useRef<HTMLDivElement>(null);
-  const previousLast = useRef<string | number | undefined>(undefined);
+  const previousScrollVersion = useRef(scrollVersion);
   const [uploading, setUploading] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
   const currentTicketId = useRef(activeTicket?.id);
   currentTicketId.current = activeTicket?.id;
-  const lastId = activeTicket?.messages[activeTicket.messages.length - 1]?.id;
-
   useEffect(() => {
+    if (scrollVersion === previousScrollVersion.current) return;
+    previousScrollVersion.current = scrollVersion;
     const area = scrollArea.current;
-    if (area && lastId !== previousLast.current) area.scrollTop = area.scrollHeight;
-    previousLast.current = lastId;
-  }, [lastId, typing]);
+    if (area) area.scrollTop = area.scrollHeight;
+  }, [scrollVersion]);
 
   const disabled = sending || uploading || updatingStatus || submitting;
 

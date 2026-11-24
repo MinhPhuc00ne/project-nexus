@@ -69,7 +69,9 @@ const StaffSellerApprovalPage = lazy(() => import('../pages/staff/StaffSellerApp
 const StaffManagementPage = lazy(() => import('../pages/staff/StaffManagementPage'));
 const StaffInboxPage = lazy(() => import('../pages/staff/StaffInboxPage'));
 const StaffDisputesPage = lazy(() => import('../pages/staff/StaffDisputesPage'));
+const StaffOrdersPage = lazy(() => import('../pages/staff/StaffOrdersPage'));
 const StaffBannersPage = lazy(() => import('../pages/staff/StaffBannersPage'));
+const StaffReviewsPage = lazy(() => import('../pages/staff/StaffReviewsPage'));
 const StaffAuctionSupportPage = lazy(() => import('../pages/staff/StaffAuctionSupportPage'));
 const StaffFaqPage = lazy(() => import('../pages/staff/StaffFaqPage'));
 const StaffHistoryPage = lazy(() => import('../pages/staff/StaffHistoryPage'));
@@ -202,12 +204,14 @@ function AppRouter() {
                   <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
                   <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
                   <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
+                  <Route path={ROUTES.STAFF_ORDERS} element={<StaffOrdersPage />} />
                   <Route
                     path={ROUTES.STAFF_AUCTION_SUPPORT}
                     element={<StaffAuctionSupportPage />}
                   />
                   <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
                   <Route path={ROUTES.STAFF_BANNERS} element={<StaffBannersPage />} />
+                  <Route path={ROUTES.STAFF_REVIEWS} element={<StaffReviewsPage />} />
                   <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
                   <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
                 </Route>

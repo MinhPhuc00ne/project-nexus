@@ -82,6 +82,7 @@ export default function CreateAuctionDialog({
       const reason = auctionEditReason(auction);
       if (reason) return reason;
     }
+    if (!auction && !consignmentDeadline) return t('auctions.create.errDeadlineRequired');
     if (!auction && promoteOnCreate && !imageFile && !imageUrl.trim())
       return t('management.bannerImageRequired');
     if (!title.trim()) return t('auctions.create.errTitle');
@@ -136,7 +137,7 @@ export default function CreateAuctionDialog({
     if (auction) return adminUpdateAuctionApi(auction.id, payload);
     return adminCreateAuctionApi({
       ...payload,
-      consignmentDeadline: payload.consignmentDeadline ?? undefined,
+      consignmentDeadline: datePayload(consignmentDeadline),
     });
   }
 
@@ -371,6 +372,7 @@ export default function CreateAuctionDialog({
             startTime={startTime}
             endTime={endTime}
             onChange={setConsignmentDeadline}
+            required={!auction}
           />
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-xs font-medium">

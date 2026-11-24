@@ -41,12 +41,39 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
 
   const featuredAuction = auctions[0];
   const isLive = featuredAuction.status === 'ACTIVE' || featuredAuction.status === 'EXTENDED';
-  const isUpcoming =
+  const isUpcoming = Boolean(
+    featuredAuction &&
     !isLive &&
     (featuredAuction.status === 'SCHEDULED' ||
       (featuredAuction.startTime
         ? new Date(featuredAuction.startTime).getTime() > Date.now()
-        : false));
+        : false)),
+  );
+  const targetDateStr = featuredAuction
+    ? isUpcoming
+      ? featuredAuction.startTime
+      : featuredAuction.endTime
+    : undefined;
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    if (!targetDateStr) return 0;
+    return Math.max(0, Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000));
+  });
+
+  useEffect(() => {
+    if (!targetDateStr) {
+      setTimeLeft(0);
+      return;
+    }
+    const update = () => {
+      const diff = Math.max(0, Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000));
+      setTimeLeft(diff);
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [targetDateStr]);
+
+  if (!featuredAuction) return null;
 
   const featuredTitle =
     featuredAuction.title ||
@@ -66,24 +93,6 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
   const depositVal = Math.round(Number(featuredAuction.startingPrice || 0) * 0.1);
 
   const targetUrl = `/auction/${featuredAuction.id}`;
-
-  const targetDateStr = isUpcoming ? featuredAuction.startTime : featuredAuction.endTime;
-
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
-    if (!targetDateStr) return 0;
-    return Math.max(0, Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000));
-  });
-
-  useEffect(() => {
-    if (!targetDateStr) return;
-    const update = () => {
-      const diff = Math.max(0, Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000));
-      setTimeLeft(diff);
-    };
-    update();
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
-  }, [targetDateStr]);
 
   const h = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
   const m = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');

@@ -18,6 +18,8 @@ interface ChatServerEvents {
     status: string;
     assignedStaffId?: string | null;
   }) => void;
+  ticket_assigned: (event: { conversationId: string; conversation?: unknown }) => void;
+  new_queue_ticket: (event: { conversationId: string; conversation?: unknown }) => void;
 }
 
 interface ChatClientEvents {

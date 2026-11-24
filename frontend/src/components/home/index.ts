@@ -7,4 +7,5 @@ export * from './HomeRecommendationCard';
 export * from './HomeHeroBanner';
 export * from './HomeLiveAuction';
 export * from './HomeRecommendationsSection';
+export * from './HomeTrendingSection';
 export { default as HomeCategoriesSection } from './HomeCategoriesSection';

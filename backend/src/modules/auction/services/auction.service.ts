@@ -30,6 +30,7 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ChatService } from '../../chat/services/chat.service';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
+import { trustLevelFor } from '../../users/services/reputation-policy';
 import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
 import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
 import { AuctionQueryDto } from '../dtos/auction-query.dto';
@@ -898,7 +899,13 @@ export class AuctionService implements OnModuleInit {
       this.prisma.auction.findUnique({ where: { id: auctionId } }),
       this.prisma.user.findUnique({
         where: { id: sellerId },
-        select: { id: true, role: true, reputationScore: true, isShopSuspended: true },
+        select: {
+          id: true,
+          role: true,
+          reputationScore: true,
+          trustLevel: true,
+          isShopSuspended: true,
+        },
       }),
     ]);
 
@@ -911,6 +918,17 @@ export class AuctionService implements OnModuleInit {
     if (seller.isShopSuspended) {
       throw new ForbiddenException(
         'Gian hàng của bạn đang bị tạm khóa, không thể ký gửi vật phẩm.',
+      );
+    }
+    const effectiveTrustLevel = trustLevelFor(seller.reputationScore);
+    if (
+      seller.trustLevel === ReputationTrustLevel.PROBATION ||
+      seller.trustLevel === ReputationTrustLevel.SUSPENDED ||
+      effectiveTrustLevel === 'PROBATION' ||
+      effectiveTrustLevel === 'SUSPENDED'
+    ) {
+      throw new BadRequestException(
+        'Tài khoản đang ở mức thử thách hoặc bị đình chỉ, không thể ký gửi vật phẩm đấu giá.',
       );
     }
     if (seller.reputationScore < auction.minSellerReputation) {
@@ -1600,10 +1618,15 @@ export class AuctionService implements OnModuleInit {
       }
 
       if (lot.lotStatus !== AuctionStatus.ACTIVE && lot.lotStatus !== AuctionStatus.EXTENDED) {
+        const existingAward = await tx.auctionAward.findFirst({
+          where: { auctionItemId: lot.id },
+          orderBy: { createdAt: 'asc' },
+          select: { id: true },
+        });
         return {
           alreadyClosed: true,
           lot,
-          awardId: null as string | null,
+          awardId: existingAward?.id ?? null,
           winningBid: null,
           roomClosed: false,
         };

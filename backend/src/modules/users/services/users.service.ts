@@ -113,8 +113,74 @@ export class UsersService {
     return this.formatProfile(updated);
   }
 
+  private shouldRequireProfileReauth(dto: UpdateBuyerProfileDto): boolean {
+    const hasPersonalUpdate =
+      dto.fullName !== undefined || dto.phoneNumber !== undefined || dto.avatarUrl !== undefined;
+    const hasBankUpdate =
+      dto.bankName !== undefined ||
+      dto.accountNumber !== undefined ||
+      dto.accountHolderName !== undefined;
+    return hasPersonalUpdate || !hasBankUpdate;
+  }
+
+  private buildProfileUpdateData(dto: UpdateBuyerProfileDto): Record<string, unknown> {
+    const data: Record<string, unknown> = { updatedAt: new Date() };
+    if (dto.fullName) data.fullName = dto.fullName;
+    if (dto.phoneNumber !== undefined) data.phoneNumber = dto.phoneNumber;
+    if (dto.avatarUrl !== undefined) data.avatarUrl = dto.avatarUrl;
+    if (dto.bankName !== undefined) data.bankName = dto.bankName?.trim() || null;
+    if (dto.accountNumber !== undefined) {
+      data.accountNumber = dto.accountNumber?.replace(/[\s-]+/g, '').trim() || null;
+    }
+    if (dto.accountHolderName !== undefined) {
+      data.accountHolderName = dto.accountHolderName?.trim()?.toUpperCase() || null;
+    }
+    return data;
+  }
+
+  private async awardMissingProfileCompletion(
+    userId: string,
+    user: User,
+    dto: UpdateBuyerProfileDto,
+  ): Promise<void> {
+    if (dto.fullName && !user.fullName) {
+      await this.reputationService.awardProfileCompletion({
+        userId,
+        fieldKey: 'FULL_NAME',
+        points: 5,
+        reason: 'Cập nhật họ và tên đầy đủ',
+      });
+    }
+    if (dto.avatarUrl && !user.avatarUrl) {
+      await this.reputationService.awardProfileCompletion({
+        userId,
+        fieldKey: 'AVATAR',
+        points: 5,
+        reason: 'Cập nhật ảnh đại diện',
+      });
+    }
+    if (dto.phoneNumber && !user.phoneNumber) {
+      await this.reputationService.awardProfileCompletion({
+        userId,
+        fieldKey: 'PHONE',
+        points: 10,
+        reason: 'Cập nhật số điện thoại liên hệ hợp lệ',
+      });
+    }
+    const hasBankInput = Boolean(dto.bankName || dto.accountNumber || dto.accountHolderName);
+    if (hasBankInput && (!user.bankName || !user.accountNumber)) {
+      await this.reputationService.awardProfileCompletion({
+        userId,
+        fieldKey: 'BANK',
+        points: 10,
+        reason: 'Cập nhật thông tin tài khoản ngân hàng',
+      });
+    }
+  }
+
   /**
-   * Updates buyer or seller personal profile information with mandatory re-authentication checks.
+   * Updates buyer or seller personal profile information, requiring re-authentication for seller
+   * personal fields while allowing bank payout updates without password confirmation.
    *
    * @param userId - Unique identifier of the user
    * @param dto - Updated profile payload
@@ -141,67 +207,20 @@ export class UsersService {
       throw new ForbiddenException('Chỉ Buyer và Seller được phép chỉnh sửa hồ sơ cá nhân.');
     }
 
-    await this.profileReauth.assert(user, {
-      password: dto.password,
-      verificationToken: verificationToken || dto.verificationToken,
-    });
+    if (this.shouldRequireProfileReauth(dto)) {
+      await this.profileReauth.assert(user, {
+        password: dto.password,
+        verificationToken: verificationToken || dto.verificationToken,
+      });
+    }
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        ...(dto.fullName ? { fullName: dto.fullName } : {}),
-        ...(dto.phoneNumber !== undefined ? { phoneNumber: dto.phoneNumber } : {}),
-        ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
-        ...(dto.bankName !== undefined ? { bankName: dto.bankName?.trim() || null } : {}),
-        ...(dto.accountNumber !== undefined
-          ? { accountNumber: dto.accountNumber?.trim() || null }
-          : {}),
-        ...(dto.accountHolderName !== undefined
-          ? { accountHolderName: dto.accountHolderName?.trim()?.toUpperCase() || null }
-          : {}),
-        updatedAt: new Date(),
-      },
+      data: this.buildProfileUpdateData(dto),
       include: { wallet: true },
     });
 
-    if (dto.fullName && !user.fullName) {
-      await this.reputationService.awardProfileCompletion({
-        userId,
-        fieldKey: 'FULL_NAME',
-        points: 5,
-        reason: 'Cập nhật họ và tên đầy đủ',
-      });
-    }
-
-    if (dto.avatarUrl && !user.avatarUrl) {
-      await this.reputationService.awardProfileCompletion({
-        userId,
-        fieldKey: 'AVATAR',
-        points: 5,
-        reason: 'Cập nhật ảnh đại diện',
-      });
-    }
-
-    if (dto.phoneNumber && !user.phoneNumber) {
-      await this.reputationService.awardProfileCompletion({
-        userId,
-        fieldKey: 'PHONE',
-        points: 10,
-        reason: 'Cập nhật số điện thoại liên hệ hợp lệ',
-      });
-    }
-
-    if (
-      (dto.bankName || dto.accountNumber || dto.accountHolderName) &&
-      (!user.bankName || !user.accountNumber)
-    ) {
-      await this.reputationService.awardProfileCompletion({
-        userId,
-        fieldKey: 'BANK',
-        points: 10,
-        reason: 'Cập nhật thông tin tài khoản ngân hàng',
-      });
-    }
+    await this.awardMissingProfileCompletion(userId, user, dto);
 
     return this.formatProfile(updated);
   }

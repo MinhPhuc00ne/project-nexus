@@ -669,7 +669,34 @@
       "removed": "Removed “{{title}}” from Trending.",
       "removeError": "Unable to remove the product from Trending.",
       "loadError": "Unable to load Trending products.",
-      "statusUnavailable": "Trending tags could not be checked. Click Try again to refresh."
+      "statusUnavailable": "Trending tags could not be checked. Click Try again to refresh.",
+      "tabAll": "All Platform Products",
+      "tabTrending": "Trending Leaderboard",
+      "tabTrendingCount": "Trending Leaderboard ({{count}})",
+      "loading": "Loading trending products…",
+      "empty": "No products currently meet the trending criteria. Products will automatically appear when they accumulate successful purchases.",
+      "cols": {
+        "rank": "Rank",
+        "product": "Product",
+        "seller": "Shop (Seller)",
+        "purchaseCount": "Purchases",
+        "price": "Price",
+        "status": "Trending Status",
+        "actions": "Moderation Actions"
+      },
+      "uncategorized": "Uncategorized",
+      "defaultSeller": "NEXUS Seller",
+      "purchasesBadge": "{{count}} sold",
+      "statusActive": "Currently Trending 🔥",
+      "statusExcluded": "Excluded from Trending by Admin",
+      "statusExcludedShort": "Excluded",
+      "removeBtn": "Remove from Trending",
+      "processing": "Processing…",
+      "removePrompt": "Enter reason for removing \"{{title}}\" from Trending (Notification will be sent to Seller):",
+      "removePromptDefault": "Does not meet homepage quality standards",
+      "removeSuccess": "Successfully removed product from Trending and notified Seller.",
+      "loadErr": "Unable to load trending products",
+      "removeErr": "Unable to remove product from trending"
     },
     "loadErr": "Unable to load products.",
     "loadCategoryErr": "Unable to load category filter.",
@@ -1564,6 +1591,10 @@
       "startError": "Unable to start auction session."
     },
     "row": {
+      "edit": "Edit",
+      "delete": "Delete Session",
+      "deleteActive": "An active session cannot be deleted.",
+      "deleteHasBids": "A session with bids cannot be deleted.",
       "view3dAria": "View 3D showcase for {{title}}",
       "view3dTitle": "View 3D showcase",
       "createdBy": "Created by: {{name}}",
@@ -1580,6 +1611,7 @@
       "start": "Start"
     },
     "create": {
+      "errDeadlineRequired": "Please choose a consignment deadline for the auction session.",
       "title": "Create Auction Session",
       "errTitle": "Please enter an auction session title.",
       "errSchedule": "Please select a valid schedule; end time must be after start time.",
@@ -1616,6 +1648,20 @@
         "hintTooShort": "Session schedule must span at least 2 minutes to set a consignment deadline in between.",
         "hintValid": "Choose a consignment deadline after start time and before end time, with at least 1 minute on each side."
       }
+    },
+    "edit": {
+      "title": "Edit Auction Session",
+      "save": "Save Changes",
+      "toastSuccess": "Auction session updated.",
+      "errSave": "Unable to update auction session."
+    },
+    "delete": {
+      "title": "Delete Auction Session",
+      "body": "Are you sure you want to delete the session \"{{title}}\"? This cannot be undone.",
+      "confirm": "Delete Session",
+      "deleting": "Deleting…",
+      "toastSuccess": "Auction session deleted.",
+      "errDelete": "Unable to delete auction session."
     },
     "itemsDialog": {
       "title": "Products · {{title}}",
