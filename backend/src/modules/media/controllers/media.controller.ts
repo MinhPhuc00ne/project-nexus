@@ -142,7 +142,7 @@ export class MediaController {
   @ApiOperation({
     summary: '[MEDIA] Upload hình ảnh hoặc video feedback cho đánh giá sản phẩm',
     description:
-      'Hỗ trợ upload 1 hoặc nhiều file ảnh/video (JPG, PNG, WEBP, GIF, SVG, MP4, WEBM, MOV, tối đa 50MB/file) để đính kèm vào Product Review.',
+      'Hỗ trợ upload 1 hoặc nhiều file ảnh (PNG, JPG, WEBP tối đa 5MB/file) và video (MP4, MOV tối đa 50MB/file) qua multipart/form-data để đính kèm vào Review.',
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -175,6 +175,6 @@ export class MediaController {
       throw new BadRequestException('Vui lòng chọn ít nhất một file ảnh hoặc video để tải lên.');
     }
 
-    return this.mediaService.uploadMultipleMedia(files, req, { allowVideo: true });
+    return this.mediaService.uploadMultipleMedia(files, req, { strictReviewPolicy: true });
   }
 }

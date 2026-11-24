@@ -197,3 +197,153 @@ test('ReviewsService.adminRemoveSellerReply clears sellerReply, deducts seller r
   assert.equal(penalties[0].deltaPoints, -10);
   assert.equal(notifications.length, 1);
 });
+
+test('ReviewsService supports 2-way ReviewReply with media and paginated listing', async () => {
+  const createdReplies = [];
+  const createdReplyMedia = [];
+  const notifications = [];
+
+  const tx = {
+    productReview: {
+      findUnique: async () => ({
+        id: 'rev-1',
+        reviewerId: 'buyer-1',
+        product: { id: 'prod-1', title: 'Đồng hồ cơ', sellerId: 'seller-1' },
+      }),
+      update: async () => ({}),
+    },
+    reviewReply: {
+      create: async ({ data }) => {
+        const rec = { id: `reply-${createdReplies.length + 1}`, ...data };
+        createdReplies.push(rec);
+        return rec;
+      },
+      findUnique: async ({ where }) => ({
+        id: where.id,
+        content: createdReplies[0].content,
+        author: { id: 'buyer-1', fullName: 'Buyer A', avatarUrl: null },
+        media: createdReplyMedia,
+      }),
+    },
+    reviewReplyMedia: {
+      createMany: async ({ data }) => {
+        createdReplyMedia.push(...data);
+      },
+    },
+    notification: {
+      create: async ({ data }) => notifications.push(data),
+    },
+  };
+
+  const service = new ReviewsService(
+    {
+      $transaction: (fn) => fn(tx),
+      productReview: { findUnique: async () => ({ id: 'rev-1' }) },
+      reviewReply: {
+        findMany: async () => createdReplies,
+        count: async () => createdReplies.length,
+      },
+    },
+    { adjustScore: async () => ({}) },
+  );
+
+  await assert.rejects(
+    () =>
+      service.createReviewReply('stranger-1', 'product', 'rev-1', {
+        content: 'Nhắn ké',
+      }),
+    /Chỉ người mua đã đánh giá hoặc người bán sở hữu/,
+  );
+
+  const reply = await service.createReviewReply('buyer-1', 'product', 'rev-1', {
+    content: 'Mình gửi thêm video mở hộp nhé',
+    mediaUrls: ['https://example.com/unbox.mp4'],
+  });
+  assert.equal(reply.id, 'reply-1');
+  assert.equal(createdReplyMedia.length, 1);
+  assert.equal(createdReplyMedia[0].mediaType, 'VIDEO');
+  assert.equal(notifications[0].userId, 'seller-1');
+
+  const page = await service.listReviewReplies(
+    'product',
+    'rev-1',
+    { page: 1, limit: 10 },
+    'buyer-1',
+  );
+  assert.equal(page.total, 1);
+  assert.equal(page.items.length, 1);
+});
+
+test('ReviewsService.adminModerateReviewVisibility hides negative review/reply without deleting, deducts reputation and sends notification', async () => {
+  let storedHidden = false;
+  const penalties = [];
+  const notifications = [];
+
+  const tx = {
+    productReview: {
+      findUnique: async () => ({
+        id: 'rev-1',
+        reviewerId: 'buyer-1',
+        reviewer: { reputationScore: 80 },
+        product: { title: 'Áo' },
+      }),
+      update: async ({ data }) => {
+        storedHidden = data.isHidden;
+        return { id: 'rev-1', isHidden: data.isHidden };
+      },
+    },
+    reviewReply: {
+      findUnique: async () => ({
+        id: 'reply-1',
+        authorId: 'seller-1',
+        author: { reputationScore: 90 },
+      }),
+      update: async ({ data }) => ({ id: 'reply-1', isHidden: data.isHidden }),
+    },
+    notification: {
+      create: async ({ data }) => notifications.push(data),
+    },
+  };
+
+  const service = new ReviewsService(
+    { $transaction: (fn) => fn(tx) },
+    { adjustScore: async (payload) => penalties.push(payload) },
+  );
+  const res = await service.adminModerateReviewVisibility(
+    'admin-1',
+    'product',
+    'rev-1',
+    {
+      isHidden: true,
+      reason: 'Bình luận tiêu cực không phù hợp',
+      pointsToDeduct: 10,
+    },
+    'ADMIN',
+  );
+  assert.equal(res.success, true);
+  assert.equal(res.isHidden, true);
+  assert.equal(storedHidden, true);
+  assert.equal(penalties.length, 1);
+  assert.equal(penalties[0].userId, 'buyer-1');
+  assert.equal(penalties[0].deltaPoints, -10);
+  assert.equal(notifications.length, 1);
+  assert.equal(notifications[0].userId, 'buyer-1');
+
+  const replyRes = await service.adminModerateReviewVisibility(
+    'admin-1',
+    'reply',
+    'reply-1',
+    {
+      isHidden: true,
+      reason: 'Phản hồi xúc phạm',
+      pointsToDeduct: 5,
+    },
+    'SUPPORT_STAFF',
+  );
+  assert.equal(replyRes.success, true);
+  assert.equal(replyRes.isHidden, true);
+  assert.equal(penalties.length, 2);
+  assert.equal(penalties[1].userId, 'seller-1');
+  assert.equal(penalties[1].deltaPoints, -5);
+  assert.equal(notifications.length, 2);
+});
