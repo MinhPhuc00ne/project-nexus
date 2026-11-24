@@ -22,12 +22,16 @@ const ALLOWED_EXTENSIONS = new Set([
 ]);
 
 const ALLOWED_REVIEW_EXTENSIONS = new Set([...ALLOWED_EXTENSIONS, '.mp4', '.webm', '.mov']);
+const REVIEW_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
+const REVIEW_VIDEO_EXTENSIONS = new Set(['.mp4', '.mov']);
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
-const MAX_REVIEW_FILE_SIZE = 50 * 1024 * 1024;
+const MAX_REVIEW_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_REVIEW_VIDEO_FILE_SIZE = 50 * 1024 * 1024;
 
 export interface MediaUploadOptions {
   allowVideo?: boolean;
+  strictReviewPolicy?: boolean;
 }
 
 @Injectable()
@@ -45,6 +49,23 @@ export class MediaService {
     }
   }
 
+  private validateStrictReviewFile(file: Express.Multer.File, ext: string): void {
+    const isImage = REVIEW_IMAGE_EXTENSIONS.has(ext);
+    const isVideo = REVIEW_VIDEO_EXTENSIONS.has(ext);
+    if (!isImage && !isVideo) {
+      throw new BadRequestException(
+        `Định dạng file không được hỗ trợ (${ext}). Review chỉ hỗ trợ ảnh (PNG, JPG, WEBP) và video (MP4, MOV).`,
+      );
+    }
+    const limitBytes = isImage ? MAX_REVIEW_IMAGE_FILE_SIZE : MAX_REVIEW_VIDEO_FILE_SIZE;
+    if (file.size > limitBytes) {
+      const maxMb = isImage ? 5 : 50;
+      throw new BadRequestException(
+        `Kích thước ${isImage ? 'ảnh' : 'video'} vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
+      );
+    }
+  }
+
   private validateUploadFile(
     file: Express.Multer.File | undefined,
     options: MediaUploadOptions,
@@ -53,7 +74,13 @@ export class MediaService {
       throw new BadRequestException('Vui lòng chọn file hình ảnh hợp lệ để tải lên.');
     }
 
-    const maxFileSize = options.allowVideo ? MAX_REVIEW_FILE_SIZE : MAX_FILE_SIZE;
+    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    if (options.strictReviewPolicy) {
+      this.validateStrictReviewFile(file, ext);
+      return;
+    }
+
+    const maxFileSize = options.allowVideo ? MAX_REVIEW_VIDEO_FILE_SIZE : MAX_FILE_SIZE;
     if (file.size > maxFileSize) {
       const maxMb = options.allowVideo ? 50 : 25;
       throw new BadRequestException(
@@ -61,7 +88,6 @@ export class MediaService {
       );
     }
 
-    const ext = path.extname(file.originalname).toLowerCase() || '.png';
     const allowedExtensions = options.allowVideo ? ALLOWED_REVIEW_EXTENSIONS : ALLOWED_EXTENSIONS;
     if (!allowedExtensions.has(ext)) {
       const supported = options.allowVideo

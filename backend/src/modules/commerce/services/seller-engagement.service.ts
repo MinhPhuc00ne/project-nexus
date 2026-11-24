@@ -29,6 +29,7 @@ export class SellerEngagementService {
 
     const baseWhere: Prisma.ReviewWhereInput = {
       targetUserId: sellerId,
+      isHidden: false,
     };
 
     const filterWhere: Prisma.ReviewWhereInput = {
@@ -40,6 +41,7 @@ export class SellerEngagementService {
         },
       }),
     };
+    const sortOrder: Prisma.SortOrder = query.sortBy === 'oldest' ? 'asc' : 'desc';
 
     const [allReviews, total, reviews] = await Promise.all([
       this.prisma.review.findMany({
@@ -51,7 +53,7 @@ export class SellerEngagementService {
         where: filterWhere,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: sortOrder },
         include: {
           reviewer: {
             select: {

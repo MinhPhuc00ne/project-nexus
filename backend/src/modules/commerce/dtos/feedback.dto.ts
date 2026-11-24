@@ -3,6 +3,8 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -13,8 +15,14 @@ import {
   MinLength,
 } from 'class-validator';
 
+function normalizeMediaUrlsInput({ value }: { value: unknown }): unknown {
+  if (value === undefined || value === null || value === '') return undefined;
+  return Array.isArray(value) ? value : [value];
+}
+
 export class ReviewDto {
   @ApiProperty({ minimum: 1, maximum: 5, example: 5 })
+  @Type(() => Number)
   @IsInt()
   @Min(1)
   @Max(5)
@@ -31,6 +39,7 @@ export class ReviewDto {
     description: 'Image or video URLs attached to product review feedback',
   })
   @IsOptional()
+  @Transform(normalizeMediaUrlsInput)
   @IsArray()
   @ArrayMaxSize(6)
   @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
@@ -49,6 +58,80 @@ export class SellerReplyReviewDto {
   @MinLength(2)
   @MaxLength(2000)
   reply!: string;
+  @ApiPropertyOptional({
+    type: [String],
+    maxItems: 6,
+    description: 'Optional image or video URLs attached to the reply',
+  })
+  @IsOptional()
+  @Transform(normalizeMediaUrlsInput)
+  @IsArray()
+  @ArrayMaxSize(6)
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
+  mediaUrls?: string[];
+}
+
+export class CreateReviewReplyDto {
+  @ApiProperty({
+    minLength: 1,
+    maxLength: 2000,
+    example: 'Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ.',
+    description: 'Reply message content between buyer and seller',
+  })
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(1)
+  @MaxLength(2000)
+  content!: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    maxItems: 6,
+    description: 'Image or video URLs attached to this reply',
+  })
+  @IsOptional()
+  @Transform(normalizeMediaUrlsInput)
+  @IsArray()
+  @ArrayMaxSize(6)
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
+  mediaUrls?: string[];
+}
+
+export class AdminModerateReviewVisibilityDto {
+  @ApiProperty({
+    example: true,
+    description: 'true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn',
+  })
+  @IsBoolean()
+  isHidden!: boolean;
+
+  @ApiPropertyOptional({
+    example: 'Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp.',
+    maxLength: 1000,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  reason?: string;
+
+  @ApiPropertyOptional({
+    example: 10,
+    minimum: 0,
+    description: 'Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  pointsToDeduct?: number;
+
+  @ApiPropertyOptional({
+    example: 'PRODUCT',
+    enum: ['PRODUCT', 'SHOP'],
+  })
+  @IsOptional()
+  @IsIn(['PRODUCT', 'SHOP'])
+  targetType?: 'PRODUCT' | 'SHOP';
 }
 
 export class ReportDto {
@@ -86,6 +169,28 @@ export class FeedbackPageDto {
   @Min(1)
   @Max(100)
   limit = 20;
+
+  @ApiPropertyOptional({
+    minimum: 1,
+    maximum: 5,
+    example: 5,
+    description: 'Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
+
+  @ApiPropertyOptional({
+    enum: ['newest', 'oldest'],
+    default: 'newest',
+    description: 'Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)',
+  })
+  @IsOptional()
+  @IsIn(['newest', 'oldest'])
+  sortBy?: 'newest' | 'oldest' = 'newest';
 }
 
 export class AdminDeleteReviewDto {
@@ -126,4 +231,25 @@ export class QueryAdminReviewsDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({
+    minimum: 1,
+    maximum: 5,
+    description: 'Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
+
+  @ApiPropertyOptional({
+    enum: ['newest', 'oldest'],
+    default: 'newest',
+    description: 'Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)',
+  })
+  @IsOptional()
+  @IsIn(['newest', 'oldest'])
+  sortBy?: 'newest' | 'oldest' = 'newest';
 }

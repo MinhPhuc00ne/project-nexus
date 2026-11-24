@@ -9,15 +9,29 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@nexus/types';
-import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
+import type { Request } from 'express';
+import { LightweightJwt } from '../../../core/security/jwt.util';
+import {
+  AuthenticatedUserPayload,
+  CurrentUser,
+  Public,
+  Roles,
+} from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
   AdminDeleteReviewDto,
+  AdminModerateReviewVisibilityDto,
+  CreateReviewReplyDto,
   FeedbackPageDto,
   QueryAdminReviewsDto,
   ReportDto,
@@ -27,25 +41,44 @@ import {
 import { ReviewsService } from '../services/reviews.service';
 import { ReportsService } from '../services/reports.service';
 
+const REVIEW_CONSUMES_TYPES = ['application/json', 'multipart/form-data'] as const;
+
 @ApiTags('Reviews & reports')
 @Controller()
 export class FeedbackController {
   constructor(
     private readonly reviews: ReviewsService,
     private readonly reports: ReportsService,
+    private readonly configService?: ConfigService,
   ) {}
+
+  private extractOptionalViewerId(req?: Request): string | undefined {
+    const authHeader = req?.headers?.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return undefined;
+    const token = authHeader.substring(7);
+    const secret = this.configService?.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+    if (!secret) return undefined;
+    const verified = LightweightJwt.verify<AuthenticatedUserPayload>(token, secret);
+    if (!verified.valid || !verified.payload) return undefined;
+    return verified.payload.id || verified.payload.sub;
+  }
 
   @Post('commerce/orders/:orderId/shop-review')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiOperation({ summary: 'Đánh giá gian hàng sau khi mua thành công từ 2 sản phẩm' })
+  @ApiConsumes(...REVIEW_CONSUMES_TYPES)
+  @UseInterceptors(AnyFilesInterceptor())
+  @ApiOperation({
+    summary: 'Đánh giá gian hàng sau khi mua thành công từ 2 sản phẩm (hỗ trợ đính kèm ảnh/video)',
+  })
   shopReview(
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
     @Body() dto: ReviewDto,
+    @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
-    return this.reviews.create(id, orderId, dto, 'shop');
+    return this.reviews.create(id, orderId, dto, 'shop', undefined, files);
   }
 
   @Patch('commerce/orders/:orderId/shop-review')
@@ -77,14 +110,19 @@ export class FeedbackController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiOperation({ summary: 'Đánh giá sản phẩm đã mua' })
+  @ApiConsumes(...REVIEW_CONSUMES_TYPES)
+  @UseInterceptors(AnyFilesInterceptor())
+  @ApiOperation({
+    summary: 'Đánh giá sản phẩm đã mua (hỗ trợ đính kèm ảnh/video multipart/form-data)',
+  })
   productReview(
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
     @Param('productId') productId: string,
     @Body() dto: ReviewDto,
+    @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
-    return this.reviews.create(id, orderId, dto, 'product', productId);
+    return this.reviews.create(id, orderId, dto, 'product', productId, files);
   }
 
   @Patch('commerce/orders/:orderId/products/:productId/review')
@@ -186,13 +224,25 @@ export class FeedbackController {
   }
   @Get('catalog/shops/:id/reviews')
   @Public()
-  shopReviews(@Param('id') id: string, @Query() query: FeedbackPageDto): Promise<unknown> {
-    return this.reviews.list(id, 'shop', query);
+  @ApiOperation({
+    summary:
+      'Danh sách đánh giá gian hàng kèm averageRating và phân bố sao 1-5 (ẩn review tiêu cực đã bị admin ẩn)',
+  })
+  shopReviews(
+    @Param('id') id: string,
+    @Query() query: FeedbackPageDto,
+    @Req() req?: Request,
+  ): Promise<unknown> {
+    return this.reviews.list(id, 'shop', query, this.extractOptionalViewerId(req));
   }
   @Get('catalog/products/:id/reviews')
   @Public()
-  productReviews(@Param('id') id: string, @Query() query: FeedbackPageDto): Promise<unknown> {
-    return this.reviews.list(id, 'product', query);
+  productReviews(
+    @Param('id') id: string,
+    @Query() query: FeedbackPageDto,
+    @Req() req?: Request,
+  ): Promise<unknown> {
+    return this.reviews.list(id, 'product', query, this.extractOptionalViewerId(req));
   }
   @Get('seller/product-reviews')
   @ApiBearerAuth()
@@ -227,6 +277,130 @@ export class FeedbackController {
     @Param('reviewId') reviewId: string,
   ): Promise<unknown> {
     return this.reviews.toggleHelpfulProductReview(userId, reviewId);
+  }
+
+  @Get('catalog/product-reviews/:reviewId/replies')
+  @Public()
+  @ApiOperation({ summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá sản phẩm' })
+  listProductReviewReplies(
+    @Param('reviewId') reviewId: string,
+    @Query() query: FeedbackPageDto,
+    @Req() req?: Request,
+  ): Promise<unknown> {
+    return this.reviews.listReviewReplies(
+      'product',
+      reviewId,
+      query,
+      this.extractOptionalViewerId(req),
+    );
+  }
+
+  @Post('commerce/product-reviews/:reviewId/replies')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @ApiConsumes(...REVIEW_CONSUMES_TYPES)
+  @UseInterceptors(AnyFilesInterceptor())
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá sản phẩm (hỗ trợ đính kèm ảnh/video)',
+  })
+  createProductReviewReply(
+    @CurrentUser('id') userId: string,
+    @Param('reviewId') reviewId: string,
+    @Body() dto: CreateReviewReplyDto,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ): Promise<unknown> {
+    return this.reviews.createReviewReply(userId, 'product', reviewId, dto, files);
+  }
+
+  @Get('catalog/shop-reviews/:reviewId/replies')
+  @Public()
+  @ApiOperation({
+    summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá gian hàng',
+  })
+  listShopReviewReplies(
+    @Param('reviewId') reviewId: string,
+    @Query() query: FeedbackPageDto,
+    @Req() req?: Request,
+  ): Promise<unknown> {
+    return this.reviews.listReviewReplies(
+      'shop',
+      reviewId,
+      query,
+      this.extractOptionalViewerId(req),
+    );
+  }
+
+  @Post('commerce/shop-reviews/:reviewId/replies')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @ApiConsumes(...REVIEW_CONSUMES_TYPES)
+  @UseInterceptors(AnyFilesInterceptor())
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá gian hàng (hỗ trợ đính kèm ảnh/video)',
+  })
+  createShopReviewReply(
+    @CurrentUser('id') userId: string,
+    @Param('reviewId') reviewId: string,
+    @Body() dto: CreateReviewReplyDto,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ): Promise<unknown> {
+    return this.reviews.createReviewReply(userId, 'shop', reviewId, dto, files);
+  }
+
+  @Patch('admin/reviews/product/:id/visibility')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Admin/Staff ẩn hoặc bỏ ẩn đánh giá sản phẩm tiêu cực (không xóa, tác giả vẫn xem được trạng thái bị ẩn)',
+  })
+  adminHideProductReview(
+    @CurrentUser('id') adminId: string,
+    @CurrentUser('role') actorRole: string,
+    @Param('id') id: string,
+    @Body() dto: AdminModerateReviewVisibilityDto,
+  ): Promise<unknown> {
+    return this.reviews.adminModerateReviewVisibility(adminId, 'product', id, dto, actorRole);
+  }
+
+  @Patch('admin/reviews/shop/:id/visibility')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Admin/Staff ẩn hoặc bỏ ẩn đánh giá gian hàng tiêu cực (không xóa)' })
+  adminHideShopReview(
+    @CurrentUser('id') adminId: string,
+    @CurrentUser('role') actorRole: string,
+    @Param('id') id: string,
+    @Body() dto: AdminModerateReviewVisibilityDto,
+  ): Promise<unknown> {
+    return this.reviews.adminModerateReviewVisibility(adminId, 'shop', id, dto, actorRole);
+  }
+
+  @Patch('admin/reviews/replies/:replyId/visibility')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Admin/Staff ẩn hoặc bỏ ẩn tin nhắn phản hồi tiêu cực trong đánh giá (không xóa)',
+  })
+  adminHideReviewReply(
+    @CurrentUser('id') adminId: string,
+    @CurrentUser('role') actorRole: string,
+    @Param('replyId') replyId: string,
+    @Body() dto: AdminModerateReviewVisibilityDto,
+  ): Promise<unknown> {
+    return this.reviews.adminModerateReviewVisibility(adminId, 'reply', replyId, dto, actorRole);
   }
   @Get('buyer/customer-reviews')
   @ApiBearerAuth()

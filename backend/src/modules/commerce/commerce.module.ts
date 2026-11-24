@@ -4,6 +4,7 @@ import { FulfillmentModule } from '../fulfillment/fulfillment.module';
 import { AdminModule } from '../admin/admin.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { UsersModule } from '../users/users.module';
+import { MediaModule } from '../media/media.module';
 import { CartService } from './services/cart.service';
 import { PayosService } from './services/payos.service';
 import { OrderService } from './services/order.service';
@@ -34,7 +35,7 @@ import { AuctionCheckoutController } from './controllers/auction-checkout.contro
 import { AuctionCheckoutService } from './services/auction-checkout.service';
 
 @Module({
-  imports: [PrismaModule, FulfillmentModule, CatalogModule, AdminModule, UsersModule],
+  imports: [PrismaModule, FulfillmentModule, CatalogModule, AdminModule, UsersModule, MediaModule],
   controllers: [
     AuctionCheckoutController,
     ReportModerationController,
