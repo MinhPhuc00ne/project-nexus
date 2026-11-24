@@ -125,7 +125,9 @@
       "windowBlockedErr": "Trình duyệt đã chặn cửa sổ thanh toán PayOS. Vui lòng cho phép popup.",
       "requestSent": "Đã tạo liên kết thanh toán PayOS.",
       "connectErr": "Không thể kết nối cổng thanh toán PayOS.",
-      "checkingStatus": "Đang kiểm tra trạng thái nạp tiền (Mã #{{orderCode}}) từ PayOS…"
+      "checkingStatus": "Đang kiểm tra trạng thái nạp tiền (Mã #{{orderCode}}) từ PayOS…",
+      "viewQrAgain": "Xem lại mã QR",
+      "openPayosLink": "Mở trang thanh toán PayOS"
     },
     "linkedBank": {
       "cardTitle": "Tài khoản ngân hàng liên kết",

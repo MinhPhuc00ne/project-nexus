@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState, type ReactElement } from 'react';
 import {
+  ExternalLink,
   Landmark as BankOutlined,
   Loader2,
   Plus as PlusOutlined,
@@ -52,6 +53,7 @@ function FinanceWorkspace(): ReactElement {
     orderCode: number;
     payment: PayosPaymentInfo;
   } | null>(null);
+  const [payosPopupOpen, setPayosPopupOpen] = useState(false);
 
   const load = useCallback(() => {
     if (revision < 0) return Promise.reject(new Error('Invalid revision'));
@@ -68,6 +70,23 @@ function FinanceWorkspace(): ReactElement {
     void refreshProfile();
   }, [refresh, refreshProfile]);
 
+  const applyDepositStatusResult = useCallback(
+    (status: Awaited<ReturnType<typeof checkBuyerDepositStatusApi>>): boolean => {
+      if (status.status === 'PENDING') return false;
+      setPendingDepositOrderCode(null);
+      setPayosPopupOpen(false);
+      setPayosDeposit(null);
+      if (status.status === 'SUCCESS') {
+        toast.success(t('finance.topUp.completed'));
+      } else {
+        toast.error(t('finance.topUp.failed'));
+      }
+      saved();
+      return true;
+    },
+    [saved, t, toast],
+  );
+
   useEffect(() => {
     const token = getStoredToken();
     const userId = user?.id;
@@ -79,16 +98,23 @@ function FinanceWorkspace(): ReactElement {
         if (notification.userId !== userId) return;
         const isWalletEvent =
           notification.targetUrl === '/seller/finance' || notification.type === 'PAYMENT';
-        if (isWalletEvent) {
-          saved();
+        if (!isWalletEvent) return;
+        if (pendingDepositOrderCode !== null) {
+          void checkBuyerDepositStatusApi(pendingDepositOrderCode)
+            .then((status) => {
+              if (!applyDepositStatusResult(status)) saved();
+            })
+            .catch(() => saved());
+          return;
         }
+        saved();
       });
       connection.connect();
       return () => connection.disconnect();
     } catch {
       return undefined;
     }
-  }, [saved, user?.id]);
+  }, [applyDepositStatusResult, pendingDepositOrderCode, saved, user?.id]);
 
   useEffect(() => {
     if (pendingDepositOrderCode === null) return undefined;
@@ -100,15 +126,7 @@ function FinanceWorkspace(): ReactElement {
       try {
         const status = await checkBuyerDepositStatusApi(pendingDepositOrderCode);
         if (!active) return;
-        if (status.status !== 'PENDING') {
-          setPendingDepositOrderCode(null);
-          setPayosDeposit(null);
-          if (status.status === 'SUCCESS') {
-            toast.success(t('finance.topUp.completed'));
-          } else {
-            toast.error(t('finance.topUp.failed'));
-          }
-          saved();
+        if (applyDepositStatusResult(status)) {
           return;
         }
       } catch {
@@ -129,7 +147,7 @@ function FinanceWorkspace(): ReactElement {
       active = false;
       window.clearTimeout(timeoutId);
     };
-  }, [pendingDepositOrderCode, saved, t, toast]);
+  }, [applyDepositStatusResult, pendingDepositOrderCode, t, toast]);
 
   async function handleDeposit(): Promise<void> {
     const amount = Number(topUpAmount);
@@ -157,6 +175,7 @@ function FinanceWorkspace(): ReactElement {
             orderCode: res.orderCode ?? 0,
           },
         });
+        setPayosPopupOpen(true);
       }
       toast.success(t('finance.topUp.requestSent'));
       setTopUpOpen(false);
@@ -211,10 +230,18 @@ function FinanceWorkspace(): ReactElement {
             <Loader2 className="size-4 animate-spin text-blue-600" aria-hidden="true" />
             {t('finance.topUp.checkingStatus', { orderCode: pendingDepositOrderCode })}
           </span>
-          <SellerButton secondary onClick={saved}>
-            <ReloadOutlined className="size-3.5" aria-hidden="true" />
-            {t('finance.refresh')}
-          </SellerButton>
+          <div className="flex flex-wrap items-center gap-2">
+            {payosDeposit && !payosPopupOpen && (
+              <SellerButton onClick={() => setPayosPopupOpen(true)}>
+                <QrCode className="size-3.5" aria-hidden="true" />
+                {t('finance.topUp.viewQrAgain')}
+              </SellerButton>
+            )}
+            <SellerButton secondary onClick={saved}>
+              <ReloadOutlined className="size-3.5" aria-hidden="true" />
+              {t('finance.refresh')}
+            </SellerButton>
+          </div>
         </div>
       )}
       {user.isShopSuspended && (
@@ -277,10 +304,10 @@ function FinanceWorkspace(): ReactElement {
         onConfirm={() => void handleDeposit()}
         submitting={submittingTopUp}
       />
-      {payosDeposit && (
+      {payosDeposit && payosPopupOpen && (
         <Popup
           isOpen
-          onClose={() => setPayosDeposit(null)}
+          onClose={() => setPayosPopupOpen(false)}
           title={
             <span className="flex items-center gap-2">
               <QrCode className="size-5 text-blue-600" aria-hidden="true" />
@@ -294,6 +321,19 @@ function FinanceWorkspace(): ReactElement {
               payment={payosDeposit.payment}
               onCopySuccess={(msg) => toast.success(msg)}
             />
+            {payosDeposit.payment.checkoutUrl && (
+              <div className="flex justify-end">
+                <a
+                  href={payosDeposit.payment.checkoutUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                >
+                  <ExternalLink className="size-3.5" aria-hidden="true" />
+                  {t('finance.topUp.openPayosLink')}
+                </a>
+              </div>
+            )}
             {payosDeposit.orderCode > 0 && (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
                 <span className="flex items-center gap-2 font-medium">
