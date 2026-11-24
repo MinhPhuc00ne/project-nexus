@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import type { TFunction } from 'i18next';
 import { Bell as BellOutlined } from 'lucide-react';
 import {
   MapPin as EnvironmentOutlined,
@@ -37,7 +38,7 @@ export default function SellerSettingsPage(): ReactElement {
   return <SettingsWorkspace key={`${user.id}:${token}`} />;
 }
 
-function getSettingsSubtitle(tab: SettingsTab, t: (k: string) => string): string {
+function getSettingsSubtitle(tab: SettingsTab, t: TFunction<'seller'>): string {
   if (tab === 'notifications') return t('settings.subtitles.notifications');
   if (tab === 'account') return t('settings.subtitles.account');
   return t('settings.subtitles.default');

@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -101,7 +102,7 @@ function SellerTrendingBadge({
 function getProductHideActionLabel(
   isPending: boolean,
   status: string,
-  t: (k: string) => string,
+  t: TFunction<'seller'>,
 ): string {
   if (isPending) return t('products.processing');
   if (status === 'ACTIVE') return t('products.stopSelling');
@@ -111,7 +112,7 @@ function getProductHideActionLabel(
 function getModalConfirmLabel(
   isPending: boolean,
   stopping: boolean,
-  t: (k: string) => string,
+  t: TFunction<'seller'>,
 ): string {
   if (isPending) return t('products.toggleModal.processing');
   if (stopping) return t('products.toggleModal.confirmStop');
