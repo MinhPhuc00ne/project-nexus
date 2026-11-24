@@ -137,19 +137,22 @@ export class AuctionController {
     return this.auctionService.adminUpdateAuction(id, dto);
   }
 
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Post('admin/:id/lock-consignment')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Admin khóa đăng ký ký gửi vật phẩm sớm cho phiên đấu giá' })
+  @ApiOperation({
+    summary: 'Admin & Nhân viên hỗ trợ khóa đăng ký ký gửi vật phẩm sớm cho phiên đấu giá',
+  })
   adminLockConsignment(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.auctionService.adminLockConsignment(id);
   }
 
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Post('admin/:id/start')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Admin bấm bắt đầu phiên đấu giá thủ công và gửi thông báo tới Người mua',
+    summary:
+      'Admin & Nhân viên hỗ trợ bấm bắt đầu phiên đấu giá thủ công và gửi thông báo tới Người mua',
   })
   adminStartAuction(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.auctionService.adminStartAuction(id);
@@ -171,10 +174,12 @@ export class AuctionController {
     return this.auctionService.adminGetAuctionItems(id);
   }
 
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Post('admin/items/:itemId/review')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Admin duyệt hoặc từ chối vật phẩm ký gửi của Người bán' })
+  @ApiOperation({
+    summary: 'Admin & Nhân viên hỗ trợ duyệt hoặc từ chối vật phẩm ký gửi của Người bán',
+  })
   adminReviewAuctionItem(
     @Param('itemId', new ParseUUIDPipe()) itemId: string,
     @CurrentUser('id') adminId: string,
@@ -183,11 +188,11 @@ export class AuctionController {
     return this.auctionService.adminReviewAuctionItem(itemId, adminId, dto);
   }
 
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
   @Post('admin/:id/items/:itemId/end')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Admin kết thúc riêng từng lô đấu giá (không áp dụng cho Nhân viên hỗ trợ)',
+    summary: 'Admin & Nhân viên hỗ trợ kết thúc riêng từng lô đấu giá',
   })
   adminEndLot(
     @Param('id', new ParseUUIDPipe()) auctionId: string,
