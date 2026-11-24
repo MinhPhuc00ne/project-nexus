@@ -27,6 +27,8 @@ export default function BuyerWithdrawalModal({
   const hasSavedBankInfo = Boolean(
     profile?.bankName && profile.accountNumber && profile.accountHolderName,
   );
+  const [useCustomBankInfo, setUseCustomBankInfo] = useState(false);
+  const lockSavedBankFields = hasSavedBankInfo && !useCustomBankInfo;
   const [amount, setAmount] = useState('');
   const [bankName, setBankName] = useState(profile?.bankName ?? '');
   const [accountNumber, setAccountNumber] = useState(profile?.accountNumber ?? '');
@@ -172,7 +174,7 @@ export default function BuyerWithdrawalModal({
                 required
                 value={bankName}
                 onChange={(event) => setBankName(event.target.value)}
-                disabled={submitting || hasSavedBankInfo}
+                disabled={submitting || lockSavedBankFields}
               />
             </label>
             <label className="block text-xs font-semibold text-slate-700">
@@ -184,7 +186,7 @@ export default function BuyerWithdrawalModal({
                 required
                 value={accountNumber}
                 onChange={(event) => setAccountNumber(event.target.value)}
-                disabled={submitting || hasSavedBankInfo}
+                disabled={submitting || lockSavedBankFields}
               />
             </label>
           </div>
@@ -197,12 +199,35 @@ export default function BuyerWithdrawalModal({
               required
               value={accountHolderName}
               onChange={(event) => setAccountHolderName(event.target.value)}
-              disabled={submitting || hasSavedBankInfo}
+              disabled={submitting || lockSavedBankFields}
             />
           </label>
 
           {hasSavedBankInfo ? (
-            <p className="text-[11px] text-slate-500">{t('walletPage.savedBankInfoNotice')}</p>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+              <span>{t('walletPage.savedBankInfoNotice')}</span>
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => {
+                  if (useCustomBankInfo) {
+                    setBankName(profile?.bankName ?? '');
+                    setAccountNumber(profile?.accountNumber ?? '');
+                    setAccountHolderName(
+                      profile?.accountHolderName ?? profile?.fullName?.toUpperCase() ?? '',
+                    );
+                    setUseCustomBankInfo(false);
+                  } else {
+                    setUseCustomBankInfo(true);
+                  }
+                }}
+                className="font-semibold text-blue-600 hover:text-blue-700 hover:underline disabled:opacity-50"
+              >
+                {useCustomBankInfo
+                  ? t('walletPage.useSavedBankAccount')
+                  : t('walletPage.useCustomBankAccount')}
+              </button>
+            </div>
           ) : (
             <p className="text-[11px] text-slate-500">{t('walletPage.bankInfoSaveNotice')}</p>
           )}

@@ -267,6 +267,13 @@ export class ProductService {
       );
     const availableQty = this.inventoryService.calculateAvailable(product.inventories);
     const totalQty = this.inventoryService.calculateTotal(product.inventories);
-    return formatProductDetail(product, availableQty, totalQty);
+    const purchaseMeta = await this.search.getProductPurchaseMeta(
+      product.id,
+      Boolean(product.trendingExcluded),
+    );
+    return {
+      ...formatProductDetail(product, availableQty, totalQty),
+      ...purchaseMeta,
+    };
   }
 }

@@ -107,6 +107,8 @@
     "accountHolderName": "Account holder name",
     "withdrawalNote": "Note (optional)",
     "savedBankInfoNotice": "Using the bank details saved in your profile.",
+    "useCustomBankAccount": "Use another bank account",
+    "useSavedBankAccount": "Use saved bank account",
     "bankInfoSaveNotice": "Bank details will be saved to your profile when you submit this request.",
     "withdrawalHoldNotice": "The amount is deducted from your available balance and held. If the request is rejected, it will be refunded to your wallet.",
     "invalidWithdrawalAmount": "Enter a whole amount greater than zero.",

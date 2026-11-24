@@ -7,7 +7,20 @@ import CatalogListing from '../../components/products/CatalogListing';
 import SearchFilterSidebar, {
   type SearchFilterState,
 } from '../../components/products/SearchFilterSidebar';
-import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
+import {
+  getCategoriesApi,
+  type CatalogQuery,
+  type CategoryNode,
+} from '../../services/products.service';
+
+const VALID_SORT_OPTIONS = new Set<NonNullable<CatalogQuery['sortBy']>>([
+  'newest',
+  'price_asc',
+  'price_desc',
+  'best_selling',
+  'trending',
+  'top_rated',
+]);
 
 export default function SearchPage() {
   const { t } = useTranslation('guest');
@@ -20,6 +33,13 @@ export default function SearchPage() {
   const rawMaxPrice = params.get('maxPrice') ? Number(params.get('maxPrice')) : undefined;
   const rawMinRating = params.get('minRating') ? Number(params.get('minRating')) : undefined;
   const rawInStock = params.get('inStock') === 'true' ? 'true' : undefined;
+  const rawTrendingOnly = params.get('trendingOnly') === 'true' ? true : undefined;
+  const rawMinPurchase = params.get('minPurchaseCount')
+    ? Number(params.get('minPurchaseCount'))
+    : undefined;
+  const sortParam = params.get('sortBy') as NonNullable<CatalogQuery['sortBy']> | null;
+  const rawSortBy: NonNullable<CatalogQuery['sortBy']> =
+    sortParam && VALID_SORT_OPTIONS.has(sortParam) ? sortParam : 'newest';
 
   const [inputVal, setInputVal] = useState(rawSearch);
   const [categories, setCategories] = useState<CategoryNode[]>([]);
@@ -56,8 +76,19 @@ export default function SearchPage() {
       maxPrice: rawMaxPrice,
       minRating: rawMinRating,
       inStock: rawInStock,
+      trendingOnly: rawTrendingOnly,
+      minPurchaseCount: rawMinPurchase,
     }),
-    [categoryId, rawCity, rawMinPrice, rawMaxPrice, rawMinRating, rawInStock],
+    [
+      categoryId,
+      rawCity,
+      rawMinPrice,
+      rawMaxPrice,
+      rawMinRating,
+      rawInStock,
+      rawTrendingOnly,
+      rawMinPurchase,
+    ],
   );
 
   const activeBadges: { label: string; key: keyof SearchFilterState }[] = [];
@@ -86,6 +117,15 @@ export default function SearchPage() {
   }
   if (rawInStock) {
     activeBadges.push({ label: t('search.badgeInStock'), key: 'inStock' });
+  }
+  if (rawTrendingOnly) {
+    activeBadges.push({ label: t('search.badgeTrendingOnly'), key: 'trendingOnly' });
+  }
+  if (rawMinPurchase !== undefined && rawMinPurchase > 0) {
+    activeBadges.push({
+      label: t('search.badgeMinPurchase', { count: rawMinPurchase }),
+      key: 'minPurchaseCount',
+    });
   }
 
   const updateFiltersInUrl = (nextFilters: SearchFilterState) => {
@@ -129,6 +169,18 @@ export default function SearchPage() {
       nextParams.delete('inStock');
     }
 
+    if (nextFilters.trendingOnly) {
+      nextParams.set('trendingOnly', 'true');
+    } else {
+      nextParams.delete('trendingOnly');
+    }
+
+    if (nextFilters.minPurchaseCount !== undefined && nextFilters.minPurchaseCount > 0) {
+      nextParams.set('minPurchaseCount', String(nextFilters.minPurchaseCount));
+    } else {
+      nextParams.delete('minPurchaseCount');
+    }
+
     setParams(nextParams);
   };
 
@@ -164,6 +216,10 @@ export default function SearchPage() {
       delete updated.minRating;
     } else if (key === 'inStock') {
       delete updated.inStock;
+    } else if (key === 'trendingOnly') {
+      delete updated.trendingOnly;
+    } else if (key === 'minPurchaseCount') {
+      delete updated.minPurchaseCount;
     }
     updateFiltersInUrl(updated);
   };
@@ -305,7 +361,7 @@ export default function SearchPage() {
           className="flex-1 min-w-0 w-full rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 shadow-xs"
         >
           <CatalogListing
-            key={`${search}-${categoryId}-${rawCity}-${rawMinPrice}-${rawMaxPrice}-${rawMinRating}-${rawInStock}`}
+            key={`${search}-${categoryId}-${rawCity}-${rawMinPrice}-${rawMaxPrice}-${rawMinRating}-${rawInStock}-${rawTrendingOnly}-${rawMinPurchase}`}
             search={search}
             categoryId={categoryId}
             city={rawCity}
@@ -313,6 +369,15 @@ export default function SearchPage() {
             maxPrice={rawMaxPrice}
             minRating={rawMinRating}
             inStock={rawInStock}
+            trendingOnly={rawTrendingOnly}
+            minPurchaseCount={rawMinPurchase}
+            initialSortBy={rawSortBy}
+            onSortChange={(nextSort) => {
+              const nextParams = new URLSearchParams(params);
+              if (nextSort === 'newest') nextParams.delete('sortBy');
+              else nextParams.set('sortBy', nextSort);
+              setParams(nextParams);
+            }}
             onOpenMobileFilter={() => setIsMobileFilterOpen(true)}
             activeFilterCount={activeBadges.length}
           />

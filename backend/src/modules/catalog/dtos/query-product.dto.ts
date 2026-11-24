@@ -14,12 +14,36 @@ import { Transform, Type } from 'class-transformer';
 import { ProductStatus } from '@prisma/client';
 
 export class QueryProductDto {
-  @IsOptional() @IsString() @MaxLength(100) city?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(5) minRating?: number;
-  @IsOptional() @IsIn(['true', 'false']) inStock?: string;
+  @ApiPropertyOptional({ example: 'Ho Chi Minh', description: 'Filter by seller city/province' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  city?: string;
+
+  @ApiPropertyOptional({
+    example: 4,
+    description: 'Filter by minimum average product rating (0-5)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(5)
+  minRating?: number;
+
+  @ApiPropertyOptional({
+    enum: ['true', 'false'],
+    example: 'true',
+    description: 'Filter by stock availability (true = in stock only, false = out of stock only)',
+  })
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  inStock?: string;
+
   @ApiPropertyOptional({
     example: true,
-    description: 'Lọc chỉ các sản phẩm đang xu hướng (có lượt mua và không bị loại khỏi trending)',
+    description:
+      'Filter only trending products (have qualifying purchases and are not excluded from trending)',
   })
   @IsOptional()
   @Transform(({ value }: { value: unknown }) => {
@@ -31,24 +55,28 @@ export class QueryProductDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: 'Lọc sản phẩm có tổng lượt mua (đơn đã thanh toán/giao) tối thiểu',
+    description: 'Filter products with at least this minimum qualifying purchase count',
   })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   minPurchaseCount?: number;
-  @ApiPropertyOptional({ example: 'Audemars', description: 'Từ khóa tìm kiếm theo tên hoặc mô tả' })
+
+  @ApiPropertyOptional({
+    example: 'Audemars',
+    description: 'Search keyword matching product title, description, or shop name',
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-category-id', description: 'Lọc theo ID danh mục' })
+  @ApiPropertyOptional({ example: 'uuid-category-id', description: 'Filter by category ID' })
   @IsOptional()
   @IsString()
   categoryId?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-seller-id', description: 'Lọc theo ID người bán' })
+  @ApiPropertyOptional({ example: 'uuid-seller-id', description: 'Filter by seller ID' })
   @IsOptional()
   @IsString()
   sellerId?: string;
@@ -58,28 +86,28 @@ export class QueryProductDto {
   @IsEnum(ProductStatus)
   status?: ProductStatus;
 
-  @ApiPropertyOptional({ example: 1000000, description: 'Giá tối thiểu' })
+  @ApiPropertyOptional({ example: 1000000, description: 'Minimum effective price' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   minPrice?: number;
 
-  @ApiPropertyOptional({ example: 500000000, description: 'Giá tối đa' })
+  @ApiPropertyOptional({ example: 500000000, description: 'Maximum effective price' })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   maxPrice?: number;
 
-  @ApiPropertyOptional({ example: 1, default: 1 })
+  @ApiPropertyOptional({ example: 1, default: 1, description: 'Page number (1-indexed)' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ example: 12, default: 12 })
+  @ApiPropertyOptional({ example: 12, default: 12, description: 'Items per page (1-100)' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -90,7 +118,7 @@ export class QueryProductDto {
   @ApiPropertyOptional({
     example: 'newest',
     enum: ['newest', 'price_asc', 'price_desc', 'best_selling', 'trending', 'top_rated'],
-    description: 'Sắp xếp theo thứ tự',
+    description: 'Sort order for product results',
   })
   @IsOptional()
   @IsString()

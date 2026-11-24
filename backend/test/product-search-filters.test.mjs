@@ -68,10 +68,14 @@ test('ProductSearchService filters trendingOnly and sorts by best_selling / tren
 
   const trendingRes = await service.getProducts({ trendingOnly: true, sortBy: 'trending' });
   assert.deepEqual(
-    trendingRes.items.map((item) => ({ id: item.id, purchaseCount: item.purchaseCount })),
+    trendingRes.items.map((item) => ({
+      id: item.id,
+      purchaseCount: item.purchaseCount,
+      isTrending: item.isTrending,
+    })),
     [
-      { id: 'p1', purchaseCount: 12 },
-      { id: 'p2', purchaseCount: 3 },
+      { id: 'p1', purchaseCount: 12, isTrending: true },
+      { id: 'p2', purchaseCount: 3, isTrending: true },
     ],
   );
 
@@ -80,7 +84,20 @@ test('ProductSearchService filters trendingOnly and sorts by best_selling / tren
     sortBy: 'best_selling',
   });
   assert.deepEqual(
-    minPurchaseRes.items.map((item) => item.id),
-    ['p3', 'p1'],
+    minPurchaseRes.items.map((item) => ({ id: item.id, isTrending: item.isTrending })),
+    [
+      { id: 'p3', isTrending: false },
+      { id: 'p1', isTrending: true },
+    ],
   );
+
+  const newestRes = await service.getProducts({ sortBy: 'newest' });
+  const p4Item = newestRes.items.find((item) => item.id === 'p4');
+  assert.equal(p4Item?.isTrending, false);
+
+  const p1Meta = await service.getProductPurchaseMeta('p1', false);
+  assert.deepEqual(p1Meta, { purchaseCount: 12, isTrending: true });
+
+  const p3Meta = await service.getProductPurchaseMeta('p3', true);
+  assert.deepEqual(p3Meta, { purchaseCount: 50, isTrending: false });
 });

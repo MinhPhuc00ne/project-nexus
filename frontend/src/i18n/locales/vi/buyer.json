@@ -107,6 +107,8 @@
     "accountHolderName": "Tên chủ tài khoản",
     "withdrawalNote": "Ghi chú (không bắt buộc)",
     "savedBankInfoNotice": "Đang dùng thông tin ngân hàng đã lưu trong hồ sơ.",
+    "useCustomBankAccount": "Dùng tài khoản ngân hàng khác",
+    "useSavedBankAccount": "Dùng tài khoản đã lưu",
     "bankInfoSaveNotice": "Thông tin ngân hàng sẽ được lưu vào hồ sơ khi gửi yêu cầu rút tiền.",
     "withdrawalHoldNotice": "Tiền sẽ được trừ khỏi số dư khả dụng và tạm giữ. Nếu yêu cầu bị từ chối, tiền sẽ được hoàn lại vào ví.",
     "invalidWithdrawalAmount": "Vui lòng nhập số tiền nguyên lớn hơn 0.",

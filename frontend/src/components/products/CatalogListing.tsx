@@ -10,6 +10,7 @@ import {
   Truck,
   ArrowUpDown,
   SlidersHorizontal,
+  Flame,
 } from 'lucide-react';
 import { getProductsPage, type CatalogQuery } from '../../services/products.service';
 import useProductResource from '../productDetail/useProductResource';
@@ -23,10 +24,21 @@ export interface CatalogListingProps {
   maxPrice?: number;
   minRating?: number;
   inStock?: 'true' | 'false';
+  trendingOnly?: boolean;
+  minPurchaseCount?: number;
+  initialSortBy?: NonNullable<CatalogQuery['sortBy']>;
+  onSortChange?: (sortBy: NonNullable<CatalogQuery['sortBy']>) => void;
   preview?: boolean;
   onOpenMobileFilter?: () => void;
   activeFilterCount?: number;
 }
+
+const SORT_OPTIONS = [
+  { key: 'newest', labelKey: 'catalog.newest', isTrending: false },
+  { key: 'trending', labelKey: 'catalog.trending', isTrending: true },
+  { key: 'best_selling', labelKey: 'catalog.bestSelling', isTrending: false },
+  { key: 'top_rated', labelKey: 'catalog.topRated', isTrending: false },
+] as const;
 
 export default function CatalogListing({
   search = '',
@@ -36,18 +48,42 @@ export default function CatalogListing({
   maxPrice,
   minRating,
   inStock,
+  trendingOnly,
+  minPurchaseCount,
+  initialSortBy = 'newest',
+  onSortChange,
   preview = false,
   onOpenMobileFilter,
   activeFilterCount = 0,
 }: CatalogListingProps) {
   const { t } = useTranslation('guest');
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState<NonNullable<CatalogQuery['sortBy']>>('newest');
+  const [sortBy, setSortBy] = useState<NonNullable<CatalogQuery['sortBy']>>(initialSortBy);
   const limit = preview ? 8 : 12;
 
   useEffect(() => {
+    setSortBy(initialSortBy);
+  }, [initialSortBy]);
+
+  useEffect(() => {
     setPage(1);
-  }, [search, categoryId, city, minPrice, maxPrice, minRating, inStock]);
+  }, [
+    search,
+    categoryId,
+    city,
+    minPrice,
+    maxPrice,
+    minRating,
+    inStock,
+    trendingOnly,
+    minPurchaseCount,
+  ]);
+
+  const handleSortSelect = (nextSort: NonNullable<CatalogQuery['sortBy']>) => {
+    setSortBy(nextSort);
+    setPage(1);
+    onSortChange?.(nextSort);
+  };
 
   const load = useCallback(
     () =>
@@ -59,11 +95,26 @@ export default function CatalogListing({
         maxPrice,
         minRating,
         inStock,
+        trendingOnly: trendingOnly || undefined,
+        minPurchaseCount,
         page,
         limit,
         sortBy,
       }),
-    [search, categoryId, city, minPrice, maxPrice, minRating, inStock, page, limit, sortBy],
+    [
+      search,
+      categoryId,
+      city,
+      minPrice,
+      maxPrice,
+      minRating,
+      inStock,
+      trendingOnly,
+      minPurchaseCount,
+      page,
+      limit,
+      sortBy,
+    ],
   );
   const { data, loading, error, retry } = useProductResource(load);
 
@@ -96,20 +147,26 @@ export default function CatalogListing({
               {t('catalog.sortByLabel')}
             </span>
 
-            <button
-              type="button"
-              onClick={() => {
-                setSortBy('newest');
-                setPage(1);
-              }}
-              className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition cursor-pointer ${
-                sortBy === 'newest'
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              {t('catalog.newest')}
-            </button>
+            {SORT_OPTIONS.map((opt) => {
+              const isActive = sortBy === opt.key;
+              let btnStyle = 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200';
+              if (isActive) {
+                btnStyle = opt.isTrending
+                  ? 'bg-orange-600 text-white shadow-xs font-bold'
+                  : 'bg-blue-600 text-white shadow-xs font-bold';
+              }
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => handleSortSelect(opt.key)}
+                  className={`inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer ${btnStyle}`}
+                >
+                  {opt.isTrending && <Flame className="h-3.5 w-3.5" />}
+                  {t(opt.labelKey)}
+                </button>
+              );
+            })}
 
             {/* Price Sorting Selector */}
             <div className="relative inline-flex items-center">
@@ -117,8 +174,7 @@ export default function CatalogListing({
                 value={sortBy === 'price_asc' || sortBy === 'price_desc' ? sortBy : ''}
                 onChange={(e) => {
                   if (e.target.value) {
-                    setSortBy(e.target.value as NonNullable<CatalogQuery['sortBy']>);
-                    setPage(1);
+                    handleSortSelect(e.target.value as NonNullable<CatalogQuery['sortBy']>);
                   }
                 }}
                 className={`appearance-none rounded-lg pl-3 pr-7 py-1.5 text-xs font-semibold transition cursor-pointer border ${
@@ -323,6 +379,12 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
           <span className="rounded-md bg-gradient-to-r from-red-600 to-rose-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-xs">
             NEXUS MALL
           </span>
+          {product.isTrending && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-500 to-amber-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-xs">
+              <Flame className="h-2.5 w-2.5" />
+              {t('catalog.trendingBadge')}
+            </span>
+          )}
           {product.is3d && (
             <span className="rounded-md bg-blue-600/90 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold uppercase text-white shadow-xs">
               {t('catalog.verifiedBadge')}
@@ -360,6 +422,14 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
               ? t('catalog.reviewsCount', { count: product.reviewsCount })
               : t('catalog.authentic')}
           </span>
+          {product.soldCount !== undefined && product.soldCount > 0 && (
+            <>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-500 text-[10px] font-medium">
+                {t('catalog.soldCount', { count: product.soldCount })}
+              </span>
+            </>
+          )}
         </div>
 
         {/* Price Row */}

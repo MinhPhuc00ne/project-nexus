@@ -15,6 +15,8 @@ const QUALIFYING_ORDER_STATUSES: OrderStatus[] = [
   OrderStatus.CONFIRMED,
 ];
 
+const TRENDING_TOP_LIMIT = 10;
+
 @Injectable()
 export class ProductSearchService {
   constructor(
@@ -40,6 +42,68 @@ export class ProductSearchService {
       }
     }
     return map;
+  }
+
+  private async loadTrendingProductIds(limit = TRENDING_TOP_LIMIT): Promise<Set<string>> {
+    const grouped = await this.prisma.orderItem.groupBy({
+      by: ['productId'],
+      where: {
+        productId: { not: null },
+        quantity: { gt: 0 },
+        order: { status: { in: QUALIFYING_ORDER_STATUSES } },
+        product: {
+          status: ProductStatus.ACTIVE,
+          hiddenByShopSuspension: false,
+          trendingExcluded: false,
+          seller: { isShopSuspended: false },
+        },
+      },
+      _sum: { quantity: true },
+      _max: { createdAt: true },
+      orderBy: [{ _sum: { quantity: 'desc' } }, { _max: { createdAt: 'asc' } }],
+      take: limit,
+    });
+
+    const ids = new Set<string>();
+    for (const row of grouped) {
+      if (row.productId && Number(row._sum?.quantity ?? 0) > 0) {
+        ids.add(row.productId);
+      }
+    }
+    return ids;
+  }
+
+  async getProductPurchaseMeta(
+    productId: string,
+    trendingExcluded = false,
+  ): Promise<{ purchaseCount: number; isTrending: boolean }> {
+    const [purchaseCounts, trendingIds] = await Promise.all([
+      this.loadPurchaseCounts([productId]),
+      trendingExcluded ? Promise.resolve(new Set<string>()) : this.loadTrendingProductIds(),
+    ]);
+    return {
+      purchaseCount: purchaseCounts.get(productId) ?? 0,
+      isTrending: !trendingExcluded && trendingIds.has(productId),
+    };
+  }
+
+  private formatProductItems<
+    T extends Parameters<typeof formatProductSummary>[0] & {
+      id: string;
+      trendingExcluded?: boolean | null;
+      inventories: unknown;
+    },
+  >(items: T[], purchaseCounts: Map<string, number>, trendingIds: Set<string>) {
+    return items.map((p) => {
+      const availableQty = this.inventoryService.calculateAvailable(
+        p.inventories as Parameters<InventoryService['calculateAvailable']>[0],
+      );
+      return {
+        ...formatProductSummary(p, availableQty),
+        purchaseCount: purchaseCounts.get(p.id) ?? 0,
+        isTrending: !p.trendingExcluded && trendingIds.has(p.id),
+      };
+    });
   }
 
   private async filterAndSortByPurchases(
@@ -136,7 +200,10 @@ export class ProductSearchService {
     };
 
     if (requiresPurchaseAggregation) {
-      const { matchingIds, purchaseCounts } = await this.filterAndSortByPurchases(where, query);
+      const [{ matchingIds, purchaseCounts }, trendingIds] = await Promise.all([
+        this.filterAndSortByPurchases(where, query),
+        this.loadTrendingProductIds(),
+      ]);
       const total = matchingIds.length;
       const pageIds = matchingIds.slice(skip, skip + limit);
       const items =
@@ -147,13 +214,7 @@ export class ProductSearchService {
             })
           : [];
       items.sort((a, b) => pageIds.indexOf(a.id) - pageIds.indexOf(b.id));
-      const formattedItems = items.map((p) => {
-        const availableQty = this.inventoryService.calculateAvailable(p.inventories);
-        return {
-          ...formatProductSummary(p, availableQty),
-          purchaseCount: purchaseCounts.get(p.id) ?? 0,
-        };
-      });
+      const formattedItems = this.formatProductItems(items, purchaseCounts, trendingIds);
       return { items: formattedItems, total, page, limit, totalPages: Math.ceil(total / limit) };
     }
 
@@ -175,14 +236,11 @@ export class ProductSearchService {
     ]);
 
     if (sortedIds) items.sort((a, b) => sortedIds.indexOf(a.id) - sortedIds.indexOf(b.id));
-    const purchaseCounts = await this.loadPurchaseCounts(items.map((item) => item.id));
-    const formattedItems = items.map((p) => {
-      const availableQty = this.inventoryService.calculateAvailable(p.inventories);
-      return {
-        ...formatProductSummary(p, availableQty),
-        purchaseCount: purchaseCounts.get(p.id) ?? 0,
-      };
-    });
+    const [purchaseCounts, trendingIds] = await Promise.all([
+      this.loadPurchaseCounts(items.map((item) => item.id)),
+      this.loadTrendingProductIds(),
+    ]);
+    const formattedItems = this.formatProductItems(items, purchaseCounts, trendingIds);
 
     return {
       items: formattedItems,

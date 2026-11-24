@@ -42,6 +42,9 @@ describe('resolveNotificationTargetUrl', () => {
       '/buyer/disputes',
     );
     expect(resolveNotificationTargetUrl({ type: 'WALLET_TOPUP' })).toBe('/buyer/wallet');
+    expect(
+      resolveNotificationTargetUrl({ type: 'PAYMENT', content: 'Your withdrawal is approved' }),
+    ).toBe('/buyer/wallet');
     expect(resolveNotificationTargetUrl({ type: 'REPUTATION_UPDATE' })).toBe('/buyer/reputation');
     expect(resolveNotificationTargetUrl({ type: 'WISHLIST_DROP' })).toBe('/buyer/wishlist');
     expect(resolveNotificationTargetUrl({ type: 'REVIEW_REMINDER' })).toBe(
