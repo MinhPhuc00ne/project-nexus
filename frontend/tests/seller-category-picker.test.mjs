@@ -1,8 +1,8 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
+import { load } from './helpers/load-module.mjs';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
-import ts from 'typescript';
+
+const phoneLabel = 'Điện tử / Điện thoại';
 
 function find(node, predicate) {
   if (!node || typeof node !== 'object') return undefined;
@@ -12,7 +12,7 @@ function find(node, predicate) {
     if (result) return result;
   }
 }
-function setup(initialValue = '', disabled = false) {
+async function setup(initialValue = '', disabled = false) {
   const slots = [];
   const effects = [];
   const changes = [];
@@ -27,7 +27,6 @@ function setup(initialValue = '', disabled = false) {
     },
   };
   const jsx = (type, props) => ({ type, props });
-  const module = { exports: {} };
   const dependencies = {
     react: {
       useId: () => 'picker',
@@ -57,28 +56,10 @@ function setup(initialValue = '', disabled = false) {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     'lucide-react': {},
   };
-  const code = ts.transpileModule(
-    fs.readFileSync(
-      new URL('../src/components/seller/SellerCategoryPicker.tsx', import.meta.url),
-      'utf8',
-    ),
-    {
-      compilerOptions: {
-        module: ts.ModuleKind.CommonJS,
-        target: ts.ScriptTarget.ES2020,
-        jsx: ts.JsxEmit.ReactJSX,
-      },
-    },
-  ).outputText;
-  vm.runInNewContext(code, {
-    module,
-    exports: module.exports,
-    document: { addEventListener() {}, removeEventListener() {} },
-    require: (name) => dependencies[name],
-  });
+  const component = await load('components/seller/SellerCategoryPicker.tsx', dependencies);
   const options = [
     { id: 'watch', label: 'Thời trang / Đồng hồ' },
-    { id: 'phone', label: 'Điện tử / Điện thoại' },
+    { id: 'phone', label: phoneLabel },
     { id: 'book', label: 'Sách / Truyện' },
   ];
   return {
@@ -88,7 +69,7 @@ function setup(initialValue = '', disabled = false) {
     },
     render() {
       cursor = 0;
-      const tree = module.exports.default({
+      const tree = component.default({
         options,
         value,
         disabled,
@@ -119,10 +100,10 @@ function key(input, value) {
   return prevented;
 }
 
-test('typing filters by full category path without accents and never commits the query', () => {
-  const app = setup('phone');
+test('typing filters by full category path without accents and never commits the query', async () => {
+  const app = await setup('phone');
   let { input } = app.render();
-  assert.equal(input.props.value, 'Điện tử / Điện thoại');
+  assert.equal(input.props.value, phoneLabel);
   focus(input);
   ({ input } = app.render());
   input.props.onChange({ target: { value: 'thoi trang dong ho' } });
@@ -139,18 +120,17 @@ test('typing filters by full category path without accents and never commits the
     find(
       view.tree,
       (node) =>
-        node.props?.role === 'option' &&
-        node.props.children[0].props.children === 'Điện tử / Điện thoại',
+        node.props?.role === 'option' && node.props.children[0].props.children === phoneLabel,
     ),
     undefined,
   );
   assert.equal(app.changes.length, 0);
   key(view.input, 'Escape');
-  assert.equal(app.render().input.props.value, 'Điện tử / Điện thoại');
+  assert.equal(app.render().input.props.value, phoneLabel);
 });
 
-test('selection commits the category ID and closes the dropdown', () => {
-  const app = setup();
+test('selection commits the category ID and closes the dropdown', async () => {
+  const app = await setup();
   let { input } = app.render();
   focus(input);
   ({ input } = app.render());
@@ -164,8 +144,8 @@ test('selection commits the category ID and closes the dropdown', () => {
   assert.equal(app.validity, '');
 });
 
-test('unmatched text cannot become a category and remains invalid until a real option is chosen', () => {
-  const app = setup();
+test('unmatched text cannot become a category and remains invalid until a real option is chosen', async () => {
+  const app = await setup();
   let { input } = app.render();
   focus(input);
   ({ input } = app.render());
@@ -179,8 +159,8 @@ test('unmatched text cannot become a category and remains invalid until a real o
   assert.equal(app.render().input.props.value, '');
 });
 
-test('keyboard navigation selects the last option with ArrowUp and disabled controls stay closed', () => {
-  const app = setup();
+test('keyboard navigation selects the last option with ArrowUp and disabled controls stay closed', async () => {
+  const app = await setup();
   let { input } = app.render();
   focus(input);
   ({ input } = app.render());
@@ -188,7 +168,7 @@ test('keyboard navigation selects the last option with ArrowUp and disabled cont
   ({ input } = app.render());
   key(input, 'Enter');
   assert.equal(app.changes[0], 'book');
-  const disabled = setup('phone', true);
+  const disabled = await setup('phone', true);
   focus(disabled.render().input);
   assert.equal(disabled.render().input.props['aria-expanded'], false);
 });

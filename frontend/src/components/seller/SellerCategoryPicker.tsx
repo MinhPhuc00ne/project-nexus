@@ -84,15 +84,13 @@ export default function SellerCategoryPicker({
         reveal();
         setActiveIndex(event.key === 'ArrowDown' ? 0 : matches.length - 1);
       } else
-        setActiveIndex((current) =>
-          matches.length
-            ? current < 0
-              ? event.key === 'ArrowDown'
-                ? 0
-                : matches.length - 1
-              : (current + (event.key === 'ArrowDown' ? 1 : -1) + matches.length) % matches.length
-            : -1,
-        );
+        setActiveIndex((current) => {
+          if (!matches.length) return -1;
+          const movingDown = event.key === 'ArrowDown';
+          if (current < 0) return movingDown ? 0 : matches.length - 1;
+          const direction = movingDown ? 1 : -1;
+          return (current + direction + matches.length) % matches.length;
+        });
     } else if (event.key === 'Enter' && expanded) {
       event.preventDefault();
       if (active) choose(active);
@@ -103,6 +101,7 @@ export default function SellerCategoryPicker({
     } else if (event.key === 'Tab') close();
   }
 
+  const errorDescription = invalid ? ` ${id}-error` : '';
   return (
     <div
       ref={container}
@@ -124,7 +123,7 @@ export default function SellerCategoryPicker({
           aria-controls={`${id}-options`}
           aria-activedescendant={active ? `${id}-option-${activeIndex}` : undefined}
           aria-invalid={invalid || undefined}
-          aria-describedby={`${id}-hint${invalid ? ` ${id}-error` : ''}`}
+          aria-describedby={`${id}-hint${errorDescription}`}
           required
           disabled={disabled}
           autoComplete="off"

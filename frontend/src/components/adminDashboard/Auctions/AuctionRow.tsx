@@ -58,13 +58,20 @@ export default function AuctionRow({
   const { t, i18n } = useTranslation('admin');
   const locale = getIntlLocale(i18n.language);
   const hasBanner = banners.data.some((banner) => banner.auctionId === item.id);
-  const bannerReason = banners.loading
-    ? t('management.bannerChecking')
-    : banners.error
-      ? t('management.bannerLoadError')
-      : !hasBanner && banners.data.length >= BANNER_LIST_LIMIT
-        ? t('management.bannerUnknown')
-        : auctionBannerReason(item);
+
+  function getBannerReason() {
+    if (banners.loading) {
+      return t('management.bannerChecking');
+    }
+    if (banners.error) {
+      return t('management.bannerLoadError');
+    }
+    if (!hasBanner && banners.data.length >= BANNER_LIST_LIMIT) {
+      return t('management.bannerUnknown');
+    }
+    return auctionBannerReason(item);
+  }
+  const bannerReason = getBannerReason();
   const editReason = auctionEditReason(item);
   const deleteReason = auctionDeleteReason(item);
   const lockReasonKey = consignmentLockReason(item, now);
@@ -72,6 +79,38 @@ export default function AuctionRow({
   const deadlinePassed =
     !!item.consignmentDeadline && new Date(item.consignmentDeadline).getTime() <= now;
   const ended = new Date(item.endTime).getTime() <= now;
+
+  function getStartTitle(): string {
+    if (ended) return t('auctions.row.pastEndTime');
+    if (!item.isConsignmentLocked && !deadlinePassed) return t('management.lockBeforeStart');
+    if (startingId === item.id) return t('management.starting');
+    return t('management.startAuction');
+  }
+
+  function renderStartButton() {
+    if (['DRAFT', 'SCHEDULED'].includes(item.status)) {
+      return (
+        <>
+          <Button
+            disabled={
+              !!startingId || locking || ended || (!item.isConsignmentLocked && !deadlinePassed)
+            }
+            title={getStartTitle()}
+            aria-label={t('management.startAuctionAria', { value1: item.title })}
+            aria-busy={startingId === item.id}
+            onClick={() => void handleStartAuction(item)}
+          >
+            {startingId === item.id ? (
+              <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Play size={16} aria-hidden="true" />
+            )}
+          </Button>
+        </>
+      );
+    }
+    return null;
+  }
   return (
     <tr>
       <td className="max-w-72 p-4">
@@ -222,33 +261,7 @@ export default function AuctionRow({
           >
             <LockKeyhole size={16} aria-hidden="true" />
           </Button>
-          {['DRAFT', 'SCHEDULED'].includes(item.status) ? (
-            <>
-              <Button
-                disabled={
-                  !!startingId || locking || ended || (!item.isConsignmentLocked && !deadlinePassed)
-                }
-                title={
-                  ended
-                    ? t('auctions.row.pastEndTime')
-                    : !item.isConsignmentLocked && !deadlinePassed
-                      ? t('management.lockBeforeStart')
-                      : startingId === item.id
-                        ? t('management.starting')
-                        : t('management.startAuction')
-                }
-                aria-label={t('management.startAuctionAria', { value1: item.title })}
-                aria-busy={startingId === item.id}
-                onClick={() => void handleStartAuction(item)}
-              >
-                {startingId === item.id ? (
-                  <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
-                ) : (
-                  <Play size={16} aria-hidden="true" />
-                )}
-              </Button>
-            </>
-          ) : null}
+          {renderStartButton()}
         </div>
       </td>
     </tr>

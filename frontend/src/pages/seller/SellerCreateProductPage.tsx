@@ -68,7 +68,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
     setOptionGroups((prev) => [
       ...prev,
       {
-        id: `opt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        id: `opt-${crypto.randomUUID()}`,
         name: presetName,
         values: [...sampleValues],
       },
@@ -79,7 +79,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
     setOptionGroups((prev) => [
       ...prev,
       {
-        id: `opt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        id: `opt-${crypto.randomUUID()}`,
         name: '',
         values: [],
       },
@@ -101,6 +101,15 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
     setNewOptionInput((prev) => ({ ...prev, [groupId]: '' }));
   };
 
+  function handleRemoveValue(groupId: string, value: string) {
+    setOptionGroups((groups) =>
+      groups.map((group) => {
+        if (group.id !== groupId) return group;
+        return { ...group, values: group.values.filter((entry) => entry !== value) };
+      }),
+    );
+  }
+
   if (productLoading)
     return (
       <p role="status" className="p-8 text-sm text-slate-500">
@@ -120,6 +129,15 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
       </div>
     );
 
+  function getSubmitLabel() {
+    if (pending) {
+      return t('productForm.saving');
+    }
+    if (editing) {
+      return t('productForm.saveChanges');
+    }
+    return t('productForm.submitPublish');
+  }
   return (
     <div className="space-y-6">
       <PageHeading
@@ -325,15 +343,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                                   {val}
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      setOptionGroups((prev) =>
-                                        prev.map((g) =>
-                                          g.id === groupId
-                                            ? { ...g, values: g.values.filter((v) => v !== val) }
-                                            : g,
-                                        ),
-                                      )
-                                    }
+                                    onClick={() => handleRemoveValue(groupId, val)}
                                     className="text-slate-400 hover:text-red-600 font-bold"
                                     aria-label={t('productForm.removeChoiceAria', { val })}
                                   >
@@ -598,11 +608,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                 }
               >
                 <ShopOutlined />
-                {pending
-                  ? t('productForm.saving')
-                  : editing
-                    ? t('productForm.saveChanges')
-                    : t('productForm.submitPublish')}
+                {getSubmitLabel()}
               </SellerButton>
             </div>
           </div>

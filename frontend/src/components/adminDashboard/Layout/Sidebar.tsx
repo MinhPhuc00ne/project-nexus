@@ -129,32 +129,41 @@ export default function Sidebar({
                 {groupKeys[group.label] ? t(`groups.${groupKeys[group.label]}`) : group.label}
               </p>
               <div className="space-y-1">
-                {group.items.map(({ id, label, icon: Icon }) => (
-                  // NavLink tự xác định isActive từ URL để tô màu mục đang chọn.
-                  // onClose đóng menu mobile sau khi chọn; không điều khiển URL.
-                  <NavLink
-                    key={id}
-                    to={`/admin/${id}`}
-                    onClick={onClose}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-lg px-3 py-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 ${isActive ? 'bg-primary text-white shadow-md shadow-blue-900/10' : 'text-slate-600 hover:bg-blue-50 hover:text-primary'}`
+                {group.items.map(({ id, label, icon: Icon }) => {
+                  function getPendingCount() {
+                    if (id === 'sellers') {
+                      return sellerCount;
                     }
-                  >
-                    <Icon size={17} />
-                    <span className="flex-1">{t(`nav.${id}`, { defaultValue: label })}</span>
-                    {['sellers', 'refunds', 'products', 'reports'].includes(id) && (
-                      <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-primary">
-                        {id === 'sellers'
-                          ? sellerCount
-                          : id === 'refunds'
-                            ? refundCount
-                            : id === 'products'
-                              ? productCount
-                              : reportCount}
-                      </span>
-                    )}
-                  </NavLink>
-                ))}
+                    if (id === 'refunds') {
+                      return refundCount;
+                    }
+                    if (id === 'products') {
+                      return productCount;
+                    }
+                    return reportCount;
+                  }
+
+                  return (
+                    // NavLink tự xác định isActive từ URL để tô màu mục đang chọn.
+                    // onClose đóng menu mobile sau khi chọn; không điều khiển URL.
+                    <NavLink
+                      key={id}
+                      to={`/admin/${id}`}
+                      onClick={onClose}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 rounded-lg px-3 py-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 ${isActive ? 'bg-primary text-white shadow-md shadow-blue-900/10' : 'text-slate-600 hover:bg-blue-50 hover:text-primary'}`
+                      }
+                    >
+                      <Icon size={17} />
+                      <span className="flex-1">{t(`nav.${id}`, { defaultValue: label })}</span>
+                      {['sellers', 'refunds', 'products', 'reports'].includes(id) && (
+                        <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                          {getPendingCount()}
+                        </span>
+                      )}
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
           ))}

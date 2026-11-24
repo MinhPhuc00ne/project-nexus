@@ -58,6 +58,25 @@ export default function BannerForm({
     }
   }
 
+  function getUploadLabel() {
+    if (uploading) {
+      return t('banners.form.uploading');
+    }
+    if (value.imageUrl) {
+      return t('banners.form.changeImage');
+    }
+    return t('banners.form.uploadImage');
+  }
+
+  function getSubmitLabel() {
+    if (uploading) {
+      return t('banners.form.uploading');
+    }
+    if (saving) {
+      return t('banners.form.saving');
+    }
+    return t('banners.form.saveBtn');
+  }
   return (
     <Popup
       isOpen
@@ -195,11 +214,7 @@ export default function BannerForm({
                 disabled={saving || uploading}
               >
                 <Upload size={18} />
-                {uploading
-                  ? t('banners.form.uploading')
-                  : value.imageUrl
-                    ? t('banners.form.changeImage')
-                    : t('banners.form.uploadImage')}
+                {getUploadLabel()}
               </Button>
             </div>
             <p className="mt-3 text-xs text-slate-500">{t('banners.form.imageHint')}</p>
@@ -229,11 +244,7 @@ export default function BannerForm({
           )}
           <div className="flex gap-2 lg:col-span-2">
             <Button type="submit" disabled={uploading || !!uploadError || !value.imageUrl}>
-              {uploading
-                ? t('banners.form.uploading')
-                : saving
-                  ? t('banners.form.saving')
-                  : t('banners.form.saveBtn')}
+              {getSubmitLabel()}
             </Button>
             <Button type="button" variant="secondary" onClick={onCancel}>
               {t('banners.form.cancel')}

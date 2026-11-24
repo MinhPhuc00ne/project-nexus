@@ -1,33 +1,9 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
+import { load } from './helpers/load-module.mjs';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
-import ts from 'typescript';
 
-function load(file, dependencies = {}) {
-  const source = fs.readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8');
-  const module = { exports: {} };
-  const code = ts.transpileModule(source, {
-    compilerOptions: {
-      module: ts.ModuleKind.CommonJS,
-      target: ts.ScriptTarget.ES2020,
-      jsx: ts.JsxEmit.ReactJSX,
-      esModuleInterop: true,
-    },
-  }).outputText;
-  vm.runInNewContext(code, {
-    module,
-    exports: module.exports,
-    URLSearchParams,
-    require: (name) => {
-      if (!(name in dependencies)) throw Error(`Unexpected import: ${name}`);
-      return dependencies[name];
-    },
-  });
-  return module.exports;
-}
 const base = 'components/adminDashboard/Auctions/';
-const policy = load(`${base}auctionManagementAvailability.ts`);
+const policy = await load(`${base}auctionManagementAvailability.ts`);
 
 test('edit and delete eligibility matches backend status and bid rules', () => {
   for (const status of [
@@ -54,7 +30,7 @@ test('edit and delete eligibility matches backend status and bid rules', () => {
 
 test('API wrappers use authenticated PATCH and DELETE endpoints and propagate server errors', async () => {
   const calls = [];
-  const api = load('services/auction.service.ts', {
+  const api = await load('services/auction.service.ts', {
     './api': {
       apiRequest: async (...args) => {
         calls.push(args);
@@ -62,7 +38,7 @@ test('API wrappers use authenticated PATCH and DELETE endpoints and propagate se
       },
     },
     './auth': {},
-    './auction-response.helpers': {},
+    './auction-response.helpers': { formatAuctionImage: (value) => value },
     './auction-socket.service': {},
   });
   const payload = { title: 'Updated', consignmentDeadline: null, imageUrl: null };
@@ -74,14 +50,14 @@ test('API wrappers use authenticated PATCH and DELETE endpoints and propagate se
   assert.equal(calls[0][1].requireAuth, true);
   assert.equal(calls[1][1].method, 'DELETE');
   assert.equal(calls[1][1].requireAuth, true);
-  const failing = load('services/auction.service.ts', {
+  const failing = await load('services/auction.service.ts', {
     './api': {
       apiRequest: async () => {
         throw Error('Already has bids');
       },
     },
     './auth': {},
-    './auction-response.helpers': {},
+    './auction-response.helpers': { formatAuctionImage: (value) => value },
     './auction-socket.service': {},
   });
   await assert.rejects(failing.adminDeleteAuctionApi('room-1'), /Already has bids/);
@@ -129,36 +105,38 @@ function find(node, predicate) {
 }
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
-function createFormSetup({ hasImage = true, promotionFails = false } = {}) {
+async function createFormSetup({ hasImage = true, promotionFails = false } = {}) {
   const harness = hooks();
   const calls = { creates: 0, promotions: 0, completed: 0, errors: [] };
-  const component = load(`${base}CreateAuctionDialog.tsx`, {
-    react: harness.react,
-    'react/jsx-runtime': { jsx, jsxs: jsx },
-    'lucide-react': {},
-    '../../../services/api': {},
-    '../../../services/auction.service': {
-      adminCreateAuctionApi: async (payload) => {
-        calls.creates++;
-        return { ...payload, id: 'created', status: 'SCHEDULED' };
+  const component = (
+    await load(`${base}CreateAuctionDialog.tsx`, {
+      react: harness.react,
+      'react/jsx-runtime': { jsx, jsxs: jsx },
+      'lucide-react': {},
+      '../../../services/api': {},
+      '../../../services/auction.service': {
+        adminCreateAuctionApi: async (payload) => {
+          calls.creates++;
+          return { ...payload, id: 'created', status: 'SCHEDULED' };
+        },
       },
-    },
-    '../../../services/auth': { getStoredToken: () => 'session' },
-    '../../ToastNotification': {
-      useToast: () => ({ success() {}, error: (message) => calls.errors.push(message) }),
-    },
-    '../../Popup': {},
-    '../shared/AdminUI': {},
-    '../../../utils/date-time': { minEndDateTime() {} },
-    './ConsignmentDeadlineField': {},
-    './auctionManagementAvailability': policy,
-    './auctionBannerPromotion': {
-      promoteAuctionBanner: async () => {
-        calls.promotions++;
-        if (promotionFails) throw Error('Unavailable');
+      '../../../services/auth': { getStoredToken: () => 'session' },
+      '../../ToastNotification': {
+        useToast: () => ({ success() {}, error: (message) => calls.errors.push(message) }),
       },
-    },
-  }).default;
+      '../../Popup': {},
+      '../shared/AdminUI': { Button: 'button' },
+      '../../../utils/date-time': { minEndDateTime() {} },
+      './ConsignmentDeadlineField': {},
+      './auctionManagementAvailability': policy,
+      './auctionBannerPromotion': {
+        promoteAuctionBanner: async () => {
+          calls.promotions++;
+          if (promotionFails) throw Error('Unavailable');
+        },
+      },
+    })
+  ).default;
   const props = {
     onClose() {},
     onCreated: () => {
@@ -192,7 +170,7 @@ function createFormSetup({ hasImage = true, promotionFails = false } = {}) {
 }
 
 test('create switch works as a promotion request and validates the image before creating', async () => {
-  const app = createFormSetup();
+  const app = await createFormSetup();
   let tree = app.render();
   const toggle = find(tree, (node) => node.props?.role === 'switch');
   assert.equal(toggle.props.disabled, false);
@@ -205,7 +183,7 @@ test('create switch works as a promotion request and validates the image before 
   assert.equal(app.calls.promotions, 1);
   assert.equal(app.calls.completed, 1);
 
-  const missing = createFormSetup({ hasImage: false });
+  const missing = await createFormSetup({ hasImage: false });
   find(missing.render(), (node) => node.props?.role === 'switch').props.onClick();
   find(missing.render(), (node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
   await tick();
@@ -213,7 +191,7 @@ test('create switch works as a promotion request and validates the image before 
 });
 
 test('promotion failure preserves successful room creation and directs retry to the banner button', async () => {
-  const app = createFormSetup({ promotionFails: true });
+  const app = await createFormSetup({ promotionFails: true });
   find(app.render(), (node) => node.props?.role === 'switch').props.onClick();
   find(app.render(), (node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
   await tick();
@@ -223,32 +201,60 @@ test('promotion failure preserves successful room creation and directs retry to 
   assert.match(app.calls.errors[0], /Lên banner/);
 });
 
+test('invalid schedules, deadlines and reputation scores never create an auction', async () => {
+  const invalidChanges = [
+    (tree) =>
+      find(tree, (node) => node.props?.type === 'datetime-local').props.onChange({
+        target: { value: '' },
+      }),
+    (tree) =>
+      find(tree, (node) => node.props?.onChange && node.props?.startTime).props.onChange(
+        '2030-01-01T09:00',
+      ),
+    (tree) =>
+      find(tree, (node) => node.props?.type === 'number').props.onChange({
+        target: { value: '-1' },
+      }),
+  ];
+  for (const change of invalidChanges) {
+    const app = await createFormSetup();
+    change(app.render());
+    find(app.render(), (node) => node.type === 'form').props.onSubmit({ preventDefault() {} });
+    await tick();
+    assert.equal(app.calls.creates, 0);
+    assert.equal(app.calls.completed, 0);
+    assert.ok(find(app.render(), (node) => node.props?.role === 'alert'));
+  }
+});
+
 test('edit form sends PATCH data, preserves original date precision, and clears deadline explicitly', async () => {
   const harness = hooks();
   const calls = [];
-  const form = load(`${base}CreateAuctionDialog.tsx`, {
-    react: harness.react,
-    'react/jsx-runtime': { jsx, jsxs: jsx },
-    'lucide-react': {},
-    '../../../services/api': {},
-    '../../../services/auction.service': {
-      adminCreateAuctionApi: () => {
-        throw Error('Edit must not create');
+  const form = (
+    await load(`${base}CreateAuctionDialog.tsx`, {
+      react: harness.react,
+      'react/jsx-runtime': { jsx, jsxs: jsx },
+      'lucide-react': {},
+      '../../../services/api': {},
+      '../../../services/auction.service': {
+        adminCreateAuctionApi: () => {
+          throw Error('Edit must not create');
+        },
+        adminUpdateAuctionApi: async (...args) => {
+          calls.push(args);
+          return { id: args[0] };
+        },
       },
-      adminUpdateAuctionApi: async (...args) => {
-        calls.push(args);
-        return { id: args[0] };
-      },
-    },
-    '../../../services/auth': { getStoredToken: () => 'session' },
-    '../../ToastNotification': { useToast: () => ({ success() {} }) },
-    '../../Popup': {},
-    '../shared/AdminUI': {},
-    '../../../utils/date-time': { minEndDateTime() {} },
-    './ConsignmentDeadlineField': {},
-    './auctionManagementAvailability': policy,
-    './auctionBannerPromotion': {},
-  }).default;
+      '../../../services/auth': { getStoredToken: () => 'session' },
+      '../../ToastNotification': { useToast: () => ({ success() {} }) },
+      '../../Popup': {},
+      '../shared/AdminUI': { Button: 'button' },
+      '../../../utils/date-time': { minEndDateTime() {} },
+      './ConsignmentDeadlineField': {},
+      './auctionManagementAvailability': policy,
+      './auctionBannerPromotion': {},
+    })
+  ).default;
   let saved;
   const props = {
     auction: {
@@ -287,23 +293,25 @@ test('delete confirmation prevents duplicate requests and closes only after serv
   let calls = 0;
   let complete;
   let deleted = 0;
-  const dialog = load(`${base}DeleteAuctionDialog.tsx`, {
-    react: harness.react,
-    'react/jsx-runtime': { jsx, jsxs: jsx },
-    '../../Popup': {},
-    '../shared/AdminUI': {},
-    '../../../services/auction.service': {
-      adminDeleteAuctionApi: () => {
-        calls++;
-        return new Promise((resolve) => {
-          complete = resolve;
-        });
+  const dialog = (
+    await load(`${base}DeleteAuctionDialog.tsx`, {
+      react: harness.react,
+      'react/jsx-runtime': { jsx, jsxs: jsx },
+      '../../Popup': {},
+      '../shared/AdminUI': { Button: 'button' },
+      '../../../services/auction.service': {
+        adminDeleteAuctionApi: () => {
+          calls++;
+          return new Promise((resolve) => {
+            complete = resolve;
+          });
+        },
       },
-    },
-    '../../../services/auth': { getStoredToken: () => 'session' },
-    '../../ToastNotification': { useToast: () => ({ success() {} }) },
-    './auctionManagementAvailability': policy,
-  }).default;
+      '../../../services/auth': { getStoredToken: () => 'session' },
+      '../../ToastNotification': { useToast: () => ({ success() {} }) },
+      './auctionManagementAvailability': policy,
+    })
+  ).default;
   const tree = harness.render(dialog, {
     auction: { id: 'room-1', title: 'Room', status: 'DRAFT', totalBidsCount: 0 },
     onClose() {},

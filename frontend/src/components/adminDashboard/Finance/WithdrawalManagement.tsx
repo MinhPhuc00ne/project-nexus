@@ -103,12 +103,151 @@ export default function WithdrawalManagement() {
     }
   }
 
-  const tone = (value: AdminWithdrawalStatus) =>
-    value === 'APPROVED' || value === 'COMPLETED'
-      ? 'green'
-      : value === 'REJECTED'
-        ? 'red'
-        : 'amber';
+  const tone = (value: AdminWithdrawalStatus) => {
+    if (value === 'APPROVED' || value === 'COMPLETED') return 'green' as const;
+    if (value === 'REJECTED') return 'red' as const;
+    return 'amber' as const;
+  };
+
+  function renderWithdrawals() {
+    if (loading) {
+      return (
+        <p role="status" className="py-10 text-center text-sm text-slate-500">
+          {t('finance.withdrawals.loading')}
+        </p>
+      );
+    }
+    if (error) {
+      return (
+        <div role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
+          {error}
+          <div className="mt-3">
+            <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
+              {t('finance.withdrawals.retry')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    if (!result?.items.length) {
+      return <EmptyState text={t('finance.withdrawals.empty')} />;
+    }
+    return (
+      <>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] text-left text-xs">
+            <thead className="bg-slate-50 text-slate-500">
+              <tr>
+                {[
+                  t('finance.withdrawals.cols.seller'),
+                  t('finance.withdrawals.cols.amount'),
+                  t('finance.withdrawals.cols.bank'),
+                  t('finance.withdrawals.cols.submittedAt'),
+                  t('finance.withdrawals.cols.status'),
+                  t('finance.withdrawals.cols.actions'),
+                ].map((label) => (
+                  <th key={label} scope="col" className="p-3 font-semibold">
+                    {label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {result.items.map((item) => (
+                <tr key={item.id} className="align-top">
+                  <td className="p-3">
+                    <p className="font-semibold text-slate-800">{item.sellerName}</p>
+                    <p className="mt-1 text-slate-500">{item.sellerEmail}</p>
+                    {item.sellerPhone && <p className="mt-1 text-slate-500">{item.sellerPhone}</p>}
+                  </td>
+                  <td className="whitespace-nowrap p-3 font-bold text-slate-900">
+                    {formatMoney(item.amount)}
+                  </td>
+                  <td className="p-3">
+                    <p className="font-medium">{item.bankName}</p>
+                    <p className="mt-1">{item.accountNumber}</p>
+                    <p className="mt-1 uppercase text-slate-500">{item.accountHolderName}</p>
+                  </td>
+                  <td className="whitespace-nowrap p-3 text-slate-500">{date(item.createdAt)}</td>
+                  <td className="p-3">
+                    <Badge tone={tone(item.status)}>
+                      {t(`finance.withdrawals.statuses.${item.status}`)}
+                    </Badge>
+                    {item.rejectionReason && (
+                      <p className="mt-2 max-w-48 text-rose-700">
+                        {t('finance.withdrawals.reasonPrefix', { reason: item.rejectionReason })}
+                      </p>
+                    )}
+                    {item.adminNote && (
+                      <p className="mt-2 max-w-48 text-slate-500">
+                        {t('finance.withdrawals.notePrefix', { note: item.adminNote })}
+                      </p>
+                    )}
+                    {item.reviewedBy && (
+                      <p className="mt-2 text-slate-400">
+                        {t('finance.withdrawals.reviewedBy', {
+                          name: item.reviewedBy.fullName,
+                          date: date(item.reviewedAt),
+                        })}
+                      </p>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    {item.status === 'PENDING' ? (
+                      <div className="flex flex-wrap gap-2">
+                        <Button onClick={() => openReview(item, 'APPROVED')}>
+                          {t('finance.withdrawals.approveBtn')}
+                        </Button>
+                        <Button variant="danger" onClick={() => openReview(item, 'REJECTED')}>
+                          {t('finance.withdrawals.rejectBtn')}
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400">{t('finance.withdrawals.processed')}</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500">
+          <span>
+            {t('finance.withdrawals.pageLabel', {
+              page,
+              totalPages: Math.max(1, result.totalPages),
+            })}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              disabled={page <= 1}
+              onClick={() => setPage((value) => value - 1)}
+            >
+              {t('finance.withdrawals.prev')}
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={page >= result.totalPages}
+              onClick={() => setPage((value) => value + 1)}
+            >
+              {t('finance.withdrawals.next')}
+            </Button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  function getSubmitLabel() {
+    if (saving) {
+      return t('finance.withdrawals.processing');
+    }
+    if (decision === 'APPROVED') {
+      return t('finance.withdrawals.confirmApprove');
+    }
+    return t('finance.withdrawals.confirmReject');
+  }
   return (
     <Panel
       title={t('finance.withdrawals.title')}
@@ -147,128 +286,7 @@ export default function WithdrawalManagement() {
           {t('finance.withdrawals.totalCount', { count: result?.total ?? 0 })}
         </span>
       </div>
-      {loading ? (
-        <p role="status" className="py-10 text-center text-sm text-slate-500">
-          {t('finance.withdrawals.loading')}
-        </p>
-      ) : error ? (
-        <div role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
-          {error}
-          <div className="mt-3">
-            <Button variant="secondary" onClick={() => setRevision((value) => value + 1)}>
-              {t('finance.withdrawals.retry')}
-            </Button>
-          </div>
-        </div>
-      ) : !result?.items.length ? (
-        <EmptyState text={t('finance.withdrawals.empty')} />
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px] text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500">
-                <tr>
-                  {[
-                    t('finance.withdrawals.cols.seller'),
-                    t('finance.withdrawals.cols.amount'),
-                    t('finance.withdrawals.cols.bank'),
-                    t('finance.withdrawals.cols.submittedAt'),
-                    t('finance.withdrawals.cols.status'),
-                    t('finance.withdrawals.cols.actions'),
-                  ].map((label) => (
-                    <th key={label} scope="col" className="p-3 font-semibold">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {result.items.map((item) => (
-                  <tr key={item.id} className="align-top">
-                    <td className="p-3">
-                      <p className="font-semibold text-slate-800">{item.sellerName}</p>
-                      <p className="mt-1 text-slate-500">{item.sellerEmail}</p>
-                      {item.sellerPhone && (
-                        <p className="mt-1 text-slate-500">{item.sellerPhone}</p>
-                      )}
-                    </td>
-                    <td className="whitespace-nowrap p-3 font-bold text-slate-900">
-                      {formatMoney(item.amount)}
-                    </td>
-                    <td className="p-3">
-                      <p className="font-medium">{item.bankName}</p>
-                      <p className="mt-1">{item.accountNumber}</p>
-                      <p className="mt-1 uppercase text-slate-500">{item.accountHolderName}</p>
-                    </td>
-                    <td className="whitespace-nowrap p-3 text-slate-500">{date(item.createdAt)}</td>
-                    <td className="p-3">
-                      <Badge tone={tone(item.status)}>
-                        {t(`finance.withdrawals.statuses.${item.status}`)}
-                      </Badge>
-                      {item.rejectionReason && (
-                        <p className="mt-2 max-w-48 text-rose-700">
-                          {t('finance.withdrawals.reasonPrefix', { reason: item.rejectionReason })}
-                        </p>
-                      )}
-                      {item.adminNote && (
-                        <p className="mt-2 max-w-48 text-slate-500">
-                          {t('finance.withdrawals.notePrefix', { note: item.adminNote })}
-                        </p>
-                      )}
-                      {item.reviewedBy && (
-                        <p className="mt-2 text-slate-400">
-                          {t('finance.withdrawals.reviewedBy', {
-                            name: item.reviewedBy.fullName,
-                            date: date(item.reviewedAt),
-                          })}
-                        </p>
-                      )}
-                    </td>
-                    <td className="p-3">
-                      {item.status === 'PENDING' ? (
-                        <div className="flex flex-wrap gap-2">
-                          <Button onClick={() => openReview(item, 'APPROVED')}>
-                            {t('finance.withdrawals.approveBtn')}
-                          </Button>
-                          <Button variant="danger" onClick={() => openReview(item, 'REJECTED')}>
-                            {t('finance.withdrawals.rejectBtn')}
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-slate-400">{t('finance.withdrawals.processed')}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4 flex items-center justify-between gap-3 text-xs text-slate-500">
-            <span>
-              {t('finance.withdrawals.pageLabel', {
-                page,
-                totalPages: Math.max(1, result.totalPages),
-              })}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                disabled={page <= 1}
-                onClick={() => setPage((value) => value - 1)}
-              >
-                {t('finance.withdrawals.prev')}
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={page >= result.totalPages}
-                onClick={() => setPage((value) => value + 1)}
-              >
-                {t('finance.withdrawals.next')}
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+      {renderWithdrawals()}
       {target && (
         <div
           className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/45 p-4"
@@ -335,11 +353,7 @@ export default function WithdrawalManagement() {
                   variant={decision === 'REJECTED' ? 'danger' : 'primary'}
                   disabled={saving || (decision === 'REJECTED' && !rejectionReason.trim())}
                 >
-                  {saving
-                    ? t('finance.withdrawals.processing')
-                    : decision === 'APPROVED'
-                      ? t('finance.withdrawals.confirmApprove')
-                      : t('finance.withdrawals.confirmReject')}
+                  {getSubmitLabel()}
                 </Button>
               </div>
             </form>

@@ -1,38 +1,13 @@
-import { test } from 'node:test';
+import { test } from 'vitest';
+import { load } from './helpers/load-module.mjs';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import vm from 'node:vm';
-import ts from 'typescript';
 
-function load(file, dependencies) {
-  const module = { exports: {} };
-  const code = ts.transpileModule(
-    fs.readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8'),
-    {
-      compilerOptions: {
-        module: ts.ModuleKind.CommonJS,
-        target: ts.ScriptTarget.ES2020,
-        esModuleInterop: true,
-      },
-    },
-  ).outputText;
-  vm.runInNewContext(code, {
-    module,
-    exports: module.exports,
-    Error,
-    require: (name) => {
-      if (!(name in dependencies)) throw Error(`Unexpected import: ${name}`);
-      return dependencies[name];
-    },
-  });
-  return module.exports;
-}
 const auction = { id: 'room-1', status: 'SCHEDULED', imageUrl: 'https://example.com/auction.png' };
 const source = 'components/adminDashboard/Auctions/auctionBannerPromotion.ts';
 
 test('promotes an eligible room using its backend identifier', async () => {
   let createdId;
-  const policy = load(source, {
+  const policy = await load(source, {
     '../../../services/banners.service': {
       listBanners: async () => [],
       createBannerFromAuction: async (id) => {
@@ -50,7 +25,7 @@ test('promotes an eligible room using its backend identifier', async () => {
 test('existing banners including inactive banners are not created again', async () => {
   for (const isActive of [true, false]) {
     const existing = { id: 'existing', auctionId: auction.id, isActive };
-    const policy = load(source, {
+    const policy = await load(source, {
       '../../../services/banners.service': {
         listBanners: async () => [existing],
         createBannerFromAuction: async () => {
@@ -65,7 +40,7 @@ test('existing banners including inactive banners are not created again', async 
 });
 
 test('draft, cancelled and missing-image rooms cannot be promoted', async () => {
-  const policy = load(source, {
+  const policy = await load(source, {
     '../../../services/banners.service': {
       listBanners: async () => {
         throw Error('Must not request');
@@ -86,7 +61,7 @@ test('draft, cancelled and missing-image rooms cannot be promoted', async () => 
 });
 
 test('failed or truncated status lookups cannot create a potentially duplicate banner', async () => {
-  const truncated = load(source, {
+  const truncated = await load(source, {
     '../../../services/banners.service': {
       listBanners: async () =>
         Array.from({ length: 100 }, (_, id) => ({ id, auctionId: `other-${id}` })),
@@ -96,7 +71,7 @@ test('failed or truncated status lookups cannot create a potentially duplicate b
     },
   });
   await assert.rejects(truncated.promoteAuctionBanner(auction), /Quản lý banner/);
-  const failing = load(source, {
+  const failing = await load(source, {
     '../../../services/banners.service': {
       listBanners: async () => {
         throw Error('Cannot load banners');
@@ -112,7 +87,7 @@ test('failed or truncated status lookups cannot create a potentially duplicate b
 test('retry after a lost response discovers the previously created banner', async () => {
   const banners = [];
   let creates = 0;
-  const policy = load(source, {
+  const policy = await load(source, {
     '../../../services/banners.service': {
       listBanners: async () => banners,
       createBannerFromAuction: async (id) => {
@@ -130,7 +105,7 @@ test('retry after a lost response discovers the previously created banner', asyn
 
 test('promotion wrapper calls the existing backend endpoint without a request body', async () => {
   let args;
-  const api = load('services/banners.service.ts', {
+  const api = await load('services/banners.service.ts', {
     './api': {
       post: async (...values) => {
         args = values;

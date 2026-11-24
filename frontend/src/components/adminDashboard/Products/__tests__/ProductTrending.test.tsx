@@ -12,6 +12,9 @@ import type { AdminData } from '../../shared/adminTypes';
 import { ToastProvider } from '../../../ToastNotification';
 import ProductManagement from '../ProductManagement';
 
+const trendingAria = 'Quản lý tag Xu hướng của sản phẩm Product trending';
+const trendingTitle = 'Product trending';
+
 vi.mock('../../../../contexts/AuthContext', () => ({ useAuth: () => ({ token: 'admin-token' }) }));
 vi.mock('../../../../services/auth', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../../services/auth')>()),
@@ -71,7 +74,7 @@ async function openTrendingDialog() {
   renderProducts();
   fireEvent.click(
     await screen.findByRole('button', {
-      name: 'Quản lý tag Xu hướng của sản phẩm Product trending',
+      name: trendingAria,
     }),
   );
   return screen.getByRole('dialog', { name: 'Quản lý tag Xu hướng' });
@@ -93,7 +96,7 @@ describe('admin product Trending moderation', () => {
       items: [
         {
           id: 'trending',
-          title: 'Product trending',
+          title: trendingTitle,
           purchaseCount: 42,
           lastPurchaseAt: null,
           isTrending: true,
@@ -115,7 +118,7 @@ describe('admin product Trending moderation', () => {
     vi.mocked(removeAdminProductFromTrending).mockResolvedValue({
       success: true,
       message: 'Removed',
-      product: { id: 'trending', title: 'Product trending', trendingExcluded: true },
+      product: { id: 'trending', title: trendingTitle, trendingExcluded: true },
     });
     vi.mocked(listAdminTrendingProducts).mockResolvedValue({ items: [], total: 0 });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Gỡ tag Xu hướng' }));
@@ -126,9 +129,7 @@ describe('admin product Trending moderation', () => {
       await screen.findByText('Đã gỡ sản phẩm “Product trending” khỏi Xu hướng.'),
     ).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
-    expect(
-      screen.queryByRole('button', { name: 'Quản lý tag Xu hướng của sản phẩm Product trending' }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: trendingAria })).not.toBeInTheDocument();
     expect(listAdminTrendingProducts).toHaveBeenCalledTimes(2);
   });
 
@@ -142,9 +143,7 @@ describe('admin product Trending moderation', () => {
       expect(within(dialog).getByRole('alert')).toHaveTextContent('Request failed'),
     );
     expect(reason).toHaveValue('Chất lượng kém');
-    expect(
-      screen.getByRole('button', { name: 'Quản lý tag Xu hướng của sản phẩm Product trending' }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: trendingAria })).toBeInTheDocument();
     expect(listAdminTrendingProducts).toHaveBeenCalledTimes(1);
   });
 
@@ -162,7 +161,7 @@ describe('admin product Trending moderation', () => {
       items: [
         {
           id: 'trending',
-          title: 'Product trending',
+          title: trendingTitle,
           purchaseCount: 42,
           lastPurchaseAt: null,
           isTrending: true,
@@ -173,7 +172,7 @@ describe('admin product Trending moderation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
     expect(
       await screen.findByRole('button', {
-        name: 'Quản lý tag Xu hướng của sản phẩm Product trending',
+        name: trendingAria,
       }),
     ).toBeInTheDocument();
   });
@@ -191,7 +190,7 @@ describe('admin product Trending moderation', () => {
     vi.mocked(removeAdminProductFromTrending).mockResolvedValue({
       success: true,
       message: 'Removed',
-      product: { id: 'trending', title: 'Product trending', trendingExcluded: true },
+      product: { id: 'trending', title: trendingTitle, trendingExcluded: true },
     });
     vi.mocked(listAdminTrendingProducts).mockResolvedValue({ items: [], total: 0 });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Remove Trending tag' }));

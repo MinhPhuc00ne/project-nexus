@@ -65,128 +65,120 @@ export default function CreateAuctionDialog({
     };
   }, [imagePreview]);
 
+  function validateSchedule(): string {
+    const start = new Date(startTime).getTime();
+    const end = new Date(endTime).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start)
+      return t('auctions.create.errSchedule');
+    if (!consignmentDeadline) return '';
+    const deadline = new Date(consignmentDeadline).getTime();
+    if (!Number.isFinite(deadline) || deadline <= start || deadline >= end)
+      return t('auctions.create.errDeadline');
+    return '';
+  }
+
+  function validateForm(): string {
+    if (auction) {
+      const reason = auctionEditReason(auction);
+      if (reason) return reason;
+    }
+    if (!auction && promoteOnCreate && !imageFile && !imageUrl.trim())
+      return t('management.bannerImageRequired');
+    if (!title.trim()) return t('auctions.create.errTitle');
+    const scheduleError = validateSchedule();
+    if (scheduleError) return scheduleError;
+    const validScores = [buyerScore, sellerScore].every(
+      (value) => value.trim() && Number.isSafeInteger(Number(value)) && Number(value) >= 0,
+    );
+    return validScores ? '' : t('auctions.create.errReputation');
+  }
+
+  async function uploadImage(): Promise<string | null> {
+    if (!imageFile) return imageUrl.trim() || null;
+    try {
+      const body = new FormData();
+      body.append('file', imageFile);
+      const result = await apiRequest<{ url: string }>('/media/upload', {
+        method: 'POST',
+        body,
+        isFormData: true,
+        requireAuth: true,
+      });
+      if (!result?.url) throw new Error(t('auctions.create.errImageUrl'));
+      return result.url;
+    } catch (cause) {
+      throw new Error(
+        cause instanceof Error
+          ? t('auctions.create.errUploadWithDetail', { message: cause.message })
+          : t('auctions.create.errUpload'),
+      );
+    }
+  }
+
+  function datePayload(value: string, original?: string | null): string {
+    if (original && value === localDateTime(original)) return original;
+    return new Date(value).toISOString();
+  }
+
+  async function saveAuction() {
+    const payload = {
+      title: title.trim(),
+      description: description.trim(),
+      imageUrl: await uploadImage(),
+      startTime: datePayload(startTime, auction?.startTime),
+      endTime: datePayload(endTime, auction?.endTime),
+      consignmentDeadline: consignmentDeadline
+        ? datePayload(consignmentDeadline, auction?.consignmentDeadline)
+        : null,
+      minBuyerReputation: Number(buyerScore),
+      minSellerReputation: Number(sellerScore),
+    };
+    if (auction) return adminUpdateAuctionApi(auction.id, payload);
+    return adminCreateAuctionApi({
+      ...payload,
+      consignmentDeadline: payload.consignmentDeadline ?? undefined,
+    });
+  }
+
+  async function promoteCreatedAuction(saved: AdminAuctionEntity): Promise<string> {
+    if (auction || !promoteOnCreate) return '';
+    try {
+      await promoteAuctionBanner(saved);
+      return '';
+    } catch (cause) {
+      return cause instanceof Error ? cause.message : t('management.promoteError');
+    }
+  }
+
+  function successMessage(bannerError: string): string {
+    if (auction) return t('management.auctionUpdated');
+    if (promoteOnCreate && !bannerError) return t('management.auctionCreatedPromoted');
+    return t('management.auctionCreated');
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (lock.current) return;
-    setError('');
-    if (auction && auctionEditReason(auction)) {
-      setError(auctionEditReason(auction));
-      return;
-    }
-    if (!auction && promoteOnCreate && !imageFile && !imageUrl.trim()) {
-      setError(t('management.bannerImageRequired'));
-      return;
-    }
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    if (!title.trim()) {
-      setError(t('auctions.create.errTitle'));
-      return;
-    }
-    if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || end <= start) {
-      setError(t('auctions.create.errSchedule'));
-      return;
-    }
-    if (consignmentDeadline) {
-      const deadline = new Date(consignmentDeadline).getTime();
-      if (!Number.isFinite(deadline) || deadline <= start.getTime() || deadline >= end.getTime()) {
-        setError(t('auctions.create.errDeadline'));
-        return;
-      }
-    }
-    if (
-      ![buyerScore, sellerScore].every(
-        (value) => value.trim() && Number.isSafeInteger(Number(value)) && Number(value) >= 0,
-      )
-    ) {
-      setError(t('auctions.create.errReputation'));
-      return;
-    }
-
+    const validationError = validateForm();
+    setError(validationError);
+    if (validationError) return;
     lock.current = true;
     setSaving(true);
     const token = getStoredToken();
-
+    const currentSession = () => active.current && token === getStoredToken();
     try {
-      let uploadedImageUrl: string | undefined = undefined;
-      if (imageFile) {
-        try {
-          const body = new FormData();
-          body.append('file', imageFile);
-          const result = await apiRequest<{ url: string }>('/media/upload', {
-            method: 'POST',
-            body,
-            isFormData: true,
-            requireAuth: true,
-          });
-          if (!result?.url) throw new Error(t('auctions.create.errImageUrl'));
-          uploadedImageUrl = result.url;
-        } catch (uploadError) {
-          setError(
-            uploadError instanceof Error
-              ? t('auctions.create.errUploadWithDetail', { message: uploadError.message })
-              : t('auctions.create.errUpload'),
-          );
-          lock.current = false;
-          if (active.current) setSaving(false);
-          return;
-        }
-      } else if (imageUrl.trim()) {
-        uploadedImageUrl = imageUrl.trim();
-      }
-
-      const payload = {
-        title: title.trim(),
-        description: description.trim(),
-        imageUrl: uploadedImageUrl ?? null,
-        startTime:
-          auction && startTime === localDateTime(auction.startTime)
-            ? auction.startTime
-            : start.toISOString(),
-        endTime:
-          auction && endTime === localDateTime(auction.endTime)
-            ? auction.endTime
-            : end.toISOString(),
-        consignmentDeadline: consignmentDeadline
-          ? auction && consignmentDeadline === localDateTime(auction.consignmentDeadline)
-            ? auction.consignmentDeadline
-            : new Date(consignmentDeadline).toISOString()
-          : null,
-        minBuyerReputation: Number(buyerScore),
-        minSellerReputation: Number(sellerScore),
-      };
-      const saved = auction
-        ? await adminUpdateAuctionApi(auction.id, payload)
-        : await adminCreateAuctionApi({
-            ...payload,
-            consignmentDeadline: payload.consignmentDeadline ?? undefined,
-          });
-      if (active.current && token === getStoredToken()) {
-        let bannerError = '';
-        if (!auction && promoteOnCreate) {
-          try {
-            await promoteAuctionBanner(saved);
-          } catch (cause) {
-            bannerError = cause instanceof Error ? cause.message : t('management.promoteError');
-          }
-        }
-        if (active.current && token === getStoredToken()) {
-          toast.success(
-            auction
-              ? t('management.auctionUpdated')
-              : promoteOnCreate && !bannerError
-                ? t('management.auctionCreatedPromoted')
-                : t('management.auctionCreated'),
-          );
-          if (bannerError)
-            toast.error(t('management.auctionBannerWarning', { value1: bannerError }), {
-              duration: 10000,
-            });
-          onCreated(saved);
-        }
-      }
+      const saved = await saveAuction();
+      if (!currentSession()) return;
+      const bannerError = await promoteCreatedAuction(saved);
+      if (!currentSession()) return;
+      toast.success(successMessage(bannerError));
+      if (bannerError)
+        toast.error(t('management.auctionBannerWarning', { value1: bannerError }), {
+          duration: 10000,
+        });
+      onCreated(saved);
     } catch (cause) {
-      if (active.current && token === getStoredToken())
+      if (currentSession())
         setError(cause instanceof Error ? cause.message : t('management.saveAuctionError'));
     } finally {
       lock.current = false;
@@ -196,6 +188,16 @@ export default function CreateAuctionDialog({
 
   const inputClass =
     'mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500';
+
+  function getSubmitLabel() {
+    if (saving) {
+      return t('management.saving');
+    }
+    if (auction) {
+      return t('management.saveChanges');
+    }
+    return t('management.createAuctionTitle');
+  }
   return (
     <Popup
       isOpen
@@ -407,11 +409,7 @@ export default function CreateAuctionDialog({
             {t('auctions.common.cancel')}
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving
-              ? t('management.saving')
-              : auction
-                ? t('management.saveChanges')
-                : t('management.createAuctionTitle')}
+            {getSubmitLabel()}
           </Button>
         </div>
       </form>

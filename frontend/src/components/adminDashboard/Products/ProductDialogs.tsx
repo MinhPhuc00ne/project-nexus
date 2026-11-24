@@ -193,12 +193,17 @@ export function ProductActionDialog({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const inFlight = useRef(false);
-  const title =
-    kind === 'delete'
-      ? t('products.actionDialog.deleteTitle')
-      : kind === 'hide'
-        ? t('products.actionDialog.hideTitle')
-        : t('products.actionDialog.activateTitle');
+
+  function getDialogTitle() {
+    if (kind === 'delete') {
+      return t('products.actionDialog.deleteTitle');
+    }
+    if (kind === 'hide') {
+      return t('products.actionDialog.hideTitle');
+    }
+    return t('products.actionDialog.activateTitle');
+  }
+  const title = getDialogTitle();
   const close = () => {
     if (!inFlight.current) onClose();
   };
