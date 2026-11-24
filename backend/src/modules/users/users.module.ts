@@ -8,11 +8,12 @@ import { BuyerController } from './controllers/buyer.controller';
 import { SellerController } from './controllers/seller.controller';
 import { UsersService } from './services/users.service';
 import { AddressService } from './services/address.service';
+import { WishlistService } from './services/wishlist.service';
 
 @Module({
   imports: [AuthModule, StorageModule, FulfillmentModule, ReputationModule],
   controllers: [UsersController, BuyerController, SellerController],
-  providers: [UsersService, AddressService],
-  exports: [UsersService, AddressService, ReputationModule],
+  providers: [UsersService, AddressService, WishlistService],
+  exports: [UsersService, AddressService, WishlistService, ReputationModule],
 })
 export class UsersModule {}

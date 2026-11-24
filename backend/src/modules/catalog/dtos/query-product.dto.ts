@@ -10,13 +10,34 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ProductStatus } from '@prisma/client';
 
 export class QueryProductDto {
   @IsOptional() @IsString() @MaxLength(100) city?: string;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(5) minRating?: number;
   @IsOptional() @IsIn(['true', 'false']) inStock?: string;
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Lọc chỉ các sản phẩm đang xu hướng (có lượt mua và không bị loại khỏi trending)',
+  })
+  @IsOptional()
+  @Transform(({ value }: { value: unknown }) => {
+    if (value === 'true' || value === true) return true;
+    if (value === 'false' || value === false) return false;
+    return value;
+  })
+  trendingOnly?: boolean;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Lọc sản phẩm có tổng lượt mua (đơn đã thanh toán/giao) tối thiểu',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  minPurchaseCount?: number;
   @ApiPropertyOptional({ example: 'Audemars', description: 'Từ khóa tìm kiếm theo tên hoặc mô tả' })
   @IsOptional()
   @IsString()
@@ -68,11 +89,11 @@ export class QueryProductDto {
 
   @ApiPropertyOptional({
     example: 'newest',
-    enum: ['newest', 'price_asc', 'price_desc'],
+    enum: ['newest', 'price_asc', 'price_desc', 'best_selling', 'trending', 'top_rated'],
     description: 'Sắp xếp theo thứ tự',
   })
   @IsOptional()
   @IsString()
-  @IsIn(['newest', 'price_asc', 'price_desc'])
-  sortBy?: 'newest' | 'price_asc' | 'price_desc';
+  @IsIn(['newest', 'price_asc', 'price_desc', 'best_selling', 'trending', 'top_rated'])
+  sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'best_selling' | 'trending' | 'top_rated';
 }

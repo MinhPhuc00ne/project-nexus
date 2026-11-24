@@ -85,3 +85,20 @@ export interface DisputeSummaryDto {
   status: DisputeStatus;
   createdAt: string;
 }
+
+export interface WishlistItemDto {
+  id: string;
+  wishlistId: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  img: string;
+  shopName: string;
+  category?: string;
+  inStock: boolean;
+  addedAt: string;
+}
+
+export interface WishlistSyncDto {
+  productIds: string[];
+}
