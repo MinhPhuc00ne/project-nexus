@@ -48,6 +48,7 @@ export default function AdminWallet() {
   const [depositError, setDepositError] = useState('');
   const [notice, setNotice] = useState('');
   const [payment, setPayment] = useState<DepositAdminWalletResult | null>(null);
+  const [completedPayment, setCompletedPayment] = useState<DepositAdminWalletResult | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
   const [statusError, setStatusError] = useState('');
   const depositLock = useRef(false);
@@ -63,10 +64,15 @@ export default function AdminWallet() {
         setStatusError('');
         if (result.status !== 'PENDING') {
           setPayment(null);
-          setQrOpen(false);
           setRefreshKey((current) => current + 1);
-          if (result.status === 'SUCCESS') setNotice(t('finance.wallet.paymentSuccess'));
-          else setDepositError(t('finance.wallet.paymentFailed'));
+          if (result.status === 'SUCCESS') {
+            setCompletedPayment(payment);
+            setQrOpen(true);
+            setNotice(t('finance.wallet.paymentSuccess'));
+          } else {
+            setQrOpen(false);
+            setDepositError(t('finance.wallet.paymentFailed'));
+          }
           return;
         }
       } catch {
@@ -134,6 +140,7 @@ export default function AdminWallet() {
         throw new Error(t('finance.wallet.qrError'));
       }
       setPayment(result);
+      setCompletedPayment(null);
       setQrOpen(true);
       setStatusError('');
       setAmount('');
@@ -152,10 +159,14 @@ export default function AdminWallet() {
 
   return (
     <div className="space-y-5">
-      {payment && qrOpen && (
+      {(completedPayment || payment) && qrOpen && (
         <AdminDepositQrDialog
-          payment={payment}
-          onClose={() => setQrOpen(false)}
+          payment={(completedPayment || payment)!}
+          successful={!!completedPayment}
+          onClose={() => {
+            setQrOpen(false);
+            setCompletedPayment(null);
+          }}
           statusError={statusError}
         />
       )}

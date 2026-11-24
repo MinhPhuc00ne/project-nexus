@@ -98,7 +98,15 @@ it('shows the backend QR and confirms the deposit only after a successful backen
       createdAt: '',
     });
   });
-  expect(await screen.findByText('Payment confirmed. Wallet balance updated.')).toBeInTheDocument();
+  expect(await screen.findByRole('dialog', { name: 'Transfer successful' })).toBeInTheDocument();
+  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'Open PayOS payment page' })).not.toBeInTheDocument();
+  expect(checkBuyerDepositStatusApi).toHaveBeenCalledTimes(1);
+  await act(async () => {
+    await i18n.changeLanguage('vi');
+  });
+  expect(screen.getByRole('dialog', { name: 'Chuyển khoản thành công' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Hoàn tất' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  expect(getAdminWallet).toHaveBeenCalledTimes(3);
+  expect(screen.getByRole('button', { name: 'Nạp vào ví' })).toBeEnabled();
 });

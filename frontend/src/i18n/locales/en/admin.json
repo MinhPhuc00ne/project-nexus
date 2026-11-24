@@ -1108,6 +1108,8 @@
       "pageLabel": "Page {{page}}/{{totalPages}}",
       "prev": "Previous",
       "next": "Next",
+      "transferSuccess": "Transfer successful",
+      "paymentDone": "Done",
       "qrTitle": "Scan QR to fund the platform wallet",
       "qrError": "Unable to create the QR code. Please retry or open the payment page.",
       "awaitingPayment": "Scan with your banking app. Your balance updates after payment is confirmed.",
