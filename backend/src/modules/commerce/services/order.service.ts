@@ -89,10 +89,10 @@ export class OrderService {
   private async syncTrendingSafely(): Promise<void> {
     if (!this.trendingService) return;
     try {
-      await this.trendingService.syncTopOneTrendingNotification();
+      await this.trendingService.syncTopTrendingNotifications();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Đồng bộ thông báo Top 1 Xu hướng thất bại: ${message}`);
+      this.logger.warn(`Đồng bộ thông báo Xu hướng thất bại: ${message}`);
     }
   }
 
@@ -704,7 +704,7 @@ export class OrderService {
       };
     });
 
-    await this.syncTrendingSafely();
+    void this.syncTrendingSafely();
 
     return {
       success: true,
@@ -986,7 +986,7 @@ export class OrderService {
       });
 
       this.logger.log(`Đơn ${payment.orderId} đã thanh toán PayOS; tiền được giữ ký quỹ.`);
-      await this.syncTrendingSafely();
+      void this.syncTrendingSafely();
     }
 
     return {
@@ -1086,7 +1086,7 @@ export class OrderService {
         this.logger.log(
           `Đồng bộ trực tiếp: Đơn ${order.id} đã thanh toán PayOS; tiền được giữ ký quỹ.`,
         );
-        await this.syncTrendingSafely();
+        void this.syncTrendingSafely();
 
         return {
           paid: true,

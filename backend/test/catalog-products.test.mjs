@@ -94,6 +94,7 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
       trendingExcluded: false,
       trendingExcludedAt: null,
       trendingNotifiedAt: null,
+      trendingTopOneNotifiedAt: null,
       reviewCount: 15,
       averageRating: 4.8,
       threeModelKey: null,
@@ -126,6 +127,7 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
       trendingExcluded: false,
       trendingExcludedAt: null,
       trendingNotifiedAt: null,
+      trendingTopOneNotifiedAt: null,
       reviewCount: 2,
       averageRating: 4.5,
       threeModelKey: null,
@@ -158,6 +160,7 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
       trendingExcluded: false,
       trendingExcludedAt: null,
       trendingNotifiedAt: null,
+      trendingTopOneNotifiedAt: null,
       reviewCount: 99,
       averageRating: 5.0,
       threeModelKey: null,
@@ -234,35 +237,65 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
     },
     product: {
       findMany: mock.fn(async ({ where }) =>
-        products.filter(
-          (p) =>
-            where.id.in.includes(p.id) &&
-            p.status === where.status &&
-            p.hiddenByShopSuspension === where.hiddenByShopSuspension &&
-            p.trendingExcluded === where.trendingExcluded,
-        ),
+        products.filter((p) => {
+          if (where.id?.in && !where.id.in.includes(p.id)) return false;
+          if (where.status !== undefined && p.status !== where.status) return false;
+          if (
+            where.hiddenByShopSuspension !== undefined &&
+            p.hiddenByShopSuspension !== where.hiddenByShopSuspension
+          ) {
+            return false;
+          }
+          if (
+            where.trendingExcluded !== undefined &&
+            p.trendingExcluded !== where.trendingExcluded
+          ) {
+            return false;
+          }
+          if (Array.isArray(where.OR)) {
+            const matchesAny = where.OR.some((cond) => {
+              if (cond.trendingNotifiedAt === null) return p.trendingNotifiedAt === null;
+              if (cond.id !== undefined) {
+                return (
+                  p.id === cond.id &&
+                  (cond.trendingTopOneNotifiedAt !== null || p.trendingTopOneNotifiedAt === null)
+                );
+              }
+              return false;
+            });
+            if (!matchesAny) return false;
+          }
+          return true;
+        }),
       ),
       findUnique: mock.fn(async ({ where }) => products.find((p) => p.id === where.id) ?? null),
       updateMany: mock.fn(async ({ where, data }) => {
-        if (where.id && typeof where.id === 'object' && where.id.not) {
-          let count = 0;
-          for (const p of products) {
-            if (p.id !== where.id.not && p.trendingNotifiedAt !== null) {
-              p.trendingNotifiedAt = data.trendingNotifiedAt;
-              count += 1;
-            }
-          }
-          return { count };
-        }
-        const target = products.find(
-          (p) =>
+        const isNotified = (p) =>
+          !Array.isArray(where.OR) ||
+          where.OR.some(
+            (cond) =>
+              (cond.trendingNotifiedAt?.not === null && p.trendingNotifiedAt !== null) ||
+              (cond.trendingTopOneNotifiedAt?.not === null && p.trendingTopOneNotifiedAt !== null),
+          );
+        const matchesTarget = (p) => {
+          if (where.id?.notIn) return !where.id.notIn.includes(p.id) && isNotified(p);
+          if (where.id?.not) return p.id !== where.id.not && p.trendingTopOneNotifiedAt !== null;
+          if (!where.id) return isNotified(p);
+          return (
             p.id === where.id &&
-            p.trendingNotifiedAt === null &&
-            p.trendingExcluded === where.trendingExcluded,
-        );
-        if (!target) return { count: 0 };
-        target.trendingNotifiedAt = data.trendingNotifiedAt;
-        return { count: 1 };
+            (where.trendingNotifiedAt !== null || p.trendingNotifiedAt === null) &&
+            (where.trendingTopOneNotifiedAt !== null || p.trendingTopOneNotifiedAt === null) &&
+            (where.trendingExcluded === undefined || p.trendingExcluded === where.trendingExcluded)
+          );
+        };
+        let count = 0;
+        for (const p of products) {
+          if (matchesTarget(p)) {
+            Object.assign(p, data);
+            count += 1;
+          }
+        }
+        return { count };
       }),
       update: mock.fn(async ({ where, data }) => {
         const target = products.find((p) => p.id === where.id);
@@ -298,14 +331,27 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
   assert.equal(firstFetch.items[2].purchaseCount, 3);
   assert.equal(notifications.length, 0);
 
-  await trendingService.syncTopOneTrendingNotification();
-  assert.equal(notifications.length, 1);
-  assert.equal(notifications[0].userId, 'seller-1');
-  assert.match(notifications[0].title, /Top 1 Xu hướng/);
-  assert.match(notifications[0].content, /5 lượt mua/);
+  await trendingService.syncTopTrendingNotifications();
+  assert.equal(notifications.length, 3);
+  const top1Notif = notifications.find((n) => n.title.includes('Top 1 Xu hướng'));
+  assert.ok(top1Notif);
+  assert.equal(top1Notif.userId, 'seller-1');
+  assert.match(top1Notif.content, /Top 1 Xu hướng.*5 lượt mua/);
+  const otherNotifs = notifications.filter((n) => n.title.includes('đã lên Xu hướng'));
+  assert.equal(otherNotifs.length, 2);
+  assert.ok(
+    otherNotifs.some(
+      (n) => n.userId === 'seller-2' && /Top 2 Xu hướng.*3 lượt mua/.test(n.content),
+    ),
+  );
+  assert.ok(
+    otherNotifs.some(
+      (n) => n.userId === 'seller-2' && /Top 3 Xu hướng.*3 lượt mua/.test(n.content),
+    ),
+  );
 
-  await trendingService.syncTopOneTrendingNotification();
-  assert.equal(notifications.length, 1);
+  await trendingService.syncTopTrendingNotifications();
+  assert.equal(notifications.length, 3);
 
   const adminProducts = new AdminProductsService(prisma, trendingService);
   assert.equal(typeof adminProducts.addProductToTrending, 'undefined');
@@ -318,14 +364,25 @@ test('ProductTrendingService ranks by purchaseCount then earliest reached timest
   });
   assert.equal(removed.success, true);
   assert.equal(removed.product.trendingExcluded, true);
-  assert.equal(notifications.length, 3);
-  assert.equal(notifications[1].userId, 'seller-1');
-  assert.match(notifications[1].title, /gỡ khỏi Xu hướng/);
-  assert.match(notifications[1].content, /Không phù hợp hiển thị/);
-  assert.equal(notifications[2].userId, 'seller-2');
-  assert.match(notifications[2].title, /Top 1 Xu hướng/);
+  assert.equal(notifications.length, 5);
+  assert.equal(notifications[3].userId, 'seller-1');
+  assert.match(notifications[3].title, /gỡ khỏi Xu hướng/);
+  assert.match(notifications[3].content, /Không phù hợp hiển thị/);
+  assert.equal(notifications[4].userId, 'seller-2');
+  assert.match(notifications[4].title, /Top 1 Xu hướng/);
+  assert.match(notifications[4].content, /Bàn phím chạm mốc trước.*Top 1 Xu hướng/);
 
   const afterRemoval = await trendingService.getTrendingProducts(10);
   assert.equal(afterRemoval.total, 2);
   assert.equal(afterRemoval.items[0].id, tieFirstId);
+
+  const clamped = await trendingService.getTrendingProducts(100);
+  assert.equal(clamped.total, 2);
+
+  await trendingService.syncTopTrendingNotifications(1);
+  const reEntered = await trendingService.syncTopTrendingNotifications(10);
+  assert.equal(reEntered, undefined);
+  assert.equal(notifications.length, 6);
+  assert.equal(notifications[5].userId, 'seller-2');
+  assert.match(notifications[5].content, /Tai nghe chạm mốc sau.*Top 2 Xu hướng/);
 });

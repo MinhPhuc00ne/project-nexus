@@ -503,7 +503,7 @@ export class AdminProductsService {
     );
 
     if (this.trendingService) {
-      await this.trendingService.syncTopOneTrendingNotification();
+      await this.trendingService.syncTopTrendingNotifications();
     }
 
     return {
