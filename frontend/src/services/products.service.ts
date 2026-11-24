@@ -2,6 +2,7 @@ import i18n from '../i18n';
 import { formatCurrency } from '../i18n/formatters';
 import api, { apiRequest } from './api';
 import { getStoredToken } from './auth';
+import { HOME_TRENDING_LIMIT } from '../constants/trending';
 import type { ProductDetail, ProductItem } from '../types/product.types';
 import { computeEffectiveSale, saleConfigFromApi } from './productExtras';
 
@@ -400,7 +401,9 @@ export interface TrendingProductsResult {
   total: number;
 }
 
-export async function getTrendingProductsApi(limit = 10): Promise<TrendingProductsResult> {
+export async function getTrendingProductsApi(
+  limit = HOME_TRENDING_LIMIT,
+): Promise<TrendingProductsResult> {
   const result = await apiRequest<TrendingProductsResult>(
     `/catalog/products/trending?limit=${encodeURIComponent(String(limit))}`,
   );
@@ -485,7 +488,9 @@ export interface TrendingProductsResponse {
   total: number;
 }
 
-export async function getTrendingProducts(limit = 10): Promise<TrendingProductsResponse> {
+export async function getTrendingProducts(
+  limit = HOME_TRENDING_LIMIT,
+): Promise<TrendingProductsResponse> {
   try {
     const res = await apiRequest<{ items: TrendingProductItem[]; total: number }>(
       `/catalog/products/trending?limit=${encodeURIComponent(String(limit))}`,

@@ -12,6 +12,7 @@ import {
   HomeTrendingSection,
 } from '../../components/home';
 import { flashSaleProducts } from '../../mocks/home.mock';
+import { HOME_TRENDING_LIMIT } from '../../constants/trending';
 import { getEventBannersApi } from '../../services/banners.service';
 import {
   getRecommendationsApi,
@@ -102,7 +103,7 @@ function HomePage() {
 
     // Lấy danh sách sản phẩm Xu hướng từ API
     setIsLoadingTrending(true);
-    void getTrendingProducts(10)
+    void getTrendingProducts(HOME_TRENDING_LIMIT)
       .then((res) => {
         if (isMounted && res?.items) {
           setTrendingProducts(res.items);

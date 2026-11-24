@@ -80,7 +80,7 @@ export default function StaffDashboard({
   }
 
   return (
-    <div className="[--staff-ink:#17233d] [--staff-line:#e7eaf3] [--staff-primary:#1f5fe3] [--staff-primary-soft:#eaf1ff] [--staff-primary-strong:#1849b7] [--staff-accent:#1f5fe3] [--staff-accent-strong:#1849b7] grid [grid-template-columns:250px_minmax(0,_1fr)] max-[1200px]:[grid-template-columns:220px_minmax(0,_1fr)] max-[768px]:block h-screen overflow-hidden bg-[#f8f7fc] [color:var(--staff-ink)] [font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_sans-serif] text-[13px] text-slate-800">
+    <div className="[--staff-ink:#17233d] [--staff-line:#e7eaf3] [--staff-primary:#1f5fe3] [--staff-primary-soft:#eaf1ff] [--staff-primary-strong:#1849b7] [--staff-accent:#1f5fe3] [--staff-accent-strong:#1849b7] grid [grid-template-columns:256px_minmax(0,_1fr)] max-[1023px]:block h-screen overflow-hidden bg-[#f8f7fc] [color:var(--staff-ink)] [font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_sans-serif] text-[13px] text-slate-800">
       <StaffSidebar
         activeNavigation={activeNavigation}
         onSelectNavigation={setActiveNavigation}
@@ -90,12 +90,7 @@ export default function StaffDashboard({
       />
 
       <div className="[grid-column:2] min-w-0 flex flex-col h-screen overflow-hidden max-[768px]:[grid-column:auto] max-[768px]:h-auto max-[768px]:overflow-visible">
-        <StaffHeader
-          account={account}
-          searchText={searchText}
-          onSearchChange={setSearchText}
-          onOpenSidebar={() => setIsSidebarOpen(true)}
-        />
+        <StaffHeader account={account} onOpenSidebar={() => setIsSidebarOpen(true)} />
 
         <main
           className={`w-full min-w-0 flex-1 min-h-0 flex flex-col ${
@@ -189,7 +184,11 @@ export default function StaffDashboard({
               )}
             </section>
           ) : (
-            <StaffTicketChatPanel searchText={searchText} notify={notify} />
+            <StaffTicketChatPanel
+              searchText={searchText}
+              onSearchChange={setSearchText}
+              notify={notify}
+            />
           )}
         </main>
       </div>

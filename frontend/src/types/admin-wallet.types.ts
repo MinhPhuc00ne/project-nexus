@@ -71,6 +71,13 @@ export interface DepositAdminWalletDto {
 export interface DepositAdminWalletResult {
   success: boolean;
   message: string;
-  wallet: { id: string; balance: number; currency: string };
-  transaction: AdminWalletTransaction;
+  paymentProvider: 'PAYOS';
+  orderCode: number;
+  checkoutUrl: string;
+  qrCode: string;
+  amount: number;
+  accountNumber?: string;
+  accountName?: string;
+  bin?: string;
+  transactionId: string;
 }

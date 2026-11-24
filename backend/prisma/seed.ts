@@ -1735,7 +1735,7 @@ async function main() {
 
   // Phiên 2: Đã chốt ký gửi & duyệt đủ lô, Admin chỉ cần bấm Bắt đầu để test 3D Showcase & Đấu giá live
   const auction2 = await upsertAdminAuctionWithLots({
-    title: 'Phiên Đấu Giá 3D Showcase Sẵn Sàng Mở Bán NEXUS #2',
+    title: 'Phiên Đấu Giá Showcase Sẵn Sàng Mở Bán NEXUS #2',
     description:
       'Phiên đã khóa ký gửi và duyệt sẵn 5 lô từ cả 3 Seller (có cả 3D model và ảnh thường), giá khởi điểm dưới 100.000đ, bước giá 2.000đ. Admin chỉ cần bấm "Bắt đầu" để test.',
     imageUrl:

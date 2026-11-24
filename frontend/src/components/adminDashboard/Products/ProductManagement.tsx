@@ -22,7 +22,7 @@ import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI
 import { ProductActionDialog, ProductDetailDialog } from './ProductDialogs';
 import { formatMoney } from '../shared/adminData';
 import type { AdminTabProps } from '../shared/adminTypes';
-import { useAdminProducts } from './useAdminProducts';
+import { useAdminProducts, type TrendingFilter } from './useAdminProducts';
 import ProductCategoryDialog from './ProductCategoryDialog';
 import ProductTrendingDialog from './ProductTrendingDialog';
 
@@ -48,6 +48,8 @@ export default function ProductManagement({ actions }: AdminTabProps) {
     refresh,
     trendingProducts,
     trendingError,
+    trendingFilter,
+    setTrendingFilter,
   } = useAdminProducts();
   const [categories, setCategories] = useState<CategoryTreeItem[]>([]);
   const [categoryError, setCategoryError] = useState('');
@@ -326,14 +328,20 @@ export default function ProductManagement({ actions }: AdminTabProps) {
         </div>
         <select
           aria-label={t('products.statusAria')}
-          value={query.status ?? ''}
-          onChange={(event) =>
+          value={trendingFilter === 'all' ? (query.status ?? '') : trendingFilter}
+          onChange={(event) => {
+            const value = event.target.value;
+            const nextTrending: TrendingFilter = value === 'trending' ? value : 'all';
+            setTrendingFilter(nextTrending);
             setQuery((current) => ({
               ...current,
-              status: (event.target.value || undefined) as AdminProductStatus | undefined,
+              status:
+                nextTrending === 'all'
+                  ? ((value || undefined) as AdminProductStatus | undefined)
+                  : undefined,
               page: 1,
-            }))
-          }
+            }));
+          }}
           className="min-h-10 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-xs"
         >
           <option value="">{t('products.allStatuses')}</option>
@@ -342,6 +350,7 @@ export default function ProductManagement({ actions }: AdminTabProps) {
               {t(`products.statuses.${value}`)}
             </option>
           ))}
+          <option value="trending">{t('products.trending.filterTrending')}</option>
         </select>
         <select
           aria-label={t('products.categoryAria')}

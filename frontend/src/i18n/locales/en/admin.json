@@ -2,7 +2,7 @@
   "header": {
     "panelTitle": "NEXUS ADMIN PANEL",
     "clusterStatus": "Cluster uptime: 99.98%",
-    "broadcastReady": "3D BROADCAST: READY",
+    "broadcastReady": "ONLINE AUCTION: READY",
     "openMenu": "Open menu",
     "accountOptionsAria": "Open account options",
     "settingsLink": "Admin settings",
@@ -12,7 +12,7 @@
     "closeMenu": "Close menu",
     "overviewAria": "NEXUS Admin - Overview",
     "navAria": "Admin navigation",
-    "engineLabel": "WebGL 3D Engine",
+    "engineLabel": "Nexus",
     "demoBadge": "DEMO"
   },
   "notifications": {
@@ -67,9 +67,9 @@
     "metricsAria": "Overview metrics",
     "revenueTitle": "Platform fee revenue",
     "revenueSubtitle": "THIS MONTH",
-    "revenueDesc": "Standard order and 3D auction fees",
+    "revenueDesc": "Standard order and auction fees",
     "feeRateLabel": "Platform fee rate",
-    "auctionsTitle": "3D Auctions",
+    "auctionsTitle": "Auctions",
     "auctionsSubtitle": "LIVE NOW",
     "liveCount": "{{count}} live sessions",
     "auctionsDesc": "Includes extended sessions",
@@ -89,7 +89,7 @@
     "trendTitle": "Platform fee revenue trend",
     "trendSubtitle": "OVER TIME",
     "totalFee": "Total fee",
-    "auction3d": "3D Auctions",
+    "auction3d": "Auctions",
     "normalOrders": "Standard orders",
     "relativeTrend": "Relative trend by source",
     "trendAria": "Platform fee trend {{label}}",
@@ -656,6 +656,7 @@
   },
   "products": {
     "trending": {
+      "filterTrending": "Trending",
       "tag": "Trending",
       "manageTag": "View and manage Trending tag",
       "manageAria": "Manage Trending tag for product {{title}}",
@@ -1134,7 +1135,18 @@
       "emptyHistory": "No wallet transactions yet.",
       "pageLabel": "Page {{page}}/{{totalPages}}",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "transferSuccess": "Transfer successful",
+      "paymentDone": "Done",
+      "qrTitle": "Scan QR to fund the platform wallet",
+      "qrError": "Unable to create the QR code. Please retry or open the payment page.",
+      "awaitingPayment": "Scan with your banking app. Your balance updates after payment is confirmed.",
+      "paymentCode": "Payment code: {{code}}",
+      "openPayment": "Open PayOS payment page",
+      "continuePayment": "View pending payment QR",
+      "paymentSuccess": "Payment confirmed. Wallet balance updated.",
+      "paymentFailed": "The deposit was unsuccessful.",
+      "paymentStatusError": "Unable to check payment status. Retrying automatically."
     },
     "chart": {
       "emptyTitle": "Revenue",
@@ -1142,7 +1154,7 @@
       "title": "Platform Fee Revenue Trend",
       "subtitle": "Standard order and auction fees by period",
       "totalUnit": "Total fee · {{unit}}",
-      "auctionFee": "3D Auction fee",
+      "auctionFee": "Auction fee",
       "normalFee": "Standard order fee",
       "share": "Share: {{percent}}%",
       "relativeChart": "Relative index chart",
@@ -1350,7 +1362,7 @@
     "breadcrumbRoot": "Administration",
     "fallbackTitle": "Admin",
     "footerOps": "© 2026 NEXUS • Admin Operations",
-    "footerPlatform": "3D Auction & Commerce Platform"
+    "footerPlatform": "Auction & Commerce Platform"
   },
   "studio": {
     "title": "3D Live Broadcast Studio",

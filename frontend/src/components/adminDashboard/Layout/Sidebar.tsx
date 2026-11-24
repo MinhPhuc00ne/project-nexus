@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { dashboardChrome } from '../../dashboard/dashboardChrome';
 import type { AdminTab } from '../shared/adminTypes';
 
 const groupKeys: Record<string, 'operations' | 'members' | 'content' | 'financeTech'> = {
@@ -94,14 +95,14 @@ export default function Sidebar({
         <button
           aria-label={t('sidebar.closeMenu')}
           onClick={onClose}
-          className="fixed inset-0 z-30 bg-slate-900/40 lg:hidden"
+          className={dashboardChrome.sidebarBackdrop}
         />
       )}
       {/* lg:translate-x-0 luôn hiện sidebar trên desktop; mobile dùng open để trượt vào/ra. */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-slate-200 bg-white transition-transform lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`${dashboardChrome.sidebar} ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="flex h-20 items-center gap-3 border-b border-slate-100 px-6">
+        <div className={dashboardChrome.sidebarBrand}>
           <NavLink
             to="/admin/overview"
             onClick={onClose}
@@ -125,7 +126,7 @@ export default function Sidebar({
         >
           {adminNavigation.map((group) => (
             <div key={group.label}>
-              <p className="mb-2 px-3 text-[10px] font-semibold tracking-wider text-slate-400">
+              <p className={dashboardChrome.sidebarLabel}>
                 {groupKeys[group.label] ? t(`groups.${groupKeys[group.label]}`) : group.label}
               </p>
               <div className="space-y-1">
@@ -151,12 +152,12 @@ export default function Sidebar({
                       to={`/admin/${id}`}
                       onClick={onClose}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 rounded-lg px-3 py-3 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-blue-600 ${isActive ? 'bg-primary text-white shadow-md shadow-blue-900/10' : 'text-slate-600 hover:bg-blue-50 hover:text-primary'}`
+                        `${dashboardChrome.navItem} ${isActive ? dashboardChrome.navActive : dashboardChrome.navIdle}`
                       }
                     >
                       <Icon size={17} />
                       <span className="flex-1">{t(`nav.${id}`, { defaultValue: label })}</span>
-                      {['sellers', 'refunds', 'products', 'reports'].includes(id) && (
+                      {['sellers', 'refunds', 'reports'].includes(id) && (
                         <span className="rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-primary">
                           {getPendingCount()}
                         </span>

@@ -1,4 +1,3 @@
-import { cn } from '../lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +10,6 @@ import {
   LogOut as LogoutOutlined,
   Menu as MenuOutlined,
   Inbox as InboxOutlined,
-  Search as SearchOutlined,
   Settings as SettingOutlined,
   ShieldCheck as SafetyCertificateOutlined,
   Star as StarOutlined,
@@ -30,6 +28,7 @@ import type { SellerDraft } from '../components/seller/sellerData';
 import { useToast } from '../components/ToastNotification';
 import LogoutConfirmDialog from '../components/auth/LogoutConfirmDialog';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import { dashboardChrome } from '../components/dashboard/dashboardChrome';
 
 const linkDefs = [
   { to: '/seller', key: 'nav.center', icon: ShopOutlined },
@@ -178,7 +177,7 @@ function SellerWorkspace() {
       >
         {sidebar && (
           <button
-            className="hidden max-[760px]:block max-[760px]:fixed max-[760px]:[inset:0] max-[760px]:[border:0] max-[760px]:bg-[#1b315c45] max-[760px]:[backdrop-filter:blur(2px)] max-[760px]:z-[39]"
+            className={dashboardChrome.sidebarBackdrop}
             data-seller="sidebar-backdrop"
             aria-label={t('layout.closeMenu')}
             onClick={() => setSidebar(false)}
@@ -186,14 +185,12 @@ function SellerWorkspace() {
         )}
         <aside
           id="seller-navigation"
-          className={cn(
-            `fixed [inset:0_auto_0_0] w-[242px] bg-white [border-right:1px_solid_#e5ebf4] z-[40] flex flex-col [&_nav]:py-0 [&_nav]:px-3 [&_nav]:overflow-y-auto max-[1250px]:w-[220px] max-[1050px]:w-[210px] max-[760px]:[transform:translateX(-100%)] max-[760px]:[transition:transform_0.2s] max-[760px]:w-[242px] max-[760px]:[&.is-open]:[transform:translateX(0)] ${sidebar ? 'is-open' : ''}`,
-          )}
+          className={`${dashboardChrome.sidebar} ${sidebar ? 'translate-x-0 is-open' : '-translate-x-full'}`}
           data-seller="sidebar"
         >
           <Link
             to="/seller"
-            className="h-20 shrink-0 flex items-center gap-[11px] py-4 px-5.5 [border-bottom:1px_solid_#e5ebf4] [&>img]:w-9 [&>img]:h-[37px] [&>img]:object-contain [&_strong]:text-[19px] [&_strong]:tracking-[-0.6px] [&_strong]:text-[#162444] [&_small]:block [&_small]:text-[9px] [&_small]:tracking-[1.45px] [&_small]:text-[#7186ab] max-[1250px]:p-4"
+            className={`${dashboardChrome.sidebarBrand} [&>img]:size-9 [&>img]:object-contain [&_strong]:text-[19px] [&_strong]:font-bold [&_strong]:tracking-tight [&_strong]:text-slate-900 [&_small]:block [&_small]:text-[9px] [&_small]:tracking-wider [&_small]:text-slate-500`}
             data-seller="brand"
           >
             <img src="/images/NEXUS.png" alt="NEXUS" />
@@ -202,39 +199,37 @@ function SellerWorkspace() {
               <small>SELLER CENTER</small>
             </span>
             <span
-              className="text-[9px] text-[#8390a7] bg-[#f1f5fa] rounded-[4px] py-0.5 px-1.5 ml-auto"
+              className="ml-auto rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-medium text-primary"
               data-seller="version"
             >
               v2.4
             </span>
           </Link>
-          <div
-            className="text-[10px] tracking-[1.1px] text-[#94a2b9] [margin:27px_23px_12px]"
-            data-seller="sidebar-label"
-          >
+          <div className={`${dashboardChrome.sidebarLabel} mt-6 px-6`} data-seller="sidebar-label">
             {t('layout.sidebarLabel')}
           </div>
-          <nav aria-label={t('layout.navAria')}>
+          <nav
+            className="flex-1 space-y-1 overflow-y-auto px-3 pb-6"
+            aria-label={t('layout.navAria')}
+          >
             {linkDefs.map(({ to, key, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
                 end={to === '/seller'}
                 className={({ isActive }) =>
-                  cn(
-                    `relative flex items-center gap-3 min-h-[45px] my-1 mx-0 rounded-[8px] py-0 px-3 text-[#5e6d87] text-[12px] font-medium [&>.anticon]:text-[#8d9ebc]! [&>.anticon]:shrink-0 [&:hover]:bg-[#f6f8fc] [&:hover]:text-[#315eea] [&.is-active]:text-[#315eea] [&.is-active]:bg-[#edf3ff] [&.is-active]:font-[650] [&.is-active:before]:[content:''] [&.is-active:before]:absolute [&.is-active:before]:left-[-12px] [&.is-active:before]:top-[11px] [&.is-active:before]:bottom-[11px] [&.is-active:before]:w-[3px] [&.is-active:before]:bg-[#315eea] [&.is-active:before]:rounded-[0_3px_3px_0] [&.is-active>.anticon]:text-[#315eea]! ${isActive || (to === '/seller/products' && location.pathname === '/seller/inventory') ? 'is-active' : ''}`,
-                  )
+                  `${dashboardChrome.navItem} ${isActive || (to === '/seller/products' && location.pathname === '/seller/inventory') ? dashboardChrome.navActive + ' is-active' : dashboardChrome.navIdle}`
                 }
                 data-seller="nav-link"
               >
-                <Icon className="text-[19px]" aria-hidden="true" />
+                <Icon size={17} aria-hidden="true" />
                 <span>{t(key)}</span>
               </NavLink>
             ))}
           </nav>
-          <div className="mt-auto [padding:30px_16px_14px]" data-seller="sidebar-bottom">
+          <div className="mt-auto border-t border-slate-100 p-4" data-seller="sidebar-bottom">
             <div
-              className="[border:1px_solid_#e5ebf4] rounded-[11px] p-[13px] [background:linear-gradient(135deg,_#f7faff,_#f4f8ff)] [&>div]:flex [&>div]:items-center [&>div]:gap-1.5 [&>div]:text-[10px] [&>div]:font-[650] [&>div>.anticon]:ml-auto [&>div>.anticon]:text-[#315eea]! [&_p]:text-[10px] [&_p]:text-[#8c9ab2] [&_p]:my-2 [&_p]:mx-0 [&_p]:leading-[1.7] [&>a]:flex [&>a]:items-center [&>a]:justify-between [&>a]:text-[10px] [&>a]:text-[#315eea]"
+              className="rounded-lg bg-blue-50 px-3 py-2.5 text-[10px] text-primary [&>div]:flex [&>div]:items-center [&>div]:gap-1.5 [&>div]:font-semibold [&_p]:my-2 [&_p]:text-[10px] [&_p]:leading-relaxed [&_p]:text-slate-500 [&>a]:flex [&>a]:items-center [&>a]:justify-between [&>a]:font-medium"
               data-seller="studio-card"
             >
               <div>
@@ -242,69 +237,39 @@ function SellerWorkspace() {
                   className="w-1.5 h-1.5 inline-block rounded-full bg-[#14b58a] shrink-0"
                   data-seller="dot"
                 />{' '}
-                {t('layout.studioTitle')}{' '}
-                <CodeSandboxOutlined className="text-[15px]" aria-hidden="true" />
+                {t('layout.studioTitle')} <CodeSandboxOutlined size={15} aria-hidden="true" />
               </div>
               <p>{t('layout.studioDesc')}</p>
               <Link to="/seller/auctions">
-                {t('layout.exploreAuctions')}{' '}
-                <DownOutlined className="text-[13px]" aria-hidden="true" />
+                {t('layout.exploreAuctions')} <DownOutlined size={13} aria-hidden="true" />
               </Link>
             </div>
             <button
-              className="flex items-center gap-2 text-[#7d8ba3] w-full [padding:17px_6px_0] bg-transparent [border:0] text-[11px]! [&>.anticon:last-child]:ml-auto"
+              className="flex w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 pt-4 text-left text-xs! font-medium text-slate-500 hover:text-primary [&>svg:last-child]:ml-auto"
               data-seller="support-link"
               onClick={() => navigate('/seller/disputes')}
             >
-              <QuestionCircleOutlined className="text-[17px]" aria-hidden="true" />
+              <QuestionCircleOutlined size={17} aria-hidden="true" />
               {t('layout.supportCenter')}
-              <SwapOutlined className="text-[14px]" aria-hidden="true" />
+              <SwapOutlined size={14} aria-hidden="true" />
             </button>
           </div>
         </aside>
-        <div
-          className="ml-[242px] min-w-0 max-[1250px]:ml-[220px] max-[1050px]:ml-[210px] max-[760px]:ml-0"
-          data-seller="workspace"
-        >
-          <header
-            className="h-20 [border-bottom:1px_solid_#e5ebf4] [background:rgba(255,_255,_255,_0.97)] sticky top-0 z-[30] flex items-center justify-between gap-5 py-0 px-8 max-[1250px]:py-0 max-[1250px]:px-[23px] max-[760px]:h-16.5 max-[760px]:py-0 max-[760px]:px-4.5 max-[760px]:gap-[13px] max-[540px]:py-0 max-[540px]:px-3 max-[540px]:gap-[7px] max-[540px]:[&_[data-seller~=icon-button]]:p-[5px]"
-            data-seller="topbar"
-          >
+        <div className="min-w-0 lg:ml-64" data-seller="workspace">
+          <header className={`sticky top-0 ${dashboardChrome.header}`} data-seller="topbar">
             <button
-              className="[border:0] bg-transparent p-[7px] text-[#7f8ca4] [place-items:center] rounded-[7px] [&:hover]:bg-[#edf3ff] [&:hover]:text-[#315eea] hidden max-[760px]:grid"
+              className={dashboardChrome.menuButton}
               data-seller="icon-button mobile-menu"
               aria-label={t('layout.openMenu')}
               aria-expanded={sidebar}
               aria-controls="seller-navigation"
               onClick={() => setSidebar(!sidebar)}
             >
-              <MenuOutlined className="text-[21px]" aria-hidden="true" />
+              <MenuOutlined size={20} aria-hidden="true" />
             </button>
-            <form
-              className="flex items-center gap-2.5 max-w-[360px] w-full text-[#9aaac3] [&_input]:w-full [&_input]:bg-transparent [&_input]:[border:0] [&_input]:[outline:none] [&_input]:text-[11px] [&_input::placeholder]:text-[#a0aec3] [&_kbd]:[border:1px_solid_#e5ebf4] [&_kbd]:rounded-[4px] [&_kbd]:py-0 [&_kbd]:px-1 [&_kbd]:text-[11px] [&_kbd]:text-[#a6b2c5] max-[760px]:max-w-[none] max-[760px]:[&_input]:text-[10px] max-[760px]:[&_kbd]:hidden max-[540px]:gap-1.5 max-[540px]:[&>.anticon]:w-[15px] max-[540px]:[&>.anticon]:shrink-0"
-              data-seller="global-search"
-              onSubmit={(event) => {
-                event.preventDefault();
-                navigate('/seller/products');
-              }}
-            >
-              <SearchOutlined className="text-[17px]" aria-hidden="true" />
-              <input
-                aria-label={t('layout.searchAria')}
-                placeholder={t('layout.searchPlaceholder')}
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-              <kbd>↵</kbd>
-            </form>
-            <div
-              className="flex items-center gap-[19px] shrink-0 max-[1250px]:gap-3 max-[760px]:gap-[9px] max-[540px]:gap-[1px]"
-              data-seller="topbar-right"
-            >
+            <div className={`ml-auto ${dashboardChrome.headerActions}`} data-seller="topbar-right">
               <span
-                className={cn(
-                  `flex items-center gap-[7px] whitespace-nowrap text-[10px] text-[#41967d] [border:1px_solid_#d4efe3] bg-[#f0fbf6] rounded-[20px] py-[5px] px-3 [&.is-paused]:bg-[#f9fafc] [&.is-paused]:[border-color:#e5ebf4] [&.is-paused]:text-[#8e98a8] [&.is-paused_[data-seller~=dot]]:bg-[#a2adbe] max-[1050px]:hidden ${!user.isSellerActive ? 'is-paused' : ''}`,
-                )}
+                className={`hidden items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-[10px] font-semibold text-emerald-700 xl:flex [&.is-paused]:bg-slate-100 [&.is-paused]:text-slate-500 [&.is-paused_[data-seller~=dot]]:bg-slate-400 ${!user.isSellerActive ? 'is-paused' : ''}`}
                 data-seller="shop-status"
               >
                 <span
@@ -331,7 +296,7 @@ function SellerWorkspace() {
               </div>
               <div className="relative" data-seller="popover-anchor" ref={accountRef}>
                 <button
-                  className="[border:0] [border-left:1px_solid_#e5ebf4] bg-transparent pl-[19px] flex items-center gap-2.5 text-left text-[#182541] max-[760px]:[border:0] max-[760px]:pl-0 max-[760px]:gap-[5px] max-[760px]:[&>.anticon]:hidden"
+                  className={dashboardChrome.accountButton}
                   data-seller="account-button"
                   aria-expanded={account}
                   onClick={() => {
@@ -340,33 +305,33 @@ function SellerWorkspace() {
                   }}
                 >
                   <span
-                    className="grid [place-items:center] w-8.5 h-8.5 shrink-0 rounded-full [border:1px_solid_#dce6fd] bg-[#eef3ff] text-[#315eea] text-[11px] font-[650] overflow-hidden [&_img]:w-full [&_img]:h-full [&_img]:object-cover max-[540px]:w-[31px] max-[540px]:h-[31px]"
+                    className={`${dashboardChrome.avatar} order-2 [&_img]:size-full [&_img]:object-cover`}
                     data-seller="avatar"
                   >
                     {user.avatarUrl ? <img src={user.avatarUrl} alt="" /> : initials}
                   </span>
                   <span
-                    className="max-w-[165px] [&_strong]:text-[11px] [&_strong]:block [&_strong]:overflow-hidden [&_strong]:text-ellipsis [&_strong]:whitespace-nowrap [&_small]:text-[9px] [&_small]:text-[#8c9bb3] max-[1250px]:max-w-[120px] max-[760px]:hidden"
+                    className="order-1 hidden max-w-36 text-right sm:block [&_strong]:block [&_strong]:truncate [&_strong]:text-xs [&_strong]:font-semibold [&_strong]:text-slate-900 [&_small]:mt-0.5 [&_small]:block [&_small]:text-[9px] [&_small]:font-bold [&_small]:tracking-wider [&_small]:text-primary"
                     data-seller="account-copy"
                   >
                     <strong>{user.fullName}</strong>
                     <small>{t('layout.sellerIdPrefix', { id: user.id.slice(0, 8) })}</small>
                   </span>
-                  <DownOutlined className="text-[14px]" aria-hidden="true" />
+                  <DownOutlined size={13} className="order-3 text-slate-400" aria-hidden="true" />
                 </button>
                 {account && (
                   <div
-                    className="absolute right-0 top-[calc(100%_+_18px)] w-[270px] p-4.5 [border:1px_solid_#e5ebf4] bg-white rounded-[12px] [box-shadow:0_12px_35px_#19356317] z-[60] [&_p]:text-[11px] [&_p]:text-[#8d9ab0] [&_p]:[margin:7px_0_15px] [&_p]:[overflow-wrap:anywhere] max-[760px]:right-0 max-[540px]:w-[255px] max-[540px]:max-w-[calc(100vw_-_28px)] [&_button]:w-full [&_button]:flex [&_button]:items-center [&_button]:gap-2.5 [&_button]:bg-transparent [&_button]:[border:0] [&_button]:text-left [&_button]:p-2.5 [&_button]:rounded-[7px] [&_button]:text-[12px] [&_button:hover]:bg-[#f3f6fc] [&_[data-seller~=logout]]:text-[#d94b61] [&_[data-seller~=logout]]:[border-top:1px_solid_#e5ebf4] [&_[data-seller~=logout]]:rounded-[0px] [&_[data-seller~=logout]]:mt-[5px]"
+                    className={`${dashboardChrome.accountMenu} z-50 [&_p]:mb-2 [&_p]:mt-1 [&_p]:break-words [&_p]:border-b [&_p]:border-slate-100 [&_p]:px-3 [&_p]:pb-3 [&_p]:text-xs [&_p]:text-slate-500 [&>strong]:block [&>strong]:px-3 [&>strong]:pt-3 [&>strong]:text-sm [&>strong]:font-semibold [&>strong]:text-slate-900 [&_button]:flex [&_button]:w-full [&_button]:items-center [&_button]:gap-2.5 [&_button]:rounded-lg [&_button]:border-0 [&_button]:bg-transparent [&_button]:px-3 [&_button]:py-2.5 [&_button]:text-left [&_button]:text-xs! [&_button]:text-slate-700 [&_button:hover]:bg-blue-50 [&_button:hover]:text-primary [&_[data-seller~=logout]]:text-red-500 [&_[data-seller~=logout]:hover]:bg-red-50`}
                     data-seller="popover account-menu"
                   >
                     <strong>{user.fullName}</strong>
                     <p>{user.email}</p>
                     <button onClick={() => navigate('/seller/settings')}>
-                      <SettingOutlined className="text-[16px]" aria-hidden="true" />
+                      <SettingOutlined size={16} aria-hidden="true" />
                       {t('layout.accountSettings')}
                     </button>
                     <button disabled={pending} onClick={() => void switchToBuyer()}>
-                      <SwapOutlined className="text-[16px]" aria-hidden="true" />
+                      <SwapOutlined size={16} aria-hidden="true" />
                       {pending ? t('layout.switching') : t('layout.switchToBuyer')}
                     </button>
                     <button
@@ -377,7 +342,7 @@ function SellerWorkspace() {
                         setLogoutConfirmationOpen(true);
                       }}
                     >
-                      <LogoutOutlined className="text-[16px]" aria-hidden="true" />
+                      <LogoutOutlined size={16} aria-hidden="true" />
                       {t('common:nav.logout')}
                     </button>
                   </div>
@@ -423,7 +388,7 @@ function SellerWorkspace() {
           onConfirm={() => {
             setLogoutConfirmationOpen(false);
             clearAuthSession();
-            toast.success('Đăng xuất thành công. Hẹn gặp lại bạn!');
+            toast.success(t('common:logoutDialog.successToast'));
             navigate('/login', { replace: true });
           }}
         />

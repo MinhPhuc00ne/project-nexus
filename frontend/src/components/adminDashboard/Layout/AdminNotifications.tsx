@@ -6,6 +6,7 @@ import {
   RefreshCw as ReloadOutlined,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { dashboardChrome } from '../../dashboard/dashboardChrome';
 import { Link } from 'react-router-dom';
 import { resolveAdminNotificationTarget } from './adminNotificationNavigation';
 
@@ -26,7 +27,7 @@ export default function AdminNotifications({
     <>
       <button
         type="button"
-        className="relative grid place-items-center rounded-lg border-0 bg-transparent p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+        className={dashboardChrome.notificationButton}
         aria-label={
           state.unreadCount !== null
             ? t('notifications.bellUnreadAria', { count: state.unreadCount })

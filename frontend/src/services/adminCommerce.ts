@@ -281,8 +281,8 @@ export function depositToAdminWallet(
   dto: DepositAdminWalletDto,
 ): Promise<DepositAdminWalletResult> {
   return adminRequest<DepositAdminWalletResult>({
-    url: '/admin/wallet/deposit',
+    url: '/commerce/wallet/deposit',
     method: 'POST',
-    data: dto,
+    data: { ...dto, provider: 'PAYOS' },
   });
 }

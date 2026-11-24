@@ -9,6 +9,8 @@ export interface PopupProps {
   isOpen: boolean;
   onClose: () => void;
   title?: ReactNode;
+  descriptionId?: string;
+  closeLabel?: string;
   children?: ReactNode;
   footer?: ReactNode;
   size?: PopupSize;
@@ -50,6 +52,8 @@ const Popup: React.FC<PopupProps> = ({
   isOpen,
   onClose,
   title,
+  descriptionId,
+  closeLabel,
   children,
   footer,
   size = 'md',
@@ -123,6 +127,7 @@ const Popup: React.FC<PopupProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
+        aria-describedby={descriptionId}
         tabIndex={-1}
       >
         {(title || showCloseButton) && (
@@ -139,7 +144,7 @@ const Popup: React.FC<PopupProps> = ({
                 type="button"
                 className="ml-auto inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-transparent p-0 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
                 onClick={onClose}
-                aria-label={t('popup.close')}
+                aria-label={closeLabel ?? t('popup.close')}
               >
                 <CloseOutlined className="text-2xl" aria-hidden="true" />
               </button>

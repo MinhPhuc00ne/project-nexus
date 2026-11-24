@@ -47,7 +47,7 @@
     "title": "Xác nhận đăng xuất",
     "descriptionWithAccount": "Bạn có chắc muốn đăng xuất khỏi tài khoản {{accountName}}?",
     "descriptionDefault": "Bạn có chắc muốn đăng xuất khỏi tài khoản này?",
-    "stay": "Ở lại",
+    "stay": "Hủy",
     "confirm": "Đăng xuất",
     "closeAria": "Đóng xác nhận đăng xuất",
     "successToast": "Đăng xuất thành công. Hẹn gặp lại bạn!"
