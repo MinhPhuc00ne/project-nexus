@@ -1107,7 +1107,16 @@
       "emptyHistory": "Chưa có giao dịch ví.",
       "pageLabel": "Trang {{page}}/{{totalPages}}",
       "prev": "Trước",
-      "next": "Sau"
+      "next": "Sau",
+      "qrTitle": "Quét mã QR nạp ví nền tảng",
+      "qrError": "Không tạo được mã QR. Vui lòng thử lại hoặc mở trang thanh toán.",
+      "awaitingPayment": "Quét mã bằng ứng dụng ngân hàng. Số dư sẽ được cập nhật sau khi nhận được thanh toán.",
+      "paymentCode": "Mã giao dịch: {{code}}",
+      "openPayment": "Mở trang thanh toán PayOS",
+      "continuePayment": "Xem lại mã QR đang chờ thanh toán",
+      "paymentSuccess": "Nạp tiền thành công. Số dư ví đã được cập nhật.",
+      "paymentFailed": "Giao dịch nạp tiền không thành công.",
+      "paymentStatusError": "Chưa kiểm tra được trạng thái. Hệ thống sẽ tự thử lại."
     },
     "chart": {
       "emptyTitle": "Doanh thu",

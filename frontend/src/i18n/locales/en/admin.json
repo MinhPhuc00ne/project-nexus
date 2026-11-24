@@ -1107,7 +1107,16 @@
       "emptyHistory": "No wallet transactions yet.",
       "pageLabel": "Page {{page}}/{{totalPages}}",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "qrTitle": "Scan QR to fund the platform wallet",
+      "qrError": "Unable to create the QR code. Please retry or open the payment page.",
+      "awaitingPayment": "Scan with your banking app. Your balance updates after payment is confirmed.",
+      "paymentCode": "Payment code: {{code}}",
+      "openPayment": "Open PayOS payment page",
+      "continuePayment": "View pending payment QR",
+      "paymentSuccess": "Payment confirmed. Wallet balance updated.",
+      "paymentFailed": "The deposit was unsuccessful.",
+      "paymentStatusError": "Unable to check payment status. Retrying automatically."
     },
     "chart": {
       "emptyTitle": "Revenue",

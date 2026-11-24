@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Wallet } from 'lucide-react';
 import {
@@ -10,11 +10,16 @@ import type {
   AdminWalletSummary,
   AdminWalletTransaction,
   AdminWalletTransactionType,
+  DepositAdminWalletResult,
 } from '../../../types/admin-wallet.types';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatMoney } from '../shared/adminData';
 import { Button, Panel } from '../shared/AdminUI';
 import { TRANSACTION_TYPES } from './transactionPresentation';
+import { checkBuyerDepositStatusApi } from '../../../services/wallet.service';
+import AdminDepositQrDialog from './AdminDepositQrDialog';
+
+const amountFormatter = new Intl.NumberFormat('vi-VN');
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
@@ -42,6 +47,40 @@ export default function AdminWallet() {
   const [depositPending, setDepositPending] = useState(false);
   const [depositError, setDepositError] = useState('');
   const [notice, setNotice] = useState('');
+  const [payment, setPayment] = useState<DepositAdminWalletResult | null>(null);
+  const [qrOpen, setQrOpen] = useState(false);
+  const [statusError, setStatusError] = useState('');
+  const depositLock = useRef(false);
+
+  useEffect(() => {
+    if (!payment) return;
+    let active = true;
+    let timer: ReturnType<typeof setTimeout>;
+    async function checkStatus() {
+      try {
+        const result = await checkBuyerDepositStatusApi(payment!.orderCode);
+        if (!active) return;
+        setStatusError('');
+        if (result.status !== 'PENDING') {
+          setPayment(null);
+          setQrOpen(false);
+          setRefreshKey((current) => current + 1);
+          if (result.status === 'SUCCESS') setNotice(t('finance.wallet.paymentSuccess'));
+          else setDepositError(t('finance.wallet.paymentFailed'));
+          return;
+        }
+      } catch {
+        if (!active) return;
+        setStatusError(t('finance.wallet.paymentStatusError'));
+      }
+      timer = setTimeout(() => void checkStatus(), 5000);
+    }
+    void checkStatus();
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [payment, t]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -70,12 +109,14 @@ export default function AdminWallet() {
 
   const submitDeposit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (depositLock.current || payment) return;
     const value = Number(amount);
     if (!Number.isSafeInteger(value) || value < 10000) {
       setDepositError(t('finance.wallet.invalidAmountErr'));
       return;
     }
 
+    depositLock.current = true;
     setDepositPending(true);
     setDepositError('');
     setNotice('');
@@ -84,7 +125,17 @@ export default function AdminWallet() {
         amount: value,
         ...(description.trim() ? { description: description.trim() } : {}),
       });
-      setNotice(result.message);
+      if (
+        !result.success ||
+        result.paymentProvider !== 'PAYOS' ||
+        !result.qrCode ||
+        !result.orderCode
+      ) {
+        throw new Error(t('finance.wallet.qrError'));
+      }
+      setPayment(result);
+      setQrOpen(true);
+      setStatusError('');
       setAmount('');
       setDescription('');
       setPage(1);
@@ -92,6 +143,7 @@ export default function AdminWallet() {
     } catch (cause) {
       setDepositError(cause instanceof Error ? cause.message : t('finance.wallet.depositErr'));
     } finally {
+      depositLock.current = false;
       setDepositPending(false);
     }
   };
@@ -100,6 +152,13 @@ export default function AdminWallet() {
 
   return (
     <div className="space-y-5">
+      {payment && qrOpen && (
+        <AdminDepositQrDialog
+          payment={payment}
+          onClose={() => setQrOpen(false)}
+          statusError={statusError}
+        />
+      )}
       <Panel
         title={t('finance.wallet.title')}
         subtitle={t('finance.wallet.subtitle')}
@@ -165,12 +224,14 @@ export default function AdminWallet() {
             {t('finance.wallet.amountLabel')}
             <input
               required
-              type="number"
-              min={10000}
-              step={1}
-              value={amount}
+              type="text"
+              inputMode="numeric"
+              value={amount ? amountFormatter.format(BigInt(amount)) : ''}
               disabled={depositPending}
-              onChange={(event) => setAmount(event.target.value)}
+              onChange={(event) => {
+                const digits = event.target.value.replace(/\./g, '');
+                if (/^\d*$/.test(digits)) setAmount(digits);
+              }}
               className="mt-1 w-full rounded-lg border border-slate-200 p-3 text-sm"
               placeholder={t('finance.wallet.amountPlaceholder')}
             />
@@ -187,10 +248,15 @@ export default function AdminWallet() {
               placeholder={t('finance.wallet.notePlaceholder')}
             />
           </label>
-          <Button type="submit" disabled={depositPending}>
+          <Button type="submit" disabled={depositPending || !!payment}>
             {depositPending ? t('finance.wallet.depositing') : t('finance.wallet.depositSubmit')}
           </Button>
         </form>
+        {payment && (
+          <Button type="button" onClick={() => setQrOpen(true)}>
+            {t('finance.wallet.continuePayment')}
+          </Button>
+        )}
         {depositError && (
           <p role="alert" className="mt-3 text-sm text-red-700">
             {depositError}
