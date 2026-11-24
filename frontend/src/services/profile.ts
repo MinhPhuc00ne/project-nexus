@@ -10,6 +10,12 @@ export interface ProfileChanges {
   avatarUrl?: string;
 }
 
+export interface BankProfileChanges {
+  bankName?: string;
+  accountNumber?: string;
+  accountHolderName?: string;
+}
+
 export function validateAvatarFile(file: File): void {
   const extensions: Record<string, RegExp> = {
     'image/jpeg': /\.jpe?g$/i,
@@ -32,11 +38,11 @@ const uploadedAvatars = new WeakMap<File, string>();
  * @param avatarFile Optional uploaded image file.
  * @returns Updated profile changes.
  */
-export async function updateMyProfile(
-  changes: ProfileChanges,
+export async function updateMyProfile<T extends ProfileChanges & BankProfileChanges>(
+  changes: T,
   password: string,
   avatarFile?: File | null,
-): Promise<ProfileChanges> {
+): Promise<T> {
   if (avatarFile) validateAvatarFile(avatarFile);
   const checkedToken = getStoredToken();
   const assertSession = () => {

@@ -6,6 +6,7 @@ import Popup from '../Popup';
 import { useToast } from '../ToastNotification';
 import { createSellerWithdrawal } from '../../services/sellerFinance';
 import { SellerButton } from './SellerUI';
+import { useSellerSession } from './SellerSession';
 import { financeMoney } from './financeFormat';
 import useSellerAction from './useSellerAction';
 import { sellerInputClass, sellerLabelClass } from './SellerResourceState';
@@ -22,11 +23,12 @@ export default function SellerWithdrawalModal({
   onSaved: () => void;
 }): ReactElement {
   const { t } = useTranslation('seller');
+  const user = useSellerSession();
   const [form, setForm] = useState({
     amount: '',
-    bankName: '',
-    accountNumber: '',
-    accountHolderName: '',
+    bankName: user.bankName ?? '',
+    accountNumber: user.accountNumber ?? '',
+    accountHolderName: user.accountHolderName ?? '',
     note: '',
   });
   const action = useSellerAction();
