@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { Role } from '@nexus/types';
@@ -14,6 +15,10 @@ const mockResetCartSync = vi.fn();
 const SELLER_EMAIL = 'seller@nexus.local';
 const SELLER_NAME = 'Seller One';
 const ROUTE_SELLER_EMAIL = 'route@nexus.local';
+const TEXT_READY = 'ready';
+const TEXT_BUYER = 'BUYER';
+const TEXT_SELLER = 'SELLER';
+const TEXT_SELLER_ROUTE = 'seller-route';
 
 vi.mock('../../services/users', () => ({
   getMe: (...args: unknown[]) => mockGetMe(...args),
@@ -174,8 +179,8 @@ describe('AuthContext', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('auth-state')).toHaveTextContent('guest');
-      expect(screen.getByTestId('loading-state')).toHaveTextContent('ready');
-      expect(screen.getByTestId('mode-state')).toHaveTextContent('BUYER');
+      expect(screen.getByTestId('loading-state')).toHaveTextContent(TEXT_READY);
+      expect(screen.getByTestId('mode-state')).toHaveTextContent(TEXT_BUYER);
       expect(screen.getByTestId('role-flags')).toHaveTextContent('-:-:-');
     });
     expect(mockGetMe).not.toHaveBeenCalled();
@@ -207,7 +212,7 @@ describe('AuthContext', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('auth-state')).toHaveTextContent('auth');
-      expect(screen.getByTestId('mode-state')).toHaveTextContent('SELLER');
+      expect(screen.getByTestId('mode-state')).toHaveTextContent(TEXT_SELLER);
       expect(screen.getByTestId('seller-state')).toHaveTextContent('seller');
     });
 
@@ -215,8 +220,8 @@ describe('AuthContext', () => {
       screen.getByText('To Buyer').click();
     });
 
-    expect(screen.getByTestId('mode-state')).toHaveTextContent('BUYER');
-    expect(getStoredActiveMode('seller-1')).toBe('BUYER');
+    expect(screen.getByTestId('mode-state')).toHaveTextContent(TEXT_BUYER);
+    expect(getStoredActiveMode('seller-1')).toBe(TEXT_BUYER);
 
     act(() => {
       mockGetStoredToken.mockReturnValue(null);
@@ -258,18 +263,18 @@ describe('AuthContext', () => {
   });
 
   it('overrides mode to SELLER on /seller routes and preserves BUYER on /buyer routes', async () => {
-    setStoredActiveMode('seller-route', 'BUYER');
+    setStoredActiveMode(TEXT_SELLER_ROUTE, TEXT_BUYER);
     window.history.pushState({}, '', '/seller/products');
 
     mockGetStoredToken.mockReturnValue('token-route');
     mockGetStoredUser.mockReturnValue({
-      id: 'seller-route',
+      id: TEXT_SELLER_ROUTE,
       email: ROUTE_SELLER_EMAIL,
       fullName: 'Route Seller',
       role: Role.SELLER,
     });
     mockGetMe.mockResolvedValue({
-      id: 'seller-route',
+      id: TEXT_SELLER_ROUTE,
       email: ROUTE_SELLER_EMAIL,
       fullName: 'Route Seller',
       role: Role.SELLER,
@@ -284,10 +289,10 @@ describe('AuthContext', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('mode-state')).toHaveTextContent('SELLER');
+      expect(screen.getByTestId('mode-state')).toHaveTextContent(TEXT_SELLER);
     });
 
-    setStoredActiveMode('seller-route', 'BUYER');
+    setStoredActiveMode(TEXT_SELLER_ROUTE, TEXT_BUYER);
     window.history.pushState({}, '', '/buyer/orders');
 
     await act(async () => {
@@ -295,7 +300,7 @@ describe('AuthContext', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('mode-state')).toHaveTextContent('BUYER');
+      expect(screen.getByTestId('mode-state')).toHaveTextContent(TEXT_BUYER);
     });
   });
 

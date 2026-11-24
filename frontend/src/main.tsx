@@ -5,6 +5,12 @@ import App from './App.tsx';
 import { consumeOAuthCallbackFromUrl } from './services/auth';
 import './index.css';
 
+const ROLE_DESTINATIONS: Record<string, string> = {
+  ADMIN: '/admin',
+  SUPPORT_STAFF: '/staff',
+  SELLER: '/seller',
+};
+
 const oauthUser = consumeOAuthCallbackFromUrl();
 if (oauthUser) {
   try {
@@ -12,14 +18,7 @@ if (oauthUser) {
   } catch {
     // Ignore storage errors
   }
-  const destination =
-    oauthUser.role === 'ADMIN'
-      ? '/admin'
-      : oauthUser.role === 'SUPPORT_STAFF'
-        ? '/staff'
-        : oauthUser.role === 'SELLER'
-          ? '/seller'
-          : '/';
+  const destination = ROLE_DESTINATIONS[oauthUser.role] ?? '/';
   const url = new URL(window.location.href);
   url.pathname = destination;
   window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
