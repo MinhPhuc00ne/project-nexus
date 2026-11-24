@@ -395,6 +395,7 @@ export class WithdrawalService {
           title: 'Yêu cầu rút tiền đã được tiếp nhận ⏳',
           content: `Yêu cầu rút ${formattedAmount} VND về ${bankDetails.bankName} (${bankDetails.accountNumber}) đã được tiếp nhận. Hệ thống sẽ thẩm định và giải ngân trong vòng 3-7 ngày làm việc. Số dư ví khả dụng đã được tạm giữ an toàn.`,
           type: NotificationType.PAYMENT,
+          targetUrl: userRole === Role.SELLER ? '/seller/finance' : '/buyer/wallet',
         },
       });
 

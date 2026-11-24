@@ -199,7 +199,22 @@ export class ShipmentTrackingService {
           data: { status: PaymentStatus.SUCCESS },
         });
       }
-      if (previous.status !== detail.status)
+      if (previous.status !== detail.status) {
+        if (tx.eventLog) {
+          await tx.eventLog.create({
+            data: {
+              eventName: 'order.shipment-updated',
+              payload: {
+                orderId,
+                waybillCode: waybill,
+                carrierStatus: detail.status,
+                previousCarrierStatus: previous.status ?? null,
+                shipmentStatus: mapped.shipment,
+                orderStatus: status,
+              },
+            },
+          });
+        }
         await tx.notification.create({
           data: {
             userId: current.buyerId,
@@ -212,6 +227,7 @@ export class ShipmentTrackingService {
             content: `Đơn #${orderId.slice(0, 8)}: ${detail.status}. Mã vận đơn: ${waybill}.`,
           },
         });
+      }
       return {
         orderId,
         orderStatus: status,

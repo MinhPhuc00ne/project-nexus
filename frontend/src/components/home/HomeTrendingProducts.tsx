@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Flame } from 'lucide-react';
+import { Flame, Store } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
 import { getTrendingProductsApi, type TrendingProduct } from '../../services/products.service';
 import { useToast } from '../ToastNotification';
+import { HOME_TRENDING_LIMIT } from '../../constants/trending';
 
 export default function HomeTrendingProducts() {
   const { t, i18n } = useTranslation('guest');
@@ -14,7 +15,7 @@ export default function HomeTrendingProducts() {
 
   useEffect(() => {
     let active = true;
-    getTrendingProductsApi(6)
+    getTrendingProductsApi(HOME_TRENDING_LIMIT)
       .then(({ items }) => {
         if (active) setProducts(items);
       })
@@ -35,7 +36,7 @@ export default function HomeTrendingProducts() {
   if (loading) {
     content = (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        {Array.from({ length: 6 }, (_, index) => (
+        {Array.from({ length: HOME_TRENDING_LIMIT }, (_, index) => (
           <div key={index} className="aspect-square animate-pulse rounded-lg bg-slate-100" />
         ))}
       </div>
@@ -74,12 +75,24 @@ export default function HomeTrendingProducts() {
                 loading="lazy"
                 className="h-full w-full object-cover transition group-hover:scale-105"
               />
-              <span className="absolute left-2 top-2 rounded-full bg-orange-600 px-2 py-1 text-[10px] font-bold text-white">
+              <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-600 px-2 py-1 text-[10px] font-bold text-white shadow-xs">
+                <Flame size={10} />
+                {t('home.trendingProducts.trendingBadge')}
+              </span>
+              <span className="absolute bottom-2 left-2 rounded-full bg-slate-900/75 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur-xs">
                 {t('home.trendingProducts.purchaseCount', { count: product.purchaseCount })}
               </span>
             </div>
             <div className="p-2.5">
-              <p className="line-clamp-2 min-h-8 text-[11px] font-semibold text-slate-800 group-hover:text-blue-600">
+              <p className="flex items-center gap-1 truncate text-[10px] font-medium text-slate-500">
+                <Store size={11} className="shrink-0 text-slate-400" />
+                <span className="truncate">
+                  {product.shopName ||
+                    product.seller?.fullName ||
+                    t('home.trendingProducts.defaultShopName')}
+                </span>
+              </p>
+              <p className="mt-1 line-clamp-2 min-h-8 text-[11px] font-semibold text-slate-800 group-hover:text-blue-600">
                 {product.title}
               </p>
               <p className="mt-1 text-xs font-bold text-blue-700">
@@ -107,7 +120,7 @@ export default function HomeTrendingProducts() {
           </div>
         </div>
         <Link
-          to="/search"
+          to="/search?sortBy=trending"
           className="shrink-0 text-xs font-semibold text-blue-600 hover:text-blue-700"
         >
           {t('home.trendingProducts.viewAll')}

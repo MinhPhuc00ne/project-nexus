@@ -1092,7 +1092,27 @@ test('single-bidder reserve rule, AuctionComplaint lifecycle, Support Staff cont
   assert.equal(ticket.contextType, 'AUCTION');
   assert.equal(ticket.contextId, room.id);
 
-  // HTTP role test: SUPPORT_STAFF cannot call adminEndLot (403 Forbidden), ADMIN can
+  // HTTP role test: SUPPORT_STAFF can review, lock-consignment, start, and end lots (200),
+  // while create/update/delete remain ADMIN-only (403) and BUYER is rejected (403).
+  const staffRoom = await h.auctionService.adminCreateAuction('admin-1', {
+    title: 'Staff Operational Flow Room',
+    startTime: new Date(Date.now() + 60_000).toISOString(),
+    endTime: new Date(Date.now() + 3_600_000).toISOString(),
+    minReputationScore: 60,
+  });
+  const staffLot = await h.auctionService.registerAuctionItem(staffRoom.id, 'seller-1', {
+    title: 'Staff Reviewed Lot',
+    description: 'Certified luxury item for staff flow test',
+    images: ['https://example.invalid/staff-lot.jpg'],
+    certificateImages: ['https://example.invalid/staff-cert.jpg'],
+    proposedStartingPrice: 1_000_000,
+    proposedBidIncrement: 100_000,
+    weightGrams: 500,
+    lengthCm: 20,
+    widthCm: 15,
+    heightCm: 10,
+  });
+
   class FixtureModule {}
   Module({
     controllers: [AuctionController],
@@ -1111,12 +1131,74 @@ test('single-bidder reserve rule, AuctionComplaint lifecycle, Support Staff cont
   try {
     await app.listen(0, '127.0.0.1');
     const base = await app.getUrl();
-    const staffToken = jwt.sign({ sub: 'staff-1' });
-    const res = await fetch(`${base}/auctions/admin/${room.id}/items/${lot1.id}/end`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${staffToken}` },
+    const staffHeaders = {
+      Authorization: `Bearer ${jwt.sign({ sub: 'staff-1' })}`,
+      'Content-Type': 'application/json',
+    };
+    const buyerHeaders = {
+      Authorization: `Bearer ${jwt.sign({ sub: 'buyer-1' })}`,
+      'Content-Type': 'application/json',
+    };
+
+    // BUYER cannot call Staff operational endpoints
+    for (const [method, path, body] of [
+      ['POST', `/auctions/admin/items/${staffLot.id}/review`, { action: 'APPROVE' }],
+      ['POST', `/auctions/admin/${staffRoom.id}/lock-consignment`],
+      ['POST', `/auctions/admin/${staffRoom.id}/start`],
+      ['POST', `/auctions/admin/${staffRoom.id}/items/${staffLot.id}/end`],
+    ]) {
+      const buyerRes = await fetch(`${base}${path}`, {
+        method,
+        headers: buyerHeaders,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      assert.equal(buyerRes.status, 403);
+    }
+
+    // SUPPORT_STAFF cannot create, update, or delete auction rooms
+    for (const [method, path, body] of [
+      ['POST', '/auctions/admin', { title: 'Blocked' }],
+      ['PATCH', `/auctions/admin/${staffRoom.id}`, { title: 'Blocked' }],
+      ['DELETE', `/auctions/admin/${staffRoom.id}`],
+    ]) {
+      const deniedRes = await fetch(`${base}${path}`, {
+        method,
+        headers: staffHeaders,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      assert.equal(deniedRes.status, 403);
+    }
+
+    // SUPPORT_STAFF passes RolesGuard on all 4 operational endpoints (hits ParseUUIDPipe 400 with fixture IDs, not 401/403)
+    for (const [method, path, body] of [
+      ['POST', `/auctions/admin/items/${staffLot.id}/review`, { action: 'APPROVE' }],
+      ['POST', `/auctions/admin/${staffRoom.id}/lock-consignment`],
+      ['POST', `/auctions/admin/${staffRoom.id}/start`],
+      ['POST', `/auctions/admin/${staffRoom.id}/items/${staffLot.id}/end`],
+    ]) {
+      const staffRes = await fetch(`${base}${path}`, {
+        method,
+        headers: staffHeaders,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      assert.equal(staffRes.status, 400);
+    }
+
+    // Service-level end-to-end operational flow executed by Support Staff ('staff-1')
+    const reviewedByStaff = await h.auctionService.adminReviewAuctionItem(staffLot.id, 'staff-1', {
+      action: 'APPROVE',
     });
-    assert.equal(res.status, 403);
+    assert.equal(reviewedByStaff.status, 'APPROVED');
+    assert.equal(reviewedByStaff.reviewedByAdminId, 'staff-1');
+
+    const lockedByStaff = await h.auctionService.adminLockConsignment(staffRoom.id);
+    assert.equal(lockedByStaff.isConsignmentLocked, true);
+
+    const startedByStaff = await h.auctionService.adminStartAuction(staffRoom.id);
+    assert.equal(startedByStaff.status, 'ACTIVE');
+
+    const endedByStaff = await h.auctionService.adminEndLot(staffRoom.id, staffLot.id, 'staff-1');
+    assert.equal(endedByStaff.lotStatus, 'FAILED');
   } finally {
     await app.close();
   }

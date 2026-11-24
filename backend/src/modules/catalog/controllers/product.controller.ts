@@ -58,11 +58,11 @@ export class ProductController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[GUEST / BUYER] Tìm kiếm và lọc danh sách sản phẩm',
+    summary: '[GUEST / BUYER] Search and filter catalog products',
     description:
-      'Hỗ trợ tìm kiếm theo từ khóa (tên, mô tả, tên shop), lọc theo danh mục, khoảng giá, sắp xếp và phân trang.',
+      'Supports keyword search (title, description, shop name), category, city, price range, rating, stock status, trendingOnly, minPurchaseCount, sorting (newest, price_asc, price_desc, best_selling, trending, top_rated), and pagination. Each item includes purchaseCount and isTrending.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách sản phẩm thành công' })
+  @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
   async getProducts(@Query() query: QueryProductDto) {
     return this.productService.getProducts(query);
   }
@@ -86,11 +86,11 @@ export class ProductController {
   @Get('trending')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[GUEST / BUYER] Lấy danh sách sản phẩm Xu hướng trên HomePage',
+    summary: '[GUEST / BUYER] List trending products for HomePage',
     description:
-      'Xếp hạng các sản phẩm đang bán chạy nhất dựa trên tổng số lượt mua (không bao gồm sản phẩm đã bị Admin gỡ khỏi xu hướng).',
+      'Ranks active products by total qualifying purchase count descending (excluding admin-excluded products), including shop metadata.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy danh sách sản phẩm xu hướng thành công' })
+  @ApiResponse({ status: 200, description: 'Trending products retrieved successfully' })
   async getTrendingProducts(@Query('limit') limit?: string): Promise<TrendingProductsResult> {
     return this.trendingService.getTrendingProducts(limit ? Number(limit) : 10);
   }
@@ -99,11 +99,11 @@ export class ProductController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: '[GUEST / BUYER] Xem chi tiết 1 sản phẩm kèm tồn kho khả dụng',
-    description: 'Trả về thông tin chi tiết sản phẩm, ảnh gallery, thông tin shop và availableQty.',
+    summary: '[GUEST / BUYER] Get product detail with available inventory',
+    description: 'Returns full product details, gallery images, shop info, and availableQty.',
   })
-  @ApiResponse({ status: 200, description: 'Lấy chi tiết sản phẩm thành công' })
-  @ApiResponse({ status: 404, description: 'Không tìm thấy sản phẩm' })
+  @ApiResponse({ status: 200, description: 'Product detail retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
   async getProductDetail(@Param('id') productId: string) {
     return this.productService.getProductDetail(productId);
   }

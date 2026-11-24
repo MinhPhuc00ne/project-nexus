@@ -35,6 +35,10 @@ import type {
   DepositAdminWalletResult,
 } from '../types/admin-wallet.types';
 import { adminRequest } from './adminRequest';
+import type {
+  UpdateProductCategoryDto,
+  UpdateProductCategoryResult,
+} from '../types/admin-product.types';
 
 export function getCategoryTree(signal?: AbortSignal): Promise<CategoryTreeItem[]> {
   return adminRequest<CategoryTreeItem[]>({
@@ -102,6 +106,17 @@ export function deleteAdminProduct(id: string): Promise<AdminProductMutationResu
   return adminRequest<AdminProductMutationResult>({
     url: `/admin/products/${encodeURIComponent(id)}`,
     method: 'DELETE',
+  });
+}
+
+export function updateAdminProductCategory(
+  id: string,
+  dto: UpdateProductCategoryDto,
+): Promise<UpdateProductCategoryResult> {
+  return adminRequest({
+    url: `/admin/products/${encodeURIComponent(id)}/category`,
+    method: 'PATCH',
+    data: dto,
   });
 }
 

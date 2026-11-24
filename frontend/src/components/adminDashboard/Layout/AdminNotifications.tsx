@@ -1,3 +1,5 @@
+import { getIntlLocale } from '../../../i18n/config';
+import useAdminNotifications from './useAdminNotifications';
 import {
   Bell as BellOutlined,
   Check as CheckOutlined,
@@ -5,8 +7,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { getIntlLocale } from '../../../i18n/config';
-import useAdminNotifications from './useAdminNotifications';
+import { resolveAdminNotificationTarget } from './adminNotificationNavigation';
 
 export default function AdminNotifications({
   userId,
@@ -101,63 +102,60 @@ export default function AdminNotifications({
                 <p className="p-5 text-center text-xs text-slate-500">{t('notifications.empty')}</p>
               ) : (
                 <ul className="m-0 max-h-[360px] list-none overflow-y-auto p-0">
-                  {state.data.items.map((item) => (
-                    <li
-                      key={item.id}
-                      className={`border-t border-slate-100 p-4 ${item.isRead ? 'bg-white' : 'bg-blue-50/70'}`}
-                    >
-                      <div className="flex items-start gap-2">
-                        {!item.isRead && (
-                          <span
-                            className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600"
-                            aria-label={t('notifications.unreadAria')}
-                          />
-                        )}
-                        <div className="min-w-0 flex-1 space-y-2">
-                          <p className="break-words text-xs font-semibold text-slate-800">
-                            {item.title}
-                          </p>
-                          <p className="whitespace-pre-wrap break-words text-xs text-slate-600">
-                            {item.content}
-                          </p>
-                          <time
-                            dateTime={item.createdAt}
-                            className="block text-[10px] text-slate-400"
-                          >
-                            {new Date(item.createdAt).toLocaleString(locale)}
-                          </time>
-                          {item.targetUrl?.startsWith('/') && !item.targetUrl.startsWith('//') && (
-                            <Link
-                              to={
-                                item.type === 'DISPUTE' &&
-                                item.title.startsWith('Khiếu nại đơn hàng') &&
-                                item.targetUrl === '/admin/reports'
-                                  ? '/admin/refunds'
-                                  : item.targetUrl
-                              }
-                              onClick={() => {
-                                if (!item.isRead) void state.markRead(item.id);
-                                onToggle();
-                              }}
-                              className="block text-xs font-medium text-blue-600 hover:underline"
-                            >
-                              {t('notifications.viewDetails')}
-                            </Link>
-                          )}
+                  {state.data.items.map((item) => {
+                    const target = resolveAdminNotificationTarget(item);
+                    return (
+                      <li
+                        key={item.id}
+                        className={`border-t border-slate-100 p-4 ${item.isRead ? 'bg-white' : 'bg-blue-50/70'}`}
+                      >
+                        <div className="flex items-start gap-2">
                           {!item.isRead && (
-                            <button
-                              type="button"
-                              disabled={busy}
-                              onClick={() => void state.markRead(item.id)}
-                              className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline disabled:opacity-50"
-                            >
-                              <CheckOutlined /> {t('notifications.markRead')}
-                            </button>
+                            <span
+                              className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600"
+                              aria-label={t('management.unread')}
+                            />
                           )}
+                          <div className="min-w-0 flex-1 space-y-2">
+                            <p className="break-words text-xs font-semibold text-slate-800">
+                              {item.title}
+                            </p>
+                            <p className="whitespace-pre-wrap break-words text-xs text-slate-600">
+                              {item.content}
+                            </p>
+                            <time
+                              dateTime={item.createdAt}
+                              className="block text-[10px] text-slate-400"
+                            >
+                              {new Date(item.createdAt).toLocaleString(locale)}
+                            </time>
+                            {target && (
+                              <Link
+                                to={target}
+                                onClick={() => {
+                                  if (!item.isRead) void state.markRead(item.id);
+                                  onToggle();
+                                }}
+                                className="block text-xs font-medium text-blue-600 hover:underline"
+                              >
+                                {t('management.viewDetails')}
+                              </Link>
+                            )}
+                            {!item.isRead && (
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void state.markRead(item.id)}
+                                className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline disabled:opacity-50"
+                              >
+                                <CheckOutlined /> {t('management.markRead')}
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
               {state.data.totalPages > 1 && (

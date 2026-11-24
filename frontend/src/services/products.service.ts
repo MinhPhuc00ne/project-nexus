@@ -32,6 +32,8 @@ export interface CatalogProduct {
   createdAt?: string;
   averageRating?: number;
   reviewCount?: number;
+  purchaseCount?: number;
+  isTrending?: boolean;
   salePrice?: number | null;
   saleStartsAt?: string | null;
   saleEndsAt?: string | null;
@@ -58,10 +60,12 @@ export interface CatalogQuery {
   maxPrice?: number;
   page?: number;
   limit?: number;
-  sortBy?: 'newest' | 'price_asc' | 'price_desc';
+  sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'best_selling' | 'trending' | 'top_rated';
   city?: string;
   minRating?: number;
   inStock?: 'true' | 'false';
+  trendingOnly?: boolean;
+  minPurchaseCount?: number;
 }
 
 export interface SearchProductsResult {
@@ -133,6 +137,8 @@ export async function searchProductsApi(query: CatalogQuery = {}): Promise<Searc
       city: query.city || undefined,
       minRating: query.minRating || undefined,
       inStock: query.inStock || undefined,
+      trendingOnly: query.trendingOnly || undefined,
+      minPurchaseCount: query.minPurchaseCount || undefined,
       minPrice: query.minPrice || undefined,
       maxPrice: query.maxPrice || undefined,
       page: query.page || 1,
@@ -222,6 +228,8 @@ function mapProduct(product: CatalogProduct): ProductDetail {
     category: product?.category,
     rating: product?.averageRating ?? 0,
     reviewsCount: product?.reviewCount ?? 0,
+    soldCount: product?.purchaseCount ?? 0,
+    isTrending: Boolean(product?.isTrending),
     shop: {
       id: product?.seller?.id,
       name: product?.seller?.fullName ?? i18n.t('errors:services.unknownSeller'),
@@ -381,6 +389,7 @@ export interface RecommendationsResult {
 }
 
 export interface TrendingProduct extends CatalogProduct {
+  shopName?: string | null;
   purchaseCount: number;
   lastPurchaseAt: string | null;
   isTrending: boolean;

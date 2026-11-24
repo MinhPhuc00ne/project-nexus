@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import { ShoppingCart as ShoppingCartOutlined } from 'lucide-react';
-import { Star, Tag, Heart, Flag, Zap, Check } from 'lucide-react';
+import { Star, Tag, Heart, Flag, Zap, Check, Flame } from 'lucide-react';
 import { getProductByIdAsync } from '../../services/products.service';
 import type { ProductDetail } from '../../types/product.types';
 import { addToCart, fetchCart, type CartItem } from '../../services/cart';
@@ -298,6 +298,12 @@ function ProductContent({ product }: { product: ProductDetail }) {
                   {t('product.soldLabel')}{' '}
                   <strong className="text-slate-900">{product.soldCount ?? 0}</strong>
                 </span>
+                {product.isTrending && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                    <Flame size={12} />
+                    {t('product.trendingBadge')}
+                  </span>
+                )}
               </div>
             </div>
 

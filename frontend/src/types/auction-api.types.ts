@@ -188,8 +188,14 @@ export interface AdminAuctionEntity extends AdminCreateAuctionInput {
   totalBidsCount: number;
   product?: AuctionProduct | null;
   startingPrice: number | string;
-  _count?: { items: number; bids: number };
+  _count?: { items: number; bids: number; awards?: number };
 }
+
+export type AdminUpdateAuctionInput = Partial<
+  Omit<AdminCreateAuctionInput, 'consignmentDeadline'>
+> & {
+  consignmentDeadline?: string | null;
+};
 
 export interface RegisterAuctionItemInput {
   title: string;
@@ -208,6 +214,8 @@ export interface RegisterAuctionItemInput {
   heightCm?: number;
 }
 
+type AuctionPrice = number | string;
+
 /**
  * Appraised auction item returned by the administrative review endpoint.
  */
@@ -217,9 +225,9 @@ export interface AdminAuctionItem extends Omit<
 > {
   id: string;
   status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
-  proposedStartingPrice: number | string;
-  proposedReservePrice: number | string | null;
-  proposedBidIncrement: number | string;
+  proposedStartingPrice: AuctionPrice;
+  proposedReservePrice: AuctionPrice | null;
+  proposedBidIncrement: AuctionPrice;
   threeModelKey?: string | null;
   weightGrams?: number;
   lengthCm?: number;
@@ -232,9 +240,9 @@ export interface AdminAuctionItem extends Omit<
     trustLevel?: string;
     isShopSuspended?: boolean;
   };
-  startingPrice: number | string | null;
-  reservePrice?: number | string | null;
-  bidIncrement?: number | string | null;
+  startingPrice: AuctionPrice | null;
+  reservePrice?: AuctionPrice | null;
+  bidIncrement?: AuctionPrice | null;
   createdAt?: string;
   reviewedAt?: string | null;
   reviewedByAdmin?: { id: string; fullName: string } | null;

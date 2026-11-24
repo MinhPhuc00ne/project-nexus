@@ -9,6 +9,7 @@ export default function AdminBannersPage() {
     <div className="space-y-5">
       {management.editor && (
         <BannerForm
+          key={management.editor.id ?? 'new'}
           id={management.editor.id}
           value={management.editor.value}
           saving={management.saving}

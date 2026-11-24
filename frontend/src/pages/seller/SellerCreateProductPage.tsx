@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/seller/SellerUI';
 import SellerProductImages from '../../components/seller/SellerProductImages';
+import SellerCategoryPicker from '../../components/seller/SellerCategoryPicker';
 import useSellerProductForm from '../../components/seller/useSellerProductForm';
 import { useParams } from 'react-router-dom';
 import { useSellerSession } from '../../components/seller/SellerSession';
@@ -67,7 +68,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
     setOptionGroups((prev) => [
       ...prev,
       {
-        id: `opt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        id: `opt-${crypto.randomUUID()}`,
         name: presetName,
         values: [...sampleValues],
       },
@@ -78,7 +79,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
     setOptionGroups((prev) => [
       ...prev,
       {
-        id: `opt-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        id: `opt-${crypto.randomUUID()}`,
         name: '',
         values: [],
       },
@@ -100,6 +101,15 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
     setNewOptionInput((prev) => ({ ...prev, [groupId]: '' }));
   };
 
+  function handleRemoveValue(groupId: string, value: string) {
+    setOptionGroups((groups) =>
+      groups.map((group) => {
+        if (group.id !== groupId) return group;
+        return { ...group, values: group.values.filter((entry) => entry !== value) };
+      }),
+    );
+  }
+
   if (productLoading)
     return (
       <p role="status" className="p-8 text-sm text-slate-500">
@@ -119,6 +129,15 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
       </div>
     );
 
+  function getSubmitLabel() {
+    if (pending) {
+      return t('productForm.saving');
+    }
+    if (editing) {
+      return t('productForm.saveChanges');
+    }
+    return t('productForm.submitPublish');
+  }
   return (
     <div className="space-y-6">
       <PageHeading
@@ -174,27 +193,20 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                     placeholder={t('productForm.titlePlaceholder')}
                   />
                 </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  {t('productForm.categoryLabel')} <span className="text-red-500">*</span>
-                  <select
-                    required
-                    disabled={categoryLoading || Boolean(categoryError) || !categoryOptions.length}
-                    value={form.categoryId}
-                    onChange={(event) => setForm({ ...form, categoryId: event.target.value })}
-                    className={inputClass}
-                  >
-                    <option value="">
-                      {categoryLoading
-                        ? t('productForm.loadingCategories')
-                        : t('productForm.selectCategory')}
-                    </option>
-                    {categoryOptions.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <SellerCategoryPicker
+                  options={categoryOptions}
+                  value={form.categoryId}
+                  onChange={(categoryId) => setForm((current) => ({ ...current, categoryId }))}
+                  loading={categoryLoading}
+                  disabled={
+                    pending ||
+                    user.isShopSuspended ||
+                    !user.isSellerActive ||
+                    categoryLoading ||
+                    Boolean(categoryError) ||
+                    !categoryOptions.length
+                  }
+                />
                 {categoryError && (
                   <div role="alert" className="space-y-2 text-sm text-red-600">
                     <p>{categoryError}</p>
@@ -331,15 +343,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                                   {val}
                                   <button
                                     type="button"
-                                    onClick={() =>
-                                      setOptionGroups((prev) =>
-                                        prev.map((g) =>
-                                          g.id === groupId
-                                            ? { ...g, values: g.values.filter((v) => v !== val) }
-                                            : g,
-                                        ),
-                                      )
-                                    }
+                                    onClick={() => handleRemoveValue(groupId, val)}
                                     className="text-slate-400 hover:text-red-600 font-bold"
                                     aria-label={t('productForm.removeChoiceAria', { val })}
                                   >
@@ -604,11 +608,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                 }
               >
                 <ShopOutlined />
-                {pending
-                  ? t('productForm.saving')
-                  : editing
-                    ? t('productForm.saveChanges')
-                    : t('productForm.submitPublish')}
+                {getSubmitLabel()}
               </SellerButton>
             </div>
           </div>

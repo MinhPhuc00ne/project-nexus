@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Upload } from 'lucide-react';
 import { bannerLink, type BannerInput } from '../../../services/banners';
 import { uploadBannerImage } from '../../../services/banners.service';
-import { Button, Panel } from '../shared/AdminUI';
+import { Button } from '../shared/AdminUI';
+import Popup from '../../Popup';
 import { Input } from '../../ui/input';
 import { minEndDateTime } from '../../../utils/date-time';
 
@@ -57,11 +58,38 @@ export default function BannerForm({
     }
   }
 
+  function getUploadLabel() {
+    if (uploading) {
+      return t('banners.form.uploading');
+    }
+    if (value.imageUrl) {
+      return t('banners.form.changeImage');
+    }
+    return t('banners.form.uploadImage');
+  }
+
+  function getSubmitLabel() {
+    if (uploading) {
+      return t('banners.form.uploading');
+    }
+    if (saving) {
+      return t('banners.form.saving');
+    }
+    return t('banners.form.saveBtn');
+  }
   return (
-    <Panel
-      title={id ? t('banners.form.editTitle') : t('banners.form.createTitle')}
-      subtitle={t('banners.form.subtitle')}
+    <Popup
+      isOpen
+      title={id ? t('management.editBanner') : t('management.addBanner')}
+      size="xl"
+      onClose={() => {
+        if (!saving && !uploading) onCancel();
+      }}
+      closeOnOverlay={!saving && !uploading}
+      closeOnEsc={!saving && !uploading}
+      showCloseButton={!saving && !uploading}
     >
+      <p className="mb-5 text-xs text-slate-500">{t('management.bannerImageHint')}</p>
       <form
         onSubmit={(event) => {
           if (uploading || uploadError || !value.imageUrl) {
@@ -186,11 +214,7 @@ export default function BannerForm({
                 disabled={saving || uploading}
               >
                 <Upload size={18} />
-                {uploading
-                  ? t('banners.form.uploading')
-                  : value.imageUrl
-                    ? t('banners.form.changeImage')
-                    : t('banners.form.uploadImage')}
+                {getUploadLabel()}
               </Button>
             </div>
             <p className="mt-3 text-xs text-slate-500">{t('banners.form.imageHint')}</p>
@@ -220,11 +244,7 @@ export default function BannerForm({
           )}
           <div className="flex gap-2 lg:col-span-2">
             <Button type="submit" disabled={uploading || !!uploadError || !value.imageUrl}>
-              {uploading
-                ? t('banners.form.uploading')
-                : saving
-                  ? t('banners.form.saving')
-                  : t('banners.form.saveBtn')}
+              {getSubmitLabel()}
             </Button>
             <Button type="button" variant="secondary" onClick={onCancel}>
               {t('banners.form.cancel')}
@@ -232,6 +252,6 @@ export default function BannerForm({
           </div>
         </fieldset>
       </form>
-    </Panel>
+    </Popup>
   );
 }

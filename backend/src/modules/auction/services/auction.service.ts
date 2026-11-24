@@ -1523,8 +1523,7 @@ export class AuctionService implements OnModuleInit {
   }
 
   /**
-   * Admin manually concludes an individual lot for demo or operational completion.
-   * Support Staff are explicitly restricted from terminating lots or rooms early.
+   * Admin or Support Staff manually concludes an individual lot for demo or operational completion.
    */
   async adminEndLot(auctionId: string, itemId: string, adminId: string) {
     const lot = await this.prisma.auctionItem.findFirst({

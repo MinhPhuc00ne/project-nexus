@@ -1,3 +1,8 @@
+import { useState } from 'react';
+import DeleteAuctionDialog from '../../components/adminDashboard/Auctions/DeleteAuctionDialog';
+import PromoteAuctionDialog from '../../components/adminDashboard/Auctions/PromoteAuctionDialog';
+import useAuctionBanners from '../../components/adminDashboard/Auctions/useAuctionBanners';
+import type { AdminAuctionEntity } from '../../services/auction.service';
 import { Gavel, Plus, RefreshCw } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import Popup from '../../components/Popup';
@@ -27,6 +32,9 @@ const COLUMN_KEYS = [
 
 export default function AdminAuctionsPage() {
   const { t } = useTranslation('admin');
+  const [editingAuction, setEditingAuction] = useState<AdminAuctionEntity | null>(null);
+  const [deletingAuction, setDeletingAuction] = useState<AdminAuctionEntity | null>(null);
+  const [promotingAuction, setPromotingAuction] = useState<AdminAuctionEntity | null>(null);
   const {
     now,
     lockDisabledReason,
@@ -40,6 +48,7 @@ export default function AdminAuctionsPage() {
     page,
     setPage,
     setRevision,
+    revision,
     loading,
     error,
     creating,
@@ -58,6 +67,7 @@ export default function AdminAuctionsPage() {
     handleLockConsignment,
     handleStartAuction,
   } = useAdminAuctions();
+  const banners = useAuctionBanners(token, revision);
   return (
     <Panel
       title={t('auctions.page.title')}
@@ -108,6 +118,11 @@ export default function AdminAuctionsPage() {
           {t('auctions.page.loading')}
         </p>
       )}
+      {banners.error && (
+        <p role="alert" className="mb-4 rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
+          {t('management.bannerCheckWarning', { error: banners.error })}
+        </p>
+      )}
       {error && (
         <div role="alert" className="space-y-3 rounded-lg bg-red-50 p-4 text-sm text-red-700">
           <p>{error}</p>
@@ -144,6 +159,10 @@ export default function AdminAuctionsPage() {
                       setLockError={setLockError}
                       openShowcaseForAuction={openShowcaseForAuction}
                       handleStartAuction={handleStartAuction}
+                      onEdit={setEditingAuction}
+                      onDelete={setDeletingAuction}
+                      onPromote={setPromotingAuction}
+                      banners={banners}
                     />
                   ))}
                 </tbody>
@@ -215,6 +234,40 @@ export default function AdminAuctionsPage() {
           </p>
         )}
       </Popup>
+      {promotingAuction && (
+        <PromoteAuctionDialog
+          key={`${token}:${promotingAuction.id}`}
+          auction={promotingAuction}
+          onClose={() => setPromotingAuction(null)}
+          onPromoted={() => {
+            setPromotingAuction(null);
+            setRevision((value) => value + 1);
+          }}
+        />
+      )}
+      {editingAuction && (
+        <CreateAuctionDialog
+          key={`edit:${token}:${editingAuction.id}`}
+          auction={editingAuction}
+          onClose={() => setEditingAuction(null)}
+          onCreated={() => {
+            setEditingAuction(null);
+            setRevision((value) => value + 1);
+          }}
+        />
+      )}
+      {deletingAuction && (
+        <DeleteAuctionDialog
+          key={`delete:${token}:${deletingAuction.id}`}
+          auction={deletingAuction}
+          onClose={() => setDeletingAuction(null)}
+          onDeleted={() => {
+            setDeletingAuction(null);
+            if (data?.items.length === 1 && page > 1) setPage((value) => value - 1);
+            else setRevision((value) => value + 1);
+          }}
+        />
+      )}
       {creating && (
         <CreateAuctionDialog
           key={token}

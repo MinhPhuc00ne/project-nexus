@@ -22,6 +22,7 @@ import {
   QueryAdminReviewsDto,
   ReportDto,
   ReviewDto,
+  SellerReplyReviewDto,
 } from '../dtos/feedback.dto';
 import { ReviewsService } from '../services/reviews.service';
 import { ReportsService } from '../services/reports.service';
@@ -140,6 +141,23 @@ export class FeedbackController {
     return this.reviews.adminDeleteReview(id, 'product', dto, actorRole);
   }
 
+  @Delete('admin/reviews/product/:id/seller-reply')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Admin/Staff gỡ phản hồi (sellerReply) vi phạm trên đánh giá sản phẩm, trừ điểm uy tín Seller và gửi thông báo',
+  })
+  adminRemoveSellerReply(
+    @CurrentUser('role') actorRole: string,
+    @Param('id') id: string,
+    @Body() dto: AdminDeleteReviewDto,
+  ): Promise<unknown> {
+    return this.reviews.adminRemoveSellerReply(id, dto, actorRole);
+  }
+
   @Delete('admin/reviews/shop/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -182,6 +200,33 @@ export class FeedbackController {
   @Roles(Role.SELLER)
   sellerReviews(@CurrentUser('id') id: string, @Query() query: FeedbackPageDto): Promise<unknown> {
     return this.reviews.list(id, 'seller-products', query);
+  }
+
+  @Post('seller/product-reviews/:reviewId/reply')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SELLER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Seller phản hồi đánh giá sản phẩm của khách hàng' })
+  replyProductReview(
+    @CurrentUser('id') sellerId: string,
+    @Param('reviewId') reviewId: string,
+    @Body() dto: SellerReplyReviewDto,
+  ): Promise<unknown> {
+    return this.reviews.replyToProductReview(sellerId, reviewId, dto);
+  }
+
+  @Post('catalog/product-reviews/:reviewId/helpful')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.BUYER, Role.SELLER)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Bình chọn / bỏ bình chọn đánh giá sản phẩm hữu ích' })
+  toggleHelpfulProductReview(
+    @CurrentUser('id') userId: string,
+    @Param('reviewId') reviewId: string,
+  ): Promise<unknown> {
+    return this.reviews.toggleHelpfulProductReview(userId, reviewId);
   }
   @Get('buyer/customer-reviews')
   @ApiBearerAuth()

@@ -1566,7 +1566,7 @@
             "description": ""
           }
         },
-        "summary": "Nhận callback GHN; xác minh lại trạng thái qua API GHN",
+        "summary": "Nhận callback GHN (chiều giao đi và chiều hoàn hàng); xác minh lại trạng thái qua API GHN",
         "tags": ["10. FULFILLMENT & SHIPPING"]
       }
     },
@@ -2544,6 +2544,34 @@
         "tags": ["5. ADMIN"]
       }
     },
+    "/api/v1/admin/products/trending": {
+      "get": {
+        "description": "Returns active products ranked by purchase count. Admin can only view and remove products from trending.",
+        "operationId": "AdminController_listTrendingProducts",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trending products retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List current HomePage trending products for moderation",
+        "tags": ["5. ADMIN"]
+      }
+    },
     "/api/v1/admin/products/{id}": {
       "get": {
         "operationId": "AdminController_getProductById",
@@ -2682,6 +2710,47 @@
           }
         ],
         "summary": "Assign or update product catalog category",
+        "tags": ["5. ADMIN"]
+      }
+    },
+    "/api/v1/admin/products/{id}/trending": {
+      "delete": {
+        "description": "Excludes a product from the HomePage trending list and notifies the seller. Admin cannot manually add products to trending.",
+        "operationId": "AdminController_removeProductFromTrending",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveTrendingProductDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product removed from trending successfully"
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a product from HomePage trending",
         "tags": ["5. ADMIN"]
       }
     },
@@ -3374,6 +3443,128 @@
         "tags": ["5. ADMIN"]
       }
     },
+    "/api/v1/admin/wallet/user-transactions": {
+      "get": {
+        "description": "Queries wallet transaction history across Buyer and Seller accounts with filters for type (DEPOSIT, WITHDRAW...), status, role, userId, date range, and keyword search.",
+        "operationId": "AdminController_getPlatformUserWalletTransactions",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Số trang",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Số bản ghi mỗi trang",
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo loại giao dịch (PLATFORM_FEE, DEPOSIT, WITHDRAW...)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DEPOSIT",
+                "WITHDRAW",
+                "ESCROW_LOCK",
+                "ESCROW_PAYOUT",
+                "ESCROW_REFUND",
+                "ORDER_PAYMENT",
+                "PLATFORM_FEE",
+                "AUCTION_BID_LOCK",
+                "AUCTION_BID_REFUND",
+                "AUCTION_DEPOSIT_FORFEIT",
+                "AUCTION_DEPOSIT_COMPENSATION"
+              ]
+            }
+          },
+          {
+            "name": "startDate",
+            "required": false,
+            "in": "query",
+            "description": "Từ ngày (YYYY-MM-DD)",
+            "schema": {
+              "example": "2026-10-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "required": false,
+            "in": "query",
+            "description": "Đến ngày (YYYY-MM-DD)",
+            "schema": {
+              "example": "2026-10-31",
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Tìm kiếm theo mã đơn hàng hoặc mô tả",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo trạng thái giao dịch (PENDING, SUCCESS, FAILED)",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "SUCCESS", "FAILED"]
+            }
+          },
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo vai trò người dùng (BUYER, SELLER, SUPPORT_STAFF, ADMIN)",
+            "schema": {
+              "type": "string",
+              "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo ID người dùng cụ thể",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Platform user wallet transactions retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List platform-wide user wallet transactions (deposits, withdrawals, escrow, refunds)",
+        "tags": ["5. ADMIN"]
+      }
+    },
     "/api/v1/admin/wallet/deposit": {
       "post": {
         "description": "Allows administrators to inject operational working capital into the platform wallet with audit transaction records.",
@@ -3708,7 +3899,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin tra cứu đơn toàn sàn, lọc và phân trang",
+        "summary": "Admin & Nhân viên hỗ trợ tra cứu đơn toàn sàn, lọc và phân trang",
         "tags": ["5. ADMIN - ORDERS"]
       }
     },
@@ -3735,7 +3926,7 @@
             "bearer": []
           }
         ],
-        "summary": "Chi tiết đơn, thanh toán, vận chuyển và xử lý hậu mãi",
+        "summary": "Admin & Nhân viên hỗ trợ xem chi tiết đơn, thanh toán, vận chuyển, hậu mãi và lịch sử thao tác",
         "tags": ["5. ADMIN - ORDERS"]
       }
     },
@@ -4088,6 +4279,29 @@
           }
         ],
         "summary": "[SELLER] Xem danh sách sản phẩm và tồn kho của chính Shop mình",
+        "tags": ["7. CATALOG - PRODUCTS"]
+      }
+    },
+    "/api/v1/catalog/products/trending": {
+      "get": {
+        "description": "Xếp hạng các sản phẩm đang bán chạy nhất dựa trên tổng số lượt mua (không bao gồm sản phẩm đã bị Admin gỡ khỏi xu hướng).",
+        "operationId": "ProductController_getTrendingProducts",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lấy danh sách sản phẩm xu hướng thành công"
+          }
+        },
+        "summary": "[GUEST / BUYER] Lấy danh sách sản phẩm Xu hướng trên HomePage",
         "tags": ["7. CATALOG - PRODUCTS"]
       }
     },
@@ -6599,6 +6813,145 @@
         "tags": ["8. COMMERCE - WEBHOOKS"]
       }
     },
+    "/api/v1/buyer/finance/withdraw": {
+      "post": {
+        "description": "Kiểm tra số dư khả dụng, đóng băng tạm thời số tiền rút trong ví và gửi yêu cầu đến Quản trị viên duyệt chuyển khoản.",
+        "operationId": "BuyerFinanceController_createWithdrawal",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWithdrawalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tạo yêu cầu rút tiền thành công"
+          },
+          "400": {
+            "description": "Số dư không đủ, thiếu thông tin ngân hàng hoặc số tiền rút không hợp lệ"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER] Tạo yêu cầu rút tiền từ số dư ví về tài khoản ngân hàng",
+        "tags": ["2. BUYER"]
+      }
+    },
+    "/api/v1/buyer/finance/transactions": {
+      "get": {
+        "description": "Hỗ trợ phân trang và lọc theo loại giao dịch (DEPOSIT, WITHDRAW, ESCROW_REFUND...) và trạng thái (PENDING, SUCCESS, FAILED).",
+        "operationId": "BuyerFinanceController_getTransactions",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DEPOSIT",
+                "WITHDRAW",
+                "ESCROW_LOCK",
+                "ESCROW_PAYOUT",
+                "ESCROW_REFUND",
+                "ORDER_PAYMENT",
+                "PLATFORM_FEE",
+                "AUCTION_BID_LOCK",
+                "AUCTION_BID_REFUND",
+                "AUCTION_DEPOSIT_FORFEIT",
+                "AUCTION_DEPOSIT_COMPENSATION"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "SUCCESS", "FAILED"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lấy lịch sử giao dịch thành công"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER] Xem lịch sử giao dịch tài chính / biến động số dư ví cá nhân",
+        "tags": ["2. BUYER"]
+      }
+    },
+    "/api/v1/buyer/finance/withdrawals": {
+      "get": {
+        "operationId": "BuyerFinanceController_getWithdrawals",
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lấy danh sách yêu cầu rút tiền thành công"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER] Xem danh sách các yêu cầu rút tiền đã tạo và tiến độ duyệt",
+        "tags": ["2. BUYER"]
+      }
+    },
     "/api/v1/seller/finance/revenue": {
       "get": {
         "description": "Tổng hợp số dư ví khả dụng, số tiền tạm giữ, tổng doanh số bán hàng, phí sàn ước tính và phân bổ doanh thu theo tháng.",
@@ -8638,7 +8991,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin khóa đăng ký ký gửi vật phẩm sớm cho phiên đấu giá",
+        "summary": "Admin & Nhân viên hỗ trợ khóa đăng ký ký gửi vật phẩm sớm cho phiên đấu giá",
         "tags": ["Auctions"]
       }
     },
@@ -8665,7 +9018,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin bấm bắt đầu phiên đấu giá thủ công và gửi thông báo tới Người mua",
+        "summary": "Admin & Nhân viên hỗ trợ bấm bắt đầu phiên đấu giá thủ công và gửi thông báo tới Người mua",
         "tags": ["Auctions"]
       }
     },
@@ -8729,7 +9082,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin duyệt hoặc từ chối vật phẩm ký gửi của Người bán",
+        "summary": "Admin & Nhân viên hỗ trợ duyệt hoặc từ chối vật phẩm ký gửi của Người bán",
         "tags": ["Auctions"]
       }
     },
@@ -8764,7 +9117,7 @@
             "bearer": []
           }
         ],
-        "summary": "Admin kết thúc riêng từng lô đấu giá (không áp dụng cho Nhân viên hỗ trợ)",
+        "summary": "Admin & Nhân viên hỗ trợ kết thúc riêng từng lô đấu giá",
         "tags": ["Auctions"]
       }
     },
@@ -10384,6 +10737,16 @@
           }
         },
         "required": ["categoryId"]
+      },
+      "RemoveTrendingProductDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "example": "Sản phẩm không còn phù hợp hiển thị tại mục Xu hướng",
+            "description": "Lý do Admin gỡ sản phẩm khỏi danh sách Xu hướng (gửi thông báo tới Seller)"
+          }
+        }
       },
       "UpdateShopStatusDto": {
         "type": "object",

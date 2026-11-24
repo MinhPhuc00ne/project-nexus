@@ -884,10 +884,22 @@
     "optionsSubtitle": "Allow buyers to choose Color, Size, or Edition when ordering",
     "quickAddLabel": "Quick add option group:",
     "presetGroups": [
-      { "name": "Color", "sampleValues": ["Black", "White", "Navy Blue", "Silver", "Rose Gold"] },
-      { "name": "Size", "sampleValues": ["S", "M", "L", "XL"] },
-      { "name": "Case / Diameter", "sampleValues": ["38mm", "40mm", "42mm", "44mm"] },
-      { "name": "Edition", "sampleValues": ["Standard", "Premium (Fullbox)", "Limited Edition"] }
+      {
+        "name": "Color",
+        "sampleValues": ["Black", "White", "Navy Blue", "Silver", "Rose Gold"]
+      },
+      {
+        "name": "Size",
+        "sampleValues": ["S", "M", "L", "XL"]
+      },
+      {
+        "name": "Case / Diameter",
+        "sampleValues": ["38mm", "40mm", "42mm", "44mm"]
+      },
+      {
+        "name": "Edition",
+        "sampleValues": ["Standard", "Premium (Fullbox)", "Limited Edition"]
+      }
     ],
     "customOptionBtn": "Custom option",
     "noOptionsHint": "No option groups yet. Click the buttons above (e.g. + Color, + Size) so buyers can select variants.",
@@ -1254,5 +1266,16 @@
       "pickerRemoveAria": "Remove {{label}} {{index}}",
       "pickerRemoveTitle": "Remove image"
     }
+  },
+  "categoryPicker": {
+    "categoryFromList": "Please select a category from the list.",
+    "productCategory": "Product category",
+    "loadingCategories": "Loading categories…",
+    "searchCategory": "Select or type to find a category",
+    "closeCategories": "Close category list",
+    "openCategories": "Open category list",
+    "noCategoryMatch": "No matching categories found. Try another keyword.",
+    "selectedCategory": "Selected: {{value1}}. ",
+    "categorySearchHint": "Type to search, then select a category from the list."
   }
 }

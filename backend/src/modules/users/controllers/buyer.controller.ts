@@ -17,6 +17,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nes
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService, UserProfileResponse } from '../services/users.service';
 import { AddressService } from '../services/address.service';
+import { WishlistService } from '../services/wishlist.service';
+import { SyncWishlistDto } from '../dtos/wishlist.dto';
+import type { WishlistItemDto } from '@nexus/types';
 import {
   UpdateBuyerProfileDto,
   ApplySellerUpgradeDto,
@@ -34,6 +37,7 @@ export class BuyerController {
   constructor(
     private readonly usersService: UsersService,
     private readonly addressService: AddressService,
+    private readonly wishlistService: WishlistService,
   ) {}
 
   @ApiOperation({
@@ -231,5 +235,64 @@ export class BuyerController {
   @Delete('addresses/:id')
   async deleteAddress(@CurrentUser('id') userId: string, @Param('id') addressId: string) {
     return this.addressService.deleteAddress(userId, addressId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Get wishlist items with product details',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('wishlist')
+  async getWishlist(@CurrentUser('id') userId: string): Promise<WishlistItemDto[]> {
+    return this.wishlistService.getWishlist(userId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Get wishlisted product IDs for quick membership checks',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('wishlist/ids')
+  async getWishlistIds(@CurrentUser('id') userId: string): Promise<string[]> {
+    return this.wishlistService.getWishlistIds(userId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Sync guest wishlist product IDs after login',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('wishlist/sync')
+  async syncWishlist(
+    @CurrentUser('id') userId: string,
+    @Body() dto: SyncWishlistDto,
+  ): Promise<WishlistItemDto[]> {
+    return this.wishlistService.syncGuestWishlist(userId, dto.productIds);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Add a product to wishlist',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post('wishlist/:productId')
+  async addToWishlist(
+    @CurrentUser('id') userId: string,
+    @Param('productId') productId: string,
+  ): Promise<WishlistItemDto> {
+    return this.wishlistService.addToWishlist(userId, productId);
+  }
+
+  @ApiOperation({
+    summary: '[BUYER] Remove a product from wishlist',
+  })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Delete('wishlist/:productId')
+  async removeFromWishlist(
+    @CurrentUser('id') userId: string,
+    @Param('productId') productId: string,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.wishlistService.removeFromWishlist(userId, productId);
   }
 }

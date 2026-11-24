@@ -27,6 +27,7 @@ export interface ProductDetail {
   rating?: number;
   reviewsCount?: number;
   soldCount?: number;
+  isTrending?: boolean;
   categoryName?: string;
   category?: {
     id: string;

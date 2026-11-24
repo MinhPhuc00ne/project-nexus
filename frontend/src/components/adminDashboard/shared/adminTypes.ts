@@ -6,7 +6,6 @@ export type AdminTab =
   | 'auctions'
   | 'categories'
   | 'banners'
-  | 'studio'
   | 'users'
   | 'sellers'
   | 'products'

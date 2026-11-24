@@ -97,7 +97,8 @@ function resolveFallbackTarget(type: string, text: string): string {
     text.includes('ví') ||
     text.includes('số dư') ||
     text.includes('nạp tiền') ||
-    text.includes('rút tiền')
+    text.includes('rút tiền') ||
+    text.includes('withdrawal')
   ) {
     return '/buyer/wallet';
   }

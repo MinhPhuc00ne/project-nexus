@@ -288,3 +288,60 @@ test('webhook authenticates and rechecks GHN rather than trusting callback statu
   });
   assert.deepEqual(tracking.refresh.mock.calls[0].arguments, ['o1', undefined, 'delivered']);
 });
+
+test('tracking refresh logs shipment status changes and return webhook triggers return delivery', async () => {
+  const f = fixture();
+  const events = [];
+  f.prisma.eventLog = { create: mock.fn(async ({ data }) => events.push(data)) };
+  f.detail.status = 'delivering';
+  await f.service.refresh('o1');
+  assert.equal(events.length, 1);
+  assert.equal(events[0].eventName, 'order.shipment-updated');
+  assert.equal(events[0].payload.carrierStatus, 'delivering');
+
+  // Return waybill webhook updates shipment, records event log, and emits return.shipment.delivered
+  const emitted = [];
+  const returnEvents = [];
+  const returnPrisma = {
+    shipment: {
+      findFirst: async () => null,
+      update: mock.fn(async () => ({})),
+    },
+    afterSalesRequest: {
+      findFirst: async () => ({
+        orderId: 'o2',
+        kind: 'RETURN',
+        status: 'APPROVED',
+        returnWaybillCode: 'RET-1',
+        order: {
+          sellerId: 'seller-2',
+          shipment: {
+            metadata: { ghnShopId: 123, ghnEnvironment: 'PRODUCTION', tracking: {} },
+          },
+        },
+      }),
+    },
+    eventLog: { create: mock.fn(async ({ data }) => returnEvents.push(data)) },
+  };
+  const controller = new GhnWebhookController(
+    { get: (key) => ({ GHN_WEBHOOK_SECRET: 'secret', NODE_ENV: 'development' })[key] },
+    returnPrisma,
+    { refresh: mock.fn(async () => ({})) },
+    { emit: (name, payload) => emitted.push({ name, payload }) },
+  );
+  const res = await controller.receive('secret', {
+    ShopID: 123,
+    OrderCode: 'RET-1',
+    Status: 'delivered',
+  });
+  assert.deepEqual(res, { success: true });
+  assert.equal(returnEvents.length, 1);
+  assert.equal(returnEvents[0].eventName, 'order.return-shipment-updated');
+  assert.equal(returnPrisma.shipment.update.mock.callCount(), 1);
+  assert.deepEqual(emitted, [
+    {
+      name: 'return.shipment.delivered',
+      payload: { orderId: 'o2', returnWaybillCode: 'RET-1', sellerId: 'seller-2' },
+    },
+  ]);
+});

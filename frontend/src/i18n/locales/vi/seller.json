@@ -884,10 +884,22 @@
     "optionsSubtitle": "Cho phép người mua chọn Màu sắc, Kích thước (Size), Phiên bản khi đặt hàng",
     "quickAddLabel": "Thêm nhanh nhóm tùy chọn:",
     "presetGroups": [
-      { "name": "Màu sắc", "sampleValues": ["Đen", "Trắng", "Xanh Navy", "Bạc", "Vàng Hồng"] },
-      { "name": "Kích thước (Size)", "sampleValues": ["S", "M", "L", "XL"] },
-      { "name": "Cỡ mặt / Đường kính", "sampleValues": ["38mm", "40mm", "42mm", "44mm"] },
-      { "name": "Phiên bản", "sampleValues": ["Tiêu chuẩn", "Cao cấp (Fullbox)", "Bản giới hạn"] }
+      {
+        "name": "Màu sắc",
+        "sampleValues": ["Đen", "Trắng", "Xanh Navy", "Bạc", "Vàng Hồng"]
+      },
+      {
+        "name": "Kích thước (Size)",
+        "sampleValues": ["S", "M", "L", "XL"]
+      },
+      {
+        "name": "Cỡ mặt / Đường kính",
+        "sampleValues": ["38mm", "40mm", "42mm", "44mm"]
+      },
+      {
+        "name": "Phiên bản",
+        "sampleValues": ["Tiêu chuẩn", "Cao cấp (Fullbox)", "Bản giới hạn"]
+      }
     ],
     "customOptionBtn": "Tùy chọn tự đặt",
     "noOptionsHint": "Chưa có nhóm phân loại nào. Bấm vào các nút phía trên (VD: + Màu sắc, + Kích thước (Size)) để người mua có thể chọn khi mua sản phẩm.",
@@ -1254,5 +1266,16 @@
       "pickerRemoveAria": "Xóa {{label}} {{index}}",
       "pickerRemoveTitle": "Xóa ảnh"
     }
+  },
+  "categoryPicker": {
+    "categoryFromList": "Vui lòng chọn danh mục từ danh sách.",
+    "productCategory": "Danh mục sản phẩm",
+    "loadingCategories": "Đang tải danh mục…",
+    "searchCategory": "Chọn hoặc nhập để tìm danh mục",
+    "closeCategories": "Đóng danh sách danh mục",
+    "openCategories": "Mở danh sách danh mục",
+    "noCategoryMatch": "Không tìm thấy danh mục phù hợp. Thử từ khóa khác.",
+    "selectedCategory": "Đã chọn: {{value1}}. ",
+    "categorySearchHint": "Nhập để tìm, sau đó chọn danh mục trong danh sách."
   }
 }
