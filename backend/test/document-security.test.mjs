@@ -103,6 +103,59 @@ test('both profile update routes enforce seller reauthentication from actual DB 
   );
 });
 
+test('seller bank-only profile update bypasses reauthentication and normalizes account number', async () => {
+  let savedData = null;
+  const user = {
+    id: 'seller',
+    email: 'seller@test',
+    role: 'SELLER',
+    isSellerActive: true,
+    isShopSuspended: false,
+    bankName: null,
+    accountNumber: null,
+    accountHolderName: null,
+    wallet: null,
+    createdAt: new Date(),
+  };
+  const prisma = {
+    user: {
+      findUnique: async () => user,
+      update: async ({ data }) => {
+        savedData = data;
+        return { ...user, ...data };
+      },
+    },
+  };
+  const proof = {
+    assert: async () => {
+      throw Error('reauth-required');
+    },
+  };
+  const reputation = {
+    awardProfileCompletion: async () => {},
+  };
+  const service = new UsersService(prisma, {}, proof, {}, reputation);
+
+  const updated = await service.updateProfile(user.id, {
+    bankName: ' Vietcombank ',
+    accountNumber: '1029 3847-56',
+    accountHolderName: ' nguyen van a ',
+  });
+
+  assert.equal(savedData.bankName, 'Vietcombank');
+  assert.equal(savedData.accountNumber, '1029384756');
+  assert.equal(savedData.accountHolderName, 'NGUYEN VAN A');
+  assert.equal(updated.accountNumber, '1029384756');
+
+  await assert.rejects(
+    service.updateProfile(user.id, {
+      fullName: 'New Name',
+      bankName: 'Vietcombank',
+    }),
+    /reauth-required/,
+  );
+});
+
 test('existing access tokens read canonical role and current mode from DB', async () => {
   const secret = 'test-secret';
   const token = new JwtService({ secret }).sign({
