@@ -137,12 +137,7 @@
     "currentPasswordLabel": "Mật khẩu hiện tại",
     "newPasswordLabel": "Mật khẩu mới",
     "newPasswordPlaceholder": "Tối thiểu 6 ký tự",
-    "changePasswordSubmit": "Đổi mật khẩu",
-    "logoutModalTitle": "Xác nhận đăng xuất",
-    "logoutModalBody": "Bạn có chắc chắn muốn kết thúc phiên làm việc của nhân viên ",
-    "stayWorking": "Ở lại làm việc",
-    "logoutSuccess": "Đăng xuất thành công. Hẹn gặp lại bạn!",
-    "logoutConfirm": "Đăng xuất ngay"
+    "changePasswordSubmit": "Đổi mật khẩu"
   },
   "activation": {
     "missingTokenErr": "Link kích hoạt thiếu mã token. Vui lòng mở đúng link trong email mời.",

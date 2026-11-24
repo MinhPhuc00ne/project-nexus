@@ -131,9 +131,6 @@ export default function StaffReviewsPanel() {
           </Button>
         }
       >
-        <p className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
-          {t('reviews.editUnavailable')}
-        </p>
         <div className="mb-4 flex flex-wrap gap-3">
           <label className="min-w-52 flex-1">
             <span className="sr-only">{t('reviews.searchLabel')}</span>

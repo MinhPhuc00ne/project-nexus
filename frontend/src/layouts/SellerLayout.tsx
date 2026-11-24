@@ -11,7 +11,6 @@ import {
   LogOut as LogoutOutlined,
   Menu as MenuOutlined,
   Inbox as InboxOutlined,
-  Search as SearchOutlined,
   Settings as SettingOutlined,
   ShieldCheck as SafetyCertificateOutlined,
   Star as StarOutlined,
@@ -280,25 +279,8 @@ function SellerWorkspace() {
             >
               <MenuOutlined className="text-[21px]" aria-hidden="true" />
             </button>
-            <form
-              className="flex items-center gap-2.5 max-w-[360px] w-full text-[#9aaac3] [&_input]:w-full [&_input]:bg-transparent [&_input]:[border:0] [&_input]:[outline:none] [&_input]:text-[11px] [&_input::placeholder]:text-[#a0aec3] [&_kbd]:[border:1px_solid_#e5ebf4] [&_kbd]:rounded-[4px] [&_kbd]:py-0 [&_kbd]:px-1 [&_kbd]:text-[11px] [&_kbd]:text-[#a6b2c5] max-[760px]:max-w-[none] max-[760px]:[&_input]:text-[10px] max-[760px]:[&_kbd]:hidden max-[540px]:gap-1.5 max-[540px]:[&>.anticon]:w-[15px] max-[540px]:[&>.anticon]:shrink-0"
-              data-seller="global-search"
-              onSubmit={(event) => {
-                event.preventDefault();
-                navigate('/seller/products');
-              }}
-            >
-              <SearchOutlined className="text-[17px]" aria-hidden="true" />
-              <input
-                aria-label={t('layout.searchAria')}
-                placeholder={t('layout.searchPlaceholder')}
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-              <kbd>↵</kbd>
-            </form>
             <div
-              className="flex items-center gap-[19px] shrink-0 max-[1250px]:gap-3 max-[760px]:gap-[9px] max-[540px]:gap-[1px]"
+              className="ml-auto flex items-center gap-[19px] shrink-0 max-[1250px]:gap-3 max-[760px]:gap-[9px] max-[540px]:gap-[1px]"
               data-seller="topbar-right"
             >
               <span
@@ -423,7 +405,7 @@ function SellerWorkspace() {
           onConfirm={() => {
             setLogoutConfirmationOpen(false);
             clearAuthSession();
-            toast.success('Đăng xuất thành công. Hẹn gặp lại bạn!');
+            toast.success(t('common:logoutDialog.successToast'));
             navigate('/login', { replace: true });
           }}
         />

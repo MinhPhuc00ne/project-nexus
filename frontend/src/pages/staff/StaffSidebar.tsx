@@ -32,14 +32,6 @@ export default function StaffSidebar({
             alt="NEXUS"
             className="[width:148px] max-w-full [height:auto] object-contain [filter:drop-shadow(0_6px_10px_rgb(31_95_227_/_10%))]"
           />
-          <div className="min-w-0">
-            <div className="flex items-center whitespace-nowrap">
-              <span className="inline-flex items-center [padding:3px_7px] [border-radius:999px] [color:var(--staff-primary)] [background:var(--staff-primary-soft)] [font-size:9px] font-extrabold [letter-spacing:0.08em]">
-                STAFF
-              </span>
-            </div>
-            <div className="mt-[2px] [color:#818ba0] text-[10px]">{t('sidebar.subtitle')}</div>
-          </div>
           <button
             className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] hidden [margin-left:auto] max-[760px]:[display:inline-grid]"
             aria-label={t('sidebar.closeMenu')}

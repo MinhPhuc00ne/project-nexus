@@ -5,7 +5,6 @@ import LanguageSwitcher from '../../components/common/LanguageSwitcher';
 import { getIntlLocale } from '../../i18n/config';
 import {
   Menu,
-  Search,
   Bell,
   ChevronDown,
   LogOut,
@@ -13,6 +12,7 @@ import {
   User,
   KeyRound,
   ShieldCheck,
+  Headphones,
 } from 'lucide-react';
 import { clearAuthSession, getStoredToken, type AuthUser } from '../../services/auth';
 import { createNotificationConnection } from '../../services/notificationSocket';
@@ -36,17 +36,10 @@ import {
 
 interface StaffHeaderProps {
   account: AuthUser | null;
-  searchText: string;
-  onSearchChange: (value: string) => void;
   onOpenSidebar: () => void;
 }
 
-export default function StaffHeader({
-  account,
-  searchText,
-  onSearchChange,
-  onOpenSidebar,
-}: StaffHeaderProps) {
+export default function StaffHeader({ account, onOpenSidebar }: StaffHeaderProps) {
   const { t, i18n } = useTranslation('staff');
   const locale = getIntlLocale(i18n.language);
   const navigate = useNavigate();
@@ -290,27 +283,23 @@ export default function StaffHeader({
       >
         <Menu size={20} />
       </button>
-      <div className="flex h-11 min-w-0 max-w-xl flex-1 items-center gap-3 rounded-xl border border-transparent bg-slate-100 px-4 text-slate-500 transition focus-within:border-blue-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-50">
-        <Search size={18} className="shrink-0" />
-        <input
-          aria-label={t('header.searchAria')}
-          placeholder={t('header.searchPlaceholder')}
-          value={searchText}
-          onChange={(event) => onSearchChange(event.target.value)}
-          className="w-full min-w-0 border-0 bg-transparent text-xs text-slate-700 outline-none placeholder:text-slate-400"
-        />
-        {searchText && (
-          <button
-            type="button"
-            aria-label={t('header.clearSearchAria')}
-            onClick={() => onSearchChange('')}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-slate-400 transition hover:bg-white hover:text-slate-700 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-600"
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 sm:inline-flex">
+          <Headphones size={20} aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-bold tracking-wider text-blue-600">
+            STAFF
+          </span>
+          <p
+            className="mt-0.5 truncate text-sm font-semibold leading-5 text-slate-800 max-[480px]:text-xs"
+            title={t('sidebar.subtitle')}
           >
-            <X size={14} />
-          </button>
-        )}
+            {t('sidebar.subtitle')}
+          </p>
+        </div>
       </div>
-      <div className="ml-auto flex items-center gap-3">
+      <div className="ml-auto flex shrink-0 items-center gap-3 max-[480px]:gap-1.5">
         <LanguageSwitcher compact />
         <div ref={notificationsRef} className="relative">
           <button
@@ -555,7 +544,7 @@ export default function StaffHeader({
         onConfirmLogout={() => {
           setIsLogoutConfirmOpen(false);
           clearAuthSession();
-          toast.success(t('header.logoutSuccess'));
+          toast.success(i18n.t('common:logoutDialog.successToast'));
           navigate('/login', { replace: true });
         }}
         isProfileEditorOpen={isProfileEditorOpen}

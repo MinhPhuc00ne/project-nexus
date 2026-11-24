@@ -137,12 +137,7 @@
     "currentPasswordLabel": "Current password",
     "newPasswordLabel": "New password",
     "newPasswordPlaceholder": "At least 6 characters",
-    "changePasswordSubmit": "Change password",
-    "logoutModalTitle": "Confirm Sign Out",
-    "logoutModalBody": "Are you sure you want to end the work session for ",
-    "stayWorking": "Stay signed in",
-    "logoutSuccess": "Signed out successfully. See you soon!",
-    "logoutConfirm": "Sign out now"
+    "changePasswordSubmit": "Change password"
   },
   "activation": {
     "missingTokenErr": "Activation link is missing the token. Please open the exact link from your invitation email.",
