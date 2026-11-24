@@ -104,6 +104,8 @@ export function useAdminAuctions() {
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState<AdminAuctionEntity | null>(null);
+  const [editingAuction, setEditingAuction] = useState<AdminAuctionEntity | null>(null);
+  const [deletingAuction, setDeletingAuction] = useState<AdminAuctionEntity | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
   const [lockingAuction, setLockingAuction] = useState<AdminAuctionEntity | null>(null);
   const [locking, setLocking] = useState(false);
@@ -253,6 +255,10 @@ export function useAdminAuctions() {
     setCreating,
     selectedAuction,
     setSelectedAuction,
+    editingAuction,
+    setEditingAuction,
+    deletingAuction,
+    setDeletingAuction,
     startingId,
     lockingAuction,
     setLockingAuction,

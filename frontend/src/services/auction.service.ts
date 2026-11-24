@@ -179,7 +179,7 @@ export function adminUpdateAuctionApi(
   id: string,
   data: AdminUpdateAuctionInput,
 ): Promise<AdminAuctionEntity> {
-  return apiRequest(`/auctions/admin/${encodeURIComponent(id)}`, {
+  return apiRequest<AdminAuctionEntity>(`/auctions/admin/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: data,
     requireAuth: true,
@@ -189,10 +189,13 @@ export function adminUpdateAuctionApi(
 export function adminDeleteAuctionApi(
   id: string,
 ): Promise<{ success: boolean; deletedId: string }> {
-  return apiRequest(`/auctions/admin/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-    requireAuth: true,
-  });
+  return apiRequest<{ success: boolean; deletedId: string }>(
+    `/auctions/admin/${encodeURIComponent(id)}`,
+    {
+      method: 'DELETE',
+      requireAuth: true,
+    },
+  );
 }
 
 /**

@@ -1,4 +1,4 @@
-import { type JSX, useEffect, useState } from 'react';
+import { type JSX, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MessageCircle, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,6 +16,8 @@ import { getChatErrorMessage } from './chatUtils';
 import { useChatRoom } from './useChatRoom';
 import SupportMenu from './SupportMenu';
 import ChatbotPanel from './ChatbotPanel';
+import { orderByLastMessage, unreadBadgeLabel } from './chatWidget.helpers';
+import { useChatUnreadSync } from './useChatUnreadSync';
 import {
   OPEN_CHAT_CONVERSATION_EVENT,
   OPEN_CHAT_WITH_USER_EVENT,
@@ -77,14 +79,21 @@ function ChatPanel({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [creating, setCreating] = useState(false);
+  const creatingRef = useRef(creating);
+  creatingRef.current = creating;
   const [participantId, setParticipantId] = useState('');
   const [type, setType] = useState<ChatConversationType>('BUYER_SELLER');
   const [revision, setRevision] = useState(0);
+  const activeChatStateRef = useRef<{ id?: string; isVisible: boolean }>({
+    isVisible: false,
+  });
+  const isPanelOpenRef = useRef(open);
+  isPanelOpenRef.current = open;
 
   useEffect(() => {
     const handleOpenChat = (event: Event): void => {
       const request = (event as CustomEvent<OpenChatWithUserRequest>).detail;
-      if (!request?.userId || request.userId === userId || creating) return;
+      if (!request?.userId || request.userId === userId || creatingRef.current) return;
 
       setOpen(true);
       setView('chat');
@@ -93,6 +102,7 @@ function ChatPanel({
       setActive(null);
       setPanelError('');
       setCreating(true);
+      creatingRef.current = true;
 
       void createChatConversation({
         participantId: request.userId,
@@ -108,12 +118,15 @@ function ChatPanel({
         .catch((error: unknown) => {
           setPanelError(getChatErrorMessage(error));
         })
-        .finally(() => setCreating(false));
+        .finally(() => {
+          creatingRef.current = false;
+          setCreating(false);
+        });
     };
 
     window.addEventListener(OPEN_CHAT_WITH_USER_EVENT, handleOpenChat);
     return () => window.removeEventListener(OPEN_CHAT_WITH_USER_EVENT, handleOpenChat);
-  }, [creating, userId]);
+  }, [t, userId]);
 
   useEffect(() => {
     const handleOpenConversation = (event: Event): void => {
@@ -138,6 +151,10 @@ function ChatPanel({
   }, []);
 
   const activeId = active?.id;
+  activeChatStateRef.current = {
+    id: activeId,
+    isVisible: open && view === 'chat',
+  };
 
   const room = useChatRoom({
     activeId,
@@ -150,6 +167,9 @@ function ChatPanel({
           conversation.id === conversationId ? { ...conversation, unreadCount: 0 } : conversation,
         ),
       );
+      void getChatUnreadCount()
+        .then(setUnread)
+        .catch(() => {});
     },
   });
 
@@ -190,23 +210,14 @@ function ChatPanel({
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    const refresh = (): void => {
-      void getChatUnreadCount()
-        .then((count) => {
-          if (!cancelled) setUnread(count);
-        })
-        .catch(() => {});
-    };
-    refresh();
-    const timer = window.setInterval(refresh, 15000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [revision]);
-
+  const chatConnectionRef = useChatUnreadSync({
+    userId,
+    activeChatStateRef,
+    isPanelOpenRef,
+    setUnread,
+    setConversations,
+    setRevision,
+  });
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -214,10 +225,15 @@ function ChatPanel({
       void getChatConversations({ search, page, limit: 20 })
         .then((result) => {
           if (cancelled) return;
+          for (const conversation of result.items) {
+            chatConnectionRef.current?.joinConversation(conversation.id);
+          }
           setConversations((current) =>
-            page === 1
-              ? result.items
-              : [...new Map([...current, ...result.items].map((c) => [c.id, c])).values()],
+            orderByLastMessage(
+              page === 1
+                ? result.items
+                : [...new Map([...current, ...result.items].map((c) => [c.id, c])).values()],
+            ),
           );
           setTotalPages(result.pagination.totalPages);
         })
@@ -287,7 +303,14 @@ function ChatPanel({
         >
           <MessageCircle size={22} />{' '}
           {canRequestSupport ? t('chat.widget.messagesAndSupport') : t('chat.widget.messages')}{' '}
-          {unread > 0 && <span className="rounded-full bg-red-500 px-2 text-xs">{unread}</span>}
+          {unread > 0 && (
+            <span
+              className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs leading-none text-white"
+              aria-label={t('chat.widget.unreadCount', { count: unread })}
+            >
+              {unreadBadgeLabel(unread)}
+            </span>
+          )}
         </button>
       )}
       <section
@@ -323,11 +346,21 @@ function ChatPanel({
                 aria-pressed={view === tab}
                 className={`rounded-lg px-3 py-2 text-sm font-semibold max-sm:flex-1 max-sm:px-2 max-sm:text-xs ${view === tab ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}`}
               >
-                {tab === 'bot'
-                  ? t('chat.widget.tabBot')
-                  : tab === 'support'
-                    ? t('chat.widget.tabSupport')
-                    : t('chat.widget.tabChat')}
+                <span className="inline-flex items-center gap-2">
+                  {tab === 'bot'
+                    ? t('chat.widget.tabBot')
+                    : tab === 'support'
+                      ? t('chat.widget.tabSupport')
+                      : t('chat.widget.tabChat')}
+                  {tab === 'chat' && unread > 0 && (
+                    <span
+                      className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs leading-none text-white"
+                      aria-label={t('chat.widget.unreadCount', { count: unread })}
+                    >
+                      {unreadBadgeLabel(unread)}
+                    </span>
+                  )}
+                </span>
               </button>
             ))}
           </nav>
