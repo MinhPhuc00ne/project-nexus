@@ -18,7 +18,8 @@ if (oauthUser) {
   } catch {
     // Ignore storage errors
   }
-  const destination = ROLE_DESTINATIONS[oauthUser.role] ?? '/';
+  const role = oauthUser.role;
+  const destination = (role && ROLE_DESTINATIONS[role]) || '/';
   const url = new URL(window.location.href);
   url.pathname = destination;
   window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
