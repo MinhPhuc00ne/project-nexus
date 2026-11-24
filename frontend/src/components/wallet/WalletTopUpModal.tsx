@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Loader2, Building2, X, WalletCards } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
@@ -15,6 +16,25 @@ interface WalletTopUpModalProps {
 }
 
 const quickAmounts = [200000, 500000, 1000000, 2000000];
+const MAX_AMOUNT_DIGITS = 10;
+
+function extractAmountDigits(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, MAX_AMOUNT_DIGITS);
+  return digits.replace(/^0+(?=\d)/, '');
+}
+
+function formatAmountWithDots(raw: string): string {
+  const digits = extractAmountDigits(raw);
+  if (!digits) return '';
+  let result = '';
+  for (let index = 0; index < digits.length; index += 1) {
+    if (index > 0 && (digits.length - index) % 3 === 0) {
+      result += '.';
+    }
+    result += digits[index];
+  }
+  return result;
+}
 
 export default function WalletTopUpModal({
   isOpen,
@@ -27,6 +47,32 @@ export default function WalletTopUpModal({
   submitting,
 }: WalletTopUpModalProps) {
   const { t } = useTranslation('common');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const caretDigitOffsetRef = useRef<number | null>(null);
+  const [composingValue, setComposingValue] = useState<string | null>(null);
+  const formattedAmount = formatAmountWithDots(topUpAmount);
+  const displayValue = composingValue ?? formattedAmount;
+
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    const targetDigits = caretDigitOffsetRef.current;
+    if (!input || targetDigits === null || composingValue !== null) return;
+    caretDigitOffsetRef.current = null;
+
+    let digitsSeen = 0;
+    let nextCursor = formattedAmount.length;
+    for (let i = 0; i < formattedAmount.length; i += 1) {
+      if (digitsSeen >= targetDigits) {
+        nextCursor = i;
+        break;
+      }
+      if (formattedAmount[i] >= '0' && formattedAmount[i] <= '9') {
+        digitsSeen += 1;
+      }
+    }
+    input.setSelectionRange(nextCursor, nextCursor);
+  }, [composingValue, formattedAmount]);
+
   if (!isOpen) return null;
 
   const topUpMethods = [
@@ -108,14 +154,37 @@ export default function WalletTopUpModal({
 
             <div className="relative mt-3">
               <input
+                ref={inputRef}
                 id="wallet-topup-amount"
-                type="number"
-                min={10000}
-                step={1000}
+                type="text"
                 inputMode="numeric"
+                autoComplete="off"
                 placeholder={t('walletTopUp.otherAmountPlaceholder')}
-                value={topUpAmount}
-                onChange={(e) => setTopUpAmount(e.target.value)}
+                value={displayValue}
+                onCompositionStart={(e) => {
+                  setComposingValue(e.currentTarget.value);
+                }}
+                onCompositionEnd={(e) => {
+                  const raw = e.currentTarget.value;
+                  setComposingValue(null);
+                  caretDigitOffsetRef.current = null;
+                  setTopUpAmount(extractAmountDigits(raw));
+                }}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if ((e.nativeEvent as InputEvent | undefined)?.isComposing) {
+                    setComposingValue(raw);
+                    return;
+                  }
+                  const cursor = e.target.selectionStart ?? raw.length;
+                  if (cursor < raw.length) {
+                    const digitsBeforeCursor = raw.slice(0, cursor).replace(/\D/g, '').length;
+                    caretDigitOffsetRef.current = Math.min(digitsBeforeCursor, MAX_AMOUNT_DIGITS);
+                  } else {
+                    caretDigitOffsetRef.current = null;
+                  }
+                  setTopUpAmount(extractAmountDigits(raw));
+                }}
                 disabled={submitting}
                 className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-xs placeholder:font-normal focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100 disabled:opacity-60"
               />

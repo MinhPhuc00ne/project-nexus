@@ -125,7 +125,9 @@
       "windowBlockedErr": "Browser blocked the PayOS payment window. Please allow popups.",
       "requestSent": "PayOS payment link created.",
       "connectErr": "Unable to connect to PayOS payment gateway.",
-      "checkingStatus": "Checking PayOS top-up status (Order #{{orderCode}})…"
+      "checkingStatus": "Checking PayOS top-up status (Order #{{orderCode}})…",
+      "viewQrAgain": "View QR code",
+      "openPayosLink": "Open PayOS payment page"
     },
     "linkedBank": {
       "cardTitle": "Linked bank account",
