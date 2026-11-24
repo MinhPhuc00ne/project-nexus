@@ -8,6 +8,7 @@ import LanguageSwitcher from '../../common/LanguageSwitcher';
 import AdminNotifications from './AdminNotifications';
 import { useToast } from '../../ToastNotification';
 import LogoutConfirmDialog from '../../auth/LogoutConfirmDialog';
+import { dashboardChrome } from '../../dashboard/dashboardChrome';
 
 // Header nhận tài khoản đã được AdminLayout xác minh qua /users/me; không tự gọi API lần nữa.
 // onMenu mở sidebar mobile; thông báo lấy từ API theo tài khoản hiện tại.
@@ -74,7 +75,7 @@ export default function AdminHeader({
   };
 
   return (
-    <header className="relative z-20 flex min-h-20 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white/95 px-4 backdrop-blur-md sm:px-7">
+    <header className={`relative ${dashboardChrome.header}`}>
       <div className="flex items-center gap-3">
         <button
           onClick={onMenu}
@@ -96,7 +97,7 @@ export default function AdminHeader({
           {t('admin:header.broadcastReady')}
         </span>
       </div>
-      <div className="flex items-center gap-4">
+      <div className={dashboardChrome.headerActions}>
         <LanguageSwitcher compact />
         <div ref={notificationRef} className="relative">
           <AdminNotifications
@@ -127,7 +128,7 @@ export default function AdminHeader({
               setShowUserMenu(!showUserMenu);
               setShowNotifications(false);
             }}
-            className="flex items-center gap-3 rounded-xl p-2 transition-colors hover:bg-blue-50 focus-visible:outline-2 focus-visible:outline-primary"
+            className={dashboardChrome.accountButton}
           >
             <span className="hidden max-w-36 text-right sm:block">
               <span className="block truncate text-xs font-semibold text-slate-900">
@@ -137,7 +138,7 @@ export default function AdminHeader({
                 {user.role}
               </span>
             </span>
-            <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary text-xs font-bold text-white">
+            <span className={dashboardChrome.avatar}>
               {user?.avatarUrl ? (
                 <img src={user.avatarUrl} alt="" className="size-full object-cover" />
               ) : (
@@ -151,10 +152,7 @@ export default function AdminHeader({
           </button>
 
           {showUserMenu && (
-            <div
-              id={userMenuId}
-              className="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-slate-200 bg-white p-2 shadow-lg"
-            >
+            <div id={userMenuId} className={dashboardChrome.accountMenu}>
               {/* Thông tin tài khoản đang đăng nhập; vẫn hiển thị khi tên ở header bị ẩn trên mobile. */}
               <div className="mb-2 border-b border-slate-100 px-3 py-3">
                 <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>

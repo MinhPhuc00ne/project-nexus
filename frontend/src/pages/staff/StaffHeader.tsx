@@ -26,6 +26,7 @@ import {
 import type { UserNotification } from '../../types/notification.types';
 import { resolveStaffNotificationTarget } from './staffNotificationNavigation';
 import StaffHeaderDialogs from './StaffHeaderDialogs';
+import { dashboardChrome } from '../../components/dashboard/dashboardChrome';
 import {
   changeStaffPassword,
   getStaffProfile,
@@ -275,20 +276,20 @@ export default function StaffHeader({ account, onOpenSidebar }: StaffHeaderProps
     .toUpperCase();
 
   return (
-    <header className="[min-height:64px] [gap:9px] px-4 max-[760px]:[min-height:58px] max-[760px]:px-2.5 sticky top-0 z-20 flex min-h-[70px] items-center gap-3 border-b border-slate-200 bg-white/95 px-5 backdrop-blur-sm">
+    <header className={`sticky top-0 ${dashboardChrome.header}`}>
       <button
-        className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] hidden max-[760px]:[display:inline-grid]"
+        className={dashboardChrome.menuButton}
         aria-label={t('header.openMenuAria')}
         onClick={onOpenSidebar}
       >
         <Menu size={20} />
       </button>
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <span className="hidden size-10 shrink-0 items-center justify-center rounded-xl border border-blue-100 bg-blue-50 text-blue-600 sm:inline-flex">
+        <span className="hidden size-9 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-primary sm:inline-flex">
           <Headphones size={20} aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-bold tracking-wider text-blue-600">
+          <span className="inline-flex rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold tracking-wider text-primary">
             STAFF
           </span>
           <p
@@ -299,7 +300,7 @@ export default function StaffHeader({ account, onOpenSidebar }: StaffHeaderProps
           </p>
         </div>
       </div>
-      <div className="ml-auto flex shrink-0 items-center gap-3 max-[480px]:gap-1.5">
+      <div className={`ml-auto ${dashboardChrome.headerActions}`}>
         <LanguageSwitcher compact />
         <div ref={notificationsRef} className="relative">
           <button
@@ -312,17 +313,17 @@ export default function StaffHeader({ account, onOpenSidebar }: StaffHeaderProps
               setIsAccountOpen(false);
               if (nextOpen) void loadNotifications();
             }}
-            className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] [&_i]:absolute [&_i]:[top:7px] [&_i]:[right:7px] [&_i]:w-1.5 [&_i]:h-1.5 [&_i]:[border:1px_solid_white] [&_i]:rounded-full [&_i]:[background:var(--staff-accent)]"
+            className={`${dashboardChrome.notificationButton} [&_i]:absolute [&_i]:right-1 [&_i]:top-1 [&_i]:size-1.5 [&_i]:rounded-full [&_i]:bg-primary`}
             aria-label={t('header.notificationsAria')}
           >
-            <Bell size={18} />
+            <Bell size={24} />
             {unreadCount > 0 && <i />}
           </button>
           {isNotificationsOpen && (
             <section
               id="staff-notifications-panel"
               aria-label={t('header.yourNotificationsAria')}
-              className="absolute right-0 top-full z-40 mt-3 w-80 max-w-[calc(100vw-24px)] rounded-2xl border border-slate-100 bg-white shadow-xl max-[480px]:fixed max-[480px]:right-3 max-[480px]:top-[70px] max-[480px]:mt-0"
+              className="absolute right-0 top-full z-40 mt-3 w-80 max-w-[calc(100vw-24px)] rounded-2xl border border-slate-100 bg-white shadow-xl max-[480px]:fixed max-[480px]:right-3 max-[480px]:top-20 max-[480px]:mt-0"
             >
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <div>
@@ -424,7 +425,7 @@ export default function StaffHeader({ account, onOpenSidebar }: StaffHeaderProps
           )}
         </div>
 
-        <div ref={accountRef} className="relative border-l border-slate-100 pl-3">
+        <div ref={accountRef} className="relative">
           <button
             type="button"
             aria-label={t('header.staffAccountAria')}
@@ -434,34 +435,31 @@ export default function StaffHeader({ account, onOpenSidebar }: StaffHeaderProps
               setIsAccountOpen((open) => !open);
               setIsNotificationsOpen(false);
             }}
-            className="flex cursor-pointer items-center gap-2.5 rounded-xl p-1.5 text-left transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-blue-500"
+            className={dashboardChrome.accountButton}
           >
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-blue-100 bg-blue-50 text-xs font-bold text-blue-700">
+            <span className={`${dashboardChrome.avatar} order-2`}>
               {accountAvatar ? (
                 <img src={accountAvatar} alt="" className="h-full w-full object-cover" />
               ) : (
                 initials
               )}
             </span>
-            <span className="max-[480px]:hidden">
-              <span className="block max-w-40 truncate text-xs font-bold text-slate-800">
+            <span className="order-1 hidden max-w-36 text-right sm:block">
+              <span className="block max-w-36 truncate text-xs font-semibold text-slate-900">
                 {accountName}
               </span>
-              <span className="mt-1 block text-[10px] text-slate-400">
+              <span className="mt-0.5 block text-[9px] font-bold tracking-wider text-primary">
                 {t('header.supportStaffRole')}
               </span>
             </span>
             <ChevronDown
-              size={14}
-              className={`text-slate-500 transition-transform ${isAccountOpen ? 'rotate-180' : ''}`}
+              size={13}
+              className={`order-3 text-slate-400 transition-transform ${isAccountOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
           {isAccountOpen && (
-            <div
-              id="staff-account-panel"
-              className="absolute right-0 top-full z-40 mt-2.5 w-76 max-w-[calc(100vw-24px)] rounded-2xl border border-slate-200/90 bg-white p-2.5 shadow-2xl animate-fade-in"
-            >
+            <div id="staff-account-panel" className={dashboardChrome.accountMenu}>
               {/* Profile Card Header */}
               <div className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-blue-200 bg-blue-100 text-xs font-bold text-blue-700 shadow-xs">

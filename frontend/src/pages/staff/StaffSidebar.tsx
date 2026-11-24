@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
+import { dashboardChrome } from '../../components/dashboard/dashboardChrome';
 import { navigation, staffSectionPaths, type StaffSection } from './staffNavigationData';
 
 interface StaffSidebarProps {
@@ -24,31 +25,30 @@ export default function StaffSidebar({
   return (
     <>
       <aside
-        className={`[border-right:1px_solid_var(--staff-line)] max-[760px]:fixed max-[760px]:[inset:0_auto_0_0] max-[760px]:[width:min(290px,_84vw)] max-[760px]:h-dvh max-[760px]:[transform:translateX(-105%)] max-[760px]:[transition:transform_0.2s_ease] max-[760px]:[box-shadow:14px_0_40px_rgb(25_35_55_/_12%)] max-[760px]:[&.staff-sidebar--open]:[transform:translateX(0)] sticky top-0 z-30 flex h-screen min-h-0 flex-col border-r border-slate-200 bg-white overflow-y-auto custom-scrollbar ${isSidebarOpen ? 'staff-sidebar--open' : ''}`}
+        className={`${dashboardChrome.sidebar} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="flex items-center gap-2.5 [min-height:70px] [padding:12px_18px] [border-bottom:1px_solid_#f0f1f6]">
-          <img
-            src="/images/logo.png"
-            alt="NEXUS"
-            className="[width:148px] max-w-full [height:auto] object-contain [filter:drop-shadow(0_6px_10px_rgb(31_95_227_/_10%))]"
-          />
+        <div className={dashboardChrome.sidebarBrand}>
+          <img src="/images/logo.png" alt="NEXUS" className="h-16 w-44 max-w-full object-contain" />
           <button
-            className="relative [display:inline-grid] [width:35px] [height:35px] [place-items:center] [border:1px_solid_#eceef5] [border-radius:9px] [color:#68758d] [background:white] cursor-pointer [transition:0.15s_ease] hover:[color:var(--staff-primary)] hover:[border-color:#c8d8ff] hover:[background:#f2f6ff] hidden [margin-left:auto] max-[760px]:[display:inline-grid]"
+            className="ml-auto p-1 text-slate-500 lg:hidden"
             aria-label={t('sidebar.closeMenu')}
             onClick={onCloseSidebar}
           >
             <X size={18} />
           </button>
         </div>
-        <div className="[padding:22px_18px_10px] [color:#9aa2b4] text-[10px] font-extrabold [letter-spacing:0.11em]">
+        <div className={`${dashboardChrome.sidebarLabel} mt-6 px-6`}>
           {t('sidebar.sectionTitle')}
         </div>
-        <nav className="grid [gap:5px] [padding:0_10px]" aria-label={t('sidebarNavAria')}>
+        <nav
+          className="flex-1 space-y-1 overflow-y-auto px-3 pb-6"
+          aria-label={t('sidebarNavAria')}
+        >
           {navigation
             .filter(({ label }) => label !== 'Quản Lý Nhân Viên' || managementAccess === 'allowed')
             .map(({ label, i18nKey, icon: Icon }) => (
               <button
-                className={`flex [min-height:42px] items-center gap-2.5 [padding:0_11px] [border:0] [border-radius:8px] [color:#665f68] [background:transparent] cursor-pointer text-left [transition:0.15s_ease] [&_>_span:nth-child(2)]:[flex:1] [&_>_span:nth-child(2)]:text-xs [&_>_span:nth-child(2)]:[font-weight:650] [&_>_span:nth-child(2)]:whitespace-nowrap hover:[background:#fff2ef] hover:[color:var(--staff-accent)] [&.is-active]:[color:white] [&.is-active]:[background:var(--staff-accent)] [&.is-active]:[box-shadow:0_7px_16px_rgb(217_52_27_/_18%)] ${activeNavigation === label ? 'is-active' : ''}`}
+                className={`${dashboardChrome.navItem} w-full text-left ${activeNavigation === label ? dashboardChrome.navActive + ' is-active' : dashboardChrome.navIdle}`}
                 key={label}
                 aria-current={activeNavigation === label ? 'page' : undefined}
                 onClick={() => {
@@ -62,15 +62,15 @@ export default function StaffSidebar({
               </button>
             ))}
         </nav>
-        <div className="[margin-top:auto] [padding:12px_10px_14px] [border-top:1px_solid_#f0f1f6]">
-          <div className="flex justify-between [padding:12px_5px_0] [color:#9a8f8d] [font-size:9px] [&_strong]:[color:#c94c35]">
+        <div className="mt-auto border-t border-slate-100 p-4">
+          <div className="rounded-lg bg-blue-50 px-3 py-2.5 text-[10px] font-medium text-primary">
             <span>NEXUS Staff Gateway</span>
           </div>
         </div>
       </aside>
       {isSidebarOpen && (
         <button
-          className="hidden max-[760px]:fixed max-[760px]:[inset:0] max-[760px]:[z-index:25] max-[760px]:block max-[760px]:[border:0] max-[760px]:[background:rgb(19_27_43_/_35%)]"
+          className={dashboardChrome.sidebarBackdrop}
           aria-label={t('sidebar.closeMenu')}
           onClick={onCloseSidebar}
         />

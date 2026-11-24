@@ -5,6 +5,7 @@ import {
   Flame as FlameOutlined,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { dashboardChrome } from '../dashboard/dashboardChrome';
 import { useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../../i18n/config';
 import useSellerNotifications from './useSellerNotifications';
@@ -63,7 +64,7 @@ export default function SellerNotifications({
     <>
       <button
         type="button"
-        className="relative grid place-items-center rounded-lg border-0 bg-transparent p-2 text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+        className={dashboardChrome.notificationButton}
         aria-label={
           state.unreadCount !== null
             ? t('notifications.bellAriaUnread', { count: state.unreadCount })

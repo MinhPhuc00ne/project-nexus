@@ -2,7 +2,7 @@
   "header": {
     "panelTitle": "NEXUS ADMIN PANEL",
     "clusterStatus": "Cụm máy chủ: 99.98%",
-    "broadcastReady": "PHÁT SÓNG 3D: SẴN SÀNG",
+    "broadcastReady": "ĐẤU GIÁ ONLINE: SẴN SÀNG",
     "openMenu": "Mở menu",
     "accountOptionsAria": "Mở tùy chọn tài khoản",
     "settingsLink": "Cài đặt quản trị",
@@ -12,7 +12,7 @@
     "closeMenu": "Đóng menu",
     "overviewAria": "NEXUS Admin - Tổng quan",
     "navAria": "Điều hướng quản trị",
-    "engineLabel": "Engine 3D WebGL",
+    "engineLabel": "Nexus",
     "demoBadge": "DEMO"
   },
   "notifications": {
@@ -67,9 +67,9 @@
     "metricsAria": "Chỉ số tổng quan",
     "revenueTitle": "Doanh thu phí sàn",
     "revenueSubtitle": "THÁNG NÀY",
-    "revenueDesc": "Phí đơn thường và đấu giá 3D",
+    "revenueDesc": "Phí đơn thường và đấu giá",
     "feeRateLabel": "Tỷ lệ phí sàn",
-    "auctionsTitle": "Phiên đấu giá 3D",
+    "auctionsTitle": "Phiên đấu giá",
     "auctionsSubtitle": "ĐANG DIỄN RA",
     "liveCount": "{{count}} phiên live",
     "auctionsDesc": "Bao gồm phiên đang gia hạn",
@@ -89,7 +89,7 @@
     "trendTitle": "Xu hướng doanh thu phí sàn",
     "trendSubtitle": "THEO THỜI GIAN",
     "totalFee": "Tổng phí sàn",
-    "auction3d": "Đấu giá 3D",
+    "auction3d": "Đấu giá",
     "normalOrders": "Đơn thường",
     "relativeTrend": "Xu hướng tương đối theo từng nguồn",
     "trendAria": "Xu hướng phí sàn {{label}}",
@@ -1154,7 +1154,7 @@
       "title": "Xu hướng doanh thu phí sàn",
       "subtitle": "Phí đơn hàng thường và phí đấu giá theo kỳ",
       "totalUnit": "Tổng phí sàn · {{unit}}",
-      "auctionFee": "Phí đấu giá 3D",
+      "auctionFee": "Phí đấu giá",
       "normalFee": "Phí đơn hàng thường",
       "share": "Tỷ trọng: {{percent}}%",
       "relativeChart": "Biểu đồ chỉ số tương đối",
@@ -1362,7 +1362,7 @@
     "breadcrumbRoot": "Quản trị",
     "fallbackTitle": "Admin",
     "footerOps": "© 2026 NEXUS • Admin Operations",
-    "footerPlatform": "3D Auction & Commerce Platform"
+    "footerPlatform": "Auction & Commerce Platform"
   },
   "studio": {
     "title": "Studio phát trực tiếp 3D",

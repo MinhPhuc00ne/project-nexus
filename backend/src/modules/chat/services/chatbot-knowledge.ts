@@ -69,10 +69,10 @@ export const chatbotKnowledge = [
   },
   {
     id: 'AUCTION',
-    title: 'Đấu giá 3D',
+    title: 'Đấu giá online',
     keywords: ['dau gia', 'dau gia 3d', 'tra gia', 'dat gia', 'anti sniping', 'auction', 'bid'],
     answer:
-      'Quy trình tham gia & mua đơn hàng đấu giá 3D trên NEXUS:\n1. Điều kiện: Tài khoản ở chế độ Người mua, có ví NEXUS Pay đủ số dư khả dụng cho mức giá đặt và đạt tối thiểu 40 điểm uy tín (một số phiên riêng có thể yêu cầu cao hơn); người bán cần từ 50 điểm uy tín để đăng sản phẩm và không được tự đấu giá phiên của mình.\n2. Đặt giá: Chọn phiên đang mở, hệ thống tạm khóa số tiền đặt giá trong ví; nếu có người trả giá cao hơn, tiền khóa của người trước được hoàn ngay về ví. Có lượt đặt giá hợp lệ trong 2 phút cuối sẽ tự động gia hạn thêm 2 phút (Anti-Sniping).\n3. Thanh toán đơn thắng: Sau khi thắng phiên, vào mục Đấu giá của tôi để xác nhận địa chỉ nhận hàng và hoàn tất thanh toán trong 24 giờ (nếu quá hạn sẽ bị hủy quyền thắng và trừ 10 điểm uy tín).',
+      'Quy trình tham gia & mua đơn hàng đấu giá trên NEXUS:\n1. Điều kiện: Tài khoản ở chế độ Người mua, có ví NEXUS Pay đủ số dư khả dụng cho mức giá đặt và đạt tối thiểu 40 điểm uy tín (một số phiên riêng có thể yêu cầu cao hơn); người bán cần từ 50 điểm uy tín để đăng sản phẩm và không được tự đấu giá phiên của mình.\n2. Đặt giá: Chọn phiên đang mở, hệ thống tạm khóa số tiền đặt giá trong ví; nếu có người trả giá cao hơn, tiền khóa của người trước được hoàn ngay về ví. Có lượt đặt giá hợp lệ trong 2 phút cuối sẽ tự động gia hạn thêm 2 phút (Anti-Sniping).\n3. Thanh toán đơn thắng: Sau khi thắng phiên, vào mục Đấu giá của tôi để xác nhận địa chỉ nhận hàng và hoàn tất thanh toán trong 24 giờ (nếu quá hạn sẽ bị hủy quyền thắng và trừ 10 điểm uy tín).',
   },
   {
     id: 'WALLET',

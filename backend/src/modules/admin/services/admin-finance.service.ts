@@ -542,7 +542,7 @@ export class AdminFinanceService {
           color: 'bg-primary',
         },
         {
-          name: 'Đấu giá 3D độc bản (16%)',
+          name: 'Đấu giá độc bản (16%)',
           description: 'WebGL Interactive Room',
           amount: formatShortAmount(totalAuctionFee),
           rawAmount: totalAuctionFee,
