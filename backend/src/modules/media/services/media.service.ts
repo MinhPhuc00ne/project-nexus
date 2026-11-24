@@ -45,6 +45,67 @@ export class MediaService {
     }
   }
 
+  private validateUploadFile(
+    file: Express.Multer.File | undefined,
+    options: MediaUploadOptions,
+  ): asserts file is Express.Multer.File {
+    if (!file || !file.buffer) {
+      throw new BadRequestException('Vui lòng chọn file hình ảnh hợp lệ để tải lên.');
+    }
+
+    const maxFileSize = options.allowVideo ? MAX_REVIEW_FILE_SIZE : MAX_FILE_SIZE;
+    if (file.size > maxFileSize) {
+      const maxMb = options.allowVideo ? 50 : 25;
+      throw new BadRequestException(
+        `Kích thước file vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
+      );
+    }
+
+    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    const allowedExtensions = options.allowVideo ? ALLOWED_REVIEW_EXTENSIONS : ALLOWED_EXTENSIONS;
+    if (!allowedExtensions.has(ext)) {
+      const supported = options.allowVideo
+        ? 'hình ảnh hoặc video (JPG, PNG, WEBP, GIF, SVG, MP4, WEBM, MOV)'
+        : 'hình ảnh (JPG, PNG, WEBP, GIF, SVG)';
+      throw new BadRequestException(
+        `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file ${supported}.`,
+      );
+    }
+  }
+
+  private async uploadToCloudinaryIfConfigured(
+    file: Express.Multer.File,
+    fallbackUrl: string,
+    fallbackPublicId: string,
+  ): Promise<{ url: string; publicId: string }> {
+    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
+    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
+    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      return { url: fallbackUrl, publicId: fallbackPublicId };
+    }
+
+    try {
+      const cloudRes = await this.cloudinaryService.uploadFile(
+        file.buffer,
+        file.originalname,
+        'nexus/media',
+      );
+      if (cloudRes?.url && !cloudRes.url.startsWith('data:')) {
+        this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${cloudRes.url}`);
+        return {
+          url: cloudRes.url,
+          publicId: cloudRes.publicId || fallbackPublicId,
+        };
+      }
+    } catch (err) {
+      this.logger.warn(`Không thể upload lên Cloudinary, sử dụng URL cục bộ của server: ${err}`);
+    }
+
+    return { url: fallbackUrl, publicId: fallbackPublicId };
+  }
+
   /**
    * Uploads a single media file to local disk storage and optionally synchronizes to Cloudinary.
    *
@@ -58,30 +119,9 @@ export class MediaService {
     req?: Request,
     options: MediaUploadOptions = {},
   ): Promise<MediaUploadResponseDto> {
-    if (!file || !file.buffer) {
-      throw new BadRequestException('Vui lòng chọn file hình ảnh hợp lệ để tải lên.');
-    }
-
-    const maxFileSize = options.allowVideo ? MAX_REVIEW_FILE_SIZE : MAX_FILE_SIZE;
-    const allowedExtensions = options.allowVideo ? ALLOWED_REVIEW_EXTENSIONS : ALLOWED_EXTENSIONS;
-
-    if (file.size > maxFileSize) {
-      const maxMb = options.allowVideo ? 50 : 25;
-      throw new BadRequestException(
-        `Kích thước file vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
-      );
-    }
+    this.validateUploadFile(file, options);
 
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    if (!allowedExtensions.has(ext)) {
-      const supported = options.allowVideo
-        ? 'hình ảnh hoặc video (JPG, PNG, WEBP, GIF, SVG, MP4, WEBM, MOV)'
-        : 'hình ảnh (JPG, PNG, WEBP, GIF, SVG)';
-      throw new BadRequestException(
-        `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file ${supported}.`,
-      );
-    }
-
     const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
     const sanitizedFileName = `media-${uniqueSuffix}${ext}`;
     const localFilePath = path.join(this.mediaUploadDir, sanitizedFileName);
@@ -99,29 +139,11 @@ export class MediaService {
     const protocol = req?.protocol || 'http';
     const localUrl = `${protocol}://${hostHeader}/uploads/media/${sanitizedFileName}`;
 
-    let finalUrl = localUrl;
-    let publicId = `local-${uniqueSuffix}`;
-
-    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
-    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
-    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
-
-    if (cloudName && apiKey && apiSecret) {
-      try {
-        const cloudRes = await this.cloudinaryService.uploadFile(
-          file.buffer,
-          file.originalname,
-          'nexus/media',
-        );
-        if (cloudRes && cloudRes.url && !cloudRes.url.startsWith('data:')) {
-          finalUrl = cloudRes.url;
-          publicId = cloudRes.publicId || publicId;
-          this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${finalUrl}`);
-        }
-      } catch (err) {
-        this.logger.warn(`Không thể upload lên Cloudinary, sử dụng URL cục bộ của server: ${err}`);
-      }
-    }
+    const { url: finalUrl, publicId } = await this.uploadToCloudinaryIfConfigured(
+      file,
+      localUrl,
+      `local-${uniqueSuffix}`,
+    );
 
     return {
       url: finalUrl,
