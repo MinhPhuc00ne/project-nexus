@@ -25,7 +25,6 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { getBuyerOrdersApi, type BuyerOrder } from '../../services/orders';
 import { getBuyerWalletApi, type BuyerWalletResponse } from '../../services/wallet.service';
-import { fetchBuyerWishlistIds } from '../../services/wishlist.service';
 import BuyerInterestRecommendations from '../../components/buyer/BuyerInterestRecommendations';
 
 const statusMap = {
@@ -104,7 +103,6 @@ export default function BuyerDashboardPage() {
 
   const [orders, setOrders] = useState<BuyerOrder[]>([]);
   const [wallet, setWallet] = useState<BuyerWalletResponse | null>(null);
-  const [wishlistCount, setWishlistCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -112,10 +110,9 @@ export default function BuyerDashboardPage() {
     async function loadData() {
       setLoading(true);
       try {
-        const [ordersData, walletData, wishlistData] = await Promise.allSettled([
+        const [ordersData, walletData] = await Promise.allSettled([
           getBuyerOrdersApi(),
           getBuyerWalletApi(),
-          fetchBuyerWishlistIds(),
         ]);
         if (isMounted) {
           if (ordersData.status === 'fulfilled' && Array.isArray(ordersData.value)) {
@@ -123,9 +120,6 @@ export default function BuyerDashboardPage() {
           }
           if (walletData.status === 'fulfilled' && walletData.value) {
             setWallet(walletData.value);
-          }
-          if (wishlistData.status === 'fulfilled' && Array.isArray(wishlistData.value)) {
-            setWishlistCount(wishlistData.value.length);
           }
         }
       } finally {
@@ -164,7 +158,7 @@ export default function BuyerDashboardPage() {
     {
       key: 'wishlist',
       label: t('dashboard.stats.wishlistLabel'),
-      value: String(wishlistCount),
+      value: t('dashboard.stats.wishlistValue'),
       sub: t('dashboard.stats.wishlistSub'),
       icon: Heart,
       link: '/buyer/wishlist',

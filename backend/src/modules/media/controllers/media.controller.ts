@@ -136,4 +136,45 @@ export class MediaController {
 
     return this.mediaService.uploadMultipleMedia(files, req);
   }
+
+  @Post('upload-review')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: '[MEDIA] Upload hình ảnh hoặc video feedback cho đánh giá sản phẩm',
+    description:
+      'Hỗ trợ upload 1 hoặc nhiều file ảnh/video (JPG, PNG, WEBP, GIF, SVG, MP4, WEBM, MOV, tối đa 50MB/file) để đính kèm vào Product Review.',
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Danh sách file ảnh/video feedback đánh giá sản phẩm',
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description: 'Danh sách ảnh/video review (tối đa 50MB/file)',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Upload media đánh giá thành công',
+    type: MultipleMediaUploadResponseDto,
+  })
+  @UseInterceptors(AnyFilesInterceptor())
+  async uploadReviewMedia(
+    @UploadedFiles() files?: Express.Multer.File[],
+    @Req() req?: Request,
+  ): Promise<MultipleMediaUploadResponseDto> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Vui lòng chọn ít nhất một file ảnh hoặc video để tải lên.');
+    }
+
+    return this.mediaService.uploadMultipleMedia(files, req, { allowVideo: true });
+  }
 }

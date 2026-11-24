@@ -23,6 +23,154 @@ export class ReviewsService {
     private readonly reputationService: ReputationService,
   ) {}
 
+  private static readonly EMPTY_COMMENT_FALLBACK = 'Không có bình luận';
+  private static readonly PRODUCT_REVIEW_NOT_FOUND = 'Không tìm thấy đánh giá sản phẩm.';
+
+  private async notifyBuyerReviewReceived(
+    tx: Prisma.TransactionClient,
+    sellerId: string,
+    buyerId: string,
+    title: string,
+    contentPrefix: string,
+    comment?: string,
+  ): Promise<void> {
+    if (!tx.notification?.create) return;
+    const buyer = tx.user?.findUnique
+      ? await tx.user.findUnique({ where: { id: buyerId }, select: { fullName: true } })
+      : null;
+    await tx.notification.create({
+      data: {
+        userId: sellerId,
+        title,
+        content: `Khách hàng ${buyer?.fullName || 'Người mua'} ${contentPrefix} Nhận xét: "${comment || ReviewsService.EMPTY_COMMENT_FALLBACK}".`,
+        type: NotificationType.SYSTEM,
+        channel: NotificationChannel.IN_APP,
+      },
+    });
+  }
+
+  private async createShopOrProductReview(
+    tx: Prisma.TransactionClient,
+    params: {
+      userId: string;
+      orderId: string;
+      sellerId: string;
+      orderItems: Array<{ productId: string | null }>;
+      dto: ReviewDto;
+      kind: 'shop' | 'product';
+      productId?: string;
+    },
+  ): Promise<unknown> {
+    const { userId, orderId, sellerId, orderItems, dto, kind, productId } = params;
+    const values = { orderId, rating: dto.rating, comment: dto.comment?.trim() || null };
+
+    if (kind === 'shop') {
+      if (tx.orderItem?.aggregate) {
+        const orderItemsAgg = await tx.orderItem.aggregate({
+          _sum: { quantity: true },
+          where: { order: { buyerId: userId, sellerId, status: 'CONFIRMED' } },
+        });
+        if ((orderItemsAgg._sum.quantity ?? 0) < 2) {
+          throw new BadRequestException(
+            'Bạn cần mua và hoàn tất ít nhất 2 sản phẩm từ gian hàng này để có thể đánh giá shop.',
+          );
+        }
+      }
+
+      const existingShopReview = await tx.review.findFirst({
+        where: { reviewerId: userId, targetUserId: sellerId, isShopReview: true },
+      });
+      const created = existingShopReview
+        ? await tx.review.update({
+            where: { id: existingShopReview.id },
+            data: { rating: dto.rating, comment: dto.comment?.trim() || null },
+          })
+        : await tx.review.create({
+            data: { ...values, reviewerId: userId, targetUserId: sellerId, isShopReview: true },
+          });
+
+      await this.notifyBuyerReviewReceived(
+        tx,
+        sellerId,
+        userId,
+        'Đánh giá gian hàng mới ⭐',
+        `vừa đánh giá ${dto.rating} sao cho gian hàng của bạn.`,
+        dto.comment,
+      );
+      return created;
+    }
+
+    if (!productId || !orderItems.some((item) => item.productId === productId)) {
+      throw new BadRequestException('Sản phẩm không thuộc đơn hàng này.');
+    }
+    await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
+    const mediaUrls = (dto.mediaUrls ?? []).map((url) => url.trim()).filter(Boolean);
+    const created = await tx.productReview.create({
+      data: { ...values, mediaUrls, reviewerId: userId, productId },
+    });
+    const product = await tx.product.update({
+      where: { id: productId },
+      data: { ratingSum: { increment: dto.rating }, reviewCount: { increment: 1 } },
+    });
+    await tx.product.update({
+      where: { id: productId },
+      data: { averageRating: product.ratingSum / product.reviewCount },
+    });
+    const prod = tx.product?.findUnique
+      ? await tx.product.findUnique({ where: { id: productId }, select: { title: true } })
+      : null;
+    await this.notifyBuyerReviewReceived(
+      tx,
+      sellerId,
+      userId,
+      'Đánh giá mới cho sản phẩm 🌟',
+      `vừa đánh giá ${dto.rating} sao cho sản phẩm "${prod?.title || 'Sản phẩm'}" trong đơn #${orderId.slice(0, 8)}.`,
+      dto.comment,
+    );
+    return created;
+  }
+
+  private async handleReviewReputationAndAlert(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    sellerId: string,
+    dto: ReviewDto,
+  ): Promise<void> {
+    const bonusReference = `REVIEW_BONUS:${orderId}`;
+    if (
+      dto.rating === 5 &&
+      !(await tx.reputationLog.findFirst({
+        where: { userId: sellerId, referenceId: bonusReference },
+      }))
+    ) {
+      await this.reputationService.adjustScore(
+        {
+          userId: sellerId,
+          deltaPoints: 1,
+          reason: `Đơn hàng #${orderId.slice(0, 8)} nhận được đánh giá 5 sao từ người mua`,
+          referenceId: bonusReference,
+        },
+        tx,
+      );
+      return;
+    }
+
+    if (dto.rating === 1) {
+      const admins = await tx.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
+      for (const admin of admins) {
+        await tx.notification.create({
+          data: {
+            userId: admin.id,
+            title: `[CẢNH BÁO SHOP] Đơn hàng #${orderId.slice(0, 8)} nhận đánh giá 1 sao`,
+            content: `Người mua đã đánh giá 1 sao cho Shop ${sellerId} tại đơn hàng #${orderId.slice(0, 8)}. Nhận xét: "${dto.comment || ReviewsService.EMPTY_COMMENT_FALLBACK}". Vui lòng kiểm tra bằng chứng và xử lý qua luồng báo cáo vi phạm.`,
+            type: 'DISPUTE',
+            channel: 'IN_APP',
+          },
+        });
+      }
+    }
+  }
+
   async create(
     userId: string,
     orderId: string,
@@ -43,141 +191,29 @@ export class ReviewsService {
         if (!order) throw new NotFoundException('Không tìm thấy đơn hàng của bạn.');
         if (order.status !== 'CONFIRMED')
           throw new BadRequestException('Chỉ đánh giá sau khi đơn hàng đã hoàn tất.');
-        const values = { orderId, rating: dto.rating, comment: dto.comment?.trim() || null };
-        let createdReview: unknown;
+
         if (kind === 'customer') {
-          createdReview = await tx.customerReview.create({
-            data: { ...values, sellerId: userId, buyerId: order.buyerId },
-          });
-        } else if (kind === 'shop') {
-          if (tx.orderItem?.aggregate) {
-            const orderItemsAgg = await tx.orderItem.aggregate({
-              _sum: { quantity: true },
-              where: {
-                order: {
-                  buyerId: userId,
-                  sellerId: order.sellerId,
-                  status: 'CONFIRMED',
-                },
-              },
-            });
-            const totalPurchasedQty = orderItemsAgg._sum.quantity ?? 0;
-            if (totalPurchasedQty < 2) {
-              throw new BadRequestException(
-                'Bạn cần mua và hoàn tất ít nhất 2 sản phẩm từ gian hàng này để có thể đánh giá shop.',
-              );
-            }
-          }
-
-          const existingShopReview = await tx.review.findFirst({
-            where: { reviewerId: userId, targetUserId: order.sellerId, isShopReview: true },
-          });
-          if (existingShopReview) {
-            createdReview = await tx.review.update({
-              where: { id: existingShopReview.id },
-              data: { rating: dto.rating, comment: dto.comment?.trim() || null },
-            });
-          } else {
-            createdReview = await tx.review.create({
-              data: {
-                ...values,
-                reviewerId: userId,
-                targetUserId: order.sellerId,
-                isShopReview: true,
-              },
-            });
-          }
-
-          if (tx.notification?.create) {
-            const buyer = tx.user?.findUnique
-              ? await tx.user.findUnique({ where: { id: userId }, select: { fullName: true } })
-              : null;
-            await tx.notification.create({
-              data: {
-                userId: order.sellerId,
-                title: 'Đánh giá gian hàng mới ⭐',
-                content: `Khách hàng ${buyer?.fullName || 'Người mua'} vừa đánh giá ${dto.rating} sao cho gian hàng của bạn. Nhận xét: "${dto.comment || 'Không có bình luận'}".`,
-                type: NotificationType.SYSTEM,
-                channel: NotificationChannel.IN_APP,
-              },
-            });
-          }
-        } else {
-          if (!productId || !order.items.some((item) => item.productId === productId)) {
-            throw new BadRequestException('Sản phẩm không thuộc đơn hàng này.');
-          }
-          await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
-          const mediaUrls = (dto.mediaUrls ?? []).map((url) => url.trim()).filter(Boolean);
-          createdReview = await tx.productReview.create({
-            data: { ...values, mediaUrls, reviewerId: userId, productId },
-          });
-          const product = await tx.product.update({
-            where: { id: productId },
+          return tx.customerReview.create({
             data: {
-              ratingSum: { increment: dto.rating },
-              reviewCount: { increment: 1 },
+              orderId,
+              rating: dto.rating,
+              comment: dto.comment?.trim() || null,
+              sellerId: userId,
+              buyerId: order.buyerId,
             },
           });
-          await tx.product.update({
-            where: { id: productId },
-            data: { averageRating: product.ratingSum / product.reviewCount },
-          });
-
-          if (tx.notification?.create) {
-            const buyer = tx.user?.findUnique
-              ? await tx.user.findUnique({ where: { id: userId }, select: { fullName: true } })
-              : null;
-            const prod = tx.product?.findUnique
-              ? await tx.product.findUnique({ where: { id: productId }, select: { title: true } })
-              : null;
-            await tx.notification.create({
-              data: {
-                userId: order.sellerId,
-                title: 'Đánh giá mới cho sản phẩm 🌟',
-                content: `Khách hàng ${buyer?.fullName || 'Người mua'} vừa đánh giá ${dto.rating} sao cho sản phẩm "${prod?.title || 'Sản phẩm'}" trong đơn #${order.id.slice(0, 8)}. Nhận xét: "${dto.comment || 'Không có bình luận'}".`,
-                type: NotificationType.SYSTEM,
-                channel: NotificationChannel.IN_APP,
-              },
-            });
-          }
         }
 
-        if (kind !== 'customer') {
-          const bonusReference = `REVIEW_BONUS:${order.id}`;
-          if (
-            dto.rating === 5 &&
-            !(await tx.reputationLog.findFirst({
-              where: { userId: order.sellerId, referenceId: bonusReference },
-            }))
-          ) {
-            await this.reputationService.adjustScore(
-              {
-                userId: order.sellerId,
-                deltaPoints: 1,
-                reason: `Đơn hàng #${order.id.slice(0, 8)} nhận được đánh giá 5 sao từ người mua`,
-                referenceId: bonusReference,
-              },
-              tx,
-            );
-          } else if (dto.rating === 1) {
-            const admins = await tx.user.findMany({
-              where: { role: 'ADMIN' },
-              select: { id: true },
-            });
-            for (const admin of admins) {
-              await tx.notification.create({
-                data: {
-                  userId: admin.id,
-                  title: `[CẢNH BÁO SHOP] Đơn hàng #${order.id.slice(0, 8)} nhận đánh giá 1 sao`,
-                  content: `Người mua đã đánh giá 1 sao cho Shop ${order.sellerId} tại đơn hàng #${order.id.slice(0, 8)}. Nhận xét: "${dto.comment || 'Không có bình luận'}". Vui lòng kiểm tra bằng chứng và xử lý qua luồng báo cáo vi phạm.`,
-                  type: 'DISPUTE',
-                  channel: 'IN_APP',
-                },
-              });
-            }
-          }
-        }
-
+        const createdReview = await this.createShopOrProductReview(tx, {
+          userId,
+          orderId,
+          sellerId: order.sellerId,
+          orderItems: order.items,
+          dto,
+          kind,
+          productId,
+        });
+        await this.handleReviewReputationAndAlert(tx, order.id, order.sellerId, dto);
         return createdReview;
       });
     } catch (error) {
@@ -267,7 +303,7 @@ export class ReviewsService {
         where: { orderId_productId: { orderId, productId } },
         include: { product: true },
       });
-      if (!existing) throw new NotFoundException('Không tìm thấy đánh giá sản phẩm.');
+      if (!existing) throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
       if (existing.reviewerId !== userId)
         throw new ForbiddenException('Bạn chỉ có thể chỉnh sửa đánh giá của chính mình.');
 
@@ -342,7 +378,7 @@ export class ReviewsService {
           data: {
             userId: order.sellerId,
             title: 'Cập nhật đánh giá sản phẩm 📝',
-            content: `Khách hàng vừa cập nhật đánh giá sản phẩm "${existing.product.title}" sang ${dto.rating} sao. Nhận xét mới: "${dto.comment || 'Không có bình luận'}".`,
+            content: `Khách hàng vừa cập nhật đánh giá sản phẩm "${existing.product.title}" sang ${dto.rating} sao. Nhận xét mới: "${dto.comment || ReviewsService.EMPTY_COMMENT_FALLBACK}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -359,7 +395,7 @@ export class ReviewsService {
         where: { orderId_productId: { orderId, productId } },
         include: { product: true },
       });
-      if (!existing) throw new NotFoundException('Không tìm thấy đánh giá sản phẩm.');
+      if (!existing) throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
       if (existing.reviewerId !== userId)
         throw new ForbiddenException('Bạn chỉ có thể xóa đánh giá của chính mình.');
 
@@ -423,7 +459,7 @@ export class ReviewsService {
           data: {
             userId: existing.targetUserId,
             title: 'Cập nhật đánh giá gian hàng 📝',
-            content: `Khách hàng vừa cập nhật đánh giá gian hàng của bạn sang ${dto.rating} sao. Nhận xét: "${dto.comment || 'Không có bình luận'}".`,
+            content: `Khách hàng vừa cập nhật đánh giá gian hàng của bạn sang ${dto.rating} sao. Nhận xét: "${dto.comment || ReviewsService.EMPTY_COMMENT_FALLBACK}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -515,6 +551,10 @@ export class ReviewsService {
         orderId: r.orderId,
         rating: r.rating,
         comment: r.comment,
+        mediaUrls: r.mediaUrls,
+        sellerReply: r.sellerReply,
+        sellerRepliedAt: r.sellerRepliedAt,
+        helpfulCount: r.helpfulCount,
         createdAt: r.createdAt,
         reviewer: r.reviewer,
         target: { id: r.product.id, name: r.product.title },
@@ -552,7 +592,7 @@ export class ReviewsService {
           where: { id },
           include: { reviewer: true, product: true },
         });
-        if (!review) throw new NotFoundException('Không tìm thấy đánh giá sản phẩm.');
+        if (!review) throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
 
         this.validatePointsToDeduct(dto.pointsToDeduct, review.reviewer.reputationScore);
 
@@ -652,7 +692,7 @@ export class ReviewsService {
       });
 
       if (!review) {
-        throw new NotFoundException('Không tìm thấy đánh giá sản phẩm.');
+        throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
       }
 
       if (review.product.sellerId !== sellerId) {
@@ -695,13 +735,20 @@ export class ReviewsService {
     reviewId: string,
   ): Promise<{ reviewId: string; helpful: boolean; helpfulCount: number }> {
     return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM product_reviews WHERE id = ${reviewId} FOR UPDATE`;
       const review = await tx.productReview.findUnique({
         where: { id: reviewId },
         select: { id: true, reviewerId: true, helpfulCount: true },
       });
 
       if (!review) {
-        throw new NotFoundException('Không tìm thấy đánh giá sản phẩm.');
+        throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
+      }
+
+      if (review.reviewerId === userId) {
+        throw new BadRequestException(
+          'Bạn không thể tự bình chọn hữu ích cho đánh giá của chính mình.',
+        );
       }
 
       const existingVote = await tx.productReviewHelpfulVote.findUnique({
@@ -712,12 +759,14 @@ export class ReviewsService {
         await tx.productReviewHelpfulVote.delete({
           where: { id: existingVote.id },
         });
-        const nextCount = Math.max(0, review.helpfulCount - 1);
-        const updated = await tx.productReview.update({
-          where: { id: reviewId },
-          data: { helpfulCount: nextCount },
-          select: { helpfulCount: true },
-        });
+        const updated =
+          review.helpfulCount > 0
+            ? await tx.productReview.update({
+                where: { id: reviewId },
+                data: { helpfulCount: { decrement: 1 } },
+                select: { helpfulCount: true },
+              })
+            : { helpfulCount: 0 };
         return {
           reviewId,
           helpful: false,
@@ -738,6 +787,72 @@ export class ReviewsService {
         reviewId,
         helpful: true,
         helpfulCount: updated.helpfulCount,
+      };
+    });
+  }
+
+  async adminRemoveSellerReply(
+    reviewId: string,
+    dto: AdminDeleteReviewDto,
+    actorRole?: string,
+  ): Promise<{ success: boolean; message: string }> {
+    const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
+    const refPrefix = actorRole === 'SUPPORT_STAFF' ? 'STAFF_DELETE' : 'ADMIN_DELETE';
+
+    return this.prisma.$transaction(async (tx) => {
+      const review = await tx.productReview.findUnique({
+        where: { id: reviewId },
+        include: {
+          product: {
+            select: {
+              id: true,
+              title: true,
+              sellerId: true,
+              seller: { select: { reputationScore: true } },
+            },
+          },
+        },
+      });
+
+      if (!review || !review.sellerReply) {
+        throw new NotFoundException('Không tìm thấy phản hồi của người bán.');
+      }
+
+      this.validatePointsToDeduct(dto.pointsToDeduct, review.product.seller.reputationScore);
+
+      await this.reputationService.adjustScore(
+        {
+          userId: review.product.sellerId,
+          deltaPoints: -dto.pointsToDeduct,
+          reason: `Phản hồi đánh giá tại sản phẩm "${review.product.title}" bị ${actorLabel} gỡ do vi phạm: ${dto.reason.trim()}`,
+          referenceId: `${refPrefix}_SELLER_REPLY:${reviewId}`,
+        },
+        tx,
+      );
+
+      await tx.productReview.update({
+        where: { id: reviewId },
+        data: {
+          sellerReply: null,
+          sellerRepliedAt: null,
+        },
+      });
+
+      if (tx.notification?.create) {
+        await tx.notification.create({
+          data: {
+            userId: review.product.sellerId,
+            title: 'Phản hồi đánh giá của bạn đã bị gỡ bỏ do vi phạm tiêu chuẩn ⚠️',
+            content: `Phản hồi của bạn tại sản phẩm "${review.product.title}" đã bị ${actorLabel} gỡ với lý do: "${dto.reason.trim()}". Bạn bị trừ ${dto.pointsToDeduct} điểm uy tín.`,
+            type: NotificationType.SYSTEM,
+            channel: NotificationChannel.IN_APP,
+          },
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Đã gỡ phản hồi của người bán và trừ điểm uy tín người bán.',
       };
     });
   }

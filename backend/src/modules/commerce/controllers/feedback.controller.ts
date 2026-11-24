@@ -141,6 +141,23 @@ export class FeedbackController {
     return this.reviews.adminDeleteReview(id, 'product', dto, actorRole);
   }
 
+  @Delete('admin/reviews/product/:id/seller-reply')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.SUPPORT_STAFF)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Admin/Staff gỡ phản hồi (sellerReply) vi phạm trên đánh giá sản phẩm, trừ điểm uy tín Seller và gửi thông báo',
+  })
+  adminRemoveSellerReply(
+    @CurrentUser('role') actorRole: string,
+    @Param('id') id: string,
+    @Body() dto: AdminDeleteReviewDto,
+  ): Promise<unknown> {
+    return this.reviews.adminRemoveSellerReply(id, dto, actorRole);
+  }
+
   @Delete('admin/reviews/shop/:id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)

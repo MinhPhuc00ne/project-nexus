@@ -19,12 +19,16 @@ const ALLOWED_EXTENSIONS = new Set([
   '.svg',
   '.bmp',
   '.tiff',
-  '.mp4',
-  '.webm',
-  '.mov',
 ]);
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024;
+const ALLOWED_REVIEW_EXTENSIONS = new Set([...ALLOWED_EXTENSIONS, '.mp4', '.webm', '.mov']);
+
+const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_REVIEW_FILE_SIZE = 50 * 1024 * 1024;
+
+export interface MediaUploadOptions {
+  allowVideo?: boolean;
+}
 
 @Injectable()
 export class MediaService {
@@ -49,19 +53,32 @@ export class MediaService {
    * @returns Metadata and URL of the uploaded media file
    * @throws BadRequestException when file is missing, exceeds size limit, has unsupported format, or fails disk writing
    */
-  async uploadMedia(file?: Express.Multer.File, req?: Request): Promise<MediaUploadResponseDto> {
+  async uploadMedia(
+    file?: Express.Multer.File,
+    req?: Request,
+    options: MediaUploadOptions = {},
+  ): Promise<MediaUploadResponseDto> {
     if (!file || !file.buffer) {
       throw new BadRequestException('Vui lòng chọn file hình ảnh hợp lệ để tải lên.');
     }
 
-    if (file.size > MAX_FILE_SIZE) {
-      throw new BadRequestException('Kích thước file vượt quá giới hạn cho phép (tối đa 50MB).');
+    const maxFileSize = options.allowVideo ? MAX_REVIEW_FILE_SIZE : MAX_FILE_SIZE;
+    const allowedExtensions = options.allowVideo ? ALLOWED_REVIEW_EXTENSIONS : ALLOWED_EXTENSIONS;
+
+    if (file.size > maxFileSize) {
+      const maxMb = options.allowVideo ? 50 : 25;
+      throw new BadRequestException(
+        `Kích thước file vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
+      );
     }
 
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    if (!ALLOWED_EXTENSIONS.has(ext)) {
+    if (!allowedExtensions.has(ext)) {
+      const supported = options.allowVideo
+        ? 'hình ảnh hoặc video (JPG, PNG, WEBP, GIF, SVG, MP4, WEBM, MOV)'
+        : 'hình ảnh (JPG, PNG, WEBP, GIF, SVG)';
       throw new BadRequestException(
-        `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file hình ảnh hoặc video (JPG, PNG, WEBP, GIF, SVG, MP4, WEBM, MOV).`,
+        `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file ${supported}.`,
       );
     }
 
@@ -128,12 +145,13 @@ export class MediaService {
   async uploadMultipleMedia(
     files: Express.Multer.File[],
     req?: Request,
+    options: MediaUploadOptions = {},
   ): Promise<MultipleMediaUploadResponseDto> {
     if (!files || files.length === 0) {
       throw new BadRequestException('Vui lòng chọn ít nhất một file hình ảnh để tải lên.');
     }
 
-    const items = await Promise.all(files.map((file) => this.uploadMedia(file, req)));
+    const items = await Promise.all(files.map((file) => this.uploadMedia(file, req, options)));
     const urls = items.map((item) => item.url);
 
     return { urls, items };
