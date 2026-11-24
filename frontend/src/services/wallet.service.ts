@@ -35,6 +35,13 @@ export interface DepositWalletResult {
   success?: boolean;
   message?: string;
   checkoutUrl?: string;
+  qrCode?: string;
+  amount?: number;
+  accountNumber?: string;
+  accountName?: string;
+  bin?: string;
+  description?: string;
+  transactionId?: string;
   newBalance?: number;
   balance?: number;
   orderCode?: number;

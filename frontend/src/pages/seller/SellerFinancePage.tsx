@@ -3,12 +3,14 @@ import {
   Landmark as BankOutlined,
   Loader2,
   Plus as PlusOutlined,
+  QrCode,
   RefreshCw as ReloadOutlined,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getStoredToken } from '../../services/auth';
 import { createNotificationConnection } from '../../services/notificationSocket';
+import type { PayosPaymentInfo } from '../../services/orders';
 import { getSellerRevenue } from '../../services/sellerFinance';
 import {
   checkBuyerDepositStatusApi,
@@ -16,6 +18,8 @@ import {
   type WalletDepositProvider,
 } from '../../services/wallet.service';
 import useProductResource from '../../components/productDetail/useProductResource';
+import { PayosQrModal } from '../../components/checkout/PayosQrModal';
+import Popup from '../../components/Popup';
 import { useToast } from '../../components/ToastNotification';
 import WalletTopUpModal from '../../components/wallet/WalletTopUpModal';
 import { useSellerSession } from '../../components/seller/SellerSession';
@@ -44,6 +48,10 @@ function FinanceWorkspace(): ReactElement {
   const [selectedMethod, setSelectedMethod] = useState<WalletDepositProvider>('PAYOS');
   const [submittingTopUp, setSubmittingTopUp] = useState(false);
   const [pendingDepositOrderCode, setPendingDepositOrderCode] = useState<number | null>(null);
+  const [payosDeposit, setPayosDeposit] = useState<{
+    orderCode: number;
+    payment: PayosPaymentInfo;
+  } | null>(null);
 
   const load = useCallback(() => {
     if (revision < 0) return Promise.reject(new Error('Invalid revision'));
@@ -94,6 +102,7 @@ function FinanceWorkspace(): ReactElement {
         if (!active) return;
         if (status.status !== 'PENDING') {
           setPendingDepositOrderCode(null);
+          setPayosDeposit(null);
           if (status.status === 'SUCCESS') {
             toast.success(t('finance.topUp.completed'));
           } else {
@@ -128,27 +137,32 @@ function FinanceWorkspace(): ReactElement {
       toast.error(t('finance.topUp.minAmountErr'));
       return;
     }
-    const paymentWindow = selectedMethod === 'PAYOS' ? window.open('about:blank', '_blank') : null;
-    if (selectedMethod === 'PAYOS' && !paymentWindow) {
-      toast.error(t('finance.topUp.windowBlockedErr'));
-      return;
-    }
-    if (paymentWindow) paymentWindow.opener = null;
     setSubmittingTopUp(true);
     try {
       const res = await depositBuyerWalletApi({ amount, provider: selectedMethod });
-      if (res.checkoutUrl) {
-        paymentWindow?.location.assign(res.checkoutUrl);
-        if (res.orderCode) setPendingDepositOrderCode(res.orderCode);
-      } else {
-        paymentWindow?.close();
+      if (res.orderCode) setPendingDepositOrderCode(res.orderCode);
+      if (res.qrCode || (res.bin && res.accountNumber) || res.checkoutUrl) {
+        setPayosDeposit({
+          orderCode: res.orderCode ?? 0,
+          payment: {
+            orderId: String(res.orderCode ?? ''),
+            paymentId: res.transactionId ?? String(res.orderCode ?? ''),
+            checkoutUrl: res.checkoutUrl ?? '',
+            qrCode: res.qrCode,
+            amount: res.amount ?? amount,
+            accountNumber: res.accountNumber,
+            accountName: res.accountName,
+            bin: res.bin,
+            description: res.description ?? (res.orderCode ? `Nap vi NEXUS ${res.orderCode}` : ''),
+            orderCode: res.orderCode ?? 0,
+          },
+        });
       }
       toast.success(t('finance.topUp.requestSent'));
       setTopUpOpen(false);
       setTopUpAmount('');
       saved();
     } catch (error) {
-      paymentWindow?.close();
       toast.error(error instanceof Error ? error.message : t('finance.topUp.connectErr'));
     } finally {
       setSubmittingTopUp(false);
@@ -263,6 +277,38 @@ function FinanceWorkspace(): ReactElement {
         onConfirm={() => void handleDeposit()}
         submitting={submittingTopUp}
       />
+      {payosDeposit && (
+        <Popup
+          isOpen
+          onClose={() => setPayosDeposit(null)}
+          title={
+            <span className="flex items-center gap-2">
+              <QrCode className="size-5 text-blue-600" aria-hidden="true" />
+              {t('finance.topUpBtn')}
+            </span>
+          }
+          size="md"
+        >
+          <div className="space-y-4">
+            <PayosQrModal
+              payment={payosDeposit.payment}
+              onCopySuccess={(msg) => toast.success(msg)}
+            />
+            {payosDeposit.orderCode > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+                <span className="flex items-center gap-2 font-medium">
+                  <Loader2 className="size-4 animate-spin text-blue-600" aria-hidden="true" />
+                  {t('finance.topUp.checkingStatus', { orderCode: payosDeposit.orderCode })}
+                </span>
+                <SellerButton secondary onClick={saved}>
+                  <ReloadOutlined className="size-3.5" aria-hidden="true" />
+                  {t('finance.refresh')}
+                </SellerButton>
+              </div>
+            )}
+          </div>
+        </Popup>
+      )}
     </div>
   );
 }
