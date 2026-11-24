@@ -41,6 +41,8 @@ import {
 import { ReviewsService } from '../services/reviews.service';
 import { ReportsService } from '../services/reports.service';
 
+const REVIEW_CONSUMES_TYPES = ['application/json', 'multipart/form-data'] as const;
+
 @ApiTags('Reviews & reports')
 @Controller()
 export class FeedbackController {
@@ -54,9 +56,8 @@ export class FeedbackController {
     const authHeader = req?.headers?.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) return undefined;
     const token = authHeader.substring(7);
-    const secret =
-      this.configService?.get<string>('JWT_SECRET') ||
-      'super-secret-jwt-key-nexus-change-in-production-2026';
+    const secret = this.configService?.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+    if (!secret) return undefined;
     const verified = LightweightJwt.verify<AuthenticatedUserPayload>(token, secret);
     if (!verified.valid || !verified.payload) return undefined;
     return verified.payload.id || verified.payload.sub;
@@ -66,7 +67,7 @@ export class FeedbackController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiConsumes('application/json', 'multipart/form-data')
+  @ApiConsumes(...REVIEW_CONSUMES_TYPES)
   @UseInterceptors(AnyFilesInterceptor())
   @ApiOperation({
     summary: 'Đánh giá gian hàng sau khi mua thành công từ 2 sản phẩm (hỗ trợ đính kèm ảnh/video)',
@@ -109,7 +110,7 @@ export class FeedbackController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiConsumes('application/json', 'multipart/form-data')
+  @ApiConsumes(...REVIEW_CONSUMES_TYPES)
   @UseInterceptors(AnyFilesInterceptor())
   @ApiOperation({
     summary: 'Đánh giá sản phẩm đã mua (hỗ trợ đính kèm ảnh/video multipart/form-data)',
@@ -298,7 +299,7 @@ export class FeedbackController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiConsumes('application/json', 'multipart/form-data')
+  @ApiConsumes(...REVIEW_CONSUMES_TYPES)
   @UseInterceptors(AnyFilesInterceptor())
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -336,7 +337,7 @@ export class FeedbackController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.BUYER, Role.SELLER)
-  @ApiConsumes('application/json', 'multipart/form-data')
+  @ApiConsumes(...REVIEW_CONSUMES_TYPES)
   @UseInterceptors(AnyFilesInterceptor())
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

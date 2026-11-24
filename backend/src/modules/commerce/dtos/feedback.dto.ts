@@ -15,6 +15,11 @@ import {
   MinLength,
 } from 'class-validator';
 
+function normalizeMediaUrlsInput({ value }: { value: unknown }): unknown {
+  if (value === undefined || value === null || value === '') return undefined;
+  return Array.isArray(value) ? value : [value];
+}
+
 export class ReviewDto {
   @ApiProperty({ minimum: 1, maximum: 5, example: 5 })
   @Type(() => Number)
@@ -34,6 +39,7 @@ export class ReviewDto {
     description: 'Image or video URLs attached to product review feedback',
   })
   @IsOptional()
+  @Transform(normalizeMediaUrlsInput)
   @IsArray()
   @ArrayMaxSize(6)
   @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
@@ -58,6 +64,7 @@ export class SellerReplyReviewDto {
     description: 'Optional image or video URLs attached to the reply',
   })
   @IsOptional()
+  @Transform(normalizeMediaUrlsInput)
   @IsArray()
   @ArrayMaxSize(6)
   @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
@@ -83,6 +90,7 @@ export class CreateReviewReplyDto {
     description: 'Image or video URLs attached to this reply',
   })
   @IsOptional()
+  @Transform(normalizeMediaUrlsInput)
   @IsArray()
   @ArrayMaxSize(6)
   @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })

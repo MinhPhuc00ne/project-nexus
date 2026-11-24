@@ -147,6 +147,77 @@ export class ReviewsService {
     });
   }
 
+  private async upsertShopReview(
+    tx: Prisma.TransactionClient,
+    params: {
+      userId: string;
+      orderId: string;
+      sellerId: string;
+      dto: ReviewDto;
+      mediaItems: UploadedReviewMediaItem[];
+      mediaUrls: string[];
+    },
+  ): Promise<unknown> {
+    const { userId, orderId, sellerId, dto, mediaItems, mediaUrls } = params;
+    if (tx.orderItem?.aggregate) {
+      const orderItemsAgg = await tx.orderItem.aggregate({
+        _sum: { quantity: true },
+        where: { order: { buyerId: userId, sellerId, status: 'CONFIRMED' } },
+      });
+      if ((orderItemsAgg._sum.quantity ?? 0) < 2) {
+        throw new BadRequestException(
+          'Bạn cần mua và hoàn tất ít nhất 2 sản phẩm từ gian hàng này để có thể đánh giá shop.',
+        );
+      }
+    }
+
+    const existingShopReview = await tx.review.findFirst({
+      where: { reviewerId: userId, targetUserId: sellerId, isShopReview: true },
+    });
+    const comment = dto.comment?.trim() || null;
+    const created = existingShopReview
+      ? await tx.review.update({
+          where: { id: existingShopReview.id },
+          data: {
+            rating: dto.rating,
+            comment,
+            ...(mediaUrls.length > 0 ? { mediaUrls } : {}),
+          },
+        })
+      : await tx.review.create({
+          data: {
+            orderId,
+            rating: dto.rating,
+            comment,
+            ...(mediaUrls.length > 0 ? { mediaUrls } : {}),
+            reviewerId: userId,
+            targetUserId: sellerId,
+            isShopReview: true,
+          },
+        });
+
+    if (mediaItems.length > 0 && created && typeof created === 'object' && 'id' in created) {
+      if (existingShopReview && tx.reviewMedia?.deleteMany) {
+        await tx.reviewMedia.deleteMany({ where: { shopReviewId: existingShopReview.id } });
+      }
+      await this.persistReviewMedia(
+        tx,
+        { shopReviewId: String((created as { id: string }).id) },
+        mediaItems,
+      );
+    }
+
+    await this.notifyBuyerReviewReceived(
+      tx,
+      sellerId,
+      userId,
+      'Đánh giá gian hàng mới ⭐',
+      `vừa đánh giá ${dto.rating} sao cho gian hàng của bạn.`,
+      dto.comment,
+    );
+    return created;
+  }
+
   private async createShopOrProductReview(
     tx: Prisma.TransactionClient,
     params: {
@@ -172,63 +243,9 @@ export class ReviewsService {
       mediaItems = [],
       mediaUrls = [],
     } = params;
-    const values = { orderId, rating: dto.rating, comment: dto.comment?.trim() || null };
 
     if (kind === 'shop') {
-      if (tx.orderItem?.aggregate) {
-        const orderItemsAgg = await tx.orderItem.aggregate({
-          _sum: { quantity: true },
-          where: { order: { buyerId: userId, sellerId, status: 'CONFIRMED' } },
-        });
-        if ((orderItemsAgg._sum.quantity ?? 0) < 2) {
-          throw new BadRequestException(
-            'Bạn cần mua và hoàn tất ít nhất 2 sản phẩm từ gian hàng này để có thể đánh giá shop.',
-          );
-        }
-      }
-
-      const existingShopReview = await tx.review.findFirst({
-        where: { reviewerId: userId, targetUserId: sellerId, isShopReview: true },
-      });
-      const created = existingShopReview
-        ? await tx.review.update({
-            where: { id: existingShopReview.id },
-            data: {
-              rating: dto.rating,
-              comment: dto.comment?.trim() || null,
-              ...(mediaUrls.length > 0 ? { mediaUrls } : {}),
-            },
-          })
-        : await tx.review.create({
-            data: {
-              ...values,
-              ...(mediaUrls.length > 0 ? { mediaUrls } : {}),
-              reviewerId: userId,
-              targetUserId: sellerId,
-              isShopReview: true,
-            },
-          });
-
-      if (mediaItems.length > 0 && created && typeof created === 'object' && 'id' in created) {
-        if (existingShopReview && tx.reviewMedia?.deleteMany) {
-          await tx.reviewMedia.deleteMany({ where: { shopReviewId: existingShopReview.id } });
-        }
-        await this.persistReviewMedia(
-          tx,
-          { shopReviewId: String((created as { id: string }).id) },
-          mediaItems,
-        );
-      }
-
-      await this.notifyBuyerReviewReceived(
-        tx,
-        sellerId,
-        userId,
-        'Đánh giá gian hàng mới ⭐',
-        `vừa đánh giá ${dto.rating} sao cho gian hàng của bạn.`,
-        dto.comment,
-      );
-      return created;
+      return this.upsertShopReview(tx, { userId, orderId, sellerId, dto, mediaItems, mediaUrls });
     }
 
     if (!productId || !orderItems.some((item) => item.productId === productId)) {
@@ -236,7 +253,14 @@ export class ReviewsService {
     }
     await tx.$queryRaw`SELECT id FROM products WHERE id = ${productId} FOR UPDATE`;
     const created = await tx.productReview.create({
-      data: { ...values, mediaUrls, reviewerId: userId, productId },
+      data: {
+        orderId,
+        rating: dto.rating,
+        comment: dto.comment?.trim() || null,
+        mediaUrls,
+        reviewerId: userId,
+        productId,
+      },
     });
     if (mediaItems.length > 0 && created && typeof created === 'object' && 'id' in created) {
       await this.persistReviewMedia(
@@ -308,6 +332,26 @@ export class ReviewsService {
     }
   }
 
+  private async validateOrderBeforeMediaUpload(
+    userId: string,
+    orderId: string,
+    kind: 'shop' | 'product',
+    productId?: string,
+  ): Promise<void> {
+    if (!this.prisma.order?.findFirst) return;
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, buyerId: userId },
+      include: { items: true },
+    });
+    if (!order) throw new NotFoundException('Không tìm thấy đơn hàng của bạn.');
+    if (order.status !== 'CONFIRMED') {
+      throw new BadRequestException('Chỉ đánh giá sau khi đơn hàng đã hoàn tất.');
+    }
+    if (kind === 'product' && (!productId || !order.items.some((i) => i.productId === productId))) {
+      throw new BadRequestException('Sản phẩm không thuộc đơn hàng này.');
+    }
+  }
+
   async create(
     userId: string,
     orderId: string,
@@ -316,6 +360,10 @@ export class ReviewsService {
     productId?: string,
     files?: Express.Multer.File[],
   ): Promise<unknown> {
+    if (kind !== 'customer' && files && files.length > 0) {
+      await this.validateOrderBeforeMediaUpload(userId, orderId, kind, productId);
+    }
+
     const { urls: preparedMediaUrls, items: preparedMediaItems } =
       kind === 'customer'
         ? { urls: [], items: [] }
@@ -369,6 +417,72 @@ export class ReviewsService {
     }
   }
 
+  private async listShopReviews(
+    targetId: string,
+    query: FeedbackPageDto,
+    pagination: { skip: number; take: number; orderBy: { createdAt: Prisma.SortOrder } },
+    author: { select: { id: boolean; fullName: boolean; avatarUrl: boolean } },
+    viewerId?: string,
+  ): Promise<unknown> {
+    const shop = await this.prisma.user.findFirst({
+      where: { id: targetId, role: 'SELLER', isShopSuspended: false },
+      select: { id: true },
+    });
+    if (!shop) throw new NotFoundException('Không tìm thấy shop.');
+    const visibleStatsWhere: Prisma.ReviewWhereInput = {
+      targetUserId: targetId,
+      isShopReview: true,
+      isHidden: false,
+    };
+    const where: Prisma.ReviewWhereInput = {
+      targetUserId: targetId,
+      isShopReview: true,
+      ...(query.rating !== undefined
+        ? { rating: { gte: query.rating, lt: query.rating + 1 } }
+        : {}),
+      ...(this.buildVisibilityFilter(viewerId) as Prisma.ReviewWhereInput),
+    };
+    const [allVisibleReviews, items, total] = await Promise.all([
+      this.prisma.review.findMany({ where: visibleStatsWhere, select: { rating: true } }),
+      this.prisma.review.findMany({
+        where,
+        ...pagination,
+        select: {
+          id: true,
+          rating: true,
+          comment: true,
+          mediaUrls: true,
+          isHidden: true,
+          hiddenReason: true,
+          createdAt: true,
+          reviewer: author,
+          media: {
+            orderBy: { sortOrder: 'asc' },
+            select: { id: true, mediaType: true, url: true, mimeType: true, sizeBytes: true },
+          },
+        },
+      }),
+      this.prisma.review.count({ where }),
+    ]);
+    const totalVisible = allVisibleReviews.length;
+    const sum = allVisibleReviews.reduce((acc, r) => acc + Number(r.rating), 0);
+    const averageRating = totalVisible > 0 ? Number((sum / totalVisible).toFixed(1)) : 5.0;
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const r of allVisibleReviews) {
+      const star = Math.min(5, Math.max(1, Math.floor(Number(r.rating)))) as 1 | 2 | 3 | 4 | 5;
+      distribution[star]++;
+    }
+    return {
+      items: items.map((r) => ({ ...r, rating: Number(r.rating) })),
+      total,
+      page: query.page,
+      limit: query.limit,
+      totalPages: Math.ceil(total / query.limit),
+      averageRating,
+      distribution,
+    };
+  }
+
   async list(
     targetId: string,
     kind: 'shop' | 'product' | 'seller-products' | 'customer',
@@ -379,73 +493,9 @@ export class ReviewsService {
     const sortOrder: Prisma.SortOrder = query.sortBy === 'oldest' ? 'asc' : 'desc';
     const pagination = { skip, take: query.limit, orderBy: { createdAt: sortOrder } };
     const author = { select: { id: true, fullName: true, avatarUrl: true } };
+
     if (kind === 'shop') {
-      const shop = await this.prisma.user.findFirst({
-        where: { id: targetId, role: 'SELLER', isShopSuspended: false },
-        select: { id: true },
-      });
-      if (!shop) throw new NotFoundException('Không tìm thấy shop.');
-      const visibleStatsWhere: Prisma.ReviewWhereInput = {
-        targetUserId: targetId,
-        isShopReview: true,
-        isHidden: false,
-      };
-      const where: Prisma.ReviewWhereInput = {
-        targetUserId: targetId,
-        isShopReview: true,
-        ...(query.rating !== undefined
-          ? { rating: { gte: query.rating, lt: query.rating + 1 } }
-          : {}),
-        ...(this.buildVisibilityFilter(viewerId) as Prisma.ReviewWhereInput),
-      };
-      const [allVisibleReviews, items, total] = await Promise.all([
-        this.prisma.review.findMany({
-          where: visibleStatsWhere,
-          select: { rating: true },
-        }),
-        this.prisma.review.findMany({
-          where,
-          ...pagination,
-          select: {
-            id: true,
-            rating: true,
-            comment: true,
-            mediaUrls: true,
-            isHidden: true,
-            hiddenReason: true,
-            createdAt: true,
-            reviewer: author,
-            media: {
-              orderBy: { sortOrder: 'asc' },
-              select: { id: true, mediaType: true, url: true, mimeType: true, sizeBytes: true },
-            },
-          },
-        }),
-        this.prisma.review.count({ where }),
-      ]);
-      const totalVisible = allVisibleReviews.length;
-      const averageRating =
-        totalVisible > 0
-          ? Number(
-              (
-                allVisibleReviews.reduce((acc, r) => acc + Number(r.rating), 0) / totalVisible
-              ).toFixed(1),
-            )
-          : 5.0;
-      const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      for (const r of allVisibleReviews) {
-        const star = Math.min(5, Math.max(1, Math.floor(Number(r.rating)))) as 1 | 2 | 3 | 4 | 5;
-        distribution[star]++;
-      }
-      return {
-        items: items.map((r) => ({ ...r, rating: Number(r.rating) })),
-        total,
-        page: query.page,
-        limit: query.limit,
-        totalPages: Math.ceil(total / query.limit),
-        averageRating,
-        distribution,
-      };
+      return this.listShopReviews(targetId, query, pagination, author, viewerId);
     }
     if (kind === 'customer') {
       const where: Prisma.CustomerReviewWhereInput = {
@@ -470,18 +520,11 @@ export class ReviewsService {
       if (!product) throw new NotFoundException('Không tìm thấy sản phẩm.');
     }
     const visibilityFilter = this.buildVisibilityFilter(viewerId) as Prisma.ProductReviewWhereInput;
-    const where: Prisma.ProductReviewWhereInput =
-      kind === 'product'
-        ? {
-            productId: targetId,
-            ...(query.rating !== undefined ? { rating: query.rating } : {}),
-            ...visibilityFilter,
-          }
-        : {
-            product: { sellerId: targetId },
-            ...(query.rating !== undefined ? { rating: query.rating } : {}),
-            ...visibilityFilter,
-          };
+    const where: Prisma.ProductReviewWhereInput = {
+      ...(kind === 'product' ? { productId: targetId } : { product: { sellerId: targetId } }),
+      ...(query.rating !== undefined ? { rating: query.rating } : {}),
+      ...visibilityFilter,
+    };
     const [items, total] = await Promise.all([
       this.prisma.productReview.findMany({
         where,
@@ -665,7 +708,7 @@ export class ReviewsService {
         where: { orderId },
       });
       if (!existing || !existing.isShopReview)
-        throw new NotFoundException('Không tìm thấy đánh giá gian hàng.');
+        throw new NotFoundException(ReviewsService.SHOP_REVIEW_NOT_FOUND);
       if (existing.reviewerId !== userId)
         throw new ForbiddenException('Bạn chỉ có thể chỉnh sửa đánh giá của chính mình.');
 
@@ -696,7 +739,7 @@ export class ReviewsService {
         where: { orderId },
       });
       if (!existing || !existing.isShopReview)
-        throw new NotFoundException('Không tìm thấy đánh giá gian hàng.');
+        throw new NotFoundException(ReviewsService.SHOP_REVIEW_NOT_FOUND);
       if (existing.reviewerId !== userId)
         throw new ForbiddenException('Bạn chỉ có thể xóa đánh giá của chính mình.');
 
@@ -872,7 +915,7 @@ export class ReviewsService {
         where: { id },
         include: { reviewer: true, targetUser: true },
       });
-      if (!review) throw new NotFoundException('Không tìm thấy đánh giá gian hàng.');
+      if (!review) throw new NotFoundException(ReviewsService.SHOP_REVIEW_NOT_FOUND);
 
       this.validatePointsToDeduct(dto.pointsToDeduct, review.reviewer.reputationScore);
 
@@ -1087,6 +1130,50 @@ export class ReviewsService {
     });
   }
 
+  private async resolveReplyTarget(
+    tx: Prisma.TransactionClient,
+    targetType: 'product' | 'shop',
+    reviewId: string,
+    userId: string,
+  ): Promise<{ buyerId: string; sellerId: string; titleLabel: string }> {
+    let buyerId: string;
+    let sellerId: string;
+    let titleLabel: string;
+    let isHidden = false;
+
+    if (targetType === 'product') {
+      const review = await tx.productReview.findUnique({
+        where: { id: reviewId },
+        include: { product: { select: { id: true, title: true, sellerId: true } } },
+      });
+      if (!review) throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
+      buyerId = review.reviewerId;
+      sellerId = review.product.sellerId;
+      titleLabel = `sản phẩm "${review.product.title}"`;
+      isHidden = Boolean(review.isHidden);
+    } else {
+      const review = await tx.review.findUnique({ where: { id: reviewId } });
+      if (!review || !review.isShopReview) {
+        throw new NotFoundException(ReviewsService.SHOP_REVIEW_NOT_FOUND);
+      }
+      buyerId = review.reviewerId;
+      sellerId = review.targetUserId;
+      titleLabel = 'gian hàng của bạn';
+      isHidden = Boolean(review.isHidden);
+    }
+
+    if (userId !== buyerId && userId !== sellerId) {
+      throw new ForbiddenException(
+        'Chỉ người mua đã đánh giá hoặc người bán sở hữu mới được phản hồi cuộc trò chuyện này.',
+      );
+    }
+    if (isHidden) {
+      throw new BadRequestException('Đánh giá này đã bị ẩn, không thể gửi thêm phản hồi.');
+    }
+
+    return { buyerId, sellerId, titleLabel };
+  }
+
   async createReviewReply(
     userId: string,
     targetType: 'product' | 'shop',
@@ -1094,39 +1181,16 @@ export class ReviewsService {
     dto: CreateReviewReplyDto,
     files?: Express.Multer.File[],
   ): Promise<unknown> {
-    const { items: mediaItems } = await this.prepareReviewMedia(dto.mediaUrls, files);
-
     return this.prisma.$transaction(async (tx) => {
-      let buyerId: string;
-      let sellerId: string;
-      let titleLabel: string;
-
-      if (targetType === 'product') {
-        const review = await tx.productReview.findUnique({
-          where: { id: reviewId },
-          include: { product: { select: { id: true, title: true, sellerId: true } } },
-        });
-        if (!review) throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
-        buyerId = review.reviewerId;
-        sellerId = review.product.sellerId;
-        titleLabel = `sản phẩm "${review.product.title}"`;
-      } else {
-        const review = await tx.review.findUnique({ where: { id: reviewId } });
-        if (!review || !review.isShopReview) {
-          throw new NotFoundException(ReviewsService.SHOP_REVIEW_NOT_FOUND);
-        }
-        buyerId = review.reviewerId;
-        sellerId = review.targetUserId;
-        titleLabel = 'gian hàng của bạn';
-      }
-
-      if (userId !== buyerId && userId !== sellerId) {
-        throw new ForbiddenException(
-          'Chỉ người mua đã đánh giá hoặc người bán sở hữu mới được phản hồi cuộc trò chuyện này.',
-        );
-      }
-
+      const { buyerId, sellerId, titleLabel } = await this.resolveReplyTarget(
+        tx,
+        targetType,
+        reviewId,
+        userId,
+      );
+      const { items: mediaItems } = await this.prepareReviewMedia(dto.mediaUrls, files);
       const authorRole = userId === sellerId ? Role.SELLER : Role.BUYER;
+      const content = dto.content.trim();
       const createdReply = await tx.reviewReply.create({
         data: {
           ...(targetType === 'product'
@@ -1134,7 +1198,7 @@ export class ReviewsService {
             : { shopReviewId: reviewId }),
           authorId: userId,
           authorRole,
-          content: dto.content.trim(),
+          content,
         },
       });
 
@@ -1154,20 +1218,18 @@ export class ReviewsService {
       if (targetType === 'product' && authorRole === Role.SELLER) {
         await tx.productReview.update({
           where: { id: reviewId },
-          data: {
-            sellerReply: dto.content.trim(),
-            sellerRepliedAt: new Date(),
-          },
+          data: { sellerReply: content, sellerRepliedAt: new Date() },
         });
       }
 
       const recipientId = userId === sellerId ? buyerId : sellerId;
       if (tx.notification?.create) {
+        const senderLabel = authorRole === Role.SELLER ? 'Người bán' : 'Khách hàng';
         await tx.notification.create({
           data: {
             userId: recipientId,
             title: 'Phản hồi mới trên đánh giá 💬',
-            content: `${authorRole === Role.SELLER ? 'Người bán' : 'Khách hàng'} vừa phản hồi trong đánh giá ${titleLabel}: "${dto.content.trim()}".`,
+            content: `${senderLabel} vừa phản hồi trong đánh giá ${titleLabel}: "${content}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
@@ -1248,6 +1310,107 @@ export class ReviewsService {
     };
   }
 
+  private async adjustProductRatingOnVisibilityChange(
+    tx: Prisma.TransactionClient,
+    productId: string,
+    rating: number,
+    isHidden: boolean,
+    wasHidden: boolean,
+  ): Promise<void> {
+    if (isHidden === wasHidden || !tx.product?.update) return;
+    const product = await tx.product.findUnique({
+      where: { id: productId },
+      select: { ratingSum: true, reviewCount: true },
+    });
+    if (!product) return;
+    const deltaCount = isHidden ? -1 : 1;
+    const deltaSum = isHidden ? -rating : rating;
+    const newCount = Math.max(0, product.reviewCount + deltaCount);
+    const newSum = Math.max(0, product.ratingSum + deltaSum);
+    await tx.product.update({
+      where: { id: productId },
+      data: {
+        reviewCount: newCount,
+        ratingSum: newSum,
+        averageRating: newCount > 0 ? newSum / newCount : 0,
+      },
+    });
+  }
+
+  private async applyReviewVisibilityUpdate(
+    tx: Prisma.TransactionClient,
+    targetType: 'product' | 'shop' | 'reply',
+    id: string,
+    visibilityData: {
+      isHidden: boolean;
+      hiddenReason: string | null;
+      hiddenAt: Date | null;
+      hiddenById: string | null;
+    },
+  ): Promise<{ authorId: string; authorScore: number; targetLabel: string }> {
+    if (targetType === 'product') {
+      const existing = await tx.productReview.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          productId: true,
+          rating: true,
+          isHidden: true,
+          reviewerId: true,
+          reviewer: { select: { reputationScore: true } },
+          product: { select: { title: true } },
+        },
+      });
+      if (!existing) throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
+      await tx.productReview.update({ where: { id }, data: visibilityData });
+      await this.adjustProductRatingOnVisibilityChange(
+        tx,
+        existing.productId,
+        existing.rating,
+        visibilityData.isHidden,
+        Boolean(existing.isHidden),
+      );
+      return {
+        authorId: existing.reviewerId,
+        authorScore: existing.reviewer?.reputationScore ?? 0,
+        targetLabel: `đánh giá sản phẩm "${existing.product.title}"`,
+      };
+    }
+
+    if (targetType === 'shop') {
+      const existing = await tx.review.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          isShopReview: true,
+          reviewerId: true,
+          reviewer: { select: { reputationScore: true } },
+        },
+      });
+      if (!existing || !existing.isShopReview) {
+        throw new NotFoundException(ReviewsService.SHOP_REVIEW_NOT_FOUND);
+      }
+      await tx.review.update({ where: { id }, data: visibilityData });
+      return {
+        authorId: existing.reviewerId,
+        authorScore: existing.reviewer?.reputationScore ?? 0,
+        targetLabel: 'đánh giá gian hàng',
+      };
+    }
+
+    const existingReply = await tx.reviewReply.findUnique({
+      where: { id },
+      select: { id: true, authorId: true, author: { select: { reputationScore: true } } },
+    });
+    if (!existingReply) throw new NotFoundException('Không tìm thấy phản hồi đánh giá.');
+    await tx.reviewReply.update({ where: { id }, data: visibilityData });
+    return {
+      authorId: existingReply.authorId,
+      authorScore: existingReply.author?.reputationScore ?? 0,
+      targetLabel: 'phản hồi đánh giá',
+    };
+  }
+
   async adminModerateReviewVisibility(
     adminId: string,
     targetType: 'product' | 'shop' | 'reply',
@@ -1255,88 +1418,24 @@ export class ReviewsService {
     dto: AdminModerateReviewVisibilityDto,
     actorRole?: string,
   ): Promise<{ success: boolean; isHidden: boolean; message: string }> {
-    const now = dto.isHidden ? new Date() : null;
     const reason = dto.isHidden ? dto.reason?.trim() || 'Nội dung tiêu cực / không phù hợp' : null;
     const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
     const refPrefix = actorRole === 'SUPPORT_STAFF' ? 'STAFF_HIDE' : 'ADMIN_HIDE';
     const pointsToDeduct = dto.isHidden ? Number(dto.pointsToDeduct ?? 0) : 0;
+    const visibilityData = {
+      isHidden: dto.isHidden,
+      hiddenReason: reason,
+      hiddenAt: dto.isHidden ? new Date() : null,
+      hiddenById: dto.isHidden ? adminId : null,
+    };
 
     return this.prisma.$transaction(async (tx) => {
-      let authorId: string;
-      let authorScore = 0;
-      let targetLabel = '';
-
-      if (targetType === 'product') {
-        const existing = await tx.productReview.findUnique({
-          where: { id },
-          select: {
-            id: true,
-            reviewerId: true,
-            reviewer: { select: { reputationScore: true } },
-            product: { select: { title: true } },
-          },
-        });
-        if (!existing) throw new NotFoundException(ReviewsService.PRODUCT_REVIEW_NOT_FOUND);
-        authorId = existing.reviewerId;
-        authorScore = existing.reviewer?.reputationScore ?? 0;
-        targetLabel = `đánh giá sản phẩm "${existing.product.title}"`;
-        await tx.productReview.update({
-          where: { id },
-          data: {
-            isHidden: dto.isHidden,
-            hiddenReason: reason,
-            hiddenAt: now,
-            hiddenById: dto.isHidden ? adminId : null,
-          },
-        });
-      } else if (targetType === 'shop') {
-        const existing = await tx.review.findUnique({
-          where: { id },
-          select: {
-            id: true,
-            isShopReview: true,
-            reviewerId: true,
-            reviewer: { select: { reputationScore: true } },
-          },
-        });
-        if (!existing || !existing.isShopReview) {
-          throw new NotFoundException(ReviewsService.SHOP_REVIEW_NOT_FOUND);
-        }
-        authorId = existing.reviewerId;
-        authorScore = existing.reviewer?.reputationScore ?? 0;
-        targetLabel = 'đánh giá gian hàng';
-        await tx.review.update({
-          where: { id },
-          data: {
-            isHidden: dto.isHidden,
-            hiddenReason: reason,
-            hiddenAt: now,
-            hiddenById: dto.isHidden ? adminId : null,
-          },
-        });
-      } else {
-        const existingReply = await tx.reviewReply.findUnique({
-          where: { id },
-          select: {
-            id: true,
-            authorId: true,
-            author: { select: { reputationScore: true } },
-          },
-        });
-        if (!existingReply) throw new NotFoundException('Không tìm thấy phản hồi đánh giá.');
-        authorId = existingReply.authorId;
-        authorScore = existingReply.author?.reputationScore ?? 0;
-        targetLabel = 'phản hồi đánh giá';
-        await tx.reviewReply.update({
-          where: { id },
-          data: {
-            isHidden: dto.isHidden,
-            hiddenReason: reason,
-            hiddenAt: now,
-            hiddenById: dto.isHidden ? adminId : null,
-          },
-        });
-      }
+      const { authorId, authorScore, targetLabel } = await this.applyReviewVisibilityUpdate(
+        tx,
+        targetType,
+        id,
+        visibilityData,
+      );
 
       if (dto.isHidden && pointsToDeduct > 0) {
         this.validatePointsToDeduct(pointsToDeduct, authorScore);

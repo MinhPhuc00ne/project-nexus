@@ -11,6 +11,7 @@ tsNode.register({
 
 const load = createRequire(import.meta.url);
 const { ReviewsService } = load('../src/modules/commerce/services/reviews.service.ts');
+const { MediaService } = load('../src/modules/media/services/media.service.ts');
 
 test('ReviewsService.create stores mediaUrls on product review and updates rating', async () => {
   let createdData = null;
@@ -375,4 +376,154 @@ test('ReviewsService.list and adminListReviews support rating filter and newest/
   await service.adminListReviews({ page: 1, limit: 20, rating: 1, sortBy: 'oldest' });
   assert.equal(capturedWhere.rating, 1);
   assert.deepEqual(capturedOrderBy, { createdAt: 'asc' });
+});
+
+test('ReviewsService.create rejects unconfirmed order before uploading files', async () => {
+  const uploadMock = mock.fn(async () => ({ items: [], urls: [] }));
+  const service = new ReviewsService(
+    {
+      order: {
+        findFirst: async () => ({
+          id: 'order-1',
+          buyerId: 'buyer-1',
+          status: 'PENDING',
+          items: [{ productId: 'prod-1' }],
+        }),
+      },
+    },
+    { adjustScore: async () => ({}) },
+    { uploadMultipleMedia: uploadMock },
+  );
+
+  await assert.rejects(
+    () =>
+      service.create('buyer-1', 'order-1', { rating: 5, comment: 'Good' }, 'product', 'prod-1', [
+        { originalname: 'photo.png', mimetype: 'image/png', size: 1024, buffer: Buffer.from('a') },
+      ]),
+    /Chỉ đánh giá sau khi đơn hàng đã hoàn tất/,
+  );
+  assert.equal(uploadMock.mock.callCount(), 0);
+});
+
+test('ReviewsService.createReviewReply blocks replies on hidden reviews without uploading media', async () => {
+  const uploadMock = mock.fn(async () => ({ items: [], urls: [] }));
+  const tx = {
+    productReview: {
+      findUnique: async () => ({
+        id: 'rev-1',
+        reviewerId: 'buyer-1',
+        isHidden: true,
+        product: { id: 'prod-1', title: 'Watch', sellerId: 'seller-1' },
+      }),
+    },
+  };
+  const service = new ReviewsService(
+    { $transaction: (fn) => fn(tx) },
+    { adjustScore: async () => ({}) },
+    { uploadMultipleMedia: uploadMock },
+  );
+
+  await assert.rejects(
+    () =>
+      service.createReviewReply('buyer-1', 'product', 'rev-1', { content: 'Reply' }, [
+        { originalname: 'photo.png', mimetype: 'image/png', size: 1024, buffer: Buffer.from('a') },
+      ]),
+    /Đánh giá này đã bị ẩn/,
+  );
+  assert.equal(uploadMock.mock.callCount(), 0);
+});
+
+test('ReviewsService.adminModerateReviewVisibility updates product rating on hide and unhide', async () => {
+  let productState = { ratingSum: 10, reviewCount: 2, averageRating: 5 };
+  let reviewHidden = false;
+
+  const tx = {
+    productReview: {
+      findUnique: async () => ({
+        id: 'rev-1',
+        productId: 'prod-1',
+        rating: 2,
+        isHidden: reviewHidden,
+        reviewerId: 'buyer-1',
+        reviewer: { reputationScore: 80 },
+        product: { title: 'Watch' },
+      }),
+      update: async ({ data }) => {
+        reviewHidden = data.isHidden;
+        return { id: 'rev-1', isHidden: data.isHidden };
+      },
+    },
+    product: {
+      findUnique: async () => ({ ...productState }),
+      update: async ({ data }) => {
+        productState = { ...data };
+        return productState;
+      },
+    },
+    notification: { create: async () => ({}) },
+  };
+
+  const service = new ReviewsService(
+    { $transaction: (fn) => fn(tx) },
+    { adjustScore: async () => ({}) },
+  );
+
+  await service.adminModerateReviewVisibility('admin-1', 'product', 'rev-1', {
+    isHidden: true,
+    reason: 'Spam',
+  });
+  assert.deepEqual(productState, { ratingSum: 8, reviewCount: 1, averageRating: 8 });
+
+  await service.adminModerateReviewVisibility('admin-1', 'product', 'rev-1', {
+    isHidden: false,
+  });
+  assert.deepEqual(productState, { ratingSum: 10, reviewCount: 2, averageRating: 5 });
+});
+
+test('MediaService strictReviewPolicy enforces 5MB images (PNG/JPG/WEBP) and 50MB videos (MP4/MOV)', async () => {
+  const mediaService = new MediaService({ get: () => undefined }, { uploadFile: async () => null });
+
+  await assert.rejects(
+    () =>
+      mediaService.uploadMultipleMedia(
+        [{ originalname: 'anim.gif', mimetype: 'image/gif', size: 1024, buffer: Buffer.from('a') }],
+        undefined,
+        { strictReviewPolicy: true },
+      ),
+    /Review chỉ hỗ trợ ảnh \(PNG, JPG, WEBP\) và video \(MP4, MOV\)/,
+  );
+
+  await assert.rejects(
+    () =>
+      mediaService.uploadMultipleMedia(
+        [
+          {
+            originalname: 'huge.png',
+            mimetype: 'image/png',
+            size: 6 * 1024 * 1024,
+            buffer: Buffer.from('a'),
+          },
+        ],
+        undefined,
+        { strictReviewPolicy: true },
+      ),
+    /Kích thước ảnh vượt quá giới hạn cho phép \(tối đa 5MB\)/,
+  );
+
+  await assert.rejects(
+    () =>
+      mediaService.uploadMultipleMedia(
+        [
+          {
+            originalname: 'huge.mp4',
+            mimetype: 'video/mp4',
+            size: 51 * 1024 * 1024,
+            buffer: Buffer.from('a'),
+          },
+        ],
+        undefined,
+        { strictReviewPolicy: true },
+      ),
+    /Kích thước video vượt quá giới hạn cho phép \(tối đa 50MB\)/,
+  );
 });

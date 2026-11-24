@@ -49,6 +49,23 @@ export class MediaService {
     }
   }
 
+  private validateStrictReviewFile(file: Express.Multer.File, ext: string): void {
+    const isImage = REVIEW_IMAGE_EXTENSIONS.has(ext);
+    const isVideo = REVIEW_VIDEO_EXTENSIONS.has(ext);
+    if (!isImage && !isVideo) {
+      throw new BadRequestException(
+        `Định dạng file không được hỗ trợ (${ext}). Review chỉ hỗ trợ ảnh (PNG, JPG, WEBP) và video (MP4, MOV).`,
+      );
+    }
+    const limitBytes = isImage ? MAX_REVIEW_IMAGE_FILE_SIZE : MAX_REVIEW_VIDEO_FILE_SIZE;
+    if (file.size > limitBytes) {
+      const maxMb = isImage ? 5 : 50;
+      throw new BadRequestException(
+        `Kích thước ${isImage ? 'ảnh' : 'video'} vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
+      );
+    }
+  }
+
   private validateUploadFile(
     file: Express.Multer.File | undefined,
     options: MediaUploadOptions,
@@ -59,20 +76,7 @@ export class MediaService {
 
     const ext = path.extname(file.originalname).toLowerCase() || '.png';
     if (options.strictReviewPolicy) {
-      const isImage = REVIEW_IMAGE_EXTENSIONS.has(ext);
-      const isVideo = REVIEW_VIDEO_EXTENSIONS.has(ext);
-      if (!isImage && !isVideo) {
-        throw new BadRequestException(
-          `Định dạng file không được hỗ trợ (${ext}). Review chỉ hỗ trợ ảnh (PNG, JPG, WEBP) và video (MP4, MOV).`,
-        );
-      }
-      const limitBytes = isImage ? MAX_REVIEW_IMAGE_FILE_SIZE : MAX_REVIEW_VIDEO_FILE_SIZE;
-      if (file.size > limitBytes) {
-        const maxMb = isImage ? 5 : 50;
-        throw new BadRequestException(
-          `Kích thước ${isImage ? 'ảnh' : 'video'} vượt quá giới hạn cho phép (tối đa ${maxMb}MB).`,
-        );
-      }
+      this.validateStrictReviewFile(file, ext);
       return;
     }
 
