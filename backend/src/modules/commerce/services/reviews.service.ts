@@ -376,7 +376,8 @@ export class ReviewsService {
     viewerId?: string,
   ): Promise<unknown> {
     const skip = (query.page - 1) * query.limit;
-    const pagination = { skip, take: query.limit, orderBy: { createdAt: 'desc' as const } };
+    const sortOrder: Prisma.SortOrder = query.sortBy === 'oldest' ? 'asc' : 'desc';
+    const pagination = { skip, take: query.limit, orderBy: { createdAt: sortOrder } };
     const author = { select: { id: true, fullName: true, avatarUrl: true } };
     if (kind === 'shop') {
       const shop = await this.prisma.user.findFirst({
@@ -392,6 +393,9 @@ export class ReviewsService {
       const where: Prisma.ReviewWhereInput = {
         targetUserId: targetId,
         isShopReview: true,
+        ...(query.rating !== undefined
+          ? { rating: { gte: query.rating, lt: query.rating + 1 } }
+          : {}),
         ...(this.buildVisibilityFilter(viewerId) as Prisma.ReviewWhereInput),
       };
       const [allVisibleReviews, items, total] = await Promise.all([
@@ -444,7 +448,10 @@ export class ReviewsService {
       };
     }
     if (kind === 'customer') {
-      const where = { buyerId: targetId };
+      const where: Prisma.CustomerReviewWhereInput = {
+        buyerId: targetId,
+        ...(query.rating !== undefined ? { rating: query.rating } : {}),
+      };
       const [items, total] = await Promise.all([
         this.prisma.customerReview.findMany({
           where,
@@ -465,8 +472,16 @@ export class ReviewsService {
     const visibilityFilter = this.buildVisibilityFilter(viewerId) as Prisma.ProductReviewWhereInput;
     const where: Prisma.ProductReviewWhereInput =
       kind === 'product'
-        ? { productId: targetId, ...visibilityFilter }
-        : { product: { sellerId: targetId }, ...visibilityFilter };
+        ? {
+            productId: targetId,
+            ...(query.rating !== undefined ? { rating: query.rating } : {}),
+            ...visibilityFilter,
+          }
+        : {
+            product: { sellerId: targetId },
+            ...(query.rating !== undefined ? { rating: query.rating } : {}),
+            ...visibilityFilter,
+          };
     const [items, total] = await Promise.all([
       this.prisma.productReview.findMany({
         where,
@@ -693,6 +708,7 @@ export class ReviewsService {
   async adminListReviews(query: QueryAdminReviewsDto): Promise<unknown> {
     const skip = (query.page - 1) * query.limit;
     const take = query.limit;
+    const sortOrder: Prisma.SortOrder = query.sortBy === 'oldest' ? 'asc' : 'desc';
     const authorSelect = {
       select: { id: true, fullName: true, email: true, reputationScore: true, trustLevel: true },
     };
@@ -700,6 +716,9 @@ export class ReviewsService {
     if (query.type === 'SHOP') {
       const where: Prisma.ReviewWhereInput = {
         isShopReview: true,
+        ...(query.rating !== undefined
+          ? { rating: { gte: query.rating, lt: query.rating + 1 } }
+          : {}),
         ...(query.search ? { comment: { contains: query.search, mode: 'insensitive' } } : {}),
       };
       const [items, total] = await Promise.all([
@@ -707,7 +726,7 @@ export class ReviewsService {
           where,
           skip,
           take,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: sortOrder },
           include: {
             reviewer: authorSelect,
             targetUser: { select: { id: true, fullName: true, email: true } },
@@ -722,6 +741,9 @@ export class ReviewsService {
           orderId: r.orderId,
           rating: Number(r.rating),
           comment: r.comment,
+          mediaUrls: r.mediaUrls,
+          isHidden: r.isHidden,
+          hiddenReason: r.hiddenReason,
           createdAt: r.createdAt,
           reviewer: r.reviewer,
           target: { id: r.targetUser.id, name: r.targetUser.fullName },
@@ -734,6 +756,7 @@ export class ReviewsService {
     }
 
     const where: Prisma.ProductReviewWhereInput = {
+      ...(query.rating !== undefined ? { rating: query.rating } : {}),
       ...(query.search ? { comment: { contains: query.search, mode: 'insensitive' } } : {}),
     };
     const [items, total] = await Promise.all([
@@ -741,7 +764,7 @@ export class ReviewsService {
         where,
         skip,
         take,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: sortOrder },
         include: {
           reviewer: authorSelect,
           product: { select: { id: true, title: true, sellerId: true } },
@@ -760,6 +783,8 @@ export class ReviewsService {
         sellerReply: r.sellerReply,
         sellerRepliedAt: r.sellerRepliedAt,
         helpfulCount: r.helpfulCount,
+        isHidden: r.isHidden,
+        hiddenReason: r.hiddenReason,
         createdAt: r.createdAt,
         reviewer: r.reviewer,
         target: { id: r.product.id, name: r.product.title },

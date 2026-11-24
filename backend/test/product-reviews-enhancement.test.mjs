@@ -347,3 +347,32 @@ test('ReviewsService.adminModerateReviewVisibility hides negative review/reply w
   assert.equal(penalties[1].deltaPoints, -5);
   assert.equal(notifications.length, 2);
 });
+
+test('ReviewsService.list and adminListReviews support rating filter and newest/oldest sortBy', async () => {
+  let capturedOrderBy = null;
+  let capturedWhere = null;
+
+  const prisma = {
+    product: {
+      findFirst: async () => ({ id: 'prod-1' }),
+    },
+    productReview: {
+      findMany: async ({ where, orderBy }) => {
+        capturedWhere = where;
+        capturedOrderBy = orderBy;
+        return [];
+      },
+      count: async () => 0,
+    },
+  };
+
+  const service = new ReviewsService(prisma, { adjustScore: async () => ({}) });
+  await service.list('prod-1', 'product', { page: 1, limit: 10, rating: 2, sortBy: 'oldest' });
+
+  assert.equal(capturedWhere.rating, 2);
+  assert.deepEqual(capturedOrderBy, { createdAt: 'asc' });
+
+  await service.adminListReviews({ page: 1, limit: 20, rating: 1, sortBy: 'oldest' });
+  assert.equal(capturedWhere.rating, 1);
+  assert.deepEqual(capturedOrderBy, { createdAt: 'asc' });
+});

@@ -161,6 +161,28 @@ export class FeedbackPageDto {
   @Min(1)
   @Max(100)
   limit = 20;
+
+  @ApiPropertyOptional({
+    minimum: 1,
+    maximum: 5,
+    example: 5,
+    description: 'Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
+
+  @ApiPropertyOptional({
+    enum: ['newest', 'oldest'],
+    default: 'newest',
+    description: 'Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)',
+  })
+  @IsOptional()
+  @IsIn(['newest', 'oldest'])
+  sortBy?: 'newest' | 'oldest' = 'newest';
 }
 
 export class AdminDeleteReviewDto {
@@ -201,4 +223,25 @@ export class QueryAdminReviewsDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({
+    minimum: 1,
+    maximum: 5,
+    description: 'Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating?: number;
+
+  @ApiPropertyOptional({
+    enum: ['newest', 'oldest'],
+    default: 'newest',
+    description: 'Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)',
+  })
+  @IsOptional()
+  @IsIn(['newest', 'oldest'])
+  sortBy?: 'newest' | 'oldest' = 'newest';
 }

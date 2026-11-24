@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -20,6 +21,15 @@ export class QuerySellerReviewsDto {
   @Min(1)
   @Max(5)
   rating?: number;
+
+  @ApiPropertyOptional({
+    enum: ['newest', 'oldest'],
+    default: 'newest',
+    description: 'Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)',
+  })
+  @IsOptional()
+  @IsIn(['newest', 'oldest'])
+  sortBy?: 'newest' | 'oldest' = 'newest';
 
   @ApiPropertyOptional({ description: 'Số trang (bắt đầu từ 1)', default: 1 })
   @IsOptional()
