@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } fro
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { PackageSearch, RefreshCw, Search } from 'lucide-react';
-import Popup from '../../components/Popup';
 import { Button, EmptyState, Panel } from '../../components/adminDashboard/shared/AdminUI';
 import {
   getStaffAfterSales,
@@ -19,9 +18,14 @@ import {
 } from '../../services/staff';
 import { formatCurrency } from '../../i18n/formatters';
 import { getIntlLocale } from '../../i18n/config';
+import StaffOrderDetailDialog from './StaffOrderDetailDialog';
+import {
+  filterStaffAfterSalesPage,
+  getAfterSalesPageCount,
+  type StaffAfterSalesKindFilter,
+} from './afterSales.helpers';
 
 const PAGE_SIZE = 20;
-const AFTER_SALES_FETCH_SIZE = 100;
 const AFTER_SALES_STATUSES: StaffAfterSalesStatus[] = [
   'REQUESTED',
   'APPROVING',
@@ -49,9 +53,11 @@ export default function StaffOrdersPanel() {
   const locale = getIntlLocale(i18n.language);
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState<StaffAfterSalesStatus | ''>('');
-  const [kind, setKind] = useState<'ALL' | 'CANCEL' | 'RETURN'>('ALL');
+  const [kind, setKind] = useState<StaffAfterSalesKindFilter>('ALL');
   const [search, setSearch] = useState('');
   const [requests, setRequests] = useState<StaffAfterSalesRequest[]>([]);
+  const [requestsTotal, setRequestsTotal] = useState(0);
+  const [requestsLimit, setRequestsLimit] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
@@ -80,56 +86,36 @@ export default function StaffOrdersPanel() {
     const controller = new AbortController();
     setLoading(true);
     setError('');
-    const loadAllRequests = async (): Promise<void> => {
-      const allRequests: StaffAfterSalesRequest[] = [];
-      let pageNumber = 1;
-      let resultTotal = 0;
-      let resultLimit = AFTER_SALES_FETCH_SIZE;
-
+    const loadRequestsPage = async (): Promise<void> => {
       try {
-        do {
-          const result = await getStaffAfterSales(
-            {
-              page: pageNumber,
-              limit: AFTER_SALES_FETCH_SIZE,
-              ...(status ? { status } : {}),
-            },
-            controller.signal,
-          );
-          if (controller.signal.aborted) return;
-          allRequests.push(...result.items);
-          resultTotal = result.total;
-          resultLimit = result.limit || AFTER_SALES_FETCH_SIZE;
-          if (result.items.length === 0) break;
-          pageNumber += 1;
-        } while (!controller.signal.aborted && (pageNumber - 1) * resultLimit < resultTotal);
-
+        const result = await getStaffAfterSales(
+          { page, limit: PAGE_SIZE, ...(status ? { status } : {}) },
+          controller.signal,
+        );
         if (controller.signal.aborted) return;
-        setRequests([...new Map(allRequests.map((request) => [request.id, request])).values()]);
+        setRequests(result.items);
+        setRequestsTotal(result.total);
+        setRequestsLimit(result.limit || PAGE_SIZE);
+        const lastPage = Math.max(1, Math.ceil(result.total / (result.limit || PAGE_SIZE)));
+        if (page > lastPage) setPage(lastPage);
       } catch (cause: unknown) {
         if (!controller.signal.aborted) {
           setRequests([]);
+          setRequestsTotal(0);
           setError(cause instanceof Error ? cause.message : t('ordersSupport.loadError'));
         }
       } finally {
         if (!controller.signal.aborted) setLoading(false);
       }
     };
-    void loadAllRequests();
+    void loadRequestsPage();
     return () => controller.abort();
-  }, [status, revision, t]);
+  }, [page, status, revision, t]);
 
-  const filteredRequests = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase(locale);
-    return requests.filter((request) => {
-      if (kind !== 'ALL' && request.kind !== kind) return false;
-      if (!term) return true;
-      return [request.orderId, request.returnWaybillCode ?? '', request.reason]
-        .join(' ')
-        .toLocaleLowerCase(locale)
-        .includes(term);
-    });
-  }, [requests, kind, search, locale]);
+  const filteredRequests = useMemo(
+    () => filterStaffAfterSalesPage(requests, kind, search, locale),
+    [requests, kind, search, locale],
+  );
 
   const loadOrder = useCallback(
     async (orderId: string, sync = false): Promise<void> => {
@@ -233,19 +219,7 @@ export default function StaffOrdersPanel() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE));
-  const visiblePage = Math.min(page, totalPages);
-  const pagedRequests = filteredRequests.slice(
-    (visiblePage - 1) * PAGE_SIZE,
-    visiblePage * PAGE_SIZE,
-  );
-  const afterSales = order?.afterSales;
-  const canReviewReturn = afterSales?.kind === 'RETURN' && afterSales.status === 'REQUESTED';
-  const canAttachReturnWaybill = afterSales?.kind === 'RETURN' && afterSales.status === 'APPROVED';
-  const canReceiveReturn =
-    afterSales?.kind === 'RETURN' &&
-    (afterSales.status === 'APPROVED' || afterSales.status === 'RECEIVED');
-
+  const totalPages = getAfterSalesPageCount(requestsTotal, requestsLimit);
   return (
     <section className="mt-4 space-y-5" aria-label={t('ordersSupport.sectionAria')}>
       <Panel
@@ -458,7 +432,7 @@ export default function StaffOrdersPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {pagedRequests.map((request) => (
+                {filteredRequests.map((request) => (
                   <tr key={request.id} className="align-top hover:bg-slate-50">
                     <td className="max-w-48 break-all p-3 font-medium">{request.orderId}</td>
                     <td className="p-3">
@@ -495,27 +469,27 @@ export default function StaffOrdersPanel() {
             }
           />
         )}
-        {!loading && filteredRequests.length > PAGE_SIZE && (
+        {!loading && totalPages > 1 && (
           <div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-500">
             <span>
               {t('ordersSupport.pagination', {
-                page: visiblePage,
+                page,
                 totalPages,
-                total: filteredRequests.length,
+                total: requestsTotal,
               })}
             </span>
             <div className="flex gap-2">
               <Button
                 variant="secondary"
-                disabled={visiblePage <= 1}
-                onClick={() => setPage(visiblePage - 1)}
+                disabled={page <= 1}
+                onClick={() => setPage((current) => Math.max(1, current - 1))}
               >
                 {t('ordersSupport.previous')}
               </Button>
               <Button
                 variant="secondary"
-                disabled={visiblePage >= totalPages}
-                onClick={() => setPage(visiblePage + 1)}
+                disabled={page >= totalPages}
+                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
               >
                 {t('ordersSupport.next')}
               </Button>
@@ -524,315 +498,29 @@ export default function StaffOrdersPanel() {
         )}
       </Panel>
 
-      <Popup
+      <StaffOrderDetailDialog
         isOpen={!!selectedOrderId}
-        title={t('ordersSupport.detailTitle')}
-        size="xl"
         onClose={() => setSelectedOrderId('')}
-      >
-        {detailLoading && (
-          <p role="status" className="text-sm text-slate-500">
-            {t('ordersSupport.detailLoading')}
-          </p>
-        )}
-        {detailError && (
-          <p role="alert" className="text-sm text-red-700">
-            {detailError}
-          </p>
-        )}
-        {order && !detailLoading && (
-          <div className="space-y-5">
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {[
-                [t('ordersSupport.orderIdLabel'), order.id],
-                [
-                  t('ordersSupport.orderStatus'),
-                  t(`ordersSupport.orderStatuses.${order.status}`, { defaultValue: order.status }),
-                ],
-                [t('ordersSupport.orderTotal'), amount(order.totalAmount, i18n.language)],
-                [t('ordersSupport.subtotal'), amount(order.subtotal, i18n.language)],
-                [t('ordersSupport.shippingFee'), amount(order.shippingFee, i18n.language)],
-                [t('ordersSupport.createdAt'), formatDate(order.createdAt, locale)],
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-lg border border-slate-200 p-3">
-                  <p className="text-xs text-slate-500">{label}</p>
-                  <p className="mt-1 break-words text-sm font-medium text-slate-900">{value}</p>
-                </div>
-              ))}
-            </section>
-            <section className="rounded-xl border border-slate-200 p-4">
-              <h3 className="font-semibold">{t('ordersSupport.shippingTitle')}</h3>
-              <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                <p>
-                  {t('ordersSupport.shippingStatus')}:{' '}
-                  {tracking?.shipment?.status ?? order.shipment?.status ?? '—'}
-                </p>
-                <p className="break-all">
-                  {t('ordersSupport.waybillLabel')}: {order.shipment?.waybillCode ?? '—'}
-                </p>
-                {tracking?.carrierStatus && (
-                  <p>
-                    {t('ordersSupport.carrierStatus')}: {tracking.carrierStatus}
-                  </p>
-                )}
-                {order.shipment?.updatedAt && (
-                  <p>
-                    {t('ordersSupport.updatedAt')}: {formatDate(order.shipment.updatedAt, locale)}
-                  </p>
-                )}
-              </div>
-              {trackingError && (
-                <p role="alert" className="mt-2 text-xs text-amber-700">
-                  {trackingError}
-                </p>
-              )}
-            </section>
-            {order.escrowRecord && (
-              <section className="rounded-xl border border-slate-200 p-4">
-                <h3 className="font-semibold">{t('ordersSupport.escrowTitle')}</h3>
-                <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                  <p>
-                    {t('ordersSupport.escrowStatus')}: {order.escrowRecord.status}
-                  </p>
-                  <p>
-                    {t('ordersSupport.escrowTotal')}:{' '}
-                    {amount(order.escrowRecord.totalAmount, i18n.language)}
-                  </p>
-                  <p>
-                    {t('ordersSupport.platformFee')}:{' '}
-                    {amount(order.escrowRecord.platformFee, i18n.language)}
-                  </p>
-                  <p>
-                    {t('ordersSupport.sellerPayout')}:{' '}
-                    {amount(order.escrowRecord.sellerPayout, i18n.language)}
-                  </p>
-                </div>
-              </section>
-            )}
-            {!order.escrowRecord && (
-              <section className="rounded-xl border border-slate-200 p-4">
-                <h3 className="font-semibold">{t('ordersSupport.escrowTitle')}</h3>
-                <p className="mt-2 text-sm text-slate-500">{t('ordersSupport.noEscrow')}</p>
-              </section>
-            )}
-            <section className="rounded-xl border border-slate-200 p-4">
-              <h3 className="font-semibold">{t('ordersSupport.paymentTitle')}</h3>
-              {order.payments?.length ? (
-                <ul className="mt-3 space-y-2 text-sm">
-                  {order.payments.map((payment) => (
-                    <li key={payment.id} className="rounded-lg bg-slate-50 p-3">
-                      <p>
-                        {payment.provider} · {payment.status} ·{' '}
-                        {amount(payment.amount, i18n.language)}
-                      </p>
-                      {payment.transactionCode && (
-                        <p className="mt-1 break-all text-xs text-slate-500">
-                          {payment.transactionCode}
-                        </p>
-                      )}
-                      <p className="mt-1 text-xs text-slate-500">
-                        {formatDate(payment.createdAt, locale)}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-2 text-sm text-slate-500">{t('ordersSupport.noPayments')}</p>
-              )}
-            </section>
-            {afterSales && (
-              <section className="rounded-xl border border-slate-200 p-4">
-                <h3 className="font-semibold">{t('ordersSupport.afterSalesTitle')}</h3>
-                <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                  <p>
-                    {t('ordersSupport.kindLabel')}:{' '}
-                    {t(`ordersSupport.kinds.${afterSales.kind}`, { defaultValue: afterSales.kind })}
-                  </p>
-                  <p>
-                    {t('ordersSupport.statusAria')}:{' '}
-                    {t(`ordersSupport.statuses.${afterSales.status}`, {
-                      defaultValue: afterSales.status,
-                    })}
-                  </p>
-                  <p>
-                    {t('ordersSupport.createdAt')}: {formatDate(afterSales.createdAt, locale)}
-                  </p>
-                  <p>
-                    {t('ordersSupport.updatedAt')}: {formatDate(afterSales.updatedAt, locale)}
-                  </p>
-                  {afterSales.receivedAt && (
-                    <p>
-                      {t('ordersSupport.receivedAt')}: {formatDate(afterSales.receivedAt, locale)}
-                    </p>
-                  )}
-                  {afterSales.restockedAt && (
-                    <p>
-                      {t('ordersSupport.restockedAt')}: {formatDate(afterSales.restockedAt, locale)}
-                    </p>
-                  )}
-                  {afterSales.decisionReason && (
-                    <p className="sm:col-span-2">
-                      {t('ordersSupport.decisionReason')}: {afterSales.decisionReason}
-                    </p>
-                  )}
-                  <p className="sm:col-span-2">
-                    {t('ordersSupport.reasonLabel')}: {afterSales.reason}
-                  </p>
-                </div>
-                {afterSales.kind === 'CANCEL' && afterSales.status !== 'REJECTED' && (
-                  <p className="mt-3 text-xs text-amber-800">
-                    {t('ordersSupport.cancelAdminOnly')}
-                  </p>
-                )}
-                {canReviewReturn && (
-                  <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
-                    <label className="block text-sm">
-                      {t('ordersSupport.reviewReason')}
-                      <textarea
-                        value={returnReason}
-                        onChange={(event) => setReturnReason(event.target.value)}
-                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-3"
-                        rows={3}
-                      />
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        disabled={processing || returnReason.trim().length < 5}
-                        onClick={() =>
-                          void runReturnAction({
-                            type: 'review',
-                            decision: 'APPROVE',
-                            reason: returnReason.trim(),
-                          })
-                        }
-                      >
-                        {t('ordersSupport.approveReturn')}
-                      </Button>
-                      <Button
-                        variant="danger"
-                        disabled={processing || returnReason.trim().length < 5}
-                        onClick={() =>
-                          void runReturnAction({
-                            type: 'review',
-                            decision: 'REJECT',
-                            reason: returnReason.trim(),
-                          })
-                        }
-                      >
-                        {t('ordersSupport.rejectReturn')}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {canAttachReturnWaybill && (
-                  <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
-                    <input
-                      value={returnWaybill}
-                      onChange={(event) => setReturnWaybill(event.target.value)}
-                      placeholder={t('ordersSupport.returnWaybillPlaceholder')}
-                      className="min-w-52 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
-                    />
-                    <Button
-                      disabled={processing || !returnWaybill.trim()}
-                      onClick={() =>
-                        void runReturnAction({ type: 'waybill', waybillCode: returnWaybill.trim() })
-                      }
-                    >
-                      {t('ordersSupport.saveWaybill')}
-                    </Button>
-                  </div>
-                )}
-                {canReceiveReturn && (
-                  <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={restock}
-                        onChange={(event) => setRestock(event.target.checked)}
-                      />
-                      {t('ordersSupport.restockLabel')}
-                    </label>
-                    <Button
-                      disabled={processing}
-                      onClick={() =>
-                        void runReturnAction({
-                          type: 'receive',
-                          reason: returnReason.trim() || t('ordersSupport.receiveDefaultReason'),
-                          restock,
-                        })
-                      }
-                    >
-                      {t('ordersSupport.confirmReceived')}
-                    </Button>
-                  </div>
-                )}
-                {actionError && (
-                  <p role="alert" className="mt-3 text-sm text-red-700">
-                    {actionError}
-                  </p>
-                )}
-              </section>
-            )}
-            {order.dispute && (
-              <section className="rounded-xl border border-slate-200 p-4">
-                <h3 className="font-semibold">{t('ordersSupport.disputeTitle')}</h3>
-                <p className="mt-2 text-sm">
-                  {order.dispute.status} · {order.dispute.reason ?? ''}
-                </p>
-                {order.dispute.resolutionNotes && (
-                  <p className="mt-1 text-sm text-slate-600">{order.dispute.resolutionNotes}</p>
-                )}
-              </section>
-            )}
-            {order.refunds.length > 0 && (
-              <section className="rounded-xl border border-slate-200 p-4">
-                <h3 className="font-semibold">{t('ordersSupport.refundsTitle')}</h3>
-                <ul className="mt-2 space-y-2 text-sm">
-                  {order.refunds.map((refund) => (
-                    <li key={refund.id} className="rounded-lg bg-slate-50 p-3">
-                      {amount(refund.amount, i18n.language)} · {refund.destination} ·{' '}
-                      {refund.status}
-                      {refund.externalReference && (
-                        <span className="block break-all text-xs text-slate-500">
-                          {refund.externalReference}
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {order.history && (
-              <section className="rounded-xl border border-slate-200 p-4">
-                <h3 className="font-semibold">{t('ordersSupport.historyTitle')}</h3>
-                {order.history.length ? (
-                  <ol className="mt-3 space-y-3">
-                    {order.history.map((entry, index) => (
-                      <li
-                        key={`${entry.source}:${entry.action}:${entry.timestamp}:${index}`}
-                        className="border-l-2 border-blue-200 pl-3"
-                      >
-                        <p className="text-sm font-medium">{entry.label}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {formatDate(entry.timestamp, locale)}
-                          {entry.actor?.fullName ? ` · ${entry.actor.fullName}` : ''}
-                        </p>
-                        {entry.note && (
-                          <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">
-                            {entry.note}
-                          </p>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
-                ) : (
-                  <p className="mt-2 text-sm text-slate-500">{t('ordersSupport.noHistory')}</p>
-                )}
-              </section>
-            )}
-          </div>
-        )}
-      </Popup>
+        t={t}
+        locale={locale}
+        language={i18n.language}
+        order={order}
+        tracking={tracking}
+        detailLoading={detailLoading}
+        detailError={detailError}
+        trackingError={trackingError}
+        returnReason={returnReason}
+        setReturnReason={setReturnReason}
+        returnWaybill={returnWaybill}
+        setReturnWaybill={setReturnWaybill}
+        restock={restock}
+        setRestock={setRestock}
+        processing={processing}
+        actionError={actionError}
+        runReturnAction={runReturnAction}
+        formatDate={formatDate}
+        amount={amount}
+      />
     </section>
   );
 }

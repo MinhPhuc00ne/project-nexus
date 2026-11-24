@@ -441,7 +441,7 @@
     "refresh": "Tải lại",
     "searchAria": "Lọc yêu cầu hậu mãi",
     "searchPlaceholder": "Mã đơn, mã vận đơn hoàn hoặc lý do…",
-    "searchScope": "Lọc danh sách hậu mãi hiện tại theo mã đơn, mã vận đơn hoàn hoặc lý do.",
+    "searchScope": "API phân trang danh sách và lọc trạng thái. Từ khóa và loại yêu cầu chỉ lọc trong trang đang xem.",
     "kindAria": "Loại yêu cầu hậu mãi",
     "allKinds": "Tất cả loại",
     "cancelKind": "Yêu cầu hủy",

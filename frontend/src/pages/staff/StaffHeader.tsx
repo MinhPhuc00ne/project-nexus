@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback, type FormEvent, type ChangeEvent } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../../components/common/LanguageSwitcher';
@@ -14,14 +13,6 @@ import {
   User,
   KeyRound,
   ShieldCheck,
-  Camera,
-  Upload,
-  Phone,
-  Lock,
-  Link2,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
 } from 'lucide-react';
 import { clearAuthSession, getStoredToken, type AuthUser } from '../../services/auth';
 import { createNotificationConnection } from '../../services/notificationSocket';
@@ -33,6 +24,8 @@ import {
   markNotificationRead,
 } from '../../services/notifications';
 import type { UserNotification } from '../../types/notification.types';
+import { resolveStaffNotificationTarget } from './staffNotificationNavigation';
+import StaffHeaderDialogs from './StaffHeaderDialogs';
 import {
   changeStaffPassword,
   getStaffProfile,
@@ -46,106 +39,6 @@ interface StaffHeaderProps {
   searchText: string;
   onSearchChange: (value: string) => void;
   onOpenSidebar: () => void;
-}
-
-function resolveStaffNotificationTarget(notification: UserNotification): string | null {
-  const metadata = notification.metadata ?? {};
-  const readId = (...keys: string[]): string | null => {
-    for (const key of keys) {
-      const value = metadata[key];
-      if (typeof value === 'string' && value.trim()) return value.trim();
-    }
-    return null;
-  };
-  const auctionId = notification.auctionId ?? readId('auctionId', 'auction_id');
-  const orderId = readId('orderId', 'order_id', 'orderCode');
-  const reviewId = readId('reviewId', 'review_id');
-  const disputeId = readId('disputeId', 'complaintId', 'dispute_id');
-  const resourceId = readId('resourceId', 'entityId', 'contextId');
-  const action = [
-    notification.type,
-    notification.title,
-    notification.content,
-    metadata.actionType,
-    metadata.entityType,
-    metadata.resourceType,
-  ]
-    .filter((value) => typeof value === 'string')
-    .join(' ')
-    .toLocaleLowerCase();
-  const resourceType = [metadata.entityType, metadata.resourceType]
-    .filter((value) => typeof value === 'string')
-    .join(' ')
-    .toLocaleLowerCase();
-
-  let target: URL | null = null;
-  if (notification.targetUrl?.startsWith('/') && !notification.targetUrl.startsWith('//')) {
-    target = new URL(notification.targetUrl, window.location.origin);
-  }
-
-  const path = target?.pathname ?? '';
-  const matches = (route: string) => path === route || path.startsWith(`${route}/`);
-  const adminOrderMatch = path.match(/^\/admin\/(?:orders|refunds)\/([^/]+)\/?$/);
-  if (adminOrderMatch) return `/staff/orders?orderId=${encodeURIComponent(adminOrderMatch[1])}`;
-  const adminAuctionMatch = path.match(/^\/admin\/auctions\/([^/]+)(?:\/lots)?\/?$/);
-  if (adminAuctionMatch) {
-    const params = new URLSearchParams(target?.search ?? '');
-    params.set('auctionId', decodeURIComponent(adminAuctionMatch[1]));
-    return `/staff/auction-support?${params.toString()}${target?.hash ?? ''}`;
-  }
-  if (path === '/admin' || path.startsWith('/admin/')) {
-    let staffPath: string | null = null;
-    if (matches('/admin/reports')) staffPath = '/staff/disputes';
-    else if (matches('/admin/reviews')) staffPath = '/staff/reviews';
-    else if (matches('/admin/refunds') || matches('/admin/orders')) staffPath = '/staff/orders';
-    else if (matches('/admin/banners')) staffPath = '/staff/banners';
-    else if (matches('/admin/auctions')) staffPath = '/staff/auction-support';
-    return staffPath ? `${staffPath}${target?.search ?? ''}${target?.hash ?? ''}` : null;
-  }
-  const auctionMatch = path.match(/^\/(?:auction|auctions|seller\/auctions)\/([^/]+)\/?$/);
-  if (auctionMatch) {
-    const params = new URLSearchParams(target?.search ?? '');
-    params.set('auctionId', decodeURIComponent(auctionMatch[1]));
-    return `/staff/auction-support?${params.toString()}${target?.hash ?? ''}`;
-  }
-  const orderRouteMatch = path.match(
-    /^\/(?:commerce\/orders|seller\/orders|buyer\/orders)\/([^/]+)\/?$/,
-  );
-  if (orderRouteMatch) return `/staff/orders?orderId=${encodeURIComponent(orderRouteMatch[1])}`;
-  if (path === '/seller/auctions' || path === '/auctions') return '/staff/auction-support';
-  if (target) return `${path}${target.search}${target.hash}`;
-
-  if (
-    auctionId ||
-    (resourceId && /auction|consignment|đấu giá|ký gửi/.test(resourceType || action))
-  ) {
-    const id = auctionId ?? resourceId;
-    return id
-      ? `/staff/auction-support?auctionId=${encodeURIComponent(id)}`
-      : '/staff/auction-support';
-  }
-  if (
-    orderId ||
-    (resourceId &&
-      /order|refund|after.?sales|đơn hàng|hoàn tiền|trả hàng|hủy đơn/.test(resourceType || action))
-  ) {
-    const id = orderId ?? resourceId;
-    return id ? `/staff/orders?orderId=${encodeURIComponent(id)}` : '/staff/orders';
-  }
-  if (reviewId || (resourceId && /review|rating|đánh giá/.test(resourceType || action)))
-    return '/staff/reviews';
-  if (
-    disputeId ||
-    (resourceId && /dispute|complaint|khiếu nại|tranh chấp/.test(resourceType || action))
-  )
-    return '/staff/disputes';
-  if (/auction|consignment|đấu giá|ký gửi/.test(action)) return '/staff/auction-support';
-  if (/order|refund|after.?sales|đơn hàng|hoàn tiền|trả hàng|hủy đơn/.test(action))
-    return '/staff/orders';
-  if (/review|rating|đánh giá/.test(action)) return '/staff/reviews';
-  if (/dispute|complaint|khiếu nại|tranh chấp/.test(action)) return '/staff/disputes';
-  if (/banner/.test(action)) return '/staff/banners';
-  return null;
 }
 
 export default function StaffHeader({
@@ -397,7 +290,6 @@ export default function StaffHeader({
       >
         <Menu size={20} />
       </button>
-
       <div className="flex h-11 min-w-0 max-w-xl flex-1 items-center gap-3 rounded-xl border border-transparent bg-slate-100 px-4 text-slate-500 transition focus-within:border-blue-200 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-50">
         <Search size={18} className="shrink-0" />
         <input
@@ -418,7 +310,6 @@ export default function StaffHeader({
           </button>
         )}
       </div>
-
       <div className="ml-auto flex items-center gap-3">
         <LanguageSwitcher compact />
         <div ref={notificationsRef} className="relative">
@@ -657,400 +548,47 @@ export default function StaffHeader({
         </div>
       </div>
       {/* Modal Chỉnh Sửa Hồ Sơ Staff */}
-      {isProfileEditorOpen &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-            onClick={(e) => {
-              if (e.target === e.currentTarget && !profileSaving && !isUploadingAvatar) {
-                setIsProfileEditorOpen(false);
-              }
-            }}
-          >
-            <div className="w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-100">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    {t('header.profileModalTitle')}
-                  </h2>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {t('header.profileModalSubtitle')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  aria-label={t('header.closeAria')}
-                  disabled={profileSaving || isUploadingAvatar}
-                  onClick={() => setIsProfileEditorOpen(false)}
-                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer disabled:opacity-50"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form
-                onSubmit={saveProfile}
-                className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1"
-              >
-                {/* Avatar Selector Card */}
-                <div className="flex flex-col items-center gap-3 rounded-xl bg-slate-50/70 p-4 border border-slate-100">
-                  <div className="relative group">
-                    <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-white shadow-md ring-2 ring-blue-500/20 bg-slate-200">
-                      {avatarPreview ? (
-                        <img
-                          src={avatarPreview}
-                          alt={t('header.avatarPreviewAlt')}
-                          className="h-full w-full object-cover"
-                          onError={() => setAvatarPreview('')}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-tr from-blue-600 to-indigo-600 text-xl font-bold text-white">
-                          {initials || <User size={30} />}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Hover Camera Overlay */}
-                    <button
-                      type="button"
-                      disabled={profileSaving || isUploadingAvatar}
-                      onClick={() => fileInputRef.current?.click()}
-                      title={t('header.choosePhotoTitle')}
-                      className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-slate-950/50 text-white opacity-0 transition-opacity group-hover:opacity-100 cursor-pointer disabled:cursor-not-allowed"
-                    >
-                      <Camera size={20} />
-                      <span className="mt-0.5 text-[10px] font-medium">
-                        {t('header.changePhoto')}
-                      </span>
-                    </button>
-                  </div>
-
-                  {/* Hidden File Input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-
-                  <div className="flex flex-col items-center gap-1.5 text-center">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        disabled={profileSaving || isUploadingAvatar}
-                        onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 cursor-pointer disabled:opacity-50"
-                      >
-                        <Upload size={13} />
-                        <span>
-                          {avatarFile ? t('header.chooseOtherPhoto') : t('header.uploadFromDevice')}
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={profileSaving || isUploadingAvatar}
-                        onClick={() => setShowManualUrl(!showManualUrl)}
-                        className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-                      >
-                        <Link2 size={13} className="inline mr-1" />
-                        {showManualUrl ? t('header.hideUrl') : t('header.pasteUrl')}
-                      </button>
-                    </div>
-
-                    <p className="text-[11px] text-slate-400">
-                      {avatarFile
-                        ? t('header.selectedFile', { name: avatarFile.name })
-                        : t('header.photoHint')}
-                    </p>
-                  </div>
-
-                  {/* Optional manual URL input if toggled */}
-                  {showManualUrl && (
-                    <div className="w-full mt-2 pt-2 border-t border-slate-200/60 animate-in fade-in duration-150">
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        {t('header.avatarUrlLabel')}
-                      </label>
-                      <input
-                        type="url"
-                        value={profileAvatar}
-                        onChange={(e) => {
-                          setProfileAvatar(e.target.value);
-                          if (!avatarFile) setAvatarPreview(e.target.value);
-                        }}
-                        placeholder="https://images.unsplash.com/..."
-                        className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Form Input: Họ tên */}
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    {t('header.fullNameLabel')} <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <User
-                      size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                    />
-                    <input
-                      required
-                      minLength={2}
-                      maxLength={100}
-                      value={profileName}
-                      onChange={(event) => setProfileName(event.target.value)}
-                      placeholder={t('header.fullNamePlaceholder')}
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-900 transition placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                </div>
-
-                {/* Form Input: Số điện thoại */}
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    {t('header.phoneLabel')}
-                  </label>
-                  <div className="relative">
-                    <Phone
-                      size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                    />
-                    <input
-                      value={profilePhone}
-                      onChange={(event) => setProfilePhone(event.target.value)}
-                      placeholder="0901234567"
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-900 transition placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                </div>
-
-                {/* Error Message */}
-                {profileFormError && (
-                  <div
-                    role="alert"
-                    className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-700 border border-red-100 animate-in fade-in"
-                  >
-                    <AlertCircle size={15} className="shrink-0 text-red-500" />
-                    <span>{profileFormError}</span>
-                  </div>
-                )}
-
-                {/* Modal Actions */}
-                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
-                  <button
-                    type="button"
-                    disabled={profileSaving || isUploadingAvatar}
-                    onClick={() => setIsProfileEditorOpen(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 cursor-pointer disabled:opacity-50"
-                  >
-                    {t('header.cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={profileSaving || isUploadingAvatar}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 cursor-pointer disabled:opacity-50"
-                  >
-                    {isUploadingAvatar ? (
-                      <>
-                        <Loader2 size={13} className="animate-spin" />
-                        <span>{t('header.uploadingPhoto')}</span>
-                      </>
-                    ) : profileSaving ? (
-                      <>
-                        <Loader2 size={13} className="animate-spin" />
-                        <span>{t('header.saving')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 size={13} />
-                        <span>{t('header.saveProfile')}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {/* Modal Đổi Mật Khẩu Staff */}
-      {isPasswordEditorOpen &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-            onClick={(e) => {
-              if (e.target === e.currentTarget && !passwordSaving) {
-                setIsPasswordEditorOpen(false);
-              }
-            }}
-          >
-            <div className="w-full max-w-md max-h-[92vh] flex flex-col overflow-hidden rounded-2xl bg-white shadow-2xl border border-slate-100">
-              {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 shrink-0">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    {t('header.passwordModalTitle')}
-                  </h2>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {t('header.passwordModalSubtitle')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  aria-label={t('header.closeAria')}
-                  disabled={passwordSaving}
-                  onClick={() => setIsPasswordEditorOpen(false)}
-                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer disabled:opacity-50"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form
-                onSubmit={savePassword}
-                className="p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1"
-              >
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    {t('header.currentPasswordLabel')} <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <KeyRound
-                      size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                    />
-                    <input
-                      required
-                      type="password"
-                      autoComplete="current-password"
-                      value={currentPassword}
-                      onChange={(event) => setCurrentPassword(event.target.value)}
-                      placeholder="••••••••"
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-900 transition placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-700">
-                    {t('header.newPasswordLabel')} <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <Lock
-                      size={15}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                    />
-                    <input
-                      required
-                      minLength={6}
-                      type="password"
-                      autoComplete="new-password"
-                      value={newPassword}
-                      onChange={(event) => setNewPassword(event.target.value)}
-                      placeholder={t('header.newPasswordPlaceholder')}
-                      className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs text-slate-900 transition placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    />
-                  </div>
-                </div>
-
-                {passwordFormError && (
-                  <div
-                    role="alert"
-                    className="flex items-center gap-2 rounded-xl bg-red-50 p-3 text-xs text-red-700 border border-red-100 animate-in fade-in"
-                  >
-                    <AlertCircle size={15} className="shrink-0 text-red-500" />
-                    <span>{passwordFormError}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
-                  <button
-                    type="button"
-                    disabled={passwordSaving}
-                    onClick={() => setIsPasswordEditorOpen(false)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 cursor-pointer disabled:opacity-50"
-                  >
-                    {t('header.cancel')}
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={passwordSaving}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 cursor-pointer disabled:opacity-50"
-                  >
-                    {passwordSaving ? (
-                      <>
-                        <Loader2 size={13} className="animate-spin" />
-                        <span>{t('header.saving')}</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 size={13} />
-                        <span>{t('header.changePasswordSubmit')}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>,
-          document.body,
-        )}
-
-      {/* Modal Xác Nhận Đăng Xuất Staff */}
-      {isLogoutConfirmOpen &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setIsLogoutConfirmOpen(false);
-              }
-            }}
-          >
-            <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white p-6 shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-150">
-              <div className="flex flex-col items-center text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 ring-8 ring-red-50/50 mb-4">
-                  <LogOut size={22} />
-                </div>
-                <h3 className="text-base font-bold text-slate-900">
-                  {t('header.logoutModalTitle')}
-                </h3>
-                <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-                  {t('header.logoutModalBody')}
-                  <strong className="text-slate-700 font-semibold">{accountName}</strong>?
-                </p>
-              </div>
-
-              <div className="mt-6 flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setIsLogoutConfirmOpen(false)}
-                  className="flex-1 rounded-xl border border-slate-200 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 cursor-pointer"
-                >
-                  {t('header.stayWorking')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsLogoutConfirmOpen(false);
-                    clearAuthSession();
-                    toast.success(t('header.logoutSuccess'));
-                    navigate('/login', { replace: true });
-                  }}
-                  className="flex-1 rounded-xl bg-red-600 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-700 cursor-pointer"
-                >
-                  {t('header.logoutConfirm')}
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      <StaffHeaderDialogs
+        t={t}
+        initials={initials}
+        accountName={accountName}
+        onConfirmLogout={() => {
+          setIsLogoutConfirmOpen(false);
+          clearAuthSession();
+          toast.success(t('header.logoutSuccess'));
+          navigate('/login', { replace: true });
+        }}
+        isProfileEditorOpen={isProfileEditorOpen}
+        setIsProfileEditorOpen={setIsProfileEditorOpen}
+        profileSaving={profileSaving}
+        isUploadingAvatar={isUploadingAvatar}
+        fileInputRef={fileInputRef}
+        avatarPreview={avatarPreview}
+        setAvatarPreview={setAvatarPreview}
+        handleFileSelect={handleFileSelect}
+        avatarFile={avatarFile}
+        showManualUrl={showManualUrl}
+        setShowManualUrl={setShowManualUrl}
+        profileAvatar={profileAvatar}
+        setProfileAvatar={setProfileAvatar}
+        profileName={profileName}
+        setProfileName={setProfileName}
+        profilePhone={profilePhone}
+        setProfilePhone={setProfilePhone}
+        profileFormError={profileFormError}
+        saveProfile={saveProfile}
+        isPasswordEditorOpen={isPasswordEditorOpen}
+        setIsPasswordEditorOpen={setIsPasswordEditorOpen}
+        passwordSaving={passwordSaving}
+        currentPassword={currentPassword}
+        setCurrentPassword={setCurrentPassword}
+        newPassword={newPassword}
+        setNewPassword={setNewPassword}
+        passwordFormError={passwordFormError}
+        savePassword={savePassword}
+        isLogoutConfirmOpen={isLogoutConfirmOpen}
+        setIsLogoutConfirmOpen={setIsLogoutConfirmOpen}
+      />{' '}
     </header>
   );
 }

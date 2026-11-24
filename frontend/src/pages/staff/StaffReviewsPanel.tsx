@@ -9,6 +9,7 @@ import {
   getStaffModeratedReviews,
   type StaffModeratedReview,
 } from '../../services/staff';
+import { validateStaffReviewDeletion } from './reviewModeration.helpers';
 
 const PAGE_SIZE = 20;
 
@@ -82,11 +83,16 @@ export default function StaffReviewsPanel() {
   async function confirmDelete(): Promise<void> {
     if (!selected || deleting) return;
     const points = Number(pointsToDeduct);
-    if (!reason.trim() || reason.trim().length < 5) {
+    const validation = validateStaffReviewDeletion(
+      reason,
+      points,
+      selected.reviewer.reputationScore,
+    );
+    if (validation === 'reasonRequired') {
       setDeleteError(t('reviews.reasonRequired'));
       return;
     }
-    if (!Number.isInteger(points) || points < 1 || points > selected.reviewer.reputationScore) {
+    if (validation === 'pointsInvalid') {
       setDeleteError(t('reviews.pointsInvalid', { max: selected.reviewer.reputationScore }));
       return;
     }

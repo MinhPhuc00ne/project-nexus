@@ -441,7 +441,7 @@
     "refresh": "Refresh",
     "searchAria": "Filter after-sales requests",
     "searchPlaceholder": "Order ID, return waybill, or reason…",
-    "searchScope": "Filter the current after-sales list by order ID, return waybill, or reason.",
+    "searchScope": "The API paginates the list and filters by status. Search text and request type apply to the current page only.",
     "kindAria": "After-sales request type",
     "allKinds": "All types",
     "cancelKind": "Cancellation",

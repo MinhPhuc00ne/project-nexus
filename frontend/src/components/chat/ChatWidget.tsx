@@ -9,29 +9,20 @@ import {
   getChatUnreadCount,
   requestChatSupport,
 } from '../../services/chat';
-import type { ChatConversation, ChatConversationType, ChatMessage } from '../../types/chat.types';
-import { createChatConnection, type ChatConnectionClient } from '../../services/chatSocket';
+import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
 import ChatConversationList from './ChatConversationList';
 import ChatMessageArea from './ChatMessageArea';
 import { getChatErrorMessage } from './chatUtils';
 import { useChatRoom } from './useChatRoom';
 import SupportMenu from './SupportMenu';
 import ChatbotPanel from './ChatbotPanel';
+import { orderByLastMessage, unreadBadgeLabel } from './chatWidget.helpers';
+import { useChatUnreadSync } from './useChatUnreadSync';
 import {
   OPEN_CHAT_CONVERSATION_EVENT,
   OPEN_CHAT_WITH_USER_EVENT,
   type OpenChatWithUserRequest,
 } from './chatEvents';
-
-const CHAT_CONVERSATION_SYNC_INTERVAL_MS = 15_000;
-
-function orderByLastMessage(items: ChatConversation[]): ChatConversation[] {
-  return [...items].sort((left, right) => {
-    const leftTime = Date.parse(left.lastMessageAt ?? left.createdAt) || 0;
-    const rightTime = Date.parse(right.lastMessageAt ?? right.createdAt) || 0;
-    return rightTime - leftTime || left.id.localeCompare(right.id);
-  });
-}
 
 export default function ChatWidget(): JSX.Element | null {
   const { token, storedUser } = useAuth();
@@ -88,10 +79,11 @@ function ChatPanel({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [creating, setCreating] = useState(false);
+  const creatingRef = useRef(creating);
+  creatingRef.current = creating;
   const [participantId, setParticipantId] = useState('');
   const [type, setType] = useState<ChatConversationType>('BUYER_SELLER');
   const [revision, setRevision] = useState(0);
-  const chatConnectionRef = useRef<ChatConnectionClient | null>(null);
   const activeChatStateRef = useRef<{ id?: string; isVisible: boolean }>({
     isVisible: false,
   });
@@ -101,7 +93,7 @@ function ChatPanel({
   useEffect(() => {
     const handleOpenChat = (event: Event): void => {
       const request = (event as CustomEvent<OpenChatWithUserRequest>).detail;
-      if (!request?.userId || request.userId === userId || creating) return;
+      if (!request?.userId || request.userId === userId || creatingRef.current) return;
 
       setOpen(true);
       setView('chat');
@@ -110,6 +102,7 @@ function ChatPanel({
       setActive(null);
       setPanelError('');
       setCreating(true);
+      creatingRef.current = true;
 
       void createChatConversation({
         participantId: request.userId,
@@ -125,12 +118,15 @@ function ChatPanel({
         .catch((error: unknown) => {
           setPanelError(getChatErrorMessage(error));
         })
-        .finally(() => setCreating(false));
+        .finally(() => {
+          creatingRef.current = false;
+          setCreating(false);
+        });
     };
 
     window.addEventListener(OPEN_CHAT_WITH_USER_EVENT, handleOpenChat);
     return () => window.removeEventListener(OPEN_CHAT_WITH_USER_EVENT, handleOpenChat);
-  }, [creating, userId]);
+  }, [t, userId]);
 
   useEffect(() => {
     const handleOpenConversation = (event: Event): void => {
@@ -214,135 +210,14 @@ function ChatPanel({
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    const connection = createChatConnection();
-    chatConnectionRef.current = connection;
-    const joinedConversationIds = new Set<string>();
-    const seenMessageIds = new Set<string>();
-    let syncingConversations = false;
-
-    const refreshUnreadCount = (): void => {
-      void getChatUnreadCount()
-        .then((count) => {
-          if (!cancelled) setUnread(count);
-        })
-        .catch(() => {});
-    };
-
-    const handleNewMessage = (message: ChatMessage): void => {
-      if (!message?.id || message.isMe || seenMessageIds.has(message.id)) return;
-      seenMessageIds.add(message.id);
-      const activeChat = activeChatStateRef.current;
-      const isReadingThisConversation =
-        activeChat.isVisible &&
-        activeChat.id === message.conversationId &&
-        document.visibilityState === 'visible';
-
-      if (!isReadingThisConversation) {
-        setUnread((count) => count + 1);
-        setConversations((current) =>
-          orderByLastMessage(
-            current.map((conversation) => {
-              if (conversation.id !== message.conversationId) return conversation;
-              const isNewer =
-                (Date.parse(message.createdAt) || 0) >=
-                (Date.parse(conversation.lastMessageAt ?? conversation.createdAt) || 0);
-              return {
-                ...conversation,
-                unreadCount: conversation.unreadCount + 1,
-                ...(isNewer
-                  ? {
-                      lastMessage: message.body || (message.attachments.length ? '📎' : ''),
-                      lastMessageAt: message.createdAt,
-                    }
-                  : {}),
-              };
-            }),
-          ),
-        );
-      }
-    };
-
-    const handleMessagesRead = (event: { conversationId: string; readBy: string }): void => {
-      if (event.readBy !== userId) return;
-      setConversations((current) =>
-        current.map((conversation) =>
-          conversation.id === event.conversationId
-            ? { ...conversation, unreadCount: 0 }
-            : conversation,
-        ),
-      );
-      refreshUnreadCount();
-    };
-
-    connection.socket.on('new_message', handleNewMessage);
-    connection.socket.on('messages_read', handleMessagesRead);
-
-    const syncUserConversations = async (recentOnly = false): Promise<void> => {
-      if (cancelled || syncingConversations) return;
-      syncingConversations = true;
-      let joinedNewConversation = false;
-      try {
-        let page = 1;
-        let totalPages = 1;
-        while (!cancelled && page <= totalPages) {
-          const result = await getChatConversations({ page, limit: 100 });
-          for (const conversation of result.items) {
-            if (joinedConversationIds.has(conversation.id)) continue;
-            joinedConversationIds.add(conversation.id);
-            connection.joinConversation(conversation.id);
-            joinedNewConversation = true;
-          }
-          totalPages = recentOnly ? 1 : Math.max(1, result.pagination.totalPages);
-          page += 1;
-        }
-        if (!cancelled) {
-          refreshUnreadCount();
-          if (joinedNewConversation && isPanelOpenRef.current) setRevision((value) => value + 1);
-        }
-      } catch {
-        // The visible inbox can still load conversations when opened; retry joining those below.
-      } finally {
-        syncingConversations = false;
-      }
-    };
-
-    const handleSocketConnect = (): void => {
-      refreshUnreadCount();
-      void syncUserConversations(true);
-    };
-    const syncWhenVisible = (): void => {
-      if (document.visibilityState !== 'visible') return;
-      refreshUnreadCount();
-      void syncUserConversations(true);
-    };
-
-    connection.socket.on('connect', handleSocketConnect);
-    window.addEventListener('focus', syncWhenVisible);
-    document.addEventListener('visibilitychange', syncWhenVisible);
-    connection.connect();
-    void syncUserConversations();
-    const syncTimer = window.setInterval(
-      () => void syncUserConversations(true),
-      CHAT_CONVERSATION_SYNC_INTERVAL_MS,
-    );
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(syncTimer);
-      window.removeEventListener('focus', syncWhenVisible);
-      document.removeEventListener('visibilitychange', syncWhenVisible);
-      connection.socket.off('new_message', handleNewMessage);
-      connection.socket.off('messages_read', handleMessagesRead);
-      connection.socket.off('connect', handleSocketConnect);
-      connection.disconnect();
-      joinedConversationIds.clear();
-      seenMessageIds.clear();
-      chatConnectionRef.current = null;
-    };
-  }, [userId]);
-
+  const chatConnectionRef = useChatUnreadSync({
+    userId,
+    activeChatStateRef,
+    isPanelOpenRef,
+    setUnread,
+    setConversations,
+    setRevision,
+  });
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -433,7 +308,7 @@ function ChatPanel({
               className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs leading-none text-white"
               aria-label={t('chat.widget.unreadCount', { count: unread })}
             >
-              {unread > 99 ? '99+' : unread}
+              {unreadBadgeLabel(unread)}
             </span>
           )}
         </button>
@@ -482,7 +357,7 @@ function ChatPanel({
                       className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-xs leading-none text-white"
                       aria-label={t('chat.widget.unreadCount', { count: unread })}
                     >
-                      {unread > 99 ? '99+' : unread}
+                      {unreadBadgeLabel(unread)}
                     </span>
                   )}
                 </span>
