@@ -517,6 +517,7 @@ export class AdminService {
               ? `Yêu cầu rút ${Number(amount).toLocaleString('vi-VN')} VND về ${req.bankName} (${req.accountNumber}) đã bị từ chối. Lý do: ${dto.rejectionReason}. Số tiền đã được hoàn trả lại ví của bạn.`
               : `Yêu cầu rút ${Number(amount).toLocaleString('vi-VN')} VND về ${req.bankName} (${req.accountNumber}) đã được xử lý thành công. Tiền sẽ về tài khoản ngân hàng của bạn trong ít phút.`,
           type: NotificationType.PAYMENT,
+          targetUrl: req.user.role === 'SELLER' ? '/seller/finance' : '/buyer/wallet',
         },
       });
     });

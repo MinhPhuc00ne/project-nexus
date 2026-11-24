@@ -24,6 +24,31 @@ export class ReviewDto {
   @IsString()
   @MaxLength(2000)
   comment?: string;
+  @ApiPropertyOptional({
+    type: [String],
+    maxItems: 6,
+    example: ['https://res.cloudinary.com/demo/image/upload/v1/review-1.jpg'],
+    description: 'Image or video URLs attached to product review feedback',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(6)
+  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
+  mediaUrls?: string[];
+}
+
+export class SellerReplyReviewDto {
+  @ApiProperty({
+    minLength: 2,
+    maxLength: 2000,
+    example: 'Cảm ơn bạn đã ủng hộ shop! Shop sẽ đóng gói kỹ hơn ở đơn sau ạ.',
+    description: 'Seller reply content for a product review',
+  })
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(2)
+  @MaxLength(2000)
+  reply!: string;
 }
 
 export class ReportDto {

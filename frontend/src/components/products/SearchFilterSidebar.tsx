@@ -12,6 +12,7 @@ import {
   SlidersHorizontal,
   Search,
   X,
+  Flame,
 } from 'lucide-react';
 import type { CategoryNode } from '../../services/products.service';
 
@@ -22,6 +23,8 @@ export interface SearchFilterState {
   maxPrice?: number;
   minRating?: number;
   inStock?: 'true' | 'false';
+  trendingOnly?: boolean;
+  minPurchaseCount?: number;
 }
 
 interface SearchFilterSidebarProps {
@@ -194,13 +197,29 @@ export default function SearchFilterSidebar({
     });
   };
 
+  const handleToggleTrendingOnly = () => {
+    onChange({
+      ...filters,
+      trendingOnly: filters.trendingOnly ? undefined : true,
+    });
+  };
+
+  const handleSelectMinPurchase = (count?: number) => {
+    onChange({
+      ...filters,
+      minPurchaseCount: filters.minPurchaseCount === count ? undefined : count,
+    });
+  };
+
   const hasActiveFilters = Boolean(
     filters.categoryId ||
     filters.city ||
     filters.minPrice !== undefined ||
     filters.maxPrice !== undefined ||
     filters.minRating !== undefined ||
-    filters.inStock,
+    filters.inStock ||
+    filters.trendingOnly ||
+    filters.minPurchaseCount !== undefined,
   );
 
   const displayedCategories = showAllCategories ? categories : categories.slice(0, 6);
@@ -576,6 +595,49 @@ export default function SearchFilterSidebar({
                 {t('filters.inStockBadge')}
               </span>
             </label>
+
+            <label className="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-50 transition cursor-pointer">
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={Boolean(filters.trendingOnly)}
+                  onChange={handleToggleTrendingOnly}
+                  className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                />
+                <span>{t('filters.trendingOnly')}</span>
+              </span>
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                <Flame className="h-2.5 w-2.5" />
+                {t('filters.trendingBadge')}
+              </span>
+            </label>
+
+            <div className="pt-2">
+              <p className="px-2.5 text-[11px] font-semibold text-slate-500">
+                {t('filters.minPurchaseLabel')}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5 px-2.5">
+                {[undefined, 1, 5, 10, 50].map((count) => {
+                  const isActive = filters.minPurchaseCount === count;
+                  return (
+                    <button
+                      key={count ?? 'all'}
+                      type="button"
+                      onClick={() => handleSelectMinPurchase(count)}
+                      className={`rounded-md border px-2 py-1 text-[10px] font-semibold transition cursor-pointer ${
+                        isActive
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-blue-300'
+                      }`}
+                    >
+                      {count === undefined
+                        ? t('filters.allPurchases')
+                        : t('filters.minPurchasesPlus', { count })}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -240,6 +240,7 @@ model User {
   auctionComplaints          AuctionComplaint[] @relation("AuctionComplaintReporter")
   handledAuctionComplaints   AuctionComplaint[] @relation("AuctionComplaintAdmin")
   cart                       Cart?
+  wishlistItems              WishlistItem[]
   reputationLogs             ReputationLog[]
   notifications              Notification[]
   notificationPreferences    NotificationPreference[]
@@ -264,6 +265,7 @@ model User {
   cancelledAutoReplies       ChatAutoReply[]          @relation("AdminCancelledReplies")
   ghnAccounts                SellerGhnAccount[]
   productReviews             ProductReview[]
+  productReviewHelpfulVotes  ProductReviewHelpfulVote[]
   customerReviewsGiven       CustomerReview[]         @relation("CustomerReviewer")
   customerReviewsReceived    CustomerReview[]         @relation("CustomerReviewee")
   eventBanners               EventBanner[]
@@ -406,6 +408,7 @@ model Product {
   auctions       Auction[]
   options        ProductOption[]
   productReviews ProductReview[]
+  wishlistItems  WishlistItem[]
   reports        ShopViolation[]
 
   @@map("products")
@@ -555,6 +558,20 @@ model CartItem {
 
   @@unique([cartId, productId, optionKey])
   @@map("cart_items")
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
+  @@map("wishlist_items")
 }
 
 model Order {
@@ -920,20 +937,38 @@ model Review {
 }
 
 model ProductReview {
-  id         String   @id @default(uuid())
-  orderId    String   @map("order_id")
-  productId  String   @map("product_id")
-  reviewerId String   @map("reviewer_id")
-  rating     Int
-  comment    String?  @db.Text
-  createdAt  DateTime @default(now()) @map("created_at")
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
-  reviewer   User     @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+  id           String                     @id @default(uuid())
+  orderId      String                     @map("order_id")
+  productId    String                     @map("product_id")
+  reviewerId   String                     @map("reviewer_id")
+  rating       Int
+  comment      String?                    @db.Text
+  mediaUrls    String[]                   @default([]) @map("media_urls")
+  sellerReply  String?                    @map("seller_reply") @db.Text
+  sellerRepliedAt DateTime?               @map("seller_replied_at")
+  helpfulCount Int                        @default(0) @map("helpful_count")
+  createdAt    DateTime                   @default(now()) @map("created_at")
+  order        Order                      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product                    @relation(fields: [productId], references: [id], onDelete: Restrict)
+  reviewer     User                       @relation(fields: [reviewerId], references: [id], onDelete: Restrict)
+  helpfulVotes ProductReviewHelpfulVote[]
 
   @@unique([orderId, productId])
   @@index([productId, createdAt])
   @@map("product_reviews")
+}
+
+model ProductReviewHelpfulVote {
+  id        String        @id @default(uuid())
+  reviewId  String        @map("review_id")
+  userId    String        @map("user_id")
+  createdAt DateTime      @default(now()) @map("created_at")
+  review    ProductReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@index([userId])
+  @@map("product_review_helpful_votes")
 }
 
 model CustomerReview {

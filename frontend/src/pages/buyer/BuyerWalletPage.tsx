@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastNotification';
+import { getStoredToken } from '../../services/auth';
+import { createNotificationConnection } from '../../services/notificationSocket';
 import {
   getBuyerWalletApi,
   getBuyerTransactionsApi,
@@ -153,6 +155,28 @@ export default function BuyerWalletPage() {
   useEffect(() => {
     void fetchWithdrawals();
   }, [fetchWithdrawals]);
+
+  useEffect(() => {
+    const token = getStoredToken();
+    const userId = user?.id;
+    if (!token || !userId) return;
+
+    try {
+      const connection = createNotificationConnection();
+      connection.socket.on('notification:new', (notification) => {
+        if (notification.userId !== userId) return;
+        const isWalletEvent =
+          notification.targetUrl === '/buyer/wallet' || notification.type === 'PAYMENT';
+        if (isWalletEvent) {
+          void Promise.all([fetchWallet(), fetchWithdrawals()]);
+        }
+      });
+      connection.connect();
+      return () => connection.disconnect();
+    } catch {
+      return undefined;
+    }
+  }, [fetchWallet, fetchWithdrawals, user?.id]);
 
   useEffect(() => {
     if (pendingDepositOrderCode === null) return;

@@ -3,7 +3,9 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
 } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { AfterSalesRequest, NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
@@ -22,6 +24,8 @@ import { RefundService } from './refund.service';
 
 @Injectable()
 export class OrderReturnService {
+  private readonly logger = new Logger(OrderReturnService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly store: AfterSalesStoreService,
@@ -260,5 +264,23 @@ export class OrderReturnService {
       });
       return tx.afterSalesRequest.findUniqueOrThrow({ where: { orderId } });
     });
+  }
+
+  @OnEvent('return.shipment.delivered')
+  async handleReturnDelivered(payload: {
+    orderId: string;
+    returnWaybillCode: string;
+    sellerId: string;
+  }): Promise<void> {
+    try {
+      await this.receive(
+        payload.orderId,
+        { id: payload.sellerId, role: 'SELLER' },
+        { restock: true, reason: `GHN xác nhận hoàn hàng (${payload.returnWaybillCode})` },
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Skip auto-receive return for order ${payload.orderId}: ${message}`);
+    }
   }
 }
