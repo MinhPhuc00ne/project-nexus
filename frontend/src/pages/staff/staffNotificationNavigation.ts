@@ -92,10 +92,10 @@ export function resolveStaffNotificationTarget(notification: UserNotification): 
   )
     return '/staff/disputes';
   if (/auction|consignment|đấu giá|ký gửi/.test(action)) return '/staff/auction-support';
+  if (/dispute|complaint|khiếu nại|tranh chấp/.test(action)) return '/staff/disputes';
   if (/order|refund|after.?sales|đơn hàng|hoàn tiền|trả hàng|hủy đơn/.test(action))
     return '/staff/orders';
   if (/review|rating|đánh giá/.test(action)) return '/staff/reviews';
-  if (/dispute|complaint|khiếu nại|tranh chấp/.test(action)) return '/staff/disputes';
   if (/banner/.test(action)) return '/staff/banners';
   return null;
 }

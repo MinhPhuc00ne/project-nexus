@@ -178,11 +178,18 @@ export default function StaffTicketChatPanel({
       );
     };
 
+    const handleSocketConnect = (): void => {
+      joinedConversationIdsRef.current.forEach((conversationId) => {
+        connection.joinConversation(conversationId);
+      });
+    };
+
     connection.socket.on('new_message', handleMessage);
     connection.socket.on('messages_read', handleMessagesRead);
     connection.socket.on('conversation_status_changed', refresh);
     connection.socket.on('ticket_assigned', refresh);
     connection.socket.on('new_queue_ticket', refresh);
+    connection.socket.on('connect', handleSocketConnect);
     connection.connect();
 
     return () => {
@@ -191,6 +198,7 @@ export default function StaffTicketChatPanel({
       connection.socket.off('conversation_status_changed', refresh);
       connection.socket.off('ticket_assigned', refresh);
       connection.socket.off('new_queue_ticket', refresh);
+      connection.socket.off('connect', handleSocketConnect);
       connection.disconnect();
       chatConnectionRef.current = null;
       joinedConversationIdsRef.current.clear();

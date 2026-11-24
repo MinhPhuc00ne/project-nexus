@@ -59,8 +59,9 @@ export default function StaffOrderDetailDialog({
   const afterSales = order?.afterSales;
   const canReviewReturn = afterSales?.kind === 'RETURN' && afterSales.status === 'REQUESTED';
   const canAttachReturnWaybill = afterSales?.kind === 'RETURN' && afterSales.status === 'APPROVED';
-  const canReceiveReturn =
-    afterSales != null && canReceiveStaffReturn(afterSales.kind, afterSales.status);
+  const canReceiveReturn = afterSales
+    ? canReceiveStaffReturn(afterSales.kind, afterSales.status)
+    : false;
 
   return (
     <Popup isOpen={isOpen} title={t('ordersSupport.detailTitle')} size="xl" onClose={onClose}>
