@@ -122,9 +122,11 @@ test(
         stock,
       );
       const gateway = {
+        broadcastAuctionStarted() {},
         broadcastBidPlaced() {},
         broadcastTimeExtended() {},
         broadcastLotEnded() {},
+        broadcastAuctionEnded() {},
         broadcastTimerSync() {},
       };
       const auctions = new AuctionService(prisma, gateway, stock, checkout);
@@ -212,6 +214,25 @@ test(
             where: { id: offer.orderId },
             data: { status: 'CONFIRMED' },
           });
+          await prisma.order.create({
+            data: {
+              buyerId: buyer.id,
+              sellerId: seller.id,
+              status: 'CONFIRMED',
+              subtotal: 100000,
+              shippingFee: 0,
+              totalAmount: 100000,
+              shippingAddressSnapshot: address,
+              items: {
+                create: {
+                  titleSnapshot: 'Second completed item',
+                  unitPrice: 100000,
+                  totalPrice: 100000,
+                  quantity: 1,
+                },
+              },
+            },
+          });
           const reviews = new ReviewsService(prisma, reputation);
           await reviews.create(buyer.id, offer.orderId, { rating: 5 }, 'shop');
           assert.equal(
@@ -260,8 +281,8 @@ test(
           });
           assert.equal(next.buyerId, buyer.id);
           assert.equal(Number(next.offerAmount), 100000);
-          assert.equal(Number(next.depositAmount), 0);
-          await checkout.respondToSecondChance(next.id, buyer.id, { action: 'ACCEPT' });
+          assert.equal(Number(next.depositAmount), 30000);
+          await checkout.respondSecondChance(next.id, buyer.id, true);
           await checkout.withdrawSecondChanceByAdmin(next.id, admin.id);
           assert.equal(
             await prisma.reputationLog.count({

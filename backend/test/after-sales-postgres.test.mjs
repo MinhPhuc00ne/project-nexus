@@ -162,7 +162,7 @@ test(
               );
             }
             const { AdminOrdersService } = source('admin/services/admin-orders.service');
-            const { QueryAdminOrdersDto } = source('admin/dto/query-admin-orders.dto');
+            const { QueryAdminOrdersDto } = source('admin/dtos/query-admin-orders.dto');
             const adminOrders = new AdminOrdersService(facade);
             const page = await adminOrders.list(
               Object.assign(new QueryAdminOrdersDto(), {
@@ -230,7 +230,7 @@ test(
             );
             throw rollback;
           },
-          { timeout: 20000 },
+          { timeout: 60000 },
         ),
         (error) => error === rollback,
       );

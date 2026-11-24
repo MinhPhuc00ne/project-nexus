@@ -344,7 +344,10 @@ export class AuctionCheckoutService {
    * plus the remaining 70% + GHN shipping from wallet balance, then transfers funds into OrderEscrow.
    */
   async checkout(awardId: string, buyerId: string, dto: CheckoutAuctionAwardDto): Promise<Order> {
-    const offer = await this.loadOwnedOfferForCheckout(awardId, buyerId);
+    const offer = await this.loadOwnedOfferForCheckout(awardId, buyerId, true);
+    if (offer.status === AuctionAwardStatus.PAID && offer.order) {
+      return offer.order;
+    }
     const quote = await this.quoteShipping(buyerId, offer, dto);
 
     return this.prisma.$transaction(async (tx) => {
@@ -358,6 +361,9 @@ export class AuctionCheckoutService {
           order: { include: { items: true } },
         },
       });
+      if (current.status === AuctionAwardStatus.PAID && current.order) {
+        return current.order;
+      }
       if (current.status !== AuctionAwardStatus.AWAITING_CHECKOUT || !current.order) {
         throw new ConflictException(
           'Quyền mua lô hàng đấu giá này không còn ở trạng thái chờ thanh toán.',
@@ -647,6 +653,24 @@ export class AuctionCheckoutService {
       });
       if (!current) {
         throw new NotFoundException('Không tìm thấy thông tin quyền mua đấu giá.');
+      }
+
+      if (current.status === AuctionAwardStatus.PAYMENT_DEFAULT) {
+        const secondChance =
+          current.tier === AuctionAwardTier.PRIMARY_WINNER && current.auctionItemId
+            ? await tx.auctionAward.findFirst({
+                where: {
+                  auctionItemId: current.auctionItemId,
+                  tier: AuctionAwardTier.SECOND_CHANCE,
+                },
+                select: { id: true },
+              })
+            : null;
+        return {
+          defaultedAwardId: current.id,
+          secondChanceAwardId: secondChance?.id ?? null,
+          lotStatus: current.auctionItem?.lotStatus ?? AuctionStatus.ENDED,
+        };
       }
 
       if (current.status !== AuctionAwardStatus.AWAITING_CHECKOUT) {
@@ -1341,7 +1365,7 @@ export class AuctionCheckoutService {
     });
   }
 
-  private async loadOwnedOfferForCheckout(awardId: string, buyerId: string) {
+  private async loadOwnedOfferForCheckout(awardId: string, buyerId: string, allowPaid = false) {
     const offer = await this.prisma.auctionAward.findUnique({
       where: { id: awardId },
       include: {
@@ -1353,6 +1377,9 @@ export class AuctionCheckoutService {
     });
     if (!offer || (offer.buyerId !== buyerId && offer.order?.buyerId !== buyerId)) {
       throw new ForbiddenException('Bạn không có quyền thanh toán đơn đấu giá này.');
+    }
+    if (allowPaid && offer.status === AuctionAwardStatus.PAID && offer.order) {
+      return offer;
     }
     if (offer.status !== AuctionAwardStatus.AWAITING_CHECKOUT || !offer.order) {
       throw new ConflictException(
