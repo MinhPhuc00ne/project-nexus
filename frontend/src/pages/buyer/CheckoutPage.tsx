@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, ShoppingBag, ArrowLeft, ChevronRight, Package } from 'lucide-react';
+import { ShoppingBag, ArrowLeft, ChevronRight, Package } from 'lucide-react';
+import { useToast } from '../../components/ToastNotification';
 import { fetchCart, clearCart, type CartItem } from '../../services/cart';
 import { getAddresses, createAddress, type UserAddress } from '../../services/address';
 import {
@@ -20,6 +21,7 @@ import CheckoutOrderSummary from '../../components/checkout/CheckoutOrderSummary
 export default function CheckoutPage() {
   const { t } = useTranslation(['commerce', 'common']);
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [items, setItems] = useState<CartItem[]>([]);
   const [loadingCart, setLoadingCart] = useState(true);
@@ -44,11 +46,8 @@ export default function CheckoutPage() {
   const [checkoutDone, setCheckoutDone] = useState(false);
   const [payosPayment, setPayosPayment] = useState<PayosPaymentInfo | null>(null);
   const [createdOrders, setCreatedOrders] = useState<BuyerOrder[]>([]);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+  const showToast = (msg: string, variant: 'success' | 'error' = 'success') => {
+    toast[variant](msg);
   };
 
   useEffect(() => {
@@ -104,7 +103,6 @@ export default function CheckoutPage() {
 
   const handleSaveNewAddress = async (addr: ShippingAddressInput) => {
     setCustomAddress(addr);
-    showToast(t('commerce:checkoutExtra.addressSavedToast'));
     try {
       const created = await createAddress({
         recipientName: addr.recipientName.trim(),
@@ -119,8 +117,12 @@ export default function CheckoutPage() {
         setAddresses((prev) => [created, ...prev]);
         setSelectedAddressId(created.id);
       }
-    } catch {
-      // ignore
+      showToast(t('commerce:checkoutExtra.addressSavedToast'));
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : t('commerce:checkoutExtra.addressSaveFailedToast'),
+        'error',
+      );
     }
   };
 
@@ -173,13 +175,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 py-8">
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-sm font-medium animate-in fade-in slide-in-from-bottom-4">
-          <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center gap-2 text-xs text-slate-500 mb-6">
           <Link to="/" className="hover:text-blue-600 transition">
@@ -193,7 +188,7 @@ export default function CheckoutPage() {
           <span className="font-semibold text-slate-800">{t('commerce:checkout.title')}</span>
         </div>
 
-        {checkoutDone ? (
+        {checkoutDone && (
           <div className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <CheckoutSuccessCard
               orders={createdOrders}
@@ -220,7 +215,8 @@ export default function CheckoutPage() {
               }
             />
           </div>
-        ) : items.length === 0 ? (
+        )}
+        {!checkoutDone && items.length === 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto shadow-sm">
             <Package size={40} className="text-slate-300 mx-auto mb-3" />
             <h2 className="text-lg font-bold text-slate-800 mb-1">
@@ -235,7 +231,8 @@ export default function CheckoutPage() {
               <span>{t('commerce:checkout.backToCart')}</span>
             </Link>
           </div>
-        ) : (
+        )}
+        {!checkoutDone && items.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             <div className="lg:col-span-7 space-y-6">
               <CheckoutAddressSection

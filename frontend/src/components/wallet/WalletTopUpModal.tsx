@@ -1,14 +1,15 @@
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2, Building2, X, WalletCards } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
+import type { WalletDepositProvider } from '../../services/wallet.service';
 
 interface WalletTopUpModalProps {
   isOpen: boolean;
   onClose: () => void;
   topUpAmount: string;
   setTopUpAmount: (val: string) => void;
-  selectedMethod: string;
-  setSelectedMethod: (val: string) => void;
+  selectedMethod: WalletDepositProvider;
+  setSelectedMethod: (val: WalletDepositProvider) => void;
   onConfirm: () => void;
   submitting: boolean;
 }
@@ -35,79 +36,146 @@ export default function WalletTopUpModal({
       label: t('walletTopUp.payosLabel'),
       desc: t('walletTopUp.payosDesc'),
     },
-  ];
+  ] satisfies Array<{
+    id: WalletDepositProvider;
+    icon: typeof Building2;
+    label: string;
+    desc: string;
+  }>;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-        <h3 className="text-base font-bold text-slate-900 mb-1">{t('walletTopUp.title')}</h3>
-        <p className="text-xs text-slate-500 mb-4">{t('walletTopUp.subtitle')}</p>
-
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          {quickAmounts.map((amt) => (
-            <button
-              key={amt}
-              type="button"
-              onClick={() => setTopUpAmount(String(amt))}
-              className={`rounded-xl border py-2 text-xs font-semibold transition ${
-                topUpAmount === String(amt)
-                  ? 'border-orange-500 bg-orange-50 text-orange-600'
-                  : 'border-slate-200 hover:border-slate-300 text-slate-700'
-              }`}
-            >
-              {formatCurrency(amt)}
-            </button>
-          ))}
-        </div>
-
-        <input
-          type="number"
-          placeholder={t('walletTopUp.otherAmountPlaceholder')}
-          value={topUpAmount}
-          onChange={(e) => setTopUpAmount(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs outline-none focus:border-orange-500 mb-4"
-        />
-
-        <div className="space-y-2 mb-5">
-          <p className="text-xs font-bold text-slate-700">{t('walletTopUp.methodTitle')}</p>
-          {topUpMethods.map((m) => (
-            <div
-              key={m.id}
-              onClick={() => setSelectedMethod(m.id)}
-              className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
-                selectedMethod === m.id
-                  ? 'border-orange-500 bg-orange-50/50'
-                  : 'border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <m.icon size={18} className="text-orange-500" />
-                <div>
-                  <p className="text-xs font-bold text-slate-800">{m.label}</p>
-                  <p className="text-[11px] text-slate-400">{m.desc}</p>
-                </div>
-              </div>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm animate-fade-in"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !submitting) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="wallet-topup-title"
+        className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+      >
+        <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+              <WalletCards size={19} />
+            </span>
+            <div>
+              <h3 id="wallet-topup-title" className="text-sm font-bold text-slate-900">
+                {t('walletTopUp.title')}
+              </h3>
+              <p className="mt-1 text-[11px] text-slate-500">{t('walletTopUp.subtitle')}</p>
             </div>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-end gap-2.5">
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-          >
-            {t('walletTopUp.cancel')}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
             disabled={submitting}
-            className="px-5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1.5"
+            aria-label={t('walletTopUp.cancel')}
+            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
           >
-            {submitting ? <Loader2 size={13} className="animate-spin" /> : null}
-            {t('walletTopUp.confirm')}
+            <X size={17} />
           </button>
+        </div>
+
+        <div className="space-y-5 px-5 py-5 sm:px-6">
+          <div>
+            <label
+              htmlFor="wallet-topup-amount"
+              className="mb-2 block text-xs font-semibold text-slate-700"
+            >
+              {t('walletTopUp.amountLabel')}
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {quickAmounts.map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  aria-pressed={topUpAmount === String(amt)}
+                  onClick={() => setTopUpAmount(String(amt))}
+                  className={`rounded-xl border px-3 py-2.5 text-xs font-bold transition ${
+                    topUpAmount === String(amt)
+                      ? 'border-orange-500 bg-orange-50 text-orange-700 ring-2 ring-orange-100'
+                      : 'border-slate-200 bg-white text-slate-700 hover:border-orange-300 hover:bg-orange-50/50'
+                  }`}
+                >
+                  {formatCurrency(amt)}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative mt-3">
+              <input
+                id="wallet-topup-amount"
+                type="number"
+                min={10000}
+                step={1000}
+                inputMode="numeric"
+                placeholder={t('walletTopUp.otherAmountPlaceholder')}
+                value={topUpAmount}
+                onChange={(e) => setTopUpAmount(e.target.value)}
+                disabled={submitting}
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-xs placeholder:font-normal focus:border-orange-400 focus:bg-white focus:ring-4 focus:ring-orange-100 disabled:opacity-60"
+              />
+            </div>
+          </div>
+
+          <fieldset className="space-y-2">
+            <legend className="mb-2 text-xs font-semibold text-slate-700">
+              {t('walletTopUp.methodTitle')}
+            </legend>
+            {topUpMethods.map((method) => (
+              <button
+                key={method.id}
+                type="button"
+                aria-pressed={selectedMethod === method.id}
+                onClick={() => setSelectedMethod(method.id)}
+                disabled={submitting}
+                className={`flex w-full items-center gap-3 rounded-xl border p-3.5 text-left transition ${
+                  selectedMethod === method.id
+                    ? 'border-orange-400 bg-orange-50/80 ring-2 ring-orange-100'
+                    : 'border-slate-200 hover:border-orange-200 hover:bg-slate-50'
+                }`}
+              >
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-orange-600 shadow-sm">
+                  <method.icon size={18} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-bold text-slate-800">{method.label}</span>
+                  <span className="mt-1 block text-[11px] text-slate-500">{method.desc}</span>
+                </span>
+                <span
+                  className={`h-4 w-4 rounded-full border-2 ${
+                    selectedMethod === method.id
+                      ? 'border-orange-500 bg-orange-500 shadow-[inset_0_0_0_3px_white]'
+                      : 'border-slate-300'
+                  }`}
+                />
+              </button>
+            ))}
+          </fieldset>
+
+          <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+            >
+              {t('walletTopUp.cancel')}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={submitting}
+              className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-200 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting && <Loader2 size={13} className="animate-spin" />}
+              {submitting ? t('walletTopUp.submitting') : t('walletTopUp.confirm')}
+            </button>
+          </div>
         </div>
       </div>
     </div>

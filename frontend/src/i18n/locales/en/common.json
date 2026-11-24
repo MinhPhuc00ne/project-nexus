@@ -263,10 +263,12 @@
     "payosDesc": "24/7 bank QR transfer",
     "title": "Top Up NEXUS Wallet",
     "subtitle": "Select an amount and payment method",
+    "amountLabel": "Amount to add",
     "otherAmountPlaceholder": "Enter other amount (VND)",
     "methodTitle": "Top-up Method",
     "cancel": "Cancel",
-    "confirm": "Confirm Top-up"
+    "confirm": "Continue to payment",
+    "submitting": "Preparing payment…"
   },
   "reportModal": {
     "titleProduct": "Report Violating Product",

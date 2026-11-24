@@ -52,17 +52,13 @@ function applyModeOverride(profile: UserProfile): UserProfile {
   const onSellerRoute =
     typeof window !== 'undefined' && window.location.pathname.startsWith('/seller');
   const onBuyerRoute =
-    typeof window !== 'undefined' &&
-    (window.location.pathname.startsWith('/buyer') || window.location.pathname === '/');
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/buyer');
 
   let effectiveMode: 'SELLER' | 'BUYER';
   if (onSellerRoute) {
     effectiveMode = 'SELLER';
-  } else if (onBuyerRoute) {
-    effectiveMode =
-      storedMode === 'SELLER' && !window.location.pathname.startsWith('/buyer')
-        ? 'SELLER'
-        : 'BUYER';
+  } else if (onBuyerRoute && storedMode === 'BUYER') {
+    effectiveMode = 'BUYER';
   } else if (storedMode) {
     effectiveMode = storedMode;
   } else {
@@ -70,10 +66,8 @@ function applyModeOverride(profile: UserProfile): UserProfile {
   }
   setStoredActiveMode(profile.id, effectiveMode);
 
-  const isSellerActive = Boolean(
-    !profile.isShopSuspended && (effectiveMode === 'SELLER' || profile.isSellerActive),
-  );
-  const currentMode = effectiveMode;
+  const isSellerActive = Boolean(profile.isSellerActive && !profile.isShopSuspended);
+  const currentMode = isSellerActive ? effectiveMode : 'BUYER';
 
   return {
     ...profile,
@@ -150,26 +144,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const switchActiveMode = useCallback(
-    async (mode: 'SELLER' | 'BUYER'): Promise<void> => {
-      const wantSeller = mode === 'SELLER';
-      setStoredActiveMode(user?.id, mode);
+  const switchActiveMode = useCallback(async (mode: 'SELLER' | 'BUYER'): Promise<void> => {
+    const wantSeller = mode === 'SELLER';
+    try {
+      const res = await toggleSellerMode(wantSeller);
       setUserState((prev) => {
         if (!prev) return prev;
+        const finalActive = res?.isSellerActive ?? (wantSeller && !prev.isShopSuspended);
+        const finalMode = finalActive ? 'SELLER' : 'BUYER';
+        setStoredActiveMode(prev.id, finalMode);
         return {
           ...prev,
-          isSellerActive: wantSeller && !prev.isShopSuspended,
-          currentMode: mode,
+          isSellerActive: finalActive,
+          currentMode: finalMode,
         };
       });
-      try {
-        await toggleSellerMode(wantSeller);
-      } catch (error) {
-        console.warn('[AuthContext] toggleSellerMode BE warning:', error);
-      }
-    },
-    [user?.id],
-  );
+    } catch (error) {
+      throw error;
+    }
+  }, []);
 
   const refreshProfile = useCallback(async (): Promise<UserProfile | null> => {
     const currentToken = getStoredToken();

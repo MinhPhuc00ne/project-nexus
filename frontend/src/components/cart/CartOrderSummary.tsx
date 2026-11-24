@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Tag, Check, ArrowRight, Truck, ShieldCheck } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
@@ -8,6 +8,10 @@ interface CartOrderSummaryProps {
   selectedItems: CartItem[];
   rawSubtotal: number;
   grandTotal: number;
+  shippingFee: number | null;
+  isQuotingShipping: boolean;
+  shippingQuoteFailed: boolean;
+  hasDeliveryAddress: boolean;
   appliedVoucher: { code: string; discount: number } | null;
   onApplyVoucher: (code: string) => void;
   onRemoveVoucher: () => void;
@@ -18,6 +22,10 @@ export default function CartOrderSummary({
   selectedItems,
   rawSubtotal,
   grandTotal,
+  shippingFee,
+  isQuotingShipping,
+  shippingQuoteFailed,
+  hasDeliveryAddress,
   appliedVoucher,
   onApplyVoucher,
   onRemoveVoucher,
@@ -28,6 +36,40 @@ export default function CartOrderSummary({
   const [voucherError, setVoucherError] = useState('');
 
   const selectedQuantity = selectedItems.reduce((sum, i) => sum + i.qty, 0);
+
+  let shippingFeeDisplay: ReactNode;
+  if (appliedVoucher?.code === 'FREESHIP') {
+    shippingFeeDisplay = (
+      <span className="font-semibold text-emerald-600">{t('cart.freeShipping')}</span>
+    );
+  } else if (isQuotingShipping) {
+    shippingFeeDisplay = (
+      <span className="font-medium text-slate-500 italic">{t('checkout.calculatingGhn')}</span>
+    );
+  } else if (shippingFee !== null) {
+    shippingFeeDisplay = (
+      <span className="font-semibold text-slate-800">{formatCurrency(shippingFee)}</span>
+    );
+  } else if (shippingQuoteFailed) {
+    shippingFeeDisplay = (
+      <span className="max-w-[55%] text-right font-medium text-rose-600">
+        {t('cart.shippingQuoteFailed')}
+      </span>
+    );
+  } else {
+    shippingFeeDisplay = (
+      <span className="max-w-[55%] text-right font-medium text-slate-500">
+        {hasDeliveryAddress
+          ? t('cart.selectItemsForShippingQuote')
+          : t('cart.shippingAddressNeeded')}
+      </span>
+    );
+  }
+
+  const totalNote =
+    shippingFee !== null || appliedVoucher?.code === 'FREESHIP'
+      ? t('cart.shippingIncluded')
+      : t('cart.ghnFeeExcluded');
 
   const handleSubmitVoucher = (e: FormEvent) => {
     e.preventDefault();
@@ -109,13 +151,7 @@ export default function CartOrderSummary({
 
           <div className="flex justify-between">
             <span>{t('cart.ghnShippingFee')}</span>
-            {appliedVoucher?.code === 'FREESHIP' ? (
-              <span className="font-semibold text-emerald-600">{t('cart.freeShipping')}</span>
-            ) : (
-              <span className="font-medium text-slate-500 italic">
-                {t('cart.calculatedAtCheckout')}
-              </span>
-            )}
+            {shippingFeeDisplay}
           </div>
         </div>
 
@@ -125,11 +161,7 @@ export default function CartOrderSummary({
             <div className="text-2xl font-extrabold text-[#f24e1e]">
               {formatCurrency(Number(grandTotal))}
             </div>
-            <span className="text-[10px] text-slate-400 block">
-              {appliedVoucher?.code === 'FREESHIP'
-                ? t('cart.vatAndEscrowIncluded')
-                : t('cart.ghnFeeExcluded')}
-            </span>
+            <span className="text-[10px] text-slate-400 block">{totalNote}</span>
           </div>
         </div>
 

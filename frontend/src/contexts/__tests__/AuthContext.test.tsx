@@ -29,6 +29,18 @@ vi.mock('../../services/cart', () => ({
   resetCartSync: () => mockResetCartSync(),
 }));
 
+const mockToast = {
+  success: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warning: vi.fn(),
+};
+
+vi.mock('../../components/ToastNotification', () => ({
+  useToast: () => mockToast,
+  ToastProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 function TestConsumer() {
   const {
     user,
@@ -121,6 +133,7 @@ function TestConsumer() {
 describe('AuthContext', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     window.history.pushState({}, '', '/');
     mockGetMe.mockReset();
     mockToggleSellerMode.mockReset();
@@ -130,6 +143,10 @@ describe('AuthContext', () => {
     mockClearAuthSession.mockReset();
     mockMergeGuestCartAfterLogin.mockReset().mockResolvedValue(undefined);
     mockResetCartSync.mockReset();
+    mockToast.success.mockReset();
+    mockToast.error.mockReset();
+    mockToast.info.mockReset();
+    mockToast.warning.mockReset();
   });
 
   afterEach(() => {

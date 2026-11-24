@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { formatCurrency } from '../../i18n/formatters';
 import { HomeCountdown } from './HomeCountdown';
 import { HomeAuctionCard } from './HomeAuctionCard';
@@ -11,8 +12,32 @@ export interface HomeLiveAuctionProps {
 }
 
 export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
-  const { t } = useTranslation('guest');
   if (!auctions || auctions.length === 0) return null;
+  return <HomeLiveAuctionContent auctions={auctions} />;
+}
+
+function resolveRealImage(auc: AuctionEntity): string {
+  if (auc.imageUrl?.trim()) {
+    return formatAuctionImage(auc.imageUrl);
+  }
+  const itemImg = auc.items
+    ?.flatMap((item) => item.images ?? [])
+    .find((u) => typeof u === 'string' && u.trim().length > 0);
+  if (itemImg) return formatAuctionImage(itemImg);
+
+  const productImg = auc.product?.images?.find((img) => img?.imageUrl?.trim());
+  return productImg?.imageUrl ? formatAuctionImage(productImg.imageUrl) : '';
+}
+
+function getAuctionLotLabel(auc: AuctionEntity, t: TFunction<'guest'>): string {
+  const lotNumber = auc.items?.[0]?.lotNumber;
+  if (lotNumber) return t('home.liveAuction.lotNumber', { num: lotNumber });
+  if (auc.id) return `LOT #${auc.id.slice(0, 8).toUpperCase()}`;
+  return t('home.liveAuction.specialLot');
+}
+
+function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
+  const { t } = useTranslation('guest');
 
   const featuredAuction = auctions[0];
   const isLive = featuredAuction.status === 'ACTIVE' || featuredAuction.status === 'EXTENDED';
@@ -29,29 +54,8 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
     featuredAuction.items?.[0]?.title ||
     t('home.liveAuction.defaultTitle');
 
-  const resolveRealImage = (auc: AuctionEntity): string => {
-    if (auc.imageUrl && auc.imageUrl.trim().length > 0) {
-      return formatAuctionImage(auc.imageUrl);
-    }
-    if (auc.items && auc.items.length > 0) {
-      for (const item of auc.items) {
-        if (item.images && item.images.length > 0) {
-          const valid = item.images.find((u) => typeof u === 'string' && u.trim().length > 0);
-          if (valid) return formatAuctionImage(valid);
-        }
-      }
-    }
-    if (auc.product && Array.isArray(auc.product.images) && auc.product.images.length > 0) {
-      for (const img of auc.product.images) {
-        if (img?.imageUrl && img.imageUrl.trim().length > 0) {
-          return formatAuctionImage(img.imageUrl);
-        }
-      }
-    }
-    return '';
-  };
-
   const featuredImage = resolveRealImage(featuredAuction);
+  const lotLabel = getAuctionLotLabel(featuredAuction, t);
 
   const itemsCount = featuredAuction.items?.length || 0;
 
@@ -162,11 +166,7 @@ export function HomeLiveAuction({ auctions }: HomeLiveAuctionProps) {
         <div className="rounded-[18px] border border-slate-200 bg-white p-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-400">
-              {featuredAuction.items?.[0]?.lotNumber
-                ? t('home.liveAuction.lotNumber', { num: featuredAuction.items[0].lotNumber })
-                : featuredAuction.id
-                  ? `LOT #${featuredAuction.id.slice(0, 8).toUpperCase()}`
-                  : t('home.liveAuction.specialLot')}
+              {lotLabel}
             </span>
 
             <span className="rounded bg-green-50 px-2 py-1 text-[10px] font-semibold text-green-500">

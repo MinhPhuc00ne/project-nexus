@@ -32,6 +32,9 @@ export interface UserProfile {
   fullName: string;
   phoneNumber: string | null;
   avatarUrl: string | null;
+  bankName?: string | null;
+  accountNumber?: string | null;
+  accountHolderName?: string | null;
   role: Role;
   isSellerActive: boolean;
   isShopSuspended: boolean;

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MapPin, Plus, AlertCircle, Home, CheckCircle2 } from 'lucide-react';
+import { MapPin, Plus, AlertCircle, Home } from 'lucide-react';
+import { useToast } from '../../components/ToastNotification';
 import AddressFormModal, { type AddressFormData } from '../../components/address/AddressFormModal';
 import AddressCard from '../../components/address/AddressCard';
 import {
@@ -25,10 +26,10 @@ const initialForm: AddressFormData = {
 
 export default function BuyerAddressesPage() {
   const { t } = useTranslation('buyer');
+  const toast = useToast();
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAddress, setEditingAddress] = useState<UserAddress | null>(null);
@@ -37,11 +38,6 @@ export default function BuyerAddressesPage() {
   const [saving, setSaving] = useState(false);
 
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const showToast = (message: string) => {
-    setToast(message);
-    setTimeout(() => setToast(null), 3500);
-  };
 
   const fetchAddresses = async () => {
     setLoading(true);
@@ -97,7 +93,7 @@ export default function BuyerAddressesPage() {
       return;
     }
 
-    if (!/^\+?[0-9]{9,15}$/.test(form.phone.trim())) {
+    if (!/^\+?\d{9,15}$/.test(form.phone.trim())) {
       setFormError(t('addresses.invalidPhoneError'));
       return;
     }
@@ -125,7 +121,7 @@ export default function BuyerAddressesPage() {
             return a;
           }),
         );
-        showToast(t('addresses.updatedToast'));
+        toast.success(t('addresses.updatedToast'));
       } else {
         const created = await createAddress(dto);
         setAddresses((prev) => {
@@ -134,7 +130,7 @@ export default function BuyerAddressesPage() {
           }
           return [created, ...prev];
         });
-        showToast(t('addresses.addedToast'));
+        toast.success(t('addresses.addedToast'));
       }
       setIsModalOpen(false);
     } catch (err: unknown) {
@@ -153,9 +149,9 @@ export default function BuyerAddressesPage() {
           isDefault: addr.id === id,
         })),
       );
-      showToast(t('addresses.setDefaultToast'));
+      toast.success(t('addresses.setDefaultToast'));
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : t('addresses.setDefaultError'));
+      toast.error(err instanceof Error ? err.message : t('addresses.setDefaultError'));
     }
   };
 
@@ -164,9 +160,9 @@ export default function BuyerAddressesPage() {
     try {
       await deleteAddress(id);
       setAddresses((prev) => prev.filter((addr) => addr.id !== id));
-      showToast(t('addresses.deletedToast'));
+      toast.success(t('addresses.deletedToast'));
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : t('addresses.deleteError'));
+      toast.error(err instanceof Error ? err.message : t('addresses.deleteError'));
     } finally {
       setDeletingId(null);
     }
@@ -193,14 +189,6 @@ export default function BuyerAddressesPage() {
         </button>
       </div>
 
-      {/* Toast Alert */}
-      {toast && (
-        <div className="mb-6 flex items-center gap-2.5 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-800">
-          <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-          <span>{toast}</span>
-        </div>
-      )}
-
       {/* Error state */}
       {error && (
         <div className="mb-6 flex items-center justify-between gap-3 rounded-xl bg-red-50 border border-red-200 p-4 text-xs text-red-700">
@@ -219,12 +207,13 @@ export default function BuyerAddressesPage() {
       )}
 
       {/* Loading state */}
-      {loading ? (
+      {loading && (
         <div className="py-16 text-center text-slate-500">
           <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           <p className="text-xs">{t('addresses.loading')}</p>
         </div>
-      ) : addresses.length === 0 ? (
+      )}
+      {!loading && addresses.length === 0 && (
         /* Empty State */
         <div className="rounded-2xl border border-dashed border-slate-200 p-12 text-center my-4">
           <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
@@ -243,7 +232,8 @@ export default function BuyerAddressesPage() {
             <span>{t('addresses.addNow')}</span>
           </button>
         </div>
-      ) : (
+      )}
+      {!loading && addresses.length > 0 && (
         /* Address List */
         <div className="space-y-4">
           {addresses.map((addr) => (

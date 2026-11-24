@@ -215,9 +215,9 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </>
         )}
 
-        {(order.status === 'CONFIRMED' || order.status === 'COMPLETED') && (
+        {order.status === 'CONFIRMED' && (
           <Link
-            to={`/buyer/reviews?orderId=${order.id}`}
+            to={`/buyer/orders/${order.id}?review=1`}
             className="flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100"
           >
             <span>{t('orders.card.reviewProduct')}</span>

@@ -21,9 +21,13 @@ import {
 } from '../../services/notifications';
 import { getStoredToken, getStoredUser } from '../../services/auth';
 import { createNotificationConnection } from '../../services/notificationSocket';
+import { getBuyerOrdersApi } from '../../services/orders';
 import type { UserNotification } from '../../types/notification.types';
 import NotificationPreferencesModal from '../notifications/NotificationPreferencesModal';
-import { resolveNotificationTargetUrl } from '../../utils/notificationNavigation';
+import {
+  getNotificationOrderReference,
+  resolveNotificationTargetUrl,
+} from '../../utils/notificationNavigation';
 
 interface NotificationDropdownProps {
   isOpen: boolean;
@@ -129,9 +133,17 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     }
   };
 
-  const handleNotificationClick = (item: UserNotification) => {
+  const handleNotificationClick = async (item: UserNotification) => {
     void handleMarkOne(item);
-    const destination = resolveNotificationTargetUrl(item);
+    let buyerOrders: Awaited<ReturnType<typeof getBuyerOrdersApi>> | undefined;
+    if (getNotificationOrderReference(item)) {
+      try {
+        buyerOrders = await getBuyerOrdersApi();
+      } catch (error) {
+        console.warn('Unable to resolve abbreviated order reference:', error);
+      }
+    }
+    const destination = resolveNotificationTargetUrl(item, buyerOrders);
     if (destination.startsWith('/') && !destination.startsWith('//')) {
       navigate(destination);
     } else {
@@ -235,7 +247,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
         {/* Content */}
         <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-100">
-          {!token ? (
+          {!token && (
             <div className="p-6 text-center text-xs text-slate-500">
               <p className="mb-3 font-semibold text-slate-700">
                 {t('header.loginToViewNotifications')}
@@ -247,16 +259,20 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 {t('header.loginNow')}
               </Link>
             </div>
-          ) : loading ? (
+          )}
+          {token && loading && (
             <div className="py-10 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-2">
               <Loader2 size={18} className="animate-spin text-blue-600" />
               <span>{t('header.loadingNotifications')}</span>
             </div>
-          ) : notifications.length > 0 ? (
+          )}
+          {token &&
+            !loading &&
+            notifications.length > 0 &&
             notifications.map((item) => (
               <div
                 key={item.id}
-                onClick={() => handleNotificationClick(item)}
+                onClick={() => void handleNotificationClick(item)}
                 className={`group flex gap-3 px-4 py-3 transition-colors hover:bg-slate-50/80 cursor-pointer ${
                   !item.isRead ? 'bg-orange-50/40' : ''
                 }`}
@@ -293,8 +309,8 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
+            ))}
+          {token && !loading && notifications.length === 0 && (
             <div className="py-10 text-center text-xs text-slate-400">
               <Bell size={24} className="mx-auto mb-2 text-slate-300 opacity-60" />
               <span>{t('header.noNotifications')}</span>

@@ -16,11 +16,11 @@ import {
   ShieldAlert,
   ChevronLeft,
   ChevronRight,
-  Check,
   Settings,
   ArrowRight,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../components/ToastNotification';
 import {
   getNotifications,
   getNotificationPreferences,
@@ -28,16 +28,21 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
 } from '../../services/notifications';
+import { getBuyerOrdersApi } from '../../services/orders';
 import type {
   UserNotification,
   NotificationPreference,
   NotificationChannel,
 } from '../../types/notification.types';
-import { resolveNotificationTargetUrl } from '../../utils/notificationNavigation';
+import {
+  getNotificationOrderReference,
+  resolveNotificationTargetUrl,
+} from '../../utils/notificationNavigation';
 
 export const BuyerNotificationsPage: React.FC = () => {
   const { t, i18n } = useTranslation('buyer');
   const navigate = useNavigate();
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'list' | 'preferences'>('list');
   const [filterRead, setFilterRead] = useState<'ALL' | 'UNREAD'>('ALL');
   const [notifications, setNotifications] = useState<UserNotification[]>([]);
@@ -45,7 +50,6 @@ export const BuyerNotificationsPage: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(true);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Preferences state
   const [preferences, setPreferences] = useState<NotificationPreference[]>([
@@ -71,10 +75,11 @@ export const BuyerNotificationsPage: React.FC = () => {
       }
     } catch (err) {
       console.warn('Failed to fetch notifications:', err);
+      toast.error(err instanceof Error ? err.message : t('notificationsPage.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [page, filterRead]);
+  }, [page, filterRead, toast, t]);
 
   const fetchPrefs = useCallback(async () => {
     setLoadingPrefs(true);
@@ -85,10 +90,11 @@ export const BuyerNotificationsPage: React.FC = () => {
       }
     } catch (err) {
       console.warn('Failed to load preferences:', err);
+      toast.error(err instanceof Error ? err.message : t('notificationsPage.prefsLoadFailed'));
     } finally {
       setLoadingPrefs(false);
     }
-  }, []);
+  }, [toast, t]);
 
   useEffect(() => {
     if (activeTab === 'list') {
@@ -109,6 +115,7 @@ export const BuyerNotificationsPage: React.FC = () => {
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.warn('Failed to mark as read:', err);
+      toast.error(err instanceof Error ? err.message : t('notificationsPage.markOneFailed'));
     }
   };
 
@@ -116,7 +123,16 @@ export const BuyerNotificationsPage: React.FC = () => {
     if (!item.isRead) {
       await handleMarkOne(item.id);
     }
-    const destination = resolveNotificationTargetUrl(item);
+    let buyerOrders: Awaited<ReturnType<typeof getBuyerOrdersApi>> | undefined;
+    if (getNotificationOrderReference(item)) {
+      try {
+        buyerOrders = await getBuyerOrdersApi();
+      } catch (error) {
+        console.warn('Unable to resolve abbreviated order reference:', error);
+        toast.error(t('notificationsPage.orderLookupFailed'));
+      }
+    }
+    const destination = resolveNotificationTargetUrl(item, buyerOrders);
     if (destination.startsWith('/') && !destination.startsWith('//')) {
       navigate(destination);
     } else {
@@ -129,10 +145,10 @@ export const BuyerNotificationsPage: React.FC = () => {
       await markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-      setToastMessage(t('notificationsPage.markedAllToast'));
-      setTimeout(() => setToastMessage(null), 3000);
+      toast.success(t('notificationsPage.markedAllToast'));
     } catch (err) {
       console.warn('Failed to mark all as read:', err);
+      toast.error(err instanceof Error ? err.message : t('notificationsPage.markAllFailed'));
     }
   };
 
@@ -146,11 +162,9 @@ export const BuyerNotificationsPage: React.FC = () => {
     setSavingPrefs(true);
     try {
       const res = await saveNotificationPreferences(preferences);
-      setToastMessage(res.message || t('notificationsPage.prefsSavedToast'));
-      setTimeout(() => setToastMessage(null), 3000);
+      toast.success(res.message || t('notificationsPage.prefsSavedToast'));
     } catch (err) {
-      setToastMessage(err instanceof Error ? err.message : t('notificationsPage.prefsSaveError'));
-      setTimeout(() => setToastMessage(null), 3000);
+      toast.error(err instanceof Error ? err.message : t('notificationsPage.prefsSaveError'));
     } finally {
       setSavingPrefs(false);
     }
@@ -210,13 +224,6 @@ export const BuyerNotificationsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 text-xs font-semibold animate-in fade-in slide-in-from-bottom-4">
-          <Check size={16} className="text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -313,12 +320,13 @@ export const BuyerNotificationsPage: React.FC = () => {
             </div>
           </div>
 
-          {loading ? (
+          {loading && (
             <div className="py-16 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-3 bg-white rounded-2xl border border-slate-200">
               <Loader2 size={24} className="animate-spin text-blue-600" />
               <span>{t('notificationsPage.loading')}</span>
             </div>
-          ) : notifications.length === 0 ? (
+          )}
+          {!loading && notifications.length === 0 && (
             <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
               <Bell size={36} className="mx-auto mb-3 text-slate-300" />
               <h3 className="text-sm font-bold text-slate-800 mb-1">
@@ -330,7 +338,8 @@ export const BuyerNotificationsPage: React.FC = () => {
                 {t('notificationsPage.emptyDesc')}
               </p>
             </div>
-          ) : (
+          )}
+          {!loading && notifications.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 overflow-hidden shadow-xs">
               {notifications.map((item) => (
                 <div

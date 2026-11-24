@@ -11,7 +11,7 @@ interface CheckoutAddressSectionProps {
   onSelectAddressId: (id: string) => void;
   currentAddress: ShippingAddressInput;
   onSaveNewAddress: (addr: ShippingAddressInput) => Promise<void>;
-  showToast: (msg: string) => void;
+  showToast: (msg: string, variant?: 'success' | 'error') => void;
 }
 
 export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
@@ -79,7 +79,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
   const handleSubmitNew = async (e: FormEvent) => {
     e.preventDefault();
     if (!formState.recipientName.trim() || !formState.phone.trim() || !formState.street.trim()) {
-      showToast(t('checkout.missingAddressFields'));
+      showToast(t('checkout.missingAddressFields'), 'error');
       return;
     }
     await onSaveNewAddress(formState);

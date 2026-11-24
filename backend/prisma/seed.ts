@@ -3,6 +3,7 @@ import {
   AuctionItemStatus,
   AuctionStatus,
   BannerCreatorRole,
+  OrderStatus,
   Prisma,
   PrismaClient,
   ProductStatus,
@@ -162,8 +163,9 @@ async function seedProductsForSeller(
   sellerUser: { id: string },
   warehouseId: string,
   products: SeedProductItem[],
-) {
+): Promise<Record<string, { id: string; title: string; basePrice: number }>> {
   const keepTitles = products.map((p) => p.title);
+  const seededMap: Record<string, { id: string; title: string; basePrice: number }> = {};
 
   // Dọn các sản phẩm mẫu cũ dư thừa của seller nếu chưa gắn với đơn hàng/giỏ hàng/đánh giá/đấu giá
   const removableProducts = await prisma.product.findMany({
@@ -252,7 +254,15 @@ async function seedProductsForSeller(
         reservedQty: 0,
       },
     });
+
+    seededMap[item.title] = {
+      id: product.id,
+      title: product.title,
+      basePrice: item.basePrice,
+    };
   }
+
+  return seededMap;
 }
 
 async function main() {
@@ -302,84 +312,192 @@ async function main() {
     },
   });
 
-  const catWatches = await prisma.category.upsert({
-    where: { slug: 'dong-ho-trang-suc' },
-    update: { name: 'Đồng Hồ & Trang Sức', level: 1 },
-    create: { name: 'Đồng Hồ & Trang Sức', slug: 'dong-ho-trang-suc', level: 1 },
-  });
+  interface SeedCategoryNode {
+    name: string;
+    slug: string;
+    children?: SeedCategoryNode[];
+  }
 
-  const catLuxuryWatches = await prisma.category.upsert({
-    where: { slug: 'dong-ho-cao-cap' },
-    update: { name: 'Đồng Hồ Cao Cấp', parentId: catWatches.id, level: 2 },
-    create: { name: 'Đồng Hồ Cao Cấp', slug: 'dong-ho-cao-cap', parentId: catWatches.id, level: 2 },
-  });
-
-  const catMenWatches = await prisma.category.upsert({
-    where: { slug: 'dong-ho-nam-sang-trong' },
-    update: { name: 'Đồng Hồ Nam Sang Trọng', parentId: catLuxuryWatches.id, level: 3 },
-    create: {
-      name: 'Đồng Hồ Nam Sang Trọng',
-      slug: 'dong-ho-nam-sang-trong',
-      parentId: catLuxuryWatches.id,
-      level: 3,
+  const categoryTree: SeedCategoryNode[] = [
+    {
+      name: 'Đồng Hồ & Trang Sức',
+      slug: 'dong-ho-trang-suc',
+      children: [
+        {
+          name: 'Đồng Hồ Cao Cấp',
+          slug: 'dong-ho-cao-cap',
+          children: [
+            { name: 'Đồng Hồ Nam Sang Trọng', slug: 'dong-ho-nam-sang-trong' },
+            { name: 'Đồng Hồ Thể Thao & Thông Minh', slug: 'dong-ho-the-thao-thong-minh' },
+            { name: 'Dây Da & Phụ Kiện Đồng Hồ', slug: 'day-da-phu-kien-dong-ho' },
+            { name: 'Hộp Đựng & Trưng Bày Đồng Hồ', slug: 'hop-dung-trung-bay-dong-ho' },
+            { name: 'Dụng Cụ Bảo Dưỡng Đồng Hồ', slug: 'dung-cu-bao-duong-dong-ho' },
+          ],
+        },
+        {
+          name: 'Trang Sức & Phụ Kiện',
+          slug: 'trang-suc-phu-kien',
+          children: [
+            { name: 'Nhẫn & Dây Chuyền Bạc', slug: 'nhan-day-chuyen-bac' },
+            { name: 'Vòng Tay & Đá Phong Thủy', slug: 'vong-tay-da-phong-thuy' },
+            { name: 'Trâm Cài & Phụ Kiện Thời Trang', slug: 'tram-cai-phu-kien-thoi-trang' },
+          ],
+        },
+      ],
     },
-  });
-
-  const catWatchStraps = await prisma.category.upsert({
-    where: { slug: 'day-da-phu-kien-dong-ho' },
-    update: { name: 'Dây Da & Phụ Kiện Đồng Hồ', parentId: catLuxuryWatches.id, level: 3 },
-    create: {
-      name: 'Dây Da & Phụ Kiện Đồng Hồ',
-      slug: 'day-da-phu-kien-dong-ho',
-      parentId: catLuxuryWatches.id,
-      level: 3,
+    {
+      name: 'Công Nghệ & Điện Tử',
+      slug: 'cong-nghe-dien-tu',
+      children: [
+        {
+          name: 'Điện Thoại & Phụ Kiện Số',
+          slug: 'dien-thoai-phu-kien',
+          children: [
+            { name: 'Tai Nghe & Thiết Bị Âm Thanh', slug: 'tai-nghe-am-thanh' },
+            { name: 'Cáp Sạc & Đế Sạc Không Dây', slug: 'cap-sac-de-sac-khong-day' },
+            { name: 'Giá Đỡ & Phụ Kiện Bàn Làm Việc', slug: 'gia-do-phu-kien-ban-lam-viec' },
+          ],
+        },
+        {
+          name: 'Máy Tính & Gaming Gear',
+          slug: 'may-tinh-gaming-gear',
+          children: [
+            { name: 'Phụ Kiện Gaming & Bàn Phím', slug: 'phu-kien-gaming-may-tinh' },
+            { name: 'Tản Nhiệt & Phụ Kiện Laptop', slug: 'tan-nhiet-phu-kien-laptop' },
+            { name: 'Túi Chống Sốc & Balo Laptop', slug: 'tui-chong-soc-balo-laptop' },
+            { name: 'Thiết Bị Mạng & Cáp Kết Nối', slug: 'thiet-bi-mang-cap-ket-noi' },
+          ],
+        },
+      ],
     },
-  });
-
-  const catTech = await prisma.category.upsert({
-    where: { slug: 'cong-nghe-dien-tu' },
-    update: { name: 'Công Nghệ & Điện Tử', level: 1 },
-    create: { name: 'Công Nghệ & Điện Tử', slug: 'cong-nghe-dien-tu', level: 1 },
-  });
-
-  const catPhoneAcc = await prisma.category.upsert({
-    where: { slug: 'dien-thoai-phu-kien' },
-    update: { name: 'Điện Thoại & Phụ Kiện Số', parentId: catTech.id, level: 2 },
-    create: {
-      name: 'Điện Thoại & Phụ Kiện Số',
-      slug: 'dien-thoai-phu-kien',
-      parentId: catTech.id,
-      level: 2,
+    {
+      name: 'Nghệ Thuật & Vật Phẩm Sưu Tầm',
+      slug: 'nghe-thuat-suu-tam',
+      children: [
+        {
+          name: 'Hội Họa & Tranh Ảnh',
+          slug: 'hoi-hoa-tranh-anh',
+          children: [
+            { name: 'Tranh Nghệ Thuật Treo Tường', slug: 'tranh-nghe-thuat-treo-tuong' },
+            { name: 'Tranh Sơn Dầu & Sơn Mài', slug: 'tranh-son-dau-son-mai' },
+          ],
+        },
+        {
+          name: 'Thủ Công Mỹ Nghệ & Gốm Sứ',
+          slug: 'thu-cong-my-nghe-gom-su',
+          children: [
+            { name: 'Gốm Sứ Nghệ Thuật', slug: 'gom-su-nghe-thuat' },
+            { name: 'Trà Cụ & Gốm Tử Sa', slug: 'tra-cu-gom-tu-sa' },
+          ],
+        },
+        {
+          name: 'Đồ Cổ & Vật Phẩm Sưu Tầm',
+          slug: 'do-co-vat-pham-suu-tam',
+          children: [
+            { name: 'Tượng & Vật Phẩm Phong Thủy', slug: 'tuong-vat-pham-phong-thuy' },
+            { name: 'Hộp Khảm & Đồ Sưu Tầm Cổ', slug: 'hop-kham-do-suu-tam-co' },
+          ],
+        },
+      ],
     },
-  });
-
-  const catAudio = await prisma.category.upsert({
-    where: { slug: 'tai-nghe-am-thanh' },
-    update: { name: 'Tai Nghe & Thiết Bị Âm Thanh', parentId: catPhoneAcc.id, level: 3 },
-    create: {
-      name: 'Tai Nghe & Thiết Bị Âm Thanh',
-      slug: 'tai-nghe-am-thanh',
-      parentId: catPhoneAcc.id,
-      level: 3,
+    {
+      name: 'Thời Trang & Phong Cách Sống',
+      slug: 'thoi-trang-phong-cach',
+      children: [
+        {
+          name: 'Túi Xách & Đồ Da',
+          slug: 'tui-xach-do-da',
+          children: [
+            { name: 'Ví Da & Thắt Lưng', slug: 'vi-da-that-lung' },
+            { name: 'Túi Đeo Chéo & Balo', slug: 'tui-deo-cheo-balo' },
+          ],
+        },
+        {
+          name: 'Kính Mắt & Phụ Kiện',
+          slug: 'kinh-mat-phu-kien',
+          children: [
+            { name: 'Kính Râm Thời Trang', slug: 'kinh-ram-thoi-trang' },
+            { name: 'Phụ Kiện Chăm Sóc Giày', slug: 'phu-kien-cham-soc-giay' },
+          ],
+        },
+      ],
     },
-  });
-
-  const catGaming = await prisma.category.upsert({
-    where: { slug: 'phu-kien-gaming-may-tinh' },
-    update: { name: 'Phụ Kiện Gaming & Bàn Phím', parentId: catPhoneAcc.id, level: 3 },
-    create: {
-      name: 'Phụ Kiện Gaming & Bàn Phím',
-      slug: 'phu-kien-gaming-may-tinh',
-      parentId: catPhoneAcc.id,
-      level: 3,
+    {
+      name: 'Nhà Cửa & Đời Sống',
+      slug: 'nha-cua-doi-song',
+      children: [
+        {
+          name: 'Trang Trí Nội Thất',
+          slug: 'trang-tri-noi-that',
+          children: [
+            { name: 'Đèn Trang Trí & Đèn Bàn', slug: 'den-trang-tri-den-ban' },
+            { name: 'Nến Thơm & Tinh Dầu', slug: 'nen-thom-tinh-dau' },
+          ],
+        },
+        {
+          name: 'Pha Chế & Bàn Ăn',
+          slug: 'pha-che-ban-an',
+          children: [
+            { name: 'Dụng Cụ Pha Cà Phê', slug: 'dung-cu-pha-ca-phe' },
+            { name: 'Bình Giữ Nhiệt & Ly Sứ', slug: 'binh-giu-nhiet-ly-su' },
+          ],
+        },
+      ],
     },
-  });
+    {
+      name: 'Sách & Văn Phòng Phẩm',
+      slug: 'sach-van-phong-pham',
+      children: [
+        {
+          name: 'Dụng Cụ Viết & Sổ Tay',
+          slug: 'dung-cu-viet-so-tay',
+          children: [
+            { name: 'Sổ Tay & Bút Ký Cao Cấp', slug: 'so-tay-but-ky-cao-cap' },
+            { name: 'Phụ Kiện Bàn Học & Văn Phòng', slug: 'phu-kien-ban-hoc-van-phong' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Thể Thao & Dã Ngoại',
+      slug: 'the-thao-du-lich',
+      children: [
+        {
+          name: 'Phụ Kiện Thể Thao & Du Lịch',
+          slug: 'phu-kien-the-thao-du-lich',
+          children: [
+            { name: 'Bình Nước & Phụ Kiện Gym', slug: 'binh-nuoc-phu-kien-gym' },
+            { name: 'Đèn Pin & Dụng Cụ Cắm Trại', slug: 'den-pin-dung-cu-cam-trai' },
+          ],
+        },
+      ],
+    },
+  ];
 
-  const catCollectibles = await prisma.category.upsert({
-    where: { slug: 'nghe-thuat-suu-tam' },
-    update: { name: 'Nghệ Thuật & Vật Phẩm Sưu Tầm', level: 1 },
-    create: { name: 'Nghệ Thuật & Vật Phẩm Sưu Tầm', slug: 'nghe-thuat-suu-tam', level: 1 },
-  });
+  const categoriesBySlug: Record<string, { id: string }> = {};
+
+  async function seedCategoryNodes(
+    nodes: SeedCategoryNode[],
+    parentId: string | null = null,
+    level = 1,
+  ) {
+    for (const node of nodes) {
+      const cat = await prisma.category.upsert({
+        where: { slug: node.slug },
+        update: { name: node.name, parentId, level },
+        create: { name: node.name, slug: node.slug, parentId, level },
+      });
+      categoriesBySlug[node.slug] = cat;
+      if (node.children?.length) {
+        await seedCategoryNodes(node.children, cat.id, level + 1);
+      }
+    }
+  }
+
+  await seedCategoryNodes(categoryTree);
+  console.info(
+    `✅ 2. Kho hàng & ${Object.keys(categoriesBySlug).length} danh mục (3 cấp) đã được khởi tạo`,
+  );
 
   // =========================================================================
   // 3. TÀI KHOẢN STAFF (QuyetFen, Kim Cường)
@@ -505,6 +623,15 @@ async function main() {
     },
   ];
 
+  const buyerEntities: Record<
+    string,
+    {
+      id: string;
+      fullName: string;
+      address: (typeof buyerList)[number]['address'];
+    }
+  > = {};
+
   for (const b of buyerList) {
     const buyerUser = await upsertDemoUser(prisma, {
       fullName: b.fullName,
@@ -521,6 +648,12 @@ async function main() {
       accountNumber: b.accountNumber,
       accountHolderName: b.fullName.toUpperCase(),
     });
+
+    buyerEntities[b.fullName] = {
+      id: buyerUser.id,
+      fullName: b.fullName,
+      address: b.address,
+    };
 
     await ensureDemoWallet(prisma, buyerUser.id, DEMO_WALLET_BALANCE);
     await upsertDefaultAddress(prisma, buyerUser.id, b.address);
@@ -737,7 +870,7 @@ async function main() {
       title: 'Tai nghe nhét tai có dây Jack 3.5mm Extra Bass',
       description: 'Chất âm sống động, bass mạnh mẽ, kèm micro đàm thoại tiện lợi.',
       basePrice: 45000,
-      categoryId: catAudio.id,
+      categoryId: categoriesBySlug['tai-nghe-am-thanh'].id,
       status: ProductStatus.ACTIVE,
       quantity: 25,
       image:
@@ -747,7 +880,7 @@ async function main() {
       title: 'Cáp sạc nhanh Type-C bọc dù chống đứt 1m',
       description: 'Lõi đồng nguyên chất hỗ trợ sạc nhanh và truyền dữ liệu tốc độ cao.',
       basePrice: 25000,
-      categoryId: catPhoneAcc.id,
+      categoryId: categoriesBySlug['cap-sac-de-sac-khong-day'].id,
       status: ProductStatus.ACTIVE,
       quantity: 50,
       image:
@@ -757,7 +890,7 @@ async function main() {
       title: 'Giá đỡ điện thoại để bàn kim loại xoay gập 360 độ',
       description: 'Khung nhôm chắc chắn, gấp gọn dễ mang theo, điều chỉnh góc nhìn linh hoạt.',
       basePrice: 35000,
-      categoryId: catPhoneAcc.id,
+      categoryId: categoriesBySlug['gia-do-phu-kien-ban-lam-viec'].id,
       status: ProductStatus.ACTIVE,
       quantity: 10,
       image:
@@ -767,7 +900,7 @@ async function main() {
       title: 'Quạt tản nhiệt mini cắm cổng USB làm mát laptop',
       description: 'Thiết kế nhỏ gọn, gió êm không ồn, sử dụng trực tiếp cổng USB nguồn 5V.',
       basePrice: 48000,
-      categoryId: catGaming.id,
+      categoryId: categoriesBySlug['tan-nhiet-phu-kien-laptop'].id,
       status: ProductStatus.ACTIVE,
       quantity: 3,
       image:
@@ -777,7 +910,7 @@ async function main() {
       title: 'Bộ chổi quét và dụng cụ vệ sinh bàn phím đa năng 5 in 1',
       description: 'Gồm đầu quét mềm, đầu nhổ keycap, bút lau kẽ tai nghe và khăn lau màn hình.',
       basePrice: 28000,
-      categoryId: catGaming.id,
+      categoryId: categoriesBySlug['phu-kien-gaming-may-tinh'].id,
       status: ProductStatus.ACTIVE,
       quantity: 1,
       image:
@@ -787,7 +920,7 @@ async function main() {
       title: 'Lót chuột gaming speed may viền chống bong mép 20x25cm',
       description: '[Hết hàng] Mặt vải dệt Speed lướt chuột êm ái, đáy cao su chống trượt.',
       basePrice: 20000,
-      categoryId: catGaming.id,
+      categoryId: categoriesBySlug['phu-kien-gaming-may-tinh'].id,
       status: ProductStatus.ACTIVE,
       quantity: 0,
       image:
@@ -797,7 +930,7 @@ async function main() {
       title: 'Bộ chia Hub USB 3.0 4 cổng tốc độ truyền cao',
       description: '[Tạm ngưng] Chia 1 cổng USB thành 4 cổng tiện dụng, tốc độ truyền tải 5Gbps.',
       basePrice: 50000,
-      categoryId: catGaming.id,
+      categoryId: categoriesBySlug['tan-nhiet-phu-kien-laptop'].id,
       status: ProductStatus.INACTIVE,
       quantity: 8,
       image:
@@ -807,7 +940,7 @@ async function main() {
       title: 'Cáp mạng đúc sẵn RJ45 chuẩn CAT6 dài 3m',
       description: '[Tạm ngưng] Đầu bấm mạ vàng truyền tín hiệu Gigabit ổn định mượt mà.',
       basePrice: 22000,
-      categoryId: catGaming.id,
+      categoryId: categoriesBySlug['thiet-bi-mang-cap-ket-noi'].id,
       status: ProductStatus.INACTIVE,
       quantity: 0,
       image:
@@ -817,7 +950,7 @@ async function main() {
       title: 'Đế sạc không dây chuẩn Qi 15W siêu mỏng nhôm nguyên khối',
       description: '[Bản nháp] Nhận diện sạc thông minh không gây nóng máy.',
       basePrice: 65000,
-      categoryId: catPhoneAcc.id,
+      categoryId: categoriesBySlug['cap-sac-de-sac-khong-day'].id,
       status: ProductStatus.DRAFT,
       quantity: 15,
       image:
@@ -827,11 +960,61 @@ async function main() {
       title: 'Túi chống sốc laptop 14 inch chất liệu nỉ có ngăn phụ',
       description: '[Bản nháp] Đựng máy chống va đập, ngăn phụ đựng sạc chuột tiện lợi.',
       basePrice: 40000,
-      categoryId: catGaming.id,
+      categoryId: categoriesBySlug['tui-chong-soc-balo-laptop'].id,
       status: ProductStatus.DRAFT,
       quantity: 2,
       image:
         'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Balo chống sốc laptop 15.6 inch chống thấm nước nhiều ngăn',
+      description: 'Đệm lưng thoáng khí, ngăn chống sốc riêng cho laptop và phụ kiện.',
+      basePrice: 85000,
+      categoryId: categoriesBySlug['tui-chong-soc-balo-laptop'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 14,
+      image:
+        'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Cáp mạng LAN Cat6 UTP bọc đầu đúc sẵn tốc độ Gigabit 5m',
+      description: 'Truyền tín hiệu ổn định cho PC, router và smart TV, chống nhiễu tốt.',
+      basePrice: 32000,
+      categoryId: categoriesBySlug['thiet-bi-mang-cap-ket-noi'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 22,
+      image:
+        'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Bình giữ nhiệt inox 304 khắc tên dung tích 500ml',
+      description: 'Giữ nóng lạnh lên đến 12 giờ, nắp kín chống rò rỉ khi mang theo.',
+      basePrice: 69000,
+      categoryId: categoriesBySlug['binh-giu-nhiet-ly-su'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 18,
+      image:
+        'https://images.unsplash.com/photo-1602143407151-7111542de6e8?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Khay đựng bút & sắp xếp bàn làm việc tối giản',
+      description: 'Chia nhiều ngăn tiện lợi cho bút, thước, ghim giấy và điện thoại.',
+      basePrice: 42000,
+      categoryId: categoriesBySlug['phu-kien-ban-hoc-van-phong'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 16,
+      image:
+        'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Đèn pin LED dã ngoại sạc USB chống nước IPX4',
+      description: 'Chiếu sáng 3 chế độ, pin sạc tích hợp phù hợp cắm trại ban đêm.',
+      basePrice: 59000,
+      categoryId: categoriesBySlug['den-pin-dung-cu-cam-trai'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 11,
+      image:
+        'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=800&q=80',
     },
   ];
 
@@ -840,7 +1023,7 @@ async function main() {
       title: 'Đồng hồ nam phong cách Classic mặt tròn dây da nâu',
       description: 'Thiết kế thanh lịch, mặt số tối giản, kính khoáng cứng chống trầy nhẹ.',
       basePrice: 75000,
-      categoryId: catMenWatches.id,
+      categoryId: categoriesBySlug['dong-ho-nam-sang-trong'].id,
       status: ProductStatus.ACTIVE,
       quantity: 12,
       image:
@@ -850,7 +1033,7 @@ async function main() {
       title: 'Đồng hồ điện tử thể thao chống nước mặt vuông năng động',
       description: 'Chức năng bấm giờ thể thao, xem lịch ngày và đèn LED nền tiện ích ban đêm.',
       basePrice: 68000,
-      categoryId: catMenWatches.id,
+      categoryId: categoriesBySlug['dong-ho-the-thao-thong-minh'].id,
       status: ProductStatus.ACTIVE,
       quantity: 30,
       image:
@@ -860,7 +1043,7 @@ async function main() {
       title: 'Dây da đồng hồ bò sáp phong cách Vintage cổ điển 20mm',
       description: 'Chất da thật mềm mại, đường may chỉ viền tỉ mỉ tạo điểm nhấn cổ điển.',
       basePrice: 35000,
-      categoryId: catWatchStraps.id,
+      categoryId: categoriesBySlug['day-da-phu-kien-dong-ho'].id,
       status: ProductStatus.ACTIVE,
       quantity: 20,
       image:
@@ -870,7 +1053,7 @@ async function main() {
       title: 'Khóa bướm tự động inox chống gãy gập dây da đồng hồ',
       description: 'Bảo vệ tuổi thọ dây da không bị cong gấp, thao tác bấm mở 1 chạm nhẹ nhàng.',
       basePrice: 25000,
-      categoryId: catWatchStraps.id,
+      categoryId: categoriesBySlug['day-da-phu-kien-dong-ho'].id,
       status: ProductStatus.ACTIVE,
       quantity: 5,
       image:
@@ -880,7 +1063,7 @@ async function main() {
       title: 'Kính lúp thợ kim hoàn phóng đại 10x soi chi tiết mặt đồng hồ',
       description: 'Thấu kính thủy tinh quang học cho độ phóng đại sắc nét từng chi tiết.',
       basePrice: 29000,
-      categoryId: catWatchStraps.id,
+      categoryId: categoriesBySlug['dung-cu-bao-duong-dong-ho'].id,
       status: ProductStatus.ACTIVE,
       quantity: 1,
       image:
@@ -890,9 +1073,19 @@ async function main() {
       title: 'Hộp đựng đồng hồ đơn bọc da có khóa bấm chống sốc',
       description: '[Hết hàng] Hộp quà tặng bọc da PU sang trọng, lót đệm nhung êm ái.',
       basePrice: 45000,
-      categoryId: catLuxuryWatches.id,
+      categoryId: categoriesBySlug['hop-dung-trung-bay-dong-ho'].id,
       status: ProductStatus.ACTIVE,
       quantity: 0,
+      image:
+        'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Hộp trưng bày 6 chiếc đồng hồ mặt kính trong suốt',
+      description: 'Khung gỗ bọc da lộn cao cấp, bảo vệ bộ sưu tập đồng hồ khỏi bụi bẩn.',
+      basePrice: 92000,
+      categoryId: categoriesBySlug['hop-dung-trung-bay-dong-ho'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 10,
       image:
         'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
     },
@@ -900,7 +1093,7 @@ async function main() {
       title: 'Dây lưới Milanese thép không gỉ khóa nam châm 20mm',
       description: '[Tạm ngưng] Lưới đan thoáng khí chống mồ hôi, khóa hút nam châm ôm sát.',
       basePrice: 40000,
-      categoryId: catWatchStraps.id,
+      categoryId: categoriesBySlug['day-da-phu-kien-dong-ho'].id,
       status: ProductStatus.INACTIVE,
       quantity: 9,
       image:
@@ -910,7 +1103,7 @@ async function main() {
       title: 'Lọ dầu bôi trơn máy đồng hồ cơ chuyên dụng Moebius 5ml',
       description: '[Tạm ngưng] Giảm ma sát ổ trục bánh xe, duy trì độ chính xác của máy cơ.',
       basePrice: 24000,
-      categoryId: catWatchStraps.id,
+      categoryId: categoriesBySlug['dung-cu-bao-duong-dong-ho'].id,
       status: ProductStatus.INACTIVE,
       quantity: 0,
       image:
@@ -920,7 +1113,7 @@ async function main() {
       title: 'Bao da du lịch đựng 2 chiếc đồng hồ gập gọn cao cấp',
       description: '[Bản nháp] Chất da dày dặn có ngăn ngăn cách 2 mặt số tránh va đập.',
       basePrice: 44000,
-      categoryId: catLuxuryWatches.id,
+      categoryId: categoriesBySlug['hop-dung-trung-bay-dong-ho'].id,
       status: ProductStatus.DRAFT,
       quantity: 14,
       image:
@@ -930,11 +1123,61 @@ async function main() {
       title: 'Cây nạy tháo chốt dây đồng hồ 2 đầu đa năng',
       description: '[Bản nháp] Một đầu nạy chốt lò xo và một đầu kim đột lỗ dây da chuyên dụng.',
       basePrice: 15000,
-      categoryId: catWatchStraps.id,
+      categoryId: categoriesBySlug['dung-cu-bao-duong-dong-ho'].id,
       status: ProductStatus.DRAFT,
       quantity: 3,
       image:
         'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Ví da bò nam dáng ngang tối giản nhiều ngăn thẻ',
+      description: 'Da bò thật mềm mịn, đường chỉ khâu tay chắc chắn, nhỏ gọn bỏ túi.',
+      basePrice: 79000,
+      categoryId: categoriesBySlug['vi-da-that-lung'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 15,
+      image:
+        'https://images.unsplash.com/photo-1627123424574-724758594e93?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Túi đeo chéo vải canvas phối da phong cách đường phố',
+      description: 'Chống bám bụi nhẹ, dây đeo điều chỉnh linh hoạt cho đi học và dạo phố.',
+      basePrice: 88000,
+      categoryId: categoriesBySlug['tui-deo-cheo-balo'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 10,
+      image:
+        'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Kính râm gọng kim loại mảnh chống tia UV400',
+      description: 'Tròng kính phân cực giảm chói khi lái xe và hoạt động ngoài trời.',
+      basePrice: 65000,
+      categoryId: categoriesBySlug['kinh-ram-thoi-trang'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 19,
+      image:
+        'https://images.unsplash.com/photo-1511499767150-a48a237f0083?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Bộ vệ sinh giày sneaker bọt tuyết kèm bàn chải lông mềm',
+      description: 'Làm sạch nhanh vết bẩn trên da, vải lưới và đế cao su không làm ố màu.',
+      basePrice: 48000,
+      categoryId: categoriesBySlug['phu-kien-cham-soc-giay'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 20,
+      image:
+        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Bình nước thể thao Tritan chia vạch 1 lít kèm ống hút',
+      description: 'Nhựa không chứa BPA, nắp bật mở một tay tiện lợi khi tập gym.',
+      basePrice: 54000,
+      categoryId: categoriesBySlug['binh-nuoc-phu-kien-gym'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 24,
+      image:
+        'https://images.unsplash.com/photo-1523362628745-0c100150b504?auto=format&fit=crop&w=800&q=80',
     },
   ];
 
@@ -943,7 +1186,7 @@ async function main() {
       title: 'Vòng tay hạt trầm hương tự nhiên mix charm bạc S925',
       description: 'Mùi hương dịu nhẹ thư thái, xâu hạt thủ công tỉ mỉ mang lại bình an.',
       basePrice: 58000,
-      categoryId: catCollectibles.id,
+      categoryId: categoriesBySlug['vong-tay-da-phong-thuy'].id,
       status: ProductStatus.ACTIVE,
       quantity: 18,
       image:
@@ -953,7 +1196,7 @@ async function main() {
       title: 'Bình gốm men lam vẽ tay họa tiết liên hoa mini',
       description: 'Gốm nung thủ công men lam cổ điển, phù hợp trang trí bàn trà và kệ sách.',
       basePrice: 82000,
-      categoryId: catCollectibles.id,
+      categoryId: categoriesBySlug['gom-su-nghe-thuat'].id,
       status: ProductStatus.ACTIVE,
       quantity: 6,
       image:
@@ -963,7 +1206,7 @@ async function main() {
       title: 'Tranh canvas nghệ thuật tối giản khung gỗ thông 30x40cm',
       description: 'In màu sắc nét trên vải canvas dày, tặng kèm đinh ba chân treo tường.',
       basePrice: 64000,
-      categoryId: catCollectibles.id,
+      categoryId: categoriesBySlug['tranh-nghe-thuat-treo-tuong'].id,
       status: ProductStatus.ACTIVE,
       quantity: 40,
       image:
@@ -973,7 +1216,7 @@ async function main() {
       title: 'Tách trà gốm Tử Sa đất chu nê dung tích 90ml',
       description: 'Đất khoáng giữ nhiệt tốt, dáng tròn cổ điển dành cho người thưởng trà.',
       basePrice: 49000,
-      categoryId: catCollectibles.id,
+      categoryId: categoriesBySlug['tra-cu-gom-tu-sa'].id,
       status: ProductStatus.ACTIVE,
       quantity: 4,
       image:
@@ -983,7 +1226,7 @@ async function main() {
       title: 'Nhẫn bạc đính đá CZ cắt giác kim cương phiên bản giới hạn',
       description: 'Bạc 925 xi bạch kim sáng bóng, chấu 6 cạnh cổ điển.',
       basePrice: 89000,
-      categoryId: catLuxuryWatches.id,
+      categoryId: categoriesBySlug['nhan-day-chuyen-bac'].id,
       status: ProductStatus.ACTIVE,
       quantity: 1,
       image:
@@ -993,9 +1236,19 @@ async function main() {
       title: 'Tượng đồng phong thủy để bàn chế tác thủ công',
       description: '[Hết hàng] Đúc đồng nguyên khối phủ màu cổ điển, đế gỗ trắc.',
       basePrice: 95000,
-      categoryId: catCollectibles.id,
+      categoryId: categoriesBySlug['tuong-vat-pham-phong-thuy'].id,
       status: ProductStatus.ACTIVE,
       quantity: 0,
+      image:
+        'https://images.unsplash.com/photo-1544967082-d9d25d867d66?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Tượng kỳ lân đá ngọc mini trưng bày bàn làm việc',
+      description: 'Điêu khắc tinh xảo mang ý nghĩa chiêu tài và bình an.',
+      basePrice: 74000,
+      categoryId: categoriesBySlug['tuong-vat-pham-phong-thuy'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 7,
       image:
         'https://images.unsplash.com/photo-1544967082-d9d25d867d66?auto=format&fit=crop&w=800&q=80',
     },
@@ -1003,7 +1256,7 @@ async function main() {
       title: 'Dây chuyền ngọc trai nuôi nước ngọt khóa bạc 925',
       description: '[Tạm ngưng] Ánh xà cừ tự nhiên dịu mắt, chiều dài dây 42cm.',
       basePrice: 72000,
-      categoryId: catLuxuryWatches.id,
+      categoryId: categoriesBySlug['nhan-day-chuyen-bac'].id,
       status: ProductStatus.INACTIVE,
       quantity: 7,
       image:
@@ -1013,7 +1266,7 @@ async function main() {
       title: 'Hộp gỗ khảm xà cừ đựng trang sức thủ công',
       description: '[Tạm ngưng] Lót nhung đỏ chống trầy bên trong, khóa đồng cổ điển.',
       basePrice: 55000,
-      categoryId: catCollectibles.id,
+      categoryId: categoriesBySlug['hop-kham-do-suu-tam-co'].id,
       status: ProductStatus.INACTIVE,
       quantity: 0,
       image:
@@ -1023,7 +1276,7 @@ async function main() {
       title: 'Bức tranh sơn dầu phong cảnh phố cổ cỡ nhỏ',
       description: '[Bản nháp] Vẽ tay trên toan bố, màu sơn dầu bền đẹp theo thời gian.',
       basePrice: 90000,
-      categoryId: catCollectibles.id,
+      categoryId: categoriesBySlug['tranh-son-dau-son-mai'].id,
       status: ProductStatus.DRAFT,
       quantity: 12,
       image:
@@ -1033,18 +1286,176 @@ async function main() {
       title: 'Trâm cài áo hợp kim đính đá phong cách cổ điển',
       description: '[Bản nháp] Phụ kiện cài áo vest, áo dài sang trọng.',
       basePrice: 32000,
-      categoryId: catCollectibles.id,
+      categoryId: categoriesBySlug['tram-cai-phu-kien-thoi-trang'].id,
       status: ProductStatus.DRAFT,
       quantity: 2,
       image:
         'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=800&q=80',
     },
+    {
+      title: 'Ghim cài ve áo hình hoa sen mạ vàng tinh xảo',
+      description: 'Phụ kiện trang sức cài áo vest và áo dài, khóa gài chắc chắn.',
+      basePrice: 46000,
+      categoryId: categoriesBySlug['tram-cai-phu-kien-thoi-trang'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 12,
+      image:
+        'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Tranh sơn mài phong cảnh làng quê Việt Nam cỡ 25x35cm',
+      description: 'Vẽ tay tỉ mỉ trên vóc gỗ, phủ sơn bóng bảo vệ bền màu.',
+      basePrice: 92000,
+      categoryId: categoriesBySlug['tranh-son-dau-son-mai'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 5,
+      image:
+        'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Hộp đựng trang sức gỗ hương khảm họa tiết cổ điển',
+      description: 'Chế tác thủ công, lót nhung mịn bảo vệ nhẫn và vòng tay.',
+      basePrice: 78000,
+      categoryId: categoriesBySlug['hop-kham-do-suu-tam-co'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 8,
+      image:
+        'https://images.unsplash.com/photo-1513519245088-0e12902e5a38?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Đèn bàn ngủ chụp vải linen chân gỗ sồi ấm áp',
+      description: 'Ánh sáng vàng dịu mắt, công tắc bật tắt tiện lợi cho phòng ngủ.',
+      basePrice: 86000,
+      categoryId: categoriesBySlug['den-trang-tri-den-ban'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 9,
+      image:
+        'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Nến thơm sáp đậu nành hương gỗ đàn hương & oải hương',
+      description: 'Thời gian đốt khoảng 30 giờ, giúp thư giãn không gian làm việc.',
+      basePrice: 52000,
+      categoryId: categoriesBySlug['nen-thom-tinh-dau'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 20,
+      image:
+        'https://images.unsplash.com/photo-1603006905003-be475563bc59?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Phin pha cà phê thủ công bằng gốm tráng men kèm đĩa lót',
+      description: 'Giữ nhiệt tốt khi chiết xuất cà phê, họa tiết men hỏa biến độc đáo.',
+      basePrice: 67000,
+      categoryId: categoriesBySlug['dung-cu-pha-ca-phe'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 14,
+      image:
+        'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
+    },
+    {
+      title: 'Sổ tay bìa da khâu tay giấy kem 120gsm kèm bút ký kim loại',
+      description: 'Giấy dày chống lem mực, bộ quà tặng sang trọng cho dân văn phòng.',
+      basePrice: 62000,
+      categoryId: categoriesBySlug['so-tay-but-ky-cao-cap'].id,
+      status: ProductStatus.ACTIVE,
+      quantity: 16,
+      image:
+        'https://images.unsplash.com/photo-1531346878377-a5be20888e57?auto=format&fit=crop&w=800&q=80',
+    },
   ];
 
-  await seedProductsForSeller(sellerEntities['Jos'], warehouse.id, josProducts);
-  await seedProductsForSeller(sellerEntities['Huy'], warehouse.id, huyProducts);
-  await seedProductsForSeller(sellerEntities['Linh'], warehouse.id, linhProducts);
-  console.info('✅ 5. Đã tạo đủ 10 sản phẩm/seller (ACTIVE/INACTIVE/DRAFT, số lượng 0..50)');
+  const josProductMap = await seedProductsForSeller(
+    sellerEntities['Jos'],
+    warehouse.id,
+    josProducts,
+  );
+  const huyProductMap = await seedProductsForSeller(
+    sellerEntities['Huy'],
+    warehouse.id,
+    huyProducts,
+  );
+  const linhProductMap = await seedProductsForSeller(
+    sellerEntities['Linh'],
+    warehouse.id,
+    linhProducts,
+  );
+  console.info(
+    `✅ 5. Đã tạo ${josProducts.length + huyProducts.length + linhProducts.length} sản phẩm cho 3 seller (đủ ACTIVE/INACTIVE/DRAFT, bao phủ mọi danh mục lá)`,
+  );
+
+  // =========================================================================
+  // 6B. ĐƠN HÀNG ĐÃ HOÀN TẤT ĐỂ 4 SẢN PHẨM LỌT TOP XU HƯỚNG (TRENDING)
+  // =========================================================================
+  const trendingOrderSeeds = [
+    {
+      idempotencyKey: 'seed-trending-order-jos-headphone',
+      buyer: buyerEntities['Liên'],
+      sellerId: sellerEntities['Jos'].id,
+      product: josProductMap['Tai nghe nhét tai có dây Jack 3.5mm Extra Bass'],
+      quantity: 12,
+      status: OrderStatus.DELIVERED,
+    },
+    {
+      idempotencyKey: 'seed-trending-order-huy-watch',
+      buyer: buyerEntities['Cường'],
+      sellerId: sellerEntities['Huy'].id,
+      product: huyProductMap['Đồng hồ nam phong cách Classic mặt tròn dây da nâu'],
+      quantity: 9,
+      status: OrderStatus.CONFIRMED,
+    },
+    {
+      idempotencyKey: 'seed-trending-order-linh-bracelet',
+      buyer: buyerEntities['Minh'],
+      sellerId: sellerEntities['Linh'].id,
+      product: linhProductMap['Vòng tay hạt trầm hương tự nhiên mix charm bạc S925'],
+      quantity: 7,
+      status: OrderStatus.DELIVERED,
+    },
+    {
+      idempotencyKey: 'seed-trending-order-jos-cable',
+      buyer: buyerEntities['An'],
+      sellerId: sellerEntities['Jos'].id,
+      product: josProductMap['Cáp sạc nhanh Type-C bọc dù chống đứt 1m'],
+      quantity: 5,
+      status: OrderStatus.CONFIRMED,
+    },
+  ];
+
+  for (const seedOrder of trendingOrderSeeds) {
+    if (!seedOrder.product) continue;
+    const existingOrder = await prisma.order.findUnique({
+      where: { idempotencyKey: seedOrder.idempotencyKey },
+    });
+    if (existingOrder) continue;
+
+    const unitPrice = seedOrder.product.basePrice;
+    const subtotal = unitPrice * seedOrder.quantity;
+    await prisma.order.create({
+      data: {
+        buyerId: seedOrder.buyer.id,
+        sellerId: seedOrder.sellerId,
+        subtotal,
+        shippingFee: 0,
+        totalAmount: subtotal,
+        status: seedOrder.status,
+        isAuction: false,
+        shippingAddressSnapshot: seedOrder.buyer.address,
+        idempotencyKey: seedOrder.idempotencyKey,
+        items: {
+          create: [
+            {
+              productId: seedOrder.product.id,
+              titleSnapshot: seedOrder.product.title,
+              quantity: seedOrder.quantity,
+              unitPrice,
+              totalPrice: subtotal,
+            },
+          ],
+        },
+      },
+    });
+  }
+  console.info('✅ 5B. Đã tạo 4 đơn hàng mẫu để 4 sản phẩm ACTIVE lọt mục Xu hướng (Trending)');
 
   // =========================================================================
   // 7. DỌN CÁC PHIÊN ĐẤU GIÁ MẪU CŨ (NẾU CHƯA CÓ BID/AWARD) & TẠO 2 PHIÊN ADMIN MỚI
