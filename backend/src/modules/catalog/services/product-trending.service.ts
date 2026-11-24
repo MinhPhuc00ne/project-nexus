@@ -173,10 +173,13 @@ export class ProductTrendingService {
   }
 
   /**
-   * Synchronizes the #1 trending product notification after purchase or moderation events.
-   * Sends an in-app notification to the seller only when a product newly holds the #1 spot.
+   * Synchronizes trending notifications for the top `limit` (default 10) trending products
+   * after purchase or moderation events. Sends an in-app notification to each seller whose
+   * product newly enters the top trending list.
+   * @param rawLimit Number of top trending products to notify (1..50, default 10).
    */
-  async syncTopOneTrendingNotification(): Promise<void> {
+  async syncTopTrendingNotifications(rawLimit = 10): Promise<void> {
+    const limit = Math.max(1, Math.min(50, Number(rawLimit) || 10));
     const topRows = await this.prisma.orderItem.groupBy({
       by: ['productId'],
       where: {
@@ -193,49 +196,74 @@ export class ProductTrendingService {
       _sum: { quantity: true },
       _max: { createdAt: true },
       orderBy: [{ _sum: { quantity: 'desc' } }, { _max: { createdAt: 'asc' } }],
-      take: 1,
+      take: limit,
     });
 
-    const topRow = topRows[0];
-    const purchaseCount = Number(topRow?._sum?.quantity ?? 0);
-    if (!topRow?.productId || purchaseCount <= 0) return;
+    const rankedEntries = topRows
+      .map((row, index) => ({
+        productId: row.productId,
+        purchaseCount: Number(row._sum?.quantity ?? 0),
+        rank: index + 1,
+      }))
+      .filter(
+        (entry): entry is { productId: string; purchaseCount: number; rank: number } =>
+          Boolean(entry.productId) && entry.purchaseCount > 0,
+      );
 
-    const topProduct = await this.prisma.product.findUnique({
-      where: { id: topRow.productId },
-      select: {
-        id: true,
-        sellerId: true,
-        title: true,
-        trendingNotifiedAt: true,
-        trendingExcluded: true,
-      },
-    });
-    if (!topProduct || topProduct.trendingExcluded || topProduct.trendingNotifiedAt) return;
+    const topIds = rankedEntries.map((entry) => entry.productId);
+    if (topIds.length === 0) {
+      await this.prisma.product.updateMany({
+        where: { trendingNotifiedAt: { not: null } },
+        data: { trendingNotifiedAt: null },
+      });
+      return;
+    }
 
     await this.prisma.product.updateMany({
       where: {
-        id: { not: topProduct.id },
+        id: { notIn: topIds },
         trendingNotifiedAt: { not: null },
       },
       data: { trendingNotifiedAt: null },
     });
 
-    const now = new Date();
-    const claimed = await this.prisma.product.updateMany({
-      where: { id: topProduct.id, trendingNotifiedAt: null, trendingExcluded: false },
-      data: { trendingNotifiedAt: now },
+    const unnotifiedProducts = await this.prisma.product.findMany({
+      where: {
+        id: { in: topIds },
+        trendingNotifiedAt: null,
+        trendingExcluded: false,
+      },
+      select: {
+        id: true,
+        sellerId: true,
+        title: true,
+      },
     });
-    if (claimed.count === 1 && this.prisma.notification?.create) {
-      await this.prisma.notification.create({
-        data: {
-          userId: topProduct.sellerId,
-          title: 'Sản phẩm của bạn đã đạt Top 1 Xu hướng',
-          content: `Chúc mừng! Sản phẩm "${topProduct.title}" đang đứng thứ nhất trên Xu hướng với ${purchaseCount} lượt mua.`,
-          targetUrl: '/seller/products',
-          type: NotificationType.SYSTEM,
-          channel: NotificationChannel.IN_APP,
-        },
+    if (unnotifiedProducts.length === 0) return;
+
+    const productMap = new Map(unnotifiedProducts.map((product) => [product.id, product]));
+    const now = new Date();
+
+    for (const entry of rankedEntries) {
+      const product = productMap.get(entry.productId);
+      if (!product) continue;
+
+      const claimed = await this.prisma.product.updateMany({
+        where: { id: product.id, trendingNotifiedAt: null, trendingExcluded: false },
+        data: { trendingNotifiedAt: now },
       });
+      if (claimed.count === 1 && this.prisma.notification?.create) {
+        await this.prisma.notification.create({
+          data: {
+            userId: product.sellerId,
+            title: 'Sản phẩm của bạn đã lên Xu hướng',
+            content: `Chúc mừng! Sản phẩm "${product.title}" đang đứng Top ${entry.rank} Xu hướng trên trang chủ với ${entry.purchaseCount} lượt mua.`,
+            targetUrl: '/seller/products',
+            type: NotificationType.SYSTEM,
+            channel: NotificationChannel.IN_APP,
+          },
+        });
+      }
     }
   }
 }
