@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Package, RefreshCw, Trash2, Flame } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getCategoryTree } from '../../../services/admin';
-import type { AdminProduct, AdminProductStatus } from '../../../types/admin-product.types';
+import type {
+  AdminProduct,
+  AdminProductStatus,
+  QueryAdminProductsParams,
+} from '../../../types/admin-product.types';
 import type { CategoryTreeItem } from '../../../types/category.types';
 import { flattenCategories } from '../../../utils/category-tree';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
@@ -19,6 +23,147 @@ import {
 import { AdminTrendingTable } from './AdminTrendingTable';
 
 const PRODUCT_STATUSES: AdminProductStatus[] = ['ACTIVE', 'INACTIVE', 'DRAFT'];
+
+function getProductStatusTone(status: AdminProductStatus): 'green' | 'red' | 'gray' {
+  if (status === 'ACTIVE') return 'green';
+  if (status === 'INACTIVE') return 'red';
+  return 'gray';
+}
+
+function AdminProductsTable({
+  result,
+  setQuery,
+  setDetailId,
+  setDecision,
+}: {
+  result: NonNullable<ReturnType<typeof useAdminProducts>['result']>;
+  setQuery: React.Dispatch<React.SetStateAction<QueryAdminProductsParams>>;
+  setDetailId: (id: string | null) => void;
+  setDecision: (d: { product: AdminProduct; kind: 'activate' | 'hide' | 'delete' } | null) => void;
+}) {
+  const { t } = useTranslation('admin');
+
+  if (!result.items.length) {
+    return <EmptyState text={t('products.empty')} />;
+  }
+
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[900px] text-left text-xs">
+          <thead className="bg-blue-50 text-slate-500">
+            <tr>
+              {[
+                t('products.cols.product'),
+                t('products.cols.seller'),
+                t('products.cols.price'),
+                t('products.cols.stock'),
+                t('products.cols.status'),
+                t('products.cols.actions'),
+              ].map((title) => (
+                <th scope="col" key={title} className="p-3 font-semibold">
+                  {title}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {result.items.map((product) => (
+              <tr key={product.id} className="align-top hover:bg-slate-50/70">
+                <td className="p-3">
+                  <div className="flex gap-3">
+                    {product.thumbnailUrl && (
+                      <img
+                        src={product.thumbnailUrl}
+                        alt=""
+                        className="size-14 shrink-0 rounded-lg border border-slate-200 object-contain"
+                      />
+                    )}
+                    <div className="max-w-72 break-words">
+                      <p className="font-semibold">{product.title}</p>
+                      <p className="mt-1 text-slate-500">{product.category.name}</p>
+                      <p className="mt-1 break-all text-[10px] text-slate-400">{product.id}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="max-w-56 break-words p-3">
+                  <p>{product.seller.fullName}</p>
+                  <p className="mt-1 break-all text-slate-500">{product.seller.email}</p>
+                </td>
+                <td className="whitespace-nowrap p-3">{formatMoney(product.basePrice)}</td>
+                <td className="p-3">
+                  <p>{t('products.availableQty', { count: product.stock.availableQty })}</p>
+                  <p className="mt-1 text-slate-500">
+                    {t('products.totalQty', { count: product.stock.totalQty })}
+                  </p>
+                </td>
+                <td className="p-3">
+                  <Badge tone={getProductStatusTone(product.status)}>
+                    {t(`products.statuses.${product.status}`)}
+                  </Badge>
+                </td>
+                <td className="p-3">
+                  <div className="flex max-w-64 flex-wrap gap-2">
+                    <Button variant="secondary" onClick={() => setDetailId(product.id)}>
+                      {t('products.detailsBtn')}
+                    </Button>
+                    {product.status === 'ACTIVE' ? (
+                      <Button
+                        variant="danger"
+                        onClick={() => setDecision({ product, kind: 'hide' })}
+                      >
+                        {t('products.hideBtn')}
+                      </Button>
+                    ) : (
+                      <Button onClick={() => setDecision({ product, kind: 'activate' })}>
+                        {product.status === 'DRAFT'
+                          ? t('products.allowSellBtn')
+                          : t('products.showAgainBtn')}
+                      </Button>
+                    )}
+                    <Button
+                      variant="danger"
+                      aria-label={t('products.deleteAria', { title: product.title })}
+                      title={t('products.deleteTitle')}
+                      onClick={() => setDecision({ product, kind: 'delete' })}
+                    >
+                      <Trash2 size={15} aria-hidden="true" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+        <span>
+          {t('products.pagination', {
+            total: result.total,
+            page: result.page,
+            totalPages: Math.max(1, result.totalPages),
+          })}
+        </span>
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            disabled={result.page <= 1}
+            onClick={() => setQuery((current) => ({ ...current, page: result.page - 1 }))}
+          >
+            {t('products.prev')}
+          </Button>
+          <Button
+            variant="secondary"
+            disabled={result.page >= result.totalPages}
+            onClick={() => setQuery((current) => ({ ...current, page: result.page + 1 }))}
+          >
+            {t('products.next')}
+          </Button>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export default function ProductManagement({ actions }: AdminTabProps) {
   const { t } = useTranslation('admin');
@@ -201,156 +346,26 @@ export default function ProductManagement({ actions }: AdminTabProps) {
               </Button>
             </div>
           )}
-          {loading ? (
+          {loading && (
             <p role="status" className="py-10 text-center text-sm text-slate-500">
               {t('products.loading')}
             </p>
-          ) : error ? (
+          )}
+          {!loading && error && (
             <div role="alert" className="space-y-3 py-5 text-sm text-red-700">
               <p>{error}</p>
               <Button variant="secondary" onClick={refresh}>
                 {t('products.retry')}
               </Button>
             </div>
-          ) : (
-            result && (
-              <>
-                {result.items.length ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[900px] text-left text-xs">
-                      <thead className="bg-blue-50 text-slate-500">
-                        <tr>
-                          {[
-                            t('products.cols.product'),
-                            t('products.cols.seller'),
-                            t('products.cols.price'),
-                            t('products.cols.stock'),
-                            t('products.cols.status'),
-                            t('products.cols.actions'),
-                          ].map((title) => (
-                            <th scope="col" key={title} className="p-3 font-semibold">
-                              {title}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {result.items.map((product) => (
-                          <tr key={product.id} className="align-top hover:bg-slate-50/70">
-                            <td className="p-3">
-                              <div className="flex gap-3">
-                                {product.thumbnailUrl && (
-                                  <img
-                                    src={product.thumbnailUrl}
-                                    alt=""
-                                    className="size-14 shrink-0 rounded-lg border border-slate-200 object-contain"
-                                  />
-                                )}
-                                <div className="max-w-72 break-words">
-                                  <p className="font-semibold">{product.title}</p>
-                                  <p className="mt-1 text-slate-500">{product.category.name}</p>
-                                  <p className="mt-1 break-all text-[10px] text-slate-400">
-                                    {product.id}
-                                  </p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="max-w-56 break-words p-3">
-                              <p>{product.seller.fullName}</p>
-                              <p className="mt-1 break-all text-slate-500">
-                                {product.seller.email}
-                              </p>
-                            </td>
-                            <td className="whitespace-nowrap p-3">
-                              {formatMoney(product.basePrice)}
-                            </td>
-                            <td className="p-3">
-                              <p>
-                                {t('products.availableQty', { count: product.stock.availableQty })}
-                              </p>
-                              <p className="mt-1 text-slate-500">
-                                {t('products.totalQty', { count: product.stock.totalQty })}
-                              </p>
-                            </td>
-                            <td className="p-3">
-                              <Badge
-                                tone={
-                                  product.status === 'ACTIVE'
-                                    ? 'green'
-                                    : product.status === 'INACTIVE'
-                                      ? 'red'
-                                      : 'gray'
-                                }
-                              >
-                                {t(`products.statuses.${product.status}`)}
-                              </Badge>
-                            </td>
-                            <td className="p-3">
-                              <div className="flex max-w-64 flex-wrap gap-2">
-                                <Button variant="secondary" onClick={() => setDetailId(product.id)}>
-                                  {t('products.detailsBtn')}
-                                </Button>
-                                {product.status === 'ACTIVE' ? (
-                                  <Button
-                                    variant="danger"
-                                    onClick={() => setDecision({ product, kind: 'hide' })}
-                                  >
-                                    {t('products.hideBtn')}
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    onClick={() => setDecision({ product, kind: 'activate' })}
-                                  >
-                                    {product.status === 'DRAFT'
-                                      ? t('products.allowSellBtn')
-                                      : t('products.showAgainBtn')}
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="danger"
-                                  aria-label={t('products.deleteAria', { title: product.title })}
-                                  title={t('products.deleteTitle')}
-                                  onClick={() => setDecision({ product, kind: 'delete' })}
-                                >
-                                  <Trash2 size={15} aria-hidden="true" />
-                                </Button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <EmptyState text={t('products.empty')} />
-                )}
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-                  <span>
-                    {t('products.pagination', {
-                      total: result.total,
-                      page: result.page,
-                      totalPages: Math.max(1, result.totalPages),
-                    })}
-                  </span>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      disabled={result.page <= 1}
-                      onClick={() => setQuery((current) => ({ ...current, page: result.page - 1 }))}
-                    >
-                      {t('products.prev')}
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      disabled={result.page >= result.totalPages}
-                      onClick={() => setQuery((current) => ({ ...current, page: result.page + 1 }))}
-                    >
-                      {t('products.next')}
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )
+          )}
+          {!loading && !error && result && (
+            <AdminProductsTable
+              result={result}
+              setQuery={setQuery}
+              setDetailId={setDetailId}
+              setDecision={setDecision}
+            />
           )}
         </>
       )}

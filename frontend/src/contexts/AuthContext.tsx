@@ -146,22 +146,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const switchActiveMode = useCallback(async (mode: 'SELLER' | 'BUYER'): Promise<void> => {
     const wantSeller = mode === 'SELLER';
-    try {
-      const res = await toggleSellerMode(wantSeller);
-      setUserState((prev) => {
-        if (!prev) return prev;
-        const finalActive = res?.isSellerActive ?? (wantSeller && !prev.isShopSuspended);
-        const finalMode = finalActive ? 'SELLER' : 'BUYER';
-        setStoredActiveMode(prev.id, finalMode);
-        return {
-          ...prev,
-          isSellerActive: finalActive,
-          currentMode: finalMode,
-        };
-      });
-    } catch (error) {
-      throw error;
-    }
+    const res = await toggleSellerMode(wantSeller);
+    setUserState((prev) => {
+      if (!prev) return prev;
+      const finalActive = res?.isSellerActive ?? (wantSeller && !prev.isShopSuspended);
+      const finalMode = finalActive ? 'SELLER' : 'BUYER';
+      setStoredActiveMode(prev.id, finalMode);
+      return {
+        ...prev,
+        isSellerActive: finalActive,
+        currentMode: finalMode,
+      };
+    });
   }, []);
 
   const refreshProfile = useCallback(async (): Promise<UserProfile | null> => {

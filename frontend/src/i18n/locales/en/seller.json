@@ -564,6 +564,7 @@
       "default": "Information is saved and synced to the system"
     },
     "account": {
+      "avatarNote": "Personal account avatar (completely separate from Shop Logo)",
       "phoneLabel": "Personal phone number",
       "notUpdated": "Not updated",
       "verifiedLabel": "Verification status",

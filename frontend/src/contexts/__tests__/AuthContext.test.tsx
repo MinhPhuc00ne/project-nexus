@@ -11,6 +11,9 @@ const mockSaveAuthSession = vi.fn();
 const mockClearAuthSession = vi.fn();
 const mockMergeGuestCartAfterLogin = vi.fn();
 const mockResetCartSync = vi.fn();
+const SELLER_EMAIL = 'seller@nexus.local';
+const SELLER_NAME = 'Seller One';
+const ROUTE_SELLER_EMAIL = 'route@nexus.local';
 
 vi.mock('../../services/users', () => ({
   getMe: (...args: unknown[]) => mockGetMe(...args),
@@ -182,14 +185,14 @@ describe('AuthContext', () => {
     mockGetStoredToken.mockReturnValue('token-123');
     mockGetStoredUser.mockReturnValue({
       id: 'seller-1',
-      email: 'seller@nexus.local',
-      fullName: 'Seller One',
+      email: SELLER_EMAIL,
+      fullName: SELLER_NAME,
       role: Role.SELLER,
     });
     mockGetMe.mockResolvedValue({
       id: 'seller-1',
-      email: 'seller@nexus.local',
-      fullName: 'Seller One',
+      email: SELLER_EMAIL,
+      fullName: SELLER_NAME,
       role: Role.SELLER,
       isSellerActive: true,
       isShopSuspended: false,
@@ -261,13 +264,13 @@ describe('AuthContext', () => {
     mockGetStoredToken.mockReturnValue('token-route');
     mockGetStoredUser.mockReturnValue({
       id: 'seller-route',
-      email: 'route@nexus.local',
+      email: ROUTE_SELLER_EMAIL,
       fullName: 'Route Seller',
       role: Role.SELLER,
     });
     mockGetMe.mockResolvedValue({
       id: 'seller-route',
-      email: 'route@nexus.local',
+      email: ROUTE_SELLER_EMAIL,
       fullName: 'Route Seller',
       role: Role.SELLER,
       isSellerActive: true,

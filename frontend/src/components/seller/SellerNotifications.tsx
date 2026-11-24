@@ -132,9 +132,9 @@ export default function SellerNotifications({
               ) : (
                 <ul className="m-0 max-h-[360px] list-none overflow-y-auto p-0">
                   {state.data.items.map((item) => {
-                    const isTrendingItem = `${item.title} ${item.content}`
-                      .toLocaleLowerCase('vi-VN')
-                      .includes('xu hướng');
+                    const itemText = `${item.title} ${item.content}`.toLowerCase();
+                    const isTrendingItem =
+                      itemText.includes('xu hướng') || itemText.includes('trending');
 
                     return (
                       <li

@@ -37,6 +37,52 @@ export default function SellerSettingsPage(): ReactElement {
   return <SettingsWorkspace key={`${user.id}:${token}`} />;
 }
 
+function getSettingsSubtitle(tab: SettingsTab, t: (k: string) => string): string {
+  if (tab === 'notifications') return t('settings.subtitles.notifications');
+  if (tab === 'account') return t('settings.subtitles.account');
+  return t('settings.subtitles.default');
+}
+
+function AccountSettingsSection({ user }: { user: ReturnType<typeof useSellerSession> }) {
+  const { t } = useTranslation('seller');
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
+        <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-lg font-bold text-blue-700">
+          {user.avatarUrl ? (
+            <img className="size-full object-cover" src={user.avatarUrl} alt="" />
+          ) : (
+            user.fullName.charAt(0)
+          )}
+        </span>
+        <div className="min-w-0">
+          <strong className="block text-sm">{user.fullName}</strong>
+          <p className="mt-1 break-all text-xs text-slate-500">{user.email}</p>
+          <p className="mt-1 text-[11px] text-blue-600 font-medium">
+            {t('settings.account.avatarNote')}
+          </p>
+        </div>
+      </div>
+      <dl className="grid gap-4 text-sm sm:grid-cols-2">
+        <div>
+          <dt className="mb-2 text-xs text-slate-500">{t('settings.account.phoneLabel')}</dt>
+          <dd className="m-0">{user.phoneNumber || t('settings.account.notUpdated')}</dd>
+        </div>
+        <div>
+          <dt className="mb-2 text-xs text-slate-500">{t('settings.account.verifiedLabel')}</dt>
+          <dd className="m-0">
+            <Badge tone={user.isVerified ? 'green' : 'amber'}>
+              {user.isVerified ? t('settings.account.verified') : t('settings.account.unverified')}
+            </Badge>
+          </dd>
+        </div>
+      </dl>
+      <p className="text-xs leading-6 text-slate-500">{t('settings.account.hint')}</p>
+      <SellerLink to="/seller/profile">{t('settings.account.openProfile')}</SellerLink>
+    </div>
+  );
+}
+
 function SettingsWorkspace(): ReactElement {
   const { t } = useTranslation('seller');
   const user = useSellerSession();
@@ -50,6 +96,28 @@ function SettingsWorkspace(): ReactElement {
     void refreshProfile();
   }
   const activeTab = tabs.find((item) => item.key === tab);
+
+  const renderTabContent = () => {
+    if (tab === 'notifications') {
+      return <SellerNotificationPreferences />;
+    }
+    if (tab === 'account') {
+      return <AccountSettingsSection user={user} />;
+    }
+    return (
+      <SellerResourceState loading={profile.loading} error={profile.error} retry={profile.retry}>
+        {profile.data && (
+          <SellerShopEditor
+            key={`${profile.data.id}:${profile.data.updatedAt}:${tab}`}
+            profile={profile.data}
+            section={tab}
+            onSaved={saved}
+          />
+        )}
+      </SellerResourceState>
+    );
+  };
+
   return (
     <div className="space-y-5">
       <PageHeading
@@ -80,73 +148,9 @@ function SettingsWorkspace(): ReactElement {
         </nav>
         <Panel
           title={activeTab ? t(activeTab.labelKey) : undefined}
-          subtitle={
-            tab === 'notifications'
-              ? t('settings.subtitles.notifications')
-              : tab === 'account'
-                ? t('settings.subtitles.account')
-                : t('settings.subtitles.default')
-          }
+          subtitle={getSettingsSubtitle(tab, t)}
         >
-          {tab === 'notifications' ? (
-            <SellerNotificationPreferences />
-          ) : tab === 'account' ? (
-            <div className="space-y-5">
-              <div className="flex items-center gap-4 rounded-xl border border-blue-100 bg-blue-50/50 p-4">
-                <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-lg font-bold text-blue-700">
-                  {user.avatarUrl ? (
-                    <img className="size-full object-cover" src={user.avatarUrl} alt="" />
-                  ) : (
-                    user.fullName.charAt(0)
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <strong className="block text-sm">{user.fullName}</strong>
-                  <p className="mt-1 break-all text-xs text-slate-500">{user.email}</p>
-                  <p className="mt-1 text-[11px] text-blue-600 font-medium">
-                    Ảnh đại diện tài khoản cá nhân (tách biệt hoàn toàn với Logo gian hàng)
-                  </p>
-                </div>
-              </div>
-              <dl className="grid gap-4 text-sm sm:grid-cols-2">
-                <div>
-                  <dt className="mb-2 text-xs text-slate-500">
-                    {t('settings.account.phoneLabel')}
-                  </dt>
-                  <dd className="m-0">{user.phoneNumber || t('settings.account.notUpdated')}</dd>
-                </div>
-                <div>
-                  <dt className="mb-2 text-xs text-slate-500">
-                    {t('settings.account.verifiedLabel')}
-                  </dt>
-                  <dd className="m-0">
-                    <Badge tone={user.isVerified ? 'green' : 'amber'}>
-                      {user.isVerified
-                        ? t('settings.account.verified')
-                        : t('settings.account.unverified')}
-                    </Badge>
-                  </dd>
-                </div>
-              </dl>
-              <p className="text-xs leading-6 text-slate-500">{t('settings.account.hint')}</p>
-              <SellerLink to="/seller/profile">{t('settings.account.openProfile')}</SellerLink>
-            </div>
-          ) : (
-            <SellerResourceState
-              loading={profile.loading}
-              error={profile.error}
-              retry={profile.retry}
-            >
-              {profile.data && (
-                <SellerShopEditor
-                  key={`${profile.data.id}:${profile.data.updatedAt}:${tab}`}
-                  profile={profile.data}
-                  section={tab}
-                  onSaved={saved}
-                />
-              )}
-            </SellerResourceState>
-          )}
+          {renderTabContent()}
         </Panel>
       </div>
     </div>

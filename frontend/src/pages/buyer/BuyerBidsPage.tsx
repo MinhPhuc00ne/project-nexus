@@ -141,13 +141,14 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
       }
 
       const mapped: BuyerBidItem[] = (Array.isArray(bidsData) ? bidsData : []).map((b) => {
-        let status: Exclude<BuyerBidStatus, 'ALL'> = 'ACTIVE';
+        const isLeadingOrWinning = Boolean(b.auction.isLeading || b.status === 'WINNING');
+        let bidStatus: Exclude<BuyerBidStatus, 'ALL'>;
         if (b.auction.status === 'ENDED' || b.auction.status === 'CANCELLED') {
-          status = b.auction.isLeading || b.status === 'WINNING' ? 'WON' : 'LOST';
+          bidStatus = isLeadingOrWinning ? 'WON' : 'LOST';
         } else if (b.auction.status === 'ACTIVE' || b.auction.status === 'EXTENDED') {
-          status = b.auction.isLeading || b.status === 'WINNING' ? 'WINNING' : 'OUTBID';
+          bidStatus = isLeadingOrWinning ? 'WINNING' : 'OUTBID';
         } else {
-          status = 'ACTIVE';
+          bidStatus = 'ACTIVE';
         }
 
         const lotItem = (
@@ -184,7 +185,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             Number(b.auction.currentHighestBid) ||
             Number(b.bidAmount),
           startPrice: Number(b.auction.product?.basePrice || 0),
-          status,
+          status: bidStatus,
           endTime: b.auction.endTime,
           totalBids: (b.auction as unknown as { totalBidsCount?: number })?.totalBidsCount || 0,
           shopName:
@@ -699,12 +700,14 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             })}
           </div>
 
-          {loading ? (
+          {loading && (
             <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
               <Loader2 size={16} className="animate-spin text-violet-600" />{' '}
               {t('bidsPage.loadingBids')}
             </div>
-          ) : filtered.length === 0 ? (
+          )}
+
+          {!loading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
               <div className="h-16 w-16 rounded-2xl bg-violet-50 flex items-center justify-center text-violet-400 mb-4">
                 <Gavel size={28} />
@@ -723,7 +726,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                 {t('bidsPage.joinAuctionNow')}
               </Link>
             </div>
-          ) : (
+          )}
+
+          {!loading && filtered.length > 0 && (
             <div className="space-y-3">
               {filtered.map((bid) => {
                 const s = statusConfig[bid.status] ?? statusConfig.ACTIVE;

@@ -139,31 +139,13 @@ export async function reactivateSellerProduct(id: string): Promise<SellerProduct
     throw new Error(i18n.t('errors:services.relistUnconfirmed'));
   return product;
 }
-export async function publishSellerProduct(
-  form: SellerProductForm,
+async function uploadProductImages(
   files: File[],
   uploaded: Map<File, string>,
+  assertSession: () => void,
   onProgress: (message: string) => void,
-  edit?: { product: SellerProduct; images: string[] },
-  options?: ProductOptionGroup[],
-): Promise<{ id: string; title: string }> {
-  const payload = buildProductPayload(form, Boolean(edit));
-  if (edit && payload.quantity < edit.product.totalQty - edit.product.availableQty)
-    throw new Error(i18n.t('errors:services.stockBelowReserved'));
-  const existingImages = edit?.images ?? [];
-  if (files.length) validateProductImages(files);
-  if (
-    files.length + existingImages.length < 1 ||
-    files.length + existingImages.length > PRODUCT_IMAGE_LIMIT
-  )
-    throw new Error(i18n.t('errors:services.productImagesCount'));
-  const token = getStoredToken();
-  const assertSession = () => {
-    if (!token || getStoredToken() !== token)
-      throw new Error(i18n.t('errors:services.sessionChangedReload'));
-  };
-  assertSession();
-  const images: string[] = [...existingImages];
+): Promise<string[]> {
+  const images: string[] = [];
   for (const [index, file] of files.entries()) {
     assertSession();
     onProgress(
@@ -189,6 +171,35 @@ export async function publishSellerProduct(
     }
     images.push(url);
   }
+  return images;
+}
+
+export async function publishSellerProduct(
+  form: SellerProductForm,
+  files: File[],
+  uploaded: Map<File, string>,
+  onProgress: (message: string) => void,
+  edit?: { product: SellerProduct; images: string[] },
+  options?: ProductOptionGroup[],
+): Promise<{ id: string; title: string }> {
+  const payload = buildProductPayload(form, Boolean(edit));
+  if (edit && payload.quantity < edit.product.totalQty - edit.product.availableQty)
+    throw new Error(i18n.t('errors:services.stockBelowReserved'));
+  const existingImages = edit?.images ?? [];
+  if (files.length) validateProductImages(files);
+  if (
+    files.length + existingImages.length < 1 ||
+    files.length + existingImages.length > PRODUCT_IMAGE_LIMIT
+  )
+    throw new Error(i18n.t('errors:services.productImagesCount'));
+  const token = getStoredToken();
+  const assertSession = () => {
+    if (!token || getStoredToken() !== token)
+      throw new Error(i18n.t('errors:services.sessionChangedReload'));
+  };
+  assertSession();
+  const uploadedUrls = await uploadProductImages(files, uploaded, assertSession, onProgress);
+  const images: string[] = [...existingImages, ...uploadedUrls];
   assertSession();
   onProgress(
     edit

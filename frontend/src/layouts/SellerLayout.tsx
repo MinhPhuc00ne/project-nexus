@@ -311,11 +311,11 @@ function SellerWorkspace() {
                   className="w-1.5 h-1.5 inline-block rounded-full bg-[#14b58a] shrink-0"
                   data-seller="dot"
                 />
-                {user.isShopSuspended
-                  ? t('layout.shopSuspended')
-                  : user.isSellerActive
-                    ? t('layout.shopActive')
-                    : t('layout.buyerMode')}
+                {(() => {
+                  if (user.isShopSuspended) return t('layout.shopSuspended');
+                  if (user.isSellerActive) return t('layout.shopActive');
+                  return t('layout.buyerMode');
+                })()}
               </span>
               <LanguageSwitcher compact />
               <div className="relative" data-seller="popover-anchor" ref={noticeRef}>

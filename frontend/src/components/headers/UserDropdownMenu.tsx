@@ -52,14 +52,13 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
   const isSellerModeActive =
     isSellerAccount && Boolean(profile?.isSellerActive) && profile?.currentMode === 'SELLER';
 
-  const roleBadgeLabel =
-    profile?.role === Role.ADMIN
-      ? t('header.roleBadges.admin')
-      : profile?.role === Role.SUPPORT_STAFF
-        ? t('header.roleBadges.staff')
-        : isSellerModeActive
-          ? t('header.roleBadges.seller')
-          : t('header.roleBadges.buyer');
+  const getRoleBadgeLabel = () => {
+    if (profile?.role === Role.ADMIN) return t('header.roleBadges.admin');
+    if (profile?.role === Role.SUPPORT_STAFF) return t('header.roleBadges.staff');
+    if (isSellerModeActive) return t('header.roleBadges.seller');
+    return t('header.roleBadges.buyer');
+  };
+  const roleBadgeLabel = getRoleBadgeLabel();
 
   const handleSwitchMode = async () => {
     onClose();

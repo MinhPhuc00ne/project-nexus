@@ -98,14 +98,36 @@ function SellerTrendingBadge({
   return null;
 }
 
+function getProductHideActionLabel(
+  isPending: boolean,
+  status: string,
+  t: (k: string) => string,
+): string {
+  if (isPending) return t('products.processing');
+  if (status === 'ACTIVE') return t('products.stopSelling');
+  return t('products.relist');
+}
+
+function getModalConfirmLabel(
+  isPending: boolean,
+  stopping: boolean,
+  t: (k: string) => string,
+): string {
+  if (isPending) return t('products.toggleModal.processing');
+  if (stopping) return t('products.toggleModal.confirmStop');
+  return t('products.toggleModal.confirmRelist');
+}
+
 export default function SellerProductsPage({ inventory = false }: { inventory?: boolean }) {
   const { t, i18n } = useTranslation('seller');
-  const [searchParams] = useSearchParams();
-  const initialTab = searchParams.get('tab') === 'trending' ? 'trending' : 'all';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [status, setStatus] = useState<string>(() =>
+    tabParam === 'trending' ? 'trending' : 'all',
+  );
   const user = useSellerSession();
   const toast = useToast();
   const canManage = user.isSellerActive && !user.isShopSuspended;
-  const [status, setStatus] = useState(initialTab);
   const [query, setQuery] = useState('');
   const [saleSaving, setSaleSaving] = useState(false);
   const [saleModalProduct, setSaleModalProduct] = useState<SellerProduct | null>(null);
@@ -118,6 +140,16 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
   const [trendingMap, setTrendingMap] = useState<
     Map<string, { rank: number; purchaseCount: number }>
   >(new Map());
+
+  useEffect(() => {
+    if (tabParam === 'trending') {
+      setStatus('trending');
+    } else if (tabParam && (tabParam in statusKeys || tabParam === 'all')) {
+      setStatus(tabParam);
+    } else if (!tabParam) {
+      setStatus('all');
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     let mounted = true;
@@ -295,7 +327,16 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
           <select
             aria-label={t('products.statusAria')}
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
+            onChange={(event) => {
+              const nextStatus = event.target.value;
+              setStatus(nextStatus);
+              setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                if (nextStatus === 'all') next.delete('tab');
+                else next.set('tab', nextStatus);
+                return next;
+              });
+            }}
             className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-600 font-medium"
           >
             <option value="all">{t('products.allStatuses')}</option>
@@ -309,168 +350,18 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
             ))}
           </select>
         </div>
-        {loading ? (
-          <p role="status" className="p-8 text-center text-sm text-slate-500">
-            {t('products.loading')}
-          </p>
-        ) : error ? (
-          <div role="alert" className="space-y-3 rounded-xl bg-red-50 p-4 text-sm text-red-700">
-            <p>{error}</p>
-            <SellerButton secondary onClick={reload}>
-              {t('products.retry')}
-            </SellerButton>
-          </div>
-        ) : !filtered.length ? (
-          <EmptyState
-            title={products.length ? t('products.emptyMatchTitle') : t('products.emptyTitle')}
-            description={products.length ? t('products.emptyMatchDesc') : t('products.emptyDesc')}
-            action={
-              !products.length ? (
-                <SellerLink to="/seller/products/new">
-                  <PlusOutlined /> {t('products.publishNew')}
-                </SellerLink>
-              ) : undefined
-            }
-          />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
-                <tr>
-                  {[
-                    t('products.cols.productVariants'),
-                    t('products.cols.priceSale'),
-                    t('products.cols.status'),
-                    t('products.cols.totalQty'),
-                    t('products.cols.availableQty'),
-                    t('products.cols.actions'),
-                  ].map((label) => (
-                    <th key={label} scope="col" className="px-3 py-3 font-medium">
-                      {label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map((product) => {
-                  const sale = computeEffectiveSale(
-                    Number(product.basePrice),
-                    saleConfigFromApi(
-                      product.basePrice,
-                      product.salePrice,
-                      product.saleStartsAt,
-                      product.saleEndsAt,
-                    ),
-                  );
-                  const options = product.options ?? [];
-                  const trendingInfo = trendingMap.get(product.id);
-
-                  return (
-                    <tr key={product.id}>
-                      <td className="px-3 py-4">
-                        <div className="flex items-center gap-3">
-                          {product.images[0]?.imageUrl ? (
-                            <img
-                              src={product.images[0].imageUrl}
-                              alt={product.title}
-                              className="h-14 w-14 rounded-lg border border-slate-100 object-contain"
-                            />
-                          ) : (
-                            <PictureOutlined className="p-3 text-2xl text-slate-300" />
-                          )}
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <Link
-                                to={`/product/${product.id}`}
-                                className="font-semibold text-blue-700 hover:underline"
-                              >
-                                {product.title}
-                              </Link>
-                              <SellerTrendingBadge
-                                trendingInfo={trendingInfo}
-                                trendingNotifiedAt={product.trendingNotifiedAt}
-                                trendingExcluded={product.trendingExcluded}
-                              />
-                            </div>
-                            <p className="mt-1 text-slate-400">{product.category?.name}</p>
-                            {options.length > 0 && (
-                              <div className="mt-1.5 flex flex-wrap gap-1">
-                                {options.map((opt) => (
-                                  <span
-                                    key={opt.id ?? opt.name}
-                                    className="inline-flex items-center gap-1 rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
-                                  >
-                                    <TagOutlined /> {opt.name}: {opt.values.join(', ')}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-4">
-                        {sale.isOnSale ? (
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-blue-700">
-                                {formatCurrency(sale.effectivePrice)}
-                              </span>
-                              <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                                -{sale.discountPercent}%
-                              </span>
-                            </div>
-                            <span className="text-[11px] line-through text-slate-400">
-                              {formatCurrency(sale.originalPrice)}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="font-semibold text-slate-800">
-                            {formatCurrency(Number(product.basePrice))}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-3 py-4">
-                        <Badge tone={product.status === 'ACTIVE' ? 'green' : 'gray'}>
-                          {statusKeys[product.status]
-                            ? t(statusKeys[product.status])
-                            : product.status}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-4">{product.totalQty}</td>
-                      <td className="px-3 py-4">{product.availableQty}</td>
-                      <td className="px-3 py-4">
-                        <div className="flex flex-wrap gap-2">
-                          {canManage && (
-                            <SellerButton secondary onClick={() => openSaleModal(product)}>
-                              <ThunderboltOutlined /> {t('products.saleBtn')}
-                            </SellerButton>
-                          )}
-                          {canManage && (
-                            <SellerLink to={`/seller/products/${product.id}/edit`} secondary>
-                              <EditOutlined /> {t('products.editBtn')}
-                            </SellerLink>
-                          )}
-                          <SellerButton
-                            secondary
-                            disabled={Boolean(pendingId) || !canManage}
-                            onClick={() => void hide(product)}
-                          >
-                            <StopOutlined />{' '}
-                            {pendingId === product.id
-                              ? t('products.processing')
-                              : product.status === 'ACTIVE'
-                                ? t('products.stopSelling')
-                                : t('products.relist')}
-                          </SellerButton>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <SellerProductsTable
+          loading={loading}
+          error={error}
+          products={products}
+          filtered={filtered}
+          reload={reload}
+          canManage={canManage}
+          pendingId={pendingId}
+          trendingMap={trendingMap}
+          openSaleModal={openSaleModal}
+          hide={(product) => void hide(product)}
+        />
       </Panel>
 
       {/* Modal thiết lập nhanh chương trình Sale cho sản phẩm */}
@@ -597,11 +488,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
               onClick={() => void confirmHide()}
             >
               <StopOutlined />
-              {pendingId
-                ? t('products.toggleModal.processing')
-                : stopping
-                  ? t('products.toggleModal.confirmStop')
-                  : t('products.toggleModal.confirmRelist')}
+              {getModalConfirmLabel(Boolean(pendingId), stopping, t)}
             </SellerButton>
           </>
         }
@@ -624,6 +511,201 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
           </p>
         )}
       </Popup>
+    </div>
+  );
+}
+
+function SellerProductsTable({
+  loading,
+  error,
+  products,
+  filtered,
+  reload,
+  canManage,
+  pendingId,
+  trendingMap,
+  openSaleModal,
+  hide,
+}: {
+  loading: boolean;
+  error: string | null;
+  products: SellerProduct[];
+  filtered: SellerProduct[];
+  reload: () => void;
+  canManage: boolean;
+  pendingId: string | null;
+  trendingMap: Map<string, { rank: number; purchaseCount: number }>;
+  openSaleModal: (product: SellerProduct) => void;
+  hide: (product: SellerProduct) => void;
+}) {
+  const { t } = useTranslation('seller');
+
+  if (loading) {
+    return (
+      <p role="status" className="p-8 text-center text-sm text-slate-500">
+        {t('products.loading')}
+      </p>
+    );
+  }
+
+  if (error) {
+    return (
+      <div role="alert" className="space-y-3 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+        <p>{error}</p>
+        <SellerButton secondary onClick={reload}>
+          {t('products.retry')}
+        </SellerButton>
+      </div>
+    );
+  }
+
+  if (!filtered.length) {
+    return (
+      <EmptyState
+        title={products.length ? t('products.emptyMatchTitle') : t('products.emptyTitle')}
+        description={products.length ? t('products.emptyMatchDesc') : t('products.emptyDesc')}
+        action={
+          !products.length ? (
+            <SellerLink to="/seller/products/new">
+              <PlusOutlined /> {t('products.publishNew')}
+            </SellerLink>
+          ) : undefined
+        }
+      />
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[720px] text-left text-xs">
+        <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
+          <tr>
+            {[
+              t('products.cols.productVariants'),
+              t('products.cols.priceSale'),
+              t('products.cols.status'),
+              t('products.cols.totalQty'),
+              t('products.cols.availableQty'),
+              t('products.cols.actions'),
+            ].map((label) => (
+              <th key={label} scope="col" className="px-3 py-3 font-medium">
+                {label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {filtered.map((product) => {
+            const sale = computeEffectiveSale(
+              Number(product.basePrice),
+              saleConfigFromApi(
+                product.basePrice,
+                product.salePrice,
+                product.saleStartsAt,
+                product.saleEndsAt,
+              ),
+            );
+            const options = product.options ?? [];
+            const trendingInfo = trendingMap.get(product.id);
+
+            return (
+              <tr key={product.id}>
+                <td className="px-3 py-4">
+                  <div className="flex items-center gap-3">
+                    {product.images[0]?.imageUrl ? (
+                      <img
+                        src={product.images[0].imageUrl}
+                        alt={product.title}
+                        className="h-14 w-14 rounded-lg border border-slate-100 object-contain"
+                      />
+                    ) : (
+                      <PictureOutlined className="p-3 text-2xl text-slate-300" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Link
+                          to={`/product/${product.id}`}
+                          className="font-semibold text-blue-700 hover:underline"
+                        >
+                          {product.title}
+                        </Link>
+                        <SellerTrendingBadge
+                          trendingInfo={trendingInfo}
+                          trendingNotifiedAt={product.trendingNotifiedAt}
+                          trendingExcluded={product.trendingExcluded}
+                        />
+                      </div>
+                      <p className="mt-1 text-slate-400">{product.category?.name}</p>
+                      {options.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {options.map((opt) => (
+                            <span
+                              key={opt.id ?? opt.name}
+                              className="inline-flex items-center gap-1 rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+                            >
+                              <TagOutlined /> {opt.name}: {opt.values.join(', ')}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                <td className="whitespace-nowrap px-3 py-4">
+                  {sale.isOnSale ? (
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-blue-700">
+                          {formatCurrency(sale.effectivePrice)}
+                        </span>
+                        <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          -{sale.discountPercent}%
+                        </span>
+                      </div>
+                      <span className="text-[11px] line-through text-slate-400">
+                        {formatCurrency(sale.originalPrice)}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="font-semibold text-slate-800">
+                      {formatCurrency(Number(product.basePrice))}
+                    </span>
+                  )}
+                </td>
+                <td className="px-3 py-4">
+                  <Badge tone={product.status === 'ACTIVE' ? 'green' : 'gray'}>
+                    {statusKeys[product.status] ? t(statusKeys[product.status]) : product.status}
+                  </Badge>
+                </td>
+                <td className="px-3 py-4">{product.totalQty}</td>
+                <td className="px-3 py-4">{product.availableQty}</td>
+                <td className="px-3 py-4">
+                  <div className="flex flex-wrap gap-2">
+                    {canManage && (
+                      <SellerButton secondary onClick={() => openSaleModal(product)}>
+                        <ThunderboltOutlined /> {t('products.saleBtn')}
+                      </SellerButton>
+                    )}
+                    {canManage && (
+                      <SellerLink to={`/seller/products/${product.id}/edit`} secondary>
+                        <EditOutlined /> {t('products.editBtn')}
+                      </SellerLink>
+                    )}
+                    <SellerButton
+                      secondary
+                      disabled={Boolean(pendingId) || !canManage}
+                      onClick={() => void hide(product)}
+                    >
+                      <StopOutlined />{' '}
+                      {getProductHideActionLabel(pendingId === product.id, product.status, t)}
+                    </SellerButton>
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

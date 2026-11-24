@@ -564,6 +564,7 @@
       "default": "Thông tin được lưu và đồng bộ lên hệ thống"
     },
     "account": {
+      "avatarNote": "Ảnh đại diện tài khoản cá nhân (tách biệt hoàn toàn với Logo gian hàng)",
       "phoneLabel": "Số điện thoại cá nhân",
       "notUpdated": "Chưa cập nhật",
       "verifiedLabel": "Trạng thái xác thực",

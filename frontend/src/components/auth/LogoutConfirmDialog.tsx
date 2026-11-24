@@ -1,4 +1,5 @@
 import { LogOut, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 type LogoutConfirmDialogProps = {
   open: boolean;
@@ -14,6 +15,7 @@ export default function LogoutConfirmDialog({
   onCancel,
   onConfirm,
 }: LogoutConfirmDialogProps) {
+  const { t } = useTranslation('common');
   if (!open) return null;
 
   return (
@@ -39,18 +41,18 @@ export default function LogoutConfirmDialog({
             type="button"
             onClick={onCancel}
             className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-            aria-label="Đóng xác nhận đăng xuất"
+            aria-label={t('logoutDialog.closeAria')}
           >
             <X size={18} aria-hidden="true" />
           </button>
         </div>
         <h2 id="logout-confirmation-title" className="mt-4 text-lg font-bold text-slate-900">
-          Xác nhận đăng xuất
+          {t('logoutDialog.title')}
         </h2>
         <p id="logout-confirmation-description" className="mt-2 text-sm leading-6 text-slate-600">
           {accountName
-            ? `Bạn có chắc muốn đăng xuất khỏi tài khoản ${accountName}?`
-            : 'Bạn có chắc muốn đăng xuất khỏi tài khoản này?'}
+            ? t('logoutDialog.descriptionWithAccount', { accountName })
+            : t('logoutDialog.descriptionDefault')}
         </p>
         <div className="mt-6 flex justify-end gap-3">
           <button
@@ -58,14 +60,14 @@ export default function LogoutConfirmDialog({
             onClick={onCancel}
             className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Ở lại
+            {t('logoutDialog.stay')}
           </button>
           <button
             type="button"
             onClick={onConfirm}
             className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
           >
-            Đăng xuất
+            {t('logoutDialog.confirm')}
           </button>
         </div>
       </section>
