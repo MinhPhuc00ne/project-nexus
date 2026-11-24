@@ -196,12 +196,6 @@ export interface AdminAuctionEntity extends Omit<AdminCreateAuctionInput, 'consi
   _count?: { items: number; bids: number; awards?: number };
 }
 
-export type AdminUpdateAuctionInput = Partial<
-  Omit<AdminCreateAuctionInput, 'consignmentDeadline'>
-> & {
-  consignmentDeadline?: string | null;
-};
-
 export interface RegisterAuctionItemInput {
   title: string;
   description: string;
@@ -230,6 +224,7 @@ export interface AdminAuctionItem extends Omit<
 > {
   id: string;
   status: 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED';
+  lotStatus?: AuctionStatus;
   proposedStartingPrice: AuctionPrice;
   proposedReservePrice: AuctionPrice | null;
   proposedBidIncrement: AuctionPrice;

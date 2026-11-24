@@ -132,7 +132,10 @@ export default function StaffReviewsPanel() {
           <label className="min-w-52 flex-1">
             <span className="sr-only">{t('reviews.searchLabel')}</span>
             <span className="relative block">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
@@ -155,9 +158,15 @@ export default function StaffReviewsPanel() {
           </select>
         </div>
 
-        {error && <p role="alert" className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {error && (
+          <p role="alert" className="mb-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </p>
+        )}
         {loading ? (
-          <p role="status" className="py-10 text-center text-sm text-slate-500">{t('reviews.loading')}</p>
+          <p role="status" className="py-10 text-center text-sm text-slate-500">
+            {t('reviews.loading')}
+          </p>
         ) : items.length ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-left text-xs">
@@ -177,21 +186,30 @@ export default function StaffReviewsPanel() {
                     <td className="max-w-48 p-3">
                       <span className="font-semibold text-slate-800">{review.target.name}</span>
                       <span className="mt-1 block text-slate-500">
-                        {t(review.type === 'PRODUCT' ? 'reviews.product' : 'reviews.shop')} · #{review.orderId.slice(0, 8)}
+                        {t(review.type === 'PRODUCT' ? 'reviews.product' : 'reviews.shop')} · #
+                        {review.orderId.slice(0, 8)}
                       </span>
                     </td>
                     <td className="max-w-48 p-3">
                       <span className="font-medium text-slate-800">{review.reviewer.fullName}</span>
-                      <span className="mt-1 block break-all text-slate-500">{review.reviewer.email}</span>
+                      <span className="mt-1 block break-all text-slate-500">
+                        {review.reviewer.email}
+                      </span>
                       <span className="mt-1 block text-slate-500">
                         {t('reviews.reputation')}: {review.reviewer.reputationScore}
                       </span>
                     </td>
-                    <td className="whitespace-nowrap p-3 font-semibold text-amber-600">★ {review.rating}/5</td>
-                    <td className="max-w-80 p-3">
-                      <p className="line-clamp-3 whitespace-pre-wrap">{review.comment || t('reviews.noComment')}</p>
+                    <td className="whitespace-nowrap p-3 font-semibold text-amber-600">
+                      ★ {review.rating}/5
                     </td>
-                    <td className="whitespace-nowrap p-3">{formatReviewDate(review.createdAt, locale)}</td>
+                    <td className="max-w-80 p-3">
+                      <p className="line-clamp-3 whitespace-pre-wrap">
+                        {review.comment || t('reviews.noComment')}
+                      </p>
+                    </td>
+                    <td className="whitespace-nowrap p-3">
+                      {formatReviewDate(review.createdAt, locale)}
+                    </td>
                     <td className="p-3">
                       <Button
                         variant="danger"
@@ -214,10 +232,18 @@ export default function StaffReviewsPanel() {
           <div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-500">
             <span>{t('reviews.pagination', { page, totalPages, total })}</span>
             <div className="flex gap-2">
-              <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>
+              <Button
+                variant="secondary"
+                disabled={page <= 1}
+                onClick={() => setPage((value) => value - 1)}
+              >
                 {t('reviews.previous')}
               </Button>
-              <Button variant="secondary" disabled={page >= totalPages} onClick={() => setPage((value) => value + 1)}>
+              <Button
+                variant="secondary"
+                disabled={page >= totalPages}
+                onClick={() => setPage((value) => value + 1)}
+              >
                 {t('reviews.next')}
               </Button>
             </div>
@@ -236,7 +262,10 @@ export default function StaffReviewsPanel() {
         {selected && (
           <div className="space-y-4">
             <p className="text-sm text-slate-600">
-              {t('reviews.deleteDescription', { name: selected.reviewer.fullName, target: selected.target.name })}
+              {t('reviews.deleteDescription', {
+                name: selected.reviewer.fullName,
+                target: selected.target.name,
+              })}
             </p>
             <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
               {t('reviews.penaltyNotice', { score: selected.reviewer.reputationScore })}
@@ -264,12 +293,20 @@ export default function StaffReviewsPanel() {
                 className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
               />
             </label>
-            {deleteError && <p role="alert" className="text-sm text-red-700">{deleteError}</p>}
+            {deleteError && (
+              <p role="alert" className="text-sm text-red-700">
+                {deleteError}
+              </p>
+            )}
             <div className="flex justify-end gap-2">
               <Button variant="secondary" disabled={deleting} onClick={() => setSelected(null)}>
                 {t('reviews.cancel')}
               </Button>
-              <Button variant="danger" disabled={deleting || selected.reviewer.reputationScore < 1} onClick={() => void confirmDelete()}>
+              <Button
+                variant="danger"
+                disabled={deleting || selected.reviewer.reputationScore < 1}
+                onClick={() => void confirmDelete()}
+              >
                 <Trash2 size={14} /> {deleting ? t('reviews.deleting') : t('reviews.confirmDelete')}
               </Button>
             </div>

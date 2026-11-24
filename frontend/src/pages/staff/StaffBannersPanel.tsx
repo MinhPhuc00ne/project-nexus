@@ -1,12 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type FormEvent,
-  type JSX,
-} from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type JSX } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import {
@@ -190,9 +182,7 @@ export default function StaffBannersPanel(): JSX.Element {
       setImageError(false);
       setUploadedFileName(file.name);
     } catch (cause) {
-      setImageUploadError(
-        cause instanceof Error ? cause.message : t('banners.imageUploadErr'),
-      );
+      setImageUploadError(cause instanceof Error ? cause.message : t('banners.imageUploadErr'));
     } finally {
       setUploadingImage(false);
     }

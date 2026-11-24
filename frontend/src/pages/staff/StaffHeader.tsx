@@ -69,7 +69,10 @@ function resolveStaffNotificationTarget(notification: UserNotification): string 
     metadata.actionType,
     metadata.entityType,
     metadata.resourceType,
-  ].filter((value) => typeof value === 'string').join(' ').toLocaleLowerCase();
+  ]
+    .filter((value) => typeof value === 'string')
+    .join(' ')
+    .toLocaleLowerCase();
   const resourceType = [metadata.entityType, metadata.resourceType]
     .filter((value) => typeof value === 'string')
     .join(' ')
@@ -105,25 +108,40 @@ function resolveStaffNotificationTarget(notification: UserNotification): string 
     params.set('auctionId', decodeURIComponent(auctionMatch[1]));
     return `/staff/auction-support?${params.toString()}${target?.hash ?? ''}`;
   }
-  const orderRouteMatch = path.match(/^\/(?:commerce\/orders|seller\/orders|buyer\/orders)\/([^/]+)\/?$/);
+  const orderRouteMatch = path.match(
+    /^\/(?:commerce\/orders|seller\/orders|buyer\/orders)\/([^/]+)\/?$/,
+  );
   if (orderRouteMatch) return `/staff/orders?orderId=${encodeURIComponent(orderRouteMatch[1])}`;
   if (path === '/seller/auctions' || path === '/auctions') return '/staff/auction-support';
   if (target) return `${path}${target.search}${target.hash}`;
 
-  if (auctionId || resourceId && /auction|consignment|đấu giá|ký gửi/.test(resourceType || action)) {
+  if (
+    auctionId ||
+    (resourceId && /auction|consignment|đấu giá|ký gửi/.test(resourceType || action))
+  ) {
     const id = auctionId ?? resourceId;
     return id
       ? `/staff/auction-support?auctionId=${encodeURIComponent(id)}`
       : '/staff/auction-support';
   }
-  if (orderId || resourceId && /order|refund|after.?sales|đơn hàng|hoàn tiền|trả hàng|hủy đơn/.test(resourceType || action)) {
+  if (
+    orderId ||
+    (resourceId &&
+      /order|refund|after.?sales|đơn hàng|hoàn tiền|trả hàng|hủy đơn/.test(resourceType || action))
+  ) {
     const id = orderId ?? resourceId;
     return id ? `/staff/orders?orderId=${encodeURIComponent(id)}` : '/staff/orders';
   }
-  if (reviewId || resourceId && /review|rating|đánh giá/.test(resourceType || action)) return '/staff/reviews';
-  if (disputeId || resourceId && /dispute|complaint|khiếu nại|tranh chấp/.test(resourceType || action)) return '/staff/disputes';
+  if (reviewId || (resourceId && /review|rating|đánh giá/.test(resourceType || action)))
+    return '/staff/reviews';
+  if (
+    disputeId ||
+    (resourceId && /dispute|complaint|khiếu nại|tranh chấp/.test(resourceType || action))
+  )
+    return '/staff/disputes';
   if (/auction|consignment|đấu giá|ký gửi/.test(action)) return '/staff/auction-support';
-  if (/order|refund|after.?sales|đơn hàng|hoàn tiền|trả hàng|hủy đơn/.test(action)) return '/staff/orders';
+  if (/order|refund|after.?sales|đơn hàng|hoàn tiền|trả hàng|hủy đơn/.test(action))
+    return '/staff/orders';
   if (/review|rating|đánh giá/.test(action)) return '/staff/reviews';
   if (/dispute|complaint|khiếu nại|tranh chấp/.test(action)) return '/staff/disputes';
   if (/banner/.test(action)) return '/staff/banners';

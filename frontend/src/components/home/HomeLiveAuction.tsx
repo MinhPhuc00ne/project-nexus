@@ -43,11 +43,11 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
   const isLive = featuredAuction.status === 'ACTIVE' || featuredAuction.status === 'EXTENDED';
   const isUpcoming = Boolean(
     featuredAuction &&
-      !isLive &&
-      (featuredAuction.status === 'SCHEDULED' ||
-        (featuredAuction.startTime
-          ? new Date(featuredAuction.startTime).getTime() > Date.now()
-          : false)),
+    !isLive &&
+    (featuredAuction.status === 'SCHEDULED' ||
+      (featuredAuction.startTime
+        ? new Date(featuredAuction.startTime).getTime() > Date.now()
+        : false)),
   );
   const targetDateStr = featuredAuction
     ? isUpcoming

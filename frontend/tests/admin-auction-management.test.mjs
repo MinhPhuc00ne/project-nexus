@@ -161,6 +161,9 @@ async function createFormSetup({ hasImage = true, promotionFails = false } = {})
     );
   dateField('Bắt đầu').props.onChange({ target: { value: '2030-01-01T10:00' } });
   dateField('Kết thúc').props.onChange({ target: { value: '2030-01-01T12:00' } });
+  find(render(), (node) => node.props?.onChange && node.props?.startTime).props.onChange(
+    '2030-01-01T11:00',
+  );
   if (hasImage)
     find(
       render(),

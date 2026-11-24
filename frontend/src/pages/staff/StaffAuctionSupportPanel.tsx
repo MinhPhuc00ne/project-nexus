@@ -18,7 +18,10 @@ import {
 import { WS_AUCTION_EVENTS } from '@nexus/types';
 import { AuctionShowcaseHUD } from '../../components/auction/showcase/AuctionShowcaseHUD';
 import { getIntlLocale } from '../../i18n/config';
-import type { AdminAuctionAward, AdminAuctionComplaint } from '../../types/admin-auction-operations.types';
+import type {
+  AdminAuctionAward,
+  AdminAuctionComplaint,
+} from '../../types/admin-auction-operations.types';
 import {
   createAuctionSocket,
   getAdminAuctionItemsApi,
@@ -182,34 +185,40 @@ export default function StaffAuctionSupportPanel() {
     setActiveIntro(null);
   };
 
-  const loadSessionDetails = useCallback(async (auctionId: string): Promise<void> => {
-    const requestId = ++detailsRequestRef.current;
-    setDetailsError('');
-    setNoteSavedId(null);
-    setDetailsLoadingId(auctionId);
-    try {
-      const [itemsResult, awards, complaints] = await Promise.all([
-        getAdminAuctionItemsApi(auctionId),
-        listAdminAuctionAwardsApi(auctionId),
-        listAdminAuctionComplaintsApi(auctionId, ''),
-      ]);
-      if (!mountedRef.current || detailsRequestRef.current !== requestId) return;
-      setSupportDetails((current) => ({
-        ...current,
-        [auctionId]: { items: itemsResult.items, awards, complaints },
-      }));
-      setNoteDrafts((current) => ({
-        ...current,
-        ...Object.fromEntries(itemsResult.items.map((item) => [item.id, item.staffNote ?? ''])),
-      }));
-    } catch (cause: unknown) {
-      if (mountedRef.current && detailsRequestRef.current === requestId) {
-        setDetailsError(cause instanceof Error ? cause.message : t('auctionSupport.loadDetailsErr'));
+  const loadSessionDetails = useCallback(
+    async (auctionId: string): Promise<void> => {
+      const requestId = ++detailsRequestRef.current;
+      setDetailsError('');
+      setNoteSavedId(null);
+      setDetailsLoadingId(auctionId);
+      try {
+        const [itemsResult, awards, complaints] = await Promise.all([
+          getAdminAuctionItemsApi(auctionId),
+          listAdminAuctionAwardsApi(auctionId),
+          listAdminAuctionComplaintsApi(auctionId, ''),
+        ]);
+        if (!mountedRef.current || detailsRequestRef.current !== requestId) return;
+        setSupportDetails((current) => ({
+          ...current,
+          [auctionId]: { items: itemsResult.items, awards, complaints },
+        }));
+        setNoteDrafts((current) => ({
+          ...current,
+          ...Object.fromEntries(itemsResult.items.map((item) => [item.id, item.staffNote ?? ''])),
+        }));
+      } catch (cause: unknown) {
+        if (mountedRef.current && detailsRequestRef.current === requestId) {
+          setDetailsError(
+            cause instanceof Error ? cause.message : t('auctionSupport.loadDetailsErr'),
+          );
+        }
+      } finally {
+        if (mountedRef.current && detailsRequestRef.current === requestId)
+          setDetailsLoadingId(null);
       }
-    } finally {
-      if (mountedRef.current && detailsRequestRef.current === requestId) setDetailsLoadingId(null);
-    }
-  }, [t]);
+    },
+    [t],
+  );
 
   const toggleSessionDetails = (auctionId: string): void => {
     if (selectedDetailsId === auctionId) {
@@ -229,7 +238,8 @@ export default function StaffAuctionSupportPanel() {
       !targetAuctionId ||
       handledTargetAuctionIdRef.current === targetAuctionId ||
       !auctions.some((auction) => auction.id === targetAuctionId)
-    ) return;
+    )
+      return;
 
     handledTargetAuctionIdRef.current = targetAuctionId;
     setSelectedDetailsId(targetAuctionId);
@@ -304,9 +314,10 @@ export default function StaffAuctionSupportPanel() {
   const reviewConsignment = async (item: AdminAuctionItem, action: 'APPROVE' | 'REJECT') => {
     const auctionId = selectedDetailsIdRef.current;
     if (!auctionId || actionId) return;
-    const rejectionReason = action === 'REJECT'
-      ? window.prompt(t('auctionSupport.rejectReasonPrompt'))?.trim()
-      : undefined;
+    const rejectionReason =
+      action === 'REJECT'
+        ? window.prompt(t('auctionSupport.rejectReasonPrompt'))?.trim()
+        : undefined;
     if (action === 'REJECT' && !rejectionReason) return;
     setActionId(item.id);
     setDetailsError('');
@@ -413,7 +424,11 @@ export default function StaffAuctionSupportPanel() {
                       })}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
-                      {t(auction.isConsignmentLocked ? 'auctionSupport.registrationLocked' : 'auctionSupport.registrationOpen')}
+                      {t(
+                        auction.isConsignmentLocked
+                          ? 'auctionSupport.registrationLocked'
+                          : 'auctionSupport.registrationOpen',
+                      )}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -424,7 +439,11 @@ export default function StaffAuctionSupportPanel() {
                         onClick={() => void runSessionAction(auction, 'lock')}
                         className="inline-flex items-center gap-1 rounded-lg border border-amber-200 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-60"
                       >
-                        {actionId === auction.id ? <LoaderCircle size={13} className="animate-spin" /> : <LockKeyhole size={13} />}
+                        {actionId === auction.id ? (
+                          <LoaderCircle size={13} className="animate-spin" />
+                        ) : (
+                          <LockKeyhole size={13} />
+                        )}
                         {t('auctionSupport.lockConsignment')}
                       </button>
                     )}
@@ -435,7 +454,11 @@ export default function StaffAuctionSupportPanel() {
                         onClick={() => void runSessionAction(auction, 'start')}
                         className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
                       >
-                        {actionId === auction.id ? <LoaderCircle size={13} className="animate-spin" /> : <Play size={13} />}
+                        {actionId === auction.id ? (
+                          <LoaderCircle size={13} className="animate-spin" />
+                        ) : (
+                          <Play size={13} />
+                        )}
                         {t('auctionSupport.startSession')}
                       </button>
                     )}
@@ -446,7 +469,11 @@ export default function StaffAuctionSupportPanel() {
                       aria-expanded={selectedDetailsId === auction.id}
                       className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                     >
-                      {selectedDetailsId === auction.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                      {selectedDetailsId === auction.id ? (
+                        <ChevronUp size={14} />
+                      ) : (
+                        <ChevronDown size={14} />
+                      )}
                       {t('auctionSupport.detailsBtn')}
                     </button>
                     <button
@@ -512,7 +539,9 @@ export default function StaffAuctionSupportPanel() {
                       <p className="font-semibold text-slate-800">{item.title}</p>
                       <p className="mt-1 text-xs text-slate-500">
                         {t('auctionSupport.sellerLabel')}: {item.seller.fullName} · {item.status}
-                        {item.lotNumber ? ` · ${t('auctionSupport.lotLabel')} ${item.lotNumber}` : ''}
+                        {item.lotNumber
+                          ? ` · ${t('auctionSupport.lotLabel')} ${item.lotNumber}`
+                          : ''}
                       </p>
                       {item.status === 'PENDING_REVIEW' && (
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -535,7 +564,11 @@ export default function StaffAuctionSupportPanel() {
                         </div>
                       )}
                       <p className="mt-1 text-xs text-slate-600">
-                        {t('auctionSupport.startingPrice')}: {formatAuctionAmount(item.startingPrice ?? item.proposedStartingPrice, locale)}
+                        {t('auctionSupport.startingPrice')}:{' '}
+                        {formatAuctionAmount(
+                          item.startingPrice ?? item.proposedStartingPrice,
+                          locale,
+                        )}
                       </p>
                       <label className="mt-3 block text-xs font-medium text-slate-600">
                         {t('auctionSupport.noteLabel')}
@@ -544,7 +577,10 @@ export default function StaffAuctionSupportPanel() {
                           maxLength={2000}
                           rows={3}
                           onChange={(event) =>
-                            setNoteDrafts((current) => ({ ...current, [item.id]: event.target.value }))
+                            setNoteDrafts((current) => ({
+                              ...current,
+                              [item.id]: event.target.value,
+                            }))
                           }
                           className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-2 text-sm font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15"
                         />
@@ -557,7 +593,9 @@ export default function StaffAuctionSupportPanel() {
                           className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
                         >
                           <Save size={13} />
-                          {savingNoteId === item.id ? t('auctionSupport.savingNote') : t('auctionSupport.saveNote')}
+                          {savingNoteId === item.id
+                            ? t('auctionSupport.savingNote')
+                            : t('auctionSupport.saveNote')}
                         </button>
                         {noteSavedId === item.id && (
                           <span role="status" className="text-xs text-emerald-700">
@@ -572,7 +610,11 @@ export default function StaffAuctionSupportPanel() {
                           onClick={() => void endLot(selectedAuction.id, item.id)}
                           className="mt-3 inline-flex items-center gap-1 rounded-lg border border-rose-200 px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:opacity-60"
                         >
-                          {actionId === item.id ? <LoaderCircle size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                          {actionId === item.id ? (
+                            <LoaderCircle size={13} className="animate-spin" />
+                          ) : (
+                            <CheckCircle2 size={13} />
+                          )}
                           {t('auctionSupport.endLot')}
                         </button>
                       )}
@@ -592,16 +634,21 @@ export default function StaffAuctionSupportPanel() {
                     {selectedSupportDetails.awards.map((award) => (
                       <li key={award.id} className="rounded-xl border border-slate-200 p-3 text-xs">
                         <p className="font-semibold text-slate-800">
-                          {award.auctionItem?.title ?? t('auctionSupport.unknownItem')} · {award.status}
+                          {award.auctionItem?.title ?? t('auctionSupport.unknownItem')} ·{' '}
+                          {award.status}
                         </p>
                         <p className="mt-1 text-slate-600">
                           {t('auctionSupport.buyerLabel')}: {award.buyer?.fullName ?? '—'}
                         </p>
                         <p className="mt-1 text-slate-600">
-                          {t('auctionSupport.offerAmount')}: {formatAuctionAmount(award.offerAmount, locale)} · {t('auctionSupport.depositAmount')}: {formatAuctionAmount(award.depositAmount, locale)}
+                          {t('auctionSupport.offerAmount')}:{' '}
+                          {formatAuctionAmount(award.offerAmount, locale)} ·{' '}
+                          {t('auctionSupport.depositAmount')}:{' '}
+                          {formatAuctionAmount(award.depositAmount, locale)}
                         </p>
                         <p className="mt-1 break-all text-slate-500">
-                          {t('auctionSupport.expiresAt')}: {formatSessionTime(award.expiresAt, t, locale)}
+                          {t('auctionSupport.expiresAt')}:{' '}
+                          {formatSessionTime(award.expiresAt, t, locale)}
                         </p>
                       </li>
                     ))}
@@ -618,14 +665,20 @@ export default function StaffAuctionSupportPanel() {
                 ) : (
                   <ul className="space-y-2">
                     {selectedSupportDetails.complaints.map((complaint) => (
-                      <li key={complaint.id} className="rounded-xl border border-slate-200 p-3 text-xs">
+                      <li
+                        key={complaint.id}
+                        className="rounded-xl border border-slate-200 p-3 text-xs"
+                      >
                         <p className="font-semibold text-slate-800">
-                          {complaint.auctionItem?.title ?? t('auctionSupport.unknownItem')} · {complaint.status}
+                          {complaint.auctionItem?.title ?? t('auctionSupport.unknownItem')} ·{' '}
+                          {complaint.status}
                         </p>
                         <p className="mt-1 text-slate-600">
                           {t('auctionSupport.reporterLabel')}: {complaint.reporter.fullName}
                         </p>
-                        <p className="mt-2 whitespace-pre-wrap text-slate-700">{complaint.reason}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-slate-700">
+                          {complaint.reason}
+                        </p>
                         <p className="mt-2 text-slate-500">
                           {formatSessionTime(complaint.createdAt, t, locale)}
                         </p>
@@ -633,7 +686,12 @@ export default function StaffAuctionSupportPanel() {
                           <ul className="mt-2 space-y-1">
                             {complaint.evidenceUrls.map((url) => (
                               <li key={url}>
-                                <a href={url} target="_blank" rel="noreferrer" className="break-all text-blue-600 hover:underline">
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="break-all text-blue-600 hover:underline"
+                                >
                                   {t('auctionSupport.viewEvidence')}
                                 </a>
                               </li>

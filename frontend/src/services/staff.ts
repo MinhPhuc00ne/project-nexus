@@ -121,12 +121,7 @@ export interface StaffModeratedReviewsPage {
 }
 
 export type StaffAfterSalesStatus =
-  | 'REQUESTED'
-  | 'APPROVING'
-  | 'APPROVED'
-  | 'RECEIVED'
-  | 'COMPLETED'
-  | 'REJECTED';
+  'REQUESTED' | 'APPROVING' | 'APPROVED' | 'RECEIVED' | 'COMPLETED' | 'REJECTED';
 
 export interface StaffAfterSalesRequest {
   id: string;
@@ -165,7 +160,12 @@ export interface StaffOrderSupportDetail {
   cancellationActor?: string | null;
   buyer?: { id: string; fullName: string; email: string };
   seller?: { id: string; fullName: string; email: string };
-  items?: Array<{ id: string; quantity: number; unitPrice: number | string; product?: { id: string; title: string } | null }>;
+  items?: Array<{
+    id: string;
+    quantity: number;
+    unitPrice: number | string;
+    product?: { id: string; title: string } | null;
+  }>;
   shipment: {
     status: string;
     waybillCode: string | null;
@@ -401,17 +401,20 @@ export function resolveStaffDispute(
 
 export function getStaffAfterSales(
   params: { page?: number; limit?: number; status?: StaffAfterSalesStatus } = {},
+  signal?: AbortSignal,
 ): Promise<StaffAfterSalesPage> {
-  return staffRequest({ url: '/commerce/after-sales', method: 'GET', params });
+  return staffRequest({ url: '/commerce/after-sales', method: 'GET', params, signal });
 }
 
 /** Staff-wide order search; backend matches order ID and the outbound waybill code. */
-export function getStaffOrders(params: {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: string;
-} = {}): Promise<StaffAdminOrdersPage> {
+export function getStaffOrders(
+  params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+  } = {},
+): Promise<StaffAdminOrdersPage> {
   return staffRequest({ url: '/admin/orders', method: 'GET', params });
 }
 

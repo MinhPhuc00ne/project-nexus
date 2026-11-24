@@ -21,6 +21,7 @@ import { formatCurrency } from '../../i18n/formatters';
 import { getIntlLocale } from '../../i18n/config';
 
 const PAGE_SIZE = 20;
+const AFTER_SALES_FETCH_SIZE = 100;
 const AFTER_SALES_STATUSES: StaffAfterSalesStatus[] = [
   'REQUESTED',
   'APPROVING',
@@ -51,7 +52,6 @@ export default function StaffOrdersPanel() {
   const [kind, setKind] = useState<'ALL' | 'CANCEL' | 'RETURN'>('ALL');
   const [search, setSearch] = useState('');
   const [requests, setRequests] = useState<StaffAfterSalesRequest[]>([]);
-  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
@@ -80,24 +80,44 @@ export default function StaffOrdersPanel() {
     const controller = new AbortController();
     setLoading(true);
     setError('');
-    void getStaffAfterSales({ page, limit: PAGE_SIZE, ...(status ? { status } : {}) })
-      .then((result) => {
+    const loadAllRequests = async (): Promise<void> => {
+      const allRequests: StaffAfterSalesRequest[] = [];
+      let pageNumber = 1;
+      let resultTotal = 0;
+      let resultLimit = AFTER_SALES_FETCH_SIZE;
+
+      try {
+        do {
+          const result = await getStaffAfterSales(
+            {
+              page: pageNumber,
+              limit: AFTER_SALES_FETCH_SIZE,
+              ...(status ? { status } : {}),
+            },
+            controller.signal,
+          );
+          if (controller.signal.aborted) return;
+          allRequests.push(...result.items);
+          resultTotal = result.total;
+          resultLimit = result.limit || AFTER_SALES_FETCH_SIZE;
+          if (result.items.length === 0) break;
+          pageNumber += 1;
+        } while (!controller.signal.aborted && (pageNumber - 1) * resultLimit < resultTotal);
+
         if (controller.signal.aborted) return;
-        setRequests(result.items);
-        setTotal(result.total);
-      })
-      .catch((cause: unknown) => {
+        setRequests([...new Map(allRequests.map((request) => [request.id, request])).values()]);
+      } catch (cause: unknown) {
         if (!controller.signal.aborted) {
           setRequests([]);
-          setTotal(0);
           setError(cause instanceof Error ? cause.message : t('ordersSupport.loadError'));
         }
-      })
-      .finally(() => {
+      } finally {
         if (!controller.signal.aborted) setLoading(false);
-      });
+      }
+    };
+    void loadAllRequests();
     return () => controller.abort();
-  }, [page, status, revision, t]);
+  }, [status, revision, t]);
 
   const filteredRequests = useMemo(() => {
     const term = search.trim().toLocaleLowerCase(locale);
@@ -111,40 +131,43 @@ export default function StaffOrdersPanel() {
     });
   }, [requests, kind, search, locale]);
 
-  const loadOrder = useCallback(async (orderId: string, sync = false): Promise<void> => {
-    const normalizedId = orderId.trim();
-    if (!normalizedId) return;
-    setSelectedOrderId(normalizedId);
-    setOrderIdInput(normalizedId);
-    setDetailLoading(true);
-    setDetailError('');
-    setTrackingError('');
-    setActionError('');
-    setOrder(null);
-    setTracking(null);
-    if (sync) setSyncingTracking(true);
-    try {
-      const [orderResult, trackingResult] = await Promise.all([
-        getStaffAdminOrderDetail(normalizedId),
-        getStaffOrderTracking(normalizedId, sync).catch((cause: unknown) => {
-          setTrackingError(
-            cause instanceof Error ? cause.message : t('ordersSupport.trackingError'),
-          );
-          return null;
-        }),
-      ]);
-      setOrder(orderResult);
-      setTracking(trackingResult);
-      setReturnReason(orderResult.afterSales?.decisionReason ?? '');
-      setReturnWaybill(orderResult.afterSales?.returnWaybillCode ?? '');
-      setRestock(Boolean(orderResult.afterSales?.restockedAt));
-    } catch (cause: unknown) {
-      setDetailError(cause instanceof Error ? cause.message : t('ordersSupport.detailError'));
-    } finally {
-      setDetailLoading(false);
-      setSyncingTracking(false);
-    }
-  }, [t]);
+  const loadOrder = useCallback(
+    async (orderId: string, sync = false): Promise<void> => {
+      const normalizedId = orderId.trim();
+      if (!normalizedId) return;
+      setSelectedOrderId(normalizedId);
+      setOrderIdInput(normalizedId);
+      setDetailLoading(true);
+      setDetailError('');
+      setTrackingError('');
+      setActionError('');
+      setOrder(null);
+      setTracking(null);
+      if (sync) setSyncingTracking(true);
+      try {
+        const [orderResult, trackingResult] = await Promise.all([
+          getStaffAdminOrderDetail(normalizedId),
+          getStaffOrderTracking(normalizedId, sync).catch((cause: unknown) => {
+            setTrackingError(
+              cause instanceof Error ? cause.message : t('ordersSupport.trackingError'),
+            );
+            return null;
+          }),
+        ]);
+        setOrder(orderResult);
+        setTracking(trackingResult);
+        setReturnReason(orderResult.afterSales?.decisionReason ?? '');
+        setReturnWaybill(orderResult.afterSales?.returnWaybillCode ?? '');
+        setRestock(Boolean(orderResult.afterSales?.restockedAt));
+      } catch (cause: unknown) {
+        setDetailError(cause instanceof Error ? cause.message : t('ordersSupport.detailError'));
+      } finally {
+        setDetailLoading(false);
+        setSyncingTracking(false);
+      }
+    },
+    [t],
+  );
 
   function submitLookup(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -210,11 +233,18 @@ export default function StaffOrdersPanel() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / PAGE_SIZE));
+  const visiblePage = Math.min(page, totalPages);
+  const pagedRequests = filteredRequests.slice(
+    (visiblePage - 1) * PAGE_SIZE,
+    visiblePage * PAGE_SIZE,
+  );
   const afterSales = order?.afterSales;
   const canReviewReturn = afterSales?.kind === 'RETURN' && afterSales.status === 'REQUESTED';
   const canAttachReturnWaybill = afterSales?.kind === 'RETURN' && afterSales.status === 'APPROVED';
-  const canReceiveReturn = canAttachReturnWaybill || afterSales?.status === 'RECEIVED';
+  const canReceiveReturn =
+    afterSales?.kind === 'RETURN' &&
+    (afterSales.status === 'APPROVED' || afterSales.status === 'RECEIVED');
 
   return (
     <section className="mt-4 space-y-5" aria-label={t('ordersSupport.sectionAria')}>
@@ -237,9 +267,15 @@ export default function StaffOrdersPanel() {
             <Search size={15} /> {t('ordersSupport.lookupBtn')}
           </Button>
         </form>
-        {orderSearchError && <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">{orderSearchError}</p>}
+        {orderSearchError && (
+          <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+            {orderSearchError}
+          </p>
+        )}
         {orderSearchLoading ? (
-          <p role="status" className="mt-4 text-sm text-slate-500">{t('ordersSupport.loading')}</p>
+          <p role="status" className="mt-4 text-sm text-slate-500">
+            {t('ordersSupport.loading')}
+          </p>
         ) : orderMatches.length > 0 ? (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-xs">
@@ -258,11 +294,19 @@ export default function StaffOrdersPanel() {
                   <tr key={match.id} className="align-top hover:bg-slate-50">
                     <td className="max-w-52 break-all p-3 font-medium">{match.id}</td>
                     <td className="max-w-40 break-all p-3">{match.shipment?.waybillCode ?? '—'}</td>
-                    <td className="p-3">{t(`ordersSupport.orderStatuses.${match.status}`, { defaultValue: match.status })}</td>
-                    <td className="whitespace-nowrap p-3">{amount(match.totalAmount, i18n.language)}</td>
+                    <td className="p-3">
+                      {t(`ordersSupport.orderStatuses.${match.status}`, {
+                        defaultValue: match.status,
+                      })}
+                    </td>
+                    <td className="whitespace-nowrap p-3">
+                      {amount(match.totalAmount, i18n.language)}
+                    </td>
                     <td className="whitespace-nowrap p-3">{formatDate(match.createdAt, locale)}</td>
                     <td className="p-3">
-                      <Button variant="secondary" onClick={() => void loadOrder(match.id)}>{t('ordersSupport.openDetails')}</Button>
+                      <Button variant="secondary" onClick={() => void loadOrder(match.id)}>
+                        {t('ordersSupport.openDetails')}
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -270,10 +314,28 @@ export default function StaffOrdersPanel() {
             </table>
             {orderSearchPages > 1 && (
               <div className="mt-3 flex items-center justify-between gap-3 text-sm text-slate-500">
-                <span>{t('ordersSupport.pagination', { page: orderSearchPage, totalPages: orderSearchPages, total: orderSearchTotal })}</span>
+                <span>
+                  {t('ordersSupport.pagination', {
+                    page: orderSearchPage,
+                    totalPages: orderSearchPages,
+                    total: orderSearchTotal,
+                  })}
+                </span>
                 <div className="flex gap-2">
-                  <Button variant="secondary" disabled={orderSearchPage <= 1} onClick={() => changeOrderSearchPage(orderSearchPage - 1)}>{t('ordersSupport.previous')}</Button>
-                  <Button variant="secondary" disabled={orderSearchPage >= orderSearchPages} onClick={() => changeOrderSearchPage(orderSearchPage + 1)}>{t('ordersSupport.next')}</Button>
+                  <Button
+                    variant="secondary"
+                    disabled={orderSearchPage <= 1}
+                    onClick={() => changeOrderSearchPage(orderSearchPage - 1)}
+                  >
+                    {t('ordersSupport.previous')}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    disabled={orderSearchPage >= orderSearchPages}
+                    onClick={() => changeOrderSearchPage(orderSearchPage + 1)}
+                  >
+                    {t('ordersSupport.next')}
+                  </Button>
                 </div>
               </div>
             )}
@@ -333,7 +395,10 @@ export default function StaffOrdersPanel() {
             <span className="sr-only">{t('ordersSupport.searchAria')}</span>
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setPage(1);
+                setSearch(event.target.value);
+              }}
               placeholder={t('ordersSupport.searchPlaceholder')}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
             />
@@ -341,7 +406,10 @@ export default function StaffOrdersPanel() {
           <select
             aria-label={t('ordersSupport.kindAria')}
             value={kind}
-            onChange={(event) => setKind(event.target.value as typeof kind)}
+            onChange={(event) => {
+              setPage(1);
+              setKind(event.target.value as typeof kind);
+            }}
             className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
           >
             <option value="ALL">{t('ordersSupport.allKinds')}</option>
@@ -390,7 +458,7 @@ export default function StaffOrdersPanel() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredRequests.map((request) => (
+                {pagedRequests.map((request) => (
                   <tr key={request.id} className="align-top hover:bg-slate-50">
                     <td className="max-w-48 break-all p-3 font-medium">{request.orderId}</td>
                     <td className="p-3">
@@ -399,20 +467,17 @@ export default function StaffOrdersPanel() {
                     <td className="max-w-64 p-3">
                       <p className="line-clamp-2 whitespace-pre-wrap">{request.reason}</p>
                     </td>
-                    <td className="max-w-40 break-all p-3">
-                      {request.returnWaybillCode || '—'}
-                    </td>
+                    <td className="max-w-40 break-all p-3">{request.returnWaybillCode || '—'}</td>
                     <td className="p-3">
                       {t(`ordersSupport.statuses.${request.status}`, {
                         defaultValue: request.status,
                       })}
                     </td>
-                    <td className="whitespace-nowrap p-3">{formatDate(request.updatedAt, locale)}</td>
+                    <td className="whitespace-nowrap p-3">
+                      {formatDate(request.updatedAt, locale)}
+                    </td>
                     <td className="p-3">
-                      <Button
-                        variant="secondary"
-                        onClick={() => void loadOrder(request.orderId)}
-                      >
+                      <Button variant="secondary" onClick={() => void loadOrder(request.orderId)}>
                         {t('ordersSupport.openDetails')}
                       </Button>
                     </td>
@@ -423,26 +488,34 @@ export default function StaffOrdersPanel() {
           </div>
         ) : (
           <EmptyState
-            text={search || kind !== 'ALL' || status ? t('ordersSupport.noSearchResults') : t('ordersSupport.empty')}
+            text={
+              search || kind !== 'ALL' || status
+                ? t('ordersSupport.noSearchResults')
+                : t('ordersSupport.empty')
+            }
           />
         )}
-        {!loading && total > PAGE_SIZE && (
+        {!loading && filteredRequests.length > PAGE_SIZE && (
           <div className="mt-4 flex items-center justify-between gap-3 text-sm text-slate-500">
             <span>
               {t('ordersSupport.pagination', {
-                page,
+                page: visiblePage,
                 totalPages,
-                total,
+                total: filteredRequests.length,
               })}
             </span>
             <div className="flex gap-2">
-              <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              <Button
+                variant="secondary"
+                disabled={visiblePage <= 1}
+                onClick={() => setPage(visiblePage - 1)}
+              >
                 {t('ordersSupport.previous')}
               </Button>
               <Button
                 variant="secondary"
-                disabled={page >= totalPages}
-                onClick={() => setPage((p) => p + 1)}
+                disabled={visiblePage >= totalPages}
+                onClick={() => setPage(visiblePage + 1)}
               >
                 {t('ordersSupport.next')}
               </Button>
@@ -457,14 +530,25 @@ export default function StaffOrdersPanel() {
         size="xl"
         onClose={() => setSelectedOrderId('')}
       >
-        {detailLoading && <p role="status" className="text-sm text-slate-500">{t('ordersSupport.detailLoading')}</p>}
-        {detailError && <p role="alert" className="text-sm text-red-700">{detailError}</p>}
+        {detailLoading && (
+          <p role="status" className="text-sm text-slate-500">
+            {t('ordersSupport.detailLoading')}
+          </p>
+        )}
+        {detailError && (
+          <p role="alert" className="text-sm text-red-700">
+            {detailError}
+          </p>
+        )}
         {order && !detailLoading && (
           <div className="space-y-5">
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {[
                 [t('ordersSupport.orderIdLabel'), order.id],
-                [t('ordersSupport.orderStatus'), t(`ordersSupport.orderStatuses.${order.status}`, { defaultValue: order.status })],
+                [
+                  t('ordersSupport.orderStatus'),
+                  t(`ordersSupport.orderStatuses.${order.status}`, { defaultValue: order.status }),
+                ],
                 [t('ordersSupport.orderTotal'), amount(order.totalAmount, i18n.language)],
                 [t('ordersSupport.subtotal'), amount(order.subtotal, i18n.language)],
                 [t('ordersSupport.shippingFee'), amount(order.shippingFee, i18n.language)],
@@ -479,21 +563,49 @@ export default function StaffOrdersPanel() {
             <section className="rounded-xl border border-slate-200 p-4">
               <h3 className="font-semibold">{t('ordersSupport.shippingTitle')}</h3>
               <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                <p>{t('ordersSupport.shippingStatus')}: {tracking?.shipment?.status ?? order.shipment?.status ?? '—'}</p>
-                <p className="break-all">{t('ordersSupport.waybillLabel')}: {order.shipment?.waybillCode ?? '—'}</p>
-                {tracking?.carrierStatus && <p>{t('ordersSupport.carrierStatus')}: {tracking.carrierStatus}</p>}
-                {order.shipment?.updatedAt && <p>{t('ordersSupport.updatedAt')}: {formatDate(order.shipment.updatedAt, locale)}</p>}
+                <p>
+                  {t('ordersSupport.shippingStatus')}:{' '}
+                  {tracking?.shipment?.status ?? order.shipment?.status ?? '—'}
+                </p>
+                <p className="break-all">
+                  {t('ordersSupport.waybillLabel')}: {order.shipment?.waybillCode ?? '—'}
+                </p>
+                {tracking?.carrierStatus && (
+                  <p>
+                    {t('ordersSupport.carrierStatus')}: {tracking.carrierStatus}
+                  </p>
+                )}
+                {order.shipment?.updatedAt && (
+                  <p>
+                    {t('ordersSupport.updatedAt')}: {formatDate(order.shipment.updatedAt, locale)}
+                  </p>
+                )}
               </div>
-              {trackingError && <p role="alert" className="mt-2 text-xs text-amber-700">{trackingError}</p>}
+              {trackingError && (
+                <p role="alert" className="mt-2 text-xs text-amber-700">
+                  {trackingError}
+                </p>
+              )}
             </section>
             {order.escrowRecord && (
               <section className="rounded-xl border border-slate-200 p-4">
                 <h3 className="font-semibold">{t('ordersSupport.escrowTitle')}</h3>
                 <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                  <p>{t('ordersSupport.escrowStatus')}: {order.escrowRecord.status}</p>
-                  <p>{t('ordersSupport.escrowTotal')}: {amount(order.escrowRecord.totalAmount, i18n.language)}</p>
-                  <p>{t('ordersSupport.platformFee')}: {amount(order.escrowRecord.platformFee, i18n.language)}</p>
-                  <p>{t('ordersSupport.sellerPayout')}: {amount(order.escrowRecord.sellerPayout, i18n.language)}</p>
+                  <p>
+                    {t('ordersSupport.escrowStatus')}: {order.escrowRecord.status}
+                  </p>
+                  <p>
+                    {t('ordersSupport.escrowTotal')}:{' '}
+                    {amount(order.escrowRecord.totalAmount, i18n.language)}
+                  </p>
+                  <p>
+                    {t('ordersSupport.platformFee')}:{' '}
+                    {amount(order.escrowRecord.platformFee, i18n.language)}
+                  </p>
+                  <p>
+                    {t('ordersSupport.sellerPayout')}:{' '}
+                    {amount(order.escrowRecord.sellerPayout, i18n.language)}
+                  </p>
                 </div>
               </section>
             )}
@@ -509,65 +621,167 @@ export default function StaffOrdersPanel() {
                 <ul className="mt-3 space-y-2 text-sm">
                   {order.payments.map((payment) => (
                     <li key={payment.id} className="rounded-lg bg-slate-50 p-3">
-                      <p>{payment.provider} · {payment.status} · {amount(payment.amount, i18n.language)}</p>
-                      {payment.transactionCode && <p className="mt-1 break-all text-xs text-slate-500">{payment.transactionCode}</p>}
-                      <p className="mt-1 text-xs text-slate-500">{formatDate(payment.createdAt, locale)}</p>
+                      <p>
+                        {payment.provider} · {payment.status} ·{' '}
+                        {amount(payment.amount, i18n.language)}
+                      </p>
+                      {payment.transactionCode && (
+                        <p className="mt-1 break-all text-xs text-slate-500">
+                          {payment.transactionCode}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs text-slate-500">
+                        {formatDate(payment.createdAt, locale)}
+                      </p>
                     </li>
                   ))}
                 </ul>
-              ) : <p className="mt-2 text-sm text-slate-500">{t('ordersSupport.noPayments')}</p>}
+              ) : (
+                <p className="mt-2 text-sm text-slate-500">{t('ordersSupport.noPayments')}</p>
+              )}
             </section>
             {afterSales && (
               <section className="rounded-xl border border-slate-200 p-4">
                 <h3 className="font-semibold">{t('ordersSupport.afterSalesTitle')}</h3>
                 <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-                  <p>{t('ordersSupport.kindLabel')}: {t(`ordersSupport.kinds.${afterSales.kind}`, { defaultValue: afterSales.kind })}</p>
-                  <p>{t('ordersSupport.statusAria')}: {t(`ordersSupport.statuses.${afterSales.status}`, { defaultValue: afterSales.status })}</p>
-                  <p>{t('ordersSupport.createdAt')}: {formatDate(afterSales.createdAt, locale)}</p>
-                  <p>{t('ordersSupport.updatedAt')}: {formatDate(afterSales.updatedAt, locale)}</p>
-                  {afterSales.receivedAt && <p>{t('ordersSupport.receivedAt')}: {formatDate(afterSales.receivedAt, locale)}</p>}
-                  {afterSales.restockedAt && <p>{t('ordersSupport.restockedAt')}: {formatDate(afterSales.restockedAt, locale)}</p>}
-                  {afterSales.decisionReason && <p className="sm:col-span-2">{t('ordersSupport.decisionReason')}: {afterSales.decisionReason}</p>}
-                  <p className="sm:col-span-2">{t('ordersSupport.reasonLabel')}: {afterSales.reason}</p>
+                  <p>
+                    {t('ordersSupport.kindLabel')}:{' '}
+                    {t(`ordersSupport.kinds.${afterSales.kind}`, { defaultValue: afterSales.kind })}
+                  </p>
+                  <p>
+                    {t('ordersSupport.statusAria')}:{' '}
+                    {t(`ordersSupport.statuses.${afterSales.status}`, {
+                      defaultValue: afterSales.status,
+                    })}
+                  </p>
+                  <p>
+                    {t('ordersSupport.createdAt')}: {formatDate(afterSales.createdAt, locale)}
+                  </p>
+                  <p>
+                    {t('ordersSupport.updatedAt')}: {formatDate(afterSales.updatedAt, locale)}
+                  </p>
+                  {afterSales.receivedAt && (
+                    <p>
+                      {t('ordersSupport.receivedAt')}: {formatDate(afterSales.receivedAt, locale)}
+                    </p>
+                  )}
+                  {afterSales.restockedAt && (
+                    <p>
+                      {t('ordersSupport.restockedAt')}: {formatDate(afterSales.restockedAt, locale)}
+                    </p>
+                  )}
+                  {afterSales.decisionReason && (
+                    <p className="sm:col-span-2">
+                      {t('ordersSupport.decisionReason')}: {afterSales.decisionReason}
+                    </p>
+                  )}
+                  <p className="sm:col-span-2">
+                    {t('ordersSupport.reasonLabel')}: {afterSales.reason}
+                  </p>
                 </div>
                 {afterSales.kind === 'CANCEL' && afterSales.status !== 'REJECTED' && (
-                  <p className="mt-3 text-xs text-amber-800">{t('ordersSupport.cancelAdminOnly')}</p>
+                  <p className="mt-3 text-xs text-amber-800">
+                    {t('ordersSupport.cancelAdminOnly')}
+                  </p>
                 )}
                 {canReviewReturn && (
                   <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
                     <label className="block text-sm">
                       {t('ordersSupport.reviewReason')}
-                      <textarea value={returnReason} onChange={(event) => setReturnReason(event.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-3" rows={3} />
+                      <textarea
+                        value={returnReason}
+                        onChange={(event) => setReturnReason(event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-200 bg-white p-3"
+                        rows={3}
+                      />
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      <Button disabled={processing || returnReason.trim().length < 5} onClick={() => void runReturnAction({ type: 'review', decision: 'APPROVE', reason: returnReason.trim() })}>{t('ordersSupport.approveReturn')}</Button>
-                      <Button variant="danger" disabled={processing || returnReason.trim().length < 5} onClick={() => void runReturnAction({ type: 'review', decision: 'REJECT', reason: returnReason.trim() })}>{t('ordersSupport.rejectReturn')}</Button>
+                      <Button
+                        disabled={processing || returnReason.trim().length < 5}
+                        onClick={() =>
+                          void runReturnAction({
+                            type: 'review',
+                            decision: 'APPROVE',
+                            reason: returnReason.trim(),
+                          })
+                        }
+                      >
+                        {t('ordersSupport.approveReturn')}
+                      </Button>
+                      <Button
+                        variant="danger"
+                        disabled={processing || returnReason.trim().length < 5}
+                        onClick={() =>
+                          void runReturnAction({
+                            type: 'review',
+                            decision: 'REJECT',
+                            reason: returnReason.trim(),
+                          })
+                        }
+                      >
+                        {t('ordersSupport.rejectReturn')}
+                      </Button>
                     </div>
                   </div>
                 )}
                 {canAttachReturnWaybill && (
                   <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-200 pt-4">
-                    <input value={returnWaybill} onChange={(event) => setReturnWaybill(event.target.value)} placeholder={t('ordersSupport.returnWaybillPlaceholder')} className="min-w-52 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm" />
-                    <Button disabled={processing || !returnWaybill.trim()} onClick={() => void runReturnAction({ type: 'waybill', waybillCode: returnWaybill.trim() })}>{t('ordersSupport.saveWaybill')}</Button>
+                    <input
+                      value={returnWaybill}
+                      onChange={(event) => setReturnWaybill(event.target.value)}
+                      placeholder={t('ordersSupport.returnWaybillPlaceholder')}
+                      className="min-w-52 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm"
+                    />
+                    <Button
+                      disabled={processing || !returnWaybill.trim()}
+                      onClick={() =>
+                        void runReturnAction({ type: 'waybill', waybillCode: returnWaybill.trim() })
+                      }
+                    >
+                      {t('ordersSupport.saveWaybill')}
+                    </Button>
                   </div>
                 )}
-                {canReceiveReturn && afterSales.status === 'APPROVED' && (
+                {canReceiveReturn && (
                   <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
                     <label className="flex items-center gap-2 text-sm">
-                      <input type="checkbox" checked={restock} onChange={(event) => setRestock(event.target.checked)} />
+                      <input
+                        type="checkbox"
+                        checked={restock}
+                        onChange={(event) => setRestock(event.target.checked)}
+                      />
                       {t('ordersSupport.restockLabel')}
                     </label>
-                    <Button disabled={processing} onClick={() => void runReturnAction({ type: 'receive', reason: returnReason.trim() || t('ordersSupport.receiveDefaultReason'), restock })}>{t('ordersSupport.confirmReceived')}</Button>
+                    <Button
+                      disabled={processing}
+                      onClick={() =>
+                        void runReturnAction({
+                          type: 'receive',
+                          reason: returnReason.trim() || t('ordersSupport.receiveDefaultReason'),
+                          restock,
+                        })
+                      }
+                    >
+                      {t('ordersSupport.confirmReceived')}
+                    </Button>
                   </div>
                 )}
-                {actionError && <p role="alert" className="mt-3 text-sm text-red-700">{actionError}</p>}
+                {actionError && (
+                  <p role="alert" className="mt-3 text-sm text-red-700">
+                    {actionError}
+                  </p>
+                )}
               </section>
             )}
             {order.dispute && (
               <section className="rounded-xl border border-slate-200 p-4">
                 <h3 className="font-semibold">{t('ordersSupport.disputeTitle')}</h3>
-                <p className="mt-2 text-sm">{order.dispute.status} · {order.dispute.reason ?? ''}</p>
-                {order.dispute.resolutionNotes && <p className="mt-1 text-sm text-slate-600">{order.dispute.resolutionNotes}</p>}
+                <p className="mt-2 text-sm">
+                  {order.dispute.status} · {order.dispute.reason ?? ''}
+                </p>
+                {order.dispute.resolutionNotes && (
+                  <p className="mt-1 text-sm text-slate-600">{order.dispute.resolutionNotes}</p>
+                )}
               </section>
             )}
             {order.refunds.length > 0 && (
@@ -576,8 +790,13 @@ export default function StaffOrdersPanel() {
                 <ul className="mt-2 space-y-2 text-sm">
                   {order.refunds.map((refund) => (
                     <li key={refund.id} className="rounded-lg bg-slate-50 p-3">
-                      {amount(refund.amount, i18n.language)} · {refund.destination} · {refund.status}
-                      {refund.externalReference && <span className="block break-all text-xs text-slate-500">{refund.externalReference}</span>}
+                      {amount(refund.amount, i18n.language)} · {refund.destination} ·{' '}
+                      {refund.status}
+                      {refund.externalReference && (
+                        <span className="block break-all text-xs text-slate-500">
+                          {refund.externalReference}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -589,14 +808,26 @@ export default function StaffOrdersPanel() {
                 {order.history.length ? (
                   <ol className="mt-3 space-y-3">
                     {order.history.map((entry, index) => (
-                      <li key={`${entry.source}:${entry.action}:${entry.timestamp}:${index}`} className="border-l-2 border-blue-200 pl-3">
+                      <li
+                        key={`${entry.source}:${entry.action}:${entry.timestamp}:${index}`}
+                        className="border-l-2 border-blue-200 pl-3"
+                      >
                         <p className="text-sm font-medium">{entry.label}</p>
-                        <p className="mt-0.5 text-xs text-slate-500">{formatDate(entry.timestamp, locale)}{entry.actor?.fullName ? ` · ${entry.actor.fullName}` : ''}</p>
-                        {entry.note && <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">{entry.note}</p>}
+                        <p className="mt-0.5 text-xs text-slate-500">
+                          {formatDate(entry.timestamp, locale)}
+                          {entry.actor?.fullName ? ` · ${entry.actor.fullName}` : ''}
+                        </p>
+                        {entry.note && (
+                          <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600">
+                            {entry.note}
+                          </p>
+                        )}
                       </li>
                     ))}
                   </ol>
-                ) : <p className="mt-2 text-sm text-slate-500">{t('ordersSupport.noHistory')}</p>}
+                ) : (
+                  <p className="mt-2 text-sm text-slate-500">{t('ordersSupport.noHistory')}</p>
+                )}
               </section>
             )}
           </div>

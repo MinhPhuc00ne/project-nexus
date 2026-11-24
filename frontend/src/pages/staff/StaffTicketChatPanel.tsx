@@ -20,7 +20,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useChatRoom } from '../../components/chat/useChatRoom';
 import { normalizeChatMessage } from '../../services/chat';
 import { createChatConnection, type ChatConnectionClient } from '../../services/chatSocket';
-import type { ChatConversation, ChatMessage, SupportConversationStatus } from '../../types/chat.types';
+import type {
+  ChatConversation,
+  ChatMessage,
+  SupportConversationStatus,
+} from '../../types/chat.types';
 
 export type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
 export type { SupportTicket, TicketStatus };
@@ -132,7 +136,9 @@ export default function StaffTicketChatPanel({
       const message = normalizeChatMessage(payload, userId);
       setConversations((current) => {
         if (!current) return current;
-        const hasConversation = current.some((conversation) => conversation.id === message.conversationId);
+        const hasConversation = current.some(
+          (conversation) => conversation.id === message.conversationId,
+        );
         if (!hasConversation) return current;
 
         const shouldCountUnread =
@@ -141,9 +147,8 @@ export default function StaffTicketChatPanel({
             document.visibilityState !== 'visible');
         const updated = current.map((conversation) => {
           if (conversation.id !== message.conversationId) return conversation;
-          const currentLastMessageTime = Date.parse(
-            conversation.lastMessageAt ?? conversation.createdAt,
-          ) || 0;
+          const currentLastMessageTime =
+            Date.parse(conversation.lastMessageAt ?? conversation.createdAt) || 0;
           if (Date.parse(message.createdAt) < currentLastMessageTime) return conversation;
           return {
             ...conversation,
@@ -163,12 +168,13 @@ export default function StaffTicketChatPanel({
     };
     const handleMessagesRead = (event: { conversationId: string; readBy: string }): void => {
       if (event.readBy !== userId) return;
-      setConversations((current) =>
-        current?.map((conversation) =>
-          conversation.id === event.conversationId
-            ? { ...conversation, unreadCount: 0 }
-            : conversation,
-        ) ?? current,
+      setConversations(
+        (current) =>
+          current?.map((conversation) =>
+            conversation.id === event.conversationId
+              ? { ...conversation, unreadCount: 0 }
+              : conversation,
+          ) ?? current,
       );
     };
 

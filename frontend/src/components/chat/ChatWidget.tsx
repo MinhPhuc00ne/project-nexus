@@ -23,6 +23,8 @@ import {
   type OpenChatWithUserRequest,
 } from './chatEvents';
 
+const CHAT_CONVERSATION_SYNC_INTERVAL_MS = 15_000;
+
 function orderByLastMessage(items: ChatConversation[]): ChatConversation[] {
   return [...items].sort((left, right) => {
     const leftTime = Date.parse(left.lastMessageAt ?? left.createdAt) || 0;
@@ -93,6 +95,8 @@ function ChatPanel({
   const activeChatStateRef = useRef<{ id?: string; isVisible: boolean }>({
     isVisible: false,
   });
+  const isPanelOpenRef = useRef(open);
+  isPanelOpenRef.current = open;
 
   useEffect(() => {
     const handleOpenChat = (event: Event): void => {
@@ -216,6 +220,7 @@ function ChatPanel({
     chatConnectionRef.current = connection;
     const joinedConversationIds = new Set<string>();
     const seenMessageIds = new Set<string>();
+    let syncingConversations = false;
 
     const refreshUnreadCount = (): void => {
       void getChatUnreadCount()
@@ -273,11 +278,11 @@ function ChatPanel({
 
     connection.socket.on('new_message', handleNewMessage);
     connection.socket.on('messages_read', handleMessagesRead);
-    connection.socket.on('connect', refreshUnreadCount);
-    connection.connect();
-    refreshUnreadCount();
 
-    const joinAllUserConversations = async (): Promise<void> => {
+    const syncUserConversations = async (recentOnly = false): Promise<void> => {
+      if (cancelled || syncingConversations) return;
+      syncingConversations = true;
+      let joinedNewConversation = false;
       try {
         let page = 1;
         let totalPages = 1;
@@ -287,22 +292,50 @@ function ChatPanel({
             if (joinedConversationIds.has(conversation.id)) continue;
             joinedConversationIds.add(conversation.id);
             connection.joinConversation(conversation.id);
+            joinedNewConversation = true;
           }
-          totalPages = Math.max(1, result.pagination.totalPages);
+          totalPages = recentOnly ? 1 : Math.max(1, result.pagination.totalPages);
           page += 1;
         }
-        if (!cancelled) refreshUnreadCount();
+        if (!cancelled) {
+          refreshUnreadCount();
+          if (joinedNewConversation && isPanelOpenRef.current) setRevision((value) => value + 1);
+        }
       } catch {
         // The visible inbox can still load conversations when opened; retry joining those below.
+      } finally {
+        syncingConversations = false;
       }
     };
-    void joinAllUserConversations();
+
+    const handleSocketConnect = (): void => {
+      refreshUnreadCount();
+      void syncUserConversations(true);
+    };
+    const syncWhenVisible = (): void => {
+      if (document.visibilityState !== 'visible') return;
+      refreshUnreadCount();
+      void syncUserConversations(true);
+    };
+
+    connection.socket.on('connect', handleSocketConnect);
+    window.addEventListener('focus', syncWhenVisible);
+    document.addEventListener('visibilitychange', syncWhenVisible);
+    connection.connect();
+    void syncUserConversations();
+    const syncTimer = window.setInterval(
+      () => void syncUserConversations(true),
+      CHAT_CONVERSATION_SYNC_INTERVAL_MS,
+    );
 
     return () => {
       cancelled = true;
+      window.clearInterval(syncTimer);
+      window.removeEventListener('focus', syncWhenVisible);
+      document.removeEventListener('visibilitychange', syncWhenVisible);
       connection.socket.off('new_message', handleNewMessage);
       connection.socket.off('messages_read', handleMessagesRead);
-      connection.socket.off('connect', refreshUnreadCount);
+      connection.socket.off('connect', handleSocketConnect);
       connection.disconnect();
       joinedConversationIds.clear();
       seenMessageIds.clear();
