@@ -1,8 +1,8 @@
 import { useState, type FormEvent, type ReactElement } from 'react';
-import { Landmark as BankOutlined, Pencil as EditOutlined, ShieldCheck } from 'lucide-react';
+import { Landmark as BankOutlined, Pencil as EditOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { updateMyProfile } from '../../services/profile';
+import { updateSellerBankAccount } from '../../services/profile';
 import Popup from '../Popup';
 import { useToast } from '../ToastNotification';
 import { useSellerSession } from './SellerSession';
@@ -14,7 +14,6 @@ interface BankFormState {
   bankName: string;
   accountNumber: string;
   accountHolderName: string;
-  password: string;
 }
 
 function LinkedBankModal({
@@ -23,7 +22,7 @@ function LinkedBankModal({
   onClose,
   onSaved,
 }: {
-  initial: Omit<BankFormState, 'password'>;
+  initial: BankFormState;
   isEdit: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -31,10 +30,7 @@ function LinkedBankModal({
   const { t } = useTranslation('seller');
   const toast = useToast();
   const action = useSellerAction();
-  const [form, setForm] = useState<BankFormState>({
-    ...initial,
-    password: '',
-  });
+  const [form, setForm] = useState<BankFormState>(initial);
 
   const close = (): void => {
     if (!action.pending) onClose();
@@ -45,7 +41,7 @@ function LinkedBankModal({
     void action.run(
       async () => {
         const bankName = form.bankName.trim();
-        const accountNumber = form.accountNumber.trim();
+        const accountNumber = form.accountNumber.replace(/[\s-]+/g, '').trim();
         const accountHolderName = form.accountHolderName.trim().toUpperCase();
         if (!bankName || !accountNumber || !accountHolderName) {
           throw new Error(t('finance.linkedBank.missingFieldsErr'));
@@ -53,10 +49,7 @@ function LinkedBankModal({
         if (!/^[A-Za-z0-9]{4,50}$/.test(accountNumber)) {
           throw new Error(t('finance.linkedBank.invalidAccountNumberErr'));
         }
-        if (!form.password) {
-          throw new Error(t('finance.linkedBank.passwordRequiredErr'));
-        }
-        await updateMyProfile({ bankName, accountNumber, accountHolderName }, form.password);
+        await updateSellerBankAccount({ bankName, accountNumber, accountHolderName });
       },
       () => {
         toast.success(t('finance.linkedBank.saveSuccess'));
@@ -100,7 +93,7 @@ function LinkedBankModal({
               className={sellerInputClass}
               required
               maxLength={50}
-              inputMode="numeric"
+              inputMode="text"
               value={form.accountNumber}
               onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
               placeholder={t('finance.linkedBank.accountNumberPlaceholder')}
@@ -117,23 +110,7 @@ function LinkedBankModal({
               placeholder={t('finance.linkedBank.accountHolderPlaceholder')}
             />
           </label>
-          <label className={sellerLabelClass}>
-            {t('finance.linkedBank.passwordLabel')}
-            <input
-              className={sellerInputClass}
-              type="password"
-              required
-              autoComplete="current-password"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              placeholder={t('finance.linkedBank.passwordPlaceholder')}
-            />
-          </label>
         </fieldset>
-        <p className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-500">
-          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-blue-600" aria-hidden="true" />
-          {t('finance.linkedBank.securityNotice')}
-        </p>
         {action.error && (
           <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
             {action.error}

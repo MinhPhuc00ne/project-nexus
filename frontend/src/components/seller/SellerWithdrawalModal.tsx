@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactElement } from 'react';
 import { Landmark as BankOutlined } from 'lucide-react';
 import { ShieldCheck as SafetyCertificateOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,11 @@ export default function SellerWithdrawalModal({
 }): ReactElement {
   const { t } = useTranslation('seller');
   const user = useSellerSession();
+  const dirtyBankFields = useRef({
+    bankName: false,
+    accountNumber: false,
+    accountHolderName: false,
+  });
   const [form, setForm] = useState({
     amount: '',
     bankName: user.bankName ?? '',
@@ -31,6 +36,18 @@ export default function SellerWithdrawalModal({
     accountHolderName: user.accountHolderName ?? '',
     note: '',
   });
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      bankName: dirtyBankFields.current.bankName ? current.bankName : (user.bankName ?? ''),
+      accountNumber: dirtyBankFields.current.accountNumber
+        ? current.accountNumber
+        : (user.accountNumber ?? ''),
+      accountHolderName: dirtyBankFields.current.accountHolderName
+        ? current.accountHolderName
+        : (user.accountHolderName ?? ''),
+    }));
+  }, [user.accountHolderName, user.accountNumber, user.bankName]);
   const action = useSellerAction();
   const toast = useToast();
   const close = (): void => {
@@ -106,7 +123,10 @@ export default function SellerWithdrawalModal({
               required
               maxLength={120}
               value={form.bankName}
-              onChange={(e) => setForm({ ...form, bankName: e.target.value })}
+              onChange={(e) => {
+                dirtyBankFields.current.bankName = true;
+                setForm({ ...form, bankName: e.target.value });
+              }}
               placeholder={t('finance.withdrawalModal.bankPlaceholder')}
             />
           </label>
@@ -118,7 +138,10 @@ export default function SellerWithdrawalModal({
               maxLength={50}
               inputMode="numeric"
               value={form.accountNumber}
-              onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
+              onChange={(e) => {
+                dirtyBankFields.current.accountNumber = true;
+                setForm({ ...form, accountNumber: e.target.value });
+              }}
             />
           </label>
           <label className={sellerLabelClass}>
@@ -128,7 +151,10 @@ export default function SellerWithdrawalModal({
               required
               maxLength={150}
               value={form.accountHolderName}
-              onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })}
+              onChange={(e) => {
+                dirtyBankFields.current.accountHolderName = true;
+                setForm({ ...form, accountHolderName: e.target.value });
+              }}
               placeholder={t('finance.withdrawalModal.accountHolderPlaceholder')}
             />
           </label>

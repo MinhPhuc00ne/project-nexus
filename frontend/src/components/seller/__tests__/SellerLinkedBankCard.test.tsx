@@ -6,7 +6,8 @@ import SellerLinkedBankCard from '../SellerLinkedBankCard';
 
 const mockRefreshProfile = vi.fn();
 const mockToastSuccess = vi.fn();
-const mockUpdateMyProfile = vi.fn();
+const mockToastError = vi.fn();
+const mockUpdateSellerBankAccount = vi.fn();
 let mockSellerUser: {
   id: string;
   bankName?: string | null;
@@ -32,20 +33,23 @@ vi.mock('../SellerSession', () => ({
 vi.mock('../../ToastNotification', () => ({
   useToast: () => ({
     success: mockToastSuccess,
-    error: vi.fn(),
+    error: mockToastError,
     info: vi.fn(),
   }),
 }));
 
 vi.mock('../../../services/profile', () => ({
-  updateMyProfile: (...args: unknown[]) => mockUpdateMyProfile(...args),
+  updateSellerBankAccount: (...args: unknown[]) => mockUpdateSellerBankAccount(...args),
 }));
+
+const VALID_ACCOUNT_NUMBER = '1029384756';
+const VALID_HOLDER_NAME = 'NGUYEN VAN A';
 
 describe('SellerLinkedBankCard', () => {
   beforeEach(async () => {
     await i18n.changeLanguage('en');
     vi.clearAllMocks();
-    mockUpdateMyProfile.mockResolvedValue({});
+    mockUpdateSellerBankAccount.mockResolvedValue({});
   });
 
   it('shows empty state when no bank account is linked and saves new bank details', async () => {
@@ -66,21 +70,17 @@ describe('SellerLinkedBankCard', () => {
     await user.click(linkButtons[0]);
 
     await user.type(screen.getByLabelText(/Bank \/ Payment channel/i), 'Vietcombank');
-    await user.type(screen.getByLabelText(/Account number/i), '1029384756');
+    await user.type(screen.getByLabelText(/Account number/i), VALID_ACCOUNT_NUMBER);
     await user.type(screen.getByLabelText(/Account holder name/i), 'nguyen van a');
-    await user.type(screen.getByLabelText(/Confirm password/i), 'Secret123!');
 
     await user.click(screen.getByRole('button', { name: /Save account/i }));
 
     await waitFor(() => {
-      expect(mockUpdateMyProfile).toHaveBeenCalledWith(
-        {
-          bankName: 'Vietcombank',
-          accountNumber: '1029384756',
-          accountHolderName: 'NGUYEN VAN A',
-        },
-        'Secret123!',
-      );
+      expect(mockUpdateSellerBankAccount).toHaveBeenCalledWith({
+        bankName: 'Vietcombank',
+        accountNumber: VALID_ACCOUNT_NUMBER,
+        accountHolderName: VALID_HOLDER_NAME,
+      });
     });
 
     expect(mockToastSuccess).toHaveBeenCalledWith('Linked bank account saved.');
@@ -102,5 +102,109 @@ describe('SellerLinkedBankCard', () => {
     expect(screen.getByText('9988776655')).toBeInTheDocument();
     expect(screen.getByText('TRAN THI B')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Edit account/i })).toBeInTheDocument();
+  });
+
+  it('normalizes pasted account numbers containing spaces or hyphens', async () => {
+    const user = userEvent.setup();
+    mockSellerUser = {
+      id: 'seller-1',
+      bankName: null,
+      accountNumber: null,
+      accountHolderName: null,
+    };
+
+    render(<SellerLinkedBankCard />);
+
+    await user.click(screen.getAllByRole('button', { name: /Link account/i })[0]);
+    await user.type(screen.getByLabelText(/Bank \/ Payment channel/i), 'ACB');
+    await user.type(screen.getByLabelText(/Account number/i), '1029 3847-56');
+    await user.type(screen.getByLabelText(/Account holder name/i), 'le van c');
+    await user.click(screen.getByRole('button', { name: /Save account/i }));
+
+    await waitFor(() => {
+      expect(mockUpdateSellerBankAccount).toHaveBeenCalledWith({
+        bankName: 'ACB',
+        accountNumber: '1029384756',
+        accountHolderName: 'LE VAN C',
+      });
+    });
+  });
+
+  it('shows validation error when bank name is blank and keeps modal open', async () => {
+    const user = userEvent.setup();
+    mockSellerUser = {
+      id: 'seller-1',
+      bankName: null,
+      accountNumber: null,
+      accountHolderName: null,
+    };
+
+    render(<SellerLinkedBankCard />);
+
+    await user.click(screen.getAllByRole('button', { name: /Link account/i })[0]);
+    await user.type(screen.getByLabelText(/Bank \/ Payment channel/i), '   ');
+    await user.type(screen.getByLabelText(/Account number/i), VALID_ACCOUNT_NUMBER);
+    await user.type(screen.getByLabelText(/Account holder name/i), VALID_HOLDER_NAME);
+    await user.click(screen.getByRole('button', { name: /Save account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Please enter bank name, account number, and account holder name.',
+      );
+    });
+    expect(mockUpdateSellerBankAccount).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('shows validation error when account number is too short and keeps modal open', async () => {
+    const user = userEvent.setup();
+    mockSellerUser = {
+      id: 'seller-1',
+      bankName: null,
+      accountNumber: null,
+      accountHolderName: null,
+    };
+
+    render(<SellerLinkedBankCard />);
+
+    await user.click(screen.getAllByRole('button', { name: /Link account/i })[0]);
+    await user.type(screen.getByLabelText(/Bank \/ Payment channel/i), 'Vietcombank');
+    await user.type(screen.getByLabelText(/Account number/i), '12');
+    await user.type(screen.getByLabelText(/Account holder name/i), VALID_HOLDER_NAME);
+    await user.click(screen.getByRole('button', { name: /Save account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Invalid account number (4–50 alphanumeric characters).',
+      );
+    });
+    expect(mockUpdateSellerBankAccount).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('keeps modal open and displays error alert when API request fails', async () => {
+    const user = userEvent.setup();
+    mockSellerUser = {
+      id: 'seller-1',
+      bankName: null,
+      accountNumber: null,
+      accountHolderName: null,
+    };
+    mockUpdateSellerBankAccount.mockRejectedValueOnce(new Error('Server unavailable'));
+
+    render(<SellerLinkedBankCard />);
+
+    await user.click(screen.getAllByRole('button', { name: /Link account/i })[0]);
+    await user.type(screen.getByLabelText(/Bank \/ Payment channel/i), 'Vietcombank');
+    await user.type(screen.getByLabelText(/Account number/i), VALID_ACCOUNT_NUMBER);
+    await user.type(screen.getByLabelText(/Account holder name/i), VALID_HOLDER_NAME);
+    await user.click(screen.getByRole('button', { name: /Save account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Server unavailable');
+    });
+    expect(mockToastError).toHaveBeenCalledWith('Server unavailable');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(mockRefreshProfile).not.toHaveBeenCalled();
   });
 });
