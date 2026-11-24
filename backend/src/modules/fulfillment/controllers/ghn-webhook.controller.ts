@@ -35,7 +35,10 @@ export class GhnWebhookController {
   @Post('webhook')
   @Public()
   @HttpCode(200)
-  @ApiOperation({ summary: 'Nhận callback GHN; xác minh lại trạng thái qua API GHN' })
+  @ApiOperation({
+    summary:
+      'Nhận callback GHN (chiều giao đi và chiều hoàn hàng); xác minh lại trạng thái qua API GHN',
+  })
   async receive(
     @Headers('x-ghn-webhook-secret') secret: string | undefined,
     @Body() body: Record<string, unknown>,
