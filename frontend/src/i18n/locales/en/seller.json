@@ -51,10 +51,6 @@
     "nextPage": "Next page",
     "breadcrumbAria": "Breadcrumb",
     "sellerCenter": "Seller Center",
-    "previewActive": "{{label}}: sample preview data, not real transactions.",
-    "previewEmpty": "{{label}} has no system data yet.",
-    "hideSampleData": "Hide sample data",
-    "viewSampleData": "View sample data",
     "emptyTitle": "No data yet",
     "emptyDesc": "Data will appear here when there is new activity.",
     "policies": {
@@ -64,7 +60,8 @@
       "packagingBody": "Inspect products, save packaging evidence, and seal items before handover.",
       "reputationTitle": "Seller reputation",
       "reputationBody": "Accurate details, on-time shipping, and responsive support protect your shop reputation."
-    }
+    },
+    "liveData": "{{label}} shows your shop’s own figures."
   },
   "session": {
     "switchModeFailed": "Unable to switch to Seller mode.",
@@ -275,13 +272,6 @@
       "CONFIRMED": "Completed",
       "CANCELLED": "Cancelled",
       "REFUNDED": "Refunded"
-    },
-    "previewStatuses": {
-      "pending": "Awaiting confirmation",
-      "packing": "Awaiting GHN handover",
-      "shipping": "In transit",
-      "delivered": "Delivered",
-      "cancelled": "Cancelled / Refunded"
     },
     "pageTitle": "Orders & GHN Shipping",
     "pageDesc": "Confirm orders, prepare packages, and track your shop's waybills.",
@@ -703,10 +693,6 @@
     },
     "completeShop": "Complete shop profile",
     "bottomNoteApi": "Account info and wallet balance are fetched from the API.",
-    "bottomNotePreviewOn": "Displayed transactions are sample data.",
-    "bottomNotePreviewOff": "You can preview the layout with sample data.",
-    "hideSample": "Hide sample data",
-    "viewSample": "View sample data",
     "identity": {
       "loading": "Loading shop…",
       "fallbackName": "{{name}}'s Shop",
@@ -720,9 +706,7 @@
     },
     "stats": {
       "netRevenue": "Net revenue",
-      "netRevenueTrend": "+16.8% vs previous period",
       "noRevenueData": "No revenue data yet",
-      "sampleRevenueNote": "Sample revenue data",
       "trackSalesNote": "Track sales performance",
       "availableBalance": "Available wallet balance",
       "balanceDetail": "Balance from your account",
@@ -734,55 +718,63 @@
       "liveAuctions": "Live auction sessions",
       "liveAuctionsDetail": "27 sample bids",
       "noAuctionsData": "No auction session data yet",
-      "exploreAuctions": "Explore auction room"
+      "exploreAuctions": "Explore auction room",
+      "inEscrowDetail": "{{amount}} held in escrow",
+      "afterFeeNote": "After the {{rate}}% platform fee"
     },
     "revenue": {
       "title": "Cash flow & revenue growth",
       "subtitle": "Compare auction vs direct retail revenue",
       "unit": "Million VND",
-      "periods": {
-        "7d": "7 days",
-        "30d": "30 days",
-        "month": "This month"
-      },
-      "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
       "emptyTitle": "Revenue will appear here",
       "emptyDesc": "No data in the selected period",
-      "auctionLabel": "Auction",
-      "auctionSample": "218.2M",
-      "retailLabel": "Direct retail",
-      "retailSample": "130.4M",
       "exportErr": "No data available to export report.",
       "exportBtn": "Export revenue report",
       "csvFilename": "sample-revenue.csv",
-      "csvHeader": "Sample data",
       "shareTitle": "Revenue breakdown",
       "shareSubtitle": "Revenue share by channel",
       "totalRevenueLabel": "TOTAL REVENUE",
-      "shareFootnotePreview": "Sample metrics for report layout.",
-      "shareFootnoteEmpty": "Automatically aggregated when sales data arrives."
+      "shareFootnoteEmpty": "Automatically aggregated when sales data arrives.",
+      "ranges": {
+        "6m": "6 months",
+        "12m": "12 months"
+      },
+      "loading": "Loading your revenue…",
+      "grossLabel": "Gross",
+      "netLabel": "After fee",
+      "releasedLabel": "Released",
+      "inEscrowLabel": "In escrow",
+      "ordersCount": "{{count}} orders",
+      "csvMonthHeader": "Month",
+      "csvGrossHeader": "Gross revenue (VND)",
+      "csvOrdersHeader": "Orders",
+      "shareFootnote": "Platform fee so far: {{fee}} at {{rate}}%."
     },
     "ordersPreview": {
       "title": "Orders awaiting GHN handover",
       "subtitle": "Prepare, pack, and track shipping",
       "viewAll": "View all",
-      "packing": "Awaiting GHN",
-      "pending": "Awaiting confirmation",
       "emptyTitle": "No orders to process",
-      "emptyDesc": "Your shop's orders will be collected here."
+      "emptyDesc": "Your shop's orders will be collected here.",
+      "loading": "Loading your latest orders…",
+      "untitled": "Untitled product"
     },
     "auctionsPreview": {
       "title": "Auction workspace",
       "subtitle": "Manage your shop's sessions and collectibles",
       "allSessions": "All sessions",
       "liveBadge": "● LIVE NOW",
-      "endedBadge": "Ended",
-      "bidsSample": "{{count}} bids · Sample data",
-      "currentPrice": "Current price",
       "exploreSession": "Explore session",
       "emptyTitle": "Ready for your first auction session?",
       "emptyDesc": "Prepare your item details and photos.",
-      "createDraft": "Create session draft"
+      "createDraft": "Create session draft",
+      "loading": "Loading your lots…",
+      "startingPrice": "Starting price",
+      "lotStatus": {
+        "PENDING_REVIEW": "Pending appraisal",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+      }
     },
     "walletPanel": {
       "title": "Finance & Escrow Wallet",

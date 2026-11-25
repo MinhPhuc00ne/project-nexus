@@ -3,8 +3,6 @@ import type { SellerDraft } from './sellerData';
 import type { ShopProfile } from '../../types/shop.types';
 import type { ToastItem } from '../../types/toast.types';
 export interface SellerWorkspaceState {
-  preview: boolean;
-  setPreview: (value: boolean) => void;
   storeName: string;
   storeLoading: boolean;
   storeError: string;

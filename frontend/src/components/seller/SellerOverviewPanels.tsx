@@ -20,7 +20,13 @@ import {
 import { useSellerSession } from './SellerSession';
 import { useSellerWorkspace } from './SellerWorkspace';
 import { Badge, EmptyState, Panel, SellerLink, StatCard, exportCsv } from './SellerUI';
-import { money, previewAuctions, previewOrders } from './sellerData';
+import { money } from './sellerData';
+import {
+  isLiveAuction,
+  useSellerConsignments,
+  useSellerOverview,
+  useSellerRecentOrders,
+} from './useSellerOverview';
 
 export function StoreIdentity() {
   const { t } = useTranslation('seller');
@@ -103,7 +109,11 @@ export function StoreIdentity() {
 export function SellerStats() {
   const { t } = useTranslation('seller');
   const user = useSellerSession();
-  const { preview } = useSellerWorkspace();
+  const { overview, liveAuctions, isLoading } = useSellerOverview();
+  // A dash while the figures are being read, and when they could not be: a
+  // zero would claim the shop has sold nothing, which is a different thing.
+  const unknown = isLoading || !overview;
+  const metrics = overview?.metrics;
   return (
     <div
       className="grid [grid-template-columns:repeat(4,_minmax(0,_1fr))] gap-4 min-[1600px]:gap-5 max-[1250px]:gap-3 max-[1050px]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] max-[540px]:gap-2.5"
@@ -111,20 +121,22 @@ export function SellerStats() {
     >
       <StatCard
         label={t('dashboard.stats.netRevenue')}
-        value={preview ? money(348600000) : '—'}
+        value={unknown ? '—' : money(metrics!.netRevenue)}
         icon={<DollarOutlined className="text-[20px]" aria-hidden="true" />}
         detail={
-          preview ? (
+          metrics && metrics.pendingEscrowRevenue > 0 ? (
             <span className="text-[#16a085]!" data-seller="text-green">
               <RiseOutlined className="text-[13px]" aria-hidden="true" />{' '}
-              {t('dashboard.stats.netRevenueTrend')}
+              {t('dashboard.stats.inEscrowDetail', { amount: money(metrics.pendingEscrowRevenue) })}
             </span>
           ) : (
             t('dashboard.stats.noRevenueData')
           )
         }
         note={
-          preview ? t('dashboard.stats.sampleRevenueNote') : t('dashboard.stats.trackSalesNote')
+          metrics
+            ? t('dashboard.stats.afterFeeNote', { rate: metrics.platformFeeRatePercentage })
+            : t('dashboard.stats.trackSalesNote')
         }
       />
       <StatCard
@@ -141,10 +153,12 @@ export function SellerStats() {
       />
       <StatCard
         label={t('dashboard.stats.pendingOrders')}
-        value={preview ? '03' : '—'}
+        value={unknown ? '—' : String(metrics!.pendingOrdersCount).padStart(2, '0')}
         icon={<TruckOutlined className="text-[20px]" aria-hidden="true" />}
         detail={
-          preview ? t('dashboard.stats.pendingOrdersDetail') : t('dashboard.stats.noOrdersData')
+          metrics && metrics.pendingOrdersCount > 0
+            ? t('dashboard.stats.pendingOrdersDetail')
+            : t('dashboard.stats.noOrdersData')
         }
         note={
           <Link to="/seller/orders">
@@ -155,10 +169,10 @@ export function SellerStats() {
       />
       <StatCard
         label={t('dashboard.stats.liveAuctions')}
-        value={preview ? '02' : '—'}
+        value={liveAuctions === null ? '—' : String(liveAuctions).padStart(2, '0')}
         icon={<CodeSandboxOutlined className="text-[20px]" aria-hidden="true" />}
         detail={
-          preview ? (
+          liveAuctions && liveAuctions > 0 ? (
             <span className="text-[#16a085]!" data-seller="text-green">
               <span
                 className="w-1.5 h-1.5 inline-block rounded-full bg-[#14b58a] shrink-0"
@@ -181,57 +195,54 @@ export function SellerStats() {
   );
 }
 
-const barHeights: Record<number, string> = {
-  '26': 'h-[26%]',
-  '30': 'h-[30%]',
-  '37': 'h-[37%]',
-  '38': 'h-[38%]',
-  '42': 'h-[42%]',
-  '44': 'h-[44%]',
-  '46': 'h-[46%]',
-  '51': 'h-[51%]',
-  '53': 'h-[53%]',
-  '60': 'h-[60%]',
-  '68': 'h-[68%]',
-  '71': 'h-[71%]',
-  '72': 'h-[72%]',
-  '74': 'h-[74%]',
-  '75': 'h-[75%]',
-  '82': 'h-[82%]',
-  '83': 'h-[83%]',
-  '92': 'h-[92%]',
-  '96': 'h-[96%]',
-  '23.18': 'h-[23.18%]',
-  '32.33': 'h-[32.33%]',
-  '26.84': 'h-[26.84%]',
-  '43.31': 'h-[43.31%]',
-  '36.6': 'h-[36.6%]',
-  '50.019999999999996': 'h-[50.019999999999996%]',
-  '45.75': 'h-[45.75%]',
-  '15.86': 'h-[15.86%]',
-  '25.62': 'h-[25.62%]',
-  '22.57': 'h-[22.57%]',
-  '45.14': 'h-[45.14%]',
-  '41.48': 'h-[41.48%]',
-  '56.12': 'h-[56.12%]',
-  '18.3': 'h-[18.3%]',
-  '31.11': 'h-[31.11%]',
-  '28.06': 'h-[28.06%]',
-  '43.92': 'h-[43.92%]',
-  '50.629999999999995': 'h-[50.629999999999995%]',
-  '58.56': 'h-[58.56%]',
-};
+/** How many months of history each choice shows. */
+const REVENUE_RANGES = { '6m': 6, '12m': 12 } as const;
+
+type RevenueRange = keyof typeof REVENUE_RANGES;
+
+/**
+ * Formats a `YYYY-MM` month for the axis under a bar.
+ *
+ * @param month - The month as the API reports it.
+ * @param locale - Which language to name the month in.
+ * @returns A short month label, or the raw value if it is not a month.
+ */
+function monthLabel(month: string, locale: string): string {
+  const parsed = new Date(`${month}-01T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return month;
+  return new Intl.DateTimeFormat(locale, { month: 'short', timeZone: 'UTC' }).format(parsed);
+}
+
+/**
+ * Rounds a maximum up to something worth writing on an axis.
+ *
+ * @param value - The largest bar's value.
+ * @returns A round number at or above it, and never zero.
+ */
+function axisCeiling(value: number): number {
+  if (value <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  return Math.ceil(value / magnitude) * magnitude;
+}
 
 export function RevenuePanels({ compact = false }: { compact?: boolean }) {
-  const { t } = useTranslation('seller');
-  const [period, setPeriod] = useState<'7d' | '30d' | 'month'>('7d');
-  const { preview, notify } = useSellerWorkspace();
-  const datasets: Record<'7d' | '30d' | 'month', number[]> = {
-    '7d': [38, 53, 44, 71, 60, 82, 75],
-    '30d': [26, 42, 37, 60, 74, 68, 92],
-    month: [30, 38, 51, 46, 72, 83, 96],
-  };
-  const weekdays = t('dashboard.revenue.weekdays', { returnObjects: true }) as string[];
+  const { t, i18n } = useTranslation('seller');
+  const [range, setRange] = useState<RevenueRange>('6m');
+  const { notify } = useSellerWorkspace();
+  const { overview, isLoading } = useSellerOverview();
+
+  // The chart used to draw one of three hardcoded arrays of percentages behind
+  // a `preview` flag nothing could turn on, with a lookup table of Tailwind
+  // height classes written for exactly those numbers. The API has reported a
+  // real monthly breakdown all along.
+  const months = (overview?.monthlyBreakdown ?? []).slice(-REVENUE_RANGES[range]);
+  const ceiling = axisCeiling(Math.max(0, ...months.map((row) => row.gross)));
+  const hasData = months.some((row) => row.gross > 0);
+  const metrics = overview?.metrics;
+  const gross = metrics?.totalGrossRevenue ?? 0;
+  const completedShare = gross > 0 ? (metrics!.completedRevenue / gross) * 100 : 0;
+  const escrowShare = gross > 0 ? 100 - completedShare : 0;
+
   return (
     <div
       className="grid [grid-template-columns:minmax(0,_1.9fr)_minmax(240px,_1fr)] gap-5 max-[1250px]:[grid-template-columns:minmax(0,_1.6fr)_minmax(230px,_1fr)] max-[1050px]:[grid-template-columns:minmax(0,_1.5fr)_minmax(200px,_1fr)] max-[760px]:[grid-template-columns:minmax(0,_1.8fr)_minmax(200px,_1fr)] max-[540px]:[grid-template-columns:1fr]"
@@ -250,19 +261,19 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           className="gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:font-[650] [&_button>span:not(.anticon)]:text-[9px] [&_button>span:not(.anticon)]:bg-[#edf1f8] [&_button>span:not(.anticon)]:py-0 [&_button>span:not(.anticon)]:px-[5px] [&_button>span:not(.anticon)]:rounded-[4px] [&_button.is-active>span:not(.anticon)]:bg-[#315eea] [&_button.is-active>span:not(.anticon)]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px] inline-flex bg-[#f5f7fb] rounded-[7px] p-[3px] mb-5.5 [&_button]:py-[5px] [&_button]:px-[11px] [&_button.is-active]:bg-white [&_button.is-active]:[box-shadow:0_1px_4px_#2039640b] [&_button.is-active]:text-[#465570]"
           data-seller="tabs chart-tabs"
         >
-          {(['7d', '30d', 'month'] as const).map((item) => (
+          {(Object.keys(REVENUE_RANGES) as RevenueRange[]).map((item) => (
             <button
               key={item}
-              className={cn(period === item ? 'is-active' : '')}
-              onClick={() => setPeriod(item)}
+              className={cn(range === item ? 'is-active' : '')}
+              onClick={() => setRange(item)}
             >
-              {t(`dashboard.revenue.periods.${item}`)}
+              {t(`dashboard.revenue.ranges.${item}`)}
             </button>
           ))}
         </div>
         <div
           className={cn(
-            `relative h-[218px] [margin:4px_0_35px_22px] min-[1600px]:h-[250px] max-[760px]:h-[190px] max-[540px]:h-[200px] ${!preview ? 'is-empty' : ''}`,
+            `relative h-[218px] [margin:4px_0_35px_22px] min-[1600px]:h-[250px] max-[760px]:h-[190px] max-[540px]:h-[200px] ${!hasData ? 'is-empty' : ''}`,
           )}
           data-seller="chart"
         >
@@ -270,26 +281,28 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
             className="absolute [inset:0] flex flex-col justify-between [&>span:not(.anticon)]:block [&>span:not(.anticon)]:[border-top:1px_dashed_#edf1f7] [&>span:not(.anticon)]:relative [&_i]:absolute [&_i]:left-[-25px] [&_i]:top-[-8px] [&_i]:not-italic [&_i]:text-[8px] [&_i]:text-[#a1afc2]"
             data-seller="chart-gridlines"
           >
-            {[400, 300, 200, 100, 0].map((n) => (
-              <span key={n}>
-                <i>{n}</i>
+            {[1, 0.75, 0.5, 0.25, 0].map((fraction) => (
+              <span key={fraction}>
+                {/* The axis follows the data instead of always running to 400. */}
+                <i>{Math.round((ceiling * fraction) / 1_000_000)}</i>
               </span>
             ))}
           </div>
-          {preview ? (
+          {hasData ? (
             <div
               className="absolute [inset:0_8px_0_14px] flex items-end justify-between gap-[13px]"
               data-seller="chart-bars"
             >
-              {datasets[period].map((value, index) => (
+              {months.map((row) => (
                 <div
-                  key={index}
-                  className="h-full w-[10%] flex items-end justify-center gap-[5px] relative [&>div]:w-[13px] [&>div]:max-w-[40%] [&>div]:[background:linear-gradient(#4d79f3,_#315eea)] [&>div]:rounded-[3px_3px_0_0] [&>div]:[transition:height_0.4s] [&>div:nth-child(2)]:bg-none [&>div:nth-child(2)]:bg-[#9eb7fb] [&_small]:absolute [&_small]:bottom-[-24px] [&_small]:text-[9px] [&_small]:text-[#8b9bb4]"
+                  key={row.month}
+                  className="h-full w-[10%] flex items-end justify-center gap-[5px] relative [&>div]:w-[13px] [&>div]:max-w-[40%] [&>div]:[background:linear-gradient(#4d79f3,_#315eea)] [&>div]:rounded-[3px_3px_0_0] [&>div]:[transition:height_0.4s] [&_small]:absolute [&_small]:bottom-[-24px] [&_small]:text-[9px] [&_small]:text-[#8b9bb4]"
                   data-seller="chart-bar-group"
+                  title={`${monthLabel(row.month, i18n.language)} · ${money(row.gross)} · ${t('dashboard.revenue.ordersCount', { count: row.ordersCount })}`}
                 >
-                  <div className={barHeights[value]} />
-                  <div className={barHeights[value * 0.61]} />
-                  <small>{weekdays[index]}</small>
+                  {/* Inline, because a real height cannot be a Tailwind class. */}
+                  <div style={{ height: `${Math.min(100, (row.gross / ceiling) * 100)}%` }} />
+                  <small>{monthLabel(row.month, i18n.language)}</small>
                 </div>
               ))}
             </div>
@@ -299,7 +312,9 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
               data-seller="chart-placeholder"
             >
               <RiseOutlined className="text-[28px]" aria-hidden="true" />
-              <strong>{t('dashboard.revenue.emptyTitle')}</strong>
+              <strong>
+                {isLoading ? t('dashboard.revenue.loading') : t('dashboard.revenue.emptyTitle')}
+              </strong>
               <span>{t('dashboard.revenue.emptyDesc')}</span>
             </div>
           )}
@@ -310,13 +325,11 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
         >
           <span>
             <i />
-            {t('dashboard.revenue.auctionLabel')}{' '}
-            <b>{preview ? t('dashboard.revenue.auctionSample') : '—'}</b>
+            {t('dashboard.revenue.grossLabel')} <b>{metrics ? money(gross) : '—'}</b>
           </span>
           <span>
             <i />
-            {t('dashboard.revenue.retailLabel')}{' '}
-            <b>{preview ? t('dashboard.revenue.retailSample') : '—'}</b>
+            {t('dashboard.revenue.netLabel')} <b>{metrics ? money(metrics.netRevenue) : '—'}</b>
           </span>
         </div>
         {!compact && (
@@ -324,11 +337,14 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
             className="inline-flex items-center gap-1.5 p-0 [border:0] bg-transparent text-[#315eea] text-[10px] font-[550]"
             data-seller="text-button"
             onClick={() =>
-              preview
+              hasData
                 ? exportCsv(t('dashboard.revenue.csvFilename'), [
-                    [t('dashboard.revenue.csvHeader'), t(`dashboard.revenue.periods.${period}`)],
-                    [t('dashboard.revenue.auctionLabel'), 218200000],
-                    [t('dashboard.revenue.retailLabel'), 130400000],
+                    [
+                      t('dashboard.revenue.csvMonthHeader'),
+                      t('dashboard.revenue.csvGrossHeader'),
+                      t('dashboard.revenue.csvOrdersHeader'),
+                    ],
+                    ...months.map((row) => [row.month, row.gross, row.ordersCount]),
                   ])
                 : notify(t('dashboard.revenue.exportErr'), 'error')
             }
@@ -344,15 +360,20 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
         action={<DollarOutlined className="text-[17px]" aria-hidden="true" />}
       >
         <div
-          className={cn(
-            `w-[174px] h-[174px] [margin:25px_auto_24px] rounded-full [background:conic-gradient(#315eea_0_62.6%,_#adc1fc_62.6%_100%)] grid [place-items:center] [transform:rotate(-90deg)] [&.is-empty]:[background:conic-gradient(#e9eff9_0_100%)] [&>div]:w-[133px] [&>div]:h-[133px] [&>div]:bg-white [&>div]:rounded-full [&>div]:flex [&>div]:items-center [&>div]:justify-center [&>div]:flex-col [&>div]:[transform:rotate(90deg)] [&_small]:text-[8px] [&_small]:tracking-[0.7px] [&_small]:text-[#96a4bc] [&_strong]:text-[24px] [&_strong]:mt-[5px] [&_strong]:font-bold [&_strong]:text-[#253557] [&_span:not(.anticon)]:text-[10px] [&_span:not(.anticon)]:text-[#16a486] [&_span:not(.anticon)]:mt-[3px] max-[1050px]:w-[155px] max-[1050px]:h-[155px] max-[1050px]:[&>div]:w-[120px] max-[1050px]:[&>div]:h-[120px] max-[760px]:my-7.5 max-[760px]:mx-auto max-[540px]:my-4.5 max-[540px]:mx-auto ${!preview ? 'is-empty' : ''}`,
-          )}
+          className="w-[174px] h-[174px] [margin:25px_auto_24px] rounded-full grid [place-items:center] [transform:rotate(-90deg)] [&>div]:w-[133px] [&>div]:h-[133px] [&>div]:bg-white [&>div]:rounded-full [&>div]:flex [&>div]:items-center [&>div]:justify-center [&>div]:flex-col [&>div]:[transform:rotate(90deg)] [&_small]:text-[8px] [&_small]:tracking-[0.7px] [&_small]:text-[#96a4bc] [&_strong]:text-[20px] [&_strong]:mt-[5px] [&_strong]:font-bold [&_strong]:text-[#253557] max-[1050px]:w-[155px] max-[1050px]:h-[155px] max-[1050px]:[&>div]:w-[120px] max-[1050px]:[&>div]:h-[120px] max-[760px]:my-7.5 max-[760px]:mx-auto max-[540px]:my-4.5 max-[540px]:mx-auto"
+          // The slice is the share of revenue already released from escrow, so
+          // the ring is drawn from the figures rather than fixed at 62,6%.
+          style={{
+            background:
+              gross > 0
+                ? `conic-gradient(#315eea 0 ${completedShare}%, #adc1fc ${completedShare}% 100%)`
+                : 'conic-gradient(#e9eff9 0 100%)',
+          }}
           data-seller="donut"
         >
           <div>
             <small>{t('dashboard.revenue.totalRevenueLabel')}</small>
-            <strong>{preview ? '348,6M' : '—'}</strong>
-            {preview && <span>+16,8%</span>}
+            <strong>{metrics ? money(gross) : '—'}</strong>
           </div>
         </div>
         <div
@@ -362,24 +383,27 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           <div>
             <span>
               <i />
-              {t('dashboard.revenue.auctionLabel')}
+              {t('dashboard.revenue.releasedLabel')}
             </span>
-            <b>{preview ? '62,6%' : '—'}</b>
+            <b>{metrics && gross > 0 ? `${completedShare.toFixed(1)}%` : '—'}</b>
           </div>
           <div>
             <span>
               <i />
-              {t('dashboard.revenue.retailLabel')}
+              {t('dashboard.revenue.inEscrowLabel')}
             </span>
-            <b>{preview ? '37,4%' : '—'}</b>
+            <b>{metrics && gross > 0 ? `${escrowShare.toFixed(1)}%` : '—'}</b>
           </div>
         </div>
         <p
           className="text-center text-[9px] text-[#98a7bf] [margin:13px_0_0]"
           data-seller="chart-footnote"
         >
-          {preview
-            ? t('dashboard.revenue.shareFootnotePreview')
+          {metrics && gross > 0
+            ? t('dashboard.revenue.shareFootnote', {
+                fee: money(metrics.estimatedPlatformFee),
+                rate: metrics.platformFeeRatePercentage,
+              })
             : t('dashboard.revenue.shareFootnoteEmpty')}
         </p>
       </Panel>
@@ -389,7 +413,9 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
 
 export function OrdersPreview() {
   const { t } = useTranslation('seller');
-  const { preview } = useSellerWorkspace();
+  // The three most recent orders, rather than three invented ones behind a flag
+  // nothing in the application could turn on.
+  const { orders, isLoading } = useSellerRecentOrders(3);
   return (
     <Panel
       title={t('dashboard.ordersPreview.title')}
@@ -405,31 +431,29 @@ export function OrdersPreview() {
         </Link>
       }
     >
-      {preview ? (
+      {orders.length > 0 ? (
         <div className="flex flex-col gap-2.5" data-seller="mini-list">
-          {previewOrders.slice(0, 3).map((order) => (
+          {orders.map((order) => (
             <Link
               className="flex items-center gap-3 py-[13px] px-[11px] [border:1px_solid_#edf1f7] rounded-[9px] text-inherit [&:hover]:[border-color:#d3dffa] [&:hover]:bg-[#fbfcff] [&>img]:w-[45px] [&>img]:h-12 [&>img]:object-contain [&>img]:bg-[#f5f7fb] [&>img]:rounded-[7px] [&>img]:shrink-0 [&>div]:min-w-0 [&_strong]:block [&_strong]:text-[10px] [&_strong]:font-semibold [&_strong]:overflow-hidden [&_strong]:text-ellipsis [&_strong]:whitespace-nowrap [&_strong]:max-w-[220px] [&_small]:block [&_small]:text-[9px] [&_small]:text-[#97a5ba] [&_small]:mt-1 max-[1250px]:[&_strong]:max-w-[150px] max-[1050px]:[&_strong]:max-w-[none] max-[540px]:py-[11px] max-[540px]:px-2 max-[540px]:gap-[9px] max-[540px]:flex-wrap max-[540px]:[&>img]:w-9.5 max-[540px]:[&>img]:h-[43px] max-[540px]:[&>div:nth-child(2)]:flex-1 max-[540px]:[&>div:nth-child(2)]:min-w-[130px] max-[540px]:[&_strong]:text-[10px] max-[540px]:[&_strong]:max-w-[200px] max-[540px]:[&_[data-seller~=preview-price]]:ml-[47px]"
               data-seller="mini-row"
               to={`/seller/orders/${order.id}`}
               key={order.id}
             >
-              <img src={order.image} alt="" />
+              <img src={order.items[0]?.thumbnail ?? ''} alt="" />
               <div>
-                <strong>{order.product}</strong>
+                <strong>{order.items[0]?.title ?? t('dashboard.ordersPreview.untitled')}</strong>
                 <small>
-                  #{order.id} · {order.buyer}
+                  #{order.id.slice(0, 8).toUpperCase()} · {order.buyer.fullName}
                 </small>
               </div>
               <div
                 className="ml-auto text-right shrink-0 flex items-end flex-col gap-1.5 [&>b]:text-[10px] max-[760px]:max-w-[140px] max-[540px]:ml-[47px] max-[540px]:text-left max-[540px]:items-center max-[540px]:flex-row max-[540px]:gap-2.5 max-[540px]:max-w-[none] max-[540px]:[&>b]:text-[10px] max-[540px]:[&_[data-seller~=badge]]:text-[8px]"
                 data-seller="mini-value"
               >
-                <b>{money(order.price)}</b>
-                <Badge tone={order.status === 'packing' ? 'amber' : 'blue'}>
-                  {order.status === 'packing'
-                    ? t('dashboard.ordersPreview.packing')
-                    : t('dashboard.ordersPreview.pending')}
+                <b>{money(order.totalAmount)}</b>
+                <Badge tone={order.status === 'PREPARING' ? 'amber' : 'blue'}>
+                  {t(`orders.statuses.${order.status}`)}
                 </Badge>
               </div>
             </Link>
@@ -437,7 +461,11 @@ export function OrdersPreview() {
         </div>
       ) : (
         <EmptyState
-          title={t('dashboard.ordersPreview.emptyTitle')}
+          title={
+            isLoading
+              ? t('dashboard.ordersPreview.loading')
+              : t('dashboard.ordersPreview.emptyTitle')
+          }
           description={t('dashboard.ordersPreview.emptyDesc')}
         />
       )}
@@ -447,7 +475,9 @@ export function OrdersPreview() {
 
 export function AuctionsPreview({ full = false }: { full?: boolean }) {
   const { t } = useTranslation('seller');
-  const { preview } = useSellerWorkspace();
+  // The shop's own consigned lots, rather than two invented ones.
+  const { consignments, isLoading } = useSellerConsignments();
+  const lots = consignments.slice(0, full ? 3 : 2);
   return (
     <Panel
       title={t('dashboard.auctionsPreview.title')}
@@ -463,7 +493,7 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
         </Link>
       }
     >
-      {preview ? (
+      {lots.length > 0 ? (
         <div
           className={cn(
             full
@@ -472,7 +502,7 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
           )}
           data-seller="auction-preview-grid mini-list"
         >
-          {previewAuctions.slice(0, full ? 3 : 2).map((auction) => (
+          {lots.map((auction) => (
             <Link
               className={cn(
                 full
@@ -488,26 +518,28 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
                   className="h-[165px] relative [background:linear-gradient(130deg,_#f2f5fb,_#e7edf8)] grid [place-items:center] overflow-hidden [&>img]:w-[80%] [&>img]:h-[90%] [&>img]:object-contain [&>img]:mix-blend-multiply [&>img]:[transition:transform_0.3s] [&>[data-seller~=badge]]:absolute [&>[data-seller~=badge]]:left-2.5 [&>[data-seller~=badge]]:top-2.5 [&>[data-seller~=badge]]:bg-[#f1fbf8] max-[1050px]:h-[135px] max-[540px]:h-[195px]"
                   data-seller="preview-image"
                 >
-                  <img src={auction.image} alt={auction.title} />
-                  <Badge tone={auction.status === 'live' ? 'green' : 'gray'}>
-                    {auction.status === 'live'
+                  <img src={auction.images[0] ?? ''} alt={auction.title} />
+                  <Badge tone={isLiveAuction(auction) ? 'green' : 'gray'}>
+                    {isLiveAuction(auction)
                       ? t('dashboard.auctionsPreview.liveBadge')
-                      : t('dashboard.auctionsPreview.endedBadge')}
+                      : t(`dashboard.auctionsPreview.lotStatus.${auction.status}`, {
+                          defaultValue: auction.status,
+                        })}
                   </Badge>
                 </div>
               ) : (
-                <img src={auction.image} alt="" />
+                <img src={auction.images[0] ?? ''} alt="" />
               )}
               <div>
                 <strong>{auction.title}</strong>
-                <small>{t('dashboard.auctionsPreview.bidsSample', { count: auction.bids })}</small>
+                <small>{auction.auction.title}</small>
               </div>
               <div
                 className="ml-auto [&_small]:text-[9px] [&_small]:text-[#96a4bb] [&_small]:block [&_b]:text-[11px] [&_b]:block [&>span:not(.anticon)]:flex [&>span:not(.anticon)]:items-center [&>span:not(.anticon)]:justify-between [&>span:not(.anticon)]:text-[9px] [&>span:not(.anticon)]:text-[#315eea] [&>span:not(.anticon)]:mt-[9px]"
                 data-seller="preview-price"
               >
-                <small>{t('dashboard.auctionsPreview.currentPrice')}</small>
-                <b>{money(auction.price)}</b>
+                <small>{t('dashboard.auctionsPreview.startingPrice')}</small>
+                <b>{money(auction.proposedStartingPrice)}</b>
                 {full && (
                   <span>
                     {t('dashboard.auctionsPreview.exploreSession')}{' '}
@@ -520,7 +552,11 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
         </div>
       ) : (
         <EmptyState
-          title={t('dashboard.auctionsPreview.emptyTitle')}
+          title={
+            isLoading
+              ? t('dashboard.auctionsPreview.loading')
+              : t('dashboard.auctionsPreview.emptyTitle')
+          }
           description={t('dashboard.auctionsPreview.emptyDesc')}
           action={
             <SellerLink to="/seller/auctions/new" secondary>
