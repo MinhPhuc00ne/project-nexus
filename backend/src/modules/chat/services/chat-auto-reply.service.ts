@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ChatAutoReplyTriggerType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { containsChatPhrase, normalizeChatText } from './chatbot-knowledge';
@@ -304,10 +305,10 @@ export class ChatAutoReplyService {
       }
     }
 
-    const triggers = [
-      ...(context.offline ? ['OFFLINE'] : []),
-      ...(context.firstMessage ? ['WELCOME'] : []),
-      'DEFAULT',
+    const triggers: ChatAutoReplyTriggerType[] = [
+      ...(context.offline ? [ChatAutoReplyTriggerType.OFFLINE] : []),
+      ...(context.firstMessage ? [ChatAutoReplyTriggerType.WELCOME] : []),
+      ChatAutoReplyTriggerType.DEFAULT,
     ];
     for (const triggerType of triggers) {
       const reply = await this.prisma.chatAutoReply.findFirst({

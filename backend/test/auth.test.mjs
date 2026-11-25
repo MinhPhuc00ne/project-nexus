@@ -95,7 +95,14 @@ function createAuthHarness(userRecord = null) {
     sendEmail: mock.fn(async () => ({ accepted: ['buyer@nexus.local'] })),
   };
 
-  const service = new AuthService(prisma, configService, jwtService, redisService, mailService);
+  const service = new AuthService(
+    prisma,
+    configService,
+    jwtService,
+    { signAccessToken: async () => 'mock-access-token', revokeAllSessions: async () => {} },
+    redisService,
+    mailService,
+  );
   return { service, prisma, tx, mailService, users };
 }
 

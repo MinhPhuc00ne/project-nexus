@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   HttpException,
 } from '@nestjs/common';
+import { TokenAuthService } from '../src/core/security/token-auth.service';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@nexus/types';
@@ -353,10 +354,18 @@ describe('M1 Security Hotfixes', () => {
         REFRESH_TOKEN_SECRET: 'test-refresh-secret-at-least-16',
       });
 
+      // Access tokens are minted by TokenAuthService; this test only exercises
+      // OTP generation and response shape, so a no-op signer is enough.
+      const tokenAuthMock = {
+        signAccessToken: vi.fn(async () => 'test-access-token'),
+        revokeAllSessions: vi.fn(async () => undefined),
+      } as unknown as TokenAuthService;
+
       const authService = new AuthService(
         prismaMock,
         configMock,
         {} as never,
+        tokenAuthMock,
         {} as unknown as RedisService,
         mailMock,
       );

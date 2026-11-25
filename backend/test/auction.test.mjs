@@ -23,7 +23,7 @@ const { AuctionCheckoutService } = load(
   '../src/modules/commerce/services/auction-checkout.service.ts',
 );
 const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
-const { JwtStrategy } = load('../src/modules/auth/strategies/jwt.strategy.ts');
+const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
 const { ConfigService } = load('@nestjs/config');
 const { WS_AUCTION_EVENTS } = load('@nexus/types');
@@ -1117,7 +1117,27 @@ test('single-bidder reserve rule, AuctionComplaint lifecycle, Support Staff cont
   Module({
     controllers: [AuctionController],
     providers: [
-      JwtStrategy,
+      {
+        // The bearer value is the account id; the role comes from the same
+        // fixture users the Prisma mock serves.
+        provide: TokenAuthService,
+        useValue: {
+          authenticate: async (token) => {
+            const account = await h.db.user.findUnique({ where: { id: token } });
+            if (!account) throw new Error('unknown fixture identity');
+            return {
+              id: token,
+              sub: token,
+              email: account.email ?? 'fixture@example.invalid',
+              role: account.role,
+              accountRole: account.role,
+              activeRole: account.role,
+              currentMode: 'BUYER',
+              isSellerActive: Boolean(account.isSellerActive),
+            };
+          },
+        },
+      },
       { provide: PrismaService, useValue: h.db },
       { provide: ConfigService, useValue: { get: () => 'auction-role-secret' } },
       { provide: AuctionService, useValue: h.auctionService },
@@ -1132,11 +1152,11 @@ test('single-bidder reserve rule, AuctionComplaint lifecycle, Support Staff cont
     await app.listen(0, '127.0.0.1');
     const base = await app.getUrl();
     const staffHeaders = {
-      Authorization: `Bearer ${jwt.sign({ sub: 'staff-1' })}`,
+      Authorization: 'Bearer staff-1',
       'Content-Type': 'application/json',
     };
     const buyerHeaders = {
-      Authorization: `Bearer ${jwt.sign({ sub: 'buyer-1' })}`,
+      Authorization: 'Bearer buyer-1',
       'Content-Type': 'application/json',
     };
 

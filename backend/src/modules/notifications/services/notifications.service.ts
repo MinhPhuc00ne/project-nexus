@@ -10,7 +10,7 @@ import {
   WithdrawalStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { publishUnreadCountSync } from '../../../core/notifications/notification-realtime.bus';
+import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { QueryNotificationDto } from '../dtos/query-notification.dto';
 import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
@@ -21,7 +21,10 @@ import {
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly domainEvents: DomainEventsService,
+  ) {}
 
   /**
    * Retrieves paginated notifications for a user with read status filtering.
@@ -212,7 +215,7 @@ export class NotificationsService {
     });
 
     const { unreadCount } = await this.getUnreadCount(userId);
-    publishUnreadCountSync(userId, unreadCount);
+    this.domainEvents.publishUnreadSync(userId, unreadCount);
 
     return {
       success: true,
@@ -236,7 +239,7 @@ export class NotificationsService {
       data: { isRead: true, readAt: new Date() },
     });
 
-    publishUnreadCountSync(userId, 0);
+    this.domainEvents.publishUnreadSync(userId, 0);
 
     return {
       success: true,

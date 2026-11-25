@@ -351,6 +351,7 @@ test(
                   : undefined,
             },
             {},
+            { signAccessToken: async () => 'test-access-token', revokeAllSessions: async () => {} },
             {},
             {},
           );

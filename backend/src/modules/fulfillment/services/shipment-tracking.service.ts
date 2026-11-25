@@ -5,7 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+
+import { ProviderConfigService } from '../../../core/providers/provider-config.service';
 import {
   NotificationChannel,
   NotificationType,
@@ -39,7 +40,7 @@ export class ShipmentTrackingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ghn: GhnOrderApiService,
-    private readonly config?: ConfigService,
+    private readonly providers: ProviderConfigService,
   ) {}
 
   async view(orderId: string, actor: ShipmentActor): Promise<TrackingResult> {
@@ -79,23 +80,24 @@ export class ShipmentTrackingService {
     const waybill = order.shipment?.waybillCode;
     if (!waybill) throw new BadRequestException('Đơn chưa có vận đơn GHN được xác nhận.');
     const context = shipmentGhnContext(order.shipment?.metadata);
-    const isDev = this.config
-      ? this.config.get<string>('NODE_ENV') !== 'production'
-      : process.env.NODE_ENV !== 'production';
+    // Simulated tracking is a sandbox feature, named in the environment,
+    // rather than something every non-production deployment inherits.
+    const isSandbox = this.providers.isShippingSandbox();
     const metadataBefore = objectValue(order.shipment?.metadata);
     const previousTracking = objectValue(metadataBefore.tracking);
 
-    // In dev mode, use mockStatus if explicitly provided, OR retain previously simulated status
-    // during non-mock refreshes (e.g. when buyer confirms delivery) to avoid resetting to ready_to_pick.
+    // In sandbox mode, use mockStatus if explicitly provided, or retain a
+    // previously simulated status during an ordinary refresh (for example when
+    // the buyer confirms delivery) so it does not reset to ready_to_pick.
     const effectiveStatus =
-      isDev && mockStatus
+      isSandbox && mockStatus
         ? mockStatus
-        : isDev && previousTracking.isSimulated && typeof previousTracking.status === 'string'
+        : isSandbox && previousTracking.isSimulated && typeof previousTracking.status === 'string'
           ? String(previousTracking.status)
           : undefined;
 
     let detail: GhnOrderDetail;
-    if (isDev && effectiveStatus) {
+    if (isSandbox && effectiveStatus) {
       detail = {
         order_code: waybill,
         client_order_code: String(metadataBefore.clientOrderCode ?? order.id),
@@ -162,7 +164,7 @@ export class ShipmentTrackingService {
           leadtime: detail.leadtime ?? null,
           log: detail.log ?? null,
           needsAttention: mapped.shipment === 'FAILED' || mapped.shipment === 'RETURNED',
-          isSimulated: Boolean(isDev && effectiveStatus),
+          isSimulated: Boolean(isSandbox && effectiveStatus),
         },
         ...(deliveredAt ? { deliveredAt } : {}),
         ...(carrierFee

@@ -515,12 +515,22 @@ export class OrderPaymentHelper {
               },
             });
 
-            await this.auctionCheckout?.processPendingDepositsForUser(tx, walletTx.wallet.userId);
+            // A top-up is always paid into the payer’s own wallet. Platform ledger
+            // wallets have no owner, so one appearing here means the transaction was
+            // written against the wrong wallet and the follow-up work must not run.
+            const walletOwnerId = walletTx.wallet.userId;
+            if (!walletOwnerId) {
+              throw new Error(
+                `Wallet top-up ${walletTx.id} credits platform wallet ${walletTx.walletId}, which has no owner`,
+              );
+            }
+
+            await this.auctionCheckout?.processPendingDepositsForUser(tx, walletOwnerId);
 
             if (tx.notification?.create) {
               await tx.notification.create({
                 data: {
-                  userId: walletTx.wallet.userId,
+                  userId: walletOwnerId,
                   title: 'Nạp tiền ví NEXUS Pay thành công ✅',
                   content: `Bạn đã nạp thành công ${Number(walletTx.amount).toLocaleString('vi-VN')} VND vào ví NEXUS Pay qua PayOS (VietQR).`,
                   type: NotificationType.PAYMENT,

@@ -1,3 +1,4 @@
+import { ChatContextType, ChatConversationStatus } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
@@ -11,12 +12,12 @@ import {
   Min,
 } from 'class-validator';
 
-export enum TicketLifecycleStatus {
-  OPEN = 'OPEN',
-  IN_PROGRESS = 'IN_PROGRESS',
-  RESOLVED = 'RESOLVED',
-  CLOSED = 'CLOSED',
-}
+/**
+ * The ticket lifecycle is the conversation status column, re-exported under its
+ * domain name so controllers and the Swagger schema stay readable.
+ */
+export const TicketLifecycleStatus = ChatConversationStatus;
+export type TicketLifecycleStatus = ChatConversationStatus;
 
 export class RequestSupportDto {
   @ApiPropertyOptional({
@@ -47,12 +48,13 @@ export class RequestSupportDto {
 
   @ApiPropertyOptional({
     description: 'Loại ngữ cảnh: DISPUTE (Tranh chấp), ORDER (Đơn hàng), GENERAL (Hỗ trợ chung)',
-    default: 'GENERAL',
-    example: 'DISPUTE',
+    enum: ChatContextType,
+    default: ChatContextType.GENERAL,
+    example: ChatContextType.DISPUTE,
   })
   @IsOptional()
-  @IsString()
-  contextType?: string = 'GENERAL';
+  @IsEnum(ChatContextType)
+  contextType?: ChatContextType = ChatContextType.GENERAL;
 
   @ApiPropertyOptional({
     description: 'Danh sách URL hình ảnh / bằng chứng đính kèm',

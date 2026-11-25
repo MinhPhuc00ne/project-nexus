@@ -48,28 +48,7 @@ test(
           const sql = (
             await readFile(new URL(`${entry.name}/migration.sql`, folder), 'utf8')
           ).replace(/^\s*(?:BEGIN|COMMIT);[ \t]*$/gm, '');
-          if (entry.name === '20261109120000_banner_ordering_and_history') {
-            const adminId = randomUUID(),
-              staffId = randomUUID();
-            for (const [id, role] of [
-              [adminId, 'ADMIN'],
-              [staffId, 'SUPPORT_STAFF'],
-            ]) {
-              await client.query(
-                'INSERT INTO users (id,email,password_hash,full_name,role,updated_at) VALUES ($1,$2,$3,$4,$5,NOW())',
-                [id, `${id}@example.invalid`, 'test-only', 'Migration fixture', role],
-              );
-              await client.query(
-                "INSERT INTO event_banners (id,title,image_url,creator_id,created_at,updated_at) VALUES ($1,$2,$3,$4,'2025-01-01',NOW())",
-                [
-                  randomUUID(),
-                  'Before migration ' + (role === 'ADMIN' ? 'admin' : 'staff'),
-                  'https://example.invalid/x.png',
-                  id,
-                ],
-              );
-            }
-          }
+
           await client.query(sql);
         }
         await client.query('COMMIT');
@@ -118,14 +97,25 @@ test(
       let adminOld, adminNew, staffOld, staffNew;
 
       await t.test(
-        'migration backfills existing creator groups without manufacturing historical actions',
+        // A historical migration used to backfill creator_role for banners
+        // created before the column existed. The squash removed that migration,
+        // so there is no backfill left to observe; what still has to hold is the
+        // property the backfill existed to guarantee.
+        'every banner carries a creator role and the schema rejects one without it',
         async () => {
-          const rows = await prisma.eventBanner.findMany({
-            where: { title: { startsWith: 'Before migration' } },
-          });
-          assert.equal(rows.length, 2);
-          assert.equal(rows.find((row) => row.title.endsWith('admin')).creatorRole, 'ADMIN');
-          assert.equal(rows.find((row) => row.title.endsWith('staff')).creatorRole, 'STAFF');
+          const column = await pool.query(
+            "SELECT is_nullable FROM information_schema.columns WHERE table_name = 'event_banners' AND column_name = 'creator_role'",
+          );
+          assert.equal(column.rows[0].is_nullable, 'NO');
+
+          await assert.rejects(
+            pool.query(
+              "INSERT INTO event_banners (id,title,image_url,creator_id,updated_at) VALUES ($1,'No role','https://example.invalid/x.png',$2,NOW())",
+              [randomUUID(), admin.id],
+            ),
+            (error) => error.code === '23502',
+          );
+
           assert.equal(await prisma.bannerDisableHistory.count(), 0);
         },
       );

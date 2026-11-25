@@ -1,5 +1,6 @@
+import { ChatContextType, ChatConversationType } from '@prisma/client';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreateConversationDto {
   @ApiPropertyOptional({
@@ -17,12 +18,13 @@ export class CreateConversationDto {
   targetUserId?: string;
 
   @ApiPropertyOptional({
-    description: 'Loại cuộc trò chuyện: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER, GENERAL',
-    default: 'BUYER_SELLER',
+    description: 'Loại cuộc trò chuyện: BUYER_SELLER, STAFF_SELLER, STAFF_BUYER',
+    enum: ChatConversationType,
+    default: ChatConversationType.BUYER_SELLER,
   })
   @IsOptional()
-  @IsString()
-  type?: string;
+  @IsEnum(ChatConversationType)
+  type?: ChatConversationType;
 
   @ApiPropertyOptional({ description: 'Tiêu đề cuộc trò chuyện / chủ đề trao đổi' })
   @IsOptional()
@@ -37,10 +39,13 @@ export class CreateConversationDto {
   @IsString()
   contextId?: string;
 
-  @ApiPropertyOptional({ description: 'Loại ngữ cảnh: ORDER, PRODUCT, DISPUTE, TICKET' })
+  @ApiPropertyOptional({
+    description: 'Loại ngữ cảnh: GENERAL, ORDER, PRODUCT, AUCTION, DISPUTE, TICKET',
+    enum: ChatContextType,
+  })
   @IsOptional()
-  @IsString()
-  contextType?: string;
+  @IsEnum(ChatContextType)
+  contextType?: ChatContextType;
 
   @ApiPropertyOptional({
     description: 'Nội dung tin nhắn đầu tiên gửi kèm khi khởi tạo cuộc trò chuyện',

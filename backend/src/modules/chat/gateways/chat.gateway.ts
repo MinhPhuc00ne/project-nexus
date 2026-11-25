@@ -1,5 +1,4 @@
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   ConnectedSocket,
   MessageBody,
@@ -11,8 +10,8 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { LightweightJwt } from '../../../core/security/jwt.util';
-import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { ChatService, ChatSocketBroadcaster } from '../services/chat.service';
 import { StaffQueueService } from '../services/staff-queue.service';
 
@@ -33,12 +32,14 @@ export class ChatGateway
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly configService: ConfigService,
+    private readonly tokenAuth: TokenAuthService,
     private readonly staffQueueService: StaffQueueService,
+    private readonly socketMetrics: SocketMetricsService,
   ) {}
 
   afterInit() {
     this.chatService.setBroadcaster(this);
+    this.socketMetrics.registerServer('/chat', this.server);
     this.logger.log('Chat WebSocket Gateway initialized successfully.');
   }
 
@@ -116,7 +117,7 @@ export class ChatGateway
     }
   }
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket): Promise<void> {
     try {
       const rawToken =
         client.handshake.auth?.token ||
@@ -128,22 +129,17 @@ export class ChatGateway
         return;
       }
 
-      const secret = this.configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
-      if (!secret) {
-        throw new Error('JWT_SECRET is not configured');
-      }
-
-      const verifyResult = LightweightJwt.verify<AuthenticatedUserPayload>(rawToken, secret);
-
-      if (!verifyResult.valid || !verifyResult.payload) {
+      // Chat is never anonymous: a token that fails verification, or belongs to a
+      // suspended or signed-out account, closes the socket.
+      const user = await this.tokenAuth.authenticateOptional(rawToken);
+      if (!user) {
         this.logger.warn(`Socket client ${client.id} invalid token, disconnecting.`);
         client.disconnect();
         return;
       }
 
-      const user = verifyResult.payload;
-      const userId = user.id || user.sub;
-      client.data.user = { ...user, id: userId };
+      const userId = user.id;
+      client.data.user = user;
 
       client.join(`user:${userId}`);
 

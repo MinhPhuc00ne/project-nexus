@@ -7,6 +7,7 @@ import { UsersModule } from '../users/users.module';
 import { MediaModule } from '../media/media.module';
 import { CartService } from './services/cart.service';
 import { PayosService } from './services/payos.service';
+import { PaymentSandboxService } from './services/payment-sandbox.service';
 import { OrderService } from './services/order.service';
 import { SellerFinanceService } from './services/seller-finance.service';
 import { WithdrawalService } from './services/withdrawal.service';
@@ -61,6 +62,7 @@ import { AuctionCheckoutService } from './services/auction-checkout.service';
     ReportsService,
     CartService,
     PayosService,
+    PaymentSandboxService,
     OrderService,
     SellerFinanceService,
     WithdrawalService,

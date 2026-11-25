@@ -8,7 +8,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { ReputationTrustLevel } from '@prisma/client';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { ReputationTrustLevel, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { MailService } from '../../../core/mail/mail.service';
@@ -62,6 +63,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly tokenAuth: TokenAuthService,
     private readonly redisService: RedisService,
     private readonly mailService: MailService,
   ) {}
@@ -470,6 +472,8 @@ export class AuthService {
       });
     });
 
+    await this.tokenAuth.revokeAllSessions(user.id);
+
     return {
       message: 'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
     };
@@ -524,10 +528,13 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token không hợp lệ.');
     }
 
-    await this.prisma.refreshToken.update({
-      where: { id: tokenRecord.id },
+    const rotated = await this.prisma.refreshToken.updateMany({
+      where: { id: tokenRecord.id, isRevoked: false },
       data: { isRevoked: true },
     });
+    if (rotated.count !== 1) {
+      throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
+    }
 
     const { accessToken, refreshToken } = await this.generateTokens({
       id: tokenRecord.user.id,
@@ -577,11 +584,10 @@ export class AuthService {
     role: string;
     isSellerActive?: boolean;
   }): Promise<{ accessToken: string; refreshToken: string }> {
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
+    const accessToken = await this.tokenAuth.signAccessToken({
       id: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as Role,
       isSellerActive: user.isSellerActive ?? false,
     });
 

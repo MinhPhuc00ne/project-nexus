@@ -1,2 +1,0 @@
-ALTER TABLE "users" ALTER COLUMN "reputation_score" SET DEFAULT 50;
-ALTER TABLE "users" ALTER COLUMN "trust_level" SET DEFAULT 'PROBATION';

@@ -1,0 +1,13 @@
+{
+  // The seeds run outside the Nest build, so `tsconfig.json` (which only
+  // includes `src`) never looked at them. A broken seed would then only be
+  // discovered by running it, which CI does not do for the demo data.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // tsconfig.json pins rootDir to src; these files live beside it.
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": ["prisma/seeds/**/*.ts", "prisma/scripts/**/*.ts", "prisma.config.ts"]
+}

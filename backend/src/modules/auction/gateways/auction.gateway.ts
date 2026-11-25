@@ -1,5 +1,4 @@
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   ConnectedSocket,
   MessageBody,
@@ -24,7 +23,8 @@ import {
   WsTimeExtendedPayload,
   WsTimerSyncPayload,
 } from '@nexus/types';
-import { LightweightJwt } from '../../../core/security/jwt.util';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 
 export type PlaceBidSocketHandler = (
@@ -69,7 +69,10 @@ export class AuctionGateway
   private readonly logger = new Logger(AuctionGateway.name);
   private placeBidHandler: PlaceBidSocketHandler | null = null;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly tokenAuth: TokenAuthService,
+    private readonly socketMetrics: SocketMetricsService,
+  ) {}
 
   /**
    * Registers the domain bid placement handler called when a client submits `auction:place_bid`.
@@ -82,6 +85,7 @@ export class AuctionGateway
    * Lifecycle hook executed after the gateway initializes.
    */
   afterInit(): void {
+    this.socketMetrics.registerServer('/ws/auctions', this.server);
     this.logger.log('Auction WebSocket Gateway initialized on namespace /ws/auctions');
   }
 
@@ -90,24 +94,19 @@ export class AuctionGateway
    *
    * @param client Connecting socket instance
    */
-  handleConnection(client: Socket): void {
+  async handleConnection(client: Socket): Promise<void> {
     try {
       const rawToken =
         client.handshake.auth?.token ||
         client.handshake.headers?.authorization?.replace('Bearer ', '');
 
-      if (rawToken) {
-        const secret = this.configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
-        if (!secret) {
-          throw new Error('JWT_SECRET is not configured');
-        }
-        const verifyResult = LightweightJwt.verify<AuthenticatedUserPayload>(rawToken, secret);
-        if (verifyResult.valid && verifyResult.payload) {
-          const user = verifyResult.payload;
-          const userId = user.id || user.sub;
-          client.data.user = { ...user, id: userId };
-          client.join(`user:${userId}`);
-        }
+      // Watching an auction is open to guests, so an absent or unusable token
+      // leaves the socket connected but anonymous. A token that does resolve is
+      // held to the same account checks as an HTTP request.
+      const user = await this.tokenAuth.authenticateOptional(rawToken);
+      if (user) {
+        client.data.user = user;
+        await client.join(`user:${user.id}`);
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);

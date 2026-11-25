@@ -1,9 +1,11 @@
+import { AfterSalesStatus, RefundStatus } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsEnum,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -95,13 +97,15 @@ export class AfterSalesPageDto {
 }
 
 export class QueryAfterSalesDto extends AfterSalesPageDto {
+  @ApiPropertyOptional({ enum: AfterSalesStatus })
   @IsOptional()
-  @IsIn(['REQUESTED', 'APPROVING', 'APPROVED', 'RECEIVED', 'COMPLETED', 'REJECTED'])
-  status?: string;
+  @IsEnum(AfterSalesStatus)
+  status?: AfterSalesStatus;
 }
 
 export class QueryRefundsDto extends AfterSalesPageDto {
+  @ApiPropertyOptional({ enum: RefundStatus, default: RefundStatus.PENDING })
   @IsOptional()
-  @IsIn(['PENDING', 'SUCCESS'])
-  status: string = 'PENDING';
+  @IsEnum(RefundStatus)
+  status: RefundStatus = RefundStatus.PENDING;
 }

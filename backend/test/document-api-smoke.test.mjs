@@ -50,6 +50,17 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
       source('modules/commerce/services/refund.service').RefundService,
     ].map((provide) => ({ provide, useValue: {} })),
     { provide: PrismaService, useValue: {} },
+    // The guard resolves identities through TokenAuthService, and the auth
+    // controller hands OAuth sign-ins to OAuthCodeService; this smoke test only
+    // asserts the dependency graph resolves.
+    {
+      provide: source('core/security/token-auth.service').TokenAuthService,
+      useValue: {},
+    },
+    {
+      provide: source('modules/auth/services/oauth-code.service').OAuthCodeService,
+      useValue: {},
+    },
     { provide: ConfigService, useValue: { get: () => undefined } },
   ];
   class ApiSmokeModule {}

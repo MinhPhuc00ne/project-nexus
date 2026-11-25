@@ -16,12 +16,14 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { Request, Response } from 'express';
 import { AuthService, GoogleUser, UserProfileResponse } from '../services/auth.service';
 import { AuthProfileService } from '../services/auth-profile.service';
+import { OAuthCodeService } from '../services/oauth-code.service';
 import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
 import { LoginDto } from '../dtos/login.dto';
 import { RefreshTokenDto } from '../dtos/refresh-token.dto';
 import { RegisterDto } from '../dtos/register.dto';
 import { ResetPasswordDto } from '../dtos/reset-password.dto';
 import { VerifyEmailDto } from '../dtos/verify-email.dto';
+import { ExchangeOAuthCodeDto } from '../dtos/exchange-oauth-code.dto';
 import { UpdateAuthProfileDto, ReauthenticateProfileDto } from '../dtos/update-profile.dto';
 import { ConfirmChangePasswordOtpDto } from '../dtos/confirm-change-password-otp.dto';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -40,6 +42,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly authProfileService: AuthProfileService,
+    private readonly oauthCodes: OAuthCodeService,
   ) {}
 
   @Post('login')
@@ -70,13 +73,29 @@ export class AuthController {
       `http://localhost:${portWeb}`
     ).replace(/\/$/, '');
 
-    const params = new URLSearchParams({
-      token: result.accessToken,
+    // Only an opaque, single-use code travels in the URL. Putting the tokens
+    // here would leave them in browser history, in the Referer header of the
+    // next request the page makes, and in every log along the way.
+    const code = await this.oauthCodes.issue({
+      accessToken: result.accessToken,
       refreshToken: result.refreshToken,
-      user: JSON.stringify(result.user),
+      user: result.user,
     });
 
-    res.redirect(`${frontendUrl}/?${params.toString()}`);
+    res.redirect(`${frontendUrl}/?code=${encodeURIComponent(code)}`);
+  }
+
+  @Post('oauth/exchange')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Đổi mã OAuth một lần sang phiên đăng nhập',
+    description:
+      'Nhận mã opaque từ redirect của Google callback và trả về access token, refresh token cùng thông tin tài khoản. Mã chỉ dùng được một lần, hết hạn sau 60 giây.',
+  })
+  @ApiResponse({ status: 200, description: 'Đổi mã thành công' })
+  @ApiResponse({ status: 401, description: 'Mã không hợp lệ, đã dùng hoặc đã hết hạn' })
+  async exchangeOAuthCode(@Body() dto: ExchangeOAuthCodeDto) {
+    return this.oauthCodes.redeem(dto.code);
   }
 
   @Post('register')

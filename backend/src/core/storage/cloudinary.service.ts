@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ProviderConfigService } from '../providers/provider-config.service';
 import * as crypto from 'crypto';
 import * as https from 'https';
 import * as fs from 'fs';
@@ -16,7 +17,10 @@ export interface UploadResult {
 export class CloudinaryStorageService {
   private readonly logger = new Logger(CloudinaryStorageService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly providers: ProviderConfigService,
+  ) {}
 
   async uploadFile(
     fileBuffer: Buffer,
@@ -27,7 +31,9 @@ export class CloudinaryStorageService {
     const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
     const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
 
-    if (!cloudName || !apiKey || !apiSecret) {
+    // STORAGE_PROVIDER names where files go. Local disk is a deliberate
+    // choice for a local or demo run, not what happens when a key is absent.
+    if (this.providers.isLocalStorage() || !cloudName || !apiKey || !apiSecret) {
       this.logger.warn(
         'Chưa cấu hình thông tin Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) trong .env. Lưu tạm vào thư mục static server.',
       );

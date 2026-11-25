@@ -71,20 +71,63 @@ describe('M1 Backend environment validation & URL/CORS helpers', () => {
     ).toThrow(/REFRESH_TOKEN_SECRET/);
   });
 
+  /** A production deployment must name a real provider for every dependency. */
+  const PRODUCTION_PROVIDERS = {
+    PAYMENT_PROVIDER: 'payos',
+    PAYOS_CLIENT_ID: 'client',
+    PAYOS_API_KEY: 'key',
+    PAYOS_CHECKSUM_KEY: 'checksum',
+    SHIPPING_PROVIDER: 'ghn',
+    GHN_API_URL: 'https://ghn.example.com',
+    GHN_TOKEN: 'token',
+    GHN_SHOP_ID: '123456',
+    STORAGE_PROVIDER: 'cloudinary',
+    CLOUDINARY_CLOUD_NAME: 'nexus',
+    CLOUDINARY_API_KEY: 'key',
+    CLOUDINARY_API_SECRET: 'secret',
+    MAIL_PROVIDER: 'smtp',
+    SMTP_HOST: 'smtp.example.com',
+    SMTP_USER: 'mailer@example.com',
+    SMTP_PASS: 'app-password',
+  };
+
   it('requires APP_PUBLIC_URL in production and allows valid production URL', () => {
     expect(() =>
       validateBackendEnv({
         ...VALID_BASE_ENV,
+        ...PRODUCTION_PROVIDERS,
         NODE_ENV: 'production',
       }),
     ).toThrow(/APP_PUBLIC_URL/);
 
     const prod = validateBackendEnv({
       ...VALID_BASE_ENV,
+      ...PRODUCTION_PROVIDERS,
       NODE_ENV: 'production',
       APP_PUBLIC_URL: 'https://api.nexus.example.com',
     });
     expect(prod.APP_PUBLIC_URL).toBe('https://api.nexus.example.com');
+  });
+
+  it('refuses to run production on a stub provider', () => {
+    expect(() =>
+      validateBackendEnv({
+        ...VALID_BASE_ENV,
+        ...PRODUCTION_PROVIDERS,
+        NODE_ENV: 'production',
+        APP_PUBLIC_URL: 'https://api.nexus.example.com',
+        MAIL_PROVIDER: 'console',
+      }),
+    ).toThrow(/MAIL_PROVIDER/);
+  });
+
+  it('requires the selected provider to carry its credentials', () => {
+    expect(() =>
+      validateBackendEnv({
+        ...VALID_BASE_ENV,
+        PAYMENT_PROVIDER: 'payos',
+      }),
+    ).toThrow(/PAYOS_CLIENT_ID/);
   });
 
   it('parses comma-separated CORS_ORIGINS and falls back cleanly', () => {

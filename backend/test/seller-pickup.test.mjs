@@ -374,6 +374,7 @@ test('webhook accepts each shipment own shop and rejects a cross-seller callback
     { get: (key) => (key === 'GHN_WEBHOOK_SECRET' ? 'secret' : config.get(key)) },
     prisma,
     tracking,
+    { isShippingSandbox: () => true },
   );
   await controller.receive('secret', { ShopID: 202, OrderCode: 'G2' });
   await assert.rejects(

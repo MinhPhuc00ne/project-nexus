@@ -44,7 +44,10 @@ services:
     container_name: nexus-migrate
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
-    command: sh -c "npx prisma migrate deploy --schema=prisma/schema.prisma && npx ts-node --project tsconfig.json prisma/seed.ts"
+    # Applies migrations and creates only the system rows. Demo data is never
+    # seeded here: it shares one printed password across every account.
+    # Run `npm run seed:demo` deliberately for a demonstration database.
+    command: sh -c "npx prisma migrate deploy --schema=prisma/schema.prisma && npx ts-node --project tsconfig.json prisma/seeds/system.ts"
     working_dir: /app/backend
     depends_on:
       postgres:

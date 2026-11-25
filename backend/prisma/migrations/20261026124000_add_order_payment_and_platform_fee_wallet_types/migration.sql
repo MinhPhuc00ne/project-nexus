@@ -1,4 +1,0 @@
--- AlterEnum
-ALTER TYPE "WalletTransactionType" ADD VALUE IF NOT EXISTS 'ORDER_PAYMENT';
-
-ALTER TYPE "WalletTransactionType" ADD VALUE IF NOT EXISTS 'PLATFORM_FEE';

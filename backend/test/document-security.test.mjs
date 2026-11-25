@@ -14,6 +14,9 @@ const { ProfileReauthService, recentReauthentication } = load(
   '../src/core/security/profile-reauth.service.ts',
 );
 const { JwtAuthGuard } = load('../src/core/security/jwt-auth.guard.ts');
+const { TokenAuthService, TOKEN_ISSUER, TOKEN_AUDIENCE } = load(
+  '../src/core/security/token-auth.service.ts',
+);
 const { toggleSellerState, userMode } = load('../src/core/security/user-mode.ts');
 const { AuthProfileService } = load('../src/modules/auth/services/auth-profile.service.ts');
 const { UsersService } = load('../src/modules/users/services/users.service.ts');
@@ -87,7 +90,9 @@ test('both profile update routes enforce seller reauthentication from actual DB 
       throw Error('reauth-required');
     },
   };
-  const root = new AuthProfileService(prisma, { get: () => undefined }, proof);
+  const root = new AuthProfileService(prisma, { get: () => undefined }, proof, {
+    revokeAllSessions: async () => {},
+  });
   const buyer = new UsersService(prisma, {}, proof);
   await assert.rejects(root.updateProfile(user.id, { fullName: 'New Name' }), /reauth-required/);
   await assert.rejects(
@@ -158,11 +163,12 @@ test('seller bank-only profile update bypasses reauthentication and normalizes a
 
 test('existing access tokens read canonical role and current mode from DB', async () => {
   const secret = 'test-secret';
-  const token = new JwtService({ secret }).sign({
-    sub: 'seller',
-    role: 'BUYER',
-    isSellerActive: false,
-  });
+  // The token claims a stale role on purpose: the account row is the
+  // authority, so the resolved identity must ignore what the token says.
+  const token = new JwtService({ secret }).sign(
+    { sub: 'seller', role: 'BUYER', isSellerActive: false, tv: 0 },
+    { issuer: TOKEN_ISSUER, audience: TOKEN_AUDIENCE, expiresIn: '5m' },
+  );
   const account = {
     id: 'seller',
     email: 'seller@test',
@@ -170,11 +176,21 @@ test('existing access tokens read canonical role and current mode from DB', asyn
     isSellerActive: true,
     isShopSuspended: false,
   };
-  const guard = new JwtAuthGuard(
-    { getAllAndOverride: () => false },
+  // No Redis in this fixture: every cache read misses and every write is a
+  // no-op, so the account row is consulted on each call.
+  const redisStub = {
+    get: async () => null,
+    set: async () => null,
+    del: async () => 0,
+    getClient: () => ({ incr: async () => 1, del: async () => 0 }),
+  };
+  const tokenAuth = new TokenAuthService(
+    new JwtService({ secret }),
     { get: () => secret },
     { user: { findUnique: async () => account } },
+    redisStub,
   );
+  const guard = new JwtAuthGuard({ getAllAndOverride: () => false }, tokenAuth);
   const request = { headers: { authorization: `Bearer ${token}` } };
   const context = {
     getHandler() {},
@@ -247,7 +263,12 @@ test('authenticated password change consumes an OTP only once and revokes refres
     user: { findUnique: async () => structuredClone(user) },
     $transaction: (fn) => fn(tx),
   };
-  const service = new AuthProfileService(prisma, { get: () => undefined }, {});
+  const service = new AuthProfileService(
+    prisma,
+    { get: () => undefined },
+    {},
+    { revokeAllSessions: async () => {} },
+  );
   const results = await Promise.allSettled([
     service.confirmChangePasswordWithOtp('staff', { otp: '123456', newPassword: 'new-password-1' }),
     service.confirmChangePasswordWithOtp('staff', { otp: '123456', newPassword: 'new-password-2' }),

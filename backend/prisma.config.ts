@@ -12,6 +12,8 @@ export default defineConfig({
     url: env('DATABASE_URL'),
   },
   migrations: {
-    seed: 'ts-node prisma/seed.ts',
+    // The managed seed creates system rows only, so it is safe wherever Prisma
+    // runs it. Demo data is a separate, explicit command.
+    seed: 'ts-node prisma/seeds/system.ts',
   },
 });

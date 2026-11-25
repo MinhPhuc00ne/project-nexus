@@ -1,3 +1,4 @@
+import { ShopViolationPenaltyLevel } from '@prisma/client';
 import { Logger, NotFoundException } from '@nestjs/common';
 import {
   NotificationType,
@@ -240,7 +241,7 @@ export class AdminShopsModerationHelper {
           title: dto.title.trim(),
           description: dto.description.trim(),
           evidenceUrls: dto.evidenceUrls || [],
-          penaltyLevel: dto.penaltyLevel?.trim() || 'WARNING',
+          penaltyLevel: dto.penaltyLevel ?? ShopViolationPenaltyLevel.WARNING,
           status: dto.status || ViolationStatus.CONFIRMED,
           resolutionNotes: dto.resolutionNotes?.trim() || null,
           handledByAdminId: adminId,

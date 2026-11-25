@@ -79,7 +79,8 @@ test('PayosService verifies webhook signatures and wraps invalid signature error
   const configService = {
     get: () => 'dummy-key',
   };
-  const payosService = new PayosService(configService);
+  // The sandbox adapter is unused here: this fixture drives the PayOS path.
+  const payosService = new PayosService(configService, { isPaymentSandbox: () => false }, {});
 
   payosService.payOS = {
     webhooks: {

@@ -15,6 +15,7 @@ import { UpdateAuthProfileDto } from '../dtos/update-profile.dto';
 import { UpdateStaffProfileDto } from '../dtos/update-staff-profile.dto';
 import { ChangePasswordDto } from '../dtos/auth.dto';
 import { ProfileReauthService } from '../../../core/security/profile-reauth.service';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { userMode } from '../../../core/security/user-mode';
 
 export interface UserProfileResponse {
@@ -60,6 +61,7 @@ export class AuthProfileService {
     private readonly prisma: PrismaService,
     _configService: ConfigService,
     private readonly profileReauth: ProfileReauthService,
+    private readonly tokenAuth: TokenAuthService,
     private readonly mailService: MailService,
   ) {}
 
@@ -187,6 +189,9 @@ export class AuthProfileService {
         throw new BadRequestException('Mã OTP đã được dùng hoặc đã hết hạn.');
       await tx.refreshToken.updateMany({ where: { userId }, data: { isRevoked: true } });
     });
+    // The refresh tokens are gone; the access tokens still in circulation have
+    // to stop working too, or the old password keeps a session alive.
+    await this.tokenAuth.revokeAllSessions(userId);
     return {
       success: true,
       message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại bằng mật khẩu mới.',
@@ -230,6 +235,7 @@ export class AuthProfileService {
         data: { isRevoked: true },
       });
     });
+    await this.tokenAuth.revokeAllSessions(userId);
     return {
       success: true,
       message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại bằng mật khẩu mới.',
