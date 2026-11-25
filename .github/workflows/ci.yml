@@ -80,6 +80,9 @@ jobs:
       - name: Validate Prisma schema
         run: npx prisma validate --schema=backend/prisma/schema.prisma
 
+      - name: Check backend import graph for cycles
+        run: npm run check:cycles
+
       - name: Build all workspaces
         run: npm run build
 

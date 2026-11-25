@@ -20,7 +20,7 @@ const { SellerPickupService } = load(
   '../src/modules/fulfillment/services/seller-pickup.service.ts',
 );
 const { ShopShippingProfileService } = load(
-  '../src/modules/users/services/shop-shipping-profile.service.ts',
+  '../src/modules/fulfillment/services/shop-shipping-profile.service.ts',
 );
 const { AuctionImageService } = load('../src/modules/auction/services/auction-image.service.ts');
 

@@ -63,7 +63,8 @@ test('shipping dependencies and routes initialize without live infrastructure', 
       source('modules/commerce/services/order-cancellation.service').OrderCancellationService,
       source('modules/commerce/services/order-return.service').OrderReturnService,
       source('modules/fulfillment/services/ghn-order-action.service').GhnOrderActionService,
-      source('modules/users/services/shop-shipping-profile.service').ShopShippingProfileService,
+      source('modules/fulfillment/services/shop-shipping-profile.service')
+        .ShopShippingProfileService,
       { provide: PrismaService, useValue: {} },
       // The guard resolves identities through TokenAuthService; this smoke test
       // only asserts the dependency graph resolves.

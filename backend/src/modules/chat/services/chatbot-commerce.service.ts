@@ -8,7 +8,7 @@ import {
   CommerceChatQueryService,
 } from '../../commerce/services/commerce-chat-query.service';
 import { ChatbotMessageDto } from '../dtos/chatbot-message.dto';
-import type { ChatbotReply } from './chatbot.service';
+import type { ChatbotReply } from './chatbot-reply';
 import {
   accountStatusIntent,
   commerceIntent,

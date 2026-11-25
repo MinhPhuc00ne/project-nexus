@@ -656,7 +656,7 @@ test('profile invalidation affects both environments in the profile transaction'
 });
 
 const { ShopShippingProfileService } = load(
-  '../src/modules/users/services/shop-shipping-profile.service.ts',
+  '../src/modules/fulfillment/services/shop-shipping-profile.service.ts',
 );
 
 test('shipping source uses the approved shop profile ahead of personal addresses', async () => {

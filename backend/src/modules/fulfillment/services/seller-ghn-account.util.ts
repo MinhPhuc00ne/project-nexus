@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { SellerGhnAccount } from '@prisma/client';
-import { ShopShippingProfile } from '../../users/services/shop-shipping-profile.service';
+import { ShopShippingProfile } from './shop-shipping-profile.service';
 
 /** Pickup response assembled from carrier metadata and the current shop profile. */
 export type SellerPickupView = SellerGhnAccount &

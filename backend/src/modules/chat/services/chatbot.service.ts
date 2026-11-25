@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CommerceChatQueryService } from '../../commerce/services/commerce-chat-query.service';
 import { ChatbotCommerceService } from './chatbot-commerce.service';
+import type { ChatbotReply } from './chatbot-reply';
 import {
   accountStatusIntent,
   commerceIntent,
@@ -21,32 +21,7 @@ import {
 } from './chatbot-knowledge';
 import { ChatbotRateLimitService } from './chatbot-rate-limit.service';
 
-/** Structured follow-up action rendered by the NEXUS chatbot UI. */
-export interface ChatbotAction {
-  type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN' | 'NAVIGATE';
-  endpoint?: string;
-  path?: string;
-  label?: string;
-  auto?: boolean;
-}
-
-/** Response schema returned by the NEXUS conversational assistant endpoints. */
-export interface ChatbotReply {
-  reply: string;
-  engine: 'FAQ' | 'GEMINI' | 'ORDER' | 'CART';
-  topic: ChatbotTopic | 'WELCOME' | 'UNKNOWN';
-  sources: { id: string; title: string }[];
-  actions: ChatbotAction[];
-  orders?: Awaited<ReturnType<CommerceChatQueryService['orders']>>;
-  cart?: Awaited<ReturnType<CommerceChatQueryService['cart']>>;
-  order?: {
-    id: string;
-    status: string;
-    shipmentStatus: string | null;
-    waybillCode: string | null;
-    afterSalesStatus: string | null;
-  };
-}
+export type { ChatbotAction, ChatbotReply } from './chatbot-reply';
 
 /** Coordinates rate limiting, ownership-scoped commerce queries, FAQ fallback, and Gemini AI replies. */
 @Injectable()
