@@ -20,6 +20,7 @@ const { TokenAuthService, TOKEN_ISSUER, TOKEN_AUDIENCE } = load(
 const { toggleSellerState, userMode } = load('../src/core/security/user-mode.ts');
 const { AuthProfileService } = load('../src/modules/auth/services/auth-profile.service.ts');
 const { UsersService } = load('../src/modules/users/services/users.service.ts');
+const { ShopsService } = load('../src/modules/users/services/shops.service.ts');
 
 test('profile proof is short-lived, user/password-bound and cannot be used as an access token', async () => {
   const jwt = new JwtService({ secret: 'test-access-secret' });
@@ -139,7 +140,7 @@ test('seller bank-only profile update bypasses reauthentication and normalizes a
   const reputation = {
     awardProfileCompletion: async () => {},
   };
-  const service = new UsersService(prisma, {}, proof, {}, reputation);
+  const service = new UsersService(prisma, {}, proof, reputation);
 
   const updated = await service.updateProfile(user.id, {
     bankName: ' Vietcombank ',
@@ -315,7 +316,7 @@ test('shop avatar and contact updates leave the personal profile and recipient a
       throw new Error('GHN unavailable');
     },
   };
-  const result = await new UsersService(prisma, {}, {}, pickup).updateShopProfile('seller', {
+  const result = await new ShopsService(prisma, pickup).updateShopProfile('seller', {
     shopAvatarUrl: 'https://example.test/shop.png',
     phone: '0912345678',
     street: 'New Street',

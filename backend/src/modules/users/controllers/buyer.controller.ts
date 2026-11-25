@@ -13,7 +13,7 @@ import {
   BadRequestException,
   Headers,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService, UserProfileResponse } from '../services/users.service';
 import { AddressService } from '../services/address.service';
@@ -22,7 +22,6 @@ import { SyncWishlistDto } from '../dtos/wishlist.dto';
 import type { WishlistItemDto } from '@nexus/types';
 import {
   UpdateBuyerProfileDto,
-  ApplySellerUpgradeDto,
   CreateAddressDto,
   UpdateAddressDto,
 } from '../../users/dtos/users.dto';
@@ -85,76 +84,6 @@ export class BuyerController {
       throw new BadRequestException('File is required for upload');
     }
     return this.usersService.uploadProofDocument(file.buffer, file.originalname);
-  }
-
-  @ApiOperation({
-    summary:
-      '[BUYER] Nộp đơn xin nâng cấp thành tài khoản Seller (Gộp thông tin gian hàng & file chứng minh)',
-    description:
-      'Gửi thông tin gian hàng, địa chỉ, tọa độ GPS và đính kèm trực tiếp file/ảnh chứng minh (CCCD/GPKD) trong 1 lần request duy nhất.',
-  })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.BUYER)
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiConsumes('multipart/form-data', 'application/json')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['storeName', 'phone', 'street', 'city'],
-      properties: {
-        storeName: {
-          type: 'string',
-          example: 'Gốm Sứ Bát Tràng Store',
-          description: 'Tên gian hàng',
-        },
-        storeDescription: {
-          type: 'string',
-          example: 'Chuyên cung cấp đồ gốm sứ nghệ thuật cao cấp',
-        },
-        phone: { type: 'string', example: '0988776655', description: 'Số điện thoại gian hàng' },
-        businessEmail: { type: 'string', example: 'shop@battrangceramics.vn' },
-        identityCardNumber: {
-          type: 'string',
-          example: '001202008888',
-          description: 'Số CCCD/CMND',
-        },
-        street: {
-          type: 'string',
-          example: '720A Điện Biên Phủ',
-          description: 'Địa chỉ đường/số nhà',
-        },
-        ward: { type: 'string', example: 'Phường 22' },
-        district: { type: 'string', example: 'Quận Bình Thạnh' },
-        city: { type: 'string', example: 'TP. Hồ Chí Minh' },
-        latitude: { type: 'number', example: 10.795, description: 'Vĩ độ GPS bản đồ' },
-        longitude: { type: 'number', example: 106.721, description: 'Kinh độ GPS bản đồ' },
-        formattedAddress: {
-          type: 'string',
-          example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh',
-        },
-        placeId: { type: 'string', example: 'ChIJ_landmark81_hcm' },
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'Ảnh CCCD/CMND hoặc file Giấy phép kinh doanh (JPG, PNG, WEBP, PDF)',
-        },
-        attachmentUrl: {
-          type: 'string',
-          example: 'https://res.cloudinary.com/...',
-          description:
-            'Hoặc link file chứng minh đã tải lên trước (nếu không đính kèm file trực tiếp)',
-        },
-      },
-    },
-  })
-  @Post('seller-upgrade/apply')
-  async applySellerUpgrade(
-    @CurrentUser('id') userId: string,
-    @Body() dto: ApplySellerUpgradeDto,
-    @UploadedFile() file?: Express.Multer.File,
-  ): Promise<{ success: boolean; message: string; requestId: string }> {
-    return this.usersService.applySellerUpgrade(userId, dto, file);
   }
 
   // --- QUẢN LÝ SỔ ĐỊA CHỈ GIAO HÀNG (USER ADDRESSES) & BẢN ĐỒ TOÀN CẦU ---

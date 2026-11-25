@@ -1,3 +1,4 @@
+import { ShopsService } from './services/shops.service';
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
@@ -13,7 +14,7 @@ import { WishlistService } from './services/wishlist.service';
 @Module({
   imports: [AuthModule, StorageModule, FulfillmentModule, ReputationModule],
   controllers: [UsersController, BuyerController, SellerController],
-  providers: [UsersService, AddressService, WishlistService],
-  exports: [UsersService, AddressService, WishlistService, ReputationModule],
+  providers: [ShopsService, UsersService, AddressService, WishlistService],
+  exports: [ShopsService, UsersService, AddressService, WishlistService, ReputationModule],
 })
 export class UsersModule {}

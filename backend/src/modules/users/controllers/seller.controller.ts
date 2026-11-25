@@ -1,3 +1,4 @@
+import { ShopsService } from '../services/shops.service';
 import { Body, Controller, Get, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { UsersService, UserProfileResponse } from '../services/users.service';
@@ -12,7 +13,10 @@ import { UpdateShopProfileDto } from '../dtos/update-shop-profile.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('seller')
 export class SellerController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly shopsService: ShopsService,
+  ) {}
 
   @ApiOperation({
     summary: '[SELLER] PROFILE.VIEW - Xem hồ sơ và ví người bán',
@@ -32,7 +36,7 @@ export class SellerController {
   @Roles(Role.SELLER, Role.ADMIN)
   @Get('shop-profile')
   async getShopProfile(@CurrentUser('id') userId: string) {
-    return this.usersService.getShopProfile(userId);
+    return this.shopsService.getShopProfile(userId);
   }
 
   @ApiOperation({
@@ -47,7 +51,7 @@ export class SellerController {
   @Patch('shop-profile')
   @HttpCode(HttpStatus.OK)
   async updateShopProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateShopProfileDto) {
-    return this.usersService.updateShopProfile(userId, dto);
+    return this.shopsService.updateShopProfile(userId, dto);
   }
 
   @ApiOperation({
