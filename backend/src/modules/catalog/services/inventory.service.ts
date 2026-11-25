@@ -133,15 +133,25 @@ export class InventoryService {
       });
     } else {
       const diff = newQuantity - inv.totalQty;
-      const newAvailable = Math.max(0, inv.availableQty + diff);
 
-      await tx.inventory.update({
-        where: { id: inv.id },
+      // Applied as a delta, not as a value computed from a row read earlier: a
+      // checkout that reserves stock between that read and this write would
+      // otherwise have its reservation silently overwritten. A reduction is
+      // conditional on enough stock being free, so it can never drive the row
+      // negative and take back units a buyer already holds.
+      const adjusted = await tx.inventory.updateMany({
+        where: diff < 0 ? { id: inv.id, availableQty: { gte: -diff } } : { id: inv.id },
         data: {
           totalQty: newQuantity,
-          availableQty: newAvailable,
+          availableQty: { increment: diff },
         },
       });
+
+      if (adjusted.count !== 1) {
+        throw new BadRequestException(
+          `Không thể giảm tồn kho xuống ${newQuantity}: số lượng chênh lệch đang được giữ cho đơn hàng chưa hoàn tất.`,
+        );
+      }
 
       await tx.inventoryLedger.create({
         data: {
@@ -211,19 +221,32 @@ export class InventoryService {
       });
     }
 
-    if (inventory.availableQty < quantity) {
-      throw new BadRequestException(
-        `Số lượng tồn kho không đủ (còn ${inventory.availableQty}, yêu cầu ${quantity})`,
-      );
-    }
-
-    const updated = await tx.inventory.update({
-      where: { id: inventory.id },
+    // The stock check and the decrement are one statement on purpose. Reading
+    // availableQty into JavaScript, comparing it there and then decrementing in
+    // a second statement let two concurrent checkouts both pass a check for the
+    // last item and both take it, leaving the row negative. PostgreSQL applies
+    // the predicate under the row lock the UPDATE takes, so exactly one of them
+    // can win and the loser sees count 0.
+    const claimed = await tx.inventory.updateMany({
+      where: { id: inventory.id, availableQty: { gte: quantity } },
       data: {
         availableQty: { decrement: quantity },
         reservedQty: { increment: quantity },
       },
     });
+
+    if (claimed.count !== 1) {
+      // Re-read only to report how much is actually left; the claim already failed.
+      const current = await tx.inventory.findUnique({
+        where: { id: inventory.id },
+        select: { availableQty: true },
+      });
+      throw new BadRequestException(
+        `Số lượng tồn kho không đủ (còn ${current?.availableQty ?? 0}, yêu cầu ${quantity})`,
+      );
+    }
+
+    const updated = await tx.inventory.findUniqueOrThrow({ where: { id: inventory.id } });
 
     await tx.inventoryReservation.create({
       data: {
