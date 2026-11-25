@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { Prisma, ProductStatus, ReputationTrustLevel, Role, User } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
-import { generateStaffBaseEmail } from '../../auth/utils/staff-email.util';
+import { generateStaffBaseEmail } from '../../../core/domain/staff-email';
 import { trustLevelFor } from '../../../core/domain/reputation-policy';
 import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
 import { QueryUsersDto, UserStatusFilter } from '../dtos/query-users.dto';

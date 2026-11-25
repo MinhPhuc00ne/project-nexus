@@ -10,7 +10,7 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'node:crypto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { MailService } from '../../../core/mail/mail.service';
-import { generateStaffBaseEmail } from '../utils/staff-email.util';
+import { generateStaffBaseEmail } from '../../../core/domain/staff-email';
 import {
   INITIAL_REPUTATION_SCORE,
   INITIAL_REPUTATION_TRUST_LEVEL,

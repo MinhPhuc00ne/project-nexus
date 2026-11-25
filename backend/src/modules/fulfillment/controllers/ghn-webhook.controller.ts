@@ -1,6 +1,4 @@
 import {
-  BadRequestException,
-  Body,
   Controller,
   Headers,
   HttpCode,
@@ -10,6 +8,8 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ZodBody } from '@nexus/contracts/nest';
+import { GhnWebhookSchema, type GhnWebhookPayload } from '../dtos/ghn-webhook.dto';
 import { ConfigService } from '@nestjs/config';
 import { ProviderConfigService } from '../../../core/providers/provider-config.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -43,7 +43,7 @@ export class GhnWebhookController {
   })
   async receive(
     @Headers('x-ghn-webhook-secret') secret: string | undefined,
-    @Body() body: Record<string, unknown>,
+    @ZodBody(GhnWebhookSchema) body: GhnWebhookPayload,
   ): Promise<{ success: boolean }> {
     const expected = this.config.get<string>('GHN_WEBHOOK_SECRET');
     if (!expected) throw new ServiceUnavailableException('Webhook GHN chưa được cấu hình.');
@@ -53,16 +53,9 @@ export class GhnWebhookController {
       !timingSafeEqual(Buffer.from(secret), Buffer.from(expected))
     )
       throw new UnauthorizedException('Webhook GHN không hợp lệ.');
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-      throw new BadRequestException('Payload GHN không hợp lệ.');
-    }
-    if (
-      !Number.isSafeInteger(body.ShopID) ||
-      Number(body.ShopID) <= 0 ||
-      typeof body.OrderCode !== 'string' ||
-      !body.OrderCode.trim()
-    )
-      throw new UnauthorizedException('Shop hoặc mã vận đơn không hợp lệ.');
+    // The payload shape is validated by GhnWebhookSchema before the handler
+    // runs, so what is left to check is whether this waybill belongs to the
+    // shop the caller claims.
     const shipment = await this.prisma.shipment.findFirst({
       where: {
         carrier: 'GHN',
