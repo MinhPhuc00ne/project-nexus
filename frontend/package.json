@@ -8,6 +8,7 @@
     "dev": "vite",
     "prebuild": "npm run build --workspace=@nexus/types",
     "build": "tsc -b && vite build",
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",

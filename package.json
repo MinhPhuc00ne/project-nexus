@@ -61,6 +61,8 @@
     "@commitlint/config-conventional": "^21.2.3",
     "@playwright/test": "^1.65.1",
     "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.8",
     "eslint-plugin-sonarjs": "^4.2.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
