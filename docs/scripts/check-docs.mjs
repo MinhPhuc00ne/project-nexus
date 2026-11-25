@@ -15,9 +15,6 @@ const BANNED_PHRASES = [
   /\brobust(?:ness)?\b/i,
   /\bcutting-edge\b/i,
   /\bgame-changer\b/i,
-
-
-
   /\bdocs-site\b/i,
 ];
 
