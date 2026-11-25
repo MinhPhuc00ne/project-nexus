@@ -59,7 +59,10 @@
     "exploreNow": "Khám phá sản phẩm ngay",
     "removeTitle": "Xoá khỏi yêu thích",
     "addToCart": "Thêm vào giỏ hàng",
-    "outOfStock": "Hết hàng"
+    "outOfStock": "Hết hàng",
+    "loading": "Đang tải sản phẩm đã lưu…",
+    "loadFailed": "Không tải được danh sách yêu thích.",
+    "removeFailed": "Không xóa được sản phẩm khỏi danh sách."
   },
   "addresses": {
     "loadError": "Không thể tải sổ địa chỉ.",

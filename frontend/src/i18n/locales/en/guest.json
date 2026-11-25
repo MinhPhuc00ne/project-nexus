@@ -342,7 +342,8 @@
     "responseTimeLabel": "Response Time",
     "withinMinutes": "within minutes",
     "withinHours": "within hours",
-    "reputationLabel": "Reputation Score"
+    "reputationLabel": "Reputation Score",
+    "wishlistFailed": "Could not update your wishlist."
   },
   "shop": {
     "visitShop": "Visit shop",

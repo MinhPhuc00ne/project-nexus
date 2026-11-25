@@ -59,7 +59,10 @@
     "exploreNow": "Explore products now",
     "removeTitle": "Remove from wishlist",
     "addToCart": "Add to cart",
-    "outOfStock": "Out of stock"
+    "outOfStock": "Out of stock",
+    "loading": "Loading your saved products…",
+    "loadFailed": "Could not load your wishlist.",
+    "removeFailed": "Could not remove that item."
   },
   "addresses": {
     "loadError": "Unable to load address book.",

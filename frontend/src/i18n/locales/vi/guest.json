@@ -342,7 +342,8 @@
     "responseTimeLabel": "Thời Gian Phản Hồi",
     "withinMinutes": "trong vài phút",
     "withinHours": "trong vài giờ",
-    "reputationLabel": "Điểm Uy Tín"
+    "reputationLabel": "Điểm Uy Tín",
+    "wishlistFailed": "Không cập nhật được danh sách yêu thích."
   },
   "shop": {
     "visitShop": "Xem cửa hàng",
