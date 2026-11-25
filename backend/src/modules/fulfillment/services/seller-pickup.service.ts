@@ -11,6 +11,7 @@ import { ShopShippingProfileService } from '../../users/services/shop-shipping-p
 import { SellerPickupDto } from '../dtos/seller-pickup.dto';
 import { GhnLogisticsService } from './ghn-logistics.service';
 import { GhnShopApiService } from './ghn-shop-api.service';
+import { GhnAccountStatus } from '@prisma/client';
 import { ghnEnvironment, GhnEnvironment } from './ghn-context';
 
 import {
@@ -44,7 +45,7 @@ export class SellerPickupService {
   /** Lists carrier accounts awaiting verification. @returns Current profiles and carrier metadata. */
   async pending(): Promise<SellerPickupView[]> {
     const accounts = await this.prisma.sellerGhnAccount.findMany({
-      where: { environment: ghnEnvironment(this.config), status: 'PENDING' },
+      where: { environment: ghnEnvironment(this.config), status: GhnAccountStatus.PENDING },
       orderBy: { updatedAt: 'asc' },
       take: 100,
     });
@@ -122,7 +123,7 @@ export class SellerPickupService {
           profileFingerprint: pickupFingerprint(dto),
           districtId: location.districtId,
           wardCode: location.wardCode,
-          status: 'PENDING',
+          status: GhnAccountStatus.PENDING,
           ghnShopId: null,
           ghnClientId: null,
           carrierName: null,
@@ -144,7 +145,7 @@ export class SellerPickupService {
           point.wardCode === data.wardCode;
         if (
           sameAddress &&
-          point.status === 'VERIFIED' &&
+          point.status === GhnAccountStatus.VERIFIED &&
           point.ghnShopId &&
           point.verifiedAt &&
           point.carrierAddress &&

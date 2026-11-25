@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ViolationStatus } from '@prisma/client';
+import { ShopViolationPenaltyLevel, ViolationStatus } from '@prisma/client';
 
 export class CreateShopViolationDto {
   @ApiProperty({
@@ -31,13 +31,14 @@ export class CreateShopViolationDto {
   evidenceUrls?: string[];
 
   @ApiPropertyOptional({
-    example: 'TEMPORARY_SUSPENSION',
+    enum: ShopViolationPenaltyLevel,
+    example: ShopViolationPenaltyLevel.TEMPORARY_SUSPENSION,
     description:
-      'Mức độ xử lý vi phạm: WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN',
+      'Mức độ xử lý vi phạm: WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN, MISREPRESENTATION, FRAUD',
   })
   @IsOptional()
-  @IsString()
-  penaltyLevel?: string;
+  @IsEnum(ShopViolationPenaltyLevel)
+  penaltyLevel?: ShopViolationPenaltyLevel;
 
   @ApiPropertyOptional({
     enum: ViolationStatus,

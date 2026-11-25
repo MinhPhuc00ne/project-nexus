@@ -1,8 +1,9 @@
+import { ChatAutoReplyScope, ChatAutoReplyStatus, ChatAutoReplyTriggerType } from '@prisma/client';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
-  IsIn,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -24,13 +25,12 @@ export class CreateAutoReplyDto {
   @ApiPropertyOptional({
     description:
       'Loại kích hoạt: WELCOME (lần đầu chat), OFFLINE (ngoài giờ), KEYWORD (từ khóa), DEFAULT',
-    default: 'WELCOME',
-    enum: ['WELCOME', 'OFFLINE', 'KEYWORD', 'DEFAULT'],
+    enum: ChatAutoReplyTriggerType,
+    default: ChatAutoReplyTriggerType.WELCOME,
   })
   @IsOptional()
-  @IsString()
-  @IsIn(['WELCOME', 'OFFLINE', 'KEYWORD', 'DEFAULT'])
-  triggerType?: string = 'WELCOME';
+  @IsEnum(ChatAutoReplyTriggerType)
+  triggerType?: ChatAutoReplyTriggerType = ChatAutoReplyTriggerType.WELCOME;
 
   @ApiPropertyOptional({
     description: 'Từ khóa kích hoạt (nếu triggerType là KEYWORD)',
@@ -65,12 +65,11 @@ export class UpdateAutoReplyDto {
 
   @ApiPropertyOptional({
     description: 'Loại kích hoạt: WELCOME, OFFLINE, KEYWORD, DEFAULT',
-    enum: ['WELCOME', 'OFFLINE', 'KEYWORD', 'DEFAULT'],
+    enum: ChatAutoReplyTriggerType,
   })
   @IsOptional()
-  @IsString()
-  @IsIn(['WELCOME', 'OFFLINE', 'KEYWORD', 'DEFAULT'])
-  triggerType?: string;
+  @IsEnum(ChatAutoReplyTriggerType)
+  triggerType?: ChatAutoReplyTriggerType;
 
   @ApiPropertyOptional({ description: 'Từ khóa kích hoạt' })
   @IsOptional()
@@ -118,19 +117,19 @@ export class QueryAutoRepliesDto {
 
   @ApiPropertyOptional({
     description: 'Phạm vi: SYSTEM (hệ thống/staff) hoặc SHOP (của seller)',
-    enum: ['SYSTEM', 'SHOP'],
+    enum: ChatAutoReplyScope,
   })
   @IsOptional()
-  @IsString()
-  scope?: string;
+  @IsEnum(ChatAutoReplyScope)
+  scope?: ChatAutoReplyScope;
 
   @ApiPropertyOptional({
     description: 'Trạng thái: ACTIVE hoặc CANCELLED_BY_ADMIN',
-    enum: ['ACTIVE', 'CANCELLED_BY_ADMIN'],
+    enum: ChatAutoReplyStatus,
   })
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(ChatAutoReplyStatus)
+  status?: ChatAutoReplyStatus;
 
   @ApiPropertyOptional({ description: 'ID gian hàng / Seller cụ thể (dành cho Admin lọc)' })
   @IsOptional()
