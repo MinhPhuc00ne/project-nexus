@@ -24,6 +24,7 @@ import {
   WsTimerSyncPayload,
 } from '@nexus/types';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 
 export type PlaceBidSocketHandler = (
@@ -68,7 +69,10 @@ export class AuctionGateway
   private readonly logger = new Logger(AuctionGateway.name);
   private placeBidHandler: PlaceBidSocketHandler | null = null;
 
-  constructor(private readonly tokenAuth: TokenAuthService) {}
+  constructor(
+    private readonly tokenAuth: TokenAuthService,
+    private readonly socketMetrics: SocketMetricsService,
+  ) {}
 
   /**
    * Registers the domain bid placement handler called when a client submits `auction:place_bid`.
@@ -81,6 +85,7 @@ export class AuctionGateway
    * Lifecycle hook executed after the gateway initializes.
    */
   afterInit(): void {
+    this.socketMetrics.registerServer('/ws/auctions', this.server);
     this.logger.log('Auction WebSocket Gateway initialized on namespace /ws/auctions');
   }
 

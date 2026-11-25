@@ -11,6 +11,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { ChatService, ChatSocketBroadcaster } from '../services/chat.service';
 import { StaffQueueService } from '../services/staff-queue.service';
 
@@ -33,10 +34,12 @@ export class ChatGateway
     private readonly chatService: ChatService,
     private readonly tokenAuth: TokenAuthService,
     private readonly staffQueueService: StaffQueueService,
+    private readonly socketMetrics: SocketMetricsService,
   ) {}
 
   afterInit() {
     this.chatService.setBroadcaster(this);
+    this.socketMetrics.registerServer('/chat', this.server);
     this.logger.log('Chat WebSocket Gateway initialized successfully.');
   }
 

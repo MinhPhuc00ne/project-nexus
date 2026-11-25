@@ -20,6 +20,7 @@ import {
   type RealtimeNotificationRecord,
 } from '../../../core/notifications/notification-realtime.bus';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 import { NotificationsService } from '../services/notifications.service';
 
@@ -45,6 +46,7 @@ export class NotificationsGateway
   constructor(
     private readonly tokenAuth: TokenAuthService,
     private readonly notificationsService: NotificationsService,
+    private readonly socketMetrics: SocketMetricsService,
   ) {}
 
   afterInit(): void {
@@ -57,6 +59,7 @@ export class NotificationsGateway
         this.emitUnreadCount(payload.userId, payload.unreadCount);
       },
     });
+    this.socketMetrics.registerServer('/ws/notifications', this.server);
     this.logger.log('Notifications WebSocket Gateway initialized on namespace /ws/notifications');
   }
 
