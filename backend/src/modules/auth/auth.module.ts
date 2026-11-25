@@ -16,16 +16,19 @@ import { ProfileReauthService } from '../../core/security/profile-reauth.service
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') ||
-          process.env.JWT_SECRET ||
-          'super-secret-jwt-key-nexus-change-in-production-2026',
-        signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
-            '7d') as `${number}${'s' | 'm' | 'h' | 'd'}`,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error('JWT_SECRET is not configured');
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
+              '7d') as `${number}${'s' | 'm' | 'h' | 'd'}`,
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController, StaffController],

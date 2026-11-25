@@ -41,7 +41,7 @@ export class AuctionSecondChanceHelper {
     private readonly reputation: ReputationService,
     private readonly adminSettings: AdminSettingsService,
     private readonly adminFinance: AdminFinanceService,
-    private readonly auctionStock?: AuctionStockService,
+    _auctionStock?: AuctionStockService,
   ) {}
 
   async respondSecondChance(awardId: string, buyerId: string, accept: boolean) {
@@ -664,7 +664,7 @@ export class AuctionSecondChanceHelper {
       auctionItem: { id: string; title: string; lotNumber: number | null; sellerId: string } | null;
     },
     walletId: string,
-    currentBalance: number,
+    _currentBalance: number,
     fromAutoDeposit = false,
   ) {
     const buyerId = award.buyerId ?? award.bid.bidderId;

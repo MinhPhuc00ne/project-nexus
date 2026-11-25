@@ -13,7 +13,7 @@ export class AdminCreateAuctionDto {
   })
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @ApiPropertyOptional({
     description: 'Detailed description, guidelines, and rules of the auction session',
@@ -39,7 +39,7 @@ export class AdminCreateAuctionDto {
   })
   @IsDateString()
   @IsNotEmpty()
-  startTime: string;
+  startTime!: string;
 
   @ApiProperty({
     description:
@@ -48,7 +48,7 @@ export class AdminCreateAuctionDto {
   })
   @IsDateString()
   @IsNotEmpty({ message: 'Hạn chót ký gửi không được để trống.' })
-  consignmentDeadline: string;
+  consignmentDeadline!: string;
 
   @ApiProperty({
     description: 'Scheduled conclusion timestamp in ISO 8601 format',
@@ -56,7 +56,7 @@ export class AdminCreateAuctionDto {
   })
   @IsDateString()
   @IsNotEmpty()
-  endTime: string;
+  endTime!: string;
 
   @ApiPropertyOptional({
     description: 'Minimum buyer reputation score required to place bids',

@@ -6,8 +6,8 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { Request, Response } from 'express';
-import { DomainException } from '../exceptions/domain.exception';
 
 @Catch()
 export class GlobalHttpExceptionFilter implements ExceptionFilter {
@@ -23,11 +23,7 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
     let message: string | string[] = 'Internal server error occurred';
     let errors: unknown = null;
 
-    if (exception instanceof DomainException) {
-      statusCode = exception.httpStatus;
-      errorCode = exception.errorCode;
-      message = exception.message;
-    } else if (exception instanceof HttpException) {
+    if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
       const res = exception.getResponse();
       if (typeof res === 'object' && res !== null) {
@@ -40,10 +36,12 @@ export class GlobalHttpExceptionFilter implements ExceptionFilter {
       }
     } else if (exception instanceof Error) {
       this.logger.error(`Unhandled Error: ${exception.message}`, exception.stack);
-      message = exception.message;
     }
 
-    const traceId = (request.headers['x-trace-id'] as string) || `req-${Date.now().toString(36)}`;
+    const traceId =
+      (request?.headers?.['x-request-id'] as string) ||
+      (request?.headers?.['x-trace-id'] as string) ||
+      crypto.randomUUID();
 
     response.status(statusCode).json({
       statusCode,

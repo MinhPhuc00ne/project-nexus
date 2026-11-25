@@ -1,4 +1,4 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -7,12 +7,10 @@ import { AuctionCheckoutService } from './auction-checkout.service';
 import { PayosService } from './payos.service';
 
 export class OrderWalletHelper {
-  private readonly logger = new Logger('OrderService');
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly payosService: PayosService,
-    private readonly configService: ConfigService,
+    _configService: ConfigService,
     private readonly auctionCheckout?: AuctionCheckoutService,
   ) {}
 

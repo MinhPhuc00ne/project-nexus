@@ -10,7 +10,7 @@ export class CreateWithdrawalDto {
   @Type(() => Number)
   @IsNumber()
   @Min(1, { message: 'Số tiền rút phải lớn hơn 0 VND' })
-  amount: number;
+  amount!: number;
 
   @ApiPropertyOptional({
     example: 'Vietcombank',

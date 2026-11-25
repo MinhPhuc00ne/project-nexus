@@ -48,7 +48,7 @@ export class AuctionService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auctionGateway: AuctionGateway,
-    private readonly stock: AuctionStockService,
+    _stock: AuctionStockService,
     private readonly checkout: AuctionCheckoutService,
     @Optional() private readonly chatService?: ChatService,
   ) {

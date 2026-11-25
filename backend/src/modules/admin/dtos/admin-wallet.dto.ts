@@ -10,7 +10,7 @@ export class DepositAdminWalletDto {
   })
   @IsNumber()
   @Min(10000, { message: 'Số tiền nạp tối thiểu là 10.000 VNĐ' })
-  amount: number;
+  amount!: number;
 
   @ApiPropertyOptional({
     example: 'Nạp quỹ dự phòng bảo chứng thanh toán',
@@ -85,36 +85,36 @@ export class QueryPlatformUserWalletTransactionsDto extends QueryAdminWalletTran
 
 export class AdminWalletResponseDto {
   @ApiProperty({ example: 'w-1234-5678', description: 'ID của ví hệ thống' })
-  walletId: string;
+  walletId!: string;
 
   @ApiProperty({ example: 'u-admin-001', description: 'ID tài khoản quản trị viên' })
-  userId: string;
+  userId!: string;
 
   @ApiProperty({ example: 5000000, description: 'Số dư khả dụng hiện tại (VND)' })
-  balance: number;
+  balance!: number;
 
   @ApiProperty({ example: 0, description: 'Số dư đóng băng / ký quỹ (VND)' })
-  lockedBalance: number;
+  lockedBalance!: number;
 
   @ApiProperty({ example: 'VND', description: 'Đơn vị tiền tệ' })
-  currency: string;
+  currency!: string;
 
   @ApiProperty({ example: 350000, description: 'Tổng doanh thu hoa hồng sàn (% phí sàn) đã thu' })
-  totalPlatformFeeCollected: number;
+  totalPlatformFeeCollected!: number;
 
   @ApiProperty({ example: 10000000, description: 'Tổng số tiền Admin đã nạp vào ví hệ thống' })
-  totalDeposited: number;
+  totalDeposited!: number;
 
   @ApiProperty({ example: 42, description: 'Tổng số lượng giao dịch phát sinh trên ví' })
-  totalTransactions: number;
+  totalTransactions!: number;
 
   @ApiProperty({ example: '2026-10-28T00:00:00.000Z', description: 'Thời gian cập nhật gần nhất' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export class AdminWalletOrderDetailsDto {
   @ApiProperty({ example: 'o-9876-5432', description: 'Mã đơn hàng liên kết' })
-  orderId: string;
+  orderId!: string;
 
   @ApiPropertyOptional({ example: 'Nguyễn Văn A', description: 'Họ tên người mua (Buyer)' })
   buyerName?: string;
@@ -132,19 +132,19 @@ export class AdminWalletOrderDetailsDto {
   sellerEmail?: string;
 
   @ApiProperty({ example: 100000, description: 'Tiền hàng gốc (chưa gồm phí ship)' })
-  subtotal: number;
+  subtotal!: number;
 
   @ApiProperty({ example: 30000, description: 'Cước vận chuyển GHN' })
-  shippingFee: number;
+  shippingFee!: number;
 
   @ApiProperty({ example: 130000, description: 'Tổng tiền người mua đã thanh toán' })
-  totalAmount: number;
+  totalAmount!: number;
 
   @ApiProperty({ example: 7000, description: 'Phí sàn thu được từ đơn (7%)' })
-  platformFee: number;
+  platformFee!: number;
 
   @ApiProperty({ example: 93000, description: 'Số tiền thực tế giải ngân cho người bán' })
-  sellerPayout: number;
+  sellerPayout!: number;
 
   @ApiPropertyOptional({ example: 'GHN123456789VN', description: 'Mã vận đơn giao hàng' })
   waybillCode?: string;
@@ -155,23 +155,23 @@ export class AdminWalletOrderDetailsDto {
 
 export class AdminWalletTransactionItemDto {
   @ApiProperty({ example: 'tx-112233', description: 'Mã giao dịch ví' })
-  id: string;
+  id!: string;
 
   @ApiProperty({ example: 'w-1234-5678', description: 'Mã ví nhận / trừ tiền' })
-  walletId: string;
+  walletId!: string;
 
   @ApiProperty({ example: 130000, description: 'Số tiền biến động (VND)' })
-  amount: number;
+  amount!: number;
 
   @ApiProperty({
     enum: WalletTransactionType,
     example: 'ESCROW_LOCK',
     description: 'Loại biến động số dư',
   })
-  type: WalletTransactionType;
+  type!: WalletTransactionType;
 
   @ApiProperty({ example: 'SUCCESS', description: 'Trạng thái giao dịch' })
-  status: string;
+  status!: string;
 
   @ApiPropertyOptional({
     example: 'o-9876-5432',
@@ -186,7 +186,7 @@ export class AdminWalletTransactionItemDto {
   description?: string;
 
   @ApiProperty({ example: '2026-10-28T00:00:00.000Z', description: 'Thời điểm tạo giao dịch' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiPropertyOptional({
     type: () => AdminWalletOrderDetailsDto,
@@ -197,17 +197,17 @@ export class AdminWalletTransactionItemDto {
 
 export class AdminWalletTransactionsResponseDto {
   @ApiProperty({ example: 100, description: 'Tổng số giao dịch thỏa mãn điều kiện' })
-  total: number;
+  total!: number;
 
   @ApiProperty({ example: 1, description: 'Trang hiện tại' })
-  page: number;
+  page!: number;
 
   @ApiProperty({ example: 10, description: 'Số bản ghi trên mỗi trang' })
-  limit: number;
+  limit!: number;
 
   @ApiProperty({ example: 10, description: 'Tổng số trang' })
-  totalPages: number;
+  totalPages!: number;
 
   @ApiProperty({ type: [AdminWalletTransactionItemDto], description: 'Danh sách các giao dịch' })
-  items: AdminWalletTransactionItemDto[];
+  items!: AdminWalletTransactionItemDto[];
 }

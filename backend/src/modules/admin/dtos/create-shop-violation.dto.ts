@@ -9,7 +9,7 @@ export class CreateShopViolationDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Tiêu đề vi phạm không được để trống' })
-  title: string;
+  title!: string;
 
   @ApiProperty({
     example:
@@ -18,7 +18,7 @@ export class CreateShopViolationDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Mô tả vi phạm không được để trống' })
-  description: string;
+  description!: string;
 
   @ApiPropertyOptional({
     example: ['https://example.com/evidence1.jpg', 'https://example.com/report.pdf'],

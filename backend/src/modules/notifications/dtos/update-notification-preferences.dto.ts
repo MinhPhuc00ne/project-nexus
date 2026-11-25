@@ -10,14 +10,14 @@ export class NotificationPreferenceItemDto {
     description: 'Kênh nhận thông báo: EMAIL, PUSH, IN_APP',
   })
   @IsEnum(NotificationChannel)
-  channel: NotificationChannel;
+  channel!: NotificationChannel;
 
   @ApiProperty({
     example: true,
     description: 'Bật (true) hoặc tắt (false) nhận thông báo qua kênh này',
   })
   @IsBoolean()
-  isEnabled: boolean;
+  isEnabled!: boolean;
 }
 
 export class UpdateNotificationPreferencesDto {
@@ -33,5 +33,5 @@ export class UpdateNotificationPreferencesDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => NotificationPreferenceItemDto)
-  preferences: NotificationPreferenceItemDto[];
+  preferences!: NotificationPreferenceItemDto[];
 }

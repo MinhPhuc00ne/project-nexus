@@ -32,7 +32,10 @@ test(
     );
     const schema = `gap_test_${randomUUID().replaceAll('-', '')}`;
     assert.match(schema, /^gap_test_[a-f0-9]{32}$/);
-    const adminPool = new Pool({ connectionString: url.toString(), connectionTimeoutMillis: 3000 });
+    const adminPool = new Pool({
+      connectionString: url.toString(),
+      connectionTimeoutMillis: 10000,
+    });
     let prisma;
     let pool;
     try {
@@ -339,7 +342,18 @@ test(
               codeExpiresAt: new Date(Date.now() + 60000),
             },
           });
-          const auth = new AuthService(prisma, {}, {}, {}, {});
+          const auth = new AuthService(
+            prisma,
+            {
+              get: (key) =>
+                key === 'JWT_SECRET' || key === 'REFRESH_TOKEN_SECRET'
+                  ? 'test-secret-key-16'
+                  : undefined,
+            },
+            {},
+            {},
+            {},
+          );
           await Promise.all([
             auth.verifyEmail({ email: account.email, code: '123456' }),
             auth.verifyEmail({ email: account.email, code: '123456' }),

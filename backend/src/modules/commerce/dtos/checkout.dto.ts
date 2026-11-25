@@ -21,17 +21,17 @@ export class ShippingAddressDto {
   @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ tên người nhận' })
   @IsString()
   @IsNotEmpty()
-  recipientName: string;
+  recipientName!: string;
 
   @ApiProperty({ example: '0987654321', description: 'Số điện thoại người nhận' })
   @IsString()
   @IsNotEmpty()
-  phone: string;
+  phone!: string;
 
   @ApiProperty({ example: 'TP. Hồ Chí Minh', description: 'Tỉnh/Thành phố' })
   @IsString()
   @IsNotEmpty()
-  city: string;
+  city!: string;
 
   @ApiPropertyOptional({ example: 'Quận 1', description: 'Quận/Huyện' })
   @IsString()
@@ -46,14 +46,14 @@ export class ShippingAddressDto {
   @ApiProperty({ example: '123 Lê Lợi', description: 'Địa chỉ đường/số nhà cụ thể' })
   @IsString()
   @IsNotEmpty()
-  street: string;
+  street!: string;
 }
 
 export class CheckoutDto {
   @ApiProperty({ description: 'Thông tin địa chỉ giao hàng' })
   @ValidateNested()
   @Type(() => ShippingAddressDto)
-  shippingAddress: ShippingAddressDto;
+  shippingAddress!: ShippingAddressDto;
 
   @ApiPropertyOptional({
     description:

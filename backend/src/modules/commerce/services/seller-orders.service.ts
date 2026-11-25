@@ -2,7 +2,6 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -19,8 +18,6 @@ import { DispatchGhnOrderDto, QuerySellerOrdersDto } from '../dtos/seller-order.
 
 @Injectable()
 export class SellerOrdersService {
-  private readonly logger = new Logger(SellerOrdersService.name);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly dispatchService: GhnDispatchService,

@@ -1,4 +1,5 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Request } from 'express';
@@ -23,7 +24,10 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<
     const request = httpContext.getRequest<Request>();
     const response = httpContext.getResponse();
     const statusCode = response.statusCode || 200;
-    const traceId = (request.headers['x-trace-id'] as string) || `req-${Date.now().toString(36)}`;
+    const traceId =
+      (request?.headers?.['x-request-id'] as string) ||
+      (request?.headers?.['x-trace-id'] as string) ||
+      crypto.randomUUID();
 
     return next.handle().pipe(
       map((data) => {

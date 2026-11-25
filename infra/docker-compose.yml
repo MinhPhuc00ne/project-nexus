@@ -68,9 +68,12 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET:-nexus_super_secret_jwt_key_2026}
-      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-15m}
-      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-nexus_super_secret_refresh_key_2026}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-30d}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
     ports:
       - '3000:3000'
     depends_on:

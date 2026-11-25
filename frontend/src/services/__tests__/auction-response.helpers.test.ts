@@ -9,6 +9,24 @@ describe('auction-response.helpers', () => {
   it('unwraps { data } envelopes and returns raw payloads unchanged', () => {
     expect(unwrapAuctionResponse({ data: { id: 'a-1' } })).toEqual({ id: 'a-1' });
     expect(unwrapAuctionResponse({ id: 'a-2' })).toEqual({ id: 'a-2' });
+
+    const awards = [{ id: 'offer', tier: 'SECOND_CHANCE', status: 'AWAITING_ACCEPTANCE' }];
+    expect(
+      unwrapAuctionResponse({ statusCode: 200, data: awards } as { data: typeof awards }),
+    ).toEqual(awards);
+    expect(unwrapAuctionResponse(awards)).toEqual(awards);
+
+    for (const result of [
+      { status: 'AWAITING_DEPOSIT' },
+      { status: 'AWAITING_CHECKOUT' },
+      { status: 'DECLINED' },
+      { remainingProductAmount: 70000, shippingFee: 15000 },
+      { order: { id: 'order' } },
+    ]) {
+      expect(
+        unwrapAuctionResponse({ statusCode: 200, data: result } as { data: typeof result }),
+      ).toEqual(result);
+    }
   });
 
   it('normalizes both nested-pagination and flat auction list payloads', () => {

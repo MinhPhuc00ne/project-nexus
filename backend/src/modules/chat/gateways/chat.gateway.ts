@@ -27,7 +27,7 @@ export class ChatGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, ChatSocketBroadcaster
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(ChatGateway.name);
 
@@ -128,9 +128,10 @@ export class ChatGateway
         return;
       }
 
-      const secret =
-        this.configService.get<string>('JWT_SECRET') ||
-        'super-secret-jwt-key-nexus-change-in-production-2026';
+      const secret = this.configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+      if (!secret) {
+        throw new Error('JWT_SECRET is not configured');
+      }
 
       const verifyResult = LightweightJwt.verify<AuthenticatedUserPayload>(rawToken, secret);
 

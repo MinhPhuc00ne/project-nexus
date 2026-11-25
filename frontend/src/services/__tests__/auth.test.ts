@@ -83,8 +83,9 @@ describe('auth service session helpers', () => {
   });
 
   it('preserves messages array on RegistrationError', () => {
-    const err = new RegistrationError(['Email exists', 'Weak password']);
+    const err = new RegistrationError(['Email exists', 'Weak password'], 400);
     expect(err.name).toBe('RegistrationError');
+    expect(err.status).toBe(400);
     expect(err.message).toBe('Email exists · Weak password');
     expect(err.messages).toEqual(['Email exists', 'Weak password']);
   });

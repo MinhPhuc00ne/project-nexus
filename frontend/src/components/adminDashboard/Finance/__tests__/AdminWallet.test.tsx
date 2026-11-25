@@ -44,7 +44,9 @@ beforeEach(async () => {
     limit: 10,
     totalPages: 0,
   });
-  vi.mocked(QRCode.toDataURL).mockResolvedValue('data:image/png;base64,qr');
+  vi.mocked(
+    QRCode.toDataURL as unknown as (text: string, options?: unknown) => Promise<string>,
+  ).mockResolvedValue('data:image/png;base64,qr');
 });
 
 it('requests PayOS through the existing authenticated wallet deposit endpoint', async () => {

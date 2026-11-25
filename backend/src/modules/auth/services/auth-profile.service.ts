@@ -58,7 +58,7 @@ export class AuthProfileService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
+    _configService: ConfigService,
     private readonly profileReauth: ProfileReauthService,
     private readonly mailService: MailService,
   ) {}

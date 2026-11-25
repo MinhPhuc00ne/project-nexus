@@ -140,7 +140,7 @@ export class ChatAutoReplyService {
   /**
    * Admin tạo tin nhắn tự động chung của hệ thống (dành cho Staff CSKH Desk)
    */
-  async createSystemAutoReply(adminId: string, dto: CreateAutoReplyDto) {
+  async createSystemAutoReply(_adminId: string, dto: CreateAutoReplyDto) {
     this.validateReply(dto.triggerType ?? 'WELCOME', dto.keyword, dto.content);
     assertCleanContent(dto.content, 'Nội dung tin nhắn tự động hệ thống');
 

@@ -38,13 +38,13 @@ export class QueryReportsDto {
 export class ReviewReportDto {
   @ApiProperty({ enum: ['INVESTIGATING', 'CONFIRMED', 'DISMISSED'] })
   @IsIn(['INVESTIGATING', 'CONFIRMED', 'DISMISSED'])
-  status: 'INVESTIGATING' | 'CONFIRMED' | 'DISMISSED';
+  status!: 'INVESTIGATING' | 'CONFIRMED' | 'DISMISSED';
 
   @ApiProperty({ description: 'Rationale retained in the moderation audit trail' })
   @IsString()
   @MinLength(5)
   @MaxLength(2000)
-  reason: string;
+  reason!: string;
 
   @ApiPropertyOptional({
     enum: [PenaltyType.FRAUD, PenaltyType.MISREPRESENTATION],

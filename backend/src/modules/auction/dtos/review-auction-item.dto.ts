@@ -27,7 +27,7 @@ export class ReviewAuctionItemDto {
   })
   @IsEnum(ReviewAction)
   @IsNotEmpty()
-  action: ReviewAction;
+  action!: ReviewAction;
 
   @ApiPropertyOptional({
     description: 'Mandatory rejection rationale (required when action is REJECT)',

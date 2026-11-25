@@ -122,10 +122,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private pool: Pool;
   private wrappedNotificationDelegate: Prisma.NotificationDelegate | null = null;
 
-  constructor(private readonly configService: ConfigService) {
-    const connectionString =
-      configService.get<string>('DATABASE_URL') ||
-      'postgresql://postgres:nexus_secret_2026@localhost:5432/nexus_main?schema=public';
+  constructor(configService: ConfigService) {
+    const connectionString = configService.get<string>('DATABASE_URL');
+    if (!connectionString) {
+      throw new Error('DATABASE_URL is required');
+    }
 
     const pool = new Pool({
       connectionString,

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AuctionStatus } from '@nexus/types';
 import i18n from '../../../../i18n';
 import type { AdminAuctionEntity } from '../../../../services/auction.service';
 import AuctionRow from '../AuctionRow';
@@ -9,7 +10,7 @@ const auction: AdminAuctionEntity = {
   id: 'auction-1',
   title: 'Summer auction',
   imageUrl: '/auction.jpg',
-  status: 'SCHEDULED',
+  status: AuctionStatus.SCHEDULED,
   startTime: '2030-06-01T00:00:00Z',
   endTime: '2030-06-02T00:00:00Z',
   minBuyerReputation: 100,
@@ -85,7 +86,7 @@ describe('admin auction row after merging translations', () => {
   });
 
   it('preserves restrictions for a running auction and translates disabled reasons', async () => {
-    renderRow({ ...auction, status: 'ACTIVE', isConsignmentLocked: true });
+    renderRow({ ...auction, status: AuctionStatus.ACTIVE, isConsignmentLocked: true });
     await act(async () => {
       await i18n.changeLanguage('en');
     });

@@ -14,8 +14,44 @@ jobs:
   verify:
     name: Lint, Build, and Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nexus_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nexus_ci
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-test-jwt-secret-key-at-least-32-chars
+      REFRESH_TOKEN_SECRET: ci-test-refresh-secret-key-at-least-32-chars
+      CORS_ORIGINS: http://localhost:5173
+      APP_PUBLIC_URL: http://localhost:3000
+      FRONTEND_URL: http://localhost:5173
+      NEXUS_AFTER_SALES_DB_TEST: '1'
+      NEXUS_BACKEND_REVIEW_DB_TEST: '1'
+      NEXUS_BANNER_DB_TEST: '1'
+      NEXUS_CHATBOT_DB_TEST: '1'
+      NEXUS_DOCUMENT_GAPS_DB_TEST: '1'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,6 +82,15 @@ jobs:
 
       - name: Build all workspaces
         run: npm run build
+
+      - name: Typecheck backend tests
+        run: npm run typecheck:test --workspace=nexus-backend
+
+      - name: Typecheck frontend tests
+        run: npm run typecheck:test --workspace=nexus-frontend
+
+      - name: Deploy Prisma migrations for integration tests
+        run: npm run prisma:deploy --workspace=nexus-backend
 
       - name: Run automated test suites
         run: npm test

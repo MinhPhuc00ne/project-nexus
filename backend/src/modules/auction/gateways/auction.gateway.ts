@@ -64,7 +64,7 @@ export class AuctionGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, AuctionSocketBroadcaster
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(AuctionGateway.name);
   private placeBidHandler: PlaceBidSocketHandler | null = null;
@@ -97,9 +97,10 @@ export class AuctionGateway
         client.handshake.headers?.authorization?.replace('Bearer ', '');
 
       if (rawToken) {
-        const secret =
-          this.configService.get<string>('JWT_SECRET') ||
-          'super-secret-jwt-key-nexus-change-in-production-2026';
+        const secret = this.configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error('JWT_SECRET is not configured');
+        }
         const verifyResult = LightweightJwt.verify<AuthenticatedUserPayload>(rawToken, secret);
         if (verifyResult.valid && verifyResult.payload) {
           const user = verifyResult.payload;

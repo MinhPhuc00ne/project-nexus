@@ -97,7 +97,7 @@ export class AuthService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = crypto.randomInt(100000, 1000000).toString();
     const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.user.upsert({
@@ -136,12 +136,9 @@ export class AuthService {
 
     this.logger.log(`🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} đã được xử lý`);
 
-    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
-
     return {
       message: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư Gmail để lấy mã OTP xác thực.',
       email,
-      ...(isDev ? { devOtpCode: verificationCode } : {}),
     };
   }
 
@@ -416,12 +413,9 @@ export class AuthService {
       data: { verificationCode: resetCode, codeExpiresAt },
     });
 
-    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
-
     return {
       message: 'Mã OTP đặt lại mật khẩu đã được gửi đến hộp thư Gmail của bạn!',
       email: user.email,
-      ...(isDev && user.role !== 'SUPPORT_STAFF' ? { devOtpCode: resetCode } : {}),
     };
   }
 
@@ -490,10 +484,7 @@ export class AuthService {
    * @throws ForbiddenException when account is suspended
    */
   async refreshToken(dto: RefreshTokenDto) {
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+    const refreshSecret = this.getRefreshSecret();
 
     let payload: RefreshJwtPayload;
     try {
@@ -559,10 +550,7 @@ export class AuthService {
    * @returns Logout confirmation message
    */
   async logout(dto: RefreshTokenDto): Promise<{ message: string }> {
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+    const refreshSecret = this.getRefreshSecret();
 
     try {
       const payload = await this.jwtService.verifyAsync<RefreshJwtPayload>(dto.refreshToken, {
@@ -598,10 +586,7 @@ export class AuthService {
     });
 
     const tokenId = crypto.randomUUID();
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+    const refreshSecret = this.getRefreshSecret();
     const refreshExpiresIn =
       this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') ||
       process.env.REFRESH_TOKEN_EXPIRES_IN ||
@@ -733,5 +718,14 @@ export class AuthService {
         'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
       );
     }
+  }
+
+  private getRefreshSecret(): string {
+    const refreshSecret =
+      this.configService.get<string>('REFRESH_TOKEN_SECRET') || process.env.REFRESH_TOKEN_SECRET;
+    if (!refreshSecret) {
+      throw new Error('REFRESH_TOKEN_SECRET is not configured');
+    }
+    return refreshSecret;
   }
 }
