@@ -1,18 +1,10 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
+import { DepositWalletInput, DepositWalletSchema } from '../dtos/deposit-wallet.dto';
 import { WalletDepositService } from '../services/wallet-deposit.service';
 
 /**
@@ -53,7 +45,10 @@ export class WalletController {
     description: 'Nạp tiền thành công hoặc trả về thông tin VietQR PayOS',
   })
   @ApiResponse({ status: 400, description: 'Số tiền nạp không hợp lệ' })
-  async depositMyWallet(@CurrentUser('id') userId: string, @Body() dto: DepositWalletDto) {
+  async depositMyWallet(
+    @CurrentUser('id') userId: string,
+    @ZodBody(DepositWalletSchema) dto: DepositWalletInput,
+  ) {
     return this.deposits.depositToUserWallet(userId, {
       ...dto,
       provider: dto.provider || 'PAYOS',

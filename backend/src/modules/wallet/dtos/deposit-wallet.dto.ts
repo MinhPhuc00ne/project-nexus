@@ -1,29 +1,22 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { z } from 'zod';
 
-export class DepositWalletDto {
-  @ApiProperty({
-    example: 500000,
-    description: 'Số tiền nạp vào ví cá nhân (VND, tối thiểu 10.000 VNĐ)',
+export const DepositWalletSchema = z
+  .object({
+    amount: z
+      .number()
+      .min(10000)
+      .describe('Số tiền nạp vào ví cá nhân (VND, tối thiểu 10.000 VNĐ)')
+      .meta({ example: 500000 }),
+    description: z
+      .string()
+      .describe('Ghi chú lý do nạp tiền')
+      .meta({ example: 'Nạp tiền vào ví NEXUS Pay để mua hàng' })
+      .optional(),
+    provider: z
+      .enum(['PAYOS', 'DIRECT'])
+      .describe('Phương thức nạp: PAYOS (tạo VietQR thanh toán) hoặc DIRECT (nạp thử nghiệm)')
+      .default('PAYOS'),
   })
-  @IsNumber()
-  @Min(10000, { message: 'Số tiền nạp tối thiểu là 10.000 VNĐ' })
-  amount!: number;
+  .strict();
 
-  @ApiPropertyOptional({
-    example: 'Nạp tiền vào ví NEXUS Pay để mua hàng',
-    description: 'Ghi chú lý do nạp tiền',
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @ApiPropertyOptional({
-    enum: ['PAYOS', 'DIRECT'],
-    default: 'PAYOS',
-    description: 'Phương thức nạp: PAYOS (tạo VietQR thanh toán) hoặc DIRECT (nạp thử nghiệm)',
-  })
-  @IsOptional()
-  @IsEnum(['PAYOS', 'DIRECT'])
-  provider?: 'PAYOS' | 'DIRECT';
-}
+export type DepositWalletInput = z.infer<typeof DepositWalletSchema>;

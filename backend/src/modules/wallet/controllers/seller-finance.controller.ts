@@ -1,21 +1,13 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { Role } from '@nexus/types';
 import { SellerFinanceService } from '../services/seller-finance.service';
-import { CreateWithdrawalDto } from '../dtos/create-withdrawal.dto';
-import { QueryFinanceDto } from '../dtos/query-finance.dto';
+import { CreateWithdrawalInput, CreateWithdrawalSchema } from '../dtos/create-withdrawal.dto';
+import { QueryFinanceInput, QueryFinanceSchema } from '../dtos/query-finance.dto';
 
 @ApiTags('3. SELLER')
 @ApiBearerAuth()
@@ -46,7 +38,10 @@ export class SellerFinanceController {
   })
   @ApiResponse({ status: 201, description: 'Tạo yêu cầu rút tiền thành công' })
   @ApiResponse({ status: 400, description: 'Số dư không đủ hoặc số tiền rút không hợp lệ' })
-  async createWithdrawal(@CurrentUser('id') sellerId: string, @Body() dto: CreateWithdrawalDto) {
+  async createWithdrawal(
+    @CurrentUser('id') sellerId: string,
+    @ZodBody(CreateWithdrawalSchema) dto: CreateWithdrawalInput,
+  ) {
     return this.sellerFinanceService.createWithdrawal(sellerId, dto);
   }
 
@@ -58,7 +53,10 @@ export class SellerFinanceController {
       'Hỗ trợ phân trang và lọc theo loại giao dịch (DEPOSIT, WITHDRAW, ESCROW_PAYOUT...) và trạng thái (PENDING, SUCCESS, FAILED).',
   })
   @ApiResponse({ status: 200, description: 'Lấy lịch sử giao dịch thành công' })
-  async getTransactions(@CurrentUser('id') sellerId: string, @Query() query: QueryFinanceDto) {
+  async getTransactions(
+    @CurrentUser('id') sellerId: string,
+    @ZodQuery(QueryFinanceSchema) query: QueryFinanceInput,
+  ) {
     return this.sellerFinanceService.getTransactions(sellerId, query);
   }
 

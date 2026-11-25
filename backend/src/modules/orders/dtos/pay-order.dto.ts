@@ -1,33 +1,23 @@
-import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
 import { PaymentProvider } from '@prisma/client';
 
-/**
- * Data transfer object for initiating order payment transactions.
- */
-export class PayOrderDto {
-  @ApiPropertyOptional({
-    enum: PaymentProvider,
-    default: PaymentProvider.PAYOS,
-    description: 'Cổng thanh toán muốn sử dụng (PAYOS, WALLET, COD)',
+export const PayOrderSchema = z
+  .object({
+    provider: z
+      .enum(PaymentProvider)
+      .describe('Cổng thanh toán muốn sử dụng (PAYOS, WALLET, COD)')
+      .default(PaymentProvider.PAYOS),
+    returnUrl: z
+      .string()
+      .describe('URL chuyển hướng khi thanh toán thành công')
+      .meta({ example: 'http://localhost:5173/payment/success' })
+      .optional(),
+    cancelUrl: z
+      .string()
+      .describe('URL chuyển hướng khi người dùng bấm hủy')
+      .meta({ example: 'http://localhost:5173/payment/cancel' })
+      .optional(),
   })
-  @IsEnum(PaymentProvider)
-  @IsOptional()
-  provider?: PaymentProvider;
+  .strict();
 
-  @ApiPropertyOptional({
-    example: 'http://localhost:5173/payment/success',
-    description: 'URL chuyển hướng khi thanh toán thành công',
-  })
-  @IsString()
-  @IsOptional()
-  returnUrl?: string;
-
-  @ApiPropertyOptional({
-    example: 'http://localhost:5173/payment/cancel',
-    description: 'URL chuyển hướng khi người dùng bấm hủy',
-  })
-  @IsString()
-  @IsOptional()
-  cancelUrl?: string;
-}
+export type PayOrderInput = z.infer<typeof PayOrderSchema>;

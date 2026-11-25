@@ -1,34 +1,19 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { z } from 'zod';
 import { OrderStatus } from '@prisma/client';
 
-export class QuerySellerOrdersDto {
-  @ApiPropertyOptional({
-    description: 'Lọc theo trạng thái đơn hàng',
-    enum: OrderStatus,
+export const QuerySellerOrdersSchema = z
+  .object({
+    status: z.enum(OrderStatus).describe('Lọc theo trạng thái đơn hàng').optional(),
+    search: z.string().describe('Tìm kiếm theo mã đơn, tên hoặc SĐT người mua').optional(),
+    page: z.coerce.number().int().min(1).describe('Số trang (bắt đầu từ 1)').default(1),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .describe('Số lượng đơn mỗi trang (1 - 100)')
+      .default(10),
   })
-  @IsOptional()
-  @IsEnum(OrderStatus)
-  status?: OrderStatus;
+  .strict();
 
-  @ApiPropertyOptional({ description: 'Tìm kiếm theo mã đơn, tên hoặc SĐT người mua' })
-  @IsOptional()
-  @IsString()
-  search?: string;
-
-  @ApiPropertyOptional({ description: 'Số trang (bắt đầu từ 1)', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ description: 'Số lượng đơn mỗi trang (1 - 100)', default: 10 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
-}
+export type QuerySellerOrdersInput = z.infer<typeof QuerySellerOrdersSchema>;

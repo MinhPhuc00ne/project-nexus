@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { AfterSalesRequest, OrderRefund, Prisma } from '@prisma/client';
-import { QueryAfterSalesDto, QueryRefundsDto } from '../dtos/after-sales.dto';
+import { QueryAfterSalesInput, QueryRefundsInput } from '../dtos/after-sales.dto';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
@@ -84,7 +84,7 @@ export class AfterSalesStoreService {
 
   async listRequests(
     actor: ShipmentActor,
-    query: QueryAfterSalesDto,
+    query: QueryAfterSalesInput,
   ): Promise<{ items: AfterSalesRequest[]; total: number; page: number; limit: number }> {
     const where: Prisma.AfterSalesRequestWhereInput = {
       ...(query.status ? { status: query.status } : {}),
@@ -106,7 +106,7 @@ export class AfterSalesStoreService {
 
   async listRefunds(
     actor: ShipmentActor,
-    query: QueryRefundsDto,
+    query: QueryRefundsInput,
   ): Promise<{ items: OrderRefund[]; total: number; page: number; limit: number }> {
     if (!isStaff(actor)) throw new ForbiddenException('Chỉ nhân viên được xem hàng đợi hoàn tiền.');
     const where = { status: query.status };

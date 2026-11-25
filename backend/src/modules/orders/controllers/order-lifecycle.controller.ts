@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Param, Post, UseGuards, HttpCode } from '@nestjs/common';
-import { ApiBearerAuth, ApiProperty, ApiTags } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { Controller, Get, Param, Post, UseGuards, HttpCode } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
+import { z } from 'zod';
 import { CurrentUser, AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import {
@@ -9,19 +10,19 @@ import {
 } from '../../fulfillment/services/shipment-tracking.service';
 import { OrderEscrowService, EscrowResult } from '../services/order-escrow.service';
 
-class DisputeOrderDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(2000)
-  reason!: string;
-}
+/** Why a buyer is disputing an order. Trimmed, so a reason of spaces is none. */
+const DisputeOrderSchema = z.object({ reason: z.string().trim().min(1).max(2000) }).strict();
 
-class ResolveOrderDto extends DisputeOrderDto {
-  @ApiProperty({ enum: ['BUYER', 'SELLER'] })
-  @IsIn(['BUYER', 'SELLER'])
-  verdict!: 'BUYER' | 'SELLER';
-}
+/** A staff ruling on a dispute, and the reasoning behind it. */
+const ResolveOrderSchema = z
+  .object({
+    reason: z.string().trim().min(1).max(2000),
+    verdict: z.enum(['BUYER', 'SELLER']),
+  })
+  .strict();
+
+type DisputeOrderInput = z.infer<typeof DisputeOrderSchema>;
+type ResolveOrderInput = z.infer<typeof ResolveOrderSchema>;
 
 @ApiTags('8. COMMERCE - ORDERS & PAYMENTS')
 @ApiBearerAuth()
@@ -65,7 +66,7 @@ export class OrderLifecycleController {
   dispute(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: DisputeOrderDto,
+    @ZodBody(DisputeOrderSchema) dto: DisputeOrderInput,
   ): ReturnType<OrderEscrowService['dispute']> {
     return this.escrow.dispute(id, userId, dto.reason);
   }
@@ -75,7 +76,7 @@ export class OrderLifecycleController {
   resolve(
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUserPayload,
-    @Body() dto: ResolveOrderDto,
+    @ZodBody(ResolveOrderSchema) dto: ResolveOrderInput,
   ): Promise<EscrowResult> {
     return this.escrow.resolve(id, user, dto.verdict, dto.reason);
   }

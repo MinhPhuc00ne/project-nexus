@@ -7019,6 +7019,28 @@
         "operationId": "AfterSalesController_list",
         "parameters": [
           {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
             "name": "status",
             "required": false,
             "in": "query",
@@ -7045,6 +7067,28 @@
       "get": {
         "operationId": "AfterSalesController_pendingRefunds",
         "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
           {
             "name": "status",
             "required": false,
@@ -7131,7 +7175,31 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CancelOrderDto"
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "refundToWallet": {
+                    "type": "boolean"
+                  },
+                  "evidenceUrls": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "reasonCode": {
+                    "type": "string",
+                    "enum": ["BUYER_REQUEST", "STOCKOUT", "SELLER_FAULT", "OTHER"]
+                  }
+                },
+                "required": ["reason"],
+                "additionalProperties": false
               }
             }
           }
@@ -7168,7 +7236,31 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReviewReturnDto"
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "refundToWallet": {
+                    "type": "boolean"
+                  },
+                  "evidenceUrls": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "decision": {
+                    "type": "string",
+                    "enum": ["APPROVE", "REJECT"]
+                  }
+                },
+                "required": ["reason", "decision"],
+                "additionalProperties": false
               }
             }
           }
@@ -7205,7 +7297,27 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AfterSalesRequestDto"
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "refundToWallet": {
+                    "type": "boolean"
+                  },
+                  "evidenceUrls": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                },
+                "required": ["reason"],
+                "additionalProperties": false
               }
             }
           }
@@ -7242,7 +7354,31 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReviewReturnDto"
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "refundToWallet": {
+                    "type": "boolean"
+                  },
+                  "evidenceUrls": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "decision": {
+                    "type": "string",
+                    "enum": ["APPROVE", "REJECT"]
+                  }
+                },
+                "required": ["reason", "decision"],
+                "additionalProperties": false
               }
             }
           }
@@ -7278,7 +7414,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReturnWaybillDto"
+                "type": "object",
+                "properties": {
+                  "waybillCode": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100,
+                    "description": "GHN waybill for a separate buyer-to-seller return shipment"
+                  }
+                },
+                "required": ["waybillCode"],
+                "additionalProperties": false
               }
             }
           }
@@ -7314,7 +7460,31 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReceiveReturnDto"
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "refundToWallet": {
+                    "type": "boolean"
+                  },
+                  "evidenceUrls": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "restock": {
+                    "type": "boolean",
+                    "description": "Only true if all returned items passed inspection and can be sold again"
+                  }
+                },
+                "required": ["reason", "restock"],
+                "additionalProperties": false
               }
             }
           }
@@ -7350,7 +7520,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CompleteRefundDto"
+                "type": "object",
+                "properties": {
+                  "externalReference": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Verified bank/provider refund reference; cancelling a payment link is not a refund"
+                  }
+                },
+                "required": ["externalReference"],
+                "additionalProperties": false
               }
             }
           }
@@ -7378,7 +7558,88 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CheckoutDto"
+                "type": "object",
+                "properties": {
+                  "shippingAddress": {
+                    "type": "object",
+                    "properties": {
+                      "country": {
+                        "default": "VN",
+                        "type": "string",
+                        "enum": ["VN"]
+                      },
+                      "recipientName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Họ tên người nhận",
+                        "example": "Nguyễn Văn A"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Số điện thoại người nhận",
+                        "example": "0987654321"
+                      },
+                      "city": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Tỉnh/Thành phố",
+                        "example": "TP. Hồ Chí Minh"
+                      },
+                      "district": {
+                        "type": "string",
+                        "description": "Quận/Huyện",
+                        "example": "Quận 1"
+                      },
+                      "ward": {
+                        "type": "string",
+                        "description": "Phường/Xã",
+                        "example": "Phường Bến Nghé"
+                      },
+                      "street": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Địa chỉ đường/số nhà cụ thể",
+                        "example": "123 Lê Lợi"
+                      }
+                    },
+                    "required": ["recipientName", "phone", "city", "street"],
+                    "additionalProperties": false,
+                    "description": "Thông tin địa chỉ giao hàng"
+                  },
+                  "itemIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Danh sách ID các CartItem muốn thanh toán (nếu bỏ trống sẽ thanh toán toàn bộ giỏ)",
+                    "example": ["item-uuid-1", "item-uuid-2"]
+                  },
+                  "shippingFee": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN."
+                  },
+                  "paymentMethod": {
+                    "default": "PAYOS",
+                    "type": "string",
+                    "enum": ["PAYOS", "WALLET", "COD"],
+                    "description": "Phương thức thanh toán khởi tạo ban đầu",
+                    "example": "PAYOS"
+                  },
+                  "returnUrl": {
+                    "type": "string",
+                    "description": "URL chuyển hướng khi thanh toán thành công trên PayOS",
+                    "example": "http://localhost:5173/payment/success"
+                  },
+                  "cancelUrl": {
+                    "type": "string",
+                    "description": "URL chuyển hướng khi người dùng hủy trên trang PayOS",
+                    "example": "http://localhost:5173/payment/cancel"
+                  }
+                },
+                "required": ["shippingAddress"],
+                "additionalProperties": false
               }
             }
           }
@@ -7417,7 +7678,88 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CheckoutDto"
+                "type": "object",
+                "properties": {
+                  "shippingAddress": {
+                    "type": "object",
+                    "properties": {
+                      "country": {
+                        "default": "VN",
+                        "type": "string",
+                        "enum": ["VN"]
+                      },
+                      "recipientName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Họ tên người nhận",
+                        "example": "Nguyễn Văn A"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Số điện thoại người nhận",
+                        "example": "0987654321"
+                      },
+                      "city": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Tỉnh/Thành phố",
+                        "example": "TP. Hồ Chí Minh"
+                      },
+                      "district": {
+                        "type": "string",
+                        "description": "Quận/Huyện",
+                        "example": "Quận 1"
+                      },
+                      "ward": {
+                        "type": "string",
+                        "description": "Phường/Xã",
+                        "example": "Phường Bến Nghé"
+                      },
+                      "street": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Địa chỉ đường/số nhà cụ thể",
+                        "example": "123 Lê Lợi"
+                      }
+                    },
+                    "required": ["recipientName", "phone", "city", "street"],
+                    "additionalProperties": false,
+                    "description": "Thông tin địa chỉ giao hàng"
+                  },
+                  "itemIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Danh sách ID các CartItem muốn thanh toán (nếu bỏ trống sẽ thanh toán toàn bộ giỏ)",
+                    "example": ["item-uuid-1", "item-uuid-2"]
+                  },
+                  "shippingFee": {
+                    "type": "number",
+                    "minimum": 0,
+                    "description": "Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN."
+                  },
+                  "paymentMethod": {
+                    "default": "PAYOS",
+                    "type": "string",
+                    "enum": ["PAYOS", "WALLET", "COD"],
+                    "description": "Phương thức thanh toán khởi tạo ban đầu",
+                    "example": "PAYOS"
+                  },
+                  "returnUrl": {
+                    "type": "string",
+                    "description": "URL chuyển hướng khi thanh toán thành công trên PayOS",
+                    "example": "http://localhost:5173/payment/success"
+                  },
+                  "cancelUrl": {
+                    "type": "string",
+                    "description": "URL chuyển hướng khi người dùng hủy trên trang PayOS",
+                    "example": "http://localhost:5173/payment/cancel"
+                  }
+                },
+                "required": ["shippingAddress"],
+                "additionalProperties": false
               }
             }
           }
@@ -7458,7 +7800,26 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PayOrderDto"
+                "type": "object",
+                "properties": {
+                  "provider": {
+                    "default": "PAYOS",
+                    "type": "string",
+                    "enum": ["PAYOS", "WALLET", "COD"],
+                    "description": "Cổng thanh toán muốn sử dụng (PAYOS, WALLET, COD)"
+                  },
+                  "returnUrl": {
+                    "type": "string",
+                    "description": "URL chuyển hướng khi thanh toán thành công",
+                    "example": "http://localhost:5173/payment/success"
+                  },
+                  "cancelUrl": {
+                    "type": "string",
+                    "description": "URL chuyển hướng khi người dùng bấm hủy",
+                    "example": "http://localhost:5173/payment/cancel"
+                  }
+                },
+                "additionalProperties": false
               }
             }
           }
@@ -7676,7 +8037,8 @@
                 "CONFIRMED",
                 "CANCELLED",
                 "REFUNDED"
-              ]
+              ],
+              "description": "Lọc theo trạng thái đơn hàng"
             }
           },
           {
@@ -7685,7 +8047,8 @@
             "in": "query",
             "description": "Tìm kiếm theo mã đơn, tên hoặc SĐT người mua",
             "schema": {
-              "type": "string"
+              "type": "string",
+              "description": "Tìm kiếm theo mã đơn, tên hoặc SĐT người mua"
             }
           },
           {
@@ -7695,7 +8058,10 @@
             "description": "Số trang (bắt đầu từ 1)",
             "schema": {
               "default": 1,
-              "type": "number"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991,
+              "description": "Số trang (bắt đầu từ 1)"
             }
           },
           {
@@ -7705,7 +8071,10 @@
             "description": "Số lượng đơn mỗi trang (1 - 100)",
             "schema": {
               "default": 10,
-              "type": "number"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Số lượng đơn mỗi trang (1 - 100)"
             }
           }
         ],
@@ -7953,7 +8322,16 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DisputeOrderDto"
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": ["reason"],
+                "additionalProperties": false
               }
             }
           }
@@ -7989,7 +8367,20 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ResolveOrderDto"
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "verdict": {
+                    "type": "string",
+                    "enum": ["BUYER", "SELLER"]
+                  }
+                },
+                "required": ["reason", "verdict"],
+                "additionalProperties": false
               }
             }
           }
@@ -8036,7 +8427,28 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DepositWalletDto"
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": 10000,
+                    "description": "Số tiền nạp vào ví cá nhân (VND, tối thiểu 10.000 VNĐ)",
+                    "example": 500000
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Ghi chú lý do nạp tiền",
+                    "example": "Nạp tiền vào ví NEXUS Pay để mua hàng"
+                  },
+                  "provider": {
+                    "default": "PAYOS",
+                    "type": "string",
+                    "enum": ["PAYOS", "DIRECT"],
+                    "description": "Phương thức nạp: PAYOS (tạo VietQR thanh toán) hoặc DIRECT (nạp thử nghiệm)"
+                  }
+                },
+                "required": ["amount"],
+                "additionalProperties": false
               }
             }
           }
@@ -8096,7 +8508,37 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateWithdrawalDto"
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": 1,
+                    "description": "Số tiền muốn rút (VND, phải lớn hơn 0)",
+                    "example": 50000
+                  },
+                  "bankName": {
+                    "type": "string",
+                    "description": "Tên ngân hàng thụ hưởng (e.g., Vietcombank, MB Bank). Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "example": "Vietcombank"
+                  },
+                  "accountNumber": {
+                    "type": "string",
+                    "description": "Số tài khoản ngân hàng thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "example": "1029384756"
+                  },
+                  "accountHolderName": {
+                    "type": "string",
+                    "description": "Họ và tên chủ tài khoản thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "example": "NGUYEN VAN A"
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "Ghi chú thêm của người bán",
+                    "example": "Rút tiền doanh thu bán hàng tháng 10"
+                  }
+                },
+                "required": ["amount"],
+                "additionalProperties": false
               }
             }
           }
@@ -8130,7 +8572,9 @@
             "schema": {
               "default": 1,
               "example": 1,
-              "type": "number"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           },
           {
@@ -8140,7 +8584,9 @@
             "schema": {
               "default": 10,
               "example": 10,
-              "type": "number"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
@@ -8149,6 +8595,7 @@
             "in": "query",
             "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
             "schema": {
+              "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
               "type": "string",
               "enum": [
                 "DEPOSIT",
@@ -8171,6 +8618,7 @@
             "in": "query",
             "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
             "schema": {
+              "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
               "type": "string",
               "enum": ["PENDING", "SUCCESS", "FAILED"]
             }
@@ -8254,7 +8702,37 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CreateWithdrawalDto"
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "number",
+                    "minimum": 1,
+                    "description": "Số tiền muốn rút (VND, phải lớn hơn 0)",
+                    "example": 50000
+                  },
+                  "bankName": {
+                    "type": "string",
+                    "description": "Tên ngân hàng thụ hưởng (e.g., Vietcombank, MB Bank). Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "example": "Vietcombank"
+                  },
+                  "accountNumber": {
+                    "type": "string",
+                    "description": "Số tài khoản ngân hàng thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "example": "1029384756"
+                  },
+                  "accountHolderName": {
+                    "type": "string",
+                    "description": "Họ và tên chủ tài khoản thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân.",
+                    "example": "NGUYEN VAN A"
+                  },
+                  "note": {
+                    "type": "string",
+                    "description": "Ghi chú thêm của người bán",
+                    "example": "Rút tiền doanh thu bán hàng tháng 10"
+                  }
+                },
+                "required": ["amount"],
+                "additionalProperties": false
               }
             }
           }
@@ -8288,7 +8766,9 @@
             "schema": {
               "default": 1,
               "example": 1,
-              "type": "number"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
             }
           },
           {
@@ -8298,7 +8778,9 @@
             "schema": {
               "default": 10,
               "example": 10,
-              "type": "number"
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
             }
           },
           {
@@ -8307,6 +8789,7 @@
             "in": "query",
             "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
             "schema": {
+              "description": "Lọc theo loại giao dịch ví: DEPOSIT, WITHDRAW, ESCROW_LOCK, ESCROW_PAYOUT, ESCROW_REFUND",
               "type": "string",
               "enum": [
                 "DEPOSIT",
@@ -8329,6 +8812,7 @@
             "in": "query",
             "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
             "schema": {
+              "description": "Lọc theo trạng thái: PENDING, SUCCESS, FAILED",
               "type": "string",
               "enum": ["PENDING", "SUCCESS", "FAILED"]
             }
@@ -8410,7 +8894,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ConfirmWebhookDto"
+                "type": "object",
+                "properties": {
+                  "webhookUrl": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "URL Webhook công khai để đăng ký và xác nhận với PayOS",
+                    "example": "https://xxxx.ngrok-free.app/api/v1/commerce/webhooks/payos"
+                  }
+                },
+                "required": ["webhookUrl"],
+                "additionalProperties": false
               }
             }
           }
@@ -9364,7 +9858,98 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CheckoutAuctionAwardDto"
+                "type": "object",
+                "properties": {
+                  "addressId": {
+                    "description": "Saved user address ID",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "shippingAddress": {
+                    "type": "object",
+                    "properties": {
+                      "country": {
+                        "default": "VN",
+                        "type": "string",
+                        "enum": ["VN"]
+                      },
+                      "recipientName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Họ tên người nhận",
+                        "example": "Nguyễn Văn A"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Số điện thoại người nhận",
+                        "example": "0987654321"
+                      },
+                      "city": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Tỉnh/Thành phố",
+                        "example": "TP. Hồ Chí Minh"
+                      },
+                      "district": {
+                        "type": "string",
+                        "description": "Quận/Huyện",
+                        "example": "Quận 1"
+                      },
+                      "ward": {
+                        "type": "string",
+                        "description": "Phường/Xã",
+                        "example": "Phường Bến Nghé"
+                      },
+                      "street": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Địa chỉ đường/số nhà cụ thể",
+                        "example": "123 Lê Lợi"
+                      }
+                    },
+                    "required": ["recipientName", "phone", "city", "street"],
+                    "additionalProperties": false
+                  },
+                  "recipientName": {
+                    "example": "Nguyễn Văn A",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "phone": {
+                    "example": "0987654321",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "city": {
+                    "example": "TP. Hồ Chí Minh",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "district": {
+                    "example": "Quận 1",
+                    "type": "string"
+                  },
+                  "ward": {
+                    "example": "Phường Bến Nghé",
+                    "type": "string"
+                  },
+                  "street": {
+                    "example": "123 Lê Lợi",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "country": {
+                    "type": "string",
+                    "enum": ["VN"]
+                  },
+                  "shippingFee": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": false
               }
             }
           }
@@ -9401,7 +9986,98 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/CheckoutAuctionAwardDto"
+                "type": "object",
+                "properties": {
+                  "addressId": {
+                    "description": "Saved user address ID",
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "shippingAddress": {
+                    "type": "object",
+                    "properties": {
+                      "country": {
+                        "default": "VN",
+                        "type": "string",
+                        "enum": ["VN"]
+                      },
+                      "recipientName": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Họ tên người nhận",
+                        "example": "Nguyễn Văn A"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Số điện thoại người nhận",
+                        "example": "0987654321"
+                      },
+                      "city": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Tỉnh/Thành phố",
+                        "example": "TP. Hồ Chí Minh"
+                      },
+                      "district": {
+                        "type": "string",
+                        "description": "Quận/Huyện",
+                        "example": "Quận 1"
+                      },
+                      "ward": {
+                        "type": "string",
+                        "description": "Phường/Xã",
+                        "example": "Phường Bến Nghé"
+                      },
+                      "street": {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Địa chỉ đường/số nhà cụ thể",
+                        "example": "123 Lê Lợi"
+                      }
+                    },
+                    "required": ["recipientName", "phone", "city", "street"],
+                    "additionalProperties": false
+                  },
+                  "recipientName": {
+                    "example": "Nguyễn Văn A",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "phone": {
+                    "example": "0987654321",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "city": {
+                    "example": "TP. Hồ Chí Minh",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "district": {
+                    "example": "Quận 1",
+                    "type": "string"
+                  },
+                  "ward": {
+                    "example": "Phường Bến Nghé",
+                    "type": "string"
+                  },
+                  "street": {
+                    "example": "123 Lê Lợi",
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "country": {
+                    "type": "string",
+                    "enum": ["VN"]
+                  },
+                  "shippingFee": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "additionalProperties": false
               }
             }
           }
@@ -12804,220 +13480,6 @@
         },
         "required": ["responseNotes"]
       },
-      "CancelOrderDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string"
-          },
-          "refundToWallet": {
-            "type": "boolean",
-            "description": "Explicit consent to refund external payments into NEXUS wallet"
-          },
-          "evidenceUrls": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "reasonCode": {
-            "type": "string",
-            "enum": ["BUYER_REQUEST", "STOCKOUT", "SELLER_FAULT", "OTHER"]
-          }
-        },
-        "required": ["reason"]
-      },
-      "ReviewReturnDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string"
-          },
-          "refundToWallet": {
-            "type": "boolean",
-            "description": "Explicit consent to refund external payments into NEXUS wallet"
-          },
-          "evidenceUrls": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "decision": {
-            "type": "string",
-            "enum": ["APPROVE", "REJECT"]
-          }
-        },
-        "required": ["reason", "decision"]
-      },
-      "AfterSalesRequestDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string"
-          },
-          "refundToWallet": {
-            "type": "boolean",
-            "description": "Explicit consent to refund external payments into NEXUS wallet"
-          },
-          "evidenceUrls": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": ["reason"]
-      },
-      "ReturnWaybillDto": {
-        "type": "object",
-        "properties": {
-          "waybillCode": {
-            "type": "string",
-            "description": "GHN waybill for a separate buyer-to-seller return shipment"
-          }
-        },
-        "required": ["waybillCode"]
-      },
-      "ReceiveReturnDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string"
-          },
-          "refundToWallet": {
-            "type": "boolean",
-            "description": "Explicit consent to refund external payments into NEXUS wallet"
-          },
-          "evidenceUrls": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "restock": {
-            "type": "boolean",
-            "description": "Only true if all returned items passed inspection and can be sold again"
-          }
-        },
-        "required": ["reason", "restock"]
-      },
-      "CompleteRefundDto": {
-        "type": "object",
-        "properties": {
-          "externalReference": {
-            "type": "string",
-            "description": "Verified bank/provider refund reference; cancelling a payment link is not a refund"
-          }
-        },
-        "required": ["externalReference"]
-      },
-      "ShippingAddressDto": {
-        "type": "object",
-        "properties": {
-          "country": {
-            "type": "string",
-            "enum": ["VN"],
-            "default": "VN"
-          },
-          "recipientName": {
-            "type": "string",
-            "example": "Nguyễn Văn A",
-            "description": "Họ tên người nhận"
-          },
-          "phone": {
-            "type": "string",
-            "example": "0987654321",
-            "description": "Số điện thoại người nhận"
-          },
-          "city": {
-            "type": "string",
-            "example": "TP. Hồ Chí Minh",
-            "description": "Tỉnh/Thành phố"
-          },
-          "district": {
-            "type": "string",
-            "example": "Quận 1",
-            "description": "Quận/Huyện"
-          },
-          "ward": {
-            "type": "string",
-            "example": "Phường Bến Nghé",
-            "description": "Phường/Xã"
-          },
-          "street": {
-            "type": "string",
-            "example": "123 Lê Lợi",
-            "description": "Địa chỉ đường/số nhà cụ thể"
-          }
-        },
-        "required": ["recipientName", "phone", "city", "street"]
-      },
-      "CheckoutDto": {
-        "type": "object",
-        "properties": {
-          "shippingAddress": {
-            "description": "Thông tin địa chỉ giao hàng",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ShippingAddressDto"
-              }
-            ]
-          },
-          "itemIds": {
-            "description": "Danh sách ID các CartItem muốn thanh toán (nếu bỏ trống sẽ thanh toán toàn bộ giỏ)",
-            "example": ["item-uuid-1", "item-uuid-2"],
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "shippingFee": {
-            "type": "number",
-            "deprecated": true,
-            "description": "Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN."
-          },
-          "paymentMethod": {
-            "type": "string",
-            "enum": ["PAYOS", "WALLET", "COD"],
-            "example": "PAYOS",
-            "description": "Phương thức thanh toán khởi tạo ban đầu",
-            "default": "PAYOS"
-          },
-          "returnUrl": {
-            "type": "string",
-            "example": "http://localhost:5173/payment/success",
-            "description": "URL chuyển hướng khi thanh toán thành công trên PayOS"
-          },
-          "cancelUrl": {
-            "type": "string",
-            "example": "http://localhost:5173/payment/cancel",
-            "description": "URL chuyển hướng khi người dùng hủy trên trang PayOS"
-          }
-        },
-        "required": ["shippingAddress"]
-      },
-      "PayOrderDto": {
-        "type": "object",
-        "properties": {
-          "provider": {
-            "type": "string",
-            "enum": ["PAYOS", "WALLET", "COD"],
-            "default": "PAYOS",
-            "description": "Cổng thanh toán muốn sử dụng (PAYOS, WALLET, COD)"
-          },
-          "returnUrl": {
-            "type": "string",
-            "example": "http://localhost:5173/payment/success",
-            "description": "URL chuyển hướng khi thanh toán thành công"
-          },
-          "cancelUrl": {
-            "type": "string",
-            "example": "http://localhost:5173/payment/cancel",
-            "description": "URL chuyển hướng khi người dùng bấm hủy"
-          }
-        }
-      },
       "DispatchGhnOrderDto": {
         "type": "object",
         "properties": {
@@ -13047,92 +13509,6 @@
             "example": "Hàng dễ vỡ, xin nhẹ tay"
           }
         }
-      },
-      "DisputeOrderDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string"
-          }
-        },
-        "required": ["reason"]
-      },
-      "ResolveOrderDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string"
-          },
-          "verdict": {
-            "type": "string",
-            "enum": ["BUYER", "SELLER"]
-          }
-        },
-        "required": ["reason", "verdict"]
-      },
-      "DepositWalletDto": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number",
-            "example": 500000,
-            "description": "Số tiền nạp vào ví cá nhân (VND, tối thiểu 10.000 VNĐ)"
-          },
-          "description": {
-            "type": "string",
-            "example": "Nạp tiền vào ví NEXUS Pay để mua hàng",
-            "description": "Ghi chú lý do nạp tiền"
-          },
-          "provider": {
-            "type": "string",
-            "enum": ["PAYOS", "DIRECT"],
-            "default": "PAYOS",
-            "description": "Phương thức nạp: PAYOS (tạo VietQR thanh toán) hoặc DIRECT (nạp thử nghiệm)"
-          }
-        },
-        "required": ["amount"]
-      },
-      "CreateWithdrawalDto": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number",
-            "example": 50000,
-            "description": "Số tiền muốn rút (VND, phải lớn hơn 0)"
-          },
-          "bankName": {
-            "type": "string",
-            "example": "Vietcombank",
-            "description": "Tên ngân hàng thụ hưởng (e.g., Vietcombank, MB Bank). Nếu để trống sẽ lấy từ Hồ sơ cá nhân."
-          },
-          "accountNumber": {
-            "type": "string",
-            "example": "1029384756",
-            "description": "Số tài khoản ngân hàng thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân."
-          },
-          "accountHolderName": {
-            "type": "string",
-            "example": "NGUYEN VAN A",
-            "description": "Họ và tên chủ tài khoản thụ hưởng. Nếu để trống sẽ lấy từ Hồ sơ cá nhân."
-          },
-          "note": {
-            "type": "string",
-            "example": "Rút tiền doanh thu bán hàng tháng 10",
-            "description": "Ghi chú thêm của người bán"
-          }
-        },
-        "required": ["amount"]
-      },
-      "ConfirmWebhookDto": {
-        "type": "object",
-        "properties": {
-          "webhookUrl": {
-            "type": "string",
-            "example": "https://xxxx.ngrok-free.app/api/v1/commerce/webhooks/payos",
-            "description": "URL Webhook công khai để đăng ký và xác nhận với PayOS"
-          }
-        },
-        "required": ["webhookUrl"]
       },
       "StaffAuctionNoteDto": {
         "type": "object",
@@ -13693,52 +14069,6 @@
           }
         },
         "required": ["imageUrl"]
-      },
-      "CheckoutAuctionAwardDto": {
-        "type": "object",
-        "properties": {
-          "addressId": {
-            "type": "string",
-            "format": "uuid",
-            "description": "Saved user address ID"
-          },
-          "shippingAddress": {
-            "$ref": "#/components/schemas/ShippingAddressDto"
-          },
-          "recipientName": {
-            "type": "string",
-            "example": "Nguyễn Văn A"
-          },
-          "phone": {
-            "type": "string",
-            "example": "0987654321"
-          },
-          "city": {
-            "type": "string",
-            "example": "TP. Hồ Chí Minh"
-          },
-          "district": {
-            "type": "string",
-            "example": "Quận 1"
-          },
-          "ward": {
-            "type": "string",
-            "example": "Phường Bến Nghé"
-          },
-          "street": {
-            "type": "string",
-            "example": "123 Lê Lợi"
-          },
-          "country": {
-            "type": "string",
-            "enum": ["VN"],
-            "default": "VN"
-          },
-          "shippingFee": {
-            "type": "number",
-            "deprecated": true
-          }
-        }
       },
       "RespondSecondChanceDto": {
         "type": "object",

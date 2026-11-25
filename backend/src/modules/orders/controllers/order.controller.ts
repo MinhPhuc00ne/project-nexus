@@ -1,18 +1,18 @@
 import {
   Controller,
   Get,
-  Post,
-  Body,
-  Param,
   Headers,
-  UseGuards,
   HttpCode,
   HttpStatus,
+  Param,
+  Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { OrderService } from '../services/order.service';
-import { CheckoutDto } from '../dtos/checkout.dto';
-import { PayOrderDto } from '../dtos/pay-order.dto';
+import { CheckoutInput, CheckoutSchema } from '../dtos/checkout.dto';
+import { PayOrderInput, PayOrderSchema } from '../dtos/pay-order.dto';
 import { CurrentUser, RequirePrivilege } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -30,7 +30,7 @@ export class OrderController {
   @ApiOperation({
     summary: '[BUYER] Báo giá giỏ hàng theo từng shop, chưa tạo đơn hoặc thanh toán',
   })
-  quoteCheckout(@CurrentUser('id') userId: string, @Body() dto: CheckoutDto) {
+  quoteCheckout(@CurrentUser('id') userId: string, @ZodBody(CheckoutSchema) dto: CheckoutInput) {
     return this.orderService.checkout(userId, dto, undefined, true);
   }
 
@@ -51,7 +51,7 @@ export class OrderController {
   @ApiResponse({ status: 400, description: 'Giỏ hàng trống hoặc vi phạm quy tắc đơn hàng' })
   async checkout(
     @CurrentUser('id') userId: string,
-    @Body() dto: CheckoutDto,
+    @ZodBody(CheckoutSchema) dto: CheckoutInput,
     @Headers('idempotency-key') idempotencyKey?: string,
   ) {
     return this.orderService.checkout(userId, dto, idempotencyKey);
@@ -74,7 +74,7 @@ export class OrderController {
   async payOrder(
     @Param('id') orderId: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: PayOrderDto,
+    @ZodBody(PayOrderSchema) dto: PayOrderInput,
   ) {
     return this.orderService.initializePayment(orderId, userId, dto);
   }

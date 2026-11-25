@@ -22,7 +22,7 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { TreasuryService } from '../../treasury/services/treasury.service';
 import { InventoryService } from '../../catalog/services/inventory.service';
 import { ProductTrendingService } from '../../catalog/services/product-trending.service';
-import { PayOrderDto } from '../dtos/pay-order.dto';
+import { PayOrderInput } from '../dtos/pay-order.dto';
 import { OrderEscrowService } from './order-escrow.service';
 import { PayosService } from '../../payments/services/payos.service';
 import { RefundService } from '../../after-sales/services/refund.service';
@@ -89,7 +89,7 @@ export class OrderPaymentHelper {
   async initializePayment(
     orderId: string,
     buyerId: string,
-    dto?: PayOrderDto,
+    dto?: PayOrderInput,
   ): Promise<
     | PayosPaymentResponse
     | WalletPaymentResponse

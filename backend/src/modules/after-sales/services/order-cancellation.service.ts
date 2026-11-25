@@ -16,7 +16,7 @@ import {
 import { shipmentGhnContext } from '../../fulfillment/services/ghn-context';
 import { objectValue } from '../../fulfillment/services/shipment-state';
 import { InventoryService } from '../../catalog/services/inventory.service';
-import { CancelOrderDto, ReviewReturnDto } from '../dtos/after-sales.dto';
+import { CancelOrderInput, ReviewReturnInput } from '../dtos/after-sales.dto';
 import { AfterSalesStoreService } from './after-sales-store.service';
 import { RefundService } from './refund.service';
 
@@ -34,7 +34,7 @@ export class OrderCancellationService {
   async cancel(
     orderId: string,
     actor: ShipmentActor,
-    dto: CancelOrderDto,
+    dto: CancelOrderInput,
   ): Promise<AfterSalesRequest> {
     const order = await this.prisma.$transaction(async (tx) => {
       const current = await this.store.lock(tx, orderId);
@@ -183,7 +183,7 @@ export class OrderCancellationService {
   async review(
     orderId: string,
     actor: ShipmentActor,
-    dto: ReviewReturnDto,
+    dto: ReviewReturnInput,
   ): Promise<AfterSalesRequest> {
     if (actor.role !== 'ADMIN')
       throw new ForbiddenException('Chỉ Admin được duyệt yêu cầu hủy đơn.');

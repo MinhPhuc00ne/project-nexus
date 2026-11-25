@@ -18,7 +18,11 @@ import {
 import { shipmentGhnContext } from '../../fulfillment/services/ghn-context';
 import { objectValue } from '../../fulfillment/services/shipment-state';
 import { InventoryService } from '../../catalog/services/inventory.service';
-import { AfterSalesRequestDto, ReceiveReturnDto, ReviewReturnDto } from '../dtos/after-sales.dto';
+import {
+  AfterSalesRequestInput,
+  ReceiveReturnInput,
+  ReviewReturnInput,
+} from '../dtos/after-sales.dto';
 import { AfterSalesStoreService, isStaff } from './after-sales-store.service';
 import { RefundService } from './refund.service';
 
@@ -38,7 +42,7 @@ export class OrderReturnService {
   async request(
     orderId: string,
     actor: ShipmentActor,
-    dto: AfterSalesRequestDto,
+    dto: AfterSalesRequestInput,
   ): Promise<AfterSalesRequest> {
     return this.prisma.$transaction(async (tx) => {
       const order = await this.store.lock(tx, orderId);
@@ -102,7 +106,7 @@ export class OrderReturnService {
   async review(
     orderId: string,
     actor: ShipmentActor,
-    dto: ReviewReturnDto,
+    dto: ReviewReturnInput,
   ): Promise<AfterSalesRequest> {
     const order = await this.prisma.$transaction(async (tx) => {
       const current = await this.store.lock(tx, orderId);
@@ -212,7 +216,7 @@ export class OrderReturnService {
   async receive(
     orderId: string,
     actor: ShipmentActor,
-    dto: ReceiveReturnDto,
+    dto: ReceiveReturnInput,
   ): Promise<AfterSalesRequest> {
     const order = await this.store.view(orderId, actor);
     if (actor.id !== order.sellerId && !isStaff(actor))

@@ -1,17 +1,26 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { AfterSalesRequest, OrderRefund, Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { AuthenticatedUserPayload, CurrentUser } from '../../../core/security/roles.decorator';
 import {
-  AfterSalesRequestDto,
-  CancelOrderDto,
-  CompleteRefundDto,
-  ReceiveReturnDto,
-  ReturnWaybillDto,
-  ReviewReturnDto,
-  QueryAfterSalesDto,
-  QueryRefundsDto,
+  AfterSalesRequestInput,
+  AfterSalesRequestSchema,
+  CancelOrderInput,
+  CancelOrderSchema,
+  CompleteRefundInput,
+  CompleteRefundSchema,
+  QueryAfterSalesInput,
+  QueryAfterSalesSchema,
+  QueryRefundsInput,
+  QueryRefundsSchema,
+  ReceiveReturnInput,
+  ReceiveReturnSchema,
+  ReturnWaybillInput,
+  ReturnWaybillSchema,
+  ReviewReturnInput,
+  ReviewReturnSchema,
 } from '../dtos/after-sales.dto';
 import { AfterSalesOrder, AfterSalesStoreService } from '../services/after-sales-store.service';
 import { OrderCancellationService } from '../services/order-cancellation.service';
@@ -33,7 +42,7 @@ export class AfterSalesController {
   @Get('after-sales')
   list(
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Query() query: QueryAfterSalesDto,
+    @ZodQuery(QueryAfterSalesSchema) query: QueryAfterSalesInput,
   ): ReturnType<AfterSalesStoreService['listRequests']> {
     return this.store.listRequests(actor, query);
   }
@@ -41,7 +50,7 @@ export class AfterSalesController {
   @Get('refunds')
   pendingRefunds(
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Query() query: QueryRefundsDto,
+    @ZodQuery(QueryRefundsSchema) query: QueryRefundsInput,
   ): ReturnType<AfterSalesStoreService['listRefunds']> {
     return this.store.listRefunds(actor, query);
   }
@@ -70,7 +79,7 @@ export class AfterSalesController {
   cancel(
     @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Body() dto: CancelOrderDto,
+    @ZodBody(CancelOrderSchema) dto: CancelOrderInput,
   ): Promise<AfterSalesRequest> {
     return this.cancellations.cancel(id, actor, dto);
   }
@@ -81,7 +90,7 @@ export class AfterSalesController {
   reviewCancellation(
     @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Body() dto: ReviewReturnDto,
+    @ZodBody(ReviewReturnSchema) dto: ReviewReturnInput,
   ): Promise<AfterSalesRequest> {
     return this.cancellations.review(id, actor, dto);
   }
@@ -93,7 +102,7 @@ export class AfterSalesController {
   request(
     @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Body() dto: AfterSalesRequestDto,
+    @ZodBody(AfterSalesRequestSchema) dto: AfterSalesRequestInput,
   ): Promise<AfterSalesRequest> {
     return this.returns.request(id, actor, dto);
   }
@@ -103,7 +112,7 @@ export class AfterSalesController {
   review(
     @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Body() dto: ReviewReturnDto,
+    @ZodBody(ReviewReturnSchema) dto: ReviewReturnInput,
   ): Promise<AfterSalesRequest> {
     return this.returns.review(id, actor, dto);
   }
@@ -113,7 +122,7 @@ export class AfterSalesController {
   waybill(
     @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Body() dto: ReturnWaybillDto,
+    @ZodBody(ReturnWaybillSchema) dto: ReturnWaybillInput,
   ): Promise<AfterSalesRequest> {
     return this.returns.attachWaybill(id, actor, dto.waybillCode);
   }
@@ -123,7 +132,7 @@ export class AfterSalesController {
   receive(
     @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Body() dto: ReceiveReturnDto,
+    @ZodBody(ReceiveReturnSchema) dto: ReceiveReturnInput,
   ): Promise<AfterSalesRequest> {
     return this.returns.receive(id, actor, dto);
   }
@@ -136,7 +145,7 @@ export class AfterSalesController {
   complete(
     @Param('id') id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
-    @Body() dto: CompleteRefundDto,
+    @ZodBody(CompleteRefundSchema) dto: CompleteRefundInput,
   ): Promise<OrderRefund> {
     return this.refunds.complete(id, actor, dto.externalReference);
   }

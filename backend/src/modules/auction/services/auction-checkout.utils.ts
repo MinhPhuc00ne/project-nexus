@@ -10,7 +10,9 @@ import {
   Prisma,
 } from '@prisma/client';
 import { GhnShippingQuote } from '../../fulfillment/services/ghn-shipping.service';
-import { CheckoutAuctionAwardDto as CheckoutAuctionAwardRequestDto } from '../dtos/checkout-auction-award.dto';
+import { CheckoutAuctionAwardInput } from '../dtos/checkout-auction-award.dto';
+
+export type { CheckoutAuctionAwardInput };
 
 export interface CreatePrimaryAwardInput {
   auctionId: string;
@@ -24,8 +26,6 @@ export interface CreatePrimaryAwardInput {
   productId?: string | null;
   expiresAt?: Date;
 }
-
-export type CheckoutAuctionAwardDto = CheckoutAuctionAwardRequestDto;
 
 export interface AuctionAwardQuote {
   awardId: string;

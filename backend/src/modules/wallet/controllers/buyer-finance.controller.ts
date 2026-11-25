@@ -1,20 +1,12 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
-import { CreateWithdrawalDto } from '../dtos/create-withdrawal.dto';
-import { QueryFinanceDto } from '../dtos/query-finance.dto';
+import { CreateWithdrawalInput, CreateWithdrawalSchema } from '../dtos/create-withdrawal.dto';
+import { QueryFinanceInput, QueryFinanceSchema } from '../dtos/query-finance.dto';
 import { WithdrawalService } from '../services/withdrawal.service';
 
 @ApiTags('2. BUYER')
@@ -37,7 +29,10 @@ export class BuyerFinanceController {
     status: 400,
     description: 'Số dư không đủ, thiếu thông tin ngân hàng hoặc số tiền rút không hợp lệ',
   })
-  async createWithdrawal(@CurrentUser('id') userId: string, @Body() dto: CreateWithdrawalDto) {
+  async createWithdrawal(
+    @CurrentUser('id') userId: string,
+    @ZodBody(CreateWithdrawalSchema) dto: CreateWithdrawalInput,
+  ) {
     return this.withdrawalService.createWithdrawal(userId, dto);
   }
 
@@ -49,7 +44,10 @@ export class BuyerFinanceController {
       'Hỗ trợ phân trang và lọc theo loại giao dịch (DEPOSIT, WITHDRAW, ESCROW_REFUND...) và trạng thái (PENDING, SUCCESS, FAILED).',
   })
   @ApiResponse({ status: 200, description: 'Lấy lịch sử giao dịch thành công' })
-  async getTransactions(@CurrentUser('id') userId: string, @Query() query: QueryFinanceDto) {
+  async getTransactions(
+    @CurrentUser('id') userId: string,
+    @ZodQuery(QueryFinanceSchema) query: QueryFinanceInput,
+  ) {
     return this.withdrawalService.getTransactions(userId, query);
   }
 

@@ -1,8 +1,9 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { PayosWebhookService } from '../services/payos-webhook.service';
 import { PayosService } from '../../payments/services/payos.service';
-import { ConfirmWebhookDto } from '../dtos/confirm-webhook.dto';
+import { ConfirmWebhookInput, ConfirmWebhookSchema } from '../dtos/confirm-webhook.dto';
 import { Public } from '../../../core/security/roles.decorator';
 import { Webhook } from '@payos/node';
 
@@ -37,7 +38,7 @@ export class PayosWebhookController {
       'Gọi API PayOS để tự động xác thực URL Webhook của bạn (tiện lợi khi sử dụng ngrok URL ở môi trường phát triển).',
   })
   @ApiResponse({ status: 200, description: 'Đăng ký Webhook URL thành công' })
-  async confirmWebhookUrl(@Body() dto: ConfirmWebhookDto) {
+  async confirmWebhookUrl(@ZodBody(ConfirmWebhookSchema) dto: ConfirmWebhookInput) {
     return this.payosService.confirmWebhook(dto.webhookUrl);
   }
 }

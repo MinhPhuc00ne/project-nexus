@@ -29,7 +29,7 @@ import {
   AUCTION_CHECKOUT_DURATION_MS,
   AuctionAwardQuote,
   BUYER_ACTIVE_AWARD_STATUSES,
-  CheckoutAuctionAwardDto,
+  CheckoutAuctionAwardInput,
   CreatePrimaryAwardInput,
   DEPOSIT_RATIO,
   createPendingAuctionOrder,
@@ -42,7 +42,7 @@ import { AuctionSecondChanceHelper } from './auction-second-chance.helper';
 
 export type {
   AuctionAwardQuote,
-  CheckoutAuctionAwardDto,
+  CheckoutAuctionAwardInput,
   CreatePrimaryAwardInput,
 } from './auction-checkout.utils';
 
@@ -261,7 +261,7 @@ export class AuctionCheckoutService {
   async quote(
     awardId: string,
     buyerId: string,
-    dto: CheckoutAuctionAwardDto,
+    dto: CheckoutAuctionAwardInput,
   ): Promise<AuctionAwardQuote> {
     const offer = await this.loadOwnedOfferForCheckout(awardId, buyerId);
     const quote = await this.quoteShipping(buyerId, offer, dto);
@@ -287,7 +287,7 @@ export class AuctionCheckoutService {
    * Completes checkout for an auction award in AWAITING_CHECKOUT: consumes the 30% locked deposit
    * plus the remaining 70% + GHN shipping from wallet balance, then transfers funds into OrderEscrow.
    */
-  async checkout(awardId: string, buyerId: string, dto: CheckoutAuctionAwardDto): Promise<Order> {
+  async checkout(awardId: string, buyerId: string, dto: CheckoutAuctionAwardInput): Promise<Order> {
     const offer = await this.loadOwnedOfferForCheckout(awardId, buyerId, true);
     if (offer.status === AuctionAwardStatus.PAID && offer.order) {
       return offer.order;
@@ -452,7 +452,7 @@ export class AuctionCheckoutService {
   private async quoteShipping(
     buyerId: string,
     offer: Awaited<ReturnType<AuctionCheckoutService['loadOwnedOfferForCheckout']>>,
-    dto: CheckoutAuctionAwardDto,
+    dto: CheckoutAuctionAwardInput,
   ) {
     if (!offer.order) {
       throw new ConflictException('Đơn hàng đấu giá chưa được khởi tạo.');
@@ -476,7 +476,7 @@ export class AuctionCheckoutService {
     return { ...quote, address };
   }
 
-  private async resolveAddress(buyerId: string, dto: CheckoutAuctionAwardDto) {
+  private async resolveAddress(buyerId: string, dto: CheckoutAuctionAwardInput) {
     if (dto.addressId) {
       const address = await this.prisma.userAddress.findFirst({
         where: { id: dto.addressId, userId: buyerId },

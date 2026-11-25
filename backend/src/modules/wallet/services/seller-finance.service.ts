@@ -2,8 +2,8 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { OrderStatus, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
-import { CreateWithdrawalDto } from '../dtos/create-withdrawal.dto';
-import { QueryFinanceDto } from '../dtos/query-finance.dto';
+import { CreateWithdrawalInput } from '../dtos/create-withdrawal.dto';
+import { QueryFinanceInput } from '../dtos/query-finance.dto';
 import { WithdrawalService } from './withdrawal.service';
 
 @Injectable()
@@ -149,7 +149,7 @@ export class SellerFinanceService {
    * @param dto - Withdrawal parameters including amount and banking credentials
    * @returns Created WithdrawalRequest entity and transaction reference
    */
-  async createWithdrawal(sellerId: string, dto: CreateWithdrawalDto) {
+  async createWithdrawal(sellerId: string, dto: CreateWithdrawalInput) {
     return this.withdrawalService.createWithdrawal(sellerId, dto, { requireSellerRole: true });
   }
 
@@ -160,7 +160,7 @@ export class SellerFinanceService {
    * @param query - Filter options by transaction type and status
    * @returns Paginated wallet transactions
    */
-  async getTransactions(sellerId: string, query: QueryFinanceDto) {
+  async getTransactions(sellerId: string, query: QueryFinanceInput) {
     return this.withdrawalService.getTransactions(sellerId, query);
   }
 

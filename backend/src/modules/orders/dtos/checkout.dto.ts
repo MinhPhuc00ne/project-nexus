@@ -1,102 +1,66 @@
-import {
-  IsNotEmpty,
-  IsString,
-  IsOptional,
-  IsArray,
-  IsNumber,
-  Min,
-  IsEnum,
-  ValidateNested,
-  IsIn,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
 import { PaymentProvider } from '@prisma/client';
 
-export class ShippingAddressDto {
-  @ApiPropertyOptional({ enum: ['VN'], default: 'VN' })
-  @IsOptional()
-  @IsIn(['VN'])
-  country?: string = 'VN';
-  @ApiProperty({ example: 'Nguyễn Văn A', description: 'Họ tên người nhận' })
-  @IsString()
-  @IsNotEmpty()
-  recipientName!: string;
-
-  @ApiProperty({ example: '0987654321', description: 'Số điện thoại người nhận' })
-  @IsString()
-  @IsNotEmpty()
-  phone!: string;
-
-  @ApiProperty({ example: 'TP. Hồ Chí Minh', description: 'Tỉnh/Thành phố' })
-  @IsString()
-  @IsNotEmpty()
-  city!: string;
-
-  @ApiPropertyOptional({ example: 'Quận 1', description: 'Quận/Huyện' })
-  @IsString()
-  @IsOptional()
-  district?: string;
-
-  @ApiPropertyOptional({ example: 'Phường Bến Nghé', description: 'Phường/Xã' })
-  @IsString()
-  @IsOptional()
-  ward?: string;
-
-  @ApiProperty({ example: '123 Lê Lợi', description: 'Địa chỉ đường/số nhà cụ thể' })
-  @IsString()
-  @IsNotEmpty()
-  street!: string;
-}
-
-export class CheckoutDto {
-  @ApiProperty({ description: 'Thông tin địa chỉ giao hàng' })
-  @ValidateNested()
-  @Type(() => ShippingAddressDto)
-  shippingAddress!: ShippingAddressDto;
-
-  @ApiPropertyOptional({
-    description:
-      'Danh sách ID các CartItem muốn thanh toán (nếu bỏ trống sẽ thanh toán toàn bộ giỏ)',
-    example: ['item-uuid-1', 'item-uuid-2'],
+export const ShippingAddressSchema = z
+  .object({
+    country: z.enum(['VN']).default('VN'),
+    recipientName: z
+      .string()
+      .trim()
+      .min(1)
+      .describe('Họ tên người nhận')
+      .meta({ example: 'Nguyễn Văn A' }),
+    phone: z
+      .string()
+      .trim()
+      .min(1)
+      .describe('Số điện thoại người nhận')
+      .meta({ example: '0987654321' }),
+    city: z.string().trim().min(1).describe('Tỉnh/Thành phố').meta({ example: 'TP. Hồ Chí Minh' }),
+    district: z.string().describe('Quận/Huyện').meta({ example: 'Quận 1' }).optional(),
+    ward: z.string().describe('Phường/Xã').meta({ example: 'Phường Bến Nghé' }).optional(),
+    street: z
+      .string()
+      .trim()
+      .min(1)
+      .describe('Địa chỉ đường/số nhà cụ thể')
+      .meta({ example: '123 Lê Lợi' }),
   })
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  itemIds?: string[];
+  .strict();
 
-  @ApiPropertyOptional({
-    deprecated: true,
-    description: 'Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN.',
-  })
-  @IsNumber()
-  @Min(0)
-  @IsOptional()
-  shippingFee?: number;
+export type ShippingAddressInput = z.infer<typeof ShippingAddressSchema>;
 
-  @ApiPropertyOptional({
-    enum: PaymentProvider,
-    example: PaymentProvider.PAYOS,
-    description: 'Phương thức thanh toán khởi tạo ban đầu',
-    default: PaymentProvider.PAYOS,
+export const CheckoutSchema = z
+  .object({
+    shippingAddress: ShippingAddressSchema.describe('Thông tin địa chỉ giao hàng'),
+    itemIds: z
+      .array(z.string())
+      .describe(
+        'Danh sách ID các CartItem muốn thanh toán (nếu bỏ trống sẽ thanh toán toàn bộ giỏ)',
+      )
+      .meta({ example: ['item-uuid-1', 'item-uuid-2'] })
+      .optional(),
+    shippingFee: z
+      .number()
+      .min(0)
+      .describe('Chỉ giữ tương thích request cũ. Backend bỏ qua giá trị này và lấy phí từ GHN.')
+      .optional(),
+    paymentMethod: z
+      .enum(PaymentProvider)
+      .describe('Phương thức thanh toán khởi tạo ban đầu')
+      .meta({ example: PaymentProvider.PAYOS })
+      .default(PaymentProvider.PAYOS),
+    returnUrl: z
+      .string()
+      .describe('URL chuyển hướng khi thanh toán thành công trên PayOS')
+      .meta({ example: 'http://localhost:5173/payment/success' })
+      .optional(),
+    cancelUrl: z
+      .string()
+      .describe('URL chuyển hướng khi người dùng hủy trên trang PayOS')
+      .meta({ example: 'http://localhost:5173/payment/cancel' })
+      .optional(),
   })
-  @IsEnum(PaymentProvider)
-  @IsOptional()
-  paymentMethod?: PaymentProvider;
+  .strict();
 
-  @ApiPropertyOptional({
-    example: 'http://localhost:5173/payment/success',
-    description: 'URL chuyển hướng khi thanh toán thành công trên PayOS',
-  })
-  @IsString()
-  @IsOptional()
-  returnUrl?: string;
-
-  @ApiPropertyOptional({
-    example: 'http://localhost:5173/payment/cancel',
-    description: 'URL chuyển hướng khi người dùng hủy trên trang PayOS',
-  })
-  @IsString()
-  @IsOptional()
-  cancelUrl?: string;
-}
+export type CheckoutInput = z.infer<typeof CheckoutSchema>;

@@ -8,7 +8,7 @@ import {
   WalletTransactionType,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
+import { DepositWalletInput } from '../dtos/deposit-wallet.dto';
 import { AuctionCheckoutService } from '../../auction/services/auction-checkout.service';
 import { WebhookData } from '@payos/node';
 import { PayosSettlement } from '../../payments/services/payos-settlement';
@@ -74,7 +74,7 @@ export class WalletDepositService {
   /**
    * Nạp tiền vào ví cá nhân (hỗ trợ qua cổng PayOS VietQR hoặc nạp trực tiếp)
    */
-  async depositToUserWallet(userId: string, dto: DepositWalletDto) {
+  async depositToUserWallet(userId: string, dto: DepositWalletInput) {
     if (dto.amount <= 0) {
       throw new BadRequestException('Số tiền nạp vào ví phải lớn hơn 0 đồng');
     }

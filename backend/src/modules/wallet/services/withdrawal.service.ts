@@ -16,8 +16,8 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
-import { CreateWithdrawalDto } from '../dtos/create-withdrawal.dto';
-import { QueryFinanceDto } from '../dtos/query-finance.dto';
+import { CreateWithdrawalInput } from '../dtos/create-withdrawal.dto';
+import { QueryFinanceInput } from '../dtos/query-finance.dto';
 
 export interface CreateWithdrawalOptions {
   requireSellerRole?: boolean;
@@ -52,7 +52,7 @@ export class WithdrawalService {
    */
   async createWithdrawal(
     userId: string,
-    dto: CreateWithdrawalDto,
+    dto: CreateWithdrawalInput,
     options?: CreateWithdrawalOptions,
   ) {
     const user = await this.prisma.user.findUnique({
@@ -141,7 +141,7 @@ export class WithdrawalService {
    * @param query - Pagination and filter parameters
    * @returns Paginated wallet transactions
    */
-  async getTransactions(userId: string, query: QueryFinanceDto) {
+  async getTransactions(userId: string, query: QueryFinanceInput) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 10));
     const skip = (page - 1) * limit;
@@ -300,7 +300,7 @@ export class WithdrawalService {
   }
 
   private resolveBankDetails(
-    dto: CreateWithdrawalDto,
+    dto: CreateWithdrawalInput,
     user: {
       bankName: string | null;
       accountNumber: string | null;

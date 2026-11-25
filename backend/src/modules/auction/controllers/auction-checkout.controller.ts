@@ -9,9 +9,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser } from '../../../core/security/roles.decorator';
-import { CheckoutAuctionAwardDto } from '../dtos/checkout-auction-award.dto';
+import {
+  CheckoutAuctionAwardInput,
+  CheckoutAuctionAwardSchema,
+} from '../dtos/checkout-auction-award.dto';
 import { RespondSecondChanceDto } from '../dtos/respond-second-chance.dto';
 import { AuctionCheckoutService } from '../services/auction-checkout.service';
 
@@ -39,7 +43,7 @@ export class AuctionCheckoutController {
   quote(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: CheckoutAuctionAwardDto,
+    @ZodBody(CheckoutAuctionAwardSchema) dto: CheckoutAuctionAwardInput,
   ): ReturnType<AuctionCheckoutService['quote']> {
     return this.checkoutService.quote(id, userId, dto);
   }
@@ -53,7 +57,7 @@ export class AuctionCheckoutController {
   checkout(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: CheckoutAuctionAwardDto,
+    @ZodBody(CheckoutAuctionAwardSchema) dto: CheckoutAuctionAwardInput,
   ): ReturnType<AuctionCheckoutService['checkout']> {
     return this.checkoutService.checkout(id, userId, dto);
   }

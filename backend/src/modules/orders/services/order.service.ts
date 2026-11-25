@@ -16,8 +16,8 @@ import {
   GhnShippingQuote,
   GhnShippingService,
 } from '../../fulfillment/services/ghn-shipping.service';
-import { CheckoutDto } from '../dtos/checkout.dto';
-import { PayOrderDto } from '../dtos/pay-order.dto';
+import { CheckoutInput } from '../dtos/checkout.dto';
+import { PayOrderInput } from '../dtos/pay-order.dto';
 import { validateQuotedCheckout } from '../utils/checkout-validation';
 import {
   OrderPaymentHelper,
@@ -41,7 +41,7 @@ export class OrderService {
   /**
    * Tạo đơn hàng từ giỏ hàng hiện tại (Price Revalidation + Anti-Self-Purchase)
    */
-  async checkout(buyerId: string, dto: CheckoutDto, idempotencyKey?: string, quoteOnly = false) {
+  async checkout(buyerId: string, dto: CheckoutInput, idempotencyKey?: string, quoteOnly = false) {
     if (idempotencyKey && !quoteOnly) {
       const existingOrders = await this.prisma.order.findMany({
         where: {
@@ -420,7 +420,7 @@ export class OrderService {
     });
   }
 
-  initializePayment(orderId: string, buyerId: string, dto?: PayOrderDto) {
+  initializePayment(orderId: string, buyerId: string, dto?: PayOrderInput) {
     return this.paymentHelper.initializePayment(orderId, buyerId, dto);
   }
 

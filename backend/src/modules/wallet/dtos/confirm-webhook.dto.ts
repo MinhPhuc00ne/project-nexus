@@ -1,12 +1,12 @@
-import { IsNotEmpty, IsUrl } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { z } from 'zod';
 
-export class ConfirmWebhookDto {
-  @ApiProperty({
-    example: 'https://xxxx.ngrok-free.app/api/v1/commerce/webhooks/payos',
-    description: 'URL Webhook công khai để đăng ký và xác nhận với PayOS',
+export const ConfirmWebhookSchema = z
+  .object({
+    webhookUrl: z
+      .url()
+      .describe('URL Webhook công khai để đăng ký và xác nhận với PayOS')
+      .meta({ example: 'https://xxxx.ngrok-free.app/api/v1/commerce/webhooks/payos' }),
   })
-  @IsUrl()
-  @IsNotEmpty()
-  webhookUrl!: string;
-}
+  .strict();
+
+export type ConfirmWebhookInput = z.infer<typeof ConfirmWebhookSchema>;

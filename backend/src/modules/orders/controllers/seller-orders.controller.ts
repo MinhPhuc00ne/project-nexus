@@ -6,15 +6,15 @@ import {
   HttpStatus,
   Param,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { QuerySellerOrdersDto } from '../dtos/seller-order.dto';
+import { QuerySellerOrdersInput, QuerySellerOrdersSchema } from '../dtos/seller-order.dto';
 import { DispatchGhnOrderDto } from '../../fulfillment/dtos/dispatch-ghn-order.dto';
 import { SellerOrdersService } from '../services/seller-orders.service';
 import { GhnDispatchService } from '../../fulfillment/services/ghn-dispatch.service';
@@ -72,7 +72,10 @@ export class SellerOrdersController {
       'Hỗ trợ lọc theo trạng thái đơn hàng (PAID, PREPARING, SHIPPING, DELIVERED, CONFIRMED, CANCELLED, REFUNDED), tìm kiếm theo mã đơn hoặc tên/SĐT khách hàng, đồng thời trả về counters số lượng đơn theo từng trạng thái.',
   })
   @ApiResponse({ status: 200, description: 'Lấy danh sách đơn bán thành công' })
-  async listOrders(@CurrentUser('id') sellerId: string, @Query() query: QuerySellerOrdersDto) {
+  async listOrders(
+    @CurrentUser('id') sellerId: string,
+    @ZodQuery(QuerySellerOrdersSchema) query: QuerySellerOrdersInput,
+  ) {
     return this.sellerOrdersService.listOrders(sellerId, query);
   }
 

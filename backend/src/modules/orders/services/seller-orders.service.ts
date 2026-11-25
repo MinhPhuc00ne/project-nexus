@@ -14,7 +14,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { GhnDispatchService } from '../../fulfillment/services/ghn-dispatch.service';
-import { QuerySellerOrdersDto } from '../dtos/seller-order.dto';
+import { QuerySellerOrdersInput } from '../dtos/seller-order.dto';
 import { DispatchGhnOrderDto } from '../../fulfillment/dtos/dispatch-ghn-order.dto';
 
 @Injectable()
@@ -31,7 +31,7 @@ export class SellerOrdersService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated orders, summary counters, and pagination metadata
    */
-  async listOrders(sellerId: string, query: QuerySellerOrdersDto) {
+  async listOrders(sellerId: string, query: QuerySellerOrdersInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));
     const skip = (page - 1) * limit;
