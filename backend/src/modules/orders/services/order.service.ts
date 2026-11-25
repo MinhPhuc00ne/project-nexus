@@ -21,11 +21,16 @@ import { PayOrderInput } from '../dtos/pay-order.dto';
 import { validateQuotedCheckout } from '../utils/checkout-validation';
 import {
   OrderPaymentHelper,
+  PayosGroupPaymentResponse,
   PayosPaymentResponse,
   WalletPaymentResponse,
 } from './order-payment.helper';
 
-export type { PayosPaymentResponse, WalletPaymentResponse } from './order-payment.helper';
+export type {
+  PayosGroupPaymentResponse,
+  PayosPaymentResponse,
+  WalletPaymentResponse,
+} from './order-payment.helper';
 
 @Injectable()
 export class OrderService {
@@ -304,20 +309,39 @@ export class OrderService {
       return orders;
     });
 
-    // 4. Tự động xử lý thanh toán nếu chỉ có 1 đơn hàng
+    // 4. Khởi tạo thanh toán cho các đơn vừa tạo.
+    //
+    // This step used to be wrapped in `createdOrders.length === 1`, so a cart
+    // holding items from two shops — which becomes one order per shop, because
+    // an order is what one seller packs — ended with every order waiting for
+    // payment and no way to pay for any of them from the checkout just
+    // completed. The buyer pays once; what that means per method differs:
+    // PayOS gets one link for a group, the wallet is debited for each order in
+    // one transaction, and COD is simply recorded against each.
     let payosPayment: PayosPaymentResponse | null = null;
+    let payosGroupPayment: PayosGroupPaymentResponse | null = null;
     let walletPayment: WalletPaymentResponse | null = null;
+    let walletPayments: WalletPaymentResponse[] | null = null;
     let codPayment: {
       orderId: string;
       success: boolean;
       message: string;
       provider: PaymentProvider;
     } | null = null;
+    let codPayments: Array<{
+      orderId: string;
+      success: boolean;
+      message: string;
+      provider: PaymentProvider;
+    }> | null = null;
+
+    const method = dto.paymentMethod || PaymentProvider.PAYOS;
+    const orderIds = createdOrders.map((order) => order.id);
 
     if (createdOrders.length === 1) {
-      if (!dto.paymentMethod || dto.paymentMethod === PaymentProvider.PAYOS) {
+      if (method === PaymentProvider.PAYOS) {
         try {
-          payosPayment = (await this.initializePayment(createdOrders[0].id, buyerId, {
+          payosPayment = (await this.initializePayment(orderIds[0], buyerId, {
             provider: PaymentProvider.PAYOS,
             returnUrl: dto.returnUrl,
             cancelUrl: dto.cancelUrl,
@@ -326,25 +350,50 @@ export class OrderService {
           const message = err instanceof Error ? err.message : String(err);
           this.logger.warn(`Tạo link PayOS ngay khi checkout thất bại: ${message}`);
         }
-      } else if (dto.paymentMethod === PaymentProvider.WALLET) {
-        walletPayment = (await this.initializePayment(createdOrders[0].id, buyerId, {
+      } else if (method === PaymentProvider.WALLET) {
+        walletPayment = (await this.initializePayment(orderIds[0], buyerId, {
           provider: PaymentProvider.WALLET,
         })) as WalletPaymentResponse;
-      } else if (dto.paymentMethod === PaymentProvider.COD) {
+      } else if (method === PaymentProvider.COD) {
         codPayment = {
-          orderId: createdOrders[0].id,
+          orderId: orderIds[0],
           success: true,
           message: 'Phương thức thanh toán COD đã được ghi nhận thành công.',
           provider: PaymentProvider.COD,
         };
       }
+    } else if (method === PaymentProvider.PAYOS) {
+      try {
+        payosGroupPayment = await this.paymentHelper.initializeGroupPayment(orderIds, buyerId, {
+          provider: PaymentProvider.PAYOS,
+          returnUrl: dto.returnUrl,
+          cancelUrl: dto.cancelUrl,
+        });
+      } catch (err: unknown) {
+        // As with a single order, the orders stand and the buyer can ask for a
+        // link again; losing the gateway must not lose the checkout.
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Tạo link PayOS cho nhóm đơn ngay khi checkout thất bại: ${message}`);
+      }
+    } else if (method === PaymentProvider.WALLET) {
+      walletPayments = await this.paymentHelper.payOrdersByWallet(orderIds, buyerId);
+    } else if (method === PaymentProvider.COD) {
+      codPayments = orderIds.map((orderId) => ({
+        orderId,
+        success: true,
+        message: 'Phương thức thanh toán COD đã được ghi nhận thành công.',
+        provider: PaymentProvider.COD,
+      }));
     }
 
     return {
       orders: createdOrders,
       payosPayment,
+      payosGroupPayment,
       walletPayment,
+      walletPayments,
       codPayment,
+      codPayments,
     };
   }
 

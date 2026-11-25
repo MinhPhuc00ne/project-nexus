@@ -361,6 +361,7 @@ model User {
   products                   Product[]
   ordersAsBuyer              Order[]                    @relation("BuyerOrders")
   ordersAsSeller             Order[]                    @relation("SellerOrders")
+  paymentGroups              PaymentGroup[]
   auctions                   Auction[]                  @relation("SellerAuctions")
   createdAuctions            Auction[]                  @relation("AdminCreatedAuctions")
   submittedAuctionItems      AuctionItem[]              @relation("SellerAuctionItems")
@@ -747,10 +748,12 @@ model Order {
   cancellationActor       OrderCancellationActor? @map("cancellation_actor")
   shippingAddressSnapshot Json                    @map("shipping_address_snapshot")
   idempotencyKey          String?                 @unique @map("idempotency_key")
+  paymentGroupId          String?                 @map("payment_group_id")
   createdAt               DateTime                @default(now()) @map("created_at")
   updatedAt               DateTime                @updatedAt @map("updated_at")
 
   buyer          User               @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: Restrict)
+  paymentGroup   PaymentGroup?      @relation(fields: [paymentGroupId], references: [id], onDelete: SetNull)
   seller         User               @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: Restrict)
   items          OrderItem[]
   payments       Payment[]
@@ -767,7 +770,32 @@ model Order {
   @@index([buyerId, status, createdAt])
   @@index([sellerId, status, createdAt])
   @@index([status, createdAt])
+  @@index([paymentGroupId])
   @@map("orders")
+}
+
+/// One payment covering several orders.
+///
+/// A cart holding items from two shops becomes two orders, because an order is
+/// what one seller packs and ships. The buyer still pays once, so the PayOS
+/// link — and the order code PayOS settles against — belongs to the group
+/// rather than to any one order. Each order keeps its own Payment row once the
+/// money arrives, which is what escrow and refunds read.
+model PaymentGroup {
+  id        String        @id @default(uuid())
+  buyerId   String        @map("buyer_id")
+  orderCode String        @unique @map("order_code")
+  amount    Decimal       @db.Decimal(15, 0)
+  status    PaymentStatus @default(PENDING)
+  metadata  Json?
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  buyer  User    @relation(fields: [buyerId], references: [id], onDelete: Restrict)
+  orders Order[]
+
+  @@index([buyerId, status])
+  @@map("payment_groups")
 }
 
 model OrderItem {
