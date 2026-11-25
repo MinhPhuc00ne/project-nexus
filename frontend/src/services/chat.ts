@@ -1,6 +1,6 @@
-import axios, { type AxiosRequestConfig } from 'axios';
+import { type AxiosRequestConfig } from 'axios';
 import i18n from '../i18n';
-import api, { ApiRequestError } from './api';
+import { request } from './api';
 import { getStoredToken, getStoredUser } from './auth';
 import type {
   ChatParticipant,
@@ -18,26 +18,20 @@ import type {
   SupportConversationStatus,
 } from '../types/chat.types';
 
-// The controller wraps detail/messages in { data }, inside the global envelope.
+/**
+ * Calls a chat endpoint, refusing early when nobody is signed in.
+ *
+ * @param config - The request, as Axios describes it.
+ * @param nestedData - True for the endpoints that wrap their payload in a
+ *   second `data`, which the conversation detail and message list do.
+ * @returns The payload.
+ */
 async function chatRequest<T>(config: AxiosRequestConfig, nestedData = false): Promise<T> {
   if (!getStoredToken()) throw new Error(i18n.t('errors:services.chatAuthRequired'));
-  try {
-    const response = await api.request<{ data: T | { data: T } }>(config);
-    const payload = response.data.data;
-    return nestedData ? (payload as { data: T }).data : (payload as T);
-  } catch (error) {
-    if (axios.isAxiosError<{ message?: string | string[]; errors?: string[] }>(error)) {
-      const payload = error.response?.data;
-      const message = payload?.errors ?? payload?.message;
-      throw new ApiRequestError(
-        Array.isArray(message)
-          ? message.join(' · ')
-          : message || i18n.t('errors:services.chatConnectFailed'),
-        error.response?.status ?? 0,
-      );
-    }
-    throw error;
-  }
+  return request<T>(config, {
+    nested: nestedData,
+    fallbackMessage: i18n.t('errors:services.chatConnectFailed'),
+  });
 }
 
 const conversationPath = (id: string) => `/chat/conversations/${encodeURIComponent(id)}`;

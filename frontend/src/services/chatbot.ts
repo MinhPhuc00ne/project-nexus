@@ -1,7 +1,6 @@
 import axios from 'axios';
 import i18n from '../i18n';
-import api, { API_BASE_URL } from './api';
-import { getApiErrorMessage } from '../lib/apiErrors';
+import api, { API_BASE_URL, ApiRequestError, toApiRequestError } from './api';
 export interface ChatbotAction {
   type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN' | 'NAVIGATE';
   endpoint?: string;
@@ -61,13 +60,16 @@ export async function sendChatbotMessage(
       : await api.post<{ data: ChatbotReply }>('/chat/bot/messages', body, { signal });
     return response.data.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.code !== 'ERR_CANCELED') {
-      const fallback =
-        error.response?.status === 429
-          ? i18n.t('errors:services.chatbotRateLimit')
-          : i18n.t('errors:services.chatbotConnectFailed');
-      throw new Error(getApiErrorMessage(error.response?.data, fallback));
-    }
-    throw error;
+    // Rate limiting is the one failure worth its own words: the chatbot is
+    // metered per user, and "try again" is the right advice only for that.
+    const rateLimited = axios.isAxiosError(error) && error.response?.status === 429;
+    const mapped = toApiRequestError(
+      error,
+      rateLimited
+        ? i18n.t('errors:services.chatbotRateLimit')
+        : i18n.t('errors:services.chatbotConnectFailed'),
+    );
+    if (mapped instanceof ApiRequestError) throw new Error(mapped.message);
+    throw mapped;
   }
 }

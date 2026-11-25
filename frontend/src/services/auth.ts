@@ -1,9 +1,6 @@
-import axios from 'axios';
-import type { ApiResponse } from '@nexus/types';
 import i18n from '../i18n';
-import api, { API_BASE_URL } from './api';
+import api, { API_BASE_URL, ApiRequestError, request } from './api';
 import type { AuthMessage, AuthUser, LoginResponse } from '../types/user.types';
-import { getApiErrorMessage, getApiErrorMessages } from '../lib/apiErrors';
 
 export type { AuthMessage, AuthUser, LoginResponse };
 
@@ -125,39 +122,34 @@ export class RegistrationError extends Error {
   }
 }
 
+/**
+ * Posts to an auth endpoint.
+ *
+ * Registration and email verification are the two flows whose errors are shown
+ * field by field, so they keep the backend's list of messages apart in a
+ * `RegistrationError`; everywhere else one line is what the screen shows.
+ *
+ * @param path - The endpoint under `/auth`.
+ * @param body - What to send.
+ * @returns The payload inside the response envelope.
+ */
 async function post<T>(path: string, body: object): Promise<T> {
-  let response;
+  const needsFieldErrors = path === 'register' || path === 'verify-email';
   try {
-    response = await api.post<ApiResponse<T>>(`/auth/${path}`, body);
-  } catch (error) {
-    if (axios.isAxiosError<ApiResponse<T> & { errors?: unknown }>(error)) {
-      const payload = error.response?.data;
-      // Chỉ xử lý thêm lỗi validation cho luồng đăng ký và xác thực tài khoản.
-      if (path === 'register' || path === 'verify-email') {
-        if (!error.response) {
-          throw new Error(i18n.t('errors:network'));
-        }
-        const messages = getApiErrorMessages(payload);
-        throw new RegistrationError(
-          messages.length ? messages : [i18n.t('errors:default')],
-          error.response.status,
-        );
-      }
-      throw new Error(
-        getApiErrorMessage(
-          payload,
-          error.response ? i18n.t('errors:default') : i18n.t('errors:network'),
-        ),
-      );
+    const payload = await request<T>({ url: `/auth/${path}`, method: 'POST', data: body });
+    if (payload === undefined || payload === null) {
+      throw new Error(i18n.t('errors:services.invalidAuctionLotData'));
     }
-    throw new Error(i18n.t('errors:network'));
+    return payload;
+  } catch (error) {
+    if (error instanceof ApiRequestError) {
+      if (needsFieldErrors && error.status > 0) {
+        throw new RegistrationError(error.messages, error.status);
+      }
+      throw new Error(error.message);
+    }
+    throw error;
   }
-
-  const payload = response.data;
-  if (!payload || typeof payload !== 'object' || !('data' in payload) || !payload.data) {
-    throw new Error(i18n.t('errors:services.invalidAuctionLotData'));
-  }
-  return payload.data;
 }
 
 export function login(email: string, password: string): Promise<LoginResponse> {
