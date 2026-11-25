@@ -13,7 +13,7 @@ async function exportOpenApi(): Promise<void> {
   app.setGlobalPrefix('api/v1');
 
   const document = SwaggerModule.createDocument(app, buildSwaggerConfig());
-  const outputPath = path.resolve(process.cwd(), '../docs-site/static/openapi/nexus-openapi.json');
+  const outputPath = path.resolve(process.cwd(), '../docs/static/openapi/nexus-openapi.json');
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, `${JSON.stringify(document, null, 2)}\n`, 'utf8');
 

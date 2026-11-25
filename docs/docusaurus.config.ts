@@ -4,21 +4,18 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Project Nexus Docs',
-  tagline: 'Enterprise Multi-Shop E-Commerce & Real-Time 3D Live Auctions',
+  tagline: 'Multi-Shop E-Commerce and Real-Time 3D Live Auctions',
   favicon: 'img/favicon.ico',
-  url: 'https://nexus-docs.local',
-  baseUrl: '/',
-  organizationName: 'project-nexus',
+  url: 'https://minhphuc00ne.github.io',
+  baseUrl: '/project-nexus/',
+  organizationName: 'MinhPhuc00ne',
   projectName: 'project-nexus',
+  trailingSlash: false,
   onBrokenLinks: 'throw',
 
   i18n: {
-    defaultLocale: 'vi',
-    locales: ['vi', 'en'],
-    localeConfigs: {
-      vi: { label: 'Tiếng Việt', htmlLang: 'vi' },
-      en: { label: 'English', htmlLang: 'en' },
-    },
+    defaultLocale: 'en',
+    locales: ['en'],
   },
 
   markdown: {
@@ -34,7 +31,7 @@ const config: Config = {
       '@easyops-cn/docusaurus-search-local',
       {
         hashed: true,
-        language: ['en', 'vi'],
+        language: ['en'],
         indexDocs: true,
         indexBlog: false,
       },
@@ -65,7 +62,7 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
-          label: 'Tài liệu',
+          label: 'Documentation',
         },
         {
           to: '/api-reference',
@@ -73,14 +70,15 @@ const config: Config = {
           label: 'API Reference',
         },
         {
-          type: 'localeDropdown',
+          href: 'https://github.com/MinhPhuc00ne/project-nexus',
+          label: 'GitHub',
           position: 'right',
         },
       ],
     },
     footer: {
       style: 'dark',
-      copyright: `Copyright © ${new Date().getFullYear()} Project Nexus. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Project Nexus. Released under the MIT License.`,
     },
     prism: {
       theme: prismThemes.github,

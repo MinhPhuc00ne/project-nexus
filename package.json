@@ -9,7 +9,7 @@
     "packages/*",
     "backend",
     "frontend",
-    "docs-site"
+    "docs"
   ],
   "scripts": {
     "dev": "turbo dev",
@@ -17,9 +17,9 @@
     "test": "turbo test",
     "test:e2e:smoke": "playwright test",
     "docs:openapi": "npm run docs:openapi --workspace=backend",
-    "docs:check": "node docs-site/scripts/check-docs-parity.mjs",
-    "docs:dev": "npm run start --workspace=docs-site",
-    "docs:build": "npm run build --workspace=docs-site",
+    "docs:check": "node docs/scripts/check-docs.mjs",
+    "docs:dev": "npm run start --workspace=docs",
+    "docs:build": "npm run build --workspace=docs",
     "i18n:check": "node frontend/scripts/check-i18n-parity.mjs",
     "test:coverage": "npm run test:coverage --workspace=backend --if-present && npm run test:coverage --workspace=frontend --if-present",
     "build:types": "npm run build --workspace=@nexus/types --if-present",

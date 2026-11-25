@@ -1,8 +1,0 @@
-{
-  "sidebar.docsSidebar.category.Bắt đầu nhanh": { "message": "Getting Started" },
-  "sidebar.docsSidebar.category.Kiến trúc & Quyết định (ADR)": { "message": "Architecture & ADRs" },
-  "sidebar.docsSidebar.category.Backend Modules": { "message": "Backend Modules" },
-  "sidebar.docsSidebar.category.Frontend & Đa ngôn ngữ": { "message": "Frontend & i18n" },
-  "sidebar.docsSidebar.category.Chất lượng & Kiểm thử": { "message": "Quality & Testing" },
-  "sidebar.docsSidebar.category.Vận hành (Runbook)": { "message": "Operations (Runbook)" }
-}

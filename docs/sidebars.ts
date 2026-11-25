@@ -5,12 +5,12 @@ const sidebars: SidebarsConfig = {
     'intro',
     {
       type: 'category',
-      label: 'Bắt đầu nhanh',
+      label: 'Getting Started',
       items: ['getting-started/quickstart', 'getting-started/environment'],
     },
     {
       type: 'category',
-      label: 'Kiến trúc & Quyết định (ADR)',
+      label: 'Architecture and ADRs',
       items: [
         'architecture/system-overview',
         'architecture/database-schema',
@@ -27,21 +27,26 @@ const sidebars: SidebarsConfig = {
     {
       type: 'category',
       label: 'Backend Modules',
-      items: ['modules/overview'],
+      items: ['modules/overview', 'modules/chatbot'],
     },
     {
       type: 'category',
-      label: 'Frontend & Đa ngôn ngữ',
-      items: ['frontend/architecture', 'frontend/ui-specification', 'frontend/i18n-guide'],
+      label: 'Frontend and Localization',
+      items: [
+        'frontend/architecture',
+        'frontend/file-guide',
+        'frontend/ui-specification',
+        'frontend/i18n-guide',
+      ],
     },
     {
       type: 'category',
-      label: 'Chất lượng & Kiểm thử',
+      label: 'Quality and Testing',
       items: ['quality/code-standards', 'quality/testing-ci'],
     },
     {
       type: 'category',
-      label: 'Vận hành (Runbook)',
+      label: 'Operations Runbook',
       items: ['operations/runbook'],
     },
   ],
