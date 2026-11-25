@@ -11,6 +11,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ProviderConfigService } from '../../../core/providers/provider-config.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import { timingSafeEqual } from 'node:crypto';
@@ -29,6 +30,7 @@ export class GhnWebhookController {
     private readonly config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly tracking: ShipmentTrackingService,
+    private readonly providers: ProviderConfigService,
     @Optional() private readonly eventEmitter?: EventEmitter2,
   ) {}
 
@@ -71,10 +73,12 @@ export class GhnWebhookController {
         ],
       },
     });
-    // Never use callback status directly in production; allow simulation in dev mode.
-    const isDev = this.config.get<string>('NODE_ENV') !== 'production';
+    // A carrier callback is only trusted to carry a status when shipping is
+    // explicitly in sandbox mode. This used to depend on NODE_ENV, so any
+    // non-production deployment accepted a status straight from the caller.
+    const isSandbox = this.providers.isShippingSandbox();
     const mockStatus =
-      isDev && typeof body.Status === 'string' && body.Status.trim()
+      isSandbox && typeof body.Status === 'string' && body.Status.trim()
         ? body.Status.trim().toLowerCase()
         : undefined;
 

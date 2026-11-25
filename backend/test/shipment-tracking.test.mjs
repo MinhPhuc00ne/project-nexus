@@ -66,7 +66,14 @@ function fixture() {
     detail: mock.fn(async () => ({ ...detail })),
     fees: mock.fn(async () => ({ total: 35000, detail: { main_service: 35000 } })),
   };
-  return { service: new ShipmentTrackingService(prisma, api), order, prisma, detail, api };
+  const providers = { isShippingSandbox: () => true };
+  return {
+    service: new ShipmentTrackingService(prisma, api, providers),
+    order,
+    prisma,
+    detail,
+    api,
+  };
 }
 
 test('created waybill remains preparing until GHN confirms pickup', async () => {
@@ -262,31 +269,57 @@ test('official labels use short-lived print tokens rather than the account token
 });
 
 test('webhook authenticates and rechecks GHN rather than trusting callback status', async () => {
-  const tracking = { refresh: mock.fn(async () => ({})) };
-  const controller = new GhnWebhookController(
-    { get: (key) => ({ GHN_WEBHOOK_SECRET: 'secret', GHN_SHOP_ID: '123' })[key] },
-    {
-      shipment: {
-        findFirst: async () => ({
-          orderId: 'o1',
-          metadata: { ghnShopId: 123, ghnEnvironment: 'PRODUCTION' },
-        }),
-      },
-    },
-    tracking,
-  );
-  await assert.rejects(
-    controller.receive('wrong', { ShopID: 123, OrderCode: 'GHN-1' }),
-    (error) => error.getStatus() === 401,
-  );
-  assert.equal(tracking.refresh.mock.callCount(), 0);
-  await controller.receive('secret', {
+  /** Builds the controller for one shipping provider selection. */
+  const build = (sandbox) => {
+    const tracking = { refresh: mock.fn(async () => ({})) };
+    return {
+      tracking,
+      controller: new GhnWebhookController(
+        { get: (key) => ({ GHN_WEBHOOK_SECRET: 'secret', GHN_SHOP_ID: '123' })[key] },
+        {
+          shipment: {
+            findFirst: async () => ({
+              orderId: 'o1',
+              metadata: { ghnShopId: 123, ghnEnvironment: 'PRODUCTION' },
+            }),
+          },
+        },
+        tracking,
+        { isShippingSandbox: () => sandbox },
+      ),
+    };
+  };
+
+  const callback = {
     ShopID: 123,
     OrderCode: 'GHN-1',
     Status: 'delivered',
     TotalFee: 1,
-  });
-  assert.deepEqual(tracking.refresh.mock.calls[0].arguments, ['o1', undefined, 'delivered']);
+  };
+
+  // A wrong secret is rejected before anything is read.
+  const real = build(false);
+  await assert.rejects(
+    real.controller.receive('wrong', { ShopID: 123, OrderCode: 'GHN-1' }),
+    (error) => error.getStatus() === 401,
+  );
+  assert.equal(real.tracking.refresh.mock.callCount(), 0);
+
+  // With a real carrier, the status in the callback is discarded and the
+  // carrier is asked directly. Trusting it would let anyone holding the
+  // webhook secret mark an order delivered.
+  await real.controller.receive('secret', callback);
+  assert.deepEqual(real.tracking.refresh.mock.calls[0].arguments, ['o1', undefined, undefined]);
+
+  // SHIPPING_PROVIDER=sandbox is the only mode that accepts a simulated
+  // status, so a demo can walk a shipment through its states.
+  const sandbox = build(true);
+  await sandbox.controller.receive('secret', callback);
+  assert.deepEqual(sandbox.tracking.refresh.mock.calls[0].arguments, [
+    'o1',
+    undefined,
+    'delivered',
+  ]);
 });
 
 test('tracking refresh logs shipment status changes and return webhook triggers return delivery', async () => {
@@ -324,9 +357,10 @@ test('tracking refresh logs shipment status changes and return webhook triggers 
     eventLog: { create: mock.fn(async ({ data }) => returnEvents.push(data)) },
   };
   const controller = new GhnWebhookController(
-    { get: (key) => ({ GHN_WEBHOOK_SECRET: 'secret', NODE_ENV: 'development' })[key] },
+    { get: (key) => ({ GHN_WEBHOOK_SECRET: 'secret' })[key] },
     returnPrisma,
     { refresh: mock.fn(async () => ({})) },
+    { isShippingSandbox: () => true },
     { emit: (name, payload) => emitted.push({ name, payload }) },
   );
   const res = await controller.receive('secret', {

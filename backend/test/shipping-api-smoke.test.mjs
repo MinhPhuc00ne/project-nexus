@@ -68,6 +68,10 @@ test('shipping dependencies and routes initialize without live infrastructure', 
       // The guard resolves identities through TokenAuthService; this smoke test
       // only asserts the dependency graph resolves.
       {
+        provide: source('core/providers/provider-config.service').ProviderConfigService,
+        useValue: { isShippingSandbox: () => true, isLocalStorage: () => true },
+      },
+      {
         provide: source('core/security/token-auth.service').TokenAuthService,
         useValue: {},
       },

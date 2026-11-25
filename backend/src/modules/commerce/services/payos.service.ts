@@ -1,5 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ProviderConfigService } from '../../../core/providers/provider-config.service';
+import { PaymentSandboxService } from './payment-sandbox.service';
 import {
   PayOS,
   CreatePaymentLinkRequest,
@@ -15,7 +17,11 @@ export class PayosService {
   private readonly logger = new Logger(PayosService.name);
   private payOS: PayOS;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly providers: ProviderConfigService,
+    private readonly sandbox: PaymentSandboxService,
+  ) {
     const clientId =
       this.configService.get<string>('PAYOS_CLIENT_ID') || process.env.PAYOS_CLIENT_ID || '';
     const apiKey =
@@ -23,9 +29,11 @@ export class PayosService {
     const checksumKey =
       this.configService.get<string>('PAYOS_CHECKSUM_KEY') || process.env.PAYOS_CHECKSUM_KEY || '';
 
-    if (!clientId || !apiKey || !checksumKey) {
-      this.logger.warn(
-        'PayOS configuration keys (PAYOS_CLIENT_ID, PAYOS_API_KEY, PAYOS_CHECKSUM_KEY) are not fully provided in environment.',
+    // PAYMENT_PROVIDER=payos is validated at boot, so missing keys here mean
+    // the configuration changed underneath a running process.
+    if (!this.providers.isPaymentSandbox() && (!clientId || !apiKey || !checksumKey)) {
+      this.logger.error(
+        'PAYMENT_PROVIDER=payos but PAYOS_CLIENT_ID, PAYOS_API_KEY or PAYOS_CHECKSUM_KEY is missing.',
       );
     }
 
@@ -42,6 +50,9 @@ export class PayosService {
   async createPaymentLink(
     paymentData: CreatePaymentLinkRequest,
   ): Promise<CreatePaymentLinkResponse> {
+    if (this.providers.isPaymentSandbox()) {
+      return this.sandbox.createPaymentLink(paymentData);
+    }
     try {
       this.logger.log(
         `Đang tạo PayOS Payment Link cho orderCode=${paymentData.orderCode}, số tiền=${paymentData.amount}`,
@@ -64,6 +75,9 @@ export class PayosService {
    * Xác thực chữ ký webhook từ PayOS (đảm bảo request xuất phát từ server PayOS)
    */
   async verifyWebhook(webhookBody: Webhook): Promise<WebhookData> {
+    if (this.providers.isPaymentSandbox()) {
+      return this.sandbox.verifyWebhook(webhookBody);
+    }
     try {
       const verified = await this.payOS.webhooks.verify(webhookBody);
       return verified;
@@ -78,6 +92,9 @@ export class PayosService {
    * Lấy thông tin thanh toán theo orderCode hoặc paymentLinkId
    */
   async getPaymentLink(orderCodeOrId: number | string): Promise<PaymentLink> {
+    if (this.providers.isPaymentSandbox()) {
+      return this.sandbox.getPaymentLink(orderCodeOrId);
+    }
     try {
       if (typeof orderCodeOrId === 'number') {
         return await this.payOS.paymentRequests.get(orderCodeOrId);
@@ -94,6 +111,9 @@ export class PayosService {
    * Đăng ký và xác nhận Webhook URL với hệ thống PayOS
    */
   async confirmWebhook(webhookUrl: string): Promise<ConfirmWebhookResponse> {
+    if (this.providers.isPaymentSandbox()) {
+      return this.sandbox.confirmWebhook(webhookUrl);
+    }
     try {
       this.logger.log(`Xác nhận webhook URL với PayOS: ${webhookUrl}`);
       return await this.payOS.webhooks.confirm(webhookUrl);
