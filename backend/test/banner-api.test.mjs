@@ -109,6 +109,12 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
     ],
   })(BannerApiModule);
   const app = await NestFactory.create(BannerApiModule, { logger: false, abortOnError: false });
+  // The same filter `main.ts` registers. Without it these routes fall to
+  // Nest's default handling, which is not what the app does and answered a
+  // rejected query with 500 instead of 400 whenever the machine was busy.
+  app.useGlobalFilters(
+    new (source('core/filters/global-http-exception.filter').GlobalHttpExceptionFilter)(),
+  );
   try {
     app.setGlobalPrefix('api/v1');
     await app.listen(0, '127.0.0.1');

@@ -166,6 +166,12 @@ test(
       ],
     })(ApiModule);
     const app = await NestFactory.create(ApiModule, { logger: false, abortOnError: false });
+    // The same filter `main.ts` registers. Without it these routes fall to
+    // Nest's default handling, which is not what the app does and answered a
+    // rejected query with 500 instead of 400 whenever the machine was busy.
+    app.useGlobalFilters(
+      new (load('../src/core/filters/global-http-exception.filter.ts').GlobalHttpExceptionFilter)(),
+    );
     app.setGlobalPrefix('api/v1');
     try {
       await app.listen(0, '127.0.0.1');

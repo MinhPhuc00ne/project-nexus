@@ -100,6 +100,12 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
     ],
   })(GapApiModule);
   const app = await NestFactory.create(GapApiModule, { logger: false, abortOnError: false });
+  // The same filter `main.ts` registers. Without it these routes fall to
+  // Nest's default handling, which is not what the app does and answered a
+  // rejected query with 500 instead of 400 whenever the machine was busy.
+  app.useGlobalFilters(
+    new (source('core/filters/global-http-exception.filter').GlobalHttpExceptionFilter)(),
+  );
   try {
     await app.listen(0, '127.0.0.1');
     const base = await app.getUrl();

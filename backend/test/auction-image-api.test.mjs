@@ -83,6 +83,12 @@ test('auction images accept uploaded URLs for staff without exposing auction man
     ],
   })(FixtureModule);
   const app = await NestFactory.create(FixtureModule, { logger: false, abortOnError: false });
+  // The same filter `main.ts` registers. Without it these routes fall to
+  // Nest's default handling, which is not what the app does and answered a
+  // rejected query with 500 instead of 400 whenever the machine was busy.
+  app.useGlobalFilters(
+    new (load('../src/core/filters/global-http-exception.filter.ts').GlobalHttpExceptionFilter)(),
+  );
   const jwt = new JwtService({ secret: 'image-test-secret' });
   try {
     await app.listen(0, '127.0.0.1');

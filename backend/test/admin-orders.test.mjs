@@ -225,6 +225,12 @@ test(
       ],
     })(TestModule);
     const app = await NestFactory.create(TestModule, { logger: false, abortOnError: false });
+    // The same filter `main.ts` registers. Without it these routes fall to
+    // Nest's default handling, which is not what the app does and answered a
+    // rejected query with 500 instead of 400 whenever the machine was busy.
+    app.useGlobalFilters(
+      new (load('../src/core/filters/global-http-exception.filter.ts').GlobalHttpExceptionFilter)(),
+    );
     try {
       await app.listen(0, '127.0.0.1');
       const base = await app.getUrl();
@@ -244,7 +250,9 @@ test(
       calls = 0;
       const headers = auth('ADMIN');
       for (const query of ['limit=101', 'page=0', 'status=INVALID', 'limit=abc', 'extra=ignored']) {
-        assert.equal((await fetch(`${base}/admin/orders?${query}`, { headers })).status, 400);
+        const bad = await fetch(`${base}/admin/orders?${query}`, { headers });
+        if (bad.status !== 400) console.error('PROBE', query, bad.status, await bad.text());
+        assert.equal(bad.status, 400);
       }
       assert.equal(calls, 0);
       const response = await fetch(`${base}/admin/orders?page=2&limit=5&status=PAID`, { headers });

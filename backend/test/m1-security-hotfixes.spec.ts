@@ -187,6 +187,68 @@ describe('M1 Security Hotfixes', () => {
         }),
       );
     });
+
+    it('honours an HTTP error thrown by another copy of Nest', () => {
+      // A monorepo can end up with the request pipeline and whatever threw
+      // holding different module instances of `@nestjs/common`, and then a
+      // BadRequestException raised by a validation pipe is not an
+      // `HttpException` to this filter. The symptom was the worst kind: a
+      // rejected request answered as 500, intermittently, with the real reason
+      // swallowed. The filter checks the shape as well as the class.
+      const filter = new GlobalHttpExceptionFilter();
+      const jsonMock = vi.fn();
+      const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+      const host = {
+        switchToHttp: () => ({
+          getResponse: () => ({ status: statusMock }),
+          getRequest: () => ({ url: '/api/v1/items', headers: {} }),
+        }),
+      } as unknown as ArgumentsHost;
+
+      const foreign = {
+        message: 'Validation failed',
+        getStatus: () => 400,
+        getResponse: () => ({ message: ['limit must not exceed 100'], error: 'Bad Request' }),
+      };
+
+      filter.catch(foreign, host);
+
+      expect(statusMock).toHaveBeenCalledWith(400);
+      expect(jsonMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          statusCode: 400,
+          errorCode: 'Bad Request',
+          message: ['limit must not exceed 100'],
+        }),
+      );
+    });
+
+    it('does not mistake an ordinary object for an HTTP error', () => {
+      const filter = new GlobalHttpExceptionFilter();
+      const jsonMock = vi.fn();
+      const statusMock = vi.fn().mockReturnValue({ json: jsonMock });
+      const host = {
+        switchToHttp: () => ({
+          getResponse: () => ({ status: statusMock }),
+          getRequest: () => ({ url: '/api/v1/items', headers: {} }),
+        }),
+      } as unknown as ArgumentsHost;
+
+      // Shape alone is not enough: a status outside the error range, or no way
+      // to report one, is not something to answer the client with.
+      for (const thrown of [
+        { getStatus: () => 200, getResponse: () => ({}) },
+        { getStatus: () => 'teapot', getResponse: () => ({}) },
+        { message: 'looks like an error' },
+        'a bare string',
+      ]) {
+        statusMock.mockClear();
+        jsonMock.mockClear();
+        filter.catch(thrown, host);
+        expect(statusMock).toHaveBeenCalledWith(500);
+        expect(jsonMock.mock.calls[0][0].message).toBe('Internal server error occurred');
+      }
+    });
   });
 
   describe('MediaService SVG blocking, magic bytes, orphan file prevention & APP_PUBLIC_URL', () => {
