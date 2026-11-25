@@ -10,12 +10,19 @@ import {
   AdminSellerRequestsProvider,
   useAdminSellerRequests,
 } from '../components/adminDashboard/Sellers/AdminSellerRequests';
-import { initialAdminData } from '../components/adminDashboard/shared/mockData/admin';
-import { applyCommerceChange } from '../components/adminDashboard/shared/commerceData';
 import type { AdminActions, AdminData } from '../components/adminDashboard/shared/adminTypes';
 import { Role, type UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { listAdminDisputes, listAdminReports } from '../services/admin';
+
+const EMPTY_ADMIN_DATA: AdminData = {
+  products: [],
+  orders: [],
+  stores: [],
+  reports: [],
+  transactions: [],
+  auctions: [],
+};
 
 // Every admin route uses the profile verified by AuthContext; no separate /me call.
 export default function AdminLayout() {
@@ -112,10 +119,6 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   }, [tab]);
   const contentRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
-  // Dữ liệu dùng chung đặt ở trang cha để thao tác trong tab và số đếm sidebar đồng bộ.
-  // State chỉ nằm trong bộ nhớ: chuyển tab vẫn giữ dữ liệu, reload/rời trang admin sẽ reset.
-  // Khi nối backend, thay initialAdminData bằng kết quả API và xử lý loading/error tại đây.
-  const [data, setData] = useState<AdminData>(initialAdminData);
   // Các state bên dưới quản lý giao diện: menu mobile, thông báo và hai loại hộp thoại.
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { success: notify } = useToast();
@@ -127,12 +130,8 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
     setDetail(null);
   }, [pathname]);
   // Các tab nhận một bộ callback chung thay vì tự sửa dữ liệu riêng.
-  // Khi nối API: gửi yêu cầu tại các action, chỉ cập nhật state sau khi server thành công.
   const actions: AdminActions = {
-    updateCommerce: (change) => {
-      setData((current) => applyCommerceChange(current, change));
-      notify(t('admin:layout.sampleDataUpdated'));
-    },
+    updateCommerce: () => undefined,
     navigate: (target) => navigate(`/admin/${target}`),
     notify,
     showDetail: (title, content) => setDetail({ title, content }),
@@ -145,7 +144,6 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
       : t('admin:layout.fallbackTitle');
   // Tính số đếm từ dữ liệu hiện tại; duyệt hồ sơ xong badge sẽ tự giảm sau lần render tiếp.
   const sellerCount = sellerRequests.pendingTotal;
-  const productCount = data.products.filter((item) => item.status === 'pending').length;
   return (
     <div className="h-dvh overflow-hidden bg-[#f5f7fb] text-slate-800 selection:bg-blue-100">
       {/* Đây là sidebar: menu điều hướng bên trái, dùng chung cho mọi trang admin.
@@ -155,7 +153,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         onClose={() => setSidebarOpen(false)}
         sellerCount={sellerCount}
         refundCount={refundCount}
-        productCount={productCount}
+        productCount={0}
         reportCount={reportCount}
       />
       {/* lg:ml-64 chừa 256px cho sidebar trên desktop. min-w-0 giúp bảng cuộn trong khung. */}
@@ -164,13 +162,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         <AdminHeader
           user={user}
           onMenu={() => setSidebarOpen(true)}
-          pendingCount={
-            sellerCount +
-            refundCount +
-            productCount +
-            reportCount +
-            data.auctions.filter((item) => item.status === 'pending').length
-          }
+          pendingCount={sellerCount + refundCount + reportCount}
         />
         {/* Đây là vùng nội dung cuộn của trang; sidebar và header vẫn giữ nguyên vị trí. */}
         <main ref={contentRef} className="min-h-0 flex-1 overflow-y-auto">
@@ -189,7 +181,9 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
             )}
             {/* Gắn trang con tại đây: /admin/users hiện trang Users, /admin/sellers hiện trang Sellers...
                 Router chọn page theo URL; page đọc dữ liệu và thao tác chung qua useAdminContext. */}
-            <Outlet context={{ data, actions, pendingRefundCount: refundCount }} />
+            <Outlet
+              context={{ data: EMPTY_ADMIN_DATA, actions, pendingRefundCount: refundCount }}
+            />
           </div>
         </main>
         {/* Đây là footer dùng chung ở cuối khung admin. */}

@@ -29,7 +29,7 @@ export default function ProtectedRoute({ allowedRoles, children }: ProtectedRout
   }
 
   const effectiveRole = (user?.role || storedUser?.role) as Role | undefined;
-  if (allowedRoles && effectiveRole && !allowedRoles.includes(effectiveRole)) {
+  if (allowedRoles && (!effectiveRole || !allowedRoles.includes(effectiveRole))) {
     return <Navigate to="/" replace />;
   }
 

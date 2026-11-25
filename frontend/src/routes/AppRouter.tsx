@@ -131,7 +131,7 @@ function AppRouter() {
                 <Route path={ROUTES.CART} element={<CartPage />} />
 
                 {/* Buyer routes requiring authentication */}
-                <Route element={<ProtectedRoute />}>
+                <Route element={<ProtectedRoute allowedRoles={[Role.BUYER, Role.SELLER]} />}>
                   <Route path={ROUTES.CHECKOUT} element={<CheckoutPage />} />
                   <Route path={ROUTES.PAYMENT_SUCCESS} element={<PaymentSuccessPage />} />
                   <Route element={<BuyerLayout />}>

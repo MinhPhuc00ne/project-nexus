@@ -89,6 +89,53 @@ describe('ProtectedRoute', () => {
     expect(screen.getByText('Home Page')).toBeInTheDocument();
   });
 
+  it('redirects authenticated users with missing role to / when allowedRoles is specified (fail-closed)', () => {
+    mockUseAuth.mockReturnValue({
+      token: VALID_TOKEN,
+      user: {},
+      storedUser: null,
+      isLoading: false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/buyer']}>
+        <Routes>
+          <Route path="/" element={<div>Home Page</div>} />
+          <Route element={<ProtectedRoute allowedRoles={[Role.BUYER, Role.SELLER]} />}>
+            <Route path="/buyer" element={<div>{BUYER_PORTAL_LABEL}</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Home Page')).toBeInTheDocument();
+  });
+
+  it('redirects disallowed roles such as GUEST and ADMIN away from buyer routes', () => {
+    for (const role of [Role.GUEST, Role.ADMIN, Role.SUPPORT_STAFF]) {
+      mockUseAuth.mockReturnValue({
+        token: VALID_TOKEN,
+        user: { role },
+        storedUser: { role },
+        isLoading: false,
+      });
+
+      const { unmount } = render(
+        <MemoryRouter initialEntries={['/buyer']}>
+          <Routes>
+            <Route path="/" element={<div>Home Page</div>} />
+            <Route element={<ProtectedRoute allowedRoles={[Role.BUYER, Role.SELLER]} />}>
+              <Route path="/buyer" element={<div>{BUYER_PORTAL_LABEL}</div>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByText('Home Page')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it('renders protected Outlet content when role is allowed', () => {
     mockUseAuth.mockReturnValue({
       token: VALID_TOKEN,
