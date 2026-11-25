@@ -2,9 +2,18 @@
   "name": "nexus-monorepo",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "packageManager": "npm@11.19.0",
-  "description": "Project Nexus - Monolithic Architecture",
+  "description": "Project Nexus - Multi-Shop E-Commerce and Real-Time 3D Live Auctions",
+  "homepage": "https://minhphuc00ne.github.io/project-nexus/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MinhPhuc00ne/project-nexus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MinhPhuc00ne/project-nexus/issues"
+  },
   "workspaces": [
     "packages/*",
     "backend",
