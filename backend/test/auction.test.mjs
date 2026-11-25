@@ -606,7 +606,7 @@ function createHarness(overrides = {}) {
   };
 
   const adminSettings = {
-    getSettings: async () => ({ platformFeePercentage: 7 }),
+    getAll: async () => ({ platformFeePercentage: 7 }),
   };
 
   const adminFinance = {

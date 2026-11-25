@@ -18,7 +18,7 @@ import {
 import { RefundService } from './refund.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
-import { AdminSettingsService } from '../../admin/services/admin-settings.service';
+import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import { objectValue } from '../../fulfillment/services/shipment-state';
@@ -40,7 +40,7 @@ export interface EscrowResult {
 export class OrderEscrowService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly settings: AdminSettingsService,
+    private readonly settings: PlatformSettingsService,
     private readonly finance: AdminFinanceService,
     private readonly refunds?: RefundService,
     private readonly reputation?: ReputationService,
@@ -64,7 +64,7 @@ export class OrderEscrowService {
     feePercentage: number;
     escrowStatus: EscrowStatus;
   }> {
-    const config = await this.settings.getSettings();
+    const config = await this.settings.getAll();
     const percentage = Number(config?.platformFeePercentage ?? 7);
     if (!Number.isFinite(percentage) || percentage < 0 || percentage > 100)
       throw new BadRequestException('Tỷ lệ phí sàn không hợp lệ.');

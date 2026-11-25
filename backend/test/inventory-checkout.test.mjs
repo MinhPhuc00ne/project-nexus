@@ -28,6 +28,29 @@ test('InventoryService.reserveStock deducts availableQty and increases reservedQ
   const tx = {
     inventory: {
       findFirst: async () => inventory,
+      findUniqueOrThrow: async () => inventory,
+      findUnique: async () => inventory,
+      // Mirrors the conditional claim: the row is only changed when it still
+      // holds enough stock, and the caller is told how many rows matched.
+      updateMany: mock.fn(async ({ where, data }) => {
+        const required = where?.availableQty?.gte;
+        if (required !== undefined && inventory.availableQty < required) {
+          return { count: 0 };
+        }
+        if (data.availableQty?.decrement) {
+          inventory.availableQty -= data.availableQty.decrement;
+        }
+        if (data.availableQty?.increment) {
+          inventory.availableQty += data.availableQty.increment;
+        }
+        if (data.reservedQty?.increment) {
+          inventory.reservedQty += data.reservedQty.increment;
+        }
+        if (data.totalQty !== undefined) {
+          inventory.totalQty = data.totalQty;
+        }
+        return { count: 1 };
+      }),
       update: mock.fn(async ({ data }) => {
         if (data.availableQty?.decrement) {
           inventory.availableQty -= data.availableQty.decrement;
@@ -80,6 +103,11 @@ test('InventoryService.reserveStock throws when availableQty is insufficient', a
   const tx = {
     inventory: {
       findFirst: async () => inventory,
+      findUnique: async () => inventory,
+      // The claim is conditional, so asking for more than is available
+      // changes no rows and reports a count of zero.
+      updateMany: async ({ where }) =>
+        inventory.availableQty >= (where?.availableQty?.gte ?? 0) ? { count: 1 } : { count: 0 },
     },
   };
 

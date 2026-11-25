@@ -44,6 +44,8 @@ function createWithdrawalPrismaMock(overrides = {}) {
   };
 
   const txClient = {
+    // The service locks the wallet row before counting pending requests.
+    $queryRaw: async () => [],
     user: {
       update: async (args) => {
         userUpdates.push(args);
@@ -67,6 +69,7 @@ function createWithdrawalPrismaMock(overrides = {}) {
       }),
     },
     withdrawalRequest: {
+      count: async () => overrides.pendingCount ?? 0,
       create: async ({ data }) => {
         const req = {
           id: 'req-1',
@@ -106,6 +109,7 @@ function createWithdrawalPrismaMock(overrides = {}) {
     withdrawalRequest: {
       count: async () => overrides.pendingCount ?? 0,
     },
+    // The service locks the wallet row before counting pending requests.
     $transaction: async (run) => run(txClient),
   };
 

@@ -106,7 +106,7 @@ test(
       const inventory = new InventoryService(prisma);
       const stock = new AuctionStockService(inventory);
       const reputation = new ReputationService(prisma, {});
-      const adminSettings = { getSettings: async () => ({ platformFeePercentage: 7 }) };
+      const adminSettings = { getAll: async () => ({ platformFeePercentage: 7 }) };
       const escrow = new OrderEscrowService(prisma, adminSettings, finance);
       let shippingCalls = 0;
       const shipping = {

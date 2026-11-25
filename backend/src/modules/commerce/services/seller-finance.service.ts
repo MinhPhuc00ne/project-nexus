@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { OrderStatus, Role } from '@prisma/client';
+import { OrderStatus, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
 import { CreateWithdrawalDto } from '../dtos/create-withdrawal.dto';
 import { QueryFinanceDto } from '../dtos/query-finance.dto';
 import { WithdrawalService } from './withdrawal.service';
@@ -10,7 +10,7 @@ import { WithdrawalService } from './withdrawal.service';
 export class SellerFinanceService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly configService: ConfigService,
+    private readonly platformSettings: PlatformSettingsService,
     private readonly withdrawalService: WithdrawalService,
   ) {}
 
@@ -50,69 +50,74 @@ export class SellerFinanceService {
       });
     }
 
-    const platformFeeRate =
-      Number(this.configService.get<number>('PLATFORM_FEE_PERCENTAGE')) || 7.0;
+    // Read from platform settings, not from the environment. Escrow charges
+    // the stored rate, so a seller shown an environment value was being
+    // quoted a fee the platform does not actually take.
+    const platformFeeRate = await this.platformSettings.get('platformFeePercentage');
 
-    const orders = await this.prisma.order.findMany({
+    // Grouped in the database rather than read into memory. A seller with ten
+    // thousand orders had every one of them loaded and summed in JavaScript on
+    // each page view.
+    const byStatus = await this.prisma.order.groupBy({
+      by: ['status'],
       where: { sellerId },
-      select: {
-        id: true,
-        totalAmount: true,
-        subtotal: true,
-        shippingFee: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
+      _sum: { totalAmount: true },
+      _count: { _all: true },
     });
 
-    let totalGrossRevenue = 0;
-    let completedRevenue = 0;
-    let pendingEscrowRevenue = 0;
-    let completedOrdersCount = 0;
-    let pendingOrdersCount = 0;
-    let cancelledOrdersCount = 0;
+    const monthlyRows = await this.prisma.$queryRaw<
+      Array<{ month: string; gross: string | number; orders_count: bigint | number }>
+    >(Prisma.sql`
+      SELECT to_char(date_trunc('month', "created_at"), 'YYYY-MM') AS month,
+             COALESCE(SUM("total_amount"), 0) AS gross,
+             COUNT(*) AS orders_count
+      FROM "orders"
+      WHERE "seller_id" = ${sellerId}
+        AND "status" IN (
+          'DELIVERED'::"OrderStatus", 'CONFIRMED'::"OrderStatus",
+          'PAID'::"OrderStatus", 'PREPARING'::"OrderStatus", 'SHIPPING'::"OrderStatus"
+        )
+      GROUP BY 1
+      ORDER BY 1 DESC
+      LIMIT 6
+    `);
 
-    const monthlyMap = new Map<string, { month: string; gross: number; ordersCount: number }>();
+    /** Total for one status, or zero when the seller has no such orders. */
+    const sumOf = (...statuses: OrderStatus[]): number =>
+      byStatus
+        .filter((row) => statuses.includes(row.status))
+        .reduce((total, row) => total + Number(row._sum.totalAmount ?? 0), 0);
 
-    for (const order of orders) {
-      const amount = Number(order.totalAmount);
-      const monthKey = order.createdAt.toISOString().substring(0, 7);
+    /** Order count for one status. */
+    const countOf = (...statuses: OrderStatus[]): number =>
+      byStatus
+        .filter((row) => statuses.includes(row.status))
+        .reduce((total, row) => total + row._count._all, 0);
 
-      if (!monthlyMap.has(monthKey)) {
-        monthlyMap.set(monthKey, { month: monthKey, gross: 0, ordersCount: 0 });
-      }
+    const completedRevenue = sumOf(OrderStatus.DELIVERED, OrderStatus.CONFIRMED);
+    const pendingEscrowRevenue = sumOf(
+      OrderStatus.PAID,
+      OrderStatus.PREPARING,
+      OrderStatus.SHIPPING,
+    );
+    const totalGrossRevenue = completedRevenue + pendingEscrowRevenue;
 
-      if (order.status === OrderStatus.DELIVERED || order.status === OrderStatus.CONFIRMED) {
-        completedRevenue += amount;
-        totalGrossRevenue += amount;
-        completedOrdersCount++;
-        const m = monthlyMap.get(monthKey)!;
-        m.gross += amount;
-        m.ordersCount++;
-      } else if (
-        order.status === OrderStatus.PAID ||
-        order.status === OrderStatus.PREPARING ||
-        order.status === OrderStatus.SHIPPING
-      ) {
-        pendingEscrowRevenue += amount;
-        totalGrossRevenue += amount;
-        pendingOrdersCount++;
-        const m = monthlyMap.get(monthKey)!;
-        m.gross += amount;
-        m.ordersCount++;
-      } else if (order.status === OrderStatus.CANCELLED || order.status === OrderStatus.REFUNDED) {
-        cancelledOrdersCount++;
-      }
-    }
+    const completedOrdersCount = countOf(OrderStatus.DELIVERED, OrderStatus.CONFIRMED);
+    const pendingOrdersCount = countOf(
+      OrderStatus.PAID,
+      OrderStatus.PREPARING,
+      OrderStatus.SHIPPING,
+    );
+    const cancelledOrdersCount = countOf(OrderStatus.CANCELLED, OrderStatus.REFUNDED);
+    const totalOrders = byStatus.reduce((total, row) => total + row._count._all, 0);
 
+    const monthlyBreakdown = monthlyRows.map((row) => ({
+      month: row.month,
+      gross: Number(row.gross),
+      ordersCount: Number(row.orders_count),
+    }));
     const estimatedPlatformFee = (totalGrossRevenue * platformFeeRate) / 100;
     const netRevenue = Math.max(0, totalGrossRevenue - estimatedPlatformFee);
-
-    const monthlyBreakdown = Array.from(monthlyMap.values())
-      .sort((a, b) => b.month.localeCompare(a.month))
-      .slice(0, 6);
 
     return {
       wallet: {
@@ -122,7 +127,7 @@ export class SellerFinanceService {
         availableToWithdraw: Number(wallet.balance),
       },
       metrics: {
-        totalOrders: orders.length,
+        totalOrders,
         completedOrdersCount,
         pendingOrdersCount,
         cancelledOrdersCount,

@@ -64,7 +64,7 @@ function fixture() {
   };
   const service = new OrderEscrowService(
     prisma,
-    { getSettings: async () => ({ platformFeePercentage: 7 }) },
+    { getAll: async () => ({ platformFeePercentage: 7 }) },
     { getOrCreatePrimaryAdminWallet: async () => ({ id: 'admin-wallet' }) },
   );
   return { service, tx, order };

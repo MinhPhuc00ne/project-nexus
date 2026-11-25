@@ -54,6 +54,12 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
     // controller hands OAuth sign-ins to OAuthCodeService; this smoke test only
     // asserts the dependency graph resolves.
     {
+      // Settings are read from the database through core; this smoke test only
+      // asserts the dependency graph resolves.
+      provide: source('core/settings/platform-settings.service').PlatformSettingsService,
+      useValue: { getAll: async () => ({ platformFeePercentage: 7 }) },
+    },
+    {
       provide: source('core/security/token-auth.service').TokenAuthService,
       useValue: {},
     },

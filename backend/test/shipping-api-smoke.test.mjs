@@ -73,6 +73,12 @@ test('shipping dependencies and routes initialize without live infrastructure', 
         useValue: { isShippingSandbox: () => true, isLocalStorage: () => true },
       },
       {
+        // Settings are read from the database through core; this smoke test only
+        // asserts the dependency graph resolves.
+        provide: source('core/settings/platform-settings.service').PlatformSettingsService,
+        useValue: { getAll: async () => ({ platformFeePercentage: 7 }) },
+      },
+      {
         provide: source('core/security/token-auth.service').TokenAuthService,
         useValue: {},
       },

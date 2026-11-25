@@ -8,6 +8,7 @@ import { SecurityModule } from './core/security/security.module';
 import { HealthModule } from './core/health/health.module';
 import { EventsModule } from './core/events/events.module';
 import { ProvidersModule } from './core/providers/providers.module';
+import { SettingsModule } from './core/settings/settings.module';
 import { MailModule } from './core/mail/mail.module';
 import { StorageModule } from './core/storage/storage.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -38,6 +39,7 @@ import { AuctionModule } from './modules/auction/auction.module';
     HealthModule,
     EventsModule,
     ProvidersModule,
+    SettingsModule,
     MailModule,
     StorageModule,
     AuthModule,

@@ -23,7 +23,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
-import { AdminSettingsService } from '../../admin/services/admin-settings.service';
+import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { productChoiceLabel } from '../../../core/domain/product-options';
 import { GhnParcelItem } from '../../fulfillment/services/ghn-parcel';
@@ -64,7 +64,7 @@ export class AuctionCheckoutService {
     private readonly shipping: GhnShippingService,
     private readonly escrow: OrderEscrowService,
     private readonly reputation: ReputationService,
-    private readonly adminSettings: AdminSettingsService,
+    private readonly adminSettings: PlatformSettingsService,
     private readonly adminFinance: AdminFinanceService,
     @Optional() private readonly auctionStock?: AuctionStockService,
   ) {

@@ -19,7 +19,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
-import { AdminSettingsService } from '../../admin/services/admin-settings.service';
+import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import {
@@ -39,7 +39,7 @@ export class AuctionSecondChanceHelper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly reputation: ReputationService,
-    private readonly adminSettings: AdminSettingsService,
+    private readonly adminSettings: PlatformSettingsService,
     private readonly adminFinance: AdminFinanceService,
     _auctionStock?: AuctionStockService,
   ) {}
@@ -279,7 +279,7 @@ export class AuctionSecondChanceHelper {
         throw new NotFoundException('Không tìm thấy ví người bán hoặc ví sàn để phân bổ tiền cọc.');
       }
 
-      const settings = await this.adminSettings.getSettings();
+      const settings = await this.adminSettings.getAll();
       const platformFeePct = settings.platformFeePercentage ?? 7;
       const platformFee = roundCurrency((depositAmount * platformFeePct) / 100);
       const sellerCompensation = roundCurrency(depositAmount - platformFee);
