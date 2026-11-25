@@ -42,7 +42,7 @@ export class MediaController {
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    description: 'File hình ảnh đính kèm (hỗ trợ JPG, PNG, WEBP, GIF, SVG)',
+    description: 'File hình ảnh đính kèm (hỗ trợ JPG, PNG, WEBP, GIF, BMP, TIFF)',
     schema: {
       type: 'object',
       properties: {

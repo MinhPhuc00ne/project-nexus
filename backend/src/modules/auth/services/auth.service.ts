@@ -97,7 +97,7 @@ export class AuthService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = crypto.randomInt(100000, 1000000).toString();
     const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.user.upsert({
@@ -136,12 +136,9 @@ export class AuthService {
 
     this.logger.log(`🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} đã được xử lý`);
 
-    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
-
     return {
       message: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư Gmail để lấy mã OTP xác thực.',
       email,
-      ...(isDev ? { devOtpCode: verificationCode } : {}),
     };
   }
 
@@ -416,12 +413,9 @@ export class AuthService {
       data: { verificationCode: resetCode, codeExpiresAt },
     });
 
-    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
-
     return {
       message: 'Mã OTP đặt lại mật khẩu đã được gửi đến hộp thư Gmail của bạn!',
       email: user.email,
-      ...(isDev && user.role !== 'SUPPORT_STAFF' ? { devOtpCode: resetCode } : {}),
     };
   }
 

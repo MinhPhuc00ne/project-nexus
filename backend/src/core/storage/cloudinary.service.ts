@@ -4,6 +4,7 @@ import * as crypto from 'crypto';
 import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveAppPublicUrl } from '../config/env.schema';
 
 export interface UploadResult {
   url: string;
@@ -30,15 +31,19 @@ export class CloudinaryStorageService {
       this.logger.warn(
         'Chưa cấu hình thông tin Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) trong .env. Lưu tạm vào thư mục static server.',
       );
-      const port = this.configService.get<string>('PORT_BACKEND') || '3000';
+      const appPublicUrl = resolveAppPublicUrl({
+        APP_PUBLIC_URL: this.configService.get<string>('APP_PUBLIC_URL'),
+        NODE_ENV: this.configService.get<string>('NODE_ENV') ?? process.env.NODE_ENV,
+        PORT_BACKEND: this.configService.get<number | string>('PORT_BACKEND'),
+      });
       const ext = fileName.split('.').pop()?.toLowerCase() || 'png';
-      const cleanFileName = `proof-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+      const cleanFileName = `proof-${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
       const uploadDir = path.join(process.cwd(), 'uploads', 'seller-proofs');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
       fs.writeFileSync(path.join(uploadDir, cleanFileName), fileBuffer);
-      const localUrl = `http://localhost:${port}/uploads/seller-proofs/${cleanFileName}`;
+      const localUrl = `${appPublicUrl}/uploads/seller-proofs/${cleanFileName}`;
       return {
         url: localUrl,
         publicId: `local-${cleanFileName}`,

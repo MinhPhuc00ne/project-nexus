@@ -64,8 +64,18 @@ export class RolesGuard implements CanActivate {
 
     // Privilege check if requiredPrivilege provided
     if (requiredPrivilege) {
-      const allowedRoles = RBAC_PRIVILEGES_MAP[requiredPrivilege];
-      if (allowedRoles && !allowedRoles.includes(user.role)) {
+      const allowedRoles = Object.prototype.hasOwnProperty.call(
+        RBAC_PRIVILEGES_MAP,
+        requiredPrivilege,
+      )
+        ? RBAC_PRIVILEGES_MAP[requiredPrivilege]
+        : undefined;
+      if (!allowedRoles || allowedRoles.length === 0) {
+        throw new ForbiddenException(
+          `Privilege '${requiredPrivilege}' is not configured in RBAC policy`,
+        );
+      }
+      if (!allowedRoles.includes(user.role)) {
         throw new ForbiddenException(
           `Role ${user.role} is not granted privilege '${requiredPrivilege}'`,
         );
