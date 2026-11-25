@@ -30,8 +30,8 @@ coverage/
 test-results/
 e2e/report/
 playwright-report/
-docs-site/build/
-docs-site/.docusaurus/
+docs/build/
+docs/.docusaurus/
 /frontend/test/
 
 .cache/

@@ -1,22 +1,22 @@
 ---
-title: 'ADR-004: Docusaurus v3 & Scalar OpenAPI'
+title: 'ADR-004: Docusaurus v3 and Scalar OpenAPI'
 ---
 
-# ADR-004: Docusaurus v3 & Scalar OpenAPI Documentation Portal
+# ADR-004: Docusaurus v3 and Scalar OpenAPI Documentation Portal
 
-- **Status**: Accepted
+Status: Accepted.
 
 ## Context
 
-Scattered Markdown files across the repository drifted out of sync with NestJS/Prisma code, lacked full-text search and architecture diagrams, and could not render interactive REST API docs statically.
+Scattered Markdown files across the repository drifted out of sync with NestJS and Prisma code, lacked full-text search and architecture diagrams, and could not render interactive REST API documentation statically.
 
 ## Decision
 
-- Create the `docs-site/` workspace powered by **Docusaurus v3** with bilingual `vi` (default) and `en` locales, `@docusaurus/theme-mermaid`, and `@easyops-cn/docusaurus-search-local`.
-- Embed **Scalar OpenAPI Reference** (`docs-site/src/pages/api-reference.tsx`) reading `docs-site/static/openapi/nexus-openapi.json` (generated from NestJS Swagger via `npm run docs:openapi`).
-- Enforce bilingual parity and OpenAPI validity via `npm run docs:check` (`check-docs-parity.mjs`) and automate GitLab Wiki publishing via `npm run docs:sync-gitlab-wiki`.
+- Maintain the `docs/` workspace powered by Docusaurus v3 in English, with `@docusaurus/theme-mermaid` for diagrams and `@easyops-cn/docusaurus-search-local` for static search.
+- Embed Scalar OpenAPI Reference (`docs/src/pages/api-reference.tsx`) reading `docs/static/openapi/nexus-openapi.json`, generated from NestJS Swagger via `npm run docs:openapi`.
+- Enforce OpenAPI validity and engineering writing standards via `npm run docs:check` (`docs/scripts/check-docs.mjs`) and publish the static portal automatically to GitHub Pages via `.github/workflows/docs-pages.yml`.
 
 ## Consequences
 
-- **Positive**: Architecture guides, ERDs, state machines, and 229+ API paths live in a single searchable static portal.
-- **Trade-off**: Any new or renamed page under `docs-site/docs/` requires a matching translation under `docs-site/i18n/en/...` to pass `docs:check`.
+- Positive: architecture guides, ERDs, state machines, and 236 REST API paths live in a single searchable static portal.
+- Trade-off: documentation changes must pass automated style checks and a full Docusaurus build before merging.

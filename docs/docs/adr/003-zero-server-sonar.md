@@ -2,23 +2,23 @@
 title: 'ADR-003: Zero-Server Sonar Quality Gate'
 ---
 
-# ADR-003: 3-Tier Zero-Server Sonar Quality Gate
+# ADR-003: Three-Tier Zero-Server Sonar Quality Gate
 
-- **Status**: Accepted
+Status: Accepted.
 
 ## Context
 
-The team needed SonarQube-grade enforcement for code smells, cognitive complexity, security rules, and test coverage without provisioning and maintaining a dedicated SonarQube Server during local development.
+The repository requires SonarQube-grade static analysis for code smells, cognitive complexity, security rules, and test coverage without provisioning and maintaining a dedicated SonarQube server during local development.
 
 ## Decision
 
-Adopt a **3-Tier Zero-Server Sonar Quality Gate**:
+Adopt a three-tier zero-server Sonar quality gate:
 
-1. **Tier 1 (IDE Realtime)**: Recommend `SonarSource.sonarlint-vscode` via `.vscode/extensions.json` and `.vscode/settings.json`.
-2. **Tier 2 (Local & CI Lint Gate)**: Integrate `eslint-plugin-sonarjs` into `eslint.config.mjs` alongside Prettier, Husky (`pre-commit` + `commit-msg` commitlint), and `npm run test:coverage` generating `lcov.info`.
-3. **Tier 3 (Online Dashboard Ready)**: Pre-configure `sonar-project.properties` and `infra/templates/sonarcloud.yml.example` so SonarQube Cloud/Server can be enabled later by providing `SONAR_TOKEN`.
+1. Tier 1 (IDE realtime): recommend `SonarSource.sonarlint-vscode` via `.vscode/extensions.json` and `.vscode/settings.json`.
+2. Tier 2 (local and CI lint gate): integrate `eslint-plugin-sonarjs` in `eslint.config.mjs` alongside Prettier, Husky (`pre-commit` and `commit-msg` commitlint), and `npm run test:coverage` generating `lcov.info`.
+3. Tier 3 (online dashboard ready): maintain `sonar-project.properties` and `infra/templates/sonarcloud.yml.example` so SonarQube Cloud can be activated later by providing `SONAR_TOKEN`.
 
 ## Consequences
 
-- **Positive**: Zero infrastructure overhead while catching code smells at edit and commit time.
-- **Trade-off**: Contributors must run `npm run lint` and `npm run test:coverage` locally/in CI before merging.
+- Positive: contributors catch code smells at edit and commit time with zero infrastructure overhead.
+- Trade-off: contributors must run `npm run lint` and `npm run test:coverage` locally or in CI before merging.

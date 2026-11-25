@@ -6,7 +6,7 @@ title: Environment Variables
 
 Project Nexus loads environment variables from the monorepo root `.env` file (via `ConfigModule.forRoot({ envFilePath: ['.env', '../.env'] })` in Backend) and `VITE_*` variables for Frontend. Use `.env.example` as the authoritative template.
 
-## 1. Database & Cache (PostgreSQL 17 & Redis 7)
+## 1. Database and Cache (PostgreSQL 17 and Redis 7)
 
 | Variable            | Example (`.env.example`)                                                          | Required | Description                                        |
 | :------------------ | :-------------------------------------------------------------------------------- | :------- | :------------------------------------------------- |
@@ -19,9 +19,9 @@ Project Nexus loads environment variables from the monorepo root `.env` file (vi
 | `REDIS_HOST`        | `localhost`                                                                       | Yes      | Redis hostname                                     |
 | `REDIS_PORT`        | `6379`                                                                            | Yes      | Redis port                                         |
 | `REDIS_PASSWORD`    | _(empty)_                                                                         | No       | Optional Redis password                            |
-| `REDIS_URL`         | `redis://localhost:6379`                                                          | Yes      | Redis connection URL for locks & caching           |
+| `REDIS_URL`         | `redis://localhost:6379`                                                          | Yes      | Redis connection URL for locks and caching         |
 
-## 2. Authentication, OAuth & Server
+## 2. Authentication, OAuth and Server
 
 | Variable                   | Example                                             | Required | Description                                                    |
 | :------------------------- | :-------------------------------------------------- | :------- | :------------------------------------------------------------- |
@@ -29,13 +29,13 @@ Project Nexus loads environment variables from the monorepo root `.env` file (vi
 | `JWT_EXPIRES_IN`           | `7d`                                                | Yes      | Access token lifetime                                          |
 | `REFRESH_TOKEN_SECRET`     | `super-secret-refresh-key-...`                      | Yes      | Refresh token signing secret                                   |
 | `REFRESH_TOKEN_EXPIRES_IN` | `30d`                                               | Yes      | Refresh token lifetime (stored in `RefreshToken` for rotation) |
-| `PORT_BACKEND`             | `3000`                                              | Yes      | NestJS HTTP & WebSocket port                                   |
+| `PORT_BACKEND`             | `3000`                                              | Yes      | NestJS HTTP and WebSocket port                                 |
 | `FRONTEND_URL`             | `http://localhost:5173`                             | Yes      | Allowed CORS origin and redirect target for emails/OAuth       |
 | `GOOGLE_CLIENT_ID`         | `your-google-client-id`                             | Optional | Google OAuth 2.0 client ID                                     |
 | `GOOGLE_CLIENT_SECRET`     | `your-google-client-secret`                         | Optional | Google OAuth 2.0 client secret                                 |
 | `GOOGLE_CALLBACK_URL`      | `http://localhost:3000/api/v1/auth/google/callback` | Optional | Authorized Google OAuth callback URL                           |
 
-## 3. Payments (PayOS) & Logistics (GHN Express)
+## 3. Payments (PayOS) and Logistics (GHN Express)
 
 | Variable             | Example                                                 | Required  | Description                                    |
 | :------------------- | :------------------------------------------------------ | :-------- | :--------------------------------------------- |
@@ -50,7 +50,7 @@ Project Nexus loads environment variables from the monorepo root `.env` file (vi
 
 _\*Note_: Local development without external sandbox keys still supports Wallet and COD flows; PayOS and GHN live integration tests require valid sandbox credentials.
 
-## 4. Business Rules, Media, Mail & AI Chatbot
+## 4. Business Rules, Media, Mail and AI Chatbot
 
 | Variable                                                            | Example                        | Description                                                          |
 | :------------------------------------------------------------------ | :----------------------------- | :------------------------------------------------------------------- |

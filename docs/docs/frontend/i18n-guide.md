@@ -4,9 +4,9 @@ title: Multilingual Guide (i18n)
 
 # Multilingual Architecture (`i18next` + `react-i18next`)
 
-The Frontend implements a **domain-namespace** i18n architecture (`frontend/src/i18n/`) that preserves current URLs (default `vi`), synchronizes `<html lang>`, and injects the `Accept-Language` header into every Axios request.
+The Frontend implements a domain-namespace i18n architecture (`frontend/src/i18n/`) that preserves current URLs (default `vi`), synchronizes `<html lang>`, and injects the `Accept-Language` header into every Axios request.
 
-## 1. Directory Structure & 10 Namespaces
+## 1. Directory Structure and 10 Namespaces
 
 ```text
 frontend/src/i18n/
@@ -23,9 +23,9 @@ frontend/src/i18n/
 | `common`   | Navigation, footer, toasts, loading states, report modal, shared labels          |
 | `errors`   | Service error messages (`services.*`) and Backend `errorCode` translations       |
 | `auth`     | Login, registration, OTP verification, forgot/reset password                     |
-| `guest`    | Homepage, search, category browsing, product & shop details                      |
+| `guest`    | Homepage, search, category browsing, product and shop details                    |
 | `auction`  | 3D auction room, bidding, lot history, complaints                                |
-| `commerce` | Cart, checkout, PayOS/Wallet/COD, cancellations & returns                        |
+| `commerce` | Cart, checkout, PayOS/Wallet/COD, cancellations and returns                      |
 | `buyer`    | Buyer portal: orders, wallet, reputation, address book, notifications            |
 | `seller`   | Seller portal: product form, inventory, GHN orders, auction consignment, finance |
 | `staff`    | Staff portal: support inbox, seller approvals, disputes, banners, FAQ            |
