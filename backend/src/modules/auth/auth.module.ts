@@ -6,6 +6,7 @@ import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { AuthProfileService } from './services/auth-profile.service';
 import { StaffProvisioningService } from './services/staff-provisioning.service';
+import { OAuthCodeService } from './services/oauth-code.service';
 import { StaffController } from './controllers/staff.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
 
@@ -30,7 +31,13 @@ import { GoogleStrategy } from './strategies/google.strategy';
     }),
   ],
   controllers: [AuthController, StaffController],
-  providers: [AuthService, AuthProfileService, StaffProvisioningService, GoogleStrategy],
+  providers: [
+    AuthService,
+    AuthProfileService,
+    StaffProvisioningService,
+    OAuthCodeService,
+    GoogleStrategy,
+  ],
   exports: [AuthService, AuthProfileService, StaffProvisioningService, JwtModule, PassportModule],
 })
 export class AuthModule {}
