@@ -13,13 +13,13 @@ const { AdminOrdersService } = load('../src/modules/admin/services/admin-orders.
 const { AdminOrdersController } = load(
   '../src/modules/admin/controllers/admin-orders.controller.ts',
 );
-const { QueryAdminOrdersDto } = load('../src/modules/admin/dtos/query-admin-orders.dto.ts');
+const { QueryAdminOrdersSchema } = load('../src/modules/admin/dtos/query-admin-orders.dto.ts');
 const { JwtAuthGuard } = load('../src/core/security/jwt-auth.guard.ts');
 const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
 const { ConfigService } = load('@nestjs/config');
 const { RolesGuard } = load('../src/core/security/roles.guard.ts');
-const { Module, ValidationPipe } = load('@nestjs/common');
+const { Module } = load('@nestjs/common');
 const { NestFactory } = load('@nestjs/core');
 
 test('admin order queries combine filters, stable pagination and safe payment/shipment projections', async () => {
@@ -45,7 +45,7 @@ test('admin order queries combine filters, stable pagination and safe payment/sh
   };
   const orders = new AdminOrdersService(prisma);
   const result = await orders.list(
-    Object.assign(new QueryAdminOrdersDto(), {
+    QueryAdminOrdersSchema.parse({
       page: 2,
       limit: 10,
       status: 'PAID',
@@ -225,9 +225,6 @@ test(
       ],
     })(TestModule);
     const app = await NestFactory.create(TestModule, { logger: false, abortOnError: false });
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
-    );
     try {
       await app.listen(0, '127.0.0.1');
       const base = await app.getUrl();

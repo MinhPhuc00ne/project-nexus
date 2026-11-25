@@ -19,7 +19,7 @@ import type { AuctionStatus as NexusAuctionStatus, WsLotEndedPayload } from '@ne
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AuctionCheckoutService } from './auction-checkout.service';
-import { PlaceBidDto } from '../dtos/place-bid.dto';
+import { PlaceBidInput } from '../dtos/place-bid.dto';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import {
   ANTI_SNIPING_EXTENSION_MS,
@@ -124,7 +124,7 @@ export class AuctionBiddingHelper {
    * Locks 100% of bidAmount in buyer's wallet, refunds 100% to any outbid buyer deterministically,
    * validates reserve price on single-bidder lots, and extends that lot's timer by +120s on late bids.
    */
-  async placeBid(auctionId: string, bidderId: string, dto: PlaceBidDto) {
+  async placeBid(auctionId: string, bidderId: string, dto: PlaceBidInput) {
     const bidder = await this.prisma.user.findUnique({
       where: { id: bidderId },
       select: {

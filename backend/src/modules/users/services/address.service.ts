@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { CreateAddressDto, UpdateAddressDto } from '../dtos/users.dto';
+import { CreateAddressInput, UpdateAddressInput } from '../dtos/users.dto';
 
 interface NominatimAddressItem {
   place_id?: number | string;
@@ -52,7 +52,7 @@ export class AddressService {
   /**
    * Thêm mới địa chỉ nhận hàng (kèm tọa độ bản đồ nếu có)
    */
-  async createAddress(userId: string, dto: CreateAddressDto) {
+  async createAddress(userId: string, dto: CreateAddressInput) {
     if (dto.isDefault) {
       await this.prisma.userAddress.updateMany({
         where: { userId, isDefault: true },
@@ -86,7 +86,7 @@ export class AddressService {
   /**
    * Cập nhật thông tin địa chỉ và tọa độ ghim bản đồ
    */
-  async updateAddress(userId: string, addressId: string, dto: UpdateAddressDto) {
+  async updateAddress(userId: string, addressId: string, dto: UpdateAddressInput) {
     const address = await this.prisma.userAddress.findUnique({
       where: { id: addressId },
     });

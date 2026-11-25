@@ -1,36 +1,25 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class AdminInviteStaffDto {
-  @ApiProperty({
-    description: 'Họ và tên nhân viên',
-    example: 'Nguyễn Văn Staff',
-  })
-  @IsNotEmpty({ message: 'Họ và tên không được để trống' })
-  @IsString({ message: 'Họ và tên phải là chuỗi ký tự' })
-  fullName!: string;
+const adminInviteStaffFields = {
+  fullName: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Họ và tên nhân viên')
+    .meta({ example: 'Nguyễn Văn Staff' }),
+  email: z
+    .email()
+    .describe('Email cá nhân của nhân viên để nhận link xác thực')
+    .meta({ example: 'staff.personal@gmail.com' }),
+  phoneNumber: nullAsAbsent(
+    z.string().describe('Số điện thoại của nhân viên').meta({ example: '0912345678' }),
+  ),
+  department: nullAsAbsent(
+    z.string().describe('Phòng ban / Bộ phận phụ trách').meta({ example: 'Chăm sóc khách hàng' }),
+  ),
+};
 
-  @ApiProperty({
-    description: 'Email cá nhân của nhân viên để nhận link xác thực',
-    example: 'staff.personal@gmail.com',
-  })
-  @IsNotEmpty({ message: 'Email cá nhân không được để trống' })
-  @IsEmail({}, { message: 'Định dạng email không hợp lệ' })
-  email!: string;
+export const AdminInviteStaffSchema = z.object(adminInviteStaffFields).strict();
 
-  @ApiPropertyOptional({
-    description: 'Số điện thoại của nhân viên',
-    example: '0912345678',
-  })
-  @IsOptional()
-  @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
-  phoneNumber?: string;
-
-  @ApiPropertyOptional({
-    description: 'Phòng ban / Bộ phận phụ trách',
-    example: 'Chăm sóc khách hàng',
-  })
-  @IsOptional()
-  @IsString({ message: 'Phòng ban phải là chuỗi ký tự' })
-  department?: string;
-}
+export type AdminInviteStaffInput = z.infer<typeof AdminInviteStaffSchema>;

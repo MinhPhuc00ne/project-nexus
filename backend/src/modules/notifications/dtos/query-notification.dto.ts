@@ -1,48 +1,33 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { booleanFromQuery, nullAsAbsent } from '../../../core/validation/query-schemas';
 import { NotificationType } from '@prisma/client';
-import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsInt, IsOptional, Min } from 'class-validator';
 
-export class QueryNotificationDto {
-  @ApiPropertyOptional({
-    example: 1,
-    description: 'Page number (default: 1)',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+const queryNotificationFields = {
+  page: nullAsAbsent(
+    z.coerce.number().int().min(1).describe('Page number (default: 1)').meta({ example: 1 }),
+  ),
+  limit: nullAsAbsent(
+    z.coerce
+      .number()
+      .int()
+      .min(1)
+      .describe('Number of notifications per page (default: 10, max: 50)')
+      .meta({ example: 10 }),
+  ),
+  isRead: nullAsAbsent(
+    booleanFromQuery
+      .describe('Filter by read status (true = read, false = unread)')
+      .meta({ example: false }),
+  ),
+  type: nullAsAbsent(
+    z
+      .enum(NotificationType)
+      .describe(
+        'Optional filter by notification category (SYSTEM, AUCTION, PAYMENT, DISPUTE, ORDER)',
+      ),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: 10,
-    description: 'Number of notifications per page (default: 10, max: 50)',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 10;
+export const QueryNotificationSchema = z.object(queryNotificationFields).strict();
 
-  @ApiPropertyOptional({
-    example: false,
-    description: 'Filter by read status (true = read, false = unread)',
-  })
-  @IsOptional()
-  @Transform(({ value }) => {
-    if (value === 'true' || value === true) return true;
-    if (value === 'false' || value === false) return false;
-    return undefined;
-  })
-  @IsBoolean()
-  isRead?: boolean;
-
-  @ApiPropertyOptional({
-    enum: NotificationType,
-    description:
-      'Optional filter by notification category (SYSTEM, AUCTION, PAYMENT, DISPUTE, ORDER)',
-  })
-  @IsOptional()
-  @IsEnum(NotificationType)
-  type?: NotificationType;
-}
+export type QueryNotificationInput = z.infer<typeof QueryNotificationSchema>;

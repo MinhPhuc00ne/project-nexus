@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { CreateCategoryDto } from '../dtos/create-category.dto';
-import { UpdateCategoryDto } from '../dtos/update-category.dto';
+import { CreateCategoryInput } from '../dtos/create-category.dto';
+import { UpdateCategoryInput } from '../dtos/update-category.dto';
 
 export interface CategoryTreeItem {
   id: string;
@@ -74,7 +74,7 @@ export class CategoryService {
    * @throws NotFoundException when parentId does not exist
    * @throws BadRequestException when parent level exceeds 2
    */
-  async createCategory(dto: CreateCategoryDto) {
+  async createCategory(dto: CreateCategoryInput) {
     const name = dto.name.trim();
 
     const existingName = await this.prisma.category.findFirst({
@@ -127,7 +127,7 @@ export class CategoryService {
    * @throws NotFoundException when category does not exist
    * @throws BadRequestException on self-parenting or depth limit exceeded
    */
-  async updateCategory(id: string, dto: UpdateCategoryDto) {
+  async updateCategory(id: string, dto: UpdateCategoryInput) {
     const category = await this.prisma.category.findUnique({
       where: { id },
       include: { children: true },

@@ -8,17 +8,17 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ShopShippingProfileService } from './shop-shipping-profile.service';
-import { SellerPickupDto } from '../dtos/seller-pickup.dto';
+import { SellerPickupInput } from '../dtos/seller-pickup.dto';
 import { GhnLogisticsService } from './ghn-logistics.service';
 import { GhnShopApiService } from './ghn-shop-api.service';
 import { GhnAccountStatus } from '@prisma/client';
-import { ghnEnvironment, GhnEnvironment } from './ghn-context';
+import { GhnEnvironment, ghnEnvironment } from './ghn-context';
 
 import {
+  SellerPickupView,
   phoneKey,
   pickupFingerprint,
   pickupView,
-  SellerPickupView,
 } from './seller-ghn-account.util';
 
 /** Synchronizes carrier accounts using shop profiles as the only pickup address source. */
@@ -57,7 +57,7 @@ export class SellerPickupService {
   }
 
   /** Reconnects a matching profile. @param sellerId Shop owner. @param dto Expected profile. @returns Verified view. */
-  async propose(sellerId: string, dto: SellerPickupDto): Promise<SellerPickupView> {
+  async propose(sellerId: string, dto: SellerPickupInput): Promise<SellerPickupView> {
     return this.synchronize(sellerId, dto);
   }
 
@@ -81,7 +81,7 @@ export class SellerPickupService {
    * @returns Verified carrier account and current shop address.
    * @throws BadRequestException for invalid profiles or carrier responses.
    */
-  async synchronize(sellerId: string, expected?: SellerPickupDto): Promise<SellerPickupView> {
+  async synchronize(sellerId: string, expected?: SellerPickupInput): Promise<SellerPickupView> {
     return this.prisma.$transaction(
       async (tx) => {
         // Profile saves and GHN setup share the same lock and always read fresh data.
@@ -92,7 +92,7 @@ export class SellerPickupService {
           (phoneKey(expected.phone) !== phoneKey(dto.phone) ||
             ['name', 'city', 'district', 'ward', 'street'].some(
               (key) =>
-                expected[key as keyof SellerPickupDto]?.toString().trim() !==
+                expected[key as keyof SellerPickupInput]?.toString().trim() !==
                 dto[key as keyof typeof dto]?.toString().trim(),
             ))
         ) {

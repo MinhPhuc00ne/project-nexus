@@ -9,10 +9,10 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { containsChatPhrase, normalizeChatText } from './chatbot-knowledge';
 import {
-  CancelAutoReplyDto,
-  CreateAutoReplyDto,
-  QueryAutoRepliesDto,
-  UpdateAutoReplyDto,
+  CancelAutoReplyInput,
+  CreateAutoReplyInput,
+  QueryAutoRepliesInput,
+  UpdateAutoReplyInput,
 } from '../dtos/auto-reply.dto';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class ChatAutoReplyService {
   /**
    * Tạo tin nhắn tự động cho Seller (tối đa 10 mẫu/shop)
    */
-  async createSellerAutoReply(sellerId: string, dto: CreateAutoReplyDto) {
+  async createSellerAutoReply(sellerId: string, dto: CreateAutoReplyInput) {
     this.validateReply(dto.triggerType ?? 'WELCOME', dto.keyword, dto.content);
     assertCleanContent(dto.content, 'Nội dung tin nhắn tự động');
 
@@ -62,7 +62,7 @@ export class ChatAutoReplyService {
   /**
    * Chỉnh sửa tin nhắn tự động của Shop
    */
-  async updateSellerAutoReply(sellerId: string, replyId: string, dto: UpdateAutoReplyDto) {
+  async updateSellerAutoReply(sellerId: string, replyId: string, dto: UpdateAutoReplyInput) {
     const existing = await this.prisma.chatAutoReply.findFirst({
       where: { id: replyId, shopId: sellerId, scope: 'SHOP' },
     });
@@ -141,7 +141,7 @@ export class ChatAutoReplyService {
   /**
    * Admin tạo tin nhắn tự động chung của hệ thống (dành cho Staff CSKH Desk)
    */
-  async createSystemAutoReply(_adminId: string, dto: CreateAutoReplyDto) {
+  async createSystemAutoReply(_adminId: string, dto: CreateAutoReplyInput) {
     this.validateReply(dto.triggerType ?? 'WELCOME', dto.keyword, dto.content);
     assertCleanContent(dto.content, 'Nội dung tin nhắn tự động hệ thống');
 
@@ -162,7 +162,7 @@ export class ChatAutoReplyService {
   /**
    * Admin hủy / khóa tin nhắn tự động của Seller kèm lý do
    */
-  async cancelSellerAutoReply(adminId: string, replyId: string, dto: CancelAutoReplyDto) {
+  async cancelSellerAutoReply(adminId: string, replyId: string, dto: CancelAutoReplyInput) {
     const existing = await this.prisma.chatAutoReply.findUnique({
       where: { id: replyId },
       include: { shop: { select: { id: true, fullName: true, email: true } } },
@@ -187,7 +187,7 @@ export class ChatAutoReplyService {
   /**
    * Admin xem danh sách tin nhắn tự động toàn sàn
    */
-  async listAutoRepliesForAdmin(query: QueryAutoRepliesDto) {
+  async listAutoRepliesForAdmin(query: QueryAutoRepliesInput) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
     const skip = (page - 1) * limit;

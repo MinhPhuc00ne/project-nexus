@@ -8,11 +8,11 @@ import {
   ViolationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { CreateShopViolationDto } from '../dtos/create-shop-violation.dto';
-import { QueryAdminShopsDto } from '../dtos/query-admin-shops.dto';
-import { ResolveShopAppealDto } from '../dtos/resolve-shop-appeal.dto';
-import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
-import { WarnShopDto } from '../dtos/warn-shop.dto';
+import { CreateShopViolationInput } from '../dtos/create-shop-violation.dto';
+import { QueryAdminShopsInput } from '../dtos/query-admin-shops.dto';
+import { ResolveShopAppealInput } from '../dtos/resolve-shop-appeal.dto';
+import { UpdateShopStatusInput } from '../dtos/update-shop-status.dto';
+import { WarnShopInput } from '../dtos/warn-shop.dto';
 import { AdminShopsModerationHelper } from './admin-shops-moderation.helper';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class AdminShopsService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated list of store summaries with violation flags and revenue totals
    */
-  async listShops(query: QueryAdminShopsDto) {
+  async listShops(query: QueryAdminShopsInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));
     const skip = (page - 1) * limit;
@@ -554,15 +554,15 @@ export class AdminShopsService {
     };
   }
 
-  updateShopStatus(sellerId: string, adminId: string, dto: UpdateShopStatusDto) {
+  updateShopStatus(sellerId: string, adminId: string, dto: UpdateShopStatusInput) {
     return this.moderationHelper.updateShopStatus(sellerId, adminId, dto);
   }
 
-  warnShop(sellerId: string, adminId: string, dto: WarnShopDto) {
+  warnShop(sellerId: string, adminId: string, dto: WarnShopInput) {
     return this.moderationHelper.warnShop(sellerId, adminId, dto);
   }
 
-  createShopViolation(sellerId: string, adminId: string, dto: CreateShopViolationDto) {
+  createShopViolation(sellerId: string, adminId: string, dto: CreateShopViolationInput) {
     return this.moderationHelper.createShopViolation(sellerId, adminId, dto);
   }
 
@@ -574,7 +574,7 @@ export class AdminShopsService {
     return this.moderationHelper.getShopActionLogs(sellerId);
   }
 
-  resolveShopAppeal(sellerId: string, adminId: string, dto: ResolveShopAppealDto) {
+  resolveShopAppeal(sellerId: string, adminId: string, dto: ResolveShopAppealInput) {
     return this.moderationHelper.resolveShopAppeal(sellerId, adminId, dto);
   }
 }

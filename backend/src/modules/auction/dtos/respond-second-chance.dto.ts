@@ -1,14 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean } from 'class-validator';
+import { z } from 'zod';
 
 /**
  * Data transfer object for a second-chance bidder to confirm or decline an auction purchase invitation.
  */
-export class RespondSecondChanceDto {
-  @ApiProperty({
-    description: 'True to accept the purchase offer, false to decline',
-    example: true,
-  })
-  @IsBoolean()
-  accept!: boolean;
-}
+const respondSecondChanceFields = {
+  accept: z
+    .boolean()
+    .describe('True to accept the purchase offer, false to decline')
+    .meta({ example: true }),
+};
+
+export const RespondSecondChanceSchema = z.object(respondSecondChanceFields).strict();
+
+export type RespondSecondChanceInput = z.infer<typeof RespondSecondChanceSchema>;

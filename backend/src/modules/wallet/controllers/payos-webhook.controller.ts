@@ -25,6 +25,9 @@ export class PayosWebhookController {
   })
   @ApiResponse({ status: 200, description: 'Xác nhận webhook thành công' })
   @ApiResponse({ status: 400, description: 'Chữ ký webhook không hợp lệ' })
+  // The body stays unvalidated on purpose: what makes a PayOS callback
+  // trustworthy is its HMAC signature, which `PayosWebhookService` checks, and
+  // the payload's shape is the gateway's to change, not this platform's.
   async handlePayosWebhook(@Body() webhookBody: Webhook) {
     return this.webhooks.handle(webhookBody);
   }

@@ -1,255 +1,152 @@
-import { Transform, Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ArrayMaxSize,
-  IsArray,
-  IsBoolean,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  IsUrl,
-  Max,
-  MaxLength,
-  Min,
-  MinLength,
-} from 'class-validator';
+import { z } from 'zod';
+import { httpUrl, mediaUrlList, nullAsAbsent } from '../../../core/validation/query-schemas';
 
-function normalizeMediaUrlsInput({ value }: { value: unknown }): unknown {
-  if (value === undefined || value === null || value === '') return undefined;
-  return Array.isArray(value) ? value : [value];
-}
+const reviewFields = {
+  rating: z.coerce.number().int().min(1).max(5).meta({ example: 5 }),
+  comment: nullAsAbsent(z.string().max(2000)),
+  mediaUrls: mediaUrlList(6)
+    .describe('Image or video URLs attached to product review feedback')
+    .meta({ example: ['https://res.cloudinary.com/demo/image/upload/v1/review-1.jpg'] }),
+};
 
-export class ReviewDto {
-  @ApiProperty({ minimum: 1, maximum: 5, example: 5 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  rating!: number;
-  @ApiPropertyOptional({ maxLength: 2000 })
-  @IsOptional()
-  @IsString()
-  @MaxLength(2000)
-  comment?: string;
-  @ApiPropertyOptional({
-    type: [String],
-    maxItems: 6,
-    example: ['https://res.cloudinary.com/demo/image/upload/v1/review-1.jpg'],
-    description: 'Image or video URLs attached to product review feedback',
-  })
-  @IsOptional()
-  @Transform(normalizeMediaUrlsInput)
-  @IsArray()
-  @ArrayMaxSize(6)
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
-  mediaUrls?: string[];
-}
+export const ReviewSchema = z.object(reviewFields).strict();
 
-export class SellerReplyReviewDto {
-  @ApiProperty({
-    minLength: 2,
-    maxLength: 2000,
-    example: 'Cảm ơn bạn đã ủng hộ shop! Shop sẽ đóng gói kỹ hơn ở đơn sau ạ.',
-    description: 'Seller reply content for a product review',
-  })
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MinLength(2)
-  @MaxLength(2000)
-  reply!: string;
-  @ApiPropertyOptional({
-    type: [String],
-    maxItems: 6,
-    description: 'Optional image or video URLs attached to the reply',
-  })
-  @IsOptional()
-  @Transform(normalizeMediaUrlsInput)
-  @IsArray()
-  @ArrayMaxSize(6)
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
-  mediaUrls?: string[];
-}
+export type ReviewInput = z.infer<typeof ReviewSchema>;
 
-export class CreateReviewReplyDto {
-  @ApiProperty({
-    minLength: 1,
-    maxLength: 2000,
-    example: 'Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ.',
-    description: 'Reply message content between buyer and seller',
-  })
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MinLength(1)
-  @MaxLength(2000)
-  content!: string;
+const sellerReplyReviewFields = {
+  reply: z
+    .string()
+    .trim()
+    .min(2)
+    .max(2000)
+    .describe('Seller reply content for a product review')
+    .meta({ example: 'Cảm ơn bạn đã ủng hộ shop! Shop sẽ đóng gói kỹ hơn ở đơn sau ạ.' }),
+  mediaUrls: mediaUrlList(6).describe('Optional image or video URLs attached to the reply'),
+};
 
-  @ApiPropertyOptional({
-    type: [String],
-    maxItems: 6,
-    description: 'Image or video URLs attached to this reply',
-  })
-  @IsOptional()
-  @Transform(normalizeMediaUrlsInput)
-  @IsArray()
-  @ArrayMaxSize(6)
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
-  mediaUrls?: string[];
-}
+export const SellerReplyReviewSchema = z.object(sellerReplyReviewFields).strict();
 
-export class AdminModerateReviewVisibilityDto {
-  @ApiProperty({
-    example: true,
-    description: 'true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn',
-  })
-  @IsBoolean()
-  isHidden!: boolean;
+export type SellerReplyReviewInput = z.infer<typeof SellerReplyReviewSchema>;
 
-  @ApiPropertyOptional({
-    example: 'Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp.',
-    maxLength: 1000,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000)
-  reason?: string;
+const createReviewReplyFields = {
+  content: z
+    .string()
+    .trim()
+    .min(1)
+    .max(2000)
+    .describe('Reply message content between buyer and seller')
+    .meta({ example: 'Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ.' }),
+  mediaUrls: mediaUrlList(6).describe('Image or video URLs attached to this reply'),
+};
 
-  @ApiPropertyOptional({
-    example: 10,
-    minimum: 0,
-    description: 'Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  pointsToDeduct?: number;
+export const CreateReviewReplySchema = z.object(createReviewReplyFields).strict();
 
-  @ApiPropertyOptional({
-    example: 'PRODUCT',
-    enum: ['PRODUCT', 'SHOP'],
-  })
-  @IsOptional()
-  @IsIn(['PRODUCT', 'SHOP'])
-  targetType?: 'PRODUCT' | 'SHOP';
-}
+export type CreateReviewReplyInput = z.infer<typeof CreateReviewReplySchema>;
 
-export class ReportDto {
-  @ApiProperty({ example: 'Sản phẩm không đúng mô tả' })
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MinLength(5)
-  @MaxLength(150)
-  title!: string;
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MinLength(10)
-  @MaxLength(5000)
-  @ApiProperty({ example: 'Nội dung mô tả chi tiết vi phạm cần kiểm tra.' })
-  description!: string;
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(10)
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true }, { each: true })
-  @ApiPropertyOptional({ type: [String], maxItems: 10 })
-  evidenceUrls?: string[];
-}
+const adminModerateReviewVisibilityFields = {
+  isHidden: z
+    .boolean()
+    .describe('true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn')
+    .meta({ example: true }),
+  reason: nullAsAbsent(
+    z
+      .string()
+      .max(1000)
+      .meta({ example: 'Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp.' }),
+  ),
+  pointsToDeduct: nullAsAbsent(
+    z.coerce
+      .number()
+      .int()
+      .min(0)
+      .describe('Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)')
+      .meta({ example: 10 }),
+  ),
+  targetType: nullAsAbsent(z.enum(['PRODUCT', 'SHOP']).meta({ example: 'PRODUCT' })),
+};
 
-export class FeedbackPageDto {
-  @ApiPropertyOptional({ default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page = 1;
-  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit = 20;
+export const AdminModerateReviewVisibilitySchema = z
+  .object(adminModerateReviewVisibilityFields)
+  .strict();
 
-  @ApiPropertyOptional({
-    minimum: 1,
-    maximum: 5,
-    example: 5,
-    description: 'Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  rating?: number;
+export type AdminModerateReviewVisibilityInput = z.infer<
+  typeof AdminModerateReviewVisibilitySchema
+>;
 
-  @ApiPropertyOptional({
-    enum: ['newest', 'oldest'],
-    default: 'newest',
-    description: 'Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)',
-  })
-  @IsOptional()
-  @IsIn(['newest', 'oldest'])
-  sortBy?: 'newest' | 'oldest' = 'newest';
-}
+const reportFields = {
+  title: z.string().trim().min(5).max(150).meta({ example: 'Sản phẩm không đúng mô tả' }),
+  description: z
+    .string()
+    .trim()
+    .min(10)
+    .max(5000)
+    .meta({ example: 'Nội dung mô tả chi tiết vi phạm cần kiểm tra.' }),
+  evidenceUrls: nullAsAbsent(z.array(httpUrl).max(10)),
+};
 
-export class AdminDeleteReviewDto {
-  @ApiProperty({ example: 'Bình luận dùng ngôn từ thô tục, xúc phạm người bán' })
-  @IsString()
-  @MinLength(5, { message: 'Lý do xóa phải có ít nhất 5 ký tự' })
-  @MaxLength(1000)
-  reason!: string;
+export const ReportSchema = z.object(reportFields).strict();
 
-  @ApiProperty({ example: 10, description: 'Số điểm uy tín muốn trừ của người đánh giá' })
-  @IsInt()
-  @Min(1, { message: 'Điểm uy tín trừ phải lớn hơn hoặc bằng 1' })
-  pointsToDeduct!: number;
-}
+export type ReportInput = z.infer<typeof ReportSchema>;
 
-export class QueryAdminReviewsDto {
-  @ApiPropertyOptional({ default: 1, minimum: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page = 1;
+const feedbackPageFields = {
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  rating: nullAsAbsent(
+    z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(5)
+      .describe('Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá')
+      .meta({ example: 5 }),
+  ),
+  sortBy: z
+    .enum(['newest', 'oldest'])
+    .describe('Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)')
+    .default('newest'),
+};
 
-  @ApiPropertyOptional({ default: 20, minimum: 1, maximum: 100 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit = 20;
+export const FeedbackPageSchema = z.object(feedbackPageFields).strict();
 
-  @ApiPropertyOptional({ enum: ['PRODUCT', 'SHOP'] })
-  @IsOptional()
-  @IsString()
-  type?: 'PRODUCT' | 'SHOP';
+export type FeedbackPageInput = z.infer<typeof FeedbackPageSchema>;
 
-  @ApiPropertyOptional({ description: 'Từ khóa tìm kiếm theo nội dung bình luận' })
-  @IsOptional()
-  @IsString()
-  search?: string;
+const adminDeleteReviewFields = {
+  reason: z
+    .string()
+    .min(5)
+    .max(1000)
+    .meta({ example: 'Bình luận dùng ngôn từ thô tục, xúc phạm người bán' }),
+  pointsToDeduct: z
+    .number()
+    .int()
+    .min(1)
+    .describe('Số điểm uy tín muốn trừ của người đánh giá')
+    .meta({ example: 10 }),
+};
 
-  @ApiPropertyOptional({
-    minimum: 1,
-    maximum: 5,
-    description: 'Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(5)
-  rating?: number;
+export const AdminDeleteReviewSchema = z.object(adminDeleteReviewFields).strict();
 
-  @ApiPropertyOptional({
-    enum: ['newest', 'oldest'],
-    default: 'newest',
-    description: 'Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)',
-  })
-  @IsOptional()
-  @IsIn(['newest', 'oldest'])
-  sortBy?: 'newest' | 'oldest' = 'newest';
-}
+export type AdminDeleteReviewInput = z.infer<typeof AdminDeleteReviewSchema>;
+
+const queryAdminReviewsFields = {
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  type: nullAsAbsent(z.string()),
+  search: nullAsAbsent(z.string().describe('Từ khóa tìm kiếm theo nội dung bình luận')),
+  rating: nullAsAbsent(
+    z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(5)
+      .describe('Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả'),
+  ),
+  sortBy: z
+    .enum(['newest', 'oldest'])
+    .describe('Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)')
+    .default('newest'),
+};
+
+export const QueryAdminReviewsSchema = z.object(queryAdminReviewsFields).strict();
+
+export type QueryAdminReviewsInput = z.infer<typeof QueryAdminReviewsSchema>;

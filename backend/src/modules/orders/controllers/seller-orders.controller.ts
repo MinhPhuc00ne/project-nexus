@@ -1,24 +1,19 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodQuery } from '@nexus/contracts/nest';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { QuerySellerOrdersInput, QuerySellerOrdersSchema } from '../dtos/seller-order.dto';
-import { DispatchGhnOrderDto } from '../../fulfillment/dtos/dispatch-ghn-order.dto';
+
+import {
+  DispatchGhnOrderInput,
+  DispatchGhnOrderSchema,
+} from '../../fulfillment/dtos/dispatch-ghn-order.dto';
 import { SellerOrdersService } from '../services/seller-orders.service';
 import { GhnDispatchService } from '../../fulfillment/services/ghn-dispatch.service';
 import { ShipmentTrackingService } from '../../fulfillment/services/shipment-tracking.service';
+import { QuerySellerOrdersInput, QuerySellerOrdersSchema } from '../dtos/seller-order.dto';
 
 @ApiTags('8. COMMERCE - SELLER ORDERS & GHN')
 @ApiBearerAuth()
@@ -49,7 +44,7 @@ export class SellerOrdersController {
   shippingQuote(
     @CurrentUser('id') sellerId: string,
     @Param('id') id: string,
-    @Body() dto: DispatchGhnOrderDto,
+    @ZodBody(DispatchGhnOrderSchema) dto: DispatchGhnOrderInput,
   ) {
     return this.dispatch.preview(sellerId, id, dto);
   }
@@ -118,7 +113,7 @@ export class SellerOrdersController {
   async dispatchGhn(
     @CurrentUser('id') sellerId: string,
     @Param('id') orderId: string,
-    @Body() dto: DispatchGhnOrderDto,
+    @ZodBody(DispatchGhnOrderSchema) dto: DispatchGhnOrderInput,
   ) {
     return this.sellerOrdersService.dispatchGhn(sellerId, orderId, dto);
   }

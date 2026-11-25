@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -8,19 +7,26 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { CreateReviewReplyDto, FeedbackPageDto, ReviewDto } from '../dtos/feedback.dto';
+import {
+  CreateReviewReplyInput,
+  CreateReviewReplySchema,
+  FeedbackPageInput,
+  FeedbackPageSchema,
+  ReviewInput,
+  ReviewSchema,
+} from '../dtos/feedback.dto';
 import { ReviewsService } from '../services/reviews.service';
 
 const REVIEW_CONSUMES_TYPES = ['application/json', 'multipart/form-data'] as const;
@@ -50,7 +56,7 @@ export class ReviewsController {
   shopReview(
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
-    @Body() dto: ReviewDto,
+    @ZodBody(ReviewSchema) dto: ReviewInput,
     @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
     return this.reviews.create(id, orderId, dto, 'shop', undefined, files);
@@ -64,7 +70,7 @@ export class ReviewsController {
   updateShopReview(
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
-    @Body() dto: ReviewDto,
+    @ZodBody(ReviewSchema) dto: ReviewInput,
   ): Promise<unknown> {
     return this.reviews.updateShopReview(id, orderId, dto);
   }
@@ -94,7 +100,7 @@ export class ReviewsController {
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
     @Param('productId') productId: string,
-    @Body() dto: ReviewDto,
+    @ZodBody(ReviewSchema) dto: ReviewInput,
     @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
     return this.reviews.create(id, orderId, dto, 'product', productId, files);
@@ -109,7 +115,7 @@ export class ReviewsController {
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
     @Param('productId') productId: string,
-    @Body() dto: ReviewDto,
+    @ZodBody(ReviewSchema) dto: ReviewInput,
   ): Promise<unknown> {
     return this.reviews.updateProductReview(id, orderId, productId, dto);
   }
@@ -154,7 +160,7 @@ export class ReviewsController {
   createProductReviewReply(
     @CurrentUser('id') userId: string,
     @Param('reviewId') reviewId: string,
-    @Body() dto: CreateReviewReplyDto,
+    @ZodBody(CreateReviewReplySchema) dto: CreateReviewReplyInput,
     @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
     return this.reviews.createReviewReply(userId, 'product', reviewId, dto, files);
@@ -174,7 +180,7 @@ export class ReviewsController {
   createShopReviewReply(
     @CurrentUser('id') userId: string,
     @Param('reviewId') reviewId: string,
-    @Body() dto: CreateReviewReplyDto,
+    @ZodBody(CreateReviewReplySchema) dto: CreateReviewReplyInput,
     @UploadedFiles() files?: Express.Multer.File[],
   ): Promise<unknown> {
     return this.reviews.createReviewReply(userId, 'shop', reviewId, dto, files);
@@ -186,7 +192,7 @@ export class ReviewsController {
   @Roles(Role.BUYER, Role.SELLER)
   customerReviews(
     @CurrentUser('id') id: string,
-    @Query() query: FeedbackPageDto,
+    @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
   ): Promise<unknown> {
     return this.reviews.list(id, 'customer', query);
   }

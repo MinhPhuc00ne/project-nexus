@@ -1,51 +1,32 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  ArrayMaxSize,
-  ArrayMinSize,
-  IsArray,
-  IsISO8601,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Length,
-  Min,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class ProductOptionDto {
-  @ApiProperty({ example: 'Màu sắc' })
-  @IsString()
-  @Length(1, 40)
-  name!: string;
+const productOptionFields = {
+  name: z.string().min(1).max(40).meta({ example: 'Màu sắc' }),
+  values: z
+    .array(z.string().min(1).max(80))
+    .min(1)
+    .max(50)
+    .meta({ example: ['Đen', 'Trắng'] }),
+};
 
-  @ApiProperty({ example: ['Đen', 'Trắng'] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(50)
-  @IsString({ each: true })
-  @Length(1, 80, { each: true })
-  values!: string[];
-}
+export const ProductOptionSchema = z.object(productOptionFields).strict();
 
-export class UpdateProductSaleDto {
-  @ApiPropertyOptional({
-    nullable: true,
-    example: 150000,
-    description: 'Giá sale; null để dừng sale',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(1000)
-  salePrice?: number | null;
+export type ProductOptionInput = z.infer<typeof ProductOptionSchema>;
 
-  @ApiPropertyOptional({ nullable: true })
-  @IsOptional()
-  @IsISO8601()
-  saleStartsAt?: string | null;
+const updateProductSaleFields = {
+  salePrice: nullAsAbsent(
+    z.coerce
+      .number()
+      .min(1000)
+      .nullable()
+      .describe('Giá sale; null để dừng sale')
+      .meta({ example: 150000 }),
+  ),
+  saleStartsAt: z.iso.datetime().nullable().optional(),
+  saleEndsAt: z.iso.datetime().nullable().optional(),
+};
 
-  @ApiPropertyOptional({ nullable: true })
-  @IsOptional()
-  @IsISO8601()
-  saleEndsAt?: string | null;
-}
+export const UpdateProductSaleSchema = z.object(updateProductSaleFields).strict();
+
+export type UpdateProductSaleInput = z.infer<typeof UpdateProductSaleSchema>;

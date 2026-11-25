@@ -1,12 +1,12 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { Role } from '@nexus/types';
-import { SellerRequestStatus, NotificationType, User, Wallet } from '@prisma/client';
+import { NotificationType, SellerRequestStatus, User, Wallet } from '@prisma/client';
 import * as fs from 'fs';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
@@ -14,10 +14,10 @@ import { CloudinaryStorageService } from '../../../core/storage/cloudinary.servi
 import { ProfileReauthService } from '../../../core/security/profile-reauth.service';
 import { toggleSellerState, userMode } from '../../../core/security/user-mode';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
-import { UpdateBuyerProfileDto, UserProfileResponse } from '../dtos/users.dto';
-import { CreateSellerRequestDto } from '../dtos/create-seller-request.dto';
-import { ToggleSellerDto } from '../dtos/toggle-seller.dto';
-import { UpdateStaffProfileDto } from '../../auth/dtos/update-staff-profile.dto';
+import { UpdateBuyerProfileInput, UserProfileResponse } from '../dtos/users.dto';
+import { CreateSellerRequestInput } from '../dtos/create-seller-request.dto';
+import { ToggleSellerInput } from '../dtos/toggle-seller.dto';
+import { UpdateStaffProfileInput } from '../../auth/dtos/update-staff-profile.dto';
 
 import { ReputationService } from './reputation.service';
 
@@ -84,7 +84,7 @@ export class UsersService {
    */
   async updateStaffProfile(
     userId: string,
-    dto: UpdateStaffProfileDto,
+    dto: UpdateStaffProfileInput,
   ): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.role !== 'SUPPORT_STAFF')
@@ -103,7 +103,7 @@ export class UsersService {
     return this.formatProfile(updated);
   }
 
-  private shouldRequireProfileReauth(dto: UpdateBuyerProfileDto): boolean {
+  private shouldRequireProfileReauth(dto: UpdateBuyerProfileInput): boolean {
     const hasPersonalUpdate =
       dto.fullName !== undefined || dto.phoneNumber !== undefined || dto.avatarUrl !== undefined;
     const hasBankUpdate =
@@ -113,7 +113,7 @@ export class UsersService {
     return hasPersonalUpdate || !hasBankUpdate;
   }
 
-  private buildProfileUpdateData(dto: UpdateBuyerProfileDto): Record<string, unknown> {
+  private buildProfileUpdateData(dto: UpdateBuyerProfileInput): Record<string, unknown> {
     const data: Record<string, unknown> = { updatedAt: new Date() };
     if (dto.fullName) data.fullName = dto.fullName;
     if (dto.phoneNumber !== undefined) data.phoneNumber = dto.phoneNumber;
@@ -131,7 +131,7 @@ export class UsersService {
   private async awardMissingProfileCompletion(
     userId: string,
     user: User,
-    dto: UpdateBuyerProfileDto,
+    dto: UpdateBuyerProfileInput,
   ): Promise<void> {
     if (dto.fullName && !user.fullName) {
       await this.reputationService.awardProfileCompletion({
@@ -182,7 +182,7 @@ export class UsersService {
    */
   async updateProfile(
     userId: string,
-    dto: UpdateBuyerProfileDto,
+    dto: UpdateBuyerProfileInput,
     _callerRole?: Role,
     verificationToken?: string,
   ): Promise<UserProfileResponse> {
@@ -234,7 +234,7 @@ export class UsersService {
    * @param dto Optional explicit toggle state.
    * @returns Updated mode state and user details.
    */
-  async toggleSellerMode(userId: string, dto?: ToggleSellerDto) {
+  async toggleSellerMode(userId: string, dto?: ToggleSellerInput) {
     const user = await toggleSellerState(this.prisma, userId, dto?.isSellerActive);
     const newSellerActive = user.isSellerActive;
 
@@ -323,7 +323,7 @@ export class UsersService {
    */
   async createSellerRequest(
     userId: string,
-    dto: CreateSellerRequestDto,
+    dto: CreateSellerRequestInput,
     file?: Express.Multer.File,
   ) {
     assertCleanContent(dto.storeName, 'Tên gian hàng');

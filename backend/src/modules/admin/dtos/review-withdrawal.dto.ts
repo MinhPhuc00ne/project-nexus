@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { WithdrawalStatus } from '@prisma/client';
 
 const REVIEWABLE_WITHDRAWAL_STATUSES = [
@@ -8,32 +8,27 @@ const REVIEWABLE_WITHDRAWAL_STATUSES = [
   WithdrawalStatus.COMPLETED,
 ] as const;
 
-export class ReviewWithdrawalDto {
-  @ApiProperty({
-    enum: REVIEWABLE_WITHDRAWAL_STATUSES,
-    example: WithdrawalStatus.COMPLETED,
-    description:
+const reviewWithdrawalFields = {
+  status: z
+    .enum(REVIEWABLE_WITHDRAWAL_STATUSES)
+    .describe(
       'Trạng thái xét duyệt: APPROVED (chấp thuận), REJECTED (từ chối hoàn tiền ví), COMPLETED (đã chuyển khoản thành công)',
-  })
-  @IsIn(REVIEWABLE_WITHDRAWAL_STATUSES, {
-    message: 'Trạng thái xét duyệt chỉ chấp nhận APPROVED, REJECTED hoặc COMPLETED',
-  })
-  @IsNotEmpty()
-  status!: WithdrawalStatus;
+    )
+    .meta({ example: WithdrawalStatus.COMPLETED }),
+  rejectionReason: nullAsAbsent(
+    z
+      .string()
+      .describe('Lý do từ chối (bắt buộc nếu status = REJECTED)')
+      .meta({ example: 'Thông tin số tài khoản không đúng với tên chủ tài khoản thụ hưởng' }),
+  ),
+  adminNote: nullAsAbsent(
+    z
+      .string()
+      .describe('Ghi chú của Quản trị viên')
+      .meta({ example: 'Đã chuyển khoản qua Vietcombank mã GD: VCB12345678' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: 'Thông tin số tài khoản không đúng với tên chủ tài khoản thụ hưởng',
-    description: 'Lý do từ chối (bắt buộc nếu status = REJECTED)',
-  })
-  @IsOptional()
-  @IsString()
-  rejectionReason?: string;
+export const ReviewWithdrawalSchema = z.object(reviewWithdrawalFields).strict();
 
-  @ApiPropertyOptional({
-    example: 'Đã chuyển khoản qua Vietcombank mã GD: VCB12345678',
-    description: 'Ghi chú của Quản trị viên',
-  })
-  @IsOptional()
-  @IsString()
-  adminNote?: string;
-}
+export type ReviewWithdrawalInput = z.infer<typeof ReviewWithdrawalSchema>;

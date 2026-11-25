@@ -17,12 +17,12 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
 import { recentReauthentication } from '../../../core/security/profile-reauth.service';
 import { userMode } from '../../../core/security/user-mode';
-import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
-import { LoginDto } from '../dtos/login.dto';
-import { RefreshTokenDto } from '../dtos/refresh-token.dto';
-import { RegisterDto } from '../dtos/register.dto';
-import { ResetPasswordDto } from '../dtos/reset-password.dto';
-import { VerifyEmailDto } from '../dtos/verify-email.dto';
+import { ForgotPasswordInput } from '../dtos/forgot-password.dto';
+import { LoginInput } from '../dtos/login.dto';
+import { RefreshTokenInput } from '../dtos/refresh-token.dto';
+import { RegisterInput } from '../dtos/register.dto';
+import { ResetPasswordInput } from '../dtos/reset-password.dto';
+import { VerifyEmailInput } from '../dtos/verify-email.dto';
 import {
   INITIAL_REPUTATION_SCORE,
   INITIAL_REPUTATION_TRUST_LEVEL,
@@ -75,7 +75,7 @@ export class AuthService {
    * @returns Registration confirmation
    * @throws BadRequestException when email is already registered or cooldown is active
    */
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterInput) {
     const { email, password, fullName } = dto;
 
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
@@ -151,7 +151,7 @@ export class AuthService {
    * @returns Verification confirmation message
    * @throws BadRequestException when code is invalid or expired
    */
-  async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
+  async verifyEmail(dto: VerifyEmailInput): Promise<{ message: string }> {
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE email = ${dto.email} FOR UPDATE`;
       const user = await tx.user.findUnique({ where: { email: dto.email } });
@@ -206,7 +206,7 @@ export class AuthService {
    * @throws UnauthorizedException on invalid credentials or unverified email
    * @throws ForbiddenException when account is suspended
    */
-  async login(dto: LoginDto) {
+  async login(dto: LoginInput) {
     const { email, password } = dto;
     const normalizedEmail = email.trim();
     const user = await this.prisma.user.findFirst({
@@ -367,7 +367,7 @@ export class AuthService {
    * @returns Reset code dispatch confirmation
    * @throws BadRequestException on non-existent account, unverified email, or active cooldown
    */
-  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; email: string }> {
+  async forgotPassword(dto: ForgotPasswordInput): Promise<{ message: string; email: string }> {
     const { email } = dto;
 
     const user = await this.prisma.user.findFirst({
@@ -428,7 +428,7 @@ export class AuthService {
    * @returns Password reset confirmation
    * @throws BadRequestException on invalid OTP, expired OTP, or identical previous password
    */
-  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(dto: ResetPasswordInput): Promise<{ message: string }> {
     const { email, code, newPassword } = dto;
 
     const user = await this.prisma.user.findFirst({
@@ -487,7 +487,7 @@ export class AuthService {
    * @throws UnauthorizedException when token is expired, revoked, or invalid
    * @throws ForbiddenException when account is suspended
    */
-  async refreshToken(dto: RefreshTokenDto) {
+  async refreshToken(dto: RefreshTokenInput) {
     const refreshSecret = this.getRefreshSecret();
 
     let payload: RefreshJwtPayload;
@@ -556,7 +556,7 @@ export class AuthService {
    * @param dto - Refresh token payload
    * @returns Logout confirmation message
    */
-  async logout(dto: RefreshTokenDto): Promise<{ message: string }> {
+  async logout(dto: RefreshTokenInput): Promise<{ message: string }> {
     const refreshSecret = this.getRefreshSecret();
 
     try {

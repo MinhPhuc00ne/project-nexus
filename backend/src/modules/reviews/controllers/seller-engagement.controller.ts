@@ -1,23 +1,17 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
-  QuerySellerDisputesDto,
-  QuerySellerReviewsDto,
-  RespondDisputeDto,
+  QuerySellerDisputesInput,
+  QuerySellerDisputesSchema,
+  QuerySellerReviewsInput,
+  QuerySellerReviewsSchema,
+  RespondDisputeInput,
+  RespondDisputeSchema,
 } from '../dtos/seller-engagement.dto';
 import { SellerEngagementService } from '../services/seller-engagement.service';
 
@@ -37,7 +31,10 @@ export class SellerEngagementController {
       'Lấy danh sách đánh giá nhận xét từ người mua về các đơn hàng của gian hàng, tính điểm trung bình và biểu đồ phân bổ từ 1 đến 5 sao.',
   })
   @ApiResponse({ status: 200, description: 'Lấy danh sách đánh giá thành công' })
-  async getReviews(@CurrentUser('id') sellerId: string, @Query() query: QuerySellerReviewsDto) {
+  async getReviews(
+    @CurrentUser('id') sellerId: string,
+    @ZodQuery(QuerySellerReviewsSchema) query: QuerySellerReviewsInput,
+  ) {
     return this.sellerEngagementService.getReviews(sellerId, query);
   }
 
@@ -49,7 +46,10 @@ export class SellerEngagementController {
       'Lấy danh sách các khiếu nại do người mua mở kèm theo lý do, link bằng chứng, trạng thái xử lý và bộ đếm trạng thái.',
   })
   @ApiResponse({ status: 200, description: 'Lấy danh sách khiếu nại thành công' })
-  async getDisputes(@CurrentUser('id') sellerId: string, @Query() query: QuerySellerDisputesDto) {
+  async getDisputes(
+    @CurrentUser('id') sellerId: string,
+    @ZodQuery(QuerySellerDisputesSchema) query: QuerySellerDisputesInput,
+  ) {
     return this.sellerEngagementService.getDisputes(sellerId, query);
   }
 
@@ -66,7 +66,7 @@ export class SellerEngagementController {
   async respondToDispute(
     @CurrentUser('id') sellerId: string,
     @Param('id') disputeId: string,
-    @Body() dto: RespondDisputeDto,
+    @ZodBody(RespondDisputeSchema) dto: RespondDisputeInput,
   ) {
     return this.sellerEngagementService.respondToDispute(sellerId, disputeId, dto);
   }

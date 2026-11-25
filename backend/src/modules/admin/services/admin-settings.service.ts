@@ -6,7 +6,7 @@ import {
   type PlatformSettings,
 } from '../../../core/settings/platform-settings.service';
 import { NotificationChannel, NotificationType } from '@prisma/client';
-import { UpdateSystemSettingsDto } from '../dtos/update-system-settings.dto';
+import { UpdateSystemSettingsInput } from '../dtos/update-system-settings.dto';
 
 /**
  * The administrative view of platform settings.
@@ -45,7 +45,7 @@ export class AdminSettingsService {
    */
   async updateSettings(
     adminId: string,
-    dto: UpdateSystemSettingsDto,
+    dto: UpdateSystemSettingsInput,
   ): Promise<{
     success: boolean;
     message: string;

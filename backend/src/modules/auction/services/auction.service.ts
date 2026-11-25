@@ -3,14 +3,14 @@ import { AuctionItemStatus, Prisma, Role } from '@prisma/client';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
-import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
-import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
-import { AuctionQueryDto } from '../dtos/auction-query.dto';
+import { AdminCreateAuctionInput } from '../dtos/admin-create-auction.dto';
+import { AdminUpdateAuctionInput } from '../dtos/admin-update-auction.dto';
+import { AuctionQueryInput } from '../dtos/auction-query.dto';
 import { AuctionIntroShowcaseResponseDto } from '../dtos/auction-showcase-response.dto';
-import { PlaceBidDto } from '../dtos/place-bid.dto';
-import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
-import { ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
-import { StaffAuctionNoteDto } from '../dtos/staff-auction-note.dto';
+import { PlaceBidInput } from '../dtos/place-bid.dto';
+import { RegisterAuctionItemInput } from '../dtos/register-auction-item.dto';
+import { ReviewAuctionItemInput } from '../dtos/review-auction-item.dto';
+import { StaffAuctionNoteInput } from '../dtos/staff-auction-note.dto';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import { AuctionAdminHelper } from './auction-admin.helper';
 import { AuctionBiddingHelper } from './auction-bidding.helper';
@@ -58,7 +58,7 @@ export class AuctionService implements OnModuleInit {
   /**
    * Lists public and filterable auction rooms with paginated approved lots preview.
    */
-  async getAuctions(query: AuctionQueryDto) {
+  async getAuctions(query: AuctionQueryInput) {
     const page = Math.max(1, Number(query.page || 1));
     const limit = Math.max(1, Math.min(50, Number(query.limit || 20)));
     const skip = (page - 1) * limit;
@@ -432,11 +432,11 @@ export class AuctionService implements OnModuleInit {
     };
   }
 
-  adminCreateAuction(adminId: string, dto: AdminCreateAuctionDto) {
+  adminCreateAuction(adminId: string, dto: AdminCreateAuctionInput) {
     return this.adminHelper.adminCreateAuction(adminId, dto);
   }
 
-  adminUpdateAuction(auctionId: string, dto: AdminUpdateAuctionDto) {
+  adminUpdateAuction(auctionId: string, dto: AdminUpdateAuctionInput) {
     return this.adminHelper.adminUpdateAuction(auctionId, dto);
   }
 
@@ -452,7 +452,7 @@ export class AuctionService implements OnModuleInit {
     return this.adminHelper.adminDeleteAuction(auctionId);
   }
 
-  registerAuctionItem(auctionId: string, sellerId: string, dto: RegisterAuctionItemDto) {
+  registerAuctionItem(auctionId: string, sellerId: string, dto: RegisterAuctionItemInput) {
     return this.consignmentHelper.registerAuctionItem(auctionId, sellerId, dto);
   }
 
@@ -460,7 +460,7 @@ export class AuctionService implements OnModuleInit {
     return this.consignmentHelper.adminGetAuctionItems(auctionId);
   }
 
-  adminReviewAuctionItem(itemId: string, adminId: string, dto: ReviewAuctionItemDto) {
+  adminReviewAuctionItem(itemId: string, adminId: string, dto: ReviewAuctionItemInput) {
     return this.consignmentHelper.adminReviewAuctionItem(itemId, adminId, dto);
   }
 
@@ -472,7 +472,7 @@ export class AuctionService implements OnModuleInit {
     return this.biddingHelper.checkBuyerEligibility(auctionId, buyerId);
   }
 
-  placeBid(auctionId: string, bidderId: string, dto: PlaceBidDto) {
+  placeBid(auctionId: string, bidderId: string, dto: PlaceBidInput) {
     return this.biddingHelper.placeBid(auctionId, bidderId, dto);
   }
 
@@ -496,7 +496,7 @@ export class AuctionService implements OnModuleInit {
     return this.consignmentHelper.getStaffOverview();
   }
 
-  staffAddItemNote(itemId: string, staffId: string, dto: StaffAuctionNoteDto) {
+  staffAddItemNote(itemId: string, staffId: string, dto: StaffAuctionNoteInput) {
     return this.consignmentHelper.staffAddItemNote(itemId, staffId, dto);
   }
 

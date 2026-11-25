@@ -18,9 +18,9 @@ import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ChatService } from '../../chat/services/chat.service';
 import { trustLevelFor } from '../../../core/domain/reputation-policy';
-import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
-import { ReviewAction, ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
-import { StaffAuctionNoteDto } from '../dtos/staff-auction-note.dto';
+import { RegisterAuctionItemInput } from '../dtos/register-auction-item.dto';
+import { ReviewAction, ReviewAuctionItemInput } from '../dtos/review-auction-item.dto';
+import { StaffAuctionNoteInput } from '../dtos/staff-auction-note.dto';
 import { formatVnd } from './auction-domain.utils';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class AuctionConsignmentHelper {
   /**
    * Seller consigns an independent auction item (not linked to retail catalog/inventory) into a scheduled room.
    */
-  async registerAuctionItem(auctionId: string, sellerId: string, dto: RegisterAuctionItemDto) {
+  async registerAuctionItem(auctionId: string, sellerId: string, dto: RegisterAuctionItemInput) {
     const [auction, seller] = await Promise.all([
       this.prisma.auction.findUnique({ where: { id: auctionId } }),
       this.prisma.user.findUnique({
@@ -168,7 +168,7 @@ export class AuctionConsignmentHelper {
    * Admin approves or rejects a consigned auction item.
    * When approved, enforces startingPrice >= reservePrice (if reservePrice is set) and assigns lot pricing.
    */
-  async adminReviewAuctionItem(itemId: string, adminId: string, dto: ReviewAuctionItemDto) {
+  async adminReviewAuctionItem(itemId: string, adminId: string, dto: ReviewAuctionItemInput) {
     const item = await this.prisma.auctionItem.findUnique({
       where: { id: itemId },
       include: { auction: true },
@@ -380,7 +380,7 @@ export class AuctionConsignmentHelper {
    * Support Staff attaches an internal verification or live-room support note to an auction lot
    * to assist Admin during pre-approval or post-auction handling.
    */
-  async staffAddItemNote(itemId: string, staffId: string, dto: StaffAuctionNoteDto) {
+  async staffAddItemNote(itemId: string, staffId: string, dto: StaffAuctionNoteInput) {
     const item = await this.prisma.auctionItem.findUnique({ where: { id: itemId } });
     if (!item) {
       throw new NotFoundException('Không tìm thấy vật phẩm đấu giá.');

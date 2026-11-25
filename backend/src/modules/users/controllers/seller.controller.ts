@@ -1,12 +1,13 @@
 import { ShopsService } from '../services/shops.service';
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { UsersService, UserProfileResponse } from '../services/users.service';
+import { ZodBody } from '@nexus/contracts/nest';
+import { UserProfileResponse, UsersService } from '../services/users.service';
 import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
-import { UpdateShopProfileDto } from '../dtos/update-shop-profile.dto';
+import { UpdateShopProfileInput, UpdateShopProfileSchema } from '../dtos/update-shop-profile.dto';
 
 @ApiTags('3. SELLER')
 @ApiBearerAuth()
@@ -50,7 +51,10 @@ export class SellerController {
   @Roles(Role.SELLER, Role.ADMIN)
   @Patch('shop-profile')
   @HttpCode(HttpStatus.OK)
-  async updateShopProfile(@CurrentUser('id') userId: string, @Body() dto: UpdateShopProfileDto) {
+  async updateShopProfile(
+    @CurrentUser('id') userId: string,
+    @ZodBody(UpdateShopProfileSchema) dto: UpdateShopProfileInput,
+  ) {
     return this.shopsService.updateShopProfile(userId, dto);
   }
 

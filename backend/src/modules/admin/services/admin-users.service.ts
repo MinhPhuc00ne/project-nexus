@@ -4,9 +4,9 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { generateStaffBaseEmail } from '../../../core/domain/staff-email';
 import { trustLevelFor } from '../../../core/domain/reputation-policy';
-import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
-import { QueryUsersDto, UserStatusFilter } from '../dtos/query-users.dto';
-import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';
+import { LockUserInput, UpdateUserStatusInput } from '../dtos/lock-user.dto';
+import { QueryUsersInput, UserStatusFilter } from '../dtos/query-users.dto';
+import { UpdateUserRoleInput } from '../dtos/update-user-role.dto';
 import {
   AdminUserDetailResponse,
   AdminUserItemResponse,
@@ -32,7 +32,7 @@ export class AdminUsersService {
    * @param query - User query parameters including search, role, and pagination
    * @returns Paginated list of user items with wallet balances
    */
-  async listUsers(query: QueryUsersDto): Promise<AdminUsersListResponse> {
+  async listUsers(query: QueryUsersInput): Promise<AdminUsersListResponse> {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, query.limit || 10);
     const skip = (page - 1) * limit;
@@ -142,7 +142,7 @@ export class AdminUsersService {
   async lockUser(
     targetUserId: string,
     adminId: string,
-    dto?: LockUserDto,
+    dto?: LockUserInput,
   ): Promise<{ success: boolean; message: string; user: AdminUserItemResponse }> {
     const user = await this.prisma.user.findUnique({
       where: { id: targetUserId },
@@ -218,7 +218,7 @@ export class AdminUsersService {
   async unlockUser(
     targetUserId: string,
     adminId: string,
-    dto?: LockUserDto,
+    dto?: LockUserInput,
   ): Promise<{ success: boolean; message: string; user: AdminUserItemResponse }> {
     const user = await this.prisma.user.findUnique({
       where: { id: targetUserId },
@@ -279,7 +279,7 @@ export class AdminUsersService {
    * @param dto - Status payload containing lock flag and reason
    * @returns Updated user status response
    */
-  async updateUserStatus(targetUserId: string, adminId: string, dto: UpdateUserStatusDto) {
+  async updateUserStatus(targetUserId: string, adminId: string, dto: UpdateUserStatusInput) {
     return dto.isLocked === false
       ? this.unlockUser(targetUserId, adminId, { reason: dto.reason })
       : this.lockUser(targetUserId, adminId, { reason: dto.reason });
@@ -298,7 +298,7 @@ export class AdminUsersService {
   async updateUserRole(
     targetUserId: string,
     adminId: string,
-    dto: UpdateUserRoleDto,
+    dto: UpdateUserRoleInput,
   ): Promise<{ success: boolean; message: string; user: AdminUserItemResponse }> {
     const user = await this.prisma.user.findUnique({
       where: { id: targetUserId },

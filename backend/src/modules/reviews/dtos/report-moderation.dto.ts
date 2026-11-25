@@ -1,57 +1,31 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { PenaltyType, ViolationStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
-import {
-  IsEnum,
-  IsIn,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-  MinLength,
-  MaxLength,
-} from 'class-validator';
 
 /** Bounds report queues and exposes the existing moderation lifecycle. */
-export class QueryReportsDto {
-  @ApiPropertyOptional({ enum: ViolationStatus })
-  @IsOptional()
-  @IsEnum(ViolationStatus)
-  status?: ViolationStatus;
+const queryReportsFields = {
+  status: nullAsAbsent(z.enum(ViolationStatus)),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+};
 
-  @ApiPropertyOptional({ default: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page: number = 1;
+export const QueryReportsSchema = z.object(queryReportsFields).strict();
 
-  @ApiPropertyOptional({ default: 20, maximum: 50 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(50)
-  limit: number = 20;
-}
+export type QueryReportsInput = z.infer<typeof QueryReportsSchema>;
 
 /** Records an explicit, auditable report decision; financial refunds remain separate. */
-export class ReviewReportDto {
-  @ApiProperty({ enum: ['INVESTIGATING', 'CONFIRMED', 'DISMISSED'] })
-  @IsIn(['INVESTIGATING', 'CONFIRMED', 'DISMISSED'])
-  status!: 'INVESTIGATING' | 'CONFIRMED' | 'DISMISSED';
+const reviewReportFields = {
+  status: z.enum(['INVESTIGATING', 'CONFIRMED', 'DISMISSED']),
+  reason: z.string().min(5).max(2000).describe('Rationale retained in the moderation audit trail'),
+  penaltyType: nullAsAbsent(
+    z
+      .enum([PenaltyType.FRAUD, PenaltyType.MISREPRESENTATION])
+      .describe(
+        'Admin-only confirmed fraud or counterfeit finding: minus 50 points and immediate suspension',
+      ),
+  ),
+};
 
-  @ApiProperty({ description: 'Rationale retained in the moderation audit trail' })
-  @IsString()
-  @MinLength(5)
-  @MaxLength(2000)
-  reason!: string;
+export const ReviewReportSchema = z.object(reviewReportFields).strict();
 
-  @ApiPropertyOptional({
-    enum: [PenaltyType.FRAUD, PenaltyType.MISREPRESENTATION],
-    description:
-      'Admin-only confirmed fraud or counterfeit finding: minus 50 points and immediate suspension',
-  })
-  @IsOptional()
-  @IsIn([PenaltyType.FRAUD, PenaltyType.MISREPRESENTATION])
-  penaltyType?: 'FRAUD' | 'MISREPRESENTATION';
-}
+export type ReviewReportInput = z.infer<typeof ReviewReportSchema>;

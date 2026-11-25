@@ -11,13 +11,13 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { MediaService } from '../../media/services/media.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import {
-  AdminDeleteReviewDto,
-  AdminModerateReviewVisibilityDto,
-  CreateReviewReplyDto,
-  FeedbackPageDto,
-  QueryAdminReviewsDto,
-  ReviewDto,
-  SellerReplyReviewDto,
+  AdminDeleteReviewInput,
+  AdminModerateReviewVisibilityInput,
+  CreateReviewReplyInput,
+  FeedbackPageInput,
+  QueryAdminReviewsInput,
+  ReviewInput,
+  SellerReplyReviewInput,
 } from '../dtos/feedback.dto';
 import {
   EMPTY_COMMENT_FALLBACK,
@@ -70,7 +70,7 @@ export class ReviewsService {
       userId: string;
       orderId: string;
       sellerId: string;
-      dto: ReviewDto;
+      dto: ReviewInput;
       mediaItems: UploadedReviewMediaItem[];
       mediaUrls: string[];
     },
@@ -142,7 +142,7 @@ export class ReviewsService {
       orderId: string;
       sellerId: string;
       orderItems: Array<{ productId: string | null }>;
-      dto: ReviewDto;
+      dto: ReviewInput;
       kind: 'shop' | 'product';
       productId?: string;
       mediaItems?: UploadedReviewMediaItem[];
@@ -212,7 +212,7 @@ export class ReviewsService {
     tx: Prisma.TransactionClient,
     orderId: string,
     sellerId: string,
-    dto: ReviewDto,
+    dto: ReviewInput,
   ): Promise<void> {
     const bonusReference = `REVIEW_BONUS:${orderId}`;
     if (
@@ -272,7 +272,7 @@ export class ReviewsService {
   async create(
     userId: string,
     orderId: string,
-    dto: ReviewDto,
+    dto: ReviewInput,
     kind: 'shop' | 'product' | 'customer',
     productId?: string,
     files?: Express.Multer.File[],
@@ -336,7 +336,7 @@ export class ReviewsService {
 
   private async listShopReviews(
     targetId: string,
-    query: FeedbackPageDto,
+    query: FeedbackPageInput,
     pagination: { skip: number; take: number; orderBy: { createdAt: Prisma.SortOrder } },
     author: { select: { id: boolean; fullName: boolean; avatarUrl: boolean } },
     viewerId?: string,
@@ -403,7 +403,7 @@ export class ReviewsService {
   async list(
     targetId: string,
     kind: 'shop' | 'product' | 'seller-products' | 'customer',
-    query: FeedbackPageDto,
+    query: FeedbackPageInput,
     viewerId?: string,
   ): Promise<unknown> {
     const skip = (query.page - 1) * query.limit;
@@ -478,7 +478,7 @@ export class ReviewsService {
     userId: string,
     orderId: string,
     productId: string,
-    dto: ReviewDto,
+    dto: ReviewInput,
   ): Promise<unknown> {
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.productReview.findUnique({
@@ -621,7 +621,7 @@ export class ReviewsService {
     });
   }
 
-  async updateShopReview(userId: string, orderId: string, dto: ReviewDto): Promise<unknown> {
+  async updateShopReview(userId: string, orderId: string, dto: ReviewInput): Promise<unknown> {
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.review.findUnique({
         where: { orderId },
@@ -665,20 +665,20 @@ export class ReviewsService {
     });
   }
 
-  adminListReviews(query: QueryAdminReviewsDto): Promise<unknown> {
+  adminListReviews(query: QueryAdminReviewsInput): Promise<unknown> {
     return this.moderationHelper.adminListReviews(query);
   }
 
   adminDeleteReview(
     id: string,
     type: 'product' | 'shop',
-    dto: AdminDeleteReviewDto,
+    dto: AdminDeleteReviewInput,
     actorRole?: string,
   ) {
     return this.moderationHelper.adminDeleteReview(id, type, dto, actorRole);
   }
 
-  replyToProductReview(sellerId: string, reviewId: string, dto: SellerReplyReviewDto) {
+  replyToProductReview(sellerId: string, reviewId: string, dto: SellerReplyReviewInput) {
     return this.repliesHelper.replyToProductReview(sellerId, reviewId, dto);
   }
 
@@ -686,7 +686,7 @@ export class ReviewsService {
     return this.repliesHelper.toggleHelpfulProductReview(userId, reviewId);
   }
 
-  adminRemoveSellerReply(reviewId: string, dto: AdminDeleteReviewDto, actorRole?: string) {
+  adminRemoveSellerReply(reviewId: string, dto: AdminDeleteReviewInput, actorRole?: string) {
     return this.moderationHelper.adminRemoveSellerReply(reviewId, dto, actorRole);
   }
 
@@ -694,7 +694,7 @@ export class ReviewsService {
     userId: string,
     targetType: 'product' | 'shop',
     reviewId: string,
-    dto: CreateReviewReplyDto,
+    dto: CreateReviewReplyInput,
     files?: Express.Multer.File[],
   ) {
     return this.repliesHelper.createReviewReply(userId, targetType, reviewId, dto, files);
@@ -703,7 +703,7 @@ export class ReviewsService {
   listReviewReplies(
     targetType: 'product' | 'shop',
     reviewId: string,
-    query: FeedbackPageDto,
+    query: FeedbackPageInput,
     viewerId?: string,
   ) {
     return this.repliesHelper.listReviewReplies(targetType, reviewId, query, viewerId);
@@ -713,7 +713,7 @@ export class ReviewsService {
     adminId: string,
     targetType: 'product' | 'shop' | 'reply',
     id: string,
-    dto: AdminModerateReviewVisibilityDto,
+    dto: AdminModerateReviewVisibilityInput,
     actorRole?: string,
   ) {
     return this.moderationHelper.adminModerateReviewVisibility(

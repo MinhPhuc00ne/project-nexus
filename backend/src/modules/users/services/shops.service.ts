@@ -4,7 +4,7 @@ import { assertCleanContent } from '../../../core/moderation/content-moderation.
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { SellerPickupService } from '../../fulfillment/services/seller-pickup.service';
-import { UpdateShopProfileDto } from '../dtos/update-shop-profile.dto';
+import { UpdateShopProfileInput } from '../dtos/update-shop-profile.dto';
 
 /**
  * The shop side of a seller account: storefront details, the pickup address a
@@ -103,7 +103,7 @@ export class ShopsService {
    * @throws NotFoundException when user is not found
    * @throws ForbiddenException when user is not authorized or shop is suspended
    */
-  async updateShopProfile(sellerId: string, dto: UpdateShopProfileDto) {
+  async updateShopProfile(sellerId: string, dto: UpdateShopProfileInput) {
     const user = await this.prisma.user.findUnique({
       where: { id: sellerId },
       include: {

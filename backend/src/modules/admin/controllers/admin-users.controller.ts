@@ -1,31 +1,33 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
+  AuthenticatedUserPayload,
   CurrentUser,
   Roles,
-  AuthenticatedUserPayload,
 } from '../../../core/security/roles.decorator';
 import { AdminService } from '../services/admin.service';
 
-import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
-import { QuerySellerRequestsDto } from '../dtos/query-seller-requests.dto';
+import {
+  LockUserInput,
+  LockUserSchema,
+  UpdateUserStatusInput,
+  UpdateUserStatusSchema,
+} from '../dtos/lock-user.dto';
+import {
+  QuerySellerRequestsInput,
+  QuerySellerRequestsSchema,
+} from '../dtos/query-seller-requests.dto';
 
-import { QueryUsersDto } from '../dtos/query-users.dto';
-import { RejectSellerRequestDto } from '../dtos/reject-seller-request.dto';
-import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';
+import { QueryUsersInput, QueryUsersSchema } from '../dtos/query-users.dto';
+import {
+  RejectSellerRequestInput,
+  RejectSellerRequestSchema,
+} from '../dtos/reject-seller-request.dto';
+import { UpdateUserRoleInput, UpdateUserRoleSchema } from '../dtos/update-user-role.dto';
 
 import { AdminUsersService } from '../services/admin-users.service';
 
@@ -52,7 +54,7 @@ export class AdminUsersController {
     description: 'Supports filtering by PENDING, APPROVED, or REJECTED status with pagination.',
   })
   @ApiResponse({ status: 200, description: 'Seller requests retrieved successfully' })
-  async getSellerRequests(@Query() query: QuerySellerRequestsDto) {
+  async getSellerRequests(@ZodQuery(QuerySellerRequestsSchema) query: QuerySellerRequestsInput) {
     return this.adminService.getSellerRequests(query);
   }
 
@@ -96,7 +98,7 @@ export class AdminUsersController {
   async rejectSellerRequest(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: RejectSellerRequestDto,
+    @ZodBody(RejectSellerRequestSchema) dto: RejectSellerRequestInput,
   ) {
     return this.adminService.rejectSellerRequest(id, admin.id, dto);
   }
@@ -108,7 +110,7 @@ export class AdminUsersController {
       'Retrieves platform accounts excluding guests. Supports role filtering, lock status filtering, and keyword search.',
   })
   @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
-  async listUsers(@Query() query: QueryUsersDto) {
+  async listUsers(@ZodQuery(QueryUsersSchema) query: QueryUsersInput) {
     return this.adminUsersService.listUsers(query);
   }
 
@@ -140,7 +142,7 @@ export class AdminUsersController {
   async lockUser(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: LockUserDto,
+    @ZodBody(LockUserSchema) dto: LockUserInput,
   ) {
     return this.adminUsersService.lockUser(id, admin.id, dto);
   }
@@ -157,7 +159,7 @@ export class AdminUsersController {
   async unlockUser(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: LockUserDto,
+    @ZodBody(LockUserSchema) dto: LockUserInput,
   ) {
     return this.adminUsersService.unlockUser(id, admin.id, dto);
   }
@@ -172,7 +174,7 @@ export class AdminUsersController {
   async updateUserStatus(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: UpdateUserStatusDto,
+    @ZodBody(UpdateUserStatusSchema) dto: UpdateUserStatusInput,
   ) {
     return this.adminUsersService.updateUserStatus(id, admin.id, dto);
   }
@@ -193,7 +195,7 @@ export class AdminUsersController {
   async updateUserRole(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: UpdateUserRoleDto,
+    @ZodBody(UpdateUserRoleSchema) dto: UpdateUserRoleInput,
   ) {
     return this.adminUsersService.updateUserRole(id, admin.id, dto);
   }

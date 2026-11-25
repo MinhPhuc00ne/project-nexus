@@ -1,44 +1,28 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsArray,
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-  MaxLength,
-} from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 /**
  * Data transfer object for Seller or Buyer to submit an auction-related complaint request.
  */
-export class CreateAuctionComplaintDto {
-  @ApiPropertyOptional({
-    description: 'Related auction lot identifier (AuctionItem ID)',
-    format: 'uuid',
-  })
-  @IsUUID()
-  @IsOptional()
-  auctionItemId?: string;
+const createAuctionComplaintFields = {
+  auctionItemId: nullAsAbsent(z.uuid().describe('Related auction lot identifier (AuctionItem ID)')),
+  reason: z
+    .string()
+    .trim()
+    .min(1)
+    .max(2000)
+    .describe('Detailed complaint reason submitted to Admin')
+    .meta({
+      example: 'Người mua thắng đấu giá nhưng chưa hoàn tất thanh toán sau thời hạn quy định.',
+    }),
+  evidenceUrls: nullAsAbsent(
+    z.array(z.string()).describe('Optional evidence image or document URLs'),
+  ),
+};
 
-  @ApiProperty({
-    description: 'Detailed complaint reason submitted to Admin',
-    example: 'Người mua thắng đấu giá nhưng chưa hoàn tất thanh toán sau thời hạn quy định.',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Vui lòng nhập nội dung khiếu nại.' })
-  @MaxLength(2000)
-  reason!: string;
+export const CreateAuctionComplaintSchema = z.object(createAuctionComplaintFields).strict();
 
-  @ApiPropertyOptional({
-    description: 'Optional evidence image or document URLs',
-    type: [String],
-  })
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  evidenceUrls?: string[];
-}
+export type CreateAuctionComplaintInput = z.infer<typeof CreateAuctionComplaintSchema>;
 
 export enum ResolveAuctionComplaintDecision {
   ACCEPTED = 'ACCEPTED',
@@ -48,22 +32,20 @@ export enum ResolveAuctionComplaintDecision {
 /**
  * Data transfer object used by Admin to accept or reject an auction complaint request.
  */
-export class ResolveAuctionComplaintDto {
-  @ApiProperty({
-    description: 'Admin decision on the complaint request',
-    enum: ResolveAuctionComplaintDecision,
-    example: ResolveAuctionComplaintDecision.ACCEPTED,
-  })
-  @IsEnum(ResolveAuctionComplaintDecision)
-  @IsNotEmpty()
-  status!: ResolveAuctionComplaintDecision;
+const resolveAuctionComplaintFields = {
+  status: z
+    .enum(ResolveAuctionComplaintDecision)
+    .describe('Admin decision on the complaint request')
+    .meta({ example: ResolveAuctionComplaintDecision.ACCEPTED }),
+  adminNote: nullAsAbsent(
+    z
+      .string()
+      .max(1000)
+      .describe('Optional resolution note sent back to the requester')
+      .meta({ example: 'Đã tiếp nhận khiếu nại và chuyển sang bước xử lý quá hạn thanh toán.' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    description: 'Optional resolution note sent back to the requester',
-    example: 'Đã tiếp nhận khiếu nại và chuyển sang bước xử lý quá hạn thanh toán.',
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(1000)
-  adminNote?: string;
-}
+export const ResolveAuctionComplaintSchema = z.object(resolveAuctionComplaintFields).strict();
+
+export type ResolveAuctionComplaintInput = z.infer<typeof ResolveAuctionComplaintSchema>;

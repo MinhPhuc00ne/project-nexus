@@ -1,26 +1,33 @@
 import {
-  Controller,
-  Post,
-  Get,
-  Patch,
-  Delete,
-  Param,
-  Body,
-  Query,
-  UseGuards,
-  UploadedFile,
-  UseInterceptors,
   BadRequestException,
+  Controller,
+  Delete,
+  Get,
   Headers,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UsersService, UserProfileResponse } from '../services/users.service';
+import { UserProfileResponse, UsersService } from '../services/users.service';
 import { AddressService } from '../services/address.service';
 import { WishlistService } from '../services/wishlist.service';
-import { SyncWishlistDto } from '../dtos/wishlist.dto';
+import { SyncWishlistInput, SyncWishlistSchema } from '../dtos/wishlist.dto';
 import type { WishlistItemDto } from '@nexus/types';
-import { UpdateBuyerProfileDto, CreateAddressDto, UpdateAddressDto } from '../dtos/users.dto';
+import {
+  CreateAddressInput,
+  CreateAddressSchema,
+  UpdateAddressInput,
+  UpdateAddressSchema,
+  UpdateBuyerProfileInput,
+  UpdateBuyerProfileSchema,
+} from '../dtos/users.dto';
 import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -57,7 +64,7 @@ export class BuyerController {
   async updateProfile(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') userRole: Role,
-    @Body() dto: UpdateBuyerProfileDto,
+    @ZodBody(UpdateBuyerProfileSchema) dto: UpdateBuyerProfileInput,
     @Headers('x-verification-token') verificationHeader?: string,
   ): Promise<UserProfileResponse> {
     return this.usersService.updateProfile(userId, dto, userRole, verificationHeader);
@@ -124,7 +131,10 @@ export class BuyerController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Post('addresses')
-  async createAddress(@CurrentUser('id') userId: string, @Body() dto: CreateAddressDto) {
+  async createAddress(
+    @CurrentUser('id') userId: string,
+    @ZodBody(CreateAddressSchema) dto: CreateAddressInput,
+  ) {
     return this.addressService.createAddress(userId, dto);
   }
 
@@ -137,7 +147,7 @@ export class BuyerController {
   async updateAddress(
     @CurrentUser('id') userId: string,
     @Param('id') addressId: string,
-    @Body() dto: UpdateAddressDto,
+    @ZodBody(UpdateAddressSchema) dto: UpdateAddressInput,
   ) {
     return this.addressService.updateAddress(userId, addressId, dto);
   }
@@ -190,7 +200,7 @@ export class BuyerController {
   @Post('wishlist/sync')
   async syncWishlist(
     @CurrentUser('id') userId: string,
-    @Body() dto: SyncWishlistDto,
+    @ZodBody(SyncWishlistSchema) dto: SyncWishlistInput,
   ): Promise<WishlistItemDto[]> {
     return this.wishlistService.syncGuestWishlist(userId, dto.productIds);
   }

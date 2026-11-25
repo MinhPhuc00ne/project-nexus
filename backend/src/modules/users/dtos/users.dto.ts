@@ -1,14 +1,5 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsEmail,
-  IsEnum,
-  IsNumber,
-  Matches,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { SellerRequestStatus } from '@prisma/client';
 import { Role } from '@nexus/types';
 
@@ -36,275 +27,162 @@ export interface UserProfileResponse {
   createdAt: Date;
 }
 
-export class UpdateBuyerProfileDto {
-  @ApiPropertyOptional({ example: 'Nguyen Van A', description: 'Updated full name' })
-  @IsString()
-  @IsOptional()
-  fullName?: string;
+const updateBuyerProfileFields = {
+  fullName: nullAsAbsent(
+    z.string().describe('Updated full name').meta({ example: 'Nguyen Van A' }),
+  ),
+  phoneNumber: nullAsAbsent(
+    z
+      .string()
+      .regex(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/)
+      .describe('Updated 10-digit Vietnamese phone number')
+      .meta({ example: '0901234567' }),
+  ),
+  avatarUrl: nullAsAbsent(
+    z.string().describe('Avatar URL').meta({ example: 'https://example.com/avatar.png' }),
+  ),
+  bankName: nullAsAbsent(
+    z.string().describe('Tên ngân hàng thụ hưởng').meta({ example: 'Vietcombank' }),
+  ),
+  accountNumber: nullAsAbsent(
+    z.string().describe('Số tài khoản ngân hàng thụ hưởng').meta({ example: '1029384756' }),
+  ),
+  accountHolderName: nullAsAbsent(
+    z
+      .string()
+      .describe('Họ và tên chủ tài khoản ngân hàng (viết hoa)')
+      .meta({ example: 'NGUYEN VAN A' }),
+  ),
+  password: nullAsAbsent(
+    z.string().describe('Mật khẩu tài khoản để xác minh trực tiếp khi Seller cập nhật hồ sơ'),
+  ),
+  verificationToken: nullAsAbsent(
+    z.string().describe('Mã token xác minh đăng nhập gần đây của Seller'),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: '0901234567',
-    description: 'Updated 10-digit Vietnamese phone number',
-  })
-  @IsString()
-  @IsOptional()
-  @Matches(/^(0|\+84)[3|5|7|8|9][0-9]{8}$/, {
-    message: 'Số điện thoại không hợp lệ (yêu cầu định dạng 10 chữ số của Việt Nam).',
-  })
-  phoneNumber?: string;
+export const UpdateBuyerProfileSchema = z.object(updateBuyerProfileFields).strict();
 
-  @ApiPropertyOptional({ example: 'https://example.com/avatar.png', description: 'Avatar URL' })
-  @IsString()
-  @IsOptional()
-  avatarUrl?: string;
+export type UpdateBuyerProfileInput = z.infer<typeof UpdateBuyerProfileSchema>;
 
-  @ApiPropertyOptional({ example: 'Vietcombank', description: 'Tên ngân hàng thụ hưởng' })
-  @IsString()
-  @IsOptional()
-  bankName?: string;
+const applySellerUpgradeFields = {
+  storeName: z.string().trim().min(1).describe('Store name').meta({ example: 'Nexus Super Store' }),
+  storeDescription: nullAsAbsent(
+    z.string().describe('Store description').meta({ example: 'Authentic electronics store' }),
+  ),
+  phone: z.string().trim().min(1).describe('Store contact phone').meta({ example: '0912345678' }),
+  businessEmail: nullAsAbsent(
+    z.email().describe('Business email').meta({ example: 'business@nexusstore.com' }),
+  ),
+  identityCardNumber: nullAsAbsent(
+    z.string().describe('National identity card number').meta({ example: '012345678910' }),
+  ),
+  attachmentUrl: nullAsAbsent(
+    z
+      .string()
+      .describe('Đường dẫn file chứng minh (nếu không upload trực tiếp file trong form-data)')
+      .meta({ example: 'https://res.cloudinary.com/nexus/proof.jpg' }),
+  ),
+  street: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Store address / street')
+    .meta({ example: '720A Điện Biên Phủ' }),
+  ward: nullAsAbsent(z.string().meta({ example: 'Phường 22' })),
+  district: nullAsAbsent(z.string().meta({ example: 'Quận Bình Thạnh' })),
+  city: z.string().trim().min(1).meta({ example: 'TP. Hồ Chí Minh' }),
+  latitude: nullAsAbsent(z.coerce.number().describe('GPS Latitude').meta({ example: 10.795 })),
+  longitude: nullAsAbsent(z.coerce.number().describe('GPS Longitude').meta({ example: 106.721 })),
+  formattedAddress: nullAsAbsent(
+    z
+      .string()
+      .describe('Formatted address')
+      .meta({ example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh' }),
+  ),
+  placeId: nullAsAbsent(z.string().describe('Place ID').meta({ example: 'ChIJw8qV...' })),
+};
 
-  @ApiPropertyOptional({ example: '1029384756', description: 'Số tài khoản ngân hàng thụ hưởng' })
-  @IsString()
-  @IsOptional()
-  accountNumber?: string;
+export const ApplySellerUpgradeSchema = z.object(applySellerUpgradeFields).strict();
 
-  @ApiPropertyOptional({
-    example: 'NGUYEN VAN A',
-    description: 'Họ và tên chủ tài khoản ngân hàng (viết hoa)',
-  })
-  @IsString()
-  @IsOptional()
-  accountHolderName?: string;
+export type ApplySellerUpgradeInput = z.infer<typeof ApplySellerUpgradeSchema>;
 
-  @ApiPropertyOptional({
-    description: 'Mật khẩu tài khoản để xác minh trực tiếp khi Seller cập nhật hồ sơ',
-  })
-  @IsString()
-  @IsOptional()
-  password?: string;
+const reviewSellerUpgradeFields = {
+  status: z
+    .enum(SellerRequestStatus)
+    .describe('Decision: APPROVED or REJECTED')
+    .meta({ example: SellerRequestStatus.APPROVED }),
+  rejectionReason: nullAsAbsent(
+    z
+      .string()
+      .describe('Rejection reason or review note')
+      .meta({ example: 'Documents verified successfully' }),
+  ),
+};
 
-  @ApiPropertyOptional({ description: 'Mã token xác minh đăng nhập gần đây của Seller' })
-  @IsString()
-  @IsOptional()
-  verificationToken?: string;
-}
+export const ReviewSellerUpgradeSchema = z.object(reviewSellerUpgradeFields).strict();
 
-export class ApplySellerUpgradeDto {
-  @ApiProperty({ example: 'Nexus Super Store', description: 'Store name' })
-  @IsString()
-  @IsNotEmpty({ message: 'Store name is required' })
-  storeName!: string;
+export type ReviewSellerUpgradeInput = z.infer<typeof ReviewSellerUpgradeSchema>;
 
-  @ApiPropertyOptional({ example: 'Authentic electronics store', description: 'Store description' })
-  @IsString()
-  @IsOptional()
-  storeDescription?: string;
+const createAddressFields = {
+  recipientName: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Họ tên người nhận hàng')
+    .meta({ example: 'Đinh Tú Liên' }),
+  phone: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Số điện thoại người nhận')
+    .meta({ example: '0909123456' }),
+  street: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Địa chỉ cụ thể')
+    .meta({ example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ' }),
+  ward: nullAsAbsent(z.string().meta({ example: 'Phường 22' })),
+  district: nullAsAbsent(z.string().meta({ example: 'Quận Bình Thạnh' })),
+  city: z.string().trim().min(1).meta({ example: 'TP. Hồ Chí Minh' }),
+  latitude: nullAsAbsent(
+    z.coerce.number().describe('Vĩ độ GPS (Latitude) từ bản đồ').meta({ example: 10.795 }),
+  ),
+  longitude: nullAsAbsent(
+    z.coerce.number().describe('Kinh độ GPS (Longitude) từ bản đồ').meta({ example: 106.721 }),
+  ),
+  formattedAddress: nullAsAbsent(
+    z
+      .string()
+      .describe('Địa chỉ đầy đủ định dạng chuẩn bản đồ')
+      .meta({ example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh' }),
+  ),
+  placeId: nullAsAbsent(
+    z.string().describe('Google / OSM Place ID').meta({ example: 'ChIJw8qV...' }),
+  ),
+  isDefault: z.boolean().meta({ example: true }).default(false),
+};
 
-  @ApiProperty({ example: '0912345678', description: 'Store contact phone' })
-  @IsString()
-  @IsNotEmpty({ message: 'Contact phone number is required' })
-  phone!: string;
+export const CreateAddressSchema = z.object(createAddressFields).strict();
 
-  @ApiPropertyOptional({ example: 'business@nexusstore.com', description: 'Business email' })
-  @IsEmail({}, { message: 'Business email must be valid' })
-  @IsOptional()
-  businessEmail?: string;
+export type CreateAddressInput = z.infer<typeof CreateAddressSchema>;
+const updateAddressFields = {
+  recipientName: nullAsAbsent(z.string().meta({ example: 'Nguyen Van A' })),
+  phone: nullAsAbsent(z.string().meta({ example: '0909123456' })),
+  street: nullAsAbsent(z.string().meta({ example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ' })),
+  ward: nullAsAbsent(z.string().meta({ example: 'Phường 22' })),
+  district: nullAsAbsent(z.string().meta({ example: 'Quận Bình Thạnh' })),
+  city: nullAsAbsent(z.string().meta({ example: 'TP. Hồ Chí Minh' })),
+  latitude: nullAsAbsent(z.coerce.number().meta({ example: 10.795 })),
+  longitude: nullAsAbsent(z.coerce.number().meta({ example: 106.721 })),
+  formattedAddress: nullAsAbsent(
+    z.string().meta({ example: 'Landmark 81, 720A Điện Biên Phủ, Bình Thạnh' }),
+  ),
+  placeId: nullAsAbsent(z.string().meta({ example: 'ChIJw8qV...' })),
+  isDefault: nullAsAbsent(z.boolean().meta({ example: false })),
+};
 
-  @ApiPropertyOptional({ example: '012345678910', description: 'National identity card number' })
-  @IsString()
-  @IsOptional()
-  identityCardNumber?: string;
+export const UpdateAddressSchema = z.object(updateAddressFields).strict();
 
-  @ApiPropertyOptional({
-    example: 'https://res.cloudinary.com/nexus/proof.jpg',
-    description: 'Đường dẫn file chứng minh (nếu không upload trực tiếp file trong form-data)',
-  })
-  @IsString()
-  @IsOptional()
-  attachmentUrl?: string;
-
-  @ApiProperty({ example: '720A Điện Biên Phủ', description: 'Store address / street' })
-  @IsString()
-  @IsNotEmpty({ message: 'Store street address is required' })
-  street!: string;
-
-  @ApiPropertyOptional({ example: 'Phường 22' })
-  @IsString()
-  @IsOptional()
-  ward?: string;
-
-  @ApiPropertyOptional({ example: 'Quận Bình Thạnh' })
-  @IsString()
-  @IsOptional()
-  district?: string;
-
-  @ApiProperty({ example: 'TP. Hồ Chí Minh' })
-  @IsString()
-  @IsNotEmpty({ message: 'Store city is required' })
-  city!: string;
-
-  @ApiPropertyOptional({ example: 10.795, description: 'GPS Latitude' })
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  latitude?: number;
-
-  @ApiPropertyOptional({ example: 106.721, description: 'GPS Longitude' })
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  longitude?: number;
-
-  @ApiPropertyOptional({
-    example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh',
-    description: 'Formatted address',
-  })
-  @IsString()
-  @IsOptional()
-  formattedAddress?: string;
-
-  @ApiPropertyOptional({ example: 'ChIJw8qV...', description: 'Place ID' })
-  @IsString()
-  @IsOptional()
-  placeId?: string;
-}
-
-export class ReviewSellerUpgradeDto {
-  @ApiProperty({
-    enum: SellerRequestStatus,
-    example: SellerRequestStatus.APPROVED,
-    description: 'Decision: APPROVED or REJECTED',
-  })
-  @IsEnum(SellerRequestStatus, {
-    message: 'Status must be APPROVED or REJECTED',
-  })
-  status!: SellerRequestStatus;
-
-  @ApiPropertyOptional({
-    example: 'Documents verified successfully',
-    description: 'Rejection reason or review note',
-  })
-  @IsString()
-  @IsOptional()
-  rejectionReason?: string;
-}
-
-export class CreateAddressDto {
-  @ApiProperty({ example: 'Đinh Tú Liên', description: 'Họ tên người nhận hàng' })
-  @IsString()
-  @IsNotEmpty()
-  recipientName!: string;
-
-  @ApiProperty({ example: '0909123456', description: 'Số điện thoại người nhận' })
-  @IsString()
-  @IsNotEmpty()
-  phone!: string;
-
-  @ApiProperty({
-    example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ',
-    description: 'Địa chỉ cụ thể',
-  })
-  @IsString()
-  @IsNotEmpty()
-  street!: string;
-
-  @ApiPropertyOptional({ example: 'Phường 22' })
-  @IsString()
-  @IsOptional()
-  ward?: string;
-
-  @ApiPropertyOptional({ example: 'Quận Bình Thạnh' })
-  @IsString()
-  @IsOptional()
-  district?: string;
-
-  @ApiProperty({ example: 'TP. Hồ Chí Minh' })
-  @IsString()
-  @IsNotEmpty()
-  city!: string;
-
-  @ApiPropertyOptional({ example: 10.795, description: 'Vĩ độ GPS (Latitude) từ bản đồ' })
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  latitude?: number;
-
-  @ApiPropertyOptional({ example: 106.721, description: 'Kinh độ GPS (Longitude) từ bản đồ' })
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  longitude?: number;
-
-  @ApiPropertyOptional({
-    example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh',
-    description: 'Địa chỉ đầy đủ định dạng chuẩn bản đồ',
-  })
-  @IsString()
-  @IsOptional()
-  formattedAddress?: string;
-
-  @ApiPropertyOptional({ example: 'ChIJw8qV...', description: 'Google / OSM Place ID' })
-  @IsString()
-  @IsOptional()
-  placeId?: string;
-  @ApiPropertyOptional({ example: true, default: false })
-  @IsOptional()
-  isDefault?: boolean;
-}
-export class UpdateAddressDto {
-  @ApiPropertyOptional({ example: 'Nguyen Van A' })
-  @IsString()
-  @IsOptional()
-  recipientName?: string;
-
-  @ApiPropertyOptional({ example: '0909123456' })
-  @IsString()
-  @IsOptional()
-  phone?: string;
-
-  @ApiPropertyOptional({ example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ' })
-  @IsString()
-  @IsOptional()
-  street?: string;
-
-  @ApiPropertyOptional({ example: 'Phường 22' })
-  @IsString()
-  @IsOptional()
-  ward?: string;
-
-  @ApiPropertyOptional({ example: 'Quận Bình Thạnh' })
-  @IsString()
-  @IsOptional()
-  district?: string;
-
-  @ApiPropertyOptional({ example: 'TP. Hồ Chí Minh' })
-  @IsString()
-  @IsOptional()
-  city?: string;
-
-  @ApiPropertyOptional({ example: 10.795 })
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  latitude?: number;
-
-  @ApiPropertyOptional({ example: 106.721 })
-  @Type(() => Number)
-  @IsNumber()
-  @IsOptional()
-  longitude?: number;
-
-  @ApiPropertyOptional({ example: 'Landmark 81, 720A Điện Biên Phủ, Bình Thạnh' })
-  @IsString()
-  @IsOptional()
-  formattedAddress?: string;
-
-  @ApiPropertyOptional({ example: 'ChIJw8qV...' })
-  @IsString()
-  @IsOptional()
-  placeId?: string;
-
-  @ApiPropertyOptional({ example: false })
-  @IsOptional()
-  isDefault?: boolean;
-}
+export type UpdateAddressInput = z.infer<typeof UpdateAddressSchema>;

@@ -10,16 +10,16 @@ import { ChatMessage } from '@prisma/client';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import {
-  CreateConversationDto,
-  QueryConversationsDto,
-  QueryMessagesDto,
-  QueryQueueDto,
-  RequestSupportDto,
-  SendMessageDto,
-  UpdateConversationStatusDto,
+  CreateConversationInput,
+  QueryConversationsInput,
+  QueryMessagesInput,
+  QueryQueueInput,
+  RequestSupportInput,
+  SendMessageInput,
+  UpdateConversationStatusInput,
 } from '../dtos';
 import { ChatAutoReplyService } from './chat-auto-reply.service';
-import { maskStaffSender, SUPPORT_STAFF_MASK } from './chat-mask.util';
+import { SUPPORT_STAFF_MASK, maskStaffSender } from './chat-mask.util';
 import { StaffQueueService } from './staff-queue.service';
 import { ChatRealtimePublisher } from './chat-realtime.publisher';
 
@@ -61,7 +61,7 @@ export class ChatService {
   async createOrGetConversation(
     currentUserId: string,
     currentUserRole: string,
-    dto: CreateConversationDto,
+    dto: CreateConversationInput,
   ) {
     const recipientId = (dto.participantId || dto.targetUserId || '').trim();
     if (!recipientId && dto.contextType !== 'DISPUTE') {
@@ -158,7 +158,7 @@ export class ChatService {
    * @returns Created support Conversation entity
    * @throws BadRequestException when staff or admin attempts to submit, or when content is invalid
    */
-  async requestSupport(userId: string, role: string, dto: RequestSupportDto) {
+  async requestSupport(userId: string, role: string, dto: RequestSupportInput) {
     if (role === 'SUPPORT_STAFF' || role === 'ADMIN') {
       throw new BadRequestException(
         'Tài khoản nhân viên hoặc quản trị viên không thể gửi yêu cầu hỗ trợ người dùng.',
@@ -307,7 +307,7 @@ export class ChatService {
    * @returns Paginated queue tickets and waiting metrics
    * @throws ForbiddenException when user lacks staff or admin privileges
    */
-  async getQueue(role: string, query: QueryQueueDto) {
+  async getQueue(role: string, query: QueryQueueInput) {
     if (role !== 'SUPPORT_STAFF' && role !== 'ADMIN') {
       throw new ForbiddenException(
         'Chỉ nhân viên hoặc quản trị viên mới có quyền xem hàng đợi hỗ trợ.',
@@ -427,7 +427,7 @@ export class ChatService {
     convId: string,
     userId: string,
     role: string,
-    dto: UpdateConversationStatusDto,
+    dto: UpdateConversationStatusInput,
   ) {
     const conv = await this.prisma.chatConversation.findUnique({
       where: { id: convId },
@@ -509,7 +509,7 @@ export class ChatService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated conversation summaries
    */
-  async listUserConversations(userId: string, role: string, query: QueryConversationsDto) {
+  async listUserConversations(userId: string, role: string, query: QueryConversationsInput) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
     const skip = (page - 1) * limit;
@@ -621,7 +621,7 @@ export class ChatService {
    * @param query - Cursor pagination parameters
    * @returns Paginated messages with masked identities
    */
-  async listMessages(convId: string, userId: string, role: string, query: QueryMessagesDto) {
+  async listMessages(convId: string, userId: string, role: string, query: QueryMessagesInput) {
     await this.getConversationById(convId, userId, role);
     const limit = Number(query.limit) || 50;
     const where: Record<string, unknown> = { conversationId: convId };
@@ -667,7 +667,7 @@ export class ChatService {
    * @returns Created ChatMessage entity
    * @throws BadRequestException when message body is missing or violates content rules
    */
-  async sendMessage(senderId: string, senderRole: string, dto: SendMessageDto) {
+  async sendMessage(senderId: string, senderRole: string, dto: SendMessageInput) {
     const text = (dto.content || dto.body || '').trim();
     const attachments = dto.attachments || [];
     if (!text && attachments.length === 0) {

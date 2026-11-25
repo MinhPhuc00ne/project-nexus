@@ -1,45 +1,18 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { OrderStatus } from '@prisma/client';
-import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
-export class QueryAdminOrdersDto {
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page: number = 1;
+const queryAdminOrdersFields = {
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  status: nullAsAbsent(z.enum(OrderStatus)),
+  search: nullAsAbsent(
+    z.string().trim().max(200).describe('Mã đơn, vận đơn, tên/email người mua hoặc người bán'),
+  ),
+  sellerId: nullAsAbsent(z.string().max(100)),
+  buyerId: nullAsAbsent(z.string().max(100)),
+};
 
-  @ApiPropertyOptional({ default: 20, maximum: 100 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit: number = 20;
+export const QueryAdminOrdersSchema = z.object(queryAdminOrdersFields).strict();
 
-  @ApiPropertyOptional({ enum: OrderStatus })
-  @IsOptional()
-  @IsEnum(OrderStatus)
-  status?: OrderStatus;
-
-  @ApiPropertyOptional({ description: 'Mã đơn, vận đơn, tên/email người mua hoặc người bán' })
-  @IsOptional()
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @MaxLength(200)
-  search?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  sellerId?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  buyerId?: string;
-}
+export type QueryAdminOrdersInput = z.infer<typeof QueryAdminOrdersSchema>;

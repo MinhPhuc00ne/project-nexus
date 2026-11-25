@@ -1,6 +1,6 @@
 import { Prisma, ProductStatus, SellerRequestStatus } from '@prisma/client';
-import { QueryProductDto } from '../dtos/query-product.dto';
-import { priceView, PricedProduct } from '../../../core/domain/product-price';
+import { QueryProductInput } from '../dtos/query-product.dto';
+import { PricedProduct, priceView } from '../../../core/domain/product-price';
 import { ProductChoice } from '../../../core/domain/product-options';
 
 export interface PaginatedResult<T> {
@@ -40,7 +40,7 @@ export interface ProductDetailInput extends ProductSummaryInput {
 }
 
 export function buildProductWhere(
-  query: QueryProductDto,
+  query: QueryProductInput,
   categoryIds?: string[],
 ): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {

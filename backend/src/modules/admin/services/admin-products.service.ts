@@ -8,10 +8,10 @@ import {
 import { NotificationChannel, NotificationType, Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ProductTrendingService } from '../../catalog/services/product-trending.service';
-import { QueryAdminProductsDto } from '../dtos/query-admin-products.dto';
-import { RemoveTrendingProductDto } from '../dtos/remove-trending-product.dto';
-import { UpdateProductCategoryDto } from '../dtos/update-product-category.dto';
-import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
+import { QueryAdminProductsInput } from '../dtos/query-admin-products.dto';
+import { RemoveTrendingProductInput } from '../dtos/remove-trending-product.dto';
+import { UpdateProductCategoryInput } from '../dtos/update-product-category.dto';
+import { UpdateProductStatusInput } from '../dtos/update-product-status.dto';
 
 @Injectable()
 export class AdminProductsService {
@@ -28,7 +28,7 @@ export class AdminProductsService {
    * @param query - Product query parameters including status, seller, and pagination
    * @returns Paginated products with stock aggregates and category metadata
    */
-  async listProducts(query: QueryAdminProductsDto) {
+  async listProducts(query: QueryAdminProductsInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));
     const skip = (page - 1) * limit;
@@ -205,7 +205,7 @@ export class AdminProductsService {
    * @throws NotFoundException when the product does not exist
    * @throws BadRequestException when activating a product from a suspended shop
    */
-  async updateProductStatus(id: string, adminId: string, dto: UpdateProductStatusDto) {
+  async updateProductStatus(id: string, adminId: string, dto: UpdateProductStatusInput) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
@@ -284,7 +284,7 @@ export class AdminProductsService {
    * @returns Updated product and category assignment details
    * @throws NotFoundException when the product or target category does not exist
    */
-  async updateProductCategory(id: string, adminId: string, dto: UpdateProductCategoryDto) {
+  async updateProductCategory(id: string, adminId: string, dto: UpdateProductCategoryInput) {
     const [product, targetCategory] = await Promise.all([
       this.prisma.product.findUnique({
         where: { id },
@@ -443,7 +443,7 @@ export class AdminProductsService {
   async removeProductFromTrending(
     id: string,
     adminId: string,
-    dto?: RemoveTrendingProductDto,
+    dto?: RemoveTrendingProductInput,
   ): Promise<{
     success: boolean;
     message: string;

@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpCode,
@@ -11,24 +10,28 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role, WithdrawalStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
+  AuthenticatedUserPayload,
   CurrentUser,
   Roles,
-  AuthenticatedUserPayload,
 } from '../../../core/security/roles.decorator';
 import { AdminService } from '../services/admin.service';
 
-import { ReviewWithdrawalDto } from '../dtos/review-withdrawal.dto';
+import { ReviewWithdrawalInput, ReviewWithdrawalSchema } from '../dtos/review-withdrawal.dto';
 
 import {
-  DepositAdminWalletDto,
-  QueryAdminWalletTransactionsDto,
-  QueryPlatformUserWalletTransactionsDto,
   AdminWalletResponseDto,
   AdminWalletTransactionsResponseDto,
+  DepositAdminWalletInput,
+  DepositAdminWalletSchema,
+  QueryAdminWalletTransactionsInput,
+  QueryAdminWalletTransactionsSchema,
+  QueryPlatformUserWalletTransactionsInput,
+  QueryPlatformUserWalletTransactionsSchema,
 } from '../dtos/admin-wallet.dto';
 
 import { AdminFinanceService } from '../services/admin-finance.service';
@@ -73,7 +76,7 @@ export class AdminFinanceController {
   async reviewWithdrawal(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: ReviewWithdrawalDto,
+    @ZodBody(ReviewWithdrawalSchema) dto: ReviewWithdrawalInput,
   ) {
     return this.adminService.reviewWithdrawalRequest(id, admin.id, dto);
   }
@@ -120,7 +123,7 @@ export class AdminFinanceController {
   })
   async getAdminWalletTransactions(
     @CurrentUser('id') adminId: string,
-    @Query() query: QueryAdminWalletTransactionsDto,
+    @ZodQuery(QueryAdminWalletTransactionsSchema) query: QueryAdminWalletTransactionsInput,
   ) {
     return this.adminFinanceService.getAdminWalletTransactions(adminId, query);
   }
@@ -135,7 +138,10 @@ export class AdminFinanceController {
     status: 200,
     description: 'Platform user wallet transactions retrieved successfully',
   })
-  async getPlatformUserWalletTransactions(@Query() query: QueryPlatformUserWalletTransactionsDto) {
+  async getPlatformUserWalletTransactions(
+    @ZodQuery(QueryPlatformUserWalletTransactionsSchema)
+    query: QueryPlatformUserWalletTransactionsInput,
+  ) {
     return this.adminFinanceService.getPlatformUserWalletTransactions(query);
   }
 
@@ -148,7 +154,10 @@ export class AdminFinanceController {
   })
   @ApiResponse({ status: 200, description: 'Deposit processed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid deposit amount' })
-  async depositAdminWallet(@CurrentUser('id') adminId: string, @Body() dto: DepositAdminWalletDto) {
+  async depositAdminWallet(
+    @CurrentUser('id') adminId: string,
+    @ZodBody(DepositAdminWalletSchema) dto: DepositAdminWalletInput,
+  ) {
     return this.adminFinanceService.depositToAdminWallet(adminId, dto);
   }
 }

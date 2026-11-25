@@ -1,21 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { z } from 'zod';
 
-export class LoginDto {
-  @ApiProperty({
-    example: 'user@nexus.com',
-    description: 'Email đăng nhập của người dùng',
-  })
-  @IsEmail()
-  @IsNotEmpty()
-  email!: string;
+const loginFields = {
+  email: z.email().describe('Email đăng nhập của người dùng').meta({ example: 'user@nexus.com' }),
+  password: z
+    .string()
+    .trim()
+    .min(1)
+    .min(6)
+    .describe('Mật khẩu người dùng (tối thiểu 6 ký tự)')
+    .meta({ example: '123456' }),
+};
 
-  @ApiProperty({
-    example: '123456',
-    description: 'Mật khẩu người dùng (tối thiểu 6 ký tự)',
-  })
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(6)
-  password!: string;
-}
+export const LoginSchema = z.object(loginFields).strict();
+
+export type LoginInput = z.infer<typeof LoginSchema>;

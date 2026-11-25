@@ -7,6 +7,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { requestBodySchema } from './helpers/openapi.mjs';
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
   transpileOnly: true,
@@ -128,9 +129,18 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
       ['catalog/banners', 'get'],
     ])
       assert.ok(doc.paths[`/api/v1/${path}`]?.[method], `${method} ${path}`);
-    assert.ok(doc.components.schemas.ReviewDto.properties.rating);
-    assert.ok(doc.components.schemas.BannerDto.properties.imageUrl);
-    assert.ok(doc.components.schemas.ReportDto.properties.evidenceUrls);
+    assert.ok(
+      requestBodySchema(
+        doc,
+        '/api/v1/commerce/orders/{orderId}/products/{productId}/review',
+        'post',
+      ).properties.rating,
+    );
+    assert.ok(requestBodySchema(doc, '/api/v1/staff/banners', 'post').properties.imageUrl);
+    assert.ok(
+      requestBodySchema(doc, '/api/v1/catalog/products/{id}/reports', 'post').properties
+        .evidenceUrls,
+    );
   } finally {
     await app.close();
   }

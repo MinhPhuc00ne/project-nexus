@@ -1,23 +1,18 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  Param,
-  ParseUUIDPipe,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ZodBody } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser } from '../../../core/security/roles.decorator';
+
+import {
+  RespondSecondChanceInput,
+  RespondSecondChanceSchema,
+} from '../dtos/respond-second-chance.dto';
+import { AuctionCheckoutService } from '../services/auction-checkout.service';
 import {
   CheckoutAuctionAwardInput,
   CheckoutAuctionAwardSchema,
 } from '../dtos/checkout-auction-award.dto';
-import { RespondSecondChanceDto } from '../dtos/respond-second-chance.dto';
-import { AuctionCheckoutService } from '../services/auction-checkout.service';
 
 /** Winner-only checkout consumes the held 30% deposit + 70% remaining balance and GHN shipping. */
 @Controller('commerce/auction-awards')
@@ -71,7 +66,7 @@ export class AuctionCheckoutController {
   respond(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: RespondSecondChanceDto,
+    @ZodBody(RespondSecondChanceSchema) dto: RespondSecondChanceInput,
   ): ReturnType<AuctionCheckoutService['respondSecondChance']> {
     return this.checkoutService.respondSecondChance(id, userId, dto.accept);
   }

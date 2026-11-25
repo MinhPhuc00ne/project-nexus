@@ -1,23 +1,15 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Roles } from '../../../core/security/roles.decorator';
 import { AdminService } from '../services/admin.service';
-import { CreateStaffDto } from '../dtos/create-staff.dto';
-import { AdminInviteStaffDto } from '../dtos/invite-staff.dto';
+import { CreateStaffInput, CreateStaffSchema } from '../dtos/create-staff.dto';
+import { AdminInviteStaffInput, AdminInviteStaffSchema } from '../dtos/invite-staff.dto';
 
-import { QueryStaffDto } from '../dtos/query-staff.dto';
+import { QueryStaffInput, QueryStaffSchema } from '../dtos/query-staff.dto';
 
 /** Provisioning and inviting the support staff who work the back office. */
 @ApiTags('5. ADMIN')
@@ -41,7 +33,7 @@ export class AdminStaffController {
   })
   @ApiResponse({ status: 400, description: 'Email address already registered or invalid input' })
   @ApiResponse({ status: 403, description: 'Administrative role required' })
-  async createStaff(@Body() dto: CreateStaffDto) {
+  async createStaff(@ZodBody(CreateStaffSchema) dto: CreateStaffInput) {
     return this.adminService.createStaff(dto);
   }
 
@@ -56,7 +48,7 @@ export class AdminStaffController {
     status: 201,
     description: 'Invitation sent successfully and staff account provisioned',
   })
-  async inviteStaff(@Body() dto: AdminInviteStaffDto) {
+  async inviteStaff(@ZodBody(AdminInviteStaffSchema) dto: AdminInviteStaffInput) {
     return this.adminService.inviteStaff(dto);
   }
 
@@ -65,7 +57,7 @@ export class AdminStaffController {
     summary: 'List support staff members',
   })
   @ApiResponse({ status: 200, description: 'Staff members retrieved successfully' })
-  async listStaff(@Query() query: QueryStaffDto) {
+  async listStaff(@ZodQuery(QueryStaffSchema) query: QueryStaffInput) {
     return this.adminService.listStaff(query);
   }
 }

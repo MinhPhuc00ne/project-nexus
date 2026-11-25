@@ -2,9 +2,9 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma, Wallet, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import {
-  DepositAdminWalletDto,
-  QueryAdminWalletTransactionsDto,
-  QueryPlatformUserWalletTransactionsDto,
+  DepositAdminWalletInput,
+  QueryAdminWalletTransactionsInput,
+  QueryPlatformUserWalletTransactionsInput,
 } from '../dtos/admin-wallet.dto';
 import { TreasuryService } from '../../treasury/services/treasury.service';
 
@@ -92,7 +92,7 @@ export class AdminFinanceService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated wallet transactions with associated order details
    */
-  async getAdminWalletTransactions(adminId: string, query: QueryAdminWalletTransactionsDto) {
+  async getAdminWalletTransactions(adminId: string, query: QueryAdminWalletTransactionsInput) {
     let wallet = await this.prisma.wallet.findUnique({
       where: { userId: adminId },
     });
@@ -210,7 +210,7 @@ export class AdminFinanceService {
    * @param query - Filters for type, status, role, userId, date range, and keyword search
    * @returns Paginated user wallet transactions with account details
    */
-  async getPlatformUserWalletTransactions(query: QueryPlatformUserWalletTransactionsDto) {
+  async getPlatformUserWalletTransactions(query: QueryPlatformUserWalletTransactionsInput) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 10));
     const skip = (page - 1) * limit;
@@ -297,7 +297,7 @@ export class AdminFinanceService {
   }
 
   private buildUserWalletTransactionWhere(
-    query: QueryPlatformUserWalletTransactionsDto,
+    query: QueryPlatformUserWalletTransactionsInput,
   ): Prisma.WalletTransactionWhereInput {
     const where: Prisma.WalletTransactionWhereInput = {};
 
@@ -342,7 +342,7 @@ export class AdminFinanceService {
    * @returns Deposit confirmation, updated balance, and transaction record
    * @throws BadRequestException when amount is non-positive
    */
-  async depositToAdminWallet(adminId: string, dto: DepositAdminWalletDto) {
+  async depositToAdminWallet(adminId: string, dto: DepositAdminWalletInput) {
     if (dto.amount <= 0) {
       throw new BadRequestException('Số tiền nạp vào ví phải lớn hơn 0 đồng.');
     }

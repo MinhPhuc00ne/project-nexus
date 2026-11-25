@@ -3,9 +3,9 @@ import { NotificationChannel, NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import {
-  AdminDeleteReviewDto,
-  AdminModerateReviewVisibilityDto,
-  QueryAdminReviewsDto,
+  AdminDeleteReviewInput,
+  AdminModerateReviewVisibilityInput,
+  QueryAdminReviewsInput,
 } from '../dtos/feedback.dto';
 import { PRODUCT_REVIEW_NOT_FOUND, SHOP_REVIEW_NOT_FOUND } from './reviews-media.helper';
 
@@ -16,7 +16,7 @@ export class ReviewsModerationHelper {
     private readonly reputationService: ReputationService,
   ) {}
 
-  async adminListReviews(query: QueryAdminReviewsDto): Promise<unknown> {
+  async adminListReviews(query: QueryAdminReviewsInput): Promise<unknown> {
     const skip = (query.page - 1) * query.limit;
     const take = query.limit;
     const sortOrder: Prisma.SortOrder = query.sortBy === 'oldest' ? 'asc' : 'desc';
@@ -121,7 +121,7 @@ export class ReviewsModerationHelper {
   async adminDeleteReview(
     id: string,
     type: 'product' | 'shop',
-    dto: AdminDeleteReviewDto,
+    dto: AdminDeleteReviewInput,
     actorRole?: string,
   ): Promise<{ success: boolean; message: string }> {
     const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
@@ -217,7 +217,7 @@ export class ReviewsModerationHelper {
 
   async adminRemoveSellerReply(
     reviewId: string,
-    dto: AdminDeleteReviewDto,
+    dto: AdminDeleteReviewInput,
     actorRole?: string,
   ): Promise<{ success: boolean; message: string }> {
     const actorLabel = actorRole === 'SUPPORT_STAFF' ? 'Nhân viên kiểm duyệt' : 'Admin';
@@ -386,7 +386,7 @@ export class ReviewsModerationHelper {
     adminId: string,
     targetType: 'product' | 'shop' | 'reply',
     id: string,
-    dto: AdminModerateReviewVisibilityDto,
+    dto: AdminModerateReviewVisibilityInput,
     actorRole?: string,
   ): Promise<{ success: boolean; isHidden: boolean; message: string }> {
     const reason = dto.isHidden ? dto.reason?.trim() || 'Nội dung tiêu cực / không phù hợp' : null;

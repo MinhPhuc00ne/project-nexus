@@ -1,66 +1,47 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
+import { ApiProperty } from '@nestjs/swagger';
 import { PenaltyType, ReputationTrustLevel } from '@prisma/client';
-import {
-  IsBoolean,
-  IsEnum,
-  IsIn,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
 
 /**
  * Data transfer object for adjusting a user's reputation score.
  */
-export class AdjustReputationDto {
-  @ApiProperty({ description: 'Target user unique identifier', example: 'usr_abc123' })
-  @IsString()
-  userId!: string;
+const adjustReputationFields = {
+  userId: z.string().describe('Target user unique identifier').meta({ example: 'usr_abc123' }),
+  deltaPoints: z
+    .number()
+    .int()
+    .min(-2147483648)
+    .max(2147483647)
+    .describe('Score delta to increment (positive) or decrement (negative)')
+    .meta({ example: 2 }),
+  reason: z
+    .string()
+    .describe('Audit explanation reason for score modification')
+    .meta({ example: 'Completed escrow order delivery #ord_123' }),
+  penaltyType: nullAsAbsent(
+    z
+      .enum(PenaltyType)
+      .describe('Infraction category when applying a penalty deduction')
+      .meta({ example: PenaltyType.ORDER_CANCELLATION }),
+  ),
+  referenceId: nullAsAbsent(
+    z
+      .string()
+      .describe('Associated domain entity identifier (e.g. orderId, auctionId)')
+      .meta({ example: 'ord_123' }),
+  ),
+  skipNotification: nullAsAbsent(
+    z
+      .boolean()
+      .describe('Whether to suppress sending an in-app notification to the user')
+      .meta({ example: false }),
+  ),
+};
 
-  @ApiProperty({
-    description: 'Score delta to increment (positive) or decrement (negative)',
-    example: 2,
-  })
-  @IsInt()
-  @Min(-2147483648)
-  @Max(2147483647)
-  deltaPoints!: number;
+export const AdjustReputationSchema = z.object(adjustReputationFields).strict();
 
-  @ApiProperty({
-    description: 'Audit explanation reason for score modification',
-    example: 'Completed escrow order delivery #ord_123',
-  })
-  @IsString()
-  reason!: string;
-
-  @ApiPropertyOptional({
-    description: 'Infraction category when applying a penalty deduction',
-    enum: PenaltyType,
-    example: PenaltyType.ORDER_CANCELLATION,
-  })
-  @IsOptional()
-  @IsEnum(PenaltyType)
-  penaltyType?: PenaltyType;
-
-  @ApiPropertyOptional({
-    description: 'Associated domain entity identifier (e.g. orderId, auctionId)',
-    example: 'ord_123',
-  })
-  @IsOptional()
-  @IsString()
-  referenceId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Whether to suppress sending an in-app notification to the user',
-    example: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  skipNotification?: boolean;
-}
+export type AdjustReputationInput = z.infer<typeof AdjustReputationSchema>;
 
 /**
  * Category keys for granular profile completion reputation rewards.
@@ -70,32 +51,27 @@ export type ProfileCompletionField = 'FULL_NAME' | 'AVATAR' | 'PHONE' | 'BANK' |
 /**
  * Data transfer object for awarding profile completion reputation milestones.
  */
-export class AwardProfileCompletionDto {
-  @ApiProperty({ description: 'Target user unique identifier', example: 'usr_abc123' })
-  @IsString()
-  userId!: string;
+const awardProfileCompletionFields = {
+  userId: z.string().describe('Target user unique identifier').meta({ example: 'usr_abc123' }),
+  fieldKey: z
+    .enum(['FULL_NAME', 'AVATAR', 'PHONE', 'BANK', 'KYC_SELLER'])
+    .describe('Profile milestone attribute key')
+    .meta({ example: 'PHONE' }),
+  points: z
+    .number()
+    .min(1)
+    .max(50)
+    .describe('Points awarded for completing this milestone')
+    .meta({ example: 10 }),
+  reason: z
+    .string()
+    .describe('Descriptive reason recorded in reputation audit log')
+    .meta({ example: 'Completed valid phone number profile registration' }),
+};
 
-  @ApiProperty({
-    description: 'Profile milestone attribute key',
-    example: 'PHONE',
-    enum: ['FULL_NAME', 'AVATAR', 'PHONE', 'BANK', 'KYC_SELLER'],
-  })
-  @IsIn(['FULL_NAME', 'AVATAR', 'PHONE', 'BANK', 'KYC_SELLER'])
-  fieldKey!: ProfileCompletionField;
+export const AwardProfileCompletionSchema = z.object(awardProfileCompletionFields).strict();
 
-  @ApiProperty({ description: 'Points awarded for completing this milestone', example: 10 })
-  @IsNumber()
-  @Min(1)
-  @Max(50)
-  points!: number;
-
-  @ApiProperty({
-    description: 'Descriptive reason recorded in reputation audit log',
-    example: 'Completed valid phone number profile registration',
-  })
-  @IsString()
-  reason!: string;
-}
+export type AwardProfileCompletionInput = z.infer<typeof AwardProfileCompletionSchema>;
 
 /**
  * Response payload summarizing a user's reputation standing and privileges.
@@ -137,17 +113,17 @@ export class ReputationSummaryResponse {
 /**
  * Query filter parameters for retrieving paginated user reputation audit logs.
  */
-export class QueryReputationLogsDto {
-  @ApiPropertyOptional({ description: 'Page offset number (1-based)', example: 1, default: 1 })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  page?: number = 1;
+const queryReputationLogsFields = {
+  page: z.number().min(1).describe('Page offset number (1-based)').meta({ example: 1 }).default(1),
+  limit: z
+    .number()
+    .min(1)
+    .max(100)
+    .describe('Number of records per page')
+    .meta({ example: 20 })
+    .default(20),
+};
 
-  @ApiPropertyOptional({ description: 'Number of records per page', example: 20, default: 20 })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
-}
+export const QueryReputationLogsSchema = z.object(queryReputationLogsFields).strict();
+
+export type QueryReputationLogsInput = z.infer<typeof QueryReputationLogsSchema>;

@@ -3,13 +3,14 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test, mock } from 'node:test';
 import tsNode from 'ts-node';
+import { requestBodySchema } from './helpers/openapi.mjs';
 
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
   transpileOnly: true,
 });
 const load = createRequire(import.meta.url);
-const { Module, ValidationPipe } = load('@nestjs/common');
+const { Module } = load('@nestjs/common');
 const { ConfigService } = load('@nestjs/config');
 const { NestFactory } = load('@nestjs/core');
 const { SwaggerModule, DocumentBuilder } = load('@nestjs/swagger');
@@ -165,9 +166,6 @@ test(
       ],
     })(ApiModule);
     const app = await NestFactory.create(ApiModule, { logger: false, abortOnError: false });
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
-    );
     app.setGlobalPrefix('api/v1');
     try {
       await app.listen(0, '127.0.0.1');
@@ -309,7 +307,9 @@ test(
       );
       assert.ok(doc.paths['/api/v1/chat/bot/messages'].post);
       assert.deepEqual(doc.paths['/api/v1/chat/bot/guest/messages'].post.security, []);
-      assert.ok(doc.components.schemas.ChatbotMessageDto.required.includes('message'));
+      assert.ok(
+        requestBodySchema(doc, '/api/v1/chat/bot/messages', 'post').required.includes('message'),
+      );
     } finally {
       fetchMock.mock.restore();
       await app.close();

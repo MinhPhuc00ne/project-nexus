@@ -15,9 +15,9 @@ const load = createRequire(import.meta.url);
 const { ChatService } = load('../src/modules/chat/services/chat.service.ts');
 const { ChatAutoReplyService } = load('../src/modules/chat/services/chat-auto-reply.service.ts');
 const { StaffQueueService } = load('../src/modules/chat/services/staff-queue.service.ts');
-const { CreateConversationDto } = load('../src/modules/chat/dtos/create-conversation.dto.ts');
-const { SendMessageDto } = load('../src/modules/chat/dtos/send-message.dto.ts');
-const { RequestSupportDto, UpdateConversationStatusDto, TicketLifecycleStatus } = load(
+const { CreateConversationSchema } = load('../src/modules/chat/dtos/create-conversation.dto.ts');
+const { SendMessageSchema } = load('../src/modules/chat/dtos/send-message.dto.ts');
+const { RequestSupportSchema, UpdateConversationStatusSchema, TicketLifecycleStatus } = load(
   '../src/modules/chat/dtos/support-queue.dto.ts',
 );
 
@@ -286,8 +286,7 @@ test('Chat Module: Chặn hoàn toàn việc người dùng nhắn tin trực ti
     isSupportOnline: async () => false,
   });
 
-  const dto = new CreateConversationDto();
-  dto.participantId = 'admin-1';
+  const dto = CreateConversationSchema.parse({ participantId: 'admin-1' });
 
   await assert.rejects(
     async () => chatService.createOrGetConversation('buyer-1', 'BUYER', dto),
@@ -310,8 +309,7 @@ test('Chat Module: Chặn Staff tự ý tạo hội thoại trực tiếp với 
     isSupportOnline: async () => false,
   });
 
-  const dto = new CreateConversationDto();
-  dto.participantId = 'buyer-1';
+  const dto = CreateConversationSchema.parse({ participantId: 'buyer-1' });
 
   await assert.rejects(
     async () => chatService.createOrGetConversation('staff-1', 'SUPPORT_STAFF', dto),
@@ -338,9 +336,10 @@ test('Chat Module: Chặn gửi tin nhắn chứa từ ngữ cấm hoặc nhạy
     data: { participant1Id: 'buyer-1', participant2Id: 'seller-1' },
   });
 
-  const sendDto = new SendMessageDto();
-  sendDto.conversationId = conv.id;
-  sendDto.content = 'Tôi muốn mua súng đạn và vũ khí cấm';
+  const sendDto = SendMessageSchema.parse({
+    conversationId: conv.id,
+    content: 'Tôi muốn mua súng đạn và vũ khí cấm',
+  });
 
   await assert.rejects(
     async () => chatService.sendMessage('buyer-1', 'BUYER', sendDto),
@@ -379,9 +378,10 @@ test('Chat Module: Phân phối ticket cho Staff online sớm nhất khi có 3 S
   assert.equal(onlineList[2].staffId, 'staff-3');
 
   // Buyer gửi yêu cầu hỗ trợ mới
-  const reqDto = new RequestSupportDto();
-  reqDto.subject = 'Cần hỗ trợ về thanh toán PayOS';
-  reqDto.message = 'Tôi quét mã QR nhưng đơn hàng chưa cập nhật thành công.';
+  const reqDto = RequestSupportSchema.parse({
+    subject: 'Cần hỗ trợ về thanh toán PayOS',
+    message: 'Tôi quét mã QR nhưng đơn hàng chưa cập nhật thành công.',
+  });
 
   const conv = await chatService.requestSupport('buyer-1', 'BUYER', reqDto);
 
@@ -529,9 +529,10 @@ test('Chat Module: Cập nhật vòng đời trạng thái ticket (OPEN -> IN_PR
   assert.equal(claimed.assignedStaffId, 'staff-1');
 
   // Staff 1 giải quyết xong và đóng ticket (RESOLVED)
-  const updateDto = new UpdateConversationStatusDto();
-  updateDto.status = TicketLifecycleStatus.RESOLVED;
-  updateDto.resolutionNotes = 'Đã hoàn tất hỗ trợ khách hàng.';
+  const updateDto = UpdateConversationStatusSchema.parse({
+    status: TicketLifecycleStatus.RESOLVED,
+    resolutionNotes: 'Đã hoàn tất hỗ trợ khách hàng.',
+  });
 
   const resolved = await chatService.updateConversationStatus(
     conv.id,

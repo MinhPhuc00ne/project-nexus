@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -8,28 +7,32 @@ import {
   Patch,
   Post,
   Put,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
-  ApiCreatedResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { BannerDto } from '../dtos/banner.dto';
-import { ReorderBannersDto } from '../dtos/reorder-banners.dto';
+import { BannerInput, BannerSchema } from '../dtos/banner.dto';
+import { ReorderBannersInput, ReorderBannersSchema } from '../dtos/reorder-banners.dto';
 import { BannerDisabledDto, BannerResponseDto } from '../dtos/banner-response.dto';
-import { BannerHistoryPageDto, QueryBannerHistoryDto } from '../dtos/banner-history.dto';
+import {
+  BannerHistoryPageDto,
+  QueryBannerHistoryInput,
+  QueryBannerHistorySchema,
+} from '../dtos/banner-history.dto';
 import { BannerService } from '../services/banner.service';
 import { BannerHistoryService } from '../services/banner-history.service';
 
@@ -85,7 +88,7 @@ export class BannerController {
   @ApiOkResponse({ type: BannerDisabledDto })
   reorder(
     @CurrentUser('id') actorId: string,
-    @Body() dto: ReorderBannersDto,
+    @ZodBody(ReorderBannersSchema) dto: ReorderBannersInput,
   ): Promise<{ success: true }> {
     return this.banners.reorder(actorId, dto.bannerIds);
   }
@@ -103,7 +106,10 @@ export class BannerController {
   @ApiCreatedResponse({ type: BannerResponseDto })
   @ApiBadRequestResponse({ description: 'Invalid content, dates, or nonpublic auction' })
   @ApiNotFoundResponse({ description: 'Linked auction not found' })
-  create(@CurrentUser('id') id: string, @Body() dto: BannerDto): ReturnType<BannerService['save']> {
+  create(
+    @CurrentUser('id') id: string,
+    @ZodBody(BannerSchema) dto: BannerInput,
+  ): ReturnType<BannerService['save']> {
     return this.banners.save(id, dto);
   }
 
@@ -152,7 +158,7 @@ export class BannerController {
   update(
     @CurrentUser('id') userId: string,
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() dto: BannerDto,
+    @ZodBody(BannerSchema) dto: BannerInput,
   ): ReturnType<BannerService['save']> {
     return this.banners.save(userId, dto, id);
   }
@@ -209,7 +215,9 @@ export class BannerController {
   @ApiBadRequestResponse({ description: 'Invalid filters or reversed date range' })
   @ApiUnauthorizedResponse({ description: 'Authentication required' })
   @ApiForbiddenResponse({ description: 'ADMIN or SUPPORT_STAFF only' })
-  listHistory(@Query() query: QueryBannerHistoryDto): Promise<BannerHistoryPageDto> {
+  listHistory(
+    @ZodQuery(QueryBannerHistorySchema) query: QueryBannerHistoryInput,
+  ): Promise<BannerHistoryPageDto> {
     return this.history.list(query);
   }
 }

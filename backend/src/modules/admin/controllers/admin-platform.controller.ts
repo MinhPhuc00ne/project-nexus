@@ -1,29 +1,27 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Patch,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
+  AuthenticatedUserPayload,
   CurrentUser,
   Roles,
-  AuthenticatedUserPayload,
 } from '../../../core/security/roles.decorator';
 
-import { UpdateSystemSettingsDto } from '../dtos/update-system-settings.dto';
+import {
+  UpdateSystemSettingsInput,
+  UpdateSystemSettingsSchema,
+} from '../dtos/update-system-settings.dto';
 
 import { AdminSettingsService } from '../services/admin-settings.service';
 import { AdminFinanceService } from '../services/admin-finance.service';
 import { AdminDisputesService } from '../services/admin-disputes.service';
-import { QueryAdminDisputesDto } from '../dtos/query-admin-disputes.dto';
+import {
+  QueryAdminDisputesInput,
+  QueryAdminDisputesSchema,
+} from '../dtos/query-admin-disputes.dto';
 
 /** Platform-wide figures, the dispute queue and the settings that drive both. */
 @ApiTags('5. ADMIN')
@@ -47,7 +45,7 @@ export class AdminPlatformController {
       'Supports status filters, keyword search on order or user identifiers, and returns aggregated status counters.',
   })
   @ApiResponse({ status: 200, description: 'Disputes retrieved successfully' })
-  async listDisputes(@Query() query: QueryAdminDisputesDto) {
+  async listDisputes(@ZodQuery(QueryAdminDisputesSchema) query: QueryAdminDisputesInput) {
     return this.adminDisputesService.getDisputes(query);
   }
 
@@ -86,7 +84,7 @@ export class AdminPlatformController {
   @ApiResponse({ status: 200, description: 'Settings updated successfully' })
   async updateSettings(
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: UpdateSystemSettingsDto,
+    @ZodBody(UpdateSystemSettingsSchema) dto: UpdateSystemSettingsInput,
   ) {
     return this.adminSettingsService.updateSettings(admin.id, dto);
   }

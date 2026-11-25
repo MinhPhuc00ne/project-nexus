@@ -1,18 +1,15 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { QueryReportsDto, ReviewReportDto } from '../dtos/report-moderation.dto';
+import {
+  QueryReportsInput,
+  QueryReportsSchema,
+  ReviewReportInput,
+  ReviewReportSchema,
+} from '../dtos/report-moderation.dto';
 import { ReportModerationService, ReportModerator } from '../services/report-moderation.service';
 
 /** Separates personal report history from privileged moderation operations. */
@@ -28,7 +25,7 @@ export class ReportModerationController {
   @ApiOperation({ summary: 'Theo dõi trạng thái báo cáo của chính mình' })
   mine(
     @CurrentUser('id') userId: string,
-    @Query() query: QueryReportsDto,
+    @ZodQuery(QueryReportsSchema) query: QueryReportsInput,
   ): ReturnType<ReportModerationService['list']> {
     return this.reports.list(query, userId);
   }
@@ -37,7 +34,9 @@ export class ReportModerationController {
   @Get('admin/reports')
   @Roles('ADMIN', 'SUPPORT_STAFF')
   @ApiOperation({ summary: 'Danh sách báo cáo vi phạm cần xử lý' })
-  list(@Query() query: QueryReportsDto): ReturnType<ReportModerationService['list']> {
+  list(
+    @ZodQuery(QueryReportsSchema) query: QueryReportsInput,
+  ): ReturnType<ReportModerationService['list']> {
     return this.reports.list(query);
   }
 
@@ -48,7 +47,7 @@ export class ReportModerationController {
   review(
     @Param('id', new ParseUUIDPipe()) id: string,
     @CurrentUser() actor: ReportModerator,
-    @Body() dto: ReviewReportDto,
+    @ZodBody(ReviewReportSchema) dto: ReviewReportInput,
   ): ReturnType<ReportModerationService['review']> {
     return this.reports.review(id, actor, dto);
   }

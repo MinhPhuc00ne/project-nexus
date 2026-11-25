@@ -1,22 +1,20 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Post, UseGuards } from '@nestjs/common';
 
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { FeedbackPageDto, ReviewDto, SellerReplyReviewDto } from '../dtos/feedback.dto';
+import {
+  FeedbackPageInput,
+  FeedbackPageSchema,
+  ReviewInput,
+  ReviewSchema,
+  SellerReplyReviewInput,
+  SellerReplyReviewSchema,
+} from '../dtos/feedback.dto';
 import { ReviewsService } from '../services/reviews.service';
 
 /** What a seller can read of their reviews, and the replies they may leave. */
@@ -32,7 +30,7 @@ export class SellerReviewsController {
   customerReview(
     @CurrentUser('id') id: string,
     @Param('orderId') orderId: string,
-    @Body() dto: ReviewDto,
+    @ZodBody(ReviewSchema) dto: ReviewInput,
   ): Promise<unknown> {
     return this.reviews.create(id, orderId, dto, 'customer');
   }
@@ -41,7 +39,10 @@ export class SellerReviewsController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SELLER)
-  sellerReviews(@CurrentUser('id') id: string, @Query() query: FeedbackPageDto): Promise<unknown> {
+  sellerReviews(
+    @CurrentUser('id') id: string,
+    @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
+  ): Promise<unknown> {
     return this.reviews.list(id, 'seller-products', query);
   }
 
@@ -54,7 +55,7 @@ export class SellerReviewsController {
   replyProductReview(
     @CurrentUser('id') sellerId: string,
     @Param('reviewId') reviewId: string,
-    @Body() dto: SellerReplyReviewDto,
+    @ZodBody(SellerReplyReviewSchema) dto: SellerReplyReviewInput,
   ): Promise<unknown> {
     return this.reviews.replyToProductReview(sellerId, reviewId, dto);
   }

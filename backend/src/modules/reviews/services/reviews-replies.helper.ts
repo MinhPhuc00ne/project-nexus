@@ -7,7 +7,11 @@ import {
 import { NotificationChannel, NotificationType, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { MediaService } from '../../media/services/media.service';
-import { CreateReviewReplyDto, FeedbackPageDto, SellerReplyReviewDto } from '../dtos/feedback.dto';
+import {
+  CreateReviewReplyInput,
+  FeedbackPageInput,
+  SellerReplyReviewInput,
+} from '../dtos/feedback.dto';
 import {
   PRODUCT_REVIEW_NOT_FOUND,
   SHOP_REVIEW_NOT_FOUND,
@@ -24,7 +28,7 @@ export class ReviewsRepliesHelper {
   async replyToProductReview(
     sellerId: string,
     reviewId: string,
-    dto: SellerReplyReviewDto,
+    dto: SellerReplyReviewInput,
   ): Promise<{
     id: string;
     sellerReply: string | null;
@@ -186,7 +190,7 @@ export class ReviewsRepliesHelper {
     userId: string,
     targetType: 'product' | 'shop',
     reviewId: string,
-    dto: CreateReviewReplyDto,
+    dto: CreateReviewReplyInput,
     files?: Express.Multer.File[],
   ): Promise<unknown> {
     return this.prisma.$transaction(async (tx) => {
@@ -264,7 +268,7 @@ export class ReviewsRepliesHelper {
   async listReviewReplies(
     targetType: 'product' | 'shop',
     reviewId: string,
-    query: FeedbackPageDto,
+    query: FeedbackPageInput,
     viewerId?: string,
   ): Promise<unknown> {
     if (targetType === 'product') {

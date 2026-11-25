@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   HttpCode,
@@ -10,14 +9,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Roles } from '../../../core/security/roles.decorator';
 
 import { CategoryService } from '../../catalog/services/category.service';
-import { CreateCategoryDto } from '../../catalog/dtos/create-category.dto';
-import { UpdateCategoryDto } from '../../catalog/dtos/update-category.dto';
+import { CreateCategoryInput, CreateCategorySchema } from '../../catalog/dtos/create-category.dto';
+import { UpdateCategoryInput, UpdateCategorySchema } from '../../catalog/dtos/update-category.dto';
 
 /** The category tree every listing is filed under. */
 @ApiTags('5. ADMIN')
@@ -38,7 +38,7 @@ export class AdminCategoriesController {
   @ApiResponse({ status: 201, description: 'Category created successfully' })
   @ApiResponse({ status: 400, description: 'Exceeds maximum taxonomy depth or invalid input' })
   @ApiResponse({ status: 409, description: 'Category name already exists' })
-  async createCategory(@Body() dto: CreateCategoryDto) {
+  async createCategory(@ZodBody(CreateCategorySchema) dto: CreateCategoryInput) {
     return this.categoryService.createCategory(dto);
   }
 
@@ -54,7 +54,10 @@ export class AdminCategoriesController {
     description: 'Circular hierarchy detected or taxonomy depth exceeded',
   })
   @ApiResponse({ status: 404, description: 'Category not found' })
-  async updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+  async updateCategory(
+    @Param('id') id: string,
+    @ZodBody(UpdateCategorySchema) dto: UpdateCategoryInput,
+  ) {
     return this.categoryService.updateCategory(id, dto);
   }
 

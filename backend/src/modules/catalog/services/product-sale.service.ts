@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { UpdateProductSaleDto } from '../dtos/product-features.dto';
+import { UpdateProductSaleInput } from '../dtos/product-features.dto';
 import { priceView } from '../../../core/domain/product-price';
 
 @Injectable()
@@ -15,7 +15,7 @@ export class ProductSaleService {
   async update(
     sellerId: string,
     productId: string,
-    dto: UpdateProductSaleDto,
+    dto: UpdateProductSaleInput,
   ): Promise<{
     id: string;
     basePrice: number;

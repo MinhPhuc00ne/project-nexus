@@ -1,12 +1,13 @@
-import { Controller, Get, Param, Query, Req } from '@nestjs/common';
+import { Controller, Get, Param, Req } from '@nestjs/common';
 
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodQuery } from '@nexus/contracts/nest';
 
 import type { Request } from 'express';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { Public } from '../../../core/security/roles.decorator';
 
-import { FeedbackPageDto } from '../dtos/feedback.dto';
+import { FeedbackPageInput, FeedbackPageSchema } from '../dtos/feedback.dto';
 import { ReviewsService } from '../services/reviews.service';
 
 /**
@@ -45,7 +46,7 @@ export class PublicReviewsController {
   })
   async shopReviews(
     @Param('id') id: string,
-    @Query() query: FeedbackPageDto,
+    @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
     @Req() req?: Request,
   ): Promise<unknown> {
     return this.reviews.list(id, 'shop', query, await this.extractOptionalViewerId(req));
@@ -55,7 +56,7 @@ export class PublicReviewsController {
   @Public()
   async productReviews(
     @Param('id') id: string,
-    @Query() query: FeedbackPageDto,
+    @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
     @Req() req?: Request,
   ): Promise<unknown> {
     return this.reviews.list(id, 'product', query, await this.extractOptionalViewerId(req));
@@ -66,7 +67,7 @@ export class PublicReviewsController {
   @ApiOperation({ summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá sản phẩm' })
   async listProductReviewReplies(
     @Param('reviewId') reviewId: string,
-    @Query() query: FeedbackPageDto,
+    @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
     @Req() req?: Request,
   ): Promise<unknown> {
     return this.reviews.listReviewReplies(
@@ -84,7 +85,7 @@ export class PublicReviewsController {
   })
   async listShopReviewReplies(
     @Param('reviewId') reviewId: string,
-    @Query() query: FeedbackPageDto,
+    @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
     @Req() req?: Request,
   ): Promise<unknown> {
     return this.reviews.listReviewReplies(

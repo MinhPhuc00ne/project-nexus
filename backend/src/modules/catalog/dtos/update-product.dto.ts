@@ -1,101 +1,36 @@
-import {
-  IsString,
-  IsNumber,
-  IsOptional,
-  IsArray,
-  IsInt,
-  Min,
-  ArrayMaxSize,
-  IsEnum,
-  ValidateNested,
-} from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { ProductStatus } from '@prisma/client';
-import { ProductOptionDto } from './product-features.dto';
+import { ProductOptionSchema } from './product-features.dto';
 
-export class UpdateProductDto {
-  @ApiPropertyOptional({ type: [ProductOptionDto] })
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(6)
-  @ValidateNested({ each: true })
-  @Type(() => ProductOptionDto)
-  options?: ProductOptionDto[];
-  @ApiPropertyOptional({ example: 'Đồng Hồ Audemars Piguet Skeleton New Edition' })
-  @IsOptional()
-  @IsString()
-  title?: string;
+const updateProductFields = {
+  options: nullAsAbsent(z.array(ProductOptionSchema).max(6)),
+  title: nullAsAbsent(z.string().meta({ example: 'Đồng Hồ Audemars Piguet Skeleton New Edition' })),
+  description: nullAsAbsent(z.string().meta({ example: 'Mô tả cập nhật' })),
+  basePrice: nullAsAbsent(z.coerce.number().min(1000).meta({ example: 130000000 })),
+  categoryId: nullAsAbsent(z.string().meta({ example: 'uuid-category-id' })),
+  quantity: nullAsAbsent(
+    z.coerce
+      .number()
+      .int()
+      .min(0)
+      .describe('Số lượng tồn kho cập nhật (thay đổi số lượng thực tế trong kho)')
+      .meta({ example: 10 }),
+  ),
+  images: nullAsAbsent(
+    z
+      .array(z.string())
+      .max(5)
+      .meta({ example: ['https://res.cloudinary.com/demo/image/upload/v1/watch.jpg'] }),
+  ),
+  status: nullAsAbsent(z.enum(ProductStatus).meta({ example: ProductStatus.ACTIVE })),
+  weightGrams: nullAsAbsent(z.coerce.number().int().min(1).meta({ example: 500 })),
+  lengthCm: nullAsAbsent(z.coerce.number().int().min(1).meta({ example: 15 })),
+  widthCm: nullAsAbsent(z.coerce.number().int().min(1).meta({ example: 10 })),
+  heightCm: nullAsAbsent(z.coerce.number().int().min(1).meta({ example: 8 })),
+  threeModelKey: nullAsAbsent(z.string().meta({ example: 'watch' })),
+};
 
-  @ApiPropertyOptional({ example: 'Mô tả cập nhật' })
-  @IsOptional()
-  @IsString()
-  description?: string;
+export const UpdateProductSchema = z.object(updateProductFields).strict();
 
-  @ApiPropertyOptional({ example: 130000000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1000)
-  basePrice?: number;
-
-  @ApiPropertyOptional({ example: 'uuid-category-id' })
-  @IsOptional()
-  @IsString()
-  categoryId?: string;
-
-  @ApiPropertyOptional({
-    example: 10,
-    description: 'Số lượng tồn kho cập nhật (thay đổi số lượng thực tế trong kho)',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  quantity?: number;
-
-  @ApiPropertyOptional({ example: ['https://res.cloudinary.com/demo/image/upload/v1/watch.jpg'] })
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(5)
-  @IsString({ each: true })
-  images?: string[];
-
-  @ApiPropertyOptional({ enum: ProductStatus, example: ProductStatus.ACTIVE })
-  @IsOptional()
-  @IsEnum(ProductStatus)
-  status?: ProductStatus;
-
-  @ApiPropertyOptional({ example: 500 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  weightGrams?: number;
-
-  @ApiPropertyOptional({ example: 15 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  lengthCm?: number;
-
-  @ApiPropertyOptional({ example: 10 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  widthCm?: number;
-
-  @ApiPropertyOptional({ example: 8 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  heightCm?: number;
-
-  @ApiPropertyOptional({ example: 'watch' })
-  @IsOptional()
-  @IsString()
-  threeModelKey?: string;
-}
+export type UpdateProductInput = z.infer<typeof UpdateProductSchema>;

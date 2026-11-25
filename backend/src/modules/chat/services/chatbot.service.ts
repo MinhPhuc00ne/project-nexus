@@ -8,14 +8,14 @@ import {
   messageOrderId,
 } from './chatbot-commerce-intent';
 import {
-  ChatbotHistoryMessageDto,
-  ChatbotMessageDto,
-  GuestChatbotMessageDto,
+  ChatbotHistoryMessageInput,
+  ChatbotMessageInput,
+  GuestChatbotMessageInput,
 } from '../dtos/chatbot-message.dto';
 import { ChatbotAiService } from './chatbot-ai.service';
 import {
-  chatbotKnowledge,
   ChatbotTopic,
+  chatbotKnowledge,
   containsChatPhrase,
   matchChatbotTopic,
 } from './chatbot-knowledge';
@@ -50,7 +50,7 @@ export class ChatbotService {
    * @returns Structured assistant response.
    * @throws BadRequestException when single-order lookup is combined with list/cart filters or vice versa.
    */
-  async reply(userId: string, dto: ChatbotMessageDto): Promise<ChatbotReply> {
+  async reply(userId: string, dto: ChatbotMessageInput): Promise<ChatbotReply> {
     await this.rateLimit.check(userId);
     if (matchChatbotTopic(dto.message) === 'SECURITY') return this.answer(dto.message, true);
     const orderId = dto.orderId ?? messageOrderId(dto.message);
@@ -80,7 +80,7 @@ export class ChatbotService {
    * @param dto Validated guest message and optional conversation history.
    * @returns Structured assistant response prompting login for protected actions.
    */
-  async replyGuest(identity: string, dto: GuestChatbotMessageDto): Promise<ChatbotReply> {
+  async replyGuest(identity: string, dto: GuestChatbotMessageInput): Promise<ChatbotReply> {
     await this.rateLimit.check(`guest:${identity}`);
     const navResult = await this.commerce.navigate?.(dto.message, false);
     if (navResult) return navResult;
@@ -132,7 +132,7 @@ export class ChatbotService {
   private async answer(
     message: string,
     authenticated: boolean,
-    history: ChatbotHistoryMessageDto[] = [],
+    history: ChatbotHistoryMessageInput[] = [],
   ): Promise<ChatbotReply> {
     const topic = matchChatbotTopic(message);
     if (topic !== 'SECURITY') {
@@ -151,7 +151,7 @@ export class ChatbotService {
    */
   private async replyFromAi(
     message: string,
-    history: ChatbotHistoryMessageDto[],
+    history: ChatbotHistoryMessageInput[],
     authenticated: boolean,
   ): Promise<ChatbotReply | null> {
     const safeHistory = history.map((turn) =>

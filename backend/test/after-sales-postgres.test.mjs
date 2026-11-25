@@ -162,10 +162,10 @@ test(
               );
             }
             const { AdminOrdersService } = source('admin/services/admin-orders.service');
-            const { QueryAdminOrdersDto } = source('admin/dtos/query-admin-orders.dto');
+            const { QueryAdminOrdersSchema } = source('admin/dtos/query-admin-orders.dto');
             const adminOrders = new AdminOrdersService(facade);
             const page = await adminOrders.list(
-              Object.assign(new QueryAdminOrdersDto(), {
+              QueryAdminOrdersSchema.parse({
                 sellerId: seller.id,
                 search: marker,
                 status: 'CANCELLED',

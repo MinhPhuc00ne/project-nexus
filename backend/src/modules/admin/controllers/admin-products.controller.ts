@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -11,19 +10,32 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
+  AuthenticatedUserPayload,
   CurrentUser,
   Roles,
-  AuthenticatedUserPayload,
 } from '../../../core/security/roles.decorator';
 
-import { QueryAdminProductsDto } from '../dtos/query-admin-products.dto';
-import { RemoveTrendingProductDto } from '../dtos/remove-trending-product.dto';
-import { UpdateProductCategoryDto } from '../dtos/update-product-category.dto';
-import { UpdateProductStatusDto } from '../dtos/update-product-status.dto';
+import {
+  QueryAdminProductsInput,
+  QueryAdminProductsSchema,
+} from '../dtos/query-admin-products.dto';
+import {
+  RemoveTrendingProductInput,
+  RemoveTrendingProductSchema,
+} from '../dtos/remove-trending-product.dto';
+import {
+  UpdateProductCategoryInput,
+  UpdateProductCategorySchema,
+} from '../dtos/update-product-category.dto';
+import {
+  UpdateProductStatusInput,
+  UpdateProductStatusSchema,
+} from '../dtos/update-product-status.dto';
 
 import { AdminProductsService } from '../services/admin-products.service';
 
@@ -43,7 +55,7 @@ export class AdminProductsController {
       'Supports keyword search, status filtering (ACTIVE, INACTIVE, DRAFT), seller filtering, and category pagination.',
   })
   @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
-  async listProducts(@Query() query: QueryAdminProductsDto) {
+  async listProducts(@ZodQuery(QueryAdminProductsSchema) query: QueryAdminProductsInput) {
     return this.adminProductsService.listProducts(query);
   }
 
@@ -82,7 +94,7 @@ export class AdminProductsController {
   async updateProductStatus(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: UpdateProductStatusDto,
+    @ZodBody(UpdateProductStatusSchema) dto: UpdateProductStatusInput,
   ) {
     return this.adminProductsService.updateProductStatus(id, admin.id, dto);
   }
@@ -99,7 +111,7 @@ export class AdminProductsController {
   async updateProductCategory(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: UpdateProductCategoryDto,
+    @ZodBody(UpdateProductCategorySchema) dto: UpdateProductCategoryInput,
   ) {
     return this.adminProductsService.updateProductCategory(id, admin.id, dto);
   }
@@ -116,7 +128,7 @@ export class AdminProductsController {
   async removeProductFromTrending(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto?: RemoveTrendingProductDto,
+    @ZodBody(RemoveTrendingProductSchema.optional()) dto?: RemoveTrendingProductInput,
   ): Promise<ReturnType<AdminProductsService['removeProductFromTrending']>> {
     return this.adminProductsService.removeProductFromTrending(id, admin.id, dto);
   }

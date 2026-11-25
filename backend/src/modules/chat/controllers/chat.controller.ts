@@ -1,11 +1,9 @@
 import {
-  Body,
   Controller,
   Get,
   Param,
   Patch,
   Post,
-  Query,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
@@ -20,16 +18,24 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser } from '../../../core/security/roles.decorator';
 import {
-  CreateConversationDto,
-  QueryConversationsDto,
-  QueryMessagesDto,
-  QueryQueueDto,
-  RequestSupportDto,
-  SendMessageDto,
-  UpdateConversationStatusDto,
+  CreateConversationInput,
+  CreateConversationSchema,
+  QueryConversationsInput,
+  QueryConversationsSchema,
+  QueryMessagesInput,
+  QueryMessagesSchema,
+  QueryQueueInput,
+  QueryQueueSchema,
+  RequestSupportInput,
+  RequestSupportSchema,
+  SendMessageInput,
+  SendMessageSchema,
+  UpdateConversationStatusInput,
+  UpdateConversationStatusSchema,
 } from '../dtos';
 import { ChatService } from '../services/chat.service';
 
@@ -58,7 +64,7 @@ export class ChatController {
   async createConversation(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
-    @Body() dto: CreateConversationDto,
+    @ZodBody(CreateConversationSchema) dto: CreateConversationInput,
   ) {
     const data = await this.chatService.createOrGetConversation(userId, role, dto);
     return { message: 'Khởi tạo cuộc trò chuyện thành công.', data };
@@ -74,7 +80,7 @@ export class ChatController {
   async requestSupport(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
-    @Body() dto: RequestSupportDto,
+    @ZodBody(RequestSupportSchema) dto: RequestSupportInput,
   ) {
     const data = await this.chatService.requestSupport(userId, role, dto);
     return { message: 'Yêu cầu hỗ trợ đã được gửi thành công.', data };
@@ -87,7 +93,7 @@ export class ChatController {
   async requestSupportAlias(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
-    @Body() dto: RequestSupportDto,
+    @ZodBody(RequestSupportSchema) dto: RequestSupportInput,
   ) {
     const data = await this.chatService.requestSupport(userId, role, dto);
     return { message: 'Yêu cầu hỗ trợ đã được gửi thành công.', data };
@@ -117,7 +123,10 @@ export class ChatController {
       'Lấy danh sách các ticket đang chờ (status = OPEN, chưa có staff nhận), xếp theo thứ tự thời gian ai gửi trước đứng trước (FIFO) kèm thời gian chờ tính bằng giây.',
   })
   @ApiResponse({ status: 200, description: 'Danh sách hàng đợi hỗ trợ kèm phân trang.' })
-  async getQueue(@CurrentUser('role') role: string, @Query() query: QueryQueueDto) {
+  async getQueue(
+    @CurrentUser('role') role: string,
+    @ZodQuery(QueryQueueSchema) query: QueryQueueInput,
+  ) {
     return this.chatService.getQueue(role, query);
   }
 
@@ -148,7 +157,7 @@ export class ChatController {
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
-    @Body() dto: UpdateConversationStatusDto,
+    @ZodBody(UpdateConversationStatusSchema) dto: UpdateConversationStatusInput,
   ) {
     const data = await this.chatService.updateConversationStatus(id, userId, role, dto);
     return { message: 'Cập nhật trạng thái cuộc trò chuyện thành công.', data };
@@ -163,7 +172,7 @@ export class ChatController {
   async listConversations(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
-    @Query() query: QueryConversationsDto,
+    @ZodQuery(QueryConversationsSchema) query: QueryConversationsInput,
   ) {
     return this.chatService.listUserConversations(userId, role, query);
   }
@@ -199,7 +208,7 @@ export class ChatController {
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
-    @Query() query: QueryMessagesDto,
+    @ZodQuery(QueryMessagesSchema) query: QueryMessagesInput,
   ) {
     const data = await this.chatService.listMessages(id, userId, role, query);
     return { data };
@@ -215,7 +224,7 @@ export class ChatController {
     @Param('id') id: string,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
-    @Body() dto: SendMessageDto,
+    @ZodBody(SendMessageSchema) dto: SendMessageInput,
   ) {
     const data = await this.chatService.sendMessage(userId, role, { ...dto, conversationId: id });
     return { message: 'Gửi tin nhắn thành công.', data };
@@ -228,7 +237,7 @@ export class ChatController {
   async sendMessageDirect(
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: string,
-    @Body() dto: SendMessageDto,
+    @ZodBody(SendMessageSchema) dto: SendMessageInput,
   ) {
     const data = await this.chatService.sendMessage(userId, role, dto);
     return { message: 'Gửi tin nhắn thành công.', data };

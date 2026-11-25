@@ -8,7 +8,7 @@ import {
 import { NotificationChannel, NotificationType, Prisma, ShopViolation } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
-import { QueryReportsDto, ReviewReportDto } from '../dtos/report-moderation.dto';
+import { QueryReportsInput, ReviewReportInput } from '../dtos/report-moderation.dto';
 
 /** Authenticated moderator identity supplied by the HTTP guard, never by the request body. */
 export interface ReportModerator {
@@ -65,7 +65,7 @@ export class ReportModerationService {
    * @returns Enriched report records and pagination metadata.
    */
   async list(
-    query: QueryReportsDto,
+    query: QueryReportsInput,
     reporterId?: string,
   ): Promise<{ items: ReportListItem[]; total: number; page: number; limit: number }> {
     const where: Prisma.ShopViolationWhereInput = {
@@ -162,7 +162,7 @@ export class ReportModerationService {
   async review(
     reportId: string,
     actor: ReportModerator,
-    dto: ReviewReportDto,
+    dto: ReviewReportInput,
   ): Promise<ShopViolation> {
     if (!['ADMIN', 'SUPPORT_STAFF'].includes(actor.role))
       throw new ForbiddenException('Chỉ nhân viên được xử lý báo cáo.');

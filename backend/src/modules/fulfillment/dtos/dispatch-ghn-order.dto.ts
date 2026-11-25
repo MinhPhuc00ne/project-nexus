@@ -1,6 +1,5 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 /**
  * Parcel overrides a seller can supply when a shipment is booked.
@@ -10,40 +9,24 @@ import { IsInt, IsOptional, IsString, Min } from 'class-validator';
  * fulfillment module import from commerce and closed an import cycle between
  * them.
  */
-export class DispatchGhnOrderDto {
-  @ApiPropertyOptional({ description: 'Khối lượng gói hàng (grams)', example: 500 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(50)
-  weightGrams?: number;
+const dispatchGhnOrderFields = {
+  weightGrams: nullAsAbsent(
+    z.coerce.number().int().min(50).describe('Khối lượng gói hàng (grams)').meta({ example: 500 }),
+  ),
+  lengthCm: nullAsAbsent(
+    z.coerce.number().int().min(1).describe('Chiều dài gói hàng (cm)').meta({ example: 20 }),
+  ),
+  widthCm: nullAsAbsent(
+    z.coerce.number().int().min(1).describe('Chiều rộng gói hàng (cm)').meta({ example: 15 }),
+  ),
+  heightCm: nullAsAbsent(
+    z.coerce.number().int().min(1).describe('Chiều cao gói hàng (cm)').meta({ example: 10 }),
+  ),
+  note: nullAsAbsent(
+    z.string().describe('Ghi chú cho shipper GHN').meta({ example: 'Hàng dễ vỡ, xin nhẹ tay' }),
+  ),
+};
 
-  @ApiPropertyOptional({ description: 'Chiều dài gói hàng (cm)', example: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  lengthCm?: number;
+export const DispatchGhnOrderSchema = z.object(dispatchGhnOrderFields).strict();
 
-  @ApiPropertyOptional({ description: 'Chiều rộng gói hàng (cm)', example: 15 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  widthCm?: number;
-
-  @ApiPropertyOptional({ description: 'Chiều cao gói hàng (cm)', example: 10 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  heightCm?: number;
-
-  @ApiPropertyOptional({
-    description: 'Ghi chú cho shipper GHN',
-    example: 'Hàng dễ vỡ, xin nhẹ tay',
-  })
-  @IsOptional()
-  @IsString()
-  note?: string;
-}
+export type DispatchGhnOrderInput = z.infer<typeof DispatchGhnOrderSchema>;

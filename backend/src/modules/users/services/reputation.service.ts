@@ -12,8 +12,8 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { NotificationsService } from '../../notifications/services/notifications.service';
 import { trustLevelFor } from '../../../core/domain/reputation-policy';
 import {
-  AdjustReputationDto,
-  AwardProfileCompletionDto,
+  AdjustReputationInput,
+  AwardProfileCompletionInput,
   ReputationSummaryResponse,
 } from '../dtos/reputation.dto';
 
@@ -50,7 +50,7 @@ export class ReputationService {
    * @throws NotFoundException when the user does not exist
    */
   async adjustScore(
-    dto: AdjustReputationDto,
+    dto: AdjustReputationInput,
     tx?: Prisma.TransactionClient,
   ): Promise<ReputationSummaryResponse | null> {
     if (!tx) return this.prisma.$transaction((transaction) => this.adjustScore(dto, transaction));
@@ -155,7 +155,7 @@ export class ReputationService {
    * @returns Boolean indicating whether reward points were newly granted
    */
   async awardProfileCompletion(
-    dto: AwardProfileCompletionDto,
+    dto: AwardProfileCompletionInput,
     tx?: Prisma.TransactionClient,
   ): Promise<boolean> {
     if (!tx)
@@ -240,7 +240,7 @@ export class ReputationService {
   async adjustByAdmin(
     userId: string,
     adminId: string,
-    input: Pick<AdjustReputationDto, 'deltaPoints' | 'reason' | 'penaltyType'>,
+    input: Pick<AdjustReputationInput, 'deltaPoints' | 'reason' | 'penaltyType'>,
   ): Promise<ReputationSummaryResponse | null> {
     return this.prisma.$transaction(async (tx) => {
       const result = await this.adjustScore({ ...input, userId }, tx);

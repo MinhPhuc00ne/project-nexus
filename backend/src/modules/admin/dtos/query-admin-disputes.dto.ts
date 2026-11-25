@@ -1,49 +1,39 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { DisputeStatus } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 
-export class QueryAdminDisputesDto {
-  @ApiPropertyOptional({
-    description: 'Trang hiện tại (bắt đầu từ 1)',
-    default: 1,
-    example: 1,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'Page phải là số nguyên' })
-  @Min(1, { message: 'Page tối thiểu là 1' })
-  page?: number = 1;
+const queryAdminDisputesFields = {
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .describe('Trang hiện tại (bắt đầu từ 1)')
+    .meta({ example: 1 })
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .describe('Số lượng bản ghi trên mỗi trang (tối đa 100)')
+    .meta({ example: 10 })
+    .default(10),
+  status: nullAsAbsent(
+    z
+      .enum(DisputeStatus)
+      .describe(
+        'Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)',
+      ),
+  ),
+  search: nullAsAbsent(
+    z
+      .string()
+      .describe(
+        'Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan',
+      )
+      .meta({ example: 'o1' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    description: 'Số lượng bản ghi trên mỗi trang (tối đa 100)',
-    default: 10,
-    example: 10,
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'Limit phải là số nguyên' })
-  @Min(1, { message: 'Limit tối thiểu là 1' })
-  limit?: number = 10;
+export const QueryAdminDisputesSchema = z.object(queryAdminDisputesFields).strict();
 
-  @ApiPropertyOptional({
-    enum: DisputeStatus,
-    description:
-      'Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)',
-  })
-  @IsOptional()
-  @IsEnum(DisputeStatus, {
-    message:
-      'Trạng thái phải là OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR hoặc CANCELLED',
-  })
-  status?: DisputeStatus;
-
-  @ApiPropertyOptional({
-    description:
-      'Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan',
-    example: 'o1',
-  })
-  @IsOptional()
-  @IsString()
-  search?: string;
-}
+export type QueryAdminDisputesInput = z.infer<typeof QueryAdminDisputesSchema>;

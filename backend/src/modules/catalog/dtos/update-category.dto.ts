@@ -1,29 +1,29 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class UpdateCategoryDto {
-  @ApiPropertyOptional({
-    example: 'Laptop Gaming & Workstation',
-    description: 'Tên danh mục hàng hóa mới',
-  })
-  @IsOptional()
-  @IsString({ message: 'Tên danh mục phải là chuỗi ký tự' })
-  @MaxLength(100, { message: 'Tên danh mục tối đa 100 ký tự' })
-  name?: string;
+const updateCategoryFields = {
+  name: nullAsAbsent(
+    z
+      .string()
+      .max(100)
+      .describe('Tên danh mục hàng hóa mới')
+      .meta({ example: 'Laptop Gaming & Workstation' }),
+  ),
+  slug: nullAsAbsent(
+    z
+      .string()
+      .describe('Đường dẫn định danh slug mới')
+      .meta({ example: 'laptop-gaming-workstation' }),
+  ),
+  parentId: nullAsAbsent(
+    z
+      .string()
+      .nullable()
+      .describe('ID của danh mục cha mới (truyền null nếu muốn đưa về danh mục gốc cấp 1)')
+      .meta({ example: 'cat-parent-uuid-456' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: 'laptop-gaming-workstation',
-    description: 'Đường dẫn định danh slug mới',
-  })
-  @IsOptional()
-  @IsString({ message: 'Slug phải là chuỗi ký tự' })
-  slug?: string;
+export const UpdateCategorySchema = z.object(updateCategoryFields).strict();
 
-  @ApiPropertyOptional({
-    example: 'cat-parent-uuid-456',
-    description: 'ID của danh mục cha mới (truyền null nếu muốn đưa về danh mục gốc cấp 1)',
-  })
-  @IsOptional()
-  @IsString({ message: 'Parent ID phải là chuỗi ký tự' })
-  parentId?: string | null;
-}
+export type UpdateCategoryInput = z.infer<typeof UpdateCategorySchema>;

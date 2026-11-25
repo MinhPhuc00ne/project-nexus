@@ -14,8 +14,9 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { GhnDispatchService } from '../../fulfillment/services/ghn-dispatch.service';
+
+import { DispatchGhnOrderInput } from '../../fulfillment/dtos/dispatch-ghn-order.dto';
 import { QuerySellerOrdersInput } from '../dtos/seller-order.dto';
-import { DispatchGhnOrderDto } from '../../fulfillment/dtos/dispatch-ghn-order.dto';
 
 @Injectable()
 export class SellerOrdersService {
@@ -358,7 +359,7 @@ export class SellerOrdersService {
    * @param dto - Optional dispatch parameters
    * @returns GHN dispatch response with tracking code
    */
-  async dispatchGhn(sellerId: string, orderId: string, dto?: DispatchGhnOrderDto) {
+  async dispatchGhn(sellerId: string, orderId: string, dto?: DispatchGhnOrderInput) {
     return this.dispatchService.dispatch(sellerId, orderId, dto);
   }
 

@@ -1,26 +1,25 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsOptional, IsString, Max, Min } from 'class-validator';
+import { z } from 'zod';
 
 /**
  * Data transfer object for approving an administrative store appeal and restoring account standing.
  */
-export class ResolveShopAppealDto {
-  @ApiProperty({
-    description: 'Detailed explanation and justification for approving the merchant appeal',
-    example: 'Accepted delivery logistics incident justification for order #ord_123',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Appeal justification reason cannot be empty' })
-  reason!: string;
+const resolveShopAppealFields = {
+  reason: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Detailed explanation and justification for approving the merchant appeal')
+    .meta({ example: 'Accepted delivery logistics incident justification for order #ord_123' }),
+  restoredScore: z
+    .number()
+    .int()
+    .min(50)
+    .max(2147483647)
+    .describe('Target reputation score to restore (defaults to 100, GOOD tier)')
+    .meta({ example: 60 })
+    .default(100),
+};
 
-  @ApiPropertyOptional({
-    description: 'Target reputation score to restore (defaults to 100, GOOD tier)',
-    example: 60,
-    default: 100,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(50)
-  @Max(2147483647)
-  restoredScore?: number;
-}
+export const ResolveShopAppealSchema = z.object(resolveShopAppealFields).strict();
+
+export type ResolveShopAppealInput = z.infer<typeof ResolveShopAppealSchema>;

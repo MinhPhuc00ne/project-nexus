@@ -1,45 +1,38 @@
-import { IsOptional, IsString, IsInt, Min, IsIn } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class QueryShopDto {
-  @ApiPropertyOptional({
-    example: 'Hoàng Gia',
-    description: 'Từ khóa tìm kiếm theo tên gian hàng, mô tả hoặc tên chủ shop',
-  })
-  @IsOptional()
-  @IsString()
-  search?: string;
+const queryShopFields = {
+  search: nullAsAbsent(
+    z
+      .string()
+      .describe('Từ khóa tìm kiếm theo tên gian hàng, mô tả hoặc tên chủ shop')
+      .meta({ example: 'Hoàng Gia' }),
+  ),
+  city: nullAsAbsent(
+    z.string().describe('Lọc shop theo tỉnh / thành phố').meta({ example: 'Hồ Chí Minh' }),
+  ),
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .describe('Số trang hiện tại')
+    .meta({ example: 1 })
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .describe('Số lượng kết quả mỗi trang')
+    .meta({ example: 12 })
+    .default(12),
+  sortBy: nullAsAbsent(
+    z
+      .enum(['reputation', 'newest', 'products_count'])
+      .describe('Tiêu chí sắp xếp kết quả')
+      .meta({ example: 'reputation' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: 'Hồ Chí Minh',
-    description: 'Lọc shop theo tỉnh / thành phố',
-  })
-  @IsOptional()
-  @IsString()
-  city?: string;
+export const QueryShopSchema = z.object(queryShopFields).strict();
 
-  @ApiPropertyOptional({ example: 1, default: 1, description: 'Số trang hiện tại' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ example: 12, default: 12, description: 'Số lượng kết quả mỗi trang' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 12;
-
-  @ApiPropertyOptional({
-    example: 'reputation',
-    enum: ['reputation', 'newest', 'products_count'],
-    description: 'Tiêu chí sắp xếp kết quả',
-  })
-  @IsOptional()
-  @IsString()
-  @IsIn(['reputation', 'newest', 'products_count'])
-  sortBy?: 'reputation' | 'newest' | 'products_count' = 'reputation';
-}
+export type QueryShopInput = z.infer<typeof QueryShopSchema>;

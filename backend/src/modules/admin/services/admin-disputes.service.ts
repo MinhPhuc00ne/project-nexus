@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DisputeStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { QueryAdminDisputesDto } from '../dtos/query-admin-disputes.dto';
+import { QueryAdminDisputesInput } from '../dtos/query-admin-disputes.dto';
 
 @Injectable()
 export class AdminDisputesService {
@@ -13,7 +13,7 @@ export class AdminDisputesService {
    * @param query - Dispute query parameters including pagination and filters
    * @returns Paginated disputes and status summary metrics
    */
-  async getDisputes(query: QueryAdminDisputesDto) {
+  async getDisputes(query: QueryAdminDisputesInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));
     const skip = (page - 1) * limit;

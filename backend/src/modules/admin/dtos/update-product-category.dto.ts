@@ -1,24 +1,23 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class UpdateProductCategoryDto {
-  @ApiProperty({
-    example: 'uuid-category-id',
-    description: 'ID danh mục mới muốn gắn cho sản phẩm',
-  })
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString({ message: 'categoryId phải là chuỗi ký tự' })
-  @IsNotEmpty({ message: 'Danh mục không được để trống' })
-  categoryId!: string;
+const updateProductCategoryFields = {
+  categoryId: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('ID danh mục mới muốn gắn cho sản phẩm')
+    .meta({ example: 'uuid-category-id' }),
+  reason: nullAsAbsent(
+    z
+      .string()
+      .trim()
+      .max(500)
+      .describe('Ghi chú hoặc lý do gắn/đổi danh mục gửi tới Seller')
+      .meta({ example: 'Phân loại lại vào danh mục mới phù hợp hơn với sản phẩm' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: 'Phân loại lại vào danh mục mới phù hợp hơn với sản phẩm',
-    description: 'Ghi chú hoặc lý do gắn/đổi danh mục gửi tới Seller',
-  })
-  @IsOptional()
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString({ message: 'Lý do phải là chuỗi ký tự' })
-  @MaxLength(500, { message: 'Lý do tối đa 500 ký tự' })
-  reason?: string;
-}
+export const UpdateProductCategorySchema = z.object(updateProductCategoryFields).strict();
+
+export type UpdateProductCategoryInput = z.infer<typeof UpdateProductCategorySchema>;

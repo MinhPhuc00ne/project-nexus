@@ -11,10 +11,10 @@ import {
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { trustLevelFor } from '../../../core/domain/reputation-policy';
 import { ReputationService } from '../../users/services/reputation.service';
-import { CreateShopViolationDto } from '../dtos/create-shop-violation.dto';
-import { ResolveShopAppealDto } from '../dtos/resolve-shop-appeal.dto';
-import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
-import { WarnShopDto } from '../dtos/warn-shop.dto';
+import { CreateShopViolationInput } from '../dtos/create-shop-violation.dto';
+import { ResolveShopAppealInput } from '../dtos/resolve-shop-appeal.dto';
+import { UpdateShopStatusInput } from '../dtos/update-shop-status.dto';
+import { WarnShopInput } from '../dtos/warn-shop.dto';
 
 @Injectable()
 export class AdminShopsModerationHelper {
@@ -34,7 +34,7 @@ export class AdminShopsModerationHelper {
    * @returns Updated shop status confirmation
    * @throws NotFoundException when the seller does not exist
    */
-  async updateShopStatus(sellerId: string, adminId: string, dto: UpdateShopStatusDto) {
+  async updateShopStatus(sellerId: string, adminId: string, dto: UpdateShopStatusInput) {
     const seller = await this.prisma.user.findUnique({
       where: { id: sellerId },
       include: {
@@ -138,7 +138,7 @@ export class AdminShopsModerationHelper {
    * @returns Created warning action log
    * @throws NotFoundException when the seller store does not exist
    */
-  async warnShop(sellerId: string, adminId: string, dto: WarnShopDto) {
+  async warnShop(sellerId: string, adminId: string, dto: WarnShopInput) {
     const seller = await this.prisma.user.findUnique({
       where: { id: sellerId },
       include: {
@@ -218,7 +218,7 @@ export class AdminShopsModerationHelper {
    * @returns Created violation record
    * @throws NotFoundException when the seller store does not exist
    */
-  async createShopViolation(sellerId: string, adminId: string, dto: CreateShopViolationDto) {
+  async createShopViolation(sellerId: string, adminId: string, dto: CreateShopViolationInput) {
     const seller = await this.prisma.user.findUnique({
       where: { id: sellerId },
       include: {
@@ -327,7 +327,7 @@ export class AdminShopsModerationHelper {
    * @returns Resolution confirmation and updated store status
    * @throws NotFoundException when the seller store does not exist
    */
-  async resolveShopAppeal(sellerId: string, adminId: string, dto: ResolveShopAppealDto) {
+  async resolveShopAppeal(sellerId: string, adminId: string, dto: ResolveShopAppealInput) {
     const seller = await this.prisma.user.findUnique({
       where: { id: sellerId },
       include: {

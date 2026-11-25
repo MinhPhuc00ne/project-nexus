@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpCode,
@@ -11,20 +10,24 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { OrderStatus, Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
+  AuthenticatedUserPayload,
   CurrentUser,
   Roles,
-  AuthenticatedUserPayload,
 } from '../../../core/security/roles.decorator';
 
-import { QueryAdminShopsDto } from '../dtos/query-admin-shops.dto';
-import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
-import { WarnShopDto } from '../dtos/warn-shop.dto';
-import { CreateShopViolationDto } from '../dtos/create-shop-violation.dto';
-import { ResolveShopAppealDto } from '../dtos/resolve-shop-appeal.dto';
+import { QueryAdminShopsInput, QueryAdminShopsSchema } from '../dtos/query-admin-shops.dto';
+import { UpdateShopStatusInput, UpdateShopStatusSchema } from '../dtos/update-shop-status.dto';
+import { WarnShopInput, WarnShopSchema } from '../dtos/warn-shop.dto';
+import {
+  CreateShopViolationInput,
+  CreateShopViolationSchema,
+} from '../dtos/create-shop-violation.dto';
+import { ResolveShopAppealInput, ResolveShopAppealSchema } from '../dtos/resolve-shop-appeal.dto';
 
 import { AdminShopsService } from '../services/admin-shops.service';
 
@@ -44,7 +47,7 @@ export class AdminShopsController {
       'Filters shops by status (ACTIVE or SUSPENDED), geographical location, or keyword search.',
   })
   @ApiResponse({ status: 200, description: 'Shops retrieved successfully' })
-  async listShops(@Query() query: QueryAdminShopsDto) {
+  async listShops(@ZodQuery(QueryAdminShopsSchema) query: QueryAdminShopsInput) {
     return this.adminShopsService.listShops(query);
   }
 
@@ -60,7 +63,7 @@ export class AdminShopsController {
   async updateShopStatus(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: UpdateShopStatusDto,
+    @ZodBody(UpdateShopStatusSchema) dto: UpdateShopStatusInput,
   ) {
     return this.adminShopsService.updateShopStatus(id, admin.id, dto);
   }
@@ -104,7 +107,7 @@ export class AdminShopsController {
   async warnShop(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: WarnShopDto,
+    @ZodBody(WarnShopSchema) dto: WarnShopInput,
   ) {
     return this.adminShopsService.warnShop(id, admin.id, dto);
   }
@@ -124,7 +127,7 @@ export class AdminShopsController {
   async resolveShopAppeal(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: ResolveShopAppealDto,
+    @ZodBody(ResolveShopAppealSchema) dto: ResolveShopAppealInput,
   ) {
     return this.adminShopsService.resolveShopAppeal(id, admin.id, dto);
   }
@@ -141,7 +144,7 @@ export class AdminShopsController {
   async createShopViolation(
     @Param('id') id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
-    @Body() dto: CreateShopViolationDto,
+    @ZodBody(CreateShopViolationSchema) dto: CreateShopViolationInput,
   ) {
     return this.adminShopsService.createShopViolation(id, admin.id, dto);
   }

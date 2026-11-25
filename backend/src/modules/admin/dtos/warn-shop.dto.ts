@@ -1,22 +1,20 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { z } from 'zod';
 
-export class WarnShopDto {
-  @ApiProperty({
-    example: 'Đăng tải thông tin sản phẩm sai lệch với thực tế',
-    description: 'Lý do cảnh cáo gian hàng',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Lý do cảnh cáo không được để trống' })
-  reason!: string;
+const warnShopFields = {
+  reason: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Lý do cảnh cáo gian hàng')
+    .meta({ example: 'Đăng tải thông tin sản phẩm sai lệch với thực tế' }),
+  penaltyPoints: z
+    .number()
+    .min(0)
+    .describe('Số điểm uy tín (reputationScore) bị trừ kèm theo (nếu có)')
+    .meta({ example: 10 })
+    .default(0),
+};
 
-  @ApiPropertyOptional({
-    example: 10,
-    description: 'Số điểm uy tín (reputationScore) bị trừ kèm theo (nếu có)',
-    default: 0,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  penaltyPoints?: number;
-}
+export const WarnShopSchema = z.object(warnShopFields).strict();
+
+export type WarnShopInput = z.infer<typeof WarnShopSchema>;

@@ -7,7 +7,7 @@ import {
 import { NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
-import { ReportDto } from '../dtos/feedback.dto';
+import { ReportInput } from '../dtos/feedback.dto';
 
 @Injectable()
 export class ReportsService {
@@ -17,7 +17,7 @@ export class ReportsService {
     reporterId: string,
     targetId: string,
     kind: 'shop' | 'product',
-    dto: ReportDto,
+    dto: ReportInput,
   ): Promise<unknown> {
     return this.prisma.$transaction(async (tx) => {
       // Serialize reports from the same account, including shop/product submissions.

@@ -3,12 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import tsNode from 'ts-node';
+import { requestBodySchema } from './helpers/openapi.mjs';
 
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
@@ -100,9 +101,6 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
   })(GapApiModule);
   const app = await NestFactory.create(GapApiModule, { logger: false, abortOnError: false });
   try {
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
-    );
     await app.listen(0, '127.0.0.1');
     const base = await app.getUrl();
     const request = (path, role, options = {}) =>
@@ -172,8 +170,10 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
       new DocumentBuilder().setTitle('Gap endpoints').setVersion('1').build(),
     );
     assert.ok(doc.paths['/commerce/auction-awards/{id}/checkout'].post);
-    assert.ok(doc.components.schemas.ReviewReportDto.properties.status);
-    assert.ok(doc.components.schemas.AdminAdjustReputationDto.properties.deltaPoints);
+    assert.ok(requestBodySchema(doc, '/admin/reports/{id}/review', 'patch').properties.status);
+    assert.ok(
+      requestBodySchema(doc, '/admin/users/{id}/reputation', 'patch').properties.deltaPoints,
+    );
   } finally {
     await app.close();
   }

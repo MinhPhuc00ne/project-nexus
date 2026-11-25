@@ -8,9 +8,9 @@ import {
 import { DisputeStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import {
-  QuerySellerDisputesDto,
-  QuerySellerReviewsDto,
-  RespondDisputeDto,
+  QuerySellerDisputesInput,
+  QuerySellerReviewsInput,
+  RespondDisputeInput,
 } from '../dtos/seller-engagement.dto';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class SellerEngagementService {
   /**
    * 1. Lấy danh sách đánh giá của khách hàng gửi cho gian hàng kèm thống kê số sao
    */
-  async getReviews(sellerId: string, query: QuerySellerReviewsDto) {
+  async getReviews(sellerId: string, query: QuerySellerReviewsInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));
     const skip = (page - 1) * limit;
@@ -145,7 +145,7 @@ export class SellerEngagementService {
   /**
    * 2. Lấy danh sách khiếu nại (Disputes) trên các đơn hàng của người bán
    */
-  async getDisputes(sellerId: string, query: QuerySellerDisputesDto) {
+  async getDisputes(sellerId: string, query: QuerySellerDisputesInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));
     const skip = (page - 1) * limit;
@@ -257,7 +257,7 @@ export class SellerEngagementService {
   /**
    * 3. Người bán gửi giải trình / đối chất cho khiếu nại
    */
-  async respondToDispute(sellerId: string, disputeId: string, dto: RespondDisputeDto) {
+  async respondToDispute(sellerId: string, disputeId: string, dto: RespondDisputeInput) {
     const dispute = await this.prisma.dispute.findUnique({
       where: { id: disputeId },
       include: {

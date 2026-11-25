@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
@@ -11,13 +10,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
-import { Public, Roles, RequirePrivilege } from '../../../core/security/roles.decorator';
+import { Public, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { CategoryService, CategoryTreeItem } from '../services/category.service';
-import { CreateCategoryDto } from '../dtos/create-category.dto';
-import { UpdateCategoryDto } from '../dtos/update-category.dto';
+import { CreateCategoryInput, CreateCategorySchema } from '../dtos/create-category.dto';
+import { UpdateCategoryInput, UpdateCategorySchema } from '../dtos/update-category.dto';
 
 @ApiTags('7. CATALOG')
 @Controller('catalog/categories')
@@ -54,7 +54,7 @@ export class CategoryController {
     description: 'Vượt quá giới hạn 3 tầng danh mục hoặc dữ liệu không hợp lệ',
   })
   @ApiResponse({ status: 409, description: 'Tên danh mục đã tồn tại' })
-  async createCategory(@Body() dto: CreateCategoryDto) {
+  async createCategory(@ZodBody(CreateCategorySchema) dto: CreateCategoryInput) {
     return this.categoryService.createCategory(dto);
   }
 
@@ -72,7 +72,10 @@ export class CategoryController {
   @ApiResponse({ status: 200, description: 'Cập nhật danh mục thành công' })
   @ApiResponse({ status: 400, description: 'Không thể chuyển vì gây vòng lặp hoặc vượt quá 3 cấp' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy danh mục' })
-  async updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
+  async updateCategory(
+    @Param('id') id: string,
+    @ZodBody(UpdateCategorySchema) dto: UpdateCategoryInput,
+  ) {
     return this.categoryService.updateCategory(id, dto);
   }
 

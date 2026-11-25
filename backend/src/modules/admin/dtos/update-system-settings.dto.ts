@@ -1,94 +1,81 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class UpdateSystemSettingsDto {
-  @ApiPropertyOptional({
-    example: 7.0,
-    description: 'Tỷ lệ phần trăm hoa hồng / phí sàn thu từ người bán (%)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  platformFeePercentage?: number;
+const updateSystemSettingsFields = {
+  platformFeePercentage: nullAsAbsent(
+    z
+      .number()
+      .min(0)
+      .max(100)
+      .describe('Tỷ lệ phần trăm hoa hồng / phí sàn thu từ người bán (%)')
+      .meta({ example: 7.0 }),
+  ),
+  cartExpirationDays: nullAsAbsent(
+    z
+      .number()
+      .min(1)
+      .max(90)
+      .describe('Thời gian giỏ hàng không hoạt động trước khi hết hạn (ngày)')
+      .meta({ example: 7 }),
+  ),
+  checkoutTimeoutMinutes: nullAsAbsent(
+    z
+      .number()
+      .min(5)
+      .max(120)
+      .describe('Thời gian giữ tạm tồn kho khi người mua checkout (phút)')
+      .meta({ example: 15 }),
+  ),
+  inventoryReservationTimeout: nullAsAbsent(
+    z
+      .number()
+      .min(5)
+      .max(240)
+      .describe('Thời gian hết hạn khóa tồn kho reservation (phút)')
+      .meta({ example: 30 }),
+  ),
+  maxActiveCartPerUser: nullAsAbsent(
+    z
+      .number()
+      .min(1)
+      .max(5)
+      .describe('Số lượng giỏ hàng hoạt động tối đa của mỗi người dùng')
+      .meta({ example: 1 }),
+  ),
+  categoryMaxLevel: nullAsAbsent(
+    z
+      .number()
+      .min(1)
+      .max(5)
+      .describe('Độ sâu phân cấp tối đa của danh mục hàng hóa (cấp)')
+      .meta({ example: 3 }),
+  ),
+  maxProductImages: nullAsAbsent(
+    z
+      .number()
+      .min(1)
+      .max(20)
+      .describe('Số lượng ảnh tối đa cho mỗi sản phẩm đăng bán')
+      .meta({ example: 5 }),
+  ),
+  antiSnipingTriggerMinutes: nullAsAbsent(
+    z
+      .number()
+      .min(1)
+      .max(30)
+      .describe('Ngưỡng đếm ngược kích hoạt gia hạn chống bắn tỉa đấu giá (phút)')
+      .meta({ example: 2 }),
+  ),
+  antiSnipingExtendMinutes: nullAsAbsent(
+    z
+      .number()
+      .min(1)
+      .max(30)
+      .describe('Số phút gia hạn cộng thêm khi chống bắn tỉa kích hoạt (phút)')
+      .meta({ example: 5 }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: 7,
-    description: 'Thời gian giỏ hàng không hoạt động trước khi hết hạn (ngày)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(90)
-  cartExpirationDays?: number;
+export const UpdateSystemSettingsSchema = z.object(updateSystemSettingsFields).strict();
 
-  @ApiPropertyOptional({
-    example: 15,
-    description: 'Thời gian giữ tạm tồn kho khi người mua checkout (phút)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(5)
-  @Max(120)
-  checkoutTimeoutMinutes?: number;
-
-  @ApiPropertyOptional({
-    example: 30,
-    description: 'Thời gian hết hạn khóa tồn kho reservation (phút)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(5)
-  @Max(240)
-  inventoryReservationTimeout?: number;
-
-  @ApiPropertyOptional({
-    example: 1,
-    description: 'Số lượng giỏ hàng hoạt động tối đa của mỗi người dùng',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(5)
-  maxActiveCartPerUser?: number;
-
-  @ApiPropertyOptional({
-    example: 3,
-    description: 'Độ sâu phân cấp tối đa của danh mục hàng hóa (cấp)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(5)
-  categoryMaxLevel?: number;
-
-  @ApiPropertyOptional({
-    example: 5,
-    description: 'Số lượng ảnh tối đa cho mỗi sản phẩm đăng bán',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(20)
-  maxProductImages?: number;
-
-  @ApiPropertyOptional({
-    example: 2,
-    description: 'Ngưỡng đếm ngược kích hoạt gia hạn chống bắn tỉa đấu giá (phút)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(30)
-  antiSnipingTriggerMinutes?: number;
-
-  @ApiPropertyOptional({
-    example: 5,
-    description: 'Số phút gia hạn cộng thêm khi chống bắn tỉa kích hoạt (phút)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  @Max(30)
-  antiSnipingExtendMinutes?: number;
-}
+export type UpdateSystemSettingsInput = z.infer<typeof UpdateSystemSettingsSchema>;

@@ -1,10 +1,16 @@
-import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { createHash } from 'node:crypto';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser, Public } from '../../../core/security/roles.decorator';
-import { ChatbotMessageDto, GuestChatbotMessageDto } from '../dtos/chatbot-message.dto';
+import {
+  ChatbotMessageInput,
+  ChatbotMessageSchema,
+  GuestChatbotMessageInput,
+  GuestChatbotMessageSchema,
+} from '../dtos/chatbot-message.dto';
 import { ChatbotReply, ChatbotService } from '../services/chatbot.service';
 
 /** Exposes conversational AI and commerce read endpoints under `/api/v1/chat/bot`. */
@@ -28,7 +34,10 @@ export class ChatbotController {
     summary: 'Hội thoại AI cho khách chưa đăng nhập; chỉ hướng dẫn chung, không tra cứu đơn',
     security: [],
   })
-  guestReply(@Req() request: Request, @Body() dto: GuestChatbotMessageDto): Promise<ChatbotReply> {
+  guestReply(
+    @Req() request: Request,
+    @ZodBody(GuestChatbotMessageSchema) dto: GuestChatbotMessageInput,
+  ): Promise<ChatbotReply> {
     const peer = request.ip ?? request.socket.remoteAddress ?? 'unknown';
     const address = peer.startsWith('::ffff:') ? peer.slice(7) : peer;
     const identity = createHash('sha256').update(address).digest('hex');
@@ -57,7 +66,10 @@ export class ChatbotController {
     summary:
       'Hội thoại, lịch sử đặt hàng cho mọi role, đơn bán và giỏ hàng cá nhân; tối đa 20 tin/phút',
   })
-  reply(@CurrentUser('id') userId: string, @Body() dto: ChatbotMessageDto): Promise<ChatbotReply> {
+  reply(
+    @CurrentUser('id') userId: string,
+    @ZodBody(ChatbotMessageSchema) dto: ChatbotMessageInput,
+  ): Promise<ChatbotReply> {
     return this.chatbot.reply(userId, dto);
   }
 }

@@ -6,9 +6,9 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { effectivePrice } from '../../../core/domain/product-price';
-import { ShippingQuoteDto } from '../dtos/shipping-quote.dto';
-import { GhnShippingService, GhnAddress, GhnShippingQuote } from './ghn-shipping.service';
-import { RouteDistanceService, RouteDistance } from './route-distance.service';
+import { ShippingQuoteInput } from '../dtos/shipping-quote.dto';
+import { GhnAddress, GhnShippingQuote, GhnShippingService } from './ghn-shipping.service';
+import { RouteDistance, RouteDistanceService } from './route-distance.service';
 
 export interface ShippingQuoteResult {
   carrier: string;
@@ -54,7 +54,7 @@ export class FulfillmentService {
 
   async calculateShippingQuote(
     userId: string,
-    dto: ShippingQuoteDto,
+    dto: ShippingQuoteInput,
   ): Promise<ShippingQuoteResult> {
     const address = dto.addressId
       ? await this.prisma.userAddress.findUnique({ where: { id: dto.addressId } })

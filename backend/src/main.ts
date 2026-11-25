@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { parseCorsOrigins } from './core/config/env.schema';
 import { GlobalHttpExceptionFilter } from './core/filters/global-http-exception.filter';
@@ -40,14 +40,6 @@ async function bootstrap(): Promise<void> {
   });
 
   // Global validation pipe adhering to Clean Code standards
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
   // Global Exception Filter
   app.useGlobalFilters(new GlobalHttpExceptionFilter());
 

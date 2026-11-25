@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  Body,
   Controller,
   Delete,
   Get,
@@ -14,6 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { AuctionComplaintStatus, Role as PrismaRole } from '@prisma/client';
 import { Role } from '@nexus/types';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -25,20 +25,34 @@ import {
 } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { AuctionCheckoutService } from '../services/auction-checkout.service';
-import { AdminAwardActionDto } from '../dtos/admin-award-action.dto';
-import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
-import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
+import { AdminAwardActionInput, AdminAwardActionSchema } from '../dtos/admin-award-action.dto';
 import {
-  CreateAuctionComplaintDto,
-  ResolveAuctionComplaintDto,
+  AdminCreateAuctionInput,
+  AdminCreateAuctionSchema,
+} from '../dtos/admin-create-auction.dto';
+import {
+  AdminUpdateAuctionInput,
+  AdminUpdateAuctionSchema,
+} from '../dtos/admin-update-auction.dto';
+import {
+  CreateAuctionComplaintInput,
+  CreateAuctionComplaintSchema,
+  ResolveAuctionComplaintInput,
+  ResolveAuctionComplaintSchema,
 } from '../dtos/auction-complaint.dto';
-import { AuctionQueryDto } from '../dtos/auction-query.dto';
+import { AuctionQueryInput, AuctionQuerySchema } from '../dtos/auction-query.dto';
 import { AuctionIntroShowcaseResponseDto } from '../dtos/auction-showcase-response.dto';
-import { AuctionSupportChatDto } from '../dtos/auction-support-chat.dto';
-import { PlaceBidDto } from '../dtos/place-bid.dto';
-import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
-import { ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
-import { StaffAuctionNoteDto } from '../dtos/staff-auction-note.dto';
+import {
+  AuctionSupportChatInput,
+  AuctionSupportChatSchema,
+} from '../dtos/auction-support-chat.dto';
+import { PlaceBidInput, PlaceBidSchema } from '../dtos/place-bid.dto';
+import {
+  RegisterAuctionItemInput,
+  RegisterAuctionItemSchema,
+} from '../dtos/register-auction-item.dto';
+import { ReviewAuctionItemInput, ReviewAuctionItemSchema } from '../dtos/review-auction-item.dto';
+import { StaffAuctionNoteInput, StaffAuctionNoteSchema } from '../dtos/staff-auction-note.dto';
 import { AuctionComplaintService } from '../services/auction-complaint.service';
 import { AuctionService } from '../services/auction.service';
 
@@ -56,7 +70,7 @@ export class AuctionController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Danh sách phiên đấu giá công khai (hỗ trợ phân trang & lọc)' })
-  getAuctions(@Query() query: AuctionQueryDto) {
+  getAuctions(@ZodQuery(AuctionQuerySchema) query: AuctionQueryInput) {
     return this.auctionService.getAuctions(query);
   }
 
@@ -86,7 +100,7 @@ export class AuctionController {
   staffAddItemNote(
     @Param('itemId', new ParseUUIDPipe()) itemId: string,
     @CurrentUser('id') staffId: string,
-    @Body() dto: StaffAuctionNoteDto,
+    @ZodBody(StaffAuctionNoteSchema) dto: StaffAuctionNoteInput,
   ) {
     return this.auctionService.staffAddItemNote(itemId, staffId, dto);
   }
@@ -113,7 +127,7 @@ export class AuctionController {
   resolveComplaint(
     @Param('complaintId', new ParseUUIDPipe()) complaintId: string,
     @CurrentUser('id') adminId: string,
-    @Body() dto: ResolveAuctionComplaintDto,
+    @ZodBody(ResolveAuctionComplaintSchema) dto: ResolveAuctionComplaintInput,
   ) {
     return this.complaintService!.resolveComplaint(complaintId, adminId, dto);
   }
@@ -123,7 +137,10 @@ export class AuctionController {
   @ApiOperation({
     summary: 'Admin tạo mới phòng đấu giá đa lô (gửi thông báo tới Người bán để ký gửi)',
   })
-  adminCreateAuction(@CurrentUser('id') adminId: string, @Body() dto: AdminCreateAuctionDto) {
+  adminCreateAuction(
+    @CurrentUser('id') adminId: string,
+    @ZodBody(AdminCreateAuctionSchema) dto: AdminCreateAuctionInput,
+  ) {
     return this.auctionService.adminCreateAuction(adminId, dto);
   }
 
@@ -132,7 +149,7 @@ export class AuctionController {
   @ApiOperation({ summary: 'Admin cập nhật thông tin phiên đấu giá trước khi bắt đầu' })
   adminUpdateAuction(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Body() dto: AdminUpdateAuctionDto,
+    @ZodBody(AdminUpdateAuctionSchema) dto: AdminUpdateAuctionInput,
   ) {
     return this.auctionService.adminUpdateAuction(id, dto);
   }
@@ -183,7 +200,7 @@ export class AuctionController {
   adminReviewAuctionItem(
     @Param('itemId', new ParseUUIDPipe()) itemId: string,
     @CurrentUser('id') adminId: string,
-    @Body() dto: ReviewAuctionItemDto,
+    @ZodBody(ReviewAuctionItemSchema) dto: ReviewAuctionItemInput,
   ) {
     return this.auctionService.adminReviewAuctionItem(itemId, adminId, dto);
   }
@@ -219,7 +236,7 @@ export class AuctionController {
   confirmPaymentDefault(
     @Param('awardId', new ParseUUIDPipe()) awardId: string,
     @CurrentUser('id') adminId: string,
-    @Body() dto: AdminAwardActionDto,
+    @ZodBody(AdminAwardActionSchema) dto: AdminAwardActionInput,
   ) {
     if (!dto.confirmed) {
       throw new BadRequestException('Cần xác nhận chắc chắn trước khi chốt quá hạn thanh toán.');
@@ -237,7 +254,7 @@ export class AuctionController {
   confirmSecondChanceNotBuying(
     @Param('awardId', new ParseUUIDPipe()) awardId: string,
     @CurrentUser('id') adminId: string,
-    @Body() dto: AdminAwardActionDto,
+    @ZodBody(AdminAwardActionSchema) dto: AdminAwardActionInput,
   ) {
     if (!dto.confirmed) {
       throw new BadRequestException('Cần xác nhận chắc chắn trước khi chốt khách không mua nữa.');
@@ -280,7 +297,7 @@ export class AuctionController {
   registerAuctionItem(
     @Param('id', new ParseUUIDPipe()) auctionId: string,
     @CurrentUser('id') sellerId: string,
-    @Body() dto: RegisterAuctionItemDto,
+    @ZodBody(RegisterAuctionItemSchema) dto: RegisterAuctionItemInput,
   ) {
     return this.auctionService.registerAuctionItem(auctionId, sellerId, dto);
   }
@@ -294,7 +311,7 @@ export class AuctionController {
   placeBid(
     @Param('id', new ParseUUIDPipe()) auctionId: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: PlaceBidDto,
+    @ZodBody(PlaceBidSchema) dto: PlaceBidInput,
   ) {
     return this.auctionService.placeBid(auctionId, userId, dto);
   }
@@ -307,7 +324,7 @@ export class AuctionController {
     @Param('id', new ParseUUIDPipe()) auctionId: string,
     @Param('itemId', new ParseUUIDPipe()) itemId: string,
     @CurrentUser('id') userId: string,
-    @Body() dto: PlaceBidDto,
+    @ZodBody(PlaceBidSchema) dto: PlaceBidInput,
   ) {
     return this.auctionService.placeBid(auctionId, userId, { ...dto, auctionItemId: itemId });
   }
@@ -320,7 +337,7 @@ export class AuctionController {
   createComplaint(
     @Param('id', new ParseUUIDPipe()) auctionId: string,
     @CurrentUser() user: AuthenticatedUserPayload,
-    @Body() dto: CreateAuctionComplaintDto,
+    @ZodBody(CreateAuctionComplaintSchema) dto: CreateAuctionComplaintInput,
   ) {
     return this.complaintService!.createComplaint(
       auctionId,
@@ -338,7 +355,7 @@ export class AuctionController {
   requestSupportChat(
     @Param('id', new ParseUUIDPipe()) auctionId: string,
     @CurrentUser() user: AuthenticatedUserPayload,
-    @Body() dto: AuctionSupportChatDto,
+    @ZodBody(AuctionSupportChatSchema) dto: AuctionSupportChatInput,
   ) {
     return this.auctionService.requestAuctionSupportChat(
       auctionId,
