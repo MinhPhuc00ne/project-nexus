@@ -9,13 +9,15 @@ COPY packages/config/package.json ./packages/config/
 COPY packages/types/package.json ./packages/types/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
-RUN npm ci
+COPY docs/package.json ./docs/
+RUN npm ci --legacy-peer-deps
 
 FROM base AS builder
 WORKDIR /app
+ENV DATABASE_URL=postgresql://postgres:postgres@localhost:5432/nexus_build
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate --schema=backend/prisma/schema.prisma
+RUN npm run prisma:generate
 RUN npm run build --workspace=@nexus/types
 RUN npm run build --workspace=backend
 
@@ -30,6 +32,7 @@ COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/packages ./packages
 COPY --from=builder --chown=nestjs:nodejs /app/backend/dist ./backend/dist
 COPY --from=builder --chown=nestjs:nodejs /app/backend/prisma ./backend/prisma
+COPY --from=builder --chown=nestjs:nodejs /app/backend/prisma.config.ts ./backend/prisma.config.ts
 COPY --from=builder --chown=nestjs:nodejs /app/backend/tsconfig.json ./backend/tsconfig.json
 COPY --from=builder --chown=nestjs:nodejs /app/backend/package.json ./backend/package.json
 COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
@@ -37,4 +40,8 @@ COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
 USER nestjs
 EXPOSE 3000
 WORKDIR /app/backend
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget --spider -q http://127.0.0.1:3000/api/v1/health || exit 1
+
 CMD ["node", "dist/main.js"]
