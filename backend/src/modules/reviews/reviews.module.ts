@@ -2,7 +2,11 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { MediaModule } from '../media/media.module';
 import { UsersModule } from '../users/users.module';
-import { FeedbackController } from './controllers/feedback.controller';
+import { AdminReviewsController } from './controllers/admin-reviews.controller';
+import { PublicReviewsController } from './controllers/public-reviews.controller';
+import { ReportsController } from './controllers/reports.controller';
+import { ReviewsController } from './controllers/reviews.controller';
+import { SellerReviewsController } from './controllers/seller-reviews.controller';
 import { ReportModerationController } from './controllers/report-moderation.controller';
 import { SellerEngagementController } from './controllers/seller-engagement.controller';
 import { ReportModerationService } from './services/report-moderation.service';
@@ -23,7 +27,15 @@ import { SellerEngagementService } from './services/seller-engagement.service';
  */
 @Module({
   imports: [PrismaModule, MediaModule, UsersModule],
-  controllers: [FeedbackController, ReportModerationController, SellerEngagementController],
+  controllers: [
+    ReviewsController,
+    PublicReviewsController,
+    SellerReviewsController,
+    AdminReviewsController,
+    ReportsController,
+    ReportModerationController,
+    SellerEngagementController,
+  ],
   providers: [
     ReviewsService,
     ReviewsModerationHelper,

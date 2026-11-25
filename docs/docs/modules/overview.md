@@ -38,7 +38,7 @@ title: 10 Backend Modules and AI Chatbot
 
 ## 4. `commerce` — Cart, Orders, Escrow, Payments and After-Sales
 
-- Controllers: `CartController`, `OrderController`, `OrderLifecycleController`, `AuctionCheckoutController`, `PayosWebhookController`, `AfterSalesController`, `SellerOrdersController`, `SellerFinanceController`, `SellerEngagementController`, `FeedbackController`, `ReportModerationController`
+- Controllers: `CartController`, `OrderController`, `OrderLifecycleController`, `AuctionCheckoutController`, `PayosWebhookController`, `WalletController`, `AfterSalesController`, `SellerOrdersController`, `SellerFinanceController`, `BuyerFinanceController`, `SellerEngagementController`, `ReviewsController`, `PublicReviewsController`, `SellerReviewsController`, `AdminReviewsController`, `ReportsController`, `ReportModerationController`
 - Services: `CartService`, `OrderService`, `OrderEscrowService`, `OrderCancellationService`, `OrderReturnService`, `RefundService`, `PayosService`, `AuctionCheckoutService`, `SellerOrdersService`, `SellerFinanceService`, `SellerEngagementService`, `ReviewsService`, `ReportsService`, `ReportModerationService`, `CommerceChatQueryService`
 - Core Capabilities:
   - Persistent 7-day cart, guest cart merge on login, and anti-self-purchase enforcement (`CANNOT_PURCHASE_OWN_PRODUCT`).

@@ -15,7 +15,9 @@ const { GhnLogisticsService } = load(
 );
 const { ReviewsService } = load('../src/modules/reviews/services/reviews.service.ts');
 const { ReportsService } = load('../src/modules/reviews/services/reports.service.ts');
-const { FeedbackController } = load('../src/modules/reviews/controllers/feedback.controller.ts');
+const { AdminReviewsController } = load(
+  '../src/modules/reviews/controllers/admin-reviews.controller.ts',
+);
 const { ROLES_KEY } = load('../src/core/security/roles.decorator.ts');
 const { BannerService } = load('../src/modules/catalog/services/banner.service.ts');
 const { ReviewsModerationHelper } = load(
@@ -184,7 +186,7 @@ test('public banners filter active time windows and invalid intervals never writ
 
 test('support staff and admin can moderate reviews with valid reputation penalty and notification', async () => {
   for (const method of ['adminListReviews', 'adminDeleteProductReview', 'adminDeleteShopReview']) {
-    const roles = Reflect.getMetadata(ROLES_KEY, FeedbackController.prototype[method]);
+    const roles = Reflect.getMetadata(ROLES_KEY, AdminReviewsController.prototype[method]);
     assert.ok(roles.includes('ADMIN'));
     assert.ok(roles.includes('SUPPORT_STAFF'));
   }

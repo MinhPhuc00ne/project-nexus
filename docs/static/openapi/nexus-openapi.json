@@ -5426,7 +5426,7 @@
     },
     "/api/v1/commerce/orders/{orderId}/shop-review": {
       "post": {
-        "operationId": "FeedbackController_shopReview",
+        "operationId": "ReviewsController_shopReview",
         "parameters": [
           {
             "name": "orderId",
@@ -5463,10 +5463,10 @@
           }
         ],
         "summary": "Đánh giá gian hàng sau khi mua thành công từ 2 sản phẩm (hỗ trợ đính kèm ảnh/video)",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews"]
       },
       "patch": {
-        "operationId": "FeedbackController_updateShopReview",
+        "operationId": "ReviewsController_updateShopReview",
         "parameters": [
           {
             "name": "orderId",
@@ -5498,10 +5498,10 @@
           }
         ],
         "summary": "Chỉnh sửa đánh giá gian hàng của chính mình",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews"]
       },
       "delete": {
-        "operationId": "FeedbackController_deleteShopReview",
+        "operationId": "ReviewsController_deleteShopReview",
         "parameters": [
           {
             "name": "orderId",
@@ -5523,12 +5523,12 @@
           }
         ],
         "summary": "Xóa đánh giá gian hàng của chính mình",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews"]
       }
     },
     "/api/v1/commerce/orders/{orderId}/products/{productId}/review": {
       "post": {
-        "operationId": "FeedbackController_productReview",
+        "operationId": "ReviewsController_productReview",
         "parameters": [
           {
             "name": "orderId",
@@ -5573,10 +5573,10 @@
           }
         ],
         "summary": "Đánh giá sản phẩm đã mua (hỗ trợ đính kèm ảnh/video multipart/form-data)",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews"]
       },
       "patch": {
-        "operationId": "FeedbackController_updateProductReview",
+        "operationId": "ReviewsController_updateProductReview",
         "parameters": [
           {
             "name": "orderId",
@@ -5616,10 +5616,10 @@
           }
         ],
         "summary": "Chỉnh sửa đánh giá sản phẩm của chính mình",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews"]
       },
       "delete": {
-        "operationId": "FeedbackController_deleteProductReview",
+        "operationId": "ReviewsController_deleteProductReview",
         "parameters": [
           {
             "name": "orderId",
@@ -5649,12 +5649,631 @@
           }
         ],
         "summary": "Xóa đánh giá sản phẩm của chính mình",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews"]
+      }
+    },
+    "/api/v1/catalog/product-reviews/{reviewId}/helpful": {
+      "post": {
+        "operationId": "ReviewsController_toggleHelpfulProductReview",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Bình chọn / bỏ bình chọn đánh giá sản phẩm hữu ích",
+        "tags": ["Reviews"]
+      }
+    },
+    "/api/v1/commerce/product-reviews/{reviewId}/replies": {
+      "post": {
+        "operationId": "ReviewsController_createProductReviewReply",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewReplyDto"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewReplyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá sản phẩm (hỗ trợ đính kèm ảnh/video)",
+        "tags": ["Reviews"]
+      }
+    },
+    "/api/v1/commerce/shop-reviews/{reviewId}/replies": {
+      "post": {
+        "operationId": "ReviewsController_createShopReviewReply",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewReplyDto"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewReplyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá gian hàng (hỗ trợ đính kèm ảnh/video)",
+        "tags": ["Reviews"]
+      }
+    },
+    "/api/v1/buyer/customer-reviews": {
+      "get": {
+        "operationId": "ReviewsController_customerReviews",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "example": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "schema": {
+              "default": "newest",
+              "type": "string",
+              "enum": ["newest", "oldest"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["Reviews"]
+      }
+    },
+    "/api/v1/catalog/shops/{id}/reviews": {
+      "get": {
+        "operationId": "PublicReviewsController_shopReviews",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "example": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "schema": {
+              "default": "newest",
+              "type": "string",
+              "enum": ["newest", "oldest"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Danh sách đánh giá gian hàng kèm averageRating và phân bố sao 1-5 (ẩn review tiêu cực đã bị admin ẩn)",
+        "tags": ["Reviews (public)"]
+      }
+    },
+    "/api/v1/catalog/products/{id}/reviews": {
+      "get": {
+        "operationId": "PublicReviewsController_productReviews",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "example": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "schema": {
+              "default": "newest",
+              "type": "string",
+              "enum": ["newest", "oldest"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": ["Reviews (public)"]
+      }
+    },
+    "/api/v1/catalog/product-reviews/{reviewId}/replies": {
+      "get": {
+        "operationId": "PublicReviewsController_listProductReviewReplies",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "example": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "schema": {
+              "default": "newest",
+              "type": "string",
+              "enum": ["newest", "oldest"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá sản phẩm",
+        "tags": ["Reviews (public)"]
+      }
+    },
+    "/api/v1/catalog/shop-reviews/{reviewId}/replies": {
+      "get": {
+        "operationId": "PublicReviewsController_listShopReviewReplies",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "example": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "schema": {
+              "default": "newest",
+              "type": "string",
+              "enum": ["newest", "oldest"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá gian hàng",
+        "tags": ["Reviews (public)"]
+      }
+    },
+    "/api/v1/seller/orders/{orderId}/customer-review": {
+      "post": {
+        "operationId": "SellerReviewsController_customerReview",
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["Reviews (seller)"]
+      }
+    },
+    "/api/v1/seller/product-reviews": {
+      "get": {
+        "operationId": "SellerReviewsController_sellerReviews",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Object"
+                }
+              ]
+            }
+          },
+          {
+            "name": "rating",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
+            "schema": {
+              "minimum": 1,
+              "maximum": 5,
+              "example": 5,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "schema": {
+              "default": "newest",
+              "type": "string",
+              "enum": ["newest", "oldest"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": ["Reviews (seller)"]
+      }
+    },
+    "/api/v1/seller/product-reviews/{reviewId}/reply": {
+      "post": {
+        "operationId": "SellerReviewsController_replyProductReview",
+        "parameters": [
+          {
+            "name": "reviewId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SellerReplyReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Seller phản hồi đánh giá sản phẩm của khách hàng",
+        "tags": ["Reviews (seller)"]
       }
     },
     "/api/v1/admin/reviews": {
       "get": {
-        "operationId": "FeedbackController_adminListReviews",
+        "operationId": "AdminReviewsController_adminListReviews",
         "parameters": [
           {
             "name": "page",
@@ -5737,12 +6356,12 @@
           }
         ],
         "summary": "Admin/Staff tra cứu danh sách bình luận/đánh giá toàn sàn kèm điểm uy tín tác giả",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews (moderation)"]
       }
     },
     "/api/v1/admin/reviews/product/{id}": {
       "delete": {
-        "operationId": "FeedbackController_adminDeleteProductReview",
+        "operationId": "AdminReviewsController_adminDeleteProductReview",
         "parameters": [
           {
             "name": "id",
@@ -5774,12 +6393,12 @@
           }
         ],
         "summary": "Admin/Staff xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews (moderation)"]
       }
     },
     "/api/v1/admin/reviews/product/{id}/seller-reply": {
       "delete": {
-        "operationId": "FeedbackController_adminRemoveSellerReply",
+        "operationId": "AdminReviewsController_adminRemoveSellerReply",
         "parameters": [
           {
             "name": "id",
@@ -5811,12 +6430,12 @@
           }
         ],
         "summary": "Admin/Staff gỡ phản hồi (sellerReply) vi phạm trên đánh giá sản phẩm, trừ điểm uy tín Seller và gửi thông báo",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews (moderation)"]
       }
     },
     "/api/v1/admin/reviews/shop/{id}": {
       "delete": {
-        "operationId": "FeedbackController_adminDeleteShopReview",
+        "operationId": "AdminReviewsController_adminDeleteShopReview",
         "parameters": [
           {
             "name": "id",
@@ -5848,561 +6467,12 @@
           }
         ],
         "summary": "Admin/Staff xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo",
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/seller/orders/{orderId}/customer-review": {
-      "post": {
-        "operationId": "FeedbackController_customerReview",
-        "parameters": [
-          {
-            "name": "orderId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReviewDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/catalog/shops/{id}/reviews": {
-      "get": {
-        "operationId": "FeedbackController_shopReviews",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "rating",
-            "required": false,
-            "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
-            "schema": {
-              "minimum": 1,
-              "maximum": 5,
-              "example": 5,
-              "type": "number"
-            }
-          },
-          {
-            "name": "sortBy",
-            "required": false,
-            "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
-            "schema": {
-              "default": "newest",
-              "type": "string",
-              "enum": ["newest", "oldest"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Danh sách đánh giá gian hàng kèm averageRating và phân bố sao 1-5 (ẩn review tiêu cực đã bị admin ẩn)",
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/catalog/products/{id}/reviews": {
-      "get": {
-        "operationId": "FeedbackController_productReviews",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "rating",
-            "required": false,
-            "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
-            "schema": {
-              "minimum": 1,
-              "maximum": 5,
-              "example": 5,
-              "type": "number"
-            }
-          },
-          {
-            "name": "sortBy",
-            "required": false,
-            "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
-            "schema": {
-              "default": "newest",
-              "type": "string",
-              "enum": ["newest", "oldest"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/seller/product-reviews": {
-      "get": {
-        "operationId": "FeedbackController_sellerReviews",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "rating",
-            "required": false,
-            "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
-            "schema": {
-              "minimum": 1,
-              "maximum": 5,
-              "example": 5,
-              "type": "number"
-            }
-          },
-          {
-            "name": "sortBy",
-            "required": false,
-            "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
-            "schema": {
-              "default": "newest",
-              "type": "string",
-              "enum": ["newest", "oldest"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/seller/product-reviews/{reviewId}/reply": {
-      "post": {
-        "operationId": "FeedbackController_replyProductReview",
-        "parameters": [
-          {
-            "name": "reviewId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SellerReplyReviewDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Seller phản hồi đánh giá sản phẩm của khách hàng",
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/catalog/product-reviews/{reviewId}/helpful": {
-      "post": {
-        "operationId": "FeedbackController_toggleHelpfulProductReview",
-        "parameters": [
-          {
-            "name": "reviewId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Bình chọn / bỏ bình chọn đánh giá sản phẩm hữu ích",
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/catalog/product-reviews/{reviewId}/replies": {
-      "get": {
-        "operationId": "FeedbackController_listProductReviewReplies",
-        "parameters": [
-          {
-            "name": "reviewId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "rating",
-            "required": false,
-            "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
-            "schema": {
-              "minimum": 1,
-              "maximum": 5,
-              "example": 5,
-              "type": "number"
-            }
-          },
-          {
-            "name": "sortBy",
-            "required": false,
-            "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
-            "schema": {
-              "default": "newest",
-              "type": "string",
-              "enum": ["newest", "oldest"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá sản phẩm",
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/commerce/product-reviews/{reviewId}/replies": {
-      "post": {
-        "operationId": "FeedbackController_createProductReviewReply",
-        "parameters": [
-          {
-            "name": "reviewId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReviewReplyDto"
-              }
-            },
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReviewReplyDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá sản phẩm (hỗ trợ đính kèm ảnh/video)",
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/catalog/shop-reviews/{reviewId}/replies": {
-      "get": {
-        "operationId": "FeedbackController_listShopReviewReplies",
-        "parameters": [
-          {
-            "name": "reviewId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "rating",
-            "required": false,
-            "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
-            "schema": {
-              "minimum": 1,
-              "maximum": 5,
-              "example": 5,
-              "type": "number"
-            }
-          },
-          {
-            "name": "sortBy",
-            "required": false,
-            "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
-            "schema": {
-              "default": "newest",
-              "type": "string",
-              "enum": ["newest", "oldest"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "summary": "Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá gian hàng",
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/commerce/shop-reviews/{reviewId}/replies": {
-      "post": {
-        "operationId": "FeedbackController_createShopReviewReply",
-        "parameters": [
-          {
-            "name": "reviewId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReviewReplyDto"
-              }
-            },
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateReviewReplyDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Buyer hoặc Seller gửi phản hồi 2 chiều trên đánh giá gian hàng (hỗ trợ đính kèm ảnh/video)",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews (moderation)"]
       }
     },
     "/api/v1/admin/reviews/product/{id}/visibility": {
       "patch": {
-        "operationId": "FeedbackController_adminHideProductReview",
+        "operationId": "AdminReviewsController_adminHideProductReview",
         "parameters": [
           {
             "name": "id",
@@ -6434,12 +6504,12 @@
           }
         ],
         "summary": "Admin/Staff ẩn hoặc bỏ ẩn đánh giá sản phẩm tiêu cực (không xóa, tác giả vẫn xem được trạng thái bị ẩn)",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews (moderation)"]
       }
     },
     "/api/v1/admin/reviews/shop/{id}/visibility": {
       "patch": {
-        "operationId": "FeedbackController_adminHideShopReview",
+        "operationId": "AdminReviewsController_adminHideShopReview",
         "parameters": [
           {
             "name": "id",
@@ -6471,12 +6541,12 @@
           }
         ],
         "summary": "Admin/Staff ẩn hoặc bỏ ẩn đánh giá gian hàng tiêu cực (không xóa)",
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews (moderation)"]
       }
     },
     "/api/v1/admin/reviews/replies/{replyId}/visibility": {
       "patch": {
-        "operationId": "FeedbackController_adminHideReviewReply",
+        "operationId": "AdminReviewsController_adminHideReviewReply",
         "parameters": [
           {
             "name": "replyId",
@@ -6508,82 +6578,12 @@
           }
         ],
         "summary": "Admin/Staff ẩn hoặc bỏ ẩn tin nhắn phản hồi tiêu cực trong đánh giá (không xóa)",
-        "tags": ["Reviews & reports"]
-      }
-    },
-    "/api/v1/buyer/customer-reviews": {
-      "get": {
-        "operationId": "FeedbackController_customerReviews",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "default": 1,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "minimum": 1,
-              "maximum": 100,
-              "default": 20,
-              "allOf": [
-                {
-                  "$ref": "#/components/schemas/Object"
-                }
-              ]
-            }
-          },
-          {
-            "name": "rating",
-            "required": false,
-            "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả đánh giá",
-            "schema": {
-              "minimum": 1,
-              "maximum": 5,
-              "example": 5,
-              "type": "number"
-            }
-          },
-          {
-            "name": "sortBy",
-            "required": false,
-            "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
-            "schema": {
-              "default": "newest",
-              "type": "string",
-              "enum": ["newest", "oldest"]
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": ["Reviews & reports"]
+        "tags": ["Reviews (moderation)"]
       }
     },
     "/api/v1/catalog/shops/{id}/reports": {
       "post": {
-        "operationId": "FeedbackController_reportShop",
+        "operationId": "ReportsController_reportShop",
         "parameters": [
           {
             "name": "id",
@@ -6614,12 +6614,12 @@
             "bearer": []
           }
         ],
-        "tags": ["Reviews & reports"]
+        "tags": ["Reports"]
       }
     },
     "/api/v1/catalog/products/{id}/reports": {
       "post": {
-        "operationId": "FeedbackController_reportProduct",
+        "operationId": "ReportsController_reportProduct",
         "parameters": [
           {
             "name": "id",
@@ -6650,7 +6650,7 @@
             "bearer": []
           }
         ],
-        "tags": ["Reviews & reports"]
+        "tags": ["Reports"]
       }
     },
     "/api/v1/commerce/reports/my": {
@@ -12657,20 +12657,26 @@
         },
         "required": ["rating"]
       },
-      "AdminDeleteReviewDto": {
+      "CreateReviewReplyDto": {
         "type": "object",
         "properties": {
-          "reason": {
+          "content": {
             "type": "string",
-            "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
+            "minLength": 1,
+            "maxLength": 2000,
+            "example": "Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ.",
+            "description": "Reply message content between buyer and seller"
           },
-          "pointsToDeduct": {
-            "type": "number",
-            "example": 10,
-            "description": "Số điểm uy tín muốn trừ của người đánh giá"
+          "mediaUrls": {
+            "maxItems": 6,
+            "description": "Image or video URLs attached to this reply",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
-        "required": ["reason", "pointsToDeduct"]
+        "required": ["content"]
       },
       "SellerReplyReviewDto": {
         "type": "object",
@@ -12693,26 +12699,20 @@
         },
         "required": ["reply"]
       },
-      "CreateReviewReplyDto": {
+      "AdminDeleteReviewDto": {
         "type": "object",
         "properties": {
-          "content": {
+          "reason": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 2000,
-            "example": "Cảm ơn bạn đã phản hồi, shop xin hỗ trợ đổi trả ngay ạ.",
-            "description": "Reply message content between buyer and seller"
+            "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
           },
-          "mediaUrls": {
-            "maxItems": 6,
-            "description": "Image or video URLs attached to this reply",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+          "pointsToDeduct": {
+            "type": "number",
+            "example": 10,
+            "description": "Số điểm uy tín muốn trừ của người đánh giá"
           }
         },
-        "required": ["content"]
+        "required": ["reason", "pointsToDeduct"]
       },
       "AdminModerateReviewVisibilityDto": {
         "type": "object",
