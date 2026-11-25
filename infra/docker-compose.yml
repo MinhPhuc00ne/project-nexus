@@ -62,6 +62,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      PORT_BACKEND: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
       REDIS_URL: ${REDIS_URL:-}
       REDIS_HOST: redis
