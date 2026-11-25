@@ -101,12 +101,16 @@ ALTER TABLE "wallets"
     OR ("type" <> 'USER_WALLET' AND "user_id" IS NULL)
   );
 
--- A balance is never negative, and locked funds never exceed the balance.
+-- Neither side of a wallet goes negative.
+--
+-- `balance` is the spendable amount and `locked_balance` is held separately;
+-- locking money moves it out of the balance rather than reserving part of it,
+-- so a wallet total is the sum of the two and locked funds are not bounded by
+-- the balance.
 ALTER TABLE "wallets"
   ADD CONSTRAINT "wallets_balance_check" CHECK (
     "balance" >= 0
     AND "locked_balance" >= 0
-    AND "locked_balance" <= "balance"
   );
 
 -- Exactly one ledger wallet exists per platform wallet type.
