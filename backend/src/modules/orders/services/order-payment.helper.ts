@@ -24,6 +24,7 @@ import { InventoryService } from '../../catalog/services/inventory.service';
 import { ProductTrendingService } from '../../catalog/services/product-trending.service';
 import { PayOrderInput } from '../dtos/pay-order.dto';
 import { OrderEscrowService } from './order-escrow.service';
+import { PayosOrderCodeService } from '../../payments/services/payos-order-code.service';
 import { PayosService } from '../../payments/services/payos.service';
 import { RefundService } from '../../after-sales/services/refund.service';
 
@@ -65,6 +66,7 @@ export class OrderPaymentHelper {
   constructor(
     private readonly prisma: PrismaService,
     private readonly payosService: PayosService,
+    private readonly orderCodes: PayosOrderCodeService,
     private readonly configService: ConfigService,
     private readonly escrow: OrderEscrowService,
     private readonly inventoryService?: InventoryService,
@@ -144,10 +146,9 @@ export class OrderPaymentHelper {
       );
     }
 
-    // PayOS yêu cầu orderCode là số nguyên (integer) duy nhất (tối đa 9007199254740991)
-    const timestampSuffix = Date.now().toString().slice(-6);
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000).toString();
-    const orderCode = Number(`${timestampSuffix}${randomSuffix}`);
+    // PayOS requires an integer nobody has used before. A clock plus a random
+    // suffix cannot promise that; a sequence can.
+    const orderCode = await this.orderCodes.next();
 
     const amount = Math.round(Number(order.totalAmount));
     if (amount <= 0) {

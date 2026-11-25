@@ -278,6 +278,7 @@ export function fixture() {
       new OrderPaymentHelper(
         prisma,
         { verifyWebhook: async () => ({ orderCode: 123, code: '00', amount: 130000 }) },
+        { next: async () => 1_000_000_000_001 },
         {},
         {},
         inventory,

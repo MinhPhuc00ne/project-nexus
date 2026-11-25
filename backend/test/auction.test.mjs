@@ -652,9 +652,24 @@ function createHarness(overrides = {}) {
   const orderService = new OrderService(
     db,
     shipping,
-    new OrderPaymentHelper(db, {}, { get: () => '' }, escrow, undefined, undefined, adminFinance),
+    new OrderPaymentHelper(
+      db,
+      {},
+      { next: async () => 1_000_000_000_001 },
+      { get: () => '' },
+      escrow,
+      undefined,
+      undefined,
+      adminFinance,
+    ),
   );
-  const walletDeposits = new WalletDepositService(db, {}, { get: () => '' }, checkoutService);
+  const walletDeposits = new WalletDepositService(
+    db,
+    {},
+    { next: async () => 1_000_000_000_001 },
+    { get: () => '' },
+    checkoutService,
+  );
 
   return {
     db,

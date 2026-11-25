@@ -196,7 +196,13 @@ function paymentFixture() {
   const service = new OrderService(
     prisma,
     {},
-    new OrderPaymentHelper(prisma, { verifyWebhook: async () => verified }, {}, { hold }),
+    new OrderPaymentHelper(
+      prisma,
+      { verifyWebhook: async () => verified },
+      { next: async () => 1_000_000_000_001 },
+      {},
+      { hold },
+    ),
   );
   return { service, hold, verified, prisma, order };
 }

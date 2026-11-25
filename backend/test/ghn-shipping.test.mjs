@@ -281,7 +281,11 @@ function checkoutFixture(quote) {
     cart: { findUnique: async () => structuredClone(cart) },
     $transaction: mock.fn(async (run) => run(tx)),
   };
-  const service = new OrderService(prisma, { quote }, new OrderPaymentHelper(prisma, {}, {}, {}));
+  const service = new OrderService(
+    prisma,
+    { quote },
+    new OrderPaymentHelper(prisma, {}, { next: async () => 1_000_000_000_001 }, {}, {}),
+  );
   return { service, prisma, tx, cart };
 }
 

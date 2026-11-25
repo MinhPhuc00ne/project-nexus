@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from '../../core/prisma/prisma.module';
 import { PaymentSandboxService } from './services/payment-sandbox.service';
+import { PayosOrderCodeService } from './services/payos-order-code.service';
 import { PayosService } from './services/payos.service';
 
 /**
@@ -12,8 +14,8 @@ import { PayosService } from './services/payos.service';
  * money-handling module can depend on.
  */
 @Module({
-  imports: [ConfigModule],
-  providers: [PayosService, PaymentSandboxService],
-  exports: [PayosService],
+  imports: [ConfigModule, PrismaModule],
+  providers: [PayosService, PaymentSandboxService, PayosOrderCodeService],
+  exports: [PayosService, PayosOrderCodeService],
 })
 export class PaymentsModule {}

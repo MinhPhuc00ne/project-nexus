@@ -12,6 +12,7 @@ import { DepositWalletInput } from '../dtos/deposit-wallet.dto';
 import { AuctionCheckoutService } from '../../auction/services/auction-checkout.service';
 import { WebhookData } from '@payos/node';
 import { PayosSettlement } from '../../payments/services/payos-settlement';
+import { PayosOrderCodeService } from '../../payments/services/payos-order-code.service';
 import { PayosService } from '../../payments/services/payos.service';
 
 @Injectable()
@@ -21,6 +22,7 @@ export class WalletDepositService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly payosService: PayosService,
+    private readonly orderCodes: PayosOrderCodeService,
     _configService: ConfigService,
     private readonly auctionCheckout?: AuctionCheckoutService,
   ) {}
@@ -98,9 +100,9 @@ export class WalletDepositService {
 
     // Nếu chọn cổng PayOS và dịch vụ PayOS khả dụng (môi trường runtime thực tế)
     if (dto.provider === 'PAYOS' && this.payosService?.createPaymentLink) {
-      const orderCode = Number(
-        `${Math.floor(Date.now() / 1000)}${Math.floor(Math.random() * 90 + 10)}`,
-      );
+      // The same sequence checkout draws from, so a top-up and an order
+      // payment can never claim one callback.
+      const orderCode = await this.orderCodes.next();
 
       const walletTx = await this.prisma.walletTransaction.create({
         data: {

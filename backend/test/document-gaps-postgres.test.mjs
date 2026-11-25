@@ -200,7 +200,14 @@ test(
           const retail = new OrderService(
             prisma,
             shipping,
-            new OrderPaymentHelper(prisma, {}, {}, escrow, inventory),
+            new OrderPaymentHelper(
+              prisma,
+              {},
+              { next: async () => 1_000_000_000_001 },
+              {},
+              escrow,
+              inventory,
+            ),
             inventory,
           );
           await assert.rejects(retail.payOrderByWallet(offer.orderId, buyer.id), /quyền mua/);
