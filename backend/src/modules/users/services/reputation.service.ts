@@ -10,7 +10,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { NotificationsService } from '../../notifications/services/notifications.service';
-import { trustLevelFor } from './reputation-policy';
+import { trustLevelFor } from '../../../core/domain/reputation-policy';
 import {
   AdjustReputationDto,
   AwardProfileCompletionDto,

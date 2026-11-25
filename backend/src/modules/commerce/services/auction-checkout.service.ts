@@ -25,7 +25,7 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
 import { AdminSettingsService } from '../../admin/services/admin-settings.service';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
-import { productChoiceLabel } from '../../catalog/utils/product-options';
+import { productChoiceLabel } from '../../../core/domain/product-options';
 import { GhnParcelItem } from '../../fulfillment/services/ghn-parcel';
 import { GhnShippingService } from '../../fulfillment/services/ghn-shipping.service';
 import { ReputationService } from '../../users/services/reputation.service';

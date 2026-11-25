@@ -16,7 +16,7 @@ import {
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ChatService } from '../../chat/services/chat.service';
-import { trustLevelFor } from '../../users/services/reputation-policy';
+import { trustLevelFor } from '../../../core/domain/reputation-policy';
 import { RegisterAuctionItemDto } from '../dtos/register-auction-item.dto';
 import { ReviewAction, ReviewAuctionItemDto } from '../dtos/review-auction-item.dto';
 import { StaffAuctionNoteDto } from '../dtos/staff-auction-note.dto';

@@ -14,7 +14,7 @@ import { generateStaffBaseEmail } from '../utils/staff-email.util';
 import {
   INITIAL_REPUTATION_SCORE,
   INITIAL_REPUTATION_TRUST_LEVEL,
-} from '../../users/services/reputation-policy';
+} from '../../../core/domain/reputation-policy';
 
 export interface StaffInvitationInput {
   fullName: string;

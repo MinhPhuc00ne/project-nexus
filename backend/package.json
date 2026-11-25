@@ -29,7 +29,8 @@
     "admin:create": "ts-node prisma/seeds/admin-create.ts",
     "seed:demo": "ts-node prisma/seeds/demo/index.ts",
     "seed:demo:reset": "ts-node prisma/seeds/demo/index.ts --reset",
-    "typecheck:seeds": "tsc --noEmit -p tsconfig.seeds.json"
+    "typecheck:seeds": "tsc --noEmit -p tsconfig.seeds.json",
+    "check:cycles": "node scripts/check-import-cycles.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.2",

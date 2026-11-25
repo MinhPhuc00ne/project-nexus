@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { UpdateProductSaleDto } from '../dtos/product-features.dto';
-import { priceView } from '../utils/product-price';
+import { priceView } from '../../../core/domain/product-price';
 
 @Injectable()
 export class ProductSaleService {

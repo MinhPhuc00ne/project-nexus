@@ -13,8 +13,8 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { AdminFinanceService } from '../../admin/services/admin-finance.service';
 import { InventoryService } from '../../catalog/services/inventory.service';
 import { ProductTrendingService } from '../../catalog/services/product-trending.service';
-import { productChoiceLabel, validateSelections } from '../../catalog/utils/product-options';
-import { effectivePrice } from '../../catalog/utils/product-price';
+import { productChoiceLabel, validateSelections } from '../../../core/domain/product-options';
+import { effectivePrice } from '../../../core/domain/product-price';
 import {
   GhnShippingQuote,
   GhnShippingService,

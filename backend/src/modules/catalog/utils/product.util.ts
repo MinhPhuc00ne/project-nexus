@@ -1,7 +1,7 @@
 import { Prisma, ProductStatus, SellerRequestStatus } from '@prisma/client';
 import { QueryProductDto } from '../dtos/query-product.dto';
-import { priceView, PricedProduct } from './product-price';
-import { ProductChoice } from './product-options';
+import { priceView, PricedProduct } from '../../../core/domain/product-price';
+import { ProductChoice } from '../../../core/domain/product-options';
 
 export interface PaginatedResult<T> {
   items: T[];

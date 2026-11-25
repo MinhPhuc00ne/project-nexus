@@ -9,7 +9,7 @@ import {
   Role,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { effectivePrice } from '../../catalog/utils/product-price';
+import { effectivePrice } from '../../../core/domain/product-price';
 import { formatCartItem, summarizeCart, FormattedCartItem } from '../utils/cart.util';
 
 /** Validated filters for a bounded commerce lookup owned by the authenticated user. */

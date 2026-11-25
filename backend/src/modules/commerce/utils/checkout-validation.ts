@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { effectivePrice } from '../../catalog/utils/product-price';
-import { validateSelections } from '../../catalog/utils/product-options';
+import { effectivePrice } from '../../../core/domain/product-price';
+import { validateSelections } from '../../../core/domain/product-options';
 
 export interface QuotedCartItem {
   id: string;

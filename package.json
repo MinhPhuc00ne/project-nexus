@@ -59,7 +59,8 @@
     "db:bootstrap": "npm run db:bootstrap --workspace=backend",
     "admin:create": "npm run admin:create --workspace=backend",
     "seed:demo": "npm run seed:demo --workspace=backend",
-    "seed:demo:reset": "npm run seed:demo:reset --workspace=backend"
+    "seed:demo:reset": "npm run seed:demo:reset --workspace=backend",
+    "check:cycles": "npm run check:cycles --workspace=backend"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

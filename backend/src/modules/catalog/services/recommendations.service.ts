@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { FeedbackPageDto } from '../../commerce/dtos/feedback.dto';
+import type { PaginatedQuery } from '@nexus/contracts';
 import { formatProductSummary } from '../utils/product.util';
 
 @Injectable()
 export class RecommendationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async get(userId: string, query: FeedbackPageDto): Promise<unknown> {
+  async get(userId: string, query: PaginatedQuery): Promise<unknown> {
     const [cart, purchases] = await Promise.all([
       this.prisma.cartItem.findMany({
         where: { cart: { userId } },

@@ -10,8 +10,8 @@ import {
   summarizeCart,
   FormattedCartItem,
 } from '../utils/cart.util';
-import { effectivePrice } from '../../catalog/utils/product-price';
-import { validateSelections } from '../../catalog/utils/product-options';
+import { effectivePrice } from '../../../core/domain/product-price';
+import { validateSelections } from '../../../core/domain/product-options';
 
 export interface CartView {
   cartId: string;

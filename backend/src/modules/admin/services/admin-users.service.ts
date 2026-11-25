@@ -3,7 +3,7 @@ import { Prisma, ProductStatus, ReputationTrustLevel, Role, User } from '@prisma
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { generateStaffBaseEmail } from '../../auth/utils/staff-email.util';
-import { trustLevelFor } from '../../users/services/reputation-policy';
+import { trustLevelFor } from '../../../core/domain/reputation-policy';
 import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
 import { QueryUsersDto, UserStatusFilter } from '../dtos/query-users.dto';
 import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';

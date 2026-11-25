@@ -16,8 +16,8 @@ import {
   ShipmentStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { productChoiceLabel } from '../../catalog/utils/product-options';
-import { DispatchGhnOrderDto } from '../../commerce/dtos/seller-order.dto';
+import { productChoiceLabel } from '../../../core/domain/product-options';
+import { DispatchGhnOrderDto } from '../dtos/dispatch-ghn-order.dto';
 import { GhnAddress, GhnShippingQuote, GhnShippingService } from './ghn-shipping.service';
 import { GhnParcel, normalizeGhnWardCode } from './ghn-parcel';
 import { shipmentGhnContext } from './ghn-context';

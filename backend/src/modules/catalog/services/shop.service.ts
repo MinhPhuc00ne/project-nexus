@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { priceView } from '../utils/product-price';
+import { priceView } from '../../../core/domain/product-price';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import { QueryShopDto } from '../dtos/query-shop.dto';
 import { InventoryService } from './inventory.service';

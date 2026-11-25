@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { effectivePrice } from '../../catalog/utils/product-price';
+import { effectivePrice } from '../../../core/domain/product-price';
 import { ShippingQuoteDto } from '../dtos/shipping-quote.dto';
 import { GhnShippingService, GhnAddress, GhnShippingQuote } from './ghn-shipping.service';
 import { RouteDistanceService, RouteDistance } from './route-distance.service';

@@ -8,10 +8,8 @@ tsNode.register({
   transpileOnly: true,
 });
 const load = createRequire(import.meta.url);
-const { effectivePrice } = load('../src/modules/catalog/utils/product-price.ts');
-const { normalizeOptions, validateSelections } = load(
-  '../src/modules/catalog/utils/product-options.ts',
-);
+const { effectivePrice } = load('../src/core/domain/product-price.ts');
+const { normalizeOptions, validateSelections } = load('../src/core/domain/product-options.ts');
 const { GhnLogisticsService } = load(
   '../src/modules/fulfillment/services/ghn-logistics.service.ts',
 );

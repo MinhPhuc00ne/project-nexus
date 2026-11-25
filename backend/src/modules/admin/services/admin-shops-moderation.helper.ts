@@ -9,7 +9,7 @@ import {
   ViolationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { trustLevelFor } from '../../users/services/reputation-policy';
+import { trustLevelFor } from '../../../core/domain/reputation-policy';
 import { ReputationService } from '../../users/services/reputation.service';
 import { CreateShopViolationDto } from '../dtos/create-shop-violation.dto';
 import { ResolveShopAppealDto } from '../dtos/resolve-shop-appeal.dto';

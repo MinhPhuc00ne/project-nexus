@@ -26,7 +26,7 @@ import { VerifyEmailDto } from '../dtos/verify-email.dto';
 import {
   INITIAL_REPUTATION_SCORE,
   INITIAL_REPUTATION_TRUST_LEVEL,
-} from '../../users/services/reputation-policy';
+} from '../../../core/domain/reputation-policy';
 export type { UserProfileResponse } from './auth-profile.service';
 
 interface RefreshJwtPayload {

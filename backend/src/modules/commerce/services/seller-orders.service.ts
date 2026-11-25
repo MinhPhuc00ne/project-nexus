@@ -14,7 +14,8 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { GhnDispatchService } from '../../fulfillment/services/ghn-dispatch.service';
-import { DispatchGhnOrderDto, QuerySellerOrdersDto } from '../dtos/seller-order.dto';
+import { QuerySellerOrdersDto } from '../dtos/seller-order.dto';
+import { DispatchGhnOrderDto } from '../../fulfillment/dtos/dispatch-ghn-order.dto';
 
 @Injectable()
 export class SellerOrdersService {

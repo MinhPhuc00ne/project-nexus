@@ -13,8 +13,8 @@ import { QueryProductDto } from '../dtos/query-product.dto';
 import { InventoryService } from './inventory.service';
 import { NotificationType, ProductStatus, Prisma, Role } from '@prisma/client';
 import { PaginatedResult, formatProductDetail } from '../utils/product.util';
-import { normalizeOptions } from '../utils/product-options';
-import { priceView } from '../utils/product-price';
+import { normalizeOptions } from '../../../core/domain/product-options';
+import { priceView } from '../../../core/domain/product-price';
 import { ProductSearchService } from './product-search.service';
 
 @Injectable()
