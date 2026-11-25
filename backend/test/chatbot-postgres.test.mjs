@@ -192,7 +192,19 @@ test(
               status: 'IN_PROGRESS',
             },
           });
-          const chat = new ChatService(facade, {}, new ChatAutoReplyService(facade), {});
+          // Realtime pushes and presence are published rather than held, so the
+          // fixture supplies a recorder it can also steer.
+          const presence = {
+            message() {},
+            read() {},
+            toUser() {},
+            toStaff() {},
+            statusChange() {},
+            isUserOnline: async () => true,
+            isStaffOnline: async () => true,
+            isSupportOnline: async () => true,
+          };
+          const chat = new ChatService(facade, {}, new ChatAutoReplyService(facade), {}, presence);
           await chat.sendMessage(buyer.id, 'BUYER', {
             conversationId: conversation.id,
             content: 'BAO HANH DIEN THOAI the nao?',
@@ -221,7 +233,7 @@ test(
             },
           });
           let online = false;
-          chat.setBroadcaster({ isUserOnline: async () => online, broadcastMessage() {} });
+          presence.isUserOnline = async () => online;
           await chat.sendMessage(buyer.id, 'BUYER', {
             conversationId: conversation.id,
             content: 'hi',

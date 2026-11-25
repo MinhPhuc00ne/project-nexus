@@ -1,3 +1,5 @@
+import { ChatPresenceService } from './services/chat-presence.service';
+import { ChatRealtimePublisher } from './services/chat-realtime.publisher';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { CloudinaryStorageService } from '../../core/storage/cloudinary.service';
@@ -20,6 +22,8 @@ import { ChatbotCommerceService } from './services/chatbot-commerce.service';
   imports: [PrismaModule, StorageModule, CommerceQueryModule],
   controllers: [ChatController, SellerAutoReplyController, AdminChatController, ChatbotController],
   providers: [
+    ChatPresenceService,
+    ChatRealtimePublisher,
     ChatbotCommerceService,
     ChatbotService,
     ChatbotAiService,

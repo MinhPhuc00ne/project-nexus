@@ -33,10 +33,23 @@ test(
     const http = createServer();
     const io = new Server(http);
     const namespace = io.of('/chat');
-    const gateway = new ChatGateway({ processQueueForStaff: async () => {} }, tokenAuthStub, {
-      registerOnlineStaff() {},
-      unregisterStaff() {},
-    });
+    const online = new Set();
+    const gateway = new ChatGateway(
+      { processQueueForStaff: async () => {} },
+      tokenAuthStub,
+      {
+        registerOnlineStaff: async () => {},
+        unregisterStaff: async () => {},
+      },
+      // Presence is shared state now; this records it in the test process.
+      {
+        connect: async (userId, socketId) => online.add(userId + '|' + socketId),
+        disconnect: async (userId, socketId) => online.delete(userId + '|' + socketId),
+        isOnline: async (userId) => [...online].some((k) => k.startsWith(userId + '|')),
+      },
+      { registerServer() {} },
+      { on() {} },
+    );
     gateway.server = namespace;
     namespace.on('connection', async (socket) => {
       await gateway.handleConnection(socket);

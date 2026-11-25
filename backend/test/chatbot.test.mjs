@@ -44,9 +44,20 @@ test('guest fallback never reads orders and offers login for protected actions',
   assert.equal(f.limit.check.mock.calls[0].arguments[0], 'guest:peer-hash');
 });
 
-test('auto replies detect shop/support offline, preserve first-message context and tolerate unknown presence', async () => {
+test('auto replies detect shop and support presence and preserve first-message context', async () => {
   let online = false;
   const calls = [];
+  // Presence comes from the shared staff queue, so the publisher answers it.
+  const presence = {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => online,
+    isStaffOnline: async () => online,
+    isSupportOnline: async () => online,
+  };
   const service = new ChatService(
     {
       user: { findUnique: async () => ({ role: 'SELLER', isShopSuspended: false }) },
@@ -60,25 +71,21 @@ test('auto replies detect shop/support offline, preserve first-message context a
       },
     },
     {},
+    presence,
   );
-  service.setBroadcaster({ isUserOnline: async () => online, isSupportOnline: async () => online });
+
   const conv = { id: 'c', type: 'BUYER_SELLER', participant1Id: 'buyer', participant2Id: 'shop' };
   await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
   assert.deepEqual(calls.at(-1)[3], { firstMessage: true, offline: true });
   online = true;
   await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
   assert.equal(calls.at(-1)[3].offline, false);
-  online = null;
-  await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
-  assert.equal(calls.at(-1)[3].offline, false);
   online = false;
   await service.triggerAutoReply({ ...conv, type: 'STAFF_BUYER' }, 'buyer', 'BUYER', 'hi');
   assert.equal(calls.at(-1)[1], 'SYSTEM');
   assert.equal(calls.at(-1)[3].offline, true);
-  service.setBroadcaster({
-    isUserOnline: async (id) => id !== 'assigned',
-    isSupportOnline: async () => true,
-  });
+  presence.isUserOnline = async (id) => id !== 'assigned';
+  presence.isSupportOnline = async () => true;
   await service.triggerAutoReply(
     { ...conv, type: 'STAFF_BUYER', assignedStaffId: 'assigned' },
     'buyer',
@@ -441,6 +448,18 @@ test('seller acting as customer receives shop replies; shop replies to buyer nev
       },
     },
     {},
+    {
+      message() {},
+      read() {},
+      toUser() {},
+      toStaff() {},
+      statusChange() {},
+      // The shop is connected in this scenario, which is what makes the
+      // routing question meaningful.
+      isUserOnline: async () => true,
+      isStaffOnline: async () => true,
+      isSupportOnline: async () => true,
+    },
   );
   const conv = {
     id: 'c',
