@@ -23,7 +23,13 @@ import {
   WsNotificationNewPayloadSchema,
   WsPlaceBidSchema,
 } from '@nexus/contracts';
-import { StandardSchemaValidationPipe, ZodBody, ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import {
+  StandardSchemaValidationPipe,
+  ZodBody,
+  ZodParam,
+  ZodParams,
+  ZodQuery,
+} from '@nexus/contracts/nest';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
@@ -305,5 +311,14 @@ describe('M1 @nexus/contracts & NestJS 12 Standard Schema validation', () => {
     } finally {
       await respApp.close();
     }
+  });
+
+  it('rejects null or malformed StandardSchema objects at decorator registration time', () => {
+    expect(() => ZodBody({ '~standard': null } as never)).toThrow(TypeError);
+    expect(() => ZodQuery({ '~standard': null } as never)).toThrow(TypeError);
+    expect(() => ZodParam('id', { '~standard': null } as never)).toThrow(TypeError);
+    expect(() => ZodParams({ '~standard': null } as never)).toThrow(TypeError);
+    expect(() => ZodBody(null as never)).toThrow(TypeError);
+    expect(() => ZodBody({} as never)).toThrow(TypeError);
   });
 });

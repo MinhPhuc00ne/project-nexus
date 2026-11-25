@@ -22,8 +22,11 @@ export const backendEnvSchema = z
       z.coerce.number().int().min(1).max(65535).default(3000),
     ),
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-    JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),
-    REFRESH_TOKEN_SECRET: z.string().min(16, 'REFRESH_TOKEN_SECRET must be at least 16 characters'),
+    JWT_SECRET: z.string().trim().min(16, 'JWT_SECRET must be at least 16 characters'),
+    REFRESH_TOKEN_SECRET: z
+      .string()
+      .trim()
+      .min(16, 'REFRESH_TOKEN_SECRET must be at least 16 characters'),
     JWT_EXPIRES_IN: z.preprocess(emptyToUndefined, z.string().min(1).default('7d')),
     REFRESH_TOKEN_EXPIRES_IN: z.preprocess(emptyToUndefined, z.string().min(1).default('30d')),
     FRONTEND_URL: z.preprocess(emptyToUndefined, z.string().url().default('http://localhost:5173')),

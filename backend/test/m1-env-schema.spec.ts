@@ -55,6 +55,20 @@ describe('M1 Backend environment validation & URL/CORS helpers', () => {
         REFRESH_TOKEN_SECRET: 'too-short',
       }),
     ).toThrow(/REFRESH_TOKEN_SECRET/);
+
+    expect(() =>
+      validateBackendEnv({
+        ...VALID_BASE_ENV,
+        JWT_SECRET: '                ',
+      }),
+    ).toThrow(/JWT_SECRET/);
+
+    expect(() =>
+      validateBackendEnv({
+        ...VALID_BASE_ENV,
+        REFRESH_TOKEN_SECRET: '                ',
+      }),
+    ).toThrow(/REFRESH_TOKEN_SECRET/);
   });
 
   it('requires APP_PUBLIC_URL in production and allows valid production URL', () => {

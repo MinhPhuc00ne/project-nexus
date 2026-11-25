@@ -10,7 +10,14 @@ export { StandardSchemaValidationPipe };
 const standardSchemaPipe = new StandardSchemaValidationPipe({ transform: true });
 
 function assertSchemaProvided(schema: StandardSchemaV1, decoratorName: string): void {
-  if (!schema || typeof schema !== 'object' || !('~standard' in schema)) {
+  if (
+    typeof schema !== 'object' ||
+    schema === null ||
+    !('~standard' in schema) ||
+    schema['~standard'] === null ||
+    schema['~standard'] === undefined ||
+    typeof schema['~standard'] !== 'object'
+  ) {
     throw new TypeError(
       `${decoratorName} requires a non-null StandardSchemaV1 instance (Guardrail 1: StandardSchemaValidationPipe skips validation when metadata.schema is missing).`,
     );

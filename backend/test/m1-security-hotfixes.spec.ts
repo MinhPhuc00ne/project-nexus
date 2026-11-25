@@ -1,4 +1,10 @@
-import { ArgumentsHost, ExecutionContext, ForbiddenException, HttpException } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  BadRequestException,
+  ExecutionContext,
+  ForbiddenException,
+  HttpException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@nexus/types';
@@ -84,6 +90,24 @@ describe('M1 Security Hotfixes', () => {
       expect(makeGuard().canActivate(createMockExecutionContext({ role: Role.ADMIN }))).toBe(true);
       expect(() =>
         makeGuard().canActivate(createMockExecutionContext({ role: Role.BUYER })),
+      ).toThrow(ForbiddenException);
+    });
+
+    it('fails closed when @Roles() is empty array or @RequirePrivilege is empty string', () => {
+      const emptyRolesReflector = {
+        getAllAndOverride: vi.fn().mockReturnValueOnce([]).mockReturnValueOnce(undefined),
+      } as unknown as Reflector;
+      const emptyRolesGuard = new RolesGuard(emptyRolesReflector);
+      expect(() =>
+        emptyRolesGuard.canActivate(createMockExecutionContext({ role: Role.ADMIN })),
+      ).toThrow(ForbiddenException);
+
+      const emptyPrivilegeReflector = {
+        getAllAndOverride: vi.fn().mockReturnValueOnce(undefined).mockReturnValueOnce(''),
+      } as unknown as Reflector;
+      const emptyPrivilegeGuard = new RolesGuard(emptyPrivilegeReflector);
+      expect(() =>
+        emptyPrivilegeGuard.canActivate(createMockExecutionContext({ role: Role.ADMIN })),
       ).toThrow(ForbiddenException);
     });
 
@@ -213,6 +237,22 @@ describe('M1 Security Hotfixes', () => {
         buffer: Buffer.from('MZ\x90\x00not-really-a-png-file-payload'),
       });
       await expect(service.uploadMedia(spoofedPng)).rejects.toThrow(/Nội dung file không khớp/);
+
+      const truncatedTiff = createMediaFile({
+        originalname: 'truncated.tiff',
+        mimetype: 'image/tiff',
+        buffer: Buffer.from([0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00]),
+      });
+      await expect(service.uploadMedia(truncatedTiff)).rejects.toThrow(BadRequestException);
+
+      const dotfileSvgWithPngBytes = createMediaFile({
+        originalname: '.svg',
+        mimetype: 'image/png',
+        buffer: validPngBuffer,
+      });
+      await expect(service.uploadMedia(dotfileSvgWithPngBytes)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('writes zero local disk files when Cloudinary is configured', async () => {

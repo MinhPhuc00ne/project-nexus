@@ -69,6 +69,17 @@ export class MediaService {
     }
   }
 
+  private resolveUploadExtension(originalname?: string): string {
+    const baseName = path.basename((originalname ?? '').trim());
+    const rawExt = path.extname(baseName).toLowerCase();
+    if (baseName.startsWith('.') && !rawExt) {
+      throw new BadRequestException(
+        `Định dạng file không được hỗ trợ (${baseName}). Vui lòng tải lên file hợp lệ.`,
+      );
+    }
+    return rawExt || '.png';
+  }
+
   private validateUploadFile(
     file: Express.Multer.File | undefined,
     options: MediaUploadOptions,
@@ -77,7 +88,7 @@ export class MediaService {
       throw new BadRequestException('Vui lòng chọn file hình ảnh hợp lệ để tải lên.');
     }
 
-    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    const ext = this.resolveUploadExtension(file.originalname);
     if (options.strictReviewPolicy) {
       this.validateStrictReviewFile(file, ext);
       return;
@@ -104,7 +115,12 @@ export class MediaService {
 
   private async validateMagicBytes(file: Express.Multer.File, ext: string): Promise<void> {
     const expectedMimes = ALLOWED_EXTENSION_MIMES[ext];
-    const detected = await fromBuffer(file.buffer);
+    let detected: Awaited<ReturnType<typeof fromBuffer>>;
+    try {
+      detected = await fromBuffer(file.buffer);
+    } catch {
+      detected = undefined;
+    }
     if (!expectedMimes || !detected || !expectedMimes.includes(detected.mime)) {
       throw new BadRequestException(
         `Nội dung file không khớp với định dạng ${ext}. Vui lòng tải lên file hợp lệ.`,
@@ -164,7 +180,7 @@ export class MediaService {
   ): Promise<MediaUploadResponseDto> {
     this.validateUploadFile(file, options);
 
-    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    const ext = this.resolveUploadExtension(file.originalname);
     await this.validateMagicBytes(file, ext);
 
     const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;

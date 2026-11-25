@@ -32,7 +32,10 @@ test(
     );
     const schema = `gap_test_${randomUUID().replaceAll('-', '')}`;
     assert.match(schema, /^gap_test_[a-f0-9]{32}$/);
-    const adminPool = new Pool({ connectionString: url.toString(), connectionTimeoutMillis: 3000 });
+    const adminPool = new Pool({
+      connectionString: url.toString(),
+      connectionTimeoutMillis: 10000,
+    });
     let prisma;
     let pool;
     try {

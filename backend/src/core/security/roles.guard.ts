@@ -30,18 +30,53 @@ export const RBAC_PRIVILEGES_MAP: Record<string, Role[]> = {
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  private assertRoles(requiredRoles: Role[] | undefined, userRole: Role): void {
+    if (requiredRoles === undefined) {
+      return;
+    }
+    if (requiredRoles.length === 0) {
+      throw new ForbiddenException('Roles metadata is empty');
+    }
+    if (!requiredRoles.includes(userRole)) {
+      throw new ForbiddenException(
+        `User role ${userRole} does not have required permissions: [${requiredRoles.join(', ')}]`,
+      );
+    }
+  }
+
+  private assertPrivilege(requiredPrivilege: string | undefined, userRole: Role): void {
+    if (requiredPrivilege === undefined) {
+      return;
+    }
+    const allowedRoles =
+      requiredPrivilege.length > 0 &&
+      Object.prototype.hasOwnProperty.call(RBAC_PRIVILEGES_MAP, requiredPrivilege)
+        ? RBAC_PRIVILEGES_MAP[requiredPrivilege]
+        : undefined;
+    if (!allowedRoles || allowedRoles.length === 0) {
+      throw new ForbiddenException(
+        `Privilege '${requiredPrivilege}' is not configured in RBAC policy`,
+      );
+    }
+    if (!allowedRoles.includes(userRole)) {
+      throw new ForbiddenException(
+        `Role ${userRole} is not granted privilege '${requiredPrivilege}'`,
+      );
+    }
+  }
+
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+    const requiredRoles = this.reflector.getAllAndOverride<Role[] | undefined>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-    const requiredPrivilege = this.reflector.getAllAndOverride<string>(PRIVILEGES_KEY, [
+    const requiredPrivilege = this.reflector.getAllAndOverride<string | undefined>(PRIVILEGES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
 
-    if (!requiredRoles && !requiredPrivilege) {
+    if (requiredRoles === undefined && requiredPrivilege === undefined) {
       return true;
     }
 
@@ -52,35 +87,8 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User context missing');
     }
 
-    // Role check if requiredRoles provided
-    if (requiredRoles && requiredRoles.length > 0) {
-      const hasRole = requiredRoles.includes(user.role);
-      if (!hasRole) {
-        throw new ForbiddenException(
-          `User role ${user.role} does not have required permissions: [${requiredRoles.join(', ')}]`,
-        );
-      }
-    }
-
-    // Privilege check if requiredPrivilege provided
-    if (requiredPrivilege) {
-      const allowedRoles = Object.prototype.hasOwnProperty.call(
-        RBAC_PRIVILEGES_MAP,
-        requiredPrivilege,
-      )
-        ? RBAC_PRIVILEGES_MAP[requiredPrivilege]
-        : undefined;
-      if (!allowedRoles || allowedRoles.length === 0) {
-        throw new ForbiddenException(
-          `Privilege '${requiredPrivilege}' is not configured in RBAC policy`,
-        );
-      }
-      if (!allowedRoles.includes(user.role)) {
-        throw new ForbiddenException(
-          `Role ${user.role} is not granted privilege '${requiredPrivilege}'`,
-        );
-      }
-    }
+    this.assertRoles(requiredRoles, user.role);
+    this.assertPrivilege(requiredPrivilege, user.role);
 
     return true;
   }
