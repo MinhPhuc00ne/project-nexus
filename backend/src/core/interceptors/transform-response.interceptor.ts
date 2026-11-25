@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Request } from 'express';
+import { toPaginationEnvelope } from './pagination-envelope';
 
 export interface ResponseEnvelope<T> {
   statusCode: number;
@@ -39,6 +40,11 @@ export class TransformResponseInterceptor<T> implements NestInterceptor<
           message = (data as { message: string }).message;
           payload = (data as { data: unknown }).data;
         }
+
+        // Paginated lists are emitted in one shape regardless of which of the
+        // four historical shapes the handler returned.
+        const page = toPaginationEnvelope(payload);
+        if (page) payload = page as typeof payload;
 
         const extraProperties =
           payload && typeof payload === 'object' && 'url' in payload
