@@ -11,13 +11,13 @@ All constants, thresholds, and operational invariants below are verified directl
 - Initial Score: `INITIAL_REPUTATION_SCORE = 50` with default `ReputationTrustLevel.PROBATION`, matching `@default(50)` and `@default(PROBATION)` in `schema.prisma`.
 - Trust Level Tiers (`trustLevelFor`):
 
-| Trust Level (`ReputationTrustLevel`) | Score Range | Operational Meaning                                              |
-| :----------------------------------- | :---------- | :--------------------------------------------------------------- |
-| `EXCELLENT`                          | ≥ 120       | Top-tier trusted account                                         |
-| `GOOD`                               | 100 – 119   | Good standing                                                    |
-| `STANDARD`                           | 80 – 99     | Standard trading privileges                                      |
-| `PROBATION`                          | 40 – 79     | New account (`50`) or under observation                          |
-| `SUSPENDED`                          | < 40        | Restricted from trading/bidding due to penalties (`PenaltyType`) |
+| Trust Level (`ReputationTrustLevel`) | Score Range | Operational Meaning                                                  |
+| :----------------------------------- | :---------- | :------------------------------------------------------------------- |
+| `EXCELLENT`                          | ≥ 120       | Top-tier trusted account                                             |
+| `GOOD`                               | 100 – 119   | Good standing                                                        |
+| `STANDARD`                           | 80 – 99     | Standard trading privileges                                          |
+| `PROBATION`                          | 40 – 79     | New account (`50`) or under observation                              |
+| `SUSPENDED`                          | < 40        | Restricted from trading and bidding due to penalties (`PenaltyType`) |
 
 ## 2. Commerce, Cart and Pricing (`cart.service.ts`, `product-price.ts`)
 
@@ -45,9 +45,9 @@ All constants, thresholds, and operational invariants below are verified directl
 - Anti-Sniping: A valid bid placed within the final `2 minutes` (`AUCTION_ANTI_SNIPING_TRIGGER_MINUTES = 2`) automatically extends the lot deadline and broadcasts `auction:time_extended`.
 - Awards and Second Chance (`AuctionAward`):
   - `PRIMARY_WINNER` receives an exclusive checkout window.
-  - On `DECLINED`, `BUYER_WITHDRAWN`, or `PAYMENT_DEFAULT`, the system processes deposit forfeiture/compensation (`AUCTION_DEPOSIT_FORFEIT` / `AUCTION_DEPOSIT_COMPENSATION`) and can offer `SECOND_CHANCE` to the runner-up bidder.
+  - On `DECLINED`, `BUYER_WITHDRAWN`, or `PAYMENT_DEFAULT`, the system processes deposit forfeiture and compensation (`AUCTION_DEPOSIT_FORFEIT` and `AUCTION_DEPOSIT_COMPENSATION`) and can offer `SECOND_CHANCE` to the runner-up bidder.
 
 ## 5. 3-Level Categories and Seller Mode Toggle
 
-- Category Tree: Enforces a maximum depth of 3 levels (`level` 1–3). Both Backend (`CategoryService`) and Frontend (`categoryMoveError`) prevent self/descendant cycles and moves exceeding depth 3.
-- Buyer/Seller Mode Toggle: `/api/v1/users/toggle-seller` lets Sellers switch modes without logging out; however, if `isShopSuspended = true`, `AuthContext` forces the effective mode to `BUYER`.
+- Category Tree: Enforces a maximum depth of 3 levels (`level` 1–3). Both Backend (`CategoryService`) and Frontend (`categoryMoveError`) prevent self and descendant cycles and moves exceeding depth 3.
+- Buyer and Seller Mode Toggle: `/api/v1/users/toggle-seller` lets Sellers switch modes without logging out; however, if `isShopSuspended = true`, `AuthContext` forces the effective mode to `BUYER`.

@@ -33,6 +33,19 @@ test('resolveRedisConfig supports plain redis:// URLs without TLS', () => {
   assert.equal(cfg.displayTarget, 'redis://cache.internal:6381');
 });
 
+test('resolveRedisConfig defaults rediss:// log port to 6379 when omitted', () => {
+  const cfg = resolveRedisConfig(
+    'rediss://default:secret@upstash.example.com',
+    'localhost',
+    6379,
+    undefined,
+  );
+
+  assert.deepEqual(cfg.options.tls, {});
+  assert.equal(cfg.displayTarget, 'rediss://upstash.example.com:6379');
+  assert.ok(!cfg.displayTarget.includes('secret'));
+});
+
 test('resolveRedisConfig falls back to host, port, and password when REDIS_URL is empty', () => {
   const cfg = resolveRedisConfig('   ', '127.0.0.1', 6380, 'localpass');
 

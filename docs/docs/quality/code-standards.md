@@ -8,10 +8,10 @@ title: Code Standards, Naming and Sonar Quality
 
 - No `any`: `@typescript-eslint/no-explicit-any` is enforced at `error` level. Use `unknown` with type narrowing or explicit generics.
 - Explicit Return Types: Public service methods, controller endpoints, and exported helpers must declare explicit return types.
-- Null/Undefined Safety: Prefer `?.` and `??`; avoid `!` non-null assertions (permitted only in `main.tsx` root mount).
-- No Redundant Inline Comments: Avoid narrating obvious syntax; write TSDoc/JSDoc (`/** ... */`) on public classes, interfaces, and functions, and `///` doc comments in Prisma schema.
+- Null and Undefined Safety: Prefer `?.` and `??`; avoid `!` non-null assertions (permitted only in `main.tsx` root mount).
+- No Redundant Inline Comments: Avoid narrating obvious syntax; write TSDoc and JSDoc (`/** ... */`) on public classes, interfaces, and functions, and `///` doc comments in Prisma schema.
 - Complexity and Size:
-  - Keep files focused (target `< 300` lines), functions concise (`~30` lines), and parameters $\le 3$ (bundle into DTO/options objects otherwise).
+  - Keep files focused (target `< 300` lines), functions concise (`~30` lines), and parameters $\le 3$ (bundle into DTO or options objects otherwise).
   - Favor early returns to minimize nesting and cognitive complexity (`sonarjs/cognitive-complexity`).
 
 ## 2. Naming Conventions

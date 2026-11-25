@@ -27,10 +27,10 @@ flowchart LR
 
 ### Container Port and Resource Mapping
 
-| Container Name   | Service       | Image                | Host Port | Container Port | Purpose                                                           |
-| :--------------- | :------------ | :------------------- | :-------- | :------------- | :---------------------------------------------------------------- |
-| `nexus-postgres` | PostgreSQL 17 | `postgres:17-alpine` | `5432`    | `5432`         | System ACID persistence, relational schema, logical separation    |
-| `nexus-redis`    | Redis 7       | `redis:7-alpine`     | `6379`    | `6379`         | Cache, Redlock distributed locking, atomic bidding queue, Pub/Sub |
+| Container Name   | Service       | Image                | Host Port | Container Port | Purpose                                                                         |
+| :--------------- | :------------ | :------------------- | :-------- | :------------- | :------------------------------------------------------------------------------ |
+| `nexus-postgres` | PostgreSQL 17 | `postgres:17-alpine` | `5432`    | `5432`         | System ACID persistence, relational schema, logical separation                  |
+| `nexus-redis`    | Redis 7       | `redis:7-alpine`     | `6379`    | `6379`         | Cache, Redlock distributed locking, atomic bidding queue, publish and subscribe |
 
 ---
 

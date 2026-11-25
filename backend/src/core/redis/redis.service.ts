@@ -25,7 +25,7 @@ export function resolveRedisConfig(
     let displayTarget = 'REDIS_URL';
     try {
       const parsed = new URL(trimmedUrl);
-      const resolvedPort = parsed.port || (isTls ? '6380' : '6379');
+      const resolvedPort = parsed.port || '6379';
       displayTarget = `${parsed.protocol}//${parsed.hostname}:${resolvedPort}`;
     } catch {
       displayTarget = isTls ? 'rediss://<configured>' : 'redis://<configured>';

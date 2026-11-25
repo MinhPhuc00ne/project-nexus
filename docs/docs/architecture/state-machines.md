@@ -64,6 +64,6 @@ stateDiagram-v2
 
 ### Lot and Award Flow (`AuctionItem` and `AuctionAward`)
 
-1. Consignment Review (`AuctionItemStatus`): Seller submits item + appraisal certificate → `PENDING_REVIEW` → Staff/Admin marks `APPROVED` or `REJECTED`.
+1. Consignment Review (`AuctionItemStatus`): Seller submits item + appraisal certificate → `PENDING_REVIEW` → Staff or Admin marks `APPROVED` or `REJECTED`.
 2. Primary Award (`PRIMARY_WINNER`): Highest valid bidder receives `AuctionAward` (`AWAITING_CHECKOUT` / `AWAITING_DEPOSIT` → `PAID`).
 3. Second Chance (`SECOND_CHANCE`) and Deposit Forfeit: If the primary winner declines (`DECLINED`), withdraws (`BUYER_WITHDRAWN`), or defaults (`PAYMENT_DEFAULT`), the system records `AUCTION_DEPOSIT_FORFEIT` / `AUCTION_DEPOSIT_COMPENSATION` and can issue a `SECOND_CHANCE` invitation to the next highest bidder.
