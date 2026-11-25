@@ -17,6 +17,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { MediaModule } from './modules/media/media.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { CartModule } from './modules/cart/cart.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 import { CommerceModule } from './modules/commerce/commerce.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FulfillmentModule } from './modules/fulfillment/fulfillment.module';
@@ -49,6 +50,7 @@ import { AuctionModule } from './modules/auction/auction.module';
     MediaModule,
     CatalogModule,
     CartModule,
+    ReviewsModule,
     CommerceModule,
     NotificationsModule,
     FulfillmentModule,
