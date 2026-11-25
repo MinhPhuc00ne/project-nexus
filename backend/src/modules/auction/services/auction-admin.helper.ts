@@ -1,4 +1,4 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   AuctionItemStatus,
   AuctionStatus,
@@ -16,6 +16,7 @@ import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import { MIN_AUCTION_DURATION_MS, getIntroDurationMs } from './auction-domain.utils';
 
+@Injectable()
 export class AuctionAdminHelper {
   private readonly logger = new Logger(AuctionAdminHelper.name);
 

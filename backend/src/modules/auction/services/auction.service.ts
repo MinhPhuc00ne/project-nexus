@@ -1,10 +1,8 @@
-import { Injectable, NotFoundException, OnModuleInit, Optional } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { AuctionItemStatus, Prisma, Role } from '@prisma/client';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { ChatService } from '../../chat/services/chat.service';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
-import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
 import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
 import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
 import { AuctionQueryDto } from '../dtos/auction-query.dto';
@@ -37,10 +35,6 @@ export class AuctionService implements OnModuleInit {
   static readonly INTRO_LOT_DURATION_MS = INTRO_LOT_DURATION_MS;
   static readonly INTRO_CLIMAX_DURATION_MS = INTRO_CLIMAX_DURATION_MS;
 
-  private readonly adminHelper: AuctionAdminHelper;
-  private readonly consignmentHelper: AuctionConsignmentHelper;
-  private readonly biddingHelper: AuctionBiddingHelper;
-
   static getIntroDurationMs(lotCount: number): number {
     return getIntroDurationMs(lotCount);
   }
@@ -49,13 +43,10 @@ export class AuctionService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly auctionGateway: AuctionGateway,
     _stock: AuctionStockService,
-    private readonly checkout: AuctionCheckoutService,
-    @Optional() private readonly chatService?: ChatService,
-  ) {
-    this.adminHelper = new AuctionAdminHelper(this.prisma, this.auctionGateway);
-    this.consignmentHelper = new AuctionConsignmentHelper(this.prisma, this.chatService);
-    this.biddingHelper = new AuctionBiddingHelper(this.prisma, this.auctionGateway, this.checkout);
-  }
+    private readonly adminHelper: AuctionAdminHelper,
+    private readonly consignmentHelper: AuctionConsignmentHelper,
+    private readonly biddingHelper: AuctionBiddingHelper,
+  ) {}
 
   /** Registers the real-time WebSocket bidding handler once the module boots. */
   onModuleInit(): void {

@@ -14,6 +14,7 @@ import { AdminOrdersController } from './controllers/admin-orders.controller';
 import { AdminOrdersService } from './services/admin-orders.service';
 import { ReputationModule } from '../users/reputation.module';
 import { AdminReputationController } from './controllers/admin-reputation.controller';
+import { AdminShopsModerationHelper } from './services/admin-shops-moderation.helper';
 
 @Module({
   imports: [AuthModule, CatalogModule, ReputationModule],
@@ -24,6 +25,7 @@ import { AdminReputationController } from './controllers/admin-reputation.contro
     AdminReputationController,
   ],
   providers: [
+    AdminShopsModerationHelper,
     AdminOrdersService,
     AdminService,
     AdminUsersService,

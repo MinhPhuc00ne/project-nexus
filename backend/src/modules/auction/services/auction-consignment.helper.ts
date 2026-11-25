@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
@@ -22,6 +23,7 @@ import { ReviewAction, ReviewAuctionItemDto } from '../dtos/review-auction-item.
 import { StaffAuctionNoteDto } from '../dtos/staff-auction-note.dto';
 import { formatVnd } from './auction-domain.utils';
 
+@Injectable()
 export class AuctionConsignmentHelper {
   private readonly logger = new Logger(AuctionConsignmentHelper.name);
 

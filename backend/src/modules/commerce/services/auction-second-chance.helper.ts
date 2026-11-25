@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -35,6 +36,7 @@ import {
   syncAuctionCompletionStatusTx,
 } from './auction-checkout.utils';
 
+@Injectable()
 export class AuctionSecondChanceHelper {
   constructor(
     private readonly prisma: PrismaService,

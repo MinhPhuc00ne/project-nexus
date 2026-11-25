@@ -34,6 +34,11 @@ import { ReportModerationController } from './controllers/report-moderation.cont
 import { ReportModerationService } from './services/report-moderation.service';
 import { AuctionCheckoutController } from './controllers/auction-checkout.controller';
 import { AuctionCheckoutService } from './services/auction-checkout.service';
+import { AuctionSecondChanceHelper } from './services/auction-second-chance.helper';
+import { OrderPaymentHelper } from './services/order-payment.helper';
+import { OrderWalletHelper } from './services/order-wallet.helper';
+import { ReviewsModerationHelper } from './services/reviews-moderation.helper';
+import { ReviewsRepliesHelper } from './services/reviews-replies.helper';
 
 @Module({
   imports: [PrismaModule, FulfillmentModule, CatalogModule, AdminModule, UsersModule, MediaModule],
@@ -52,6 +57,11 @@ import { AuctionCheckoutService } from './services/auction-checkout.service';
     OrderLifecycleController,
   ],
   providers: [
+    AuctionSecondChanceHelper,
+    OrderPaymentHelper,
+    OrderWalletHelper,
+    ReviewsModerationHelper,
+    ReviewsRepliesHelper,
     AuctionCheckoutService,
     ReportModerationService,
     AfterSalesStoreService,

@@ -27,6 +27,16 @@ const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
 const { ConfigService } = load('@nestjs/config');
 const { WS_AUCTION_EVENTS } = load('@nexus/types');
+const { AuctionAdminHelper } = load('../src/modules/auction/services/auction-admin.helper.ts');
+const { AuctionBiddingHelper } = load('../src/modules/auction/services/auction-bidding.helper.ts');
+const { AuctionConsignmentHelper } = load(
+  '../src/modules/auction/services/auction-consignment.helper.ts',
+);
+const { AuctionSecondChanceHelper } = load(
+  '../src/modules/commerce/services/auction-second-chance.helper.ts',
+);
+const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
+const { OrderWalletHelper } = load('../src/modules/commerce/services/order-wallet.helper.ts');
 
 function createHarness(overrides = {}) {
   const wallets = new Map([
@@ -626,22 +636,33 @@ function createHarness(overrides = {}) {
     db,
     shipping,
     escrow,
-    reputation,
-    adminSettings,
-    adminFinance,
+    new AuctionSecondChanceHelper(db, reputation, adminSettings, adminFinance, undefined),
   );
-  const auctionService = new AuctionService(db, gateway, {}, checkoutService, chatService);
+  // Helpers are injected now, so the fixture builds them from the same
+  // doubles the service used to hand them.
+  const auctionService = new AuctionService(
+    db,
+    gateway,
+    {},
+    new AuctionAdminHelper(db, gateway),
+    new AuctionConsignmentHelper(db, chatService),
+    new AuctionBiddingHelper(db, gateway, checkoutService),
+  );
   const complaintService = new AuctionComplaintService(db);
   const orderService = new OrderService(
     db,
-    {},
-    { get: () => '' },
     shipping,
-    escrow,
-    undefined,
-    undefined,
-    adminFinance,
-    checkoutService,
+    new OrderPaymentHelper(
+      db,
+      {},
+      { get: () => '' },
+      escrow,
+      undefined,
+      undefined,
+      adminFinance,
+      checkoutService,
+    ),
+    new OrderWalletHelper(db, {}, { get: () => '' }, checkoutService),
   );
 
   return {

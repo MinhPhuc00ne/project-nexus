@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
@@ -6,6 +6,7 @@ import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
 import { AuctionCheckoutService } from './auction-checkout.service';
 import { PayosService } from './payos.service';
 
+@Injectable()
 export class OrderWalletHelper {
   constructor(
     private readonly prisma: PrismaService,

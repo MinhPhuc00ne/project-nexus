@@ -14,6 +14,8 @@ const { OrderService } = load('../src/modules/commerce/services/order.service.ts
 const { SellerEngagementService } = load(
   '../src/modules/commerce/services/seller-engagement.service.ts',
 );
+const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
+const { OrderWalletHelper } = load('../src/modules/commerce/services/order-wallet.helper.ts');
 
 function fixture() {
   const order = {
@@ -193,10 +195,9 @@ function paymentFixture() {
   const verified = { orderCode: 123, code: '00', amount: 130000 };
   const service = new OrderService(
     prisma,
-    { verifyWebhook: async () => verified },
     {},
-    {},
-    { hold },
+    new OrderPaymentHelper(prisma, { verifyWebhook: async () => verified }, {}, { hold }),
+    new OrderWalletHelper(prisma, { verifyWebhook: async () => verified }, {}),
   );
   return { service, hold, verified, prisma, order };
 }

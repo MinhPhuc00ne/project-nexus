@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   NotificationChannel,
@@ -52,6 +58,7 @@ export interface WalletPaymentResponse {
   };
 }
 
+@Injectable()
 export class OrderPaymentHelper {
   private readonly logger = new Logger('OrderService');
 

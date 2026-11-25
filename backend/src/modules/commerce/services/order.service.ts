@@ -6,13 +6,10 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { OrderStatus, PaymentProvider, PaymentStatus, Prisma, ProductStatus } from '@prisma/client';
 import { Webhook } from '@payos/node';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { AdminFinanceService } from '../../admin/services/admin-finance.service';
 import { InventoryService } from '../../catalog/services/inventory.service';
-import { ProductTrendingService } from '../../catalog/services/product-trending.service';
 import { productChoiceLabel, validateSelections } from '../../../core/domain/product-options';
 import { effectivePrice } from '../../../core/domain/product-price';
 import {
@@ -23,55 +20,26 @@ import { CheckoutDto } from '../dtos/checkout.dto';
 import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
 import { PayOrderDto } from '../dtos/pay-order.dto';
 import { validateQuotedCheckout } from '../utils/checkout-validation';
-import { AuctionCheckoutService } from './auction-checkout.service';
-import { OrderEscrowService } from './order-escrow.service';
 import {
   OrderPaymentHelper,
   PayosPaymentResponse,
   WalletPaymentResponse,
 } from './order-payment.helper';
 import { OrderWalletHelper } from './order-wallet.helper';
-import { PayosService } from './payos.service';
-import { RefundService } from './refund.service';
 
 export type { PayosPaymentResponse, WalletPaymentResponse } from './order-payment.helper';
 
 @Injectable()
 export class OrderService {
   private readonly logger = new Logger(OrderService.name);
-  private readonly paymentHelper: OrderPaymentHelper;
-  private readonly walletHelper: OrderWalletHelper;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly payosService: PayosService,
-    private readonly configService: ConfigService,
     private readonly shipping: GhnShippingService,
-    private readonly escrow: OrderEscrowService,
+    private readonly paymentHelper: OrderPaymentHelper,
+    private readonly walletHelper: OrderWalletHelper,
     @Optional() private readonly inventoryService?: InventoryService,
-    private readonly refunds?: RefundService,
-    private readonly finance?: AdminFinanceService,
-    @Optional() private readonly auctionCheckout?: AuctionCheckoutService,
-    @Optional() private readonly trendingService?: ProductTrendingService,
-  ) {
-    this.paymentHelper = new OrderPaymentHelper(
-      this.prisma,
-      this.payosService,
-      this.configService,
-      this.escrow,
-      this.inventoryService,
-      this.refunds,
-      this.finance,
-      this.auctionCheckout,
-      this.trendingService,
-    );
-    this.walletHelper = new OrderWalletHelper(
-      this.prisma,
-      this.payosService,
-      this.configService,
-      this.auctionCheckout,
-    );
-  }
+  ) {}
 
   /**
    * Tạo đơn hàng từ giỏ hàng hiện tại (Price Revalidation + Anti-Self-Purchase)

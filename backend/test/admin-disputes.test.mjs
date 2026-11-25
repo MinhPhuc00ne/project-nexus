@@ -134,9 +134,14 @@ test('AdminDisputesService.getDisputes returns list of disputes, counters and pa
 
   const prisma = {
     dispute: {
+      // Counters are grouped in the database rather than counted in memory.
+      groupBy: mock.fn(async () => [
+        { status: 'OPEN', _count: { _all: 1 } },
+        { status: 'UNDER_REVIEW', _count: { _all: 1 } },
+        { status: 'RESOLVED_BUYER_FAVOR', _count: { _all: 1 } },
+      ]),
       findMany: mock.fn(async (args) => {
         if (args?.select?.status) {
-          // allDisputes query for counters
           return [
             { status: 'OPEN' },
             { status: 'UNDER_REVIEW' },

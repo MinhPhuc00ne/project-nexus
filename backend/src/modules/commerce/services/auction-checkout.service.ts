@@ -4,7 +4,6 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  Optional,
 } from '@nestjs/common';
 import {
   AuctionAward,
@@ -22,13 +21,9 @@ import {
   WalletTransactionType,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { AdminFinanceService } from '../../admin/services/admin-finance.service';
-import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
-import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { productChoiceLabel } from '../../../core/domain/product-options';
 import { GhnParcelItem } from '../../fulfillment/services/ghn-parcel';
 import { GhnShippingService } from '../../fulfillment/services/ghn-shipping.service';
-import { ReputationService } from '../../users/services/reputation.service';
 import { OrderEscrowService } from './order-escrow.service';
 import {
   AUCTION_CHECKOUT_DURATION_MS,
@@ -57,25 +52,12 @@ export type {
  */
 @Injectable()
 export class AuctionCheckoutService {
-  private readonly secondChanceHelper: AuctionSecondChanceHelper;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly shipping: GhnShippingService,
     private readonly escrow: OrderEscrowService,
-    private readonly reputation: ReputationService,
-    private readonly adminSettings: PlatformSettingsService,
-    private readonly adminFinance: AdminFinanceService,
-    @Optional() private readonly auctionStock?: AuctionStockService,
-  ) {
-    this.secondChanceHelper = new AuctionSecondChanceHelper(
-      this.prisma,
-      this.reputation,
-      this.adminSettings,
-      this.adminFinance,
-      this.auctionStock,
-    );
-  }
+    private readonly secondChanceHelper: AuctionSecondChanceHelper,
+  ) {}
 
   /**
    * Creates the initial 24-hour checkout award for the primary winner of a lot:

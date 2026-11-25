@@ -19,6 +19,8 @@ const { OrderCancellationService } = load(
 const { OrderReturnService } = load('../src/modules/commerce/services/order-return.service.ts');
 const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
 const { ReputationService } = load('../src/modules/users/services/reputation.service.ts');
+const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
+const { OrderWalletHelper } = load('../src/modules/commerce/services/order-wallet.helper.ts');
 export const buyer = { id: 'buyer', role: 'BUYER' };
 export const seller = { id: 'seller', role: 'SELLER' };
 export const admin = { id: 'admin', role: 'ADMIN' };
@@ -273,13 +275,18 @@ export function fixture() {
     returns: new OrderReturnService(prisma, store, ghn, actions, inventory, refunds),
     payments: new OrderService(
       prisma,
-      { verifyWebhook: async () => ({ orderCode: 123, code: '00', amount: 130000 }) },
       {},
-      {},
-      {},
+      new OrderPaymentHelper(
+        prisma,
+        { verifyWebhook: async () => ({ orderCode: 123, code: '00', amount: 130000 }) },
+        {},
+        {},
+        inventory,
+        refunds,
+        finance,
+      ),
+      new OrderWalletHelper(prisma, {}, {}),
       inventory,
-      refunds,
-      finance,
     ),
     fullOrder,
   };

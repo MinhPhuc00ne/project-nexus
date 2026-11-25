@@ -341,7 +341,19 @@ test(
             auctionId: auction.id,
           });
           const inbox = await notifications.getUserNotifications(buyer.id, { page: 1, limit: 10 });
-          const auctions = new AuctionService(prisma, {}, {}, {});
+          const { AuctionAdminHelper } = source('auction/services/auction-admin.helper');
+          const { AuctionBiddingHelper } = source('auction/services/auction-bidding.helper');
+          const { AuctionConsignmentHelper } = source(
+            'auction/services/auction-consignment.helper',
+          );
+          const auctions = new AuctionService(
+            prisma,
+            {},
+            {},
+            new AuctionAdminHelper(prisma, {}),
+            new AuctionConsignmentHelper(prisma, undefined),
+            new AuctionBiddingHelper(prisma, {}, {}),
+          );
           const listing = await auctions.getAuctions({ page: 1, limit: 20 });
           assert.equal(
             listing.items.find((row) => row.id === auction.id).targetUrl,

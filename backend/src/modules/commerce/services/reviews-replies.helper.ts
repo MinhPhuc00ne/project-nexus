@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { MediaService } from '../../media/services/media.service';
@@ -9,6 +14,7 @@ import {
   prepareReviewMedia,
 } from './reviews-media.helper';
 
+@Injectable()
 export class ReviewsRepliesHelper {
   constructor(
     private readonly prisma: PrismaService,

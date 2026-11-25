@@ -14,6 +14,9 @@ const { CartService } = load('../src/modules/commerce/services/cart.service.ts')
 const { RecommendationsService } = load(
   '../src/modules/catalog/services/recommendations.service.ts',
 );
+const { AdminShopsModerationHelper } = load(
+  '../src/modules/admin/services/admin-shops-moderation.helper.ts',
+);
 
 test('restoring shop restores only products hidden by suspension and warning targets seller', async () => {
   const seller = {
@@ -32,10 +35,14 @@ test('restoring shop restores only products hidden by suspension and warning tar
     shopActionLog: { create: async ({ data }) => ({ id: 'log', ...data }) },
     notification: { create: async ({ data }) => notifications.push(data) },
   };
-  const service = new AdminShopsService({
+  const prismaDouble = {
     user: { findUnique: async () => seller },
     $transaction: (fn) => fn(tx),
-  });
+  };
+  const service = new AdminShopsService(
+    prismaDouble,
+    new AdminShopsModerationHelper(prismaDouble, { adjustScore: async () => ({}) }),
+  );
   await service.updateShopStatus('seller', 'admin', { isSellerActive: false });
   await service.updateShopStatus('seller', 'admin', { isSellerActive: true });
   assert.equal(changes[0].where.status, 'ACTIVE');

@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { NotificationChannel, NotificationType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { ReputationService } from '../../users/services/reputation.service';
@@ -9,6 +9,7 @@ import {
 } from '../dtos/feedback.dto';
 import { PRODUCT_REVIEW_NOT_FOUND, SHOP_REVIEW_NOT_FOUND } from './reviews-media.helper';
 
+@Injectable()
 export class ReviewsModerationHelper {
   constructor(
     private readonly prisma: PrismaService,

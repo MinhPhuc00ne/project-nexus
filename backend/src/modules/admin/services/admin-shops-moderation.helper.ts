@@ -1,5 +1,5 @@
 import { ShopViolationPenaltyLevel } from '@prisma/client';
-import { Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   NotificationType,
   ProductStatus,
@@ -16,6 +16,7 @@ import { ResolveShopAppealDto } from '../dtos/resolve-shop-appeal.dto';
 import { UpdateShopStatusDto } from '../dtos/update-shop-status.dto';
 import { WarnShopDto } from '../dtos/warn-shop.dto';
 
+@Injectable()
 export class AdminShopsModerationHelper {
   private readonly logger = new Logger('AdminShopsService');
 

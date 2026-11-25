@@ -33,17 +33,13 @@ import { ReviewsRepliesHelper } from './reviews-replies.helper';
 
 @Injectable()
 export class ReviewsService {
-  private readonly moderationHelper: ReviewsModerationHelper;
-  private readonly repliesHelper: ReviewsRepliesHelper;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly reputationService: ReputationService,
+    private readonly moderationHelper: ReviewsModerationHelper,
+    private readonly repliesHelper: ReviewsRepliesHelper,
     @Optional() private readonly mediaService?: MediaService,
-  ) {
-    this.moderationHelper = new ReviewsModerationHelper(this.prisma, this.reputationService);
-    this.repliesHelper = new ReviewsRepliesHelper(this.prisma, this.mediaService);
-  }
+  ) {}
 
   private async notifyBuyerReviewReceived(
     tx: Prisma.TransactionClient,

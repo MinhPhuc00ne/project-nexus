@@ -115,14 +115,14 @@ test(
           return { fee: { total: 30000 }, origin: {}, parcel: {}, request: {} };
         },
       };
+      const { AuctionSecondChanceHelper } = source(
+        'commerce/services/auction-second-chance.helper',
+      );
       const checkout = new AuctionCheckoutService(
         prisma,
         shipping,
         escrow,
-        reputation,
-        adminSettings,
-        finance,
-        stock,
+        new AuctionSecondChanceHelper(prisma, reputation, adminSettings, finance, stock),
       );
       const gateway = {
         broadcastAuctionStarted() {},
@@ -132,7 +132,17 @@ test(
         broadcastAuctionEnded() {},
         broadcastTimerSync() {},
       };
-      const auctions = new AuctionService(prisma, gateway, stock, checkout);
+      const { AuctionAdminHelper } = source('auction/services/auction-admin.helper');
+      const { AuctionBiddingHelper } = source('auction/services/auction-bidding.helper');
+      const { AuctionConsignmentHelper } = source('auction/services/auction-consignment.helper');
+      const auctions = new AuctionService(
+        prisma,
+        gateway,
+        stock,
+        new AuctionAdminHelper(prisma, gateway),
+        new AuctionConsignmentHelper(prisma, undefined),
+        new AuctionBiddingHelper(prisma, gateway, checkout),
+      );
       const category = await prisma.category.create({
         data: { name: 'Fixture', slug: randomUUID() },
       });
@@ -188,7 +198,15 @@ test(
             where: { id: results[0].awardId },
           });
           assert.equal(Number(offer.depositAmount), 30000);
-          const retail = new OrderService(prisma, {}, {}, shipping, escrow, inventory);
+          const { OrderPaymentHelper } = source('commerce/services/order-payment.helper');
+          const { OrderWalletHelper } = source('commerce/services/order-wallet.helper');
+          const retail = new OrderService(
+            prisma,
+            shipping,
+            new OrderPaymentHelper(prisma, {}, {}, escrow, inventory),
+            new OrderWalletHelper(prisma, {}, {}),
+            inventory,
+          );
           await assert.rejects(retail.payOrderByWallet(offer.orderId, buyer.id), /quyền mua/);
           await assert.rejects(
             checkout.checkout(offer.id, runner.id, address),
@@ -236,7 +254,14 @@ test(
               },
             },
           });
-          const reviews = new ReviewsService(prisma, reputation);
+          const { ReviewsModerationHelper } = source('commerce/services/reviews-moderation.helper');
+          const { ReviewsRepliesHelper } = source('commerce/services/reviews-replies.helper');
+          const reviews = new ReviewsService(
+            prisma,
+            reputation,
+            new ReviewsModerationHelper(prisma, reputation),
+            new ReviewsRepliesHelper(prisma, undefined),
+          );
           await reviews.create(buyer.id, offer.orderId, { rating: 5 }, 'shop');
           assert.equal(
             await prisma.reputationLog.count({
@@ -427,7 +452,13 @@ test(
         'shop warnings apply the same suspension thresholds as other reputation changes',
         async () => {
           const warned = await user('SELLER');
-          await new AdminShopsService(prisma, reputation).warnShop(warned.id, admin.id, {
+          const { AdminShopsModerationHelper } = source(
+            'admin/services/admin-shops-moderation.helper',
+          );
+          await new AdminShopsService(
+            prisma,
+            new AdminShopsModerationHelper(prisma, reputation),
+          ).warnShop(warned.id, admin.id, {
             reason: 'Documented fixture violation',
             penaltyPoints: 70,
           });

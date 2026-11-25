@@ -60,6 +60,33 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
       useValue: { getAll: async () => ({ platformFeePercentage: 7 }) },
     },
     {
+      provide: source('modules/commerce/services/order-payment.helper').OrderPaymentHelper,
+      useValue: {},
+    },
+    {
+      provide: source('modules/commerce/services/order-wallet.helper').OrderWalletHelper,
+      useValue: {},
+    },
+    {
+      provide: source('modules/commerce/services/reviews-moderation.helper')
+        .ReviewsModerationHelper,
+      useValue: {},
+    },
+    {
+      provide: source('modules/commerce/services/reviews-replies.helper').ReviewsRepliesHelper,
+      useValue: {},
+    },
+    {
+      provide: source('modules/admin/services/admin-shops-moderation.helper')
+        .AdminShopsModerationHelper,
+      useValue: {},
+    },
+    {
+      provide: source('modules/commerce/services/auction-second-chance.helper')
+        .AuctionSecondChanceHelper,
+      useValue: {},
+    },
+    {
       provide: source('core/security/token-auth.service').TokenAuthService,
       useValue: {},
     },

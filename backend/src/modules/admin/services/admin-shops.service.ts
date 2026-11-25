@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ReputationService } from '../../users/services/reputation.service';
 import {
   OrderStatus,
   Prisma,
@@ -18,14 +17,10 @@ import { AdminShopsModerationHelper } from './admin-shops-moderation.helper';
 
 @Injectable()
 export class AdminShopsService {
-  private readonly moderationHelper: AdminShopsModerationHelper;
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly reputation: ReputationService,
-  ) {
-    this.moderationHelper = new AdminShopsModerationHelper(this.prisma, this.reputation);
-  }
+    private readonly moderationHelper: AdminShopsModerationHelper,
+  ) {}
 
   /**
    * Retrieves paginated platform seller stores with operational metrics and search filters.

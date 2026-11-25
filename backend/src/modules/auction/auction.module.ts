@@ -10,6 +10,9 @@ import { CommerceModule } from '../commerce/commerce.module';
 import { AuctionLifecycleService } from './services/auction-lifecycle.service';
 import { AuctionImageController } from './controllers/auction-image.controller';
 import { AuctionImageService } from './services/auction-image.service';
+import { AuctionAdminHelper } from './services/auction-admin.helper';
+import { AuctionBiddingHelper } from './services/auction-bidding.helper';
+import { AuctionConsignmentHelper } from './services/auction-consignment.helper';
 
 /**
  * AuctionModule encapsulates the live 3D multi-lot bidding lifecycle, anti-sniping protection,
@@ -19,6 +22,9 @@ import { AuctionImageService } from './services/auction-image.service';
   imports: [PrismaModule, CatalogModule, CommerceModule, ChatModule],
   controllers: [AuctionController, AuctionImageController],
   providers: [
+    AuctionAdminHelper,
+    AuctionBiddingHelper,
+    AuctionConsignmentHelper,
     AuctionService,
     AuctionComplaintService,
     AuctionGateway,

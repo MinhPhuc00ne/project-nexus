@@ -18,6 +18,10 @@ const { ReportsService } = load('../src/modules/commerce/services/reports.servic
 const { FeedbackController } = load('../src/modules/commerce/controllers/feedback.controller.ts');
 const { ROLES_KEY } = load('../src/core/security/roles.decorator.ts');
 const { BannerService } = load('../src/modules/catalog/services/banner.service.ts');
+const { ReviewsModerationHelper } = load(
+  '../src/modules/commerce/services/reviews-moderation.helper.ts',
+);
+const { ReviewsRepliesHelper } = load('../src/modules/commerce/services/reviews-replies.helper.ts');
 
 test('sale boundaries use one effective price and never replace base price', () => {
   const product = {
@@ -88,9 +92,12 @@ test('review creation requires ownership, completion and purchased product, and 
     reputationLog: { findFirst: async () => null },
     product: { update: mock.fn(async () => ({ ratingSum: 9, reviewCount: 2 })) },
   };
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: mock.fn(async () => ({})) },
+    new ReviewsModerationHelper(prismaDouble, { adjustScore: mock.fn(async () => ({})) }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
   await assert.rejects(
     service.create('buyer', 'order', { rating: 5 }, 'product', 'p1'),
@@ -202,9 +209,14 @@ test('support staff and admin can moderate reviews with valid reputation penalty
     product: { update: async (args) => productUpdates.push(args) },
     notification: { create: async ({ data }) => notifications.push(data) },
   };
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: async (payload) => reputationCalls.push(payload) },
+    new ReviewsModerationHelper(prismaDouble, {
+      adjustScore: async (payload) => reputationCalls.push(payload),
+    }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
 
   await assert.rejects(

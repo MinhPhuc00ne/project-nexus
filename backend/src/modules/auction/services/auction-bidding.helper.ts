@@ -1,4 +1,10 @@
-import { BadRequestException, ForbiddenException, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   AuctionItemStatus,
   AuctionStatus,
@@ -24,6 +30,7 @@ import {
   lotDisplayTitle,
 } from './auction-domain.utils';
 
+@Injectable()
 export class AuctionBiddingHelper {
   private readonly logger = new Logger(AuctionBiddingHelper.name);
 
