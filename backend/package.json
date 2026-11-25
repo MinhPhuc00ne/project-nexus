@@ -23,7 +23,8 @@
     "test:legacy": "node --test test/*.test.mjs",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck:test": "tsc --noEmit -p tsconfig.test.json"
+    "typecheck:test": "tsc --noEmit -p tsconfig.test.json",
+    "db:verify": "node prisma/scripts/verify-constraints.mjs"
   },
   "dependencies": {
     "@nestjs/common": "^12.1.2",

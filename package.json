@@ -54,7 +54,8 @@
     "docker:full": "docker compose --profile full up --build -d",
     "docker:down": "docker compose --profile full down",
     "docker:clean": "docker compose --profile full down -v",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "db:verify": "npm run db:verify --workspace=backend"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",

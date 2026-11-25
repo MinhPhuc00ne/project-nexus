@@ -92,5 +92,8 @@ jobs:
       - name: Deploy Prisma migrations for integration tests
         run: npm run prisma:deploy --workspace=nexus-backend
 
+      - name: Verify database CHECK constraints and partial indexes
+        run: npm run db:verify
+
       - name: Run automated test suites
         run: npm test
