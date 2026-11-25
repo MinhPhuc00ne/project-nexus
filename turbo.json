@@ -4,7 +4,8 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", "build/**"],
+      "passThroughEnv": ["DATABASE_URL"]
     },
     "dev": {
       "dependsOn": ["^build"],
@@ -13,7 +14,8 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$"]
+      "inputs": ["$TURBO_DEFAULT$"],
+      "passThroughEnv": ["DATABASE_URL", "REDIS_URL", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD"]
     },
     "lint": {
       "dependsOn": ["^build"],
