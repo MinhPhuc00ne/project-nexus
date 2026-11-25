@@ -5,7 +5,14 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", "build/**"],
-      "passThroughEnv": ["DATABASE_URL"]
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "REFRESH_TOKEN_SECRET",
+        "CORS_ORIGINS",
+        "APP_PUBLIC_URL",
+        "FRONTEND_URL"
+      ]
     },
     "dev": {
       "dependsOn": ["^build"],
@@ -15,7 +22,23 @@
     "test": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$"],
-      "passThroughEnv": ["DATABASE_URL", "REDIS_URL", "REDIS_HOST", "REDIS_PORT", "REDIS_PASSWORD"]
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "REDIS_URL",
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_PASSWORD",
+        "JWT_SECRET",
+        "REFRESH_TOKEN_SECRET",
+        "CORS_ORIGINS",
+        "APP_PUBLIC_URL",
+        "FRONTEND_URL",
+        "NEXUS_AFTER_SALES_DB_TEST",
+        "NEXUS_BACKEND_REVIEW_DB_TEST",
+        "NEXUS_BANNER_DB_TEST",
+        "NEXUS_CHATBOT_DB_TEST",
+        "NEXUS_DOCUMENT_GAPS_DB_TEST"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"],
