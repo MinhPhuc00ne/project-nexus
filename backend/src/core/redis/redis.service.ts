@@ -1,6 +1,56 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Redis } from 'ioredis';
+import { Redis, type RedisOptions } from 'ioredis';
+
+export interface ResolvedRedisConfig {
+  url?: string;
+  options: RedisOptions;
+  displayTarget: string;
+}
+
+export function resolveRedisConfig(
+  redisUrl: string | undefined,
+  host: string,
+  port: number,
+  password: string | undefined,
+): ResolvedRedisConfig {
+  const baseOptions: RedisOptions = {
+    lazyConnect: true,
+    maxRetriesPerRequest: 3,
+  };
+
+  const trimmedUrl = redisUrl?.trim();
+  if (trimmedUrl) {
+    const isTls = trimmedUrl.toLowerCase().startsWith('rediss://');
+    let displayTarget = 'REDIS_URL';
+    try {
+      const parsed = new URL(trimmedUrl);
+      const resolvedPort = parsed.port || (isTls ? '6380' : '6379');
+      displayTarget = `${parsed.protocol}//${parsed.hostname}:${resolvedPort}`;
+    } catch {
+      displayTarget = isTls ? 'rediss://<configured>' : 'redis://<configured>';
+    }
+
+    return {
+      url: trimmedUrl,
+      options: {
+        ...baseOptions,
+        ...(isTls ? { tls: {} } : {}),
+      },
+      displayTarget,
+    };
+  }
+
+  return {
+    options: {
+      ...baseOptions,
+      host,
+      port,
+      password: password || undefined,
+    },
+    displayTarget: `${host}:${port}`,
+  };
+}
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
@@ -10,25 +60,25 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit(): void {
+    const redisUrl = this.configService.get<string>('REDIS_URL');
     const host = this.configService.get<string>('REDIS_HOST', 'localhost');
     const port = this.configService.get<number>('REDIS_PORT', 6379);
     const password = this.configService.get<string>('REDIS_PASSWORD');
 
-    this.client = new Redis({
-      host,
-      port,
-      password: password || undefined,
-      lazyConnect: true,
-      maxRetriesPerRequest: 3,
-    });
+    const resolved = resolveRedisConfig(redisUrl, host, port, password);
+    this.client = resolved.url
+      ? new Redis(resolved.url, resolved.options)
+      : new Redis(resolved.options);
 
     this.client
       .connect()
       .then(() => {
-        this.logger.log(`Connected to Redis at ${host}:${port}`);
+        this.logger.log(`Connected to Redis at ${resolved.displayTarget}`);
       })
       .catch((err: unknown) => {
-        this.logger.warn(`Redis connection failed at ${host}:${port}: ${(err as Error).message}`);
+        this.logger.warn(
+          `Redis connection failed at ${resolved.displayTarget}: ${(err as Error).message}`,
+        );
       });
   }
 
