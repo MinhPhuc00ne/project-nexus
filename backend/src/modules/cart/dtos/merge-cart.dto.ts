@@ -1,42 +1,28 @@
-import {
-  IsArray,
-  ArrayMaxSize,
-  ValidateNested,
-  IsString,
-  IsNotEmpty,
-  IsInt,
-  Min,
-  IsObject,
-  IsOptional,
-} from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { z } from 'zod';
 
-export class MergeCartItemDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsObject()
-  selections?: Record<string, string>;
-  @ApiProperty({ example: 'uuid-product-id' })
-  @IsString()
-  @IsNotEmpty()
-  productId!: string;
-
-  @ApiProperty({ example: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  quantity!: number;
-}
-
-export class MergeCartDto {
-  @ApiProperty({
-    type: [MergeCartItemDto],
-    description: 'Danh sách các sản phẩm và số lượng lưu tạm từ LocalStorage của Guest',
+/** One line of the cart a guest built before signing in. */
+export const MergeCartItemSchema = z
+  .object({
+    productId: z.string().trim().min(1, 'productId is required'),
+    quantity: z.coerce.number().int().min(1),
+    selections: z.record(z.string(), z.string()).optional(),
   })
-  @IsArray()
-  @ArrayMaxSize(100)
-  @ValidateNested({ each: true })
-  @Type(() => MergeCartItemDto)
-  items!: MergeCartItemDto[];
-}
+  .strict();
+
+/**
+ * The cart a guest built in their browser, handed over on sign-in.
+ *
+ * The cap of 100 lines is what `@ArrayMaxSize(100)` enforced: this body comes
+ * from local storage, so its length is whatever the client says it is.
+ */
+export const MergeCartSchema = z
+  .object({
+    items: z
+      .array(MergeCartItemSchema)
+      .max(100)
+      .describe('Danh sách các sản phẩm và số lượng lưu tạm từ LocalStorage của Guest'),
+  })
+  .strict();
+
+export type MergeCartItemInput = z.infer<typeof MergeCartItemSchema>;
+export type MergeCartInput = z.infer<typeof MergeCartSchema>;

@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { AddToCartDto } from '../dtos/add-to-cart.dto';
-import { UpdateCartItemDto } from '../dtos/update-cart-item.dto';
-import { MergeCartDto } from '../dtos/merge-cart.dto';
+import { AddToCartInput } from '../dtos/add-to-cart.dto';
+import { UpdateCartItemInput } from '../dtos/update-cart-item.dto';
+import { MergeCartInput } from '../dtos/merge-cart.dto';
 import {
   getCartExpiresAt,
   formatCartItem,
@@ -98,7 +98,7 @@ export class CartService {
     tx: Prisma.TransactionClient,
     userId: string,
     cartId: string,
-    dto: AddToCartDto,
+    dto: AddToCartInput,
     clamp = false,
   ): Promise<void> {
     if (!Number.isSafeInteger(dto.quantity) || dto.quantity < 1)
@@ -134,7 +134,7 @@ export class CartService {
     });
   }
 
-  async addToCart(userId: string, dto: AddToCartDto): Promise<CartView> {
+  async addToCart(userId: string, dto: AddToCartInput): Promise<CartView> {
     await this.prisma.$transaction(async (tx) => {
       const cart = await this.lockedCart(tx, userId);
       await this.append(tx, userId, cart.id, dto);
@@ -145,7 +145,7 @@ export class CartService {
   async updateCartItem(
     userId: string,
     cartItemId: string,
-    dto: UpdateCartItemDto,
+    dto: UpdateCartItemInput,
   ): Promise<CartView> {
     if (!Number.isSafeInteger(dto.quantity) || dto.quantity < 0)
       throw new BadRequestException('Số lượng không hợp lệ.');
@@ -189,7 +189,7 @@ export class CartService {
     return this.getCart(userId);
   }
 
-  async mergeGuestCart(userId: string, dto: MergeCartDto): Promise<CartView> {
+  async mergeGuestCart(userId: string, dto: MergeCartInput): Promise<CartView> {
     const skippedItems: Array<{ productId: string; reason: string }> = [];
     await this.prisma.$transaction(
       async (tx) => {

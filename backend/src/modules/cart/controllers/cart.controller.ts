@@ -4,7 +4,6 @@ import {
   Post,
   Patch,
   Delete,
-  Body,
   Param,
   UseGuards,
   HttpCode,
@@ -12,9 +11,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CartService } from '../services/cart.service';
-import { AddToCartDto } from '../dtos/add-to-cart.dto';
-import { UpdateCartItemDto } from '../dtos/update-cart-item.dto';
-import { MergeCartDto } from '../dtos/merge-cart.dto';
+import { ZodBody } from '@nexus/contracts/nest';
+import { AddToCartInput, AddToCartSchema } from '../dtos/add-to-cart.dto';
+import { UpdateCartItemInput, UpdateCartItemSchema } from '../dtos/update-cart-item.dto';
+import { MergeCartInput, MergeCartSchema } from '../dtos/merge-cart.dto';
 import { CurrentUser, RequirePrivilege } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -51,7 +51,10 @@ export class CartController {
     status: 400,
     description: 'Tồn kho không đủ, sản phẩm hết hàng hoặc người bán cố tình mua đồ của mình',
   })
-  async addToCart(@CurrentUser('id') userId: string, @Body() dto: AddToCartDto) {
+  async addToCart(
+    @CurrentUser('id') userId: string,
+    @ZodBody(AddToCartSchema) dto: AddToCartInput,
+  ) {
     return this.cartService.addToCart(userId, dto);
   }
 
@@ -67,7 +70,7 @@ export class CartController {
   async updateCartItem(
     @CurrentUser('id') userId: string,
     @Param('id') cartItemId: string,
-    @Body() dto: UpdateCartItemDto,
+    @ZodBody(UpdateCartItemSchema) dto: UpdateCartItemInput,
   ) {
     return this.cartService.updateCartItem(userId, cartItemId, dto);
   }
@@ -100,7 +103,10 @@ export class CartController {
       'Nhận danh sách các món Guest đã lưu tạm trên trình duyệt, tự động lọc bỏ sản phẩm của chính mình và gộp số lượng vào giỏ hàng PostgreSQL.',
   })
   @ApiResponse({ status: 200, description: 'Gộp giỏ hàng thành công' })
-  async mergeGuestCart(@CurrentUser('id') userId: string, @Body() dto: MergeCartDto) {
+  async mergeGuestCart(
+    @CurrentUser('id') userId: string,
+    @ZodBody(MergeCartSchema) dto: MergeCartInput,
+  ) {
     return this.cartService.mergeGuestCart(userId, dto);
   }
 }
