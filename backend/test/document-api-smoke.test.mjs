@@ -81,7 +81,7 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
       useValue: {},
     },
     {
-      provide: source('modules/commerce/services/auction-second-chance.helper')
+      provide: source('modules/auction/services/auction-second-chance.helper')
         .AuctionSecondChanceHelper,
       useValue: {},
     },

@@ -3,7 +3,7 @@ import { AuctionStatus as NexusAuctionStatus } from '@nexus/types';
 import { AuctionAwardStatus, AuctionStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { DistributedLockService } from '../../../core/redis/distributed-lock.service';
-import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
+import { AuctionCheckoutService } from './auction-checkout.service';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import { AuctionService } from './auction.service';
 

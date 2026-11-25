@@ -68,7 +68,7 @@ test(
       prisma = new PrismaClient({ adapter: new PrismaPg(pool, { schema }) });
       const { InventoryService } = source('catalog/services/inventory.service');
       const { AuctionStockService } = source('catalog/services/auction-stock.service');
-      const { AuctionCheckoutService } = source('commerce/services/auction-checkout.service');
+      const { AuctionCheckoutService } = source('auction/services/auction-checkout.service');
       const { AuctionService } = source('auction/services/auction.service');
       const { ReputationService } = source('users/services/reputation.service');
       const { OrderEscrowService } = source('commerce/services/order-escrow.service');
@@ -115,9 +115,7 @@ test(
           return { fee: { total: 30000 }, origin: {}, parcel: {}, request: {} };
         },
       };
-      const { AuctionSecondChanceHelper } = source(
-        'commerce/services/auction-second-chance.helper',
-      );
+      const { AuctionSecondChanceHelper } = source('auction/services/auction-second-chance.helper');
       const checkout = new AuctionCheckoutService(
         prisma,
         shipping,

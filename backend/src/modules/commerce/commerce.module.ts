@@ -12,9 +12,6 @@ import { OrderController } from './controllers/order.controller';
 import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { OrderLifecycleController } from './controllers/order-lifecycle.controller';
 import { OrderEscrowService } from './services/order-escrow.service';
-import { AuctionCheckoutController } from './controllers/auction-checkout.controller';
-import { AuctionCheckoutService } from './services/auction-checkout.service';
-import { AuctionSecondChanceHelper } from './services/auction-second-chance.helper';
 import { OrderPaymentHelper } from './services/order-payment.helper';
 
 @Module({
@@ -27,20 +24,8 @@ import { OrderPaymentHelper } from './services/order-payment.helper';
     AdminModule,
     UsersModule,
   ],
-  controllers: [
-    AuctionCheckoutController,
-    OrderController,
-    SellerOrdersController,
-    OrderLifecycleController,
-  ],
-  providers: [
-    AuctionSecondChanceHelper,
-    OrderPaymentHelper,
-    AuctionCheckoutService,
-    OrderService,
-    SellerOrdersService,
-    OrderEscrowService,
-  ],
-  exports: [AuctionCheckoutService, OrderService, SellerOrdersService],
+  controllers: [OrderController, SellerOrdersController, OrderLifecycleController],
+  providers: [OrderPaymentHelper, OrderService, SellerOrdersService, OrderEscrowService],
+  exports: [OrderService, OrderEscrowService, SellerOrdersService],
 })
 export class CommerceModule {}

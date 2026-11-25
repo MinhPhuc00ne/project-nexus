@@ -20,7 +20,7 @@ const { AuctionComplaintService } = load(
 const { AuctionGateway } = load('../src/modules/auction/gateways/auction.gateway.ts');
 const { AuctionController } = load('../src/modules/auction/controllers/auction.controller.ts');
 const { AuctionCheckoutService } = load(
-  '../src/modules/commerce/services/auction-checkout.service.ts',
+  '../src/modules/auction/services/auction-checkout.service.ts',
 );
 const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
 const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
@@ -33,7 +33,7 @@ const { AuctionConsignmentHelper } = load(
   '../src/modules/auction/services/auction-consignment.helper.ts',
 );
 const { AuctionSecondChanceHelper } = load(
-  '../src/modules/commerce/services/auction-second-chance.helper.ts',
+  '../src/modules/auction/services/auction-second-chance.helper.ts',
 );
 const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
 const { WalletDepositService } = load('../src/modules/wallet/services/wallet-deposit.service.ts');

@@ -101,7 +101,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
         useValue: {},
       },
       {
-        provide: source('modules/commerce/services/auction-second-chance.helper')
+        provide: source('modules/auction/services/auction-second-chance.helper')
           .AuctionSecondChanceHelper,
         useValue: {},
       },

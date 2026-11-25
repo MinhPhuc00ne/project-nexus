@@ -18,7 +18,7 @@ import {
 import type { AuctionStatus as NexusAuctionStatus, WsLotEndedPayload } from '@nexus/types';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
+import { AuctionCheckoutService } from './auction-checkout.service';
 import { PlaceBidDto } from '../dtos/place-bid.dto';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import {

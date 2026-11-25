@@ -24,7 +24,7 @@ import {
   Roles,
 } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
+import { AuctionCheckoutService } from '../services/auction-checkout.service';
 import { AdminAwardActionDto } from '../dtos/admin-award-action.dto';
 import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
 import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';

@@ -9,7 +9,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
-import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
+import { AuctionCheckoutService } from '../../auction/services/auction-checkout.service';
 import { WebhookData } from '@payos/node';
 import { PayosSettlement } from '../../payments/services/payos-settlement';
 import { PayosService } from '../../payments/services/payos.service';

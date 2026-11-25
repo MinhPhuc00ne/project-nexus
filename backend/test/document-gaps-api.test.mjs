@@ -25,9 +25,9 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
   );
   const { ReportModerationService } = source('modules/reviews/services/report-moderation.service');
   const { AuctionCheckoutController } = source(
-    'modules/commerce/controllers/auction-checkout.controller',
+    'modules/auction/controllers/auction-checkout.controller',
   );
-  const { AuctionCheckoutService } = source('modules/commerce/services/auction-checkout.service');
+  const { AuctionCheckoutService } = source('modules/auction/services/auction-checkout.service');
   const { AdminReputationController } = source(
     'modules/admin/controllers/admin-reputation.controller',
   );
