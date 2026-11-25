@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { AfterSalesModule } from '../after-sales/after-sales.module';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
 import { AdminModule } from '../admin/admin.module';
@@ -17,11 +18,6 @@ import { SellerFinanceController } from './controllers/seller-finance.controller
 import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { OrderLifecycleController } from './controllers/order-lifecycle.controller';
 import { OrderEscrowService } from './services/order-escrow.service';
-import { AfterSalesController } from './controllers/after-sales.controller';
-import { AfterSalesStoreService } from './services/after-sales-store.service';
-import { OrderCancellationService } from './services/order-cancellation.service';
-import { OrderReturnService } from './services/order-return.service';
-import { RefundService } from './services/refund.service';
 import { AuctionCheckoutController } from './controllers/auction-checkout.controller';
 import { AuctionCheckoutService } from './services/auction-checkout.service';
 import { AuctionSecondChanceHelper } from './services/auction-second-chance.helper';
@@ -29,10 +25,16 @@ import { OrderPaymentHelper } from './services/order-payment.helper';
 import { OrderWalletHelper } from './services/order-wallet.helper';
 
 @Module({
-  imports: [PrismaModule, FulfillmentModule, CatalogModule, AdminModule, UsersModule],
+  imports: [
+    PrismaModule,
+    AfterSalesModule,
+    FulfillmentModule,
+    CatalogModule,
+    AdminModule,
+    UsersModule,
+  ],
   controllers: [
     AuctionCheckoutController,
-    AfterSalesController,
     OrderController,
     PayosWebhookController,
     BuyerFinanceController,
@@ -45,10 +47,6 @@ import { OrderWalletHelper } from './services/order-wallet.helper';
     OrderPaymentHelper,
     OrderWalletHelper,
     AuctionCheckoutService,
-    AfterSalesStoreService,
-    OrderCancellationService,
-    OrderReturnService,
-    RefundService,
     PayosService,
     PaymentSandboxService,
     OrderService,

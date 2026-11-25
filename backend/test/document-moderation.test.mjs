@@ -10,7 +10,7 @@ tsNode.register({
 const load = createRequire(import.meta.url);
 const { AdminShopsService } = load('../src/modules/admin/services/admin-shops.service.ts');
 const { AdminProductsService } = load('../src/modules/admin/services/admin-products.service.ts');
-const { CartService } = load('../src/modules/commerce/services/cart.service.ts');
+const { CartService } = load('../src/modules/cart/services/cart.service.ts');
 const { RecommendationsService } = load(
   '../src/modules/catalog/services/recommendations.service.ts',
 );

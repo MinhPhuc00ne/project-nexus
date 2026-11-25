@@ -72,9 +72,9 @@ test(
       const { AuctionService } = source('auction/services/auction.service');
       const { ReputationService } = source('users/services/reputation.service');
       const { OrderEscrowService } = source('commerce/services/order-escrow.service');
-      const { ReportsService } = source('commerce/services/reports.service');
-      const { ReportModerationService } = source('commerce/services/report-moderation.service');
-      const { ReviewsService } = source('commerce/services/reviews.service');
+      const { ReportsService } = source('reviews/services/reports.service');
+      const { ReportModerationService } = source('reviews/services/report-moderation.service');
+      const { ReviewsService } = source('reviews/services/reviews.service');
       const { OrderService } = source('commerce/services/order.service');
       const { AuthService } = source('auth/services/auth.service');
       const { AuctionLifecycleService } = source('auction/services/auction-lifecycle.service');
@@ -254,8 +254,8 @@ test(
               },
             },
           });
-          const { ReviewsModerationHelper } = source('commerce/services/reviews-moderation.helper');
-          const { ReviewsRepliesHelper } = source('commerce/services/reviews-replies.helper');
+          const { ReviewsModerationHelper } = source('reviews/services/reviews-moderation.helper');
+          const { ReviewsRepliesHelper } = source('reviews/services/reviews-replies.helper');
           const reviews = new ReviewsService(
             prisma,
             reputation,

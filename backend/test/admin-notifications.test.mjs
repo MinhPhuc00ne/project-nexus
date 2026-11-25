@@ -33,7 +33,7 @@ const tokenAuthStub = {
     return { id, sub: id, role };
   },
 };
-const { ReportsService } = load('../src/modules/commerce/services/reports.service.ts');
+const { ReportsService } = load('../src/modules/reviews/services/reports.service.ts');
 
 test('notifyAllAdmins fans out in-app notification with targetUrl to all Admin accounts', async () => {
   const createdBatches = [];

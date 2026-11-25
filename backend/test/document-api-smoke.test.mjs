@@ -20,8 +20,8 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
     source('modules/catalog/controllers/product.controller').ProductController,
     source('modules/catalog/controllers/banner.controller').BannerController,
     source('modules/catalog/controllers/recommendations.controller').RecommendationsController,
-    source('modules/commerce/controllers/feedback.controller').FeedbackController,
-    source('modules/commerce/controllers/after-sales.controller').AfterSalesController,
+    source('modules/reviews/controllers/feedback.controller').FeedbackController,
+    source('modules/after-sales/controllers/after-sales.controller').AfterSalesController,
     source('modules/auth/controllers/staff.controller').StaffController,
     source('modules/auth/controllers/auth.controller').AuthController,
   ];
@@ -38,16 +38,16 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
     source('modules/catalog/services/banner.service').BannerService,
     source('modules/catalog/services/banner-history.service').BannerHistoryService,
     source('modules/catalog/services/recommendations.service').RecommendationsService,
-    source('modules/commerce/services/reviews.service').ReviewsService,
-    source('modules/commerce/services/reports.service').ReportsService,
+    source('modules/reviews/services/reviews.service').ReviewsService,
+    source('modules/reviews/services/reports.service').ReportsService,
     ...[
       source('modules/auth/services/auth.service').AuthService,
       source('modules/auth/services/auth-profile.service').AuthProfileService,
       source('modules/users/services/users.service').UsersService,
-      source('modules/commerce/services/after-sales-store.service').AfterSalesStoreService,
-      source('modules/commerce/services/order-cancellation.service').OrderCancellationService,
-      source('modules/commerce/services/order-return.service').OrderReturnService,
-      source('modules/commerce/services/refund.service').RefundService,
+      source('modules/after-sales/services/after-sales-store.service').AfterSalesStoreService,
+      source('modules/after-sales/services/order-cancellation.service').OrderCancellationService,
+      source('modules/after-sales/services/order-return.service').OrderReturnService,
+      source('modules/after-sales/services/refund.service').RefundService,
     ].map((provide) => ({ provide, useValue: {} })),
     { provide: PrismaService, useValue: {} },
     // The guard resolves identities through TokenAuthService, and the auth
@@ -68,12 +68,11 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
       useValue: {},
     },
     {
-      provide: source('modules/commerce/services/reviews-moderation.helper')
-        .ReviewsModerationHelper,
+      provide: source('modules/reviews/services/reviews-moderation.helper').ReviewsModerationHelper,
       useValue: {},
     },
     {
-      provide: source('modules/commerce/services/reviews-replies.helper').ReviewsRepliesHelper,
+      provide: source('modules/reviews/services/reviews-replies.helper').ReviewsRepliesHelper,
       useValue: {},
     },
     {

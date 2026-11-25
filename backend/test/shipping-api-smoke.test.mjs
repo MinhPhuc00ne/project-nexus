@@ -39,7 +39,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
     'modules/fulfillment/controllers/seller-pickup.controller',
   );
   const controllers = [
-    source('modules/commerce/controllers/after-sales.controller').AfterSalesController,
+    source('modules/after-sales/controllers/after-sales.controller').AfterSalesController,
     SellerPickupController,
     AdminPickupController,
     source('modules/fulfillment/controllers/fulfillment.controller').FulfillmentController,
@@ -58,10 +58,10 @@ test('shipping dependencies and routes initialize without live infrastructure', 
         useValue: {},
       },
       source('modules/catalog/services/inventory.service').InventoryService,
-      source('modules/commerce/services/after-sales-store.service').AfterSalesStoreService,
-      source('modules/commerce/services/refund.service').RefundService,
-      source('modules/commerce/services/order-cancellation.service').OrderCancellationService,
-      source('modules/commerce/services/order-return.service').OrderReturnService,
+      source('modules/after-sales/services/after-sales-store.service').AfterSalesStoreService,
+      source('modules/after-sales/services/refund.service').RefundService,
+      source('modules/after-sales/services/order-cancellation.service').OrderCancellationService,
+      source('modules/after-sales/services/order-return.service').OrderReturnService,
       source('modules/fulfillment/services/ghn-order-action.service').GhnOrderActionService,
       source('modules/fulfillment/services/shop-shipping-profile.service')
         .ShopShippingProfileService,
@@ -87,12 +87,12 @@ test('shipping dependencies and routes initialize without live infrastructure', 
         useValue: {},
       },
       {
-        provide: source('modules/commerce/services/reviews-moderation.helper')
+        provide: source('modules/reviews/services/reviews-moderation.helper')
           .ReviewsModerationHelper,
         useValue: {},
       },
       {
-        provide: source('modules/commerce/services/reviews-replies.helper').ReviewsRepliesHelper,
+        provide: source('modules/reviews/services/reviews-replies.helper').ReviewsRepliesHelper,
         useValue: {},
       },
       {

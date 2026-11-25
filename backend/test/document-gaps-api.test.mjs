@@ -21,9 +21,9 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
   const { PrismaService } = source('core/prisma/prisma.service');
   const { TokenAuthService } = source('core/security/token-auth.service');
   const { ReportModerationController } = source(
-    'modules/commerce/controllers/report-moderation.controller',
+    'modules/reviews/controllers/report-moderation.controller',
   );
-  const { ReportModerationService } = source('modules/commerce/services/report-moderation.service');
+  const { ReportModerationService } = source('modules/reviews/services/report-moderation.service');
   const { AuctionCheckoutController } = source(
     'modules/commerce/controllers/auction-checkout.controller',
   );

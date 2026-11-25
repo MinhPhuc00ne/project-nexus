@@ -13,15 +13,15 @@ const { normalizeOptions, validateSelections } = load('../src/core/domain/produc
 const { GhnLogisticsService } = load(
   '../src/modules/fulfillment/services/ghn-logistics.service.ts',
 );
-const { ReviewsService } = load('../src/modules/commerce/services/reviews.service.ts');
-const { ReportsService } = load('../src/modules/commerce/services/reports.service.ts');
-const { FeedbackController } = load('../src/modules/commerce/controllers/feedback.controller.ts');
+const { ReviewsService } = load('../src/modules/reviews/services/reviews.service.ts');
+const { ReportsService } = load('../src/modules/reviews/services/reports.service.ts');
+const { FeedbackController } = load('../src/modules/reviews/controllers/feedback.controller.ts');
 const { ROLES_KEY } = load('../src/core/security/roles.decorator.ts');
 const { BannerService } = load('../src/modules/catalog/services/banner.service.ts');
 const { ReviewsModerationHelper } = load(
-  '../src/modules/commerce/services/reviews-moderation.helper.ts',
+  '../src/modules/reviews/services/reviews-moderation.helper.ts',
 );
-const { ReviewsRepliesHelper } = load('../src/modules/commerce/services/reviews-replies.helper.ts');
+const { ReviewsRepliesHelper } = load('../src/modules/reviews/services/reviews-replies.helper.ts');
 
 test('sale boundaries use one effective price and never replace base price', () => {
   const product = {

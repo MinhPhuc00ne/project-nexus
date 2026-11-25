@@ -61,14 +61,14 @@ test(
             });
             const finance = { getOrCreatePrimaryAdminWallet: async () => adminWallet };
             const { AfterSalesStoreService } = source(
-              'commerce/services/after-sales-store.service',
+              'after-sales/services/after-sales-store.service',
             );
-            const { RefundService } = source('commerce/services/refund.service');
+            const { RefundService } = source('after-sales/services/refund.service');
             const { InventoryService } = source('catalog/services/inventory.service');
             const { OrderCancellationService } = source(
-              'commerce/services/order-cancellation.service',
+              'after-sales/services/order-cancellation.service',
             );
-            const { OrderReturnService } = source('commerce/services/order-return.service');
+            const { OrderReturnService } = source('after-sales/services/order-return.service');
             const store = new AfterSalesStoreService(facade);
             const refunds = new RefundService(facade, finance, store);
             const inventory = new InventoryService(facade);

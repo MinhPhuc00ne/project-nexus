@@ -10,12 +10,12 @@ tsNode.register({
 });
 
 const load = createRequire(import.meta.url);
-const { ReviewsService } = load('../src/modules/commerce/services/reviews.service.ts');
+const { ReviewsService } = load('../src/modules/reviews/services/reviews.service.ts');
 const { MediaService } = load('../src/modules/media/services/media.service.ts');
 const { ReviewsModerationHelper } = load(
-  '../src/modules/commerce/services/reviews-moderation.helper.ts',
+  '../src/modules/reviews/services/reviews-moderation.helper.ts',
 );
-const { ReviewsRepliesHelper } = load('../src/modules/commerce/services/reviews-replies.helper.ts');
+const { ReviewsRepliesHelper } = load('../src/modules/reviews/services/reviews-replies.helper.ts');
 
 test('ReviewsService.create stores mediaUrls on product review and updates rating', async () => {
   let createdData = null;

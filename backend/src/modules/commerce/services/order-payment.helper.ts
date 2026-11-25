@@ -25,7 +25,7 @@ import { PayOrderDto } from '../dtos/pay-order.dto';
 import { AuctionCheckoutService } from './auction-checkout.service';
 import { OrderEscrowService } from './order-escrow.service';
 import { PayosService } from './payos.service';
-import { RefundService } from './refund.service';
+import { RefundService } from '../../after-sales/services/refund.service';
 
 export interface PayosPaymentResponse {
   orderId: string;

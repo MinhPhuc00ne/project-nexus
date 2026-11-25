@@ -15,7 +15,7 @@ import {
   WalletTransactionType,
   Dispute,
 } from '@prisma/client';
-import { RefundService } from './refund.service';
+import { RefundService } from '../../after-sales/services/refund.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
 import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';

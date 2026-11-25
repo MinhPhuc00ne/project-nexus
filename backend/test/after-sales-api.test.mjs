@@ -12,10 +12,10 @@ tsNode.register({
 });
 const load = createRequire(import.meta.url);
 const { AfterSalesStoreService } = load(
-  '../src/modules/commerce/services/after-sales-store.service.ts',
+  '../src/modules/after-sales/services/after-sales-store.service.ts',
 );
 const { CancelOrderDto, QueryAfterSalesDto, QueryRefundsDto, ReceiveReturnDto } = load(
-  '../src/modules/commerce/dtos/after-sales.dto.ts',
+  '../src/modules/after-sales/dtos/after-sales.dto.ts',
 );
 
 test('request and refund queues scope user data and restrict financial queue to staff', async () => {

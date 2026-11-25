@@ -12,7 +12,7 @@ const load = createRequire(import.meta.url);
 const { OrderEscrowService } = load('../src/modules/commerce/services/order-escrow.service.ts');
 const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
 const { SellerEngagementService } = load(
-  '../src/modules/commerce/services/seller-engagement.service.ts',
+  '../src/modules/reviews/services/seller-engagement.service.ts',
 );
 const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
 const { OrderWalletHelper } = load('../src/modules/commerce/services/order-wallet.helper.ts');

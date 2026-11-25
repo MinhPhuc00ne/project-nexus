@@ -10,7 +10,7 @@ tsNode.register({
 });
 
 const load = createRequire(import.meta.url);
-const { CartService } = load('../src/modules/commerce/services/cart.service.ts');
+const { CartService } = load('../src/modules/cart/services/cart.service.ts');
 const { PayosService } = load('../src/modules/commerce/services/payos.service.ts');
 
 test('CartService prevents seller from adding their own product to cart', async () => {
