@@ -21,9 +21,10 @@ const BANNED_PHRASES = [
 const EMOJI_PATTERN = /\p{Extended_Pictographic}/u;
 const VIETNAMESE_CHAR_PATTERN =
   /[ăâđêôơưàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ]/i;
-const BOLD_COLON_BULLET_PATTERN = /^\s*[-*]\s+\*\*[^*]+\*\*\s*:/;
+const BOLD_COLON_BULLET_PATTERN = /^\s*(?:[-*]|\d+\.)\s+\*\*[^*]+\*\*\s*:/;
 const AMPERSAND_PROSE_PATTERN = /(?:^|\s)&(?:\s|$)/;
 const MID_SENTENCE_BOLD_PATTERN = /[a-z0-9,;:]\s+\*\*[^*]+\*\*/i;
+const SLASH_COMPOUND_PATTERN = /\b[A-Za-z]{2,}\/[A-Za-z]{2,}\b/;
 
 function collectMarkdownFiles(dir, baseDir = dir) {
   const results = [];
@@ -42,6 +43,13 @@ function stripInlineCodeAndLinks(line) {
   return line
     .replace(/`[^`]*`/g, 'CODE')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/https?:\/\/\S+/g, 'URL');
+}
+
+function stripCodeLinksAndPaths(line) {
+  return line
+    .replace(/`[^`]*`/g, 'CODE')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, 'LINK')
     .replace(/https?:\/\/\S+/g, 'URL');
 }
 
@@ -93,6 +101,12 @@ function validateMarkdownFile(filePath) {
 
     if (AMPERSAND_PROSE_PATTERN.test(stripped)) {
       errors.push(`${relPath}:${lineNo} uses "&" in prose instead of "and"`);
+    }
+
+    const slashChecked = stripCodeLinksAndPaths(rawLine);
+    const slashMatch = SLASH_COMPOUND_PATTERN.exec(slashChecked);
+    if (slashMatch) {
+      errors.push(`${relPath}:${lineNo} uses slash-separated compound "${slashMatch[0]}" in prose`);
     }
 
     const isHeading = /^\s*#{1,6}\s/.test(rawLine);

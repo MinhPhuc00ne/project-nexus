@@ -22,10 +22,10 @@ frontend/src/i18n/
 | :--------- | :------------------------------------------------------------------------------- |
 | `common`   | Navigation, footer, toasts, loading states, report modal, shared labels          |
 | `errors`   | Service error messages (`services.*`) and Backend `errorCode` translations       |
-| `auth`     | Login, registration, OTP verification, forgot/reset password                     |
+| `auth`     | Login, registration, OTP verification, forgot and reset password                 |
 | `guest`    | Homepage, search, category browsing, product and shop details                    |
 | `auction`  | 3D auction room, bidding, lot history, complaints                                |
-| `commerce` | Cart, checkout, PayOS/Wallet/COD, cancellations and returns                      |
+| `commerce` | Cart, checkout, PayOS, Wallet, COD, cancellations, and returns                   |
 | `buyer`    | Buyer portal: orders, wallet, reputation, address book, notifications            |
 | `seller`   | Seller portal: product form, inventory, GHN orders, auction consignment, finance |
 | `staff`    | Staff portal: support inbox, seller approvals, disputes, banners, FAQ            |

@@ -54,12 +54,12 @@ Ten self-contained business modules: `auth`, `users`, `catalog`, `commerce`, `au
 | Mechanism                         | When Used                                                              | Real Example                                                                                                                         |
 | :-------------------------------- | :--------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------- |
 | Injected Public Service           | Synchronous reads or participation in the same `prisma.$transaction()` | `CommerceModule` calls `InventoryService` (Catalog) to reserve stock; `FulfillmentModule` reads `ShopShippingProfileService` (Users) |
-| EventEmitter2 (`@OnEvent`)        | Asynchronous side effects that decouple modules                        | Order payment/cancellation emits events consumed by `ReputationModule` and `NotificationsModule`                                     |
+| EventEmitter2 (`@OnEvent`)        | Asynchronous side effects that decouple modules                        | Order payment and cancellation emit events consumed by `ReputationModule` and `NotificationsModule`                                  |
 | Shared Contracts (`@nexus/types`) | Compile-time and runtime alignment between FE and BE                   | `Role`, `OrderStatus`, `AuctionStatus`, `AUCTION_EVENTS`, `CHAT_EVENTS`                                                              |
 
 ## 3. Concurrency and Consistency Strategy
 
 - ACID Transactions (`prisma.$transaction`): Enforced for checkout, `EscrowRecord` holds, disbursements, `OrderRefund` accounting, `WithdrawalRequest` locking, and auction `Bid` placement.
 - Pessimistic Row Locks (`SELECT ... FOR UPDATE`): Prevents race conditions on last-item inventory checkout and concurrent auction bids.
-- Idempotency (`Idempotency-Key`): Prevents duplicate charges on checkout/payment retries.
+- Idempotency (`Idempotency-Key`): Prevents duplicate charges on checkout and payment retries.
 - Webhook Verification: PayOS webhooks verify HMAC signatures (`PAYOS_CHECKSUM_KEY`); GHN webhooks validate `GHN_WEBHOOK_SECRET`.

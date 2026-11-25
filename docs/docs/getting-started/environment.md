@@ -30,7 +30,7 @@ Project Nexus loads environment variables from the monorepo root `.env` file (vi
 | `REFRESH_TOKEN_SECRET`     | `super-secret-refresh-key-...`                      | Yes      | Refresh token signing secret                                   |
 | `REFRESH_TOKEN_EXPIRES_IN` | `30d`                                               | Yes      | Refresh token lifetime (stored in `RefreshToken` for rotation) |
 | `PORT_BACKEND`             | `3000`                                              | Yes      | NestJS HTTP and WebSocket port                                 |
-| `FRONTEND_URL`             | `http://localhost:5173`                             | Yes      | Allowed CORS origin and redirect target for emails/OAuth       |
+| `FRONTEND_URL`             | `http://localhost:5173`                             | Yes      | Allowed CORS origin and redirect target for emails and OAuth   |
 | `GOOGLE_CLIENT_ID`         | `your-google-client-id`                             | Optional | Google OAuth 2.0 client ID                                     |
 | `GOOGLE_CLIENT_SECRET`     | `your-google-client-secret`                         | Optional | Google OAuth 2.0 client secret                                 |
 | `GOOGLE_CALLBACK_URL`      | `http://localhost:3000/api/v1/auth/google/callback` | Optional | Authorized Google OAuth callback URL                           |

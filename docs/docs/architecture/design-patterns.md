@@ -10,7 +10,7 @@ This page documents the core architectural and implementation patterns enforced 
 
 | Pattern                              | Real Implementation                                                                                      | Technical Benefit                                                                      |
 | :----------------------------------- | :------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------- |
-| Inversion of Control and DI          | All Services, Controllers, and Gateways use NestJS constructor injection                                 | Cleanly mockable dependencies for `node:test` unit/integration tests                   |
+| Inversion of Control and DI          | All Services, Controllers, and Gateways use NestJS constructor injection                                 | Cleanly mockable dependencies for `node:test` unit and integration tests               |
 | Unit of Work (`prisma.$transaction`) | `OrderService`, `OrderEscrowService`, `RefundService`, `AuctionService`, `SellerFinanceService`          | Guarantees ACID atomicity across wallets, escrow, inventory, and orders                |
 | Strategy Pattern                     | Payments (`PayosService`, `WALLET`, `COD`) and Logistics (`GhnLogisticsService`, `RouteDistanceService`) | New providers can be added without modifying core checkout orchestration               |
 | In-Process Domain Events             | `EventEmitterModule.forRoot({ wildcard: true, delimiter: '.' })`                                         | Decouples core transactions from side effects (reputation updates, notifications)      |
@@ -26,7 +26,7 @@ Both Frontend and Backend import Enums (`Role`, `OrderStatus`, `AuctionStatus`),
 ### In-Flight Deduplication and Cross-Tab Sync (`AuthContext.tsx`)
 
 - `inFlightPromiseRef` deduplicates concurrent `/users/me` calls sharing the same access token.
-- Listens to `nexus:auth-change` and browser `storage` events (`nexus:auth-*`) to synchronize login/logout and cart state across browser tabs.
+- Listens to `nexus:auth-change` and browser `storage` events (`nexus:auth-*`) to synchronize login, logout, and cart state across browser tabs.
 - `applyModeOverride()` reconciles route prefixes (`/seller/*` forces `SELLER`, `/buyer/*` preserves `BUYER`, `isShopSuspended` forces `BUYER`).
 
 ### Token Refresh Queue (`services/api.ts`)

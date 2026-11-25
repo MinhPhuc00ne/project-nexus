@@ -12,9 +12,9 @@ title: 10 Backend Modules and AI Chatbot
 - Services: `AuthService`, `AuthProfileService`, `StaffProvisioningService`, `JwtStrategy`, `GoogleStrategy`
 - Core Capabilities:
   - User registration with 6-digit email OTP verification (`MailService`).
-  - Bcrypt login, Access Token (7d) and Refresh Token (30d) rotation/revocation persisted in `RefreshToken`.
+  - Bcrypt login, Access Token (7d) and Refresh Token (30d) rotation and revocation persisted in `RefreshToken`.
   - Google OAuth 2.0 (`GoogleStrategy`).
-  - Password change OTP confirmation, forgot/reset password flows.
+  - Password change OTP confirmation, forgot and reset password flows.
   - `SUPPORT_STAFF` (`@staff.com`) provisioning and activation via `StaffInvitation` token + OTP sent to `personalEmail`.
 
 ## 2. `users` — Profiles, `NEXUS Pay` Wallet, Addresses and Reputation
@@ -22,8 +22,8 @@ title: 10 Backend Modules and AI Chatbot
 - Controllers: `UsersController`, `BuyerController`, `SellerController`
 - Services: `UsersService`, `AddressService`, `ReputationService` (`ReputationModule`), `ShopShippingProfileService` (`ShopShippingProfileModule`)
 - Core Capabilities:
-  - Profile management, `UserAddress` book (with GHN Province/District/Ward codes), and Shop shipping profiles.
-  - `SellerUpgradeRequest` submission and direct Buyer/Seller mode switching without re-login (`/api/v1/users/toggle-seller`).
+  - Profile management, `UserAddress` book (with GHN Province, District, and Ward codes), and Shop shipping profiles.
+  - `SellerUpgradeRequest` submission and direct Buyer and Seller mode switching without re-login (`/api/v1/users/toggle-seller`).
   - Reputation scoring and audit trail (`INITIAL_REPUTATION_SCORE = 50`, `ReputationLog`, `ReputationTrustLevel`).
 
 ## 3. `catalog` — 3-Level Categories, Products, Inventory and Banners
@@ -84,7 +84,7 @@ title: 10 Backend Modules and AI Chatbot
 
 - Controllers: `AdminController`, `AdminOrdersController`, `AdminReputationController`, `BackofficeDisputesController`
 - Services: `AdminService`, `AdminUsersService`, `AdminShopsService`, `AdminProductsService`, `AdminOrdersService`, `AdminDisputesService`, `AdminFinanceService`, `AdminSettingsService`
-- Core Capabilities: User governance/locking, Seller approvals, Shop warnings/suspensions/appeals (`ShopActionLog`, `ShopViolation`), withdrawal approvals, dispute/refund reconciliation, and platform settings.
+- Core Capabilities: User governance and locking, Seller approvals, Shop warnings, suspensions, and appeals (`ShopActionLog`, `ShopViolation`), withdrawal approvals, dispute and refund reconciliation, and platform settings.
 
 ## 10. `media` — Media and Document Storage
 
