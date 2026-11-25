@@ -20,11 +20,7 @@ import { AddressService } from '../services/address.service';
 import { WishlistService } from '../services/wishlist.service';
 import { SyncWishlistDto } from '../dtos/wishlist.dto';
 import type { WishlistItemDto } from '@nexus/types';
-import {
-  UpdateBuyerProfileDto,
-  CreateAddressDto,
-  UpdateAddressDto,
-} from '../../users/dtos/users.dto';
+import { UpdateBuyerProfileDto, CreateAddressDto, UpdateAddressDto } from '../dtos/users.dto';
 import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';

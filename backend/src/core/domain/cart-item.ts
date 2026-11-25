@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
-import { effectivePrice, PricedProduct } from '../../../core/domain/product-price';
-import { ProductChoice, validateSelections } from '../../../core/domain/product-options';
+import { effectivePrice, PricedProduct } from './product-price';
+import { ProductChoice, validateSelections } from './product-options';
 
 export const CART_EXPIRATION_DAYS = 7;
 

@@ -9,7 +9,7 @@ import {
   formatCartItem,
   summarizeCart,
   FormattedCartItem,
-} from '../utils/cart.util';
+} from '../../../core/domain/cart-item';
 import { effectivePrice } from '../../../core/domain/product-price';
 import { validateSelections } from '../../../core/domain/product-options';
 

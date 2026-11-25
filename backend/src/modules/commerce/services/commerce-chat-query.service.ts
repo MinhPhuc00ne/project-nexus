@@ -10,7 +10,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { effectivePrice } from '../../../core/domain/product-price';
-import { formatCartItem, summarizeCart, FormattedCartItem } from '../utils/cart.util';
+import { formatCartItem, summarizeCart, FormattedCartItem } from '../../../core/domain/cart-item';
 
 /** Validated filters for a bounded commerce lookup owned by the authenticated user. */
 export interface CommerceChatQuery {

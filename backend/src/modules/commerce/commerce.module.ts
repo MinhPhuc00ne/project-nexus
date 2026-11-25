@@ -5,7 +5,6 @@ import { AdminModule } from '../admin/admin.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { UsersModule } from '../users/users.module';
 import { MediaModule } from '../media/media.module';
-import { CartService } from './services/cart.service';
 import { PayosService } from './services/payos.service';
 import { PaymentSandboxService } from './services/payment-sandbox.service';
 import { OrderService } from './services/order.service';
@@ -14,7 +13,6 @@ import { WithdrawalService } from './services/withdrawal.service';
 import { SellerOrdersService } from './services/seller-orders.service';
 import { SellerEngagementService } from './services/seller-engagement.service';
 import { BuyerFinanceController } from './controllers/buyer-finance.controller';
-import { CartController } from './controllers/cart.controller';
 import { OrderController } from './controllers/order.controller';
 import { PayosWebhookController } from './controllers/payos-webhook.controller';
 import { SellerFinanceController } from './controllers/seller-finance.controller';
@@ -47,7 +45,6 @@ import { ReviewsRepliesHelper } from './services/reviews-replies.helper';
     ReportModerationController,
     AfterSalesController,
     FeedbackController,
-    CartController,
     OrderController,
     PayosWebhookController,
     BuyerFinanceController,
@@ -70,7 +67,6 @@ import { ReviewsRepliesHelper } from './services/reviews-replies.helper';
     RefundService,
     ReviewsService,
     ReportsService,
-    CartService,
     PayosService,
     PaymentSandboxService,
     OrderService,
@@ -82,7 +78,6 @@ import { ReviewsRepliesHelper } from './services/reviews-replies.helper';
   ],
   exports: [
     AuctionCheckoutService,
-    CartService,
     PayosService,
     OrderService,
     SellerFinanceService,
