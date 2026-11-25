@@ -19,7 +19,7 @@ import {
   WalletTransactionType,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { AdminFinanceService } from '../../admin/services/admin-finance.service';
+import { TreasuryService } from '../../treasury/services/treasury.service';
 import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
 import { AuctionStockService } from '../../catalog/services/auction-stock.service';
 import { ReputationService } from '../../users/services/reputation.service';
@@ -42,7 +42,7 @@ export class AuctionSecondChanceHelper {
     private readonly prisma: PrismaService,
     private readonly reputation: ReputationService,
     private readonly adminSettings: PlatformSettingsService,
-    private readonly adminFinance: AdminFinanceService,
+    private readonly treasury: TreasuryService,
     _auctionStock?: AuctionStockService,
   ) {}
 
@@ -261,7 +261,7 @@ export class AuctionSecondChanceHelper {
         throw new ConflictException('Không xác định được người bán của lô đấu giá.');
       }
 
-      const adminWallet = await this.adminFinance.getOrCreatePrimaryAdminWallet(tx);
+      const adminWallet = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
       const walletOwnerIds = [...new Set([buyerId, sellerId, adminWallet.userId])].sort();
       for (const ownerId of walletOwnerIds) {
         await tx.$queryRaw`SELECT id FROM wallets WHERE user_id = ${ownerId} FOR UPDATE`;

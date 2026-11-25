@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TreasuryModule } from '../treasury/treasury.module';
 import { AdminController } from './controllers/admin.controller';
 import { BackofficeDisputesController } from './controllers/backoffice-disputes.controller';
 import { AdminService } from './services/admin.service';
@@ -17,7 +18,7 @@ import { AdminReputationController } from './controllers/admin-reputation.contro
 import { AdminShopsModerationHelper } from './services/admin-shops-moderation.helper';
 
 @Module({
-  imports: [AuthModule, CatalogModule, ReputationModule],
+  imports: [TreasuryModule, AuthModule, CatalogModule, ReputationModule],
   controllers: [
     AdminController,
     BackofficeDisputesController,

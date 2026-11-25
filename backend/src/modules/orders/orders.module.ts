@@ -3,7 +3,7 @@ import { AfterSalesModule } from '../after-sales/after-sales.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
-import { AdminModule } from '../admin/admin.module';
+import { TreasuryModule } from '../treasury/treasury.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { UsersModule } from '../users/users.module';
 import { OrderService } from './services/order.service';
@@ -35,7 +35,7 @@ import { OrderPaymentHelper } from './services/order-payment.helper';
     AfterSalesModule,
     FulfillmentModule,
     CatalogModule,
-    AdminModule,
+    TreasuryModule,
     UsersModule,
   ],
   controllers: [OrderController, SellerOrdersController, OrderLifecycleController],

@@ -19,7 +19,7 @@ import {
 import { WebhookData } from '@payos/node';
 import { PayosSettlement } from '../../payments/services/payos-settlement';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { AdminFinanceService } from '../../admin/services/admin-finance.service';
+import { TreasuryService } from '../../treasury/services/treasury.service';
 import { InventoryService } from '../../catalog/services/inventory.service';
 import { ProductTrendingService } from '../../catalog/services/product-trending.service';
 import { PayOrderDto } from '../dtos/pay-order.dto';
@@ -69,7 +69,7 @@ export class OrderPaymentHelper {
     private readonly escrow: OrderEscrowService,
     private readonly inventoryService?: InventoryService,
     private readonly refunds?: RefundService,
-    private readonly finance?: AdminFinanceService,
+    private readonly treasury?: TreasuryService,
     private readonly trendingService?: ProductTrendingService,
   ) {}
 
@@ -512,7 +512,7 @@ export class OrderPaymentHelper {
         const currentPayment = await tx.payment.findUniqueOrThrow({ where: { id: payment.id } });
         if (currentPayment.status === PaymentStatus.SUCCESS) return;
         const payable = await tx.order.findUniqueOrThrow({ where: { id: payment.orderId } });
-        if (payable.status === OrderStatus.CANCELLED && this.refunds && this.finance) {
+        if (payable.status === OrderStatus.CANCELLED && this.refunds && this.treasury) {
           // A verified transfer arriving after cancellation is still money owed to the buyer.
           await tx.payment.update({
             where: { id: payment.id },
@@ -525,7 +525,7 @@ export class OrderPaymentHelper {
               } as Prisma.InputJsonValue,
             },
           });
-          const admin = await this.finance.getOrCreatePrimaryAdminWallet(tx);
+          const admin = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
           await tx.wallet.update({
             where: { id: admin.id },
             data: { balance: { increment: currentPayment.amount } },

@@ -19,6 +19,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
   const { PayosService } = source('modules/payments/services/payos.service');
   const { AdminSettingsService } = source('modules/admin/services/admin-settings.service');
   const { AdminFinanceService } = source('modules/admin/services/admin-finance.service');
+  const { TreasuryService } = source('modules/treasury/services/treasury.service');
   const { AuthService } = source('modules/auth/services/auth.service');
   const { AuthProfileService } = source('modules/auth/services/auth-profile.service');
   const { OrderService } = source('modules/orders/services/order.service');
@@ -118,6 +119,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
         PayosService,
         AdminSettingsService,
         AdminFinanceService,
+        TreasuryService,
         AuthService,
         AuthProfileService,
       ].map((provide) => ({

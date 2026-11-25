@@ -19,7 +19,7 @@ import { RefundService } from '../../after-sales/services/refund.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
 import { PlatformSettingsService } from '../../../core/settings/platform-settings.service';
-import { AdminFinanceService } from '../../admin/services/admin-finance.service';
+import { TreasuryService } from '../../treasury/services/treasury.service';
 import { ReputationService } from '../../users/services/reputation.service';
 import { objectValue } from '../../fulfillment/services/shipment-state';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
@@ -41,7 +41,7 @@ export class OrderEscrowService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: PlatformSettingsService,
-    private readonly finance: AdminFinanceService,
+    private readonly treasury: TreasuryService,
     private readonly refunds?: RefundService,
     private readonly reputation?: ReputationService,
   ) {}
@@ -83,7 +83,7 @@ export class OrderEscrowService {
       },
     });
 
-    const admin = await this.finance.getOrCreatePrimaryAdminWallet(tx);
+    const admin = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
     await tx.wallet.update({
       where: { id: admin.id },
       data: { balance: { increment: order.totalAmount } },
@@ -244,7 +244,7 @@ export class OrderEscrowService {
       update: {},
       create: { userId: order.sellerId, balance: 0, lockedBalance: 0, currency: 'VND' },
     });
-    const admin = await this.finance.getOrCreatePrimaryAdminWallet(tx);
+    const admin = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
     const sellerPayout = Number(escrow.sellerPayout);
     const shippingFee = Number(order.shippingFee ?? 0);
     const totalDeduction = sellerPayout + shippingFee;

@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/com
 import { NotificationType, OrderRefund, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
-import { AdminFinanceService } from '../../admin/services/admin-finance.service';
+import { TreasuryService } from '../../treasury/services/treasury.service';
 import { AfterSalesOrder, AfterSalesStoreService } from './after-sales-store.service';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
 
@@ -10,7 +10,7 @@ import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.serv
 export class RefundService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly finance: AdminFinanceService,
+    private readonly treasury: TreasuryService,
     private readonly store: AfterSalesStoreService,
   ) {}
 
@@ -32,7 +32,7 @@ export class RefundService {
         .comparedTo(escrow.totalAmount) !== 0
     )
       throw new BadRequestException('Cần đối soát số tiền đã thanh toán trước khi hoàn.');
-    const admin = await this.finance.getOrCreatePrimaryAdminWallet(tx);
+    const admin = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
     if (escrow.status === 'DISBURSED') {
       const recovered = await tx.wallet.updateMany({
         where: { userId: order.sellerId, balance: { gte: escrow.sellerPayout } },

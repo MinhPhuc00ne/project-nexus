@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
-import { AdminModule } from '../admin/admin.module';
+import { TreasuryModule } from '../treasury/treasury.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
 import { UsersModule } from '../users/users.module';
@@ -20,7 +20,7 @@ import { RefundService } from './services/refund.service';
  * takes money and the code that gives it back free to call each other.
  */
 @Module({
-  imports: [PrismaModule, FulfillmentModule, CatalogModule, AdminModule, UsersModule],
+  imports: [PrismaModule, FulfillmentModule, CatalogModule, TreasuryModule, UsersModule],
   controllers: [AfterSalesController],
   providers: [AfterSalesStoreService, OrderCancellationService, OrderReturnService, RefundService],
   exports: [RefundService],

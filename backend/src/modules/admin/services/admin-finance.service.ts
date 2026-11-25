@@ -1,23 +1,21 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import {
-  Prisma,
-  Role,
-  Wallet,
-  WalletTransactionStatus,
-  WalletTransactionType,
-} from '@prisma/client';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Prisma, Wallet, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import {
   DepositAdminWalletDto,
   QueryAdminWalletTransactionsDto,
   QueryPlatformUserWalletTransactionsDto,
 } from '../dtos/admin-wallet.dto';
+import { TreasuryService } from '../../treasury/services/treasury.service';
 
 @Injectable()
 export class AdminFinanceService {
   private readonly logger = new Logger(AdminFinanceService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly treasury: TreasuryService,
+  ) {}
 
   /**
    * Retrieves or automatically initializes the primary platform administrator wallet.
@@ -26,42 +24,8 @@ export class AdminFinanceService {
    * @returns Primary admin Wallet entity
    * @throws NotFoundException when no administrator user exists
    */
-  async getOrCreatePrimaryAdminWallet(txClient?: Prisma.TransactionClient): Promise<Wallet> {
-    const client = txClient || this.prisma;
-
-    let adminUser = await client.user.findFirst({
-      where: { role: Role.ADMIN },
-      orderBy: { createdAt: 'asc' },
-      include: { wallet: true },
-    });
-
-    if (!adminUser) {
-      adminUser = await client.user.findFirst({
-        where: { email: 'admin@nexus.com' },
-        include: { wallet: true },
-      });
-    }
-
-    if (!adminUser) {
-      throw new NotFoundException(
-        'Không tìm thấy tài khoản Quản trị viên (ADMIN) trên hệ thống để gán ví nền tảng.',
-      );
-    }
-
-    let wallet = adminUser.wallet;
-    if (!wallet) {
-      wallet = await client.wallet.create({
-        data: {
-          userId: adminUser.id,
-          balance: 0,
-          lockedBalance: 0,
-          currency: 'VND',
-        },
-      });
-      this.logger.log(`Đã khởi tạo ví Admin hệ thống cho userId: ${adminUser.id}`);
-    }
-
-    return wallet;
+  getOrCreatePrimaryAdminWallet(txClient?: Prisma.TransactionClient): Promise<Wallet> {
+    return this.treasury.getOrCreatePrimaryAdminWallet(txClient);
   }
 
   /**
