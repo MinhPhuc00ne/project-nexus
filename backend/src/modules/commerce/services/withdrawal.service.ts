@@ -29,6 +29,11 @@ interface ResolvedBankDetails {
   accountHolderName: string;
 }
 
+/** The part of a Prisma client the pending-limit check needs. */
+type PrismaLike = {
+  withdrawalRequest: { count(args: { where: Record<string, unknown> }): Promise<number> };
+};
+
 @Injectable()
 export class WithdrawalService {
   private readonly logger = new Logger(WithdrawalService.name);
@@ -79,7 +84,9 @@ export class WithdrawalService {
       );
     }
 
-    await this.ensureWithinPendingLimit(userId);
+    // A courtesy check so the common case fails fast with a clear message.
+    // The limit itself is enforced inside the transaction, under a lock.
+    await this.ensureWithinPendingLimit(this.prisma, userId);
 
     const bankDetails = this.resolveBankDetails(dto, user);
     const isSeller = user.role === Role.SELLER;
@@ -266,8 +273,19 @@ export class WithdrawalService {
     });
   }
 
-  private async ensureWithinPendingLimit(userId: string) {
-    const pendingCount = await this.prisma.withdrawalRequest.count({
+  /**
+   * Rejects a request that would exceed the pending limit.
+   *
+   * @param db - The client to count with. Pass the transaction client for the
+   *   check that enforces the limit, and only then under a row lock: at READ
+   *   COMMITTED two concurrent transactions otherwise both count the same
+   *   pending requests and both insert.
+   * @param userId - Whose requests to count.
+   * @returns Completion.
+   * @throws BadRequestException when the limit is already reached.
+   */
+  private async ensureWithinPendingLimit(db: PrismaLike, userId: string) {
+    const pendingCount = await db.withdrawalRequest.count({
       where: {
         userId,
         status: WithdrawalStatus.PENDING,
@@ -330,6 +348,12 @@ export class WithdrawalService {
     } = params;
 
     return this.prisma.$transaction(async (tx) => {
+      // Locking the wallet row serialises every withdrawal for this account,
+      // so the count below cannot be read concurrently by a second request
+      // that then inserts past the limit.
+      await tx.$queryRaw`SELECT id FROM wallets WHERE id = ${walletId} FOR UPDATE`;
+      await this.ensureWithinPendingLimit(tx, userId);
+
       if (
         !existingBankInfo.bankName ||
         !existingBankInfo.accountNumber ||
