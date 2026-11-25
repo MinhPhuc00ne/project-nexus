@@ -23,7 +23,7 @@ export class RegisterAuctionItemDto {
   })
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @ApiProperty({
     description: 'Detailed description, provenance, and physical condition of the consigned item',
@@ -32,7 +32,7 @@ export class RegisterAuctionItemDto {
   })
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description!: string;
 
   @ApiProperty({
     description: 'List of high-resolution product image URLs from multiple angles',
@@ -42,7 +42,7 @@ export class RegisterAuctionItemDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsString({ each: true })
-  images: string[];
+  images!: string[];
 
   @ApiPropertyOptional({
     description: 'Storage key for the interactive 3D inspection model (if available)',
@@ -60,7 +60,7 @@ export class RegisterAuctionItemDto {
   @Type(() => Number)
   @IsNumber()
   @Min(10000)
-  proposedStartingPrice: number;
+  proposedStartingPrice!: number;
 
   @ApiPropertyOptional({
     description: 'Proposed minimum reserve price in VND currency (minimum acceptable sale price)',
@@ -110,7 +110,7 @@ export class RegisterAuctionItemDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsString({ each: true })
-  certificateImages: string[];
+  certificateImages!: string[];
 
   @ApiPropertyOptional({
     description: 'Certificate issue date in ISO 8601 format',

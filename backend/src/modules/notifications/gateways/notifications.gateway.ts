@@ -38,7 +38,7 @@ export class NotificationsGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, OnModuleDestroy
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(NotificationsGateway.name);
   private unsubscribeBus: (() => void) | null = null;
@@ -82,9 +82,10 @@ export class NotificationsGateway
         return;
       }
 
-      const secret =
-        this.configService.get<string>('JWT_SECRET') ||
-        'super-secret-jwt-key-nexus-change-in-production-2026';
+      const secret = this.configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+      if (!secret) {
+        throw new Error('JWT_SECRET is not configured');
+      }
       const verifyResult = LightweightJwt.verify<AuthenticatedUserPayload>(rawToken, secret);
 
       if (!verifyResult.valid || !verifyResult.payload) {

@@ -8,5 +8,5 @@ export class ConfirmWebhookDto {
   })
   @IsUrl()
   @IsNotEmpty()
-  webhookUrl: string;
+  webhookUrl!: string;
 }

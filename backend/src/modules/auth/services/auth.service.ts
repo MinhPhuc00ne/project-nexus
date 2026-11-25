@@ -490,10 +490,7 @@ export class AuthService {
    * @throws ForbiddenException when account is suspended
    */
   async refreshToken(dto: RefreshTokenDto) {
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+    const refreshSecret = this.getRefreshSecret();
 
     let payload: RefreshJwtPayload;
     try {
@@ -559,10 +556,7 @@ export class AuthService {
    * @returns Logout confirmation message
    */
   async logout(dto: RefreshTokenDto): Promise<{ message: string }> {
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+    const refreshSecret = this.getRefreshSecret();
 
     try {
       const payload = await this.jwtService.verifyAsync<RefreshJwtPayload>(dto.refreshToken, {
@@ -598,10 +592,7 @@ export class AuthService {
     });
 
     const tokenId = crypto.randomUUID();
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+    const refreshSecret = this.getRefreshSecret();
     const refreshExpiresIn =
       this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') ||
       process.env.REFRESH_TOKEN_EXPIRES_IN ||
@@ -733,5 +724,14 @@ export class AuthService {
         'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
       );
     }
+  }
+
+  private getRefreshSecret(): string {
+    const refreshSecret =
+      this.configService.get<string>('REFRESH_TOKEN_SECRET') || process.env.REFRESH_TOKEN_SECRET;
+    if (!refreshSecret) {
+      throw new Error('REFRESH_TOKEN_SECRET is not configured');
+    }
+    return refreshSecret;
   }
 }

@@ -72,8 +72,8 @@ function createAuthHarness(userRecord = null) {
 
   const configService = {
     get: (key) => {
-      if (key === 'JWT_SECRET') return 'test-jwt-secret';
-      if (key === 'JWT_REFRESH_SECRET') return 'test-refresh-secret';
+      if (key === 'JWT_SECRET') return 'test-jwt-secret-key-16';
+      if (key === 'REFRESH_TOKEN_SECRET') return 'test-refresh-secret-key-16';
       return undefined;
     },
   };

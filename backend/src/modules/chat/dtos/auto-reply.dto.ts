@@ -48,7 +48,7 @@ export class CreateAutoReplyDto {
   @IsString()
   @IsNotEmpty({ message: 'Nội dung tin nhắn tự động không được để trống' })
   @MaxLength(1000, { message: 'Nội dung tin nhắn tự động tối đa 1000 ký tự' })
-  content: string;
+  content!: string;
 
   @ApiPropertyOptional({ description: 'Trạng thái kích hoạt (mặc định true)', default: true })
   @IsOptional()
@@ -98,7 +98,7 @@ export class CancelAutoReplyDto {
   @IsString()
   @IsNotEmpty({ message: 'Lý do hủy không được để trống' })
   @MaxLength(500)
-  cancelReason: string;
+  cancelReason!: string;
 }
 
 export class QueryAutoRepliesDto {

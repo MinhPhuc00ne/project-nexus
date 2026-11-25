@@ -1,12 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DisputeStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { QueryAdminDisputesDto } from '../dtos/query-admin-disputes.dto';
 
 @Injectable()
 export class AdminDisputesService {
-  private readonly logger = new Logger(AdminDisputesService.name);
-
   constructor(private readonly prisma: PrismaService) {}
 
   /**

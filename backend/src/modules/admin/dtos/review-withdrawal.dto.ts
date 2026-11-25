@@ -19,7 +19,7 @@ export class ReviewWithdrawalDto {
     message: 'Trạng thái xét duyệt chỉ chấp nhận APPROVED, REJECTED hoặc COMPLETED',
   })
   @IsNotEmpty()
-  status: WithdrawalStatus;
+  status!: WithdrawalStatus;
 
   @ApiPropertyOptional({
     example: 'Thông tin số tài khoản không đúng với tên chủ tài khoản thụ hưởng',

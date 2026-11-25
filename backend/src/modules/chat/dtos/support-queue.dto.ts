@@ -35,7 +35,7 @@ export class RequestSupportDto {
   @IsNotEmpty({ message: 'Nội dung yêu cầu hỗ trợ không được để trống.' })
   @IsString()
   @MaxLength(2000)
-  message: string;
+  message!: string;
 
   @ApiPropertyOptional({
     description: 'Mã định danh ngữ cảnh liên quan (mã tranh chấp, mã đơn hàng)',
@@ -75,7 +75,7 @@ export class UpdateConversationStatusDto {
   @IsEnum(TicketLifecycleStatus, {
     message: 'Trạng thái phải là OPEN, IN_PROGRESS, RESOLVED hoặc CLOSED.',
   })
-  status: TicketLifecycleStatus;
+  status!: TicketLifecycleStatus;
 
   @ApiPropertyOptional({
     description: 'Ghi chú giải quyết hoặc lý do đóng cuộc trò chuyện',

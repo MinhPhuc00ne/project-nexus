@@ -5,18 +5,18 @@ export class RegisterBuyerDto {
   @ApiProperty({ example: 'buyer@example.com', description: 'Buyer email' })
   @IsEmail({}, { message: 'Must be a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'Password123!', description: 'Password (min 6 characters)' })
   @IsString()
   @MinLength(6, { message: 'Password must be at least 6 characters' })
   @IsNotEmpty({ message: 'Password is required' })
-  password: string;
+  password!: string;
 
   @ApiProperty({ example: 'Nguyen Van A', description: 'Full name' })
   @IsString()
   @IsNotEmpty({ message: 'Full name is required' })
-  fullName: string;
+  fullName!: string;
 
   @ApiPropertyOptional({ example: '0901234567', description: 'Phone number' })
   @IsString()
@@ -31,65 +31,65 @@ export class LoginDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Email or platform identifier is required' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'AdminPassword123!', description: 'User password' })
   @IsString()
   @IsNotEmpty({ message: 'Password is required' })
-  password: string;
+  password!: string;
 }
 
 export class RefreshTokenDto {
   @ApiProperty({ description: 'Refresh token string' })
   @IsString()
   @IsNotEmpty({ message: 'Refresh token is required' })
-  refreshToken: string;
+  refreshToken!: string;
 }
 
 export class ChangePasswordDto {
   @ApiProperty({ example: 'CurrentPassword123!', description: 'Current password' })
   @IsString()
   @IsNotEmpty({ message: 'Current password is required' })
-  currentPassword: string;
+  currentPassword!: string;
 
   @ApiProperty({ example: 'NewPassword123!', description: 'New password (min 6 characters)' })
   @IsString()
   @MinLength(6, { message: 'New password must be at least 6 characters' })
   @IsNotEmpty({ message: 'New password is required' })
-  newPassword: string;
+  newPassword!: string;
 }
 
 export class ForgotPasswordRequestDto {
   @ApiProperty({ example: 'user@example.com', description: 'Registered email' })
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+  email!: string;
 }
 
 export class ResetPasswordWithOtpDto {
   @ApiProperty({ example: 'user@example.com', description: 'Registered email' })
   @IsEmail({}, { message: 'Valid email is required' })
   @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '123456', description: '6-digit OTP code received in email' })
   @IsString()
   @Matches(/^\d{6}$/, { message: 'OTP must be a 6-digit number' })
   @IsNotEmpty({ message: 'OTP is required' })
-  otp: string;
+  otp!: string;
 
   @ApiProperty({ example: 'NewPassword123!', description: 'New password' })
   @IsString()
   @MinLength(6, { message: 'New password must be at least 6 characters' })
   @IsNotEmpty({ message: 'New password is required' })
-  newPassword: string;
+  newPassword!: string;
 }
 
 export class InviteStaffDto {
   @ApiProperty({ example: 'Nguyen Van Staff', description: 'Staff full name' })
   @IsString()
   @IsNotEmpty({ message: 'Full name is required' })
-  fullName: string;
+  fullName!: string;
 
   @ApiProperty({
     example: 'staff_personal@gmail.com',
@@ -97,12 +97,12 @@ export class InviteStaffDto {
   })
   @IsEmail({}, { message: 'Valid personal email is required' })
   @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '0912345678', description: 'Phone number' })
   @IsString()
   @IsNotEmpty({ message: 'Phone number is required' })
-  phoneNumber: string;
+  phoneNumber!: string;
 
   @ApiPropertyOptional({ example: 'Customer Support', description: 'Assigned department' })
   @IsString()
@@ -156,7 +156,7 @@ export class StaffForgotPasswordDto {
   })
   @IsEmail({}, { message: 'Must be a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+  email!: string;
 }
 
 export class StaffResetPasswordDto {
@@ -166,17 +166,17 @@ export class StaffResetPasswordDto {
   })
   @IsEmail({}, { message: 'Must be a valid email address' })
   @IsNotEmpty({ message: 'Email is required' })
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: '123456', description: 'Mã OTP 6 số nhận qua email cá nhân' })
   @IsString()
   @Matches(/^\d{6}$/, { message: 'OTP must be a 6-digit number' })
   @IsNotEmpty({ message: 'OTP is required' })
-  otp: string;
+  otp!: string;
 
   @ApiProperty({ example: 'NewStaffPassword123!', description: 'Mật khẩu mới' })
   @IsString()
   @MinLength(6, { message: 'New password must be at least 6 characters' })
   @IsNotEmpty({ message: 'New password is required' })
-  newPassword: string;
+  newPassword!: string;
 }

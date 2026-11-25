@@ -8,7 +8,7 @@ export class WarnShopDto {
   })
   @IsString()
   @IsNotEmpty({ message: 'Lý do cảnh cáo không được để trống' })
-  reason: string;
+  reason!: string;
 
   @ApiPropertyOptional({
     example: 10,

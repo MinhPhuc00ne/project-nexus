@@ -33,9 +33,10 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     const token = authHeader.substring(7);
-    const secret =
-      this.configService.get<string>('JWT_SECRET') ||
-      'super-secret-jwt-key-nexus-change-in-production-2026';
+    const secret = this.configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
 
     const verifyResult = LightweightJwt.verify<AuthenticatedUserPayload>(token, secret);
 

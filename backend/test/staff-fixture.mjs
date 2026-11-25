@@ -91,7 +91,13 @@ export function staffFixture({ mailAccepted = true } = {}) {
     return result;
   };
   const config = {
-    get: (key) => ({ FRONTEND_URL: 'https://nexus.test', SMTP_USER: 'sender@example.test' })[key],
+    get: (key) =>
+      ({
+        FRONTEND_URL: 'https://nexus.test',
+        SMTP_USER: 'sender@example.test',
+        JWT_SECRET: 'test-jwt-secret-key-16',
+        REFRESH_TOKEN_SECRET: 'test-refresh-secret-key-16',
+      })[key],
   };
   const mail = {
     sendEmail: async (message) => {

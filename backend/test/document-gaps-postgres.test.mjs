@@ -339,7 +339,18 @@ test(
               codeExpiresAt: new Date(Date.now() + 60000),
             },
           });
-          const auth = new AuthService(prisma, {}, {}, {}, {});
+          const auth = new AuthService(
+            prisma,
+            {
+              get: (key) =>
+                key === 'JWT_SECRET' || key === 'REFRESH_TOKEN_SECRET'
+                  ? 'test-secret-key-16'
+                  : undefined,
+            },
+            {},
+            {},
+            {},
+          );
           await Promise.all([
             auth.verifyEmail({ email: account.email, code: '123456' }),
             auth.verifyEmail({ email: account.email, code: '123456' }),

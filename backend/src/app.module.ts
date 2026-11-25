@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { PrismaModule } from './core/prisma/prisma.module';
+import { validateBackendEnv } from './core/config/env.schema';
 import { RedisModule } from './core/redis/redis.module';
 import { MailModule } from './core/mail/mail.module';
 import { StorageModule } from './core/storage/storage.module';
@@ -20,7 +21,8 @@ import { AuctionModule } from './modules/auction/auction.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['.env', '../.env'],
+      envFilePath: ['.env', '../.env', '../../.env'],
+      validate: validateBackendEnv,
     }),
     EventEmitterModule.forRoot({
       wildcard: true,

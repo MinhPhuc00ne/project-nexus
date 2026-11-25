@@ -8,7 +8,7 @@ export class DepositWalletDto {
   })
   @IsNumber()
   @Min(10000, { message: 'Số tiền nạp tối thiểu là 10.000 VNĐ' })
-  amount: number;
+  amount!: number;
 
   @ApiPropertyOptional({
     example: 'Nạp tiền vào ví NEXUS Pay để mua hàng',

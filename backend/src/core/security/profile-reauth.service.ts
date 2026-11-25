@@ -21,10 +21,10 @@ export class ProfileReauthService {
     private readonly jwt: JwtService,
     config: ConfigService,
   ) {
-    const accessSecret =
-      config.get<string>('JWT_SECRET') ||
-      process.env.JWT_SECRET ||
-      'super-secret-jwt-key-nexus-change-in-production-2026';
+    const accessSecret = config.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+    if (!accessSecret) {
+      throw new Error('JWT_SECRET is not configured');
+    }
     this.proofSecret = createHmac('sha256', accessSecret)
       .update('PROFILE_UPDATE_PROOF')
       .digest('hex');

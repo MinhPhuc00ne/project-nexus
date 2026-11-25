@@ -27,7 +27,7 @@ export class ReputationService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly notificationsService: NotificationsService,
+    _notificationsService: NotificationsService,
   ) {}
 
   /**

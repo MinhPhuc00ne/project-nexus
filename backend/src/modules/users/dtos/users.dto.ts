@@ -93,7 +93,7 @@ export class ApplySellerUpgradeDto {
   @ApiProperty({ example: 'Nexus Super Store', description: 'Store name' })
   @IsString()
   @IsNotEmpty({ message: 'Store name is required' })
-  storeName: string;
+  storeName!: string;
 
   @ApiPropertyOptional({ example: 'Authentic electronics store', description: 'Store description' })
   @IsString()
@@ -103,7 +103,7 @@ export class ApplySellerUpgradeDto {
   @ApiProperty({ example: '0912345678', description: 'Store contact phone' })
   @IsString()
   @IsNotEmpty({ message: 'Contact phone number is required' })
-  phone: string;
+  phone!: string;
 
   @ApiPropertyOptional({ example: 'business@nexusstore.com', description: 'Business email' })
   @IsEmail({}, { message: 'Business email must be valid' })
@@ -126,7 +126,7 @@ export class ApplySellerUpgradeDto {
   @ApiProperty({ example: '720A Điện Biên Phủ', description: 'Store address / street' })
   @IsString()
   @IsNotEmpty({ message: 'Store street address is required' })
-  street: string;
+  street!: string;
 
   @ApiPropertyOptional({ example: 'Phường 22' })
   @IsString()
@@ -141,7 +141,7 @@ export class ApplySellerUpgradeDto {
   @ApiProperty({ example: 'TP. Hồ Chí Minh' })
   @IsString()
   @IsNotEmpty({ message: 'Store city is required' })
-  city: string;
+  city!: string;
 
   @ApiPropertyOptional({ example: 10.795, description: 'GPS Latitude' })
   @Type(() => Number)
@@ -178,7 +178,7 @@ export class ReviewSellerUpgradeDto {
   @IsEnum(SellerRequestStatus, {
     message: 'Status must be APPROVED or REJECTED',
   })
-  status: SellerRequestStatus;
+  status!: SellerRequestStatus;
 
   @ApiPropertyOptional({
     example: 'Documents verified successfully',
@@ -193,12 +193,12 @@ export class CreateAddressDto {
   @ApiProperty({ example: 'Đinh Tú Liên', description: 'Họ tên người nhận hàng' })
   @IsString()
   @IsNotEmpty()
-  recipientName: string;
+  recipientName!: string;
 
   @ApiProperty({ example: '0909123456', description: 'Số điện thoại người nhận' })
   @IsString()
   @IsNotEmpty()
-  phone: string;
+  phone!: string;
 
   @ApiProperty({
     example: 'Tòa nhà Landmark 81, 720A Điện Biên Phủ',
@@ -206,7 +206,7 @@ export class CreateAddressDto {
   })
   @IsString()
   @IsNotEmpty()
-  street: string;
+  street!: string;
 
   @ApiPropertyOptional({ example: 'Phường 22' })
   @IsString()
@@ -221,7 +221,7 @@ export class CreateAddressDto {
   @ApiProperty({ example: 'TP. Hồ Chí Minh' })
   @IsString()
   @IsNotEmpty()
-  city: string;
+  city!: string;
 
   @ApiPropertyOptional({ example: 10.795, description: 'Vĩ độ GPS (Latitude) từ bản đồ' })
   @Type(() => Number)
