@@ -17,9 +17,9 @@ const { OrderCancellationService } = load(
   '../src/modules/after-sales/services/order-cancellation.service.ts',
 );
 const { OrderReturnService } = load('../src/modules/after-sales/services/order-return.service.ts');
-const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
+const { OrderService } = load('../src/modules/orders/services/order.service.ts');
 const { ReputationService } = load('../src/modules/users/services/reputation.service.ts');
-const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
+const { OrderPaymentHelper } = load('../src/modules/orders/services/order-payment.helper.ts');
 export const buyer = { id: 'buyer', role: 'BUYER' };
 export const seller = { id: 'seller', role: 'SELLER' };
 export const admin = { id: 'admin', role: 'ADMIN' };

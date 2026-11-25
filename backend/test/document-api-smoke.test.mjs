@@ -60,7 +60,7 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
       useValue: { getAll: async () => ({ platformFeePercentage: 7 }) },
     },
     {
-      provide: source('modules/commerce/services/order-payment.helper').OrderPaymentHelper,
+      provide: source('modules/orders/services/order-payment.helper').OrderPaymentHelper,
       useValue: {},
     },
     {

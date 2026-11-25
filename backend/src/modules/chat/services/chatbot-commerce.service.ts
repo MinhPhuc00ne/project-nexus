@@ -6,7 +6,7 @@ import {
   CommerceChatOrders,
   CommerceChatQuery,
   CommerceChatQueryService,
-} from '../../commerce/services/commerce-chat-query.service';
+} from '../../commerce-query/services/commerce-chat-query.service';
 import { ChatbotMessageDto } from '../dtos/chatbot-message.dto';
 import type { ChatbotReply } from './chatbot-reply';
 import {

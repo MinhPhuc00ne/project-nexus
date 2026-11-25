@@ -9,12 +9,12 @@ tsNode.register({
   transpileOnly: true,
 });
 const load = createRequire(import.meta.url);
-const { OrderEscrowService } = load('../src/modules/commerce/services/order-escrow.service.ts');
-const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
+const { OrderEscrowService } = load('../src/modules/orders/services/order-escrow.service.ts');
+const { OrderService } = load('../src/modules/orders/services/order.service.ts');
 const { SellerEngagementService } = load(
   '../src/modules/reviews/services/seller-engagement.service.ts',
 );
-const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
+const { OrderPaymentHelper } = load('../src/modules/orders/services/order-payment.helper.ts');
 const { PayosWebhookService } = load('../src/modules/wallet/services/payos-webhook.service.ts');
 
 function fixture() {

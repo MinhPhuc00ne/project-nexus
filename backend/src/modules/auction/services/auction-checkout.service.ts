@@ -24,7 +24,7 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { productChoiceLabel } from '../../../core/domain/product-options';
 import { GhnParcelItem } from '../../fulfillment/services/ghn-parcel';
 import { GhnShippingService } from '../../fulfillment/services/ghn-shipping.service';
-import { OrderEscrowService } from '../../commerce/services/order-escrow.service';
+import { OrderEscrowService } from '../../orders/services/order-escrow.service';
 import {
   AUCTION_CHECKOUT_DURATION_MS,
   AuctionAwardQuote,

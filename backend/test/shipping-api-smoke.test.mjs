@@ -21,9 +21,9 @@ test('shipping dependencies and routes initialize without live infrastructure', 
   const { AdminFinanceService } = source('modules/admin/services/admin-finance.service');
   const { AuthService } = source('modules/auth/services/auth.service');
   const { AuthProfileService } = source('modules/auth/services/auth-profile.service');
-  const { OrderService } = source('modules/commerce/services/order.service');
-  const { OrderEscrowService } = source('modules/commerce/services/order-escrow.service');
-  const { SellerOrdersService } = source('modules/commerce/services/seller-orders.service');
+  const { OrderService } = source('modules/orders/services/order.service');
+  const { OrderEscrowService } = source('modules/orders/services/order-escrow.service');
+  const { SellerOrdersService } = source('modules/orders/services/seller-orders.service');
   const { GhnShippingService } = source('modules/fulfillment/services/ghn-shipping.service');
   const { GhnDispatchService } = source('modules/fulfillment/services/ghn-dispatch.service');
   const { GhnLogisticsService } = source('modules/fulfillment/services/ghn-logistics.service');
@@ -44,9 +44,9 @@ test('shipping dependencies and routes initialize without live infrastructure', 
     AdminPickupController,
     source('modules/fulfillment/controllers/fulfillment.controller').FulfillmentController,
     source('modules/fulfillment/controllers/ghn-webhook.controller').GhnWebhookController,
-    source('modules/commerce/controllers/order.controller').OrderController,
-    source('modules/commerce/controllers/order-lifecycle.controller').OrderLifecycleController,
-    source('modules/commerce/controllers/seller-orders.controller').SellerOrdersController,
+    source('modules/orders/controllers/order.controller').OrderController,
+    source('modules/orders/controllers/order-lifecycle.controller').OrderLifecycleController,
+    source('modules/orders/controllers/seller-orders.controller').SellerOrdersController,
     source('modules/auth/controllers/auth.controller').AuthController,
   ];
   class SmokeModule {}
@@ -79,7 +79,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
         useValue: { getAll: async () => ({ platformFeePercentage: 7 }) },
       },
       {
-        provide: source('modules/commerce/services/order-payment.helper').OrderPaymentHelper,
+        provide: source('modules/orders/services/order-payment.helper').OrderPaymentHelper,
         useValue: {},
       },
       {

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { AuctionModule } from '../auction/auction.module';
-import { CommerceModule } from '../commerce/commerce.module';
+import { OrdersModule } from '../orders/orders.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { BuyerFinanceController } from './controllers/buyer-finance.controller';
 import { PayosWebhookController } from './controllers/payos-webhook.controller';
@@ -23,7 +23,7 @@ import { WithdrawalService } from './services/withdrawal.service';
  * branch buried in its payment helper, are here now.
  */
 @Module({
-  imports: [PrismaModule, PaymentsModule, CommerceModule, AuctionModule],
+  imports: [PrismaModule, PaymentsModule, OrdersModule, AuctionModule],
   controllers: [
     WalletController,
     BuyerFinanceController,

@@ -21,7 +21,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { AfterSalesModule } from './modules/after-sales/after-sales.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { WalletModule } from './modules/wallet/wallet.module';
-import { CommerceModule } from './modules/commerce/commerce.module';
+import { OrdersModule } from './modules/orders/orders.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FulfillmentModule } from './modules/fulfillment/fulfillment.module';
 import { ChatModule } from './modules/chat/chat.module';
@@ -55,7 +55,7 @@ import { AuctionModule } from './modules/auction/auction.module';
     CartModule,
     ReviewsModule,
     AfterSalesModule,
-    CommerceModule,
+    OrdersModule,
     PaymentsModule,
     WalletModule,
     NotificationsModule,

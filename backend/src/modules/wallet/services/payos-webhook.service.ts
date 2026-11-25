@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Webhook } from '@payos/node';
-import { OrderService } from '../../commerce/services/order.service';
+import { OrderService } from '../../orders/services/order.service';
 import { PayosSettlement } from '../../payments/services/payos-settlement';
 import { PayosService } from '../../payments/services/payos.service';
 import { WalletDepositService } from './wallet-deposit.service';

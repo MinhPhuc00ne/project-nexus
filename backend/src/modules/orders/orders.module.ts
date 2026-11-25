@@ -14,6 +14,20 @@ import { OrderLifecycleController } from './controllers/order-lifecycle.controll
 import { OrderEscrowService } from './services/order-escrow.service';
 import { OrderPaymentHelper } from './services/order-payment.helper';
 
+/**
+ * Checkout and the life of an order: quoting it, paying for it, holding the
+ * money in escrow and the seller's view of what to pack.
+ *
+ * It was called `commerce` and held 11.6k lines — the cart, reviews, reports,
+ * wallets, withdrawals, refunds, returns and auction checkout as well — so
+ * "commerce" had stopped naming anything in particular. Each of those is now
+ * its own module and this is what was left, which is orders.
+ *
+ * It publishes `OrderService` for the wallet to offer PayOS callbacks to,
+ * `OrderEscrowService` for auction checkout to hold a deposit through, and
+ * `SellerOrdersService` for fulfilment. It imports after-sales rather than the
+ * other way round: a transfer clearing after a cancellation is money owed back.
+ */
 @Module({
   imports: [
     PrismaModule,
@@ -28,4 +42,4 @@ import { OrderPaymentHelper } from './services/order-payment.helper';
   providers: [OrderPaymentHelper, OrderService, SellerOrdersService, OrderEscrowService],
   exports: [OrderService, OrderEscrowService, SellerOrdersService],
 })
-export class CommerceModule {}
+export class OrdersModule {}

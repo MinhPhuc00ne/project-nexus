@@ -11,7 +11,7 @@ import {
   ValidateIf,
   ValidateNested,
 } from 'class-validator';
-import { ShippingAddressDto } from '../../commerce/dtos/checkout.dto';
+import { ShippingAddressDto } from '../../orders/dtos/checkout.dto';
 
 function hasFlatAddressFields(o: CheckoutAuctionAwardDto): boolean {
   return (

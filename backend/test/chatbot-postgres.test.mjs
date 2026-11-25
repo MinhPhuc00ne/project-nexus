@@ -18,7 +18,7 @@ const load = createRequire(import.meta.url);
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
 const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
 const { CommerceChatQueryService } = load(
-  '../src/modules/commerce/services/commerce-chat-query.service.ts',
+  '../src/modules/commerce-query/services/commerce-chat-query.service.ts',
 );
 const { ChatbotRateLimitService } = load(
   '../src/modules/chat/services/chatbot-rate-limit.service.ts',

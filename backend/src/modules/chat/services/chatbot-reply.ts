@@ -1,4 +1,4 @@
-import type { CommerceChatQueryService } from '../../commerce/services/commerce-chat-query.service';
+import type { CommerceChatQueryService } from '../../commerce-query/services/commerce-chat-query.service';
 import type { ChatbotTopic } from './chatbot-knowledge';
 
 /**

@@ -71,11 +71,11 @@ test(
       const { AuctionCheckoutService } = source('auction/services/auction-checkout.service');
       const { AuctionService } = source('auction/services/auction.service');
       const { ReputationService } = source('users/services/reputation.service');
-      const { OrderEscrowService } = source('commerce/services/order-escrow.service');
+      const { OrderEscrowService } = source('orders/services/order-escrow.service');
       const { ReportsService } = source('reviews/services/reports.service');
       const { ReportModerationService } = source('reviews/services/report-moderation.service');
       const { ReviewsService } = source('reviews/services/reviews.service');
-      const { OrderService } = source('commerce/services/order.service');
+      const { OrderService } = source('orders/services/order.service');
       const { AuthService } = source('auth/services/auth.service');
       const { AuctionLifecycleService } = source('auction/services/auction-lifecycle.service');
       const { AdminShopsService } = source('admin/services/admin-shops.service');
@@ -196,7 +196,7 @@ test(
             where: { id: results[0].awardId },
           });
           assert.equal(Number(offer.depositAmount), 30000);
-          const { OrderPaymentHelper } = source('commerce/services/order-payment.helper');
+          const { OrderPaymentHelper } = source('orders/services/order-payment.helper');
           const retail = new OrderService(
             prisma,
             shipping,

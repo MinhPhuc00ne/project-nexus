@@ -18,9 +18,9 @@ const { GhnShippingService } = loadBackend(
 const { FulfillmentService } = loadBackend(
   '../src/modules/fulfillment/services/fulfillment.service.ts',
 );
-const { OrderService } = loadBackend('../src/modules/commerce/services/order.service.ts');
+const { OrderService } = loadBackend('../src/modules/orders/services/order.service.ts');
 const { OrderPaymentHelper } = loadBackend(
-  '../src/modules/commerce/services/order-payment.helper.ts',
+  '../src/modules/orders/services/order-payment.helper.ts',
 );
 
 const item = {

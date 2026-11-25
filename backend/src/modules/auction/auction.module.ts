@@ -7,7 +7,7 @@ import { AuctionService } from './services/auction.service';
 import { AuctionGateway } from './gateways/auction.gateway';
 import { CatalogModule } from '../catalog/catalog.module';
 import { AdminModule } from '../admin/admin.module';
-import { CommerceModule } from '../commerce/commerce.module';
+import { OrdersModule } from '../orders/orders.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
 import { UsersModule } from '../users/users.module';
 import { AuctionLifecycleService } from './services/auction-lifecycle.service';
@@ -28,7 +28,7 @@ import { AuctionSecondChanceHelper } from './services/auction-second-chance.help
   imports: [
     PrismaModule,
     CatalogModule,
-    CommerceModule,
+    OrdersModule,
     ChatModule,
     FulfillmentModule,
     AdminModule,
