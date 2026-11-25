@@ -89,8 +89,14 @@ jobs:
       - name: Typecheck frontend tests
         run: npm run typecheck:test --workspace=nexus-frontend
 
+      - name: Typecheck database seeds
+        run: npm run typecheck:seeds --workspace=nexus-backend
+
       - name: Deploy Prisma migrations for integration tests
         run: npm run prisma:deploy --workspace=nexus-backend
+
+      - name: Bootstrap system rows
+        run: npm run db:bootstrap
 
       - name: Verify database CHECK constraints and partial indexes
         run: npm run db:verify

@@ -55,7 +55,11 @@
     "docker:down": "docker compose --profile full down",
     "docker:clean": "docker compose --profile full down -v",
     "docker:logs": "docker compose logs -f",
-    "db:verify": "npm run db:verify --workspace=backend"
+    "db:verify": "npm run db:verify --workspace=backend",
+    "db:bootstrap": "npm run db:bootstrap --workspace=backend",
+    "admin:create": "npm run admin:create --workspace=backend",
+    "seed:demo": "npm run seed:demo --workspace=backend",
+    "seed:demo:reset": "npm run seed:demo:reset --workspace=backend"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
