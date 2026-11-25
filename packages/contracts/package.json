@@ -1,0 +1,58 @@
+{
+  "name": "@nexus/contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Zod 4 contracts, envelopes, events, and NestJS 12 Standard Schema decorators for Project Nexus",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "nest": [
+        "./dist/esm/nest/index.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/esm/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./nest": {
+      "types": "./dist/esm/nest/index.d.ts",
+      "import": "./dist/esm/nest/index.js",
+      "require": "./dist/cjs/nest/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.cjs.json && node --input-type=commonjs -e \"const fs=require('fs');fs.writeFileSync('dist/esm/package.json',JSON.stringify({type:'module'},null,2)+'\\n');fs.writeFileSync('dist/cjs/package.json',JSON.stringify({type:'commonjs'},null,2)+'\\n');\"",
+    "dev": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.cjs.json --noEmit",
+    "lint": "eslint .",
+    "clean": "node --input-type=commonjs -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^12.0.0",
+    "@standard-schema/spec": "^1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@nestjs/common": {
+      "optional": true
+    },
+    "@standard-schema/spec": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@nestjs/common": "^12.1.2",
+    "@nexus/config": "*",
+    "@standard-schema/spec": "^1.1.0",
+    "typescript": "^5.9.3"
+  }
+}

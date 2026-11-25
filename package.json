@@ -32,6 +32,7 @@
     "i18n:check": "node frontend/scripts/check-i18n-parity.mjs",
     "test:coverage": "npm run test:coverage --workspace=backend --if-present && npm run test:coverage --workspace=frontend --if-present",
     "build:types": "npm run build --workspace=@nexus/types --if-present",
+    "build:contracts": "npm run build --workspace=@nexus/contracts",
     "dev:backend": "npm run start:dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:web": "npm run dev:frontend",
