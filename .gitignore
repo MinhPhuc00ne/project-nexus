@@ -28,8 +28,14 @@ coverage/
 .nyc_output/
 *.lcov
 test-results/
+e2e/report/
+playwright-report/
+docs/build/
+docs/.docusaurus/
+/frontend/test/
 
 .cache/
+.npm-cache/
 .turbo/
 .eslintcache
 .prettiercache
@@ -58,7 +64,9 @@ Desktop.ini
 postgres_data/
 redis_data/
 rabbitmq_data/
-data/
+/data/
+uploads/
+backend/uploads/
 
 *.blend1
 *.blend@
@@ -67,4 +75,6 @@ data/
 .agents/
 skills-lock.json
 
-.husky/
+.husky/_/
+ngrok.exe
+.ngrok*

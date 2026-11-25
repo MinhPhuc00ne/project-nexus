@@ -6,6 +6,7 @@ export interface ApiResponse<T> {
   data: T;
   timestamp: string;
   traceId?: string;
+  errors?: unknown;
 }
 
 export interface PaginatedResponse<T> {
@@ -24,6 +25,8 @@ export interface UserSummaryDto {
   walletBalance: number;
   reputationScore: number;
   isSellerActive: boolean;
+  isShopSuspended?: boolean;
+  suspensionReason?: string | null;
 }
 
 export interface ProductSummaryDto {
@@ -47,8 +50,12 @@ export interface AuctionSummaryDto {
   bidIncrement: number;
   status: AuctionStatus;
   startTime: string;
+  consignmentDeadline?: string | null;
+  isConsignmentLocked?: boolean;
+  consignmentLockedAt?: string | null;
   endTime: string;
   threeModelKey?: string | null;
+  imageUrl?: string | null;
   totalBidsCount: number;
 }
 
@@ -77,4 +84,21 @@ export interface DisputeSummaryDto {
   reason: string;
   status: DisputeStatus;
   createdAt: string;
+}
+
+export interface WishlistItemDto {
+  id: string;
+  wishlistId: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  img: string;
+  shopName: string;
+  category?: string;
+  inStock: boolean;
+  addedAt: string;
+}
+
+export interface WishlistSyncDto {
+  productIds: string[];
 }

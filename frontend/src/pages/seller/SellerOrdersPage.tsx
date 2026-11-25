@@ -1,0 +1,278 @@
+import { useCallback, useState, type FormEvent, type ReactElement } from 'react';
+import { Link } from 'react-router-dom';
+import { RefreshCw as ReloadOutlined } from 'lucide-react';
+import { Search as SearchOutlined } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../../contexts/AuthContext';
+import { getSellerOrders } from '../../services/sellerOrders';
+import type { SellerOrderStatus } from '../../types/order.types';
+import useProductResource from '../../components/productDetail/useProductResource';
+import { useSellerSession } from '../../components/seller/SellerSession';
+import {
+  Badge,
+  EmptyState,
+  PageHeading,
+  Panel,
+  SellerButton,
+  SellerLink,
+} from '../../components/seller/SellerUI';
+import SellerResourceState from '../../components/seller/SellerResourceState';
+import SellerOrderActions from '../../components/seller/SellerOrderActions';
+import SellerPagination from '../../components/seller/SellerPagination';
+import {
+  getSellerOrderLabel,
+  sellerOrderLabelKeys,
+} from '../../components/seller/orderPresentation';
+import { financeDate, financeMoney } from '../../components/seller/financeFormat';
+
+export default function SellerOrdersPage(): ReactElement {
+  const user = useSellerSession();
+  const { token } = useAuth();
+  return <OrdersWorkspace key={`${user.id}:${token}`} />;
+}
+function OrdersWorkspace(): ReactElement {
+  const { t } = useTranslation('seller');
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState<SellerOrderStatus | ''>('');
+  const [search, setSearch] = useState('');
+  const [draftSearch, setDraftSearch] = useState('');
+  const [revision, setRevision] = useState(0);
+  const refresh = (): void => setRevision((value) => value + 1);
+  const load = useCallback(() => {
+    void revision;
+    return getSellerOrders({ page, limit: 10, status: status || undefined, search });
+  }, [page, status, search, revision]);
+  const resource = useProductResource(load);
+  function submit(event: FormEvent): void {
+    event.preventDefault();
+    setPage(1);
+    setSearch(draftSearch.trim());
+  }
+  return (
+    <div className="space-y-5">
+      <PageHeading
+        title={t('orders.pageTitle')}
+        description={t('orders.pageDesc')}
+        actions={
+          <>
+            <SellerLink secondary to="/seller/shipping">
+              {t('orders.calcShipping')}
+            </SellerLink>
+            <SellerButton secondary onClick={refresh} disabled={resource.loading}>
+              <ReloadOutlined />
+              {t('orders.refresh')}
+            </SellerButton>
+          </>
+        }
+      />
+      <Panel title={t('orders.panelTitle')} subtitle={t('orders.panelSubtitle')}>
+        <form onSubmit={submit} className="mb-5 flex flex-wrap gap-3">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5">
+            <SearchOutlined className="text-slate-400" />
+            <input
+              className="min-w-0 flex-1 text-sm outline-none"
+              aria-label={t('orders.searchAria')}
+              placeholder={t('orders.searchPlaceholder')}
+              maxLength={150}
+              value={draftSearch}
+              onChange={(e) => setDraftSearch(e.target.value)}
+            />
+          </label>
+          <select
+            aria-label={t('orders.statusAria')}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs"
+            value={status}
+            onChange={(e) => {
+              setStatus(e.target.value as SellerOrderStatus | '');
+              setPage(1);
+            }}
+          >
+            <option value="">{t('orders.allStatuses')}</option>
+            {Object.entries(sellerOrderLabelKeys).map(([key, labelKey]) => (
+              <option value={key} key={key}>
+                {t(labelKey)}
+              </option>
+            ))}
+          </select>
+          <SellerButton type="submit">{t('orders.searchBtn')}</SellerButton>
+        </form>
+        <SellerResourceState
+          loading={resource.loading}
+          error={resource.error}
+          retry={resource.retry}
+        >
+          {resource.data && (
+            <>
+              <div className="mb-5 flex flex-wrap gap-2 text-xs">
+                {[
+                  {
+                    key: '' as const,
+                    label: t('orders.tabs.all'),
+                    count: resource.data.counters.all,
+                  },
+                  {
+                    key: 'PAID' as const,
+                    label: t('orders.tabs.paid'),
+                    count: resource.data.counters.paid,
+                  },
+                  {
+                    key: 'PREPARING' as const,
+                    label: t('orders.tabs.preparing'),
+                    count: resource.data.counters.preparing,
+                  },
+                  {
+                    key: 'SHIPPING' as const,
+                    label: t('orders.tabs.shipping'),
+                    count: resource.data.counters.shipping,
+                  },
+                  {
+                    key: 'DELIVERED' as const,
+                    label: t('orders.tabs.delivered'),
+                    count: resource.data.counters.delivered,
+                  },
+                  {
+                    key: 'CONFIRMED' as const,
+                    label: t('orders.tabs.confirmed'),
+                    count: resource.data.counters.confirmed,
+                  },
+                  {
+                    key: 'CANCELLED' as const,
+                    label: t('orders.tabs.cancelled'),
+                    count: resource.data.counters.cancelled,
+                  },
+                ].map((tab) => {
+                  const isActive = status === tab.key;
+                  return (
+                    <button
+                      type="button"
+                      key={tab.label}
+                      onClick={() => {
+                        setStatus(tab.key);
+                        setPage(1);
+                      }}
+                      className={`cursor-pointer rounded-lg px-3 py-2 transition-colors ${
+                        isActive
+                          ? 'bg-blue-600 font-semibold text-white shadow-sm'
+                          : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
+                      }`}
+                    >
+                      {tab.label}: <b>{tab.count}</b>
+                    </button>
+                  );
+                })}
+              </div>
+              {resource.data.items.length ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px] text-left text-xs">
+                    <thead className="border-y border-blue-100 bg-blue-50/60 text-slate-500">
+                      <tr>
+                        {[
+                          t('orders.cols.orderBuyer'),
+                          t('orders.cols.products'),
+                          t('orders.cols.payment'),
+                          t('orders.cols.status'),
+                          t('orders.cols.actions'),
+                        ].map((label) => (
+                          <th key={label} className="px-3 py-3 font-medium">
+                            {label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {resource.data.items.map((order) => (
+                        <tr key={order.id} className="align-top hover:bg-blue-50/30">
+                          <td className="px-3 py-4">
+                            <Link
+                              className="font-semibold text-blue-700"
+                              to={`/seller/orders/${order.id}`}
+                            >
+                              #{order.id.slice(0, 8)}
+                            </Link>
+                            <p className="mt-2 font-medium">{order.buyer.fullName}</p>
+                            <p className="mt-1 text-slate-500">
+                              {order.buyer.phoneNumber || t('orders.noPhone')}
+                            </p>
+                            <small className="mt-2 block text-slate-400">
+                              {financeDate(order.createdAt)}
+                            </small>
+                          </td>
+                          <td className="max-w-[240px] px-3 py-4">
+                            <ul className="space-y-2">
+                              {order.items.map((item) => (
+                                <li key={item.id} className="flex items-center gap-2">
+                                  {item.thumbnail && (
+                                    <img
+                                      className="size-10 shrink-0 rounded object-contain"
+                                      src={item.thumbnail}
+                                      alt=""
+                                    />
+                                  )}
+                                  <span className="break-words leading-5">
+                                    {item.title} × {item.quantity}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                            {!order.items.length && (
+                              <span className="text-slate-500">{t('orders.noProducts')}</span>
+                            )}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-4 font-semibold text-blue-700">
+                            {financeMoney(order.totalAmount)}
+                          </td>
+                          <td className="px-3 py-4">
+                            <Badge
+                              tone={
+                                order.status === 'CANCELLED' || order.status === 'REFUNDED'
+                                  ? 'gray'
+                                  : order.status === 'PAID' || order.status === 'PREPARING'
+                                    ? 'amber'
+                                    : order.status === 'DELIVERED' || order.status === 'CONFIRMED'
+                                      ? 'green'
+                                      : 'blue'
+                              }
+                            >
+                              {getSellerOrderLabel(order.status)}
+                            </Badge>
+                            {order.shipment?.waybillCode && (
+                              <p className="mt-2 break-all text-slate-500">
+                                {t('orders.waybillOnOrder', { code: order.shipment.waybillCode })}
+                              </p>
+                            )}
+                          </td>
+                          <td className="min-w-[180px] px-3 py-4">
+                            <SellerOrderActions
+                              id={order.id}
+                              status={order.status}
+                              hasShipment={Boolean(order.shipment?.waybillCode)}
+                              onChanged={refresh}
+                            />
+                            <Link
+                              className="mt-3 inline-block text-blue-600 hover:underline"
+                              to={`/seller/orders/${order.id}`}
+                            >
+                              {t('orders.viewDetail')}
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <EmptyState title={t('orders.emptyTitle')} description={t('orders.emptyDesc')} />
+              )}
+              <SellerPagination
+                page={resource.data.page}
+                total={resource.data.total}
+                totalPages={resource.data.totalPages}
+                onPage={setPage}
+              />
+            </>
+          )}
+        </SellerResourceState>
+      </Panel>
+    </div>
+  );
+}

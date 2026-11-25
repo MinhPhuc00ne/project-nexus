@@ -1,0 +1,37 @@
+name: Bug Report
+description: Report a reproducible bug in Project Nexus
+title: '[Bug]: '
+labels: ['bug']
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      options:
+        - Backend API
+        - Frontend Web
+        - Real-time Auctions / Socket.IO
+        - Payments / Escrow / GHN
+        - Documentation
+        - Docker / CI
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Describe what happened and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction Steps
+      description: List the exact steps to reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or Error Output
+      render: shell
