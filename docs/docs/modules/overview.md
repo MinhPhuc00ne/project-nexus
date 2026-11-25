@@ -82,7 +82,7 @@ title: 10 Backend Modules and AI Chatbot
 
 ## 9. `admin` — Platform Governance and Oversight
 
-- Controllers: `AdminController`, `AdminOrdersController`, `AdminReputationController`, `BackofficeDisputesController`
+- Controllers: `AdminStaffController`, `AdminUsersController`, `AdminProductsController`, `AdminCategoriesController`, `AdminShopsController`, `AdminFinanceController`, `AdminPlatformController`, `AdminOrdersController`, `AdminReputationController`, `BackofficeDisputesController`
 - Services: `AdminService`, `AdminUsersService`, `AdminShopsService`, `AdminProductsService`, `AdminOrdersService`, `AdminDisputesService`, `AdminFinanceService`, `AdminSettingsService`
 - Core Capabilities: User governance and locking, Seller approvals, Shop warnings, suspensions, and appeals (`ShopActionLog`, `ShopViolation`), withdrawal approvals, dispute and refund reconciliation, and platform settings.
 

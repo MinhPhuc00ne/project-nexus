@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TreasuryModule } from '../treasury/treasury.module';
-import { AdminController } from './controllers/admin.controller';
+import { AdminStaffController } from './controllers/admin-staff.controller';
+import { AdminUsersController } from './controllers/admin-users.controller';
+import { AdminProductsController } from './controllers/admin-products.controller';
+import { AdminCategoriesController } from './controllers/admin-categories.controller';
+import { AdminShopsController } from './controllers/admin-shops.controller';
+import { AdminFinanceController } from './controllers/admin-finance.controller';
+import { AdminPlatformController } from './controllers/admin-platform.controller';
 import { BackofficeDisputesController } from './controllers/backoffice-disputes.controller';
 import { AdminService } from './services/admin.service';
 import { AdminUsersService } from './services/admin-users.service';
@@ -20,7 +26,13 @@ import { AdminShopsModerationHelper } from './services/admin-shops-moderation.he
 @Module({
   imports: [TreasuryModule, AuthModule, CatalogModule, ReputationModule],
   controllers: [
-    AdminController,
+    AdminStaffController,
+    AdminUsersController,
+    AdminProductsController,
+    AdminCategoriesController,
+    AdminShopsController,
+    AdminFinanceController,
+    AdminPlatformController,
     BackofficeDisputesController,
     AdminOrdersController,
     AdminReputationController,

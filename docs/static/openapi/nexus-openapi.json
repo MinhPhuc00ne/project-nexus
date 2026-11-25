@@ -2041,7 +2041,7 @@
     "/api/v1/admin/staff": {
       "post": {
         "description": "Provisions a corporate staff account and sends a random temporary password to their personal email address.",
-        "operationId": "AdminController_createStaff",
+        "operationId": "AdminStaffController_createStaff",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2073,7 +2073,7 @@
         "tags": ["5. ADMIN"]
       },
       "get": {
-        "operationId": "AdminController_listStaff",
+        "operationId": "AdminStaffController_listStaff",
         "parameters": [
           {
             "name": "search",
@@ -2123,7 +2123,7 @@
     "/api/v1/admin/staff/invite": {
       "post": {
         "description": "Creates a staff account and dispatches credentials to personal email. Does not expose the password in the response.",
-        "operationId": "AdminController_inviteStaff",
+        "operationId": "AdminStaffController_inviteStaff",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -2152,7 +2152,7 @@
     "/api/v1/admin/seller-requests": {
       "get": {
         "description": "Supports filtering by PENDING, APPROVED, or REJECTED status with pagination.",
-        "operationId": "AdminController_getSellerRequests",
+        "operationId": "AdminUsersController_getSellerRequests",
         "parameters": [
           {
             "name": "status",
@@ -2201,7 +2201,7 @@
     },
     "/api/v1/admin/seller-requests/{id}": {
       "get": {
-        "operationId": "AdminController_getSellerRequestById",
+        "operationId": "AdminUsersController_getSellerRequestById",
         "parameters": [
           {
             "name": "id",
@@ -2232,7 +2232,7 @@
     "/api/v1/admin/seller-requests/{id}/approve": {
       "patch": {
         "description": "Updates request status to APPROVED, grants SELLER role to the account, and enables seller mode.",
-        "operationId": "AdminController_approveSellerRequest",
+        "operationId": "AdminUsersController_approveSellerRequest",
         "parameters": [
           {
             "name": "id",
@@ -2266,7 +2266,7 @@
     "/api/v1/admin/seller-requests/{id}/reject": {
       "patch": {
         "description": "Updates request status to REJECTED with rejection reasons and notifies the applicant.",
-        "operationId": "AdminController_rejectSellerRequest",
+        "operationId": "AdminUsersController_rejectSellerRequest",
         "parameters": [
           {
             "name": "id",
@@ -2310,7 +2310,7 @@
     "/api/v1/admin/users": {
       "get": {
         "description": "Retrieves platform accounts excluding guests. Supports role filtering, lock status filtering, and keyword search.",
-        "operationId": "AdminController_listUsers",
+        "operationId": "AdminUsersController_listUsers",
         "parameters": [
           {
             "name": "search",
@@ -2382,7 +2382,7 @@
     "/api/v1/admin/users/{id}": {
       "get": {
         "description": "Retrieves user profile, wallet balances, registered addresses, and historical order metrics.",
-        "operationId": "AdminController_getUserById",
+        "operationId": "AdminUsersController_getUserById",
         "parameters": [
           {
             "name": "id",
@@ -2413,7 +2413,7 @@
     "/api/v1/admin/users/{id}/lock": {
       "patch": {
         "description": "Sets user trust level to SUSPENDED and revokes all refresh tokens to terminate active sessions.",
-        "operationId": "AdminController_lockUser",
+        "operationId": "AdminUsersController_lockUser",
         "parameters": [
           {
             "name": "id",
@@ -2457,7 +2457,7 @@
     "/api/v1/admin/users/{id}/unlock": {
       "patch": {
         "description": "Restores user trust level to standard standing based on reputation score.",
-        "operationId": "AdminController_unlockUser",
+        "operationId": "AdminUsersController_unlockUser",
         "parameters": [
           {
             "name": "id",
@@ -2501,7 +2501,7 @@
     "/api/v1/admin/users/{id}/status": {
       "patch": {
         "description": "Toggles account lock status using the isLocked boolean field.",
-        "operationId": "AdminController_updateUserStatus",
+        "operationId": "AdminUsersController_updateUserStatus",
         "parameters": [
           {
             "name": "id",
@@ -2539,7 +2539,7 @@
     "/api/v1/admin/users/{id}/role": {
       "patch": {
         "description": "Assigns any platform role (BUYER, SELLER, SUPPORT_STAFF, ADMIN) to a user account.",
-        "operationId": "AdminController_updateUserRole",
+        "operationId": "AdminUsersController_updateUserRole",
         "parameters": [
           {
             "name": "id",
@@ -2583,7 +2583,7 @@
     "/api/v1/admin/products": {
       "get": {
         "description": "Supports keyword search, status filtering (ACTIVE, INACTIVE, DRAFT), seller filtering, and category pagination.",
-        "operationId": "AdminController_listProducts",
+        "operationId": "AdminProductsController_listProducts",
         "parameters": [
           {
             "name": "page",
@@ -2661,7 +2661,7 @@
     "/api/v1/admin/products/trending": {
       "get": {
         "description": "Returns active products ranked by purchase count. Admin can only view and remove products from trending.",
-        "operationId": "AdminController_listTrendingProducts",
+        "operationId": "AdminProductsController_listTrendingProducts",
         "parameters": [
           {
             "name": "limit",
@@ -2688,7 +2688,7 @@
     },
     "/api/v1/admin/products/{id}": {
       "get": {
-        "operationId": "AdminController_getProductById",
+        "operationId": "AdminProductsController_getProductById",
         "parameters": [
           {
             "name": "id",
@@ -2717,7 +2717,7 @@
       },
       "delete": {
         "description": "Permanently deletes product if no orders exist, or deactivates it to retain historical order integrity.",
-        "operationId": "AdminController_deleteProduct",
+        "operationId": "AdminProductsController_deleteProduct",
         "parameters": [
           {
             "name": "id",
@@ -2748,7 +2748,7 @@
     "/api/v1/admin/products/{id}/status": {
       "patch": {
         "description": "Updates product status to ACTIVE (approved for sale) or INACTIVE (hidden due to policy violations).",
-        "operationId": "AdminController_updateProductStatus",
+        "operationId": "AdminProductsController_updateProductStatus",
         "parameters": [
           {
             "name": "id",
@@ -2789,7 +2789,7 @@
     "/api/v1/admin/products/{id}/category": {
       "patch": {
         "description": "Allows Admin to reassign a product to a newly created or more appropriate catalog category and notifies the seller.",
-        "operationId": "AdminController_updateProductCategory",
+        "operationId": "AdminProductsController_updateProductCategory",
         "parameters": [
           {
             "name": "id",
@@ -2830,7 +2830,7 @@
     "/api/v1/admin/products/{id}/trending": {
       "delete": {
         "description": "Excludes a product from the HomePage trending list and notifies the seller. Admin cannot manually add products to trending.",
-        "operationId": "AdminController_removeProductFromTrending",
+        "operationId": "AdminProductsController_removeProductFromTrending",
         "parameters": [
           {
             "name": "id",
@@ -2868,10 +2868,121 @@
         "tags": ["5. ADMIN"]
       }
     },
+    "/api/v1/admin/categories": {
+      "post": {
+        "description": "Creates root level categories or nested subcategories up to three tiers deep using parentId.",
+        "operationId": "AdminCategoriesController_createCategory",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Category created successfully"
+          },
+          "400": {
+            "description": "Exceeds maximum taxonomy depth or invalid input"
+          },
+          "409": {
+            "description": "Category name already exists"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create product catalog category",
+        "tags": ["5. ADMIN"]
+      }
+    },
+    "/api/v1/admin/categories/{id}": {
+      "patch": {
+        "description": "Updates category name, slug, or moves category to a new parent node.",
+        "operationId": "AdminCategoriesController_updateCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Category updated successfully"
+          },
+          "400": {
+            "description": "Circular hierarchy detected or taxonomy depth exceeded"
+          },
+          "404": {
+            "description": "Category not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update catalog category attributes and hierarchy",
+        "tags": ["5. ADMIN"]
+      },
+      "delete": {
+        "description": "Removes empty categories that possess no child categories and no associated products.",
+        "operationId": "AdminCategoriesController_deleteCategory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category deleted successfully"
+          },
+          "400": {
+            "description": "Category contains active child categories or linked products"
+          },
+          "404": {
+            "description": "Category not found"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete catalog category",
+        "tags": ["5. ADMIN"]
+      }
+    },
     "/api/v1/admin/shops": {
       "get": {
         "description": "Filters shops by status (ACTIVE or SUSPENDED), geographical location, or keyword search.",
-        "operationId": "AdminController_listShops",
+        "operationId": "AdminShopsController_listShops",
         "parameters": [
           {
             "name": "page",
@@ -2941,7 +3052,7 @@
     "/api/v1/admin/shops/{id}/status": {
       "patch": {
         "description": "Suspends selling capabilities and hides catalog items while retaining buyer capabilities on the account.",
-        "operationId": "AdminController_updateShopStatus",
+        "operationId": "AdminShopsController_updateShopStatus",
         "parameters": [
           {
             "name": "id",
@@ -2982,7 +3093,7 @@
     "/api/v1/admin/shops/{id}": {
       "get": {
         "description": "Returns shop identity, inventory breakdown, violation record, and administrative action logs.",
-        "operationId": "AdminController_getShopDetail",
+        "operationId": "AdminShopsController_getShopDetail",
         "parameters": [
           {
             "name": "id",
@@ -3013,7 +3124,7 @@
     "/api/v1/admin/shops/{id}/orders": {
       "get": {
         "description": "Supports pagination and filtering across order fulfillment statuses.",
-        "operationId": "AdminController_getShopOrders",
+        "operationId": "AdminShopsController_getShopOrders",
         "parameters": [
           {
             "name": "id",
@@ -3065,7 +3176,7 @@
     "/api/v1/admin/shops/{id}/warn": {
       "post": {
         "description": "Records an administrative warning, notifies the seller, and optionally deducts reputation points.",
-        "operationId": "AdminController_warnShop",
+        "operationId": "AdminShopsController_warnShop",
         "parameters": [
           {
             "name": "id",
@@ -3106,7 +3217,7 @@
     "/api/v1/admin/shops/{id}/resolve-appeal": {
       "post": {
         "description": "Accepts an appeal from a suspended or penalized store, restores normalized reputation score, reactivates listing catalog, and dispatches in-app confirmation notification.",
-        "operationId": "AdminController_resolveShopAppeal",
+        "operationId": "AdminShopsController_resolveShopAppeal",
         "parameters": [
           {
             "name": "id",
@@ -3147,7 +3258,7 @@
     "/api/v1/admin/shops/{id}/violations": {
       "post": {
         "description": "Documents shop violations, evidence references, penalty levels, and resolution remarks.",
-        "operationId": "AdminController_createShopViolation",
+        "operationId": "AdminShopsController_createShopViolation",
         "parameters": [
           {
             "name": "id",
@@ -3185,7 +3296,7 @@
         "tags": ["5. ADMIN"]
       },
       "get": {
-        "operationId": "AdminController_getShopViolations",
+        "operationId": "AdminShopsController_getShopViolations",
         "parameters": [
           {
             "name": "id",
@@ -3212,7 +3323,7 @@
     },
     "/api/v1/admin/shops/{id}/action-logs": {
       "get": {
-        "operationId": "AdminController_getShopActionLogs",
+        "operationId": "AdminShopsController_getShopActionLogs",
         "parameters": [
           {
             "name": "id",
@@ -3240,7 +3351,7 @@
     "/api/v1/admin/withdrawals": {
       "get": {
         "description": "Filters withdrawal applications by status (PENDING, APPROVED, REJECTED, COMPLETED) with pagination.",
-        "operationId": "AdminController_listWithdrawals",
+        "operationId": "AdminFinanceController_listWithdrawals",
         "parameters": [
           {
             "name": "status",
@@ -3284,7 +3395,7 @@
     "/api/v1/admin/withdrawals/{id}/review": {
       "patch": {
         "description": "Releases locked funds back to wallet on rejection, or deducts locked balance upon approval.",
-        "operationId": "AdminController_reviewWithdrawal",
+        "operationId": "AdminFinanceController_reviewWithdrawal",
         "parameters": [
           {
             "name": "id",
@@ -3325,97 +3436,10 @@
         "tags": ["5. ADMIN"]
       }
     },
-    "/api/v1/admin/disputes": {
-      "get": {
-        "description": "Supports status filters, keyword search on order or user identifiers, and returns aggregated status counters.",
-        "operationId": "AdminController_listDisputes",
-        "parameters": [
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "description": "Trang hiện tại (bắt đầu từ 1)",
-            "schema": {
-              "default": 1,
-              "example": 1,
-              "type": "number"
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "description": "Số lượng bản ghi trên mỗi trang (tối đa 100)",
-            "schema": {
-              "default": 10,
-              "example": 10,
-              "type": "number"
-            }
-          },
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "description": "Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "OPEN",
-                "UNDER_REVIEW",
-                "RESOLVED_SELLER_FAVOR",
-                "RESOLVED_BUYER_FAVOR",
-                "CANCELLED"
-              ]
-            }
-          },
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "description": "Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan",
-            "schema": {
-              "example": "o1",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Disputes retrieved successfully"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "List pending and historical order disputes across the platform",
-        "tags": ["5. ADMIN"]
-      }
-    },
-    "/api/v1/admin/analytics/overview": {
-      "get": {
-        "description": "Aggregates platform fee revenue trend periods (7d, 30d, month, year) split into normal orders vs 3D auctions, revenue composition breakdown by source and category, and hourly bid frequency distribution for live dashboard charts.",
-        "operationId": "AdminController_getDashboardAnalytics",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Dashboard overview analytics retrieved successfully"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[Admin] Get operational analytics for dashboard overview charts",
-        "tags": ["5. ADMIN"]
-      }
-    },
     "/api/v1/admin/finance/analytics": {
       "get": {
         "description": "Alternative endpoint providing platform fee trend periods, revenue composition items, and hourly bid frequency metrics for financial reporting.",
-        "operationId": "AdminController_getFinanceAnalytics",
+        "operationId": "AdminFinanceController_getFinanceAnalytics",
         "parameters": [],
         "responses": {
           "200": {
@@ -3434,7 +3458,7 @@
     "/api/v1/admin/wallet": {
       "get": {
         "description": "Returns current operational balance, collected platform transaction commissions, and cumulative manual deposits.",
-        "operationId": "AdminController_getAdminWallet",
+        "operationId": "AdminFinanceController_getAdminWallet",
         "parameters": [],
         "responses": {
           "200": {
@@ -3460,7 +3484,7 @@
     "/api/v1/admin/wallet/transactions": {
       "get": {
         "description": "Details escrow hold transactions, shop disbursements, carrier postage debits, and platform commission earnings.",
-        "operationId": "AdminController_getAdminWalletTransactions",
+        "operationId": "AdminFinanceController_getAdminWalletTransactions",
         "parameters": [
           {
             "name": "page",
@@ -3560,7 +3584,7 @@
     "/api/v1/admin/wallet/user-transactions": {
       "get": {
         "description": "Queries wallet transaction history across Buyer and Seller accounts with filters for type (DEPOSIT, WITHDRAW...), status, role, userId, date range, and keyword search.",
-        "operationId": "AdminController_getPlatformUserWalletTransactions",
+        "operationId": "AdminFinanceController_getPlatformUserWalletTransactions",
         "parameters": [
           {
             "name": "page",
@@ -3682,7 +3706,7 @@
     "/api/v1/admin/wallet/deposit": {
       "post": {
         "description": "Allows administrators to inject operational working capital into the platform wallet with audit transaction records.",
-        "operationId": "AdminController_depositAdminWallet",
+        "operationId": "AdminFinanceController_depositAdminWallet",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3711,10 +3735,97 @@
         "tags": ["5. ADMIN"]
       }
     },
+    "/api/v1/admin/disputes": {
+      "get": {
+        "description": "Supports status filters, keyword search on order or user identifiers, and returns aggregated status counters.",
+        "operationId": "AdminPlatformController_listDisputes",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "Trang hiện tại (bắt đầu từ 1)",
+            "schema": {
+              "default": 1,
+              "example": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Số lượng bản ghi trên mỗi trang (tối đa 100)",
+            "schema": {
+              "default": 10,
+              "example": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo trạng thái khiếu nại (OPEN, UNDER_REVIEW, RESOLVED_SELLER_FAVOR, RESOLVED_BUYER_FAVOR, CANCELLED)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "UNDER_REVIEW",
+                "RESOLVED_SELLER_FAVOR",
+                "RESOLVED_BUYER_FAVOR",
+                "CANCELLED"
+              ]
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Tìm kiếm theo mã khiếu nại (id), mã đơn hàng (orderId), lý do hoặc thông tin người liên quan",
+            "schema": {
+              "example": "o1",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Disputes retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "List pending and historical order disputes across the platform",
+        "tags": ["5. ADMIN"]
+      }
+    },
+    "/api/v1/admin/analytics/overview": {
+      "get": {
+        "description": "Aggregates platform fee revenue trend periods (7d, 30d, month, year) split into normal orders vs 3D auctions, revenue composition breakdown by source and category, and hourly bid frequency distribution for live dashboard charts.",
+        "operationId": "AdminPlatformController_getDashboardAnalytics",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Dashboard overview analytics retrieved successfully"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[Admin] Get operational analytics for dashboard overview charts",
+        "tags": ["5. ADMIN"]
+      }
+    },
     "/api/v1/admin/settings": {
       "get": {
         "description": "Queries runtime configuration values including commission percentage rates, checkout reservation limits, and catalog bounds.",
-        "operationId": "AdminController_getSettings",
+        "operationId": "AdminPlatformController_getSettings",
         "parameters": [],
         "responses": {
           "200": {
@@ -3731,7 +3842,7 @@
       },
       "patch": {
         "description": "Modifies platform fee percentages, cart retention lifespans, and checkout hold limits without application redeployment.",
-        "operationId": "AdminController_updateSettings",
+        "operationId": "AdminPlatformController_updateSettings",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3754,117 +3865,6 @@
           }
         ],
         "summary": "Update platform runtime configuration parameters",
-        "tags": ["5. ADMIN"]
-      }
-    },
-    "/api/v1/admin/categories": {
-      "post": {
-        "description": "Creates root level categories or nested subcategories up to three tiers deep using parentId.",
-        "operationId": "AdminController_createCategory",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCategoryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Category created successfully"
-          },
-          "400": {
-            "description": "Exceeds maximum taxonomy depth or invalid input"
-          },
-          "409": {
-            "description": "Category name already exists"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Create product catalog category",
-        "tags": ["5. ADMIN"]
-      }
-    },
-    "/api/v1/admin/categories/{id}": {
-      "patch": {
-        "description": "Updates category name, slug, or moves category to a new parent node.",
-        "operationId": "AdminController_updateCategory",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateCategoryDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Category updated successfully"
-          },
-          "400": {
-            "description": "Circular hierarchy detected or taxonomy depth exceeded"
-          },
-          "404": {
-            "description": "Category not found"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Update catalog category attributes and hierarchy",
-        "tags": ["5. ADMIN"]
-      },
-      "delete": {
-        "description": "Removes empty categories that possess no child categories and no associated products.",
-        "operationId": "AdminController_deleteCategory",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Category deleted successfully"
-          },
-          "400": {
-            "description": "Category contains active child categories or linked products"
-          },
-          "404": {
-            "description": "Category not found"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Delete catalog category",
         "tags": ["5. ADMIN"]
       }
     },
@@ -11581,6 +11581,47 @@
           }
         }
       },
+      "CreateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Laptop & Máy tính xách tay",
+            "description": "Tên danh mục hàng hóa"
+          },
+          "slug": {
+            "type": "string",
+            "example": "laptop-may-tinh-xach-tay",
+            "description": "Đường dẫn định danh slug (nếu để trống hệ thống sẽ tự sinh từ tên)"
+          },
+          "parentId": {
+            "type": "object",
+            "example": "cat-parent-uuid-123",
+            "description": "ID của danh mục cha (để trống nếu là danh mục gốc cấp 1)"
+          }
+        },
+        "required": ["name"]
+      },
+      "UpdateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Laptop Gaming & Workstation",
+            "description": "Tên danh mục hàng hóa mới"
+          },
+          "slug": {
+            "type": "string",
+            "example": "laptop-gaming-workstation",
+            "description": "Đường dẫn định danh slug mới"
+          },
+          "parentId": {
+            "type": "object",
+            "example": "cat-parent-uuid-456",
+            "description": "ID của danh mục cha mới (truyền null nếu muốn đưa về danh mục gốc cấp 1)"
+          }
+        }
+      },
       "UpdateShopStatusDto": {
         "type": "object",
         "properties": {
@@ -12001,47 +12042,6 @@
             "type": "number",
             "example": 5,
             "description": "Số phút gia hạn cộng thêm khi chống bắn tỉa kích hoạt (phút)"
-          }
-        }
-      },
-      "CreateCategoryDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "example": "Laptop & Máy tính xách tay",
-            "description": "Tên danh mục hàng hóa"
-          },
-          "slug": {
-            "type": "string",
-            "example": "laptop-may-tinh-xach-tay",
-            "description": "Đường dẫn định danh slug (nếu để trống hệ thống sẽ tự sinh từ tên)"
-          },
-          "parentId": {
-            "type": "object",
-            "example": "cat-parent-uuid-123",
-            "description": "ID của danh mục cha (để trống nếu là danh mục gốc cấp 1)"
-          }
-        },
-        "required": ["name"]
-      },
-      "UpdateCategoryDto": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "example": "Laptop Gaming & Workstation",
-            "description": "Tên danh mục hàng hóa mới"
-          },
-          "slug": {
-            "type": "string",
-            "example": "laptop-gaming-workstation",
-            "description": "Đường dẫn định danh slug mới"
-          },
-          "parentId": {
-            "type": "object",
-            "example": "cat-parent-uuid-456",
-            "description": "ID của danh mục cha mới (truyền null nếu muốn đưa về danh mục gốc cấp 1)"
           }
         }
       },
