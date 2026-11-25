@@ -15,7 +15,7 @@ const { AdminOrdersController } = load(
 );
 const { QueryAdminOrdersDto } = load('../src/modules/admin/dtos/query-admin-orders.dto.ts');
 const { JwtAuthGuard } = load('../src/core/security/jwt-auth.guard.ts');
-const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
+const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
 const { ConfigService } = load('@nestjs/config');
 const { RolesGuard } = load('../src/core/security/roles.guard.ts');
@@ -203,20 +203,21 @@ test(
       controllers: [AdminOrdersController],
       providers: [
         { provide: AdminOrdersService, useValue: orders },
-        { provide: ConfigService, useValue: { get: () => 'admin-orders-test-secret' } },
         {
-          provide: PrismaService,
+          // The bearer value names the calling role, so the test states who it is
+          // calling as without signing a token.
+          provide: TokenAuthService,
           useValue: {
-            user: {
-              findUnique: async ({ where }) => ({
-                id: where.id,
-                role: where.id,
-                email: 'test@example.test',
-                isSellerActive: false,
-                isShopSuspended: false,
-                trustLevel: 'NORMAL',
-              }),
-            },
+            authenticate: async (token) => ({
+              id: token,
+              sub: token,
+              email: 'test@example.test',
+              role: token,
+              accountRole: token,
+              activeRole: token,
+              currentMode: 'BUYER',
+              isSellerActive: false,
+            }),
           },
         },
         JwtAuthGuard,
@@ -231,13 +232,7 @@ test(
       await app.listen(0, '127.0.0.1');
       const base = await app.getUrl();
       const auth = (role) => ({
-        authorization: `Bearer ${LightweightJwt.sign(
-          { sub: role, role: 'ADMIN' },
-          {
-            secret: 'admin-orders-test-secret',
-            expiresInSeconds: 60,
-          },
-        )}`,
+        authorization: `Bearer ${role}`,
       });
       assert.equal((await fetch(`${base}/admin/orders`)).status, 401);
       for (const role of ['BUYER', 'SELLER']) {

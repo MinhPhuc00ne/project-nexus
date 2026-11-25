@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, ProductStatus, ReputationTrustLevel, Role, User } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { generateStaffBaseEmail } from '../../auth/utils/staff-email.util';
 import { trustLevelFor } from '../../users/services/reputation-policy';
 import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
@@ -20,7 +21,10 @@ type UserWithWallet = User & {
 export class AdminUsersService {
   private readonly logger = new Logger(AdminUsersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tokenAuth: TokenAuthService,
+  ) {}
 
   /**
    * Retrieves paginated platform user accounts with role and status filtering.
@@ -186,6 +190,9 @@ export class AdminUsersService {
       where: { userId: targetUserId, isRevoked: false },
       data: { isRevoked: true },
     });
+    // A locked account must stop being served immediately, including on the
+    // access token it is holding and on its open WebSocket connections.
+    await this.tokenAuth.revokeAllSessions(targetUserId);
 
     this.logger.log(
       `Admin (${adminId}) đã khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
@@ -335,6 +342,8 @@ export class AdminUsersService {
       where: { userId: targetUserId, isRevoked: false },
       data: { isRevoked: true },
     });
+    // The new role is in the token claims, so the old token must not survive.
+    await this.tokenAuth.revokeAllSessions(targetUserId);
 
     this.logger.log(`Admin (${adminId}) đã chuyển vai trò của user ${user.email} sang ${dto.role}`);
 

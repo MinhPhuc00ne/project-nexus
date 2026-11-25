@@ -1,5 +1,4 @@
 import { Logger, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   ConnectedSocket,
   OnGatewayConnection,
@@ -20,7 +19,7 @@ import {
   subscribeNotificationRealtime,
   type RealtimeNotificationRecord,
 } from '../../../core/notifications/notification-realtime.bus';
-import { LightweightJwt } from '../../../core/security/jwt.util';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 import { NotificationsService } from '../services/notifications.service';
 
@@ -44,7 +43,7 @@ export class NotificationsGateway
   private unsubscribeBus: (() => void) | null = null;
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly tokenAuth: TokenAuthService,
     private readonly notificationsService: NotificationsService,
   ) {}
 
@@ -82,13 +81,10 @@ export class NotificationsGateway
         return;
       }
 
-      const secret = this.configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
-      if (!secret) {
-        throw new Error('JWT_SECRET is not configured');
-      }
-      const verifyResult = LightweightJwt.verify<AuthenticatedUserPayload>(rawToken, secret);
-
-      if (!verifyResult.valid || !verifyResult.payload) {
+      // A notification stream is personal, so the token must resolve to a usable
+      // account before the socket joins that account’s room.
+      const user = await this.tokenAuth.authenticateOptional(rawToken);
+      if (!user) {
         client.emit(WS_NOTIFICATION_EVENTS.SERVER.ERROR, {
           message: 'Invalid or expired JWT token.',
         });
@@ -96,14 +92,8 @@ export class NotificationsGateway
         return;
       }
 
-      const user = verifyResult.payload;
-      const userId = user.id || user.sub;
-      if (!userId) {
-        client.disconnect(true);
-        return;
-      }
-
-      client.data.user = { ...user, id: userId };
+      const userId = user.id;
+      client.data.user = user;
       await client.join(`user:${userId}`);
       if (user.role) {
         await client.join(`role:${user.role}`);

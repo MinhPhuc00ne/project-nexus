@@ -17,7 +17,19 @@ const { NestFactory } = load('@nestjs/core');
 const { ChatGateway } = load('../src/modules/chat/gateways/chat.gateway.ts');
 const { ChatService } = load('../src/modules/chat/services/chat.service.ts');
 const { StaffQueueService } = load('../src/modules/chat/services/staff-queue.service.ts');
-const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
+const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
+
+/**
+ * Stands in for TokenAuthService: the handshake token is read as the account id,
+ * so the realtime path is exercised without signing real tokens.
+ */
+const tokenAuthStub = {
+  authenticateOptional: async (token) => {
+    if (!token) return undefined;
+    const [id, role] = token.split('|');
+    return { id, sub: id, role };
+  },
+};
 const { TransformResponseInterceptor } = load(
   '../src/core/interceptors/transform-response.interceptor.ts',
 );
@@ -51,7 +63,7 @@ test(
             },
           },
         },
-        { provide: ConfigService, useValue: { get: () => 'chat-realtime-test-secret' } },
+        { provide: TokenAuthService, useValue: tokenAuthStub },
         { provide: StaffQueueService, useValue: {} },
       ],
     })(RealtimeModule);
@@ -70,10 +82,7 @@ test(
       assert.equal(body.traceId, 'http-still-wrapped');
       socket = io(`${base}/chat`, {
         auth: {
-          token: LightweightJwt.sign(
-            { sub: 'buyer', role: 'BUYER' },
-            { secret: 'chat-realtime-test-secret', expiresInSeconds: 60 },
-          ),
+          token: 'buyer|BUYER',
         },
         reconnection: false,
       });

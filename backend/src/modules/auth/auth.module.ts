@@ -8,8 +8,6 @@ import { AuthProfileService } from './services/auth-profile.service';
 import { StaffProvisioningService } from './services/staff-provisioning.service';
 import { StaffController } from './controllers/staff.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { ProfileReauthService } from '../../core/security/profile-reauth.service';
 
 @Module({
   imports: [
@@ -32,21 +30,7 @@ import { ProfileReauthService } from '../../core/security/profile-reauth.service
     }),
   ],
   controllers: [AuthController, StaffController],
-  providers: [
-    AuthService,
-    AuthProfileService,
-    StaffProvisioningService,
-    ProfileReauthService,
-    JwtStrategy,
-    GoogleStrategy,
-  ],
-  exports: [
-    ProfileReauthService,
-    AuthService,
-    AuthProfileService,
-    StaffProvisioningService,
-    JwtModule,
-    PassportModule,
-  ],
+  providers: [AuthService, AuthProfileService, StaffProvisioningService, GoogleStrategy],
+  exports: [AuthService, AuthProfileService, StaffProvisioningService, JwtModule, PassportModule],
 })
 export class AuthModule {}

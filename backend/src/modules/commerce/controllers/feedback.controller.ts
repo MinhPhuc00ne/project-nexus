@@ -14,18 +14,12 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@nexus/types';
 import type { Request } from 'express';
-import { LightweightJwt } from '../../../core/security/jwt.util';
-import {
-  AuthenticatedUserPayload,
-  CurrentUser,
-  Public,
-  Roles,
-} from '../../../core/security/roles.decorator';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
@@ -49,18 +43,20 @@ export class FeedbackController {
   constructor(
     private readonly reviews: ReviewsService,
     private readonly reports: ReportsService,
-    private readonly configService?: ConfigService,
+    private readonly tokenAuth: TokenAuthService,
   ) {}
 
-  private extractOptionalViewerId(req?: Request): string | undefined {
+  /**
+   * Resolves the signed-in reader of a publicly readable review list.
+   *
+   * @param req - The incoming request, which may carry no credentials at all.
+   * @returns The viewer’s id, or undefined for a guest or an unusable token.
+   */
+  private async extractOptionalViewerId(req?: Request): Promise<string | undefined> {
     const authHeader = req?.headers?.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) return undefined;
-    const token = authHeader.substring(7);
-    const secret = this.configService?.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
-    if (!secret) return undefined;
-    const verified = LightweightJwt.verify<AuthenticatedUserPayload>(token, secret);
-    if (!verified.valid || !verified.payload) return undefined;
-    return verified.payload.id || verified.payload.sub;
+    const viewer = await this.tokenAuth.authenticateOptional(authHeader.substring(7));
+    return viewer?.id;
   }
 
   @Post('commerce/orders/:orderId/shop-review')
@@ -228,21 +224,21 @@ export class FeedbackController {
     summary:
       'Danh sách đánh giá gian hàng kèm averageRating và phân bố sao 1-5 (ẩn review tiêu cực đã bị admin ẩn)',
   })
-  shopReviews(
+  async shopReviews(
     @Param('id') id: string,
     @Query() query: FeedbackPageDto,
     @Req() req?: Request,
   ): Promise<unknown> {
-    return this.reviews.list(id, 'shop', query, this.extractOptionalViewerId(req));
+    return this.reviews.list(id, 'shop', query, await this.extractOptionalViewerId(req));
   }
   @Get('catalog/products/:id/reviews')
   @Public()
-  productReviews(
+  async productReviews(
     @Param('id') id: string,
     @Query() query: FeedbackPageDto,
     @Req() req?: Request,
   ): Promise<unknown> {
-    return this.reviews.list(id, 'product', query, this.extractOptionalViewerId(req));
+    return this.reviews.list(id, 'product', query, await this.extractOptionalViewerId(req));
   }
   @Get('seller/product-reviews')
   @ApiBearerAuth()
@@ -282,7 +278,7 @@ export class FeedbackController {
   @Get('catalog/product-reviews/:reviewId/replies')
   @Public()
   @ApiOperation({ summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá sản phẩm' })
-  listProductReviewReplies(
+  async listProductReviewReplies(
     @Param('reviewId') reviewId: string,
     @Query() query: FeedbackPageDto,
     @Req() req?: Request,
@@ -291,7 +287,7 @@ export class FeedbackController {
       'product',
       reviewId,
       query,
-      this.extractOptionalViewerId(req),
+      await this.extractOptionalViewerId(req),
     );
   }
 
@@ -320,7 +316,7 @@ export class FeedbackController {
   @ApiOperation({
     summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá gian hàng',
   })
-  listShopReviewReplies(
+  async listShopReviewReplies(
     @Param('reviewId') reviewId: string,
     @Query() query: FeedbackPageDto,
     @Req() req?: Request,
@@ -329,7 +325,7 @@ export class FeedbackController {
       'shop',
       reviewId,
       query,
-      this.extractOptionalViewerId(req),
+      await this.extractOptionalViewerId(req),
     );
   }
 

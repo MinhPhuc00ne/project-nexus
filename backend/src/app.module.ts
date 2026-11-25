@@ -4,6 +4,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { validateBackendEnv } from './core/config/env.schema';
 import { RedisModule } from './core/redis/redis.module';
+import { SecurityModule } from './core/security/security.module';
 import { MailModule } from './core/mail/mail.module';
 import { StorageModule } from './core/storage/storage.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -30,6 +31,7 @@ import { AuctionModule } from './modules/auction/auction.module';
     }),
     PrismaModule,
     RedisModule,
+    SecurityModule,
     MailModule,
     StorageModule,
     AuthModule,

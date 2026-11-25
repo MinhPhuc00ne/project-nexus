@@ -15,7 +15,7 @@ const { NestFactory } = load('@nestjs/core');
 const { SwaggerModule, DocumentBuilder } = load('@nestjs/swagger');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
 const { RedisService } = load('../src/core/redis/redis.service.ts');
-const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
+const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { ChatbotController } = load('../src/modules/chat/controllers/chatbot.controller.ts');
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
 const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
@@ -97,6 +97,23 @@ test(
         ChatbotAiService,
         ChatbotRateLimitService,
         {
+          // The bearer value names the calling account, so the test states who it
+          // is calling as without signing a token.
+          provide: TokenAuthService,
+          useValue: {
+            authenticate: async (token) => ({
+              id: token,
+              sub: token,
+              email: `${token}@example.test`,
+              role: 'BUYER',
+              accountRole: 'BUYER',
+              activeRole: 'BUYER',
+              currentMode: 'BUYER',
+              isSellerActive: false,
+            }),
+          },
+        },
+        {
           provide: ConfigService,
           useValue: {
             get: (key) =>
@@ -157,7 +174,7 @@ test(
       const base = `${await app.getUrl()}/api/v1/chat/bot`;
       const headers = (id) => ({
         'Content-Type': 'application/json',
-        authorization: `Bearer ${LightweightJwt.sign({ sub: id }, { secret: 'chatbot-test-secret', expiresInSeconds: 120 })}`,
+        authorization: `Bearer ${id}`,
       });
       const post = (body, id = 'owner') =>
         fetch(`${base}/messages`, {
