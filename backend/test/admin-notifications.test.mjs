@@ -19,9 +19,8 @@ const { NotificationsService } = load(
 const { NotificationsGateway } = load(
   '../src/modules/notifications/gateways/notifications.gateway.ts',
 );
-const { publishCreatedNotifications, subscribeNotificationRealtime } = load(
-  '../src/core/notifications/notification-realtime.bus.ts',
-);
+const { EventEmitter2 } = load('@nestjs/event-emitter');
+const { DomainEventsService } = load('../src/core/events/domain-events.service.ts');
 const { PrismaService, wrapNotificationDelegate } = load('../src/core/prisma/prisma.service.ts');
 /**
  * Stands in for TokenAuthService: the handshake token is read as the account id,
@@ -174,7 +173,14 @@ test('NotificationsGateway authenticates JWT handshake, emits connected payload,
     markAllAsRead: mock.fn(),
   };
 
-  const gateway = new NotificationsGateway(tokenAuthStub, notifServiceMock);
+  const domainEvents = new DomainEventsService(new EventEmitter2());
+  const socketMetricsStub = { registerServer() {} };
+  const gateway = new NotificationsGateway(
+    tokenAuthStub,
+    domainEvents,
+    notifServiceMock,
+    socketMetricsStub,
+  );
   const roomEmits = [];
   gateway.server = {
     to: (room) => ({
@@ -206,7 +212,7 @@ test('NotificationsGateway authenticates JWT handshake, emits connected payload,
   assert.equal(clientEmits[0].event, 'notification:connected');
   assert.equal(clientEmits[0].payload.unreadCount, 3);
 
-  publishCreatedNotifications([
+  domainEvents.publishNotificationsCreated([
     {
       id: 'n-live-1',
       userId: 'admin-99',
@@ -235,9 +241,12 @@ test('NotificationsGateway authenticates JWT handshake, emits connected payload,
 });
 
 test('NotificationsGateway rejects missing JWT handshake cleanly', async () => {
-  const gateway = new NotificationsGateway(tokenAuthStub, {
-    getUnreadCount: mock.fn(async () => ({ unreadCount: 0 })),
-  });
+  const gateway = new NotificationsGateway(
+    tokenAuthStub,
+    new DomainEventsService(new EventEmitter2()),
+    { getUnreadCount: mock.fn(async () => ({ unreadCount: 0 })) },
+    { registerServer() {} },
+  );
   const clientEmits = [];
   const disconnect = mock.fn();
   await gateway.handleConnection({
@@ -259,8 +268,8 @@ test('wrapNotificationDelegate intercepts create, createMany and createManyAndRe
     createManyAndReturn: async ({ data }) => (Array.isArray(data) ? data : [data]),
   };
 
-  const wrapped = wrapNotificationDelegate(delegateMock, (records) => {
-    emitted.push(...records);
+  const wrapped = wrapNotificationDelegate(delegateMock, ({ events }) => {
+    emitted.push(...events);
   });
 
   await wrapped.create({

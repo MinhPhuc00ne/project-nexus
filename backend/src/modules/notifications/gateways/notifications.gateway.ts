@@ -16,9 +16,9 @@ import {
 } from '@nexus/types';
 import { Server, Socket } from 'socket.io';
 import {
-  subscribeNotificationRealtime,
-  type RealtimeNotificationRecord,
-} from '../../../core/notifications/notification-realtime.bus';
+  DomainEventsService,
+  type NotificationCreatedEvent,
+} from '../../../core/events/domain-events.service';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
@@ -41,31 +41,34 @@ export class NotificationsGateway
   server!: Server;
 
   private readonly logger = new Logger(NotificationsGateway.name);
-  private unsubscribeBus: (() => void) | null = null;
+  private unsubscribers: Array<() => void> = [];
 
   constructor(
     private readonly tokenAuth: TokenAuthService,
+    private readonly domainEvents: DomainEventsService,
     private readonly notificationsService: NotificationsService,
     private readonly socketMetrics: SocketMetricsService,
   ) {}
 
   afterInit(): void {
-    this.unsubscribeBus?.();
-    this.unsubscribeBus = subscribeNotificationRealtime({
-      onCreated: async (records) => {
-        await this.dispatchCreatedBatch(records);
-      },
-      onUnreadSync: (payload) => {
-        this.emitUnreadCount(payload.userId, payload.unreadCount);
-      },
-    });
+    this.unsubscribeAll();
+    this.unsubscribers = [
+      this.domainEvents.onNotificationsCreated((records) => this.dispatchCreatedBatch(records)),
+      this.domainEvents.onUnreadSync((payload) =>
+        this.emitUnreadCount(payload.userId, payload.unreadCount),
+      ),
+    ];
     this.socketMetrics.registerServer('/ws/notifications', this.server);
     this.logger.log('Notifications WebSocket Gateway initialized on namespace /ws/notifications');
   }
 
   onModuleDestroy(): void {
-    this.unsubscribeBus?.();
-    this.unsubscribeBus = null;
+    this.unsubscribeAll();
+  }
+
+  private unsubscribeAll(): void {
+    for (const unsubscribe of this.unsubscribers) unsubscribe();
+    this.unsubscribers = [];
   }
 
   async handleConnection(client: Socket): Promise<void> {
@@ -133,10 +136,10 @@ export class NotificationsGateway
     return payload;
   }
 
-  private async dispatchCreatedBatch(records: RealtimeNotificationRecord[]): Promise<void> {
+  private async dispatchCreatedBatch(records: NotificationCreatedEvent[]): Promise<void> {
     if (!this.server || records.length === 0) return;
 
-    const byUser = new Map<string, RealtimeNotificationRecord[]>();
+    const byUser = new Map<string, NotificationCreatedEvent[]>();
     for (const rec of records) {
       if (!rec.userId) continue;
       const list = byUser.get(rec.userId) ?? [];

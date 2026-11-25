@@ -22,7 +22,14 @@ test('email verification starts at 50 PROBATION and replay preserves earned poin
     reputationLog: { create: async ({ data }) => logs.push(data) },
     notification: { create: async ({ data }) => notices.push(data) },
   };
-  const auth = new AuthService({ $transaction: (run) => run(tx) }, {}, {}, {}, {});
+  const auth = new AuthService(
+    { $transaction: (run) => run(tx) },
+    {},
+    {},
+    { signAccessToken: async () => 'test-access-token', revokeAllSessions: async () => {} },
+    {},
+    {},
+  );
   await auth.verifyEmail({ email: user.email, code: '123456' });
   assert.equal(user.reputationScore, 50);
   assert.equal(user.trustLevel, 'PROBATION');
@@ -46,7 +53,14 @@ test('registration and Google initialize new accounts at 50 without overwriting 
     },
     wallet: { upsert: async () => ({}) },
   };
-  const auth = new AuthService(prisma, {}, {}, {}, { sendEmail: async () => undefined });
+  const auth = new AuthService(
+    prisma,
+    {},
+    {},
+    { signAccessToken: async () => 'test-access-token', revokeAllSessions: async () => {} },
+    {},
+    { sendEmail: async () => undefined },
+  );
   auth.generateTokens = async () => ({ accessToken: 'fixture', refreshToken: 'fixture' });
   await auth.register({
     email: 'fixture@example.invalid',

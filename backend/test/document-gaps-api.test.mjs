@@ -19,7 +19,7 @@ const source = (path) => load(`../src/${path}.ts`);
 
 test('document gap endpoints enforce JWT roles, validate DTOs and preserve authenticated identities', async () => {
   const { PrismaService } = source('core/prisma/prisma.service');
-  const { JwtStrategy } = source('modules/auth/strategies/jwt.strategy');
+  const { TokenAuthService } = source('core/security/token-auth.service');
   const { ReportModerationController } = source(
     'modules/commerce/controllers/report-moderation.controller',
   );
@@ -48,7 +48,27 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
   Module({
     controllers: [ReportModerationController, AuctionCheckoutController, AdminReputationController],
     providers: [
-      JwtStrategy,
+      {
+        // The bearer value is the account id, so a fixture states who it is
+        // calling as without minting a verifiable token.
+        provide: TokenAuthService,
+        useValue: {
+          authenticate: async (token) => {
+            const role = [...identities].find(([, id]) => id === token)?.[0];
+            if (!role) throw new Error('unknown fixture identity');
+            return {
+              id: token,
+              sub: token,
+              email: `${token}@example.invalid`,
+              role,
+              accountRole: role,
+              activeRole: role,
+              currentMode: 'BUYER',
+              isSellerActive: false,
+            };
+          },
+        },
+      },
       { provide: ConfigService, useValue: { get: () => 'isolated-api-test-secret' } },
       {
         provide: PrismaService,
@@ -91,7 +111,7 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
-          ...(role ? { Authorization: 'Bearer ' + jwt.sign({ sub: identities.get(role) }) } : {}),
+          ...(role ? { Authorization: 'Bearer ' + identities.get(role) } : {}),
         },
       });
     const reportId = randomUUID();

@@ -15,7 +15,7 @@ tsNode.register({
 });
 const load = createRequire(import.meta.url);
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
-const { JwtStrategy } = load('../src/modules/auth/strategies/jwt.strategy.ts');
+const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { AuctionImageController } = load(
   '../src/modules/auction/controllers/auction-image.controller.ts',
 );
@@ -55,7 +55,27 @@ test('auction images accept uploaded URLs for staff without exposing auction man
   Module({
     controllers: [AuctionImageController, AuctionController],
     providers: [
-      JwtStrategy,
+      {
+        // The bearer value is the account id, so the fixture states who it is
+        // calling as without minting a verifiable token.
+        provide: TokenAuthService,
+        useValue: {
+          authenticate: async (token) => {
+            const role = [...identities].find(([, id]) => id === token)?.[0];
+            if (!role) throw new Error('unknown fixture identity');
+            return {
+              id: token,
+              sub: token,
+              email: 'fixture@example.invalid',
+              role,
+              accountRole: role,
+              activeRole: role,
+              currentMode: 'BUYER',
+              isSellerActive: false,
+            };
+          },
+        },
+      },
       AuctionImageService,
       { provide: PrismaService, useValue: db },
       { provide: ConfigService, useValue: { get: () => 'image-test-secret' } },
@@ -75,7 +95,7 @@ test('auction images accept uploaded URLs for staff without exposing auction man
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...(role ? { Authorization: 'Bearer ' + jwt.sign({ sub: identities.get(role) }) } : {}),
+          ...(role ? { Authorization: 'Bearer ' + identities.get(role) } : {}),
         },
         body: JSON.stringify(body),
       });

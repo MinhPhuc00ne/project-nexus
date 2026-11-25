@@ -30,6 +30,7 @@ const tokenAuthStub = {
     return { id, sub: id, role };
   },
 };
+const { SocketMetricsService } = load('../src/core/realtime/socket-metrics.service.ts');
 const { TransformResponseInterceptor } = load(
   '../src/core/interceptors/transform-response.interceptor.ts',
 );
@@ -65,6 +66,7 @@ test(
         },
         { provide: TokenAuthService, useValue: tokenAuthStub },
         { provide: StaffQueueService, useValue: {} },
+        SocketMetricsService,
       ],
     })(RealtimeModule);
     const app = await NestFactory.create(RealtimeModule, { logger: false });

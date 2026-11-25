@@ -65,6 +65,16 @@ test('shipping dependencies and routes initialize without live infrastructure', 
       source('modules/fulfillment/services/ghn-order-action.service').GhnOrderActionService,
       source('modules/users/services/shop-shipping-profile.service').ShopShippingProfileService,
       { provide: PrismaService, useValue: {} },
+      // The guard resolves identities through TokenAuthService; this smoke test
+      // only asserts the dependency graph resolves.
+      {
+        provide: source('core/security/token-auth.service').TokenAuthService,
+        useValue: {},
+      },
+      {
+        provide: source('modules/auth/services/oauth-code.service').OAuthCodeService,
+        useValue: {},
+      },
       { provide: ConfigService, useValue: { get: (_key, fallback) => fallback } },
       ...[
         PayosService,

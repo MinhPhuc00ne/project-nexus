@@ -19,7 +19,7 @@ const source = (path) => load(`../src/${path}.ts`);
 
 test('banner endpoints validate JWT roles, operator identity, filters and Swagger contracts', async () => {
   const { PrismaService } = source('core/prisma/prisma.service');
-  const { JwtStrategy } = source('modules/auth/strategies/jwt.strategy');
+  const { TokenAuthService } = source('core/security/token-auth.service');
   const { BannerController } = source('modules/catalog/controllers/banner.controller');
   const { BannerService } = source('modules/catalog/services/banner.service');
   const { BannerHistoryService } = source('modules/catalog/services/banner-history.service');
@@ -61,7 +61,27 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
   Module({
     controllers: [BannerController, NotificationsController],
     providers: [
-      JwtStrategy,
+      {
+        // The bearer value is the account id, so a fixture states who it is
+        // calling as without minting a verifiable token.
+        provide: TokenAuthService,
+        useValue: {
+          authenticate: async (token) => {
+            const role = [...accounts].find(([, id]) => id === token)?.[0];
+            if (!role) throw new Error('unknown fixture identity');
+            return {
+              id: token,
+              sub: token,
+              email: `${token}@example.invalid`,
+              role,
+              accountRole: role,
+              activeRole: role,
+              currentMode: 'BUYER',
+              isSellerActive: false,
+            };
+          },
+        },
+      },
       { provide: ConfigService, useValue: { get: () => 'banner-api-fixture-secret' } },
       {
         provide: PrismaService,
@@ -100,7 +120,7 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          ...(role ? { Authorization: 'Bearer ' + jwt.sign({ sub: accounts.get(role) }) } : {}),
+          ...(role ? { Authorization: 'Bearer ' + accounts.get(role) } : {}),
         },
       });
     const body = {

@@ -110,6 +110,7 @@ export function staffFixture({ mailAccepted = true } = {}) {
     prisma,
     config,
     { sign: () => 'test-token' },
+    { signAccessToken: async () => 'test-access-token', revokeAllSessions: async () => {} },
     { set: async () => {} },
     mail,
   );
