@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { AuctionStatus as NexusAuctionStatus } from '@nexus/types';
 import { AuctionAwardStatus, AuctionStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { DistributedLockService } from '../../../core/redis/distributed-lock.service';
 import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import { AuctionService } from './auction.service';
@@ -19,13 +20,18 @@ export class AuctionLifecycleService implements OnModuleInit, OnModuleDestroy {
     private readonly auctions: AuctionService,
     private readonly checkout: AuctionCheckoutService,
     private readonly gateway: AuctionGateway,
+    private readonly locks: DistributedLockService,
   ) {}
 
   /** Starts bounded, nonoverlapping deadline sweeps and 1-second WebSocket timer syncs. */
   onModuleInit(): void {
     this.sweepTimer = setInterval(() => {
       if (this.running) return;
-      this.running = this.tick()
+      // Closing a lot forfeits a deposit and notifies a bidder, so it must
+      // happen once across the cluster rather than once per instance.
+      this.running = this.locks
+        .runExclusively('auction:deadline-sweep', 25, () => this.tick())
+        .then(() => undefined)
         .catch(() => this.logger.warn('Auction deadlines will be retried.'))
         .finally(() => {
           this.running = undefined;
