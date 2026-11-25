@@ -15,7 +15,7 @@ const { SellerEngagementService } = load(
   '../src/modules/reviews/services/seller-engagement.service.ts',
 );
 const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
-const { OrderWalletHelper } = load('../src/modules/commerce/services/order-wallet.helper.ts');
+const { PayosWebhookService } = load('../src/modules/wallet/services/payos-webhook.service.ts');
 
 function fixture() {
   const order = {
@@ -197,14 +197,16 @@ function paymentFixture() {
     prisma,
     {},
     new OrderPaymentHelper(prisma, { verifyWebhook: async () => verified }, {}, { hold }),
-    new OrderWalletHelper(prisma, { verifyWebhook: async () => verified }, {}),
   );
   return { service, hold, verified, prisma, order };
 }
 
 test('concurrent PayOS callbacks hold payment once instead of paying out twice', async () => {
   const f = paymentFixture();
-  await Promise.all([f.service.handlePayosWebhook({}), f.service.handlePayosWebhook({})]);
+  await Promise.all([
+    f.service.settleOrderPayment(f.verified),
+    f.service.settleOrderPayment(f.verified),
+  ]);
   assert.equal(f.hold.mock.callCount(), 1);
   assert.equal(f.order.status, 'PAID');
 });
@@ -212,7 +214,10 @@ test('concurrent PayOS callbacks hold payment once instead of paying out twice',
 test('PayOS payment amount must match the server order', async () => {
   const f = paymentFixture();
   f.verified.amount = 1;
-  await assert.rejects(f.service.handlePayosWebhook({}), (error) => error.getStatus() === 400);
+  await assert.rejects(
+    f.service.settleOrderPayment(f.verified),
+    (error) => error.getStatus() === 400,
+  );
   assert.equal(f.hold.mock.callCount(), 0);
   assert.equal(f.prisma.$transaction.mock.callCount(), 0);
 });
@@ -236,4 +241,58 @@ test('a seller response cannot overwrite a concurrently resolved dispute', async
     (error) => error.getStatus() === 400,
   );
   assert.deepEqual(updateMany.mock.calls[0].arguments[0].where.status.in, ['OPEN', 'UNDER_REVIEW']);
+});
+
+test('a PayOS callback goes to the order it paid for, or to the wallet it topped up', async () => {
+  const verified = { orderCode: 7, code: '00', amount: 1000 };
+  const payos = { verifyWebhook: mock.fn(async () => verified) };
+  const seen = [];
+
+  // Nothing holds a record for this orderCode: both owners decline it.
+  const orphan = new PayosWebhookService(
+    payos,
+    { settleOrderPayment: async () => null },
+    { settleTopup: async () => null },
+  );
+  assert.deepEqual(await orphan.handle({}), {
+    success: false,
+    message: 'Payment record not found',
+  });
+
+  // An order payment is settled by the order side and the wallet is never asked.
+  const paid = new PayosWebhookService(
+    payos,
+    {
+      settleOrderPayment: async (data) => {
+        seen.push(data);
+        return { success: true, orderCode: data.orderCode };
+      },
+    },
+    {
+      settleTopup: async () => {
+        throw new Error('the wallet must not be offered a settled order payment');
+      },
+    },
+  );
+  assert.deepEqual(await paid.handle({}), { success: true, orderCode: 7 });
+  assert.deepEqual(seen, [verified]);
+
+  // A top-up carries the same callback shape and is claimed by the wallet.
+  const topped = new PayosWebhookService(
+    payos,
+    { settleOrderPayment: async () => null },
+    {
+      settleTopup: async () => ({
+        success: true,
+        message: 'Wallet deposit processed successfully',
+      }),
+    },
+  );
+  assert.deepEqual(await topped.handle({}), {
+    success: true,
+    message: 'Wallet deposit processed successfully',
+  });
+
+  // The signature is verified once per callback, before either owner is asked.
+  assert.equal(payos.verifyWebhook.mock.callCount(), 3);
 });

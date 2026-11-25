@@ -19,6 +19,8 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { CartModule } from './modules/cart/cart.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { AfterSalesModule } from './modules/after-sales/after-sales.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { WalletModule } from './modules/wallet/wallet.module';
 import { CommerceModule } from './modules/commerce/commerce.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { FulfillmentModule } from './modules/fulfillment/fulfillment.module';
@@ -54,6 +56,8 @@ import { AuctionModule } from './modules/auction/auction.module';
     ReviewsModule,
     AfterSalesModule,
     CommerceModule,
+    PaymentsModule,
+    WalletModule,
     NotificationsModule,
     FulfillmentModule,
     ChatModule,

@@ -64,7 +64,7 @@ test('new backend routes, DTO schemas and service dependencies initialize withou
       useValue: {},
     },
     {
-      provide: source('modules/commerce/services/order-wallet.helper').OrderWalletHelper,
+      provide: source('modules/wallet/services/wallet-deposit.service').WalletDepositService,
       useValue: {},
     },
     {

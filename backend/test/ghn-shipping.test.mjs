@@ -22,9 +22,6 @@ const { OrderService } = loadBackend('../src/modules/commerce/services/order.ser
 const { OrderPaymentHelper } = loadBackend(
   '../src/modules/commerce/services/order-payment.helper.ts',
 );
-const { OrderWalletHelper } = loadBackend(
-  '../src/modules/commerce/services/order-wallet.helper.ts',
-);
 
 const item = {
   name: 'Product',
@@ -284,12 +281,7 @@ function checkoutFixture(quote) {
     cart: { findUnique: async () => structuredClone(cart) },
     $transaction: mock.fn(async (run) => run(tx)),
   };
-  const service = new OrderService(
-    prisma,
-    { quote },
-    new OrderPaymentHelper(prisma, {}, {}, {}),
-    new OrderWalletHelper(prisma, {}, {}),
-  );
+  const service = new OrderService(prisma, { quote }, new OrderPaymentHelper(prisma, {}, {}, {}));
   return { service, prisma, tx, cart };
 }
 

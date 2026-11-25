@@ -20,7 +20,6 @@ const { OrderReturnService } = load('../src/modules/after-sales/services/order-r
 const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
 const { ReputationService } = load('../src/modules/users/services/reputation.service.ts');
 const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
-const { OrderWalletHelper } = load('../src/modules/commerce/services/order-wallet.helper.ts');
 export const buyer = { id: 'buyer', role: 'BUYER' };
 export const seller = { id: 'seller', role: 'SELLER' };
 export const admin = { id: 'admin', role: 'ADMIN' };
@@ -285,7 +284,6 @@ export function fixture() {
         refunds,
         finance,
       ),
-      new OrderWalletHelper(prisma, {}, {}),
       inventory,
     ),
     fullOrder,

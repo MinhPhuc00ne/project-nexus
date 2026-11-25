@@ -199,12 +199,10 @@ test(
           });
           assert.equal(Number(offer.depositAmount), 30000);
           const { OrderPaymentHelper } = source('commerce/services/order-payment.helper');
-          const { OrderWalletHelper } = source('commerce/services/order-wallet.helper');
           const retail = new OrderService(
             prisma,
             shipping,
             new OrderPaymentHelper(prisma, {}, {}, escrow, inventory),
-            new OrderWalletHelper(prisma, {}, {}),
             inventory,
           );
           await assert.rejects(retail.payOrderByWallet(offer.orderId, buyer.id), /quyền mua/);

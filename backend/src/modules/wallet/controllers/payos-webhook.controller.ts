@@ -1,7 +1,7 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { OrderService } from '../services/order.service';
-import { PayosService } from '../services/payos.service';
+import { PayosWebhookService } from '../services/payos-webhook.service';
+import { PayosService } from '../../payments/services/payos.service';
 import { ConfirmWebhookDto } from '../dtos/confirm-webhook.dto';
 import { Public } from '../../../core/security/roles.decorator';
 import { Webhook } from '@payos/node';
@@ -10,7 +10,7 @@ import { Webhook } from '@payos/node';
 @Controller('commerce/webhooks')
 export class PayosWebhookController {
   constructor(
-    private readonly orderService: OrderService,
+    private readonly webhooks: PayosWebhookService,
     private readonly payosService: PayosService,
   ) {}
 
@@ -25,7 +25,7 @@ export class PayosWebhookController {
   @ApiResponse({ status: 200, description: 'Xác nhận webhook thành công' })
   @ApiResponse({ status: 400, description: 'Chữ ký webhook không hợp lệ' })
   async handlePayosWebhook(@Body() webhookBody: Webhook) {
-    return this.orderService.handlePayosWebhook(webhookBody);
+    return this.webhooks.handle(webhookBody);
   }
 
   @Public()

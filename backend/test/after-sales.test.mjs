@@ -304,7 +304,11 @@ test('verified payment arriving after cancellation is recorded and refunded once
     provider: 'PAYOS',
     transactionCode: '123',
   });
-  await Promise.all([f.payments.handlePayosWebhook({}), f.payments.handlePayosWebhook({})]);
+  const verified = { orderCode: 123, code: '00', amount: 130000 };
+  await Promise.all([
+    f.payments.settleOrderPayment(verified),
+    f.payments.settleOrderPayment(verified),
+  ]);
   assert.equal(f.state.payments[0].status, 'SUCCESS');
   assert.equal(f.state.order.status, 'CANCELLED');
   assert.equal(f.state.refunds.length, 1);

@@ -16,7 +16,7 @@ const source = (path) => load(`../src/${path}.ts`);
 
 test('shipping dependencies and routes initialize without live infrastructure', async () => {
   const { PrismaService } = source('core/prisma/prisma.service');
-  const { PayosService } = source('modules/commerce/services/payos.service');
+  const { PayosService } = source('modules/payments/services/payos.service');
   const { AdminSettingsService } = source('modules/admin/services/admin-settings.service');
   const { AdminFinanceService } = source('modules/admin/services/admin-finance.service');
   const { AuthService } = source('modules/auth/services/auth.service');
@@ -83,7 +83,7 @@ test('shipping dependencies and routes initialize without live infrastructure', 
         useValue: {},
       },
       {
-        provide: source('modules/commerce/services/order-wallet.helper').OrderWalletHelper,
+        provide: source('modules/wallet/services/wallet-deposit.service').WalletDepositService,
         useValue: {},
       },
       {

@@ -11,8 +11,8 @@ tsNode.register({
 
 const load = createRequire(import.meta.url);
 const { BadRequestException, ForbiddenException } = load('@nestjs/common');
-const { WithdrawalService } = load('../src/modules/commerce/services/withdrawal.service.ts');
-const { SellerFinanceService } = load('../src/modules/commerce/services/seller-finance.service.ts');
+const { WithdrawalService } = load('../src/modules/wallet/services/withdrawal.service.ts');
+const { SellerFinanceService } = load('../src/modules/wallet/services/seller-finance.service.ts');
 const { AdminService } = load('../src/modules/admin/services/admin.service.ts');
 const { AdminFinanceService } = load('../src/modules/admin/services/admin-finance.service.ts');
 

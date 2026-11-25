@@ -7,7 +7,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { OrderStatus, PaymentProvider, PaymentStatus, Prisma, ProductStatus } from '@prisma/client';
-import { Webhook } from '@payos/node';
+import { WebhookData } from '@payos/node';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { InventoryService } from '../../catalog/services/inventory.service';
 import { productChoiceLabel, validateSelections } from '../../../core/domain/product-options';
@@ -17,7 +17,6 @@ import {
   GhnShippingService,
 } from '../../fulfillment/services/ghn-shipping.service';
 import { CheckoutDto } from '../dtos/checkout.dto';
-import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
 import { PayOrderDto } from '../dtos/pay-order.dto';
 import { validateQuotedCheckout } from '../utils/checkout-validation';
 import {
@@ -25,7 +24,6 @@ import {
   PayosPaymentResponse,
   WalletPaymentResponse,
 } from './order-payment.helper';
-import { OrderWalletHelper } from './order-wallet.helper';
 
 export type { PayosPaymentResponse, WalletPaymentResponse } from './order-payment.helper';
 
@@ -37,7 +35,6 @@ export class OrderService {
     private readonly prisma: PrismaService,
     private readonly shipping: GhnShippingService,
     private readonly paymentHelper: OrderPaymentHelper,
-    private readonly walletHelper: OrderWalletHelper,
     @Optional() private readonly inventoryService?: InventoryService,
   ) {}
 
@@ -435,23 +432,11 @@ export class OrderService {
     return this.paymentHelper.registerCodPayment(orderId, buyerId);
   }
 
-  handlePayosWebhook(body: Webhook) {
-    return this.paymentHelper.handlePayosWebhook(body);
+  settleOrderPayment(webhookData: WebhookData) {
+    return this.paymentHelper.settleOrderPayment(webhookData);
   }
 
   checkPayosPaymentStatus(orderId: string, userId: string) {
     return this.paymentHelper.checkPayosPaymentStatus(orderId, userId);
-  }
-
-  getUserWallet(userId: string) {
-    return this.walletHelper.getUserWallet(userId);
-  }
-
-  depositToUserWallet(userId: string, dto: DepositWalletDto) {
-    return this.walletHelper.depositToUserWallet(userId, dto);
-  }
-
-  checkPayosWalletDepositStatus(orderCode: number, userId: string) {
-    return this.walletHelper.checkPayosWalletDepositStatus(orderCode, userId);
   }
 }

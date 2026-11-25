@@ -13,7 +13,6 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader } from '@n
 import { OrderService } from '../services/order.service';
 import { CheckoutDto } from '../dtos/checkout.dto';
 import { PayOrderDto } from '../dtos/pay-order.dto';
-import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
 import { CurrentUser, RequirePrivilege } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -92,51 +91,6 @@ export class OrderController {
   @ApiResponse({ status: 404, description: 'Không tìm thấy đơn hàng' })
   async getPaymentStatus(@Param('id') orderId: string, @CurrentUser('id') userId: string) {
     return this.orderService.checkPayosPaymentStatus(orderId, userId);
-  }
-
-  @Get('wallet')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: '[BUYER / USER] Xem số dư ví và lịch sử giao dịch cá nhân',
-    description: 'Trả về số dư khả dụng, tiền tạm giữ và danh sách các giao dịch gần nhất của ví.',
-  })
-  @ApiResponse({ status: 200, description: 'Lấy thông tin ví thành công' })
-  async getMyWallet(@CurrentUser('id') userId: string) {
-    return this.orderService.getUserWallet(userId);
-  }
-
-  @Post('wallet/deposit')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: '[BUYER / USER] Nạp tiền vào ví cá nhân (NEXUS Pay)',
-    description:
-      'Nạp tiền vào ví để mua sắm và thanh toán đơn hàng bằng số dư ví. Hỗ trợ tạo liên kết PayOS VietQR hoặc nạp trực tiếp.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Nạp tiền thành công hoặc trả về thông tin VietQR PayOS',
-  })
-  @ApiResponse({ status: 400, description: 'Số tiền nạp không hợp lệ' })
-  async depositMyWallet(@CurrentUser('id') userId: string, @Body() dto: DepositWalletDto) {
-    return this.orderService.depositToUserWallet(userId, {
-      ...dto,
-      provider: dto.provider || 'PAYOS',
-    });
-  }
-
-  @Get('wallet/deposit/:orderCode/status')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({
-    summary: '[BUYER / USER] Kiểm tra trạng thái nạp tiền ví qua PayOS',
-    description:
-      'Kiểm tra trạng thái giao dịch nạp tiền ví theo orderCode và đồng bộ với cổng PayOS.',
-  })
-  @ApiResponse({ status: 200, description: 'Lấy trạng thái nạp tiền thành công' })
-  async checkWalletDepositStatus(
-    @CurrentUser('id') userId: string,
-    @Param('orderCode') orderCode: string,
-  ) {
-    return this.orderService.checkPayosWalletDepositStatus(Number(orderCode), userId);
   }
 
   @Get('orders')

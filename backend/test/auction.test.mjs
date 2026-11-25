@@ -36,7 +36,7 @@ const { AuctionSecondChanceHelper } = load(
   '../src/modules/commerce/services/auction-second-chance.helper.ts',
 );
 const { OrderPaymentHelper } = load('../src/modules/commerce/services/order-payment.helper.ts');
-const { OrderWalletHelper } = load('../src/modules/commerce/services/order-wallet.helper.ts');
+const { WalletDepositService } = load('../src/modules/wallet/services/wallet-deposit.service.ts');
 
 function createHarness(overrides = {}) {
   const wallets = new Map([
@@ -652,18 +652,9 @@ function createHarness(overrides = {}) {
   const orderService = new OrderService(
     db,
     shipping,
-    new OrderPaymentHelper(
-      db,
-      {},
-      { get: () => '' },
-      escrow,
-      undefined,
-      undefined,
-      adminFinance,
-      checkoutService,
-    ),
-    new OrderWalletHelper(db, {}, { get: () => '' }, checkoutService),
+    new OrderPaymentHelper(db, {}, { get: () => '' }, escrow, undefined, undefined, adminFinance),
   );
+  const walletDeposits = new WalletDepositService(db, {}, { get: () => '' }, checkoutService);
 
   return {
     db,
@@ -686,6 +677,7 @@ function createHarness(overrides = {}) {
     auctionService,
     complaintService,
     orderService,
+    walletDeposits,
   };
 }
 
@@ -987,8 +979,8 @@ test('PRIMARY_WINNER payment default forfeits 30% deposit (93% Seller / 7% Admin
   assert.equal(topupNotif.metadata.requiredDepositAmount, 300_000);
   assert.equal(topupNotif.metadata.missingAmount, 200_000);
 
-  // Topping up wallet via OrderService automatically locks 300k deposit and opens AWAITING_CHECKOUT
-  await h.orderService.depositToUserWallet('buyer-1', { amount: 250_000 });
+  // Topping up the wallet automatically locks the 300k deposit and opens AWAITING_CHECKOUT
+  await h.walletDeposits.depositToUserWallet('buyer-1', { amount: 250_000 });
   const promoted = h.awards.get(secondOffer.id);
   assert.equal(promoted.status, 'AWAITING_CHECKOUT');
   assert.ok(promoted.orderId);

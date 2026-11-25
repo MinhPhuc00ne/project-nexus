@@ -1,20 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AfterSalesModule } from '../after-sales/after-sales.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { FulfillmentModule } from '../fulfillment/fulfillment.module';
 import { AdminModule } from '../admin/admin.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { UsersModule } from '../users/users.module';
-import { PayosService } from './services/payos.service';
-import { PaymentSandboxService } from './services/payment-sandbox.service';
 import { OrderService } from './services/order.service';
-import { SellerFinanceService } from './services/seller-finance.service';
-import { WithdrawalService } from './services/withdrawal.service';
 import { SellerOrdersService } from './services/seller-orders.service';
-import { BuyerFinanceController } from './controllers/buyer-finance.controller';
 import { OrderController } from './controllers/order.controller';
-import { PayosWebhookController } from './controllers/payos-webhook.controller';
-import { SellerFinanceController } from './controllers/seller-finance.controller';
 import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { OrderLifecycleController } from './controllers/order-lifecycle.controller';
 import { OrderEscrowService } from './services/order-escrow.service';
@@ -22,11 +16,11 @@ import { AuctionCheckoutController } from './controllers/auction-checkout.contro
 import { AuctionCheckoutService } from './services/auction-checkout.service';
 import { AuctionSecondChanceHelper } from './services/auction-second-chance.helper';
 import { OrderPaymentHelper } from './services/order-payment.helper';
-import { OrderWalletHelper } from './services/order-wallet.helper';
 
 @Module({
   imports: [
     PrismaModule,
+    PaymentsModule,
     AfterSalesModule,
     FulfillmentModule,
     CatalogModule,
@@ -36,32 +30,17 @@ import { OrderWalletHelper } from './services/order-wallet.helper';
   controllers: [
     AuctionCheckoutController,
     OrderController,
-    PayosWebhookController,
-    BuyerFinanceController,
-    SellerFinanceController,
     SellerOrdersController,
     OrderLifecycleController,
   ],
   providers: [
     AuctionSecondChanceHelper,
     OrderPaymentHelper,
-    OrderWalletHelper,
     AuctionCheckoutService,
-    PayosService,
-    PaymentSandboxService,
     OrderService,
-    SellerFinanceService,
-    WithdrawalService,
     SellerOrdersService,
     OrderEscrowService,
   ],
-  exports: [
-    AuctionCheckoutService,
-    PayosService,
-    OrderService,
-    SellerFinanceService,
-    WithdrawalService,
-    SellerOrdersService,
-  ],
+  exports: [AuctionCheckoutService, OrderService, SellerOrdersService],
 })
 export class CommerceModule {}

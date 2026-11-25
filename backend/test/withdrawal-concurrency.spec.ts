@@ -3,7 +3,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient, WalletType, WithdrawalStatus } from '@prisma/client';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { WithdrawalService } from '../src/modules/commerce/services/withdrawal.service';
+import { WithdrawalService } from '../src/modules/wallet/services/withdrawal.service';
 
 /**
  * A member firing several withdrawal requests at once.

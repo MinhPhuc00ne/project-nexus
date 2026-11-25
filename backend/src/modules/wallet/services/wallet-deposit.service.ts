@@ -1,13 +1,23 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Prisma, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
+import {
+  NotificationChannel,
+  NotificationType,
+  Prisma,
+  WalletTransactionStatus,
+  WalletTransactionType,
+} from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { DepositWalletDto } from '../dtos/deposit-wallet.dto';
-import { AuctionCheckoutService } from './auction-checkout.service';
-import { PayosService } from './payos.service';
+import { AuctionCheckoutService } from '../../commerce/services/auction-checkout.service';
+import { WebhookData } from '@payos/node';
+import { PayosSettlement } from '../../payments/services/payos-settlement';
+import { PayosService } from '../../payments/services/payos.service';
 
 @Injectable()
-export class OrderWalletHelper {
+export class WalletDepositService {
+  private readonly logger = new Logger(WalletDepositService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly payosService: PayosService,
@@ -197,5 +207,93 @@ export class OrderWalletHelper {
       createdAt: tx.createdAt,
       balance: Number(wallet.balance),
     };
+  }
+
+  /**
+   * Settles a verified PayOS callback against a wallet top-up.
+   *
+   * PayOS sends one callback shape for both an order payment and a top-up, and
+   * the two are told apart only by which record carries the orderCode. This
+   * used to live inside the order payment helper as the branch taken when no
+   * payment matched, which is how the module that settles orders ended up
+   * crediting wallets and settling auction deposits.
+   *
+   * @param webhookData - The already-verified callback payload.
+   * @returns The settlement, or null when no top-up carries this orderCode.
+   */
+  async settleTopup(webhookData: WebhookData): Promise<PayosSettlement | null> {
+    const { orderCode } = webhookData;
+
+    const walletTx = await this.prisma.walletTransaction.findFirst({
+      where: {
+        referenceId: String(orderCode),
+        type: WalletTransactionType.DEPOSIT,
+      },
+      include: {
+        wallet: true,
+      },
+    });
+
+    if (walletTx) {
+      if (walletTx.status === WalletTransactionStatus.SUCCESS) {
+        this.logger.log(`Nạp ví PayOS orderCode=${orderCode} đã được xử lý trước đó`);
+        return { success: true, message: 'Already processed' };
+      }
+
+      if (Number(webhookData.amount) !== Number(walletTx.amount)) {
+        throw new BadRequestException('Số tiền nạp PayOS không khớp giao dịch.');
+      }
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.walletTransaction.update({
+          where: { id: walletTx.id },
+          data: {
+            status: WalletTransactionStatus.SUCCESS,
+            description: `${walletTx.description} (Đã thanh toán VietQR PayOS)`,
+          },
+        });
+
+        await tx.wallet.update({
+          where: { id: walletTx.walletId },
+          data: {
+            balance: { increment: walletTx.amount },
+          },
+        });
+
+        // A top-up is always paid into the payer’s own wallet. Platform ledger
+        // wallets have no owner, so one appearing here means the transaction was
+        // written against the wrong wallet and the follow-up work must not run.
+        const walletOwnerId = walletTx.wallet.userId;
+        if (!walletOwnerId) {
+          throw new Error(
+            `Wallet top-up ${walletTx.id} credits platform wallet ${walletTx.walletId}, which has no owner`,
+          );
+        }
+
+        await this.auctionCheckout?.processPendingDepositsForUser(tx, walletOwnerId);
+
+        if (tx.notification?.create) {
+          await tx.notification.create({
+            data: {
+              userId: walletOwnerId,
+              title: 'Nạp tiền ví NEXUS Pay thành công ✅',
+              content: `Bạn đã nạp thành công ${Number(walletTx.amount).toLocaleString('vi-VN')} VND vào ví NEXUS Pay qua PayOS (VietQR).`,
+              type: NotificationType.PAYMENT,
+              channel: NotificationChannel.IN_APP,
+            },
+          });
+        }
+      });
+
+      this.logger.log(
+        `Nạp ví PayOS orderCode=${orderCode} thành công cho userId=${walletTx.wallet.userId}`,
+      );
+      return { success: true, message: 'Wallet deposit processed successfully' };
+    }
+
+    this.logger.warn(
+      `Không tìm thấy bản ghi Payment hoặc WalletTransaction cho PayOS orderCode=${orderCode}`,
+    );
+    return { success: false, message: 'Payment record not found' };
   }
 }
