@@ -14,7 +14,7 @@ flowchart TB
     subgraph BE["Backend (NestJS 12 — /api/v1)"]
         PIPE["Global Pipeline<br/>ValidationPipe • JwtAuthGuard • RolesGuard<br/>TransformResponseInterceptor • GlobalHttpExceptionFilter"]
         CORE["Core Layer<br/>PrismaModule • RedisModule • MailModule • StorageModule<br/>Security • Moderation • Navigation • Notifications Bus"]
-        MODS["10 Domain Modules<br/>auth • users • catalog • commerce • auction<br/>fulfillment • chat • notifications • admin • media"]
+        MODS["17 Domain Modules<br/>auth • users • catalog • cart • orders • payments<br/>wallet • after-sales • reviews • treasury • commerce-query<br/>auction • fulfillment • chat • notifications • admin • media"]
         BUS["EventEmitter2 (Wildcard '.' Domain Bus)"]
     end
 
@@ -47,7 +47,7 @@ flowchart TB
 
 ### Domain Layer (`backend/src/modules`)
 
-Ten self-contained business modules: `auth`, `users`, `catalog`, `commerce`, `auction`, `fulfillment`, `chat`, `notifications`, `admin`, `media`. Each module encapsulates its own controllers, DTOs, services, and domain helpers, exposing only explicit public contracts.
+Seventeen self-contained business modules: `auth`, `users`, `catalog`, `cart`, `orders`, `payments`, `wallet`, `after-sales`, `reviews`, `treasury`, `commerce-query`, `auction`, `fulfillment`, `chat`, `notifications`, `admin`, `media`. Each module encapsulates its own controllers, DTOs, services, and domain helpers, exposing only explicit public contracts.
 
 ## 2. Cross-Module Communication
 

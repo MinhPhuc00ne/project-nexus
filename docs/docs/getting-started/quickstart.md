@@ -20,7 +20,7 @@ This guide explains how to bootstrap the Project Nexus development environment l
 cp .env.example .env
 
 # 2. Install dependencies across all workspaces (root, backend, frontend, docs, packages/*)
-npm install --legacy-peer-deps
+npm install
 
 # 3. Build shared contract package @nexus/types
 npm run build:types
