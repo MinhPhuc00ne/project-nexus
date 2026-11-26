@@ -70,7 +70,7 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
           className="text-sm font-semibold text-primary hover:text-primary-dark transition flex items-center gap-1 group"
         >
           <span>{t('home.categoriesSection.viewAll')}</span>
-          <span className="group-hover:translate-x-0.5 transition-transform">→</span>
+          {/* <span className="group-hover:translate-x-0.5 transition-transform">→</span> */}
         </Link>
       </div>
 
