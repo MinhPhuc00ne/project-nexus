@@ -18,26 +18,53 @@ This guide maps the `frontend/src` directory by architectural layer and user rol
 - `frontend/src/contexts/CartContext.tsx` synchronizes cart state with backend commerce endpoints for authenticated buyers and local storage for guests.
 - `frontend/src/i18n/index.ts` configures `i18next` and `react-i18next` with English (`en`) and Vietnamese (`vi`) translation bundles.
 
-## Service Layer
+## Feature Slices
 
-All HTTP calls share the Axios instance in `frontend/src/services/api.ts`, which injects Bearer tokens, refreshes expired access tokens on HTTP `401` responses, and normalizes API errors.
+Services and the types they carry are grouped under `frontend/src/features/<feature>`,
+one folder per piece of the product, each with a `services` folder and a
+`types` folder, and each service's tests beside it:
 
-- `frontend/src/services/auth.ts` handles login, registration, OTP verification, password reset, Google OAuth, and token refresh.
-- `frontend/src/services/users.ts` manages `/users/me`, seller mode switching, and seller upgrade applications.
-- `frontend/src/services/products.service.ts` queries public catalog listings, categories, and product details.
-- `frontend/src/services/cart.ts` and `frontend/src/services/orders.ts` manage cart mutations, checkout, order tracking, and return requests.
-- `frontend/src/services/auction.ts` connects auction listings, consignment submissions, escrow checkout, and bidding endpoints.
-- `frontend/src/services/wallet.ts` handles wallet balances, top-ups, and withdrawal requests.
-- `frontend/src/services/chat.ts` integrates buyer-seller messaging, support tickets, and chatbot requests.
-- `frontend/src/services/sellerProducts.ts` manages seller inventory CRUD and media uploads.
-- `frontend/src/services/admin.ts` and `frontend/src/services/staff.ts` cover moderation, user management, shop approval, finance controls, and staff ticket operations.
+```
+frontend/src/features/
+  account/   auction/   admin/     auth/      cart/
+  catalog/   chat/      disputes/  notifications/
+  orders/    reviews/   shipping/  staff/     wallet/   wishlist/
+```
+
+They used to be two flat directories — forty-three services and twenty-eight
+type files — where nothing connected `cartSync.ts` to `cart.ts` or
+`seller-finance.types.ts` to the wallet, and three naming conventions had
+accumulated to stand in for folders (`admin.ts`, `adminChat.ts`,
+`admin-returns.ts`).
+
+Imports between features go through the `@/` alias, which maps to
+`frontend/src`, rather than counting `../` out of a folder.
+
+### What is not a feature
+
+- `frontend/src/services/api.ts` is the Axios instance every feature's
+  services call. It injects Bearer tokens, refreshes an expired access token on
+  a `401` and normalizes API errors into `ApiRequestError`.
+- `frontend/src/services/socketPool.ts` leases reference-counted Socket.IO
+  connections, so the chat drawer and the notification bell share one
+  connection per namespace instead of opening one each.
+- `frontend/src/services/sellerResources.ts` de-duplicates concurrent reads
+  within one authenticated session; the catalog, orders, wallet and disputes
+  services all use it.
+- `frontend/src/types/toast.types.ts` is shared, because every feature raises
+  a toast.
+
+There is no `src/types/index.ts`. It re-exported seven type files with
+`export *`, so any file could reach any feature's types through a path that
+named none of them; each of its seven call sites now imports from the module
+that defines what it uses.
 
 ## Role Workspaces and Layouts
 
 | Role Group         | Layout                          | Primary Route Prefix                        | Key Directories                                                               |
 | ------------------ | ------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------- |
 | Guest and Shopping | `GuestLayout`, `NonAdminLayout` | `/`, `/search`, `/product/:id`, `/auctions` | `pages/guest`, `components/home`, `components/products`, `components/auction` |
-| Authentication     | `AuthLayout`                    | `/login`, `/register`, `/forgot-password`   | `pages/auth`                                                                  |
+| Authentication     | `AuthLayout`                    | `/login`, `/register`                       | `pages/auth`                                                                  |
 | Buyer              | `GuestLayout`                   | `/buyer/*`, `/cart`, `/checkout`            | `pages/buyer`, `components/cart`, `components/profile`                        |
 | Seller             | `SellerLayout`                  | `/seller/*`                                 | `pages/seller`, `components/seller`                                           |
 | Support Staff      | `StaffLayout`                   | `/staff/*`                                  | `pages/staff`, `components/staff`                                             |
