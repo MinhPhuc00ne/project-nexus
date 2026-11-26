@@ -6,7 +6,7 @@ import type {
   UpdateSellerShop,
   UpdateSellerShopResult,
 } from '@/features/catalog/types/shop.types';
-import { getSellerResource } from '@/features/seller/services/sellerResources';
+import { getSellerResource } from '@/services/sellerResources';
 
 export async function uploadShopAvatarFile(file: File): Promise<string> {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp'];

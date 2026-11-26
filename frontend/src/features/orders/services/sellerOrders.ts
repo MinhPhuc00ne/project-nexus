@@ -1,7 +1,7 @@
 import i18n from '@/i18n';
 import { apiRequest, ApiRequestError } from '@/services/api';
 import { getStoredUser } from '@/features/auth/services/auth';
-import { getSellerResource } from '@/features/seller/services/sellerResources';
+import { getSellerResource } from '@/services/sellerResources';
 import type {
   DispatchGhnRequest,
   GhnDiagnostic,

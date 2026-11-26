@@ -1,6 +1,6 @@
 import i18n from '@/i18n';
 import { apiRequest } from '@/services/api';
-import { getSellerResource } from '@/features/seller/services/sellerResources';
+import { getSellerResource } from '@/services/sellerResources';
 import type {
   CreateWithdrawal,
   FinancePage,
