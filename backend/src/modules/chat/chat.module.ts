@@ -15,11 +15,14 @@ import { ChatbotController } from './controllers/chatbot.controller';
 import { ChatbotService } from './services/chatbot.service';
 import { ChatbotAiService } from './services/chatbot-ai.service';
 import { ChatbotRateLimitService } from './services/chatbot-rate-limit.service';
-import { CommerceQueryModule } from '../commerce-query/commerce-query.module';
+import { OrdersModule } from '../orders/orders.module';
+import { CartModule } from '../cart/cart.module';
+import { CatalogModule } from '../catalog/catalog.module';
+import { UsersModule } from '../users/users.module';
 import { ChatbotCommerceService } from './services/chatbot-commerce.service';
 
 @Module({
-  imports: [PrismaModule, StorageModule, CommerceQueryModule],
+  imports: [PrismaModule, StorageModule, OrdersModule, CartModule, CatalogModule, UsersModule],
   controllers: [ChatController, SellerAutoReplyController, AdminChatController, ChatbotController],
   providers: [
     ChatPresenceService,

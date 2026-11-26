@@ -1,4 +1,7 @@
-import type { CommerceChatQueryService } from '../../commerce-query/services/commerce-chat-query.service';
+import type {
+  CommerceChatCart,
+  CommerceChatOrders,
+} from '../../../core/domain/commerce-chat.types';
 import type { ChatbotTopic } from './chatbot-knowledge';
 
 /**
@@ -27,8 +30,8 @@ export interface ChatbotReply {
   topic: ChatbotTopic | 'WELCOME' | 'UNKNOWN';
   sources: { id: string; title: string }[];
   actions: ChatbotAction[];
-  orders?: Awaited<ReturnType<CommerceChatQueryService['orders']>>;
-  cart?: Awaited<ReturnType<CommerceChatQueryService['cart']>>;
+  orders?: CommerceChatOrders;
+  cart?: CommerceChatCart;
   order?: {
     id: string;
     status: string;
