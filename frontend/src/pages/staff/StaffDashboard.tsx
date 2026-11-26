@@ -48,16 +48,9 @@ export default function StaffDashboard({
     defaultValue: fallbackContent.description,
   });
   const sectionTopics: string[] =
-    sectionKey === 'auctionSupport' ||
-    sectionKey === 'faq' ||
-    sectionKey === 'history' ||
-    sectionKey === 'performance'
+    sectionKey === 'auctionSupport' || sectionKey === 'faq'
       ? (t(`sections.${sectionKey}.topics`, { returnObjects: true }) as string[])
       : [];
-  const unavailableApiMessage: Partial<Record<StaffSection, string>> = {
-    'Lịch Sử & CSAT': t('dashboard.unavailableHistory'),
-    'Hiệu Suất Cá Nhân': t('dashboard.unavailablePerformance'),
-  };
 
   if (activeNavigation === 'Quản Lý Nhân Viên' && managementAccess !== 'allowed') {
     return (
@@ -177,8 +170,7 @@ export default function StaffDashboard({
                   <Inbox className="mx-auto mb-3 text-slate-400" size={28} />
                   <h3 className="font-semibold text-slate-700">{t('dashboard.noDataTitle')}</h3>
                   <p className="mt-2 text-sm text-slate-500">
-                    {unavailableApiMessage[activeNavigation] ||
-                      t('dashboard.noDataFallback', { title: sectionTitle.toLowerCase() })}
+                    {t('dashboard.noDataFallback', { title: sectionTitle.toLowerCase() })}
                   </p>
                 </div>
               )}

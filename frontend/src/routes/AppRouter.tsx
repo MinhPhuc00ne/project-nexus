@@ -74,8 +74,6 @@ const StaffBannersPage = lazy(() => import('../pages/staff/StaffBannersPage'));
 const StaffReviewsPage = lazy(() => import('../pages/staff/StaffReviewsPage'));
 const StaffAuctionSupportPage = lazy(() => import('../pages/staff/StaffAuctionSupportPage'));
 const StaffFaqPage = lazy(() => import('../pages/staff/StaffFaqPage'));
-const StaffHistoryPage = lazy(() => import('../pages/staff/StaffHistoryPage'));
-const StaffPerformancePage = lazy(() => import('../pages/staff/StaffPerformancePage'));
 const AdminProductsPage = lazy(() => import('../pages/admin/AdminProductsPage'));
 const AdminOrdersPage = lazy(() => import('../pages/admin/AdminOrdersPage'));
 const AdminStoresPage = lazy(() => import('../pages/admin/AdminStoresPage'));
@@ -212,8 +210,6 @@ function AppRouter() {
                   <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
                   <Route path={ROUTES.STAFF_BANNERS} element={<StaffBannersPage />} />
                   <Route path={ROUTES.STAFF_REVIEWS} element={<StaffReviewsPage />} />
-                  <Route path={ROUTES.STAFF_HISTORY} element={<StaffHistoryPage />} />
-                  <Route path={ROUTES.STAFF_PERFORMANCE} element={<StaffPerformancePage />} />
                 </Route>
               </Route>
 
