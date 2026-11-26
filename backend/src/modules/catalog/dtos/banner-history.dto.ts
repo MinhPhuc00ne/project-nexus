@@ -16,21 +16,23 @@ export const QueryBannerHistorySchema = z.object(queryBannerHistoryFields).stric
 
 export type QueryBannerHistoryInput = z.infer<typeof QueryBannerHistorySchema>;
 
-export const BannerDisableHistorySchema = z.object({
-  id: z.uuid(),
-  bannerId: z.uuid(),
-  bannerTitle: z.string(),
-  creatorId: z.uuid(),
-  creatorName: z.string(),
-  creatorRole: z.enum(BannerCreatorRole),
-  actorId: z.uuid(),
-  actorName: z.string(),
-  actorRole: z.enum(Role),
-  source: z.enum(['UPDATE', 'DELETE', 'DISABLE']),
-  wasActive: z.boolean().meta({ example: true }),
-  isActive: z.boolean().meta({ example: false }),
-  createdAt: z.iso.datetime(),
-});
+export const BannerDisableHistorySchema = z
+  .object({
+    id: z.uuid(),
+    bannerId: z.uuid(),
+    bannerTitle: z.string(),
+    creatorId: z.uuid(),
+    creatorName: z.string(),
+    creatorRole: z.enum(BannerCreatorRole),
+    actorId: z.uuid(),
+    actorName: z.string(),
+    actorRole: z.enum(Role),
+    source: z.enum(['UPDATE', 'DELETE', 'DISABLE']),
+    wasActive: z.boolean().meta({ example: true }),
+    isActive: z.boolean().meta({ example: false }),
+    createdAt: z.iso.datetime(),
+  })
+  .meta({ id: 'BannerDisableHistoryDto' });
 
 export type BannerDisableHistoryDto = Omit<
   z.infer<typeof BannerDisableHistorySchema>,
@@ -40,12 +42,14 @@ export type BannerDisableHistoryDto = Omit<
   createdAt: Date | string;
 };
 
-export const BannerHistoryPageSchema = z.object({
-  items: z.array(BannerDisableHistorySchema),
-  total: z.number(),
-  page: z.number(),
-  limit: z.number(),
-});
+export const BannerHistoryPageSchema = z
+  .object({
+    items: z.array(BannerDisableHistorySchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+  })
+  .meta({ id: 'BannerHistoryPageDto' });
 
 export type BannerHistoryPageDto = {
   items: BannerDisableHistoryDto[];

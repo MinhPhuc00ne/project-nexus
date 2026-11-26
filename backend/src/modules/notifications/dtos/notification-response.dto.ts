@@ -1,25 +1,27 @@
 import { NotificationChannel, NotificationType } from '@prisma/client';
 import { z } from 'zod';
 
-export const NotificationResponseSchema = z.object({
-  id: z.uuid(),
-  title: z.string(),
-  content: z.string(),
-  type: z.enum(NotificationType),
-  channel: z.enum(NotificationChannel),
-  isRead: z.boolean(),
-  readAt: z.iso.datetime().nullable(),
-  createdAt: z.iso.datetime(),
-  auctionId: z.uuid().nullable(),
-  targetUrl: z
-    .string()
-    .nullable()
-    .describe(
-      'Frontend destination. New auction notifications use the same route as auction banners and manual browsing. Legacy notifications may have no destination.',
-    )
-    .meta({ example: '/auction/00000000-0000-4000-8000-000000000001' }),
-  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
-});
+export const NotificationResponseSchema = z
+  .object({
+    id: z.uuid(),
+    title: z.string(),
+    content: z.string(),
+    type: z.enum(NotificationType),
+    channel: z.enum(NotificationChannel),
+    isRead: z.boolean(),
+    readAt: z.iso.datetime().nullable(),
+    createdAt: z.iso.datetime(),
+    auctionId: z.uuid().nullable(),
+    targetUrl: z
+      .string()
+      .nullable()
+      .describe(
+        'Frontend destination. New auction notifications use the same route as auction banners and manual browsing. Legacy notifications may have no destination.',
+      )
+      .meta({ example: '/auction/00000000-0000-4000-8000-000000000001' }),
+    metadata: z.record(z.string(), z.unknown()).nullable().optional(),
+  })
+  .meta({ id: 'NotificationResponseDto' });
 
 export type NotificationResponseDto = Omit<
   z.infer<typeof NotificationResponseSchema>,
