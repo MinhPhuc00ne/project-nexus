@@ -1,25 +1,32 @@
 import {
   BadRequestException,
+  Controller,
+  Get,
   HttpStatus,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Test } from '@nestjs/testing';
 import type { HealthCheck } from '@nexus/contracts';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { Response } from 'express';
+import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HealthController } from '../src/core/health/health.controller';
-import type { HealthService } from '../src/core/health/health.service';
+import { HealthService } from '../src/core/health/health.service';
+import { TransformResponseInterceptor } from '../src/core/interceptors/transform-response.interceptor';
 import type { MailService } from '../src/core/mail/mail.service';
 import type { PrismaService } from '../src/core/prisma/prisma.service';
 import { ProviderConfigService } from '../src/core/providers/provider-config.service';
 import type { RedisService } from '../src/core/redis/redis.service';
+import type { ProfileReauthService } from '../src/core/security/profile-reauth.service';
 import type { TokenAuthService } from '../src/core/security/token-auth.service';
-import type { CloudinaryStorageService } from '../src/core/storage/cloudinary.service';
+import { CloudinaryStorageService } from '../src/core/storage/cloudinary.service';
+import { AuthProfileService } from '../src/modules/auth/services/auth-profile.service';
 import { AuthService } from '../src/modules/auth/services/auth.service';
 import type { InventoryService } from '../src/modules/catalog/services/inventory.service';
 import type { AfterSalesStoreService } from '../src/modules/commerce/services/after-sales-store.service';
@@ -214,6 +221,79 @@ describe('M2 Sanity Defect Fixes', () => {
       const afterFiles = fs.existsSync(mediaDir) ? fs.readdirSync(mediaDir) : [];
       expect(afterFiles).toEqual(beforeFiles);
     });
+
+    it('rejects uppercase or whitespace-padded data: URIs from Cloudinary without local fallback', async () => {
+      const configService = new ConfigService({
+        STORAGE_PROVIDER: 'cloudinary',
+        CLOUDINARY_CLOUD_NAME: 'demo-cloud',
+        CLOUDINARY_API_KEY: 'demo-key',
+        CLOUDINARY_API_SECRET: 'demo-secret',
+      });
+      const cloudinary = {
+        uploadFile: vi.fn().mockResolvedValue({
+          url: '  DATA:image/png;base64,iVBORw0KGgo=  ',
+        }),
+      } as unknown as CloudinaryStorageService;
+      const service = new MediaService(
+        configService,
+        cloudinary,
+        new ProviderConfigService(configService),
+      );
+
+      const mediaDir = path.join(process.cwd(), 'uploads', 'media');
+      const beforeFiles = fs.existsSync(mediaDir) ? fs.readdirSync(mediaDir) : [];
+
+      await expect(service.uploadMedia(makeImageFile())).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+
+      const afterFiles = fs.existsSync(mediaDir) ? fs.readdirSync(mediaDir) : [];
+      expect(afterFiles).toEqual(beforeFiles);
+    });
+
+    it('CloudinaryStorageService throws ServiceUnavailableException when STORAGE_PROVIDER=cloudinary and credentials are missing', async () => {
+      const configService = new ConfigService({
+        STORAGE_PROVIDER: 'cloudinary',
+      });
+      const storageService = new CloudinaryStorageService(
+        configService,
+        new ProviderConfigService(configService),
+      );
+
+      const proofsDir = path.join(process.cwd(), 'uploads', 'seller-proofs');
+      const beforeFiles = fs.existsSync(proofsDir) ? fs.readdirSync(proofsDir) : [];
+
+      await expect(storageService.uploadFile(VALID_PNG_BUFFER, 'proof.png')).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+
+      const afterFiles = fs.existsSync(proofsDir) ? fs.readdirSync(proofsDir) : [];
+      expect(afterFiles).toEqual(beforeFiles);
+    });
+
+    it('CloudinaryStorageService saves locally only when STORAGE_PROVIDER=local', async () => {
+      const configService = new ConfigService({
+        STORAGE_PROVIDER: 'local',
+        APP_PUBLIC_URL: 'https://cdn.nexus.test',
+      });
+      const storageService = new CloudinaryStorageService(
+        configService,
+        new ProviderConfigService(configService),
+      );
+
+      const res = await storageService.uploadFile(VALID_PNG_BUFFER, 'proof.png');
+      const fileName = res.url.split('/').pop() ?? '';
+      const savedPath = path.join(process.cwd(), 'uploads', 'seller-proofs', fileName);
+      try {
+        expect(res.publicId).toMatch(/^local-/);
+        expect(res.url).toBe(`https://cdn.nexus.test/uploads/seller-proofs/${fileName}`);
+        expect(fs.existsSync(savedPath)).toBe(true);
+      } finally {
+        if (fs.existsSync(savedPath)) {
+          fs.unlinkSync(savedPath);
+        }
+      }
+    });
   });
 
   describe('Fix 4: AuthService transactional refresh rotation & MailService delegation', () => {
@@ -361,6 +441,41 @@ describe('M2 Sanity Defect Fixes', () => {
         process.env.NODE_ENV = prevNodeEnv;
       }
     });
+
+    it('AuthProfileService.requestChangePasswordOtp fails closed when MailService returns false even outside production', async () => {
+      const prevNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'development';
+      try {
+        const prisma = {
+          user: {
+            findUnique: vi.fn().mockResolvedValue({
+              id: 'user-1',
+              email: 'profile-buyer@nexus.test',
+              personalEmail: null,
+              fullName: 'Buyer Test',
+            }),
+            update: vi.fn().mockResolvedValue({ id: 'user-1' }),
+          },
+        } as unknown as PrismaService;
+        const mail = {
+          sendEmail: vi.fn().mockResolvedValue(false),
+        } as unknown as MailService;
+        const authProfileService = new AuthProfileService(
+          prisma,
+          new ConfigService({}),
+          {} as unknown as ProfileReauthService,
+          {} as unknown as TokenAuthService,
+          mail,
+        );
+
+        await expect(authProfileService.requestChangePasswordOtp('user-1')).rejects.toThrow(
+          BadRequestException,
+        );
+        expect(mail.sendEmail).toHaveBeenCalledTimes(1);
+      } finally {
+        process.env.NODE_ENV = prevNodeEnv;
+      }
+    });
   });
 
   describe('Fix 5: HealthController HTTP status mapping', () => {
@@ -396,6 +511,63 @@ describe('M2 Sanity Defect Fixes', () => {
       expect(res.status).toHaveBeenLastCalledWith(HttpStatus.SERVICE_UNAVAILABLE);
       expect(downBody.status).toBe('down');
       expect(downBody.db.status).toBe('down');
+    });
+
+    it('emits matching HTTP status and envelope body.statusCode via real NestJS + TransformResponseInterceptor', async () => {
+      const checkMock = vi.fn<() => Promise<HealthCheck>>();
+
+      @Controller('envelope-probe')
+      class EnvelopeProbeController {
+        @Get('custom')
+        custom() {
+          return {
+            message: 'Custom upload',
+            data: { url: 'https://cdn.nexus.test/file.png' },
+          };
+        }
+      }
+
+      const moduleRef = await Test.createTestingModule({
+        controllers: [HealthController, EnvelopeProbeController],
+        providers: [{ provide: HealthService, useValue: { check: checkMock } }],
+      }).compile();
+
+      const app = moduleRef.createNestApplication();
+      app.setGlobalPrefix('api/v1');
+      app.useGlobalInterceptors(new TransformResponseInterceptor());
+      await app.init();
+
+      try {
+        checkMock.mockResolvedValueOnce(makeHealthResponse('ok'));
+        const okRes = await request(app.getHttpServer()).get('/api/v1/health');
+        expect(okRes.status).toBe(200);
+        expect(okRes.body.statusCode).toBe(200);
+        expect(okRes.body.message).toBe('Operation successful');
+        expect(okRes.body.data.status).toBe('ok');
+
+        checkMock.mockResolvedValueOnce(makeHealthResponse('degraded'));
+        const degradedRes = await request(app.getHttpServer()).get('/api/v1/health');
+        expect(degradedRes.status).toBe(200);
+        expect(degradedRes.body.statusCode).toBe(200);
+        expect(degradedRes.body.message).toBe('Operation successful');
+        expect(degradedRes.body.data.status).toBe('degraded');
+
+        checkMock.mockResolvedValueOnce(makeHealthResponse('down'));
+        const downRes = await request(app.getHttpServer()).get('/api/v1/health');
+        expect(downRes.status).toBe(503);
+        expect(downRes.body.statusCode).toBe(503);
+        expect(downRes.body.message).toBe('Service unavailable');
+        expect(downRes.body.data.status).toBe('down');
+
+        const customRes = await request(app.getHttpServer()).get('/api/v1/envelope-probe/custom');
+        expect(customRes.status).toBe(200);
+        expect(customRes.body.statusCode).toBe(200);
+        expect(customRes.body.message).toBe('Custom upload');
+        expect(customRes.body.url).toBe('https://cdn.nexus.test/file.png');
+        expect(customRes.body.data).toEqual({ url: 'https://cdn.nexus.test/file.png' });
+      } finally {
+        await app.close();
+      }
     });
   });
 });
