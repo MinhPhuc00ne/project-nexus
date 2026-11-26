@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../../i18n';
-import type { WalletDepositProvider } from '../../../services/wallet.service';
+import type { WalletDepositProvider } from '@/features/wallet/services/wallet.service';
 import WalletTopUpModal from '../WalletTopUpModal';
 
 function Harness({ onAmountChange }: { onAmountChange: (val: string) => void }) {

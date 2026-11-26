@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { CartController } from './controllers/cart.controller';
 import { CartService } from './services/cart.service';
+import { CartChatFacade } from './services/cart-chat.facade';
 
 /**
  * The shopping cart.
@@ -15,7 +16,7 @@ import { CartService } from './services/cart.service';
 @Module({
   imports: [PrismaModule],
   controllers: [CartController],
-  providers: [CartService],
-  exports: [CartService],
+  providers: [CartService, CartChatFacade],
+  exports: [CartService, CartChatFacade],
 })
 export class CartModule {}

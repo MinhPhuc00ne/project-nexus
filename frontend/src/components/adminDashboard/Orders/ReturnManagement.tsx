@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
-import { listAdminReturns } from '../../../services/admin-returns';
+import { listAdminReturns } from '@/features/admin/services/admin-returns';
 import {
   returnStatusLabels,
   type AdminReturnRequest,
   type ReturnStatus,
-} from '../../../types/admin-return.types';
+} from '@/features/admin/types/admin-return.types';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { date, message } from './orderPresentation';
 import ReturnDetail from './ReturnDetail';

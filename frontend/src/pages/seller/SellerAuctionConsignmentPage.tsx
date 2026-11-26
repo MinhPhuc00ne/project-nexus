@@ -9,7 +9,7 @@ import {
   getSellerAuctionConsignmentsApi,
   type AuctionEntity,
   type SellerAuctionConsignment,
-} from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import SellerConsignmentForm from '../../components/seller/SellerConsignmentForm';
 import SellerConsignmentHistoryPanel from '../../components/seller/SellerConsignmentHistoryPanel';
 import { canSubmitConsignment } from '../../components/seller/sellerConsignmentHelpers';

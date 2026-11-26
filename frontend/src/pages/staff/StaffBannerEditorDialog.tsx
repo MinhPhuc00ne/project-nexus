@@ -15,7 +15,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import type { AuctionEntity } from '../../services/auction.service';
+import type { AuctionEntity } from '@/features/auction/services/auction.service';
 import { minEndDateTime } from '../../utils/date-time';
 
 type StaffBannerEditorDialogProps = {

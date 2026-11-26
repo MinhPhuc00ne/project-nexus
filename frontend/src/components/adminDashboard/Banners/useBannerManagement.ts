@@ -7,7 +7,7 @@ import {
   saveBannerOrder,
   type Banner,
   type BannerInput,
-} from '../../../services/banners.service';
+} from '@/features/catalog/services/banners.service';
 
 const blank: BannerInput = {
   title: '',

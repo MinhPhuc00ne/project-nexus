@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { nullAsAbsent } from '../../../core/validation/query-schemas';
-import { ApiProperty } from '@nestjs/swagger';
 import { PenaltyType, ReputationTrustLevel } from '@prisma/client';
 
 /**
@@ -76,39 +75,30 @@ export type AwardProfileCompletionInput = z.infer<typeof AwardProfileCompletionS
 /**
  * Response payload summarizing a user's reputation standing and privileges.
  */
-export class ReputationSummaryResponse {
-  @ApiProperty({ description: 'Target user unique identifier', example: 'usr_abc123' })
-  userId!: string;
-
-  @ApiProperty({ description: 'Current nonnegative reputation score', example: 100 })
-  score!: number;
-
-  @ApiProperty({
-    description: 'Current trust level tier classification',
-    enum: ReputationTrustLevel,
-    example: ReputationTrustLevel.GOOD,
-  })
-  trustLevel!: ReputationTrustLevel;
-
-  @ApiProperty({
-    description: 'Whether the seller store is administratively or automatically suspended',
-    example: false,
-  })
-  isSuspended!: boolean;
-
-  @ApiProperty({
-    description:
+export const ReputationSummaryResponseSchema = z.object({
+  userId: z.string().describe('Target user unique identifier').meta({ example: 'usr_abc123' }),
+  score: z.number().describe('Current nonnegative reputation score').meta({ example: 100 }),
+  trustLevel: z
+    .enum(ReputationTrustLevel)
+    .describe('Current trust level tier classification')
+    .meta({ example: ReputationTrustLevel.GOOD }),
+  isSuspended: z
+    .boolean()
+    .describe('Whether the seller store is administratively or automatically suspended')
+    .meta({ example: false }),
+  canSell: z
+    .boolean()
+    .describe(
       'Whether the user possesses active selling permissions (score >= 50 and not suspended)',
-    example: true,
-  })
-  canSell!: boolean;
+    )
+    .meta({ example: true }),
+  isVerifiedShop: z
+    .boolean()
+    .describe('Whether the shop possesses the excellent reputation badge (score >= 120)')
+    .meta({ example: true }),
+});
 
-  @ApiProperty({
-    description: 'Whether the shop possesses the excellent reputation badge (score >= 120)',
-    example: true,
-  })
-  isVerifiedShop!: boolean;
-}
+export type ReputationSummaryResponse = z.infer<typeof ReputationSummaryResponseSchema>;
 
 /**
  * Query filter parameters for retrieving paginated user reputation audit logs.

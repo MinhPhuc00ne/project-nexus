@@ -1,4 +1,4 @@
-import type { SystemSettings } from '../../../types/admin-settings.types';
+import type { SystemSettings } from '@/features/admin/types/admin-settings.types';
 
 export type SettingsGroupId = 'fees' | 'cartInventory' | 'catalog' | 'antiSniping';
 

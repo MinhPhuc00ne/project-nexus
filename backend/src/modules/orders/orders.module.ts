@@ -13,6 +13,7 @@ import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { OrderLifecycleController } from './controllers/order-lifecycle.controller';
 import { OrderEscrowService } from './services/order-escrow.service';
 import { OrderPaymentHelper } from './services/order-payment.helper';
+import { OrdersChatFacade } from './services/orders-chat.facade';
 
 /**
  * Checkout and the life of an order: quoting it, paying for it, holding the
@@ -39,7 +40,13 @@ import { OrderPaymentHelper } from './services/order-payment.helper';
     UsersModule,
   ],
   controllers: [OrderController, SellerOrdersController, OrderLifecycleController],
-  providers: [OrderPaymentHelper, OrderService, SellerOrdersService, OrderEscrowService],
-  exports: [OrderService, OrderEscrowService, SellerOrdersService],
+  providers: [
+    OrderPaymentHelper,
+    OrderService,
+    SellerOrdersService,
+    OrderEscrowService,
+    OrdersChatFacade,
+  ],
+  exports: [OrderService, OrderEscrowService, SellerOrdersService, OrdersChatFacade],
 })
 export class OrdersModule {}

@@ -68,7 +68,7 @@ export function StoreIdentity() {
           </Badge>
         </div>
         <div
-          className="flex items-center gap-[17px] flex-wrap mt-2 text-[10px] text-[#8c9bb2] [&>span:not(.anticon)]:flex [&>span:not(.anticon)]:items-center [&>span:not(.anticon)]:gap-1 [&_b]:text-[#5c6c87] [&_b]:font-[550] [&>span:not(.anticon):first-child>.anticon]:text-[#f7b740]! max-[760px]:gap-2 max-[760px]:text-[9px] max-[540px]:flex-col max-[540px]:items-start max-[540px]:gap-[5px]"
+          className="flex items-center gap-[17px] flex-wrap mt-2 text-[10px] text-[#8c9bb2] [&>span]:flex [&>span]:items-center [&>span]:gap-1 [&_b]:text-[#5c6c87] [&_b]:font-[550] [&>span:first-child>svg]:text-[#f7b740]! max-[760px]:gap-2 max-[760px]:text-[9px] max-[540px]:flex-col max-[540px]:items-start max-[540px]:gap-[5px]"
           data-seller="store-meta"
         >
           <span>
@@ -258,7 +258,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
         }
       >
         <div
-          className="gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:font-[650] [&_button>span:not(.anticon)]:text-[9px] [&_button>span:not(.anticon)]:bg-[#edf1f8] [&_button>span:not(.anticon)]:py-0 [&_button>span:not(.anticon)]:px-[5px] [&_button>span:not(.anticon)]:rounded-[4px] [&_button.is-active>span:not(.anticon)]:bg-[#315eea] [&_button.is-active>span:not(.anticon)]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px] inline-flex bg-[#f5f7fb] rounded-[7px] p-[3px] mb-5.5 [&_button]:py-[5px] [&_button]:px-[11px] [&_button.is-active]:bg-white [&_button.is-active]:[box-shadow:0_1px_4px_#2039640b] [&_button.is-active]:text-[#465570]"
+          className="gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:font-[650] [&_button>span]:text-[9px] [&_button>span]:bg-[#edf1f8] [&_button>span]:py-0 [&_button>span]:px-[5px] [&_button>span]:rounded-[4px] [&_button.is-active>span]:bg-[#315eea] [&_button.is-active>span]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px] inline-flex bg-[#f5f7fb] rounded-[7px] p-[3px] mb-5.5 [&_button]:py-[5px] [&_button]:px-[11px] [&_button.is-active]:bg-white [&_button.is-active]:[box-shadow:0_1px_4px_#2039640b] [&_button.is-active]:text-[#465570]"
           data-seller="tabs chart-tabs"
         >
           {(Object.keys(REVENUE_RANGES) as RevenueRange[]).map((item) => (
@@ -278,7 +278,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           data-seller="chart"
         >
           <div
-            className="absolute [inset:0] flex flex-col justify-between [&>span:not(.anticon)]:block [&>span:not(.anticon)]:[border-top:1px_dashed_#edf1f7] [&>span:not(.anticon)]:relative [&_i]:absolute [&_i]:left-[-25px] [&_i]:top-[-8px] [&_i]:not-italic [&_i]:text-[8px] [&_i]:text-[#a1afc2]"
+            className="absolute [inset:0] flex flex-col justify-between [&>span]:block [&>span]:[border-top:1px_dashed_#edf1f7] [&>span]:relative [&_i]:absolute [&_i]:left-[-25px] [&_i]:top-[-8px] [&_i]:not-italic [&_i]:text-[8px] [&_i]:text-[#a1afc2]"
             data-seller="chart-gridlines"
           >
             {[1, 0.75, 0.5, 0.25, 0].map((fraction) => (
@@ -308,7 +308,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
             </div>
           ) : (
             <div
-              className="absolute [inset:0] flex flex-col items-center justify-center gap-[9px] text-[#adbbd2] [&_strong]:text-[11px] [&_strong]:text-[#899bb9] [&_strong]:font-medium [&_span:not(.anticon)]:text-[10px]"
+              className="absolute [inset:0] flex flex-col items-center justify-center gap-[9px] text-[#adbbd2] [&_strong]:text-[11px] [&_strong]:text-[#899bb9] [&_strong]:font-medium [&_span]:text-[10px]"
               data-seller="chart-placeholder"
             >
               <RiseOutlined className="text-[28px]" aria-hidden="true" />
@@ -320,7 +320,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           )}
         </div>
         <div
-          className="flex gap-5 justify-center [border-top:1px_solid_#f0f3f8] [padding:15px_0_2px] flex-wrap text-[9px] text-[#8b98ad] [&>span:not(.anticon)]:flex [&>span:not(.anticon)]:items-center [&>span:not(.anticon)]:gap-1.5 [&_i]:inline-block [&_i]:w-[7px] [&_i]:h-[7px] [&_i]:bg-[#315eea] [&_i]:rounded-full [&_i]:shrink-0 [&>span:not(.anticon):nth-child(2)_i]:bg-[#9eb7fb] [&_b]:font-semibold [&_b]:text-[#4b5d7d] max-[1050px]:gap-2.5"
+          className="flex gap-5 justify-center [border-top:1px_solid_#f0f3f8] [padding:15px_0_2px] flex-wrap text-[9px] text-[#8b98ad] [&>span]:flex [&>span]:items-center [&>span]:gap-1.5 [&_i]:inline-block [&_i]:w-[7px] [&_i]:h-[7px] [&_i]:bg-[#315eea] [&_i]:rounded-full [&_i]:shrink-0 [&>span:nth-child(2)_i]:bg-[#9eb7fb] [&_b]:font-semibold [&_b]:text-[#4b5d7d] max-[1050px]:gap-2.5"
           data-seller="chart-legend"
         >
           <span>
@@ -377,7 +377,7 @@ export function RevenuePanels({ compact = false }: { compact?: boolean }) {
           </div>
         </div>
         <div
-          className="[&_i]:inline-block [&_i]:w-[7px] [&_i]:h-[7px] [&_i]:bg-[#315eea] [&_i]:rounded-full [&_i]:shrink-0 [&>div:nth-child(2)_i]:bg-[#9eb7fb] [&>div]:flex [&>div]:justify-between [&>div]:items-center [&>div]:gap-2.5 [&>div]:bg-[#f7f9fc] [&>div]:[border:1px_solid_#eef2f8] [&>div]:rounded-[7px] [&>div]:p-2.5 [&>div]:mb-2 [&>div]:text-[10px] [&_span:not(.anticon)]:flex [&_span:not(.anticon)]:items-center [&_span:not(.anticon)]:gap-[7px] [&_span:not(.anticon)]:text-[#7a8ba9]"
+          className="[&_i]:inline-block [&_i]:w-[7px] [&_i]:h-[7px] [&_i]:bg-[#315eea] [&_i]:rounded-full [&_i]:shrink-0 [&>div:nth-child(2)_i]:bg-[#9eb7fb] [&>div]:flex [&>div]:justify-between [&>div]:items-center [&>div]:gap-2.5 [&>div]:bg-[#f7f9fc] [&>div]:[border:1px_solid_#eef2f8] [&>div]:rounded-[7px] [&>div]:p-2.5 [&>div]:mb-2 [&>div]:text-[10px] [&_span]:flex [&_span]:items-center [&_span]:gap-[7px] [&_span]:text-[#7a8ba9]"
           data-seller="donut-legend"
         >
           <div>
@@ -535,7 +535,7 @@ export function AuctionsPreview({ full = false }: { full?: boolean }) {
                 <small>{auction.auction.title}</small>
               </div>
               <div
-                className="ml-auto [&_small]:text-[9px] [&_small]:text-[#96a4bb] [&_small]:block [&_b]:text-[11px] [&_b]:block [&>span:not(.anticon)]:flex [&>span:not(.anticon)]:items-center [&>span:not(.anticon)]:justify-between [&>span:not(.anticon)]:text-[9px] [&>span:not(.anticon)]:text-[#315eea] [&>span:not(.anticon)]:mt-[9px]"
+                className="ml-auto [&_small]:text-[9px] [&_small]:text-[#96a4bb] [&_small]:block [&_b]:text-[11px] [&_b]:block [&>span]:flex [&>span]:items-center [&>span]:justify-between [&>span]:text-[9px] [&>span]:text-[#315eea] [&>span]:mt-[9px]"
                 data-seller="preview-price"
               >
                 <small>{t('dashboard.auctionsPreview.startingPrice')}</small>
@@ -580,7 +580,7 @@ export function WalletPanel() {
       action={<SafetyCertificateOutlined className="text-[19px]" aria-hidden="true" />}
     >
       <div
-        className="[border:1px_solid_#e2eafa] [background:linear-gradient(120deg,_#f3f7ff,_#fafcff)] rounded-[10px] p-5 flex items-center justify-between gap-3 mb-[15px] [&_small]:text-[9px] [&_small]:text-[#899dbd] [&_small]:tracking-[0.7px] [&_strong]:block [&_strong]:text-[26px] [&_strong]:tracking-[-1px] [&_strong]:font-bold [&_strong]:my-1.5 [&_strong]:mx-0 [&_p]:text-[9px] [&_p]:text-[#93a4be] [&_p]:m-0 [&>.anticon]:text-[#81a2ec]!"
+        className="[border:1px_solid_#e2eafa] [background:linear-gradient(120deg,_#f3f7ff,_#fafcff)] rounded-[10px] p-5 flex items-center justify-between gap-3 mb-[15px] [&_small]:text-[9px] [&_small]:text-[#899dbd] [&_small]:tracking-[0.7px] [&_strong]:block [&_strong]:text-[26px] [&_strong]:tracking-[-1px] [&_strong]:font-bold [&_strong]:my-1.5 [&_strong]:mx-0 [&_p]:text-[9px] [&_p]:text-[#93a4be] [&_p]:m-0 [&>svg]:text-[#81a2ec]!"
         data-seller="wallet-highlight"
       >
         <div>
@@ -591,7 +591,7 @@ export function WalletPanel() {
         <WalletOutlined className="text-[34px]" aria-hidden="true" />
       </div>
       <div
-        className="flex items-center justify-between text-[10px] py-[11px] px-0 text-[#90a0b9] [border-bottom:1px_solid_#f0f3f8] [&_span:not(.anticon)]:flex [&_span:not(.anticon)]:items-center [&_span:not(.anticon)]:gap-2 [&_b]:text-[#4b5f80]"
+        className="flex items-center justify-between text-[10px] py-[11px] px-0 text-[#90a0b9] [border-bottom:1px_solid_#f0f3f8] [&_span]:flex [&_span]:items-center [&_span]:gap-2 [&_b]:text-[#4b5f80]"
         data-seller="wallet-details"
       >
         <span>
@@ -601,7 +601,7 @@ export function WalletPanel() {
         <b>{money(user.wallet?.lockedBalance ?? 0)}</b>
       </div>
       <div
-        className="flex items-center justify-between text-[10px] py-[11px] px-0 text-[#90a0b9] [border-bottom:1px_solid_#f0f3f8] [&_span:not(.anticon)]:flex [&_span:not(.anticon)]:items-center [&_span:not(.anticon)]:gap-2 [&_b]:text-[#4b5f80]"
+        className="flex items-center justify-between text-[10px] py-[11px] px-0 text-[#90a0b9] [border-bottom:1px_solid_#f0f3f8] [&_span]:flex [&_span]:items-center [&_span]:gap-2 [&_b]:text-[#4b5f80]"
         data-seller="wallet-details"
       >
         <span>{t('dashboard.walletPanel.currencyLabel')}</span>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ProductDetail } from '../../types/product.types';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
 import ProductReviewsSection from './ProductReviewsSection';
 
 export default function ProductInfoTabs({ product }: { product: ProductDetail }) {

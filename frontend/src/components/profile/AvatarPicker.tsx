@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload as UploadOutlined } from 'lucide-react';
 import { User as UserOutlined } from 'lucide-react';
-import { validateAvatarFile } from '../../services/profile';
+import { validateAvatarFile } from '@/features/account/services/profile';
 
 interface AvatarPickerProps {
   savedUrl: string;

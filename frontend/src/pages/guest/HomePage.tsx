@@ -13,16 +13,16 @@ import {
   HomeTrendingSection,
 } from '../../components/home';
 import { HOME_TRENDING_LIMIT } from '../../constants/trending';
-import { getEventBannersApi } from '../../services/banners.service';
+import { getEventBannersApi } from '@/features/catalog/services/banners.service';
 import {
   getRecommendationsApi,
   getProductsCatalog,
   getTrendingProducts,
   type RecommendedProduct,
   type TrendingProductItem,
-} from '../../services/products.service';
+} from '@/features/catalog/services/products.service';
 import { AuctionStatus } from '@nexus/types';
-import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
+import { getAuctionsApi, type AuctionEntity } from '@/features/auction/services/auction.service';
 import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
 
 function HomePage() {
@@ -186,7 +186,12 @@ function HomePage() {
 
           <p className="mt-3 text-sm text-slate-500">{t('home.freeShippingDesc')}</p>
 
-          <button className="mt-4 text-sm font-semibold text-sky-500">{t('home.claimCode')}</button>
+          <Link
+            to="/search"
+            className="mt-4 inline-block text-sm font-semibold text-sky-500 hover:underline"
+          >
+            {t('home.claimCode')}
+          </Link>
         </div>
 
         <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
@@ -207,7 +212,12 @@ function HomePage() {
 
           <p className="mt-3 text-sm text-slate-500">{t('home.payosGiftDesc')}</p>
 
-          <button className="mt-4 text-sm font-semibold text-sky-500">{t('home.explore')}</button>
+          <Link
+            to="/buyer/wallet"
+            className="mt-4 inline-block text-sm font-semibold text-sky-500 hover:underline"
+          >
+            {t('home.explore')}
+          </Link>
         </div>
       </section>
 

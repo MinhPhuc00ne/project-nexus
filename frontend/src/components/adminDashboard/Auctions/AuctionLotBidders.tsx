@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatCurrency } from '../../../i18n/formatters';
-import type { AuctionBidItem } from '../../../services/auction.service';
+import type { AuctionBidItem } from '@/features/auction/services/auction.service';
 import { Badge, EmptyState } from '../shared/AdminUI';
 
 type Props = {

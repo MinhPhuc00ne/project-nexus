@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { UserNotification } from '../../../types/notification.types';
+import type { UserNotification } from '@/features/notifications/types/notification.types';
 import { resolveStaffNotificationTarget } from '../staffNotificationNavigation';
 
 const makeNotification = (overrides: Partial<UserNotification>): UserNotification => ({

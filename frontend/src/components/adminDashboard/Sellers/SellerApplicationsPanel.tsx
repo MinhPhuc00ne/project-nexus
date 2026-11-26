@@ -9,8 +9,8 @@ import {
   approveSellerRequest,
   getSellerRequestById,
   rejectSellerRequest,
-} from '../../../services/admin';
-import type { SellerUpgradeRequest } from '../../../services/users';
+} from '@/features/admin/services/admin';
+import type { SellerUpgradeRequest } from '@/features/account/services/users';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { useAdminSellerRequests, type SellerRequestFilter } from './AdminSellerRequests';
 import type { AdminTabProps } from '../shared/adminTypes';

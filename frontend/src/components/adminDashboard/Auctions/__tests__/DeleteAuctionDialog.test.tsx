@@ -6,16 +6,16 @@ import i18n from '../../../../i18n';
 import {
   adminDeleteAuctionApi,
   type AdminAuctionEntity,
-} from '../../../../services/auction.service';
-import { getStoredToken } from '../../../../services/auth';
+} from '@/features/auction/services/auction.service';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { ToastProvider } from '../../../ToastNotification';
 import DeleteAuctionDialog from '../DeleteAuctionDialog';
 
-vi.mock('../../../../services/auction.service', () => ({
+vi.mock('@/features/auction/services/auction.service', () => ({
   adminDeleteAuctionApi: vi.fn(),
 }));
 
-vi.mock('../../../../services/auth', () => ({
+vi.mock('@/features/auth/services/auth', () => ({
   getStoredToken: vi.fn(),
 }));
 

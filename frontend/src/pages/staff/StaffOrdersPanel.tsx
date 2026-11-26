@@ -15,7 +15,7 @@ import {
   type StaffOrderTracking,
   type StaffAdminOrderListItem,
   type StaffReturnAction,
-} from '../../services/staff';
+} from '@/features/staff/services/staff';
 import { formatCurrency } from '../../i18n/formatters';
 import { getIntlLocale } from '../../i18n/config';
 import StaffOrderDetailDialog from './StaffOrderDetailDialog';

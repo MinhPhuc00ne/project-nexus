@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sparkles } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import { getProductByIdAsync, getProductsPage } from '../../services/products.service';
-import { getBuyerOrdersApi } from '../../services/orders';
-import type { ProductDetail } from '../../types/product.types';
+import { getProductByIdAsync, getProductsPage } from '@/features/catalog/services/products.service';
+import { getBuyerOrdersApi } from '@/features/orders/services/orders';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
 import {
   getBuyerInterestCategoryIds,
   recordBuyerProductPurchase,

@@ -1,6 +1,6 @@
 import i18n from '../../../i18n';
 import { getIntlLocale } from '../../../i18n/config';
-import type { AdminWalletTransactionType } from '../../../types/admin-wallet.types';
+import type { AdminWalletTransactionType } from '@/features/admin/types/admin-wallet.types';
 
 export const TRANSACTION_TYPES: AdminWalletTransactionType[] = [
   'DEPOSIT',

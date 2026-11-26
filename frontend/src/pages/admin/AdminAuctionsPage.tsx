@@ -2,7 +2,7 @@ import { useState } from 'react';
 import DeleteAuctionDialog from '../../components/adminDashboard/Auctions/DeleteAuctionDialog';
 import PromoteAuctionDialog from '../../components/adminDashboard/Auctions/PromoteAuctionDialog';
 import useAuctionBanners from '../../components/adminDashboard/Auctions/useAuctionBanners';
-import type { AdminAuctionEntity } from '../../services/auction.service';
+import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';
 import { Gavel, Plus, RefreshCw } from 'lucide-react';
 import { Trans, useTranslation } from 'react-i18next';
 import Popup from '../../components/Popup';

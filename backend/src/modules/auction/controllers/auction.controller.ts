@@ -12,7 +12,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { AuctionComplaintStatus, Role as PrismaRole } from '@prisma/client';
 import { Role } from '@nexus/types';
@@ -41,7 +41,7 @@ import {
   ResolveAuctionComplaintSchema,
 } from '../dtos/auction-complaint.dto';
 import { AuctionQueryInput, AuctionQuerySchema } from '../dtos/auction-query.dto';
-import { AuctionIntroShowcaseResponseDto } from '../dtos/auction-showcase-response.dto';
+import { AuctionIntroShowcaseResponseSchema } from '../dtos/auction-showcase-response.dto';
 import {
   AuctionSupportChatInput,
   AuctionSupportChatSchema,
@@ -274,7 +274,7 @@ export class AuctionController {
   @Public()
   @Get(':id/intro-showcase')
   @ApiOperation({ summary: 'Lấy dữ liệu đồng bộ màn giới thiệu 3D khi vào phòng đấu giá' })
-  @ApiResponse({ status: 200, type: AuctionIntroShowcaseResponseDto })
+  @ApiOkResponse({ standardSchema: AuctionIntroShowcaseResponseSchema })
   getAuctionIntroShowcase(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.auctionService.getAuctionIntroShowcase(id);
   }

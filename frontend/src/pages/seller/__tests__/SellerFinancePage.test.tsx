@@ -20,12 +20,12 @@ vi.mock('../../../contexts/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../../../services/auth', () => ({
+vi.mock('@/features/auth/services/auth', () => ({
   getStoredToken: () => 'seller-token',
   getStoredUser: () => ({ id: 'seller-1' }),
 }));
 
-vi.mock('../../../services/notificationSocket', () => ({
+vi.mock('@/features/notifications/services/notificationSocket', () => ({
   createNotificationConnection: () => ({
     socket: { on: vi.fn() },
     connect: vi.fn(),
@@ -51,14 +51,14 @@ vi.mock('../../../components/ToastNotification', () => ({
   }),
 }));
 
-vi.mock('../../../services/sellerFinance', () => ({
+vi.mock('@/features/wallet/services/sellerFinance', () => ({
   getSellerRevenue: () => mockGetSellerRevenue(),
   getSellerTransactions: () => mockGetSellerTransactions(),
   getSellerWithdrawals: () => mockGetSellerWithdrawals(),
   createSellerWithdrawal: vi.fn(),
 }));
 
-vi.mock('../../../services/wallet.service', () => ({
+vi.mock('@/features/wallet/services/wallet.service', () => ({
   depositBuyerWalletApi: (...args: unknown[]) => mockDepositBuyerWalletApi(...args),
   checkBuyerDepositStatusApi: (...args: unknown[]) => mockCheckBuyerDepositStatusApi(...args),
 }));

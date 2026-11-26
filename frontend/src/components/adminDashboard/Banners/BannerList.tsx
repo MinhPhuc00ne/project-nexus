@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GripVertical, Image, Pencil, Plus, Power, RefreshCw, Search } from 'lucide-react';
 import { useCategoryDragScroll } from '../Categories/useCategoryDragScroll';
-import { bannerLink, bannerStatus, type Banner } from '../../../services/banners';
+import { bannerLink, bannerStatus, type Banner } from '@/features/catalog/services/banners';
 import { getIntlLocale } from '../../../i18n/config';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { Input } from '../../ui/input';

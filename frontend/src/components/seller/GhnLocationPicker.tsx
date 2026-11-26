@@ -5,8 +5,8 @@ import {
   getShippingDistricts,
   getShippingProvinces,
   getShippingWards,
-} from '../../services/shipping';
-import type { GhnDistrict, GhnLocation, GhnWard } from '../../types/shipping.types';
+} from '@/features/shipping/services/shipping';
+import type { GhnDistrict, GhnLocation, GhnWard } from '@/features/shipping/types/shipping.types';
 
 export const emptyGhnLocation: GhnLocation = { provinceId: '', districtId: '', wardCode: '' };
 export default function GhnLocationPicker({

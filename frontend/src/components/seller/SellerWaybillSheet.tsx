@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { SellerWaybill } from '../../types/order.types';
+import type { SellerWaybill } from '@/features/orders/types/order.types';
 import { financeDate, financeMoney } from './financeFormat';
 
 export default function SellerWaybillSheet({

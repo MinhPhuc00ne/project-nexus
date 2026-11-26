@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, AlertCircle, Send, Loader2 } from 'lucide-react';
-import { createAuctionComplaintApi } from '../../services/auction.service';
+import { createAuctionComplaintApi } from '@/features/auction/services/auction.service';
 import { useToast } from '../ToastNotification/useToast';
 
 /**

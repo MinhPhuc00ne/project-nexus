@@ -1,7 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
-import type { BuyerOrder } from '../../services/orders';
+import type { BuyerOrder } from '@/features/orders/services/orders';
 import type { BuyerDisputeReason } from '../../pages/buyer/BuyerDisputesPage';
 
 export const reasonLabels: Record<BuyerDisputeReason, string> = {

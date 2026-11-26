@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../../i18n/config';
 import { formatCurrency } from '../../i18n/formatters';
 import type { HomeProduct } from './home.types';
-import { formatAuctionImage, type AuctionEntity } from '../../services/auction.service';
+import {
+  formatAuctionImage,
+  type AuctionEntity,
+} from '@/features/auction/services/auction.service';
 
 export interface HomeAuctionCardProps {
   product?: HomeProduct;

@@ -35,9 +35,9 @@ import {
   computeEffectiveSale,
   saleConfigFromApi,
   type ProductSaleConfig,
-} from '../../services/productExtras';
-import { updateProductSale, type SellerProduct } from '../../services/sellerProducts';
-import { getTrendingProducts } from '../../services/products.service';
+} from '@/features/catalog/services/productExtras';
+import { updateProductSale, type SellerProduct } from '@/features/catalog/services/sellerProducts';
+import { getTrendingProducts } from '@/features/catalog/services/products.service';
 
 const statusKeys = {
   ACTIVE: 'products.statuses.ACTIVE',

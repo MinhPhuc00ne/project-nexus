@@ -7,13 +7,13 @@ import { formatCurrency } from '../../../i18n/formatters';
 import Popup from '../../Popup';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
-import { listAdminDisputes } from '../../../services/admin';
+import { listAdminDisputes } from '@/features/admin/services/admin';
 import DisputeResolution from './DisputeResolution';
 import type {
   AdminDispute,
   AdminDisputePage,
   AdminDisputeStatus,
-} from '../../../types/admin-dispute.types';
+} from '@/features/admin/types/admin-dispute.types';
 
 const DISPUTE_STATUSES: AdminDisputeStatus[] = [
   'OPEN',

@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../../i18n/formatters';
-import type { AdminAuctionItem, ReviewAuctionItemInput } from '../../../services/auction.service';
+import type {
+  AdminAuctionItem,
+  ReviewAuctionItemInput,
+} from '@/features/auction/services/auction.service';
 import { Button } from '../shared/AdminUI';
 
 const inputClass = 'mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm';

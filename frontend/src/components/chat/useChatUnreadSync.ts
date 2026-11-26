@@ -5,9 +5,12 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from 'react';
-import { getChatConversations, getChatUnreadCount } from '../../services/chat';
-import { createChatConnection, type ChatConnectionClient } from '../../services/chatSocket';
-import type { ChatConversation, ChatMessage } from '../../types/chat.types';
+import { getChatConversations, getChatUnreadCount } from '@/features/chat/services/chat';
+import {
+  createChatConnection,
+  type ChatConnectionClient,
+} from '@/features/chat/services/chatSocket';
+import type { ChatConversation, ChatMessage } from '@/features/chat/types/chat.types';
 import { orderByLastMessage, rememberChatMessageId } from './chatWidget.helpers';
 
 const CHAT_CONVERSATION_SYNC_INTERVAL_MS = 15_000;

@@ -3,8 +3,8 @@ import {
   createBannerFromAuction,
   listBanners,
   type Banner,
-} from '../../../services/banners.service';
-import type { AdminAuctionEntity } from '../../../services/auction.service';
+} from '@/features/catalog/services/banners.service';
+import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';
 
 // The management endpoint returns at most 100 banners and has no pagination/filter by auction.
 export const BANNER_LIST_LIMIT = 100;

@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { getStoredToken, getStoredUser } from '../../services/auth';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import {
   createNotificationConnection,
   type NotificationSocket,
-} from '../../services/notificationSocket';
+} from '@/features/notifications/services/notificationSocket';
 import {
   getNotificationUnreadCount,
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-} from '../../services/notifications';
-import type { NotificationsPage } from '../../types/notification.types';
+} from '@/features/notifications/services/notifications';
+import type { NotificationsPage } from '@/features/notifications/types/notification.types';
 import { useToast } from '../ToastNotification';
 
 export default function useSellerNotifications(userId: string, isOpen: boolean) {

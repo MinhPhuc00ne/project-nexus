@@ -1,7 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getStaffDisputes, resolveStaffDispute } from '../../services/staff';
-import type { StaffDispute, StaffDisputeStatus, StaffDisputesPage } from '../../services/staff';
+import { getStaffDisputes, resolveStaffDispute } from '@/features/staff/services/staff';
+import type {
+  StaffDispute,
+  StaffDisputeStatus,
+  StaffDisputesPage,
+} from '@/features/staff/services/staff';
 import { getIntlLocale } from '../../i18n/config';
 import { formatCurrency } from '../../i18n/formatters';
 

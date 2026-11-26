@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Trash2, Minus, Plus, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import type { CartItem } from '../../types/cart.types';
+import type { CartItem } from '@/features/cart/types/cart.types';
 
 interface CartItemListProps {
   items: CartItem[];

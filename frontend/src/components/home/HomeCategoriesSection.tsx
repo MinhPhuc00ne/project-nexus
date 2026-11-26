@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
+import { getCategoriesApi, type CategoryNode } from '@/features/catalog/services/products.service';
 import { getCategoryImageUrl } from '../../constants/categoryImages';
 import { ROUTES } from '../../routes/paths';
 

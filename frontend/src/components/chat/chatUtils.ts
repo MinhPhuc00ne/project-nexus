@@ -1,6 +1,6 @@
 import i18n from '../../i18n';
 import { getIntlLocale } from '../../i18n/config';
-import type { ChatMessage } from '../../types/chat.types';
+import type { ChatMessage } from '@/features/chat/types/chat.types';
 
 export const getChatErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : i18n.t('common:chat.loadMessagesError');

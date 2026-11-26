@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { DetailFields } from '../shared/CommerceUI';
 import { formatMoney } from '../shared/adminData';
-import type { AdminWalletTransaction } from '../../../types/admin-wallet.types';
+import type { AdminWalletTransaction } from '@/features/admin/types/admin-wallet.types';
 import { date } from './transactionPresentation';
 
 export default function TransactionDetailDialog({

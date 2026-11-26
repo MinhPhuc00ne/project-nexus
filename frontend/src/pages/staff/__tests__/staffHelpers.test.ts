@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { StaffAfterSalesRequest } from '../../../services/staff';
+import type { StaffAfterSalesRequest } from '@/features/staff/services/staff';
 import {
   canReceiveStaffReturn,
   filterStaffAfterSalesPage,

@@ -1,4 +1,4 @@
-import type { ChatConversation } from '../../types/chat.types';
+import type { ChatConversation } from '@/features/chat/types/chat.types';
 
 export const MAX_SEEN_CHAT_MESSAGE_IDS = 1_000;
 

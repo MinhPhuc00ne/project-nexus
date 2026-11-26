@@ -1,5 +1,5 @@
-import type { AuctionBidItem, AuctionEntity } from '../../types/auction-api.types';
-import type { AuctionConsignmentItem } from '../../types/auction-consignment.types';
+import type { AuctionBidItem, AuctionEntity } from '@/features/auction/types/auction-api.types';
+import type { AuctionConsignmentItem } from '@/features/auction/types/auction-consignment.types';
 
 /** Merge REST and socket copies by bid ID without merging equal bids on different lots. */
 export function mergeBidHistory(...lists: (AuctionBidItem[] | undefined)[]): AuctionBidItem[] {

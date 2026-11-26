@@ -20,9 +20,10 @@ const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { ChatbotController } = load('../src/modules/chat/controllers/chatbot.controller.ts');
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
 const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
-const { CommerceChatQueryService } = load(
-  '../src/modules/commerce-query/services/commerce-chat-query.service.ts',
-);
+const { OrdersChatFacade } = load('../src/modules/orders/services/orders-chat.facade.ts');
+const { CartChatFacade } = load('../src/modules/cart/services/cart-chat.facade.ts');
+const { CatalogChatFacade } = load('../src/modules/catalog/services/catalog-chat.facade.ts');
+const { UsersChatFacade } = load('../src/modules/users/services/users-chat.facade.ts');
 const { ChatbotAiService } = load('../src/modules/chat/services/chatbot-ai.service.ts');
 const { ChatbotRateLimitService } = load(
   '../src/modules/chat/services/chatbot-rate-limit.service.ts',
@@ -94,7 +95,10 @@ test(
       providers: [
         ChatbotService,
         ChatbotCommerceService,
-        CommerceChatQueryService,
+        OrdersChatFacade,
+        CartChatFacade,
+        CatalogChatFacade,
+        UsersChatFacade,
         ChatbotAiService,
         ChatbotRateLimitService,
         {

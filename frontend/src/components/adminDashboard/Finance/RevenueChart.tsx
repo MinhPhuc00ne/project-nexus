@@ -1,7 +1,10 @@
 import { ChartNoAxesCombined, CircleDollarSign } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AdminOverviewAnalytics, RevenuePeriod } from '../../../types/admin-analytics.types';
+import type {
+  AdminOverviewAnalytics,
+  RevenuePeriod,
+} from '@/features/admin/types/admin-analytics.types';
 import { Badge, Panel } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';
 

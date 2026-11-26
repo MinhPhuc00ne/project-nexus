@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { forgotPassword, resetPassword } from '../../services/auth';
+import { forgotPassword, resetPassword } from '@/features/auth/services/auth';
 import Popup from '../../components/Popup';
 import { KeyRound, Mail } from 'lucide-react';
 

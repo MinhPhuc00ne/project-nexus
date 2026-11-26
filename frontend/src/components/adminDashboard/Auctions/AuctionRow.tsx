@@ -13,7 +13,10 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatCurrency } from '../../../i18n/formatters';
-import { resolveAuctionImageUrl, type AdminAuctionEntity } from '../../../services/auction.service';
+import {
+  resolveAuctionImageUrl,
+  type AdminAuctionEntity,
+} from '@/features/auction/services/auction.service';
 import { Badge, Button } from '../shared/AdminUI';
 import type { useAdminAuctions } from './useAdminAuctions';
 import { isKnownAuctionStatus } from './auctionStatuses';

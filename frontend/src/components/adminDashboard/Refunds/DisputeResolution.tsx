@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { resolveAdminDispute } from '../../../services/admin';
+import { resolveAdminDispute } from '@/features/admin/services/admin';
 import { Button } from '../shared/AdminUI';
 
 export default function DisputeResolution({

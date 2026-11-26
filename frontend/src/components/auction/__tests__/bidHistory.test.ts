@@ -1,7 +1,7 @@
 import { BidStatus } from '@nexus/types';
 import { describe, expect, it } from 'vitest';
-import type { AuctionBidItem, AuctionEntity } from '../../../types/auction-api.types';
-import type { AuctionConsignmentItem } from '../../../types/auction-consignment.types';
+import type { AuctionBidItem, AuctionEntity } from '@/features/auction/types/auction-api.types';
+import type { AuctionConsignmentItem } from '@/features/auction/types/auction-consignment.types';
 import { getLotBidHistory, mergeBidHistory } from '../bidHistory';
 
 const makeBid = (

@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { SellerDraft } from './sellerData';
-import type { ShopProfile } from '../../types/shop.types';
+import type { ShopProfile } from '@/features/catalog/types/shop.types';
 import type { ToastItem } from '../../types/toast.types';
 export interface SellerWorkspaceState {
   storeName: string;

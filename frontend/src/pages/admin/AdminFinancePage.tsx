@@ -8,8 +8,8 @@ import {
 import TransactionHistory from '../../components/adminDashboard/Finance/TransactionHistory';
 import AdminWallet from '../../components/adminDashboard/Finance/AdminWallet';
 import WithdrawalManagement from '../../components/adminDashboard/Finance/WithdrawalManagement';
-import { getAdminFinanceAnalytics } from '../../services/admin';
-import type { AdminOverviewAnalytics } from '../../types/admin-analytics.types';
+import { getAdminFinanceAnalytics } from '@/features/admin/services/admin';
+import type { AdminOverviewAnalytics } from '@/features/admin/types/admin-analytics.types';
 
 export default function AdminFinancePage() {
   const { t } = useTranslation('admin');

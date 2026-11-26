@@ -4,11 +4,11 @@ import { getIntlLocale } from '../../../i18n/config';
 import {
   listAdminAuctionComplaintsApi,
   resolveAdminAuctionComplaintApi,
-} from '../../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import {
   AUCTION_COMPLAINT_STATES,
   type AuctionComplaintState,
-} from '../../../types/admin-auction-operations.types';
+} from '@/features/admin/types/admin-auction-operations.types';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { useAuctionOperationResource } from './useAuctionOperationResource';
 

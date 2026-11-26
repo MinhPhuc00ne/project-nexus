@@ -2,8 +2,8 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Headset, MessageCircle } from 'lucide-react';
-import { getStoredToken, getStoredUser } from '../../services/auth';
-import { requestAuctionSupportChatApi } from '../../services/auction.service';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
+import { requestAuctionSupportChatApi } from '@/features/auction/services/auction.service';
 import { openChatConversation } from '../chat/chatEvents';
 
 export default function AuctionSupportRequest({ auctionId }: { auctionId: string }) {

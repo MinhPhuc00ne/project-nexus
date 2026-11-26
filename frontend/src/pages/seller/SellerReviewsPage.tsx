@@ -14,7 +14,7 @@ import {
   getSellerShopReviewsApi,
   type ProductReviewItem,
   type ShopReviewItem,
-} from '../../services/reviews.service';
+} from '@/features/reviews/services/reviews.service';
 
 type ReviewTab = 'all' | 'positive' | 'improve';
 type SellerReview = (ProductReviewItem | ShopReviewItem) & { kind: 'PRODUCT' | 'SHOP' };

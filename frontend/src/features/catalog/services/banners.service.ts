@@ -1,0 +1,133 @@
+import i18n from '@/i18n';
+import api from '@/services/api';
+import { isAxiosError } from 'axios';
+import { getApiErrorMessage } from '@/lib/apiErrors';
+
+export interface BannerInput {
+  title: string;
+  imageUrl: string;
+  targetUrl: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  isActive: boolean;
+  priority: number;
+}
+
+export interface Banner extends BannerInput {
+  id: string;
+  auctionId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function createBannerFromAuction(auctionId: string): Promise<Banner> {
+  return bannerRequest(() =>
+    api.post<BannerResponse<Banner>>(
+      `/staff/banners/from-auction/${encodeURIComponent(auctionId)}`,
+    ),
+  );
+}
+
+type BannerResponse<T> = T | { data: T };
+
+// Shared Axios instance supplies the base URL, Bearer token and refresh-token handling.
+async function bannerRequest<T>(request: () => Promise<{ data: BannerResponse<T> }>): Promise<T> {
+  try {
+    const { data: payload } = await request();
+    if (payload && typeof payload === 'object' && 'data' in payload) return payload.data;
+    return payload as T;
+  } catch (error) {
+    if (isAxiosError(error)) {
+      throw new Error(
+        error.response ? getApiErrorMessage(error.response.data) : i18n.t('errors:network'),
+      );
+    }
+    throw error;
+  }
+}
+
+export async function listBanners(publicOnly = false): Promise<Banner[]> {
+  const banners = await bannerRequest(() =>
+    api.get<BannerResponse<Banner[]>>(publicOnly ? '/catalog/banners' : '/staff/banners'),
+  );
+  // Legacy priorities of zero or less follow the numbered positions.
+  const position = (priority: number) => (priority >= 1 ? priority : Number.MAX_SAFE_INTEGER);
+  return [...banners].sort((a, b) => position(a.priority) - position(b.priority));
+}
+
+function normalizeBannerImageUrl(value: string): string {
+  const url = new URL(value.trim());
+  // The upload API's local fallback uses localhost, which banner validation rejects.
+  if (url.hostname === 'localhost' && url.protocol === 'http:') {
+    url.hostname = '127.0.0.1';
+    return url.href;
+  }
+  return value.trim();
+}
+
+export function saveBanner(body: BannerInput, id?: string): Promise<Banner> {
+  const payload = { ...body, imageUrl: normalizeBannerImageUrl(body.imageUrl) };
+  return bannerRequest(() =>
+    id
+      ? api.put<BannerResponse<Banner>>(`/staff/banners/${encodeURIComponent(id)}`, payload)
+      : api.post<BannerResponse<Banner>>('/staff/banners', payload),
+  );
+}
+
+export async function saveBannerOrder(ordered: Banner[]): Promise<Banner[]> {
+  const result: Banner[] = [];
+  for (const [index, banner] of ordered.entries()) {
+    const priority = index + 1;
+    if (priority !== banner.priority) {
+      await saveBanner(
+        {
+          title: banner.title,
+          imageUrl: banner.imageUrl,
+          targetUrl: banner.targetUrl,
+          startsAt: banner.startsAt,
+          endsAt: banner.endsAt,
+          isActive: banner.isActive,
+          priority,
+        },
+        banner.id,
+      );
+    }
+    result.push({ ...banner, priority });
+  }
+  return result;
+}
+
+export async function uploadBannerImage(file: File): Promise<string> {
+  if (!/\.(jpe?g|png|webp|gif|svg)$/i.test(file.name)) {
+    throw new Error(i18n.t('errors:services.invalidImageFormatBanner'));
+  }
+  if (file.size > 25 * 1024 * 1024) {
+    throw new Error(i18n.t('errors:services.imageTooLarge25'));
+  }
+  const body = new FormData();
+  body.append('file', file);
+  const result = await bannerRequest(() =>
+    api.post<BannerResponse<{ url: string }>>('/media/upload', body),
+  );
+  if (!result?.url) throw new Error(i18n.t('errors:services.invalidBannerUrl'));
+  return normalizeBannerImageUrl(result.url);
+}
+
+export interface EventBannerItem {
+  id: string;
+  title: string;
+  imageUrl: string;
+  targetUrl?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  isActive: boolean;
+  priority: number;
+}
+
+export async function getEventBannersApi(): Promise<EventBannerItem[]> {
+  try {
+    return await listBanners(true);
+  } catch {
+    return [];
+  }
+}

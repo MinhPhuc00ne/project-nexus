@@ -59,7 +59,11 @@ test(
             const adminWallet = await tx.wallet.create({
               data: { userId: admin.id, balance: 390000 },
             });
-            const finance = { getOrCreatePrimaryAdminWallet: async () => adminWallet };
+            const finance = {
+              getOrCreatePrimaryAdminWallet: async () => adminWallet,
+              getOrCreateEscrowWallet: async () => adminWallet,
+              getOrCreatePlatformRevenueWallet: async () => adminWallet,
+            };
             const { AfterSalesStoreService } = source(
               'after-sales/services/after-sales-store.service',
             );

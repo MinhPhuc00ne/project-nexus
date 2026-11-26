@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import Popup from '../Popup';
-import { clearCart, type CartItem } from '../../services/cart';
-import { getStoredToken } from '../../services/auth';
-import { getAddresses, createAddress, type UserAddress } from '../../services/address';
+import { clearCart, type CartItem } from '@/features/cart/services/cart';
+import { getStoredToken } from '@/features/auth/services/auth';
+import { getAddresses, createAddress, type UserAddress } from '@/features/account/services/address';
 import {
   checkoutApi,
   getCheckoutQuoteApi,
@@ -14,7 +14,7 @@ import {
   type ShippingAddressInput,
   type CheckoutPaymentMethodType,
   DEFAULT_SHIPPING_ADDRESS,
-} from '../../services/orders';
+} from '@/features/orders/services/orders';
 import { Loader2 } from 'lucide-react';
 import CheckoutSuccessCard from '../checkout/CheckoutSuccessCard';
 import CheckoutAddressSection from '../checkout/CheckoutAddressSection';

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image as ImageIcon, Layers } from 'lucide-react';
-import { formatAuctionImage } from '../../../services/auction.service';
+import { formatAuctionImage } from '@/features/auction/services/auction.service';
 
 interface SellerGalleryFrame3DProps {
   title: string;

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { getSellerShopProfile } from '../../services/shops';
+import { getSellerShopProfile } from '@/features/catalog/services/shops';
 import useProductResource from '../../components/productDetail/useProductResource';
 import { useSellerSession } from '../../components/seller/SellerSession';
 import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';

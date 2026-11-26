@@ -10,20 +10,20 @@ import GhnLocationPicker, { emptyGhnLocation } from '../../components/seller/Ghn
 import SellerShippingResult from '../../components/seller/SellerShippingResult';
 import SellerPickupPointPanel from '../../components/seller/SellerPickupPointPanel';
 import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/seller/SellerUI';
-import { getMyProducts } from '../../services/sellerProducts';
-import { getStoredToken } from '../../services/auth';
+import { getMyProducts } from '@/features/catalog/services/sellerProducts';
+import { getStoredToken } from '@/features/auth/services/auth';
 import {
   getShippingDistance,
   getShippingQuote,
   getShippingServices,
   parseCoordinate,
-} from '../../services/shipping';
+} from '@/features/shipping/services/shipping';
 import type {
   GhnLocation,
   GhnService,
   ShippingQuote,
   DistanceResult,
-} from '../../types/shipping.types';
+} from '@/features/shipping/types/shipping.types';
 
 const inputClass = 'mt-2 w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm';
 export default function SellerShippingPage(): ReactElement {
