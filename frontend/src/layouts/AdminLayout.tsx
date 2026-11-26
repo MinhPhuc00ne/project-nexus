@@ -15,7 +15,7 @@ import type { AdminActions, AdminData } from '../components/adminDashboard/share
 import type { UserProfile } from '@/features/account/types/user.types';
 import { Role } from '@nexus/types';
 import { useAuth } from '../contexts/AuthContext';
-import { listAdminDisputes, listAdminReports } from '@/features/admin/services/admin';
+import { useAdminPendingCounts } from '../components/adminDashboard/Layout/useAdminPendingCounts';
 
 const EMPTY_ADMIN_DATA: AdminData = {
   products: [],
@@ -96,29 +96,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   const { pathname } = useLocation();
   // Lấy tên trang từ URL, ví dụ /admin/users -> users, để chọn tiêu đề tương ứng.
   const tab = pathname.split('/')[2] ?? 'overview';
-  const [reportCount, setReportCount] = useState(0);
-  const [refundCount, setRefundCount] = useState(0);
-  useEffect(() => {
-    const controller = new AbortController();
-    listAdminDisputes({ limit: 1 }, controller.signal)
-      .then((result) => {
-        if (!controller.signal.aborted) setRefundCount(result.counters.pendingReview);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setRefundCount(0);
-      });
-    Promise.all([
-      listAdminReports({ limit: 1, status: 'PENDING' }, controller.signal),
-      listAdminReports({ limit: 1, status: 'INVESTIGATING' }, controller.signal),
-    ])
-      .then(([pending, investigating]) => {
-        if (!controller.signal.aborted) setReportCount(pending.total + investigating.total);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setReportCount(0);
-      });
-    return () => controller.abort();
-  }, [tab]);
+  const { reportCount, refundCount } = useAdminPendingCounts(user.id);
   const contentRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   // Các state bên dưới quản lý giao diện: menu mobile, thông báo và hai loại hộp thoại.

@@ -40,6 +40,7 @@ import type {
   StaffUser,
 } from '@/features/admin/types/admin.types';
 import { adminRequest } from '@/features/admin/services/adminRequest';
+import { refreshAdminPendingCounts } from './adminPendingCounts';
 import { HOME_TRENDING_LIMIT } from '@/constants/trending';
 import type {
   AdminTrendingProductsResult,
@@ -150,34 +151,51 @@ export function inviteStaff(dto: InviteStaffDto): Promise<StaffInvitationResult>
   });
 }
 
-export function listAdminDisputes(
+export async function listAdminDisputes(
   params: QueryAdminDisputes,
   signal?: AbortSignal,
 ): Promise<AdminDisputePage> {
-  return adminRequest<AdminDisputePage>({ url: '/admin/disputes', method: 'GET', params, signal });
+  const { meta, ...result } = await adminRequest<
+    PaginatedResponse<AdminDisputePage['items'][number]> & Pick<AdminDisputePage, 'counters'>
+  >({ url: '/admin/disputes', method: 'GET', params, signal });
+  return { ...result, ...meta };
 }
 
-export function resolveAdminDispute(orderId: string, verdict: 'BUYER' | 'SELLER', reason: string) {
-  return adminRequest<{ success: boolean; alreadyProcessed?: boolean }>({
+export async function resolveAdminDispute(
+  orderId: string,
+  verdict: 'BUYER' | 'SELLER',
+  reason: string,
+) {
+  const result = await adminRequest<{ success: boolean; alreadyProcessed?: boolean }>({
     url: `/commerce/orders/${encodeURIComponent(orderId)}/resolve-dispute`,
     method: 'POST',
     data: { verdict, reason },
   });
+  refreshAdminPendingCounts();
+  return result;
 }
 
-export function listAdminReports(
+export async function listAdminReports(
   params: { page?: number; limit?: number; status?: AdminReportStatus },
   signal?: AbortSignal,
 ): Promise<AdminReportPage> {
-  return adminRequest({ url: '/admin/reports', method: 'GET', params, signal });
+  const { meta, ...result } = await adminRequest<PaginatedResponse<AdminReport>>({
+    url: '/admin/reports',
+    method: 'GET',
+    params,
+    signal,
+  });
+  return { ...result, ...meta };
 }
 
-export function reviewAdminReport(id: string, data: ReviewAdminReport): Promise<AdminReport> {
-  return adminRequest({
+export async function reviewAdminReport(id: string, data: ReviewAdminReport): Promise<AdminReport> {
+  const result = await adminRequest<AdminReport>({
     url: `/admin/reports/${encodeURIComponent(id)}/review`,
     method: 'PATCH',
     data,
   });
+  refreshAdminPendingCounts();
+  return result;
 }
 
 export function getAdminSettings(signal?: AbortSignal): Promise<SystemSettings> {
@@ -258,14 +276,15 @@ export function listStaff(params?: QueryStaffParams): Promise<PaginatedResult<St
 /**
  * 3. Xem danh sách yêu cầu nâng cấp lên Seller (hỗ trợ lọc PENDING, APPROVED, REJECTED)
  */
-export function getSellerRequests(
+export async function getSellerRequests(
   params?: QuerySellerRequestsParams,
 ): Promise<PaginatedResult<SellerUpgradeRequest>> {
-  return adminRequest<PaginatedResult<SellerUpgradeRequest>>({
+  const { meta, ...result } = await adminRequest<PaginatedResponse<SellerUpgradeRequest>>({
     url: '/admin/seller-requests',
     method: 'GET',
     params,
   });
+  return { ...result, ...meta };
 }
 
 /**
