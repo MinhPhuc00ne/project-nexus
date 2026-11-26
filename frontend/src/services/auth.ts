@@ -78,38 +78,65 @@ export function clearAuthSession(): void {
   }
 }
 
-export function consumeOAuthCallbackFromUrl(): AuthUser | null {
+/**
+ * Finishes a Google sign-in from the `?code=` the callback redirected with.
+ *
+ * The callback used to redirect with the session itself in the query string —
+ * `?user={...}&token=...&refreshToken=...` — and this read it from there. A URL
+ * is the least private place to put a credential: it is kept in browser
+ * history, written to any proxy or server log along the way, and handed to the
+ * next site the visitor clicks through to in the `Referer` header. A refresh
+ * token travelling that way outlives the session it belongs to.
+ *
+ * The backend has answered `POST /auth/oauth/exchange` all along: the redirect
+ * carries an opaque code, good once and for sixty seconds, and the tokens come
+ * back in the response body. This asks for them, and strips the code from the
+ * address bar either way so a reload cannot try to spend it twice.
+ *
+ * @returns The signed-in account, or null when there was no code or it failed.
+ */
+export async function consumeOAuthCallbackFromUrl(): Promise<AuthUser | null> {
   const params = new URLSearchParams(window.location.search);
-  const rawUser = params.get('user');
-  const token = params.get('token');
-  const refreshToken = params.get('refreshToken');
-  if (!params.has('user') && !params.has('token') && !params.has('refreshToken')) return null;
+  const code = params.get('code')?.trim();
+  if (!code) return null;
 
   try {
-    if (!rawUser || !token?.trim() || !refreshToken?.trim()) return null;
-    const parsed = JSON.parse(rawUser) as Partial<AuthUser>;
-    if (parsed && typeof parsed.id === 'string' && typeof parsed.email === 'string') {
-      const user: AuthUser = {
-        id: parsed.id,
-        email: parsed.email,
-        fullName: parsed.fullName || parsed.email,
-        role: parsed.role,
-        avatarUrl: parsed.avatarUrl ?? null,
-      };
-      saveAuthSession(user, token, refreshToken);
-      return user;
+    const handoff = await request<{
+      accessToken: string;
+      refreshToken: string;
+      user: Partial<AuthUser> | null;
+    }>({ url: '/auth/oauth/exchange', method: 'POST', data: { code } });
+
+    const account = handoff.user;
+    if (
+      !handoff.accessToken ||
+      !account ||
+      typeof account.id !== 'string' ||
+      typeof account.email !== 'string'
+    ) {
+      return null;
     }
-  } catch {
-    /* Ignore malformed query parameter */
+
+    const user: AuthUser = {
+      id: account.id,
+      email: account.email,
+      fullName: account.fullName || account.email,
+      role: account.role,
+      avatarUrl: account.avatarUrl ?? null,
+    };
+    saveAuthSession(user, handoff.accessToken, handoff.refreshToken);
+    return user;
+  } catch (error) {
+    // A code that was already spent, or expired, is not worth interrupting the
+    // page for: the visitor simply is not signed in.
+    console.warn('Could not complete the Google sign-in:', error);
+    return null;
   } finally {
-    params.delete('user');
-    params.delete('token');
-    params.delete('refreshToken');
+    params.delete('code');
     const remainingQuery = params.toString();
     const nextUrl = `${window.location.pathname}${remainingQuery ? `?${remainingQuery}` : ''}${window.location.hash}`;
     window.history.replaceState(window.history.state, '', nextUrl);
   }
-  return null;
 }
 
 export class RegistrationError extends Error {
