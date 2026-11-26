@@ -1,46 +1,33 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class CreateStaffDto {
-  @ApiProperty({
-    description: 'Email cá nhân nhận tài khoản @staff.com và mật khẩu ngẫu nhiên để đăng nhập ngay',
-    example: 'hotro.canhan@gmail.com',
-  })
-  @IsNotEmpty({ message: 'Email không được để trống' })
-  @IsEmail({}, { message: 'Định dạng email không hợp lệ' })
-  email!: string;
+const createStaffFields = {
+  email: z
+    .email()
+    .describe('Email cá nhân nhận tài khoản @staff.com và mật khẩu ngẫu nhiên để đăng nhập ngay')
+    .meta({ example: 'hotro.canhan@gmail.com' }),
+  fullName: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Họ và tên nhân viên')
+    .meta({ example: 'Nguyễn Văn Hỗ Trợ' }),
+  phoneNumber: nullAsAbsent(
+    z.string().describe('Số điện thoại nhân viên').meta({ example: '0987654321' }),
+  ),
+  department: nullAsAbsent(
+    z.string().describe('Phòng ban / Bộ phận phụ trách').meta({ example: 'Chăm sóc khách hàng' }),
+  ),
+  password: nullAsAbsent(
+    z
+      .string()
+      .describe(
+        'Trường cũ được chấp nhận nhưng bỏ qua; backend luôn sinh mật khẩu ngẫu nhiên và gửi qua email cá nhân',
+      )
+      .meta({ example: 'Staff@123456' }),
+  ),
+};
 
-  @ApiProperty({
-    description: 'Họ và tên nhân viên',
-    example: 'Nguyễn Văn Hỗ Trợ',
-  })
-  @IsNotEmpty({ message: 'Họ và tên không được để trống' })
-  @IsString({ message: 'Họ và tên phải là chuỗi ký tự' })
-  fullName!: string;
+export const CreateStaffSchema = z.object(createStaffFields).strict();
 
-  @ApiPropertyOptional({
-    description: 'Số điện thoại nhân viên',
-    example: '0987654321',
-  })
-  @IsOptional()
-  @IsString({ message: 'Số điện thoại phải là chuỗi ký tự' })
-  phoneNumber?: string;
-
-  @ApiPropertyOptional({
-    description: 'Phòng ban / Bộ phận phụ trách',
-    example: 'Chăm sóc khách hàng',
-  })
-  @IsOptional()
-  @IsString({ message: 'Phòng ban phải là chuỗi ký tự' })
-  department?: string;
-
-  @ApiPropertyOptional({
-    deprecated: true,
-    description:
-      'Trường cũ được chấp nhận nhưng bỏ qua; backend luôn sinh mật khẩu ngẫu nhiên và gửi qua email cá nhân',
-    example: 'Staff@123456',
-  })
-  @IsOptional()
-  @IsString()
-  password?: string;
-}
+export type CreateStaffInput = z.infer<typeof CreateStaffSchema>;

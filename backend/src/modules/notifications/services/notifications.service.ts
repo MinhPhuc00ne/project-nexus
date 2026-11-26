@@ -12,8 +12,8 @@ import {
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
-import { QueryNotificationDto } from '../dtos/query-notification.dto';
-import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
+import { QueryNotificationInput } from '../dtos/query-notification.dto';
+import { UpdateNotificationPreferencesInput } from '../dtos/update-notification-preferences.dto';
 import {
   AdminNotificationSummaryDto,
   NotificationPageDto,
@@ -35,7 +35,7 @@ export class NotificationsService {
    */
   async getUserNotifications(
     userId: string,
-    query: QueryNotificationDto,
+    query: QueryNotificationInput,
   ): Promise<NotificationPageDto> {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(50, query.limit || 10));
@@ -316,7 +316,7 @@ export class NotificationsService {
    * @param dto - Updated channel preference settings
    * @returns Confirmation and refreshed preferences
    */
-  async updatePreferences(userId: string, dto: UpdateNotificationPreferencesDto) {
+  async updatePreferences(userId: string, dto: UpdateNotificationPreferencesInput) {
     const operations = dto.preferences.map((item) =>
       this.prisma.notificationPreference.upsert({
         where: {

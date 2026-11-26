@@ -1,12 +1,10 @@
 import {
-  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Patch,
   Post,
-  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -20,17 +18,25 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import {
+  AuthenticatedUserPayload,
   CurrentUser,
   Roles,
-  AuthenticatedUserPayload,
 } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
-import { CreateSellerRequestDto } from '../dtos/create-seller-request.dto';
-import { ToggleSellerDto } from '../dtos/toggle-seller.dto';
-import { QueryReputationLogsDto, ReputationSummaryResponse } from '../dtos/reputation.dto';
+import {
+  CreateSellerRequestInput,
+  CreateSellerRequestSchema,
+} from '../dtos/create-seller-request.dto';
+import { ToggleSellerInput, ToggleSellerSchema } from '../dtos/toggle-seller.dto';
+import {
+  QueryReputationLogsInput,
+  QueryReputationLogsSchema,
+  ReputationSummaryResponse,
+} from '../dtos/reputation.dto';
 import { UsersService } from '../services/users.service';
 import { ReputationService } from '../services/reputation.service';
 import { sellerProofFileFilter, sellerProofStorage } from '../utils/seller-proof-upload.util';
@@ -74,7 +80,10 @@ export class UsersController {
     status: 403,
     description: 'Tài khoản chưa được cấp quyền Seller, không thể chuyển đổi',
   })
-  async toggleSeller(@CurrentUser() user: AuthenticatedUserPayload, @Body() dto: ToggleSellerDto) {
+  async toggleSeller(
+    @CurrentUser() user: AuthenticatedUserPayload,
+    @ZodBody(ToggleSellerSchema) dto: ToggleSellerInput,
+  ) {
     return this.usersService.toggleSellerMode(user.id, dto);
   }
 
@@ -176,7 +185,7 @@ export class UsersController {
    */
   async createSellerRequest(
     @CurrentUser() user: AuthenticatedUserPayload,
-    @Body() dto: CreateSellerRequestDto,
+    @ZodBody(CreateSellerRequestSchema) dto: CreateSellerRequestInput,
     @UploadedFile() file?: Express.Multer.File,
   ) {
     return this.usersService.createSellerRequest(user.id, dto, file);
@@ -229,7 +238,7 @@ export class UsersController {
   })
   async getReputationLogs(
     @CurrentUser('id') userId: string,
-    @Query() query: QueryReputationLogsDto,
+    @ZodQuery(QueryReputationLogsSchema) query: QueryReputationLogsInput,
   ) {
     return this.reputationService.getReputationLogs(userId, query.page, query.limit);
   }

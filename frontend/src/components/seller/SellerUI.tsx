@@ -2,14 +2,12 @@ import { cn } from '../../lib/utils';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink as ExportOutlined } from 'lucide-react';
 import {
   ChevronRight as RightOutlined,
   Database as DatabaseOutlined,
   Inbox as InboxOutlined,
   ShieldCheck as SafetyCertificateOutlined,
 } from 'lucide-react';
-import { useSellerWorkspace } from './SellerWorkspace';
 export function SellerButton({
   children,
   secondary = false,
@@ -145,22 +143,24 @@ export function PageHeading({
     </header>
   );
 }
+/**
+ * Says where a panel's figures come from.
+ *
+ * This used to offer a "view sample data" button that swapped the panels for
+ * invented figures — a revenue of 348,6M, three pending orders, two live lots.
+ * The panels read the shop's own figures now, so there is nothing to swap to,
+ * and a button that fills a dashboard with numbers nobody earned is worse than
+ * an empty one.
+ */
 export function ModuleNotice({ label }: { label: string }) {
   const { t } = useTranslation('seller');
-  const { preview, setPreview } = useSellerWorkspace();
   return (
     <div
-      className={cn(
-        `flex items-center gap-2 text-[#8b98ad] text-[10px] py-0 px-0.5 my-[-6px] mx-0 [&>.anticon]:text-[#93a4be]! [&>.anticon]:shrink-0 [&_button]:flex [&_button]:items-center [&_button]:gap-1 [&_button]:text-[#315eea] [&_button]:bg-transparent [&_button]:[border:0] [&_button]:p-1 [&_button]:ml-auto [&_button]:whitespace-nowrap [&_button]:font-[550] [&.is-preview]:text-[#b38b42] max-[540px]:items-start max-[540px]:text-[9px] max-[540px]:gap-1.5 max-[540px]:flex-wrap max-[540px]:[&>span:not(.anticon)]:flex-1 max-[540px]:[&_button]:text-[9px] max-[540px]:[&_button]:p-0 max-[540px]:[&_button]:ml-5.5 ${preview ? 'is-preview' : ''}`,
-      )}
+      className="flex items-center gap-2 text-[#8b98ad] text-[10px] py-0 px-0.5 my-[-6px] mx-0 [&>.anticon]:text-[#93a4be]! [&>.anticon]:shrink-0 max-[540px]:items-start max-[540px]:text-[9px] max-[540px]:gap-1.5 max-[540px]:flex-wrap max-[540px]:[&>span:not(.anticon)]:flex-1"
       data-seller="module-notice"
     >
       <DatabaseOutlined className="text-[16px]" aria-hidden="true" />
-      <span>{preview ? t('ui.previewActive', { label }) : t('ui.previewEmpty', { label })}</span>
-      <button type="button" onClick={() => setPreview(!preview)}>
-        {preview ? t('ui.hideSampleData') : t('ui.viewSampleData')}
-        <ExportOutlined className="text-[14px]" aria-hidden="true" />
-      </button>
+      <span>{t('ui.liveData', { label })}</span>
     </div>
   );
 }

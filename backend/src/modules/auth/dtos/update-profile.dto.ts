@@ -1,51 +1,43 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Length, Matches } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class UpdateAuthProfileDto {
-  @ApiPropertyOptional({ description: 'Mật khẩu xác minh lại khi Seller cập nhật hồ sơ' })
-  @IsOptional()
-  @IsString()
-  password?: string;
+const updateAuthProfileFields = {
+  password: nullAsAbsent(z.string().describe('Mật khẩu xác minh lại khi Seller cập nhật hồ sơ')),
+  verificationToken: nullAsAbsent(
+    z.string().describe('Token PROFILE_UPDATE do API reauthenticate cấp, hạn 5 phút'),
+  ),
+  fullName: nullAsAbsent(
+    z
+      .string()
+      .min(2)
+      .max(100)
+      .describe('Họ và tên của người dùng (từ 2 đến 100 ký tự)')
+      .meta({ example: 'Nguyen Van A' }),
+  ),
+  phoneNumber: nullAsAbsent(
+    z
+      .string()
+      .regex(/^\+?[0-9]{9,15}$/)
+      .describe('Số điện thoại liên lạc (9 đến 15 chữ số)')
+      .meta({ example: '0912345678' }),
+  ),
+  avatarUrl: nullAsAbsent(
+    z
+      .string()
+      .regex(/^https?:\/\/\S+$/i)
+      .describe('Đường dẫn ảnh đại diện hợp lệ (http hoặc https)')
+      .meta({ example: 'https://example.com/avatar.jpg' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    description: 'Token PROFILE_UPDATE do API reauthenticate cấp, hạn 5 phút',
-  })
-  @IsOptional()
-  @IsString()
-  verificationToken?: string;
-  @ApiPropertyOptional({
-    example: 'Nguyen Van A',
-    description: 'Họ và tên của người dùng (từ 2 đến 100 ký tự)',
-  })
-  @IsString({ message: 'Họ và tên phải là chuỗi ký tự.' })
-  @Length(2, 100, { message: 'Họ và tên phải có độ dài từ 2 đến 100 ký tự.' })
-  @IsOptional()
-  fullName?: string;
+export const UpdateAuthProfileSchema = z.object(updateAuthProfileFields).strict();
 
-  @ApiPropertyOptional({
-    example: '0912345678',
-    description: 'Số điện thoại liên lạc (9 đến 15 chữ số)',
-  })
-  @IsString({ message: 'Số điện thoại phải là chuỗi ký tự.' })
-  @Matches(/^\+?[0-9]{9,15}$/, { message: 'Số điện thoại phải có từ 9 đến 15 chữ số.' })
-  @IsOptional()
-  phoneNumber?: string;
+export type UpdateAuthProfileInput = z.infer<typeof UpdateAuthProfileSchema>;
 
-  @ApiPropertyOptional({
-    example: 'https://example.com/avatar.jpg',
-    description: 'Đường dẫn ảnh đại diện hợp lệ (http hoặc https)',
-  })
-  @IsString({ message: 'Đường dẫn ảnh đại diện phải là chuỗi ký tự.' })
-  @Matches(/^https?:\/\/\S+$/i, {
-    message: 'Ảnh đại diện phải là đường dẫn URL hợp lệ (bắt đầu bằng http:// hoặc https://).',
-  })
-  @IsOptional()
-  avatarUrl?: string;
-}
+const reauthenticateProfileFields = {
+  password: z.string().min(1).max(200).describe('Mật khẩu hiện tại để xác minh hồ sơ'),
+};
 
-export class ReauthenticateProfileDto {
-  @ApiPropertyOptional({ description: 'Mật khẩu hiện tại để xác minh hồ sơ' })
-  @IsString()
-  @Length(1, 200)
-  password!: string;
-}
+export const ReauthenticateProfileSchema = z.object(reauthenticateProfileFields).strict();
+
+export type ReauthenticateProfileInput = z.infer<typeof ReauthenticateProfileSchema>;

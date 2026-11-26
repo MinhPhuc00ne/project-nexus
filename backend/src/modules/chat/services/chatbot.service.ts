@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CommerceChatQueryService } from '../../commerce/services/commerce-chat-query.service';
 import { ChatbotCommerceService } from './chatbot-commerce.service';
+import type { ChatbotReply } from './chatbot-reply';
 import {
   accountStatusIntent,
   commerceIntent,
@@ -8,45 +8,20 @@ import {
   messageOrderId,
 } from './chatbot-commerce-intent';
 import {
-  ChatbotHistoryMessageDto,
-  ChatbotMessageDto,
-  GuestChatbotMessageDto,
+  ChatbotHistoryMessageInput,
+  ChatbotMessageInput,
+  GuestChatbotMessageInput,
 } from '../dtos/chatbot-message.dto';
 import { ChatbotAiService } from './chatbot-ai.service';
 import {
-  chatbotKnowledge,
   ChatbotTopic,
+  chatbotKnowledge,
   containsChatPhrase,
   matchChatbotTopic,
 } from './chatbot-knowledge';
 import { ChatbotRateLimitService } from './chatbot-rate-limit.service';
 
-/** Structured follow-up action rendered by the NEXUS chatbot UI. */
-export interface ChatbotAction {
-  type: 'REQUEST_SUPPORT' | 'SELECT_ORDER' | 'LOGIN' | 'NAVIGATE';
-  endpoint?: string;
-  path?: string;
-  label?: string;
-  auto?: boolean;
-}
-
-/** Response schema returned by the NEXUS conversational assistant endpoints. */
-export interface ChatbotReply {
-  reply: string;
-  engine: 'FAQ' | 'GEMINI' | 'ORDER' | 'CART';
-  topic: ChatbotTopic | 'WELCOME' | 'UNKNOWN';
-  sources: { id: string; title: string }[];
-  actions: ChatbotAction[];
-  orders?: Awaited<ReturnType<CommerceChatQueryService['orders']>>;
-  cart?: Awaited<ReturnType<CommerceChatQueryService['cart']>>;
-  order?: {
-    id: string;
-    status: string;
-    shipmentStatus: string | null;
-    waybillCode: string | null;
-    afterSalesStatus: string | null;
-  };
-}
+export type { ChatbotAction, ChatbotReply } from './chatbot-reply';
 
 /** Coordinates rate limiting, ownership-scoped commerce queries, FAQ fallback, and Gemini AI replies. */
 @Injectable()
@@ -75,7 +50,7 @@ export class ChatbotService {
    * @returns Structured assistant response.
    * @throws BadRequestException when single-order lookup is combined with list/cart filters or vice versa.
    */
-  async reply(userId: string, dto: ChatbotMessageDto): Promise<ChatbotReply> {
+  async reply(userId: string, dto: ChatbotMessageInput): Promise<ChatbotReply> {
     await this.rateLimit.check(userId);
     if (matchChatbotTopic(dto.message) === 'SECURITY') return this.answer(dto.message, true);
     const orderId = dto.orderId ?? messageOrderId(dto.message);
@@ -105,7 +80,7 @@ export class ChatbotService {
    * @param dto Validated guest message and optional conversation history.
    * @returns Structured assistant response prompting login for protected actions.
    */
-  async replyGuest(identity: string, dto: GuestChatbotMessageDto): Promise<ChatbotReply> {
+  async replyGuest(identity: string, dto: GuestChatbotMessageInput): Promise<ChatbotReply> {
     await this.rateLimit.check(`guest:${identity}`);
     const navResult = await this.commerce.navigate?.(dto.message, false);
     if (navResult) return navResult;
@@ -157,7 +132,7 @@ export class ChatbotService {
   private async answer(
     message: string,
     authenticated: boolean,
-    history: ChatbotHistoryMessageDto[] = [],
+    history: ChatbotHistoryMessageInput[] = [],
   ): Promise<ChatbotReply> {
     const topic = matchChatbotTopic(message);
     if (topic !== 'SECURITY') {
@@ -176,7 +151,7 @@ export class ChatbotService {
    */
   private async replyFromAi(
     message: string,
-    history: ChatbotHistoryMessageDto[],
+    history: ChatbotHistoryMessageInput[],
     authenticated: boolean,
   ): Promise<ChatbotReply | null> {
     const safeHistory = history.map((turn) =>

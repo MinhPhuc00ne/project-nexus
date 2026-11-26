@@ -1,182 +1,191 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, Matches } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class RegisterBuyerDto {
-  @ApiProperty({ example: 'buyer@example.com', description: 'Buyer email' })
-  @IsEmail({}, { message: 'Must be a valid email address' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email!: string;
+const registerBuyerFields = {
+  email: z.email().describe('Buyer email').meta({ example: 'buyer@example.com' }),
+  password: z
+    .string()
+    .trim()
+    .min(1)
+    .min(6)
+    .describe('Password (min 6 characters)')
+    .meta({ example: 'Password123!' }),
+  fullName: z.string().trim().min(1).describe('Full name').meta({ example: 'Nguyen Van A' }),
+  phoneNumber: nullAsAbsent(z.string().describe('Phone number').meta({ example: '0901234567' })),
+};
 
-  @ApiProperty({ example: 'Password123!', description: 'Password (min 6 characters)' })
-  @IsString()
-  @MinLength(6, { message: 'Password must be at least 6 characters' })
-  @IsNotEmpty({ message: 'Password is required' })
-  password!: string;
+export const RegisterBuyerSchema = z.object(registerBuyerFields).strict();
 
-  @ApiProperty({ example: 'Nguyen Van A', description: 'Full name' })
-  @IsString()
-  @IsNotEmpty({ message: 'Full name is required' })
-  fullName!: string;
+export type RegisterBuyerInput = z.infer<typeof RegisterBuyerSchema>;
 
-  @ApiPropertyOptional({ example: '0901234567', description: 'Phone number' })
-  @IsString()
-  @IsOptional()
-  phoneNumber?: string;
-}
+const loginFields = {
+  email: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Email or platform-assigned staff email (e.g. HuyNQ@staff.com)')
+    .meta({ example: 'admin@nexus.com' }),
+  password: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('User password')
+    .meta({ example: 'AdminPassword123!' }),
+};
 
-export class LoginDto {
-  @ApiProperty({
-    example: 'admin@nexus.com',
-    description: 'Email or platform-assigned staff email (e.g. HuyNQ@staff.com)',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Email or platform identifier is required' })
-  email!: string;
+export const LoginSchema = z.object(loginFields).strict();
 
-  @ApiProperty({ example: 'AdminPassword123!', description: 'User password' })
-  @IsString()
-  @IsNotEmpty({ message: 'Password is required' })
-  password!: string;
-}
+export type LoginInput = z.infer<typeof LoginSchema>;
 
-export class RefreshTokenDto {
-  @ApiProperty({ description: 'Refresh token string' })
-  @IsString()
-  @IsNotEmpty({ message: 'Refresh token is required' })
-  refreshToken!: string;
-}
+const refreshTokenFields = {
+  refreshToken: z.string().trim().min(1).describe('Refresh token string'),
+};
 
-export class ChangePasswordDto {
-  @ApiProperty({ example: 'CurrentPassword123!', description: 'Current password' })
-  @IsString()
-  @IsNotEmpty({ message: 'Current password is required' })
-  currentPassword!: string;
+export const RefreshTokenSchema = z.object(refreshTokenFields).strict();
 
-  @ApiProperty({ example: 'NewPassword123!', description: 'New password (min 6 characters)' })
-  @IsString()
-  @MinLength(6, { message: 'New password must be at least 6 characters' })
-  @IsNotEmpty({ message: 'New password is required' })
-  newPassword!: string;
-}
+export type RefreshTokenInput = z.infer<typeof RefreshTokenSchema>;
 
-export class ForgotPasswordRequestDto {
-  @ApiProperty({ example: 'user@example.com', description: 'Registered email' })
-  @IsEmail({}, { message: 'Valid email is required' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email!: string;
-}
+const changePasswordFields = {
+  currentPassword: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Current password')
+    .meta({ example: 'CurrentPassword123!' }),
+  newPassword: z
+    .string()
+    .trim()
+    .min(1)
+    .min(6)
+    .describe('New password (min 6 characters)')
+    .meta({ example: 'NewPassword123!' }),
+};
 
-export class ResetPasswordWithOtpDto {
-  @ApiProperty({ example: 'user@example.com', description: 'Registered email' })
-  @IsEmail({}, { message: 'Valid email is required' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email!: string;
+export const ChangePasswordSchema = z.object(changePasswordFields).strict();
 
-  @ApiProperty({ example: '123456', description: '6-digit OTP code received in email' })
-  @IsString()
-  @Matches(/^\d{6}$/, { message: 'OTP must be a 6-digit number' })
-  @IsNotEmpty({ message: 'OTP is required' })
-  otp!: string;
+export type ChangePasswordInput = z.infer<typeof ChangePasswordSchema>;
 
-  @ApiProperty({ example: 'NewPassword123!', description: 'New password' })
-  @IsString()
-  @MinLength(6, { message: 'New password must be at least 6 characters' })
-  @IsNotEmpty({ message: 'New password is required' })
-  newPassword!: string;
-}
+const forgotPasswordRequestFields = {
+  email: z.email().describe('Registered email').meta({ example: 'user@example.com' }),
+};
 
-export class InviteStaffDto {
-  @ApiProperty({ example: 'Nguyen Van Staff', description: 'Staff full name' })
-  @IsString()
-  @IsNotEmpty({ message: 'Full name is required' })
-  fullName!: string;
+export const ForgotPasswordRequestSchema = z.object(forgotPasswordRequestFields).strict();
 
-  @ApiProperty({
-    example: 'staff_personal@gmail.com',
-    description: 'Personal email to receive the assigned staff login and random initial password',
-  })
-  @IsEmail({}, { message: 'Valid personal email is required' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email!: string;
+export type ForgotPasswordRequestInput = z.infer<typeof ForgotPasswordRequestSchema>;
 
-  @ApiProperty({ example: '0912345678', description: 'Phone number' })
-  @IsString()
-  @IsNotEmpty({ message: 'Phone number is required' })
-  phoneNumber!: string;
+const resetPasswordWithOtpFields = {
+  email: z.email().describe('Registered email').meta({ example: 'user@example.com' }),
+  otp: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^\d{6}$/)
+    .describe('6-digit OTP code received in email')
+    .meta({ example: '123456' }),
+  newPassword: z
+    .string()
+    .trim()
+    .min(1)
+    .min(6)
+    .describe('New password')
+    .meta({ example: 'NewPassword123!' }),
+};
 
-  @ApiPropertyOptional({ example: 'Customer Support', description: 'Assigned department' })
-  @IsString()
-  @IsOptional()
-  department?: string;
-}
+export const ResetPasswordWithOtpSchema = z.object(resetPasswordWithOtpFields).strict();
 
-export class ActivateStaffDto {
-  @ApiProperty({
-    example: 'a1b2c3d4e5f6...',
-    description: 'Mã token kích hoạt tài khoản nhận qua email cá nhân',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Mã token kích hoạt không được để trống' })
-  token!: string;
+export type ResetPasswordWithOtpInput = z.infer<typeof ResetPasswordWithOtpSchema>;
 
-  @ApiProperty({ example: 'Nguyễn Quang Huy', description: 'Xác nhận Họ và tên nhân viên' })
-  @IsString()
-  @IsNotEmpty({ message: 'Họ và tên không được để trống' })
-  fullName!: string;
+const inviteStaffFields = {
+  fullName: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Staff full name')
+    .meta({ example: 'Nguyen Van Staff' }),
+  email: z
+    .email()
+    .describe('Personal email to receive the assigned staff login and random initial password')
+    .meta({ example: 'staff_personal@gmail.com' }),
+  phoneNumber: z.string().trim().min(1).describe('Phone number').meta({ example: '0912345678' }),
+  department: nullAsAbsent(
+    z.string().describe('Assigned department').meta({ example: 'Customer Support' }),
+  ),
+};
 
-  @ApiPropertyOptional({ example: '0912345678', description: 'Xác nhận Số điện thoại nhân viên' })
-  @IsString()
-  @IsOptional()
-  phoneNumber?: string;
+export const InviteStaffSchema = z.object(inviteStaffFields).strict();
 
-  @ApiProperty({
-    example: 'Staff@123456',
-    description:
+export type InviteStaffInput = z.infer<typeof InviteStaffSchema>;
+
+const activateStaffFields = {
+  token: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Mã token kích hoạt tài khoản nhận qua email cá nhân')
+    .meta({ example: 'a1b2c3d4e5f6...' }),
+  fullName: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Xác nhận Họ và tên nhân viên')
+    .meta({ example: 'Nguyễn Quang Huy' }),
+  phoneNumber: nullAsAbsent(
+    z.string().describe('Xác nhận Số điện thoại nhân viên').meta({ example: '0912345678' }),
+  ),
+  newPassword: z
+    .string()
+    .trim()
+    .min(1)
+    .min(8)
+    .regex(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).+$/)
+    .describe(
       'Mật khẩu mới (tối thiểu 8 ký tự, có ít nhất 1 chữ hoa, 1 chữ thường, 1 số và 1 ký tự đặc biệt)',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Mật khẩu mới không được để trống' })
-  @MinLength(8, { message: 'Mật khẩu mới phải có tối thiểu 8 ký tự' })
-  @Matches(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^a-zA-Z0-9\s]).+$/, {
-    message:
-      'Mật khẩu mới phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường, 1 chữ số và 1 ký tự đặc biệt',
-  })
-  newPassword!: string;
+    )
+    .meta({ example: 'Staff@123456' }),
+  confirmPassword: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Xác nhận lại mật khẩu mới')
+    .meta({ example: 'Staff@123456' }),
+};
 
-  @ApiProperty({ example: 'Staff@123456', description: 'Xác nhận lại mật khẩu mới' })
-  @IsString()
-  @IsNotEmpty({ message: 'Xác nhận mật khẩu không được để trống' })
-  confirmPassword!: string;
-}
+export const ActivateStaffSchema = z.object(activateStaffFields).strict();
 
-export class StaffForgotPasswordDto {
-  @ApiProperty({
-    example: 'HuyNQ@staff.com',
-    description: 'Tài khoản công tác @staff.com; OTP gửi về email cá nhân đã liên kết',
-  })
-  @IsEmail({}, { message: 'Must be a valid email address' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email!: string;
-}
+export type ActivateStaffInput = z.infer<typeof ActivateStaffSchema>;
 
-export class StaffResetPasswordDto {
-  @ApiProperty({
-    example: 'HuyNQ@staff.com',
-    description: 'Tài khoản công tác @staff.com dùng khi yêu cầu OTP',
-  })
-  @IsEmail({}, { message: 'Must be a valid email address' })
-  @IsNotEmpty({ message: 'Email is required' })
-  email!: string;
+const staffForgotPasswordFields = {
+  email: z
+    .email()
+    .describe('Tài khoản công tác @staff.com; OTP gửi về email cá nhân đã liên kết')
+    .meta({ example: 'HuyNQ@staff.com' }),
+};
 
-  @ApiProperty({ example: '123456', description: 'Mã OTP 6 số nhận qua email cá nhân' })
-  @IsString()
-  @Matches(/^\d{6}$/, { message: 'OTP must be a 6-digit number' })
-  @IsNotEmpty({ message: 'OTP is required' })
-  otp!: string;
+export const StaffForgotPasswordSchema = z.object(staffForgotPasswordFields).strict();
 
-  @ApiProperty({ example: 'NewStaffPassword123!', description: 'Mật khẩu mới' })
-  @IsString()
-  @MinLength(6, { message: 'New password must be at least 6 characters' })
-  @IsNotEmpty({ message: 'New password is required' })
-  newPassword!: string;
-}
+export type StaffForgotPasswordInput = z.infer<typeof StaffForgotPasswordSchema>;
+
+const staffResetPasswordFields = {
+  email: z
+    .email()
+    .describe('Tài khoản công tác @staff.com dùng khi yêu cầu OTP')
+    .meta({ example: 'HuyNQ@staff.com' }),
+  otp: z
+    .string()
+    .trim()
+    .min(1)
+    .regex(/^\d{6}$/)
+    .describe('Mã OTP 6 số nhận qua email cá nhân')
+    .meta({ example: '123456' }),
+  newPassword: z
+    .string()
+    .trim()
+    .min(1)
+    .min(6)
+    .describe('Mật khẩu mới')
+    .meta({ example: 'NewStaffPassword123!' }),
+};
+
+export const StaffResetPasswordSchema = z.object(staffResetPasswordFields).strict();
+
+export type StaffResetPasswordInput = z.infer<typeof StaffResetPasswordSchema>;

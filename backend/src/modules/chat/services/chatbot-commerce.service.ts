@@ -6,9 +6,9 @@ import {
   CommerceChatOrders,
   CommerceChatQuery,
   CommerceChatQueryService,
-} from '../../commerce/services/commerce-chat-query.service';
-import { ChatbotMessageDto } from '../dtos/chatbot-message.dto';
-import type { ChatbotReply } from './chatbot.service';
+} from '../../commerce-query/services/commerce-chat-query.service';
+import { ChatbotMessageInput } from '../dtos/chatbot-message.dto';
+import type { ChatbotReply } from './chatbot-reply';
 import {
   accountStatusIntent,
   commerceIntent,
@@ -39,8 +39,8 @@ const support: ChatbotReply['actions'] = [
 ];
 
 interface CommerceContext {
-  intent: ChatbotMessageDto['intent'] | null;
-  status: ChatbotMessageDto['status'];
+  intent: ChatbotMessageInput['intent'] | null;
+  status: ChatbotMessageInput['status'];
   needsScopeClarification: boolean;
 }
 
@@ -56,7 +56,7 @@ export class ChatbotCommerceService {
    * @returns A deterministic data reply, or null for ordinary conversation.
    * @throws BadRequestException for incompatible filters.
    */
-  async answer(userId: string, dto: ChatbotMessageDto): Promise<ChatbotReply | null> {
+  async answer(userId: string, dto: ChatbotMessageInput): Promise<ChatbotReply | null> {
     const context = this.queryContext(dto);
     if (context.needsScopeClarification) {
       const prompt = context.status
@@ -96,8 +96,8 @@ export class ChatbotCommerceService {
    * @returns Bounded commerce query parameters.
    */
   private buildQuery(
-    dto: ChatbotMessageDto,
-    inheritedStatus?: ChatbotMessageDto['status'],
+    dto: ChatbotMessageInput,
+    inheritedStatus?: ChatbotMessageInput['status'],
   ): CommerceChatQuery {
     const text = normalizeChatText(dto.message);
     const pageMatch = text.match(/\b(?:trang|page)\s+(\d+)\b/);
@@ -252,7 +252,7 @@ export class ChatbotCommerceService {
    */
   private formatOrdersReply(
     intent: 'PURCHASES' | 'SALES',
-    status: ChatbotMessageDto['status'],
+    status: ChatbotMessageInput['status'],
     orders: CommerceChatOrders,
   ): ChatbotReply {
     const label = intent === 'SALES' ? 'đơn bán' : 'đơn mua';
@@ -292,9 +292,9 @@ export class ChatbotCommerceService {
    * @param dto Current request and optional untrusted conversation history.
    * @returns Read intent and status; data ownership remains enforced by Commerce queries.
    */
-  private queryContext(dto: ChatbotMessageDto): CommerceContext {
-    let intent: ChatbotMessageDto['intent'] | null = null;
-    let status: ChatbotMessageDto['status'];
+  private queryContext(dto: ChatbotMessageInput): CommerceContext {
+    let intent: ChatbotMessageInput['intent'] | null = null;
+    let status: ChatbotMessageInput['status'];
     for (const turn of (dto.history ?? []).slice(-12)) {
       if (turn.role !== 'user') continue;
       const explicit = commerceIntent(turn.content);

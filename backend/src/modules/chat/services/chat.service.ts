@@ -10,17 +10,18 @@ import { ChatMessage } from '@prisma/client';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
 import {
-  CreateConversationDto,
-  QueryConversationsDto,
-  QueryMessagesDto,
-  QueryQueueDto,
-  RequestSupportDto,
-  SendMessageDto,
-  UpdateConversationStatusDto,
+  CreateConversationInput,
+  QueryConversationsInput,
+  QueryMessagesInput,
+  QueryQueueInput,
+  RequestSupportInput,
+  SendMessageInput,
+  UpdateConversationStatusInput,
 } from '../dtos';
 import { ChatAutoReplyService } from './chat-auto-reply.service';
-import { maskStaffSender, SUPPORT_STAFF_MASK } from './chat-mask.util';
+import { SUPPORT_STAFF_MASK, maskStaffSender } from './chat-mask.util';
 import { StaffQueueService } from './staff-queue.service';
+import { ChatRealtimePublisher } from './chat-realtime.publisher';
 
 export interface ChatSocketBroadcaster {
   isUserOnline?(userId: string): Promise<boolean | null>;
@@ -39,18 +40,13 @@ export interface ChatSocketBroadcaster {
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
-  private socketBroadcaster: ChatSocketBroadcaster | null = null;
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly cloudinary: CloudinaryStorageService,
     private readonly autoReplyService: ChatAutoReplyService,
     private readonly staffQueueService: StaffQueueService,
+    private readonly realtime: ChatRealtimePublisher,
   ) {}
-
-  setBroadcaster(broadcaster: ChatSocketBroadcaster): void {
-    this.socketBroadcaster = broadcaster;
-  }
 
   /**
    * Initializes or retrieves a direct conversation between participants.
@@ -65,7 +61,7 @@ export class ChatService {
   async createOrGetConversation(
     currentUserId: string,
     currentUserRole: string,
-    dto: CreateConversationDto,
+    dto: CreateConversationInput,
   ) {
     const recipientId = (dto.participantId || dto.targetUserId || '').trim();
     if (!recipientId && dto.contextType !== 'DISPUTE') {
@@ -162,7 +158,7 @@ export class ChatService {
    * @returns Created support Conversation entity
    * @throws BadRequestException when staff or admin attempts to submit, or when content is invalid
    */
-  async requestSupport(userId: string, role: string, dto: RequestSupportDto) {
+  async requestSupport(userId: string, role: string, dto: RequestSupportInput) {
     if (role === 'SUPPORT_STAFF' || role === 'ADMIN') {
       throw new BadRequestException(
         'Tài khoản nhân viên hoặc quản trị viên không thể gửi yêu cầu hỗ trợ người dùng.',
@@ -197,7 +193,7 @@ export class ChatService {
 
     const convType = role === 'SELLER' ? 'STAFF_SELLER' : 'STAFF_BUYER';
 
-    const availableStaffId = this.staffQueueService.getNextAvailableStaff();
+    const availableStaffId = await this.staffQueueService.getNextAvailableStaff();
 
     const conv = await this.prisma.chatConversation.create({
       data: {
@@ -235,8 +231,8 @@ export class ChatService {
     });
 
     if (availableStaffId) {
-      this.staffQueueService.trackAssignedTicket(availableStaffId, conv.id);
-      this.socketBroadcaster?.broadcastToUser(availableStaffId, 'ticket_assigned', {
+      await this.staffQueueService.trackAssignedTicket(availableStaffId, conv.id);
+      this.realtime.toUser(availableStaffId, 'ticket_assigned', {
         conversationId: conv.id,
         conversation: conv,
       });
@@ -244,7 +240,7 @@ export class ChatService {
         `Tự động gán ticket ${conv.id} cho staff online sớm nhất: ${availableStaffId}`,
       );
     } else {
-      this.socketBroadcaster?.broadcastToStaff('new_queue_ticket', {
+      this.realtime.toStaff('new_queue_ticket', {
         conversationId: conv.id,
         conversation: conv,
       });
@@ -311,7 +307,7 @@ export class ChatService {
    * @returns Paginated queue tickets and waiting metrics
    * @throws ForbiddenException when user lacks staff or admin privileges
    */
-  async getQueue(role: string, query: QueryQueueDto) {
+  async getQueue(role: string, query: QueryQueueInput) {
     if (role !== 'SUPPORT_STAFF' && role !== 'ADMIN') {
       throw new ForbiddenException(
         'Chỉ nhân viên hoặc quản trị viên mới có quyền xem hàng đợi hỗ trợ.',
@@ -407,8 +403,8 @@ export class ChatService {
     });
 
     this.staffQueueService.trackAssignedTicket(staffId, convId);
-    this.socketBroadcaster?.broadcastStatusChange(convId, 'IN_PROGRESS', staffId);
-    this.socketBroadcaster?.broadcastToUser(staffId, 'ticket_assigned', {
+    this.realtime.statusChange(convId, 'IN_PROGRESS', staffId);
+    this.realtime.toUser(staffId, 'ticket_assigned', {
       conversationId: convId,
       conversation: updated,
     });
@@ -431,7 +427,7 @@ export class ChatService {
     convId: string,
     userId: string,
     role: string,
-    dto: UpdateConversationStatusDto,
+    dto: UpdateConversationStatusInput,
   ) {
     const conv = await this.prisma.chatConversation.findUnique({
       where: { id: convId },
@@ -465,7 +461,7 @@ export class ChatService {
       }
     }
 
-    this.socketBroadcaster?.broadcastStatusChange(convId, dto.status, conv.assignedStaffId);
+    this.realtime.statusChange(convId, dto.status, conv.assignedStaffId);
 
     if (dto.resolutionNotes?.trim()) {
       await this.sendMessage(userId, role, {
@@ -513,7 +509,7 @@ export class ChatService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated conversation summaries
    */
-  async listUserConversations(userId: string, role: string, query: QueryConversationsDto) {
+  async listUserConversations(userId: string, role: string, query: QueryConversationsInput) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;
     const skip = (page - 1) * limit;
@@ -625,7 +621,7 @@ export class ChatService {
    * @param query - Cursor pagination parameters
    * @returns Paginated messages with masked identities
    */
-  async listMessages(convId: string, userId: string, role: string, query: QueryMessagesDto) {
+  async listMessages(convId: string, userId: string, role: string, query: QueryMessagesInput) {
     await this.getConversationById(convId, userId, role);
     const limit = Number(query.limit) || 50;
     const where: Record<string, unknown> = { conversationId: convId };
@@ -671,7 +667,7 @@ export class ChatService {
    * @returns Created ChatMessage entity
    * @throws BadRequestException when message body is missing or violates content rules
    */
-  async sendMessage(senderId: string, senderRole: string, dto: SendMessageDto) {
+  async sendMessage(senderId: string, senderRole: string, dto: SendMessageInput) {
     const text = (dto.content || dto.body || '').trim();
     const attachments = dto.attachments || [];
     if (!text && attachments.length === 0) {
@@ -693,7 +689,7 @@ export class ChatService {
         },
       });
       this.staffQueueService.trackAssignedTicket(senderId, convId);
-      this.socketBroadcaster?.broadcastStatusChange(convId, 'IN_PROGRESS', senderId);
+      this.realtime.statusChange(convId, 'IN_PROGRESS', senderId);
     }
 
     const message = await this.prisma.chatMessage.create({
@@ -718,7 +714,7 @@ export class ChatService {
       ...message,
       sender: maskStaffSender(message.sender, false),
     };
-    this.socketBroadcaster?.broadcastMessage(convId, clientPayload);
+    this.realtime.message(convId, clientPayload);
 
     await this.triggerAutoReply(conv, senderId, senderRole, text);
 
@@ -755,11 +751,11 @@ export class ChatService {
         if (partner?.role !== 'SELLER' || partner.isShopSuspended) return;
         const reply = await this.autoReplyService.findMatchingReply(partnerId, 'SHOP', text, {
           firstMessage,
-          offline: (await this.socketBroadcaster?.isUserOnline?.(partnerId)) === false,
+          offline: !(await this.realtime.isUserOnline(partnerId)),
         });
         if (reply) {
           const autoMsg = await this.saveAutoReply(conv, partnerId, reply);
-          this.socketBroadcaster?.broadcastMessage(conv.id, autoMsg);
+          this.realtime.message(conv.id, autoMsg);
         }
       } else if (
         (conv.type === 'STAFF_BUYER' || conv.type === 'STAFF_SELLER') &&
@@ -768,8 +764,8 @@ export class ChatService {
         const reply = await this.autoReplyService.findMatchingReply(null, 'SYSTEM', text, {
           firstMessage,
           offline: conv.assignedStaffId
-            ? (await this.socketBroadcaster?.isUserOnline?.(conv.assignedStaffId)) === false
-            : (await this.socketBroadcaster?.isSupportOnline?.()) === false,
+            ? !(await this.realtime.isUserOnline(conv.assignedStaffId))
+            : !(await this.realtime.isSupportOnline()),
         });
         if (reply) {
           const staffUser = await this.prisma.user.findFirst({
@@ -779,7 +775,7 @@ export class ChatService {
           // Never store a system reply as if the customer had authored it.
           if (!staffUser) return;
           const autoMsg = await this.saveAutoReply(conv, staffUser.id, reply);
-          this.socketBroadcaster?.broadcastMessage(conv.id, {
+          this.realtime.message(conv.id, {
             ...autoMsg,
             senderId: SUPPORT_STAFF_MASK.id,
             sender: SUPPORT_STAFF_MASK,
@@ -837,7 +833,7 @@ export class ChatService {
       data: isUser1 ? { unreadCountUser1: 0 } : { unreadCountUser2: 0 },
     });
 
-    this.socketBroadcaster?.broadcastRead(convId, userId);
+    this.realtime.read(convId, userId);
     return {
       success: true,
       conversationId: convId,

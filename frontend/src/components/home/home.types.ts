@@ -9,7 +9,6 @@ export interface HomeProduct {
   discount?: number;
   rating?: number;
   sold?: number;
-  saleSold?: number;
   badge?: string;
 }
 

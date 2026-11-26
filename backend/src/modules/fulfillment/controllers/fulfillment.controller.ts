@@ -1,5 +1,6 @@
-import { Controller, Post, Get, Body, Param, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Param, ParseIntPipe, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser, Public, Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -8,9 +9,12 @@ import { FulfillmentService } from '../services/fulfillment.service';
 import { RouteDistanceService } from '../services/route-distance.service';
 import { GhnLogisticsService } from '../services/ghn-logistics.service';
 import {
-  ShippingQuoteDto,
-  DirectDistanceDto,
-  CalculateGhnFeeDto,
+  CalculateGhnFeeInput,
+  CalculateGhnFeeSchema,
+  DirectDistanceInput,
+  DirectDistanceSchema,
+  ShippingQuoteInput,
+  ShippingQuoteSchema,
 } from '../dtos/shipping-quote.dto';
 
 @ApiTags('10. FULFILLMENT & SHIPPING')
@@ -33,7 +37,7 @@ export class FulfillmentController {
       'Tra cứu cước phí vận chuyển chính xác theo quy chuẩn bảng giá Giao Hàng Nhanh: Mã Quận/Huyện, Phường/Xã, trọng lượng gram và kích thước 3 chiều.',
   })
   @ApiResponse({ status: 200, description: 'Cước phí vận chuyển GHN chính thức' })
-  async calculateOfficialGhnFee(@Body() dto: CalculateGhnFeeDto) {
+  async calculateOfficialGhnFee(@ZodBody(CalculateGhnFeeSchema) dto: CalculateGhnFeeInput) {
     const fee = await this.ghnService.calculateFee({
       toDistrictId: dto.toDistrictId,
       toWardCode: dto.toWardCode,
@@ -62,7 +66,10 @@ export class FulfillmentController {
       'Phí do GHN trả về theo địa chỉ và sản phẩm. Khoảng cách chỉ để tham khảo, không dùng tính cước. GHN lỗi sẽ không có báo giá dự phòng.',
   })
   @ApiResponse({ status: 200, description: 'Báo giá vận chuyển chi tiết' })
-  async getShippingQuote(@CurrentUser('id') userId: string, @Body() dto: ShippingQuoteDto) {
+  async getShippingQuote(
+    @CurrentUser('id') userId: string,
+    @ZodBody(ShippingQuoteSchema) dto: ShippingQuoteInput,
+  ) {
     const quote = await this.fulfillmentService.calculateShippingQuote(userId, dto);
     return {
       message: 'Tính cước phí vận chuyển thành công',
@@ -77,7 +84,7 @@ export class FulfillmentController {
     description: 'Chỉ trả khoảng cách và thời gian di chuyển. Không tính hoặc trả phí vận chuyển.',
   })
   @ApiResponse({ status: 200, description: 'Khoảng cách và thời gian di chuyển tham khảo' })
-  async computeDirectDistance(@Body() dto: DirectDistanceDto) {
+  async computeDirectDistance(@ZodBody(DirectDistanceSchema) dto: DirectDistanceInput) {
     const result = await this.distanceService.getRoadDistanceAndDuration(
       dto.originLat,
       dto.originLon,

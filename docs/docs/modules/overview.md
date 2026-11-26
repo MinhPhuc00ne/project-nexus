@@ -38,7 +38,7 @@ title: 10 Backend Modules and AI Chatbot
 
 ## 4. `commerce` — Cart, Orders, Escrow, Payments and After-Sales
 
-- Controllers: `CartController`, `OrderController`, `OrderLifecycleController`, `AuctionCheckoutController`, `PayosWebhookController`, `AfterSalesController`, `SellerOrdersController`, `SellerFinanceController`, `SellerEngagementController`, `FeedbackController`, `ReportModerationController`
+- Controllers: `CartController`, `OrderController`, `OrderLifecycleController`, `AuctionCheckoutController`, `PayosWebhookController`, `WalletController`, `AfterSalesController`, `SellerOrdersController`, `SellerFinanceController`, `BuyerFinanceController`, `SellerEngagementController`, `ReviewsController`, `PublicReviewsController`, `SellerReviewsController`, `AdminReviewsController`, `ReportsController`, `ReportModerationController`
 - Services: `CartService`, `OrderService`, `OrderEscrowService`, `OrderCancellationService`, `OrderReturnService`, `RefundService`, `PayosService`, `AuctionCheckoutService`, `SellerOrdersService`, `SellerFinanceService`, `SellerEngagementService`, `ReviewsService`, `ReportsService`, `ReportModerationService`, `CommerceChatQueryService`
 - Core Capabilities:
   - Persistent 7-day cart, guest cart merge on login, and anti-self-purchase enforcement (`CANNOT_PURCHASE_OWN_PRODUCT`).
@@ -82,7 +82,7 @@ title: 10 Backend Modules and AI Chatbot
 
 ## 9. `admin` — Platform Governance and Oversight
 
-- Controllers: `AdminController`, `AdminOrdersController`, `AdminReputationController`, `BackofficeDisputesController`
+- Controllers: `AdminStaffController`, `AdminUsersController`, `AdminProductsController`, `AdminCategoriesController`, `AdminShopsController`, `AdminFinanceController`, `AdminPlatformController`, `AdminOrdersController`, `AdminReputationController`, `BackofficeDisputesController`
 - Services: `AdminService`, `AdminUsersService`, `AdminShopsService`, `AdminProductsService`, `AdminOrdersService`, `AdminDisputesService`, `AdminFinanceService`, `AdminSettingsService`
 - Core Capabilities: User governance and locking, Seller approvals, Shop warnings, suspensions, and appeals (`ShopActionLog`, `ShopViolation`), withdrawal approvals, dispute and refund reconciliation, and platform settings.
 

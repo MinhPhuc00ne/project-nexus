@@ -1,37 +1,38 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsEnum, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { z } from 'zod';
 import { NotificationChannel } from '@prisma/client';
 
-export class NotificationPreferenceItemDto {
-  @ApiProperty({
-    enum: NotificationChannel,
-    example: NotificationChannel.EMAIL,
-    description: 'Kênh nhận thông báo: EMAIL, PUSH, IN_APP',
-  })
-  @IsEnum(NotificationChannel)
-  channel!: NotificationChannel;
+const notificationPreferenceItemFields = {
+  channel: z
+    .enum(NotificationChannel)
+    .describe('Kênh nhận thông báo: EMAIL, PUSH, IN_APP')
+    .meta({ example: NotificationChannel.EMAIL }),
+  isEnabled: z
+    .boolean()
+    .describe('Bật (true) hoặc tắt (false) nhận thông báo qua kênh này')
+    .meta({ example: true }),
+};
 
-  @ApiProperty({
-    example: true,
-    description: 'Bật (true) hoặc tắt (false) nhận thông báo qua kênh này',
-  })
-  @IsBoolean()
-  isEnabled!: boolean;
-}
+export const NotificationPreferenceItemSchema = z.object(notificationPreferenceItemFields).strict();
 
-export class UpdateNotificationPreferencesDto {
-  @ApiProperty({
-    type: [NotificationPreferenceItemDto],
-    description: 'Danh sách cài đặt bật/tắt nhận thông báo cho từng kênh',
-    example: [
-      { channel: 'IN_APP', isEnabled: true },
-      { channel: 'EMAIL', isEnabled: true },
-      { channel: 'PUSH', isEnabled: false },
-    ],
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => NotificationPreferenceItemDto)
-  preferences!: NotificationPreferenceItemDto[];
-}
+export type NotificationPreferenceItemInput = z.infer<typeof NotificationPreferenceItemSchema>;
+
+const updateNotificationPreferencesFields = {
+  preferences: z
+    .array(NotificationPreferenceItemSchema)
+    .describe('Danh sách cài đặt bật/tắt nhận thông báo cho từng kênh')
+    .meta({
+      example: [
+        { channel: 'IN_APP', isEnabled: true },
+        { channel: 'EMAIL', isEnabled: true },
+        { channel: 'PUSH', isEnabled: false },
+      ],
+    }),
+};
+
+export const UpdateNotificationPreferencesSchema = z
+  .object(updateNotificationPreferencesFields)
+  .strict();
+
+export type UpdateNotificationPreferencesInput = z.infer<
+  typeof UpdateNotificationPreferencesSchema
+>;

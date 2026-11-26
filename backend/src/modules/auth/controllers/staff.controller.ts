@@ -1,34 +1,41 @@
 import {
   Controller,
-  Post,
   Get,
-  Body,
-  Query,
-  UseGuards,
+  GoneException,
   HttpCode,
   HttpStatus,
   Patch,
-  GoneException,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { AuthService } from '../services/auth.service';
 import { AuthProfileService, UserProfileResponse } from '../services/auth-profile.service';
 import {
-  ActivateStaffDto,
-  ChangePasswordDto,
-  StaffForgotPasswordDto,
-  StaffResetPasswordDto,
+  ActivateStaffInput,
+  ActivateStaffSchema,
+  ChangePasswordInput,
+  ChangePasswordSchema,
+  StaffForgotPasswordInput,
+  StaffForgotPasswordSchema,
+  StaffResetPasswordInput,
+  StaffResetPasswordSchema,
 } from '../dtos/auth.dto';
 import {
-  Public,
   CurrentUser,
-  Roles,
+  Public,
   RequirePrivilege,
+  Roles,
 } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Role } from '@nexus/types';
-import { UpdateStaffProfileDto } from '../dtos/update-staff-profile.dto';
+import {
+  UpdateStaffProfileInput,
+  UpdateStaffProfileSchema,
+} from '../dtos/update-staff-profile.dto';
 
 @ApiTags('4. STAFF')
 @Controller('staff')
@@ -70,7 +77,7 @@ export class StaffController {
   @Public()
   @Post('activate')
   @HttpCode(HttpStatus.OK)
-  async activateStaff(@Body() _dto: ActivateStaffDto): Promise<never> {
+  async activateStaff(@ZodBody(ActivateStaffSchema) _dto: ActivateStaffInput): Promise<never> {
     throw new GoneException(
       'Luồng kích hoạt bằng token đã ngừng. Vui lòng dùng tài khoản được cấp hoặc Quên mật khẩu.',
     );
@@ -95,7 +102,7 @@ export class StaffController {
   @ApiOperation({ summary: 'Staff cập nhật họ tên, số điện thoại và avatar của chính mình' })
   updateStaffProfile(
     @CurrentUser('id') userId: string,
-    @Body() dto: UpdateStaffProfileDto,
+    @ZodBody(UpdateStaffProfileSchema) dto: UpdateStaffProfileInput,
   ): Promise<UserProfileResponse> {
     return this.authProfileService.updateStaffProfile(userId, dto);
   }
@@ -110,7 +117,7 @@ export class StaffController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(
-    @Body() dto: StaffForgotPasswordDto,
+    @ZodBody(StaffForgotPasswordSchema) dto: StaffForgotPasswordInput,
   ): Promise<{ success: boolean; message: string }> {
     const result = await this.authService.forgotPassword(dto);
     return { success: true, message: result.message };
@@ -126,7 +133,7 @@ export class StaffController {
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(
-    @Body() dto: StaffResetPasswordDto,
+    @ZodBody(StaffResetPasswordSchema) dto: StaffResetPasswordInput,
   ): Promise<{ success: boolean; message: string }> {
     const result = await this.authService.resetPassword({
       email: dto.email,
@@ -147,7 +154,7 @@ export class StaffController {
   @HttpCode(HttpStatus.OK)
   async changePassword(
     @CurrentUser('id') userId: string,
-    @Body() dto: ChangePasswordDto,
+    @ZodBody(ChangePasswordSchema) dto: ChangePasswordInput,
   ): Promise<{ success: boolean; message: string }> {
     return this.authProfileService.changePassword(userId, dto);
   }

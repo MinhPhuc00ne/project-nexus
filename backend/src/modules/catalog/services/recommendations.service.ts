@@ -1,30 +1,34 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { FeedbackPageDto } from '../../commerce/dtos/feedback.dto';
+import type { PaginatedQuery } from '@nexus/contracts';
 import { formatProductSummary } from '../utils/product.util';
 
 @Injectable()
 export class RecommendationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async get(userId: string, query: FeedbackPageDto): Promise<unknown> {
-    const [cart, purchases] = await Promise.all([
+  async get(userId: string, query: PaginatedQuery): Promise<unknown> {
+    // The signal is which categories the buyer is interested in, so the
+    // database returns the distinct categories rather than two hundred rows
+    // for the service to deduplicate.
+    const [cartCategories, purchasedCategories] = await Promise.all([
       this.prisma.cartItem.findMany({
-        where: { cart: { userId } },
-        take: 100,
-        orderBy: { id: 'asc' },
+        where: { cart: { userId }, product: { categoryId: { not: undefined } } },
+        distinct: ['productId'],
+        take: 50,
         select: { product: { select: { categoryId: true } } },
       }),
       this.prisma.orderItem.findMany({
         where: { order: { buyerId: userId, status: 'CONFIRMED' } },
         orderBy: { order: { createdAt: 'desc' } },
-        take: 100,
+        distinct: ['productId'],
+        take: 50,
         select: { product: { select: { categoryId: true } } },
       }),
     ]);
     const categories = [
       ...new Set(
-        [...cart, ...purchases]
+        [...cartCategories, ...purchasedCategories]
           .map((item) => item.product?.categoryId)
           .filter((categoryId): categoryId is string => Boolean(categoryId)),
       ),
@@ -41,6 +45,11 @@ export class RecommendationsService {
       seller: { select: { id: true, fullName: true, avatarUrl: true, shopAvatarUrl: true } },
       inventories: { select: { availableQty: true } },
     };
+    const limit = Math.min(query.limit, 50);
+
+    // Each query takes only what can still appear in the answer. Both used to
+    // take 100 full product graphs — images, options, seller and inventory —
+    // and the service then threw away everything past the limit.
     const preferred = categories.length
       ? await this.prisma.product.findMany({
           where: {
@@ -50,20 +59,24 @@ export class RecommendationsService {
           },
           include,
           orderBy: [{ averageRating: 'desc' }, { createdAt: 'desc' }],
-          take: 100,
+          take: limit,
         })
       : [];
-    const fallback = await this.prisma.product.findMany({
-      where: {
-        ...visible,
-        inventories: { some: { availableQty: { gt: 0 } } },
-        id: { notIn: preferred.map((p) => p.id) },
-      },
-      include,
-      orderBy: [{ reviewCount: 'desc' }, { averageRating: 'desc' }, { createdAt: 'desc' }],
-      take: 100,
-    });
-    const limit = Math.min(query.limit, 50);
+
+    const remaining = limit - preferred.length;
+    const fallback =
+      remaining > 0
+        ? await this.prisma.product.findMany({
+            where: {
+              ...visible,
+              inventories: { some: { availableQty: { gt: 0 } } },
+              id: { notIn: preferred.map((p) => p.id) },
+            },
+            include,
+            orderBy: [{ reviewCount: 'desc' }, { averageRating: 'desc' }, { createdAt: 'desc' }],
+            take: remaining,
+          })
+        : [];
     return {
       items: [...preferred, ...fallback].slice(0, limit).map((product) => ({
         ...formatProductSummary(

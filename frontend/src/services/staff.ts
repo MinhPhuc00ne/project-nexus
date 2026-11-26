@@ -1,7 +1,6 @@
-import axios, { type AxiosRequestConfig } from 'axios';
+import { type AxiosRequestConfig } from 'axios';
 import i18n from '../i18n';
-import api, { ApiRequestError, apiRequest } from './api';
-import { getApiErrorMessage } from '../lib/apiErrors';
+import { apiRequest, request } from './api';
 
 export interface StaffInvitationInfo {
   valid: boolean;
@@ -279,20 +278,17 @@ export interface StaffBannerPayload {
   priority?: number;
 }
 
-// Hai endpoint công khai: người nhận lời mời chưa có tài khoản để đăng nhập.
+/**
+ * Calls a staff endpoint.
+ *
+ * Two of them are public: whoever was invited has no account to sign in with
+ * yet, so this never requires a token.
+ *
+ * @param config - The request, as Axios describes it.
+ * @returns The payload inside the response envelope.
+ */
 async function staffRequest<T>(config: AxiosRequestConfig): Promise<T> {
-  try {
-    const response = await api.request<{ data: T }>(config);
-    return response.data.data;
-  } catch (error) {
-    if (axios.isAxiosError<{ errors?: string[]; message?: string }>(error)) {
-      throw new ApiRequestError(
-        getApiErrorMessage(error.response?.data, i18n.t('errors:network')),
-        error.response?.status ?? 0,
-      );
-    }
-    throw error;
-  }
+  return request<T>(config, { fallbackMessage: i18n.t('errors:network') });
 }
 
 export function getStaffInvitationInfo(token: string): Promise<StaffInvitationInfo> {

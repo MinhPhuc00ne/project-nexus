@@ -75,7 +75,6 @@ function SellerWorkspace() {
   const [account, setAccount] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
-  const [preview, setPreview] = useState(false);
   const [search, setSearch] = useState('');
   const store = useSellerStore(user.id);
   const draftKey = `nexus:seller-drafts:${user.id}`;
@@ -154,8 +153,6 @@ function SellerWorkspace() {
   return (
     <SellerWorkspaceContext.Provider
       value={{
-        preview,
-        setPreview,
         storeName: store.name,
         storeLoading: store.loading,
         storeError: store.error,

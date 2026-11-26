@@ -1,5 +1,12 @@
 import { Module } from '@nestjs/common';
-import { AdminController } from './controllers/admin.controller';
+import { TreasuryModule } from '../treasury/treasury.module';
+import { AdminStaffController } from './controllers/admin-staff.controller';
+import { AdminUsersController } from './controllers/admin-users.controller';
+import { AdminProductsController } from './controllers/admin-products.controller';
+import { AdminCategoriesController } from './controllers/admin-categories.controller';
+import { AdminShopsController } from './controllers/admin-shops.controller';
+import { AdminFinanceController } from './controllers/admin-finance.controller';
+import { AdminPlatformController } from './controllers/admin-platform.controller';
 import { BackofficeDisputesController } from './controllers/backoffice-disputes.controller';
 import { AdminService } from './services/admin.service';
 import { AdminUsersService } from './services/admin-users.service';
@@ -14,16 +21,24 @@ import { AdminOrdersController } from './controllers/admin-orders.controller';
 import { AdminOrdersService } from './services/admin-orders.service';
 import { ReputationModule } from '../users/reputation.module';
 import { AdminReputationController } from './controllers/admin-reputation.controller';
+import { AdminShopsModerationHelper } from './services/admin-shops-moderation.helper';
 
 @Module({
-  imports: [AuthModule, CatalogModule, ReputationModule],
+  imports: [TreasuryModule, AuthModule, CatalogModule, ReputationModule],
   controllers: [
-    AdminController,
+    AdminStaffController,
+    AdminUsersController,
+    AdminProductsController,
+    AdminCategoriesController,
+    AdminShopsController,
+    AdminFinanceController,
+    AdminPlatformController,
     BackofficeDisputesController,
     AdminOrdersController,
     AdminReputationController,
   ],
   providers: [
+    AdminShopsModerationHelper,
     AdminOrdersService,
     AdminService,
     AdminUsersService,

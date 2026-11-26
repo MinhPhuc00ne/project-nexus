@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { QueryAdminOrdersDto } from '../dtos/query-admin-orders.dto';
+import { QueryAdminOrdersInput } from '../dtos/query-admin-orders.dto';
 
 const orderSelect = {
   id: true,
@@ -228,7 +228,7 @@ function buildLifecycleHistory(order: AdminOrderDetailRaw): OrderHistoryEntry[] 
 export class AdminOrdersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(query: QueryAdminOrdersDto): Promise<{
+  async list(query: QueryAdminOrdersInput): Promise<{
     items: AdminOrder[];
     total: number;
     page: number;

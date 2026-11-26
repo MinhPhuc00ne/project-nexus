@@ -1,24 +1,23 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 /**
  * Data transfer object for Admin post-auction confirmation actions on an auction award.
  */
-export class AdminAwardActionDto {
-  @ApiProperty({
-    description: 'Explicit admin confirmation flag for irreversible award actions',
-    example: true,
-  })
-  @IsBoolean()
-  @IsNotEmpty()
-  confirmed!: boolean;
+const adminAwardActionFields = {
+  confirmed: z
+    .boolean()
+    .describe('Explicit admin confirmation flag for irreversible award actions')
+    .meta({ example: true }),
+  note: nullAsAbsent(
+    z
+      .string()
+      .max(1000)
+      .describe('Optional administrative note describing the action')
+      .meta({ example: 'Người mua không hoàn tất thanh toán phần còn lại trong thời hạn 24 giờ.' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    description: 'Optional administrative note describing the action',
-    example: 'Người mua không hoàn tất thanh toán phần còn lại trong thời hạn 24 giờ.',
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(1000)
-  note?: string;
-}
+export const AdminAwardActionSchema = z.object(adminAwardActionFields).strict();
+
+export type AdminAwardActionInput = z.infer<typeof AdminAwardActionSchema>;

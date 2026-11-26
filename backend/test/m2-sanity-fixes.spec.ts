@@ -29,9 +29,9 @@ import { CloudinaryStorageService } from '../src/core/storage/cloudinary.service
 import { AuthProfileService } from '../src/modules/auth/services/auth-profile.service';
 import { AuthService } from '../src/modules/auth/services/auth.service';
 import type { InventoryService } from '../src/modules/catalog/services/inventory.service';
-import type { AfterSalesStoreService } from '../src/modules/commerce/services/after-sales-store.service';
-import { OrderReturnService } from '../src/modules/commerce/services/order-return.service';
-import type { RefundService } from '../src/modules/commerce/services/refund.service';
+import type { AfterSalesStoreService } from '../src/modules/after-sales/services/after-sales-store.service';
+import { OrderReturnService } from '../src/modules/after-sales/services/order-return.service';
+import type { RefundService } from '../src/modules/after-sales/services/refund.service';
 import type { GhnOrderActionService } from '../src/modules/fulfillment/services/ghn-order-action.service';
 import type { GhnOrderApiService } from '../src/modules/fulfillment/services/ghn-order-api.service';
 import { MediaService } from '../src/modules/media/services/media.service';

@@ -1,32 +1,36 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class LockUserDto {
-  @ApiPropertyOptional({
-    description: 'Lý do khóa hoặc mở khóa tài khoản người dùng',
-    example: 'Vi phạm quy định giao dịch hoặc có hành vi gian lận',
-  })
-  @IsOptional()
-  @IsString({ message: 'Lý do phải là chuỗi ký tự' })
-  @MaxLength(500, { message: 'Lý do không được vượt quá 500 ký tự' })
-  reason?: string;
-}
+const lockUserFields = {
+  reason: nullAsAbsent(
+    z
+      .string()
+      .max(500)
+      .describe('Lý do khóa hoặc mở khóa tài khoản người dùng')
+      .meta({ example: 'Vi phạm quy định giao dịch hoặc có hành vi gian lận' }),
+  ),
+};
 
-export class UpdateUserStatusDto {
-  @ApiPropertyOptional({
-    description: 'Trạng thái khóa tài khoản: true (khóa) hoặc false (mở khóa)',
-    example: true,
-  })
-  @IsOptional()
-  @IsBoolean({ message: 'isLocked phải là giá trị boolean (true/false)' })
-  isLocked?: boolean;
+export const LockUserSchema = z.object(lockUserFields).strict();
 
-  @ApiPropertyOptional({
-    description: 'Lý do thay đổi trạng thái tài khoản',
-    example: 'Khóa tài khoản theo yêu cầu xử lý vi phạm',
-  })
-  @IsOptional()
-  @IsString({ message: 'Lý do phải là chuỗi ký tự' })
-  @MaxLength(500, { message: 'Lý do không được vượt quá 500 ký tự' })
-  reason?: string;
-}
+export type LockUserInput = z.infer<typeof LockUserSchema>;
+
+const updateUserStatusFields = {
+  isLocked: nullAsAbsent(
+    z
+      .boolean()
+      .describe('Trạng thái khóa tài khoản: true (khóa) hoặc false (mở khóa)')
+      .meta({ example: true }),
+  ),
+  reason: nullAsAbsent(
+    z
+      .string()
+      .max(500)
+      .describe('Lý do thay đổi trạng thái tài khoản')
+      .meta({ example: 'Khóa tài khoản theo yêu cầu xử lý vi phạm' }),
+  ),
+};
+
+export const UpdateUserStatusSchema = z.object(updateUserStatusFields).strict();
+
+export type UpdateUserStatusInput = z.infer<typeof UpdateUserStatusSchema>;

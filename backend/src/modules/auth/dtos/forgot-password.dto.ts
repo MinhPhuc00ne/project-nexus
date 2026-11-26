@@ -1,13 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty } from 'class-validator';
+import { z } from 'zod';
 
-export class ForgotPasswordDto {
-  @ApiProperty({
-    example: 'admin@nexus.com',
-    description:
+const forgotPasswordFields = {
+  email: z
+    .email()
+    .describe(
       'Email đã đăng ký trong hệ thống để nhận mã OTP đặt lại mật khẩu (Admin, Staff, Buyer, Seller)',
-  })
-  @IsNotEmpty({ message: 'Email không được để trống' })
-  @IsEmail({}, { message: 'Định dạng email không hợp lệ' })
-  email!: string;
-}
+    )
+    .meta({ example: 'admin@nexus.com' }),
+};
+
+export const ForgotPasswordSchema = z.object(forgotPasswordFields).strict();
+
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>;

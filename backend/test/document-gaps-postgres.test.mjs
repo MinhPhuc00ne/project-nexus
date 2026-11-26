@@ -68,14 +68,14 @@ test(
       prisma = new PrismaClient({ adapter: new PrismaPg(pool, { schema }) });
       const { InventoryService } = source('catalog/services/inventory.service');
       const { AuctionStockService } = source('catalog/services/auction-stock.service');
-      const { AuctionCheckoutService } = source('commerce/services/auction-checkout.service');
+      const { AuctionCheckoutService } = source('auction/services/auction-checkout.service');
       const { AuctionService } = source('auction/services/auction.service');
       const { ReputationService } = source('users/services/reputation.service');
-      const { OrderEscrowService } = source('commerce/services/order-escrow.service');
-      const { ReportsService } = source('commerce/services/reports.service');
-      const { ReportModerationService } = source('commerce/services/report-moderation.service');
-      const { ReviewsService } = source('commerce/services/reviews.service');
-      const { OrderService } = source('commerce/services/order.service');
+      const { OrderEscrowService } = source('orders/services/order-escrow.service');
+      const { ReportsService } = source('reviews/services/reports.service');
+      const { ReportModerationService } = source('reviews/services/report-moderation.service');
+      const { ReviewsService } = source('reviews/services/reviews.service');
+      const { OrderService } = source('orders/services/order.service');
       const { AuthService } = source('auth/services/auth.service');
       const { AuctionLifecycleService } = source('auction/services/auction-lifecycle.service');
       const { AdminShopsService } = source('admin/services/admin-shops.service');
@@ -106,7 +106,7 @@ test(
       const inventory = new InventoryService(prisma);
       const stock = new AuctionStockService(inventory);
       const reputation = new ReputationService(prisma, {});
-      const adminSettings = { getSettings: async () => ({ platformFeePercentage: 7 }) };
+      const adminSettings = { getAll: async () => ({ platformFeePercentage: 7 }) };
       const escrow = new OrderEscrowService(prisma, adminSettings, finance);
       let shippingCalls = 0;
       const shipping = {
@@ -115,14 +115,12 @@ test(
           return { fee: { total: 30000 }, origin: {}, parcel: {}, request: {} };
         },
       };
+      const { AuctionSecondChanceHelper } = source('auction/services/auction-second-chance.helper');
       const checkout = new AuctionCheckoutService(
         prisma,
         shipping,
         escrow,
-        reputation,
-        adminSettings,
-        finance,
-        stock,
+        new AuctionSecondChanceHelper(prisma, reputation, adminSettings, finance, stock),
       );
       const gateway = {
         broadcastAuctionStarted() {},
@@ -132,7 +130,17 @@ test(
         broadcastAuctionEnded() {},
         broadcastTimerSync() {},
       };
-      const auctions = new AuctionService(prisma, gateway, stock, checkout);
+      const { AuctionAdminHelper } = source('auction/services/auction-admin.helper');
+      const { AuctionBiddingHelper } = source('auction/services/auction-bidding.helper');
+      const { AuctionConsignmentHelper } = source('auction/services/auction-consignment.helper');
+      const auctions = new AuctionService(
+        prisma,
+        gateway,
+        stock,
+        new AuctionAdminHelper(prisma, gateway),
+        new AuctionConsignmentHelper(prisma, undefined),
+        new AuctionBiddingHelper(prisma, gateway, checkout),
+      );
       const category = await prisma.category.create({
         data: { name: 'Fixture', slug: randomUUID() },
       });
@@ -188,7 +196,20 @@ test(
             where: { id: results[0].awardId },
           });
           assert.equal(Number(offer.depositAmount), 30000);
-          const retail = new OrderService(prisma, {}, {}, shipping, escrow, inventory);
+          const { OrderPaymentHelper } = source('orders/services/order-payment.helper');
+          const retail = new OrderService(
+            prisma,
+            shipping,
+            new OrderPaymentHelper(
+              prisma,
+              {},
+              { next: async () => 1_000_000_000_001 },
+              {},
+              escrow,
+              inventory,
+            ),
+            inventory,
+          );
           await assert.rejects(retail.payOrderByWallet(offer.orderId, buyer.id), /quyền mua/);
           await assert.rejects(
             checkout.checkout(offer.id, runner.id, address),
@@ -236,7 +257,14 @@ test(
               },
             },
           });
-          const reviews = new ReviewsService(prisma, reputation);
+          const { ReviewsModerationHelper } = source('reviews/services/reviews-moderation.helper');
+          const { ReviewsRepliesHelper } = source('reviews/services/reviews-replies.helper');
+          const reviews = new ReviewsService(
+            prisma,
+            reputation,
+            new ReviewsModerationHelper(prisma, reputation),
+            new ReviewsRepliesHelper(prisma, undefined),
+          );
           await reviews.create(buyer.id, offer.orderId, { rating: 5 }, 'shop');
           assert.equal(
             await prisma.reputationLog.count({
@@ -427,7 +455,13 @@ test(
         'shop warnings apply the same suspension thresholds as other reputation changes',
         async () => {
           const warned = await user('SELLER');
-          await new AdminShopsService(prisma, reputation).warnShop(warned.id, admin.id, {
+          const { AdminShopsModerationHelper } = source(
+            'admin/services/admin-shops-moderation.helper',
+          );
+          await new AdminShopsService(
+            prisma,
+            new AdminShopsModerationHelper(prisma, reputation),
+          ).warnShop(warned.id, admin.id, {
             reason: 'Documented fixture violation',
             penaltyPoints: 70,
           });

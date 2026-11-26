@@ -12,8 +12,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../../i18n/config';
-import { useSellerWorkspace } from '../../components/seller/SellerWorkspace';
-import { ModuleNotice, Panel, PolicyCards, SellerButton } from '../../components/seller/SellerUI';
+import { ModuleNotice, Panel, PolicyCards } from '../../components/seller/SellerUI';
 import {
   StoreIdentity,
   SellerStats,
@@ -25,7 +24,6 @@ import {
 
 export default function SellerDashboardPage({ home = false }: { home?: boolean }) {
   const { t, i18n } = useTranslation('seller');
-  const { preview, setPreview } = useSellerWorkspace();
   return (
     <div
       className="flex flex-col gap-5.5 min-w-0 [&>[data-seller~=page-stack]]:gap-4 [&_h1]:mt-0 [&_h2]:mt-0 [&_h3]:mt-0 max-[540px]:gap-[17px]"
@@ -164,13 +162,7 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
         data-seller="bottom-note"
       >
         <SafetyCertificateOutlined className="text-[15px]" aria-hidden="true" />
-        <span>
-          {t('dashboard.bottomNoteApi')}{' '}
-          {preview ? t('dashboard.bottomNotePreviewOn') : t('dashboard.bottomNotePreviewOff')}
-        </span>
-        <SellerButton secondary onClick={() => setPreview(!preview)}>
-          {preview ? t('dashboard.hideSample') : t('dashboard.viewSample')}
-        </SellerButton>
+        <span>{t('dashboard.bottomNoteApi')}</span>
       </div>
     </div>
   );

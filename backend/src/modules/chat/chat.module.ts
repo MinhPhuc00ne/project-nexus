@@ -1,3 +1,5 @@
+import { ChatPresenceService } from './services/chat-presence.service';
+import { ChatRealtimePublisher } from './services/chat-realtime.publisher';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { CloudinaryStorageService } from '../../core/storage/cloudinary.service';
@@ -13,13 +15,15 @@ import { ChatbotController } from './controllers/chatbot.controller';
 import { ChatbotService } from './services/chatbot.service';
 import { ChatbotAiService } from './services/chatbot-ai.service';
 import { ChatbotRateLimitService } from './services/chatbot-rate-limit.service';
-import { CommerceQueryModule } from '../commerce/commerce-query.module';
+import { CommerceQueryModule } from '../commerce-query/commerce-query.module';
 import { ChatbotCommerceService } from './services/chatbot-commerce.service';
 
 @Module({
   imports: [PrismaModule, StorageModule, CommerceQueryModule],
   controllers: [ChatController, SellerAutoReplyController, AdminChatController, ChatbotController],
   providers: [
+    ChatPresenceService,
+    ChatRealtimePublisher,
     ChatbotCommerceService,
     ChatbotService,
     ChatbotAiService,

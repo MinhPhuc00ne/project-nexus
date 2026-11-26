@@ -1,87 +1,75 @@
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
-export class DepositAdminWalletDto {
-  @ApiProperty({
-    example: 1000000,
-    description: 'Số tiền nạp vào ví hệ thống (VND, tối thiểu 10.000 VNĐ)',
-  })
-  @IsNumber()
-  @Min(10000, { message: 'Số tiền nạp tối thiểu là 10.000 VNĐ' })
-  amount!: number;
+const depositAdminWalletFields = {
+  amount: z
+    .number()
+    .min(10000)
+    .describe('Số tiền nạp vào ví hệ thống (VND, tối thiểu 10.000 VNĐ)')
+    .meta({ example: 1000000 }),
+  description: nullAsAbsent(
+    z
+      .string()
+      .describe('Ghi chú lý do nạp tiền vào ví hệ thống')
+      .meta({ example: 'Nạp quỹ dự phòng bảo chứng thanh toán' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: 'Nạp quỹ dự phòng bảo chứng thanh toán',
-    description: 'Ghi chú lý do nạp tiền vào ví hệ thống',
-  })
-  @IsString()
-  @IsOptional()
-  description?: string;
-}
+export const DepositAdminWalletSchema = z.object(depositAdminWalletFields).strict();
 
-export class QueryAdminWalletTransactionsDto {
-  @ApiPropertyOptional({ example: 1, default: 1, description: 'Số trang' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export type DepositAdminWalletInput = z.infer<typeof DepositAdminWalletSchema>;
 
-  @ApiPropertyOptional({ example: 10, default: 10, description: 'Số bản ghi mỗi trang' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 10;
+const queryAdminWalletTransactionsFields = {
+  page: z.coerce.number().int().min(1).describe('Số trang').meta({ example: 1 }).default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .describe('Số bản ghi mỗi trang')
+    .meta({ example: 10 })
+    .default(10),
+  type: nullAsAbsent(
+    z
+      .enum(WalletTransactionType)
+      .describe('Lọc theo loại giao dịch (PLATFORM_FEE, DEPOSIT, WITHDRAW...)'),
+  ),
+  startDate: nullAsAbsent(
+    z.string().describe('Từ ngày (YYYY-MM-DD)').meta({ example: '2026-10-01' }),
+  ),
+  endDate: nullAsAbsent(
+    z.string().describe('Đến ngày (YYYY-MM-DD)').meta({ example: '2026-10-31' }),
+  ),
+  search: nullAsAbsent(z.string().describe('Tìm kiếm theo mã đơn hàng hoặc mô tả')),
+};
 
-  @ApiPropertyOptional({
-    enum: WalletTransactionType,
-    description: 'Lọc theo loại giao dịch (PLATFORM_FEE, DEPOSIT, WITHDRAW...)',
-  })
-  @IsOptional()
-  @IsEnum(WalletTransactionType)
-  type?: WalletTransactionType;
+export const QueryAdminWalletTransactionsSchema = z
+  .object(queryAdminWalletTransactionsFields)
+  .strict();
 
-  @ApiPropertyOptional({ example: '2026-10-01', description: 'Từ ngày (YYYY-MM-DD)' })
-  @IsOptional()
-  @IsString()
-  startDate?: string;
+export type QueryAdminWalletTransactionsInput = z.infer<typeof QueryAdminWalletTransactionsSchema>;
 
-  @ApiPropertyOptional({ example: '2026-10-31', description: 'Đến ngày (YYYY-MM-DD)' })
-  @IsOptional()
-  @IsString()
-  endDate?: string;
+const queryPlatformUserWalletTransactionsFields = {
+  ...queryAdminWalletTransactionsFields,
+  status: nullAsAbsent(
+    z
+      .enum(WalletTransactionStatus)
+      .describe('Lọc theo trạng thái giao dịch (PENDING, SUCCESS, FAILED)'),
+  ),
+  role: nullAsAbsent(
+    z.enum(Role).describe('Lọc theo vai trò người dùng (BUYER, SELLER, SUPPORT_STAFF, ADMIN)'),
+  ),
+  userId: nullAsAbsent(z.string().describe('Lọc theo ID người dùng cụ thể')),
+};
 
-  @ApiPropertyOptional({ description: 'Tìm kiếm theo mã đơn hàng hoặc mô tả' })
-  @IsOptional()
-  @IsString()
-  search?: string;
-}
+export const QueryPlatformUserWalletTransactionsSchema = z
+  .object(queryPlatformUserWalletTransactionsFields)
+  .strict();
 
-export class QueryPlatformUserWalletTransactionsDto extends QueryAdminWalletTransactionsDto {
-  @ApiPropertyOptional({
-    enum: WalletTransactionStatus,
-    description: 'Lọc theo trạng thái giao dịch (PENDING, SUCCESS, FAILED)',
-  })
-  @IsOptional()
-  @IsEnum(WalletTransactionStatus)
-  status?: WalletTransactionStatus;
-
-  @ApiPropertyOptional({
-    enum: Role,
-    description: 'Lọc theo vai trò người dùng (BUYER, SELLER, SUPPORT_STAFF, ADMIN)',
-  })
-  @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
-
-  @ApiPropertyOptional({ description: 'Lọc theo ID người dùng cụ thể' })
-  @IsOptional()
-  @IsString()
-  userId?: string;
-}
+export type QueryPlatformUserWalletTransactionsInput = z.infer<
+  typeof QueryPlatformUserWalletTransactionsSchema
+>;
 
 export class AdminWalletResponseDto {
   @ApiProperty({ example: 'w-1234-5678', description: 'ID của ví hệ thống' })

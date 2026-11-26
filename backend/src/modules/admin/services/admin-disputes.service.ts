@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DisputeStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { QueryAdminDisputesDto } from '../dtos/query-admin-disputes.dto';
+import { QueryAdminDisputesInput } from '../dtos/query-admin-disputes.dto';
 
 @Injectable()
 export class AdminDisputesService {
@@ -13,7 +13,7 @@ export class AdminDisputesService {
    * @param query - Dispute query parameters including pagination and filters
    * @returns Paginated disputes and status summary metrics
    */
-  async getDisputes(query: QueryAdminDisputesDto) {
+  async getDisputes(query: QueryAdminDisputesInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(100, query.limit || 10));
     const skip = (page - 1) * limit;
@@ -39,9 +39,13 @@ export class AdminDisputesService {
       ];
     }
 
-    const [allDisputes, total, disputes] = await Promise.all([
-      this.prisma.dispute.findMany({
-        select: { status: true },
+    const [statusTotals, total, disputes] = await Promise.all([
+      // Counted in the database. Reading every dispute to count them in
+      // JavaScript moved the whole table across the wire on each page of a
+      // paginated list, and grew with the dispute history for ever.
+      this.prisma.dispute.groupBy({
+        by: ['status'],
+        _count: { _all: true },
       }),
       this.prisma.dispute.count({ where }),
       this.prisma.dispute.findMany({
@@ -122,19 +126,20 @@ export class AdminDisputesService {
       }),
     ]);
 
+    /** Disputes in one status, or zero when there are none. */
+    const countOf = (...statuses: DisputeStatus[]): number =>
+      statusTotals
+        .filter((row) => statuses.includes(row.status))
+        .reduce((sum, row) => sum + row._count._all, 0);
+
     const counters = {
-      all: allDisputes.length,
-      pendingReview: allDisputes.filter(
-        (d) => d.status === DisputeStatus.OPEN || d.status === DisputeStatus.UNDER_REVIEW,
-      ).length,
-      open: allDisputes.filter((d) => d.status === DisputeStatus.OPEN).length,
-      underReview: allDisputes.filter((d) => d.status === DisputeStatus.UNDER_REVIEW).length,
-      resolvedSellerFavor: allDisputes.filter(
-        (d) => d.status === DisputeStatus.RESOLVED_SELLER_FAVOR,
-      ).length,
-      resolvedBuyerFavor: allDisputes.filter((d) => d.status === DisputeStatus.RESOLVED_BUYER_FAVOR)
-        .length,
-      cancelled: allDisputes.filter((d) => d.status === DisputeStatus.CANCELLED).length,
+      all: statusTotals.reduce((sum, row) => sum + row._count._all, 0),
+      pendingReview: countOf(DisputeStatus.OPEN, DisputeStatus.UNDER_REVIEW),
+      open: countOf(DisputeStatus.OPEN),
+      underReview: countOf(DisputeStatus.UNDER_REVIEW),
+      resolvedSellerFavor: countOf(DisputeStatus.RESOLVED_SELLER_FAVOR),
+      resolvedBuyerFavor: countOf(DisputeStatus.RESOLVED_BUYER_FAVOR),
+      cancelled: countOf(DisputeStatus.CANCELLED),
     };
 
     const items = disputes.map((d) => ({

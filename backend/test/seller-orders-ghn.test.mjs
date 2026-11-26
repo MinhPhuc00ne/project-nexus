@@ -12,7 +12,7 @@ tsNode.register({
 
 const loadBackend = createRequire(import.meta.url);
 const { SellerOrdersService } = loadBackend(
-  '../src/modules/commerce/services/seller-orders.service.ts',
+  '../src/modules/orders/services/seller-orders.service.ts',
 );
 const { GhnDispatchService } = loadBackend(
   '../src/modules/fulfillment/services/ghn-dispatch.service.ts',

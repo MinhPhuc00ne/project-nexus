@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, HttpCode, HttpStatus, Param, Query } from '@nestjs/common';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodQuery } from '@nexus/contracts/nest';
 import { ShopService } from '../services/shop.service';
-import { QueryShopDto } from '../dtos/query-shop.dto';
+import { QueryShopInput, QueryShopSchema } from '../dtos/query-shop.dto';
 import { Public } from '../../../core/security/roles.decorator';
 
 @ApiTags('8. CATALOG - SHOPS')
@@ -18,7 +19,7 @@ export class ShopController {
       'Hỗ trợ tìm kiếm theo từ khóa (tên shop, mô tả, tên chủ shop), lọc theo tỉnh/thành phố, sắp xếp theo uy tín/sản phẩm/mới nhất và phân trang.',
   })
   @ApiResponse({ status: 200, description: 'Lấy danh sách gian hàng thành công' })
-  async getShops(@Query() query: QueryShopDto) {
+  async getShops(@ZodQuery(QueryShopSchema) query: QueryShopInput) {
     return this.shopService.getShops(query);
   }
 

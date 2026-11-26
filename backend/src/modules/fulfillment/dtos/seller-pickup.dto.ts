@@ -1,88 +1,38 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsInt,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Max,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class SellerPickupDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(200)
-  name!: string;
+const sellerPickupFields = {
+  name: z.string().trim().min(1).max(200),
+  phone: z.string().trim().min(1).max(20),
+  city: z.string().trim().min(1).max(120),
+  district: z.string().trim().min(1).max(120),
+  ward: z.string().trim().min(1).max(120),
+  street: z.string().trim().min(1).max(500),
+  latitude: nullAsAbsent(z.number().min(-90).max(90)),
+  longitude: nullAsAbsent(z.number().min(-180).max(180)),
+};
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(20)
-  phone!: string;
+export const SellerPickupSchema = z.object(sellerPickupFields).strict();
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  city!: string;
+export type SellerPickupInput = z.infer<typeof SellerPickupSchema>;
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  district!: string;
+const verifySellerPickupFields = {
+  ghnShopId: z
+    .number()
+    .int()
+    .min(1)
+    .describe('Shop ID GHN đã tạo cho điểm lấy hàng này, thuộc tài khoản của sàn'),
+};
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(120)
-  ward!: string;
+export const VerifySellerPickupSchema = z.object(verifySellerPickupFields).strict();
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(500)
-  street!: string;
+export type VerifySellerPickupInput = z.infer<typeof VerifySellerPickupSchema>;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNumber()
-  @Min(-90)
-  @Max(90)
-  latitude?: number;
+const ghnShopPageFields = {
+  offset: z.coerce.number().int().min(0).default(0),
+  limit: z.coerce.number().int().min(1).max(100).default(100),
+};
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNumber()
-  @Min(-180)
-  @Max(180)
-  longitude?: number;
-}
+export const GhnShopPageSchema = z.object(ghnShopPageFields).strict();
 
-export class VerifySellerPickupDto {
-  @ApiProperty({ description: 'Shop ID GHN đã tạo cho điểm lấy hàng này, thuộc tài khoản của sàn' })
-  @IsInt()
-  @Min(1)
-  ghnShopId!: number;
-}
-
-export class GhnShopPageDto {
-  @ApiPropertyOptional({ default: 0 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  offset = 0;
-
-  @ApiPropertyOptional({ default: 100 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit = 100;
-}
+export type GhnShopPageInput = z.infer<typeof GhnShopPageSchema>;

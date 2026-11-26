@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpCode,
@@ -7,16 +6,19 @@ import {
   Param,
   Patch,
   Put,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { QueryNotificationDto } from '../dtos/query-notification.dto';
-import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
+import { QueryNotificationInput, QueryNotificationSchema } from '../dtos/query-notification.dto';
+import {
+  UpdateNotificationPreferencesInput,
+  UpdateNotificationPreferencesSchema,
+} from '../dtos/update-notification-preferences.dto';
 import { NotificationsService } from '../services/notifications.service';
 import {
   AdminNotificationSummaryDto,
@@ -45,7 +47,7 @@ export class NotificationsController {
   })
   async getMyNotifications(
     @CurrentUser('id') userId: string,
-    @Query() query: QueryNotificationDto,
+    @ZodQuery(QueryNotificationSchema) query: QueryNotificationInput,
   ): Promise<NotificationPageDto> {
     return this.notificationsService.getUserNotifications(userId, query);
   }
@@ -89,7 +91,7 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'Notification preferences updated successfully.' })
   async updatePreferences(
     @CurrentUser('id') userId: string,
-    @Body() dto: UpdateNotificationPreferencesDto,
+    @ZodBody(UpdateNotificationPreferencesSchema) dto: UpdateNotificationPreferencesInput,
   ) {
     return this.notificationsService.updatePreferences(userId, dto);
   }

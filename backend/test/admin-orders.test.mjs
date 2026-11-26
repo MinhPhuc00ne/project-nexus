@@ -13,13 +13,13 @@ const { AdminOrdersService } = load('../src/modules/admin/services/admin-orders.
 const { AdminOrdersController } = load(
   '../src/modules/admin/controllers/admin-orders.controller.ts',
 );
-const { QueryAdminOrdersDto } = load('../src/modules/admin/dtos/query-admin-orders.dto.ts');
+const { QueryAdminOrdersSchema } = load('../src/modules/admin/dtos/query-admin-orders.dto.ts');
 const { JwtAuthGuard } = load('../src/core/security/jwt-auth.guard.ts');
 const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
 const { ConfigService } = load('@nestjs/config');
 const { RolesGuard } = load('../src/core/security/roles.guard.ts');
-const { Module, ValidationPipe } = load('@nestjs/common');
+const { Module } = load('@nestjs/common');
 const { NestFactory } = load('@nestjs/core');
 
 test('admin order queries combine filters, stable pagination and safe payment/shipment projections', async () => {
@@ -45,7 +45,7 @@ test('admin order queries combine filters, stable pagination and safe payment/sh
   };
   const orders = new AdminOrdersService(prisma);
   const result = await orders.list(
-    Object.assign(new QueryAdminOrdersDto(), {
+    QueryAdminOrdersSchema.parse({
       page: 2,
       limit: 10,
       status: 'PAID',
@@ -225,8 +225,11 @@ test(
       ],
     })(TestModule);
     const app = await NestFactory.create(TestModule, { logger: false, abortOnError: false });
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+    // The same filter `main.ts` registers. Without it these routes fall to
+    // Nest's default handling, which is not what the app does and answered a
+    // rejected query with 500 instead of 400 whenever the machine was busy.
+    app.useGlobalFilters(
+      new (load('../src/core/filters/global-http-exception.filter.ts').GlobalHttpExceptionFilter)(),
     );
     try {
       await app.listen(0, '127.0.0.1');
@@ -247,7 +250,9 @@ test(
       calls = 0;
       const headers = auth('ADMIN');
       for (const query of ['limit=101', 'page=0', 'status=INVALID', 'limit=abc', 'extra=ignored']) {
-        assert.equal((await fetch(`${base}/admin/orders?${query}`, { headers })).status, 400);
+        const bad = await fetch(`${base}/admin/orders?${query}`, { headers });
+        if (bad.status !== 400) console.error('PROBE', query, bad.status, await bad.text());
+        assert.equal(bad.status, 400);
       }
       assert.equal(calls, 0);
       const response = await fetch(`${base}/admin/orders?page=2&limit=5&status=PAID`, { headers });

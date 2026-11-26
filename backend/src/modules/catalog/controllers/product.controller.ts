@@ -1,32 +1,32 @@
 import {
   Controller,
-  Get,
-  Post,
-  Patch,
   Delete,
-  Body,
-  Param,
-  Query,
-  UseGuards,
+  Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { ProductService } from '../services/product.service';
 import { ProductSaleService } from '../services/product-sale.service';
 import {
   ProductTrendingService,
   TrendingProductsResult,
 } from '../services/product-trending.service';
-import { UpdateProductSaleDto } from '../dtos/product-features.dto';
-import { CreateProductDto } from '../dtos/create-product.dto';
-import { UpdateProductDto } from '../dtos/update-product.dto';
-import { QueryProductDto } from '../dtos/query-product.dto';
+import { UpdateProductSaleInput, UpdateProductSaleSchema } from '../dtos/product-features.dto';
+import { CreateProductInput, CreateProductSchema } from '../dtos/create-product.dto';
+import { UpdateProductInput, UpdateProductSchema } from '../dtos/update-product.dto';
+import { QueryProductInput, QueryProductSchema } from '../dtos/query-product.dto';
 import {
-  Public,
   CurrentUser,
-  Roles,
+  Public,
   RequirePrivilege,
+  Roles,
 } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -49,7 +49,7 @@ export class ProductController {
   updateSale(
     @CurrentUser('id') sellerId: string,
     @Param('id') productId: string,
-    @Body() dto: UpdateProductSaleDto,
+    @ZodBody(UpdateProductSaleSchema) dto: UpdateProductSaleInput,
   ): ReturnType<ProductSaleService['update']> {
     return this.sale.update(sellerId, productId, dto);
   }
@@ -63,7 +63,7 @@ export class ProductController {
       'Supports keyword search (title, description, shop name), category, city, price range, rating, stock status, trendingOnly, minPurchaseCount, sorting (newest, price_asc, price_desc, best_selling, trending, top_rated), and pagination. Each item includes purchaseCount and isTrending.',
   })
   @ApiResponse({ status: 200, description: 'Products retrieved successfully' })
-  async getProducts(@Query() query: QueryProductDto) {
+  async getProducts(@ZodQuery(QueryProductSchema) query: QueryProductInput) {
     return this.productService.getProducts(query);
   }
 
@@ -121,7 +121,10 @@ export class ProductController {
   })
   @ApiResponse({ status: 201, description: 'Tạo sản phẩm và kho hàng thành công' })
   @ApiResponse({ status: 400, description: 'Dữ liệu không hợp lệ hoặc danh mục không tồn tại' })
-  async createProduct(@CurrentUser('id') sellerId: string, @Body() dto: CreateProductDto) {
+  async createProduct(
+    @CurrentUser('id') sellerId: string,
+    @ZodBody(CreateProductSchema) dto: CreateProductInput,
+  ) {
     return this.productService.createProduct(sellerId, dto);
   }
 
@@ -142,7 +145,7 @@ export class ProductController {
   async updateProduct(
     @CurrentUser('id') sellerId: string,
     @Param('id') productId: string,
-    @Body() dto: UpdateProductDto,
+    @ZodBody(UpdateProductSchema) dto: UpdateProductInput,
   ) {
     return this.productService.updateProduct(sellerId, productId, dto);
   }

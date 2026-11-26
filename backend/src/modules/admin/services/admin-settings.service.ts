@@ -1,43 +1,29 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Role } from '@nexus/types';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { RedisService } from '../../../core/redis/redis.service';
+import {
+  PlatformSettingsService,
+  type PlatformSettings,
+} from '../../../core/settings/platform-settings.service';
 import { NotificationChannel, NotificationType } from '@prisma/client';
-import { UpdateSystemSettingsDto } from '../dtos/update-system-settings.dto';
+import { UpdateSystemSettingsInput } from '../dtos/update-system-settings.dto';
 
-export interface SystemSettings {
-  platformFeePercentage: number;
-  cartExpirationDays: number;
-  checkoutTimeoutMinutes: number;
-  inventoryReservationTimeout: number;
-  maxActiveCartPerUser: number;
-  categoryMaxLevel: number;
-  maxProductImages: number;
-  antiSnipingTriggerMinutes: number;
-  antiSnipingExtendMinutes: number;
-}
-
-const DEFAULT_SETTINGS: SystemSettings = {
-  platformFeePercentage: 7.0,
-  cartExpirationDays: 7,
-  checkoutTimeoutMinutes: 15,
-  inventoryReservationTimeout: 30,
-  maxActiveCartPerUser: 1,
-  categoryMaxLevel: 3,
-  maxProductImages: 5,
-  antiSnipingTriggerMinutes: 2,
-  antiSnipingExtendMinutes: 5,
-};
-
-const REDIS_SETTINGS_KEY = 'nexus:system:settings';
+/**
+ * The administrative view of platform settings.
+ *
+ * The settings used to be held in a Redis key and a field on this service, so
+ * a cache flush reverted every change an administrator had made and nothing
+ * outside admin could read them without importing this module. They are now
+ * owned by `PlatformSettingsService` in core, backed by the database.
+ */
+export type SystemSettings = PlatformSettings;
 
 @Injectable()
 export class AdminSettingsService {
   private readonly logger = new Logger(AdminSettingsService.name);
-  private cachedSettings: SystemSettings = { ...DEFAULT_SETTINGS };
 
   constructor(
-    private readonly redisService: RedisService,
+    private readonly platformSettings: PlatformSettingsService,
     @Optional() private readonly prisma?: PrismaService,
   ) {}
 
@@ -47,18 +33,7 @@ export class AdminSettingsService {
    * @returns Active system settings configuration object
    */
   async getSettings(): Promise<SystemSettings> {
-    try {
-      const raw = await this.redisService.get(REDIS_SETTINGS_KEY);
-      if (raw) {
-        this.cachedSettings = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
-      }
-    } catch (err) {
-      this.logger.warn(
-        `Không thể đọc cấu hình từ Redis, dùng bộ nhớ đệm: ${(err as Error).message}`,
-      );
-    }
-
-    return this.cachedSettings;
+    return this.platformSettings.getAll();
   }
 
   /**
@@ -70,28 +45,15 @@ export class AdminSettingsService {
    */
   async updateSettings(
     adminId: string,
-    dto: UpdateSystemSettingsDto,
+    dto: UpdateSystemSettingsInput,
   ): Promise<{
     success: boolean;
     message: string;
     settings: SystemSettings;
   }> {
     const current = await this.getSettings();
-    const updated: SystemSettings = {
-      ...current,
-      ...Object.fromEntries(Object.entries(dto).filter(([_, v]) => v !== undefined)),
-    };
-
-    this.cachedSettings = updated;
-
-    try {
-      const client = this.redisService.getClient();
-      if (client) {
-        await client.set(REDIS_SETTINGS_KEY, JSON.stringify(updated));
-      }
-    } catch (err) {
-      this.logger.warn(`Lưu cấu hình vào Redis thất bại: ${(err as Error).message}`);
-    }
+    // Stored in the database, so the change survives a cache flush.
+    const updated = await this.platformSettings.update(dto, adminId);
 
     this.logger.log(`Admin (${adminId}) đã cập nhật cấu hình hệ thống.`);
 

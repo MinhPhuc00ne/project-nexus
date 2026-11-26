@@ -17,6 +17,9 @@ const { NestFactory } = load('@nestjs/core');
 const { ChatGateway } = load('../src/modules/chat/gateways/chat.gateway.ts');
 const { ChatService } = load('../src/modules/chat/services/chat.service.ts');
 const { StaffQueueService } = load('../src/modules/chat/services/staff-queue.service.ts');
+const { ChatPresenceService } = load('../src/modules/chat/services/chat-presence.service.ts');
+const { EventEmitter2 } = load('@nestjs/event-emitter');
+const { ChatRealtimePublisher } = load('../src/modules/chat/services/chat-realtime.publisher.ts');
 const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 
 /**
@@ -39,7 +42,6 @@ test(
   'global HTTP interceptor preserves HTTP envelopes while real Nest websocket rooms receive raw chat messages',
   { timeout: 15000 },
   async () => {
-    let broadcaster;
     class HealthController {
       health() {
         return { ready: true };
@@ -58,14 +60,21 @@ test(
         ChatGateway,
         {
           provide: ChatService,
-          useValue: {
-            setBroadcaster(value) {
-              broadcaster = value;
-            },
-          },
+          useValue: {},
         },
         { provide: TokenAuthService, useValue: tokenAuthStub },
         { provide: StaffQueueService, useValue: {} },
+        {
+          provide: ChatPresenceService,
+          useValue: {
+            connect: async () => {},
+            disconnect: async () => {},
+            isOnline: async () => false,
+          },
+        },
+        { provide: ChatRealtimePublisher, useValue: {} },
+        // The gateway subscribes to chat events through the emitter.
+        { provide: EventEmitter2, useValue: new EventEmitter2() },
         SocketMetricsService,
       ],
     })(RealtimeModule);
@@ -99,7 +108,9 @@ test(
         senderId: 'seller',
       };
       const received = once(socket, 'new_message');
-      broadcaster.broadcastMessage('realtime-conversation', message);
+      // The gateway subscribes to the published event rather than being handed
+      // to the service as a broadcaster.
+      app.get(ChatGateway).broadcastMessage('realtime-conversation', message);
       assert.deepEqual((await received)[0], message);
       assert.equal((await app.get(ChatGateway).server.in('user:buyer').fetchSockets()).length, 1);
     } finally {

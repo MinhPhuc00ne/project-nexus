@@ -113,8 +113,10 @@ export function mapCatalogToProductItem(p: CatalogProduct): ProductItem {
       isDiscount: sale.isOnSale,
       discountText: sale.isOnSale ? `-${sale.discountPercent}%` : undefined,
     },
-    rating: p.averageRating && p.averageRating > 0 ? p.averageRating : 5.0,
-    soldCount: 0,
+    // Zero means nobody has reviewed it. This used to fall back to 5.0, which
+    // showed an unreviewed product as perfectly rated.
+    rating: p.averageRating ?? 0,
+    soldCount: p.purchaseCount ?? 0,
     oldPrice: sale.isOnSale ? formatCurrency(sale.originalPrice) : undefined,
     currentPrice: formatCurrency(sale.effectivePrice),
     priceColor: 'red',

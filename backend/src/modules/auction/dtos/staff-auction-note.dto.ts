@@ -1,16 +1,19 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 /**
  * Data transfer object used by Support Staff to attach a pre-review or live support note on a lot.
  */
-export class StaffAuctionNoteDto {
-  @ApiPropertyOptional({
-    description: 'Support staff inspection or live room support note',
-    example: 'Đã kiểm tra sơ bộ giấy kiểm định GIA và đối chiếu ảnh thực tế.',
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(2000)
-  staffNote?: string;
-}
+const staffAuctionNoteFields = {
+  staffNote: nullAsAbsent(
+    z
+      .string()
+      .max(2000)
+      .describe('Support staff inspection or live room support note')
+      .meta({ example: 'Đã kiểm tra sơ bộ giấy kiểm định GIA và đối chiếu ảnh thực tế.' }),
+  ),
+};
+
+export const StaffAuctionNoteSchema = z.object(staffAuctionNoteFields).strict();
+
+export type StaffAuctionNoteInput = z.infer<typeof StaffAuctionNoteSchema>;

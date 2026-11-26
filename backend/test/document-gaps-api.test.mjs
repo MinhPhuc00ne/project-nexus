@@ -3,12 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import tsNode from 'ts-node';
+import { requestBodySchema } from './helpers/openapi.mjs';
 
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
@@ -21,13 +22,13 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
   const { PrismaService } = source('core/prisma/prisma.service');
   const { TokenAuthService } = source('core/security/token-auth.service');
   const { ReportModerationController } = source(
-    'modules/commerce/controllers/report-moderation.controller',
+    'modules/reviews/controllers/report-moderation.controller',
   );
-  const { ReportModerationService } = source('modules/commerce/services/report-moderation.service');
+  const { ReportModerationService } = source('modules/reviews/services/report-moderation.service');
   const { AuctionCheckoutController } = source(
-    'modules/commerce/controllers/auction-checkout.controller',
+    'modules/auction/controllers/auction-checkout.controller',
   );
-  const { AuctionCheckoutService } = source('modules/commerce/services/auction-checkout.service');
+  const { AuctionCheckoutService } = source('modules/auction/services/auction-checkout.service');
   const { AdminReputationController } = source(
     'modules/admin/controllers/admin-reputation.controller',
   );
@@ -99,10 +100,13 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
     ],
   })(GapApiModule);
   const app = await NestFactory.create(GapApiModule, { logger: false, abortOnError: false });
+  // The same filter `main.ts` registers. Without it these routes fall to
+  // Nest's default handling, which is not what the app does and answered a
+  // rejected query with 500 instead of 400 whenever the machine was busy.
+  app.useGlobalFilters(
+    new (source('core/filters/global-http-exception.filter').GlobalHttpExceptionFilter)(),
+  );
   try {
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
-    );
     await app.listen(0, '127.0.0.1');
     const base = await app.getUrl();
     const request = (path, role, options = {}) =>
@@ -172,8 +176,10 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
       new DocumentBuilder().setTitle('Gap endpoints').setVersion('1').build(),
     );
     assert.ok(doc.paths['/commerce/auction-awards/{id}/checkout'].post);
-    assert.ok(doc.components.schemas.ReviewReportDto.properties.status);
-    assert.ok(doc.components.schemas.AdminAdjustReputationDto.properties.deltaPoints);
+    assert.ok(requestBodySchema(doc, '/admin/reports/{id}/review', 'patch').properties.status);
+    assert.ok(
+      requestBodySchema(doc, '/admin/users/{id}/reputation', 'patch').properties.deltaPoints,
+    );
   } finally {
     await app.close();
   }

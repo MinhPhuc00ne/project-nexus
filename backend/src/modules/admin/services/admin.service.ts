@@ -9,15 +9,15 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import {
-  StaffProvisioningService,
-  StaffInvitationInput,
   ProvisionedStaffResult,
+  StaffInvitationInput,
+  StaffProvisioningService,
 } from '../../auth/services/staff-provisioning.service';
-import { CreateStaffDto } from '../dtos/create-staff.dto';
-import { QuerySellerRequestsDto } from '../dtos/query-seller-requests.dto';
-import { QueryStaffDto } from '../dtos/query-staff.dto';
-import { RejectSellerRequestDto } from '../dtos/reject-seller-request.dto';
-import { ReviewWithdrawalDto } from '../dtos/review-withdrawal.dto';
+import { CreateStaffInput } from '../dtos/create-staff.dto';
+import { QuerySellerRequestsInput } from '../dtos/query-seller-requests.dto';
+import { QueryStaffInput } from '../dtos/query-staff.dto';
+import { RejectSellerRequestInput } from '../dtos/reject-seller-request.dto';
+import { ReviewWithdrawalInput } from '../dtos/review-withdrawal.dto';
 
 @Injectable()
 export class AdminService {
@@ -32,7 +32,7 @@ export class AdminService {
    * @param dto - Staff creation payload
    * @returns Provisioned staff credentials and profile
    */
-  async createStaff(dto: CreateStaffDto): Promise<ProvisionedStaffResult> {
+  async createStaff(dto: CreateStaffInput): Promise<ProvisionedStaffResult> {
     return this.staffProvisioning.invite(dto);
   }
 
@@ -52,7 +52,7 @@ export class AdminService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated staff list
    */
-  async listStaff(query: QueryStaffDto) {
+  async listStaff(query: QueryStaffInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, query.limit || 10);
     const skip = (page - 1) * limit;
@@ -111,7 +111,7 @@ export class AdminService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated list of seller requests
    */
-  async getSellerRequests(query: QuerySellerRequestsDto) {
+  async getSellerRequests(query: QuerySellerRequestsInput) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, query.limit || 10);
     const skip = (page - 1) * limit;
@@ -301,7 +301,7 @@ export class AdminService {
    * @throws NotFoundException when request does not exist
    * @throws BadRequestException when request has already been processed
    */
-  async rejectSellerRequest(id: string, adminId: string, dto: RejectSellerRequestDto) {
+  async rejectSellerRequest(id: string, adminId: string, dto: RejectSellerRequestInput) {
     const request = await this.prisma.sellerUpgradeRequest.findUnique({
       where: { id },
       include: { user: true },
@@ -425,7 +425,7 @@ export class AdminService {
    * @throws NotFoundException when request does not exist
    * @throws BadRequestException when request has already been processed or rejected without reason
    */
-  async reviewWithdrawalRequest(id: string, adminId: string, dto: ReviewWithdrawalDto) {
+  async reviewWithdrawalRequest(id: string, adminId: string, dto: ReviewWithdrawalInput) {
     const req = await this.prisma.withdrawalRequest.findUnique({
       where: { id },
       include: {
@@ -443,10 +443,6 @@ export class AdminService {
 
     if (req.status !== WithdrawalStatus.PENDING) {
       throw new BadRequestException('Yêu cầu rút tiền này đã được xử lý trước đó.');
-    }
-
-    if (dto.status === WithdrawalStatus.PENDING) {
-      throw new BadRequestException('Trạng thái xét duyệt không hợp lệ.');
     }
 
     const wallet = req.user.wallet;

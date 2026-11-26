@@ -15,9 +15,9 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAdminsAndStaff } from '../../../core/notifications/admin-notification.util';
 import { auctionTargetUrlForRole } from '../../../core/navigation/auction-navigation';
 import {
-  CreateAuctionComplaintDto,
+  CreateAuctionComplaintInput,
   ResolveAuctionComplaintDecision,
-  ResolveAuctionComplaintDto,
+  ResolveAuctionComplaintInput,
 } from '../dtos/auction-complaint.dto';
 
 /**
@@ -35,7 +35,7 @@ export class AuctionComplaintService {
     auctionId: string,
     reporterId: string,
     reporterRole: Role,
-    dto: CreateAuctionComplaintDto,
+    dto: CreateAuctionComplaintInput,
   ) {
     const auction = await this.prisma.auction.findUnique({
       where: { id: auctionId },
@@ -172,7 +172,7 @@ export class AuctionComplaintService {
    * Admin accepts or rejects an auction complaint and dispatches a decision notification
    * back to the requester.
    */
-  async resolveComplaint(complaintId: string, adminId: string, dto: ResolveAuctionComplaintDto) {
+  async resolveComplaint(complaintId: string, adminId: string, dto: ResolveAuctionComplaintInput) {
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM auction_complaints WHERE id = ${complaintId} FOR UPDATE`;
       const existing = await tx.auctionComplaint.findUnique({

@@ -20,13 +20,23 @@ const { AuctionComplaintService } = load(
 const { AuctionGateway } = load('../src/modules/auction/gateways/auction.gateway.ts');
 const { AuctionController } = load('../src/modules/auction/controllers/auction.controller.ts');
 const { AuctionCheckoutService } = load(
-  '../src/modules/commerce/services/auction-checkout.service.ts',
+  '../src/modules/auction/services/auction-checkout.service.ts',
 );
-const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
+const { OrderService } = load('../src/modules/orders/services/order.service.ts');
 const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
 const { ConfigService } = load('@nestjs/config');
 const { WS_AUCTION_EVENTS } = load('@nexus/types');
+const { AuctionAdminHelper } = load('../src/modules/auction/services/auction-admin.helper.ts');
+const { AuctionBiddingHelper } = load('../src/modules/auction/services/auction-bidding.helper.ts');
+const { AuctionConsignmentHelper } = load(
+  '../src/modules/auction/services/auction-consignment.helper.ts',
+);
+const { AuctionSecondChanceHelper } = load(
+  '../src/modules/auction/services/auction-second-chance.helper.ts',
+);
+const { OrderPaymentHelper } = load('../src/modules/orders/services/order-payment.helper.ts');
+const { WalletDepositService } = load('../src/modules/wallet/services/wallet-deposit.service.ts');
 
 function createHarness(overrides = {}) {
   const wallets = new Map([
@@ -606,7 +616,7 @@ function createHarness(overrides = {}) {
   };
 
   const adminSettings = {
-    getSettings: async () => ({ platformFeePercentage: 7 }),
+    getAll: async () => ({ platformFeePercentage: 7 }),
   };
 
   const adminFinance = {
@@ -626,21 +636,38 @@ function createHarness(overrides = {}) {
     db,
     shipping,
     escrow,
-    reputation,
-    adminSettings,
-    adminFinance,
+    new AuctionSecondChanceHelper(db, reputation, adminSettings, adminFinance, undefined),
   );
-  const auctionService = new AuctionService(db, gateway, {}, checkoutService, chatService);
+  // Helpers are injected now, so the fixture builds them from the same
+  // doubles the service used to hand them.
+  const auctionService = new AuctionService(
+    db,
+    gateway,
+    {},
+    new AuctionAdminHelper(db, gateway),
+    new AuctionConsignmentHelper(db, chatService),
+    new AuctionBiddingHelper(db, gateway, checkoutService),
+  );
   const complaintService = new AuctionComplaintService(db);
   const orderService = new OrderService(
     db,
-    {},
-    { get: () => '' },
     shipping,
-    escrow,
-    undefined,
-    undefined,
-    adminFinance,
+    new OrderPaymentHelper(
+      db,
+      {},
+      { next: async () => 1_000_000_000_001 },
+      { get: () => '' },
+      escrow,
+      undefined,
+      undefined,
+      adminFinance,
+    ),
+  );
+  const walletDeposits = new WalletDepositService(
+    db,
+    {},
+    { next: async () => 1_000_000_000_001 },
+    { get: () => '' },
     checkoutService,
   );
 
@@ -665,6 +692,7 @@ function createHarness(overrides = {}) {
     auctionService,
     complaintService,
     orderService,
+    walletDeposits,
   };
 }
 
@@ -966,8 +994,8 @@ test('PRIMARY_WINNER payment default forfeits 30% deposit (93% Seller / 7% Admin
   assert.equal(topupNotif.metadata.requiredDepositAmount, 300_000);
   assert.equal(topupNotif.metadata.missingAmount, 200_000);
 
-  // Topping up wallet via OrderService automatically locks 300k deposit and opens AWAITING_CHECKOUT
-  await h.orderService.depositToUserWallet('buyer-1', { amount: 250_000 });
+  // Topping up the wallet automatically locks the 300k deposit and opens AWAITING_CHECKOUT
+  await h.walletDeposits.depositToUserWallet('buyer-1', { amount: 250_000 });
   const promoted = h.awards.get(secondOffer.id);
   assert.equal(promoted.status, 'AWAITING_CHECKOUT');
   assert.ok(promoted.orderId);

@@ -1,16 +1,6 @@
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { ChatContextType, ChatConversationStatus } from '@prisma/client';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-} from 'class-validator';
 
 /**
  * The ticket lifecycle is the conversation status column, re-exported under its
@@ -19,95 +9,70 @@ import {
 export const TicketLifecycleStatus = ChatConversationStatus;
 export type TicketLifecycleStatus = ChatConversationStatus;
 
-export class RequestSupportDto {
-  @ApiPropertyOptional({
-    description: 'Tiêu đề tóm tắt yêu cầu hỗ trợ',
-    example: 'Khiếu nại đơn hàng không nhận được',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  subject?: string;
+const requestSupportFields = {
+  subject: nullAsAbsent(
+    z
+      .string()
+      .max(200)
+      .describe('Tiêu đề tóm tắt yêu cầu hỗ trợ')
+      .meta({ example: 'Khiếu nại đơn hàng không nhận được' }),
+  ),
+  message: z
+    .string()
+    .trim()
+    .min(1)
+    .max(2000)
+    .describe('Nội dung chi tiết yêu cầu hỗ trợ gửi đến nhân viên CSKH')
+    .meta({
+      example: 'Tôi đã thanh toán đơn hàng #ORD-123 nhưng người bán không gửi hàng theo hẹn.',
+    }),
+  contextId: nullAsAbsent(
+    z
+      .string()
+      .describe('Mã định danh ngữ cảnh liên quan (mã tranh chấp, mã đơn hàng)')
+      .meta({ example: 'dispute-uuid-456' }),
+  ),
+  contextType: z
+    .enum(ChatContextType)
+    .describe('Loại ngữ cảnh: DISPUTE (Tranh chấp), ORDER (Đơn hàng), GENERAL (Hỗ trợ chung)')
+    .meta({ example: ChatContextType.DISPUTE })
+    .default(ChatContextType.GENERAL),
+  attachments: nullAsAbsent(
+    z
+      .array(z.string())
+      .describe('Danh sách URL hình ảnh / bằng chứng đính kèm')
+      .meta({ example: ['https://res.cloudinary.com/nexus/evidence1.jpg'] }),
+  ),
+};
 
-  @ApiProperty({
-    description: 'Nội dung chi tiết yêu cầu hỗ trợ gửi đến nhân viên CSKH',
-    example: 'Tôi đã thanh toán đơn hàng #ORD-123 nhưng người bán không gửi hàng theo hẹn.',
-  })
-  @IsNotEmpty({ message: 'Nội dung yêu cầu hỗ trợ không được để trống.' })
-  @IsString()
-  @MaxLength(2000)
-  message!: string;
+export const RequestSupportSchema = z.object(requestSupportFields).strict();
 
-  @ApiPropertyOptional({
-    description: 'Mã định danh ngữ cảnh liên quan (mã tranh chấp, mã đơn hàng)',
-    example: 'dispute-uuid-456',
-  })
-  @IsOptional()
-  @IsString()
-  contextId?: string;
+export type RequestSupportInput = z.infer<typeof RequestSupportSchema>;
 
-  @ApiPropertyOptional({
-    description: 'Loại ngữ cảnh: DISPUTE (Tranh chấp), ORDER (Đơn hàng), GENERAL (Hỗ trợ chung)',
-    enum: ChatContextType,
-    default: ChatContextType.GENERAL,
-    example: ChatContextType.DISPUTE,
-  })
-  @IsOptional()
-  @IsEnum(ChatContextType)
-  contextType?: ChatContextType = ChatContextType.GENERAL;
+const updateConversationStatusFields = {
+  status: z
+    .enum(TicketLifecycleStatus)
+    .describe('Trạng thái mới của cuộc trò chuyện / ticket hỗ trợ')
+    .meta({ example: TicketLifecycleStatus.RESOLVED }),
+  resolutionNotes: nullAsAbsent(
+    z
+      .string()
+      .max(1000)
+      .describe('Ghi chú giải quyết hoặc lý do đóng cuộc trò chuyện')
+      .meta({ example: 'Đã hoàn tiền cho người mua thành công.' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    description: 'Danh sách URL hình ảnh / bằng chứng đính kèm',
-    type: [String],
-    example: ['https://res.cloudinary.com/nexus/evidence1.jpg'],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  attachments?: string[];
-}
+export const UpdateConversationStatusSchema = z.object(updateConversationStatusFields).strict();
 
-export class UpdateConversationStatusDto {
-  @ApiProperty({
-    description: 'Trạng thái mới của cuộc trò chuyện / ticket hỗ trợ',
-    enum: TicketLifecycleStatus,
-    example: TicketLifecycleStatus.RESOLVED,
-  })
-  @IsNotEmpty()
-  @IsEnum(TicketLifecycleStatus, {
-    message: 'Trạng thái phải là OPEN, IN_PROGRESS, RESOLVED hoặc CLOSED.',
-  })
-  status!: TicketLifecycleStatus;
+export type UpdateConversationStatusInput = z.infer<typeof UpdateConversationStatusSchema>;
 
-  @ApiPropertyOptional({
-    description: 'Ghi chú giải quyết hoặc lý do đóng cuộc trò chuyện',
-    example: 'Đã hoàn tiền cho người mua thành công.',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000)
-  resolutionNotes?: string;
-}
+const queryQueueFields = {
+  page: z.coerce.number().int().min(1).describe('Trang hiện tại (bắt đầu từ 1)').default(1),
+  limit: z.coerce.number().int().min(1).describe('Số lượng yêu cầu mỗi trang').default(20),
+  contextType: nullAsAbsent(z.string().describe('Lọc theo loại ngữ cảnh: DISPUTE, ORDER, GENERAL')),
+};
 
-export class QueryQueueDto {
-  @ApiPropertyOptional({ description: 'Trang hiện tại (bắt đầu từ 1)', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
+export const QueryQueueSchema = z.object(queryQueueFields).strict();
 
-  @ApiPropertyOptional({ description: 'Số lượng yêu cầu mỗi trang', default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  limit?: number = 20;
-
-  @ApiPropertyOptional({
-    description: 'Lọc theo loại ngữ cảnh: DISPUTE, ORDER, GENERAL',
-  })
-  @IsOptional()
-  @IsString()
-  contextType?: string;
-}
+export type QueryQueueInput = z.infer<typeof QueryQueueSchema>;

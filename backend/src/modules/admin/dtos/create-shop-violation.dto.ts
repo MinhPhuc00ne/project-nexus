@@ -1,61 +1,45 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { ShopViolationPenaltyLevel, ViolationStatus } from '@prisma/client';
 
-export class CreateShopViolationDto {
-  @ApiProperty({
-    example: 'Bán hàng giả mạo nhãn hiệu đã bảo hộ',
-    description: 'Tiêu đề vi phạm của shop',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Tiêu đề vi phạm không được để trống' })
-  title!: string;
-
-  @ApiProperty({
+const createShopViolationFields = {
+  title: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Tiêu đề vi phạm của shop')
+    .meta({ example: 'Bán hàng giả mạo nhãn hiệu đã bảo hộ' }),
+  description: z.string().trim().min(1).describe('Mô tả chi tiết hành vi vi phạm').meta({
     example:
       'Shop có hành vi đăng bán sản phẩm vi phạm bản quyền thương hiệu, không xuất trình được hóa đơn nguồn gốc.',
-    description: 'Mô tả chi tiết hành vi vi phạm',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Mô tả vi phạm không được để trống' })
-  description!: string;
+  }),
+  evidenceUrls: nullAsAbsent(
+    z
+      .array(z.string())
+      .describe('Danh sách URL hình ảnh hoặc tài liệu bằng chứng vi phạm')
+      .meta({ example: ['https://example.com/evidence1.jpg', 'https://example.com/report.pdf'] }),
+  ),
+  penaltyLevel: nullAsAbsent(
+    z
+      .enum(ShopViolationPenaltyLevel)
+      .describe(
+        'Mức độ xử lý vi phạm: WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN, MISREPRESENTATION, FRAUD',
+      )
+      .meta({ example: ShopViolationPenaltyLevel.TEMPORARY_SUSPENSION }),
+  ),
+  status: z
+    .enum(ViolationStatus)
+    .describe('Trạng thái vi phạm: PENDING, INVESTIGATING, CONFIRMED, DISMISSED')
+    .meta({ example: ViolationStatus.CONFIRMED })
+    .default(ViolationStatus.CONFIRMED),
+  resolutionNotes: nullAsAbsent(
+    z.string().describe('Ghi chú giải quyết của Quản trị viên').meta({
+      example:
+        'Đã xác minh đối soát với chủ thương hiệu, tiến hành tạm ẩn sản phẩm và cảnh cáo shop.',
+    }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: ['https://example.com/evidence1.jpg', 'https://example.com/report.pdf'],
-    description: 'Danh sách URL hình ảnh hoặc tài liệu bằng chứng vi phạm',
-    type: [String],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  evidenceUrls?: string[];
+export const CreateShopViolationSchema = z.object(createShopViolationFields).strict();
 
-  @ApiPropertyOptional({
-    enum: ShopViolationPenaltyLevel,
-    example: ShopViolationPenaltyLevel.TEMPORARY_SUSPENSION,
-    description:
-      'Mức độ xử lý vi phạm: WARNING, PENALTY_POINTS, TEMPORARY_SUSPENSION, PERMANENT_BAN, MISREPRESENTATION, FRAUD',
-  })
-  @IsOptional()
-  @IsEnum(ShopViolationPenaltyLevel)
-  penaltyLevel?: ShopViolationPenaltyLevel;
-
-  @ApiPropertyOptional({
-    enum: ViolationStatus,
-    example: ViolationStatus.CONFIRMED,
-    description: 'Trạng thái vi phạm: PENDING, INVESTIGATING, CONFIRMED, DISMISSED',
-    default: ViolationStatus.CONFIRMED,
-  })
-  @IsOptional()
-  @IsEnum(ViolationStatus)
-  status?: ViolationStatus;
-
-  @ApiPropertyOptional({
-    example:
-      'Đã xác minh đối soát với chủ thương hiệu, tiến hành tạm ẩn sản phẩm và cảnh cáo shop.',
-    description: 'Ghi chú giải quyết của Quản trị viên',
-  })
-  @IsOptional()
-  @IsString()
-  resolutionNotes?: string;
-}
+export type CreateShopViolationInput = z.infer<typeof CreateShopViolationSchema>;

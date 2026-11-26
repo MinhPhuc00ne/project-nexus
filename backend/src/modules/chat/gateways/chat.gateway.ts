@@ -1,3 +1,13 @@
+import { ChatPresenceService } from '../services/chat-presence.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  CHAT_EVENTS,
+  type ChatMessageEvent,
+  type ChatReadEvent,
+  type ChatStatusChangeEvent,
+  type ChatToStaffEvent,
+  type ChatToUserEvent,
+} from '../services/chat-realtime.publisher';
 import { Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
@@ -34,11 +44,32 @@ export class ChatGateway
     private readonly chatService: ChatService,
     private readonly tokenAuth: TokenAuthService,
     private readonly staffQueueService: StaffQueueService,
+    private readonly presence: ChatPresenceService,
     private readonly socketMetrics: SocketMetricsService,
+    private readonly emitter: EventEmitter2,
   ) {}
 
   afterInit() {
-    this.chatService.setBroadcaster(this);
+    // The gateway subscribes to what the service publishes, rather than the
+    // service holding a reference back to the gateway.
+    this.emitter.on(CHAT_EVENTS.MESSAGE, ({ conversationId, message }: ChatMessageEvent) =>
+      this.broadcastMessage(conversationId, message),
+    );
+    this.emitter.on(CHAT_EVENTS.READ, ({ conversationId, userId }: ChatReadEvent) =>
+      this.broadcastRead(conversationId, userId),
+    );
+    this.emitter.on(CHAT_EVENTS.TO_USER, ({ userId, event, payload }: ChatToUserEvent) =>
+      this.broadcastToUser(userId, event, payload),
+    );
+    this.emitter.on(CHAT_EVENTS.TO_STAFF, ({ event, payload }: ChatToStaffEvent) =>
+      this.broadcastToStaff(event, payload),
+    );
+    this.emitter.on(
+      CHAT_EVENTS.STATUS_CHANGE,
+      ({ conversationId, status, assignedStaffId }: ChatStatusChangeEvent) =>
+        this.broadcastStatusChange(conversationId, status, assignedStaffId),
+    );
+
     this.socketMetrics.registerServer('/chat', this.server);
     this.logger.log('Chat WebSocket Gateway initialized successfully.');
   }
@@ -142,10 +173,11 @@ export class ChatGateway
       client.data.user = user;
 
       client.join(`user:${userId}`);
+      await this.presence.connect(userId, client.id);
 
       if (user.role === 'SUPPORT_STAFF') {
         client.join('role:SUPPORT_STAFF');
-        this.staffQueueService.registerOnlineStaff(userId, client.id);
+        await this.staffQueueService.registerOnlineStaff(userId, client.id);
         void this.chatService.processQueueForStaff(userId);
       }
 
@@ -159,10 +191,13 @@ export class ChatGateway
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     const user = client.data?.user;
+    if (user?.id) {
+      await this.presence.disconnect(user.id, client.id);
+    }
     if (user?.role === 'SUPPORT_STAFF' && user.id) {
-      this.staffQueueService.unregisterStaff(user.id, client.id);
+      await this.staffQueueService.unregisterStaff(user.id, client.id);
     }
     this.logger.log(`Socket client disconnected: ${client.id}`);
   }

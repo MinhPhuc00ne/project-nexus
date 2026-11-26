@@ -1,10 +1,10 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { QueryProductDto } from '../dtos/query-product.dto';
+import { QueryProductInput } from '../dtos/query-product.dto';
 
 export async function priceSortedIds(
   prisma: PrismaService,
-  query: QueryProductDto,
+  query: QueryProductInput,
   categoryIds: string[] | undefined,
   skip: number,
   take: number,

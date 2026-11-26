@@ -1,14 +1,13 @@
-import { ArrayMaxSize, IsArray, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { z } from 'zod';
 
-export class SyncWishlistDto {
-  @ApiProperty({
-    example: ['prod-uuid-1', 'prod-uuid-2'],
-    description: 'List of guest product IDs to sync into the user account',
-    type: [String],
-  })
-  @IsArray()
-  @ArrayMaxSize(100)
-  @IsString({ each: true })
-  productIds!: string[];
-}
+const syncWishlistFields = {
+  productIds: z
+    .array(z.string())
+    .max(100)
+    .describe('List of guest product IDs to sync into the user account')
+    .meta({ example: ['prod-uuid-1', 'prod-uuid-2'] }),
+};
+
+export const SyncWishlistSchema = z.object(syncWishlistFields).strict();
+
+export type SyncWishlistInput = z.infer<typeof SyncWishlistSchema>;

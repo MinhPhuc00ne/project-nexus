@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpCode,
@@ -13,22 +12,31 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { Request, Response } from 'express';
 import { AuthService, GoogleUser, UserProfileResponse } from '../services/auth.service';
 import { AuthProfileService } from '../services/auth-profile.service';
 import { OAuthCodeService } from '../services/oauth-code.service';
-import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
-import { LoginDto } from '../dtos/login.dto';
-import { RefreshTokenDto } from '../dtos/refresh-token.dto';
-import { RegisterDto } from '../dtos/register.dto';
-import { ResetPasswordDto } from '../dtos/reset-password.dto';
-import { VerifyEmailDto } from '../dtos/verify-email.dto';
-import { ExchangeOAuthCodeDto } from '../dtos/exchange-oauth-code.dto';
-import { UpdateAuthProfileDto, ReauthenticateProfileDto } from '../dtos/update-profile.dto';
-import { ConfirmChangePasswordOtpDto } from '../dtos/confirm-change-password-otp.dto';
+import { ForgotPasswordInput, ForgotPasswordSchema } from '../dtos/forgot-password.dto';
+import { LoginInput, LoginSchema } from '../dtos/login.dto';
+import { RefreshTokenInput, RefreshTokenSchema } from '../dtos/refresh-token.dto';
+import { RegisterInput, RegisterSchema } from '../dtos/register.dto';
+import { ResetPasswordInput, ResetPasswordSchema } from '../dtos/reset-password.dto';
+import { VerifyEmailInput, VerifyEmailSchema } from '../dtos/verify-email.dto';
+import { ExchangeOAuthCodeInput, ExchangeOAuthCodeSchema } from '../dtos/exchange-oauth-code.dto';
+import {
+  ReauthenticateProfileInput,
+  ReauthenticateProfileSchema,
+  UpdateAuthProfileInput,
+  UpdateAuthProfileSchema,
+} from '../dtos/update-profile.dto';
+import {
+  ConfirmChangePasswordOtpInput,
+  ConfirmChangePasswordOtpSchema,
+} from '../dtos/confirm-change-password-otp.dto';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { CurrentUser, Roles, RequirePrivilege } from '../../../core/security/roles.decorator';
+import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { Role } from '@nexus/types';
 
 interface RequestWithUser extends Request {
@@ -49,7 +57,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Đăng nhập vào hệ thống' })
   @ApiResponse({ status: 200, description: 'Đăng nhập thành công' })
   @ApiResponse({ status: 401, description: 'Email hoặc mật khẩu không chính xác' })
-  async login(@Body() loginDto: LoginDto) {
+  async login(@ZodBody(LoginSchema) loginDto: LoginInput) {
     return this.authService.login(loginDto);
   }
 
@@ -94,21 +102,23 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Đổi mã thành công' })
   @ApiResponse({ status: 401, description: 'Mã không hợp lệ, đã dùng hoặc đã hết hạn' })
-  async exchangeOAuthCode(@Body() dto: ExchangeOAuthCodeDto) {
+  async exchangeOAuthCode(@ZodBody(ExchangeOAuthCodeSchema) dto: ExchangeOAuthCodeInput) {
     return this.oauthCodes.redeem(dto.code);
   }
 
   @Post('register')
   @ApiOperation({ summary: 'Đăng ký tài khoản mới & gửi mã OTP về email' })
   @ApiResponse({ status: 201, description: 'Đăng ký thành công, vui lòng check mail' })
-  async register(@Body() dto: RegisterDto): Promise<{ message: string; email: string }> {
+  async register(
+    @ZodBody(RegisterSchema) dto: RegisterInput,
+  ): Promise<{ message: string; email: string }> {
     return this.authService.register(dto);
   }
 
   @Post('verify-email')
   @ApiOperation({ summary: 'Xác thực tài khoản bằng mã OTP nhận từ email' })
   @ApiResponse({ status: 200, description: 'Xác thực thành công' })
-  async verifyEmail(@Body() dto: VerifyEmailDto) {
+  async verifyEmail(@ZodBody(VerifyEmailSchema) dto: VerifyEmailInput) {
     return this.authService.verifyEmail(dto);
   }
 
@@ -118,7 +128,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Đã gửi mã OTP về email' })
   @ApiResponse({ status: 400, description: 'Email không tồn tại hoặc tài khoản chưa xác thực' })
   async forgotPassword(
-    @Body() dto: ForgotPasswordDto,
+    @ZodBody(ForgotPasswordSchema) dto: ForgotPasswordInput,
   ): Promise<{ message: string; email: string }> {
     return this.authService.forgotPassword(dto);
   }
@@ -128,7 +138,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Đặt lại mật khẩu bằng mã OTP nhận từ email' })
   @ApiResponse({ status: 200, description: 'Đặt lại mật khẩu thành công' })
   @ApiResponse({ status: 400, description: 'Mã OTP không chính xác hoặc đã hết hạn' })
-  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    @ZodBody(ResetPasswordSchema) dto: ResetPasswordInput,
+  ): Promise<{ message: string }> {
     return this.authService.resetPassword(dto);
   }
 
@@ -137,7 +149,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Làm mới Access Token bằng Refresh Token' })
   @ApiResponse({ status: 200, description: 'Làm mới token thành công' })
   @ApiResponse({ status: 401, description: 'Refresh token không hợp lệ hoặc đã hết hạn' })
-  async refreshToken(@Body() dto: RefreshTokenDto) {
+  async refreshToken(@ZodBody(RefreshTokenSchema) dto: RefreshTokenInput) {
     return this.authService.refreshToken(dto);
   }
 
@@ -145,7 +157,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Đăng xuất và thu hồi Refresh Token' })
   @ApiResponse({ status: 200, description: 'Đăng xuất thành công' })
-  async logout(@Body() dto: RefreshTokenDto): Promise<{ message: string }> {
+  async logout(@ZodBody(RefreshTokenSchema) dto: RefreshTokenInput): Promise<{ message: string }> {
     return this.authService.logout(dto);
   }
 
@@ -179,7 +191,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
   async updateProfile(
     @CurrentUser('id') userId: string,
-    @Body() dto: UpdateAuthProfileDto,
+    @ZodBody(UpdateAuthProfileSchema) dto: UpdateAuthProfileInput,
   ): Promise<UserProfileResponse> {
     return this.authProfileService.updateProfile(userId, dto);
   }
@@ -192,7 +204,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   reauthenticate(
     @CurrentUser('id') userId: string,
-    @Body() dto: ReauthenticateProfileDto,
+    @ZodBody(ReauthenticateProfileSchema) dto: ReauthenticateProfileInput,
   ): ReturnType<AuthProfileService['reauthenticate']> {
     return this.authProfileService.reauthenticate(userId, dto.password);
   }
@@ -228,7 +240,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Chưa đăng nhập' })
   async confirmChangePasswordWithOtp(
     @CurrentUser('id') userId: string,
-    @Body() dto: ConfirmChangePasswordOtpDto,
+    @ZodBody(ConfirmChangePasswordOtpSchema) dto: ConfirmChangePasswordOtpInput,
   ): Promise<{ success: boolean; message: string }> {
     return this.authProfileService.confirmChangePasswordWithOtp(userId, dto);
   }

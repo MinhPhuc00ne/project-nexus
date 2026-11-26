@@ -8,12 +8,12 @@ import {
   RefreshCw as ReloadOutlined,
 } from 'lucide-react';
 import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
-import { FALLBACK_CATEGORY_TREE, getCategoryImageUrl } from '../../mocks/categories.mock';
+import { getCategoryImageUrl } from '../../constants/categoryImages';
 import { ROUTES } from '../../routes/paths';
 
 export default function CategoryPage() {
   const { t } = useTranslation('guest');
-  const [categories, setCategories] = useState<CategoryNode[]>(FALLBACK_CATEGORY_TREE);
+  const [categories, setCategories] = useState<CategoryNode[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
 
@@ -24,9 +24,11 @@ export default function CategoryPage() {
       if (Array.isArray(data) && data.length > 0) {
         setCategories(data);
       }
-    } catch {
-      // Fallback
-      setCategories(FALLBACK_CATEGORY_TREE);
+    } catch (error) {
+      // A hardcoded tree used to stand in here, so a failed request looked like
+      // a catalogue of categories that may not exist.
+      console.warn('Unable to load categories:', error);
+      setCategories([]);
     } finally {
       setLoading(false);
     }

@@ -7,7 +7,7 @@ import {
 import { BannerCreatorRole, EventBanner, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
-import { BannerDto } from '../dtos/banner.dto';
+import { BannerInput, BannerSchema } from '../dtos/banner.dto';
 import { BannerResponseDto } from '../dtos/banner-response.dto';
 import { BannerActor, BannerHistoryService } from './banner-history.service';
 
@@ -100,7 +100,7 @@ export class BannerService {
    * @throws ForbiddenException if the editor no longer has management privileges.
    * @throws NotFoundException if the banner or linked auction does not exist.
    */
-  async save(actorId: string, dto: BannerDto, id?: string): Promise<EventBanner> {
+  async save(actorId: string, dto: BannerInput, id?: string): Promise<EventBanner> {
     const startsAt = dto.startsAt ? new Date(dto.startsAt) : null;
     const endsAt = dto.endsAt ? new Date(dto.endsAt) : null;
     if (startsAt && endsAt && startsAt >= endsAt)
@@ -185,14 +185,20 @@ export class BannerService {
         : null;
     const endsAt = auction.endTime ? new Date(auction.endTime).toISOString() : null;
 
-    return this.save(actorId, {
-      title: auction.title.trim().slice(0, 150),
-      imageUrl: auction.imageUrl.trim(),
-      auctionId,
-      startsAt,
-      endsAt,
-      isActive: true,
-    });
+    // Parsed rather than hand-built: this path used to assemble the banner
+    // itself and so skipped the rules and defaults every banner posted over
+    // HTTP goes through, the default priority among them.
+    return this.save(
+      actorId,
+      BannerSchema.parse({
+        title: auction.title.trim().slice(0, 150),
+        imageUrl: auction.imageUrl.trim(),
+        auctionId,
+        startsAt,
+        endsAt,
+        isActive: true,
+      }),
+    );
   }
 
   /**

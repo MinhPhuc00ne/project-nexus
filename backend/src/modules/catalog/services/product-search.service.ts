@@ -2,9 +2,9 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { OrderStatus, Prisma, ProductStatus } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
-import { QueryProductDto } from '../dtos/query-product.dto';
+import { QueryProductInput } from '../dtos/query-product.dto';
 import { InventoryService } from './inventory.service';
-import { buildProductWhere, formatProductSummary, PaginatedResult } from '../utils/product.util';
+import { PaginatedResult, buildProductWhere, formatProductSummary } from '../utils/product.util';
 import { priceSortedIds } from '../utils/product-price-sort';
 
 const QUALIFYING_ORDER_STATUSES: OrderStatus[] = [
@@ -108,7 +108,7 @@ export class ProductSearchService {
 
   private async filterAndSortByPurchases(
     where: Prisma.ProductWhereInput,
-    query: QueryProductDto,
+    query: QueryProductInput,
   ): Promise<{ matchingIds: string[]; purchaseCounts: Map<string, number> }> {
     const candidates = await this.prisma.product.findMany({
       where,
@@ -143,7 +143,7 @@ export class ProductSearchService {
     return { matchingIds: filtered.map((c) => c.id), purchaseCounts };
   }
 
-  private validateProductQuery(query: QueryProductDto): void {
+  private validateProductQuery(query: QueryProductInput): void {
     if (query.status && query.status !== ProductStatus.ACTIVE) {
       throw new BadRequestException('Danh sách công khai chỉ trả sản phẩm đang bán.');
     }
@@ -160,7 +160,7 @@ export class ProductSearchService {
   }
 
   private resolveOrderBy(
-    sortBy?: QueryProductDto['sortBy'],
+    sortBy?: QueryProductInput['sortBy'],
   ): Prisma.ProductOrderByWithRelationInput {
     if (sortBy === 'price_asc') return { basePrice: 'asc' };
     if (sortBy === 'price_desc') return { basePrice: 'desc' };
@@ -168,7 +168,7 @@ export class ProductSearchService {
     return { createdAt: 'desc' };
   }
 
-  async getProducts(query: QueryProductDto): Promise<PaginatedResult<unknown>> {
+  async getProducts(query: QueryProductInput): Promise<PaginatedResult<unknown>> {
     this.validateProductQuery(query);
 
     const page = Math.max(1, Number(query.page) || 1);

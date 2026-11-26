@@ -3,13 +3,14 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test, mock } from 'node:test';
 import tsNode from 'ts-node';
+import { requestBodySchema } from './helpers/openapi.mjs';
 
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
   transpileOnly: true,
 });
 const load = createRequire(import.meta.url);
-const { Module, ValidationPipe } = load('@nestjs/common');
+const { Module } = load('@nestjs/common');
 const { ConfigService } = load('@nestjs/config');
 const { NestFactory } = load('@nestjs/core');
 const { SwaggerModule, DocumentBuilder } = load('@nestjs/swagger');
@@ -20,7 +21,7 @@ const { ChatbotController } = load('../src/modules/chat/controllers/chatbot.cont
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
 const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
 const { CommerceChatQueryService } = load(
-  '../src/modules/commerce/services/commerce-chat-query.service.ts',
+  '../src/modules/commerce-query/services/commerce-chat-query.service.ts',
 );
 const { ChatbotAiService } = load('../src/modules/chat/services/chatbot-ai.service.ts');
 const { ChatbotRateLimitService } = load(
@@ -165,8 +166,11 @@ test(
       ],
     })(ApiModule);
     const app = await NestFactory.create(ApiModule, { logger: false, abortOnError: false });
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+    // The same filter `main.ts` registers. Without it these routes fall to
+    // Nest's default handling, which is not what the app does and answered a
+    // rejected query with 500 instead of 400 whenever the machine was busy.
+    app.useGlobalFilters(
+      new (load('../src/core/filters/global-http-exception.filter.ts').GlobalHttpExceptionFilter)(),
     );
     app.setGlobalPrefix('api/v1');
     try {
@@ -309,7 +313,9 @@ test(
       );
       assert.ok(doc.paths['/api/v1/chat/bot/messages'].post);
       assert.deepEqual(doc.paths['/api/v1/chat/bot/guest/messages'].post.security, []);
-      assert.ok(doc.components.schemas.ChatbotMessageDto.required.includes('message'));
+      assert.ok(
+        requestBodySchema(doc, '/api/v1/chat/bot/messages', 'post').required.includes('message'),
+      );
     } finally {
       fetchMock.mock.restore();
       await app.close();

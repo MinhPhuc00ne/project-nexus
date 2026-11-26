@@ -1,10 +1,16 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { CreateAutoReplyDto, UpdateAutoReplyDto } from '../dtos/auto-reply.dto';
+import {
+  CreateAutoReplyInput,
+  CreateAutoReplySchema,
+  UpdateAutoReplyInput,
+  UpdateAutoReplySchema,
+} from '../dtos/auto-reply.dto';
 import { ChatAutoReplyService } from '../services/chat-auto-reply.service';
 
 @ApiTags('Seller Chat Auto-Reply')
@@ -30,7 +36,10 @@ export class SellerAutoReplyController {
   })
   @ApiResponse({ status: 201, description: 'Tạo tin nhắn tự động thành công.' })
   @ApiResponse({ status: 400, description: 'Nội dung chứa từ cấm hoặc vượt quá giới hạn 10 mẫu.' })
-  async createAutoReply(@CurrentUser('id') sellerId: string, @Body() dto: CreateAutoReplyDto) {
+  async createAutoReply(
+    @CurrentUser('id') sellerId: string,
+    @ZodBody(CreateAutoReplySchema) dto: CreateAutoReplyInput,
+  ) {
     const data = await this.autoReplyService.createSellerAutoReply(sellerId, dto);
     return { message: 'Tạo tin nhắn tự động thành công.', data };
   }
@@ -43,7 +52,7 @@ export class SellerAutoReplyController {
   async updateAutoReply(
     @CurrentUser('id') sellerId: string,
     @Param('id') id: string,
-    @Body() dto: UpdateAutoReplyDto,
+    @ZodBody(UpdateAutoReplySchema) dto: UpdateAutoReplyInput,
   ) {
     const data = await this.autoReplyService.updateSellerAutoReply(sellerId, id, dto);
     return { message: 'Cập nhật tin nhắn tự động thành công.', data };

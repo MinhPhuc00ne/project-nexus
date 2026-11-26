@@ -76,4 +76,40 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  {
+    // A module’s utilities, helpers and DTOs are its internals. Reaching for them
+    // across a module boundary is what built a six-module import cycle, and
+    // `npm run check:cycles` only catches such a reach once it closes a loop;
+    // this catches the first one. Services are exempt: Nest already governs them,
+    // since a provider that is not exported fails at startup.
+    files: ['backend/src/modules/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              // A module's public surface is its exported providers and the
+              // schemas describing what its endpoints accept. Everything else
+              // — the helpers a service happens to be split into, the
+              // functions in utils/ — is how it is built this week, and a
+              // second module importing it turns a refactor into a breakage.
+              // Request schemas under dtos/ stay importable on purpose: a few
+              // modules administer another's resources (the back office
+              // reclassifies catalog categories, auction checkout takes the
+              // same address as retail checkout) and should reuse that
+              // contract rather than restate it and drift from it.
+              group: [
+                '../../*/utils/*',
+                '../../*/helpers/*',
+                '../../*/services/*.helper',
+                '../../*/gateways/*',
+              ],
+              message: `Do not import another module’s internals. Move shared code to core/, or export it from that module and inject it. Request schemas under dtos/ are a module's public contract and may be imported.`,
+            },
+          ],
+        },
+      ],
+    },
+  },
 );

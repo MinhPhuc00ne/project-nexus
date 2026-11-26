@@ -1,23 +1,21 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import {
-  Prisma,
-  Role,
-  Wallet,
-  WalletTransactionStatus,
-  WalletTransactionType,
-} from '@prisma/client';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Prisma, Wallet, WalletTransactionStatus, WalletTransactionType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import {
-  DepositAdminWalletDto,
-  QueryAdminWalletTransactionsDto,
-  QueryPlatformUserWalletTransactionsDto,
+  DepositAdminWalletInput,
+  QueryAdminWalletTransactionsInput,
+  QueryPlatformUserWalletTransactionsInput,
 } from '../dtos/admin-wallet.dto';
+import { TreasuryService } from '../../treasury/services/treasury.service';
 
 @Injectable()
 export class AdminFinanceService {
   private readonly logger = new Logger(AdminFinanceService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly treasury: TreasuryService,
+  ) {}
 
   /**
    * Retrieves or automatically initializes the primary platform administrator wallet.
@@ -26,42 +24,8 @@ export class AdminFinanceService {
    * @returns Primary admin Wallet entity
    * @throws NotFoundException when no administrator user exists
    */
-  async getOrCreatePrimaryAdminWallet(txClient?: Prisma.TransactionClient): Promise<Wallet> {
-    const client = txClient || this.prisma;
-
-    let adminUser = await client.user.findFirst({
-      where: { role: Role.ADMIN },
-      orderBy: { createdAt: 'asc' },
-      include: { wallet: true },
-    });
-
-    if (!adminUser) {
-      adminUser = await client.user.findFirst({
-        where: { email: 'admin@nexus.com' },
-        include: { wallet: true },
-      });
-    }
-
-    if (!adminUser) {
-      throw new NotFoundException(
-        'Không tìm thấy tài khoản Quản trị viên (ADMIN) trên hệ thống để gán ví nền tảng.',
-      );
-    }
-
-    let wallet = adminUser.wallet;
-    if (!wallet) {
-      wallet = await client.wallet.create({
-        data: {
-          userId: adminUser.id,
-          balance: 0,
-          lockedBalance: 0,
-          currency: 'VND',
-        },
-      });
-      this.logger.log(`Đã khởi tạo ví Admin hệ thống cho userId: ${adminUser.id}`);
-    }
-
-    return wallet;
+  getOrCreatePrimaryAdminWallet(txClient?: Prisma.TransactionClient): Promise<Wallet> {
+    return this.treasury.getOrCreatePrimaryAdminWallet(txClient);
   }
 
   /**
@@ -128,7 +92,7 @@ export class AdminFinanceService {
    * @param query - Query filter and pagination parameters
    * @returns Paginated wallet transactions with associated order details
    */
-  async getAdminWalletTransactions(adminId: string, query: QueryAdminWalletTransactionsDto) {
+  async getAdminWalletTransactions(adminId: string, query: QueryAdminWalletTransactionsInput) {
     let wallet = await this.prisma.wallet.findUnique({
       where: { userId: adminId },
     });
@@ -246,7 +210,7 @@ export class AdminFinanceService {
    * @param query - Filters for type, status, role, userId, date range, and keyword search
    * @returns Paginated user wallet transactions with account details
    */
-  async getPlatformUserWalletTransactions(query: QueryPlatformUserWalletTransactionsDto) {
+  async getPlatformUserWalletTransactions(query: QueryPlatformUserWalletTransactionsInput) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 10));
     const skip = (page - 1) * limit;
@@ -333,7 +297,7 @@ export class AdminFinanceService {
   }
 
   private buildUserWalletTransactionWhere(
-    query: QueryPlatformUserWalletTransactionsDto,
+    query: QueryPlatformUserWalletTransactionsInput,
   ): Prisma.WalletTransactionWhereInput {
     const where: Prisma.WalletTransactionWhereInput = {};
 
@@ -378,7 +342,7 @@ export class AdminFinanceService {
    * @returns Deposit confirmation, updated balance, and transaction record
    * @throws BadRequestException when amount is non-positive
    */
-  async depositToAdminWallet(adminId: string, dto: DepositAdminWalletDto) {
+  async depositToAdminWallet(adminId: string, dto: DepositAdminWalletInput) {
     if (dto.amount <= 0) {
       throw new BadRequestException('Số tiền nạp vào ví phải lớn hơn 0 đồng.');
     }

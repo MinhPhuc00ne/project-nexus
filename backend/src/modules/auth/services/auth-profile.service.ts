@@ -10,10 +10,10 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { MailService } from '../../../core/mail/mail.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { ConfirmChangePasswordOtpDto } from '../dtos/confirm-change-password-otp.dto';
-import { UpdateAuthProfileDto } from '../dtos/update-profile.dto';
-import { UpdateStaffProfileDto } from '../dtos/update-staff-profile.dto';
-import { ChangePasswordDto } from '../dtos/auth.dto';
+import { ConfirmChangePasswordOtpInput } from '../dtos/confirm-change-password-otp.dto';
+import { UpdateAuthProfileInput } from '../dtos/update-profile.dto';
+import { UpdateStaffProfileInput } from '../dtos/update-staff-profile.dto';
+import { ChangePasswordInput } from '../dtos/auth.dto';
 import { ProfileReauthService } from '../../../core/security/profile-reauth.service';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { userMode } from '../../../core/security/user-mode';
@@ -74,7 +74,7 @@ export class AuthProfileService {
     return { ...user, ...userMode(user) };
   }
 
-  async updateProfile(userId: string, dto: UpdateAuthProfileDto): Promise<UserProfileResponse> {
+  async updateProfile(userId: string, dto: UpdateAuthProfileInput): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('Không tìm thấy thông tin người dùng.');
     if (user.role !== 'BUYER' && user.role !== 'SELLER') {
@@ -107,7 +107,7 @@ export class AuthProfileService {
    */
   async updateStaffProfile(
     userId: string,
-    dto: UpdateStaffProfileDto,
+    dto: UpdateStaffProfileInput,
   ): Promise<UserProfileResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || user.role !== 'SUPPORT_STAFF') {
@@ -158,7 +158,7 @@ export class AuthProfileService {
 
   async confirmChangePasswordWithOtp(
     userId: string,
-    dto: ConfirmChangePasswordOtpDto,
+    dto: ConfirmChangePasswordOtpInput,
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user || !user.verificationCode || !user.codeExpiresAt) {
@@ -207,7 +207,7 @@ export class AuthProfileService {
    */
   async changePassword(
     userId: string,
-    dto: ChangePasswordDto,
+    dto: ChangePasswordInput,
   ): Promise<{ success: boolean; message: string }> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {

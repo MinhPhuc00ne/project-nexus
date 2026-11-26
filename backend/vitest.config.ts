@@ -11,6 +11,12 @@ export default defineConfig({
     }),
   ],
   resolve: {
+    // A second copy of these means a second HttpException class, so a
+    // BadRequestException raised by one copy's validation pipe fails the
+    // `instanceof` check in the other copy's exception filter and is served as
+    // 500 instead of 400. Which copy a spec got depended on the order Vite
+    // happened to resolve the files in, so the symptom came and went.
+    dedupe: ['@nestjs/common', '@nestjs/core'],
     alias: [
       // Resolve @nexus/contracts to its TypeScript source rather than its built
       // output. The package ships both an ESM and a CommonJS build, and Vite

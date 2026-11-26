@@ -1,44 +1,21 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
+import { ApiProperty } from '@nestjs/swagger';
 import { BannerCreatorRole, Role } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
 
 /** Bounded audit filters shared by all authorized administrators and support staff. */
-export class QueryBannerHistoryDto {
-  @ApiPropertyOptional({ format: 'uuid' })
-  @IsOptional()
-  @IsUUID()
-  bannerId?: string;
+const queryBannerHistoryFields = {
+  bannerId: nullAsAbsent(z.uuid()),
+  actorId: nullAsAbsent(z.uuid().describe('Account that disabled the banner')),
+  from: nullAsAbsent(z.iso.datetime().describe('Inclusive lower timestamp')),
+  to: nullAsAbsent(z.iso.datetime().describe('Inclusive upper timestamp')),
+  page: z.coerce.number().int().min(1).max(21474836).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+};
 
-  @ApiPropertyOptional({ format: 'uuid', description: 'Account that disabled the banner' })
-  @IsOptional()
-  @IsUUID()
-  actorId?: string;
+export const QueryBannerHistorySchema = z.object(queryBannerHistoryFields).strict();
 
-  @ApiPropertyOptional({ format: 'date-time', description: 'Inclusive lower timestamp' })
-  @IsOptional()
-  @IsDateString()
-  from?: string;
-
-  @ApiPropertyOptional({ format: 'date-time', description: 'Inclusive upper timestamp' })
-  @IsOptional()
-  @IsDateString()
-  to?: string;
-
-  @ApiPropertyOptional({ default: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(21474836)
-  page: number = 1;
-
-  @ApiPropertyOptional({ default: 20, maximum: 100 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit: number = 20;
-}
+export type QueryBannerHistoryInput = z.infer<typeof QueryBannerHistorySchema>;
 
 /** Immutable snapshots preserve who disabled whose banner even after names or content change. */
 export class BannerDisableHistoryDto {

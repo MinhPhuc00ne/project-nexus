@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { effectivePrice } from '../../catalog/utils/product-price';
+import { effectivePrice } from '../../../core/domain/product-price';
 import { Prisma, ProductStatus, SellerRequestStatus } from '@prisma/client';
 import type { WishlistItemDto } from '@nexus/types';
 

@@ -59,7 +59,7 @@
     },
     "flashSale": {
       "noImage": "Chưa có hình ảnh",
-      "soldProgress": "ĐÃ BÁN {{sold}}/50"
+      "soldCount": "Đã bán {{count}}"
     },
     "liveAuction": {
       "defaultTitle": "Phòng Đấu Giá Trực Tiếp",
@@ -193,7 +193,8 @@
     "trendingBadge": "Xu hướng",
     "soldCount": "Đã bán {{count}}",
     "reviewsCount": "{{count}} đánh giá",
-    "authentic": "Chính hãng"
+    "authentic": "Chính hãng",
+    "noReviewsYet": "Chưa có đánh giá"
   },
   "filters": {
     "title": "Bộ Lọc Tìm Kiếm",
@@ -342,7 +343,8 @@
     "responseTimeLabel": "Thời Gian Phản Hồi",
     "withinMinutes": "trong vài phút",
     "withinHours": "trong vài giờ",
-    "reputationLabel": "Điểm Uy Tín"
+    "reputationLabel": "Điểm Uy Tín",
+    "wishlistFailed": "Không cập nhật được danh sách yêu thích."
   },
   "shop": {
     "visitShop": "Xem cửa hàng",

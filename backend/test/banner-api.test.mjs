@@ -3,12 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import tsNode from 'ts-node';
+import { requestBodySchema } from './helpers/openapi.mjs';
 
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
@@ -108,11 +109,14 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
     ],
   })(BannerApiModule);
   const app = await NestFactory.create(BannerApiModule, { logger: false, abortOnError: false });
+  // The same filter `main.ts` registers. Without it these routes fall to
+  // Nest's default handling, which is not what the app does and answered a
+  // rejected query with 500 instead of 400 whenever the machine was busy.
+  app.useGlobalFilters(
+    new (source('core/filters/global-http-exception.filter').GlobalHttpExceptionFilter)(),
+  );
   try {
     app.setGlobalPrefix('api/v1');
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
-    );
     await app.listen(0, '127.0.0.1');
     const base = (await app.getUrl()) + '/api/v1';
     const request = (path, role, options = {}) =>
@@ -283,7 +287,10 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
       assert.ok(document.components.schemas[schema], schema);
     assert.ok(document.components.schemas.NotificationResponseDto.properties.targetUrl);
     assert.ok(document.components.schemas.BannerDisableHistoryDto.properties.creatorRole);
-    assert.equal(document.components.schemas.BannerDto.properties.priority.deprecated, undefined);
+    assert.equal(
+      requestBodySchema(document, '/api/v1/staff/banners', 'post').properties.priority.deprecated,
+      undefined,
+    );
   } finally {
     await app.close();
   }

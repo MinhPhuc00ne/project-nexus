@@ -12,6 +12,7 @@ import { Role } from '@nexus/types';
 import { clearAuthSession, getStoredToken, getStoredUser, saveAuthSession } from '../services/auth';
 import { getMe, toggleSellerMode } from '../services/users';
 import { mergeGuestCartAfterLogin, resetCartSync } from '../services/cart';
+import { syncGuestWishlist } from '../services/wishlist.service';
 import type { AuthUser, UserProfile } from '../types/user.types';
 import { useToast } from '../components/ToastNotification';
 
@@ -220,6 +221,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cartOwnerChanged || !cartInitialized.current) {
           cartInitialized.current = true;
           void mergeGuestCartAfterLogin();
+          // A guest's saved products are kept in this browser because they have
+          // nowhere else to live; once there is an account they belong to it.
+          void syncGuestWishlist().catch((error: unknown) => {
+            console.error('Unable to hand the guest wishlist to the account:', error);
+          });
         }
       } else {
         cartInitialized.current = false;

@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { BannerCreatorRole, Prisma, Role } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { BannerHistoryPageDto, QueryBannerHistoryDto } from '../dtos/banner-history.dto';
+import { BannerHistoryPageDto, QueryBannerHistoryInput } from '../dtos/banner-history.dto';
 
 /** Authenticated account read within the mutation transaction. */
 export interface BannerActor {
@@ -73,7 +73,7 @@ export class BannerHistoryService {
    * @returns Snapshot records and total count from the same database snapshot.
    * @throws BadRequestException when the date range is reversed.
    */
-  async list(query: QueryBannerHistoryDto): Promise<BannerHistoryPageDto> {
+  async list(query: QueryBannerHistoryInput): Promise<BannerHistoryPageDto> {
     if (query.from && query.to && new Date(query.from) > new Date(query.to))
       throw new BadRequestException('Thời gian bắt đầu phải trước thời gian kết thúc.');
     const where: Prisma.BannerDisableHistoryWhereInput = {

@@ -61,14 +61,14 @@ test(
             });
             const finance = { getOrCreatePrimaryAdminWallet: async () => adminWallet };
             const { AfterSalesStoreService } = source(
-              'commerce/services/after-sales-store.service',
+              'after-sales/services/after-sales-store.service',
             );
-            const { RefundService } = source('commerce/services/refund.service');
+            const { RefundService } = source('after-sales/services/refund.service');
             const { InventoryService } = source('catalog/services/inventory.service');
             const { OrderCancellationService } = source(
-              'commerce/services/order-cancellation.service',
+              'after-sales/services/order-cancellation.service',
             );
-            const { OrderReturnService } = source('commerce/services/order-return.service');
+            const { OrderReturnService } = source('after-sales/services/order-return.service');
             const store = new AfterSalesStoreService(facade);
             const refunds = new RefundService(facade, finance, store);
             const inventory = new InventoryService(facade);
@@ -172,10 +172,10 @@ test(
               );
             }
             const { AdminOrdersService } = source('admin/services/admin-orders.service');
-            const { QueryAdminOrdersDto } = source('admin/dtos/query-admin-orders.dto');
+            const { QueryAdminOrdersSchema } = source('admin/dtos/query-admin-orders.dto');
             const adminOrders = new AdminOrdersService(facade);
             const page = await adminOrders.list(
-              Object.assign(new QueryAdminOrdersDto(), {
+              QueryAdminOrdersSchema.parse({
                 sellerId: seller.id,
                 search: marker,
                 status: 'CANCELLED',
