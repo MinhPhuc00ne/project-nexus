@@ -41,14 +41,14 @@ services:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.backend
+      # The Prisma CLI and ts-node live in this stage, not in the server's.
+      # Applies migrations and creates only the system rows; demo data is never
+      # seeded here, because it shares one printed password across every account
+      # it creates. Run `npm run seed:demo` deliberately for a demo database.
+      target: migrator
     container_name: nexus-migrate
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
-    # Applies migrations and creates only the system rows. Demo data is never
-    # seeded here: it shares one printed password across every account.
-    # Run `npm run seed:demo` deliberately for a demonstration database.
-    command: sh -c "npx prisma migrate deploy --schema=prisma/schema.prisma && npx ts-node --project tsconfig.json prisma/seeds/system.ts"
-    working_dir: /app/backend
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,6 +60,7 @@ services:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.backend
+      target: runner
     container_name: nexus-backend
     restart: unless-stopped
     environment:

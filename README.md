@@ -57,7 +57,7 @@ cd project-nexus
 cp .env.example .env
 
 # 3. Install dependencies across all workspaces
-npm install --legacy-peer-deps
+npm install
 
 # 4. Build shared @nexus/types contract package
 npm run build:types

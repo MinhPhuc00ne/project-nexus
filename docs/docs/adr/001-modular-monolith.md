@@ -21,7 +21,7 @@ Project Nexus integrates tightly coupled domains (Auth, Users and Wallet, Catalo
 
 Adopt NestJS Level 1.5 Modular Monolith:
 
-- 10 domain modules (`auth`, `users`, `catalog`, `commerce`, `auction`, `fulfillment`, `chat`, `notifications`, `admin`, `media`) communicate exclusively via exported public Services or `EventEmitter2`.
+- 17 domain modules (`auth`, `users`, `catalog`, `cart`, `orders`, `payments`, `wallet`, `after-sales`, `reviews`, `treasury`, `commerce-query`, `auction`, `fulfillment`, `chat`, `notifications`, `admin`, `media`) communicate exclusively via exported public Services or `EventEmitter2`.
 - Financial and inventory mutations execute inside unified `prisma.$transaction()` blocks.
 
 ## Consequences

@@ -4,18 +4,28 @@ RUN apk add --no-cache libc6-compat
 COPY package*.json ./
 COPY packages/config/package.json ./packages/config/
 COPY packages/types/package.json ./packages/types/
+COPY packages/contracts/package.json ./packages/contracts/
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 COPY docs/package.json ./docs/
-RUN npm ci --legacy-peer-deps
+# `--legacy-peer-deps` is gone: the tree resolves on its own, and the flag was
+# hiding whether it still did.
+RUN npm ci
 
 FROM node:22-alpine AS builder
 WORKDIR /app
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL:-http://localhost:3000/api/v1}
-COPY --from=dependencies /app/node_modules ./node_modules
+# The whole installed tree, not just the root `node_modules`: a workspace whose
+# dependency range the root cannot satisfy gets its own nested copy, and
+# contracts pins a TypeScript the root does not resolve to.
+COPY --from=dependencies /app/ ./
 COPY . .
 RUN npm run build --workspace=@nexus/types
+# The front end depends on @nexus/contracts, which was never built here: the
+# image only worked because the package happened to resolve to a dist built
+# outside Docker.
+RUN npm run build --workspace=@nexus/contracts
 RUN npm run build --workspace=frontend
 
 FROM nginx:1.27-alpine AS runner
