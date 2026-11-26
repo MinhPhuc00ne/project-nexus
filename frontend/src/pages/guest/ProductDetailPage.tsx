@@ -238,7 +238,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
     <main className="min-h-screen bg-[var(--color-canvas)] py-6">
       <div className="mx-auto max-w-[1280px] space-y-6 px-4">
         <nav className="flex flex-wrap items-center gap-3 text-sm text-muted">
-          <Link to="/" className="text-blue-600 font-medium">
+          <Link to="/" className="inline-flex items-center gap-1.5 text-blue-600 font-medium">
             <ArrowLeftOutlined /> {t('product.breadcrumbHome')}
           </Link>
           <span>/</span>
