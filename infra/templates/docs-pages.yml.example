@@ -7,7 +7,7 @@ on:
       - main
       - dev
     paths:
-      - 'docs-site/**'
+      - 'docs/**'
       - 'backend/src/**/controllers/**'
       - 'backend/src/**/dtos/**'
 
@@ -25,13 +25,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - run: npm run docs:openapi
       - run: npm run docs:check
       - run: npm run docs:build
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: docs-site/build
+          path: docs/build
 
   deploy:
     needs: build
