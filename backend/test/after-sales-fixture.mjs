@@ -253,7 +253,11 @@ export function fixture() {
     },
   };
   const store = new AfterSalesStoreService(prisma, new ReputationService(prisma, {}));
-  const finance = { getOrCreatePrimaryAdminWallet: async () => copy(state.wallets[0]) };
+  const finance = {
+    getOrCreatePrimaryAdminWallet: async () => copy(state.wallets[0]),
+    getOrCreateEscrowWallet: async () => copy(state.wallets[0]),
+    getOrCreatePlatformRevenueWallet: async () => copy(state.wallets[0]),
+  };
   const refunds = new RefundService(prisma, finance, store);
   const inventory = new InventoryService(prisma);
   const ghn = {

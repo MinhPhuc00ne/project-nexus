@@ -9,26 +9,19 @@ import {
   QueryReportsSchema,
   ReviewReportInput,
   ReviewReportSchema,
-} from '../dtos/report-moderation.dto';
-import { ReportModerationService, ReportModerator } from '../services/report-moderation.service';
+} from '../../reviews/dtos/report-moderation.dto';
+import {
+  ReportModerationService,
+  ReportModerator,
+} from '../../reviews/services/report-moderation.service';
 
-/** Separates personal report history from privileged moderation operations. */
+/** Privileged moderation operations for violation reports. */
 @Controller()
 @ApiTags('Reviews and reports')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ReportModerationController {
   constructor(private readonly reports: ReportModerationService) {}
-
-  /** Returns only reports authored by the current account. @returns Personal report history. */
-  @Get('commerce/reports/my')
-  @ApiOperation({ summary: 'Theo dõi trạng thái báo cáo của chính mình' })
-  mine(
-    @CurrentUser('id') userId: string,
-    @ZodQuery(QueryReportsSchema) query: QueryReportsInput,
-  ): ReturnType<ReportModerationService['list']> {
-    return this.reports.list(query, userId);
-  }
 
   /** Retrieves the moderation queue for authorized staff. @returns Filtered report queue. */
   @Get('admin/reports')

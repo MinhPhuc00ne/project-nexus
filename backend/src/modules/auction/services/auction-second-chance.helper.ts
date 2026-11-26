@@ -261,15 +261,18 @@ export class AuctionSecondChanceHelper {
         throw new ConflictException('Không xác định được người bán của lô đấu giá.');
       }
 
-      const adminWallet = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
-      const walletOwnerIds = [...new Set([buyerId, sellerId, adminWallet.userId])].sort();
+      const platformRevenueWallet = await this.treasury.getOrCreatePlatformRevenueWallet(tx);
+      const walletOwnerIds = [...new Set([buyerId, sellerId])].sort();
       for (const ownerId of walletOwnerIds) {
         await tx.$queryRaw`SELECT id FROM wallets WHERE user_id = ${ownerId} FOR UPDATE`;
       }
+      await tx.$queryRaw`SELECT id FROM wallets WHERE id = ${platformRevenueWallet.id} FOR UPDATE`;
 
       const buyerWallet = await tx.wallet.findUnique({ where: { userId: buyerId } });
       const sellerWallet = await tx.wallet.findUnique({ where: { userId: sellerId } });
-      const latestAdminWallet = await tx.wallet.findUnique({ where: { id: adminWallet.id } });
+      const latestAdminWallet = await tx.wallet.findUnique({
+        where: { id: platformRevenueWallet.id },
+      });
       const depositAmount = Number(current.depositAmount);
 
       if (!buyerWallet || Number(buyerWallet.lockedBalance) < depositAmount) {

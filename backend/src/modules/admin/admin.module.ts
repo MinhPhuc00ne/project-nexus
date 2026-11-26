@@ -19,12 +19,15 @@ import { AuthModule } from '../auth/auth.module';
 import { CatalogModule } from '../catalog/catalog.module';
 import { AdminOrdersController } from './controllers/admin-orders.controller';
 import { AdminOrdersService } from './services/admin-orders.service';
-import { ReputationModule } from '../users/reputation.module';
+import { UsersModule } from '../users/users.module';
+import { ReviewsModule } from '../reviews/reviews.module';
 import { AdminReputationController } from './controllers/admin-reputation.controller';
+import { AdminReviewsController } from './controllers/admin-reviews.controller';
+import { ReportModerationController } from './controllers/report-moderation.controller';
 import { AdminShopsModerationHelper } from './services/admin-shops-moderation.helper';
 
 @Module({
-  imports: [TreasuryModule, AuthModule, CatalogModule, ReputationModule],
+  imports: [TreasuryModule, AuthModule, CatalogModule, UsersModule, ReviewsModule],
   controllers: [
     AdminStaffController,
     AdminUsersController,
@@ -36,6 +39,8 @@ import { AdminShopsModerationHelper } from './services/admin-shops-moderation.he
     BackofficeDisputesController,
     AdminOrdersController,
     AdminReputationController,
+    AdminReviewsController,
+    ReportModerationController,
   ],
   providers: [
     AdminShopsModerationHelper,

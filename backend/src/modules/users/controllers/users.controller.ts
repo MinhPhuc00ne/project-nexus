@@ -14,6 +14,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -36,6 +37,7 @@ import {
   QueryReputationLogsInput,
   QueryReputationLogsSchema,
   ReputationSummaryResponse,
+  ReputationSummaryResponseSchema,
 } from '../dtos/reputation.dto';
 import { UsersService } from '../services/users.service';
 import { ReputationService } from '../services/reputation.service';
@@ -215,10 +217,9 @@ export class UsersController {
     description:
       'Returns reputation points, documented trust thresholds, excellent reputation badge, and selling permissions.',
   })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'Reputation summary metrics retrieved successfully',
-    type: ReputationSummaryResponse,
+    standardSchema: ReputationSummaryResponseSchema,
   })
   async getReputationSummary(
     @CurrentUser('id') userId: string,

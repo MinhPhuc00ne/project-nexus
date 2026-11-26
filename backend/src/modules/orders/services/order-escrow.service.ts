@@ -83,14 +83,14 @@ export class OrderEscrowService {
       },
     });
 
-    const admin = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
+    const escrowWallet = await this.treasury.getOrCreateEscrowWallet(tx);
     await tx.wallet.update({
-      where: { id: admin.id },
+      where: { id: escrowWallet.id },
       data: { balance: { increment: order.totalAmount } },
     });
     await tx.walletTransaction.create({
       data: {
-        walletId: admin.id,
+        walletId: escrowWallet.id,
         amount: order.totalAmount,
         type: WalletTransactionType.ESCROW_LOCK,
         status: 'SUCCESS',
@@ -244,10 +244,12 @@ export class OrderEscrowService {
       update: {},
       create: { userId: order.sellerId, balance: 0, lockedBalance: 0, currency: 'VND' },
     });
-    const admin = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
+    const escrowWallet = await this.treasury.getOrCreateEscrowWallet(tx);
+    const platformRevenueWallet = await this.treasury.getOrCreatePlatformRevenueWallet(tx);
     const sellerPayout = Number(escrow.sellerPayout);
+    const platformFee = Number(escrow.platformFee);
     const shippingFee = Number(order.shippingFee ?? 0);
-    const totalDeduction = sellerPayout + shippingFee;
+    const totalEscrowOutflow = sellerPayout + platformFee + shippingFee;
 
     // 1. Cộng tiền hàng sau khi trừ phí sàn cho người bán
     await tx.wallet.update({
@@ -265,14 +267,14 @@ export class OrderEscrowService {
       },
     });
 
-    // 2. Khấu trừ ví Admin: xuất tiền hàng cho Shop và thanh toán cước GHN
+    // 2. Giải phóng tiền ký quỹ khỏi ví ESCROW_LIABILITY và ghi nhận phí sàn vào PLATFORM_REVENUE
     await tx.wallet.update({
-      where: { id: admin.id },
-      data: { balance: { decrement: totalDeduction } },
+      where: { id: escrowWallet.id },
+      data: { balance: { decrement: totalEscrowOutflow } },
     });
     await tx.walletTransaction.create({
       data: {
-        walletId: admin.id,
+        walletId: escrowWallet.id,
         amount: sellerPayout,
         type: WalletTransactionType.ESCROW_PAYOUT,
         status: 'SUCCESS',
@@ -281,10 +283,27 @@ export class OrderEscrowService {
       },
     });
 
+    if (platformFee > 0) {
+      await tx.wallet.update({
+        where: { id: platformRevenueWallet.id },
+        data: { balance: { increment: platformFee } },
+      });
+      await tx.walletTransaction.create({
+        data: {
+          walletId: platformRevenueWallet.id,
+          amount: platformFee,
+          type: WalletTransactionType.PLATFORM_FEE,
+          status: 'SUCCESS',
+          referenceId: order.id,
+          description: `Thu phí sàn đơn hàng #${order.id.slice(0, 8)}`,
+        },
+      });
+    }
+
     if (shippingFee > 0) {
       await tx.walletTransaction.create({
         data: {
-          walletId: admin.id,
+          walletId: escrowWallet.id,
           amount: shippingFee,
           type: WalletTransactionType.PLATFORM_FEE,
           status: 'SUCCESS',

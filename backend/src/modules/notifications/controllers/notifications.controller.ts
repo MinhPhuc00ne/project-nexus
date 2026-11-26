@@ -8,7 +8,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
@@ -22,7 +22,9 @@ import {
 import { NotificationsService } from '../services/notifications.service';
 import {
   AdminNotificationSummaryDto,
+  AdminNotificationSummarySchema,
   NotificationPageDto,
+  NotificationPageSchema,
 } from '../dtos/notification-response.dto';
 
 @ApiTags('9. NOTIFICATIONS')
@@ -39,9 +41,8 @@ export class NotificationsController {
     description:
       'Retrieves paginated in-app notifications sorted newest first, supporting filters by read status (isRead) and category (type). For instant 0-second delivery across Admin, Staff, Seller, and Buyer, connect Socket.IO to namespace /ws/notifications with handshake auth { token: "<JWT>" } and listen to "notification:new" and "notification:unread_count".',
   })
-  @ApiResponse({
-    status: 200,
-    type: NotificationPageDto,
+  @ApiOkResponse({
+    standardSchema: NotificationPageSchema,
     description:
       'Notifications retrieved successfully. Actionable Admin notifications include targetUrl routes such as /admin/sellers, /admin/auctions, /admin/finance, /admin/reports, /admin/refunds, /admin/products, /admin/stores, and /admin/banners. Actionable Staff notifications include /staff/disputes, /staff/auction-support, /staff/inbox, and /staff/banners alongside metadata.',
   })
@@ -61,9 +62,8 @@ export class NotificationsController {
     description:
       'Aggregates unread notification count, latest 10 Admin notifications, and live pending item counts across seller upgrades, auction consignments, withdrawals, order disputes, violation reports, pending refunds, and GHN pickup verifications.',
   })
-  @ApiResponse({
-    status: 200,
-    type: AdminNotificationSummaryDto,
+  @ApiOkResponse({
+    standardSchema: AdminNotificationSummarySchema,
     description: 'Admin notification summary and pending queue counts retrieved successfully.',
   })
   @ApiResponse({ status: 403, description: 'Administrative role required.' })
