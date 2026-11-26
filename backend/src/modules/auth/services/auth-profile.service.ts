@@ -264,7 +264,7 @@ export class AuthProfileService {
         </div>
       `,
     });
-    if (!success && process.env.NODE_ENV === 'production') {
+    if (!success) {
       this.logger.warn('Gửi email đổi mật khẩu thất bại.');
       throw new BadRequestException(
         'Không thể gửi email xác nhận đổi mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',

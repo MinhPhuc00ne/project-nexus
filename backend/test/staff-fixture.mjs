@@ -114,12 +114,6 @@ export function staffFixture({ mailAccepted = true } = {}) {
     { set: async () => {} },
     mail,
   );
-  shared.transporter = {
-    sendMail: async (message) => {
-      emails.push(message);
-      return { accepted: [message.to] };
-    },
-  };
   return { state, prisma, emails, provision, shared, mail, config };
 }
 

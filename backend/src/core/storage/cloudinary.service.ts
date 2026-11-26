@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ProviderConfigService } from '../providers/provider-config.service';
 import * as crypto from 'crypto';
@@ -27,16 +27,10 @@ export class CloudinaryStorageService {
     fileName: string,
     folder = 'nexus/seller-proofs',
   ): Promise<UploadResult> {
-    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
-    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
-    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
-
     // STORAGE_PROVIDER names where files go. Local disk is a deliberate
     // choice for a local or demo run, not what happens when a key is absent.
-    if (this.providers.isLocalStorage() || !cloudName || !apiKey || !apiSecret) {
-      this.logger.warn(
-        'Chưa cấu hình thông tin Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) trong .env. Lưu tạm vào thư mục static server.',
-      );
+    if (this.providers.isLocalStorage()) {
+      this.logger.log('STORAGE_PROVIDER=local: lưu file vào thư mục static uploads/seller-proofs.');
       const appPublicUrl = resolveAppPublicUrl({
         APP_PUBLIC_URL: this.configService.get<string>('APP_PUBLIC_URL'),
         NODE_ENV: this.configService.get<string>('NODE_ENV') ?? process.env.NODE_ENV,
@@ -55,6 +49,19 @@ export class CloudinaryStorageService {
         publicId: `local-${cleanFileName}`,
         format: ext,
       };
+    }
+
+    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME')?.trim();
+    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY')?.trim();
+    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET')?.trim();
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      this.logger.error(
+        'STORAGE_PROVIDER=cloudinary nhưng thiếu cấu hình CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY hoặc CLOUDINARY_API_SECRET.',
+      );
+      throw new ServiceUnavailableException(
+        'Chưa cấu hình đầy đủ thông tin Cloudinary để tải file lên.',
+      );
     }
 
     const timestamp = Math.floor(Date.now() / 1000);

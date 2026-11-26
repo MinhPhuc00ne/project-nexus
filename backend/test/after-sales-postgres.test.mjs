@@ -86,7 +86,17 @@ test(
               inventory,
               refunds,
             );
-            const returns = new OrderReturnService(facade, store, ghn, actions, inventory, refunds);
+            const returns = new OrderReturnService(
+              facade,
+              store,
+              ghn,
+              actions,
+              inventory,
+              refunds,
+              {
+                isShippingSandbox: () => true,
+              },
+            );
             const category = await tx.category.create({ data: { name: marker, slug: marker } });
             const product = await tx.product.create({
               data: {

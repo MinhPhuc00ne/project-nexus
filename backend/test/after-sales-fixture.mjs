@@ -270,7 +270,9 @@ export function fixture() {
     actions,
     finance,
     cancel: new OrderCancellationService(prisma, store, ghn, actions, inventory, refunds),
-    returns: new OrderReturnService(prisma, store, ghn, actions, inventory, refunds),
+    returns: new OrderReturnService(prisma, store, ghn, actions, inventory, refunds, {
+      isShippingSandbox: () => true,
+    }),
     payments: new OrderService(
       prisma,
       { verifyWebhook: async () => ({ orderCode: 123, code: '00', amount: 130000 }) },

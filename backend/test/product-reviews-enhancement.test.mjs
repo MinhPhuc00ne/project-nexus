@@ -481,7 +481,11 @@ test('ReviewsService.adminModerateReviewVisibility updates product rating on hid
 });
 
 test('MediaService strictReviewPolicy enforces 5MB images (PNG/JPG/WEBP) and 50MB videos (MP4/MOV)', async () => {
-  const mediaService = new MediaService({ get: () => undefined }, { uploadFile: async () => null });
+  const mediaService = new MediaService(
+    { get: () => undefined },
+    { uploadFile: async () => null },
+    { isLocalStorage: () => true },
+  );
 
   await assert.rejects(
     () =>
