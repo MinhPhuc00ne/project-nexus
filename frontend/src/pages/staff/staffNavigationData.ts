@@ -1,13 +1,4 @@
-import {
-  BadgeCheck,
-  BookOpen,
-  Gavel,
-  Image,
-  Inbox,
-  PackageSearch,
-  ShieldCheck,
-  Star,
-} from 'lucide-react';
+import { BadgeCheck, Gavel, Image, Inbox, PackageSearch, ShieldCheck, Star } from 'lucide-react';
 
 /**
  * The sections of the staff workspace.
@@ -25,7 +16,6 @@ export const navigation = [
   { label: 'Hộp Thư Trực Tuyến', i18nKey: 'nav.inbox', icon: Inbox },
   { label: 'Khiếu Nại & Tranh Chấp', i18nKey: 'nav.disputes', icon: ShieldCheck },
   { label: 'Hỗ Trợ Đấu Giá 3D', i18nKey: 'nav.auctionSupport', icon: Gavel },
-  { label: 'Hướng Dẫn & FAQ Sàn', i18nKey: 'nav.faq', icon: BookOpen },
   { label: 'Quản Lý Banner', i18nKey: 'nav.banners', icon: Image },
   { label: 'Kiểm Duyệt Đánh Giá', i18nKey: 'nav.reviews', icon: Star },
 ] as const;
@@ -38,7 +28,6 @@ export const sectionKeyMap = {
   'Khiếu Nại & Tranh Chấp': 'disputes',
   'Đơn hàng & Hậu mãi': 'orders',
   'Hỗ Trợ Đấu Giá 3D': 'auctionSupport',
-  'Hướng Dẫn & FAQ Sàn': 'faq',
   'Quản Lý Banner': 'banners',
   'Kiểm Duyệt Đánh Giá': 'reviews',
 } as const satisfies Record<StaffSection, string>;
@@ -73,15 +62,6 @@ export const sectionContent: Record<
     description: 'Theo dõi yêu cầu về phòng đấu giá, thao tác trả giá và hiển thị sản phẩm 3D.',
     topics: ['Sự cố phòng đấu giá', 'Yêu cầu về lượt trả giá', 'Hiển thị sản phẩm 3D'],
   },
-  'Hướng Dẫn & FAQ Sàn': {
-    title: 'Hướng dẫn nghiệp vụ và câu hỏi thường gặp',
-    description: 'Tra cứu quy trình tiếp nhận và xử lý yêu cầu hỗ trợ trên NEXUS.',
-    topics: [
-      'Tiếp nhận: xác định khách hàng, mã đơn hàng hoặc phiên đấu giá và nội dung cần hỗ trợ.',
-      'Xử lý: kiểm tra thông tin, thu thập bằng chứng và chuyển bộ phận có thẩm quyền.',
-      'Hoàn tất: thông báo kết quả, ghi nhận nội dung xử lý và xác nhận với khách hàng.',
-    ],
-  },
   'Quản Lý Banner': {
     title: 'Quản lý banner sự kiện',
     description: 'Tạo, cập nhật và điều chỉnh lịch hiển thị banner trên sàn.',
@@ -100,7 +80,6 @@ export const staffSectionPaths: Record<StaffSection, string> = {
   'Khiếu Nại & Tranh Chấp': '/staff/disputes',
   'Đơn hàng & Hậu mãi': '/staff/orders',
   'Hỗ Trợ Đấu Giá 3D': '/staff/auction-support',
-  'Hướng Dẫn & FAQ Sàn': '/staff/faq',
   'Quản Lý Banner': '/staff/banners',
   'Kiểm Duyệt Đánh Giá': '/staff/reviews',
 };

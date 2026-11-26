@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { saveAdminAuctionLotNoteApi } from '../../../services/auction.service';
+import { saveAdminAuctionLotNoteApi } from '@/features/auction/services/auction.service';
 import { Button } from '../shared/AdminUI';
 
 export default function AuctionLotNote({

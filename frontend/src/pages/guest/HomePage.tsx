@@ -13,16 +13,16 @@ import {
   HomeTrendingSection,
 } from '../../components/home';
 import { HOME_TRENDING_LIMIT } from '../../constants/trending';
-import { getEventBannersApi } from '../../services/banners.service';
+import { getEventBannersApi } from '@/features/catalog/services/banners.service';
 import {
   getRecommendationsApi,
   getProductsCatalog,
   getTrendingProducts,
   type RecommendedProduct,
   type TrendingProductItem,
-} from '../../services/products.service';
+} from '@/features/catalog/services/products.service';
 import { AuctionStatus } from '@nexus/types';
-import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
+import { getAuctionsApi, type AuctionEntity } from '@/features/auction/services/auction.service';
 import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
 
 function HomePage() {

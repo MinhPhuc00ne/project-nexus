@@ -4,7 +4,7 @@ import {
   createNotificationConnection,
   type NotificationUnreadCountEvent,
   type RealtimeNotification,
-} from '../services/notificationSocket';
+} from '@/features/notifications/services/notificationSocket';
 
 export const notificationsQueryKey = ['notifications'] as const;
 export const notificationUnreadCountQueryKey = ['notifications', 'unreadCount'] as const;

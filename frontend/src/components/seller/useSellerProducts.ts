@@ -4,13 +4,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../ToastNotification';
 import { useSellerSession } from './SellerSession';
 import { useSellerWorkspace } from './SellerWorkspace';
-import { getStoredToken } from '../../services/auth';
+import { getStoredToken } from '@/features/auth/services/auth';
 import {
   getMyProducts,
   hideSellerProduct,
   reactivateSellerProduct,
   type SellerProduct,
-} from '../../services/sellerProducts';
+} from '@/features/catalog/services/sellerProducts';
 
 export default function useSellerProducts() {
   const { t } = useTranslation('seller');

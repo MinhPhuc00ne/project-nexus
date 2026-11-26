@@ -1,8 +1,8 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Upload } from 'lucide-react';
-import { bannerLink, type BannerInput } from '../../../services/banners';
-import { uploadBannerImage } from '../../../services/banners.service';
+import { bannerLink, type BannerInput } from '@/features/catalog/services/banners';
+import { uploadBannerImage } from '@/features/catalog/services/banners.service';
 import { Button } from '../shared/AdminUI';
 import Popup from '../../Popup';
 import { Input } from '../../ui/input';

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
-import type { DistanceResult, ShippingQuote } from '../../types/shipping.types';
+import type { DistanceResult, ShippingQuote } from '@/features/shipping/types/shipping.types';
 import { Panel } from './SellerUI';
 
 export default function SellerShippingResult({

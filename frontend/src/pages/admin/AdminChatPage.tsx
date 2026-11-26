@@ -11,7 +11,7 @@ import {
   getAdminAutoReplyHistory,
   listAdminAutoReplies,
   listAdminChatConversations,
-} from '../../services/adminChat';
+} from '@/features/admin/services/adminChat';
 import type {
   AdminAutoReply,
   AdminAutoReplyHistory,
@@ -22,7 +22,7 @@ import type {
   AdminChatAuditPage,
   AdminChatConversation,
   AdminChatConversationPage,
-} from '../../types/admin-chat.types';
+} from '@/features/admin/types/admin-chat.types';
 
 const TRIGGER_KEYS: AdminAutoReplyTrigger[] = ['WELCOME', 'OFFLINE', 'KEYWORD', 'DEFAULT'];
 

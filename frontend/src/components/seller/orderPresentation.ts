@@ -1,6 +1,6 @@
 import i18n from '../../i18n/index';
-import type { SellerDisputeStatus } from '../../types/seller-dispute.types';
-import type { SellerOrderStatus } from '../../types/order.types';
+import type { SellerDisputeStatus } from '@/features/disputes/types/seller-dispute.types';
+import type { SellerOrderStatus } from '@/features/orders/types/order.types';
 
 export const sellerOrderLabelKeys = {
   PENDING_PAYMENT: 'orders.statuses.PENDING_PAYMENT',

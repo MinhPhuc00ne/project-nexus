@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { getShopDetail } from '../../services/shops';
+import { getShopDetail } from '@/features/catalog/services/shops';
 import useProductResource from '../productDetail/useProductResource';
-import type { ShopProfile } from '../../types/shop.types';
+import type { ShopProfile } from '@/features/catalog/types/shop.types';
 
 type Store = {
   name: string;

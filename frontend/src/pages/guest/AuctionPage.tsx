@@ -4,7 +4,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
 import { Heart, Share2, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
 import { BidStatus, AuctionStatus } from '@nexus/types';
-import type { AuctionViewerMode, AuctionTabKey, SimilarWatch } from '../../types';
+import type {
+  AuctionViewerMode,
+  AuctionTabKey,
+  SimilarWatch,
+} from '@/features/auction/types/auction.types';
 import AuctionGallery from '../../components/auction/AuctionGallery';
 import AuctionBidTerminal from '../../components/auction/AuctionBidTerminal';
 import AuctionSupportRequest from '../../components/auction/AuctionSupportRequest';
@@ -25,8 +29,8 @@ import {
   type AuctionConsignmentItem,
   type BuyerEligibilityResponse,
   type AuctionBidItem,
-} from '../../services/auction.service';
-import { getStoredToken } from '../../services/auth';
+} from '@/features/auction/services/auction.service';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 
 /**

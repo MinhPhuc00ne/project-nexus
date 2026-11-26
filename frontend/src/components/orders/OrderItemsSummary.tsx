@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Store, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import type { BuyerOrder } from '../../services/orders';
+import type { BuyerOrder } from '@/features/orders/services/orders';
 
 interface OrderItemsSummaryProps {
   order: BuyerOrder;

@@ -3,15 +3,15 @@ import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
-import { getAdminOrderById } from '../../../services/admin';
-import { getAdminReturnOrder, processAdminReturn } from '../../../services/admin-returns';
-import type { AdminOrderDetail } from '../../../types/admin-order.types';
+import { getAdminOrderById } from '@/features/admin/services/admin';
+import { getAdminReturnOrder, processAdminReturn } from '@/features/admin/services/admin-returns';
+import type { AdminOrderDetail } from '@/features/admin/types/admin-order.types';
 import {
   returnStatusLabels,
   type AdminReturnOrder,
   type ReturnAction,
   type ReturnStatus,
-} from '../../../types/admin-return.types';
+} from '@/features/admin/types/admin-return.types';
 import { date, message, money, OrderBadge } from './orderPresentation';
 
 type Action = 'approve' | 'reject' | 'waybill' | 'receive';

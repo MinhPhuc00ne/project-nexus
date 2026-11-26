@@ -4,8 +4,8 @@ import { RefreshCw as ReloadOutlined } from 'lucide-react';
 import { Search as SearchOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { getSellerOrders } from '../../services/sellerOrders';
-import type { SellerOrderStatus } from '../../types/order.types';
+import { getSellerOrders } from '@/features/orders/services/sellerOrders';
+import type { SellerOrderStatus } from '@/features/orders/types/order.types';
 import useProductResource from '../../components/productDetail/useProductResource';
 import { useSellerSession } from '../../components/seller/SellerSession';
 import {

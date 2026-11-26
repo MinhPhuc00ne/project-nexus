@@ -1,8 +1,8 @@
 import React, { useState, useEffect, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Edit2, Plus } from 'lucide-react';
-import type { UserAddress } from '../../services/address';
-import type { ShippingAddressInput } from '../../services/orders';
+import type { UserAddress } from '@/features/account/services/address';
+import type { ShippingAddressInput } from '@/features/orders/services/orders';
 import CheckoutAddressForm from './CheckoutAddressForm';
 
 interface CheckoutAddressSectionProps {

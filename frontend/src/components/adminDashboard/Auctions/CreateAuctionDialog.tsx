@@ -6,8 +6,8 @@ import {
   adminCreateAuctionApi,
   adminUpdateAuctionApi,
   type AdminAuctionEntity,
-} from '../../../services/auction.service';
-import { getStoredToken } from '../../../services/auth';
+} from '@/features/auction/services/auction.service';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { useToast } from '../../ToastNotification';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';

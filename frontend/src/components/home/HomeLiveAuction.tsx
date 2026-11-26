@@ -4,7 +4,10 @@ import type { TFunction } from 'i18next';
 import { formatCurrency } from '../../i18n/formatters';
 import { HomeCountdown } from './HomeCountdown';
 import { HomeAuctionCard } from './HomeAuctionCard';
-import { formatAuctionImage, type AuctionEntity } from '../../services/auction.service';
+import {
+  formatAuctionImage,
+  type AuctionEntity,
+} from '@/features/auction/services/auction.service';
 
 export interface HomeLiveAuctionProps {
   auctions?: AuctionEntity[];

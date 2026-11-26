@@ -11,7 +11,11 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getBuyerOrdersApi, disputeOrderApi, type BuyerOrder } from '../../services/orders';
+import {
+  getBuyerOrdersApi,
+  disputeOrderApi,
+  type BuyerOrder,
+} from '@/features/orders/services/orders';
 import CreateDisputeModal, { reasonLabels } from '../../components/disputes/CreateDisputeModal';
 import { useToast } from '../../components/ToastNotification';
 

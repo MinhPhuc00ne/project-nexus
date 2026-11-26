@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import i18n from '../../i18n';
-import { getStoredUser } from '../../services/auth';
+import { getStoredUser } from '@/features/auth/services/auth';
 import {
   confirmChangePasswordOtp,
   requestChangePasswordOtp,
   validatePasswordChange,
-} from '../../services/changePassword';
+} from '@/features/auth/services/changePassword';
 
 export default function useChangePassword(
   userId: string,

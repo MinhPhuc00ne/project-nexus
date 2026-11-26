@@ -13,9 +13,15 @@ import {
   Star,
 } from 'lucide-react';
 import type { AuctionTabKey } from './types';
-import type { AuctionEntity, AuctionConsignmentItem } from '../../services/auction.service';
+import type {
+  AuctionEntity,
+  AuctionConsignmentItem,
+} from '@/features/auction/services/auction.service';
 import { getLotBidHistory } from './bidHistory';
-import { getShopReviewsApi, type ShopReviewItem } from '../../services/reviews.service';
+import {
+  getShopReviewsApi,
+  type ShopReviewItem,
+} from '@/features/reviews/services/reviews.service';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface AuctionDetailTabsProps {

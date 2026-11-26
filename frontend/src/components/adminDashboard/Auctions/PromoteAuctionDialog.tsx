@@ -4,8 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
-import { resolveAuctionImageUrl, type AdminAuctionEntity } from '../../../services/auction.service';
-import { getStoredToken } from '../../../services/auth';
+import {
+  resolveAuctionImageUrl,
+  type AdminAuctionEntity,
+} from '@/features/auction/services/auction.service';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { useToast } from '../../ToastNotification';
 import { auctionBannerReason, promoteAuctionBanner } from './auctionBannerPromotion';
 

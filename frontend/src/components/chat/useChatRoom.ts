@@ -4,9 +4,12 @@ import {
   markChatAsRead,
   normalizeChatMessage,
   sendChatMessage,
-} from '../../services/chat';
-import { type ChatConnectionClient, createChatConnection } from '../../services/chatSocket';
-import type { ChatMessage } from '../../types/chat.types';
+} from '@/features/chat/services/chat';
+import {
+  type ChatConnectionClient,
+  createChatConnection,
+} from '@/features/chat/services/chatSocket';
+import type { ChatMessage } from '@/features/chat/types/chat.types';
 import { getChatErrorMessage, mergeMessages } from './chatUtils';
 
 interface UseChatRoomOptions {

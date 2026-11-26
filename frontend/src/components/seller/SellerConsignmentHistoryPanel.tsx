@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import { LoaderCircle, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
-import type { SellerAuctionConsignment } from '../../services/auction.service';
+import type { SellerAuctionConsignment } from '@/features/auction/services/auction.service';
 import { Badge, EmptyState, Panel, SellerButton } from './SellerUI';
 
 export interface SellerConsignmentHistoryPanelProps {

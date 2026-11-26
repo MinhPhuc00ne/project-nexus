@@ -15,7 +15,7 @@ let mockSellerUser: {
   accountHolderName?: string | null;
 } = { id: 'seller-1' };
 
-vi.mock('../../../services/auth', () => ({
+vi.mock('@/features/auth/services/auth', () => ({
   getStoredToken: () => 'test-token',
   getStoredUser: () => ({ id: 'seller-1' }),
 }));
@@ -38,7 +38,7 @@ vi.mock('../../ToastNotification', () => ({
   }),
 }));
 
-vi.mock('../../../services/profile', () => ({
+vi.mock('@/features/account/services/profile', () => ({
   updateSellerBankAccount: (...args: unknown[]) => mockUpdateSellerBankAccount(...args),
 }));
 

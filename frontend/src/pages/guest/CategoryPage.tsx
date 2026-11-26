@@ -7,7 +7,7 @@ import {
   Search as SearchOutlined,
   RefreshCw as ReloadOutlined,
 } from 'lucide-react';
-import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
+import { getCategoriesApi, type CategoryNode } from '@/features/catalog/services/products.service';
 import { getCategoryImageUrl } from '../../constants/categoryImages';
 import { ROUTES } from '../../routes/paths';
 

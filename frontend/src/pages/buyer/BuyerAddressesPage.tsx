@@ -12,7 +12,7 @@ import {
   deleteAddress,
   type UserAddress,
   type CreateAddressDto,
-} from '../../services/address';
+} from '@/features/account/services/address';
 
 const initialForm: AddressFormData = {
   recipientName: '',

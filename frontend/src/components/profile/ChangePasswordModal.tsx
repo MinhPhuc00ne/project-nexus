@@ -6,7 +6,7 @@ import { Eye as EyeOutlined, Lock as LockOutlined, Mail as MailOutlined } from '
 import Popup from '../Popup';
 import { useAuth } from '../../contexts/AuthContext';
 import useChangePassword from './useChangePassword';
-import { markPasswordChanged } from '../../services/authNotice';
+import { markPasswordChanged } from '@/features/auth/services/authNotice';
 
 const inputClass =
   'mt-1.5 w-full rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50';

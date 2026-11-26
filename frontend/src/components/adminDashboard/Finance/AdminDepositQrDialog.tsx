@@ -4,7 +4,7 @@ import QRCode from 'qrcode';
 import { CircleCheck } from 'lucide-react';
 import Popup from '../../Popup';
 import { formatMoney } from '../shared/adminData';
-import type { DepositAdminWalletResult } from '../../../types/admin-wallet.types';
+import type { DepositAdminWalletResult } from '@/features/admin/types/admin-wallet.types';
 
 export default function AdminDepositQrDialog({
   payment,

@@ -5,7 +5,7 @@ import type {
   TransactionStatus,
   TransactionType,
   WithdrawalStatus,
-} from '../../types/seller-finance.types';
+} from '@/features/wallet/types/seller-finance.types';
 
 export function financeMoney(value: number): string {
   return formatCurrency(value);

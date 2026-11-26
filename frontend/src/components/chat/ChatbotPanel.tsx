@@ -7,7 +7,7 @@ import {
   sendChatbotMessage,
   type ChatbotAction,
   type ChatbotReply,
-} from '../../services/chatbot';
+} from '@/features/chat/services/chatbot';
 import { getChatErrorMessage } from './chatUtils';
 
 function isSafeInternalPath(path?: string): path is string {

@@ -54,7 +54,7 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
       <StoreIdentity />
       {home && (
         <div
-          className="grid [grid-template-columns:repeat(4,_minmax(0,_1fr))] gap-[13px] [&>a]:flex [&>a]:items-center [&>a]:gap-3 [&>a]:bg-white [&>a]:[border:1px_solid_#e5ebf4] [&>a]:rounded-[10px] [&>a]:py-4 [&>a]:px-3.5 [&>a]:[transition:box-shadow_0.2s,_transform_0.2s] [&>a]:text-inherit [&>a:hover]:[box-shadow:0_5px_15px_#315eea0d] [&>a:hover]:[transform:translateY(-2px)] [&>a:hover]:[border-color:#c8d7fd] [&_i]:grid [&_i]:[place-items:center] [&_i]:bg-[#eef4ff] [&_i]:rounded-[9px] [&_i]:w-9.5 [&_i]:h-9.5 [&_i]:shrink-0 [&_i]:text-[#315eea] [&_strong]:text-[11px] [&_strong]:block [&_strong]:font-semibold [&_small]:text-[9px] [&_small]:text-[#8a9ab4] [&>a>.anticon]:ml-auto [&>a>.anticon]:text-[#8da6d3]! [&>a>.anticon]:shrink-0 max-[1250px]:gap-2.5 max-[1250px]:[&>a]:py-[13px] max-[1250px]:[&>a]:px-2.5 max-[1250px]:[&>a]:gap-[9px] max-[1250px]:[&_i]:w-[31px] max-[1250px]:[&_i]:h-8.5 max-[1250px]:[&_small]:text-[8px] max-[1250px]:[&>a>.anticon]:hidden max-[1050px]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] max-[540px]:[&>a]:p-3 max-[540px]:[&>a]:gap-[9px] max-[540px]:[&_strong]:text-[10px] max-[540px]:[&_small]:text-[8px] max-[540px]:[&_i]:w-[29px] max-[540px]:[&_i]:h-8 max-[540px]:[&_.anticon]:w-4.5 max-[540px]:gap-[9px]"
+          className="grid [grid-template-columns:repeat(4,_minmax(0,_1fr))] gap-[13px] [&>a]:flex [&>a]:items-center [&>a]:gap-3 [&>a]:bg-white [&>a]:[border:1px_solid_#e5ebf4] [&>a]:rounded-[10px] [&>a]:py-4 [&>a]:px-3.5 [&>a]:[transition:box-shadow_0.2s,_transform_0.2s] [&>a]:text-inherit [&>a:hover]:[box-shadow:0_5px_15px_#315eea0d] [&>a:hover]:[transform:translateY(-2px)] [&>a:hover]:[border-color:#c8d7fd] [&_i]:grid [&_i]:[place-items:center] [&_i]:bg-[#eef4ff] [&_i]:rounded-[9px] [&_i]:w-9.5 [&_i]:h-9.5 [&_i]:shrink-0 [&_i]:text-[#315eea] [&_strong]:text-[11px] [&_strong]:block [&_strong]:font-semibold [&_small]:text-[9px] [&_small]:text-[#8a9ab4] [&>a>svg]:ml-auto [&>a>svg]:text-[#8da6d3]! [&>a>svg]:shrink-0 max-[1250px]:gap-2.5 max-[1250px]:[&>a]:py-[13px] max-[1250px]:[&>a]:px-2.5 max-[1250px]:[&>a]:gap-[9px] max-[1250px]:[&_i]:w-[31px] max-[1250px]:[&_i]:h-8.5 max-[1250px]:[&_small]:text-[8px] max-[1250px]:[&>a>svg]:hidden max-[1050px]:[grid-template-columns:repeat(2,_minmax(0,_1fr))] max-[540px]:[&>a]:p-3 max-[540px]:[&>a]:gap-[9px] max-[540px]:[&_strong]:text-[10px] max-[540px]:[&_small]:text-[8px] max-[540px]:[&_i]:w-[29px] max-[540px]:[&_i]:h-8 max-[540px]:[&_svg]:w-4.5 max-[540px]:gap-[9px]"
           data-seller="quick-links"
         >
           {[
@@ -121,7 +121,7 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
           action={<SafetyCertificateOutlined className="text-[19px]" aria-hidden="true" />}
         >
           <div
-            className="flex flex-col gap-3.5 [&>div]:flex [&>div]:items-start [&>div]:gap-2.5 [&>div]:p-[13px] [&>div]:[border:1px_solid_#ecf1f9] [&>div]:rounded-[9px] [&>div]:bg-[#f9fbff] [&_.anticon]:w-4.5 [&_.anticon]:shrink-0 [&_.anticon]:text-[#7295e4]! [&_.anticon]:mt-[1px] [&_strong]:text-[11px] [&_strong]:font-[550] [&_p]:text-[10px] [&_p]:text-[#91a0b8] [&_p]:[margin:4px_0_0] [&_p]:leading-[1.8]"
+            className="flex flex-col gap-3.5 [&>div]:flex [&>div]:items-start [&>div]:gap-2.5 [&>div]:p-[13px] [&>div]:[border:1px_solid_#ecf1f9] [&>div]:rounded-[9px] [&>div]:bg-[#f9fbff] [&_svg]:w-4.5 [&_svg]:shrink-0 [&_svg]:text-[#7295e4]! [&_svg]:mt-[1px] [&_strong]:text-[11px] [&_strong]:font-[550] [&_p]:text-[10px] [&_p]:text-[#91a0b8] [&_p]:[margin:4px_0_0] [&_p]:leading-[1.8]"
             data-seller="checklist"
           >
             <div>
@@ -158,7 +158,7 @@ export default function SellerDashboardPage({ home = false }: { home?: boolean }
       </div>
       {!home && <PolicyCards />}
       <div
-        className="flex items-center gap-2 text-[#9aa7bd] text-[10px] py-[5px] px-0 [&>.anticon]:shrink-0 [&>[data-seller~=button]]:ml-auto max-[760px]:items-start max-[760px]:flex-wrap max-[760px]:leading-[1.8] max-[760px]:[&>span:not(.anticon)]:flex-1 max-[760px]:[&>[data-seller~=button]]:ml-[23px] max-[540px]:[&_[data-seller~=button]]:text-[9px]!"
+        className="flex items-center gap-2 text-[#9aa7bd] text-[10px] py-[5px] px-0 [&>svg]:shrink-0 [&>[data-seller~=button]]:ml-auto max-[760px]:items-start max-[760px]:flex-wrap max-[760px]:leading-[1.8] max-[760px]:[&>span]:flex-1 max-[760px]:[&>[data-seller~=button]]:ml-[23px] max-[540px]:[&_[data-seller~=button]]:text-[9px]!"
         data-seller="bottom-note"
       >
         <SafetyCertificateOutlined className="text-[15px]" aria-hidden="true" />

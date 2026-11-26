@@ -19,7 +19,7 @@ import { getIntlLocale } from '../../i18n/config';
 import type {
   AdminAuctionAward,
   AdminAuctionComplaint,
-} from '../../types/admin-auction-operations.types';
+} from '@/features/admin/types/admin-auction-operations.types';
 import {
   createAuctionSocket,
   getAdminAuctionItemsApi,
@@ -32,12 +32,12 @@ import {
   reviewAuctionItemApi,
   saveAdminAuctionLotNoteApi,
   getStaffAuctionOverviewApi,
-} from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import type {
   AdminAuctionItem,
   AuctionIntroShowcaseResponse,
   StaffAuctionOverviewResponse,
-} from '../../types/auction-api.types';
+} from '@/features/auction/types/auction-api.types';
 import StaffAuctionSessionDetails from './StaffAuctionSessionDetails';
 
 type StaffAuctionSession = StaffAuctionOverviewResponse['auctions'][number];

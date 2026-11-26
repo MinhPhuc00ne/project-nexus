@@ -11,7 +11,7 @@ import {
   confirmDeliveryOrderApi,
   isCodOrder,
   type BuyerOrder,
-} from '../../services/orders';
+} from '@/features/orders/services/orders';
 import OrderCard, {
   type TabStatus,
   type DisplayOrder,

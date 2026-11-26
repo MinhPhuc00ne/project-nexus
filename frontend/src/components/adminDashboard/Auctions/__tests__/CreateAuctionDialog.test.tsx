@@ -7,18 +7,18 @@ import {
   adminCreateAuctionApi,
   adminUpdateAuctionApi,
   type AdminAuctionEntity,
-} from '../../../../services/auction.service';
-import { getStoredToken } from '../../../../services/auth';
+} from '@/features/auction/services/auction.service';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { ToastProvider } from '../../../ToastNotification';
 import { promoteAuctionBanner } from '../auctionBannerPromotion';
 import CreateAuctionDialog from '../CreateAuctionDialog';
 
-vi.mock('../../../../services/auction.service', () => ({
+vi.mock('@/features/auction/services/auction.service', () => ({
   adminCreateAuctionApi: vi.fn(),
   adminUpdateAuctionApi: vi.fn(),
 }));
 
-vi.mock('../../../../services/auth', () => ({
+vi.mock('@/features/auth/services/auth', () => ({
   getStoredToken: vi.fn(),
 }));
 

@@ -2,8 +2,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import { useEffect, useRef, useState } from 'react';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
-import { adminDeleteAuctionApi, type AdminAuctionEntity } from '../../../services/auction.service';
-import { getStoredToken } from '../../../services/auth';
+import {
+  adminDeleteAuctionApi,
+  type AdminAuctionEntity,
+} from '@/features/auction/services/auction.service';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { useToast } from '../../ToastNotification';
 import { auctionDeleteReason } from './auctionManagementAvailability';
 

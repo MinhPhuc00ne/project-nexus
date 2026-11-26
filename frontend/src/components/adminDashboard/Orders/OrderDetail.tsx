@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
-import { getAdminOrderById } from '../../../services/admin';
-import type { AdminOrderDetail } from '../../../types/admin-order.types';
+import { getAdminOrderById } from '@/features/admin/services/admin';
+import type { AdminOrderDetail } from '@/features/admin/types/admin-order.types';
 import { money, date, message, OrderBadge } from './orderPresentation';
 
 export default function OrderDetail({ id }: { id: string }) {

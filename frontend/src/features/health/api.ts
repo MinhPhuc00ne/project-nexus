@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import type { HealthCheck } from '@nexus/contracts';
-import { request } from '../../services/api';
+import { request } from '@/services/api';
 
 export const healthQueryKey = ['system', 'health'] as const;
 

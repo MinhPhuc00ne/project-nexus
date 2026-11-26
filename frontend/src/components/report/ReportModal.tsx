@@ -8,7 +8,7 @@ import {
   submitReportApi,
   uploadReportEvidence,
   type ReportTargetType,
-} from '../../services/reports.service';
+} from '@/features/reviews/services/reports.service';
 
 interface ReportModalProps {
   isOpen: boolean;

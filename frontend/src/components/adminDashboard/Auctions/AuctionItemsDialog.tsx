@@ -7,7 +7,7 @@ import {
   type ReviewAuctionItemInput,
   type AdminAuctionEntity,
   type AdminAuctionItemsResponse,
-} from '../../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import Popup from '../../Popup';
 import { useToast } from '../../ToastNotification';
 import { Badge, Button, EmptyState } from '../shared/AdminUI';

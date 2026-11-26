@@ -48,7 +48,7 @@ export default function StaffDashboard({
     defaultValue: fallbackContent.description,
   });
   const sectionTopics: string[] =
-    sectionKey === 'auctionSupport' || sectionKey === 'faq'
+    sectionKey === 'auctionSupport'
       ? (t(`sections.${sectionKey}.topics`, { returnObjects: true }) as string[])
       : [];
 
@@ -148,9 +148,7 @@ export default function StaffDashboard({
               aria-label={sectionTitle}
             >
               <h2 className="text-base font-bold text-slate-800">
-                {activeNavigation === 'Hướng Dẫn & FAQ Sàn'
-                  ? t('dashboard.faqProcessTitle')
-                  : t('dashboard.trackingScopeTitle')}
+                {t('dashboard.trackingScopeTitle')}
               </h2>
               <ul className="mt-4 grid gap-3 md:grid-cols-3">
                 {sectionTopics.map((topic) => (
@@ -162,18 +160,16 @@ export default function StaffDashboard({
                   </li>
                 ))}
               </ul>
-              {activeNavigation !== 'Hướng Dẫn & FAQ Sàn' && (
-                <div
-                  role="status"
-                  className="mt-6 rounded-xl border border-dashed border-slate-200 px-6 py-12 text-center"
-                >
-                  <Inbox className="mx-auto mb-3 text-slate-400" size={28} />
-                  <h3 className="font-semibold text-slate-700">{t('dashboard.noDataTitle')}</h3>
-                  <p className="mt-2 text-sm text-slate-500">
-                    {t('dashboard.noDataFallback', { title: sectionTitle.toLowerCase() })}
-                  </p>
-                </div>
-              )}
+              <div
+                role="status"
+                className="mt-6 rounded-xl border border-dashed border-slate-200 px-6 py-12 text-center"
+              >
+                <Inbox className="mx-auto mb-3 text-slate-400" size={28} />
+                <h3 className="font-semibold text-slate-700">{t('dashboard.noDataTitle')}</h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  {t('dashboard.noDataFallback', { title: sectionTitle.toLowerCase() })}
+                </p>
+              </div>
             </section>
           ) : (
             <StaffTicketChatPanel

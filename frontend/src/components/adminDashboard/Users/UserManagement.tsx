@@ -1,8 +1,12 @@
 import { ChevronLeft, ChevronRight, Mail, ShieldBan, UserPlus } from 'lucide-react';
 import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { inviteStaff, lockUser, unlockUser } from '../../../services/admin';
-import type { AdminUser, AdminUserRole, AdminUserStatus } from '../../../types/user.types';
+import { inviteStaff, lockUser, unlockUser } from '@/features/admin/services/admin';
+import type {
+  AdminUser,
+  AdminUserRole,
+  AdminUserStatus,
+} from '@/features/account/types/user.types';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import type { AdminTabProps } from '../shared/adminTypes';
 import { useAdminUsers } from './useAdminUsers';

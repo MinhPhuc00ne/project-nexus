@@ -2,7 +2,7 @@ import { type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertCircle } from 'lucide-react';
 import Popup from '../Popup';
-import type { UserAddress } from '../../services/address';
+import type { UserAddress } from '@/features/account/services/address';
 import AdministrativeAddressSelect from './AdministrativeAddressSelect';
 
 export interface AddressFormData {

@@ -18,16 +18,17 @@ import {
   X,
   CheckCircle2,
 } from 'lucide-react';
-import { getCartItems } from '../../services/cart';
+import { getCartItems } from '@/features/cart/services/cart';
 import { useAuth } from '../../contexts/AuthContext';
 import { SUPPORTED_LANGUAGES, normalizeLanguage } from '../../i18n/config';
-import { getNotificationUnreadCount } from '../../services/notifications';
+import { getNotificationUnreadCount } from '@/features/notifications/services/notifications';
 import {
   notificationUnreadCountQueryKey,
   subscribeNotificationsToQueryCache,
 } from '../../lib/socketManager';
 import { queryClient } from '../../lib/queryClient';
-import type { CartItem as StoredCartItem, NotificationItem } from '../../types';
+import type { CartItem as StoredCartItem } from '@/features/cart/types/cart.types';
+import type { NotificationItem } from '@/features/notifications/types/notification.types';
 import NotificationDropdown from './NotificationDropdown';
 import CartDropdownPanel from './CartDropdownPanel';
 import UserDropdownMenu from './UserDropdownMenu';

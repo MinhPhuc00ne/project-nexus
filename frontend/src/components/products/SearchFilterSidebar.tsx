@@ -14,7 +14,7 @@ import {
   X,
   Flame,
 } from 'lucide-react';
-import type { CategoryNode } from '../../services/products.service';
+import type { CategoryNode } from '@/features/catalog/services/products.service';
 
 export interface SearchFilterState {
   categoryId?: string;

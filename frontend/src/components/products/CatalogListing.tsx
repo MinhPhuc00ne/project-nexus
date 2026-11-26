@@ -12,9 +12,9 @@ import {
   SlidersHorizontal,
   Flame,
 } from 'lucide-react';
-import { getProductsPage, type CatalogQuery } from '../../services/products.service';
+import { getProductsPage, type CatalogQuery } from '@/features/catalog/services/products.service';
 import useProductResource from '../productDetail/useProductResource';
-import type { ProductDetail } from '../../types/product.types';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
 
 export interface CatalogListingProps {
   search?: string;

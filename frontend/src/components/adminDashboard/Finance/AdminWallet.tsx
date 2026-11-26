@@ -5,18 +5,18 @@ import {
   depositToAdminWallet,
   getAdminWallet,
   getAdminWalletTransactions,
-} from '../../../services/admin';
+} from '@/features/admin/services/admin';
 import type {
   AdminWalletSummary,
   AdminWalletTransaction,
   AdminWalletTransactionType,
   DepositAdminWalletResult,
-} from '../../../types/admin-wallet.types';
+} from '@/features/admin/types/admin-wallet.types';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatMoney } from '../shared/adminData';
 import { Button, Panel } from '../shared/AdminUI';
 import { TRANSACTION_TYPES } from './transactionPresentation';
-import { checkBuyerDepositStatusApi } from '../../../services/wallet.service';
+import { checkBuyerDepositStatusApi } from '@/features/wallet/services/wallet.service';
 import AdminDepositQrDialog from './AdminDepositQrDialog';
 
 const amountFormatter = new Intl.NumberFormat('vi-VN');

@@ -4,9 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoginSchema, type LoginInput } from '@nexus/contracts';
-import { login, startGoogleLogin } from '../../services/auth';
+import { login, startGoogleLogin } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';
-import { clearPasswordChangedNotice, hasPasswordChangedNotice } from '../../services/authNotice';
+import {
+  clearPasswordChangedNotice,
+  hasPasswordChangedNotice,
+} from '@/features/auth/services/authNotice';
 import { ROUTES } from '../../routes/paths';
 import { useToast } from '../../components/ToastNotification';
 import ForgotPasswordModal from './ForgotPasswordModal';

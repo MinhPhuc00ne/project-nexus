@@ -1,7 +1,7 @@
 import React, { type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Check } from 'lucide-react';
-import type { ShippingAddressInput } from '../../services/orders';
+import type { ShippingAddressInput } from '@/features/orders/services/orders';
 import AdministrativeAddressSelect from '../address/AdministrativeAddressSelect';
 
 interface CheckoutAddressFormProps {

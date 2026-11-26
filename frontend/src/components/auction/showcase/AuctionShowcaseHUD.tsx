@@ -13,7 +13,10 @@ import {
   VolumeX,
   X,
 } from 'lucide-react';
-import { formatAuctionImage, type AuctionConsignmentItem } from '../../../services/auction.service';
+import {
+  formatAuctionImage,
+  type AuctionConsignmentItem,
+} from '@/features/auction/services/auction.service';
 import { AuctionAudioEngine } from './AuctionAudioEngine';
 import { Museum3DCanvas } from './Museum3DCanvas';
 import { SellerGalleryFrame3D } from './SellerGalleryFrame3D';

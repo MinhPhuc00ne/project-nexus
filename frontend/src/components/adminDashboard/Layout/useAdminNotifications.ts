@@ -11,15 +11,15 @@ import { notificationsQueryKey, notificationUnreadCountQueryKey } from '../../..
 import {
   createNotificationConnection,
   type RealtimeNotification,
-} from '../../../services/notificationSocket';
+} from '@/features/notifications/services/notificationSocket';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getStoredToken, getStoredUser } from '../../../services/auth';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-} from '../../../services/notifications';
-import type { NotificationsPage } from '../../../types/notification.types';
+} from '@/features/notifications/services/notifications';
+import type { NotificationsPage } from '@/features/notifications/types/notification.types';
 import { useToast } from '../../ToastNotification';
 import {
   publishAdminAuctionNotification,

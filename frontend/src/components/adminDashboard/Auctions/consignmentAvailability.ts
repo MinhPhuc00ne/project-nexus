@@ -1,4 +1,4 @@
-import type { AdminAuctionEntity } from '../../../services/auction.service';
+import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';
 
 export type ConsignmentLockReasonKey =
   'alreadyLocked' | 'endedOrClosed' | 'pastEndTime' | 'alreadyStarted' | 'deadlinePassed';

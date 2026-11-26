@@ -6,7 +6,7 @@ import {
   getSellerPickupPoint,
   saveSellerPickupPoint,
   type SellerPickupPoint,
-} from '../../services/sellerPickup';
+} from '@/features/shipping/services/sellerPickup';
 import { Panel, SellerButton } from './SellerUI';
 
 const emptyPoint: SellerPickupPoint = {

@@ -5,16 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import { ShoppingCart as ShoppingCartOutlined } from 'lucide-react';
 import { Star, Tag, Heart, Flag, Zap, Check, Flame } from 'lucide-react';
-import { getProductByIdAsync } from '../../services/products.service';
-import type { ProductDetail } from '../../types/product.types';
-import { addToCart, fetchCart, type CartItem } from '../../services/cart';
-import { getStoredToken } from '../../services/auth';
+import { getProductByIdAsync } from '@/features/catalog/services/products.service';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
+import { addToCart, fetchCart, type CartItem } from '@/features/cart/services/cart';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   addBuyerWishlistItem,
   getBuyerWishlistIds,
   removeBuyerWishlistItem,
-} from '../../services/wishlist.service';
+} from '@/features/wishlist/services/wishlist.service';
 import ProductImageGallery from '../../components/productDetail/ProductImageGallery';
 import ProductShopBanner from '../../components/productDetail/ProductShopBanner';
 import ProductInfoTabs from '../../components/productDetail/ProductInfoTabs';

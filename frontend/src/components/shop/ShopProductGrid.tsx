@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Package, Eye, Search, ShoppingCart } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import type { CatalogProduct } from '../../services/products.service';
+import type { CatalogProduct } from '@/features/catalog/services/products.service';
 
 interface ShopProductGridProps {
   products: CatalogProduct[];

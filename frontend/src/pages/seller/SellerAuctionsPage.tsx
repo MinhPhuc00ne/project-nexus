@@ -31,7 +31,7 @@ import {
   getAuctionsApi,
   resolveAuctionImageUrl,
   type AuctionEntity,
-} from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 
 function toSellerAuction(auction: AuctionEntity, locale: string): SellerAuction {
   const status: SellerAuction['status'] =
@@ -169,7 +169,7 @@ export default function SellerAuctionsPage() {
         data-seller="toolbar"
       >
         <div
-          className="flex gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:py-2 [&_button]:px-3 [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:text-[#315eea] [&_button.is-active]:bg-[#edf3ff] [&_button.is-active]:font-[650] [&_button>span:not(.anticon)]:text-[9px] [&_button>span:not(.anticon)]:bg-[#edf1f8] [&_button>span:not(.anticon)]:py-0 [&_button>span:not(.anticon)]:px-[5px] [&_button>span:not(.anticon)]:rounded-[4px] [&_button.is-active>span:not(.anticon)]:bg-[#315eea] [&_button.is-active>span:not(.anticon)]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px]"
+          className="flex gap-1 items-center flex-wrap [&_button]:[border:0] [&_button]:bg-transparent [&_button]:text-[#7a89a1] [&_button]:py-2 [&_button]:px-3 [&_button]:rounded-[6px] [&_button]:text-[10px] [&_button]:flex [&_button]:items-center [&_button]:gap-[7px] [&_button]:whitespace-nowrap [&_button.is-active]:text-[#315eea] [&_button.is-active]:bg-[#edf3ff] [&_button.is-active]:font-[650] [&_button>span]:text-[9px] [&_button>span]:bg-[#edf1f8] [&_button>span]:py-0 [&_button>span]:px-[5px] [&_button>span]:rounded-[4px] [&_button.is-active>span]:bg-[#315eea] [&_button.is-active>span]:text-[#fff] max-[540px]:[&_button]:py-[7px] max-[540px]:[&_button]:px-2.5 max-[540px]:[&_button]:text-[9px]"
           data-seller="tabs"
         >
           {(
@@ -252,7 +252,7 @@ export default function SellerAuctionsPage() {
             {auctionDrafts.map((draft) => (
               <div
                 key={draft.id}
-                className="flex items-center gap-[13px] p-[13px] [border:1px_solid_#e9eef7] rounded-[9px] [&>.anticon]:text-[#7c9bd8]! [&>.anticon]:shrink-0 [&_strong]:text-[12px] [&_strong]:font-[550] [&_strong]:block [&_small]:text-[10px] [&_small]:text-[#91a2bc] [&_small]:block [&_small]:mt-1 [&_[data-seller~=badge]]:ml-auto [&_button]:ml-2 max-[540px]:flex-wrap max-[540px]:[&>div]:min-w-[170px] max-[540px]:[&>div]:flex-1 max-[540px]:[&_small]:text-[9px] max-[540px]:[&_[data-seller~=text-button]]:ml-auto"
+                className="flex items-center gap-[13px] p-[13px] [border:1px_solid_#e9eef7] rounded-[9px] [&>svg]:text-[#7c9bd8]! [&>svg]:shrink-0 [&_strong]:text-[12px] [&_strong]:font-[550] [&_strong]:block [&_small]:text-[10px] [&_small]:text-[#91a2bc] [&_small]:block [&_small]:mt-1 [&_[data-seller~=badge]]:ml-auto [&_button]:ml-2 max-[540px]:flex-wrap max-[540px]:[&>div]:min-w-[170px] max-[540px]:[&>div]:flex-1 max-[540px]:[&_small]:text-[9px] max-[540px]:[&_[data-seller~=text-button]]:ml-auto"
                 data-seller="draft-row"
               >
                 <CodeSandboxOutlined className="text-[22px]" aria-hidden="true" />
@@ -274,7 +274,7 @@ export default function SellerAuctionsPage() {
         data-seller="policy-grid"
       >
         <div
-          className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>.anticon]:text-[#7291d7]! [&>.anticon]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>.anticon]:[grid-row:1/3] max-[540px]:[&>.anticon]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
+          className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>svg]:text-[#7291d7]! [&>svg]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>svg]:[grid-row:1/3] max-[540px]:[&>svg]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
           data-seller="policy"
         >
           <FieldTimeOutlined className="text-[22px]" aria-hidden="true" />
@@ -282,7 +282,7 @@ export default function SellerAuctionsPage() {
           <p>{t('auctions.list.policy1Body')}</p>
         </div>
         <div
-          className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>.anticon]:text-[#7291d7]! [&>.anticon]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>.anticon]:[grid-row:1/3] max-[540px]:[&>.anticon]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
+          className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>svg]:text-[#7291d7]! [&>svg]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>svg]:[grid-row:1/3] max-[540px]:[&>svg]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
           data-seller="policy"
         >
           <SafetyCertificateOutlined className="text-[22px]" aria-hidden="true" />
@@ -290,7 +290,7 @@ export default function SellerAuctionsPage() {
           <p>{t('auctions.list.policy2Body')}</p>
         </div>
         <div
-          className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>.anticon]:text-[#7291d7]! [&>.anticon]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>.anticon]:[grid-row:1/3] max-[540px]:[&>.anticon]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
+          className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>svg]:text-[#7291d7]! [&>svg]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>svg]:[grid-row:1/3] max-[540px]:[&>svg]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
           data-seller="policy"
         >
           <CodeSandboxOutlined className="text-[22px]" aria-hidden="true" />

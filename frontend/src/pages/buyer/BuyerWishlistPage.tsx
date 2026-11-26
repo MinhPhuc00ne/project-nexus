@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Heart, ShoppingCart, Trash2, Search, Tag, ShoppingBag } from 'lucide-react';
-import { addToCart } from '../../services/cart';
+import { addToCart } from '@/features/cart/services/cart';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastNotification';
 import {
   getBuyerWishlist,
   removeBuyerWishlistItem,
   type WishlistItem,
-} from '../../services/wishlist.service';
+} from '@/features/wishlist/services/wishlist.service';
 import { formatCurrency } from '../../i18n/formatters';
 
 export default function BuyerWishlistPage() {
