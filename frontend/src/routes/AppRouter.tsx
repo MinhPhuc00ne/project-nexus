@@ -226,10 +226,6 @@ function AppRouter() {
                     element={<StaffDashboard initialSection="Hỗ Trợ Đấu Giá 3D" />}
                   />
                   <Route
-                    path={ROUTES.STAFF_FAQ}
-                    element={<StaffDashboard initialSection="Hướng Dẫn & FAQ Sàn" />}
-                  />
-                  <Route
                     path={ROUTES.STAFF_BANNERS}
                     element={<StaffDashboard initialSection="Quản Lý Banner" />}
                   />

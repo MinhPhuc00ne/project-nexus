@@ -368,7 +368,7 @@ function SellerWorkspace() {
             <Outlet />
           </main>
           <footer
-            className="py-6 px-8 flex justify-between text-[#99a6bc] text-[10px] gap-3 [&>span:not(.anticon):last-child]:flex [&>span:not(.anticon):last-child]:items-center [&>span:not(.anticon):last-child]:gap-1.5 max-[760px]:py-5 max-[760px]:px-4.5 max-[760px]:[&>span:not(.anticon):last-child]:hidden"
+            className="py-6 px-8 flex justify-between text-[#99a6bc] text-[10px] gap-3 [&>span:last-child]:flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5 max-[760px]:py-5 max-[760px]:px-4.5 max-[760px]:[&>span:last-child]:hidden"
             data-seller="footer"
           >
             <span>© {new Date().getFullYear()} NEXUS · Seller Center</span>
