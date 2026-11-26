@@ -17,6 +17,7 @@ import OrderCard, {
   type DisplayOrder,
   statusConfig,
 } from '../../components/orders/OrderCard';
+import { toOrderTab } from '../../components/orders/orderStatus';
 
 const tabs = [
   { key: 'ALL', labelKey: 'ordersPage.tabs.all' },
@@ -123,7 +124,7 @@ export default function BuyerOrdersPage() {
       firstItem?.product?.images?.[0]?.url ||
       'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=400&q=80';
     const rawStatus = (o?.status as string) || 'PENDING_PAYMENT';
-    const mappedStatus = (rawStatus === 'CONFIRMED' ? 'COMPLETED' : rawStatus) as TabStatus;
+    const mappedStatus = toOrderTab(rawStatus) as TabStatus;
     const validStatus: Exclude<TabStatus, 'ALL'> =
       mappedStatus in statusConfig
         ? (mappedStatus as Exclude<TabStatus, 'ALL'>)

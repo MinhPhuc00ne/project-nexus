@@ -456,6 +456,7 @@
     "viewAuction": "Xem phiên đấu giá",
     "loadingRights": "Đang tải quyền mua…",
     "noOffersTitle": "Chưa có lời mời mua cần xác nhận",
-    "noOffersDesc": "Khi bạn được chuyển quyền mua sau người thắng trước, lời mời sẽ xuất hiện tại đây."
+    "noOffersDesc": "Khi bạn được chuyển quyền mua sau người thắng trước, lời mời sẽ xuất hiện tại đây.",
+    "supportChatFailed": "Chưa kết nối được bộ phận hỗ trợ. Vui lòng thử lại."
   }
 }
