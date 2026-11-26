@@ -101,4 +101,16 @@ describe('admin auction row after merging translations', () => {
     expect(lock.getAttribute('title')).toBe(i18n.t('admin:auctions.lockReasons.alreadyLocked'));
     expect(lock).not.toHaveAttribute('title', 'alreadyLocked');
   });
+
+  it('allows a scheduled session past its old end time to open the new-time confirmation', async () => {
+    const item = { ...auction, endTime: '2030-04-30T00:00:00Z', isConsignmentLocked: true };
+    const callbacks = renderRow(item);
+    await act(async () => {
+      await i18n.changeLanguage('en');
+    });
+    const start = screen.getByRole('button', { name: 'Start auction Summer auction' });
+    expect(start).toBeEnabled();
+    fireEvent.click(start);
+    expect(callbacks.handleStartAuction).toHaveBeenCalledWith(item);
+  });
 });

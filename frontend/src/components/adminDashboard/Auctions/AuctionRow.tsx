@@ -81,10 +81,9 @@ export default function AuctionRow({
   const lockReason = lockReasonKey ? t(`auctions.lockReasons.${lockReasonKey}`) : '';
   const deadlinePassed =
     !!item.consignmentDeadline && new Date(item.consignmentDeadline).getTime() <= now;
-  const ended = new Date(item.endTime).getTime() <= now;
 
   function getStartTitle(): string {
-    if (ended) return t('auctions.row.pastEndTime');
+    if (item.status === 'DRAFT') return t('auctions.start.scheduledOnly');
     if (!item.isConsignmentLocked && !deadlinePassed) return t('management.lockBeforeStart');
     if (startingId === item.id) return t('management.starting');
     return t('management.startAuction');
@@ -96,7 +95,10 @@ export default function AuctionRow({
         <>
           <Button
             disabled={
-              !!startingId || locking || ended || (!item.isConsignmentLocked && !deadlinePassed)
+              !!startingId ||
+              locking ||
+              item.status === 'DRAFT' ||
+              (!item.isConsignmentLocked && !deadlinePassed)
             }
             title={getStartTitle()}
             aria-label={t('management.startAuctionAria', { value1: item.title })}

@@ -1591,6 +1591,17 @@
       "startSuccess": "Started session \"{{title}}\" and launched live showcase!",
       "startError": "Unable to start auction session."
     },
+    "start": {
+      "title": "Start auction session",
+      "hint": "Choose the closing time before opening this session now. The closing time must be more than one minute from now and after the scheduled start and consignment deadline.",
+      "endLabel": "New closing time",
+      "confirm": "Save time and start",
+      "bannerHint": "Linked banners will use the actual session start and closing times. Disabled banners stay disabled.",
+      "errEndTime": "Choose a closing time more than one minute from now, after the scheduled start and consignment deadline.",
+      "bannerSyncError": "The session is live, but its banner schedule could not be fully updated. Check Banner Management: {{message}}",
+      "scheduledOnly": "Only scheduled sessions can be started.",
+      "savedButNotStarted": "The closing time was saved, but the session could not start. {{message}}"
+    },
     "row": {
       "edit": "Edit",
       "delete": "Delete Session",

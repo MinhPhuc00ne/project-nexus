@@ -53,8 +53,8 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
 
   if (loading) {
     return (
-      <section className="overflow-hidden rounded-2xl">
-        <div className="relative h-[300px] sm:h-[380px] lg:h-[440px] w-full overflow-hidden rounded-[22px] border border-slate-200/80 bg-gradient-to-r from-slate-100 via-slate-200/70 to-slate-100 animate-pulse shadow-sm flex items-center justify-center">
+      <section className="w-full overflow-hidden rounded-2xl bg-navy shadow-panel ring-1 ring-black/5 sm:rounded-3xl">
+        <div className="relative h-[300px] sm:h-[380px] lg:h-[440px] w-full overflow-hidden bg-gradient-to-r from-slate-100 via-slate-200/70 to-slate-100 motion-safe:animate-pulse flex items-center justify-center">
           <div className="text-center space-y-3">
             <div className="h-6 w-44 sm:w-64 bg-slate-300/60 rounded-full mx-auto" />
             <div className="h-4 w-60 sm:w-96 bg-slate-300/40 rounded-full mx-auto" />
@@ -67,37 +67,34 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
   const currentSlide = activeSlides[activeSlide] || activeSlides[0];
 
   return (
-    <section className="overflow-hidden rounded-2xl">
+    <section className="w-full overflow-hidden rounded-2xl bg-navy shadow-panel ring-1 ring-black/5 sm:rounded-3xl">
       <div
-        className={`relative w-full overflow-hidden rounded-2xl border border-line bg-navy shadow-panel ${currentSlide.isFullBanner || !currentSlide.description ? 'h-[300px] sm:h-[380px] lg:h-[440px]' : 'min-h-[380px] sm:min-h-[420px] lg:h-[440px]'}`}
+        className={`group relative w-full overflow-hidden bg-navy ${currentSlide.isFullBanner || !currentSlide.description ? 'h-[300px] sm:h-[380px] lg:h-[440px]' : 'min-h-[380px] sm:min-h-[420px] lg:h-[440px]'}`}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
+        onFocusCapture={() => setIsPaused(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setIsPaused(false);
+        }}
       >
         {currentSlide.isFullBanner || !currentSlide.description ? (
           <Link
             to={currentSlide.targetUrl || '/search'}
-            className="group relative flex h-full w-full items-center justify-center overflow-hidden bg-slate-950"
+            aria-label={currentSlide.title || t('home.heroFallback.shopNow')}
+            className="relative block h-full w-full overflow-hidden bg-slate-950 outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-primary"
           >
-            {/* Lớp nền ambient blur lấy màu ảnh lấp đầy khung hình tự nhiên, tránh viền trống */}
-            <img
-              src={currentSlide.image}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover blur-2xl opacity-40 scale-110 pointer-events-none select-none"
-            />
-            {/* Ảnh banner chính hiển thị trọn vẹn 100% theo chiều dọc, không bị crop mất chi tiết */}
             <img
               src={currentSlide.image}
               alt={currentSlide.title || 'Event Banner'}
-              className="relative z-10 h-full w-full object-contain object-center transition-transform duration-700 group-hover:scale-[1.02]"
+              className="h-full w-full object-cover object-center motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.02]"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src =
                   'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1400&q=80';
               }}
             />
             {currentSlide.title && (
-              <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent px-8 py-5 sm:px-14 sm:py-7 text-white">
-                <h2 className="text-lg font-bold tracking-tight drop-shadow sm:text-2xl">
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 translate-y-2 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent pb-14 pt-16 text-white opacity-0 transition-[opacity,translate] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100 motion-reduce:transform-none motion-reduce:transition-none">
+                <h2 className="px-6 text-lg font-semibold tracking-tight drop-shadow sm:px-10 sm:text-2xl">
                   {currentSlide.title}
                 </h2>
               </div>

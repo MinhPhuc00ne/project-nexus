@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import DeleteAuctionDialog from '../../components/adminDashboard/Auctions/DeleteAuctionDialog';
+import StartAuctionDialog from '../../components/adminDashboard/Auctions/StartAuctionDialog';
 import PromoteAuctionDialog from '../../components/adminDashboard/Auctions/PromoteAuctionDialog';
 import useAuctionBanners from '../../components/adminDashboard/Auctions/useAuctionBanners';
 import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';
@@ -58,6 +59,10 @@ export default function AdminAuctionsPage() {
     deletingAuction,
     setDeletingAuction,
     startingId,
+    startingAuction,
+    setStartingAuction,
+    startError,
+    confirmStartAuction,
     lockingAuction,
     setLockingAuction,
     locking,
@@ -236,6 +241,16 @@ export default function AdminAuctionsPage() {
           </p>
         )}
       </Popup>
+      {startingAuction && (
+        <StartAuctionDialog
+          key={`start:${token}:${startingAuction.id}`}
+          auction={startingAuction}
+          pending={!!startingId}
+          error={startError}
+          onClose={() => setStartingAuction(null)}
+          onConfirm={confirmStartAuction}
+        />
+      )}
       {promotingAuction && (
         <PromoteAuctionDialog
           key={`${token}:${promotingAuction.id}`}

@@ -1591,6 +1591,17 @@
       "startSuccess": "Đã mở phiên \"{{title}}\" & phát sóng video giới thiệu trực tiếp!",
       "startError": "Không thể bắt đầu phiên đấu giá."
     },
+    "start": {
+      "title": "Bắt đầu phiên đấu giá",
+      "hint": "Chọn lại giờ kết thúc trước khi mở phiên ngay bây giờ. Giờ kết thúc cần cách hiện tại hơn một phút, sau giờ bắt đầu theo lịch và hạn ký gửi.",
+      "endLabel": "Giờ kết thúc mới",
+      "confirm": "Lưu giờ và bắt đầu",
+      "bannerHint": "Banner đã gắn với phiên sẽ tự dùng giờ mở và kết thúc thực tế. Banner đang tắt vẫn giữ tắt.",
+      "errEndTime": "Chọn giờ kết thúc cách hiện tại hơn một phút, sau giờ bắt đầu theo lịch và hạn ký gửi.",
+      "bannerSyncError": "Phiên đã mở nhưng chưa cập nhật đầy đủ lịch banner. Kiểm tra mục Quản lý banner: {{message}}",
+      "scheduledOnly": "Chỉ có thể mở phiên đang ở trạng thái chờ.",
+      "savedButNotStarted": "Đã lưu giờ kết thúc nhưng chưa mở được phiên. {{message}}"
+    },
     "row": {
       "edit": "Chỉnh sửa",
       "delete": "Xóa phiên",

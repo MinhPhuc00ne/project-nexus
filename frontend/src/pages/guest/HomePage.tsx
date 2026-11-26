@@ -166,7 +166,6 @@ function HomePage() {
   return (
     <main className="mx-auto max-w-[1280px] px-4 py-5 sm:py-7">
       <HomeHeroBanner slides={banners} loading={isLoadingBanners} />
-
       <section className="mt-4 grid gap-4 md:grid-cols-2">
         <div className="nexus-panel p-5">
           <div className="flex items-center justify-between gap-3">

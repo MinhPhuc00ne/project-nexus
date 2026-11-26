@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   adminStartAuctionApi,
+  adminUpdateAuctionApi,
   adminLockConsignmentApi,
   getAdminAuctionItemsApi,
   getAdminAuctionsApi,
@@ -13,6 +14,7 @@ import {
 } from '@/features/auction/services/auction.service';
 import { useToast } from '../../ToastNotification';
 import { consignmentLockReason } from './consignmentAvailability';
+import { startEndTimePayload, syncStartedAuctionBanners } from './auctionStartSchedule';
 
 type AdminAuctionRowWithItems = AdminAuctionEntity & {
   items?: AuctionConsignmentItem[];
@@ -107,6 +109,9 @@ export function useAdminAuctions() {
   const [editingAuction, setEditingAuction] = useState<AdminAuctionEntity | null>(null);
   const [deletingAuction, setDeletingAuction] = useState<AdminAuctionEntity | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
+  const [startingAuction, setStartingAuction] = useState<AdminAuctionEntity | null>(null);
+  const [startError, setStartError] = useState('');
+  const startLock = useRef(false);
   const [lockingAuction, setLockingAuction] = useState<AdminAuctionEntity | null>(null);
   const [locking, setLocking] = useState(false);
   const [lockError, setLockError] = useState('');
@@ -159,11 +164,32 @@ export function useAdminAuctions() {
     }
   }
 
-  async function handleStartAuction(item: AdminAuctionEntity) {
-    if (startingId) return;
+  function handleStartAuction(item: AdminAuctionEntity) {
+    if (startLock.current || locking) return;
+    setStartError('');
+    setStartingAuction(item);
+  }
+
+  async function confirmStartAuction(endTime: string) {
+    const item = startingAuction;
+    if (!item || startLock.current) return;
+    startLock.current = true;
     setStartingId(item.id);
+    setStartError('');
+    let scheduleSaved = false;
     try {
+      const endTimeIso = startEndTimePayload(item, endTime);
+      await adminUpdateAuctionApi(item.id, { endTime: endTimeIso });
+      scheduleSaved = true;
       const started = await adminStartAuctionApi(item.id);
+      let bannerWarning = '';
+      try {
+        await syncStartedAuctionBanners(started);
+      } catch (cause) {
+        bannerWarning = t('auctions.start.bannerSyncError', {
+          message: cause instanceof Error ? cause.message : t('management.checkBannerError'),
+        });
+      }
       const showcaseItems =
         started.items && started.items.length > 0
           ? started.items
@@ -176,6 +202,7 @@ export function useAdminAuctions() {
                 row.id === item.id
                   ? {
                       ...row,
+                      ...started,
                       status: AuctionStatus.ACTIVE,
                       isConsignmentLocked: true,
                       items: showcaseItems,
@@ -186,6 +213,9 @@ export function useAdminAuctions() {
           : current,
       );
       toast.success(t('auctions.page.startSuccess', { title: item.title }));
+      if (bannerWarning) toast.error(bannerWarning);
+      setStartingAuction(null);
+      setRevision((value) => value + 1);
       setShowcaseState({
         auctionId: started.id,
         title: started.title,
@@ -194,8 +224,10 @@ export function useAdminAuctions() {
         playbackMode: 'live',
       });
     } catch (cause: unknown) {
-      toast.error(cause instanceof Error ? cause.message : t('auctions.page.startError'));
+      const message = cause instanceof Error ? cause.message : t('auctions.page.startError');
+      setStartError(scheduleSaved ? t('auctions.start.savedButNotStarted', { message }) : message);
     } finally {
+      startLock.current = false;
       setStartingId(null);
     }
   }
@@ -260,6 +292,10 @@ export function useAdminAuctions() {
     deletingAuction,
     setDeletingAuction,
     startingId,
+    startingAuction,
+    setStartingAuction,
+    startError,
+    confirmStartAuction,
     lockingAuction,
     setLockingAuction,
     locking,
