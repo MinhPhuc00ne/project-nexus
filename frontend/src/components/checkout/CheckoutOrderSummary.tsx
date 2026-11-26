@@ -24,7 +24,7 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
   const { t } = useTranslation('commerce');
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-      <h3 className="text-sm font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100">
+      <h3 className="text-sm font-semibold text-ink mb-4 pb-3 border-b border-slate-100">
         {t('checkout.checkoutListTitle', { count: items.length })}
       </h3>
 
@@ -51,9 +51,9 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
                   className="w-12 h-12 object-contain rounded-lg border border-slate-100 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
-                  <span className="font-bold text-slate-900 line-clamp-1">{cleanTitle}</span>
+                  <span className="font-semibold text-ink line-clamp-1">{cleanTitle}</span>
                   {hasSelections && (
-                    <span className="text-[10px] text-slate-500 font-medium block truncate mt-0.5">
+                    <span className="text-[10px] text-muted font-medium block truncate mt-0.5">
                       {t('cart.variantLabel')}{' '}
                       {Object.entries(effectiveSelections)
                         .map(([k, v]) => `${k}: ${v}`)
@@ -70,7 +70,7 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
                   </span>
                 </div>
               </div>
-              <span className="font-extrabold text-slate-900 shrink-0">
+              <span className="font-semibold text-ink shrink-0">
                 {formatCurrency(Number(it.price * it.qty))}
               </span>
             </div>
@@ -81,15 +81,15 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
       <div className="space-y-2 pt-3 border-t border-slate-100 text-xs text-slate-600">
         <div className="flex justify-between">
           <span>{t('checkout.subtotalMerchandise')}</span>
-          <span className="font-semibold text-slate-900">{formatCurrency(rawSubtotal)}</span>
+          <span className="font-semibold text-ink">{formatCurrency(rawSubtotal)}</span>
         </div>
         <div className="flex justify-between">
           <span>{t('checkout.ghnShippingLabel')}</span>
-          <span className="font-semibold text-slate-900">{formatCurrency(shippingFee)}</span>
+          <span className="font-semibold text-ink">{formatCurrency(shippingFee)}</span>
         </div>
-        <div className="flex justify-between items-baseline pt-2 border-t border-slate-100 text-slate-900">
-          <span className="text-sm font-bold">{t('checkout.total')}:</span>
-          <span className="text-xl font-extrabold text-blue-600">{formatCurrency(grandTotal)}</span>
+        <div className="flex justify-between items-baseline pt-2 border-t border-slate-100 text-ink">
+          <span className="text-sm font-semibold">{t('checkout.total')}:</span>
+          <span className="text-xl font-semibold text-blue-600">{formatCurrency(grandTotal)}</span>
         </div>
       </div>
 
@@ -97,7 +97,7 @@ export const CheckoutOrderSummary: React.FC<CheckoutOrderSummaryProps> = ({
         type="button"
         disabled={isSubmitting}
         onClick={onCheckout}
-        className="w-full mt-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        className="w-full mt-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
       >
         {isSubmitting ? (
           <>

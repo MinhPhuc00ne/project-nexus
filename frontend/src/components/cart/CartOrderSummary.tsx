@@ -42,25 +42,25 @@ export default function CartOrderSummary({
   let shippingFeeDisplay: ReactNode;
   if (appliedVoucher?.code === 'FREESHIP') {
     shippingFeeDisplay = (
-      <span className="font-semibold text-emerald-600">{t('cart.freeShipping')}</span>
+      <span className="font-semibold text-blue-600">{t('cart.freeShipping')}</span>
     );
   } else if (isQuotingShipping) {
     shippingFeeDisplay = (
-      <span className="font-medium text-slate-500 italic">{t('checkout.calculatingGhn')}</span>
+      <span className="font-medium text-muted italic">{t('checkout.calculatingGhn')}</span>
     );
   } else if (shippingFee !== null) {
     shippingFeeDisplay = (
-      <span className="font-semibold text-slate-800">{formatCurrency(shippingFee)}</span>
+      <span className="font-semibold text-ink">{formatCurrency(shippingFee)}</span>
     );
   } else if (shippingQuoteFailed) {
     shippingFeeDisplay = (
-      <span className="max-w-[55%] text-right font-medium text-rose-600">
+      <span className="max-w-[55%] text-right font-medium text-primary">
         {t('cart.shippingQuoteFailed')}
       </span>
     );
   } else {
     shippingFeeDisplay = (
-      <span className="max-w-[55%] text-right font-medium text-slate-500">
+      <span className="max-w-[55%] text-right font-medium text-muted">
         {hasDeliveryAddress
           ? t('cart.selectItemsForShippingQuote')
           : t('cart.shippingAddressNeeded')}
@@ -120,8 +120,8 @@ export default function CartOrderSummary({
           </p>
         )}
         {appliedVoucher && (
-          <div className="flex items-center justify-between text-xs text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200 mt-2">
-            <span className="font-bold flex items-center gap-1">
+          <div className="flex items-center justify-between text-xs text-blue-700 bg-blue-50 px-3 py-2 rounded-lg border border-blue-200 mt-2">
+            <span className="font-semibold flex items-center gap-1">
               <Check size={13} /> {appliedVoucher.code} (-
               {formatCurrency(Number(appliedVoucher.discount))})
             </span>
@@ -129,7 +129,7 @@ export default function CartOrderSummary({
               type="button"
               onClick={onRemoveVoucher}
               aria-label={t('cart.removeVoucher')}
-              className="ml-2 grid size-8 shrink-0 place-items-center rounded-lg text-emerald-700 hover:bg-emerald-100"
+              className="ml-2 grid size-8 shrink-0 place-items-center rounded-lg text-blue-700 hover:bg-blue-100"
             >
               <X size={15} />
             </button>
@@ -145,15 +145,15 @@ export default function CartOrderSummary({
         <div className="space-y-3 text-sm text-muted">
           <div className="flex justify-between gap-3">
             <span>{t('cart.subtotalSelected', { count: selectedQuantity })}</span>
-            <span className="font-semibold text-slate-800">
-              {formatCurrency(Number(rawSubtotal))}
-            </span>
+            <span className="font-semibold text-ink">{formatCurrency(Number(rawSubtotal))}</span>
           </div>
 
           {appliedVoucher && (
-            <div className="flex justify-between gap-3 text-emerald-600">
+            <div className="flex justify-between gap-3 text-blue-600">
               <span>{t('cart.voucherDiscount')}</span>
-              <span className="font-bold">-{formatCurrency(Number(appliedVoucher.discount))}</span>
+              <span className="font-semibold">
+                -{formatCurrency(Number(appliedVoucher.discount))}
+              </span>
             </div>
           )}
 
@@ -164,7 +164,7 @@ export default function CartOrderSummary({
         </div>
 
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-line pt-4">
-          <span className="text-sm font-bold text-slate-900">{t('checkout.total')}:</span>
+          <span className="text-sm font-semibold text-ink">{t('checkout.total')}:</span>
           <div className="text-right">
             <div className="text-2xl font-semibold tabular-nums text-ink">
               {formatCurrency(Number(grandTotal))}
@@ -188,7 +188,7 @@ export default function CartOrderSummary({
             <Truck size={14} className="text-blue-600" /> {t('cart.ghnInspection')}
           </span>
           <span className="flex items-center gap-1">
-            <ShieldCheck size={14} className="text-emerald-600" /> {t('cart.escrow100')}
+            <ShieldCheck size={14} className="text-blue-600" /> {t('cart.escrow100')}
           </span>
         </div>
       </div>

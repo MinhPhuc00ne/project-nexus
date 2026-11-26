@@ -175,7 +175,7 @@ export const BuyerNotificationsPage: React.FC = () => {
     const t = (type || '').toUpperCase();
     if (t.includes('AUCTION') || t.includes('BID')) {
       return (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
           <Gavel size={18} />
         </div>
       );
@@ -189,7 +189,7 @@ export const BuyerNotificationsPage: React.FC = () => {
     }
     if (t.includes('REPUTATION') || t.includes('TRUST')) {
       return (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
           <Sparkles size={18} />
         </div>
       );
@@ -250,7 +250,7 @@ export const BuyerNotificationsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('list')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
             activeTab === 'list'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -259,7 +259,7 @@ export const BuyerNotificationsPage: React.FC = () => {
           <Bell size={14} />
           <span>{t('notificationsPage.tabList')}</span>
           {unreadCount > 0 && (
-            <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+            <span className="bg-primary text-white text-[10px] font-semibold px-1.5 py-0.2 rounded-full">
               {unreadCount}
             </span>
           )}
@@ -268,7 +268,7 @@ export const BuyerNotificationsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setActiveTab('preferences')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
             activeTab === 'preferences'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -294,7 +294,7 @@ export const BuyerNotificationsPage: React.FC = () => {
                   setFilterRead('ALL');
                   setPage(1);
                 }}
-                className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
                   filterRead === 'ALL'
                     ? 'bg-slate-800 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -308,7 +308,7 @@ export const BuyerNotificationsPage: React.FC = () => {
                   setFilterRead('UNREAD');
                   setPage(1);
                 }}
-                className={`px-3 py-1 rounded-lg font-bold transition cursor-pointer ${
+                className={`px-3 py-1 rounded-lg font-semibold transition cursor-pointer ${
                   filterRead === 'UNREAD'
                     ? 'bg-slate-800 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -328,12 +328,12 @@ export const BuyerNotificationsPage: React.FC = () => {
           {!loading && notifications.length === 0 && (
             <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
               <Bell size={36} className="mx-auto mb-3 text-slate-300" />
-              <h3 className="text-sm font-bold text-slate-800 mb-1">
+              <h3 className="text-sm font-semibold text-ink mb-1">
                 {filterRead === 'UNREAD'
                   ? t('notificationsPage.emptyUnreadTitle')
                   : t('notificationsPage.emptyAllTitle')}
               </h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-muted max-w-sm mx-auto leading-relaxed">
                 {t('notificationsPage.emptyDesc')}
               </p>
             </div>
@@ -345,7 +345,7 @@ export const BuyerNotificationsPage: React.FC = () => {
                   key={item.id}
                   onClick={() => void handleNotificationClick(item)}
                   className={`group flex items-start gap-4 p-4.5 transition hover:bg-slate-50/80 cursor-pointer ${
-                    !item.isRead ? 'bg-orange-50/30' : ''
+                    !item.isRead ? 'bg-blue-50/50' : ''
                   }`}
                 >
                   {getIconForType(item.type)}
@@ -354,14 +354,14 @@ export const BuyerNotificationsPage: React.FC = () => {
                     <div className="flex items-center justify-between gap-3 mb-1">
                       <h4
                         className={`text-xs ${
-                          !item.isRead ? 'font-bold text-slate-900' : 'font-medium text-slate-700'
+                          !item.isRead ? 'font-semibold text-ink' : 'font-medium text-slate-700'
                         }`}
                       >
                         {item.title}
                       </h4>
                       <div className="flex items-center gap-2">
                         {!item.isRead && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700">
                             {t('notificationsPage.unreadBadge')}
                           </span>
                         )}
@@ -393,7 +393,7 @@ export const BuyerNotificationsPage: React.FC = () => {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-2 pt-2">
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-muted">
                 {t('notificationsPage.pageLabel', { page, totalPages })}
               </span>
               <div className="flex items-center gap-1.5">
@@ -422,10 +422,10 @@ export const BuyerNotificationsPage: React.FC = () => {
       {/* TAB 2: PREFERENCES */}
       {activeTab === 'preferences' && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs max-w-2xl">
-          <h3 className="text-sm font-bold text-slate-900 mb-1">
+          <h3 className="text-sm font-semibold text-ink mb-1">
             {t('notificationsPage.prefsTitle')}
           </h3>
-          <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+          <p className="text-xs text-muted mb-6 leading-relaxed">
             {t('notificationsPage.prefsDesc')}
           </p>
 
@@ -446,10 +446,10 @@ export const BuyerNotificationsPage: React.FC = () => {
                     <Bell size={20} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 m-0">
+                    <h4 className="text-xs font-semibold text-ink m-0">
                       {t('notificationsPage.inAppTitle')}
                     </h4>
-                    <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
+                    <p className="text-[11px] text-muted m-0 mt-0.5 leading-relaxed">
                       {t('notificationsPage.inAppDesc')}
                     </p>
                   </div>
@@ -476,10 +476,10 @@ export const BuyerNotificationsPage: React.FC = () => {
                     <Mail size={20} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 m-0">
+                    <h4 className="text-xs font-semibold text-ink m-0">
                       {t('notificationsPage.emailTitle')}
                     </h4>
-                    <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
+                    <p className="text-[11px] text-muted m-0 mt-0.5 leading-relaxed">
                       {t('notificationsPage.emailDesc')}
                     </p>
                   </div>
@@ -502,14 +502,14 @@ export const BuyerNotificationsPage: React.FC = () => {
                 className="flex items-start justify-between gap-4 p-4 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-blue-50/20 transition cursor-pointer select-none"
               >
                 <div className="flex items-start gap-3.5">
-                  <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl shrink-0 mt-0.5">
+                  <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl shrink-0 mt-0.5">
                     <BellRing size={20} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-900 m-0">
+                    <h4 className="text-xs font-semibold text-ink m-0">
                       {t('notificationsPage.pushTitle')}
                     </h4>
-                    <p className="text-[11px] text-slate-500 m-0 mt-0.5 leading-relaxed">
+                    <p className="text-[11px] text-muted m-0 mt-0.5 leading-relaxed">
                       {t('notificationsPage.pushDesc')}
                     </p>
                   </div>
@@ -531,7 +531,7 @@ export const BuyerNotificationsPage: React.FC = () => {
                   type="button"
                   disabled={savingPrefs}
                   onClick={handleSavePreferences}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs transition disabled:opacity-50 cursor-pointer"
                 >
                   {savingPrefs ? (
                     <Loader2 size={16} className="animate-spin" />

@@ -63,3 +63,25 @@ describe('auction-response.helpers', () => {
     expect(formatAuctionImage('uploads/watch.png')).toBe('http://localhost:3000/uploads/watch.png');
   });
 });
+
+describe('auction list pagination', () => {
+  const meta = { total: 24, page: 2, limit: 9, totalPages: 3 };
+  it('reads the actual API metadata instead of replacing totals with zero', () => {
+    expect(normalizeAuctionListResponse({ items: [], meta })).toEqual({
+      items: [],
+      pagination: meta,
+    });
+  });
+  it('preserves nested legacy pagination', () => {
+    expect(normalizeAuctionListResponse({ items: [], pagination: meta })).toEqual({
+      items: [],
+      pagination: meta,
+    });
+  });
+  it('preserves flat legacy pagination', () => {
+    expect(normalizeAuctionListResponse({ items: [], ...meta })).toEqual({
+      items: [],
+      pagination: meta,
+    });
+  });
+});

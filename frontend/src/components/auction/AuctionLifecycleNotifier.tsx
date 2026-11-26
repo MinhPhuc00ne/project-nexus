@@ -153,11 +153,14 @@ export default function AuctionLifecycleNotifier(): React.ReactElement | null {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-rose-500" />
           </span>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
+          <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-amber-400">
             {t('notifier.liveBadge')}
           </span>
         </div>
-        <p className="mt-0.5 truncate text-xs font-bold text-slate-100" title={activeAlert.title}>
+        <p
+          className="mt-0.5 truncate text-xs font-semibold text-slate-100"
+          title={activeAlert.title}
+        >
           {activeAlert.title}
         </p>
         <p className="text-[11px] text-slate-400">{t('notifier.bannerDesc')}</p>
@@ -170,7 +173,7 @@ export default function AuctionLifecycleNotifier(): React.ReactElement | null {
             navigate(`/auction/${activeAlert.auctionId}`);
             setActiveAlert(null);
           }}
-          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-3 py-2 text-xs font-bold text-slate-950 shadow-sm transition hover:from-amber-400 hover:to-amber-300 cursor-pointer"
+          className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 px-3 py-2 text-xs font-semibold text-slate-950 shadow-sm transition hover:from-amber-400 hover:to-amber-300 cursor-pointer"
         >
           <span>{t('notifier.enterRoom')}</span>
           <ArrowRight size={13} />

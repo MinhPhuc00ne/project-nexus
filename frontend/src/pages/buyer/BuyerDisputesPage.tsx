@@ -220,7 +220,7 @@ export default function BuyerDisputesPage() {
       {/* List */}
       {loading && (
         <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-          <Loader2 size={16} className="animate-spin text-red-600" /> {t('disputesPage.loading')}
+          <Loader2 size={16} className="animate-spin text-primary" /> {t('disputesPage.loading')}
         </div>
       )}
       {!loading && filtered.length === 0 && (
@@ -228,13 +228,13 @@ export default function BuyerDisputesPage() {
           <div className="h-16 w-16 rounded-2xl bg-red-50 flex items-center justify-center text-red-400 mb-4">
             <ShieldAlert size={28} />
           </div>
-          <h3 className="text-sm font-bold text-slate-800 mb-1">{t('disputesPage.emptyTitle')}</h3>
-          <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
+          <h3 className="text-sm font-semibold text-ink mb-1">{t('disputesPage.emptyTitle')}</h3>
+          <p className="text-xs text-muted max-w-sm mb-5 leading-relaxed">
             {t('disputesPage.emptyDesc')}
           </p>
           <Link
             to="/buyer/orders"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs transition shadow-sm"
           >
             <ShoppingBag size={14} />
             {t('disputesPage.viewOrdersButton')}
@@ -251,11 +251,11 @@ export default function BuyerDisputesPage() {
                 className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition"
               >
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="text-xs font-bold text-slate-800">
+                  <span className="text-xs font-semibold text-ink">
                     {t('disputesPage.orderNumberLabel', { number: d.orderNumber })}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.cls}`}
+                    className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.cls}`}
                   >
                     {s.icon} {t(s.labelKey)}
                   </span>
@@ -267,8 +267,8 @@ export default function BuyerDisputesPage() {
                     className="h-12 w-12 rounded-lg object-contain"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-slate-900">{d.productName}</p>
-                    <p className="text-[11px] text-slate-500 mt-1">{d.description}</p>
+                    <p className="text-xs font-semibold text-ink">{d.productName}</p>
+                    <p className="text-[11px] text-muted mt-1">{d.description}</p>
                   </div>
                 </div>
               </div>

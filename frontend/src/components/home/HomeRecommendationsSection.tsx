@@ -29,7 +29,7 @@ export function HomeRecommendationsSection({
                 {t('home.recommendationsSection.title')}
               </h2>
               {isPersonalized ? (
-                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
+                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700 border border-blue-200">
                   {t('home.recommendationsSection.personalizedBadge')}
                 </span>
               ) : (
@@ -38,7 +38,7 @@ export function HomeRecommendationsSection({
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-muted mt-0.5">
               {isPersonalized
                 ? t('home.recommendationsSection.personalizedDesc')
                 : t('home.recommendationsSection.trendingDesc')}
@@ -48,7 +48,7 @@ export function HomeRecommendationsSection({
 
         <Link
           to="/search"
-          className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1 group"
+          className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition flex items-center gap-1 group"
         >
           <span>{t('home.recommendationsSection.exploreAll')}</span>
           <span className="group-hover:translate-x-0.5 transition-transform">→</span>
@@ -69,7 +69,7 @@ export function HomeRecommendationsSection({
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div className="py-12 text-center text-xs text-slate-500">
+        <div className="py-12 text-center text-xs text-muted">
           {t('home.recommendationsSection.empty')}
         </div>
       ) : (
@@ -104,13 +104,13 @@ export function HomeRecommendationsSection({
                     {/* Badges: Chỉ hiển thị khi có dữ liệu thật (Gợi ý theo gu hoặc Giảm giá thật) */}
                     <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
                       {isInterest && (
-                        <span className="rounded-md bg-emerald-600/90 backdrop-blur-xs px-2 py-0.5 text-[9px] font-bold text-white shadow-xs">
+                        <span className="rounded-md bg-blue-600/90 backdrop-blur-xs px-2 py-0.5 text-[9px] font-semibold text-white shadow-xs">
                           {t('home.recommendationsSection.forYouBadge')}
                         </span>
                       )}
 
                       {hasDiscount && (
-                        <span className="w-fit rounded-md bg-rose-600 px-1.5 py-0.5 text-[9px] font-black text-white">
+                        <span className="w-fit rounded-md bg-blue-600 px-1.5 py-0.5 text-[9px] font-semibold text-white">
                           -{discountPct}%
                         </span>
                       )}
@@ -121,12 +121,12 @@ export function HomeRecommendationsSection({
                     <p className="truncate text-[10px] font-medium text-slate-400">
                       {p.seller?.fullName || t('home.recommendationsSection.defaultShopName')}
                     </p>
-                    <h3 className="mt-1 line-clamp-2 min-h-[32px] text-xs font-semibold text-slate-800 group-hover:text-blue-600 transition">
+                    <h3 className="mt-1 line-clamp-2 min-h-[32px] text-xs font-semibold text-ink group-hover:text-blue-600 transition">
                       {p.title}
                     </h3>
 
                     <div className="mt-2.5 flex items-baseline gap-1.5">
-                      <span className="text-sm font-extrabold text-blue-600">
+                      <span className="text-sm font-semibold text-blue-600">
                         {formatCurrency(price)}
                       </span>
                       {hasDiscount && (
@@ -139,8 +139,8 @@ export function HomeRecommendationsSection({
                     <div className="mt-2 flex items-center justify-between text-[11px] min-h-[18px]">
                       {p.averageRating && p.averageRating > 0 ? (
                         <div className="flex items-center gap-1">
-                          <Star size={11} className="fill-amber-400 text-amber-400" />
-                          <span className="font-bold text-slate-700">
+                          <Star size={11} className="fill-blue-400 text-blue-400" />
+                          <span className="font-semibold text-slate-700">
                             {p.averageRating.toFixed(1)}
                           </span>
                           <span className="text-[10px] text-slate-400">({p.reviewCount || 0})</span>

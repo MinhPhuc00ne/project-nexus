@@ -92,8 +92,8 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
           <span className="text-xs text-slate-400">{t('home.auctionCard.noImage')}</span>
         )}
         <span
-          className={`absolute left-2 top-2 rounded px-2 py-1 text-[10px] font-bold text-white shadow-xs ${
-            isUpcoming ? 'bg-amber-500' : 'bg-sky-500'
+          className={`absolute left-2 top-2 rounded px-2 py-1 text-[10px] font-semibold text-white shadow-xs ${
+            isUpcoming ? 'bg-amber-500' : 'bg-blue-500'
           }`}
         >
           {isUpcoming ? t('home.auctionCard.upcoming') : t('home.auctionCard.live')}
@@ -108,13 +108,13 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
 
       <div className="p-2">
         <Link to={targetUrl}>
-          <h3 className="text-xs font-bold text-slate-700 hover:text-[var(--color-primary)] transition line-clamp-1">
+          <h3 className="text-xs font-semibold text-slate-700 hover:text-[var(--color-primary)] transition line-clamp-1">
             {title}
           </h3>
         </Link>
 
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-xs font-extrabold text-sky-500">
+          <span className="text-xs font-semibold text-blue-500">
             {currentPrice ? formatCurrency(currentPrice) : '--'}
           </span>
 

@@ -39,7 +39,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
     if (level === 'PLATINUM') {
       return {
         label: t('product.trustPlatinum'),
-        color: 'bg-slate-100 text-slate-800 border-slate-300',
+        color: 'bg-slate-100 text-ink border-slate-300',
       };
     }
     if (level === 'GOLD') {
@@ -70,7 +70,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
 
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-5">
-            <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-lg bg-white text-[var(--color-navy)] flex items-center justify-center text-2xl sm:text-3xl font-black shadow-md border-2 border-blue-200 shrink-0 overflow-hidden">
+            <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-lg bg-white text-[var(--color-navy)] flex items-center justify-center text-2xl sm:text-3xl font-semibold shadow-md border-2 border-blue-200 shrink-0 overflow-hidden">
               {shopLogoUrl ? (
                 <img src={shopLogoUrl} alt={shop.name} className="w-full h-full object-cover" />
               ) : (
@@ -80,11 +80,11 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
 
             <div>
               <div className="flex items-center gap-2.5 flex-wrap mb-1.5">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-semibold text-white tracking-tight">
                   {shop.name}
                 </h1>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-bold border ${badge.color}`}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold border ${badge.color}`}
                 >
                   <Award className="w-3.5 h-3.5" />
                   {badge.label}
@@ -141,7 +141,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
             <button
               type="button"
               onClick={onContact}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[var(--color-navy)] hover:bg-blue-50 text-xs font-bold shadow-xs transition cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[var(--color-navy)] hover:bg-blue-50 text-xs font-semibold shadow-xs transition cursor-pointer"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>{t('shop.contactShop')}</span>
@@ -149,7 +149,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
             <button
               type="button"
               onClick={() => setShowReportModal(true)}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-red-500/20 text-blue-100 hover:text-white text-xs font-semibold border border-white/20 transition cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg bg-white/10 hover:bg-blue-500/20 text-blue-100 hover:text-white text-xs font-semibold border border-white/20 transition cursor-pointer"
               title={t('product.reportShopTitle')}
             >
               <Flag className="w-3.5 h-3.5" />

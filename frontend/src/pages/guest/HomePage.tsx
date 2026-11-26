@@ -8,7 +8,6 @@ import {
   HomeFlashSaleCard,
   HomeHeroBanner,
   HomeLiveAuction,
-  HomeCategoriesSection,
   HomeRecommendationsSection,
   HomeTrendingSection,
 } from '../../components/home';
@@ -88,12 +87,18 @@ function HomePage() {
     // Nếu chưa có phiên ACTIVE nào, tải các phiên đã lên lịch (SCHEDULED) để người mua theo dõi lịch khởi tranh.
     void (async () => {
       try {
-        const res = await getAuctionsApi({ limit: 4, status: AuctionStatus.ACTIVE });
-        if (isMounted && res?.items && res.items.length > 0) {
-          setLiveAuctions(res.items);
+        const results = await Promise.all([
+          getAuctionsApi({ limit: 3, status: AuctionStatus.ACTIVE }),
+          getAuctionsApi({ limit: 3, status: AuctionStatus.EXTENDED }),
+        ]);
+        const live = results
+          .flatMap((result) => result.items)
+          .sort((a, b) => Date.parse(a.endTime) - Date.parse(b.endTime));
+        if (isMounted && live.length > 0) {
+          setLiveAuctions(live.slice(0, 3));
           return;
         }
-        const schedRes = await getAuctionsApi({ limit: 4, status: AuctionStatus.SCHEDULED });
+        const schedRes = await getAuctionsApi({ limit: 3, status: AuctionStatus.SCHEDULED });
         if (isMounted && schedRes?.items && schedRes.items.length > 0) {
           setLiveAuctions(schedRes.items);
         }
@@ -170,20 +175,20 @@ function HomePage() {
         <div className="nexus-panel p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                 {t('home.freeShippingTag')}
               </p>
-              <h3 className="mt-2 text-[18px] font-bold text-slate-800">
+              <h3 className="mt-2 text-[18px] font-semibold text-ink">
                 {t('home.freeShippingTitle')}
               </h3>
             </div>
 
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-green-500">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-500">
               <Truck size={22} />
             </div>
           </div>
 
-          <p className="mt-3 text-sm text-slate-500">{t('home.freeShippingDesc')}</p>
+          <p className="mt-3 text-sm text-muted">{t('home.freeShippingDesc')}</p>
 
           <Link
             to="/search"
@@ -196,10 +201,10 @@ function HomePage() {
         <div className="nexus-panel p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                 {t('home.escrowTag')}
               </p>
-              <h3 className="mt-2 text-[18px] font-bold text-slate-800">
+              <h3 className="mt-2 text-[18px] font-semibold text-ink">
                 {t('home.payosGiftTitle')}
               </h3>
             </div>
@@ -209,7 +214,7 @@ function HomePage() {
             </div>
           </div>
 
-          <p className="mt-3 text-sm text-slate-500">{t('home.payosGiftDesc')}</p>
+          <p className="mt-3 text-sm text-muted">{t('home.payosGiftDesc')}</p>
 
           <Link
             to="/buyer/wallet"
@@ -231,14 +236,12 @@ function HomePage() {
         </div>
       </section>
 
-      <HomeCategoriesSection />
-
       {/* No discounts, no section: an empty Flash Sale is better than a made-up one. */}
       {flashProducts.length > 0 && (
         <section className="nexus-panel mt-6 p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <h2 className="flex items-center gap-1.5 text-[16px] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)]">
+              <h2 className="flex items-center gap-1.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">
                 <Zap size={18} /> Flash Sale
               </h2>
 

@@ -84,13 +84,13 @@ const statusConfig = {
   LOST: {
     labelKey: 'bidsPage.status.lostLabel',
     icon: <XCircle size={11} />,
-    cls: 'bg-slate-50 text-slate-500 border-slate-200',
+    cls: 'bg-slate-50 text-muted border-slate-200',
     descKey: 'bidsPage.status.lostDesc',
   },
   ENDED: {
     labelKey: 'bidsPage.status.endedLabel',
     icon: <Clock size={11} />,
-    cls: 'bg-slate-50 text-slate-500 border-slate-200',
+    cls: 'bg-slate-50 text-muted border-slate-200',
     descKey: 'bidsPage.status.endedDesc',
   },
 } as const;
@@ -329,7 +329,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
             type="button"
             onClick={() => void loadData()}
             disabled={loading}
-            className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+            className="p-2 text-muted hover:text-ink rounded-xl hover:bg-slate-100 transition cursor-pointer"
             title={t('bidsPage.refreshTitle')}
           >
             <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
@@ -341,26 +341,26 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
         <>
           {/* Overview Metric Cards */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3.5">
-              <div className="flex items-center gap-1.5 text-amber-700 text-xs font-semibold mb-1">
+            <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5">
+              <div className="flex items-center gap-1.5 text-blue-700 text-xs font-semibold mb-1">
                 <Trophy size={13} />
                 {t('bidsPage.status.winningLabel')}
               </div>
-              <p className="text-xl font-extrabold text-amber-800">{winningCount}</p>
+              <p className="text-xl font-semibold text-blue-800">{winningCount}</p>
             </div>
             <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5">
               <div className="flex items-center gap-1.5 text-blue-700 text-xs font-semibold mb-1">
                 <Flame size={13} />
                 {t('bidsPage.status.activeLabel')}
               </div>
-              <p className="text-xl font-extrabold text-blue-800">{activeCount}</p>
+              <p className="text-xl font-semibold text-blue-800">{activeCount}</p>
             </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3.5">
-              <div className="flex items-center gap-1.5 text-emerald-700 text-xs font-semibold mb-1">
+            <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5">
+              <div className="flex items-center gap-1.5 text-blue-700 text-xs font-semibold mb-1">
                 <CheckCircle size={13} />
                 {t('bidsPage.wonOrRightsCard')}
               </div>
-              <p className="text-xl font-extrabold text-emerald-800">
+              <p className="text-xl font-semibold text-blue-800">
                 {wonCount + pendingCheckoutAwards.length}
               </p>
             </div>
@@ -374,7 +374,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
           <button
             type="button"
             onClick={() => setActionError(null)}
-            className="text-rose-500 hover:text-rose-700 text-xs font-bold"
+            className="text-rose-500 hover:text-rose-700 text-xs font-semibold"
           >
             ✕
           </button>
@@ -385,11 +385,11 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
       {secondChanceOffers.length > 0 && (
         <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-4 shadow-xs space-y-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white font-semibold">
               <Sparkles size={16} />
             </span>
             <div>
-              <h2 className="text-sm font-bold text-slate-900 m-0">
+              <h2 className="text-sm font-semibold text-ink m-0">
                 {t('bidsPage.secondChanceTitle', { count: secondChanceOffers.length })}
               </h2>
               <p className="text-[11px] text-slate-600 m-0">{t('bidsPage.secondChanceDesc')}</p>
@@ -412,21 +412,19 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                      <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
                         {t('bidsPage.top2Badge')}
                       </span>
-                      <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                      <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
                         {t('bidsPage.deposit30', {
                           amount: formatCurrency(deposit, i18n.language),
                         })}
                       </span>
                     </div>
 
-                    <h4 className="text-xs font-bold text-slate-900 line-clamp-1 mb-1">
-                      {lotTitle}
-                    </h4>
+                    <h4 className="text-xs font-semibold text-ink line-clamp-1 mb-1">{lotTitle}</h4>
 
-                    <p className="mb-2 text-[11px] text-slate-500">{award.auction?.title}</p>
+                    <p className="mb-2 text-[11px] text-muted">{award.auction?.title}</p>
                     <p className="mb-2 text-[11px] font-semibold text-amber-700">
                       {t('bidsPage.responseDeadline', {
                         date: new Date(award.expiresAt).toLocaleString(
@@ -437,7 +435,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
                     <p className="text-[11px] text-slate-600">
                       {t('bidsPage.proposedTotal')}{' '}
-                      <strong className="text-slate-900">
+                      <strong className="text-ink">
                         {formatCurrency(
                           Number(award.offerAmount || award.bid?.bidAmount || 0),
                           i18n.language,
@@ -447,7 +445,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
                     {isAwaitingDeposit ? (
                       <div className="mt-2 p-2.5 rounded-lg bg-amber-50/80 border border-amber-200 text-[11px] text-amber-800 space-y-1">
-                        <div className="flex items-center gap-1 font-bold text-amber-900">
+                        <div className="flex items-center gap-1 font-semibold text-amber-900">
                           <AlertTriangle size={12} /> {t('bidsPage.insufficientWalletTitle')}
                         </div>
                         <p>
@@ -460,7 +458,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                         </p>
                       </div>
                     ) : (
-                      <p className="text-[10px] text-slate-500 mt-1">
+                      <p className="text-[10px] text-muted mt-1">
                         {t('bidsPage.secondChanceNote')}
                       </p>
                     )}
@@ -470,7 +468,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                     <button
                       type="button"
                       onClick={() => handleOpenSupportChat(award.auctionId, lotTitle)}
-                      className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:text-violet-700 rounded-lg hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:text-blue-700 rounded-lg hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
                     >
                       <MessageSquare size={12} /> {t('bidsPage.chatWithShop')}
                     </button>
@@ -480,7 +478,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                         type="button"
                         disabled={isResponding}
                         onClick={() => handleRespondSecondChance(award, false)}
-                        className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-500 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1.5 text-[11px] font-semibold text-muted hover:text-rose-600 rounded-lg hover:bg-rose-50 transition flex items-center gap-1 cursor-pointer"
                         title={t('bidsPage.declineTitle')}
                       >
                         <Ban size={12} /> {t('bidsPage.decline')}
@@ -490,7 +488,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                         <button
                           type="button"
                           onClick={() => navigate('/buyer/wallet')}
-                          className="px-3 py-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                          className="px-3 py-1.5 text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                         >
                           <Wallet size={12} /> {t('bidsPage.topUpNow')}
                         </button>
@@ -499,7 +497,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                           type="button"
                           disabled={isResponding}
                           onClick={() => handleRespondSecondChance(award, true)}
-                          className="px-3 py-1.5 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                          className="px-3 py-1.5 text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                         >
                           {isResponding ? (
                             <Loader2 size={12} className="animate-spin" />
@@ -520,13 +518,13 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
       {/* SECTION 2: ACTIVE 24H CHECKOUT AWARDS (PRIMARY_WINNER & ACCEPTED SECOND_CHANCE) */}
       {pendingCheckoutAwards.length > 0 && (
-        <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-100/50 border border-amber-200 rounded-2xl p-4 shadow-xs space-y-3">
+        <div className="bg-gradient-to-r from-blue-50 via-blue-50 to-blue-100/50 border border-amber-200 rounded-2xl p-4 shadow-xs space-y-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500 text-white font-bold">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500 text-white font-semibold">
               <Sparkles size={16} />
             </span>
             <div>
-              <h2 className="text-sm font-bold text-slate-900 m-0">
+              <h2 className="text-sm font-semibold text-ink m-0">
                 {t('bidsPage.pendingCheckoutTitle', { count: pendingCheckoutAwards.length })}
               </h2>
               <p className="text-[11px] text-slate-600 m-0">{t('bidsPage.pendingCheckoutDesc')}</p>
@@ -549,32 +547,30 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-[11px] font-bold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-amber-800 bg-amber-100/70 px-2 py-0.5 rounded-md flex items-center gap-1">
                         <Clock size={11} />
                         {t('bidsPage.deadline', {
                           time: expiresDate.toLocaleTimeString(intlLocale),
                           date: expiresDate.toLocaleDateString(intlLocale),
                         })}
                       </span>
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                         {t('bidsPage.depositHeldBadge', {
                           amount: formatCurrency(deposit, i18n.language),
                         })}
                       </span>
                     </div>
 
-                    <h4 className="text-xs font-bold text-slate-900 line-clamp-1 mb-1">
-                      {lotTitle}
-                    </h4>
+                    <h4 className="text-xs font-semibold text-ink line-clamp-1 mb-1">{lotTitle}</h4>
 
                     <div className="text-[11px] text-slate-600 space-y-0.5">
                       <p>
                         {t('bidsPage.winningPrice')}{' '}
-                        <strong className="text-slate-900">
+                        <strong className="text-ink">
                           {formatCurrency(totalAmount, i18n.language)}
                         </strong>
                       </p>
-                      <p className="text-[10px] text-slate-500">{t('bidsPage.remainingNote')}</p>
+                      <p className="text-[10px] text-muted">{t('bidsPage.remainingNote')}</p>
                     </div>
                   </div>
 
@@ -582,7 +578,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                     <button
                       type="button"
                       onClick={() => handleOpenSupportChat(award.auctionId, lotTitle)}
-                      className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:text-violet-700 rounded-lg hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
+                      className="px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:text-blue-700 rounded-lg hover:bg-slate-50 transition flex items-center gap-1 cursor-pointer"
                     >
                       <MessageSquare size={12} /> {t('bidsPage.chatWithShop')}
                     </button>
@@ -590,7 +586,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                     <button
                       type="button"
                       onClick={() => setActiveCheckoutAward(award)}
-                      className="px-3.5 py-1.5 text-[11px] font-bold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      className="px-3.5 py-1.5 text-[11px] font-semibold bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                     >
                       <CreditCard size={12} /> {t('bidsPage.payAndReceive')}
                     </button>
@@ -606,11 +602,11 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
       {!purchasesOnly && defaultedAwards.length > 0 && (
         <div className="bg-rose-50/70 border border-rose-200 rounded-2xl p-4 shadow-xs space-y-3">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-rose-500 text-white font-bold">
+            <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-rose-500 text-white font-semibold">
               <AlertTriangle size={16} />
             </span>
             <div>
-              <h2 className="text-sm font-bold text-slate-900 m-0">
+              <h2 className="text-sm font-semibold text-ink m-0">
                 {t('bidsPage.defaultedTitle', { count: defaultedAwards.length })}
               </h2>
               <p className="text-[11px] text-rose-700 m-0">{t('bidsPage.defaultedDesc')}</p>
@@ -628,7 +624,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                      <span className="text-[10px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
                         {t('bidsPage.overdueBadge')}
                       </span>
                       <span className="text-[10px] text-slate-400">
@@ -640,11 +636,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                       </span>
                     </div>
 
-                    <h4 className="text-xs font-bold text-slate-900 line-clamp-1 mb-1">
-                      {lotTitle}
-                    </h4>
+                    <h4 className="text-xs font-semibold text-ink line-clamp-1 mb-1">{lotTitle}</h4>
 
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-muted">
                       {t('bidsPage.forfeitedDeposit', {
                         amount: formatCurrency(Number(award.depositAmount), i18n.language),
                       })}
@@ -664,7 +658,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                           lotTitle,
                         })
                       }
-                      className="px-2.5 py-1 text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200 cursor-pointer"
+                      className="px-2.5 py-1 text-[11px] font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition border border-rose-200 cursor-pointer"
                     >
                       {t('bidsPage.complainToAdmin')}
                     </button>
@@ -690,16 +684,14 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                     activeTab === tab.key
-                      ? 'bg-violet-600 text-white shadow-sm'
+                      ? 'bg-blue-600 text-white shadow-sm'
                       : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
                   }`}
                 >
                   {t(tab.labelKey)}
                   <span
                     className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                      activeTab === tab.key
-                        ? 'bg-white/20 text-white'
-                        : 'bg-slate-100 text-slate-500'
+                      activeTab === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-muted'
                     }`}
                   >
                     {count}
@@ -711,25 +703,25 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
           {loading && (
             <div className="py-14 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-              <Loader2 size={16} className="animate-spin text-violet-600" />{' '}
+              <Loader2 size={16} className="animate-spin text-blue-600" />{' '}
               {t('bidsPage.loadingBids')}
             </div>
           )}
 
           {!loading && filtered.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
-              <div className="h-16 w-16 rounded-2xl bg-violet-50 flex items-center justify-center text-violet-400 mb-4">
+              <div className="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-400 mb-4">
                 <Gavel size={28} />
               </div>
-              <h3 className="text-sm font-bold text-slate-800 mb-1">
+              <h3 className="text-sm font-semibold text-ink mb-1">
                 {t('bidsPage.emptyBidsTitle')}
               </h3>
-              <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
+              <p className="text-xs text-muted max-w-sm mb-5 leading-relaxed">
                 {t('bidsPage.emptyBidsDesc')}
               </p>
               <Link
                 to="/auction"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs transition shadow-sm"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm"
               >
                 <ShoppingBag size={14} />
                 {t('bidsPage.joinAuctionNow')}
@@ -747,9 +739,9 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                     className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm hover:shadow-md transition"
                   >
                     <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
-                      <span className="text-xs font-semibold text-slate-500">{bid.shopName}</span>
+                      <span className="text-xs font-semibold text-muted">{bid.shopName}</span>
                       <span
-                        className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${s.cls}`}
+                        className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.cls}`}
                       >
                         {s.icon} {t(s.labelKey)}
                       </span>
@@ -763,7 +755,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-slate-900 line-clamp-2">
+                        <p className="text-xs font-semibold text-ink line-clamp-2">
                           {bid.productName}
                         </p>
                         <div className="mt-2.5 grid grid-cols-2 gap-2">
@@ -771,7 +763,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                             <p className="text-[10px] text-slate-400 mb-0.5">
                               {t('bidsPage.myBidLabel')}
                             </p>
-                            <p className="text-xs font-extrabold text-violet-700">
+                            <p className="text-xs font-semibold text-blue-700">
                               {formatCurrency(bid.myBid, i18n.language)}
                             </p>
                           </div>
@@ -779,7 +771,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
                             <p className="text-[10px] text-slate-400 mb-0.5">
                               {t('bidsPage.currentBidLabel')}
                             </p>
-                            <p className="text-xs font-extrabold text-slate-800">
+                            <p className="text-xs font-semibold text-ink">
                               {formatCurrency(bid.currentBid, i18n.language)}
                             </p>
                           </div>
@@ -803,7 +795,7 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
       )}
 
       {purchasesOnly && loading && (
-        <p role="status" className="py-8 text-center text-sm text-slate-500">
+        <p role="status" className="py-8 text-center text-sm text-muted">
           {t('bidsPage.loadingRights')}
         </p>
       )}
@@ -813,8 +805,8 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
         secondChanceOffers.length === 0 &&
         pendingCheckoutAwards.length === 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-            <p className="font-semibold text-slate-800">{t('bidsPage.noOffersTitle')}</p>
-            <p className="mt-2 text-sm text-slate-500">{t('bidsPage.noOffersDesc')}</p>
+            <p className="font-semibold text-ink">{t('bidsPage.noOffersTitle')}</p>
+            <p className="mt-2 text-sm text-muted">{t('bidsPage.noOffersDesc')}</p>
           </div>
         )}
 

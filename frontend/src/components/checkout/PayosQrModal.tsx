@@ -26,13 +26,13 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
         )}&accountName=${encodeURIComponent(payment.accountName || '')}`;
 
   return (
-    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white rounded-2xl p-6 text-left shadow-lg border border-indigo-900/50">
+    <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-blue-950 text-white rounded-2xl p-6 text-left shadow-lg border border-blue-900/50">
       <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
         <div className="flex items-center gap-2">
-          <QrCode className="text-emerald-400" size={22} />
-          <span className="font-bold text-sm text-white">{t('checkout.qrModalTitle')}</span>
+          <QrCode className="text-blue-400" size={22} />
+          <span className="font-semibold text-sm text-white">{t('checkout.qrModalTitle')}</span>
         </div>
-        <span className="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+        <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
           {t('checkout.autoActivateBadge')}
         </span>
       </div>
@@ -47,7 +47,7 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
               <span>{t('checkout.scanViaLink')}</span>
             </div>
           )}
-          <span className="text-[11px] text-slate-500 mt-2 font-semibold">
+          <span className="text-[11px] text-muted mt-2 font-semibold">
             {t('checkout.openBankApp')}
           </span>
         </div>
@@ -65,7 +65,7 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
                 {t('checkout.accountNumber')}
               </span>
               <div className="flex items-center gap-2">
-                <strong className="text-emerald-400 font-mono text-base tracking-wider">
+                <strong className="text-blue-400 font-mono text-base tracking-wider">
                   {payment.accountNumber}
                 </strong>
                 <button
@@ -86,7 +86,7 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
           )}
           <div>
             <span className="text-slate-400 text-[11px] block">{t('checkout.amountToPay')}</span>
-            <strong className="text-amber-400 text-base font-extrabold">
+            <strong className="text-blue-400 text-base font-semibold">
               {formatCurrency(Number(payment.amount))}
             </strong>
           </div>
@@ -118,10 +118,10 @@ export const PayosQrModal: React.FC<PayosQrModalProps> = ({ payment, onCopySucce
         </div>
       </div>
 
-      <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-center gap-2.5 text-xs text-emerald-300">
+      <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-center gap-2.5 text-xs text-blue-300">
         <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
         </span>
         <span>{t('checkout.qrAutoActivateNote')}</span>
       </div>

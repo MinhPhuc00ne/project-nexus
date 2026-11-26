@@ -12,27 +12,27 @@ interface HomeTrendingSectionProps {
 function renderRankBadge(rank: number) {
   if (rank === 1) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500 px-2 py-0.5 text-[10px] font-black text-white shadow-xs">
+      <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-blue-600 via-blue-700 to-navy px-2 py-0.5 text-[10px] font-semibold text-white shadow-xs">
         🏆 TOP 1
       </span>
     );
   }
   if (rank === 2) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-slate-400 to-slate-500 px-2 py-0.5 text-[10px] font-black text-white shadow-xs">
+      <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-slate-400 to-slate-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-xs">
         🥈 TOP 2
       </span>
     );
   }
   if (rank === 3) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-amber-600 to-amber-700 px-2 py-0.5 text-[10px] font-black text-white shadow-xs">
+      <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-blue-600 to-blue-700 px-2 py-0.5 text-[10px] font-semibold text-white shadow-xs">
         🥉 TOP 3
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-700">
+    <span className="inline-flex items-center rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700">
       #{rank}
     </span>
   );
@@ -57,11 +57,11 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
               <h2 className="text-lg font-semibold tracking-tight text-ink flex items-center gap-1.5">
                 {t('home.trending.title')}
               </h2>
-              <span className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-0.5 text-[10px] font-extrabold text-white shadow-xs">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-0.5 text-[10px] font-semibold text-white shadow-xs">
                 HOT TREND
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">{t('home.trending.subtitle')}</p>
+            <p className="text-xs text-muted mt-0.5">{t('home.trending.subtitle')}</p>
           </div>
         </div>
 
@@ -127,28 +127,28 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
                     />
                     <div className="absolute top-1.5 left-1.5 z-10">{renderRankBadge(rank)}</div>
                     {hasSale && (
-                      <span className="absolute top-1.5 right-1.5 rounded-md bg-red-500 px-1.5 py-0.5 text-[10px] font-extrabold text-white shadow-xs">
+                      <span className="absolute top-1.5 right-1.5 rounded-md bg-blue-500 px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-xs">
                         -{discountPct}%
                       </span>
                     )}
                   </div>
 
                   {/* Shop Info */}
-                  <div className="mt-2.5 flex items-center justify-between text-[11px] text-slate-500">
+                  <div className="mt-2.5 flex items-center justify-between text-[11px] text-muted">
                     <span className="truncate max-w-[110px] font-medium flex items-center gap-1">
                       <Store size={11} className="text-slate-400 shrink-0" />
                       {item.shopName || item.seller?.fullName || 'NEXUS Store'}
                     </span>
                     {item.reputationScore > 0 && (
-                      <span className="flex items-center gap-0.5 font-semibold text-amber-600 shrink-0">
-                        <Star size={10} className="fill-amber-400 text-amber-400" />
+                      <span className="flex items-center gap-0.5 font-semibold text-blue-600 shrink-0">
+                        <Star size={10} className="fill-blue-400 text-blue-400" />
                         {item.reputationScore}
                       </span>
                     )}
                   </div>
 
                   {/* Product Title */}
-                  <h3 className="mt-1 line-clamp-2 text-xs font-semibold text-slate-900 group-hover:text-primary transition">
+                  <h3 className="mt-1 line-clamp-2 text-xs font-semibold text-ink group-hover:text-primary transition">
                     {item.title}
                   </h3>
                 </div>
@@ -166,9 +166,9 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
                     )}
                   </div>
 
-                  <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500">
-                    <span className="inline-flex items-center gap-1 font-semibold text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded">
-                      <Flame size={11} className="text-orange-500 fill-orange-500" />
+                  <div className="mt-1 flex items-center justify-between text-[10px] text-muted">
+                    <span className="inline-flex items-center gap-1 font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                      <Flame size={11} className="text-blue-500 fill-blue-500" />
                       {purchaseText}
                     </span>
                     <span className="text-slate-400">{stockText}</span>

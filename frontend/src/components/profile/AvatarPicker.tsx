@@ -67,7 +67,7 @@ export default function AvatarPicker({ savedUrl, file, onChange }: AvatarPickerP
               }}
             />
           </label>
-          <p className="text-[11px] text-slate-500">{t('profileEditor.avatarPicker.formatHint')}</p>
+          <p className="text-[11px] text-muted">{t('profileEditor.avatarPicker.formatHint')}</p>
           {file && (
             <div className="flex flex-wrap items-center gap-3 text-xs">
               <span className="break-all text-slate-600">{file.name}</span>
@@ -85,7 +85,7 @@ export default function AvatarPicker({ savedUrl, file, onChange }: AvatarPickerP
           )}
         </div>
       </div>
-      <p className="text-[11px] text-slate-500">{t('profileEditor.avatarPicker.uploadHint')}</p>
+      <p className="text-[11px] text-muted">{t('profileEditor.avatarPicker.uploadHint')}</p>
       {error && (
         <p role="alert" className="text-xs text-red-600">
           {error}

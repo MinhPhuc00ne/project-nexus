@@ -233,7 +233,7 @@ export default function SearchPage() {
         <>
           {t('search.titleCategoryOnly', { category: categoryName })}
           {rawSearch && (
-            <span className="text-sm font-normal text-slate-500">
+            <span className="text-sm font-normal text-muted">
               {' '}
               {t('search.titleKeywordSuffix', { keyword: rawSearch })}
             </span>
@@ -250,7 +250,7 @@ export default function SearchPage() {
   return (
     <main className="mx-auto max-w-[1280px] space-y-5 px-3 sm:px-4 py-5 sm:py-7">
       {/* Breadcrumb Navigation */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-slate-500">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-muted">
         <Link
           to="/"
           className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 transition"
@@ -264,7 +264,7 @@ export default function SearchPage() {
         {categoryName && (
           <>
             <span className="text-slate-300">/</span>
-            <span className="font-semibold text-slate-800">{categoryName}</span>
+            <span className="font-semibold text-ink">{categoryName}</span>
           </>
         )}
       </nav>
@@ -273,11 +273,11 @@ export default function SearchPage() {
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-r from-blue-50/40 via-white to-slate-50 p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-semibold text-ink tracking-tight flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-blue-600 shrink-0 hidden sm:inline-block" />
               <span>{renderPageTitle()}</span>
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500">{t('search.subtitle')}</p>
+            <p className="text-xs sm:text-sm text-muted">{t('search.subtitle')}</p>
           </div>
 
           {/* Search Input Box */}
@@ -304,7 +304,7 @@ export default function SearchPage() {
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl text-xs sm:text-sm font-bold transition shadow-xs shrink-0 cursor-pointer"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white rounded-xl text-xs sm:text-sm font-semibold transition shadow-xs shrink-0 cursor-pointer"
             >
               {t('search.submitButton')}
             </button>
@@ -314,7 +314,7 @@ export default function SearchPage() {
         {/* Active Filter Chips */}
         {activeBadges.length > 0 && (
           <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wide mr-1 flex items-center gap-1">
+            <span className="text-xs font-semibold text-muted uppercase tracking-wide mr-1 flex items-center gap-1">
               <SlidersHorizontal className="h-3.5 w-3.5 text-blue-600" />{' '}
               {t('search.filteringLabel')}
             </span>
@@ -327,7 +327,7 @@ export default function SearchPage() {
                 <button
                   type="button"
                   onClick={() => removeFilterItem(badge.key)}
-                  className="text-blue-500 hover:text-rose-600 cursor-pointer ml-0.5"
+                  className="text-blue-500 hover:text-primary-dark cursor-pointer ml-0.5"
                   title={t('search.removeFilter', { label: badge.label })}
                 >
                   <X className="h-3 w-3" />
@@ -337,7 +337,7 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={handleResetFilters}
-              className="text-xs font-semibold text-rose-500 hover:text-rose-700 hover:underline ml-2 cursor-pointer"
+              className="text-xs font-semibold text-primary hover:text-primary-dark hover:underline ml-2 cursor-pointer"
             >
               {t('search.clearAllFilters')}
             </button>

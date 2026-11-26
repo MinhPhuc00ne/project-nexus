@@ -28,7 +28,7 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
           <span className="text-xs text-slate-400">{t('home.flashSale.noImage')}</span>
         )}
         {product.discount ? (
-          <span className="absolute left-2 top-2 rounded bg-[var(--color-primary)] px-2 py-1 text-[10px] font-bold text-white shadow-sm">
+          <span className="absolute left-2 top-2 rounded bg-[var(--color-primary)] px-2 py-1 text-[10px] font-semibold text-white shadow-sm">
             -{product.discount}%
           </span>
         ) : null}
@@ -40,7 +40,7 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
         </h3>
 
         <div className="mt-1 flex items-baseline gap-2">
-          <p className="text-sm font-extrabold text-[var(--color-primary)]">
+          <p className="text-sm font-semibold text-[var(--color-primary)]">
             {product.price ? formatCurrency(product.price) : '--'}
           </p>
           {product.oldPrice ? (
@@ -54,7 +54,7 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
             against a stock of 50 that nothing reported, filled from a "sold"
             count derived from the card's position in the list. */}
         {typeof product.sold === 'number' && product.sold > 0 && (
-          <p className="mt-2 text-[10px] font-semibold text-slate-500">
+          <p className="mt-2 text-[10px] font-semibold text-muted">
             {t('home.flashSale.soldCount', { count: product.sold })}
           </p>
         )}

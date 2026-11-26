@@ -212,8 +212,8 @@ export default function BuyerOrdersPage() {
               {t(tab.labelKey)}
               {count > 0 && (
                 <span
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                    activeTab === tab.key ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                  className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                    activeTab === tab.key ? 'bg-white/25 text-white' : 'bg-slate-100 text-muted'
                   }`}
                 >
                   {count}
@@ -233,14 +233,14 @@ export default function BuyerOrdersPage() {
       {!loading && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center rounded-2xl border border-dashed border-slate-200 bg-white">
           <ShoppingBag size={36} className="text-slate-300 mb-3" />
-          <p className="text-sm font-semibold text-slate-500">{t('ordersPage.emptyTitle')}</p>
+          <p className="text-sm font-semibold text-muted">{t('ordersPage.emptyTitle')}</p>
           <p className="text-xs text-slate-400 mt-1">
             {search ? t('ordersPage.emptySearch') : t('ordersPage.emptyDefault')}
           </p>
           {!search && (
             <Link
               to="/search"
-              className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
+              className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm"
             >
               {t('ordersPage.exploreProducts')}
             </Link>

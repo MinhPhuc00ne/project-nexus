@@ -132,7 +132,7 @@ export const ShopDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8 text-slate-500">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8 text-muted">
         <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
         <p className="text-base font-semibold">{t('shop.loadingShop')}</p>
       </div>
@@ -144,8 +144,8 @@ export const ShopDetailPage: React.FC = () => {
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-8">
         <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-lg font-bold text-slate-900 mb-2">{t('shop.unavailableTitle')}</h2>
-          <p className="text-sm text-slate-500 mb-6">{error || t('shop.notFoundFallback')}</p>
+          <h2 className="text-lg font-semibold text-ink mb-2">{t('shop.unavailableTitle')}</h2>
+          <p className="text-sm text-muted mb-6">{error || t('shop.notFoundFallback')}</p>
           <button
             type="button"
             onClick={() => navigate('/search')}
@@ -159,7 +159,7 @@ export const ShopDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pb-16">
+    <div className="min-h-screen bg-slate-50 text-ink pb-16">
       <ShopHeader
         shop={shop}
         onShare={() => {
@@ -200,7 +200,7 @@ export const ShopDetailPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('products')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
                 activeTab === 'products'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'
@@ -213,7 +213,7 @@ export const ShopDetailPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('reviews')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
                 activeTab === 'reviews'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200'
@@ -225,13 +225,13 @@ export const ShopDetailPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-6 text-xs">
-            <div className="flex items-center gap-1.5 text-slate-500">
+            <div className="flex items-center gap-1.5 text-muted">
               <Store className="w-3.5 h-3.5 text-emerald-600" />
               <span>{t('shop.verifiedLabel')}</span>
               <strong className="text-emerald-700">{t('shop.verifiedValue')}</strong>
             </div>
 
-            <div className="flex items-center gap-1.5 text-slate-500">
+            <div className="flex items-center gap-1.5 text-muted">
               <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
               <span>{t('shop.protectionLabel')}</span>
               <strong className="text-blue-700">{t('shop.protectionValue')}</strong>

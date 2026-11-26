@@ -38,14 +38,14 @@ export const statusConfig: Record<
   PAID: {
     label: 'Đã thanh toán',
     icon: <CheckCircle size={11} />,
-    cls: 'bg-sky-50 text-sky-700 border-sky-200',
-    dot: 'bg-sky-400',
+    cls: 'bg-blue-50 text-blue-700 border-blue-200',
+    dot: 'bg-blue-400',
   },
   PREPARING: {
     label: 'Đang chuẩn bị',
     icon: <Package size={11} />,
-    cls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    dot: 'bg-indigo-400',
+    cls: 'bg-blue-50 text-blue-700 border-blue-200',
+    dot: 'bg-blue-400',
   },
   SHIPPING: {
     label: 'Đang giao hàng',
@@ -120,12 +120,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({
       <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50/60 border-b border-slate-100">
         <div className="flex items-center gap-2">
           <span className={`h-2 w-2 rounded-full shrink-0 ${s.dot} animate-pulse`} />
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+          <span className="text-[11px] font-semibold text-muted uppercase tracking-wide">
             {order.shopName}
           </span>
         </div>
         <span
-          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full border ${s.cls}`}
+          className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full border ${s.cls}`}
         >
           {s.icon}
           {statusLabel}
@@ -140,7 +140,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           <img src={order.img} alt={order.product} className="h-full w-full object-contain" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-slate-900 line-clamp-2 group-hover:text-blue-600 transition">
+          <p className="text-xs font-semibold text-ink line-clamp-2 group-hover:text-blue-600 transition">
             {order.product}
           </p>
           <p className="text-[11px] text-slate-400 mt-1">
@@ -152,7 +152,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </p>
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-1">
-          <span className="text-sm font-extrabold text-[var(--color-primary)]">{order.price}</span>
+          <span className="text-sm font-semibold text-[var(--color-primary)]">{order.price}</span>
           <ChevronRight size={14} className="text-slate-400 group-hover:text-blue-600 transition" />
         </div>
       </Link>
@@ -169,7 +169,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               type="button"
               disabled={isPaying}
               onClick={(e) => onPayNow(order.id, e)}
-              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:opacity-50"
             >
               {isPaying ? (
                 <>
@@ -198,7 +198,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
               type="button"
               disabled={isConfirming}
               onClick={(e) => onConfirmDelivery?.(order.id, e)}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
             >
               {isConfirming ? (
                 <>

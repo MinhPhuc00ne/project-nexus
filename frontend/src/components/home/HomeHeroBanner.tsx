@@ -13,6 +13,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
   const { t } = useTranslation('guest');
   const [activeSlide, setActiveSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [titleVisible, setTitleVisible] = useState(false);
 
   const fallbackPlatformSlides: HomeHeroSlide[] = [
     {
@@ -29,18 +30,19 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
 
   const activeSlides = slides.length > 0 ? slides : fallbackPlatformSlides;
 
-  const showPreviousSlide = useCallback(
-    () => setActiveSlide((current) => (current === 0 ? activeSlides.length - 1 : current - 1)),
-    [activeSlides.length],
-  );
+  const showPreviousSlide = useCallback(() => {
+    setTitleVisible(false);
+    setActiveSlide((current) => (current === 0 ? activeSlides.length - 1 : current - 1));
+  }, [activeSlides.length]);
 
-  const showNextSlide = useCallback(
-    () => setActiveSlide((current) => (current === activeSlides.length - 1 ? 0 : current + 1)),
-    [activeSlides.length],
-  );
+  const showNextSlide = useCallback(() => {
+    setTitleVisible(false);
+    setActiveSlide((current) => (current === activeSlides.length - 1 ? 0 : current + 1));
+  }, [activeSlides.length]);
 
   useEffect(() => {
     setActiveSlide(0);
+    setTitleVisible(false);
   }, [slides.length]);
 
   useEffect(() => {
@@ -79,21 +81,29 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
       >
         {currentSlide.isFullBanner || !currentSlide.description ? (
           <Link
+            key={currentSlide.id ?? activeSlide}
             to={currentSlide.targetUrl || '/search'}
             aria-label={currentSlide.title || t('home.heroFallback.shopNow')}
+            onMouseEnter={() => setTitleVisible(true)}
+            onMouseLeave={() => setTitleVisible(false)}
+            onFocus={() => setTitleVisible(true)}
+            onBlur={() => setTitleVisible(false)}
             className="relative block h-full w-full overflow-hidden bg-slate-950 outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-primary"
           >
             <img
               src={currentSlide.image}
               alt={currentSlide.title || 'Event Banner'}
-              className="h-full w-full object-cover object-center motion-safe:transition-transform motion-safe:duration-700 motion-safe:group-hover:scale-[1.02]"
+              className={`h-full w-full object-cover object-center motion-safe:transition-transform motion-safe:duration-700 ${titleVisible ? 'motion-safe:scale-[1.02]' : ''}`}
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src =
                   'https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1400&q=80';
               }}
             />
             {currentSlide.title && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 translate-y-2 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent pb-14 pt-16 text-white opacity-0 transition-[opacity,translate] duration-300 group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100 motion-reduce:transform-none motion-reduce:transition-none">
+              <div
+                aria-hidden={!titleVisible}
+                className={`pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-transparent pb-14 pt-16 text-white transition-[opacity,translate] duration-300 motion-reduce:transform-none motion-reduce:transition-none ${titleVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'}`}
+              >
                 <h2 className="px-6 text-lg font-semibold tracking-tight drop-shadow sm:px-10 sm:text-2xl">
                   {currentSlide.title}
                 </h2>
@@ -188,7 +198,10 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
                   key={index}
                   type="button"
                   aria-label={t('home.heroFallback.goToSlide', { index: index + 1 })}
-                  onClick={() => setActiveSlide(index)}
+                  onClick={() => {
+                    setTitleVisible(false);
+                    setActiveSlide(index);
+                  }}
                   className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                     activeSlide === index
                       ? 'w-7 bg-[var(--color-primary)]'

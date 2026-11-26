@@ -71,7 +71,7 @@ const quickLinks = [
     to: '/buyer/reputation',
     icon: Award,
     labelKey: 'dashboard.quickLinks.reputation',
-    color: 'text-indigo-600',
+    color: 'text-blue-600',
   },
   {
     to: '/buyer/addresses',
@@ -186,14 +186,16 @@ export default function BuyerDashboardPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-200 mb-1">
             {t('dashboard.bannerBadge')}
           </p>
-          <h1 className="text-xl font-bold mb-1">{t('dashboard.greeting', { name: firstName })}</h1>
+          <h1 className="text-xl font-semibold mb-1">
+            {t('dashboard.greeting', { name: firstName })}
+          </h1>
           <p className="text-xs text-blue-100">{t('dashboard.bannerDesc')}</p>
           <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
             <Link
               to="/buyer/reputation"
               className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition border border-white/20 px-3 py-1 rounded-md text-white cursor-pointer"
             >
-              <Star size={12} className="text-amber-300 fill-amber-300" />
+              <Star size={12} className="text-blue-200 fill-blue-200" />
               <span>
                 {t('dashboard.reputationLabel')} <strong>{user?.reputationScore ?? 100}</strong>
               </span>
@@ -203,7 +205,7 @@ export default function BuyerDashboardPage() {
               to="/buyer/reputation"
               className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 transition border border-white/20 px-3 py-1 rounded-md text-white cursor-pointer"
             >
-              <TrendingUp size={12} className="text-emerald-300" />
+              <TrendingUp size={12} className="text-blue-200" />
               <span>
                 {t('dashboard.tierLabel')} <strong>{user?.trustLevel ?? 'EXCELLENT'}</strong>
               </span>
@@ -225,7 +227,7 @@ export default function BuyerDashboardPage() {
             <div className="inline-flex h-9 w-9 items-center justify-center rounded-md bg-blue-50 text-blue-600 border border-blue-100 mb-2.5">
               <stat.icon size={17} />
             </div>
-            <p className="text-base font-bold text-slate-900 leading-tight">{stat.value}</p>
+            <p className="text-base font-semibold text-ink leading-tight">{stat.value}</p>
             <p className="text-xs font-semibold text-slate-700 mt-0.5">{stat.label}</p>
             <p className="text-[11px] text-slate-400 mt-0.5">{stat.sub}</p>
           </Link>
@@ -235,7 +237,7 @@ export default function BuyerDashboardPage() {
       {/* Recent Orders */}
       <div className="rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200">
-          <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
             <Package size={15} className="text-blue-600" />
             {t('dashboard.recentOrdersTitle')}
           </h2>
@@ -255,10 +257,10 @@ export default function BuyerDashboardPage() {
         )}
         {!loading && orders.length === 0 && (
           <div className="p-8 text-center space-y-2">
-            <p className="text-xs text-slate-500">{t('dashboard.noOrders')}</p>
+            <p className="text-xs text-muted">{t('dashboard.noOrders')}</p>
             <Link
               to="/search"
-              className="inline-block text-xs font-bold text-blue-600 hover:underline"
+              className="inline-block text-xs font-semibold text-blue-600 hover:underline"
             >
               {t('dashboard.exploreNow')}
             </Link>
@@ -297,7 +299,7 @@ export default function BuyerDashboardPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-slate-900 truncate group-hover:text-blue-600 transition">
+                    <p className="text-xs font-semibold text-ink truncate group-hover:text-blue-600 transition">
                       {title}
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
@@ -306,7 +308,7 @@ export default function BuyerDashboardPage() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs font-bold text-blue-700">
+                    <p className="text-xs font-semibold text-blue-700">
                       {formatCurrency(Number(order.totalAmount), i18n.language)}
                     </p>
                     <span

@@ -167,16 +167,16 @@ export default function CheckoutPage() {
 
   if (loadingCart) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500 text-xs">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-muted text-xs">
         {t('commerce:checkout.loading')}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 py-8">
+    <div className="min-h-screen bg-slate-50 text-ink py-8">
       <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center gap-2 text-xs text-slate-500 mb-6">
+        <div className="flex items-center gap-2 text-xs text-muted mb-6">
           <Link to="/" className="hover:text-blue-600 transition">
             {t('common:nav.home')}
           </Link>
@@ -185,7 +185,7 @@ export default function CheckoutPage() {
             {t('common:nav.cart')}
           </Link>
           <ChevronRight size={13} />
-          <span className="font-semibold text-slate-800">{t('commerce:checkout.title')}</span>
+          <span className="font-semibold text-ink">{t('commerce:checkout.title')}</span>
         </div>
 
         {checkoutDone && (
@@ -199,7 +199,7 @@ export default function CheckoutPage() {
               primaryAction={
                 <Link
                   to="/buyer/orders"
-                  className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow transition hover:bg-slate-800"
+                  className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-semibold text-white shadow transition hover:bg-slate-800"
                 >
                   <ShoppingBag size={14} />
                   <span>{t('commerce:checkout.viewMyOrders')}</span>
@@ -208,7 +208,7 @@ export default function CheckoutPage() {
               secondaryAction={
                 <Link
                   to="/search"
-                  className="rounded-xl bg-slate-100 px-6 py-2.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
+                  className="rounded-xl bg-slate-100 px-6 py-2.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200"
                 >
                   {t('commerce:cart.continueShopping')}
                 </Link>
@@ -219,13 +219,13 @@ export default function CheckoutPage() {
         {!checkoutDone && items.length === 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-md mx-auto shadow-sm">
             <Package size={40} className="text-slate-300 mx-auto mb-3" />
-            <h2 className="text-lg font-bold text-slate-800 mb-1">
+            <h2 className="text-lg font-semibold text-ink mb-1">
               {t('commerce:checkout.noItemsTitle')}
             </h2>
-            <p className="text-xs text-slate-500 mb-6">{t('commerce:checkout.noItemsDesc')}</p>
+            <p className="text-xs text-muted mb-6">{t('commerce:checkout.noItemsDesc')}</p>
             <Link
               to="/cart"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
             >
               <ArrowLeft size={14} />
               <span>{t('commerce:checkout.backToCart')}</span>

@@ -128,12 +128,12 @@ export default function ChangePasswordModal({
                   }
                   aria-pressed={visible}
                   onClick={() => setVisible((value) => !value)}
-                  className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center text-slate-500"
+                  className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center text-muted"
                 >
                   {visible ? <EyeInvisibleOutlined /> : <EyeOutlined />}
                 </button>
               </div>
-              <span className="mt-1.5 block text-[11px] font-normal text-slate-500">
+              <span className="mt-1.5 block text-[11px] font-normal text-muted">
                 {t('profileEditor.changePasswordModal.passwordHint')}
               </span>
             </label>

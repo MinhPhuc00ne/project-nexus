@@ -52,14 +52,14 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
         ) : (
           <span className="text-xs text-slate-400">{t('home.recommendationCard.noImage')}</span>
         )}
-        <span className="absolute left-2 top-2 rounded bg-[var(--color-primary)] px-2 py-1 text-[9px] font-bold text-white">
+        <span className="absolute left-2 top-2 rounded bg-[var(--color-primary)] px-2 py-1 text-[9px] font-semibold text-white">
           {product.badge ||
             (typeof product.id === 'number' && product.id % 2 === 0 ? 'HOT' : 'MALL')}
         </span>
         <button
           type="button"
           aria-label={t('home.recommendationCard.favoriteAria', { name: product.name })}
-          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-slate-500 shadow-sm transition hover:text-rose-500 cursor-pointer"
+          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-muted shadow-sm transition hover:text-primary cursor-pointer"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -70,9 +70,9 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
       </Link>
 
       <div className="p-2.5 sm:p-3">
-        <p className="truncate text-[10px] text-slate-500">
+        <p className="truncate text-[10px] text-muted">
           Nexus Store ·{' '}
-          <span className="text-green-600">● {t('home.recommendationCard.active')}</span>
+          <span className="text-blue-600">● {t('home.recommendationCard.active')}</span>
         </p>
 
         <Link to={`/product/${prodId}`}>
@@ -89,11 +89,11 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
           </span>
         </div>
 
-        <p className="mt-2 text-sm font-extrabold text-primary">
+        <p className="mt-2 text-sm font-semibold text-primary">
           {product.price ? formatCurrency(product.price) : '--'}
         </p>
 
-        <p className="mt-2 flex items-center gap-1 text-[10px] text-green-600">
+        <p className="mt-2 flex items-center gap-1 text-[10px] text-blue-600">
           <Truck size={12} /> {t('home.recommendationCard.fastShipping')}
         </p>
 

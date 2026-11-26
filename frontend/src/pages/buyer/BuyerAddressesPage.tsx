@@ -181,7 +181,7 @@ export default function BuyerAddressesPage() {
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm cursor-pointer"
+            className="inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm cursor-pointer"
           >
             <Plus size={16} />
             <span>{t('addresses.addNew')}</span>
@@ -199,7 +199,7 @@ export default function BuyerAddressesPage() {
           <button
             type="button"
             onClick={() => void fetchAddresses()}
-            className="font-bold underline hover:no-underline"
+            className="font-semibold underline hover:no-underline"
           >
             {t('addresses.retry')}
           </button>
@@ -208,7 +208,7 @@ export default function BuyerAddressesPage() {
 
       {/* Loading state */}
       {loading && (
-        <div className="py-16 text-center text-slate-500">
+        <div className="py-16 text-center text-muted">
           <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
           <p className="text-xs">{t('addresses.loading')}</p>
         </div>
@@ -219,14 +219,14 @@ export default function BuyerAddressesPage() {
           <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
             <Home size={28} />
           </div>
-          <h3 className="text-sm font-bold text-slate-800 mb-1">{t('addresses.emptyTitle')}</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-5 leading-relaxed">
+          <h3 className="text-sm font-semibold text-ink mb-1">{t('addresses.emptyTitle')}</h3>
+          <p className="text-xs text-muted max-w-sm mx-auto mb-5 leading-relaxed">
             {t('addresses.emptyDesc')}
           </p>
           <button
             type="button"
             onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm cursor-pointer"
           >
             <Plus size={16} />
             <span>{t('addresses.addNow')}</span>

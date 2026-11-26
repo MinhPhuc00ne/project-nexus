@@ -225,7 +225,7 @@ export default function OrderReviewModal({
       isOpen={isOpen}
       onClose={handleClose}
       title={
-        <div className="flex items-center gap-2 text-base font-bold text-slate-900">
+        <div className="flex items-center gap-2 text-base font-semibold text-ink">
           <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
           <span>
             {t('orders.reviewModal.title', { code: order.orderNumber || order.id?.slice(0, 8) })}
@@ -240,17 +240,17 @@ export default function OrderReviewModal({
             <CheckCircle2 size={32} />
           </div>
           <div className="space-y-1">
-            <h3 className="text-base font-bold text-slate-900">
+            <h3 className="text-base font-semibold text-ink">
               {t('orders.reviewModal.thankYouTitle')}
             </h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            <p className="text-xs text-muted max-w-sm mx-auto">
               {t('orders.reviewModal.thankYouDesc')}
             </p>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="px-6 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition"
+            className="px-6 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition"
           >
             {t('orders.reviewModal.close')}
           </button>
@@ -266,7 +266,7 @@ export default function OrderReviewModal({
 
           {/* Danh sách sản phẩm trong đơn */}
           <div className="space-y-4">
-            <h4 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-slate-700">
+            <h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-700">
               <Package size={14} className="text-blue-600" />
               <span>{t('orders.reviewModal.rateProductsTitle')}</span>
             </h4>
@@ -295,8 +295,8 @@ export default function OrderReviewModal({
                       className="h-12 w-12 rounded-lg object-cover border border-slate-200"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-bold text-slate-900">{title}</p>
-                      <p className="text-[11px] text-slate-500">
+                      <p className="truncate text-xs font-semibold text-ink">{title}</p>
+                      <p className="text-[11px] text-muted">
                         {formatCurrency(Number(item.unitPrice || item.subtotal || 0))} x{' '}
                         {item.quantity}
                       </p>
@@ -327,7 +327,7 @@ export default function OrderReviewModal({
                         </button>
                       ))}
                     </div>
-                    <span className="text-xs font-bold text-amber-600 ml-1">
+                    <span className="text-xs font-semibold text-amber-600 ml-1">
                       {t(
                         (
                           {
@@ -351,7 +351,7 @@ export default function OrderReviewModal({
                         setProductComments((prev) => ({ ...prev, [pid]: e.target.value }))
                       }
                       placeholder={t('orders.reviewModal.productCommentPlaceholder')}
-                      className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
+                      className="w-full rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-ink placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
                     />
                   </div>
                 </div>
@@ -363,14 +363,14 @@ export default function OrderReviewModal({
           {canReviewShop && !loadingShopEligibility && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-slate-800 cursor-pointer">
+                <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink cursor-pointer">
                   <input
                     type="checkbox"
                     checked={includeShop}
                     onChange={(e) => setIncludeShop(e.target.checked)}
                     className="rounded text-blue-600 focus:ring-blue-500"
                   />
-                  <Store size={14} className="text-sky-600" />
+                  <Store size={14} className="text-blue-600" />
                   <span>{t('orders.reviewModal.rateShopLabel')}</span>
                 </label>
               </div>
@@ -406,7 +406,7 @@ export default function OrderReviewModal({
                     value={shopComment}
                     onChange={(e) => setShopComment(e.target.value)}
                     placeholder={t('orders.reviewModal.shopCommentPlaceholder')}
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-slate-800 placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-ink placeholder-slate-400 focus:border-blue-600 focus:outline-hidden"
                   />
                 </div>
               )}
@@ -418,7 +418,7 @@ export default function OrderReviewModal({
             </p>
           )}
           {!canReviewShop && !shopEligibilityError && !loadingShopEligibility && (
-            <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-5 text-slate-500">
+            <p className="rounded-lg bg-slate-50 p-3 text-[11px] leading-5 text-muted">
               {t('orders.reviewModal.shopReviewRequiresTwoProducts')}
             </p>
           )}
@@ -435,7 +435,7 @@ export default function OrderReviewModal({
             <button
               type="submit"
               disabled={submitting || loadingShopEligibility || shopEligibilityError}
-              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition shadow-sm disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition shadow-sm disabled:opacity-50"
             >
               {submitting ? (
                 <>

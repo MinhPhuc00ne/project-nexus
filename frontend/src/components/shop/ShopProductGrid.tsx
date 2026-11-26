@@ -31,8 +31,8 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
     <main className="max-w-screen-2xl mx-auto px-6 py-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">{t('shop.gridTitle')}</h2>
-          <p className="text-xs text-slate-500 mt-1">{t('shop.gridSubtitle')}</p>
+          <h2 className="text-xl font-semibold text-ink">{t('shop.gridTitle')}</h2>
+          <p className="text-xs text-muted mt-1">{t('shop.gridSubtitle')}</p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <label className="relative block sm:w-72">
@@ -46,10 +46,10 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder={t('shop.productSearchPlaceholder')}
               aria-label={t('shop.productSearchPlaceholder')}
-              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-xs text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-9 pr-3 text-xs text-ink shadow-sm outline-none transition placeholder:text-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
             />
           </label>
-          <span className="text-xs font-bold text-slate-400 sm:text-right">
+          <span className="text-xs font-semibold text-slate-400 sm:text-right">
             {t('shop.gridShowing', { shown: products.length, total: totalProducts })}
           </span>
         </div>
@@ -58,24 +58,24 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
       {products.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center max-w-lg mx-auto shadow-sm">
           <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-bold text-slate-800 mb-1">
+          <h3 className="text-base font-semibold text-ink mb-1">
             {search ? t('shop.searchEmptyTitle') : t('shop.gridEmptyTitle')}
           </h3>
-          <p className="text-xs text-slate-500 mb-6">
+          <p className="text-xs text-muted mb-6">
             {search ? t('shop.searchEmptyDesc', { search }) : t('shop.gridEmptyDesc')}
           </p>
           {search ? (
             <button
               type="button"
               onClick={() => onSearchChange('')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition"
             >
               {t('shop.clearProductSearch')}
             </button>
           ) : (
             <Link
               to="/search"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition"
             >
               {t('shop.exploreOtherProducts')}
             </Link>
@@ -103,7 +103,7 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
                   }}
                 />
                 {product.threeModelKey && (
-                  <span className="absolute top-3 left-3 bg-blue-600/90 backdrop-blur-sm text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="absolute top-3 left-3 bg-blue-600/90 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
                     3D Model
                   </span>
                 )}
@@ -111,13 +111,13 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
 
               <div className="p-4 flex flex-col flex-1">
                 {product.category && (
-                  <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider mb-1">
+                  <span className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider mb-1">
                     {product.category.name}
                   </span>
                 )}
                 <Link
                   to={`/product/${product.id}`}
-                  className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition line-clamp-2 mb-2"
+                  className="text-sm font-semibold text-ink group-hover:text-blue-600 transition line-clamp-2 mb-2"
                 >
                   {product.title}
                 </Link>
@@ -127,7 +127,7 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
                     <span className="text-[10px] text-slate-400 block font-medium">
                       {t('shop.listedPrice')}
                     </span>
-                    <span className="text-base font-extrabold text-blue-600">
+                    <span className="text-base font-semibold text-blue-600">
                       {formatCurrency(product.basePrice)}
                     </span>
                   </div>
@@ -162,18 +162,18 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
             type="button"
             disabled={page === 1}
             onClick={() => onPageChange(Math.max(1, page - 1))}
-            className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {t('shop.prevPage')}
           </button>
-          <span className="text-xs font-semibold text-slate-500 px-3">
+          <span className="text-xs font-semibold text-muted px-3">
             {t('shop.pageOf', { page, totalPages })}
           </span>
           <button
             type="button"
             disabled={page >= totalPages}
             onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-            className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+            className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
           >
             {t('shop.nextPage')}
           </button>

@@ -233,7 +233,7 @@ export default function CheckoutModal({
       title={modalTitle}
       size={checkoutSuccess ? 'lg' : 'xl'}
     >
-      <div className="space-y-6 text-slate-800">
+      <div className="space-y-6 text-ink">
         {checkoutSuccess ? (
           <CheckoutSuccessCard
             orders={createdOrders}
@@ -246,7 +246,7 @@ export default function CheckoutModal({
               <Link
                 to="/buyer/orders"
                 onClick={handleClose}
-                className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-slate-800"
+                className="flex items-center gap-1.5 rounded-xl bg-slate-900 px-6 py-2.5 text-xs font-semibold text-white shadow hover:bg-slate-800"
               >
                 {t('checkout.viewMyOrders')}
               </Link>
@@ -255,7 +255,7 @@ export default function CheckoutModal({
               <button
                 type="button"
                 onClick={handleClose}
-                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow hover:bg-blue-700"
+                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-semibold text-white shadow hover:bg-blue-700"
               >
                 {t('checkout.done')}
               </button>
@@ -291,7 +291,7 @@ export default function CheckoutModal({
                 type="button"
                 onClick={handleClose}
                 disabled={isProcessingOrder}
-                className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
+                className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
               >
                 {t('checkout.cancel')}
               </button>
@@ -299,7 +299,7 @@ export default function CheckoutModal({
                 type="button"
                 onClick={handleConfirmCheckout}
                 disabled={isProcessingOrder || isCalculatingFee}
-                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition flex items-center gap-2 disabled:opacity-50"
+                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-md transition flex items-center gap-2 disabled:opacity-50"
               >
                 {(isProcessingOrder || isCalculatingFee) && (
                   <Loader2 size={14} className="animate-spin" />

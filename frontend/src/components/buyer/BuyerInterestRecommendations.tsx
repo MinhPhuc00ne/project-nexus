@@ -97,10 +97,10 @@ export default function BuyerInterestRecommendations({
         <div className="flex items-start gap-2.5">
           <Sparkles size={17} className="mt-0.5 shrink-0 text-blue-600" />
           <div>
-            <h2 className="text-sm font-bold text-slate-900">
+            <h2 className="text-sm font-semibold text-ink">
               {t('dashboard.interestRecommendationsTitle')}
             </h2>
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] text-muted">
               {t('dashboard.interestRecommendationsDesc')}
             </p>
           </div>
@@ -128,10 +128,10 @@ export default function BuyerInterestRecommendations({
               />
             </div>
             <div className="p-2.5">
-              <p className="line-clamp-2 min-h-8 text-[11px] font-semibold text-slate-800 group-hover:text-blue-600">
+              <p className="line-clamp-2 min-h-8 text-[11px] font-semibold text-ink group-hover:text-blue-600">
                 {product.name}
               </p>
-              <p className="mt-1 text-xs font-bold text-blue-700">
+              <p className="mt-1 text-xs font-semibold text-blue-700">
                 {formatCurrency(product.price, i18n.language)}
               </p>
             </div>

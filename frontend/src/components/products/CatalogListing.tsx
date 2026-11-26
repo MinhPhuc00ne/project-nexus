@@ -136,14 +136,14 @@ export default function CatalogListing({
                 <SlidersHorizontal className="h-3.5 w-3.5 text-blue-600" />
                 <span>{t('catalog.filtersButton')}</span>
                 {activeFilterCount > 0 && (
-                  <span className="ml-1 rounded-full bg-blue-600 px-1.5 py-0.2 text-[10px] font-bold text-white">
+                  <span className="ml-1 rounded-full bg-blue-600 px-1.5 py-0.2 text-[10px] font-semibold text-white">
                     {activeFilterCount}
                   </span>
                 )}
               </button>
             )}
 
-            <span className="hidden sm:inline-block text-xs font-bold text-slate-500 uppercase tracking-wide mr-1">
+            <span className="hidden sm:inline-block text-xs font-semibold text-muted uppercase tracking-wide mr-1">
               {t('catalog.sortByLabel')}
             </span>
 
@@ -151,9 +151,7 @@ export default function CatalogListing({
               const isActive = sortBy === opt.key;
               let btnStyle = 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200';
               if (isActive) {
-                btnStyle = opt.isTrending
-                  ? 'bg-orange-600 text-white shadow-xs font-bold'
-                  : 'bg-blue-600 text-white shadow-xs font-bold';
+                btnStyle = 'bg-blue-600 text-white shadow-xs font-semibold';
               }
               return (
                 <button
@@ -179,7 +177,7 @@ export default function CatalogListing({
                 }}
                 className={`appearance-none rounded-lg pl-3 pr-7 py-1.5 text-xs font-semibold transition cursor-pointer border ${
                   sortBy === 'price_asc' || sortBy === 'price_desc'
-                    ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-xs'
+                    ? 'bg-blue-600 text-white border-blue-600 font-semibold shadow-xs'
                     : 'bg-white text-slate-700 hover:bg-slate-100 border-slate-200'
                 }`}
               >
@@ -205,7 +203,7 @@ export default function CatalogListing({
 
           {/* Right Side: Total Count and Mini Pager */}
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 font-medium hidden sm:inline" role="status">
+            <span className="text-xs text-muted font-medium hidden sm:inline" role="status">
               {loading
                 ? t('catalog.searching')
                 : data
@@ -261,7 +259,7 @@ export default function CatalogListing({
           <button
             type="button"
             onClick={retry}
-            className="rounded-lg bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700 cursor-pointer"
+            className="rounded-lg bg-primary px-3 py-1 text-xs font-semibold text-white hover:bg-primary-dark cursor-pointer"
           >
             {t('catalog.retry')}
           </button>
@@ -274,8 +272,8 @@ export default function CatalogListing({
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 text-blue-500">
             <Store className="h-7 w-7" />
           </div>
-          <h3 className="text-base font-bold text-slate-800">{t('catalog.emptyTitle')}</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">{t('catalog.emptyDesc')}</p>
+          <h3 className="text-base font-semibold text-ink">{t('catalog.emptyTitle')}</h3>
+          <p className="text-xs text-muted max-w-md mx-auto">{t('catalog.emptyDesc')}</p>
         </div>
       )}
 
@@ -321,7 +319,7 @@ export default function CatalogListing({
                         setPage(pageNum);
                         window.scrollTo({ top: 180, behavior: 'smooth' });
                       }}
-                      className={`h-8 w-8 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      className={`h-8 w-8 rounded-lg text-xs font-semibold transition cursor-pointer ${
                         isCurrent
                           ? 'bg-blue-600 text-white shadow-xs'
                           : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
@@ -379,17 +377,17 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
 
         {/* Top-Left Shopee Mall / Yêu thích Badge */}
         <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
-          <span className="rounded-md bg-gradient-to-r from-red-600 to-rose-600 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-xs">
+          <span className="rounded-md bg-gradient-to-r from-blue-700 to-blue-500 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-xs">
             NEXUS MALL
           </span>
           {product.isTrending && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-orange-500 to-amber-500 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-xs">
+            <span className="inline-flex items-center gap-1 rounded-md bg-gradient-to-r from-blue-600 to-navy px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-xs">
               <Flame className="h-2.5 w-2.5" />
               {t('catalog.trendingBadge')}
             </span>
           )}
           {product.is3d && (
-            <span className="rounded-md bg-blue-600/90 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-bold uppercase text-white shadow-xs">
+            <span className="rounded-md bg-blue-600/90 backdrop-blur-xs px-1.5 py-0.5 text-[9px] font-semibold uppercase text-white shadow-xs">
               {t('catalog.verifiedBadge')}
             </span>
           )}
@@ -397,7 +395,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
 
         {/* Top-Right Discount Ribbon */}
         {product.discount && product.discount > 0 ? (
-          <div className="absolute top-0 right-0 bg-amber-400 text-amber-950 px-2 py-1 text-[10px] font-extrabold uppercase shadow-xs rounded-bl-lg">
+          <div className="absolute top-0 right-0 bg-amber-400 text-amber-950 px-2 py-1 text-[10px] font-semibold uppercase shadow-xs rounded-bl-lg">
             -{product.discount}%
           </div>
         ) : null}
@@ -409,7 +407,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
           {product.categoryName || product.brand}
         </p>
 
-        <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold text-slate-800 group-hover:text-blue-600 transition min-h-[2.5rem]">
+        <h3 className="line-clamp-2 text-xs sm:text-sm font-semibold text-ink group-hover:text-blue-600 transition min-h-[2.5rem]">
           {product.name}
         </h3>
 
@@ -417,14 +415,14 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
         <div className="flex items-center gap-1.5 text-[11px]">
           {hasRating && (
             <>
-              <div className="flex items-center gap-0.5 text-amber-500 font-bold">
+              <div className="flex items-center gap-0.5 text-amber-500 font-semibold">
                 <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                 <span>{product.rating!.toFixed(1)}</span>
               </div>
               <span className="text-slate-300">•</span>
             </>
           )}
-          <span className="text-slate-500 text-[10px]">
+          <span className="text-muted text-[10px]">
             {product.reviewsCount
               ? t('catalog.reviewsCount', { count: product.reviewsCount })
               : t('catalog.noReviewsYet')}
@@ -432,7 +430,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
           {product.soldCount !== undefined && product.soldCount > 0 && (
             <>
               <span className="text-slate-300">•</span>
-              <span className="text-slate-500 text-[10px] font-medium">
+              <span className="text-muted text-[10px] font-medium">
                 {t('catalog.soldCount', { count: product.soldCount })}
               </span>
             </>
@@ -441,7 +439,7 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
 
         {/* Price Row */}
         <div className="mt-auto pt-2 flex items-baseline gap-2 flex-wrap">
-          <p className="text-base sm:text-lg font-extrabold text-red-600 tracking-tight">
+          <p className="text-base sm:text-lg font-semibold text-primary tracking-tight">
             {product.formattedPrice}
           </p>
           {product.formattedOldPrice && (
@@ -452,8 +450,8 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
         </div>
 
         {/* Bottom Logistics and Location Meta */}
-        <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 text-slate-500">
-          <div className="flex items-center gap-1 text-emerald-600 font-medium text-[10px]">
+        <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-100 text-muted">
+          <div className="flex items-center gap-1 text-blue-600 font-medium text-[10px]">
             <Truck className="h-3 w-3" />
             <span>Freeship</span>
           </div>

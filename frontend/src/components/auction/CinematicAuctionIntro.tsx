@@ -185,31 +185,31 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
   return (
     <div className="fixed inset-0 z-[3000] flex items-center justify-center bg-slate-950/95 backdrop-blur-2xl p-2.5 sm:p-5 transition-all duration-500 animate-fadeIn select-none">
       {/* Ambient Spotlight Background */}
-      <div className="absolute inset-0 bg-radial from-rose-600/15 via-blue-600/5 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-radial from-blue-600/15 via-blue-600/5 to-transparent pointer-events-none" />
 
       {/* Main Cinematic Frame Container */}
       <div className="relative w-full max-w-5xl max-h-[96vh] flex flex-col rounded-3xl border border-slate-700/80 bg-slate-900/95 shadow-[0_0_100px_rgba(0,0,0,0.95)] overflow-hidden">
         {/* Top Header Bar: Thể hiện đây là Video của TOÀN BỘ PHIÊN ĐẤU GIÁ */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-slate-800/90 bg-slate-950/80 backdrop-blur-md z-30">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-rose-600 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-rose-600/40 shrink-0">
+            <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-blue-600/40 shrink-0">
               <Film className="w-4 h-4 animate-pulse" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-black uppercase tracking-wider text-rose-400 bg-rose-500/15 px-2.5 py-0.5 rounded-full border border-rose-500/30">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-400 bg-blue-500/15 px-2.5 py-0.5 rounded-full border border-blue-500/30">
                   {t('cinematic.badge')}
                 </span>
-                <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+                <span className="text-[10px] font-mono font-semibold text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
                   {sessionCode}
                 </span>
                 {isLive ? (
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="text-[10px] font-semibold text-blue-400 bg-blue-950/60 border border-blue-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping" />
                     {t('cinematic.live')}
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="text-[10px] font-semibold text-blue-400 bg-blue-950/60 border border-blue-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {auction?.status === 'SCHEDULED'
                       ? t('cinematic.upcoming')
@@ -217,7 +217,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                   </span>
                 )}
               </div>
-              <h2 className="text-xs sm:text-sm font-extrabold text-white tracking-wide truncate max-w-xs sm:max-w-lg mt-0.5 m-0">
+              <h2 className="text-xs sm:text-sm font-semibold text-white tracking-wide truncate max-w-xs sm:max-w-lg mt-0.5 m-0">
                 {sessionTitle}
               </h2>
             </div>
@@ -236,7 +236,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="group relative flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-gradient-to-r from-orange-500 via-amber-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white text-xs sm:text-sm font-extrabold rounded-full shadow-lg shadow-orange-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-white/30"
+              className="group relative flex items-center gap-2 px-3.5 sm:px-4 py-2 bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500 hover:from-blue-600 hover:to-blue-600 text-white text-xs sm:text-sm font-semibold rounded-full shadow-lg shadow-blue-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer border border-white/30"
               title={t('cinematic.skipTitle')}
             >
               {/* Vòng tròn đếm ngược SVG */}
@@ -263,7 +263,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                     className="transition-all duration-1000 ease-linear"
                   />
                 </svg>
-                <span className="absolute text-[9px] font-mono font-black">{countdown}</span>
+                <span className="absolute text-[9px] font-mono font-semibold">{countdown}</span>
               </div>
               <span>{t('cinematic.skip')}</span>
               <FastForward className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -283,13 +283,13 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Film className="w-8 h-8 text-rose-400" />
+                    <Film className="w-8 h-8 text-blue-400" />
                   </div>
                 </div>
               ) : (
                 <Film className="w-14 h-14 text-slate-700 mb-3" />
               )}
-              <h3 className="text-base font-bold text-white mb-1">
+              <h3 className="text-base font-semibold text-white mb-1">
                 {videoError ? t('cinematic.videoErrorTitle') : t('cinematic.noVideoTitle')}
               </h3>
               <p className="text-xs text-slate-400 mb-4">
@@ -298,7 +298,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs shadow-lg transition cursor-pointer flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs shadow-lg transition cursor-pointer flex items-center gap-2"
               >
                 <Gavel className="w-4 h-4" />
                 <span>{t('cinematic.enterRoomNow')}</span>
@@ -335,8 +335,8 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
           {/* Watermark Logo Overlay */}
           {Boolean(rawVideoUrl) && (
             <div className="absolute top-4 left-4 z-20 pointer-events-none flex items-center gap-2 bg-black/75 px-3 py-1 rounded-full border border-white/10 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-              <span className="text-[10px] font-mono font-bold text-slate-200">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+              <span className="text-[10px] font-mono font-semibold text-slate-200">
                 {t('cinematic.watermark')}
               </span>
             </div>
@@ -347,7 +347,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             <button
               type="button"
               onClick={toggleMute}
-              className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-amber-300 border border-amber-500/40 text-xs font-semibold backdrop-blur-md shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer animate-pulse"
+              className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/90 hover:bg-slate-800 text-blue-300 border border-blue-500/40 text-xs font-semibold backdrop-blur-md shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer animate-pulse"
             >
               <VolumeX className="w-3.5 h-3.5" />
               <span>{t('cinematic.unmutePrompt')}</span>
@@ -364,7 +364,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                   max="100"
                   value={videoProgress}
                   onChange={handleSeek}
-                  className="w-full h-1.5 bg-slate-700/80 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                  className="w-full h-1.5 bg-slate-700/80 rounded-lg appearance-none cursor-pointer accent-blue-500"
                 />
               </div>
 
@@ -390,7 +390,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                     title={isMuted ? t('cinematic.unmuteTitle') : t('cinematic.muteTitle')}
                   >
                     {isMuted ? (
-                      <VolumeX className="w-4 h-4 text-amber-400" />
+                      <VolumeX className="w-4 h-4 text-blue-400" />
                     ) : (
                       <Volume2 className="w-4 h-4" />
                     )}
@@ -442,11 +442,11 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
           {/* Thanh tiêu đề danh mục */}
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
-              <Layers className="w-4 h-4 text-sky-400 shrink-0" />
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
+              <Layers className="w-4 h-4 text-blue-400 shrink-0" />
+              <span className="text-xs font-semibold text-white uppercase tracking-wider">
                 {t('cinematic.catalogTitle')}
               </span>
-              <span className="text-[11px] font-bold text-sky-400 bg-sky-950/60 border border-sky-500/30 px-2 py-0.5 rounded-full shrink-0">
+              <span className="text-[11px] font-semibold text-blue-400 bg-blue-950/60 border border-blue-500/30 px-2 py-0.5 rounded-full shrink-0">
                 {sessionItems.length > 0
                   ? t('cinematic.itemsCount', { count: sessionItems.length })
                   : t('cinematic.acceptingItems')}
@@ -456,7 +456,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs transition shadow-lg shadow-blue-600/30 flex items-center gap-2 cursor-pointer shrink-0"
+              className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition shadow-lg shadow-blue-600/30 flex items-center gap-2 cursor-pointer shrink-0"
             >
               <Gavel className="w-3.5 h-3.5" />
               <span>{t('cinematic.bidNow')}</span>
@@ -481,7 +481,7 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                     }}
                     className={`flex items-center gap-2.5 p-2 px-3 rounded-xl border text-left cursor-pointer transition shrink-0 max-w-[240px] sm:max-w-[280px] ${
                       isSelected
-                        ? 'border-rose-500 bg-rose-950/40 ring-1 ring-rose-500/60 shadow-md'
+                        ? 'border-blue-500 bg-blue-950/40 ring-1 ring-blue-500/60 shadow-md'
                         : 'border-slate-800 bg-slate-900/80 hover:bg-slate-850 hover:border-slate-700'
                     }`}
                   >
@@ -497,24 +497,24 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
                         <span
-                          className={`text-[9px] font-mono font-black px-1.5 py-0.2 rounded ${
+                          className={`text-[9px] font-mono font-semibold px-1.5 py-0.2 rounded ${
                             isSelected
-                              ? 'bg-rose-500 text-white'
+                              ? 'bg-blue-500 text-white'
                               : 'bg-slate-800 text-slate-300 border border-slate-700'
                           }`}
                         >
                           {t('cinematic.lotBadge', { number: lot.lotNumber ?? idx + 1 })}
                         </span>
                         {isSelected && (
-                          <span className="text-[9px] font-bold text-rose-400 flex items-center gap-0.5">
+                          <span className="text-[9px] font-semibold text-blue-400 flex items-center gap-0.5">
                             <Sparkles className="w-2.5 h-2.5" /> {t('cinematic.selected')}
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] font-bold text-white truncate mt-0.5 m-0 max-w-[170px]">
+                      <p className="text-[11px] font-semibold text-white truncate mt-0.5 m-0 max-w-[170px]">
                         {lot.title}
                       </p>
-                      <p className="text-[10px] font-extrabold text-rose-400 mt-0.5 m-0">
+                      <p className="text-[10px] font-semibold text-blue-400 mt-0.5 m-0">
                         {lot.startingPrice
                           ? t('cinematic.startPrice', { amount: formatVND(lot.startingPrice) })
                           : t('cinematic.awaitingValuation')}
@@ -526,13 +526,13 @@ export const CinematicAuctionIntro: React.FC<CinematicAuctionIntroProps> = ({
             </div>
           ) : (
             /* Thông báo khi Admin chỉ mới tạo phiên, người bán chưa niêm yết hiện vật */
-            <div className="flex items-center gap-3 p-2.5 px-3.5 rounded-xl border border-amber-500/30 bg-amber-950/20 text-amber-300 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+            <div className="flex items-center gap-3 p-2.5 px-3.5 rounded-xl border border-blue-500/30 bg-blue-950/20 text-blue-300 text-xs">
+              <AlertCircle className="w-4 h-4 shrink-0 text-blue-400" />
               <div className="min-w-0 flex-1">
-                <span className="font-bold text-amber-200">
+                <span className="font-semibold text-blue-200">
                   {t('cinematic.consignmentOpenLabel')}
                 </span>{' '}
-                <span className="text-amber-300/80">{t('cinematic.consignmentOpenDesc')}</span>
+                <span className="text-blue-300/80">{t('cinematic.consignmentOpenDesc')}</span>
               </div>
             </div>
           )}

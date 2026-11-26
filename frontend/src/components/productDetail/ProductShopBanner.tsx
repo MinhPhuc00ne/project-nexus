@@ -88,7 +88,7 @@ export const ProductShopBanner: React.FC<ProductShopBannerProps> = ({ product, o
               {shopAvatarUrl ? (
                 <img src={shopAvatarUrl} alt={shopName} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-xl font-bold text-[var(--color-navy)]">
+                <span className="text-xl font-semibold text-[var(--color-navy)]">
                   {shopName.charAt(0).toUpperCase()}
                 </span>
               )}
@@ -102,7 +102,7 @@ export const ProductShopBanner: React.FC<ProductShopBannerProps> = ({ product, o
           </div>
 
           <div className="space-y-1.5 min-w-0 flex-1">
-            <h3 className="font-bold text-slate-900 text-base truncate">
+            <h3 className="font-semibold text-ink text-base truncate">
               {sellerId ? (
                 <Link to={`/shop/${sellerId}`} className="hover:text-blue-600 transition">
                   {shopName}
@@ -111,7 +111,7 @@ export const ProductShopBanner: React.FC<ProductShopBannerProps> = ({ product, o
                 shopName
               )}
             </h3>
-            <p className="text-[11px] font-medium text-slate-500 flex items-center gap-1.5">
+            <p className="text-[11px] font-medium text-muted flex items-center gap-1.5">
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
                   isOnline ? 'bg-emerald-500' : 'bg-slate-400'
@@ -148,7 +148,7 @@ export const ProductShopBanner: React.FC<ProductShopBannerProps> = ({ product, o
               <button
                 type="button"
                 onClick={() => setShowReportShopModal(true)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:border-red-200 hover:text-red-600 hover:bg-red-50/50 rounded-md transition cursor-pointer"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-white border border-slate-200 hover:border-blue-200 hover:text-blue-600 hover:bg-blue-50/50 rounded-md transition cursor-pointer"
                 title={t('product.reportShopTitle')}
               >
                 <Flag size={12} />
@@ -161,40 +161,40 @@ export const ProductShopBanner: React.FC<ProductShopBannerProps> = ({ product, o
         {/* Right: Shop stats grid (Blue & White signature style) */}
         <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-y-3 gap-x-6 text-xs">
           <div className="space-y-0.5">
-            <span className="text-slate-500">{t('product.shopReviewsLabel')}</span>
-            <p className="font-bold text-blue-700 flex items-center gap-1">
+            <span className="text-muted">{t('product.shopReviewsLabel')}</span>
+            <p className="font-semibold text-blue-700 flex items-center gap-1">
               <Star size={12} className="fill-blue-600 text-blue-600" />
               <span>{t('product.shopReviewsCount', { count: totalReviews })}</span>
             </p>
           </div>
 
           <div className="space-y-0.5">
-            <span className="text-slate-500">{t('product.responseRateLabel')}</span>
-            <p className="font-bold text-blue-700">
+            <span className="text-muted">{t('product.responseRateLabel')}</span>
+            <p className="font-semibold text-blue-700">
               {isOnline ? '99%' : t('product.waitingResponse')}
             </p>
           </div>
 
           <div className="space-y-0.5">
-            <span className="text-slate-500">{t('product.joinedLabel')}</span>
-            <p className="font-bold text-slate-800">{formatJoinDate(shopProfile?.createdAt)}</p>
+            <span className="text-muted">{t('product.joinedLabel')}</span>
+            <p className="font-semibold text-ink">{formatJoinDate(shopProfile?.createdAt)}</p>
           </div>
 
           <div className="space-y-0.5">
-            <span className="text-slate-500">{t('product.productsLabel')}</span>
-            <p className="font-bold text-blue-700">{totalProducts}</p>
+            <span className="text-muted">{t('product.productsLabel')}</span>
+            <p className="font-semibold text-blue-700">{totalProducts}</p>
           </div>
 
           <div className="space-y-0.5">
-            <span className="text-slate-500">{t('product.responseTimeLabel')}</span>
-            <p className="font-bold text-slate-800">
+            <span className="text-muted">{t('product.responseTimeLabel')}</span>
+            <p className="font-semibold text-ink">
               {isOnline ? t('product.withinMinutes') : t('product.withinHours')}
             </p>
           </div>
 
           <div className="space-y-0.5">
-            <span className="text-slate-500">{t('product.reputationLabel')}</span>
-            <p className="font-bold text-blue-700 flex items-center gap-1">
+            <span className="text-muted">{t('product.reputationLabel')}</span>
+            <p className="font-semibold text-blue-700 flex items-center gap-1">
               <Award size={13} />
               <span>
                 {trustScore} ({formatTrustLevel(trustLevel)})

@@ -48,15 +48,15 @@ export default function CategoryPage() {
   return (
     <main className="mx-auto max-w-[1280px] space-y-8 px-4 py-8">
       {/* Header Banner */}
-      <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-700 p-8 sm:p-10 text-white shadow-md">
+      <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-blue-600 via-blue-600 to-blue-700 p-8 sm:p-10 text-white shadow-md">
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3.5 py-1 text-xs font-semibold backdrop-blur-sm">
             <AppstoreOutlined /> {t('categories.badge')}
           </div>
-          <h1 className="mt-3 text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <h1 className="mt-3 text-2xl sm:text-3xl font-semibold tracking-tight">
             {t('categories.title')}
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-sky-100 leading-relaxed">
+          <p className="mt-2 text-sm sm:text-base text-blue-100 leading-relaxed">
             {t('categories.subtitle')}
           </p>
 
@@ -67,7 +67,7 @@ export default function CategoryPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder={t('categories.searchPlaceholder')}
-              className="w-full bg-transparent px-2 py-1 text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
+              className="w-full bg-transparent px-2 py-1 text-sm text-ink placeholder-slate-400 focus:outline-none"
             />
             {searchTerm && (
               <button
@@ -85,7 +85,7 @@ export default function CategoryPage() {
       {/* Main Grid */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-800">
+          <h2 className="text-lg font-semibold text-ink">
             {searchTerm
               ? t('categories.searchResultsHeading', { count: filteredCategories.length })
               : t('categories.allCategoriesHeading')}
@@ -104,9 +104,7 @@ export default function CategoryPage() {
 
         {filteredCategories.length === 0 ? (
           <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-slate-500">
-              {t('categories.emptyForKeyword', { keyword: searchTerm })}
-            </p>
+            <p className="text-muted">{t('categories.emptyForKeyword', { keyword: searchTerm })}</p>
             <button
               type="button"
               onClick={() => setSearchTerm('')}
@@ -137,7 +135,7 @@ export default function CategoryPage() {
                       <div className="flex-1 min-w-0">
                         <Link
                           to={parentUrl}
-                          className="text-base font-bold text-slate-900 hover:text-blue-600 transition truncate block"
+                          className="text-base font-semibold text-ink hover:text-blue-600 transition truncate block"
                         >
                           {cat.name}
                         </Link>

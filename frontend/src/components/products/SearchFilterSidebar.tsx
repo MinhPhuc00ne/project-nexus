@@ -241,7 +241,7 @@ export default function SearchFilterSidebar({
     <div className="space-y-5 text-slate-700">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h2 className="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-slate-800">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-ink">
           <Filter className="h-4 w-4 text-blue-600" />
           {t('filters.title')}
         </h2>
@@ -249,7 +249,7 @@ export default function SearchFilterSidebar({
           <button
             type="button"
             onClick={onReset}
-            className="flex items-center gap-1 text-xs font-semibold text-rose-500 hover:text-rose-600 transition cursor-pointer"
+            className="flex items-center gap-1 text-xs font-semibold text-blue-500 hover:text-blue-600 transition cursor-pointer"
             title={t('filters.clearAllTitle')}
           >
             <RotateCcw className="h-3 w-3" />
@@ -263,7 +263,7 @@ export default function SearchFilterSidebar({
         <button
           type="button"
           onClick={() => toggleSection('categories')}
-          className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
             <Boxes className="h-3.5 w-3.5 text-blue-500" /> {t('filters.byCategory')}
@@ -288,7 +288,7 @@ export default function SearchFilterSidebar({
                       className={`group flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition cursor-pointer ${
                         isSelected
                           ? 'bg-blue-600 font-semibold text-white shadow-xs'
-                          : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                          : 'text-slate-600 hover:bg-slate-50 hover:text-ink'
                       }`}
                     >
                       <span className="truncate">{cat.name}</span>
@@ -326,10 +326,10 @@ export default function SearchFilterSidebar({
         <button
           type="button"
           onClick={() => toggleSection('cities')}
-          className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 text-emerald-500" /> {t('filters.location')}
+            <MapPin className="h-3.5 w-3.5 text-blue-500" /> {t('filters.location')}
           </span>
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
@@ -425,10 +425,10 @@ export default function SearchFilterSidebar({
         <button
           type="button"
           onClick={() => toggleSection('price')}
-          className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <Tag className="h-3.5 w-3.5 text-amber-500" /> {t('filters.priceRange')}
+            <Tag className="h-3.5 w-3.5 text-blue-500" /> {t('filters.priceRange')}
           </span>
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
@@ -474,7 +474,7 @@ export default function SearchFilterSidebar({
                     value={fromPrice}
                     onChange={(e) => setFromPrice(e.target.value)}
                     placeholder={t('filters.minPlaceholder')}
-                    className="w-full rounded-lg border border-slate-200 bg-white pl-6 pr-2 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition"
+                    className="w-full rounded-lg border border-slate-200 bg-white pl-6 pr-2 py-1.5 text-xs text-ink placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition"
                   />
                 </div>
                 <span className="text-slate-400 text-xs">-</span>
@@ -489,13 +489,13 @@ export default function SearchFilterSidebar({
                     value={toPrice}
                     onChange={(e) => setToPrice(e.target.value)}
                     placeholder={t('filters.maxPlaceholder')}
-                    className="w-full rounded-lg border border-slate-200 bg-white pl-6 pr-2 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition"
+                    className="w-full rounded-lg border border-slate-200 bg-white pl-6 pr-2 py-1.5 text-xs text-ink placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none transition"
                   />
                 </div>
               </div>
               <button
                 type="submit"
-                className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.99] py-1.5 text-xs font-bold uppercase tracking-wider text-white transition shadow-xs cursor-pointer"
+                className="w-full rounded-lg bg-blue-600 hover:bg-blue-700 active:scale-[0.99] py-1.5 text-xs font-semibold uppercase tracking-wider text-white transition shadow-xs cursor-pointer"
               >
                 {t('filters.apply')}
               </button>
@@ -509,10 +509,10 @@ export default function SearchFilterSidebar({
         <button
           type="button"
           onClick={() => toggleSection('rating')}
-          className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> {t('filters.starRating')}
+            <Star className="h-3.5 w-3.5 fill-blue-400 text-blue-400" /> {t('filters.starRating')}
           </span>
           <ChevronDown
             className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
@@ -532,7 +532,7 @@ export default function SearchFilterSidebar({
                   onClick={() => handleSelectRating(stars)}
                   className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition cursor-pointer ${
                     isSelected
-                      ? 'bg-amber-50 text-amber-900 font-semibold border border-amber-200/70'
+                      ? 'bg-blue-50 text-blue-900 font-semibold border border-blue-200/70'
                       : 'hover:bg-slate-50 text-slate-600'
                   }`}
                 >
@@ -542,7 +542,7 @@ export default function SearchFilterSidebar({
                         <Star
                           key={i}
                           className={`h-3 w-3 ${
-                            i < stars ? 'fill-amber-400 text-amber-400' : 'text-slate-200'
+                            i < stars ? 'fill-blue-400 text-blue-400' : 'text-slate-200'
                           }`}
                         />
                       ))}
@@ -553,7 +553,7 @@ export default function SearchFilterSidebar({
                         : t('filters.starsAndUp', { stars })}
                     </span>
                   </div>
-                  {isSelected && <Check className="h-3 w-3 text-amber-600" />}
+                  {isSelected && <Check className="h-3 w-3 text-blue-600" />}
                 </button>
               );
             })}
@@ -566,10 +566,10 @@ export default function SearchFilterSidebar({
         <button
           type="button"
           onClick={() => toggleSection('stock')}
-          className="flex w-full items-center justify-between py-1 text-xs font-bold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
+          className="flex w-full items-center justify-between py-1 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:text-blue-600 transition cursor-pointer"
         >
           <span className="flex items-center gap-1.5">
-            <SlidersHorizontal className="h-3.5 w-3.5 text-purple-500" />{' '}
+            <SlidersHorizontal className="h-3.5 w-3.5 text-blue-500" />{' '}
             {t('filters.serviceAndPromo')}
           </span>
           <ChevronDown
@@ -591,7 +591,7 @@ export default function SearchFilterSidebar({
                 />
                 <span>{t('filters.inStockOnly')}</span>
               </span>
-              <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
                 {t('filters.inStockBadge')}
               </span>
             </label>
@@ -602,18 +602,18 @@ export default function SearchFilterSidebar({
                   type="checkbox"
                   checked={Boolean(filters.trendingOnly)}
                   onChange={handleToggleTrendingOnly}
-                  className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                  className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                 />
                 <span>{t('filters.trendingOnly')}</span>
               </span>
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
                 <Flame className="h-2.5 w-2.5" />
                 {t('filters.trendingBadge')}
               </span>
             </label>
 
             <div className="pt-2">
-              <p className="px-2.5 text-[11px] font-semibold text-slate-500">
+              <p className="px-2.5 text-[11px] font-semibold text-muted">
                 {t('filters.minPurchaseLabel')}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-1.5 px-2.5">
@@ -663,7 +663,7 @@ export default function SearchFilterSidebar({
           <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-white p-5 shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-left duration-200">
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                <span className="text-sm font-bold text-slate-800">{t('filters.mobileTitle')}</span>
+                <span className="text-sm font-semibold text-ink">{t('filters.mobileTitle')}</span>
                 <button
                   type="button"
                   onClick={onCloseMobile}
@@ -686,7 +686,7 @@ export default function SearchFilterSidebar({
               <button
                 type="button"
                 onClick={onCloseMobile}
-                className="flex-1 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs cursor-pointer"
+                className="flex-1 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs cursor-pointer"
               >
                 {t('filters.viewResults')}
               </button>

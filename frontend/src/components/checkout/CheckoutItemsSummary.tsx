@@ -21,7 +21,7 @@ export const CheckoutItemsSummary: React.FC<CheckoutItemsSummaryProps> = ({
   const { t } = useTranslation('commerce');
   return (
     <div className="space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-4 text-xs">
-      <div className="flex justify-between border-b border-slate-200 pb-2 font-bold text-slate-800">
+      <div className="flex justify-between border-b border-slate-200 pb-2 font-semibold text-ink">
         <span>{t('checkout.itemsToPay', { count: items.length })}</span>
         <span>{t('checkout.lineTotal')}</span>
       </div>
@@ -53,7 +53,7 @@ export const CheckoutItemsSummary: React.FC<CheckoutItemsSummaryProps> = ({
                   </span>
                 )}
               </div>
-              <span className="shrink-0 font-bold text-slate-900">
+              <span className="shrink-0 font-semibold text-ink">
                 {formatCurrency(Number(item.price) * item.qty)}
               </span>
             </div>
@@ -63,26 +63,24 @@ export const CheckoutItemsSummary: React.FC<CheckoutItemsSummaryProps> = ({
       <div className="space-y-1 border-t border-slate-200 pt-2 text-slate-600">
         <div className="flex justify-between">
           <span>{t('checkout.itemsSubtotal')}</span>
-          <span className="font-semibold text-slate-800">
-            {formatCurrency(Number(itemsSubtotal))}
-          </span>
+          <span className="font-semibold text-ink">{formatCurrency(Number(itemsSubtotal))}</span>
         </div>
         <div className="flex justify-between">
           <span>{t('checkout.ghnShippingLabel')}</span>
-          <span className="font-semibold text-slate-800">
+          <span className="font-semibold text-ink">
             {isCalculatingFee ? (
               <span className="italic text-slate-400">{t('checkout.calculatingGhn')}</span>
             ) : shippingFee === 0 ? (
-              <span className="font-bold text-emerald-600">{t('cart.freeShipping')}</span>
+              <span className="font-semibold text-blue-600">{t('cart.freeShipping')}</span>
             ) : (
               formatCurrency(Number(shippingFee))
             )}
           </span>
         </div>
       </div>
-      <div className="flex items-baseline justify-between border-t border-slate-200 pt-2 font-bold">
+      <div className="flex items-baseline justify-between border-t border-slate-200 pt-2 font-semibold">
         <span className="text-slate-700">{t('checkout.total')}:</span>
-        <span className="text-base font-extrabold text-blue-600">
+        <span className="text-base font-semibold text-blue-600">
           {isCalculatingFee ? (
             <span className="text-xs font-medium italic text-slate-400">
               {t('checkout.calculating')}

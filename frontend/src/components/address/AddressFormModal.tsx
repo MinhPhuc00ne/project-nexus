@@ -54,7 +54,7 @@ export default function AddressFormModal({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               {t('address.recipientNameLabel')} <span className="text-red-500">*</span>
             </label>
             <input
@@ -68,7 +68,7 @@ export default function AddressFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
               {t('address.phoneLabel')} <span className="text-red-500">*</span>
             </label>
             <input
@@ -90,7 +90,7 @@ export default function AddressFormModal({
         />
 
         <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1">
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
             {t('address.streetLabel')} <span className="text-red-500">*</span>
           </label>
           <input
@@ -128,7 +128,7 @@ export default function AddressFormModal({
           <button
             type="submit"
             disabled={saving}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition shadow-sm disabled:opacity-50 flex items-center gap-1.5"
           >
             {saving
               ? t('address.saving')

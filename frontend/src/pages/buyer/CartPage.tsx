@@ -163,12 +163,12 @@ export default function CartPage() {
     <main className="min-h-[calc(100dvh-10rem)] bg-canvas py-6 sm:py-8">
       <div className="mx-auto max-w-[1280px] space-y-6 px-4 sm:px-6">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <nav className="flex items-center gap-2 text-xs text-slate-500">
+          <nav className="flex items-center gap-2 text-xs text-muted">
             <Link to="/" className="hover:text-primary transition">
               {t('common:nav.home')}
             </Link>
             <ChevronRight size={13} />
-            <span className="font-semibold text-slate-800">{t('commerce:cart.title')}</span>
+            <span className="font-semibold text-ink">{t('commerce:cart.title')}</span>
           </nav>
           <Link to="/search" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
             <ArrowLeft size={14} />

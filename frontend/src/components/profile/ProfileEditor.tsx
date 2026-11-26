@@ -12,7 +12,7 @@ import ChangePasswordModal from './ChangePasswordModal';
 import { useToast } from '../ToastNotification';
 
 const inputClass =
-  'mt-1.5 min-h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:bg-slate-50 disabled:text-slate-500';
+  'mt-1.5 min-h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:bg-slate-50 disabled:text-muted';
 
 type ProfileForm = Required<ProfileChanges>;
 
@@ -109,7 +109,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
           )}
         </div>
         <div className="min-w-0">
-          <h2 className="text-base font-bold text-slate-900 truncate">{profile.fullName}</h2>
+          <h2 className="text-base font-semibold text-ink truncate">{profile.fullName}</h2>
           <p className="mt-1 break-words text-sm text-muted">
             <span className="font-semibold text-blue-700">{roleLabel}</span> · {profile.email}
           </p>
@@ -152,9 +152,9 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
           <input
             value={profile.email}
             readOnly
-            className={`${inputClass} bg-slate-50 text-slate-500`}
+            className={`${inputClass} bg-slate-50 text-muted`}
           />
-          <span className="mt-1.5 block text-[11px] font-normal text-slate-500">
+          <span className="mt-1.5 block text-[11px] font-normal text-muted">
             {t('profileEditor.emailNote')}
           </span>
         </label>
@@ -220,7 +220,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5">
           <div>
             <h3 className="text-sm font-semibold text-ink">{t('profileEditor.securityTitle')}</h3>
-            <p className="mt-0.5 text-xs text-slate-500">{t('profileEditor.securityDesc')}</p>
+            <p className="mt-0.5 text-xs text-muted">{t('profileEditor.securityDesc')}</p>
           </div>
           <button
             type="button"

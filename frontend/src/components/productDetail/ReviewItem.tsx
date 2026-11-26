@@ -10,7 +10,7 @@ export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
     <div className="py-4 space-y-2.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center font-bold text-xs text-slate-600">
+          <div className="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center font-semibold text-xs text-slate-600">
             {rev.reviewer?.avatarUrl ? (
               <img
                 src={rev.reviewer.avatarUrl}
@@ -22,7 +22,7 @@ export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
             )}
           </div>
           <div>
-            <p className="text-xs font-bold text-slate-800">
+            <p className="text-xs font-semibold text-ink">
               {rev.reviewer?.fullName || t('product.anonymousBuyer')}
             </p>
             <div className="flex items-center gap-0.5">

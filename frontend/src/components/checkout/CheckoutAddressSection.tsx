@@ -89,7 +89,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
           <MapPin className="text-[var(--color-primary)]" size={18} />
           <span>{t('checkout.ghnAddressTitle')}</span>
         </h2>
@@ -98,7 +98,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
           <button
             type="button"
             onClick={() => setMode('SELECT')}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer"
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 cursor-pointer"
           >
             <Edit2 size={13} />
             <span>{t('checkout.change')}</span>
@@ -109,7 +109,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
           <button
             type="button"
             onClick={() => setMode('VIEW')}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+            className="text-xs font-semibold text-muted hover:text-ink transition cursor-pointer"
           >
             {t('checkout.close')}
           </button>
@@ -119,13 +119,13 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
       {mode === 'VIEW' && (
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-slate-900 text-sm">
+            <span className="font-semibold text-ink text-sm">
               {displayAddress.recipientName || t('checkout.noRecipientName')}
             </span>
-            <span className="text-slate-500">•</span>
+            <span className="text-muted">•</span>
             <span className="font-semibold text-slate-700">{displayAddress.phone}</span>
             {displayAddress.isDefault && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
                 {t('checkout.defaultBadge')}
               </span>
             )}
@@ -163,11 +163,11 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
                 />
                 <div className="text-xs flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">{a.recipientName}</span>
+                    <span className="font-semibold text-ink">{a.recipientName}</span>
                     <span className="text-slate-400">•</span>
                     <span className="text-slate-600">{a.phone}</span>
                     {a.isDefault && (
-                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-100 text-blue-700">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-blue-100 text-blue-700">
                         {t('checkout.defaultBadge')}
                       </span>
                     )}
@@ -194,7 +194,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
                 });
                 setMode('NEW');
               }}
-              className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1.5 cursor-pointer"
+              className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition flex items-center gap-1.5 cursor-pointer"
             >
               <Plus size={14} />
               <span>{t('checkout.addNewAddress')}</span>

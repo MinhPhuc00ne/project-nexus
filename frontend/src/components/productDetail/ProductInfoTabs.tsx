@@ -28,7 +28,7 @@ export default function ProductInfoTabs({ product }: { product: ProductDetail })
             aria-selected={tab === id}
             onClick={() => setTab(id)}
             className={`border-b-2 py-4 text-sm font-semibold cursor-pointer ${
-              tab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'
+              tab === id ? 'border-blue-600 text-blue-600' : 'border-transparent text-muted'
             }`}
           >
             {label}

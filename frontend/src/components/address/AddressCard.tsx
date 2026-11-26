@@ -29,11 +29,11 @@ export default function AddressCard({
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="font-bold text-slate-900 text-sm">{addr.recipientName}</span>
+            <span className="font-semibold text-ink text-sm">{addr.recipientName}</span>
             <span className="text-slate-300">•</span>
             <span className="text-xs text-slate-600 font-medium">{addr.phone}</span>
             {addr.isDefault && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
+              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-blue-700 border border-blue-200">
                 <MapPin size={11} /> {t('address.defaultBadge')}
               </span>
             )}

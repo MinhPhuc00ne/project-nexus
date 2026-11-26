@@ -38,9 +38,9 @@ const statusMap = {
   },
   PAID: {
     labelKey: 'orderDetailPage.status.paid',
-    color: 'text-emerald-800',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
+    color: 'text-blue-800',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
     icon: CheckCircle,
   },
   PREPARING: {
@@ -52,30 +52,30 @@ const statusMap = {
   },
   SHIPPING: {
     labelKey: 'orderDetailPage.status.shipping',
-    color: 'text-indigo-800',
-    bg: 'bg-indigo-50',
-    border: 'border-indigo-200',
+    color: 'text-blue-800',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
     icon: Truck,
   },
   DELIVERED: {
     labelKey: 'orderDetailPage.status.delivered',
-    color: 'text-emerald-800',
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
+    color: 'text-blue-800',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
     icon: CheckCircle,
   },
   CONFIRMED: {
     labelKey: 'orderDetailPage.status.completed',
-    color: 'text-teal-800',
-    bg: 'bg-teal-50',
-    border: 'border-teal-200',
+    color: 'text-blue-800',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
     icon: CheckCircle,
   },
   COMPLETED: {
     labelKey: 'orderDetailPage.status.completed',
-    color: 'text-teal-800',
-    bg: 'bg-teal-50',
-    border: 'border-teal-200',
+    color: 'text-blue-800',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
     icon: CheckCircle,
   },
   CANCELLED: {
@@ -182,7 +182,7 @@ export default function BuyerOrderDetailPage() {
         </p>
         <Link
           to="/buyer/orders"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition"
         >
           <ChevronLeft size={14} /> {t('orderDetailPage.backToOrders')}
         </Link>
@@ -191,22 +191,22 @@ export default function BuyerOrderDetailPage() {
   }
 
   return (
-    <div className="space-y-6 text-slate-800">
+    <div className="space-y-6 text-ink">
       {/* Top Bar Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <Link
             to="/buyer/orders"
-            className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-600 transition mb-2"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-blue-600 transition mb-2"
           >
             <ChevronLeft size={14} /> {t('orderDetailPage.backToOrders')}
           </Link>
-          <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+          <h1 className="text-lg font-semibold text-ink flex items-center gap-2">
             <span>
               {t('orderDetailPage.title', { number: order.orderNumber || order.id?.slice(0, 8) })}
             </span>
             <span
-              className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${statusConfig.color} ${statusConfig.bg} ${statusConfig.border}`}
+              className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${statusConfig.color} ${statusConfig.bg} ${statusConfig.border}`}
             >
               <StatusIcon size={12} />
               {t(statusConfig.labelKey)}
@@ -221,8 +221,8 @@ export default function BuyerOrderDetailPage() {
 
         {order.status === 'PENDING_PAYMENT' &&
           (isCod ? (
-            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-700 shadow-sm">
-              <Banknote size={15} className="text-emerald-600" />
+            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-semibold text-blue-700 shadow-sm">
+              <Banknote size={15} className="text-blue-600" />
               <span>{t('orderDetailPage.codLabel')}</span>
             </div>
           ) : (
@@ -230,7 +230,7 @@ export default function BuyerOrderDetailPage() {
               type="button"
               disabled={isPaying}
               onClick={handlePayNow}
-              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50"
+              className="flex shrink-0 cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50"
             >
               {isPaying ? (
                 <>
@@ -250,16 +250,16 @@ export default function BuyerOrderDetailPage() {
 
       {/* Action Banner for Delivered / Completed */}
       {order.status === 'DELIVERED' && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 to-teal-50 p-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-blue-300 bg-gradient-to-r from-blue-50 to-blue-50 p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+            <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-sm">
               <CheckCircle size={22} />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-emerald-950">
+              <h4 className="text-sm font-semibold text-blue-950">
                 {t('orderDetailPage.deliveredBannerTitle')}
               </h4>
-              <p className="text-xs text-emerald-700 mt-0.5">
+              <p className="text-xs text-blue-700 mt-0.5">
                 {t('orderDetailPage.deliveredBannerDesc')}
               </p>
             </div>
@@ -267,7 +267,7 @@ export default function BuyerOrderDetailPage() {
           <div className="flex items-center gap-2 shrink-0">
             <Link
               to={`/buyer/disputes?orderId=${order.id}`}
-              className="px-4 py-2 rounded-xl text-xs font-bold border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition shadow-sm"
+              className="px-4 py-2 rounded-xl text-xs font-semibold border border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 transition shadow-sm"
             >
               {t('orderDetailPage.disputeOrReturn')}
             </Link>
@@ -275,7 +275,7 @@ export default function BuyerOrderDetailPage() {
               type="button"
               disabled={isConfirming}
               onClick={handleConfirmDelivery}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-sm disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm disabled:opacity-50"
             >
               {isConfirming ? (
                 <>
@@ -300,7 +300,7 @@ export default function BuyerOrderDetailPage() {
               <CheckCircle size={22} />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-blue-950">
+              <h4 className="text-sm font-semibold text-blue-950">
                 {t('orderDetailPage.completedBannerTitle')}
               </h4>
               <p className="text-xs text-blue-700 mt-0.5">
@@ -318,7 +318,7 @@ export default function BuyerOrderDetailPage() {
                 return next;
               });
             }}
-            className="shrink-0 px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
+            className="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-sm cursor-pointer"
           >
             {t('orderDetailPage.rateProducts')}
           </button>
@@ -362,26 +362,26 @@ export default function BuyerOrderDetailPage() {
 
           {/* Payment Method Card */}
           <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-ink">
               {isCod ? (
-                <Banknote size={16} className="text-emerald-600" />
+                <Banknote size={16} className="text-blue-600" />
               ) : (
                 <CreditCard size={16} className="text-blue-600" />
               )}
               <span>{t('orderDetailPage.paymentMethodTitle')}</span>
             </h3>
             {isCod ? (
-              <div className="space-y-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/70 p-3 text-xs">
-                <div className="flex justify-between font-bold text-slate-800">
+              <div className="space-y-1.5 rounded-xl border border-blue-200/80 bg-blue-50/70 p-3 text-xs">
+                <div className="flex justify-between font-semibold text-ink">
                   <span>{t('orderDetailPage.methodLabel')}</span>
-                  <span className="font-extrabold text-emerald-700">
+                  <span className="font-semibold text-blue-700">
                     {t('orderDetailPage.codLabel')}
                   </span>
                 </div>
                 {['DELIVERED', 'CONFIRMED', 'COMPLETED'].includes(order.status) ? (
-                  <div className="flex justify-between text-[11px] text-slate-500">
+                  <div className="flex justify-between text-[11px] text-muted">
                     <span>{t('orderDetailPage.statusLabel')}</span>
-                    <span className="font-semibold text-emerald-700">
+                    <span className="font-semibold text-blue-700">
                       {t('orderDetailPage.paidCash', {
                         amount: formatCurrency(Number(order.totalAmount), i18n.language),
                       })}
@@ -389,13 +389,13 @@ export default function BuyerOrderDetailPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex justify-between text-[11px] text-slate-500">
+                    <div className="flex justify-between text-[11px] text-muted">
                       <span>{t('orderDetailPage.codAmountDue')}</span>
-                      <span className="font-extrabold text-[var(--color-primary)]">
+                      <span className="font-semibold text-[var(--color-primary)]">
                         {formatCurrency(Number(order.totalAmount), i18n.language)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-[11px] text-slate-500">
+                    <div className="flex justify-between text-[11px] text-muted">
                       <span>{t('orderDetailPage.statusLabel')}</span>
                       <span className="font-semibold text-amber-700">
                         {t('orderDetailPage.awaitingDeliveryPayment')}
@@ -406,11 +406,11 @@ export default function BuyerOrderDetailPage() {
               </div>
             ) : (
               <div className="space-y-1 rounded-xl bg-slate-50 p-3 text-xs">
-                <div className="flex justify-between font-bold text-slate-800">
+                <div className="flex justify-between font-semibold text-ink">
                   <span>{t('orderDetailPage.methodLabel')}</span>
                   <span className="text-blue-600">{t('orderDetailPage.payosMethod')}</span>
                 </div>
-                <div className="flex justify-between text-[11px] text-slate-500">
+                <div className="flex justify-between text-[11px] text-muted">
                   <span>{t('orderDetailPage.statusLabel')}</span>
                   <span className="font-semibold text-slate-700">
                     {order.status !== 'PENDING_PAYMENT'
@@ -422,13 +422,13 @@ export default function BuyerOrderDetailPage() {
             )}
 
             {isCod ? (
-              <div className="flex items-start gap-2 rounded-xl border border-emerald-200/70 bg-emerald-50/70 p-2.5 text-[11px] text-emerald-900">
-                <Truck size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+              <div className="flex items-start gap-2 rounded-xl border border-blue-200/70 bg-blue-50/70 p-2.5 text-[11px] text-blue-900">
+                <Truck size={16} className="mt-0.5 shrink-0 text-blue-600" />
                 <span>{t('orderDetailPage.codInspectionNote')}</span>
               </div>
             ) : (
-              <div className="flex items-start gap-2 rounded-xl border border-indigo-100/70 bg-indigo-50/70 p-2.5 text-[11px] text-indigo-700">
-                <ShieldCheck size={16} className="mt-0.5 shrink-0 text-indigo-600" />
+              <div className="flex items-start gap-2 rounded-xl border border-blue-100/70 bg-blue-50/70 p-2.5 text-[11px] text-blue-700">
+                <ShieldCheck size={16} className="mt-0.5 shrink-0 text-blue-600" />
                 <span>{t('orderDetailPage.escrowProtectionNote')}</span>
               </div>
             )}

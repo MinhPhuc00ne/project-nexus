@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 export function TimerBox({ value }: { value: string }) {
   return (
-    <span className="min-w-[2.25em] rounded bg-slate-800 px-2 py-1 text-center font-mono text-xs font-bold tabular-nums text-white">
+    <span className="min-w-[2.25em] rounded bg-slate-800 px-2 py-1 text-center font-sans text-xs font-semibold tabular-nums text-white">
       {value}
     </span>
   );

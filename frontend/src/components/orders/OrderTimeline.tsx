@@ -87,7 +87,7 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
       <div className="bg-white rounded-2xl border border-rose-200 p-5 shadow-sm flex items-center gap-3 text-rose-800">
         <Clock className="w-5 h-5 text-rose-600 shrink-0" />
         <div>
-          <h4 className="font-bold text-sm">{t('orders.timeline.cancelledTitle')}</h4>
+          <h4 className="font-semibold text-sm">{t('orders.timeline.cancelledTitle')}</h4>
           <p className="text-xs text-rose-600 mt-0.5">
             {t('orders.timeline.cancelledDesc', {
               date: new Date(updatedAt || createdAt).toLocaleString(locale),
@@ -100,7 +100,7 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-      <h3 className="text-sm font-bold text-slate-900 mb-6 flex items-center gap-2">
+      <h3 className="text-sm font-semibold text-ink mb-6 flex items-center gap-2">
         <Package size={16} className="text-blue-600" />
         <span>{t('orders.timeline.statusTitle')}</span>
       </h3>
@@ -113,7 +113,7 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
               className="flex sm:flex-col items-center sm:text-center gap-3 sm:gap-2 relative z-10"
             >
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition shrink-0 ${
+                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs transition shrink-0 ${
                   st.done
                     ? 'bg-blue-600 text-white shadow-sm ring-4 ring-blue-50'
                     : st.active
@@ -125,8 +125,8 @@ export const OrderTimeline: React.FC<OrderTimelineProps> = ({
               </div>
               <div>
                 <p
-                  className={`text-xs font-bold ${
-                    st.active ? 'text-amber-700' : st.done ? 'text-slate-900' : 'text-slate-400'
+                  className={`text-xs font-semibold ${
+                    st.active ? 'text-amber-700' : st.done ? 'text-ink' : 'text-slate-400'
                   }`}
                 >
                   {st.label}

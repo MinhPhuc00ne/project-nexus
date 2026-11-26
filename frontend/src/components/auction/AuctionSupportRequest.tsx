@@ -43,7 +43,7 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
             <Headset size={20} />
           </span>
           <div>
-            <h2 className="font-semibold text-slate-900">{t('supportRequest.heading')}</h2>
+            <h2 className="font-semibold text-ink">{t('supportRequest.heading')}</h2>
             <p className="mt-1 text-sm text-slate-600">{t('supportRequest.subheading')}</p>
           </div>
         </div>
@@ -59,7 +59,7 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
             <MessageCircle size={16} /> {t('supportRequest.requestButton')}
           </button>
         ) : getStoredToken() ? (
-          <span className="text-sm text-slate-500">{t('supportRequest.roleNotice')}</span>
+          <span className="text-sm text-muted">{t('supportRequest.roleNotice')}</span>
         ) : (
           <Link
             to="/login"
@@ -82,10 +82,10 @@ export default function AuctionSupportRequest({ auctionId }: { auctionId: string
             aria-labelledby="auction-support-title"
             className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl sm:p-6"
           >
-            <h2 id="auction-support-title" className="text-lg font-bold text-slate-900">
+            <h2 id="auction-support-title" className="text-lg font-semibold text-ink">
               {t('supportRequest.modalTitle')}
             </h2>
-            <p className="mt-1 text-sm text-slate-500">{t('supportRequest.modalDesc')}</p>
+            <p className="mt-1 text-sm text-muted">{t('supportRequest.modalDesc')}</p>
             <form onSubmit={(event) => void submit(event)} className="mt-4">
               <label
                 htmlFor="auction-support-message"

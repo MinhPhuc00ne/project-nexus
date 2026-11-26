@@ -355,7 +355,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
     );
   } else if (reviews.length === 0) {
     reviewListContent = (
-      <p className="text-xs text-slate-500 py-4 text-center">{t('product.emptyReviews')}</p>
+      <p className="text-xs text-muted py-4 text-center">{t('product.emptyReviews')}</p>
     );
   } else {
     reviewListContent = (
@@ -372,8 +372,8 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
       {/* 1. Header tóm tắt Rating (Blue & White Theme) */}
       <div className="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-lg bg-blue-50/60 border border-blue-200">
         <div className="text-center sm:text-left sm:pr-8 sm:border-r border-blue-200">
-          <div className="text-3xl font-extrabold text-[var(--color-navy)] tracking-tight">
-            {currentDisplayRating} <span className="text-base font-bold text-slate-500">/ 5.0</span>
+          <div className="text-3xl font-semibold text-[var(--color-navy)] tracking-tight">
+            {currentDisplayRating} <span className="text-base font-semibold text-muted">/ 5.0</span>
           </div>
           <div className="flex items-center justify-center sm:justify-start gap-1 mt-1">
             {[1, 2, 3, 4, 5].map((s) => (
@@ -395,7 +395,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
           </p>
         </div>
         <div className="text-xs text-slate-600 space-y-1">
-          <p className="font-bold text-[var(--color-navy)] flex items-center gap-1.5">
+          <p className="font-semibold text-[var(--color-navy)] flex items-center gap-1.5">
             <ShieldCheck size={16} className="text-blue-600" />
             {t('product.reviewsSyncedTitle')}
           </p>
@@ -408,7 +408,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         onSubmit={handleSubmitReview}
         className="p-5 rounded-lg border border-slate-200 bg-white shadow-xs space-y-4"
       >
-        <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+        <h4 className="text-sm font-semibold text-ink flex items-center gap-2">
           <MessageSquare size={16} className="text-blue-600" />
           {t(ownProductReview ? 'product.editReviewHeading' : 'product.submitReviewHeading')}
         </h4>
@@ -452,7 +452,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                   />
                 </button>
               ))}
-              <span className="text-xs font-bold text-blue-700 ml-1.5">
+              <span className="text-xs font-semibold text-blue-700 ml-1.5">
                 {t('product.starsOutOfFive', { rating: hoverRating || userRating })}
               </span>
             </div>
@@ -491,7 +491,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
                       />
                     </button>
                   ))}
-                  <span className="text-xs font-bold text-blue-700 ml-1.5">
+                  <span className="text-xs font-semibold text-blue-700 ml-1.5">
                     {t('product.starsOutOfFive', { rating: shopRating })}
                   </span>
                 </div>
@@ -506,13 +506,11 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder={t('product.reviewPlaceholder')}
-          className="w-full text-xs p-3 rounded-md border border-slate-300 bg-white text-slate-800 focus:border-blue-600 focus:outline-none"
+          className="w-full text-xs p-3 rounded-md border border-slate-300 bg-white text-ink focus:border-blue-600 focus:outline-none"
         />
 
         {reviewEligibilityMessage && (
-          <p
-            className={`text-[11px] ${reviewEligibilityError ? 'text-rose-600' : 'text-slate-500'}`}
-          >
+          <p className={`text-[11px] ${reviewEligibilityError ? 'text-rose-600' : 'text-muted'}`}>
             {reviewEligibilityMessage}
           </p>
         )}
@@ -526,7 +524,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
             value={shopComment}
             onChange={(e) => setShopComment(e.target.value)}
             placeholder={t('product.shopReviewPlaceholder')}
-            className="w-full text-xs px-3 py-2.5 rounded-md border border-slate-300 bg-white text-slate-800 focus:border-blue-600 focus:outline-none"
+            className="w-full text-xs px-3 py-2.5 rounded-md border border-slate-300 bg-white text-ink focus:border-blue-600 focus:outline-none"
           />
         )}
 
@@ -574,7 +572,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
 
       {/* 3. Danh sách đánh giá & Phản hồi của Seller */}
       <div className="space-y-4">
-        <h4 className="text-sm font-bold text-slate-900">
+        <h4 className="text-sm font-semibold text-ink">
           {t('product.customerReviewsHeading', { count: reviews.length })}
         </h4>
 

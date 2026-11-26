@@ -156,22 +156,22 @@ export default function BuyerWishlistPage() {
           aria-busy="true"
         >
           <div className="h-16 w-16 rounded-2xl bg-slate-100 animate-pulse mb-4" />
-          <p className="text-xs text-slate-500">{t('wishlist.loading')}</p>
+          <p className="text-xs text-muted">{t('wishlist.loading')}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
-          <div className="h-16 w-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-400 mb-4">
+          <div className="h-16 w-16 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-400 mb-4">
             <Heart size={28} />
           </div>
-          <h3 className="text-sm font-bold text-slate-800 mb-1">
+          <h3 className="text-sm font-semibold text-ink mb-1">
             {search ? t('wishlist.emptySearchTitle') : t('wishlist.emptyTitle')}
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mb-5 leading-relaxed">
+          <p className="text-xs text-muted max-w-sm mb-5 leading-relaxed">
             {search ? t('wishlist.emptySearchDesc') : t('wishlist.emptyDesc')}
           </p>
           <Link
             to="/search"
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition shadow-sm"
           >
             <ShoppingBag size={14} />
             {t('wishlist.exploreNow')}
@@ -194,14 +194,14 @@ export default function BuyerWishlistPage() {
                     className="h-full w-full object-contain group-hover:scale-105 transition-transform duration-300"
                   />
                   {hasDiscount && (
-                    <span className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                    <span className="absolute top-3 left-3 flex items-center gap-1 rounded-lg bg-blue-500 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
                       <Tag size={10} /> -{discountPct(item.originalPrice!, item.price)}%
                     </span>
                   )}
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    className="absolute top-3 right-3 h-8 w-8 rounded-xl bg-white/90 hover:bg-red-50 text-slate-400 hover:text-red-500 shadow-sm flex items-center justify-center transition"
+                    className="absolute top-3 right-3 h-8 w-8 rounded-xl bg-white/90 hover:bg-blue-50 text-slate-400 hover:text-blue-500 shadow-sm flex items-center justify-center transition"
                     title={t('wishlist.removeTitle')}
                   >
                     <Trash2 size={14} />
@@ -214,7 +214,7 @@ export default function BuyerWishlistPage() {
                     <p className="text-[11px] font-medium text-slate-400 mb-1">{item.shopName}</p>
                     <Link
                       to={`/product/${item.id}`}
-                      className="text-xs font-bold text-slate-800 hover:text-blue-600 line-clamp-2 transition leading-snug"
+                      className="text-xs font-semibold text-ink hover:text-blue-600 line-clamp-2 transition leading-snug"
                     >
                       {item.name}
                     </Link>
@@ -222,7 +222,7 @@ export default function BuyerWishlistPage() {
 
                   <div>
                     <div className="flex items-baseline gap-2 mb-3">
-                      <span className="text-sm font-extrabold text-[var(--color-primary)]">
+                      <span className="text-sm font-semibold text-[var(--color-primary)]">
                         {formatCurrency(item.price, i18n.language)}
                       </span>
                       {hasDiscount && (
@@ -236,7 +236,7 @@ export default function BuyerWishlistPage() {
                       type="button"
                       onClick={() => handleAddToCart(item)}
                       disabled={!item.inStock}
-                      className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold transition ${
+                      className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold transition ${
                         item.inStock
                           ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
                           : 'bg-slate-100 text-slate-400 cursor-not-allowed'

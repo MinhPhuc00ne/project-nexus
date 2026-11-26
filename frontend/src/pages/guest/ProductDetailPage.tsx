@@ -69,7 +69,7 @@ export default function ProductDetailPage() {
         role="alert"
         className="mx-auto my-12 max-w-xl space-y-4 rounded-xl border border-red-100 bg-white p-8 text-center"
       >
-        <h1 className="text-xl font-bold">{t('product.loadErrorTitle')}</h1>
+        <h1 className="text-xl font-semibold">{t('product.loadErrorTitle')}</h1>
         <p>{error || t('product.notFound')}</p>
         <button
           type="button"
@@ -237,14 +237,14 @@ function ProductContent({ product }: { product: ProductDetail }) {
   return (
     <main className="min-h-screen bg-[var(--color-canvas)] py-6">
       <div className="mx-auto max-w-[1280px] space-y-6 px-4">
-        <nav className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+        <nav className="flex flex-wrap items-center gap-3 text-sm text-muted">
           <Link to="/" className="text-blue-600 font-medium">
             <ArrowLeftOutlined /> {t('product.breadcrumbHome')}
           </Link>
           <span>/</span>
           <span>{product.categoryName || t('product.breadcrumbProductFallback')}</span>
           <span>/</span>
-          <span className="text-slate-800 font-medium">{product.name}</span>
+          <span className="text-ink font-medium">{product.name}</span>
         </nav>
 
         {toast && (
@@ -260,7 +260,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
             <button
               type="button"
               onClick={() => setToast(null)}
-              className="ml-4 font-bold opacity-60 hover:opacity-100"
+              className="ml-4 font-semibold opacity-60 hover:opacity-100"
             >
               ✕
             </button>
@@ -276,11 +276,11 @@ function ProductContent({ product }: { product: ProductDetail }) {
           <div className="space-y-5 lg:col-span-7">
             <div>
               <div className="flex items-start justify-between gap-3">
-                <h1 className="text-2xl font-bold text-slate-900">{product.name}</h1>
+                <h1 className="text-2xl font-semibold text-ink">{product.name}</h1>
                 <button
                   type="button"
                   onClick={() => setShowReportProductModal(true)}
-                  className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:border-red-200 hover:bg-red-50/50 hover:text-red-600 transition cursor-pointer"
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-muted hover:border-blue-200 hover:bg-blue-50/50 hover:text-blue-600 transition cursor-pointer"
                   title={t('product.reportProductTitle')}
                 >
                   <Flag size={13} />
@@ -291,7 +291,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
               {/* Rating summary under title */}
               <div className="flex items-center gap-3 text-xs mt-2.5 flex-wrap">
                 {(product.reviewsCount ?? 0) > 0 ? (
-                  <div className="flex items-center gap-1 text-blue-600 font-bold">
+                  <div className="flex items-center gap-1 text-blue-600 font-semibold">
                     <span className="underline">
                       {product.rating ? product.rating.toFixed(1) : '0.0'}
                     </span>
@@ -314,16 +314,16 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 )}
                 <span className="text-slate-300">|</span>
                 <span className="text-slate-600">
-                  <strong className="text-slate-900">{product.reviewsCount ?? 0}</strong>{' '}
+                  <strong className="text-ink">{product.reviewsCount ?? 0}</strong>{' '}
                   {t('product.reviewsCountLabel')}
                 </span>
                 <span className="text-slate-300">|</span>
                 <span className="text-slate-600">
                   {t('product.soldLabel')}{' '}
-                  <strong className="text-slate-900">{product.soldCount ?? 0}</strong>
+                  <strong className="text-ink">{product.soldCount ?? 0}</strong>
                 </span>
                 {product.isTrending && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 px-2.5 py-0.5 text-[11px] font-bold text-white shadow-2xs">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-blue-600 to-navy px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-2xs">
                     <Flame size={12} />
                     {t('product.trendingBadge')}
                   </span>
@@ -335,7 +335,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
             <div className="rounded-lg border border-blue-100 bg-blue-50/70 p-4 space-y-1.5">
               {product.discount && product.discount > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded bg-blue-600 px-2 py-0.5 text-[11px] font-bold text-white">
+                  <span className="inline-flex items-center gap-1 rounded bg-blue-600 px-2 py-0.5 text-[11px] font-semibold text-white">
                     <Zap size={12} />
                     {product.saleLabel || 'FLASH SALE'} -{product.discount}%
                   </span>
@@ -345,7 +345,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 </div>
               )}
               <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-3xl font-extrabold text-[var(--color-navy)]">
+                <span className="text-3xl font-semibold text-[var(--color-navy)]">
                   {product.formattedPrice}
                 </span>
                 {product.formattedOldPrice && (
@@ -358,7 +358,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
 
             <div className="flex items-center justify-between flex-wrap gap-3 text-sm">
               <div className="flex items-center gap-2.5">
-                <span className="font-medium text-slate-500">{t('product.categoryLabel')}</span>
+                <span className="font-medium text-muted">{t('product.categoryLabel')}</span>
                 {product.category?.id ? (
                   <Link
                     to={`/search?categoryId=${product.category.id}&categoryName=${encodeURIComponent(product.category.name)}`}
@@ -376,7 +376,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
                   </span>
                 )}
               </div>
-              <p className={`text-xs font-semibold ${canBuy ? 'text-blue-700' : 'text-slate-500'}`}>
+              <p className={`text-xs font-semibold ${canBuy ? 'text-blue-700' : 'text-muted'}`}>
                 {canBuy
                   ? t('product.inStockDetailed', { count: product.stock })
                   : t('product.temporarilyOutOfStock')}
@@ -391,7 +391,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-slate-700">{group.name}:</span>
                       {selectedOptions[group.name] && (
-                        <span className="font-bold text-blue-700">
+                        <span className="font-semibold text-blue-700">
                           {t('product.selectedOption', { value: selectedOptions[group.name] })}
                         </span>
                       )}
@@ -469,7 +469,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 className={`p-3 rounded-lg border transition flex items-center justify-center cursor-pointer ${
                   isInWishlist
                     ? 'border-blue-600 bg-blue-50 text-blue-600'
-                    : 'border-slate-200 bg-white text-slate-500 hover:text-blue-600 hover:border-blue-200'
+                    : 'border-slate-200 bg-white text-muted hover:text-blue-600 hover:border-blue-200'
                 }`}
               >
                 <Heart size={20} className={isInWishlist ? 'fill-blue-600 text-blue-600' : ''} />

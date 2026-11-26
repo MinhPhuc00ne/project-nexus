@@ -188,8 +188,8 @@ export default function AuctionAwardCheckoutModal({
               <Sparkles size={16} />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">{t('awardCheckout.title')}</h3>
-              <p className="text-[11px] text-slate-500">{t('awardCheckout.subtitle')}</p>
+              <h3 className="text-sm font-semibold text-ink">{t('awardCheckout.title')}</h3>
+              <p className="text-[11px] text-muted">{t('awardCheckout.subtitle')}</p>
             </div>
           </div>
           <button
@@ -218,13 +218,13 @@ export default function AuctionAwardCheckoutModal({
               className="w-14 h-14 object-cover rounded-lg border border-slate-200 shrink-0 bg-white"
             />
             <div className="min-w-0 flex-1">
-              <span className="inline-block text-[10px] font-bold text-violet-700 bg-violet-50 px-2 py-0.5 rounded-md border border-violet-200 mb-1">
+              <span className="inline-block text-[10px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200 mb-1">
                 {award.tier === 'SECOND_CHANCE'
                   ? t('awardCheckout.secondChanceBadge')
                   : t('awardCheckout.winnerBadge')}
               </span>
-              <h4 className="text-xs font-bold text-slate-900 truncate">{itemTitle}</h4>
-              <p className="text-[11px] text-slate-500">
+              <h4 className="text-xs font-semibold text-ink truncate">{itemTitle}</h4>
+              <p className="text-[11px] text-muted">
                 {t('awardCheckout.paymentDeadline')}{' '}
                 <strong className="text-amber-700">
                   {new Date(award.expiresAt).toLocaleTimeString(getIntlLocale(i18n.language))}{' '}
@@ -237,14 +237,14 @@ export default function AuctionAwardCheckoutModal({
           {/* Shipping Address Selection */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                <MapPin size={14} className="text-violet-600" />
+              <label className="text-xs font-semibold text-ink flex items-center gap-1.5">
+                <MapPin size={14} className="text-blue-600" />
                 {t('awardCheckout.shippingAddressTitle')}
               </label>
               <button
                 type="button"
                 onClick={() => navigate('/buyer/addresses')}
-                className="text-[11px] font-semibold text-violet-600 hover:underline flex items-center gap-0.5"
+                className="text-[11px] font-semibold text-blue-600 hover:underline flex items-center gap-0.5"
               >
                 {t('awardCheckout.manageAddresses')} <ArrowUpRight size={11} />
               </button>
@@ -252,7 +252,7 @@ export default function AuctionAwardCheckoutModal({
 
             {loadingInitial ? (
               <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                <Loader2 size={14} className="animate-spin text-violet-600" />{' '}
+                <Loader2 size={14} className="animate-spin text-blue-600" />{' '}
                 {t('awardCheckout.loadingAddresses')}
               </div>
             ) : addresses.length === 0 ? (
@@ -261,7 +261,7 @@ export default function AuctionAwardCheckoutModal({
                 <button
                   type="button"
                   onClick={() => navigate('/buyer/addresses')}
-                  className="px-2.5 py-1 text-[11px] font-bold bg-amber-600 text-white rounded-lg hover:bg-amber-700"
+                  className="px-2.5 py-1 text-[11px] font-semibold bg-amber-600 text-white rounded-lg hover:bg-amber-700"
                 >
                   {t('awardCheckout.addAddress')}
                 </button>
@@ -275,7 +275,7 @@ export default function AuctionAwardCheckoutModal({
                       key={addr.id}
                       className={`block p-2.5 rounded-xl border text-xs cursor-pointer transition ${
                         isSelected
-                          ? 'border-violet-500 bg-violet-50/40 ring-1 ring-violet-400'
+                          ? 'border-blue-500 bg-blue-50/40 ring-1 ring-blue-400'
                           : 'border-slate-200 hover:bg-slate-50'
                       }`}
                     >
@@ -285,14 +285,14 @@ export default function AuctionAwardCheckoutModal({
                           name="shippingAddress"
                           checked={isSelected}
                           onChange={() => setSelectedAddressId(addr.id)}
-                          className="mt-0.5 text-violet-600 focus:ring-violet-500"
+                          className="mt-0.5 text-blue-600 focus:ring-blue-500"
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 font-semibold text-slate-900">
+                          <div className="flex items-center gap-2 font-semibold text-ink">
                             <span>{addr.recipientName}</span>
-                            <span className="text-slate-500 font-normal">({addr.phone})</span>
+                            <span className="text-muted font-normal">({addr.phone})</span>
                             {addr.isDefault && (
-                              <span className="text-[9px] font-bold text-violet-700 bg-violet-100 px-1.5 py-0.2 rounded">
+                              <span className="text-[9px] font-semibold text-blue-700 bg-blue-100 px-1.5 py-0.2 rounded">
                                 {t('awardCheckout.defaultBadge')}
                               </span>
                             )}
@@ -313,14 +313,14 @@ export default function AuctionAwardCheckoutModal({
 
           {/* Pricing & Fee Breakdown */}
           <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-2 text-xs">
-            <h5 className="font-bold text-slate-800 flex items-center gap-1.5 pb-1 border-b border-slate-200">
+            <h5 className="font-semibold text-ink flex items-center gap-1.5 pb-1 border-b border-slate-200">
               <CreditCard size={13} className="text-slate-600" />
               {t('awardCheckout.breakdownTitle')}
             </h5>
 
             <div className="flex justify-between text-slate-600">
               <span>{t('awardCheckout.totalWinningPrice')}</span>
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-ink">
                 {formatCurrency(
                   quote?.offerAmount ?? Number(award.offerAmount || 0),
                   i18n.language,
@@ -340,16 +340,16 @@ export default function AuctionAwardCheckoutModal({
 
             <div className="flex justify-between text-slate-600">
               <span>{t('awardCheckout.remaining70')}</span>
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-ink">
                 {formatCurrency(quote?.remainingProductAmount ?? quote?.dueNow ?? 0, i18n.language)}
               </span>
             </div>
 
             <div className="flex justify-between text-slate-600">
               <span className="flex items-center gap-1">
-                <Truck size={12} className="text-slate-500" /> {t('awardCheckout.ghnFee')}
+                <Truck size={12} className="text-muted" /> {t('awardCheckout.ghnFee')}
               </span>
-              <span className="font-semibold text-slate-900">
+              <span className="font-semibold text-ink">
                 {loadingQuote ? (
                   <span className="text-slate-400 text-[11px]">
                     {t('awardCheckout.calculating')}
@@ -360,9 +360,9 @@ export default function AuctionAwardCheckoutModal({
               </span>
             </div>
 
-            <div className="pt-2 border-t border-slate-200 flex justify-between items-center font-bold text-sm">
-              <span className="text-slate-900">{t('awardCheckout.dueNow')}</span>
-              <span className="text-violet-700 text-base">
+            <div className="pt-2 border-t border-slate-200 flex justify-between items-center font-semibold text-sm">
+              <span className="text-ink">{t('awardCheckout.dueNow')}</span>
+              <span className="text-blue-700 text-base">
                 {formatCurrency(dueNow, i18n.language)}
               </span>
             </div>
@@ -400,7 +400,7 @@ export default function AuctionAwardCheckoutModal({
               <button
                 type="button"
                 onClick={() => navigate('/buyer/wallet')}
-                className="px-2.5 py-1 text-[11px] font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition shrink-0"
+                className="px-2.5 py-1 text-[11px] font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition shrink-0"
               >
                 {t('awardCheckout.topUpNow')}
               </button>
@@ -422,7 +422,7 @@ export default function AuctionAwardCheckoutModal({
             type="button"
             onClick={handleCheckout}
             disabled={submitting || loadingQuote || !isBalanceSufficient || !selectedAddressId}
-            className="px-4 py-2 text-xs font-bold bg-violet-600 hover:bg-violet-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
           >
             {submitting ? (
               <>

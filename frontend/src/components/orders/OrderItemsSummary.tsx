@@ -24,11 +24,11 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
       {/* Seller Header */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">
             <Store size={18} />
           </div>
           <div>
-            <h4 className="text-xs font-bold text-slate-900">
+            <h4 className="text-xs font-semibold text-ink">
               {order?.seller?.fullName || t('orders.itemsSummary.defaultShop')}
             </h4>
             <p className="text-[11px] text-slate-400">{t('orders.itemsSummary.verifiedPartner')}</p>
@@ -37,7 +37,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
         {order?.seller?.id && (
           <Link
             to={`/shop/${order.seller.id}`}
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 transition flex items-center gap-1"
+            className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition flex items-center gap-1"
           >
             <span>{t('orders.itemsSummary.viewShop')}</span>
             <ChevronRight size={13} />
@@ -71,12 +71,12 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                   {item?.product?.id ? (
                     <Link
                       to={`/product/${item.product.id}`}
-                      className="font-bold text-slate-900 line-clamp-1 hover:text-blue-600 transition"
+                      className="font-semibold text-ink line-clamp-1 hover:text-blue-600 transition"
                     >
                       {title}
                     </Link>
                   ) : (
-                    <span className="font-bold text-slate-900 line-clamp-1">{title}</span>
+                    <span className="font-semibold text-ink line-clamp-1">{title}</span>
                   )}
                   {(() => {
                     const selections = (
@@ -84,7 +84,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                     ).selections;
                     if (!selections || Object.keys(selections).length === 0) return null;
                     return (
-                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      <p className="text-[11px] text-muted font-medium mt-0.5">
                         {t('orders.itemsSummary.variantLabel')}{' '}
                         {Object.entries(selections)
                           .map(([k, v]) => `${k}: ${v}`)
@@ -98,7 +98,7 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <p className="font-extrabold text-slate-900 text-sm">
+                <p className="font-semibold text-ink text-sm">
                   {formatCurrency(Number(item?.unitPrice ?? 0) * (item?.quantity ?? 1))}
                 </p>
                 <p className="text-[10px] text-slate-400">
@@ -116,19 +116,17 @@ export const OrderItemsSummary: React.FC<OrderItemsSummaryProps> = ({ order }) =
       <div className="pt-4 border-t border-slate-100 space-y-2.5 text-xs text-slate-600">
         <div className="flex justify-between">
           <span>{t('orders.itemsSummary.subtotalMerchandise')}</span>
-          <span className="font-semibold text-slate-900">{formatCurrency(rawSubtotal)}</span>
+          <span className="font-semibold text-ink">{formatCurrency(rawSubtotal)}</span>
         </div>
         <div className="flex justify-between">
           <span>{t('orders.itemsSummary.ghnShipping')}</span>
-          <span className="font-semibold text-slate-900">
+          <span className="font-semibold text-ink">
             {shippingFee > 0 ? formatCurrency(shippingFee) : t('orders.itemsSummary.freeShipping')}
           </span>
         </div>
-        <div className="flex justify-between items-baseline pt-3 border-t border-slate-100 text-slate-900">
-          <span className="text-sm font-bold">{t('orders.itemsSummary.grandTotal')}</span>
-          <span className="text-xl font-extrabold text-blue-600">
-            {formatCurrency(totalAmount)}
-          </span>
+        <div className="flex justify-between items-baseline pt-3 border-t border-slate-100 text-ink">
+          <span className="text-sm font-semibold">{t('orders.itemsSummary.grandTotal')}</span>
+          <span className="text-xl font-semibold text-blue-600">{formatCurrency(totalAmount)}</span>
         </div>
       </div>
     </div>

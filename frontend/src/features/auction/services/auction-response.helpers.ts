@@ -2,6 +2,7 @@ import type {
   AuctionEntity,
   AuctionListResponse,
 } from '@/features/auction/types/auction-api.types';
+import type { PaginatedResponse } from '@nexus/contracts';
 
 /** Read either the standard HTTP envelope or an already unwrapped payload. */
 export function unwrapAuctionResponse<T>(payload: T | { data: T }): T {
@@ -13,6 +14,7 @@ export function unwrapAuctionResponse<T>(payload: T | { data: T }): T {
  */
 export type RawAuctionListResponse =
   | AuctionListResponse
+  | PaginatedResponse<AuctionEntity>
   | {
       items: AuctionEntity[];
       total: number;
@@ -29,6 +31,7 @@ export type RawAuctionListResponse =
  */
 export function normalizeAuctionListResponse(payload: RawAuctionListResponse): AuctionListResponse {
   if (payload && 'pagination' in payload) return payload;
+  if (payload && 'meta' in payload) return { items: payload.items, pagination: payload.meta };
   return {
     items: payload?.items ?? [],
     pagination: {

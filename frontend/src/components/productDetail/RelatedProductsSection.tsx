@@ -11,9 +11,9 @@ export default function RelatedProductsSection({ currentProductId }: { currentPr
   const { data: products, loading, error, retry } = useProductResource(load);
   return (
     <section className="pb-12">
-      <h2 className="mb-5 text-lg font-bold text-slate-900">{t('product.relatedTitle')}</h2>
+      <h2 className="mb-5 text-lg font-semibold text-ink">{t('product.relatedTitle')}</h2>
       {loading ? (
-        <p role="status" className="text-sm text-slate-500">
+        <p role="status" className="text-sm text-muted">
           {t('product.loadingProduct')}
         </p>
       ) : error ? (
@@ -24,7 +24,7 @@ export default function RelatedProductsSection({ currentProductId }: { currentPr
           </button>
         </div>
       ) : !products?.length ? (
-        <p className="text-sm text-slate-500">{t('product.relatedEmpty')}</p>
+        <p className="text-sm text-muted">{t('product.relatedEmpty')}</p>
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {products.map((product) => (
@@ -45,10 +45,8 @@ export default function RelatedProductsSection({ currentProductId }: { currentPr
                 )}
               </div>
               <div className="space-y-2 p-4">
-                <h3 className="line-clamp-2 text-sm font-semibold text-slate-800">
-                  {product.name}
-                </h3>
-                <p className="text-sm font-bold text-blue-600">{product.formattedPrice}</p>
+                <h3 className="line-clamp-2 text-sm font-semibold text-ink">{product.name}</h3>
+                <p className="text-sm font-semibold text-blue-600">{product.formattedPrice}</p>
               </div>
             </Link>
           ))}

@@ -527,14 +527,14 @@ export const AuctionPage: React.FC = () => {
     return (
       <div className="min-h-[70vh] bg-slate-50 flex items-center justify-center p-8">
         <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
-          <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 font-bold text-xl">
+          <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 font-semibold text-xl">
             🔨
           </div>
-          <h2 className="text-lg font-extrabold text-slate-900">{t('page.emptyTitle')}</h2>
-          <p className="text-xs text-slate-500 mt-2 mb-6 leading-relaxed">{t('page.emptyDesc')}</p>
+          <h2 className="text-lg font-semibold text-ink">{t('page.emptyTitle')}</h2>
+          <p className="text-xs text-muted mt-2 mb-6 leading-relaxed">{t('page.emptyDesc')}</p>
           <Link
             to="/"
-            className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-sm hover:bg-blue-700 transition"
+            className="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 text-white font-semibold text-xs rounded-xl shadow-sm hover:bg-blue-700 transition"
           >
             {t('page.backHome')}
           </Link>
@@ -588,7 +588,7 @@ export const AuctionPage: React.FC = () => {
   const hasVideo = Boolean(activeAuction.videoUrl && activeAuction.videoUrl.trim().length > 0);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-slate-50 text-ink">
       {bidSuccessToast && (
         <div className="fixed top-20 right-6 z-[2500] flex items-center gap-3 bg-emerald-600 text-white px-5 py-3.5 rounded-xl shadow-2xl animate-bounce">
           <CheckCircle2 className="w-5 h-5 text-white" />
@@ -627,17 +627,17 @@ export const AuctionPage: React.FC = () => {
       />
 
       <main className="max-w-7xl mx-auto px-4 py-5 pb-14">
-        <div className="flex items-center justify-between mb-5 text-[13px] text-slate-500">
+        <div className="flex items-center justify-between mb-5 text-[13px] text-muted">
           <nav className="flex items-center gap-2 flex-wrap" aria-label="Breadcrumb">
-            <Link to="/" className="text-slate-500 hover:text-rose-500 transition">
+            <Link to="/" className="text-muted hover:text-blue-500 transition">
               {t('page.breadcrumbHome')}
             </Link>
             <span className="text-slate-300">/</span>
-            <Link to="/auction" className="text-slate-500 hover:text-rose-500 transition">
+            <Link to="/auction" className="text-muted hover:text-blue-500 transition">
               {t('page.breadcrumbAuctions')}
             </Link>
             <span className="text-slate-300">/</span>
-            <span className="text-slate-900 font-semibold truncate max-w-xs sm:max-w-md">
+            <span className="text-ink font-semibold truncate max-w-xs sm:max-w-md">
               {currentLot?.title || activeAuction.title}
             </span>
           </nav>
@@ -646,7 +646,7 @@ export const AuctionPage: React.FC = () => {
             <button
               type="button"
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 cursor-pointer transition hover:border-slate-300 ${
-                isLiked ? 'text-red-500 border-red-200 bg-red-50' : ''
+                isLiked ? 'text-primary border-blue-200 bg-blue-50' : ''
               }`}
               onClick={() => setIsLiked(!isLiked)}
             >
@@ -671,17 +671,17 @@ export const AuctionPage: React.FC = () => {
           <div className="mb-6 bg-white border border-slate-200 rounded-2xl p-4 shadow-xs">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">
                   <Layers size={17} />
                 </div>
                 <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 m-0">
+                  <h3 className="text-xs sm:text-sm font-semibold text-ink m-0">
                     {t('page.lotsTitle', { count: activeAuction.items.length })}
                   </h3>
-                  <p className="text-[11px] text-slate-500 m-0">{t('page.lotsSubtitle')}</p>
+                  <p className="text-[11px] text-muted m-0">{t('page.lotsSubtitle')}</p>
                 </div>
               </div>
-              <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
+              <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full">
                 {t('page.viewingLot', { number: currentLot?.lotNumber ?? selectedLotIndex + 1 })}
               </span>
             </div>
@@ -714,19 +714,19 @@ export const AuctionPage: React.FC = () => {
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                        <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
                           {t('page.lotBadge', { number: lot.lotNumber ?? idx + 1 })}
                         </span>
                         {lot.threeModelKey && (
-                          <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-sky-100 text-sky-700">
+                          <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-blue-100 text-blue-700">
                             3D
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-bold text-slate-900 truncate mt-1 max-w-[150px]">
+                      <p className="text-xs font-semibold text-ink truncate mt-1 max-w-[150px]">
                         {lot.title}
                       </p>
-                      <p className="text-[11px] font-extrabold text-blue-600 mt-0.5">
+                      <p className="text-[11px] font-semibold text-blue-600 mt-0.5">
                         {lot.startingPrice
                           ? formatCurrency(Number(lot.startingPrice), i18n.language)
                           : t('page.awaitingValuation')}
@@ -744,7 +744,7 @@ export const AuctionPage: React.FC = () => {
           <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-amber-900 flex items-center gap-3.5 shadow-xs">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-600" />
             <div className="text-xs">
-              <p className="font-bold text-amber-900 text-sm">
+              <p className="font-semibold text-amber-900 text-sm">
                 {t('page.awaitingConsignmentTitle')}
               </p>
               <p className="text-amber-700 mt-0.5">

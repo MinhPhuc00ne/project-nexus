@@ -73,8 +73,8 @@ export default function AuctionComplaintModal({
               <AlertCircle size={16} />
             </span>
             <div>
-              <h3 className="text-sm font-bold text-slate-900">{t('complaintModal.title')}</h3>
-              <p className="text-[11px] text-slate-500">{t('complaintModal.subtitle')}</p>
+              <h3 className="text-sm font-semibold text-ink">{t('complaintModal.title')}</h3>
+              <p className="text-[11px] text-muted">{t('complaintModal.subtitle')}</p>
             </div>
           </div>
           <button
@@ -96,13 +96,13 @@ export default function AuctionComplaintModal({
 
           {lotTitle && (
             <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
-              <span className="text-slate-500 font-medium">{t('complaintModal.relatedLot')}</span>{' '}
-              <strong className="text-slate-900">{lotTitle}</strong>
+              <span className="text-muted font-medium">{t('complaintModal.relatedLot')}</span>{' '}
+              <strong className="text-ink">{lotTitle}</strong>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-800">
+            <label className="text-xs font-semibold text-ink">
               {t('complaintModal.reasonLabel')} <span className="text-rose-500">*</span>
             </label>
             <textarea
@@ -130,7 +130,7 @@ export default function AuctionComplaintModal({
             <button
               type="submit"
               disabled={submitting || !reason.trim()}
-              className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer"
             >
               {submitting ? (
                 <>

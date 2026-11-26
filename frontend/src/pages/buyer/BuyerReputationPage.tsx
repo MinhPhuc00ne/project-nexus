@@ -28,8 +28,8 @@ import { ROUTES } from '../../routes/paths';
 const TRUST_LEVEL_CONFIG = {
   EXCELLENT: {
     labelKey: 'reputationPage.trustLevels.excellentLabel',
-    badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-    colorCls: 'text-indigo-600',
+    badgeCls: 'bg-blue-50 text-blue-700 border-blue-200',
+    colorCls: 'text-blue-600',
     icon: '💎',
     descKey: 'reputationPage.trustLevels.excellentDesc',
   },
@@ -133,11 +133,11 @@ export default function BuyerReputationPage() {
             <div className="md:col-span-7 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-muted">
                     {t('reputationPage.currentIndex')}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${config.badgeCls}`}
+                    className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${config.badgeCls}`}
                   >
                     <span>{config.icon}</span>
                     <span>{t(config.labelKey)}</span>
@@ -145,8 +145,8 @@ export default function BuyerReputationPage() {
                 </div>
 
                 <div className="mt-5 flex items-baseline gap-3">
-                  <span className="text-5xl font-black tracking-tight text-slate-900">{score}</span>
-                  <span className="text-sm font-bold text-slate-400">
+                  <span className="text-5xl font-semibold tracking-tight text-ink">{score}</span>
+                  <span className="text-sm font-semibold text-slate-400">
                     {t('reputationPage.maxScore')}
                   </span>
                 </div>
@@ -157,7 +157,7 @@ export default function BuyerReputationPage() {
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         score >= 80
-                          ? 'bg-gradient-to-r from-emerald-500 to-indigo-600'
+                          ? 'bg-gradient-to-r from-blue-600 to-navy'
                           : score >= 50
                             ? 'bg-blue-500'
                             : score >= 20
@@ -185,7 +185,7 @@ export default function BuyerReputationPage() {
             {/* Right: Privileges & Safety (5 cols) */}
             <div className="md:col-span-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
               <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted mb-4">
                   {t('reputationPage.privilegesTitle')}
                 </h3>
 
@@ -193,11 +193,11 @@ export default function BuyerReputationPage() {
                   {/* Privilege 1: VIP Auction */}
                   <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                         <Gavel size={16} />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800">
+                        <p className="font-semibold text-ink">
                           {t('reputationPage.vipAuctionTitle')}
                         </p>
                         <p className="text-[11px] text-slate-400">
@@ -206,11 +206,11 @@ export default function BuyerReputationPage() {
                       </div>
                     </div>
                     {score >= 80 ? (
-                      <span className="flex items-center gap-1 font-bold text-emerald-600 text-xs">
+                      <span className="flex items-center gap-1 font-semibold text-emerald-600 text-xs">
                         <CheckCircle2 size={14} /> {t('reputationPage.eligible')}
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 font-bold text-slate-400 text-xs">
+                      <span className="flex items-center gap-1 font-semibold text-slate-400 text-xs">
                         {t('reputationPage.notEligible')}
                       </span>
                     )}
@@ -219,11 +219,11 @@ export default function BuyerReputationPage() {
                   {/* Privilege 2: Become Seller */}
                   <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
                         <Store size={16} />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800">
+                        <p className="font-semibold text-ink">
                           {t('reputationPage.openShopTitle')}
                         </p>
                         <p className="text-[11px] text-slate-400">
@@ -232,11 +232,11 @@ export default function BuyerReputationPage() {
                       </div>
                     </div>
                     {score >= 20 && !summary?.isSuspended ? (
-                      <span className="flex items-center gap-1 font-bold text-emerald-600 text-xs">
+                      <span className="flex items-center gap-1 font-semibold text-emerald-600 text-xs">
                         <CheckCircle2 size={14} /> {t('reputationPage.eligible')}
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 font-bold text-rose-500 text-xs">
+                      <span className="flex items-center gap-1 font-semibold text-rose-500 text-xs">
                         <AlertTriangle size={14} /> {t('reputationPage.restricted')}
                       </span>
                     )}
@@ -245,11 +245,11 @@ export default function BuyerReputationPage() {
                   {/* Privilege 3: Verified Status */}
                   <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/60 p-3 text-xs">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-primary">
                         <ShieldCheck size={16} />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-800">
+                        <p className="font-semibold text-ink">
                           {t('reputationPage.safeStatusTitle')}
                         </p>
                         <p className="text-[11px] text-slate-400">
@@ -257,7 +257,7 @@ export default function BuyerReputationPage() {
                         </p>
                       </div>
                     </div>
-                    <span className="flex items-center gap-1 font-bold text-emerald-600 text-xs">
+                    <span className="flex items-center gap-1 font-semibold text-emerald-600 text-xs">
                       <CheckCircle2 size={14} /> {t('reputationPage.goodStanding')}
                     </span>
                   </div>
@@ -267,7 +267,7 @@ export default function BuyerReputationPage() {
               <div className="mt-4 pt-3 border-t border-slate-100">
                 <Link
                   to="/buyer/orders"
-                  className="w-full flex items-center justify-center gap-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition"
+                  className="w-full flex items-center justify-center gap-1 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
                 >
                   <span>{t('reputationPage.viewOrdersForPoints')}</span>
                   <span>→</span>
@@ -281,7 +281,7 @@ export default function BuyerReputationPage() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div className="flex items-center gap-2">
                 <History size={18} className="text-blue-600" />
-                <h3 className="text-sm font-bold text-slate-900">
+                <h3 className="text-sm font-semibold text-ink">
                   {t('reputationPage.historyTitle')}
                 </h3>
                 <span className="text-xs text-slate-400 font-normal">
@@ -291,7 +291,7 @@ export default function BuyerReputationPage() {
             </div>
 
             {logs.length === 0 ? (
-              <div className="py-12 text-center text-xs text-slate-500">
+              <div className="py-12 text-center text-xs text-muted">
                 <Award size={36} className="mx-auto text-slate-300 mb-2" />
                 <p className="font-semibold text-slate-700">{t('reputationPage.emptyTitle')}</p>
                 <p className="text-slate-400 mt-1 max-w-sm mx-auto">
@@ -302,7 +302,7 @@ export default function BuyerReputationPage() {
               <div className="divide-y divide-slate-100 overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
-                    <tr className="text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+                    <tr className="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
                       <th className="pb-3 pl-2">{t('reputationPage.colTime')}</th>
                       <th className="pb-3">{t('reputationPage.colReason')}</th>
                       <th className="pb-3 text-center">{t('reputationPage.colDelta')}</th>
@@ -316,10 +316,10 @@ export default function BuyerReputationPage() {
                       const isPositive = log.deltaPoints > 0;
                       return (
                         <tr key={log.id} className="hover:bg-slate-50/70 transition">
-                          <td className="py-3.5 pl-2 text-slate-500 whitespace-nowrap">
+                          <td className="py-3.5 pl-2 text-muted whitespace-nowrap">
                             {new Date(log.createdAt).toLocaleString(getIntlLocale(i18n.language))}
                           </td>
-                          <td className="py-3.5 font-medium text-slate-900">
+                          <td className="py-3.5 font-medium text-ink">
                             <p>{log.reason}</p>
                             {log.referenceId && (
                               <p className="text-[10px] text-slate-400 font-mono mt-0.5">
@@ -327,7 +327,7 @@ export default function BuyerReputationPage() {
                               </p>
                             )}
                           </td>
-                          <td className="py-3.5 text-center font-extrabold whitespace-nowrap">
+                          <td className="py-3.5 text-center font-semibold whitespace-nowrap">
                             <span
                               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${
                                 isPositive
@@ -339,7 +339,7 @@ export default function BuyerReputationPage() {
                               {t('reputationPage.pointsUnit')}
                             </span>
                           </td>
-                          <td className="py-3.5 text-right pr-2 font-bold text-slate-900">
+                          <td className="py-3.5 text-right pr-2 font-semibold text-ink">
                             {log.balanceAfter} {t('reputationPage.pointsUnit')}
                           </td>
                         </tr>
@@ -353,7 +353,7 @@ export default function BuyerReputationPage() {
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-                <span className="text-slate-500">
+                <span className="text-muted">
                   {t('reputationPage.pageLabel', { page, totalPages })}
                 </span>
                 <div className="flex items-center gap-1.5">
