@@ -1,3 +1,5 @@
+import type { PaginatedResponse } from '@nexus/contracts';
+
 export type AdminAutoReplyScope = 'SYSTEM' | 'SHOP';
 export type AdminAutoReplyStatus = 'ACTIVE' | 'CANCELLED_BY_ADMIN';
 export type AdminAutoReplyTrigger = 'WELCOME' | 'OFFLINE' | 'KEYWORD' | 'DEFAULT';
@@ -20,10 +22,7 @@ export interface AdminAutoReply {
   cancelledByUser?: { id: string; fullName: string; email: string } | null;
 }
 
-export interface AdminAutoReplyPage {
-  items: AdminAutoReply[];
-  pagination: { page: number; limit: number; total: number; totalPages: number };
-}
+export type AdminAutoReplyPage = PaginatedResponse<AdminAutoReply>;
 
 export interface AdminAutoReplyQuery {
   page?: number;
@@ -61,10 +60,7 @@ export interface AdminChatConversation {
   assignedStaff?: AdminChatParticipant | null;
 }
 
-export interface AdminChatConversationPage {
-  items: AdminChatConversation[];
-  pagination: { page: number; limit: number; total: number; totalPages: number };
-}
+export type AdminChatConversationPage = PaginatedResponse<AdminChatConversation>;
 
 export interface AdminChatAuditMessage {
   id: string;
