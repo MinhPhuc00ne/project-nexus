@@ -4,7 +4,7 @@ import { Flame } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getStoredToken } from '@/features/auth/services/auth';
 import { removeAdminProductFromTrending } from '@/features/admin/services/admin';
-import type { AdminProduct } from '../../../types/admin-product.types';
+import type { AdminProduct } from '@/features/admin/types/admin-product.types';
 import Popup from '../../Popup';
 import { useToast } from '../../ToastNotification';
 import { Button } from '../shared/AdminUI';

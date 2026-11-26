@@ -13,7 +13,7 @@ import type {
   AdminDispute,
   AdminDisputePage,
   AdminDisputeStatus,
-} from '../../../types/admin-dispute.types';
+} from '@/features/admin/types/admin-dispute.types';
 
 const DISPUTE_STATUSES: AdminDisputeStatus[] = [
   'OPEN',

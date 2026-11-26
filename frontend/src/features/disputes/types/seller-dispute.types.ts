@@ -1,4 +1,4 @@
-import type { OrderParty } from './order.types';
+import type { OrderParty } from '@/features/orders/types/order.types';
 
 export type SellerDisputeStatus =
   'OPEN' | 'UNDER_REVIEW' | 'RESOLVED_SELLER_FAVOR' | 'RESOLVED_BUYER_FAVOR' | 'CANCELLED';

@@ -7,7 +7,7 @@ import {
   returnStatusLabels,
   type AdminReturnRequest,
   type ReturnStatus,
-} from '../../../types/admin-return.types';
+} from '@/features/admin/types/admin-return.types';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { date, message } from './orderPresentation';
 import ReturnDetail from './ReturnDetail';

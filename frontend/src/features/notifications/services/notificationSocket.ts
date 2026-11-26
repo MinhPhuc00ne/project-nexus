@@ -3,7 +3,7 @@ import i18n from '@/i18n';
 import { API_BASE_URL } from '@/services/api';
 import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import { leaseSocket } from '@/services/socketPool';
-import type { UserNotification } from '@/types/notification.types';
+import type { UserNotification } from '@/features/notifications/types/notification.types';
 
 export interface NotificationUnreadCountEvent {
   userId: string;

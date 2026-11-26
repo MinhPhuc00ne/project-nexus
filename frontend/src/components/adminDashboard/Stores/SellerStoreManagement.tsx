@@ -7,7 +7,11 @@ import {
   updateAdminShopStatus,
   warnAdminShop,
 } from '@/features/admin/services/admin';
-import type { AdminShop, PaginatedResult, QueryAdminShopsParams } from '../../../types/admin.types';
+import type {
+  AdminShop,
+  PaginatedResult,
+  QueryAdminShopsParams,
+} from '@/features/admin/types/admin.types';
 import Popup from '../../Popup';
 import { useToast } from '../../ToastNotification';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';

@@ -1,5 +1,5 @@
 import type { AuctionStatus } from '@nexus/types';
-import type { AuctionBidItem } from './auction-api.types';
+import type { AuctionBidItem } from '@/features/auction/types/auction-api.types';
 
 /**
  * Approved or proposed consignment lot included in an auction session payload.

@@ -9,7 +9,7 @@ import type {
   AdminWalletTransaction,
   AdminWalletTransactionPage,
   AdminWalletTransactionType,
-} from '../../../types/admin-wallet.types';
+} from '@/features/admin/types/admin-wallet.types';
 import { TRANSACTION_TYPES, date } from './transactionPresentation';
 import { buildTransactionCsv } from './transactionCsv';
 import TransactionDetailDialog from './TransactionDetailDialog';

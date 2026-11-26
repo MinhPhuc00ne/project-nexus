@@ -10,7 +10,7 @@ import type {
   NotificationPreference,
   NotificationPreferences,
   SaveNotificationPreferencesResult,
-} from '@/types/notification.types';
+} from '@/features/notifications/types/notification.types';
 
 const pending = new Map<string, Promise<unknown>>();
 

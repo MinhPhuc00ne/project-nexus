@@ -6,7 +6,7 @@ import {
   WalletCards as WalletOutlined,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { SellerRevenue } from '../../types/seller-finance.types';
+import type { SellerRevenue } from '@/features/wallet/types/seller-finance.types';
 import { EmptyState, Panel, StatCard } from './SellerUI';
 import { financeMoney } from './financeFormat';
 

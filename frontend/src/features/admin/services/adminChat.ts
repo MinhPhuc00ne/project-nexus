@@ -7,7 +7,7 @@ import type {
   AdminChatAuditPage,
   AdminChatConversationPage,
   CreateSystemAutoReplyDto,
-} from '@/types/admin-chat.types';
+} from '@/features/admin/types/admin-chat.types';
 
 export function listAdminAutoReplies(
   params: AdminAutoReplyQuery,

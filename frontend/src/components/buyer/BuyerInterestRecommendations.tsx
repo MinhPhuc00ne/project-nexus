@@ -5,7 +5,7 @@ import { Sparkles } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
 import { getProductByIdAsync, getProductsPage } from '@/features/catalog/services/products.service';
 import { getBuyerOrdersApi } from '@/features/orders/services/orders';
-import type { ProductDetail } from '../../types/product.types';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
 import {
   getBuyerInterestCategoryIds,
   recordBuyerProductPurchase,

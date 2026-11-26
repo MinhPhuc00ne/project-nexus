@@ -3,7 +3,7 @@ import { formatCurrency } from '@/i18n/formatters';
 import api, { apiRequest } from '@/services/api';
 import { getStoredToken } from '@/features/auth/services/auth';
 import { HOME_TRENDING_LIMIT } from '@/constants/trending';
-import type { ProductDetail, ProductItem } from '@/types/product.types';
+import type { ProductDetail, ProductItem } from '@/features/catalog/types/product.types';
 import { computeEffectiveSale, saleConfigFromApi } from '@/features/catalog/services/productExtras';
 
 export interface CatalogProduct {
@@ -286,8 +286,18 @@ export async function getRelatedProducts(currentId: string, limit = 4): Promise<
   return products.filter((product) => product.id !== currentId).slice(0, limit);
 }
 
-export type { ShopQuery, ShopListItem, PaginatedShops, ShopDetailResult } from '@/types/shop.types';
-import type { ShopQuery, ShopListItem, PaginatedShops, ShopDetailResult } from '@/types/shop.types';
+export type {
+  ShopQuery,
+  ShopListItem,
+  PaginatedShops,
+  ShopDetailResult,
+} from '@/features/catalog/types/shop.types';
+import type {
+  ShopQuery,
+  ShopListItem,
+  PaginatedShops,
+  ShopDetailResult,
+} from '@/features/catalog/types/shop.types';
 
 export async function getShopsApi(query: ShopQuery = {}): Promise<PaginatedShops> {
   const { search, city, page = 1, limit = 12, sortBy } = query;

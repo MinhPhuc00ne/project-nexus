@@ -33,7 +33,7 @@ import type {
   UserNotification,
   NotificationPreference,
   NotificationChannel,
-} from '../../types/notification.types';
+} from '@/features/notifications/types/notification.types';
 import {
   getNotificationOrderReference,
   resolveNotificationTargetUrl,

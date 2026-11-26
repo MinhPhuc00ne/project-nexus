@@ -7,7 +7,7 @@ import {
   Trash2 as DeleteOutlined,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { SellerShopProfile } from '../../types/shop.types';
+import type { SellerShopProfile } from '@/features/catalog/types/shop.types';
 import { VIETNAM_PROVINCES } from '../../constants/vietnamProvinces';
 import { updateSellerShopProfile, uploadShopAvatarFile } from '@/features/catalog/services/shops';
 import { useToast } from '../ToastNotification';

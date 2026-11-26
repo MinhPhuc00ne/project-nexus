@@ -18,7 +18,7 @@ import {
 import { getMe, toggleSellerMode } from '@/features/account/services/users';
 import { mergeGuestCartAfterLogin, resetCartSync } from '@/features/cart/services/cart';
 import { syncGuestWishlist } from '@/features/wishlist/services/wishlist.service';
-import type { AuthUser, UserProfile } from '../types/user.types';
+import type { AuthUser, UserProfile } from '@/features/account/types/user.types';
 import { useToast } from '../components/ToastNotification';
 
 const ACTIVE_MODE_PREFIX = 'nexus:active-mode:';

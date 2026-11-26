@@ -1,4 +1,4 @@
-import type { OrderAddress, SellerOrderStatus } from './order.types';
+import type { OrderAddress, SellerOrderStatus } from '@/features/orders/types/order.types';
 
 // Prisma Decimal values are serialized as strings by the admin endpoints.
 export type AdminOrderAmount = string | number;

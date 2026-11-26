@@ -3,7 +3,10 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getAdminSettings, updateAdminSettings } from '@/features/admin/services/admin';
-import type { SystemSettings, UpdateSystemSettingsDto } from '../../types/admin-settings.types';
+import type {
+  SystemSettings,
+  UpdateSystemSettingsDto,
+} from '@/features/admin/types/admin-settings.types';
 import { useToast } from '../../components/ToastNotification';
 import { Button, Panel } from '../../components/adminDashboard/shared/AdminUI';
 import {

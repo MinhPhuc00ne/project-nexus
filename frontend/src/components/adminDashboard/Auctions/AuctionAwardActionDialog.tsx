@@ -7,7 +7,7 @@ import {
   canConfirmAwardAction,
   type AdminAuctionAward,
   type AwardAction,
-} from '../../../types/admin-auction-operations.types';
+} from '@/features/admin/types/admin-auction-operations.types';
 
 type Props = {
   award: AdminAuctionAward;

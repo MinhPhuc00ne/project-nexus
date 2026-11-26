@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Store } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getAdminShopById } from '@/features/admin/services/admin';
-import type { AdminShopDetail } from '../../../types/admin.types';
+import type { AdminShopDetail } from '@/features/admin/types/admin.types';
 import { Badge, Button } from '../shared/AdminUI';
 
 export default function UserShopSummary({

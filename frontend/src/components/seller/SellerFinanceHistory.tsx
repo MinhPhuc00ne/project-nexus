@@ -13,7 +13,7 @@ import type {
   SellerWithdrawal,
   TransactionStatus,
   TransactionType,
-} from '../../types/seller-finance.types';
+} from '@/features/wallet/types/seller-finance.types';
 import { Badge, EmptyState, Panel, SellerButton } from './SellerUI';
 import SellerResourceState from './SellerResourceState';
 import SellerWithdrawalDetail from './SellerWithdrawalDetail';

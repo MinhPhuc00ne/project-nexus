@@ -6,7 +6,7 @@ import Popup from '../Popup';
 import useProductResource from '../productDetail/useProductResource';
 import { useToast } from '../ToastNotification';
 import { getSellerWaybill } from '@/features/orders/services/sellerOrders';
-import type { SellerWaybill } from '../../types/order.types';
+import type { SellerWaybill } from '@/features/orders/types/order.types';
 import { useSellerSession } from './SellerSession';
 import SellerResourceState from './SellerResourceState';
 import SellerWaybillSheet from './SellerWaybillSheet';

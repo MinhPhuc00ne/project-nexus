@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { listUsers } from '@/features/admin/services/admin';
-import type { PaginatedResult } from '../../../types/admin.types';
-import type { AdminUser, QueryUsersParams } from '../../../types/user.types';
+import type { PaginatedResult } from '@/features/admin/types/admin.types';
+import type { AdminUser, QueryUsersParams } from '@/features/account/types/user.types';
 import { useAuth } from '../../../contexts/AuthContext';
 
 export function useAdminUsers(preview: boolean) {

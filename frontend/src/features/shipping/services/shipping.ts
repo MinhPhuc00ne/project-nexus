@@ -9,7 +9,7 @@ import type {
   GhnWard,
   ShippingQuote,
   ShippingQuoteRequest,
-} from '@/types/shipping.types';
+} from '@/features/shipping/types/shipping.types';
 
 const base = '/fulfillment/shipping';
 const pending = new Map<string, Promise<unknown>>();

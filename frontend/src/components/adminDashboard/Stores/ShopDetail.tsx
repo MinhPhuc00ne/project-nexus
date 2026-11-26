@@ -8,7 +8,7 @@ import {
   getAdminShopViolations,
   resolveAdminShopAppeal,
 } from '@/features/admin/services/admin';
-import type { AdminShopDetail } from '../../../types/admin.types';
+import type { AdminShopDetail } from '@/features/admin/types/admin.types';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatCurrency } from '../../../i18n/formatters';
 import Popup from '../../Popup';

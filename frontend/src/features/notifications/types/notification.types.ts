@@ -67,3 +67,19 @@ export interface SaveNotificationPreferencesResult extends NotificationPreferenc
   success: boolean;
   message: string;
 }
+
+/**
+ * A notification as the header's dropdown shows it.
+ *
+ * Shorter than `UserNotification`, which is what the server sends: the header
+ * renders a title, a line of text and whether it has been read, and nothing
+ * else. It lived in the `src/types` barrel, which was the only reason that
+ * barrel had a body rather than being re-exports.
+ */
+export interface NotificationItem {
+  id: string | number;
+  title: string;
+  desc?: string;
+  time?: string;
+  unread?: boolean;
+}

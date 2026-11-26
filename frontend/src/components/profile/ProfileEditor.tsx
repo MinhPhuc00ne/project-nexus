@@ -6,7 +6,7 @@ import { Role } from '@nexus/types';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateMyProfile, type ProfileChanges } from '@/features/account/services/profile';
-import type { UserProfile } from '../../types';
+import type { UserProfile } from '@/features/account/types/user.types';
 import AvatarPicker from './AvatarPicker';
 import ChangePasswordModal from './ChangePasswordModal';
 import { useToast } from '../ToastNotification';

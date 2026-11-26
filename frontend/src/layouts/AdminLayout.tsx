@@ -11,7 +11,8 @@ import {
   useAdminSellerRequests,
 } from '../components/adminDashboard/Sellers/AdminSellerRequests';
 import type { AdminActions, AdminData } from '../components/adminDashboard/shared/adminTypes';
-import { Role, type UserProfile } from '../types';
+import type { UserProfile } from '@/features/account/types/user.types';
+import { Role } from '@nexus/types';
 import { useAuth } from '../contexts/AuthContext';
 import { listAdminDisputes, listAdminReports } from '@/features/admin/services/admin';
 

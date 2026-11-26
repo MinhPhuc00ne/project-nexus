@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getUserById } from '@/features/admin/services/admin';
-import type { AdminUserDetail, AdminUserRole } from '../../../types/user.types';
+import type { AdminUserDetail, AdminUserRole } from '@/features/account/types/user.types';
 import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';

@@ -23,7 +23,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '@/features/notifications/services/notifications';
-import type { UserNotification } from '../../types/notification.types';
+import type { UserNotification } from '@/features/notifications/types/notification.types';
 import { resolveStaffNotificationTarget } from './staffNotificationNavigation';
 import StaffHeaderDialogs from './StaffHeaderDialogs';
 import { dashboardChrome } from '../../components/dashboard/dashboardChrome';

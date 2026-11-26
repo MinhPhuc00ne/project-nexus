@@ -1,29 +1,32 @@
-import type { AdminOverviewAnalytics } from '@/types/admin-analytics.types';
+import type { AdminOverviewAnalytics } from '@/features/admin/types/admin-analytics.types';
 import type {
   AdminOrderAfterSales,
   AdminOrderDetail,
   AdminOrderPage,
   QueryAdminOrders,
-} from '@/types/admin-order.types';
-import type { AdminDisputePage, QueryAdminDisputes } from '@/types/admin-dispute.types';
+} from '@/features/admin/types/admin-order.types';
+import type {
+  AdminDisputePage,
+  QueryAdminDisputes,
+} from '@/features/admin/types/admin-dispute.types';
 import type {
   AdminReport,
   AdminReportPage,
   AdminReportStatus,
   ReviewAdminReport,
-} from '@/types/admin-report.types';
+} from '@/features/admin/types/admin-report.types';
 import type {
   SystemSettings,
   UpdateSystemSettingsDto,
   UpdateSystemSettingsResult,
-} from '@/types/admin-settings.types';
+} from '@/features/admin/types/admin-settings.types';
 import type {
   AdminUser,
   AdminUserDetail,
   QueryUsersParams,
   SellerUpgradeRequest,
   UserStatusResult,
-} from '@/types/user.types';
+} from '@/features/account/types/user.types';
 import type {
   CreateStaffDto,
   CreateStaffResult,
@@ -34,13 +37,13 @@ import type {
   SellerRequestReviewResult,
   StaffInvitationResult,
   StaffUser,
-} from '@/types/admin.types';
+} from '@/features/admin/types/admin.types';
 import { adminRequest } from '@/features/admin/services/adminRequest';
 import { HOME_TRENDING_LIMIT } from '@/constants/trending';
 import type {
   AdminTrendingProductsResult,
   RemoveAdminProductTrendingResult,
-} from '@/types/admin-product.types';
+} from '@/features/admin/types/admin-product.types';
 
 export function listAdminTrendingProducts(
   signal?: AbortSignal,

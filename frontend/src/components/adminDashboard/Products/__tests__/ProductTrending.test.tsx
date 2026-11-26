@@ -7,7 +7,7 @@ import {
   getCategoryTree,
   removeAdminProductFromTrending,
 } from '@/features/admin/services/admin';
-import type { AdminProduct } from '../../../../types/admin-product.types';
+import type { AdminProduct } from '@/features/admin/types/admin-product.types';
 import type { AdminData } from '../../shared/adminTypes';
 import { ToastProvider } from '../../../ToastNotification';
 import ProductManagement from '../ProductManagement';

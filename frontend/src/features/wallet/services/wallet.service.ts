@@ -1,5 +1,5 @@
 import api, { apiRequest } from '@/services/api';
-import type { FinancePage, SellerWithdrawal } from '@/types/seller-finance.types';
+import type { FinancePage, SellerWithdrawal } from '@/features/wallet/types/seller-finance.types';
 
 export interface WalletTransactionItem {
   id: string;

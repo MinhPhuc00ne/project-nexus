@@ -9,7 +9,7 @@ import {
   safeEvidenceUrls,
   uploadDisputeEvidence,
 } from '@/features/disputes/services/sellerDisputes';
-import type { SellerDispute } from '../../types/seller-dispute.types';
+import type { SellerDispute } from '@/features/disputes/types/seller-dispute.types';
 import { getStoredUser } from '@/features/auth/services/auth';
 import { useSellerSession } from './SellerSession';
 import { canRespondDispute, getDisputeLabel } from './orderPresentation';

@@ -4,8 +4,11 @@ import { CheckCircle2, LoaderCircle, Save } from 'lucide-react';
 import type {
   AdminAuctionAward,
   AdminAuctionComplaint,
-} from '../../types/admin-auction-operations.types';
-import type { AdminAuctionItem, StaffAuctionOverviewResponse } from '../../types/auction-api.types';
+} from '@/features/admin/types/admin-auction-operations.types';
+import type {
+  AdminAuctionItem,
+  StaffAuctionOverviewResponse,
+} from '@/features/auction/types/auction-api.types';
 import { canEndStaffAuctionLot } from './auctionSupport.helpers';
 
 type StaffAuctionSession = StaffAuctionOverviewResponse['auctions'][number];

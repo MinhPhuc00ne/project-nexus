@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getSellerRequests } from '@/features/admin/services/admin';
-import type { PaginatedResult } from '../../../types/admin.types';
+import type { PaginatedResult } from '@/features/admin/types/admin.types';
 import type { SellerUpgradeRequest } from '@/features/account/services/users';
 import { useAuth } from '../../../contexts/AuthContext';
 

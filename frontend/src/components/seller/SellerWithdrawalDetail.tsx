@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import Popup from '../Popup';
-import type { SellerWithdrawal } from '../../types/seller-finance.types';
+import type { SellerWithdrawal } from '@/features/wallet/types/seller-finance.types';
 import { financeDate, financeMoney, getWithdrawalLabel } from './financeFormat';
 
 export default function SellerWithdrawalDetail({

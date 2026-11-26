@@ -11,7 +11,7 @@ import {
   AUCTION_AWARD_STATES,
   canConfirmAwardAction,
   type AwardAction,
-} from '../../../types/admin-auction-operations.types';
+} from '@/features/admin/types/admin-auction-operations.types';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { useAuctionOperationResource } from './useAuctionOperationResource';
 import AuctionAwardActionDialog from './AuctionAwardActionDialog';

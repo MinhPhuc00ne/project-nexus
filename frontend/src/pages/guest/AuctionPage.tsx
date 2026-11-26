@@ -4,7 +4,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
 import { Heart, Share2, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
 import { BidStatus, AuctionStatus } from '@nexus/types';
-import type { AuctionViewerMode, AuctionTabKey, SimilarWatch } from '../../types';
+import type {
+  AuctionViewerMode,
+  AuctionTabKey,
+  SimilarWatch,
+} from '@/features/auction/types/auction.types';
 import AuctionGallery from '../../components/auction/AuctionGallery';
 import AuctionBidTerminal from '../../components/auction/AuctionBidTerminal';
 import AuctionSupportRequest from '../../components/auction/AuctionSupportRequest';

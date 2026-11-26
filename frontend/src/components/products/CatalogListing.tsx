@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { getProductsPage, type CatalogQuery } from '@/features/catalog/services/products.service';
 import useProductResource from '../productDetail/useProductResource';
-import type { ProductDetail } from '../../types/product.types';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
 
 export interface CatalogListingProps {
   search?: string;

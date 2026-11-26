@@ -9,7 +9,7 @@ import type {
   AdminReport,
   AdminReportPage,
   AdminReportStatus,
-} from '../../../types/admin-report.types';
+} from '@/features/admin/types/admin-report.types';
 
 const REPORT_STATUSES: AdminReportStatus[] = ['PENDING', 'INVESTIGATING', 'CONFIRMED', 'DISMISSED'];
 

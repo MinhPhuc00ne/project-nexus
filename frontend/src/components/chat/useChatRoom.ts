@@ -9,7 +9,7 @@ import {
   type ChatConnectionClient,
   createChatConnection,
 } from '@/features/chat/services/chatSocket';
-import type { ChatMessage } from '../../types/chat.types';
+import type { ChatMessage } from '@/features/chat/types/chat.types';
 import { getChatErrorMessage, mergeMessages } from './chatUtils';
 
 interface UseChatRoomOptions {

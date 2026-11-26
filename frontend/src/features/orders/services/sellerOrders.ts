@@ -10,7 +10,7 @@ import type {
   SellerOrdersQuery,
   SellerShipment,
   SellerWaybill,
-} from '@/types/order.types';
+} from '@/features/orders/types/order.types';
 
 const base = '/seller/orders';
 export function getSellerOrders(query: SellerOrdersQuery): Promise<SellerOrdersPage> {

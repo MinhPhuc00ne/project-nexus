@@ -1,5 +1,5 @@
 import i18n from '../../../i18n';
-import type { AdminWalletTransaction } from '../../../types/admin-wallet.types';
+import type { AdminWalletTransaction } from '@/features/admin/types/admin-wallet.types';
 import { date } from './transactionPresentation';
 
 export function buildTransactionCsv(rows: AdminWalletTransaction[]): string {

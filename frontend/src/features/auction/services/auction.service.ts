@@ -12,7 +12,7 @@ import type {
   AdminAuctionComplaint,
   AuctionComplaintState,
   AwardAction,
-} from '@/types/admin-auction-operations.types';
+} from '@/features/admin/types/admin-auction-operations.types';
 import type {
   BuyerEligibilityResponse,
   MyBidItem,
@@ -38,8 +38,8 @@ import type {
   AuctionAwardQuote,
   CheckoutAuctionAwardInput,
   CreateAuctionComplaintInput,
-} from '@/types/auction-api.types';
-export type * from '@/types/auction-api.types';
+} from '@/features/auction/types/auction-api.types';
+export type * from '@/features/auction/types/auction-api.types';
 export { normalizeAuctionListResponse } from '@/features/auction/services/auction-response.helpers';
 export { createAuctionSocket } from '@/features/auction/services/auction-socket.service';
 

@@ -22,7 +22,7 @@ import {
 import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import { createNotificationConnection } from '@/features/notifications/services/notificationSocket';
 import { getBuyerOrdersApi } from '@/features/orders/services/orders';
-import type { UserNotification } from '../../types/notification.types';
+import type { UserNotification } from '@/features/notifications/types/notification.types';
 import NotificationPreferencesModal from '../notifications/NotificationPreferencesModal';
 import {
   getNotificationOrderReference,

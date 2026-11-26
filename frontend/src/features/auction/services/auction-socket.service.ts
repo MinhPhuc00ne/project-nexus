@@ -2,7 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import { WS_AUCTION_EVENTS } from '@nexus/types';
 import { API_BASE_URL } from '@/services/api';
 import { getStoredToken } from '@/features/auth/services/auth';
-import type { AuctionSocketClient } from '@/types/auction-socket.types';
+import type { AuctionSocketClient } from '@/features/auction/types/auction-socket.types';
 
 /**
  * Establishes a WebSocket connection to the auction namespace for real-time auction events.

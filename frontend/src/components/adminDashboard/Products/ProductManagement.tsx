@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getCategoryTree } from '@/features/admin/services/admin';
-import type { AdminProduct, AdminProductStatus } from '../../../types/admin-product.types';
-import type { CategoryTreeItem } from '../../../types/category.types';
+import type { AdminProduct, AdminProductStatus } from '@/features/admin/types/admin-product.types';
+import type { CategoryTreeItem } from '@/features/catalog/types/category.types';
 import { flattenCategories } from '../../../utils/category-tree';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { ProductActionDialog, ProductDetailDialog } from './ProductDialogs';

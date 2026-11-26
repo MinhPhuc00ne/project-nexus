@@ -12,7 +12,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '@/features/notifications/services/notifications';
-import type { NotificationsPage } from '../../types/notification.types';
+import type { NotificationsPage } from '@/features/notifications/types/notification.types';
 import { useToast } from '../ToastNotification';
 
 export default function useSellerNotifications(userId: string, isOpen: boolean) {

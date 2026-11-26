@@ -5,7 +5,10 @@ import {
   getNotificationPreferences,
   saveNotificationPreferences,
 } from '@/features/notifications/services/notifications';
-import type { NotificationPreference, NotificationChannel } from '../../types/notification.types';
+import type {
+  NotificationPreference,
+  NotificationChannel,
+} from '@/features/notifications/types/notification.types';
 
 interface NotificationPreferencesModalProps {
   isOpen: boolean;

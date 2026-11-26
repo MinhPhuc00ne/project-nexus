@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Role } from '../types';
+import { Role } from '@nexus/types';
 import { useAuth } from '../contexts/AuthContext';
 
 /**

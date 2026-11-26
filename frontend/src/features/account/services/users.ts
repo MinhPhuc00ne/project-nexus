@@ -5,7 +5,7 @@ import type {
   SellerUpgradeRequest,
   ToggleSellerResponse,
   CreateSellerRequestDto,
-} from '@/types/user.types';
+} from '@/features/account/types/user.types';
 
 export type {
   UserWallet,

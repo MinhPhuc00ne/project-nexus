@@ -16,7 +16,7 @@ import type {
   RequestChatSupport,
   SendChatMessage,
   SupportConversationStatus,
-} from '@/types/chat.types';
+} from '@/features/chat/types/chat.types';
 
 /**
  * Calls a chat endpoint, refusing early when nobody is signed in.

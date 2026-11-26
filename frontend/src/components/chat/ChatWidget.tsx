@@ -9,7 +9,7 @@ import {
   getChatUnreadCount,
   requestChatSupport,
 } from '@/features/chat/services/chat';
-import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
+import type { ChatConversation, ChatConversationType } from '@/features/chat/types/chat.types';
 import ChatConversationList from './ChatConversationList';
 import ChatMessageArea from './ChatMessageArea';
 import { getChatErrorMessage } from './chatUtils';

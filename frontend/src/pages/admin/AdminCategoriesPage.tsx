@@ -11,7 +11,7 @@ import CategoryDialogs, {
 import { Input } from '../../components/ui/input';
 import { useToast } from '../../components/ToastNotification';
 import { getCategoryTree } from '@/features/admin/services/admin';
-import type { CategoryTreeItem } from '../../types/category.types';
+import type { CategoryTreeItem } from '@/features/catalog/types/category.types';
 
 export default function AdminCategoriesPage() {
   const { t } = useTranslation('admin');

@@ -1,11 +1,14 @@
 import type { AuctionStatus, BidStatus } from '@nexus/types';
-import type { AuctionConsignmentItem, SellerAuctionConsignment } from './auction-consignment.types';
+import type {
+  AuctionConsignmentItem,
+  SellerAuctionConsignment,
+} from '@/features/auction/types/auction-consignment.types';
 export type {
   AuctionConsignmentItem,
   AuctionConsignmentStatus,
   SellerAuctionConsignment,
-} from './auction-consignment.types';
-export type { AuctionSocketClient } from './auction-socket.types';
+} from '@/features/auction/types/auction-consignment.types';
+export type { AuctionSocketClient } from '@/features/auction/types/auction-socket.types';
 
 export interface AuctionProduct {
   id: string;

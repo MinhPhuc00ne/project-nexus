@@ -4,7 +4,7 @@ import { GripVertical, Pencil, Plus, Tag, Trash2 } from 'lucide-react';
 import { categoryMoveError } from '../../../utils/category-tree';
 import { Badge, Button } from '../shared/AdminUI';
 import type { CategoryAction } from './CategoryDialogs';
-import type { CategoryTreeItem } from '../../../types/category.types';
+import type { CategoryTreeItem } from '@/features/catalog/types/category.types';
 
 export default function CategoryNode({
   category,

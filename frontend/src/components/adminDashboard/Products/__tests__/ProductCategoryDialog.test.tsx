@@ -9,8 +9,8 @@ import {
   updateAdminProductCategory,
 } from '@/features/admin/services/admin';
 import { getStoredToken } from '@/features/auth/services/auth';
-import type { AdminProduct } from '../../../../types/admin-product.types';
-import type { CategoryTreeItem } from '../../../../types/category.types';
+import type { AdminProduct } from '@/features/admin/types/admin-product.types';
+import type { CategoryTreeItem } from '@/features/catalog/types/category.types';
 import ProductCategoryDialog from '../ProductCategoryDialog';
 
 vi.mock('@/features/admin/services/admin', () => ({

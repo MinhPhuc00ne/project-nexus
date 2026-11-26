@@ -34,7 +34,7 @@ import {
 } from '@/features/wallet/services/wallet.service';
 import WalletTopUpModal from '../../components/wallet/WalletTopUpModal';
 import BuyerWithdrawalModal from '../../components/wallet/BuyerWithdrawalModal';
-import type { SellerWithdrawal } from '../../types/seller-finance.types';
+import type { SellerWithdrawal } from '@/features/wallet/types/seller-finance.types';
 
 type FilterType = 'ALL' | 'TOP_UP' | 'PAYMENT' | 'REFUND' | 'WITHDRAWAL';
 

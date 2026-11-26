@@ -1,4 +1,4 @@
-import type { AdminOrderDetail } from './admin-order.types';
+import type { AdminOrderDetail } from '@/features/admin/types/admin-order.types';
 
 export type ReturnStatus =
   'REQUESTED' | 'APPROVING' | 'APPROVED' | 'RECEIVED' | 'COMPLETED' | 'REJECTED';

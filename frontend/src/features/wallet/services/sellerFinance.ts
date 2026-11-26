@@ -9,7 +9,7 @@ import type {
   SellerWithdrawal,
   TransactionQuery,
   WithdrawalResult,
-} from '@/types/seller-finance.types';
+} from '@/features/wallet/types/seller-finance.types';
 
 const base = '/seller/finance';
 

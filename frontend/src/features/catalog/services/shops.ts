@@ -5,7 +5,7 @@ import type {
   SellerShopProfile,
   UpdateSellerShop,
   UpdateSellerShopResult,
-} from '@/types/shop.types';
+} from '@/features/catalog/types/shop.types';
 import { getSellerResource } from '@/features/seller/services/sellerResources';
 
 export async function uploadShopAvatarFile(file: File): Promise<string> {

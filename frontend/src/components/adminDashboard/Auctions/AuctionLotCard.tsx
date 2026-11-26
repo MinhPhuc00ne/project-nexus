@@ -15,7 +15,7 @@ import AuctionLotNote from './AuctionLotNote';
 import {
   AUCTION_AWARD_STATES,
   type AuctionAwardState,
-} from '../../../types/admin-auction-operations.types';
+} from '@/features/admin/types/admin-auction-operations.types';
 
 type Props = {
   lot: AdminAuctionLot;

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
-import type { CartDropdownItem } from '../../types/cart.types';
+import type { CartDropdownItem } from '@/features/cart/types/cart.types';
 
 export type { CartDropdownItem };
 

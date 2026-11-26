@@ -1,5 +1,5 @@
 import type { OrderStatus, Role } from '@nexus/types';
-import type { SellerUpgradeRequest } from './user.types.ts';
+import type { SellerUpgradeRequest } from '@/features/account/types/user.types';
 
 export interface StaffUser {
   id: string;

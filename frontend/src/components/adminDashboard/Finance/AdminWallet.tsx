@@ -11,7 +11,7 @@ import type {
   AdminWalletTransaction,
   AdminWalletTransactionType,
   DepositAdminWalletResult,
-} from '../../../types/admin-wallet.types';
+} from '@/features/admin/types/admin-wallet.types';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatMoney } from '../shared/adminData';
 import { Button, Panel } from '../shared/AdminUI';

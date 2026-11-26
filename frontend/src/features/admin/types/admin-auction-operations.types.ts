@@ -1,4 +1,4 @@
-import type { AdminAuctionLot } from './auction-api.types';
+import type { AdminAuctionLot } from '@/features/auction/types/auction-api.types';
 
 export type AuctionAwardState =
   | 'AWAITING_ACCEPTANCE'

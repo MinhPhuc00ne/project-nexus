@@ -1,5 +1,5 @@
 import i18n from '../i18n';
-import type { CategoryTreeItem } from '../types/category.types';
+import type { CategoryTreeItem } from '@/features/catalog/types/category.types';
 
 export function flattenCategories(
   items: CategoryTreeItem[],

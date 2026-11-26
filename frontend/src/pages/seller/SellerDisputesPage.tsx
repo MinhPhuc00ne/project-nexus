@@ -5,7 +5,10 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { getSellerDisputes } from '@/features/disputes/services/sellerDisputes';
-import type { SellerDispute, SellerDisputeStatus } from '../../types/seller-dispute.types';
+import type {
+  SellerDispute,
+  SellerDisputeStatus,
+} from '@/features/disputes/types/seller-dispute.types';
 import useProductResource from '../../components/productDetail/useProductResource';
 import { useSellerSession } from '../../components/seller/SellerSession';
 import {

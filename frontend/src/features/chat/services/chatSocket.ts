@@ -3,7 +3,7 @@ import i18n from '@/i18n';
 import { API_BASE_URL } from '@/services/api';
 import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import { leaseSocket } from '@/services/socketPool';
-import type { ChatMessage } from '@/types/chat.types';
+import type { ChatMessage } from '@/features/chat/types/chat.types';
 
 interface ChatServerEvents {
   new_message: (message: ChatMessage) => void;

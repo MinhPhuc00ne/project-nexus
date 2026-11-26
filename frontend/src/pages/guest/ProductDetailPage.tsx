@@ -6,7 +6,7 @@ import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import { ShoppingCart as ShoppingCartOutlined } from 'lucide-react';
 import { Star, Tag, Heart, Flag, Zap, Check, Flame } from 'lucide-react';
 import { getProductByIdAsync } from '@/features/catalog/services/products.service';
-import type { ProductDetail } from '../../types/product.types';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
 import { addToCart, fetchCart, type CartItem } from '@/features/cart/services/cart';
 import { getStoredToken } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';

@@ -15,7 +15,7 @@ import {
   LogOut,
   ArrowLeftRight,
 } from 'lucide-react';
-import type { UserProfile } from '../../types';
+import type { UserProfile } from '@/features/account/types/user.types';
 import { clearAuthSession } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../ToastNotification';

@@ -23,7 +23,7 @@ import type {
   GhnService,
   ShippingQuote,
   DistanceResult,
-} from '../../types/shipping.types';
+} from '@/features/shipping/types/shipping.types';
 
 const inputClass = 'mt-2 w-full rounded-lg border border-slate-200 bg-white p-2.5 text-sm';
 export default function SellerShippingPage(): ReactElement {

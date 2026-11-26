@@ -10,7 +10,7 @@ import {
   getNotificationPreferences,
   saveNotificationPreferences,
 } from '@/features/notifications/services/notifications';
-import type { NotificationPreferences } from '../../types/notification.types';
+import type { NotificationPreferences } from '@/features/notifications/types/notification.types';
 import useProductResource from '../productDetail/useProductResource';
 import { useToast } from '../ToastNotification';
 import SellerResourceState from './SellerResourceState';

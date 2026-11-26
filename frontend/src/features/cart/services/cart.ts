@@ -1,6 +1,6 @@
 import { apiRequest } from '@/services/api';
 import { getStoredToken } from '@/features/auth/services/auth';
-import type { CartItem } from '@/types/cart.types';
+import type { CartItem } from '@/features/cart/types/cart.types';
 import {
   type BackendCartItem,
   type BackendCartResponse,

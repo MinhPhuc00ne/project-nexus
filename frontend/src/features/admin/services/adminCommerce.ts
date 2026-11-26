@@ -5,13 +5,13 @@ import type {
   QueryAdminProductsParams,
   UpdateProductStatusDto,
   UpdateProductStatusResult,
-} from '@/types/admin-product.types';
+} from '@/features/admin/types/admin-product.types';
 import type {
   CategoryTreeItem,
   CreateCategoryDto,
   DeleteCategoryResult,
   UpdateCategoryDto,
-} from '@/types/category.types';
+} from '@/features/catalog/types/category.types';
 import type {
   PaginatedResult,
   AdminShop,
@@ -26,19 +26,19 @@ import type {
   AdminShopActionLog,
   CreateAdminShopViolationDto,
   ResolveAdminShopAppealDto,
-} from '@/types/admin.types';
+} from '@/features/admin/types/admin.types';
 import type {
   AdminWalletSummary,
   AdminWalletTransactionPage,
   AdminWalletTransactionQueryDto,
   DepositAdminWalletDto,
   DepositAdminWalletResult,
-} from '@/types/admin-wallet.types';
+} from '@/features/admin/types/admin-wallet.types';
 import { adminRequest } from '@/features/admin/services/adminRequest';
 import type {
   UpdateProductCategoryDto,
   UpdateProductCategoryResult,
-} from '@/types/admin-product.types';
+} from '@/features/admin/types/admin-product.types';
 
 export function getCategoryTree(signal?: AbortSignal): Promise<CategoryTreeItem[]> {
   return adminRequest<CategoryTreeItem[]>({

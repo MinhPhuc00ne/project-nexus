@@ -4,7 +4,7 @@ import type {
   AdminReturnRequest,
   ReturnAction,
   ReturnStatus,
-} from '@/types/admin-return.types';
+} from '@/features/admin/types/admin-return.types';
 
 interface AfterSalesPage {
   items: AdminReturnRequest[];

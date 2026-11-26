@@ -2,7 +2,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import i18n from '../index';
 import { formatCurrency } from '../formatters';
 import { normalizeLanguage } from '../config';
-import { returnStatusLabels, type ReturnStatus } from '../../types/admin-return.types';
+import { returnStatusLabels, type ReturnStatus } from '@/features/admin/types/admin-return.types';
 
 describe('i18n infrastructure', () => {
   beforeEach(async () => {

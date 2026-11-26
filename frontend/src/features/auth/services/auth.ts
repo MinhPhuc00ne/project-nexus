@@ -1,6 +1,6 @@
 import i18n from '@/i18n';
 import api, { API_BASE_URL, ApiRequestError, request } from '@/services/api';
-import type { AuthMessage, AuthUser, LoginResponse } from '@/types/user.types';
+import type { AuthMessage, AuthUser, LoginResponse } from '@/features/account/types/user.types';
 
 export type { AuthMessage, AuthUser, LoginResponse };
 

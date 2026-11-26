@@ -27,7 +27,7 @@ import type {
   ChatConversation,
   ChatMessage,
   SupportConversationStatus,
-} from '../../types/chat.types';
+} from '@/features/chat/types/chat.types';
 
 export type TicketCategory = 'Auction 3D' | 'Shipping' | 'Escrow';
 export type { SupportTicket, TicketStatus };

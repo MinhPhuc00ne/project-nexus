@@ -3,9 +3,9 @@ import { AuctionStatus } from '@nexus/types';
 import { getSellerAuctionConsignmentsApi } from '@/features/auction/services/auction.service';
 import { getSellerOrders } from '@/features/orders/services/sellerOrders';
 import { getSellerRevenue } from '@/features/wallet/services/sellerFinance';
-import type { SellerAuctionConsignment } from '../../types/auction-consignment.types';
-import type { SellerOrder } from '../../types/order.types';
-import type { SellerRevenue } from '../../types/seller-finance.types';
+import type { SellerAuctionConsignment } from '@/features/auction/types/auction-consignment.types';
+import type { SellerOrder } from '@/features/orders/types/order.types';
+import type { SellerRevenue } from '@/features/wallet/types/seller-finance.types';
 
 /** An auction is live while it is taking bids, including an extension. */
 const LIVE_AUCTION_STATUSES: AuctionStatus[] = [AuctionStatus.ACTIVE, AuctionStatus.EXTENDED];

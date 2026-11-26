@@ -1,4 +1,7 @@
-import type { AuctionEntity, AuctionListResponse } from '@/types/auction-api.types';
+import type {
+  AuctionEntity,
+  AuctionListResponse,
+} from '@/features/auction/types/auction-api.types';
 
 /** Read either the standard HTTP envelope or an already unwrapped payload. */
 export function unwrapAuctionResponse<T>(payload: T | { data: T }): T {

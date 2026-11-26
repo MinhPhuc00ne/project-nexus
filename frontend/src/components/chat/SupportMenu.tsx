@@ -9,7 +9,7 @@ import {
   ChevronRight,
   Package,
 } from 'lucide-react';
-import type { ChatConversation } from '../../types/chat.types';
+import type { ChatConversation } from '@/features/chat/types/chat.types';
 import ChatAvatar from './ChatAvatar';
 
 const categoryConfigs = [

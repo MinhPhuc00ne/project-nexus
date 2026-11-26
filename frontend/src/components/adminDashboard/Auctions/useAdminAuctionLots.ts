@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WS_AUCTION_EVENTS, type WsTimerSyncPayload } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
-import { canEndAuctionLot } from '../../../types/admin-auction-operations.types';
+import { canEndAuctionLot } from '@/features/admin/types/admin-auction-operations.types';
 import { adminNotificationIsConnected, subscribeAdminAuctionUpdates } from './adminAuctionRealtime';
 import {
   adminEndAuctionLotApi,

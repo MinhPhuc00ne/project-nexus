@@ -1,7 +1,10 @@
 import i18n from '@/i18n';
 import { apiRequest } from '@/services/api';
 import { getSellerResource } from '@/features/seller/services/sellerResources';
-import type { SellerDisputesPage, SellerDisputeStatus } from '@/types/seller-dispute.types';
+import type {
+  SellerDisputesPage,
+  SellerDisputeStatus,
+} from '@/features/disputes/types/seller-dispute.types';
 
 export function getSellerDisputes(
   page: number,

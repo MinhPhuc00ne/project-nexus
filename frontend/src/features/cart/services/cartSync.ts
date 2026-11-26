@@ -2,7 +2,7 @@ import i18n from '@/i18n';
 import { formatCurrency } from '@/i18n/formatters';
 import { apiRequest } from '@/services/api';
 import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
-import type { CartItem } from '@/types/cart.types';
+import type { CartItem } from '@/features/cart/types/cart.types';
 
 export const GUEST_CART_STORAGE_KEY = 'nexus:guest-cart';
 export const AUTH_CART_CACHE_KEY = 'nexus:auth-cart-cache';
