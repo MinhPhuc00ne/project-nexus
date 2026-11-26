@@ -36,13 +36,9 @@ const SellerCreateProductPage = lazy(() => import('../pages/seller/SellerCreateP
 const StaffActivationPage = lazy(() => import('../pages/staff/StaffActivationPage'));
 const Login = lazy(() => import('../pages/auth/Login'));
 const RegisterPage = lazy(() => import('../pages/auth/RegisterPage'));
-const ForgotPasswordPage = lazy(() => import('../pages/auth/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('../pages/auth/ResetPasswordPage'));
-const VerifyOtpPage = lazy(() => import('../pages/auth/VerifyOtpPage'));
 const HomePage = lazy(() => import('../pages/guest/HomePage'));
 const SearchPage = lazy(() => import('../pages/guest/SearchPage'));
 const AuctionPage = lazy(() => import('../pages/guest/AuctionPage'));
-const AuctionDetailPage = lazy(() => import('../pages/guest/AuctionDetailPage'));
 const ProductDetailPage = lazy(() => import('../pages/guest/ProductDetailPage'));
 const ShopDetailPage = lazy(() => import('../pages/guest/ShopDetailPage'));
 const CategoryPage = lazy(() => import('../pages/guest/CategoryPage'));
@@ -65,25 +61,23 @@ const BuyerDisputesPage = lazy(() => import('../pages/buyer/BuyerDisputesPage'))
 const BuyerAddressesPage = lazy(() => import('../pages/buyer/BuyerAddressesPage'));
 const BuyerReputationPage = lazy(() => import('../pages/buyer/BuyerReputationPage'));
 const BuyerNotificationsPage = lazy(() => import('../pages/buyer/BuyerNotificationsPage'));
+// Nine one-line pages used to wrap this, each only to pick a section and each
+// pulling the same module into a chunk of its own. The route says which
+// section it is.
+const StaffDashboard = lazy(() => import('../pages/staff/StaffDashboard'));
 const StaffSellerApprovalPage = lazy(() => import('../pages/staff/StaffSellerApprovalPage'));
-const StaffManagementPage = lazy(() => import('../pages/staff/StaffManagementPage'));
-const StaffInboxPage = lazy(() => import('../pages/staff/StaffInboxPage'));
-const StaffDisputesPage = lazy(() => import('../pages/staff/StaffDisputesPage'));
-const StaffOrdersPage = lazy(() => import('../pages/staff/StaffOrdersPage'));
-const StaffBannersPage = lazy(() => import('../pages/staff/StaffBannersPage'));
-const StaffReviewsPage = lazy(() => import('../pages/staff/StaffReviewsPage'));
-const StaffAuctionSupportPage = lazy(() => import('../pages/staff/StaffAuctionSupportPage'));
-const StaffFaqPage = lazy(() => import('../pages/staff/StaffFaqPage'));
 const AdminProductsPage = lazy(() => import('../pages/admin/AdminProductsPage'));
 const AdminOrdersPage = lazy(() => import('../pages/admin/AdminOrdersPage'));
-const AdminStoresPage = lazy(() => import('../pages/admin/AdminStoresPage'));
-const AdminReportsPage = lazy(() => import('../pages/admin/AdminReportsPage'));
+const SellerStoreManagement = lazy(
+  () => import('../components/adminDashboard/Stores/SellerStoreManagement'),
+);
+const ReportQueue = lazy(() => import('../components/adminDashboard/Reports/ReportQueue'));
 const AdminDashboardPage = lazy(() => import('../pages/admin/AdminDashboardPage'));
 const AdminUsersPage = lazy(() => import('../pages/admin/AdminUsersPage'));
 const AdminSellersPage = lazy(() => import('../pages/admin/AdminSellersPage'));
 const AdminAuctionsPage = lazy(() => import('../pages/admin/AdminAuctionsPage'));
 const AdminAuctionLotsPage = lazy(() => import('../pages/admin/AdminAuctionLotsPage'));
-const AdminRefundsPage = lazy(() => import('../pages/admin/AdminRefundsPage'));
+const OrderDisputes = lazy(() => import('../components/adminDashboard/Refunds/OrderDisputes'));
 const AdminFinancePage = lazy(() => import('../pages/admin/AdminFinancePage'));
 const AdminSystemPage = lazy(() => import('../pages/admin/AdminSystemPage'));
 const AdminSettingsPage = lazy(() => import('../pages/admin/AdminSettingsPage'));
@@ -117,7 +111,7 @@ function AppRouter() {
                 <Route path={ROUTES.SEARCH} element={<SearchPage />} />
                 <Route path={ROUTES.CATEGORY} element={<CategoryPage />} />
                 <Route path={ROUTES.AUCTION} element={<AuctionPage />} />
-                <Route path={ROUTES.AUCTION_DETAIL} element={<AuctionDetailPage />} />
+                <Route path={ROUTES.AUCTION_DETAIL} element={<AuctionPage />} />
                 <Route path={ROUTES.PRODUCT} element={<ProductDetailPage />} />
                 <Route path={ROUTES.SHOP_DETAIL} element={<ShopDetailPage />} />
                 <Route path={ROUTES.ABOUT} element={<AboutPage />} />
@@ -152,9 +146,21 @@ function AppRouter() {
               <Route element={<AuthLayout />}>
                 <Route path={ROUTES.LOGIN} element={<Login />} />
                 <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
-                <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-                <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
-                <Route path={ROUTES.VERIFY_OTP} element={<VerifyOtpPage />} />
+                {/* Resetting a password is an OTP in a modal on the login
+                    page, not a page of its own. These three paths rendered an
+                    empty placeholder card that looked like a feature; nothing
+                    ever linked to them, and no email points at them. Anyone
+                    arriving by hand or from an old bookmark lands where the
+                    flow actually is. */}
+                <Route
+                  path={ROUTES.FORGOT_PASSWORD}
+                  element={<Navigate to={ROUTES.LOGIN} replace />}
+                />
+                <Route
+                  path={ROUTES.RESET_PASSWORD}
+                  element={<Navigate to={ROUTES.LOGIN} replace />}
+                />
+                <Route path={ROUTES.VERIFY_OTP} element={<Navigate to={ROUTES.LOGIN} replace />} />
               </Route>
 
               {/* Seller routes */}
@@ -199,17 +205,38 @@ function AppRouter() {
                     path={ROUTES.STAFF_SELLER_APPROVALS}
                     element={<StaffSellerApprovalPage />}
                   />
-                  <Route path={ROUTES.STAFF_TEAM} element={<StaffManagementPage />} />
-                  <Route path={ROUTES.STAFF_INBOX} element={<StaffInboxPage />} />
-                  <Route path={ROUTES.STAFF_DISPUTES} element={<StaffDisputesPage />} />
-                  <Route path={ROUTES.STAFF_ORDERS} element={<StaffOrdersPage />} />
+                  <Route
+                    path={ROUTES.STAFF_TEAM}
+                    element={<StaffDashboard initialSection="Quản Lý Nhân Viên" />}
+                  />
+                  <Route
+                    path={ROUTES.STAFF_INBOX}
+                    element={<StaffDashboard initialSection="Hộp Thư Trực Tuyến" />}
+                  />
+                  <Route
+                    path={ROUTES.STAFF_DISPUTES}
+                    element={<StaffDashboard initialSection="Khiếu Nại & Tranh Chấp" />}
+                  />
+                  <Route
+                    path={ROUTES.STAFF_ORDERS}
+                    element={<StaffDashboard initialSection="Đơn hàng & Hậu mãi" />}
+                  />
                   <Route
                     path={ROUTES.STAFF_AUCTION_SUPPORT}
-                    element={<StaffAuctionSupportPage />}
+                    element={<StaffDashboard initialSection="Hỗ Trợ Đấu Giá 3D" />}
                   />
-                  <Route path={ROUTES.STAFF_FAQ} element={<StaffFaqPage />} />
-                  <Route path={ROUTES.STAFF_BANNERS} element={<StaffBannersPage />} />
-                  <Route path={ROUTES.STAFF_REVIEWS} element={<StaffReviewsPage />} />
+                  <Route
+                    path={ROUTES.STAFF_FAQ}
+                    element={<StaffDashboard initialSection="Hướng Dẫn & FAQ Sàn" />}
+                  />
+                  <Route
+                    path={ROUTES.STAFF_BANNERS}
+                    element={<StaffDashboard initialSection="Quản Lý Banner" />}
+                  />
+                  <Route
+                    path={ROUTES.STAFF_REVIEWS}
+                    element={<StaffDashboard initialSection="Kiểm Duyệt Đánh Giá" />}
+                  />
                 </Route>
               </Route>
 
@@ -227,11 +254,11 @@ function AppRouter() {
                 <Route path="sellers" element={<AdminSellersPage />} />
                 <Route path="products" element={<AdminProductsPage />} />
                 <Route path="orders" element={<AdminOrdersPage />} />
-                <Route path="stores" element={<AdminStoresPage />} />
-                <Route path="reports" element={<AdminReportsPage />} />
+                <Route path="stores" element={<SellerStoreManagement />} />
+                <Route path="reports" element={<ReportQueue />} />
                 <Route path="auctions" element={<AdminAuctionsPage />} />
                 <Route path="auctions/:auctionId/lots" element={<AdminAuctionLotsPage />} />
-                <Route path="refunds" element={<AdminRefundsPage />} />
+                <Route path="refunds" element={<OrderDisputes />} />
                 <Route path="finance" element={<AdminFinancePage />} />
                 <Route path="system" element={<AdminSystemPage />} />
                 <Route path="settings" element={<AdminSettingsPage />} />
