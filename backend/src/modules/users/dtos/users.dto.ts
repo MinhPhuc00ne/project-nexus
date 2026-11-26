@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { nullAsAbsent } from '../../../core/validation/query-schemas';
-import { SellerRequestStatus } from '@prisma/client';
 import { Role } from '@nexus/types';
 
 export interface UserProfileResponse {
@@ -64,65 +63,6 @@ const updateBuyerProfileFields = {
 export const UpdateBuyerProfileSchema = z.object(updateBuyerProfileFields).strict();
 
 export type UpdateBuyerProfileInput = z.infer<typeof UpdateBuyerProfileSchema>;
-
-const applySellerUpgradeFields = {
-  storeName: z.string().trim().min(1).describe('Store name').meta({ example: 'Nexus Super Store' }),
-  storeDescription: nullAsAbsent(
-    z.string().describe('Store description').meta({ example: 'Authentic electronics store' }),
-  ),
-  phone: z.string().trim().min(1).describe('Store contact phone').meta({ example: '0912345678' }),
-  businessEmail: nullAsAbsent(
-    z.email().describe('Business email').meta({ example: 'business@nexusstore.com' }),
-  ),
-  identityCardNumber: nullAsAbsent(
-    z.string().describe('National identity card number').meta({ example: '012345678910' }),
-  ),
-  attachmentUrl: nullAsAbsent(
-    z
-      .string()
-      .describe('Đường dẫn file chứng minh (nếu không upload trực tiếp file trong form-data)')
-      .meta({ example: 'https://res.cloudinary.com/nexus/proof.jpg' }),
-  ),
-  street: z
-    .string()
-    .trim()
-    .min(1)
-    .describe('Store address / street')
-    .meta({ example: '720A Điện Biên Phủ' }),
-  ward: nullAsAbsent(z.string().meta({ example: 'Phường 22' })),
-  district: nullAsAbsent(z.string().meta({ example: 'Quận Bình Thạnh' })),
-  city: z.string().trim().min(1).meta({ example: 'TP. Hồ Chí Minh' }),
-  latitude: nullAsAbsent(z.coerce.number().describe('GPS Latitude').meta({ example: 10.795 })),
-  longitude: nullAsAbsent(z.coerce.number().describe('GPS Longitude').meta({ example: 106.721 })),
-  formattedAddress: nullAsAbsent(
-    z
-      .string()
-      .describe('Formatted address')
-      .meta({ example: 'Landmark 81, 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP. Hồ Chí Minh' }),
-  ),
-  placeId: nullAsAbsent(z.string().describe('Place ID').meta({ example: 'ChIJw8qV...' })),
-};
-
-export const ApplySellerUpgradeSchema = z.object(applySellerUpgradeFields).strict();
-
-export type ApplySellerUpgradeInput = z.infer<typeof ApplySellerUpgradeSchema>;
-
-const reviewSellerUpgradeFields = {
-  status: z
-    .enum(SellerRequestStatus)
-    .describe('Decision: APPROVED or REJECTED')
-    .meta({ example: SellerRequestStatus.APPROVED }),
-  rejectionReason: nullAsAbsent(
-    z
-      .string()
-      .describe('Rejection reason or review note')
-      .meta({ example: 'Documents verified successfully' }),
-  ),
-};
-
-export const ReviewSellerUpgradeSchema = z.object(reviewSellerUpgradeFields).strict();
-
-export type ReviewSellerUpgradeInput = z.infer<typeof ReviewSellerUpgradeSchema>;
 
 const createAddressFields = {
   recipientName: z

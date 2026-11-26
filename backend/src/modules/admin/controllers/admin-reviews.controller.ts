@@ -23,17 +23,10 @@ import {
   AdminModerateReviewVisibilitySchema,
   QueryAdminReviewsInput,
   QueryAdminReviewsSchema,
-} from '../dtos/feedback.dto';
-import { ReviewsService } from '../services/reviews.service';
+} from '../../reviews/dtos/feedback.dto';
+import { ReviewsService } from '../../reviews/services/reviews.service';
 
-/**
- * Moderation of reviews and their replies.
- *
- * These are `/admin/reviews/*` routes but they stay in the reviews module:
- * moderating a review needs the review rules, and moving them into the admin
- * module would make the back office a dependency of nothing more than a route
- * prefix.
- */
+/** Moderation of reviews and their replies. */
 @ApiTags('Reviews (moderation)')
 @Controller()
 export class AdminReviewsController {

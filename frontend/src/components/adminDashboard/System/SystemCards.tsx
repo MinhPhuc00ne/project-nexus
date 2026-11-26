@@ -1,99 +1,68 @@
-import { mockLogistics, mockSystemEvents } from './mockData/system';
-// Hai khối dùng ở Tổng quan và Hệ thống: trạng thái vận chuyển và danh sách nhật ký sự kiện.
-
-import { Download, ScrollText, Truck } from 'lucide-react';
+import type { HealthCheck } from '@nexus/contracts';
+import { Server, ScrollText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Badge, Button, Panel } from '../shared/AdminUI';
-import type { AdminTabProps } from '../shared/adminTypes';
+import { Badge, Panel } from '../shared/AdminUI';
 
-// Nhật ký cố định để dựng UI. Muốn cập nhật thời gian thực cần nguồn API/WebSocket riêng.
+function probeTone(status?: 'ok' | 'degraded' | 'down'): 'green' | 'amber' | 'red' {
+  if (status === 'ok') return 'green';
+  if (status === 'degraded') return 'amber';
+  return 'red';
+}
 
-// Pick chỉ lấy kiểu của prop actions; card này không cần nhận toàn bộ AdminData.
-// Endpoint và trạng thái GHN dưới đây chỉ là nội dung hiển thị, chưa gửi request thật.
-export function LogisticsCard({ actions }: Pick<AdminTabProps, 'actions'>) {
+export function SystemHealthBreakdown({ health }: { health?: HealthCheck }) {
   const { t } = useTranslation('admin');
   return (
     <Panel
       title={t('system.logistics.title')}
-      subtitle={t('system.logistics.subtitle')}
-      icon={<Truck size={19} />}
+      subtitle={health ? `Updated ${new Date(health.timestamp).toLocaleTimeString()}` : undefined}
+      icon={<Server size={19} />}
     >
-      <div className="space-y-3 rounded-lg bg-blue-50 p-3 text-[11px]">
+      <div className="space-y-3 rounded-lg bg-slate-50 p-3 text-xs">
         <div className="flex justify-between gap-2">
-          <span className="text-slate-500">{t('system.logistics.webhookEndpoint')}</span>
-          <code className="break-all text-primary">{mockLogistics.webhookEndpoint}</code>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-slate-500">{t('system.logistics.autoShipment')}</span>
-          <Badge tone="green">
-            {t('system.logistics.activeStatus', {
-              defaultValue: mockLogistics.automaticShipmentStatus,
-            })}
+          <span className="text-slate-500">PostgreSQL</span>
+          <Badge tone={probeTone(health?.db.status)}>
+            {health?.db.status ?? 'unknown'}
+            {health?.db.latencyMs !== undefined ? ` · ${health.db.latencyMs}ms` : ''}
           </Badge>
         </div>
-      </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[10px]">
-        <span className="text-slate-500">
-          {t('system.logistics.latencyPrefix')} <b>{mockLogistics.latency}</b>
-        </span>
-        <button
-          onClick={() => actions.notify(t('system.logistics.demoNotice'))}
-          className="font-semibold text-primary hover:underline"
-        >
-          {t('system.logistics.retryFailed')}
-        </button>
+        <div className="flex justify-between gap-2">
+          <span className="text-slate-500">Redis</span>
+          <Badge tone={probeTone(health?.redis.status)}>
+            {health?.redis.status ?? 'unknown'}
+            {health?.redis.latencyMs !== undefined ? ` · ${health.redis.latencyMs}ms` : ''}
+          </Badge>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-slate-500">Socket.IO</span>
+          <Badge tone={health ? 'green' : 'gray'}>
+            {health ? `${health.sockets.connectedClients} clients` : 'unknown'}
+          </Badge>
+        </div>
       </div>
     </Panel>
   );
 }
 
-// compact=true dùng trong Tổng quan để hiển thị 3 sự kiện; tab Hệ thống hiển thị đầy đủ.
-export function EventLog({ compact = false }: { compact?: boolean }) {
+export function OutboxCard({ health }: { health?: HealthCheck }) {
   const { t } = useTranslation('admin');
-  const download = () => {
-    // Chỉ xuất thời gian/nội dung; tone là class màu UI nên không đưa vào JSON tải xuống.
-    // JSON.stringify(..., null, 2) thụt dòng 2 dấu cách cho dễ đọc.
-    const url = URL.createObjectURL(
-      new Blob(
-        [
-          JSON.stringify(
-            mockSystemEvents.map(({ time, message }) => ({ time, message })),
-            null,
-            2,
-          ),
-        ],
-        { type: 'application/json' },
-      ),
-    );
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = 'nexus-demo-event-log.json';
-    anchor.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <Panel
       title={t('system.events.title')}
       subtitle={t('system.events.subtitle')}
       icon={<ScrollText size={19} />}
-      action={<span className="mt-3 size-2 shrink-0 rounded-full bg-blue-500" />}
     >
-      <div className="space-y-2">
-        {mockSystemEvents.slice(0, compact ? 3 : mockSystemEvents.length).map((event, index) => (
-          <p
-            key={event.time}
-            className="rounded-lg bg-slate-50 p-3 font-mono text-[10px] leading-5 text-slate-600"
-          >
-            <span className={`font-bold ${event.tone}`}>[{event.time}]</span>{' '}
-            {t(`system.events.items.${index}`, { defaultValue: event.message })}
-          </p>
-        ))}
+      <div className="space-y-2 rounded-lg bg-slate-50 p-3 text-xs">
+        <div className="flex justify-between gap-2">
+          <span className="text-slate-500">Outbox Pending Events</span>
+          <Badge tone={(health?.outbox.pendingCount ?? 0) > 50 ? 'amber' : 'green'}>
+            {health?.outbox.pendingCount ?? 0}
+          </Badge>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-slate-500">Overall Status</span>
+          <Badge tone={probeTone(health?.status)}>{health?.status ?? 'unknown'}</Badge>
+        </div>
       </div>
-      <Button variant="secondary" onClick={download} className="mt-4 w-full">
-        <Download size={13} />
-        {t('system.events.exportJson')}
-      </Button>
     </Panel>
   );
 }

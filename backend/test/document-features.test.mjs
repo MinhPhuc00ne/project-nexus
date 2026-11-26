@@ -16,7 +16,7 @@ const { GhnLogisticsService } = load(
 const { ReviewsService } = load('../src/modules/reviews/services/reviews.service.ts');
 const { ReportsService } = load('../src/modules/reviews/services/reports.service.ts');
 const { AdminReviewsController } = load(
-  '../src/modules/reviews/controllers/admin-reviews.controller.ts',
+  '../src/modules/admin/controllers/admin-reviews.controller.ts',
 );
 const { ROLES_KEY } = load('../src/core/security/roles.decorator.ts');
 const { BannerService } = load('../src/modules/catalog/services/banner.service.ts');

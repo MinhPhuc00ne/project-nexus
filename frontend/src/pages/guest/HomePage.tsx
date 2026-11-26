@@ -186,7 +186,12 @@ function HomePage() {
 
           <p className="mt-3 text-sm text-slate-500">{t('home.freeShippingDesc')}</p>
 
-          <button className="mt-4 text-sm font-semibold text-sky-500">{t('home.claimCode')}</button>
+          <Link
+            to="/search"
+            className="mt-4 inline-block text-sm font-semibold text-sky-500 hover:underline"
+          >
+            {t('home.claimCode')}
+          </Link>
         </div>
 
         <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
@@ -207,7 +212,12 @@ function HomePage() {
 
           <p className="mt-3 text-sm text-slate-500">{t('home.payosGiftDesc')}</p>
 
-          <button className="mt-4 text-sm font-semibold text-sky-500">{t('home.explore')}</button>
+          <Link
+            to="/buyer/wallet"
+            className="mt-4 inline-block text-sm font-semibold text-sky-500 hover:underline"
+          >
+            {t('home.explore')}
+          </Link>
         </div>
       </section>
 

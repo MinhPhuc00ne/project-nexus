@@ -32,7 +32,7 @@ export class RefundService {
         .comparedTo(escrow.totalAmount) !== 0
     )
       throw new BadRequestException('Cần đối soát số tiền đã thanh toán trước khi hoàn.');
-    const admin = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
+    const escrowWallet = await this.treasury.getOrCreateEscrowWallet(tx);
     if (escrow.status === 'DISBURSED') {
       const recovered = await tx.wallet.updateMany({
         where: { userId: order.sellerId, balance: { gte: escrow.sellerPayout } },
@@ -54,12 +54,12 @@ export class RefundService {
         },
       });
       await tx.wallet.update({
-        where: { id: admin.id },
+        where: { id: escrowWallet.id },
         data: { balance: { increment: escrow.sellerPayout } },
       });
       await tx.walletTransaction.create({
         data: {
-          walletId: admin.id,
+          walletId: escrowWallet.id,
           amount: escrow.sellerPayout,
           type: 'ESCROW_REFUND',
           status: 'SUCCESS',
@@ -76,7 +76,7 @@ export class RefundService {
           buyerId: order.buyerId,
           paymentId: payment.id,
           amount: payment.amount,
-          adminWalletId: admin.id,
+          adminWalletId: escrowWallet.id,
           toWallet: payment.provider === 'WALLET' || walletConsent,
         }),
       );

@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role, WithdrawalStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -24,8 +24,8 @@ import { AdminService } from '../services/admin.service';
 import { ReviewWithdrawalInput, ReviewWithdrawalSchema } from '../dtos/review-withdrawal.dto';
 
 import {
-  AdminWalletResponseDto,
-  AdminWalletTransactionsResponseDto,
+  AdminWalletResponseSchema,
+  AdminWalletTransactionsResponseSchema,
   DepositAdminWalletInput,
   DepositAdminWalletSchema,
   QueryAdminWalletTransactionsInput,
@@ -101,10 +101,9 @@ export class AdminFinanceController {
     description:
       'Returns current operational balance, collected platform transaction commissions, and cumulative manual deposits.',
   })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'Platform wallet details retrieved successfully',
-    type: AdminWalletResponseDto,
+    standardSchema: AdminWalletResponseSchema,
   })
   async getAdminWallet(@CurrentUser('id') adminId: string) {
     return this.adminFinanceService.getAdminWallet(adminId);
@@ -116,10 +115,9 @@ export class AdminFinanceController {
     description:
       'Details escrow hold transactions, shop disbursements, carrier postage debits, and platform commission earnings.',
   })
-  @ApiResponse({
-    status: 200,
+  @ApiOkResponse({
     description: 'Wallet transactions retrieved successfully',
-    type: AdminWalletTransactionsResponseDto,
+    standardSchema: AdminWalletTransactionsResponseSchema,
   })
   async getAdminWalletTransactions(
     @CurrentUser('id') adminId: string,

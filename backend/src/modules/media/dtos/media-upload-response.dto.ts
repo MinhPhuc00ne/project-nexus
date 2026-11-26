@@ -1,66 +1,47 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { z } from 'zod';
 
-export class MediaUploadResponseDto {
-  @ApiProperty({
-    example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg',
-    description: 'Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary',
-  })
-  url!: string;
+export const MediaUploadResponseSchema = z.object({
+  url: z
+    .string()
+    .describe('Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary')
+    .meta({ example: 'https://res.cloudinary.com/demo/image/upload/sample.jpg' }),
+  publicId: z
+    .string()
+    .optional()
+    .describe('Mã định danh duy nhất của file media trên hệ thống lưu trữ')
+    .meta({ example: 'nexus/media/sample_123' }),
+  fileName: z
+    .string()
+    .describe('Tên file được lưu trên máy chủ')
+    .meta({ example: 'media-1729410000000-a1b2c3d4.png' }),
+  originalName: z
+    .string()
+    .describe('Tên file gốc do client tải lên')
+    .meta({ example: 'cover-chapter-1.png' }),
+  mimeType: z.string().describe('MIME type của file ảnh').meta({ example: 'image/png' }),
+  size: z.number().describe('Kích thước file theo bytes').meta({ example: 245120 }),
+  urls: z
+    .array(z.string())
+    .optional()
+    .describe('Mảng URL của các ảnh đã tải lên')
+    .meta({ example: ['https://res.cloudinary.com/demo/image/upload/sample.jpg'] }),
+});
 
-  @ApiProperty({
-    example: 'nexus/media/sample_123',
-    description: 'Mã định danh duy nhất của file media trên hệ thống lưu trữ',
-    required: false,
-  })
-  publicId?: string;
+export type MediaUploadResponseDto = z.infer<typeof MediaUploadResponseSchema>;
 
-  @ApiProperty({
-    example: 'media-1729410000000-a1b2c3d4.png',
-    description: 'Tên file được lưu trên máy chủ',
-  })
-  fileName!: string;
+export const MultipleMediaUploadResponseSchema = z.object({
+  urls: z
+    .array(z.string())
+    .describe('Mảng chứa danh sách các URL của toàn bộ file ảnh vừa được tải lên')
+    .meta({
+      example: [
+        'https://res.cloudinary.com/demo/image/upload/sample1.jpg',
+        'https://res.cloudinary.com/demo/image/upload/sample2.jpg',
+      ],
+    }),
+  items: z
+    .array(MediaUploadResponseSchema)
+    .describe('Danh sách chi tiết thông tin của từng file ảnh vừa được tải lên'),
+});
 
-  @ApiProperty({
-    example: 'cover-chapter-1.png',
-    description: 'Tên file gốc do client tải lên',
-  })
-  originalName!: string;
-
-  @ApiProperty({
-    example: 'image/png',
-    description: 'MIME type của file ảnh',
-  })
-  mimeType!: string;
-
-  @ApiProperty({
-    example: 245120,
-    description: 'Kích thước file theo bytes',
-  })
-  size!: number;
-
-  @ApiProperty({
-    example: ['https://res.cloudinary.com/demo/image/upload/sample.jpg'],
-    description: 'Mảng URL của các ảnh đã tải lên',
-    required: false,
-    type: [String],
-  })
-  urls?: string[];
-}
-
-export class MultipleMediaUploadResponseDto {
-  @ApiProperty({
-    example: [
-      'https://res.cloudinary.com/demo/image/upload/sample1.jpg',
-      'https://res.cloudinary.com/demo/image/upload/sample2.jpg',
-    ],
-    description: 'Mảng chứa danh sách các URL của toàn bộ file ảnh vừa được tải lên',
-    type: [String],
-  })
-  urls!: string[];
-
-  @ApiProperty({
-    description: 'Danh sách chi tiết thông tin của từng file ảnh vừa được tải lên',
-    type: [MediaUploadResponseDto],
-  })
-  items!: MediaUploadResponseDto[];
-}
+export type MultipleMediaUploadResponseDto = z.infer<typeof MultipleMediaUploadResponseSchema>;

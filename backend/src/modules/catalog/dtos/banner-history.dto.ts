@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { nullAsAbsent } from '../../../core/validation/query-schemas';
-import { ApiProperty } from '@nestjs/swagger';
 import { BannerCreatorRole, Role } from '@prisma/client';
 
 /** Bounded audit filters shared by all authorized administrators and support staff. */
@@ -17,27 +16,44 @@ export const QueryBannerHistorySchema = z.object(queryBannerHistoryFields).stric
 
 export type QueryBannerHistoryInput = z.infer<typeof QueryBannerHistorySchema>;
 
-/** Immutable snapshots preserve who disabled whose banner even after names or content change. */
-export class BannerDisableHistoryDto {
-  @ApiProperty({ format: 'uuid' }) id!: string;
-  @ApiProperty({ format: 'uuid' }) bannerId!: string;
-  @ApiProperty() bannerTitle!: string;
-  @ApiProperty({ format: 'uuid' }) creatorId!: string;
-  @ApiProperty() creatorName!: string;
-  @ApiProperty({ enum: BannerCreatorRole }) creatorRole!: BannerCreatorRole;
-  @ApiProperty({ format: 'uuid' }) actorId!: string;
-  @ApiProperty() actorName!: string;
-  @ApiProperty({ enum: Role }) actorRole!: Role;
-  @ApiProperty({ enum: ['UPDATE', 'DELETE', 'DISABLE'] }) source!: string;
-  @ApiProperty({ example: true }) wasActive!: boolean;
-  @ApiProperty({ example: false }) isActive!: boolean;
-  @ApiProperty({ type: String, format: 'date-time' }) createdAt!: Date;
-}
+export const BannerDisableHistorySchema = z
+  .object({
+    id: z.uuid(),
+    bannerId: z.uuid(),
+    bannerTitle: z.string(),
+    creatorId: z.uuid(),
+    creatorName: z.string(),
+    creatorRole: z.enum(BannerCreatorRole),
+    actorId: z.uuid(),
+    actorName: z.string(),
+    actorRole: z.enum(Role),
+    source: z.enum(['UPDATE', 'DELETE', 'DISABLE']),
+    wasActive: z.boolean().meta({ example: true }),
+    isActive: z.boolean().meta({ example: false }),
+    createdAt: z.iso.datetime(),
+  })
+  .meta({ id: 'BannerDisableHistoryDto' });
 
-/** Paginated history response with stable descending timestamp and identifier ordering. */
-export class BannerHistoryPageDto {
-  @ApiProperty({ type: [BannerDisableHistoryDto] }) items!: BannerDisableHistoryDto[];
-  @ApiProperty() total!: number;
-  @ApiProperty() page!: number;
-  @ApiProperty() limit!: number;
-}
+export type BannerDisableHistoryDto = Omit<
+  z.infer<typeof BannerDisableHistorySchema>,
+  'createdAt' | 'source'
+> & {
+  source: string;
+  createdAt: Date | string;
+};
+
+export const BannerHistoryPageSchema = z
+  .object({
+    items: z.array(BannerDisableHistorySchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+  })
+  .meta({ id: 'BannerHistoryPageDto' });
+
+export type BannerHistoryPageDto = {
+  items: BannerDisableHistoryDto[];
+  total: number;
+  page: number;
+  limit: number;
+};

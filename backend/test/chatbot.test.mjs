@@ -11,9 +11,10 @@ tsNode.register({
 const load = createRequire(import.meta.url);
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
 const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
-const { CommerceChatQueryService } = load(
-  '../src/modules/commerce-query/services/commerce-chat-query.service.ts',
-);
+const { OrdersChatFacade } = load('../src/modules/orders/services/orders-chat.facade.ts');
+const { CartChatFacade } = load('../src/modules/cart/services/cart-chat.facade.ts');
+const { CatalogChatFacade } = load('../src/modules/catalog/services/catalog-chat.facade.ts');
+const { UsersChatFacade } = load('../src/modules/users/services/users-chat.facade.ts');
 const { ChatbotAiService } = load('../src/modules/chat/services/chatbot-ai.service.ts');
 const { ChatbotRateLimitService } = load(
   '../src/modules/chat/services/chatbot-rate-limit.service.ts',
@@ -26,7 +27,12 @@ function fixture(order = null) {
   const prisma = { order: { findFirst: mock.fn(async () => order) } };
   const ai = { isConfigured: () => false, answer: mock.fn(async () => null) };
   const limit = { check: mock.fn(async () => {}) };
-  const commerce = new ChatbotCommerceService(new CommerceChatQueryService(prisma));
+  const commerce = new ChatbotCommerceService(
+    new OrdersChatFacade(prisma),
+    new CartChatFacade(prisma),
+    new CatalogChatFacade(prisma),
+    new UsersChatFacade(prisma),
+  );
   return { prisma, ai, limit, bot: new ChatbotService(commerce, ai, limit) };
 }
 
