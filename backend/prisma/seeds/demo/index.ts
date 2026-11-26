@@ -53,61 +53,66 @@ export function assertNotProduction(env: NodeJS.ProcessEnv = process.env): void 
 async function resetDatabase(prisma: PrismaClient): Promise<void> {
   // Ordered children before parents. Prisma has no cascade-everything, and
   // TRUNCATE across 53 tables by name would silently miss new ones.
-  await prisma.$transaction([
-    prisma.reviewReplyMedia.deleteMany(),
-    prisma.reviewReply.deleteMany(),
-    prisma.reviewMedia.deleteMany(),
-    prisma.productReviewHelpfulVote.deleteMany(),
-    prisma.productReview.deleteMany(),
-    prisma.customerReview.deleteMany(),
-    prisma.review.deleteMany(),
-    prisma.chatMessage.deleteMany(),
-    prisma.chatConversation.deleteMany(),
-    prisma.chatAutoReply.deleteMany(),
-    prisma.notification.deleteMany(),
-    prisma.notificationPreference.deleteMany(),
-    prisma.bannerDisableHistory.deleteMany(),
-    prisma.eventBanner.deleteMany(),
-    prisma.auctionComplaint.deleteMany(),
-    prisma.auctionAward.deleteMany(),
-    prisma.bid.deleteMany(),
-    prisma.auctionItem.deleteMany(),
-    prisma.auction.deleteMany(),
-    prisma.orderRefund.deleteMany(),
-    prisma.afterSalesRequest.deleteMany(),
-    prisma.dispute.deleteMany(),
-    prisma.shipment.deleteMany(),
-    prisma.escrowRecord.deleteMany(),
-    prisma.payment.deleteMany(),
-    prisma.orderItem.deleteMany(),
-    prisma.order.deleteMany(),
-    prisma.cartItem.deleteMany(),
-    prisma.cart.deleteMany(),
-    prisma.wishlistItem.deleteMany(),
-    prisma.inventoryReservation.deleteMany(),
-    prisma.inventoryLedger.deleteMany(),
-    prisma.inventory.deleteMany(),
-    prisma.productOption.deleteMany(),
-    prisma.productImage.deleteMany(),
-    prisma.shopViolation.deleteMany(),
-    prisma.product.deleteMany(),
-    prisma.category.deleteMany(),
-    prisma.warehouse.deleteMany(),
-    prisma.sellerGhnAccount.deleteMany(),
-    prisma.withdrawalRequest.deleteMany(),
-    prisma.walletTransaction.deleteMany(),
-    prisma.wallet.deleteMany(),
-    prisma.shopActionLog.deleteMany(),
-    prisma.sellerUpgradeRequest.deleteMany(),
-    prisma.staffInvitation.deleteMany(),
-    prisma.reputationLog.deleteMany(),
-    prisma.refreshToken.deleteMany(),
-    prisma.userAddress.deleteMany(),
-    prisma.outboxEvent.deleteMany(),
-    prisma.eventLog.deleteMany(),
-    prisma.systemSetting.deleteMany(),
-    prisma.user.deleteMany(),
-  ]);
+  // Use an interactive transaction with an extended timeout so remote WAN
+  // connections (e.g., Railway TCP proxy) do not hit Prisma's 5s default.
+  await prisma.$transaction(
+    async (tx) => {
+      await tx.reviewReplyMedia.deleteMany();
+      await tx.reviewReply.deleteMany();
+      await tx.reviewMedia.deleteMany();
+      await tx.productReviewHelpfulVote.deleteMany();
+      await tx.productReview.deleteMany();
+      await tx.customerReview.deleteMany();
+      await tx.review.deleteMany();
+      await tx.chatMessage.deleteMany();
+      await tx.chatConversation.deleteMany();
+      await tx.chatAutoReply.deleteMany();
+      await tx.notification.deleteMany();
+      await tx.notificationPreference.deleteMany();
+      await tx.bannerDisableHistory.deleteMany();
+      await tx.eventBanner.deleteMany();
+      await tx.auctionComplaint.deleteMany();
+      await tx.auctionAward.deleteMany();
+      await tx.bid.deleteMany();
+      await tx.auctionItem.deleteMany();
+      await tx.auction.deleteMany();
+      await tx.orderRefund.deleteMany();
+      await tx.afterSalesRequest.deleteMany();
+      await tx.dispute.deleteMany();
+      await tx.shipment.deleteMany();
+      await tx.escrowRecord.deleteMany();
+      await tx.payment.deleteMany();
+      await tx.orderItem.deleteMany();
+      await tx.order.deleteMany();
+      await tx.cartItem.deleteMany();
+      await tx.cart.deleteMany();
+      await tx.wishlistItem.deleteMany();
+      await tx.inventoryReservation.deleteMany();
+      await tx.inventoryLedger.deleteMany();
+      await tx.inventory.deleteMany();
+      await tx.productOption.deleteMany();
+      await tx.productImage.deleteMany();
+      await tx.shopViolation.deleteMany();
+      await tx.product.deleteMany();
+      await tx.category.deleteMany();
+      await tx.warehouse.deleteMany();
+      await tx.sellerGhnAccount.deleteMany();
+      await tx.withdrawalRequest.deleteMany();
+      await tx.walletTransaction.deleteMany();
+      await tx.wallet.deleteMany();
+      await tx.shopActionLog.deleteMany();
+      await tx.sellerUpgradeRequest.deleteMany();
+      await tx.staffInvitation.deleteMany();
+      await tx.reputationLog.deleteMany();
+      await tx.refreshToken.deleteMany();
+      await tx.userAddress.deleteMany();
+      await tx.outboxEvent.deleteMany();
+      await tx.eventLog.deleteMany();
+      await tx.systemSetting.deleteMany();
+      await tx.user.deleteMany();
+    },
+    { maxWait: 15_000, timeout: 60_000 },
+  );
 }
 
 async function main(): Promise<void> {
@@ -174,8 +179,9 @@ async function main(): Promise<void> {
     );
 
     console.log('');
-    console.log('Demo accounts (one shared password):');
-    console.log(`  password: ${people.password}`);
+    console.log('Demo accounts:');
+    console.log(`  admin password: ${people.adminPassword}`);
+    console.log(`  demo password:  ${people.password}`);
     for (const person of [people.admin, ...people.staff, ...people.sellers, ...people.buyers]) {
       console.log(`  ${person.role.padEnd(14)} ${person.email}`);
     }
