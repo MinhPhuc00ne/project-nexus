@@ -17,15 +17,15 @@ export function HomeRecommendationsSection({
 }: HomeRecommendationsSectionProps) {
   const { t } = useTranslation('guest');
   return (
-    <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-xs">
+    <section className="nexus-panel mt-6 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 text-white shadow-sm">
-            <Sparkles size={18} className="animate-pulse" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary">
+            <Sparkles size={18} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-extrabold uppercase tracking-wide text-slate-900">
+              <h2 className="text-lg font-semibold tracking-tight text-ink">
                 {t('home.recommendationsSection.title')}
               </h2>
               {isPersonalized ? (
@@ -86,7 +86,7 @@ export function HomeRecommendationsSection({
               <Link
                 key={p.id}
                 to={`/product/${p.id}`}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 bg-white transition duration-200 hover:-translate-y-1 hover:border-blue-300 hover:shadow-md cursor-pointer"
+                className="nexus-product-card group relative flex flex-col justify-between overflow-hidden"
               >
                 <div>
                   <div className="relative aspect-square w-full overflow-hidden bg-slate-100">

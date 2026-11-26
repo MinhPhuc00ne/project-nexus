@@ -181,7 +181,7 @@ export default function BuyerDashboardPage() {
   return (
     <div className="space-y-5">
       {/* Welcome Banner (Blue & White Signature Theme) */}
-      <div className="relative overflow-hidden rounded-lg bg-[#1c3973] p-6 text-white shadow-xs">
+      <div className="relative overflow-hidden rounded-lg bg-[var(--color-navy)] p-6 text-white shadow-xs">
         <div className="relative z-10">
           <p className="text-xs font-semibold uppercase tracking-wider text-blue-200 mb-1">
             {t('dashboard.bannerBadge')}

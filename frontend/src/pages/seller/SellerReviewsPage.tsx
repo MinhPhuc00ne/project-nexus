@@ -105,7 +105,7 @@ export default function SellerReviewsPage() {
         >
           <div className="flex items-center gap-5 rounded-xl border border-blue-100 bg-blue-50/60 p-5">
             <div className="text-center">
-              <strong className="block text-4xl font-bold text-[#1c3973]">
+              <strong className="block text-4xl font-bold text-[var(--color-navy)]">
                 {averageRating ? averageRating.toFixed(1) : '—'}
                 <small className="text-base text-slate-500">/5</small>
               </strong>
@@ -154,7 +154,7 @@ export default function SellerReviewsPage() {
             <p className="text-xs font-medium text-slate-500">
               {t('reviews.reputationScoreLabel')}
             </p>
-            <strong className="mt-1 block text-3xl text-[#1c3973]">
+            <strong className="mt-1 block text-3xl text-[var(--color-navy)]">
               {user.reputationScore} <small className="text-base text-slate-500">/ 100</small>
             </strong>
             <p className="mt-2 text-sm text-slate-600">

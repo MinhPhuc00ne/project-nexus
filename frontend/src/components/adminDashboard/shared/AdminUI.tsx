@@ -21,9 +21,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <Card
-      className={`min-w-0 rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm shadow-slate-200/30 sm:p-6 ${className}`}
-    >
+    <Card className={`min-w-0 p-5 sm:p-6 ${className}`}>
       <div className="mb-5 flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           {icon && (
@@ -35,7 +33,7 @@ export function Panel({
             <h2 className="text-base font-bold tracking-tight text-slate-900 sm:text-lg">
               {title}
             </h2>
-            {subtitle && <p className="mt-1 text-xs leading-relaxed text-slate-500">{subtitle}</p>}
+            {subtitle && <p className="mt-1 text-sm leading-relaxed text-muted">{subtitle}</p>}
           </div>
         </div>
         {action}
@@ -62,7 +60,7 @@ export function Button({
       variant={
         variant === 'danger' ? 'destructive' : variant === 'secondary' ? 'secondary' : 'default'
       }
-      className={`h-auto min-h-10 rounded-lg px-3.5 py-2.5 text-xs font-semibold focus-visible:outline-blue-600 disabled:cursor-not-allowed ${colors[variant]} ${className}`}
+      className={`h-auto min-h-11 rounded-xl px-4 py-2.5 text-sm font-semibold focus-visible:outline-primary disabled:cursor-not-allowed ${colors[variant]} ${className}`}
       {...props}
     >
       {children}
@@ -87,7 +85,7 @@ export function Badge({
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[10px] font-bold ${colors[tone]}`}
+      className={`inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold ${colors[tone]}`}
     >
       {children}
     </span>
@@ -106,10 +104,10 @@ export function SearchInput({
   const { t } = useTranslation('admin');
   const resolvedPlaceholder = placeholder ?? t('shared.searchPlaceholder');
   return (
-    <label className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-slate-400">
+    <label className="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-slate-50/60 px-3.5 py-2.5 text-slate-400 transition-[border-color,box-shadow] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10">
       <Search size={16} />
       <Input
-        className="h-auto w-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 py-0 text-xs text-slate-800 shadow-none outline-none placeholder:text-slate-400 focus-visible:outline-none"
+        className="h-auto w-full min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 py-0 text-sm text-ink shadow-none outline-none placeholder:text-slate-400 focus-visible:outline-none"
         aria-label={resolvedPlaceholder}
         placeholder={resolvedPlaceholder}
         value={value}
@@ -122,9 +120,11 @@ export function SearchInput({
 export function EmptyState({ text }: { text?: string }) {
   const { t } = useTranslation('admin');
   return (
-    <div className="flex flex-col items-center gap-3 py-12 text-center text-sm text-slate-400">
-      <Inbox size={32} strokeWidth={1.5} />
-      <p>{text ?? t('shared.emptyDefault')}</p>
+    <div className="flex flex-col items-center gap-4 px-4 py-14 text-center text-sm text-muted">
+      <span className="grid size-14 place-items-center rounded-2xl bg-blue-50 text-primary">
+        <Inbox size={26} strokeWidth={1.5} />
+      </span>
+      <p className="max-w-sm leading-relaxed">{text ?? t('shared.emptyDefault')}</p>
     </div>
   );
 }

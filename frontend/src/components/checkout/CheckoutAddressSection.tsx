@@ -90,7 +90,7 @@ export const CheckoutAddressSection: React.FC<CheckoutAddressSectionProps> = ({
     <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
       <div className="flex items-center justify-between pb-3 border-b border-slate-100">
         <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          <MapPin className="text-[#f24e1e]" size={18} />
+          <MapPin className="text-[var(--color-primary)]" size={18} />
           <span>{t('checkout.ghnAddressTitle')}</span>
         </h2>
 

@@ -60,7 +60,7 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
                 )}
 
                 <div className="min-w-0 flex-1">
-                  <h5 className="mb-0.5 line-clamp-2 text-[13px] font-semibold text-slate-800 hover:text-[#f24e1e]">
+                  <h5 className="mb-0.5 line-clamp-2 text-[13px] font-semibold text-slate-800 hover:text-[var(--color-primary)]">
                     {cleanTitle}
                   </h5>
 
@@ -73,7 +73,7 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
                   )}
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[13px] font-bold text-[#f24e1e]">
+                    <span className="text-[13px] font-bold text-[var(--color-primary)]">
                       {typeof item.price === 'number' ? formatCurrency(item.price) : item.price}
                     </span>
                     {item.qty && (
@@ -93,7 +93,7 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
         <div className="p-3 border-t border-slate-100 bg-slate-50">
           <Link
             to="/cart"
-            className="block w-full py-2.5 px-4 rounded-xl bg-[#f24e1e] hover:bg-[#d63b0e] text-white text-center font-bold text-xs shadow-md transition"
+            className="block w-full py-2.5 px-4 rounded-xl bg-[var(--color-primary)] hover:bg-[#d63b0e] text-white text-center font-bold text-xs shadow-md transition"
             onClick={onClose}
           >
             {t('header.checkoutCart')}

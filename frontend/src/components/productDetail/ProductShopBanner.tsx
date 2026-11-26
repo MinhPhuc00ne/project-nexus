@@ -88,7 +88,7 @@ export const ProductShopBanner: React.FC<ProductShopBannerProps> = ({ product, o
               {shopAvatarUrl ? (
                 <img src={shopAvatarUrl} alt={shopName} className="w-full h-full object-cover" />
               ) : (
-                <span className="text-xl font-bold text-[#1c3973]">
+                <span className="text-xl font-bold text-[var(--color-navy)]">
                   {shopName.charAt(0).toUpperCase()}
                 </span>
               )}

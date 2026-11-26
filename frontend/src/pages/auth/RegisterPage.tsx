@@ -23,9 +23,9 @@ const benefitDefs = [
 export default function RegisterPage() {
   const { t } = useTranslation('auth');
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="flex flex-1 items-center justify-center bg-[linear-gradient(135deg,#eaf0fb_0%,#f3f7fb_60%,#f0f2fc_100%)] px-5 py-8 text-slate-900 sm:px-9">
-        <div className="grid w-full max-w-[1100px] items-center gap-8 min-[900px]:grid-cols-[0.82fr_1.18fr] min-[900px]:gap-12">
+    <div className="flex flex-col">
+      <main className="flex flex-1 items-center justify-center bg-canvas px-5 py-8 text-slate-900 sm:px-9">
+        <div className="grid w-full max-w-[1100px] items-center gap-8 [&>section:last-child]:order-first min-[900px]:[&>section:last-child]:order-none min-[900px]:grid-cols-[0.82fr_1.18fr] min-[900px]:gap-12">
           <section
             className="mx-auto w-full max-w-[440px] min-[900px]:mx-0"
             aria-labelledby="register-intro-title"

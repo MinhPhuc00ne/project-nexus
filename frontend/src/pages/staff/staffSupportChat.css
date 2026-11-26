@@ -3,13 +3,13 @@
    ========================================================================== */
 
 .staff-support-chat {
-  --support-primary: #2563eb;
-  --support-primary-hover: #1d4ed8;
-  --support-primary-soft: #eff6ff;
+  --support-primary: var(--color-primary);
+  --support-primary-hover: var(--color-primary-dark);
+  --support-primary-soft: var(--color-blue-50);
   --support-surface: #ffffff;
-  --support-border: #e2e8f0;
-  --support-muted: #64748b;
-  --support-text: #0f172a;
+  --support-border: var(--color-line);
+  --support-muted: var(--color-muted);
+  --support-text: var(--color-ink);
 
   display: flex;
   flex-direction: column;
@@ -17,7 +17,7 @@
   min-height: 0;
   width: 100%;
   color: var(--support-text);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 /* Custom Sleek Scrollbar */
@@ -59,7 +59,7 @@
   gap: 7px;
   padding: 4px 10px;
   background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-line);
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 500;
@@ -87,8 +87,8 @@
   gap: 6px;
   padding: 5px 12px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
   color: #475569;
   font-size: 12px;
   font-weight: 500;
@@ -98,9 +98,9 @@
 }
 
 .support-refresh-btn:hover {
-  background: #eff6ff;
+  background: var(--color-blue-50);
   border-color: #bfdbfe;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 /* Metric Strip (Compact, High-Efficiency) */
@@ -127,9 +127,9 @@
 }
 
 .support-metric-chip.blue {
-  background: #eff6ff;
+  background: var(--color-blue-50);
   border-color: #dbeafe;
-  color: #1d4ed8;
+  color: var(--color-primary-dark);
 }
 
 .support-metric-chip.amber {
@@ -198,7 +198,7 @@
   height: 100%;
   min-height: 0;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-line);
   border-radius: 14px;
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
   overflow: hidden;
@@ -232,11 +232,11 @@
 
 .support-ticket-card:hover {
   background: #f8fafc;
-  border-color: #e2e8f0;
+  border-color: var(--color-line);
 }
 
 .support-ticket-card.is-current {
-  background: #eff6ff;
+  background: var(--color-blue-50);
   border-color: #bfdbfe;
   box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
 }
@@ -249,7 +249,7 @@
   left: 0;
   width: 3.5px;
   border-radius: 0 4px 4px 0;
-  background: #2563eb;
+  background: var(--color-primary);
 }
 
 /* Middle Column: Chat Conversation View */
@@ -267,7 +267,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 16px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--color-line);
   background: #ffffff;
   flex-shrink: 0;
 }
@@ -304,16 +304,16 @@
   word-break: break-word;
   background: #ffffff;
   color: #1e293b;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-line);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .support-message.is-agent .support-message-bubble {
   border-top-left-radius: 14px;
   border-top-right-radius: 3px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: #ffffff;
-  border: 1px solid #1d4ed8;
+  border: 1px solid var(--color-primary-dark);
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
 }
 
@@ -321,7 +321,7 @@
 .support-composer {
   display: flex;
   flex-direction: column;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-line);
   background: #ffffff;
   padding: 10px 14px 12px;
   flex-shrink: 0;
@@ -347,7 +347,7 @@
   padding: 3px 9px;
   border-radius: 9999px;
   background: #f1f5f9;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-line);
   color: #475569;
   font-size: 11px;
   font-weight: 500;
@@ -360,9 +360,9 @@
 }
 
 .support-canned-chip:hover {
-  background: #eff6ff;
+  background: var(--color-blue-50);
   border-color: #bfdbfe;
-  color: #2563eb;
+  color: var(--color-primary);
 }
 
 .support-textarea {
@@ -370,7 +370,7 @@
   min-height: 60px;
   max-height: 120px;
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-line);
   border-radius: 10px;
   font-size: 13px;
   line-height: 1.5;
@@ -412,7 +412,7 @@
   height: 100%;
   padding: 32px 20px;
   text-align: center;
-  color: #64748b;
+  color: var(--color-muted);
 }
 
 .support-empty-icon {
@@ -586,7 +586,7 @@
 
 .support-quick-replies-hint {
   color: #687992;
-  font-size: 10px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -686,7 +686,7 @@
   }
 
   .support-metric-chip > span:nth-child(2) {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .support-workspace {

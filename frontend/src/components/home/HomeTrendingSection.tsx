@@ -46,18 +46,18 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
   }
 
   return (
-    <section className="mt-5 rounded-[18px] border border-orange-200/80 bg-gradient-to-b from-orange-50/40 to-white p-4 sm:p-5 shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-orange-100 pb-3.5">
+    <section className="nexus-panel mt-6 p-5 sm:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-red-500 text-white shadow-sm shadow-orange-300/40">
-            <Flame size={20} className="animate-pulse" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-primary">
+            <Flame size={20} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-[16px] font-extrabold uppercase tracking-wide text-slate-900 flex items-center gap-1.5">
+              <h2 className="text-lg font-semibold tracking-tight text-ink flex items-center gap-1.5">
                 {t('home.trending.title')}
               </h2>
-              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500 to-red-500 px-2.5 py-0.5 text-[10px] font-extrabold text-white shadow-xs">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-0.5 text-[10px] font-extrabold text-white shadow-xs">
                 HOT TREND
               </span>
             </div>
@@ -67,7 +67,7 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
 
         <Link
           to="/search?sortBy=newest"
-          className="text-xs font-bold text-orange-600 hover:text-orange-700 transition flex items-center gap-1 group"
+          className="text-sm font-semibold text-primary hover:text-primary-dark transition flex items-center gap-1 group"
         >
           <span>{t('home.categoriesSection.viewAll')}</span>
           <span className="group-hover:translate-x-0.5 transition-transform">→</span>
@@ -114,7 +114,7 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
               <Link
                 key={item.id}
                 to={`/product/${item.id}`}
-                className="group relative flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-2.5 transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-md"
+                className="nexus-product-card group relative flex flex-col justify-between p-2.5"
               >
                 <div>
                   {/* Image & Rank Badge */}
@@ -148,7 +148,7 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
                   </div>
 
                   {/* Product Title */}
-                  <h3 className="mt-1 line-clamp-2 text-xs font-semibold text-slate-900 group-hover:text-orange-600 transition">
+                  <h3 className="mt-1 line-clamp-2 text-xs font-semibold text-slate-900 group-hover:text-primary transition">
                     {item.title}
                   </h3>
                 </div>
@@ -156,7 +156,7 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
                 {/* Pricing & Purchases count */}
                 <div className="mt-2.5 pt-2 border-t border-slate-100">
                   <div className="flex items-baseline gap-1.5">
-                    <strong className="text-sm font-extrabold text-orange-600">
+                    <strong className="text-base font-semibold text-ink">
                       {formatCurrency(price, i18n.language)}
                     </strong>
                     {hasSale && (

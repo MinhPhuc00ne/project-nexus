@@ -391,7 +391,7 @@ export default function BuyerOrderDetailPage() {
                   <>
                     <div className="flex justify-between text-[11px] text-slate-500">
                       <span>{t('orderDetailPage.codAmountDue')}</span>
-                      <span className="font-extrabold text-[#f24e1e]">
+                      <span className="font-extrabold text-[var(--color-primary)]">
                         {formatCurrency(Number(order.totalAmount), i18n.language)}
                       </span>
                     </div>

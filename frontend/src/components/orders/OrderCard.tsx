@@ -152,7 +152,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </p>
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-1">
-          <span className="text-sm font-extrabold text-[#f24e1e]">{order.price}</span>
+          <span className="text-sm font-extrabold text-[var(--color-primary)]">{order.price}</span>
           <ChevronRight size={14} className="text-slate-400 group-hover:text-blue-600 transition" />
         </div>
       </Link>

@@ -258,15 +258,15 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   };
 
   return (
-    <header className="home-header sticky top-0 z-[1000] w-full bg-white font-sans shadow-sm">
-      <div className="h-9 border-b border-slate-200 bg-slate-50 text-[12px] sm:text-[13px] text-slate-500 flex items-center">
+    <header className="home-header nexus-header sticky top-0 z-40 w-full font-sans">
+      <div className="min-h-9 border-b border-line bg-canvas text-[12px] sm:text-[13px] text-slate-500 flex items-center">
         <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-2 sm:px-4 py-1 gap-2">
-          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
+          <div className="home-utility-start flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
             <button
               type="button"
               onClick={handleToggleSeller}
               disabled={isTogglingSeller}
-              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)] cursor-pointer whitespace-nowrap"
               title={
                 profile?.role === 'SELLER' || profile?.role === 'ADMIN'
                   ? t('header.toggleSellerTitle')
@@ -298,7 +298,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <button
               type="button"
               onClick={handleOpenUpgradeModal}
-              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)] cursor-pointer whitespace-nowrap"
             >
               <ShoppingBag size={14} className="shrink-0" />
               <span className="hidden lg:inline">
@@ -310,7 +310,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <span className="text-xs text-slate-300">|</span>
 
             <div
-              className="relative inline-flex cursor-pointer items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap"
+              className="relative inline-flex cursor-pointer items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)] whitespace-nowrap"
               onMouseEnter={() => setShowAppQrModal(true)}
               onMouseLeave={() => setShowAppQrModal(false)}
             >
@@ -323,9 +323,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   <div className="animate-home-popover-enter motion-reduce:animate-none w-[200px] rounded-[10px] border border-slate-200 bg-white p-3.5 text-center shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
                     <div className="mx-auto flex h-[130px] w-[130px] items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-100">
                       <div className="grid grid-cols-2 gap-2.5">
-                        <div className="h-10 w-10 rounded bg-[#1c3973]" />
-                        <div className="h-10 w-10 rounded bg-[#1c3973]" />
-                        <div className="h-10 w-10 rounded bg-[#1c3973]" />
+                        <div className="h-10 w-10 rounded bg-[var(--color-navy)]" />
+                        <div className="h-10 w-10 rounded bg-[var(--color-navy)]" />
+                        <div className="h-10 w-10 rounded bg-[var(--color-navy)]" />
                       </div>
                     </div>
 
@@ -356,7 +356,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 href="https://facebook.com"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center text-slate-500 transition-colors hover:text-[#1c3973]"
+                className="flex items-center justify-center text-slate-500 transition-colors hover:text-[var(--color-navy)]"
                 title="Facebook"
               >
                 <Globe size={14} />
@@ -364,7 +364,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
               <a
                 href="#chat"
-                className="flex items-center justify-center text-slate-500 transition-colors hover:text-[#1c3973]"
+                className="flex items-center justify-center text-slate-500 transition-colors hover:text-[var(--color-navy)]"
                 title="Chat"
               >
                 <MessageSquare size={14} />
@@ -372,11 +372,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
+          <div className="home-utility-end flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] cursor-pointer whitespace-nowrap"
+                className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)] cursor-pointer whitespace-nowrap"
                 onClick={() => setShowNotifMenu(!showNotifMenu)}
                 title={t('nav.notifications')}
               >
@@ -384,7 +384,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   <Bell size={14} />
 
                   {(realUnreadCount > 0 || notifications.some((n) => n.unread)) && (
-                    <span className="absolute -right-1.5 -top-1 h-3.5 min-w-[14px] px-0.5 text-[9px] font-bold text-white bg-[#f24e1e] rounded-full flex items-center justify-center">
+                    <span className="absolute -right-1.5 -top-1 h-3.5 min-w-[14px] px-0.5 text-[9px] font-bold text-white bg-[var(--color-primary)] rounded-full flex items-center justify-center">
                       {realUnreadCount > 99 ? '99+' : realUnreadCount > 0 ? realUnreadCount : ''}
                     </span>
                   )}
@@ -406,7 +406,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
             <a
               href="#help"
-              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap"
+              className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)] whitespace-nowrap"
               title={t('header.helpCenter')}
             >
               <HelpCircle size={14} className="shrink-0" />
@@ -418,7 +418,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             <div className="relative" ref={langRef}>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap"
+                className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)] whitespace-nowrap"
                 onClick={() => setShowLangMenu(!showLangMenu)}
                 title={t('language.label')}
               >
@@ -443,7 +443,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       type="button"
                       className={`flex w-full items-center justify-between rounded-md px-2.5 py-2 text-[13px] transition-colors hover:bg-slate-100 ${
                         currentLang === lang.code
-                          ? 'font-semibold text-[#1c3973]'
+                          ? 'font-semibold text-[var(--color-navy)]'
                           : 'text-slate-800'
                       }`}
                       onClick={() => {
@@ -455,7 +455,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                         {lang.flag} {lang.label}
                       </span>
 
-                      {currentLang === lang.code && <Check size={14} className="text-[#1c3973]" />}
+                      {currentLang === lang.code && (
+                        <Check size={14} className="text-[var(--color-navy)]" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -468,7 +470,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               <div className="relative" ref={userRef}>
                 <button
                   type="button"
-                  className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e] whitespace-nowrap cursor-pointer"
+                  className="inline-flex items-center gap-1 sm:gap-1.5 rounded-md px-1 sm:px-1.5 py-1 font-medium text-slate-500 transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)] whitespace-nowrap cursor-pointer"
                   onClick={() => setShowUserMenu(!showUserMenu)}
                 >
                   {displayUserAvatar ? (
@@ -479,7 +481,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                       className="h-[20px] w-[20px] sm:h-[22px] sm:w-[22px] rounded-full object-cover shrink-0"
                     />
                   ) : (
-                    <div className="flex h-[20px] w-[20px] sm:h-[22px] sm:w-[22px] items-center justify-center rounded-full bg-[#1c3973] text-white shrink-0">
+                    <div className="flex h-[20px] w-[20px] sm:h-[22px] sm:w-[22px] items-center justify-center rounded-full bg-[var(--color-navy)] text-white shrink-0">
                       <User size={13} />
                     </div>
                   )}
@@ -508,7 +510,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md px-1 sm:px-1.5 py-1 text-[12px] sm:text-[13px] font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+                  className="inline-flex items-center rounded-md px-1 sm:px-1.5 py-1 text-[12px] sm:text-[13px] font-medium text-slate-500 transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)]"
                   onClick={onLoginClick}
                 >
                   {t('nav.login')}
@@ -518,7 +520,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
                 <button
                   type="button"
-                  className="inline-flex items-center rounded-md px-1 sm:px-1.5 py-1 text-[12px] sm:text-[13px] font-medium text-slate-500 transition-colors hover:bg-orange-50 hover:text-[#f24e1e]"
+                  className="inline-flex items-center rounded-md px-1 sm:px-1.5 py-1 text-[12px] sm:text-[13px] font-medium text-slate-500 transition-colors hover:bg-blue-50 hover:text-[var(--color-primary)]"
                   onClick={onRegisterClick}
                 >
                   {t('nav.register')}
@@ -529,8 +531,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
         </div>
       </div>
 
-      <div className="bg-white py-2 sm:py-3.5 pb-2 sm:pb-2.5">
-        <div className="mx-auto flex w-full max-w-[1280px] items-center gap-2.5 sm:gap-4 md:gap-6 px-2 sm:px-4">
+      <div className="bg-white py-3 sm:py-4 pb-3 sm:pb-3">
+        <div className="home-header-main mx-auto flex w-full max-w-[1280px] items-center gap-2.5 sm:gap-4 md:gap-6 px-4">
           <a
             href="/"
             className="flex shrink-0 cursor-pointer items-center transition-transform hover:scale-[1.02]"
@@ -548,9 +550,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             />
           </a>
 
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="home-search flex min-w-0 flex-1 flex-col gap-1.5">
             <form
-              className="flex items-center rounded-full border-2 border-[#f24e1e] bg-white py-0.5 pl-3.5 pr-0.5 shadow-[0_2px_6px_rgba(242,78,30,0.08)] transition-[border-color,box-shadow] duration-[160ms] ease-linear focus-within:border-[#1c3973] focus-within:shadow-[0_4px_16px_rgb(28_57_115_/_18%)] motion-reduce:transition-none"
+              className="flex items-center rounded-xl border border-line bg-slate-50/70 py-1 pl-2 pr-1 transition-[border-color,box-shadow] duration-150 focus-within:border-primary focus-within:bg-white focus-within:ring-4 focus-within:ring-primary/10 motion-reduce:transition-none"
               onSubmit={handleSearchSubmit}
             >
               <div className="relative shrink-0" ref={floorRef}>
@@ -575,7 +577,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                         type="button"
                         className={`w-full rounded-md border-0 bg-transparent px-3 py-2.5 text-left text-[13px] transition-colors hover:bg-slate-100 ${
                           selectedFloorKey === floorKey
-                            ? 'bg-orange-50 font-bold text-[#f24e1e]'
+                            ? 'bg-orange-50 font-bold text-[var(--color-primary)]'
                             : 'text-slate-800'
                         }`}
                         onClick={() => {
@@ -615,7 +617,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               <button
                 type="submit"
                 aria-label="Search"
-                className="flex h-[38px] w-[58px] shrink-0 items-center justify-center rounded-full border-0 bg-gradient-to-br from-[#ff6b35] to-[#ee4d2d] text-white transition-transform hover:scale-[1.04] hover:shadow-[0_4px_12px_rgba(238,77,45,0.35)]"
+                className="flex h-[38px] w-[58px] shrink-0 items-center justify-center rounded-lg border-0 bg-primary text-white transition-[background-color,box-shadow] hover:bg-primary-dark hover:shadow-md"
               >
                 <Search size={18} />
               </button>
@@ -630,7 +632,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                     <a
                       key={idx}
                       href={`#search?q=${kw}`}
-                      className="whitespace-nowrap text-slate-500 no-underline transition-colors hover:text-[#f24e1e]"
+                      className="whitespace-nowrap text-slate-500 no-underline transition-colors hover:text-[var(--color-primary)]"
                       onClick={(e) => {
                         e.preventDefault();
 
@@ -653,22 +655,22 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             )}
           </div>
 
-          <div className="relative shrink-0" ref={cartRef}>
+          <div className="home-cart relative shrink-0" ref={cartRef}>
             <button
               type="button"
-              className="flex items-center gap-1.5 sm:gap-2.5 rounded-full border border-[#d6e4ff] bg-[#f0f5ff] px-2.5 sm:px-3.5 py-1.5 sm:py-2 transition-all hover:-translate-y-px hover:border-[#adc6ff] hover:bg-[#e6f0ff] cursor-pointer"
+              className="flex items-center gap-1.5 sm:gap-2.5 rounded-xl border border-blue-100 bg-blue-50 px-2.5 sm:px-3.5 py-1.5 sm:py-2 transition-all hover:-translate-y-px hover:border-blue-200 hover:bg-blue-100 cursor-pointer"
               onClick={() => setShowCartPanel(!showCartPanel)}
             >
               <div className="relative flex items-center">
-                <ShoppingCart size={20} className="text-[#f24e1e]" />
+                <ShoppingCart size={20} className="text-[var(--color-primary)]" />
                 {effectiveCartCount > 0 && (
-                  <span className="absolute -right-2.5 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#f24e1e] px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -right-2.5 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--color-primary)] px-1 text-[10px] font-bold text-white">
                     {effectiveCartCount > 99 ? '99+' : effectiveCartCount}
                   </span>
                 )}
               </div>
 
-              <span className="text-xs sm:text-sm font-bold text-[#1c3973] whitespace-nowrap">
+              <span className="text-xs sm:text-sm font-bold text-[var(--color-navy)] whitespace-nowrap">
                 {t('nav.cart')}
               </span>
             </button>

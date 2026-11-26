@@ -160,7 +160,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
         </label>
         {seller && (
           <div className="rounded-lg border border-blue-200 bg-blue-50/70 p-4">
-            <p className="mb-2.5 text-xs font-semibold text-[#1c3973]">
+            <p className="mb-2.5 text-xs font-semibold text-[var(--color-navy)]">
               <LockOutlined className="mr-1.5" />
               {t('profileEditor.verifyPasswordPrompt')}
             </p>

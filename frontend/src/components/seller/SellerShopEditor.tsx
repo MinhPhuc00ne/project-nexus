@@ -102,7 +102,7 @@ export default function SellerShopEditor({
             <div className="rounded-lg border border-blue-200 bg-blue-50/40 p-4 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <p className="text-xs font-bold text-[#1c3973]">
+                  <p className="text-xs font-bold text-[var(--color-navy)]">
                     {t('settings.editor.logoTitle')}
                   </p>
                   <p className="text-[11px] text-slate-500 mt-0.5">

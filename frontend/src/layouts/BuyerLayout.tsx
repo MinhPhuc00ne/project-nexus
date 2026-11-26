@@ -1,3 +1,4 @@
+import PageTransition from '../components/common/PageTransition';
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -73,7 +74,7 @@ export default function BuyerLayout() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-140px)] bg-[#f6f8fc] py-7">
+    <div className="nexus-shell min-h-[calc(100vh-140px)] py-6 sm:py-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
         <nav className="mb-5 flex items-center gap-2 text-xs text-slate-500">
@@ -81,7 +82,9 @@ export default function BuyerLayout() {
             {t('common:nav.home')}
           </NavLink>
           <ChevronRight size={13} />
-          <span className="font-semibold text-[#1c3973]">{t('common:nav.buyerPortal')}</span>
+          <span className="font-semibold text-[var(--color-navy)]">
+            {t('common:nav.buyerPortal')}
+          </span>
           {location.pathname !== '/buyer' && (
             <>
               <ChevronRight size={13} />
@@ -98,9 +101,9 @@ export default function BuyerLayout() {
         {/* 2-Column Responsive Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* Left Column: Buyer Navigation Sidebar */}
-          <aside className="lg:col-span-4 xl:col-span-3 space-y-4">
+          <aside className="lg:sticky lg:top-40 lg:col-span-4 xl:col-span-3 space-y-4">
             {/* User Profile Card (Blue & White Theme) */}
-            <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xs">
+            <div className="nexus-panel p-5">
               <div className="flex items-center gap-3.5 mb-4">
                 {profile?.avatarUrl ? (
                   <img
@@ -109,7 +112,7 @@ export default function BuyerLayout() {
                     className="h-12 w-12 rounded-lg object-cover border border-blue-200"
                   />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#1c3973] text-white font-bold text-lg">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--color-navy)] text-white font-bold text-lg">
                     {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
@@ -157,17 +160,17 @@ export default function BuyerLayout() {
             </div>
 
             {/* Navigation Menu */}
-            <nav className="rounded-lg border border-slate-200 bg-white p-2 shadow-xs space-y-1">
+            <nav className="nexus-panel space-y-1 p-2">
               {navItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-md text-xs font-semibold transition-colors ${
+                    `flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       isActive
-                        ? 'bg-[#1c3973] text-white'
-                        : 'text-slate-700 hover:bg-blue-50 hover:text-blue-700'
+                        ? 'bg-blue-50 text-primary shadow-[inset_3px_0_0_var(--color-primary)]'
+                        : 'text-muted hover:bg-slate-50 hover:text-ink'
                     }`
                   }
                 >
@@ -180,7 +183,7 @@ export default function BuyerLayout() {
             {/* Switch to Seller or Upgrade to Seller Card (Blue & White) */}
             {hasSellerRole ? (
               <div className="rounded-lg border border-blue-200 bg-white p-4 shadow-xs">
-                <div className="flex items-center gap-2 text-[#1c3973] font-bold text-xs mb-1">
+                <div className="flex items-center gap-2 text-[var(--color-navy)] font-bold text-xs mb-1">
                   <Store size={15} className="text-blue-600" />
                   <span>{t('buyer:layout.sellerCenterTitle')}</span>
                 </div>
@@ -198,7 +201,7 @@ export default function BuyerLayout() {
               </div>
             ) : (
               <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 shadow-xs">
-                <div className="flex items-center gap-2 text-[#1c3973] font-bold text-xs mb-1">
+                <div className="flex items-center gap-2 text-[var(--color-navy)] font-bold text-xs mb-1">
                   <Store size={15} className="text-blue-600" />
                   <span>{t('buyer:layout.openShopTitle')}</span>
                 </div>
@@ -218,7 +221,9 @@ export default function BuyerLayout() {
 
           {/* Right Column: Dynamic Content Outlet */}
           <section className="lg:col-span-8 xl:col-span-9 min-h-[500px]">
-            <Outlet />
+            <PageTransition>
+              <Outlet />
+            </PageTransition>
           </section>
         </div>
       </div>

@@ -54,7 +54,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
   const badge = getTrustBadge(shop.trustLevel);
 
   return (
-    <section className="bg-[#1c3973] text-white relative overflow-hidden border-b border-blue-900">
+    <section className="bg-[var(--color-navy)] text-white relative overflow-hidden border-b border-blue-900">
       <div className="max-w-screen-2xl mx-auto px-6 py-9 relative z-10">
         <div className="flex items-center gap-2 text-xs text-blue-200 mb-5">
           <Link to="/" className="hover:text-white transition">
@@ -70,7 +70,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
 
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-5">
-            <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-lg bg-white text-[#1c3973] flex items-center justify-center text-2xl sm:text-3xl font-black shadow-md border-2 border-blue-200 shrink-0 overflow-hidden">
+            <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-lg bg-white text-[var(--color-navy)] flex items-center justify-center text-2xl sm:text-3xl font-black shadow-md border-2 border-blue-200 shrink-0 overflow-hidden">
               {shopLogoUrl ? (
                 <img src={shopLogoUrl} alt={shop.name} className="w-full h-full object-cover" />
               ) : (
@@ -141,7 +141,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
             <button
               type="button"
               onClick={onContact}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[#1c3973] hover:bg-blue-50 text-xs font-bold shadow-xs transition cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-white text-[var(--color-navy)] hover:bg-blue-50 text-xs font-bold shadow-xs transition cursor-pointer"
             >
               <MessageCircle className="w-3.5 h-3.5" />
               <span>{t('shop.contactShop')}</span>

@@ -392,7 +392,7 @@ export default function SellerProductsPage({ inventory = false }: { inventory?: 
             </div>
 
             <label className="flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50/70 p-3 cursor-pointer">
-              <span className="font-bold text-[#1c3973]">
+              <span className="font-bold text-[var(--color-navy)]">
                 {t('products.saleModal.enableLabel')}
               </span>
               <input

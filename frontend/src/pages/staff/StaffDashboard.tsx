@@ -73,7 +73,7 @@ export default function StaffDashboard({
   }
 
   return (
-    <div className="[--staff-ink:#17233d] [--staff-line:#e7eaf3] [--staff-primary:#1f5fe3] [--staff-primary-soft:#eaf1ff] [--staff-primary-strong:#1849b7] [--staff-accent:#1f5fe3] [--staff-accent-strong:#1849b7] grid [grid-template-columns:256px_minmax(0,_1fr)] max-[1023px]:block h-screen overflow-hidden bg-[#f8f7fc] [color:var(--staff-ink)] [font-family:Inter,_ui-sans-serif,_system-ui,_-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_sans-serif] text-[13px] text-slate-800">
+    <div className="nexus-shell [--staff-ink:var(--color-ink)] [--staff-line:var(--color-line)] [--staff-primary:var(--color-primary)] [--staff-primary-soft:var(--color-blue-50)] [--staff-primary-strong:var(--color-primary-dark)] [--staff-accent:var(--color-primary)] [--staff-accent-strong:var(--color-primary-dark)] grid [grid-template-columns:256px_minmax(0,_1fr)] max-[1023px]:block h-screen overflow-hidden bg-[var(--color-canvas)] [color:var(--staff-ink)] font-sans text-sm text-slate-800">
       <StaffSidebar
         activeNavigation={activeNavigation}
         onSelectNavigation={setActiveNavigation}
@@ -89,7 +89,7 @@ export default function StaffDashboard({
           className={`w-full min-w-0 flex-1 min-h-0 flex flex-col ${
             activeNavigation === 'Hộp Thư Trực Tuyến'
               ? 'overflow-hidden max-[768px]:overflow-visible px-3 pt-2 pb-3 lg:px-4 lg:pt-2.5 lg:pb-3.5 max-w-full'
-              : 'overflow-y-auto px-5 pb-6 pt-4 max-w-[1800px] mx-auto custom-scrollbar'
+              : 'overflow-y-auto px-4 py-6 sm:px-8 sm:py-8 max-w-[1600px] mx-auto custom-scrollbar'
           }`}
         >
           {activeNavigation === 'Hộp Thư Trực Tuyến' ? (

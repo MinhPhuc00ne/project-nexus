@@ -91,7 +91,7 @@ export default function CartOrderSummary({
     <div className="lg:col-span-4 space-y-4">
       <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <Tag size={15} className="text-[#f24e1e]" />
+          <Tag size={15} className="text-[var(--color-primary)]" />
           {t('cart.voucherTitle')}
         </h3>
 
@@ -101,7 +101,7 @@ export default function CartOrderSummary({
             value={voucherCode}
             onChange={(e) => setVoucherCode(e.target.value)}
             placeholder={t('cart.voucherPlaceholder')}
-            className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[#f24e1e] uppercase font-semibold"
+            className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[var(--color-primary)] uppercase font-semibold"
           />
           <button
             type="submit"
@@ -158,7 +158,7 @@ export default function CartOrderSummary({
         <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
           <span className="text-sm font-bold text-slate-900">{t('checkout.total')}:</span>
           <div className="text-right">
-            <div className="text-2xl font-extrabold text-[#f24e1e]">
+            <div className="text-2xl font-extrabold text-[var(--color-primary)]">
               {formatCurrency(Number(grandTotal))}
             </div>
             <span className="text-[10px] text-slate-400 block">{totalNote}</span>
@@ -172,7 +172,7 @@ export default function CartOrderSummary({
           className={`w-full py-4 rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
             selectedItems.length === 0
               ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              : 'bg-[#f24e1e] hover:bg-[#d63b0e] text-white hover:shadow-lg'
+              : 'bg-[var(--color-primary)] hover:bg-[#d63b0e] text-white hover:shadow-lg'
           }`}
         >
           {t('cart.proceedCheckoutCount', { count: selectedQuantity })}

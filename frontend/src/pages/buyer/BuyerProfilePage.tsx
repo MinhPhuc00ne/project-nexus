@@ -36,7 +36,7 @@ export default function BuyerProfilePage() {
     <div className="space-y-4">
       <div className="rounded-lg border border-slate-200 bg-white px-6 py-4 shadow-xs flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-lg font-bold text-[#1c3973]">{t('profile.title')}</h1>
+          <h1 className="text-lg font-bold text-[var(--color-navy)]">{t('profile.title')}</h1>
           <p className="text-xs text-slate-500 mt-0.5">{t('profile.subtitle')}</p>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">

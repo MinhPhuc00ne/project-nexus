@@ -31,7 +31,7 @@ export const CartItemList: React.FC<CartItemListProps> = ({
             type="checkbox"
             checked={isAllSelected}
             onChange={(e) => onToggleSelectAll(e.target.checked)}
-            className="h-4 w-4 cursor-pointer rounded accent-[#f24e1e] focus:ring-orange-400"
+            className="h-4 w-4 cursor-pointer rounded accent-[var(--color-primary)] focus:ring-orange-400"
           />
           <span>{t('cart.selectAll', { count: items.length })}</span>
         </label>
@@ -78,7 +78,7 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                     checked={Boolean(item.selected)}
                     disabled={item.isOutOfStock}
                     onChange={() => onToggleSelectItem(item.id)}
-                    className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[#f24e1e] focus:ring-orange-400 disabled:opacity-50"
+                    className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[var(--color-primary)] focus:ring-orange-400 disabled:opacity-50"
                   />
                   <Link
                     to={targetUrl}
@@ -94,7 +94,7 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                     )}
                     <Link
                       to={targetUrl}
-                      className="text-xs font-bold text-slate-900 hover:text-[#f24e1e] transition line-clamp-2"
+                      className="text-xs font-bold text-slate-900 hover:text-[var(--color-primary)] transition line-clamp-2"
                     >
                       {cleanTitle}
                     </Link>
@@ -132,7 +132,7 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                           </span>
                           <Link
                             to={targetUrl}
-                            className="text-[11px] text-[#f24e1e] hover:underline font-semibold"
+                            className="text-[11px] text-[var(--color-primary)] hover:underline font-semibold"
                           >
                             {t('cart.chooseVariant')}
                           </Link>
@@ -175,7 +175,7 @@ export const CartItemList: React.FC<CartItemListProps> = ({
                     </button>
                   </div>
 
-                  <div className="w-28 text-right text-sm font-extrabold text-[#f24e1e]">
+                  <div className="w-28 text-right text-sm font-extrabold text-[var(--color-primary)]">
                     {formatCurrency(Number(item.price * item.qty))}
                   </div>
 

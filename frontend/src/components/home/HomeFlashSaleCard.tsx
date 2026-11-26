@@ -15,7 +15,7 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
   return (
     <Link
       to={`/product/${encodeURIComponent(String(product.id))}`}
-      className="block overflow-hidden rounded-xl border border-slate-200 bg-white p-2 transition-[transform,box-shadow,border-color] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgb(28_57_115_/_10%)] motion-reduce:transition-none motion-reduce:hover:transform-none"
+      className="block overflow-hidden nexus-product-card p-2.5"
     >
       <div className="relative aspect-square overflow-hidden rounded-lg border border-slate-300 bg-slate-900 p-1">
         {product.image ? (
@@ -28,19 +28,19 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
           <span className="text-xs text-slate-400">{t('home.flashSale.noImage')}</span>
         )}
         {product.discount ? (
-          <span className="absolute left-2 top-2 rounded bg-[#f24e1e] px-2 py-1 text-[10px] font-bold text-white shadow-sm">
+          <span className="absolute left-2 top-2 rounded bg-[var(--color-primary)] px-2 py-1 text-[10px] font-bold text-white shadow-sm">
             -{product.discount}%
           </span>
         ) : null}
       </div>
 
       <div className="px-1 pb-1 pt-2">
-        <h3 className="truncate text-xs font-semibold text-slate-700 hover:text-[#f24e1e] transition">
+        <h3 className="truncate text-xs font-semibold text-slate-700 hover:text-[var(--color-primary)] transition">
           {product.name}
         </h3>
 
         <div className="mt-1 flex items-baseline gap-2">
-          <p className="text-sm font-extrabold text-[#f24e1e]">
+          <p className="text-sm font-extrabold text-[var(--color-primary)]">
             {product.price ? formatCurrency(product.price) : '--'}
           </p>
           {product.oldPrice ? (

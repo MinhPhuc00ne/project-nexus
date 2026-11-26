@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({ backUrl = ROUTES.HOME, backText }) => {
   const resolvedBackText = backText ?? t('header.backToHome');
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:px-8 md:py-4">
+    <header className="nexus-header sticky top-0 z-20 flex items-center justify-between px-4 py-3 md:px-8 md:py-4">
       <div className="flex items-center gap-4">
         <Link
           to={ROUTES.HOME}
@@ -52,7 +52,10 @@ const Header: React.FC<HeaderProps> = ({ backUrl = ROUTES.HOME, backText }) => {
             <span className="text-sm font-bold leading-[1.2] text-slate-900">1900 8822</span>
           </div>
         </div>
-        <a href="#" className="whitespace-nowrap text-sm font-medium text-blue-600 hover:underline">
+        <a
+          href="#"
+          className="hidden whitespace-nowrap text-sm font-medium text-blue-600 hover:underline sm:inline"
+        >
           {t('header.helpCenter')}
         </a>
       </div>

@@ -66,8 +66,8 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
                   strokeWidth={2}
                 />
                 <div className="min-w-0">
-                  <p className="m-0 text-xs font-semibold leading-4">{t(titleKey)}</p>
-                  <p className="m-0 text-[10px] leading-4 text-slate-500">{t(descKey)}</p>
+                  <p className="m-0 text-sm font-semibold leading-5">{t(titleKey)}</p>
+                  <p className="m-0 text-xs leading-5 text-muted">{t(descKey)}</p>
                 </div>
               </div>
             ))}
@@ -95,7 +95,7 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
               />
             </a>
             <div className="ml-1 flex items-center gap-1.5">
-              <span className="rounded bg-[#ee4d2d] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">
+              <span className="rounded bg-[var(--color-primary-dark)] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">
                 MALL
               </span>
               <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">
@@ -116,14 +116,14 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
 
         {/* Customer Care column */}
         <nav className="min-w-0" aria-label={t('footer.customerCare')}>
-          <h4 className="mb-3 mt-0 text-xs font-bold uppercase leading-5 tracking-wider text-slate-800">
+          <h4 className="mb-3 mt-0 text-sm font-semibold leading-5 text-ink">
             {t('footer.customerCare')}
           </h4>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {customerCareLinks.map(({ key, href }) => (
               <li key={key}>
                 <a
-                  className="text-[11px] leading-4 text-slate-600 no-underline transition-colors hover:text-[#ee4d2d] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:text-xs"
+                  className="text-sm leading-6 text-muted no-underline transition-colors hover:text-[var(--color-primary-dark)] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:text-xs"
                   href={href}
                 >
                   {t(key)}
@@ -135,14 +135,14 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
 
         {/* Legal & About column */}
         <nav className="min-w-0" aria-label={t('footer.aboutNexus')}>
-          <h4 className="mb-3 mt-0 text-xs font-bold uppercase leading-5 tracking-wider text-slate-800">
+          <h4 className="mb-3 mt-0 text-sm font-semibold leading-5 text-ink">
             {t('footer.aboutNexus')}
           </h4>
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {platformLegalLinks.map(({ key, href }) => (
               <li key={key}>
                 <a
-                  className="text-[11px] leading-4 text-slate-600 no-underline transition-colors hover:text-[#ee4d2d] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:text-xs"
+                  className="text-sm leading-6 text-muted no-underline transition-colors hover:text-[var(--color-primary-dark)] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:text-xs"
                   href={href}
                 >
                   {t(key)}

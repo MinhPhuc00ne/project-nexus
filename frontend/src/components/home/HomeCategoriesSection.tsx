@@ -33,20 +33,20 @@ export default function HomeCategoriesSection() {
   const displayCategories = categories.slice(0, 6);
 
   return (
-    <section className="mt-5 rounded-[18px] border border-sky-200 bg-gradient-to-b from-sky-50/70 to-white p-4 sm:p-5">
+    <section className="nexus-panel mt-6 p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div className="flex items-center gap-2">
-          <span className="text-sky-500">
+          <span className="text-primary">
             <ShoppingCart size={18} />
           </span>
-          <h2 className="text-[15px] font-extrabold uppercase tracking-[0.05em] text-slate-800">
+          <h2 className="text-lg font-semibold tracking-tight text-ink">
             {t('home.categoriesSection.title')}
           </h2>
         </div>
 
         <Link
           to={ROUTES.CATEGORY}
-          className="text-xs font-semibold text-sky-500 hover:text-sky-600 transition"
+          className="text-xs font-semibold text-primary hover:text-primary-dark transition"
         >
           {t('home.categoriesSection.viewAll')}
         </Link>
@@ -61,7 +61,7 @@ export default function HomeCategoriesSection() {
             <Link
               key={category.id}
               to={searchUrl}
-              className="group block rounded-[14px] border border-slate-100 bg-slate-50 p-3 text-center transition-[transform,box-shadow,border-color] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:border-sky-200 hover:bg-sky-50 hover:shadow-[0_10px_24px_rgb(28_57_115_/_10%)] motion-reduce:transition-none motion-reduce:hover:transform-none"
+              className="group block rounded-[14px] border border-slate-100 bg-slate-50 p-3 text-center transition-[transform,box-shadow,border-color] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:shadow-[0_10px_24px_rgb(28_57_115_/_10%)] motion-reduce:transition-none motion-reduce:hover:transform-none"
             >
               <img
                 src={imageUrl}

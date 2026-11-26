@@ -164,7 +164,7 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
               <Banknote className="text-emerald-700" size={20} />
               <span className="font-bold text-emerald-950">{t('checkout.codAmountDue')}</span>
             </div>
-            <span className="text-base font-black text-[#f24e1e] sm:text-lg">
+            <span className="text-base font-black text-[var(--color-primary)] sm:text-lg">
               {formatCurrency(Number(grandTotal || 0))}
             </span>
           </div>
@@ -229,7 +229,7 @@ export const CheckoutSuccessCard: React.FC<CheckoutSuccessCardProps> = ({
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-slate-600">{t('checkout.orderTotalAmount')}</span>
-            <span className="text-base font-extrabold text-[#f24e1e]">
+            <span className="text-base font-extrabold text-[var(--color-primary)]">
               {formatCurrency(Number(grandTotal || 0))}
             </span>
           </div>

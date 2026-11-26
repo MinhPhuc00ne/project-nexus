@@ -175,21 +175,21 @@ export default function CartPage() {
         </div>
 
         <h1 className="text-2xl font-extrabold text-slate-900 mb-6 flex items-center gap-3">
-          <ShoppingBag className="text-[#f24e1e]" size={28} />
+          <ShoppingBag className="text-[var(--color-primary)]" size={28} />
           {t('commerce:cart.heading', { count: totalQuantity })}
           {loading && <Loader2 size={18} className="animate-spin text-slate-400 ml-2" />}
         </h1>
 
         {items.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm max-w-xl mx-auto my-8">
-            <div className="w-20 h-20 bg-orange-50 text-[#f24e1e] rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-20 h-20 bg-orange-50 text-[var(--color-primary)] rounded-full flex items-center justify-center mx-auto mb-4">
               <ShoppingBag size={36} />
             </div>
             <h2 className="text-xl font-bold text-slate-800 mb-2">{t('commerce:cart.empty')}</h2>
             <p className="text-sm text-slate-500 mb-6">{t('commerce:cart.emptyDesc')}</p>
             <Link
               to="/search"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#f24e1e] hover:bg-[#d63b0e] text-white font-bold text-sm transition shadow-md"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-primary)] hover:bg-[#d63b0e] text-white font-bold text-sm transition shadow-md"
             >
               {t('commerce:cart.continueShopping')}
               <ArrowRight size={16} />

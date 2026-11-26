@@ -1,3 +1,4 @@
+import PageTransition from '../components/common/PageTransition';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -146,7 +147,7 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
   // Tính số đếm từ dữ liệu hiện tại; duyệt hồ sơ xong badge sẽ tự giảm sau lần render tiếp.
   const sellerCount = sellerRequests.pendingTotal;
   return (
-    <div className="h-dvh overflow-hidden bg-[#f5f7fb] text-slate-800 selection:bg-blue-100">
+    <div className="nexus-shell h-dvh overflow-hidden text-sm selection:bg-blue-100">
       {/* Đây là sidebar: menu điều hướng bên trái, dùng chung cho mọi trang admin.
           open/onClose điều khiển đóng mở menu trên mobile; các count hiển thị badge. */}
       <Sidebar
@@ -167,28 +168,32 @@ function AdminWorkspace({ user }: { user: UserProfile }) {
         />
         {/* Đây là vùng nội dung cuộn của trang; sidebar và header vẫn giữ nguyên vị trí. */}
         <main ref={contentRef} className="min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1720px] px-4 py-5 sm:px-7 sm:py-6">
+          <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-8 sm:py-8">
             {/* Thanh đường dẫn: Quản trị > tên trang hiện tại. */}
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-[11px] text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-muted">
                 <span>{t('admin:layout.breadcrumbRoot')}</span>
                 <ChevronRight size={12} />
                 <span className="font-medium text-slate-600">{title}</span>
               </div>
             </div>
             {/* Tiêu đề trang con; trang overview có tiêu đề riêng nên không hiển thị ở đây. */}
-            {tab !== 'overview' && (
-              <h1 className="mb-5 text-2xl font-bold tracking-tight text-primary">{title}</h1>
+            {tab !== 'overview' && tab !== 'chat' && (
+              <h1 className="mb-6 text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+                {title}
+              </h1>
             )}
             {/* Gắn trang con tại đây: /admin/users hiện trang Users, /admin/sellers hiện trang Sellers...
                 Router chọn page theo URL; page đọc dữ liệu và thao tác chung qua useAdminContext. */}
-            <Outlet
-              context={{ data: EMPTY_ADMIN_DATA, actions, pendingRefundCount: refundCount }}
-            />
+            <PageTransition>
+              <Outlet
+                context={{ data: EMPTY_ADMIN_DATA, actions, pendingRefundCount: refundCount }}
+              />
+            </PageTransition>
           </div>
         </main>
         {/* Đây là footer dùng chung ở cuối khung admin. */}
-        <footer className="flex shrink-0 flex-wrap justify-between gap-2 border-t border-slate-200 bg-white px-4 py-3 text-[10px] text-slate-400 sm:px-7">
+        <footer className="flex shrink-0 flex-wrap justify-between gap-2 border-t border-slate-200 bg-white px-4 py-3 text-xs text-muted sm:px-8">
           <span>{t('admin:layout.footerOps')}</span>
           <span>{t('admin:layout.footerPlatform')}</span>
         </footer>

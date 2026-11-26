@@ -5,25 +5,25 @@ import { formatCurrency } from '../../i18n/formatters';
 export default function AuthHeroSection() {
   const { t, i18n } = useTranslation('auth');
   return (
-    <div className="[grid-column:span_7_/_span_7] flex flex-col justify-center max-[1024px]:[grid-column:1_/_-1] max-[1024px]:min-w-0">
+    <div className="[grid-column:span_7_/_span_7] flex flex-col justify-center max-[1024px]:hidden">
       <div className="mb-8">
-        <div className="inline-flex items-center gap-2 [background-color:#eaf0ff] [border:1px_solid_#d2e0ff] [padding:0.375rem_0.875rem] rounded-full mb-6">
+        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 [padding:0.375rem_0.875rem] rounded-full mb-6">
           <div className="w-2 h-2 rounded-full bg-blue-600"></div>
           <span className="text-xs font-bold text-blue-600 [letter-spacing:0.025em] uppercase">
             {t('hero.badge')}
           </span>
         </div>
-        <h2 className="[font-size:2.75rem] font-black text-slate-900 [line-height:1.15] mb-4 max-[768px]:[font-size:2rem]">
+        <h2 className="[font-size:2.75rem] font-semibold text-ink [line-height:1.15] mb-4 max-[768px]:[font-size:2rem]">
           {t('hero.titleLine1')}
           <br />
-          <span className="[color:#3b5bdb]">{t('hero.titleLine2')}</span>
+          <span className="text-primary">{t('hero.titleLine2')}</span>
         </h2>
         <p className="text-slate-500 text-base [max-width:36rem] leading-relaxed">
           {t('hero.subtitle')}
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl [box-shadow:0_10px_25px_-5px_rgba(226,_232,_240,_0.8),_0_8px_10px_-6px_rgba(226,_232,_240,_0.8)] overflow-hidden [border:1px_solid_#f1f5f9] flex mb-10 max-[768px]:flex-col">
+      <div className="nexus-panel overflow-hidden flex mb-10 max-[768px]:flex-col">
         <div className="[background-color:#0b1329] relative [width:40%] p-5 flex flex-col justify-between items-center text-center overflow-hidden [min-height:250px] max-[768px]:w-full">
           <div className="absolute [inset:0] [background:radial-gradient(_ellipse_at_center,_rgba(8,_145,_178,_0.25)_0%,_rgba(15,_23,_42,_0.8)_60%,_#0b1329_100%_)]"></div>
 
@@ -62,7 +62,7 @@ export default function AuthHeroSection() {
         <div className="p-6 [width:60%] flex flex-col justify-between max-[768px]:w-full">
           <div>
             <div className="flex justify-between items-start mb-2">
-              <span className="[background-color:#eef2ff] [color:#3b5bdb] text-[11px] font-bold [padding:0.125rem_0.625rem] rounded uppercase [letter-spacing:0.05em]">
+              <span className="[background-color:#eef2ff] text-primary text-[11px] font-bold [padding:0.125rem_0.625rem] rounded uppercase [letter-spacing:0.05em]">
                 {t('hero.vipSession')}
               </span>
               <span className="text-xs font-medium text-slate-400 [&_strong]:text-slate-600">

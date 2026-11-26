@@ -621,7 +621,7 @@ export const UpgradeSellerModal: React.FC<UpgradeSellerModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmittingUpgrade}
-                className="px-5 py-2 text-sm font-semibold text-white bg-[#f24e1e] hover:bg-[#d94217] rounded-lg transition disabled:opacity-50"
+                className="px-5 py-2 text-sm font-semibold text-white bg-[var(--color-primary)] hover:bg-[#d94217] rounded-lg transition disabled:opacity-50"
               >
                 {isSubmittingUpgrade ? t('upgradeSeller.submitting') : t('upgradeSeller.submit')}
               </button>

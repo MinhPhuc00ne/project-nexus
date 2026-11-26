@@ -372,7 +372,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
       {/* 1. Header tóm tắt Rating (Blue & White Theme) */}
       <div className="flex flex-col sm:flex-row items-center gap-6 p-5 rounded-lg bg-blue-50/60 border border-blue-200">
         <div className="text-center sm:text-left sm:pr-8 sm:border-r border-blue-200">
-          <div className="text-3xl font-extrabold text-[#1c3973] tracking-tight">
+          <div className="text-3xl font-extrabold text-[var(--color-navy)] tracking-tight">
             {currentDisplayRating} <span className="text-base font-bold text-slate-500">/ 5.0</span>
           </div>
           <div className="flex items-center justify-center sm:justify-start gap-1 mt-1">
@@ -395,7 +395,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
           </p>
         </div>
         <div className="text-xs text-slate-600 space-y-1">
-          <p className="font-bold text-[#1c3973] flex items-center gap-1.5">
+          <p className="font-bold text-[var(--color-navy)] flex items-center gap-1.5">
             <ShieldCheck size={16} className="text-blue-600" />
             {t('product.reviewsSyncedTitle')}
           </p>
@@ -460,7 +460,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
 
           {sellerId && canReviewShop && (
             <div className="rounded-md border border-blue-100 bg-blue-50/40 p-3 space-y-2">
-              <label className="flex items-center justify-between text-xs font-semibold text-[#1c3973] cursor-pointer">
+              <label className="flex items-center justify-between text-xs font-semibold text-[var(--color-navy)] cursor-pointer">
                 <span className="flex items-center gap-1.5">
                   <Store size={14} className="text-blue-600" />
                   {t(ownShopReview ? 'product.editShopReview' : 'product.rateShopService', {

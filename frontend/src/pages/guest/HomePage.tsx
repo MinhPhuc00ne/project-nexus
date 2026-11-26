@@ -164,11 +164,11 @@ function HomePage() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-[1280px] px-4 py-4">
+    <main className="mx-auto max-w-[1280px] px-4 py-5 sm:py-7">
       <HomeHeroBanner slides={banners} loading={isLoadingBanners} />
 
       <section className="mt-4 grid gap-4 md:grid-cols-2">
-        <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="nexus-panel p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
@@ -188,13 +188,13 @@ function HomePage() {
 
           <Link
             to="/search"
-            className="mt-4 inline-block text-sm font-semibold text-sky-500 hover:underline"
+            className="mt-4 inline-block text-sm font-semibold text-primary hover:underline"
           >
             {t('home.claimCode')}
           </Link>
         </div>
 
-        <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="nexus-panel p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-slate-500">
@@ -205,7 +205,7 @@ function HomePage() {
               </h3>
             </div>
 
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 text-orange-500">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-primary">
               <WalletCards size={22} />
             </div>
           </div>
@@ -214,7 +214,7 @@ function HomePage() {
 
           <Link
             to="/buyer/wallet"
-            className="mt-4 inline-block text-sm font-semibold text-sky-500 hover:underline"
+            className="mt-4 inline-block text-sm font-semibold text-primary hover:underline"
           >
             {t('home.explore')}
           </Link>
@@ -236,17 +236,20 @@ function HomePage() {
 
       {/* No discounts, no section: an empty Flash Sale is better than a made-up one. */}
       {flashProducts.length > 0 && (
-        <section className="mt-5 rounded-[18px] border border-slate-200 bg-white p-4 sm:p-5">
+        <section className="nexus-panel mt-6 p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <h2 className="flex items-center gap-1.5 text-[16px] font-extrabold uppercase tracking-[0.08em] text-[#f24e1e]">
+              <h2 className="flex items-center gap-1.5 text-[16px] font-extrabold uppercase tracking-[0.08em] text-[var(--color-primary)]">
                 <Zap size={18} /> Flash Sale
               </h2>
 
               <HomeCountdown endsAt={flashSaleEndsAt} />
             </div>
 
-            <Link to="/search?onSale=true" className="text-xs font-semibold text-[#f36a22]">
+            <Link
+              to="/search?onSale=true"
+              className="text-xs font-semibold text-[var(--color-primary)]"
+            >
               {t('home.viewAllPromos')}
             </Link>
           </div>

@@ -14,7 +14,7 @@ import { ROUTES } from '../../routes/paths';
 import { useToast } from '../../components/ToastNotification';
 import ForgotPasswordModal from './ForgotPasswordModal';
 import AuthHeroSection from './AuthHeroSection';
-import { ArrowLeft, Lock, Eye, EyeOff, Gift, Shield, User } from 'lucide-react';
+import { Lock, Eye, EyeOff, Gift, Shield, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Login: React.FC = () => {
@@ -121,17 +121,15 @@ const Login: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800 [font-family:var(--font-sans,_system-ui,_-apple-system,_sans-serif)]">
+    <div className="nexus-shell flex flex-col [font-family:var(--font-sans,_system-ui,_-apple-system,_sans-serif)]">
       <main className="[flex:1] [max-width:80rem] w-full [margin:0_auto] [padding:2.5rem_1.5rem] max-[480px]:[padding:1.5rem_1rem]">
         <div className="grid [grid-template-columns:repeat(12,_minmax(0,_1fr))] gap-12 items-center max-[1024px]:[grid-template-columns:minmax(0,_1fr)] max-[1024px]:gap-10">
           <AuthHeroSection />
 
-          <div className="[grid-column:span_5_/_span_5] flex items-center max-[1024px]:[grid-column:1_/_-1] max-[1024px]:min-w-0">
-            <div className="bg-white w-full rounded-2xl [box-shadow:0_20px_25px_-5px_rgba(226,_232,_240,_0.8),_0_8px_10px_-6px_rgba(226,_232,_240,_0.8)] [border:1px_solid_#f1f5f9] [padding:2.25rem_2rem] relative overflow-hidden max-[480px]:[padding:1.75rem_1.25rem]">
-              <div className="absolute top-0 left-0 w-full h-1 [background:linear-gradient(to_right,_#2563eb,_#06b6d4,_#3b82f6)]"></div>
-
+          <div className="[grid-column:span_5_/_span_5] flex items-center max-[1024px]:[grid-column:1_/_-1] max-[1024px]:min-w-0 max-[1024px]:mx-auto max-[1024px]:w-full max-[1024px]:max-w-lg">
+            <div className="nexus-auth-card w-full [padding:2.25rem_2rem] relative overflow-hidden max-[480px]:[padding:1.75rem_1.25rem]">
               <div className="mb-6">
-                <h2 className="[font-size:1.75rem] font-extrabold text-slate-900 [letter-spacing:-0.025em]">
+                <h2 className="text-2xl font-semibold text-ink [letter-spacing:-0.025em]">
                   {t('login.title')}
                 </h2>
               </div>
@@ -237,11 +235,10 @@ const Login: React.FC = () => {
                 <Button
                   id="login-submit-button"
                   type="submit"
-                  className="w-full mt-2 h-11 bg-[#2f54eb] hover:bg-[#2040c7] text-white text-sm font-bold rounded-xl shadow-[0_10px_15px_-3px_rgba(47,84,235,0.25)] flex justify-center items-center gap-2 transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full mt-2 h-11 bg-primary hover:bg-primary-dark text-white text-sm font-semibold rounded-xl shadow-sm flex justify-center items-center gap-2 transition-all active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={pending}
                 >
                   {pending ? t('login.submitting') : t('login.submit')}{' '}
-                  <ArrowLeft className="w-4 h-4 rotate-180" />
                 </Button>
               </form>
 

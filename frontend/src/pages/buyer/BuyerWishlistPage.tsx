@@ -225,7 +225,7 @@ export default function BuyerWishlistPage() {
 
                   <div>
                     <div className="flex items-baseline gap-2 mb-3">
-                      <span className="text-sm font-extrabold text-[#f24e1e]">
+                      <span className="text-sm font-extrabold text-[var(--color-primary)]">
                         {formatCurrency(item.price, i18n.language)}
                       </span>
                       {hasDiscount && (

@@ -1,3 +1,4 @@
+import PageTransition from '../components/common/PageTransition';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -169,7 +170,7 @@ function SellerWorkspace() {
       }}
     >
       <div
-        className="min-h-[100vh] bg-[#f6f8fc] text-[#182541] text-[13px] leading-[1.55] [&_*]:box-border [&_button]:[-webkit-tap-highlight-color:transparent] [&_button]:cursor-pointer [&_button]:[font:inherit] [&_button]:[transition:background_0.16s,_color_0.16s,_box-shadow_0.16s] [&_a]:[-webkit-tap-highlight-color:transparent] [&_a]:no-underline [&_input]:[-webkit-tap-highlight-color:transparent] [&_input]:[font:inherit] [&_select]:[-webkit-tap-highlight-color:transparent] [&_select]:cursor-pointer [&_select]:[font:inherit] [&_textarea]:[-webkit-tap-highlight-color:transparent] [&_textarea]:[font:inherit] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-[0.48] [&_:focus-visible]:[outline:3px_solid_#99b8ff] [&_:focus-visible]:[outline-offset:3px] [&_p]:mt-0 motion-reduce:[&_*]:[scroll-behavior:auto]! motion-reduce:[&_*]:[transition:none]! motion-reduce:[&_*]:[animation:none]!"
+        className="nexus-shell min-h-dvh text-sm leading-[1.55] [&_*]:box-border [&_button]:[-webkit-tap-highlight-color:transparent] [&_button]:cursor-pointer [&_button]:[font:inherit] [&_button]:[transition:background_0.16s,_color_0.16s,_box-shadow_0.16s] [&_a]:[-webkit-tap-highlight-color:transparent] [&_a]:no-underline [&_input]:[-webkit-tap-highlight-color:transparent] [&_input]:[font:inherit] [&_select]:[-webkit-tap-highlight-color:transparent] [&_select]:cursor-pointer [&_select]:[font:inherit] [&_textarea]:[-webkit-tap-highlight-color:transparent] [&_textarea]:[font:inherit] [&_button:disabled]:cursor-not-allowed [&_button:disabled]:opacity-[0.48] [&_:focus-visible]:[outline:3px_solid_#99b8ff] [&_:focus-visible]:[outline-offset:3px] [&_p]:mt-0 motion-reduce:[&_*]:[scroll-behavior:auto]! motion-reduce:[&_*]:[transition:none]! motion-reduce:[&_*]:[animation:none]!"
         data-seller="shell"
       >
         {sidebar && (
@@ -365,10 +366,12 @@ function SellerWorkspace() {
                 </button>
               </div>
             )}
-            <Outlet />
+            <PageTransition>
+              <Outlet />
+            </PageTransition>
           </main>
           <footer
-            className="py-6 px-8 flex justify-between text-[#99a6bc] text-[10px] gap-3 [&>span:last-child]:flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5 max-[760px]:py-5 max-[760px]:px-4.5 max-[760px]:[&>span:last-child]:hidden"
+            className="py-6 px-8 flex justify-between text-[var(--color-muted)] text-[10px] gap-3 [&>span:last-child]:flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5 max-[760px]:py-5 max-[760px]:px-4.5 max-[760px]:[&>span:last-child]:hidden"
             data-seller="footer"
           >
             <span>© {new Date().getFullYear()} NEXUS · Seller Center</span>

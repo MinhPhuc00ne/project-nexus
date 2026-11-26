@@ -235,7 +235,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f8fc] py-6">
+    <main className="min-h-screen bg-[var(--color-canvas)] py-6">
       <div className="mx-auto max-w-[1280px] space-y-6 px-4">
         <nav className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
           <Link to="/" className="text-blue-600 font-medium">
@@ -345,7 +345,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
                 </div>
               )}
               <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-3xl font-extrabold text-[#1c3973]">
+                <span className="text-3xl font-extrabold text-[var(--color-navy)]">
                   {product.formattedPrice}
                 </span>
                 {product.formattedOldPrice && (

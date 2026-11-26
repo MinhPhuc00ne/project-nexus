@@ -243,7 +243,7 @@ export default function RegisterForm() {
 
   return (
     <section
-      className="mx-auto w-full max-w-[526px] rounded-2xl border border-slate-200/80 bg-white px-6 py-8 shadow-[0_18px_24px_-14px_rgb(15_23_42_/_25%),0_4px_6px_-4px_rgb(15_23_42_/_12%)] sm:px-[30px]"
+      className="mx-auto w-full max-w-[526px] nexus-auth-card px-6 py-8 sm:px-[30px]"
       aria-labelledby="register-form-title"
     >
       <h2 id="register-form-title" className="text-xl leading-7 font-bold">
@@ -259,12 +259,12 @@ export default function RegisterForm() {
       >
         <div>
           <label
-            className="mb-1 block text-xs leading-5 font-medium text-slate-700"
+            className="mb-1.5 block text-sm leading-5 font-medium text-slate-700"
             htmlFor="register-name"
           >
             {t('registerForm.fullNameLabel')} <span className="text-red-500">*</span>
           </label>
-          <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+          <div className="flex min-h-11 items-center gap-2.5 rounded-xl border border-line bg-slate-50/60 px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
             <UserRound size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
             <input
               id="register-name"
@@ -285,7 +285,7 @@ export default function RegisterForm() {
               required
               maxLength={100}
               pattern=".*\S.*"
-              className="min-w-0 flex-1 bg-transparent py-2 text-xs text-slate-900 outline-none placeholder:text-slate-500"
+              className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-500"
             />
           </div>
           <FieldError field="fullName" errors={fieldErrors} />
@@ -293,12 +293,12 @@ export default function RegisterForm() {
 
         <div>
           <label
-            className="mb-1 block text-xs leading-5 font-medium text-slate-700"
+            className="mb-1.5 block text-sm leading-5 font-medium text-slate-700"
             htmlFor="register-contact"
           >
             {t('registerForm.emailLabel')} <span className="text-red-500">*</span>
           </label>
-          <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+          <div className="flex min-h-11 items-center gap-2.5 rounded-xl border border-line bg-slate-50/60 px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
             <Mail size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
             <input
               id="register-contact"
@@ -317,7 +317,7 @@ export default function RegisterForm() {
               onBlur={() => validateDetailsField('email')}
               aria-invalid={Boolean(fieldErrors.email?.length)}
               aria-describedby={fieldErrors.email?.length ? 'register-email-error' : undefined}
-              className="min-w-0 flex-1 bg-transparent py-2 text-xs text-slate-900 outline-none placeholder:text-slate-500"
+              className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-500"
             />
             <button
               className="shrink-0 cursor-pointer rounded-md bg-blue-50 px-2 py-1.5 text-[11px] font-medium text-blue-600 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
@@ -354,12 +354,12 @@ export default function RegisterForm() {
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
           <div>
             <label
-              className="mb-1 block text-xs leading-5 font-medium text-slate-700"
+              className="mb-1.5 block text-sm leading-5 font-medium text-slate-700"
               htmlFor="register-password"
             >
               {t('registerForm.passwordLabel')} <span className="text-red-500">*</span>
             </label>
-            <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+            <div className="flex min-h-11 items-center gap-2.5 rounded-xl border border-line bg-slate-50/60 px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
               <LockKeyhole size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
               <input
                 id="register-password"
@@ -385,7 +385,7 @@ export default function RegisterForm() {
                 placeholder={t('registerForm.passwordPlaceholder')}
                 minLength={8}
                 required
-                className="min-w-0 flex-1 bg-transparent py-2 text-xs text-slate-900 outline-none placeholder:text-slate-500"
+                className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-500"
               />
               <button
                 type="button"
@@ -412,12 +412,12 @@ export default function RegisterForm() {
           </div>
           <div>
             <label
-              className="mb-1 block text-xs leading-5 font-medium text-slate-700"
+              className="mb-1.5 block text-sm leading-5 font-medium text-slate-700"
               htmlFor="register-confirm-password"
             >
               {t('registerForm.confirmPasswordLabel')} <span className="text-red-500">*</span>
             </label>
-            <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+            <div className="flex min-h-11 items-center gap-2.5 rounded-xl border border-line bg-slate-50/60 px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
               <LockKeyhole size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
               <input
                 id="register-confirm-password"
@@ -437,7 +437,7 @@ export default function RegisterForm() {
                 autoComplete="new-password"
                 placeholder={t('registerForm.confirmPasswordPlaceholder')}
                 required
-                className="min-w-0 flex-1 bg-transparent py-2 text-xs text-slate-900 outline-none placeholder:text-slate-500"
+                className="min-w-0 flex-1 bg-transparent py-2.5 text-sm text-slate-900 outline-none placeholder:text-slate-500"
               />
               <button
                 type="button"
@@ -463,12 +463,12 @@ export default function RegisterForm() {
           </div>
           <div className="sm:col-span-2">
             <label
-              className="mb-1 block text-xs leading-5 font-medium text-slate-700"
+              className="mb-1.5 block text-sm leading-5 font-medium text-slate-700"
               htmlFor="register-otp"
             >
               {t('registerForm.otpLabel')} <span className="text-red-500">*</span>
             </label>
-            <div className="flex min-h-9 items-center gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+            <div className="flex min-h-11 items-center gap-2.5 rounded-xl border border-line bg-slate-50/60 px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
               <RectangleEllipsis size={14} className="shrink-0 text-slate-400" aria-hidden="true" />
               <input
                 id="register-otp"

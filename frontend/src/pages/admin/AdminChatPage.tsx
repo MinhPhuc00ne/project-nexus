@@ -748,7 +748,9 @@ export default function AdminChatPage() {
   return (
     <main className="space-y-5">
       <header>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">{t('chat.title')}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+          {t('chat.title')}
+        </h1>
         <p className="mt-1 text-sm text-slate-500">{t('chat.subtitle')}</p>
       </header>
       <div role="tablist" aria-label={t('chat.tablistAria')} className="flex flex-wrap gap-2">

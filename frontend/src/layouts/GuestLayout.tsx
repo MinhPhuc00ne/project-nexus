@@ -1,3 +1,4 @@
+import PageTransition from '../components/common/PageTransition';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import Footer from '../components/footer';
@@ -13,7 +14,7 @@ function GuestLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="nexus-shell min-h-screen">
       <HomeHeader
         onLoginClick={() => navigate('/login')}
         onRegisterClick={() => navigate('/register')}
@@ -23,7 +24,13 @@ function GuestLayout() {
           navigate(`/search${params.size ? `?${params.toString()}` : ''}`);
         }}
       />
-      <Outlet />
+      {pathname.startsWith('/buyer') ? (
+        <Outlet />
+      ) : (
+        <PageTransition>
+          <Outlet />
+        </PageTransition>
+      )}
       <Footer />
     </div>
   );

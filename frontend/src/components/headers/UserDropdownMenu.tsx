@@ -84,7 +84,7 @@ export const UserDropdownMenu: React.FC<UserDropdownMenuProps> = ({
                 className="h-[38px] w-[38px] shrink-0 rounded-full object-cover border border-blue-200"
               />
             ) : (
-              <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[#1c3973] text-white">
+              <div className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[var(--color-navy)] text-white">
                 <User size={20} />
               </div>
             )}

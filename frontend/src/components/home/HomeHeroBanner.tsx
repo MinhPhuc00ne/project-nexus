@@ -53,7 +53,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
 
   if (loading) {
     return (
-      <section className="rounded-[18px] border border-slate-200 bg-slate-100/60 p-3 sm:p-4">
+      <section className="overflow-hidden rounded-2xl">
         <div className="relative h-[300px] sm:h-[380px] lg:h-[440px] w-full overflow-hidden rounded-[22px] border border-slate-200/80 bg-gradient-to-r from-slate-100 via-slate-200/70 to-slate-100 animate-pulse shadow-sm flex items-center justify-center">
           <div className="text-center space-y-3">
             <div className="h-6 w-44 sm:w-64 bg-slate-300/60 rounded-full mx-auto" />
@@ -67,9 +67,9 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
   const currentSlide = activeSlides[activeSlide] || activeSlides[0];
 
   return (
-    <section className="rounded-[18px] border border-slate-200 bg-slate-100/60 p-3 sm:p-4">
+    <section className="overflow-hidden rounded-2xl">
       <div
-        className="relative h-[300px] sm:h-[380px] lg:h-[440px] w-full overflow-hidden rounded-[22px] border border-slate-200 bg-gradient-to-br from-sky-50 via-sky-100/50 to-white shadow-[0_16px_40px_rgb(28_57_115_/_8%)]"
+        className={`relative w-full overflow-hidden rounded-2xl border border-line bg-navy shadow-panel ${currentSlide.isFullBanner || !currentSlide.description ? 'h-[300px] sm:h-[380px] lg:h-[440px]' : 'min-h-[380px] sm:min-h-[420px] lg:h-[440px]'}`}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={() => setIsPaused(false)}
       >
@@ -109,22 +109,22 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
               <div className="flex flex-col justify-center space-y-3 sm:space-y-4 lg:col-span-7">
                 {currentSlide.badge && (
                   <div>
-                    <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-orange-600 shadow-xs">
+                    <span className="inline-flex rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold tracking-wider text-blue-200">
                       {currentSlide.badge}
                     </span>
                   </div>
                 )}
 
                 <div>
-                  <h1 className="text-2xl font-black leading-tight tracking-tight text-slate-900 sm:text-3xl lg:text-[36px]">
+                  <h1 className="text-3xl font-semibold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
                     {currentSlide.title}
                     {currentSlide.accent && (
-                      <span className="mt-1 block text-sky-500">{currentSlide.accent}</span>
+                      <span className="mt-1 block text-blue-300">{currentSlide.accent}</span>
                     )}
                   </h1>
 
                   {currentSlide.description && (
-                    <p className="mt-2.5 line-clamp-2 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+                    <p className="mt-2.5 line-clamp-2 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base">
                       {currentSlide.description}
                     </p>
                   )}
@@ -133,7 +133,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
                 <div className="flex flex-wrap items-center gap-3 pt-1 sm:pt-2">
                   <Link
                     to={currentSlide.targetUrl || '/search'}
-                    className="inline-flex items-center justify-center rounded-xl bg-[#f36a22] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_20px_rgba(243,106,34,0.25)] transition hover:bg-[#ea5b10] hover:shadow-lg active:scale-95"
+                    className="inline-flex items-center justify-center rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark motion-safe:active:scale-[0.98]"
                   >
                     {t('home.heroFallback.shopNow')}
                   </Link>
@@ -171,7 +171,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
               type="button"
               aria-label={t('home.heroFallback.prevBanner')}
               onClick={showPreviousSlide}
-              className="absolute left-3 top-1/2 z-20 flex h-9 w-9 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/85 text-slate-700 shadow-md backdrop-blur-md transition-all duration-200 hover:border-orange-300 hover:bg-white hover:text-[#f36a22] hover:scale-105 active:scale-95 sm:left-5 cursor-pointer"
+              className="absolute left-3 top-1/2 z-20 flex h-9 w-9 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/85 text-slate-700 shadow-md backdrop-blur-md transition-all duration-200 hover:border-blue-300 hover:bg-white hover:text-[var(--color-primary)] hover:scale-105 active:scale-95 sm:left-5 cursor-pointer"
             >
               <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
@@ -180,7 +180,7 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
               type="button"
               aria-label={t('home.heroFallback.nextBanner')}
               onClick={showNextSlide}
-              className="absolute right-3 top-1/2 z-20 flex h-9 w-9 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/85 text-slate-700 shadow-md backdrop-blur-md transition-all duration-200 hover:border-orange-300 hover:bg-white hover:text-[#f36a22] hover:scale-105 active:scale-95 sm:right-5 cursor-pointer"
+              className="absolute right-3 top-1/2 z-20 flex h-9 w-9 sm:h-11 sm:w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200/90 bg-white/85 text-slate-700 shadow-md backdrop-blur-md transition-all duration-200 hover:border-blue-300 hover:bg-white hover:text-[var(--color-primary)] hover:scale-105 active:scale-95 sm:right-5 cursor-pointer"
             >
               <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
@@ -193,7 +193,9 @@ export function HomeHeroBanner({ slides = [], loading = false }: HomeHeroBannerP
                   aria-label={t('home.heroFallback.goToSlide', { index: index + 1 })}
                   onClick={() => setActiveSlide(index)}
                   className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                    activeSlide === index ? 'w-7 bg-[#f36a22]' : 'w-2 bg-white/75 hover:bg-white'
+                    activeSlide === index
+                      ? 'w-7 bg-[var(--color-primary)]'
+                      : 'w-2 bg-white/75 hover:bg-white'
                   }`}
                 />
               ))}

@@ -78,9 +78,9 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
   const targetUrl = `/auction/${featuredAuction.id}`;
 
   return (
-    <section className="mt-5 rounded-[18px] border border-slate-200 bg-white p-4 sm:p-5">
+    <section className="nexus-panel mt-6 p-5 sm:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-        <div className="flex items-center gap-2 text-sky-500">
+        <div className="flex items-center gap-2 text-primary">
           <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" />
           <span className="text-[11px] font-bold uppercase tracking-[0.12em]">
             {t('home.liveAuction.exclusiveFeature')}
@@ -93,7 +93,7 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
       </div>
 
       <div className="mt-4">
-        <h2 className="text-[15px] font-extrabold uppercase tracking-[0.04em] text-slate-800">
+        <h2 className="text-lg font-semibold tracking-tight text-ink">
           {t('home.liveAuction.heading')}
         </h2>
         <p className="mt-2 text-sm text-slate-500">{t('home.liveAuction.subheading')}</p>

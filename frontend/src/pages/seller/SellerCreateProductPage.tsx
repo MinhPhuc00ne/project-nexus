@@ -340,7 +340,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                               {group.values.map((val) => (
                                 <span
                                   key={val}
-                                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-[#1c3973]"
+                                  className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-white px-2.5 py-1 text-xs font-semibold text-[var(--color-navy)]"
                                 >
                                   <TagOutlined className="text-blue-600 text-[11px]" />
                                   {val}
@@ -444,7 +444,7 @@ function SellerProductFormPage({ productId }: { productId?: string }) {
                   <div className="flex items-center gap-2.5">
                     <ThunderboltOutlined className="text-lg text-blue-600" />
                     <div>
-                      <p className="text-xs font-bold text-[#1c3973]">
+                      <p className="text-xs font-bold text-[var(--color-navy)]">
                         {t('productForm.enableSaleTitle')}
                       </p>
                       <p className="text-[11px] text-slate-500">
