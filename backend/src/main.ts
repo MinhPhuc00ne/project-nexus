@@ -62,7 +62,10 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('api/docs', app, document);
 
   const port =
-    configService.get<number>('PORT_BACKEND') || Number(process.env.PORT_BACKEND) || 3000;
+    Number(process.env.PORT) ||
+    configService.get<number>('PORT_BACKEND') ||
+    Number(process.env.PORT_BACKEND) ||
+    3000;
   await app.listen(port, '0.0.0.0');
   logger.log(`Nexus Backend Monolith running on: http://localhost:${port}/api/v1`);
   logger.log(`Interactive Swagger Docs available at: http://localhost:${port}/api/docs`);
