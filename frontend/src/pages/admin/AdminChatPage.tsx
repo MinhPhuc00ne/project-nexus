@@ -144,8 +144,7 @@ function AutoReplyPanel() {
       .then((data) => {
         if (!controller.signal.aborted) {
           setResult(data);
-          if (page > Math.max(1, data.pagination.totalPages))
-            setPage(Math.max(1, data.pagination.totalPages));
+          if (page > Math.max(1, data.meta.totalPages)) setPage(Math.max(1, data.meta.totalPages));
         }
       })
       .catch((cause) => {
@@ -431,11 +430,7 @@ function AutoReplyPanel() {
                 </article>
               ))}
             </div>
-            <Pager
-              page={result.pagination.page}
-              totalPages={result.pagination.totalPages}
-              onChange={setPage}
-            />
+            <Pager page={result.meta.page} totalPages={result.meta.totalPages} onChange={setPage} />
           </>
         )}
       </Panel>
@@ -667,11 +662,7 @@ function ConversationAuditPanel() {
               </tbody>
             </table>
           </div>
-          <Pager
-            page={result.pagination.page}
-            totalPages={result.pagination.totalPages}
-            onChange={setPage}
-          />
+          <Pager page={result.meta.page} totalPages={result.meta.totalPages} onChange={setPage} />
         </>
       )}
       {selected && (
