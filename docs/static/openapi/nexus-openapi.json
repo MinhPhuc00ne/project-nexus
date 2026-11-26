@@ -1244,7 +1244,49 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReputationSummaryResponse"
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "type": "string",
+                      "description": "Target user unique identifier",
+                      "example": "usr_abc123"
+                    },
+                    "score": {
+                      "type": "number",
+                      "description": "Current nonnegative reputation score",
+                      "example": 100
+                    },
+                    "trustLevel": {
+                      "type": "string",
+                      "enum": ["EXCELLENT", "GOOD", "STANDARD", "PROBATION", "SUSPENDED"],
+                      "description": "Current trust level tier classification",
+                      "example": "GOOD"
+                    },
+                    "isSuspended": {
+                      "type": "boolean",
+                      "description": "Whether the seller store is administratively or automatically suspended",
+                      "example": false
+                    },
+                    "canSell": {
+                      "type": "boolean",
+                      "description": "Whether the user possesses active selling permissions (score >= 50 and not suspended)",
+                      "example": true
+                    },
+                    "isVerifiedShop": {
+                      "type": "boolean",
+                      "description": "Whether the shop possesses the excellent reputation badge (score >= 120)",
+                      "example": true
+                    }
+                  },
+                  "required": [
+                    "userId",
+                    "score",
+                    "trustLevel",
+                    "isSuspended",
+                    "canSell",
+                    "isVerifiedShop"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -2764,7 +2806,97 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/NotificationPageDto"
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "content": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": ["ORDER", "AUCTION", "SYSTEM", "PAYMENT", "DISPUTE"]
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": ["EMAIL", "PUSH", "IN_APP"]
+                          },
+                          "isRead": {
+                            "type": "boolean"
+                          },
+                          "readAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "auctionId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "targetUrl": {
+                            "nullable": true,
+                            "description": "Frontend destination. New auction notifications use the same route as auction banners and manual browsing. Legacy notifications may have no destination.",
+                            "example": "/auction/00000000-0000-4000-8000-000000000001",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "nullable": true,
+                            "type": "object",
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "content",
+                          "type",
+                          "channel",
+                          "isRead",
+                          "readAt",
+                          "createdAt",
+                          "auctionId",
+                          "targetUrl"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    },
+                    "unreadCount": {
+                      "type": "number"
+                    },
+                    "page": {
+                      "type": "number"
+                    },
+                    "limit": {
+                      "type": "number"
+                    },
+                    "totalPages": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["items", "total", "unreadCount", "page", "limit", "totalPages"],
+                  "additionalProperties": false
                 }
               }
             }
@@ -2790,7 +2922,148 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminNotificationSummaryDto"
+                  "type": "object",
+                  "properties": {
+                    "unreadCount": {
+                      "type": "number",
+                      "description": "Total unread in-app notifications for current Admin user",
+                      "example": 5
+                    },
+                    "totalPendingActions": {
+                      "type": "number",
+                      "description": "Sum of all pending operational tasks across Admin queues",
+                      "example": 10
+                    },
+                    "pendingQueues": {
+                      "type": "object",
+                      "properties": {
+                        "sellerUpgradeRequests": {
+                          "type": "number",
+                          "description": "Pending buyer-to-seller upgrade requests (/admin/sellers)",
+                          "example": 2
+                        },
+                        "auctionConsignments": {
+                          "type": "number",
+                          "description": "Pending auction consignment items awaiting review (/admin/auctions)",
+                          "example": 3
+                        },
+                        "withdrawalRequests": {
+                          "type": "number",
+                          "description": "Pending seller withdrawal requests (/admin/finance)",
+                          "example": 1
+                        },
+                        "openDisputes": {
+                          "type": "number",
+                          "description": "Open or under-review order disputes (/admin/reports)",
+                          "example": 1
+                        },
+                        "violationReports": {
+                          "type": "number",
+                          "description": "Pending or investigating shop/product violation reports (/admin/reports)",
+                          "example": 2
+                        },
+                        "pendingRefunds": {
+                          "type": "number",
+                          "description": "Pending after-sales requests and external refunds (/admin/refunds)",
+                          "example": 1
+                        },
+                        "pendingPickupPoints": {
+                          "type": "number",
+                          "description": "Pending GHN seller pickup point verifications (/admin/stores)",
+                          "example": 0
+                        }
+                      },
+                      "required": [
+                        "sellerUpgradeRequests",
+                        "auctionConsignments",
+                        "withdrawalRequests",
+                        "openDisputes",
+                        "violationReports",
+                        "pendingRefunds",
+                        "pendingPickupPoints"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "recentNotifications": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "content": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": ["ORDER", "AUCTION", "SYSTEM", "PAYMENT", "DISPUTE"]
+                          },
+                          "channel": {
+                            "type": "string",
+                            "enum": ["EMAIL", "PUSH", "IN_APP"]
+                          },
+                          "isRead": {
+                            "type": "boolean"
+                          },
+                          "readAt": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "auctionId": {
+                            "nullable": true,
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "targetUrl": {
+                            "nullable": true,
+                            "description": "Frontend destination. New auction notifications use the same route as auction banners and manual browsing. Legacy notifications may have no destination.",
+                            "example": "/auction/00000000-0000-4000-8000-000000000001",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "nullable": true,
+                            "type": "object",
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "content",
+                          "type",
+                          "channel",
+                          "isRead",
+                          "readAt",
+                          "createdAt",
+                          "auctionId",
+                          "targetUrl"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "description": "Latest 10 Admin notifications"
+                    }
+                  },
+                  "required": [
+                    "unreadCount",
+                    "totalPendingActions",
+                    "pendingQueues",
+                    "recentNotifications"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -4747,7 +5020,68 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminWalletResponseDto"
+                  "type": "object",
+                  "properties": {
+                    "walletId": {
+                      "type": "string",
+                      "description": "ID của ví hệ thống",
+                      "example": "w-1234-5678"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "description": "ID tài khoản quản trị viên",
+                      "example": "u-admin-001"
+                    },
+                    "balance": {
+                      "type": "number",
+                      "description": "Số dư khả dụng hiện tại (VND)",
+                      "example": 5000000
+                    },
+                    "lockedBalance": {
+                      "type": "number",
+                      "description": "Số dư đóng băng / ký quỹ (VND)",
+                      "example": 0
+                    },
+                    "currency": {
+                      "type": "string",
+                      "description": "Đơn vị tiền tệ",
+                      "example": "VND"
+                    },
+                    "totalPlatformFeeCollected": {
+                      "type": "number",
+                      "description": "Tổng doanh thu hoa hồng sàn (% phí sàn) đã thu",
+                      "example": 350000
+                    },
+                    "totalDeposited": {
+                      "type": "number",
+                      "description": "Tổng số tiền Admin đã nạp vào ví hệ thống",
+                      "example": 10000000
+                    },
+                    "totalTransactions": {
+                      "type": "number",
+                      "description": "Tổng số lượng giao dịch phát sinh trên ví",
+                      "example": 42
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                      "description": "Thời gian cập nhật gần nhất",
+                      "example": "2026-10-28T00:00:00.000Z"
+                    }
+                  },
+                  "required": [
+                    "walletId",
+                    "userId",
+                    "balance",
+                    "lockedBalance",
+                    "currency",
+                    "totalPlatformFeeCollected",
+                    "totalDeposited",
+                    "totalTransactions",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -4857,7 +5191,173 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminWalletTransactionsResponseDto"
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "number",
+                      "description": "Tổng số giao dịch thỏa mãn điều kiện",
+                      "example": 100
+                    },
+                    "page": {
+                      "type": "number",
+                      "description": "Trang hiện tại",
+                      "example": 1
+                    },
+                    "limit": {
+                      "type": "number",
+                      "description": "Số bản ghi trên mỗi trang",
+                      "example": 10
+                    },
+                    "totalPages": {
+                      "type": "number",
+                      "description": "Tổng số trang",
+                      "example": 10
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "Mã giao dịch ví",
+                            "example": "tx-112233"
+                          },
+                          "walletId": {
+                            "type": "string",
+                            "description": "Mã ví nhận / trừ tiền",
+                            "example": "w-1234-5678"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Số tiền biến động (VND)",
+                            "example": 130000
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "DEPOSIT",
+                              "WITHDRAW",
+                              "ESCROW_LOCK",
+                              "ESCROW_PAYOUT",
+                              "ESCROW_REFUND",
+                              "ORDER_PAYMENT",
+                              "PLATFORM_FEE",
+                              "AUCTION_BID_LOCK",
+                              "AUCTION_BID_REFUND",
+                              "AUCTION_DEPOSIT_FORFEIT",
+                              "AUCTION_DEPOSIT_COMPENSATION"
+                            ],
+                            "description": "Loại biến động số dư",
+                            "example": "ESCROW_LOCK"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "Trạng thái giao dịch",
+                            "example": "SUCCESS"
+                          },
+                          "referenceId": {
+                            "description": "Mã đối chiếu tham chiếu (Order ID)",
+                            "example": "o-9876-5432",
+                            "type": "string"
+                          },
+                          "description": {
+                            "description": "Nội dung mô tả",
+                            "example": "Tạm giữ thanh toán đơn hàng #o-9876-54",
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$",
+                            "description": "Thời điểm tạo giao dịch",
+                            "example": "2026-10-28T00:00:00.000Z"
+                          },
+                          "orderDetails": {
+                            "description": "Thông tin chi tiết về người mua, shop và dòng tiền đơn hàng",
+                            "nullable": true,
+                            "type": "object",
+                            "properties": {
+                              "orderId": {
+                                "type": "string",
+                                "description": "Mã đơn hàng liên kết",
+                                "example": "o-9876-5432"
+                              },
+                              "buyerName": {
+                                "description": "Họ tên người mua (Buyer)",
+                                "example": "Nguyễn Văn A",
+                                "type": "string"
+                              },
+                              "buyerEmail": {
+                                "description": "Email người mua",
+                                "example": "buyer@example.com",
+                                "type": "string"
+                              },
+                              "shopName": {
+                                "description": "Tên người bán / cửa hàng (Seller/Shop)",
+                                "example": "Shop Thời Trang ABC",
+                                "type": "string"
+                              },
+                              "sellerEmail": {
+                                "description": "Email người bán",
+                                "example": "seller@example.com",
+                                "type": "string"
+                              },
+                              "subtotal": {
+                                "type": "number",
+                                "description": "Tiền hàng gốc (chưa gồm phí ship)",
+                                "example": 100000
+                              },
+                              "shippingFee": {
+                                "type": "number",
+                                "description": "Cước vận chuyển GHN",
+                                "example": 30000
+                              },
+                              "totalAmount": {
+                                "type": "number",
+                                "description": "Tổng tiền người mua đã thanh toán",
+                                "example": 130000
+                              },
+                              "platformFee": {
+                                "type": "number",
+                                "description": "Phí sàn thu được từ đơn (7%)",
+                                "example": 7000
+                              },
+                              "sellerPayout": {
+                                "type": "number",
+                                "description": "Số tiền thực tế giải ngân cho người bán",
+                                "example": 93000
+                              },
+                              "waybillCode": {
+                                "description": "Mã vận đơn giao hàng",
+                                "example": "GHN123456789VN",
+                                "type": "string"
+                              },
+                              "carrier": {
+                                "description": "Đơn vị vận chuyển",
+                                "example": "GHN",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "orderId",
+                              "subtotal",
+                              "shippingFee",
+                              "totalAmount",
+                              "platformFee",
+                              "sellerPayout"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": ["id", "walletId", "amount", "type", "status", "createdAt"],
+                        "additionalProperties": false
+                      },
+                      "description": "Danh sách các giao dịch"
+                    }
+                  },
+                  "required": ["total", "page", "limit", "totalPages", "items"],
+                  "additionalProperties": false
                 }
               }
             }
@@ -5520,6 +6020,546 @@
         ],
         "summary": "Admin điều chỉnh điểm uy tín, có nhật ký người thực hiện",
         "tags": ["5. ADMIN"]
+      }
+    },
+    "/api/v1/admin/reviews": {
+      "get": {
+        "operationId": "AdminReviewsController_adminListReviews",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "type",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "description": "Từ khóa tìm kiếm theo nội dung bình luận",
+            "schema": {
+              "type": "string",
+              "description": "Từ khóa tìm kiếm theo nội dung bình luận"
+            }
+          },
+          {
+            "name": "rating",
+            "required": false,
+            "in": "query",
+            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5,
+              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
+            "schema": {
+              "default": "newest",
+              "type": "string",
+              "enum": ["newest", "oldest"],
+              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin/Staff tra cứu danh sách bình luận/đánh giá toàn sàn kèm điểm uy tín tác giả",
+        "tags": ["Reviews (moderation)"]
+      }
+    },
+    "/api/v1/admin/reviews/product/{id}": {
+      "delete": {
+        "operationId": "AdminReviewsController_adminDeleteProductReview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 1000,
+                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
+                  },
+                  "pointsToDeduct": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991,
+                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
+                    "example": 10
+                  }
+                },
+                "required": ["reason", "pointsToDeduct"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin/Staff xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo",
+        "tags": ["Reviews (moderation)"]
+      }
+    },
+    "/api/v1/admin/reviews/product/{id}/seller-reply": {
+      "delete": {
+        "operationId": "AdminReviewsController_adminRemoveSellerReply",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 1000,
+                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
+                  },
+                  "pointsToDeduct": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991,
+                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
+                    "example": 10
+                  }
+                },
+                "required": ["reason", "pointsToDeduct"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin/Staff gỡ phản hồi (sellerReply) vi phạm trên đánh giá sản phẩm, trừ điểm uy tín Seller và gửi thông báo",
+        "tags": ["Reviews (moderation)"]
+      }
+    },
+    "/api/v1/admin/reviews/shop/{id}": {
+      "delete": {
+        "operationId": "AdminReviewsController_adminDeleteShopReview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 1000,
+                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
+                  },
+                  "pointsToDeduct": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991,
+                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
+                    "example": 10
+                  }
+                },
+                "required": ["reason", "pointsToDeduct"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin/Staff xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo",
+        "tags": ["Reviews (moderation)"]
+      }
+    },
+    "/api/v1/admin/reviews/product/{id}/visibility": {
+      "patch": {
+        "operationId": "AdminReviewsController_adminHideProductReview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isHidden": {
+                    "type": "boolean",
+                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
+                    "example": true
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
+                  },
+                  "pointsToDeduct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
+                    "example": 10
+                  },
+                  "targetType": {
+                    "type": "string",
+                    "enum": ["PRODUCT", "SHOP"],
+                    "example": "PRODUCT"
+                  }
+                },
+                "required": ["isHidden"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin/Staff ẩn hoặc bỏ ẩn đánh giá sản phẩm tiêu cực (không xóa, tác giả vẫn xem được trạng thái bị ẩn)",
+        "tags": ["Reviews (moderation)"]
+      }
+    },
+    "/api/v1/admin/reviews/shop/{id}/visibility": {
+      "patch": {
+        "operationId": "AdminReviewsController_adminHideShopReview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isHidden": {
+                    "type": "boolean",
+                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
+                    "example": true
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
+                  },
+                  "pointsToDeduct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
+                    "example": 10
+                  },
+                  "targetType": {
+                    "type": "string",
+                    "enum": ["PRODUCT", "SHOP"],
+                    "example": "PRODUCT"
+                  }
+                },
+                "required": ["isHidden"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin/Staff ẩn hoặc bỏ ẩn đánh giá gian hàng tiêu cực (không xóa)",
+        "tags": ["Reviews (moderation)"]
+      }
+    },
+    "/api/v1/admin/reviews/replies/{replyId}/visibility": {
+      "patch": {
+        "operationId": "AdminReviewsController_adminHideReviewReply",
+        "parameters": [
+          {
+            "name": "replyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isHidden": {
+                    "type": "boolean",
+                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
+                    "example": true
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 1000,
+                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
+                  },
+                  "pointsToDeduct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
+                    "example": 10
+                  },
+                  "targetType": {
+                    "type": "string",
+                    "enum": ["PRODUCT", "SHOP"],
+                    "example": "PRODUCT"
+                  }
+                },
+                "required": ["isHidden"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Admin/Staff ẩn hoặc bỏ ẩn tin nhắn phản hồi tiêu cực trong đánh giá (không xóa)",
+        "tags": ["Reviews (moderation)"]
+      }
+    },
+    "/api/v1/admin/reports": {
+      "get": {
+        "operationId": "ReportModerationController_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "INVESTIGATING", "CONFIRMED", "DISMISSED"]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Danh sách báo cáo vi phạm cần xử lý",
+        "tags": ["Reviews and reports"]
+      }
+    },
+    "/api/v1/admin/reports/{id}/review": {
+      "patch": {
+        "operationId": "ReportModerationController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["INVESTIGATING", "CONFIRMED", "DISMISSED"]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 2000,
+                    "description": "Rationale retained in the moderation audit trail"
+                  },
+                  "penaltyType": {
+                    "type": "string",
+                    "enum": ["FRAUD", "MISREPRESENTATION"],
+                    "description": "Admin-only confirmed fraud or counterfeit finding: minus 50 points and immediate suspension"
+                  }
+                },
+                "required": ["status", "reason"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Xử lý báo cáo: đang điều tra, xác nhận hoặc bác bỏ",
+        "tags": ["Reviews and reports"]
       }
     },
     "/api/v1/catalog/categories": {
@@ -6457,7 +7497,104 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/BannerResponseDto"
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "imageUrl": {
+                        "type": "string"
+                      },
+                      "targetUrl": {
+                        "nullable": true,
+                        "example": "/auction/00000000-0000-4000-8000-000000000001",
+                        "type": "string"
+                      },
+                      "auctionId": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "creatorRole": {
+                        "type": "string",
+                        "enum": ["ADMIN", "STAFF"],
+                        "description": "Immutable role group at creation; ADMIN precedes STAFF when priorities match"
+                      },
+                      "startsAt": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "endsAt": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "priority": {
+                        "type": "number",
+                        "description": "Higher priorities appear first"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "creatorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "creator": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "fullName": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
+                          }
+                        },
+                        "required": ["id", "fullName", "role"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title",
+                      "imageUrl",
+                      "targetUrl",
+                      "auctionId",
+                      "creatorRole",
+                      "startsAt",
+                      "endsAt",
+                      "isActive",
+                      "priority",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -6481,7 +7618,104 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/BannerResponseDto"
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "imageUrl": {
+                        "type": "string"
+                      },
+                      "targetUrl": {
+                        "nullable": true,
+                        "example": "/auction/00000000-0000-4000-8000-000000000001",
+                        "type": "string"
+                      },
+                      "auctionId": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "creatorRole": {
+                        "type": "string",
+                        "enum": ["ADMIN", "STAFF"],
+                        "description": "Immutable role group at creation; ADMIN precedes STAFF when priorities match"
+                      },
+                      "startsAt": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "endsAt": {
+                        "nullable": true,
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "isActive": {
+                        "type": "boolean"
+                      },
+                      "priority": {
+                        "type": "number",
+                        "description": "Higher priorities appear first"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                      },
+                      "creatorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "creator": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "fullName": {
+                            "type": "string"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
+                          }
+                        },
+                        "required": ["id", "fullName", "role"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title",
+                      "imageUrl",
+                      "targetUrl",
+                      "auctionId",
+                      "creatorRole",
+                      "startsAt",
+                      "endsAt",
+                      "isActive",
+                      "priority",
+                      "createdAt",
+                      "updatedAt"
+                    ],
+                    "additionalProperties": false
                   }
                 }
               }
@@ -6572,7 +7806,104 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BannerResponseDto"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "imageUrl": {
+                      "type": "string"
+                    },
+                    "targetUrl": {
+                      "nullable": true,
+                      "example": "/auction/00000000-0000-4000-8000-000000000001",
+                      "type": "string"
+                    },
+                    "auctionId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "creatorRole": {
+                      "type": "string",
+                      "enum": ["ADMIN", "STAFF"],
+                      "description": "Immutable role group at creation; ADMIN precedes STAFF when priorities match"
+                    },
+                    "startsAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "endsAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "priority": {
+                      "type": "number",
+                      "description": "Higher priorities appear first"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "creatorId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "creator": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "fullName": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
+                        }
+                      },
+                      "required": ["id", "fullName", "role"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "imageUrl",
+                    "targetUrl",
+                    "auctionId",
+                    "creatorRole",
+                    "startsAt",
+                    "endsAt",
+                    "isActive",
+                    "priority",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6629,7 +7960,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BannerDisabledDto"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true],
+                      "example": true
+                    }
+                  },
+                  "required": ["success"],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6664,7 +8004,104 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BannerResponseDto"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "imageUrl": {
+                      "type": "string"
+                    },
+                    "targetUrl": {
+                      "nullable": true,
+                      "example": "/auction/00000000-0000-4000-8000-000000000001",
+                      "type": "string"
+                    },
+                    "auctionId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "creatorRole": {
+                      "type": "string",
+                      "enum": ["ADMIN", "STAFF"],
+                      "description": "Immutable role group at creation; ADMIN precedes STAFF when priorities match"
+                    },
+                    "startsAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "endsAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "priority": {
+                      "type": "number",
+                      "description": "Higher priorities appear first"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "creatorId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "creator": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "fullName": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
+                        }
+                      },
+                      "required": ["id", "fullName", "role"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "imageUrl",
+                    "targetUrl",
+                    "auctionId",
+                    "creatorRole",
+                    "startsAt",
+                    "endsAt",
+                    "isActive",
+                    "priority",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6765,7 +8202,104 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BannerResponseDto"
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "imageUrl": {
+                      "type": "string"
+                    },
+                    "targetUrl": {
+                      "nullable": true,
+                      "example": "/auction/00000000-0000-4000-8000-000000000001",
+                      "type": "string"
+                    },
+                    "auctionId": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "creatorRole": {
+                      "type": "string",
+                      "enum": ["ADMIN", "STAFF"],
+                      "description": "Immutable role group at creation; ADMIN precedes STAFF when priorities match"
+                    },
+                    "startsAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "endsAt": {
+                      "nullable": true,
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    },
+                    "priority": {
+                      "type": "number",
+                      "description": "Higher priorities appear first"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    },
+                    "creatorId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    },
+                    "creator": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "fullName": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
+                        }
+                      },
+                      "required": ["id", "fullName", "role"],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title",
+                    "imageUrl",
+                    "targetUrl",
+                    "auctionId",
+                    "creatorRole",
+                    "startsAt",
+                    "endsAt",
+                    "isActive",
+                    "priority",
+                    "createdAt",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6804,7 +8338,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BannerDisabledDto"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true],
+                      "example": true
+                    }
+                  },
+                  "required": ["success"],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6842,7 +8385,16 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BannerDisabledDto"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [true],
+                      "example": true
+                    }
+                  },
+                  "required": ["success"],
+                  "additionalProperties": false
                 }
               }
             }
@@ -6940,7 +8492,98 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/BannerHistoryPageDto"
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "bannerId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "bannerTitle": {
+                            "type": "string"
+                          },
+                          "creatorId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "creatorName": {
+                            "type": "string"
+                          },
+                          "creatorRole": {
+                            "type": "string",
+                            "enum": ["ADMIN", "STAFF"]
+                          },
+                          "actorId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "actorName": {
+                            "type": "string"
+                          },
+                          "actorRole": {
+                            "type": "string",
+                            "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": ["UPDATE", "DELETE", "DISABLE"]
+                          },
+                          "wasActive": {
+                            "type": "boolean",
+                            "example": true
+                          },
+                          "isActive": {
+                            "type": "boolean",
+                            "example": false
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "bannerId",
+                          "bannerTitle",
+                          "creatorId",
+                          "creatorName",
+                          "creatorRole",
+                          "actorId",
+                          "actorName",
+                          "actorRole",
+                          "source",
+                          "wasActive",
+                          "isActive",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    },
+                    "page": {
+                      "type": "number"
+                    },
+                    "limit": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["items", "total", "page", "limit"],
+                  "additionalProperties": false
                 }
               }
             }
@@ -7002,381 +8645,6 @@
           }
         ],
         "tags": ["Recommendations"]
-      }
-    },
-    "/api/v1/media/upload": {
-      "post": {
-        "description": "Nhận file hình ảnh từ client (field \"file\" hoặc \"image\"), lưu trữ vào máy chủ và trả về đường dẫn URL của ảnh. Nếu gửi nhiều file, hệ thống sẽ tự động upload toàn bộ mảng và trả về danh sách urls.",
-        "operationId": "MediaController_uploadMedia",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "File hình ảnh đính kèm (hỗ trợ JPG, PNG, WEBP, GIF, BMP, TIFF)",
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "File hình ảnh (field name \"file\" hoặc \"image\")"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Upload file thành công, trả về đường dẫn URL của ảnh",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MediaUploadResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Không có file hoặc file không đúng định dạng"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[MEDIA] Upload file hình ảnh lên server / Cloudinary",
-        "tags": ["6. MEDIA"]
-      }
-    },
-    "/api/v1/media/upload-multiple": {
-      "post": {
-        "description": "Nhận một mảng các file hình ảnh từ client (field name \"files\" hoặc \"images\"), lưu trữ và tải lên song song, trả về mảng danh sách URL ảnh để gán trực tiếp vào mảng ảnh sản phẩm/hồ sơ.",
-        "operationId": "MediaController_uploadMultipleMedia",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Mảng các file hình ảnh đính kèm (chọn cùng lúc nhiều ảnh)",
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "files": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "binary"
-                    },
-                    "description": "Danh sách mảng các file hình ảnh"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Upload toàn bộ danh sách file thành công, trả về mảng URL và thông tin chi tiết",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MultipleMediaUploadResponseDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Không có file hoặc file không đúng định dạng"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[MEDIA] Upload mảng nhiều file hình ảnh cùng 1 lần (Array / Batch Upload)",
-        "tags": ["6. MEDIA"]
-      }
-    },
-    "/api/v1/media/upload-review": {
-      "post": {
-        "description": "Hỗ trợ upload 1 hoặc nhiều file ảnh (PNG, JPG, WEBP tối đa 5MB/file) và video (MP4, MOV tối đa 50MB/file) qua multipart/form-data để đính kèm vào Review.",
-        "operationId": "MediaController_uploadReviewMedia",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Danh sách file ảnh/video feedback đánh giá sản phẩm",
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "files": {
-                    "type": "array",
-                    "items": {
-                      "type": "string",
-                      "format": "binary"
-                    },
-                    "description": "Danh sách ảnh/video review (tối đa 50MB/file)"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Upload media đánh giá thành công",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MultipleMediaUploadResponseDto"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[MEDIA] Upload hình ảnh hoặc video feedback cho đánh giá sản phẩm",
-        "tags": ["6. MEDIA"]
-      }
-    },
-    "/api/v1/commerce/cart": {
-      "get": {
-        "description": "Lấy danh sách sản phẩm trong giỏ hàng. Tự động so sánh giá lúc thêm và giá hiện tại của Shop (hasPriceChanged), đồng thời kiểm tra tình trạng tồn kho.",
-        "operationId": "CartController_getCart",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Lấy giỏ hàng thành công"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[BUYER / SELLER] Xem giỏ hàng cá nhân kèm Price Revalidation",
-        "tags": ["8. COMMERCE - CART"]
-      },
-      "delete": {
-        "operationId": "CartController_clearCart",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Đã dọn dẹp sạch giỏ hàng"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[BUYER / SELLER] Xóa toàn bộ giỏ hàng (Clear Cart)",
-        "tags": ["8. COMMERCE - CART"]
-      }
-    },
-    "/api/v1/commerce/cart/items": {
-      "post": {
-        "description": "Thêm sản phẩm kèm số lượng. Bắt buộc kiểm tra: tồn kho khả dụng, sản phẩm ACTIVE, và chặn tự mua hàng của chính mình (Anti-Self-Purchase).",
-        "operationId": "CartController_addToCart",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "productId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "description": "ID của sản phẩm muốn thêm vào giỏ",
-                    "example": "uuid-product-id"
-                  },
-                  "quantity": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991,
-                    "description": "Số lượng mua",
-                    "example": 1
-                  },
-                  "selections": {
-                    "example": {
-                      "Màu sắc": "Đen",
-                      "Size": "M"
-                    },
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  }
-                },
-                "required": ["productId", "quantity"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Thêm vào giỏ hàng thành công"
-          },
-          "400": {
-            "description": "Tồn kho không đủ, sản phẩm hết hàng hoặc người bán cố tình mua đồ của mình"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[BUYER / SELLER] Thêm sản phẩm vào giỏ hàng",
-        "tags": ["8. COMMERCE - CART"]
-      }
-    },
-    "/api/v1/commerce/cart/items/{id}": {
-      "patch": {
-        "description": "Thay đổi số lượng món hàng. Nếu số lượng = 0 sẽ tự động xóa. Kiểm tra số lượng tồn kho khả dụng trước khi cập nhật.",
-        "operationId": "CartController_updateCartItem",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "quantity": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991,
-                    "description": "Số lượng mới của món hàng (nếu truyền 0 sẽ tự động xóa khỏi giỏ)",
-                    "example": 2
-                  }
-                },
-                "required": ["quantity"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Cập nhật số lượng thành công"
-          },
-          "400": {
-            "description": "Số lượng vượt quá tồn kho"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[BUYER / SELLER] Cập nhật số lượng của một món hàng trong giỏ",
-        "tags": ["8. COMMERCE - CART"]
-      },
-      "delete": {
-        "operationId": "CartController_removeCartItem",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Xóa món hàng thành công"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[BUYER / SELLER] Xóa một món hàng khỏi giỏ",
-        "tags": ["8. COMMERCE - CART"]
-      }
-    },
-    "/api/v1/commerce/cart/merge": {
-      "post": {
-        "description": "Nhận danh sách các món Guest đã lưu tạm trên trình duyệt, tự động lọc bỏ sản phẩm của chính mình và gộp số lượng vào giỏ hàng PostgreSQL.",
-        "operationId": "CartController_mergeGuestCart",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "items": {
-                    "maxItems": 100,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "productId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "quantity": {
-                          "type": "integer",
-                          "minimum": 1,
-                          "maximum": 9007199254740991
-                        },
-                        "selections": {
-                          "type": "object",
-                          "additionalProperties": {
-                            "type": "string"
-                          }
-                        }
-                      },
-                      "required": ["productId", "quantity"],
-                      "additionalProperties": false
-                    },
-                    "description": "Danh sách các sản phẩm và số lượng lưu tạm từ LocalStorage của Guest"
-                  }
-                },
-                "required": ["items"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Gộp giỏ hàng thành công"
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "[BUYER / SELLER] Gộp giỏ hàng từ Guest (LocalStorage) vào Database sau khi đăng nhập",
-        "tags": ["8. COMMERCE - CART"]
       }
     },
     "/api/v1/commerce/orders/{orderId}/shop-review": {
@@ -8464,10 +9732,19 @@
         "tags": ["Reviews (seller)"]
       }
     },
-    "/api/v1/admin/reviews": {
+    "/api/v1/commerce/reports/my": {
       "get": {
-        "operationId": "AdminReviewsController_adminListReviews",
+        "operationId": "ReportsController_mine",
         "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "INVESTIGATING", "CONFIRMED", "DISMISSED"]
+            }
+          },
           {
             "name": "page",
             "required": false,
@@ -8487,49 +9764,7 @@
               "default": 20,
               "type": "integer",
               "minimum": 1,
-              "maximum": 100
-            }
-          },
-          {
-            "name": "type",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "search",
-            "required": false,
-            "in": "query",
-            "description": "Từ khóa tìm kiếm theo nội dung bình luận",
-            "schema": {
-              "type": "string",
-              "description": "Từ khóa tìm kiếm theo nội dung bình luận"
-            }
-          },
-          {
-            "name": "rating",
-            "required": false,
-            "in": "query",
-            "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 5,
-              "description": "Lọc theo số sao đánh giá (1 - 5); bỏ trống để lấy tất cả"
-            }
-          },
-          {
-            "name": "sortBy",
-            "required": false,
-            "in": "query",
-            "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)",
-            "schema": {
-              "default": "newest",
-              "type": "string",
-              "enum": ["newest", "oldest"],
-              "description": "Sắp xếp bình luận mới nhất (newest) hoặc cũ nhất (oldest)"
+              "maximum": 50
             }
           }
         ],
@@ -8543,359 +9778,8 @@
             "bearer": []
           }
         ],
-        "summary": "Admin/Staff tra cứu danh sách bình luận/đánh giá toàn sàn kèm điểm uy tín tác giả",
-        "tags": ["Reviews (moderation)"]
-      }
-    },
-    "/api/v1/admin/reviews/product/{id}": {
-      "delete": {
-        "operationId": "AdminReviewsController_adminDeleteProductReview",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "reason": {
-                    "type": "string",
-                    "minLength": 5,
-                    "maxLength": 1000,
-                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
-                  },
-                  "pointsToDeduct": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
-                    "example": 10
-                  }
-                },
-                "required": ["reason", "pointsToDeduct"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Admin/Staff xóa bình luận sản phẩm vi phạm, trừ điểm uy tín tác giả và gửi thông báo",
-        "tags": ["Reviews (moderation)"]
-      }
-    },
-    "/api/v1/admin/reviews/product/{id}/seller-reply": {
-      "delete": {
-        "operationId": "AdminReviewsController_adminRemoveSellerReply",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "reason": {
-                    "type": "string",
-                    "minLength": 5,
-                    "maxLength": 1000,
-                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
-                  },
-                  "pointsToDeduct": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
-                    "example": 10
-                  }
-                },
-                "required": ["reason", "pointsToDeduct"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Admin/Staff gỡ phản hồi (sellerReply) vi phạm trên đánh giá sản phẩm, trừ điểm uy tín Seller và gửi thông báo",
-        "tags": ["Reviews (moderation)"]
-      }
-    },
-    "/api/v1/admin/reviews/shop/{id}": {
-      "delete": {
-        "operationId": "AdminReviewsController_adminDeleteShopReview",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "reason": {
-                    "type": "string",
-                    "minLength": 5,
-                    "maxLength": 1000,
-                    "example": "Bình luận dùng ngôn từ thô tục, xúc phạm người bán"
-                  },
-                  "pointsToDeduct": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của người đánh giá",
-                    "example": 10
-                  }
-                },
-                "required": ["reason", "pointsToDeduct"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Admin/Staff xóa đánh giá gian hàng vi phạm, trừ điểm uy tín tác giả và gửi thông báo",
-        "tags": ["Reviews (moderation)"]
-      }
-    },
-    "/api/v1/admin/reviews/product/{id}/visibility": {
-      "patch": {
-        "operationId": "AdminReviewsController_adminHideProductReview",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "isHidden": {
-                    "type": "boolean",
-                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
-                    "example": true
-                  },
-                  "reason": {
-                    "type": "string",
-                    "maxLength": 1000,
-                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
-                  },
-                  "pointsToDeduct": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
-                    "example": 10
-                  },
-                  "targetType": {
-                    "type": "string",
-                    "enum": ["PRODUCT", "SHOP"],
-                    "example": "PRODUCT"
-                  }
-                },
-                "required": ["isHidden"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Admin/Staff ẩn hoặc bỏ ẩn đánh giá sản phẩm tiêu cực (không xóa, tác giả vẫn xem được trạng thái bị ẩn)",
-        "tags": ["Reviews (moderation)"]
-      }
-    },
-    "/api/v1/admin/reviews/shop/{id}/visibility": {
-      "patch": {
-        "operationId": "AdminReviewsController_adminHideShopReview",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "isHidden": {
-                    "type": "boolean",
-                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
-                    "example": true
-                  },
-                  "reason": {
-                    "type": "string",
-                    "maxLength": 1000,
-                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
-                  },
-                  "pointsToDeduct": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
-                    "example": 10
-                  },
-                  "targetType": {
-                    "type": "string",
-                    "enum": ["PRODUCT", "SHOP"],
-                    "example": "PRODUCT"
-                  }
-                },
-                "required": ["isHidden"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Admin/Staff ẩn hoặc bỏ ẩn đánh giá gian hàng tiêu cực (không xóa)",
-        "tags": ["Reviews (moderation)"]
-      }
-    },
-    "/api/v1/admin/reviews/replies/{replyId}/visibility": {
-      "patch": {
-        "operationId": "AdminReviewsController_adminHideReviewReply",
-        "parameters": [
-          {
-            "name": "replyId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "isHidden": {
-                    "type": "boolean",
-                    "description": "true = ẩn đánh giá/phản hồi tiêu cực vi phạm, false = bỏ ẩn",
-                    "example": true
-                  },
-                  "reason": {
-                    "type": "string",
-                    "maxLength": 1000,
-                    "example": "Nội dung chứa từ ngữ xúc phạm hoặc tiêu cực không phù hợp."
-                  },
-                  "pointsToDeduct": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991,
-                    "description": "Số điểm uy tín muốn trừ của tác giả khi ẩn (mặc định 0 nếu không trừ)",
-                    "example": 10
-                  },
-                  "targetType": {
-                    "type": "string",
-                    "enum": ["PRODUCT", "SHOP"],
-                    "example": "PRODUCT"
-                  }
-                },
-                "required": ["isHidden"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Admin/Staff ẩn hoặc bỏ ẩn tin nhắn phản hồi tiêu cực trong đánh giá (không xóa)",
-        "tags": ["Reviews (moderation)"]
+        "summary": "Theo dõi trạng thái báo cáo của chính mình",
+        "tags": ["Reports"]
       }
     },
     "/api/v1/catalog/shops/{id}/reports": {
@@ -9016,162 +9900,6 @@
           }
         ],
         "tags": ["Reports"]
-      }
-    },
-    "/api/v1/commerce/reports/my": {
-      "get": {
-        "operationId": "ReportModerationController_mine",
-        "parameters": [
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["PENDING", "INVESTIGATING", "CONFIRMED", "DISMISSED"]
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 1,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 9007199254740991
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 20,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Theo dõi trạng thái báo cáo của chính mình",
-        "tags": ["Reviews and reports"]
-      }
-    },
-    "/api/v1/admin/reports": {
-      "get": {
-        "operationId": "ReportModerationController_list",
-        "parameters": [
-          {
-            "name": "status",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["PENDING", "INVESTIGATING", "CONFIRMED", "DISMISSED"]
-            }
-          },
-          {
-            "name": "page",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 1,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 9007199254740991
-            }
-          },
-          {
-            "name": "limit",
-            "required": false,
-            "in": "query",
-            "schema": {
-              "default": 20,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Danh sách báo cáo vi phạm cần xử lý",
-        "tags": ["Reviews and reports"]
-      }
-    },
-    "/api/v1/admin/reports/{id}/review": {
-      "patch": {
-        "operationId": "ReportModerationController_review",
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "enum": ["INVESTIGATING", "CONFIRMED", "DISMISSED"]
-                  },
-                  "reason": {
-                    "type": "string",
-                    "minLength": 5,
-                    "maxLength": 2000,
-                    "description": "Rationale retained in the moderation audit trail"
-                  },
-                  "penaltyType": {
-                    "type": "string",
-                    "enum": ["FRAUD", "MISREPRESENTATION"],
-                    "description": "Admin-only confirmed fraud or counterfeit finding: minus 50 points and immediate suspension"
-                  }
-                },
-                "required": ["status", "reason"],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "summary": "Xử lý báo cáo: đang điều tra, xác nhận hoặc bác bỏ",
-        "tags": ["Reviews and reports"]
       }
     },
     "/api/v1/seller/reviews": {
@@ -9368,6 +10096,551 @@
         ],
         "summary": "[SELLER] Gửi giải trình và bổ sung bằng chứng đối chất khiếu nại",
         "tags": ["8. COMMERCE - SELLER REVIEWS & DISPUTES"]
+      }
+    },
+    "/api/v1/media/upload": {
+      "post": {
+        "description": "Nhận file hình ảnh từ client (field \"file\" hoặc \"image\"), lưu trữ vào máy chủ và trả về đường dẫn URL của ảnh. Nếu gửi nhiều file, hệ thống sẽ tự động upload toàn bộ mảng và trả về danh sách urls.",
+        "operationId": "MediaController_uploadMedia",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "File hình ảnh đính kèm (hỗ trợ JPG, PNG, WEBP, GIF, BMP, TIFF)",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "File hình ảnh (field name \"file\" hoặc \"image\")"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload file thành công, trả về đường dẫn URL của ảnh",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "url": {
+                      "type": "string",
+                      "description": "Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary",
+                      "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+                    },
+                    "publicId": {
+                      "description": "Mã định danh duy nhất của file media trên hệ thống lưu trữ",
+                      "example": "nexus/media/sample_123",
+                      "type": "string"
+                    },
+                    "fileName": {
+                      "type": "string",
+                      "description": "Tên file được lưu trên máy chủ",
+                      "example": "media-1729410000000-a1b2c3d4.png"
+                    },
+                    "originalName": {
+                      "type": "string",
+                      "description": "Tên file gốc do client tải lên",
+                      "example": "cover-chapter-1.png"
+                    },
+                    "mimeType": {
+                      "type": "string",
+                      "description": "MIME type của file ảnh",
+                      "example": "image/png"
+                    },
+                    "size": {
+                      "type": "number",
+                      "description": "Kích thước file theo bytes",
+                      "example": 245120
+                    },
+                    "urls": {
+                      "description": "Mảng URL của các ảnh đã tải lên",
+                      "example": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": ["url", "fileName", "originalName", "mimeType", "size"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Không có file hoặc file không đúng định dạng"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[MEDIA] Upload file hình ảnh lên server / Cloudinary",
+        "tags": ["6. MEDIA"]
+      }
+    },
+    "/api/v1/media/upload-multiple": {
+      "post": {
+        "description": "Nhận một mảng các file hình ảnh từ client (field name \"files\" hoặc \"images\"), lưu trữ và tải lên song song, trả về mảng danh sách URL ảnh để gán trực tiếp vào mảng ảnh sản phẩm/hồ sơ.",
+        "operationId": "MediaController_uploadMultipleMedia",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Mảng các file hình ảnh đính kèm (chọn cùng lúc nhiều ảnh)",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "Danh sách mảng các file hình ảnh"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload toàn bộ danh sách file thành công, trả về mảng URL và thông tin chi tiết",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mảng chứa danh sách các URL của toàn bộ file ảnh vừa được tải lên",
+                      "example": [
+                        "https://res.cloudinary.com/demo/image/upload/sample1.jpg",
+                        "https://res.cloudinary.com/demo/image/upload/sample2.jpg"
+                      ]
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string",
+                            "description": "Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary",
+                            "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+                          },
+                          "publicId": {
+                            "description": "Mã định danh duy nhất của file media trên hệ thống lưu trữ",
+                            "example": "nexus/media/sample_123",
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string",
+                            "description": "Tên file được lưu trên máy chủ",
+                            "example": "media-1729410000000-a1b2c3d4.png"
+                          },
+                          "originalName": {
+                            "type": "string",
+                            "description": "Tên file gốc do client tải lên",
+                            "example": "cover-chapter-1.png"
+                          },
+                          "mimeType": {
+                            "type": "string",
+                            "description": "MIME type của file ảnh",
+                            "example": "image/png"
+                          },
+                          "size": {
+                            "type": "number",
+                            "description": "Kích thước file theo bytes",
+                            "example": 245120
+                          },
+                          "urls": {
+                            "description": "Mảng URL của các ảnh đã tải lên",
+                            "example": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": ["url", "fileName", "originalName", "mimeType", "size"],
+                        "additionalProperties": false
+                      },
+                      "description": "Danh sách chi tiết thông tin của từng file ảnh vừa được tải lên"
+                    }
+                  },
+                  "required": ["urls", "items"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Không có file hoặc file không đúng định dạng"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[MEDIA] Upload mảng nhiều file hình ảnh cùng 1 lần (Array / Batch Upload)",
+        "tags": ["6. MEDIA"]
+      }
+    },
+    "/api/v1/media/upload-review": {
+      "post": {
+        "description": "Hỗ trợ upload 1 hoặc nhiều file ảnh (PNG, JPG, WEBP tối đa 5MB/file) và video (MP4, MOV tối đa 50MB/file) qua multipart/form-data để đính kèm vào Review.",
+        "operationId": "MediaController_uploadReviewMedia",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Danh sách file ảnh/video feedback đánh giá sản phẩm",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "Danh sách ảnh/video review (tối đa 50MB/file)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload media đánh giá thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "urls": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Mảng chứa danh sách các URL của toàn bộ file ảnh vừa được tải lên",
+                      "example": [
+                        "https://res.cloudinary.com/demo/image/upload/sample1.jpg",
+                        "https://res.cloudinary.com/demo/image/upload/sample2.jpg"
+                      ]
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string",
+                            "description": "Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary",
+                            "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg"
+                          },
+                          "publicId": {
+                            "description": "Mã định danh duy nhất của file media trên hệ thống lưu trữ",
+                            "example": "nexus/media/sample_123",
+                            "type": "string"
+                          },
+                          "fileName": {
+                            "type": "string",
+                            "description": "Tên file được lưu trên máy chủ",
+                            "example": "media-1729410000000-a1b2c3d4.png"
+                          },
+                          "originalName": {
+                            "type": "string",
+                            "description": "Tên file gốc do client tải lên",
+                            "example": "cover-chapter-1.png"
+                          },
+                          "mimeType": {
+                            "type": "string",
+                            "description": "MIME type của file ảnh",
+                            "example": "image/png"
+                          },
+                          "size": {
+                            "type": "number",
+                            "description": "Kích thước file theo bytes",
+                            "example": 245120
+                          },
+                          "urls": {
+                            "description": "Mảng URL của các ảnh đã tải lên",
+                            "example": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": ["url", "fileName", "originalName", "mimeType", "size"],
+                        "additionalProperties": false
+                      },
+                      "description": "Danh sách chi tiết thông tin của từng file ảnh vừa được tải lên"
+                    }
+                  },
+                  "required": ["urls", "items"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[MEDIA] Upload hình ảnh hoặc video feedback cho đánh giá sản phẩm",
+        "tags": ["6. MEDIA"]
+      }
+    },
+    "/api/v1/commerce/cart": {
+      "get": {
+        "description": "Lấy danh sách sản phẩm trong giỏ hàng. Tự động so sánh giá lúc thêm và giá hiện tại của Shop (hasPriceChanged), đồng thời kiểm tra tình trạng tồn kho.",
+        "operationId": "CartController_getCart",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Lấy giỏ hàng thành công"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER / SELLER] Xem giỏ hàng cá nhân kèm Price Revalidation",
+        "tags": ["8. COMMERCE - CART"]
+      },
+      "delete": {
+        "operationId": "CartController_clearCart",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Đã dọn dẹp sạch giỏ hàng"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER / SELLER] Xóa toàn bộ giỏ hàng (Clear Cart)",
+        "tags": ["8. COMMERCE - CART"]
+      }
+    },
+    "/api/v1/commerce/cart/items": {
+      "post": {
+        "description": "Thêm sản phẩm kèm số lượng. Bắt buộc kiểm tra: tồn kho khả dụng, sản phẩm ACTIVE, và chặn tự mua hàng của chính mình (Anti-Self-Purchase).",
+        "operationId": "CartController_addToCart",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "productId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "ID của sản phẩm muốn thêm vào giỏ",
+                    "example": "uuid-product-id"
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 9007199254740991,
+                    "description": "Số lượng mua",
+                    "example": 1
+                  },
+                  "selections": {
+                    "example": {
+                      "Màu sắc": "Đen",
+                      "Size": "M"
+                    },
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["productId", "quantity"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Thêm vào giỏ hàng thành công"
+          },
+          "400": {
+            "description": "Tồn kho không đủ, sản phẩm hết hàng hoặc người bán cố tình mua đồ của mình"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER / SELLER] Thêm sản phẩm vào giỏ hàng",
+        "tags": ["8. COMMERCE - CART"]
+      }
+    },
+    "/api/v1/commerce/cart/items/{id}": {
+      "patch": {
+        "description": "Thay đổi số lượng món hàng. Nếu số lượng = 0 sẽ tự động xóa. Kiểm tra số lượng tồn kho khả dụng trước khi cập nhật.",
+        "operationId": "CartController_updateCartItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991,
+                    "description": "Số lượng mới của món hàng (nếu truyền 0 sẽ tự động xóa khỏi giỏ)",
+                    "example": 2
+                  }
+                },
+                "required": ["quantity"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật số lượng thành công"
+          },
+          "400": {
+            "description": "Số lượng vượt quá tồn kho"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER / SELLER] Cập nhật số lượng của một món hàng trong giỏ",
+        "tags": ["8. COMMERCE - CART"]
+      },
+      "delete": {
+        "operationId": "CartController_removeCartItem",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Xóa món hàng thành công"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER / SELLER] Xóa một món hàng khỏi giỏ",
+        "tags": ["8. COMMERCE - CART"]
+      }
+    },
+    "/api/v1/commerce/cart/merge": {
+      "post": {
+        "description": "Nhận danh sách các món Guest đã lưu tạm trên trình duyệt, tự động lọc bỏ sản phẩm của chính mình và gộp số lượng vào giỏ hàng PostgreSQL.",
+        "operationId": "CartController_mergeGuestCart",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        },
+                        "selections": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": ["productId", "quantity"],
+                      "additionalProperties": false
+                    },
+                    "description": "Danh sách các sản phẩm và số lượng lưu tạm từ LocalStorage của Guest"
+                  }
+                },
+                "required": ["items"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Gộp giỏ hàng thành công"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "[BUYER / SELLER] Gộp giỏ hàng từ Guest (LocalStorage) vào Database sau khi đăng nhập",
+        "tags": ["8. COMMERCE - CART"]
       }
     },
     "/api/v1/commerce/after-sales": {
@@ -12187,7 +13460,232 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AuctionIntroShowcaseResponseDto"
+                  "type": "object",
+                  "properties": {
+                    "auctionId": {
+                      "type": "string",
+                      "example": "a442d1a0-7f8a-4e21-9b1c-8c1e4d5f6a7b"
+                    },
+                    "title": {
+                      "type": "string",
+                      "example": "NEXUS Grand Heritage Auction 2026"
+                    },
+                    "description": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "DRAFT",
+                        "SCHEDULED",
+                        "ACTIVE",
+                        "EXTENDED",
+                        "ENDED",
+                        "SETTLED",
+                        "CANCELLED",
+                        "FAILED"
+                      ],
+                      "example": "ACTIVE"
+                    },
+                    "startedAt": {
+                      "type": "string",
+                      "example": "2026-11-11T08:00:00.000Z"
+                    },
+                    "endTime": {
+                      "type": "string",
+                      "example": "2026-11-11T10:00:00.000Z"
+                    },
+                    "serverTime": {
+                      "type": "string",
+                      "description": "Current server UTC timestamp for client clock synchronization",
+                      "example": "2026-11-11T08:00:05.240Z"
+                    },
+                    "introDurationMs": {
+                      "type": "number",
+                      "description": "Total intro broadcast duration in milliseconds",
+                      "example": 31300
+                    },
+                    "isIntroActive": {
+                      "type": "boolean",
+                      "description": "True while the live intro broadcast is actively airing (elapsedMs < introDurationMs)",
+                      "example": true
+                    },
+                    "elapsedMs": {
+                      "type": "number",
+                      "description": "Elapsed milliseconds since startedAt (0 when not active yet, clamped to [0, introDurationMs])",
+                      "example": 5240
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "d18d71c0-3b2a-4c6f-a51b-1f2e3d4c5b6a"
+                          },
+                          "title": {
+                            "type": "string",
+                            "example": "Patek Philippe Calatrava Skeleton 18K"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "Handcrafted 18K rose gold mechanical timepiece with box and papers."
+                          },
+                          "images": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "threeModelKey": {
+                            "example": "preset_watch",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "lotNumber": {
+                            "example": 1,
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "startingPrice": {
+                            "type": "number",
+                            "description": "Official starting price (fallback to seller proposedStartingPrice)",
+                            "example": 350000000
+                          },
+                          "proposedStartingPrice": {
+                            "type": "number",
+                            "description": "Seller originally proposed starting price",
+                            "example": 350000000
+                          },
+                          "reservePrice": {
+                            "example": 420000000,
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "proposedReservePrice": {
+                            "example": 420000000,
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "bidIncrement": {
+                            "type": "number",
+                            "description": "Official bid increment (fallback to seller proposedBidIncrement)",
+                            "example": 5000000
+                          },
+                          "proposedBidIncrement": {
+                            "type": "number",
+                            "description": "Seller originally proposed bid increment",
+                            "example": 5000000
+                          },
+                          "appraisalCertificateNumber": {
+                            "example": "GIA-2026-88412",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "appraisalAgency": {
+                            "example": "GIA Gemological Institute",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "certificateImages": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Seller-uploaded appraisal certificate images"
+                          },
+                          "certificateIssueDate": {
+                            "example": "2026-04-15T00:00:00.000Z",
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "seller": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "example": "7b52c1b0-4e1a-4f38-8d2e-9a0b12345678"
+                              },
+                              "fullName": {
+                                "type": "string",
+                                "example": "Huy Luxury Timepieces"
+                              },
+                              "avatarUrl": {
+                                "nullable": true,
+                                "type": "string"
+                              },
+                              "shopAvatarUrl": {
+                                "nullable": true,
+                                "type": "string"
+                              }
+                            },
+                            "required": ["id", "fullName"],
+                            "additionalProperties": false
+                          },
+                          "lotStatus": {
+                            "type": "string",
+                            "enum": [
+                              "DRAFT",
+                              "SCHEDULED",
+                              "ACTIVE",
+                              "EXTENDED",
+                              "ENDED",
+                              "SETTLED",
+                              "CANCELLED",
+                              "FAILED"
+                            ]
+                          },
+                          "currentHighestBid": {
+                            "example": 355000000,
+                            "type": "number"
+                          },
+                          "currentHighestBidderId": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "totalBidsCount": {
+                            "example": 4,
+                            "type": "number"
+                          },
+                          "startTime": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "endTime": {
+                            "nullable": true,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "description",
+                          "images",
+                          "startingPrice",
+                          "proposedStartingPrice",
+                          "bidIncrement",
+                          "proposedBidIncrement",
+                          "certificateImages"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "auctionId",
+                    "title",
+                    "status",
+                    "startedAt",
+                    "endTime",
+                    "serverTime",
+                    "introDurationMs",
+                    "isIntroActive",
+                    "elapsedMs",
+                    "items"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -14414,936 +15912,6 @@
         "type": "http"
       }
     },
-    "schemas": {
-      "ReputationSummaryResponse": {
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "description": "Target user unique identifier",
-            "example": "usr_abc123"
-          },
-          "score": {
-            "type": "number",
-            "description": "Current nonnegative reputation score",
-            "example": 100
-          },
-          "trustLevel": {
-            "type": "string",
-            "description": "Current trust level tier classification",
-            "enum": ["EXCELLENT", "GOOD", "STANDARD", "PROBATION", "SUSPENDED"],
-            "example": "GOOD"
-          },
-          "isSuspended": {
-            "type": "boolean",
-            "description": "Whether the seller store is administratively or automatically suspended",
-            "example": false
-          },
-          "canSell": {
-            "type": "boolean",
-            "description": "Whether the user possesses active selling permissions (score >= 50 and not suspended)",
-            "example": true
-          },
-          "isVerifiedShop": {
-            "type": "boolean",
-            "description": "Whether the shop possesses the excellent reputation badge (score >= 120)",
-            "example": true
-          }
-        },
-        "required": ["userId", "score", "trustLevel", "isSuspended", "canSell", "isVerifiedShop"]
-      },
-      "NotificationResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": ["ORDER", "AUCTION", "SYSTEM", "PAYMENT", "DISPUTE"]
-          },
-          "channel": {
-            "type": "string",
-            "enum": ["EMAIL", "PUSH", "IN_APP"]
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "readAt": {
-            "type": "string",
-            "nullable": true,
-            "format": "date-time"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "auctionId": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "targetUrl": {
-            "type": "string",
-            "nullable": true,
-            "example": "/auction/00000000-0000-4000-8000-000000000001",
-            "description": "Frontend destination. New auction notifications use the same route as auction banners and manual browsing. Legacy notifications may have no destination."
-          },
-          "metadata": {
-            "type": "object",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "content",
-          "type",
-          "channel",
-          "isRead",
-          "readAt",
-          "createdAt",
-          "auctionId",
-          "targetUrl"
-        ]
-      },
-      "NotificationPageDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NotificationResponseDto"
-            }
-          },
-          "total": {
-            "type": "number"
-          },
-          "unreadCount": {
-            "type": "number"
-          },
-          "page": {
-            "type": "number"
-          },
-          "limit": {
-            "type": "number"
-          },
-          "totalPages": {
-            "type": "number"
-          }
-        },
-        "required": ["items", "total", "unreadCount", "page", "limit", "totalPages"]
-      },
-      "AdminPendingQueuesDto": {
-        "type": "object",
-        "properties": {
-          "sellerUpgradeRequests": {
-            "type": "number",
-            "example": 2,
-            "description": "Pending buyer-to-seller upgrade requests (/admin/sellers)"
-          },
-          "auctionConsignments": {
-            "type": "number",
-            "example": 3,
-            "description": "Pending auction consignment items awaiting review (/admin/auctions)"
-          },
-          "withdrawalRequests": {
-            "type": "number",
-            "example": 1,
-            "description": "Pending seller withdrawal requests (/admin/finance)"
-          },
-          "openDisputes": {
-            "type": "number",
-            "example": 1,
-            "description": "Open or under-review order disputes (/admin/reports)"
-          },
-          "violationReports": {
-            "type": "number",
-            "example": 2,
-            "description": "Pending or investigating shop/product violation reports (/admin/reports)"
-          },
-          "pendingRefunds": {
-            "type": "number",
-            "example": 1,
-            "description": "Pending after-sales requests and external refunds (/admin/refunds)"
-          },
-          "pendingPickupPoints": {
-            "type": "number",
-            "example": 0,
-            "description": "Pending GHN seller pickup point verifications (/admin/stores)"
-          }
-        },
-        "required": [
-          "sellerUpgradeRequests",
-          "auctionConsignments",
-          "withdrawalRequests",
-          "openDisputes",
-          "violationReports",
-          "pendingRefunds",
-          "pendingPickupPoints"
-        ]
-      },
-      "AdminNotificationSummaryDto": {
-        "type": "object",
-        "properties": {
-          "unreadCount": {
-            "type": "number",
-            "example": 5,
-            "description": "Total unread in-app notifications for current Admin user"
-          },
-          "totalPendingActions": {
-            "type": "number",
-            "example": 10,
-            "description": "Sum of all pending operational tasks across Admin queues"
-          },
-          "pendingQueues": {
-            "$ref": "#/components/schemas/AdminPendingQueuesDto"
-          },
-          "recentNotifications": {
-            "description": "Latest 10 Admin notifications",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NotificationResponseDto"
-            }
-          }
-        },
-        "required": ["unreadCount", "totalPendingActions", "pendingQueues", "recentNotifications"]
-      },
-      "AdminWalletResponseDto": {
-        "type": "object",
-        "properties": {
-          "walletId": {
-            "type": "string",
-            "example": "w-1234-5678",
-            "description": "ID của ví hệ thống"
-          },
-          "userId": {
-            "type": "string",
-            "example": "u-admin-001",
-            "description": "ID tài khoản quản trị viên"
-          },
-          "balance": {
-            "type": "number",
-            "example": 5000000,
-            "description": "Số dư khả dụng hiện tại (VND)"
-          },
-          "lockedBalance": {
-            "type": "number",
-            "example": 0,
-            "description": "Số dư đóng băng / ký quỹ (VND)"
-          },
-          "currency": {
-            "type": "string",
-            "example": "VND",
-            "description": "Đơn vị tiền tệ"
-          },
-          "totalPlatformFeeCollected": {
-            "type": "number",
-            "example": 350000,
-            "description": "Tổng doanh thu hoa hồng sàn (% phí sàn) đã thu"
-          },
-          "totalDeposited": {
-            "type": "number",
-            "example": 10000000,
-            "description": "Tổng số tiền Admin đã nạp vào ví hệ thống"
-          },
-          "totalTransactions": {
-            "type": "number",
-            "example": 42,
-            "description": "Tổng số lượng giao dịch phát sinh trên ví"
-          },
-          "updatedAt": {
-            "format": "date-time",
-            "type": "string",
-            "example": "2026-10-28T00:00:00.000Z",
-            "description": "Thời gian cập nhật gần nhất"
-          }
-        },
-        "required": [
-          "walletId",
-          "userId",
-          "balance",
-          "lockedBalance",
-          "currency",
-          "totalPlatformFeeCollected",
-          "totalDeposited",
-          "totalTransactions",
-          "updatedAt"
-        ]
-      },
-      "AdminWalletOrderDetailsDto": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "example": "o-9876-5432",
-            "description": "Mã đơn hàng liên kết"
-          },
-          "buyerName": {
-            "type": "string",
-            "example": "Nguyễn Văn A",
-            "description": "Họ tên người mua (Buyer)"
-          },
-          "buyerEmail": {
-            "type": "string",
-            "example": "buyer@example.com",
-            "description": "Email người mua"
-          },
-          "shopName": {
-            "type": "string",
-            "example": "Shop Thời Trang ABC",
-            "description": "Tên người bán / cửa hàng (Seller/Shop)"
-          },
-          "sellerEmail": {
-            "type": "string",
-            "example": "seller@example.com",
-            "description": "Email người bán"
-          },
-          "subtotal": {
-            "type": "number",
-            "example": 100000,
-            "description": "Tiền hàng gốc (chưa gồm phí ship)"
-          },
-          "shippingFee": {
-            "type": "number",
-            "example": 30000,
-            "description": "Cước vận chuyển GHN"
-          },
-          "totalAmount": {
-            "type": "number",
-            "example": 130000,
-            "description": "Tổng tiền người mua đã thanh toán"
-          },
-          "platformFee": {
-            "type": "number",
-            "example": 7000,
-            "description": "Phí sàn thu được từ đơn (7%)"
-          },
-          "sellerPayout": {
-            "type": "number",
-            "example": 93000,
-            "description": "Số tiền thực tế giải ngân cho người bán"
-          },
-          "waybillCode": {
-            "type": "string",
-            "example": "GHN123456789VN",
-            "description": "Mã vận đơn giao hàng"
-          },
-          "carrier": {
-            "type": "string",
-            "example": "GHN",
-            "description": "Đơn vị vận chuyển"
-          }
-        },
-        "required": [
-          "orderId",
-          "subtotal",
-          "shippingFee",
-          "totalAmount",
-          "platformFee",
-          "sellerPayout"
-        ]
-      },
-      "AdminWalletTransactionItemDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "tx-112233",
-            "description": "Mã giao dịch ví"
-          },
-          "walletId": {
-            "type": "string",
-            "example": "w-1234-5678",
-            "description": "Mã ví nhận / trừ tiền"
-          },
-          "amount": {
-            "type": "number",
-            "example": 130000,
-            "description": "Số tiền biến động (VND)"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "DEPOSIT",
-              "WITHDRAW",
-              "ESCROW_LOCK",
-              "ESCROW_PAYOUT",
-              "ESCROW_REFUND",
-              "ORDER_PAYMENT",
-              "PLATFORM_FEE",
-              "AUCTION_BID_LOCK",
-              "AUCTION_BID_REFUND",
-              "AUCTION_DEPOSIT_FORFEIT",
-              "AUCTION_DEPOSIT_COMPENSATION"
-            ],
-            "example": "ESCROW_LOCK",
-            "description": "Loại biến động số dư"
-          },
-          "status": {
-            "type": "string",
-            "example": "SUCCESS",
-            "description": "Trạng thái giao dịch"
-          },
-          "referenceId": {
-            "type": "string",
-            "example": "o-9876-5432",
-            "description": "Mã đối chiếu tham chiếu (Order ID)"
-          },
-          "description": {
-            "type": "string",
-            "example": "Tạm giữ thanh toán đơn hàng #o-9876-54",
-            "description": "Nội dung mô tả"
-          },
-          "createdAt": {
-            "format": "date-time",
-            "type": "string",
-            "example": "2026-10-28T00:00:00.000Z",
-            "description": "Thời điểm tạo giao dịch"
-          },
-          "orderDetails": {
-            "description": "Thông tin chi tiết về người mua, shop và dòng tiền đơn hàng",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/AdminWalletOrderDetailsDto"
-              }
-            ]
-          }
-        },
-        "required": ["id", "walletId", "amount", "type", "status", "createdAt"]
-      },
-      "AdminWalletTransactionsResponseDto": {
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "number",
-            "example": 100,
-            "description": "Tổng số giao dịch thỏa mãn điều kiện"
-          },
-          "page": {
-            "type": "number",
-            "example": 1,
-            "description": "Trang hiện tại"
-          },
-          "limit": {
-            "type": "number",
-            "example": 10,
-            "description": "Số bản ghi trên mỗi trang"
-          },
-          "totalPages": {
-            "type": "number",
-            "example": 10,
-            "description": "Tổng số trang"
-          },
-          "items": {
-            "description": "Danh sách các giao dịch",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AdminWalletTransactionItemDto"
-            }
-          }
-        },
-        "required": ["total", "page", "limit", "totalPages", "items"]
-      },
-      "BannerCreatorDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "fullName": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string",
-            "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
-          }
-        },
-        "required": ["id", "fullName", "role"]
-      },
-      "BannerResponseDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "imageUrl": {
-            "type": "string"
-          },
-          "targetUrl": {
-            "type": "string",
-            "nullable": true,
-            "example": "/auction/00000000-0000-4000-8000-000000000001"
-          },
-          "auctionId": {
-            "type": "string",
-            "nullable": true,
-            "format": "uuid"
-          },
-          "creatorRole": {
-            "type": "string",
-            "enum": ["ADMIN", "STAFF"],
-            "description": "Immutable role group at creation; ADMIN precedes STAFF when priorities match"
-          },
-          "startsAt": {
-            "type": "string",
-            "nullable": true,
-            "format": "date-time"
-          },
-          "endsAt": {
-            "type": "string",
-            "nullable": true,
-            "format": "date-time"
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "priority": {
-            "type": "number",
-            "description": "Higher priorities appear first"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "creatorId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "creator": {
-            "$ref": "#/components/schemas/BannerCreatorDto"
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "imageUrl",
-          "targetUrl",
-          "auctionId",
-          "creatorRole",
-          "startsAt",
-          "endsAt",
-          "isActive",
-          "priority",
-          "createdAt",
-          "updatedAt"
-        ]
-      },
-      "BannerDisabledDto": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "example": true
-          }
-        },
-        "required": ["success"]
-      },
-      "BannerDisableHistoryDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "bannerId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "bannerTitle": {
-            "type": "string"
-          },
-          "creatorId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "creatorName": {
-            "type": "string"
-          },
-          "creatorRole": {
-            "type": "string",
-            "enum": ["ADMIN", "STAFF"]
-          },
-          "actorId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "actorName": {
-            "type": "string"
-          },
-          "actorRole": {
-            "type": "string",
-            "enum": ["ADMIN", "SUPPORT_STAFF", "SELLER", "BUYER", "GUEST"]
-          },
-          "source": {
-            "type": "string",
-            "enum": ["UPDATE", "DELETE", "DISABLE"]
-          },
-          "wasActive": {
-            "type": "boolean",
-            "example": true
-          },
-          "isActive": {
-            "type": "boolean",
-            "example": false
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "required": [
-          "id",
-          "bannerId",
-          "bannerTitle",
-          "creatorId",
-          "creatorName",
-          "creatorRole",
-          "actorId",
-          "actorName",
-          "actorRole",
-          "source",
-          "wasActive",
-          "isActive",
-          "createdAt"
-        ]
-      },
-      "BannerHistoryPageDto": {
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/BannerDisableHistoryDto"
-            }
-          },
-          "total": {
-            "type": "number"
-          },
-          "page": {
-            "type": "number"
-          },
-          "limit": {
-            "type": "number"
-          }
-        },
-        "required": ["items", "total", "page", "limit"]
-      },
-      "MediaUploadResponseDto": {
-        "type": "object",
-        "properties": {
-          "url": {
-            "type": "string",
-            "example": "https://res.cloudinary.com/demo/image/upload/sample.jpg",
-            "description": "Đường dẫn URL của file ảnh sau khi upload lên server/Cloudinary"
-          },
-          "publicId": {
-            "type": "string",
-            "example": "nexus/media/sample_123",
-            "description": "Mã định danh duy nhất của file media trên hệ thống lưu trữ"
-          },
-          "fileName": {
-            "type": "string",
-            "example": "media-1729410000000-a1b2c3d4.png",
-            "description": "Tên file được lưu trên máy chủ"
-          },
-          "originalName": {
-            "type": "string",
-            "example": "cover-chapter-1.png",
-            "description": "Tên file gốc do client tải lên"
-          },
-          "mimeType": {
-            "type": "string",
-            "example": "image/png",
-            "description": "MIME type của file ảnh"
-          },
-          "size": {
-            "type": "number",
-            "example": 245120,
-            "description": "Kích thước file theo bytes"
-          },
-          "urls": {
-            "example": ["https://res.cloudinary.com/demo/image/upload/sample.jpg"],
-            "description": "Mảng URL của các ảnh đã tải lên",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": ["url", "fileName", "originalName", "mimeType", "size"]
-      },
-      "MultipleMediaUploadResponseDto": {
-        "type": "object",
-        "properties": {
-          "urls": {
-            "example": [
-              "https://res.cloudinary.com/demo/image/upload/sample1.jpg",
-              "https://res.cloudinary.com/demo/image/upload/sample2.jpg"
-            ],
-            "description": "Mảng chứa danh sách các URL của toàn bộ file ảnh vừa được tải lên",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "items": {
-            "description": "Danh sách chi tiết thông tin của từng file ảnh vừa được tải lên",
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MediaUploadResponseDto"
-            }
-          }
-        },
-        "required": ["urls", "items"]
-      },
-      "AuctionShowcaseSellerDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "7b52c1b0-4e1a-4f38-8d2e-9a0b12345678"
-          },
-          "fullName": {
-            "type": "string",
-            "example": "Huy Luxury Timepieces"
-          },
-          "avatarUrl": {
-            "type": "object",
-            "nullable": true
-          },
-          "shopAvatarUrl": {
-            "type": "object",
-            "nullable": true
-          }
-        },
-        "required": ["id", "fullName"]
-      },
-      "AuctionShowcaseItemDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "example": "d18d71c0-3b2a-4c6f-a51b-1f2e3d4c5b6a"
-          },
-          "title": {
-            "type": "string",
-            "example": "Patek Philippe Calatrava Skeleton 18K"
-          },
-          "description": {
-            "type": "string",
-            "example": "Handcrafted 18K rose gold mechanical timepiece with box and papers."
-          },
-          "images": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "threeModelKey": {
-            "type": "object",
-            "nullable": true,
-            "example": "preset_watch"
-          },
-          "lotNumber": {
-            "type": "object",
-            "nullable": true,
-            "example": 1
-          },
-          "startingPrice": {
-            "type": "number",
-            "example": 350000000,
-            "description": "Official starting price (fallback to seller proposedStartingPrice)"
-          },
-          "proposedStartingPrice": {
-            "type": "number",
-            "example": 350000000,
-            "description": "Seller originally proposed starting price"
-          },
-          "reservePrice": {
-            "type": "object",
-            "nullable": true,
-            "example": 420000000
-          },
-          "proposedReservePrice": {
-            "type": "object",
-            "nullable": true,
-            "example": 420000000
-          },
-          "bidIncrement": {
-            "type": "number",
-            "example": 5000000,
-            "description": "Official bid increment (fallback to seller proposedBidIncrement)"
-          },
-          "proposedBidIncrement": {
-            "type": "number",
-            "example": 5000000,
-            "description": "Seller originally proposed bid increment"
-          },
-          "appraisalCertificateNumber": {
-            "type": "object",
-            "nullable": true,
-            "example": "GIA-2026-88412"
-          },
-          "appraisalAgency": {
-            "type": "object",
-            "nullable": true,
-            "example": "GIA Gemological Institute"
-          },
-          "certificateImages": {
-            "description": "Seller-uploaded appraisal certificate images",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "certificateIssueDate": {
-            "type": "object",
-            "nullable": true,
-            "example": "2026-04-15T00:00:00.000Z"
-          },
-          "seller": {
-            "$ref": "#/components/schemas/AuctionShowcaseSellerDto"
-          },
-          "lotStatus": {
-            "type": "string",
-            "enum": [
-              "DRAFT",
-              "SCHEDULED",
-              "ACTIVE",
-              "EXTENDED",
-              "ENDED",
-              "SETTLED",
-              "CANCELLED",
-              "FAILED"
-            ]
-          },
-          "currentHighestBid": {
-            "type": "number",
-            "example": 355000000
-          },
-          "currentHighestBidderId": {
-            "type": "object",
-            "nullable": true
-          },
-          "totalBidsCount": {
-            "type": "number",
-            "example": 4
-          },
-          "startTime": {
-            "type": "object",
-            "nullable": true
-          },
-          "endTime": {
-            "type": "object",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "title",
-          "description",
-          "images",
-          "startingPrice",
-          "proposedStartingPrice",
-          "bidIncrement",
-          "proposedBidIncrement",
-          "certificateImages"
-        ]
-      },
-      "AuctionIntroShowcaseResponseDto": {
-        "type": "object",
-        "properties": {
-          "auctionId": {
-            "type": "string",
-            "example": "a442d1a0-7f8a-4e21-9b1c-8c1e4d5f6a7b"
-          },
-          "title": {
-            "type": "string",
-            "example": "NEXUS Grand Heritage Auction 2026"
-          },
-          "description": {
-            "type": "object",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "DRAFT",
-              "SCHEDULED",
-              "ACTIVE",
-              "EXTENDED",
-              "ENDED",
-              "SETTLED",
-              "CANCELLED",
-              "FAILED"
-            ],
-            "example": "ACTIVE"
-          },
-          "startedAt": {
-            "type": "string",
-            "example": "2026-11-11T08:00:00.000Z"
-          },
-          "endTime": {
-            "type": "string",
-            "example": "2026-11-11T10:00:00.000Z"
-          },
-          "serverTime": {
-            "type": "string",
-            "example": "2026-11-11T08:00:05.240Z",
-            "description": "Current server UTC timestamp for client clock synchronization"
-          },
-          "introDurationMs": {
-            "type": "number",
-            "example": 31300,
-            "description": "Total intro broadcast duration in milliseconds"
-          },
-          "isIntroActive": {
-            "type": "boolean",
-            "example": true,
-            "description": "True while the live intro broadcast is actively airing (elapsedMs < introDurationMs)"
-          },
-          "elapsedMs": {
-            "type": "number",
-            "example": 5240,
-            "description": "Elapsed milliseconds since startedAt (0 when not active yet, clamped to [0, introDurationMs])"
-          },
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AuctionShowcaseItemDto"
-            }
-          }
-        },
-        "required": [
-          "auctionId",
-          "title",
-          "status",
-          "startedAt",
-          "endTime",
-          "serverTime",
-          "introDurationMs",
-          "isIntroActive",
-          "elapsedMs",
-          "items"
-        ]
-      }
-    }
+    "schemas": {}
   }
 }

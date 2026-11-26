@@ -27,9 +27,16 @@ import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { BannerInput, BannerSchema } from '../dtos/banner.dto';
 import { ReorderBannersInput, ReorderBannersSchema } from '../dtos/reorder-banners.dto';
-import { BannerDisabledDto, BannerResponseDto } from '../dtos/banner-response.dto';
+import { z } from 'zod';
+import {
+  BannerDisabledDto,
+  BannerDisabledSchema,
+  BannerResponseDto,
+  BannerResponseSchema,
+} from '../dtos/banner-response.dto';
 import {
   BannerHistoryPageDto,
+  BannerHistoryPageSchema,
   QueryBannerHistoryInput,
   QueryBannerHistorySchema,
 } from '../dtos/banner-history.dto';
@@ -53,7 +60,7 @@ export class BannerController {
     description:
       'Higher priorities appear first, then admin-created banners before staff-created banners, newest first within tied groups. Linked auctions use auctionId and targetUrl=/auction/:id. Expired or inactive banners are excluded.',
   })
-  @ApiOkResponse({ type: [BannerResponseDto] })
+  @ApiOkResponse({ standardSchema: z.array(BannerResponseSchema) })
   listPublic(): Promise<BannerResponseDto[]> {
     return this.banners.list(true);
   }
@@ -68,7 +75,7 @@ export class BannerController {
     description:
       'Uses the same priority ordering as the public list. Includes creator identity and inactive banners.',
   })
-  @ApiOkResponse({ type: [BannerResponseDto] })
+  @ApiOkResponse({ standardSchema: z.array(BannerResponseSchema) })
   @ApiUnauthorizedResponse({ description: 'Authentication required' })
   @ApiForbiddenResponse({ description: 'ADMIN or SUPPORT_STAFF only' })
   listAll(): Promise<BannerResponseDto[]> {
@@ -85,7 +92,7 @@ export class BannerController {
     description:
       'Selected IDs appear first in the supplied order. Omitted banners follow with priority zero.',
   })
-  @ApiOkResponse({ type: BannerDisabledDto })
+  @ApiOkResponse({ standardSchema: BannerDisabledSchema })
   reorder(
     @CurrentUser('id') actorId: string,
     @ZodBody(ReorderBannersSchema) dto: ReorderBannersInput,
@@ -103,7 +110,7 @@ export class BannerController {
     description:
       'Set auctionId to link an existing public auction. The server derives targetUrl. Role at creation is immutable; higher priority displays first.',
   })
-  @ApiCreatedResponse({ type: BannerResponseDto })
+  @ApiCreatedResponse({ standardSchema: BannerResponseSchema })
   @ApiBadRequestResponse({ description: 'Invalid content, dates, or nonpublic auction' })
   @ApiNotFoundResponse({ description: 'Linked auction not found' })
   create(
@@ -130,7 +137,7 @@ export class BannerController {
     description:
       'Copies the auction title and image, derives /auction/:id and publishes immediately. No request body is required. Add an auction image first; draft and cancelled auctions cannot be promoted.',
   })
-  @ApiCreatedResponse({ type: BannerResponseDto })
+  @ApiCreatedResponse({ standardSchema: BannerResponseSchema })
   @ApiBadRequestResponse({
     description: 'Invalid UUID, nonpublic auction or missing auction image',
   })
@@ -152,7 +159,7 @@ export class BannerController {
     description:
       'isActive=false immediately disables a currently active banner and records its prior content and operator. Staff actions notify every admin without an approval request. Repeated disables do not duplicate history. Omit auctionId to retain the existing association, or set null to unlink.',
   })
-  @ApiOkResponse({ type: BannerResponseDto })
+  @ApiOkResponse({ standardSchema: BannerResponseSchema })
   @ApiBadRequestResponse({ description: 'Invalid payload or dates' })
   @ApiNotFoundResponse({ description: 'Banner or auction not found' })
   update(
@@ -173,7 +180,7 @@ export class BannerController {
     description:
       'Staff may disable their own, another staff member, or an admin banner. No approval is required. Every real transition is audited; staff actions notify admins.',
   })
-  @ApiOkResponse({ type: BannerDisabledDto })
+  @ApiOkResponse({ standardSchema: BannerDisabledSchema })
   @ApiNotFoundResponse({ description: 'Banner not found' })
   remove(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -192,7 +199,7 @@ export class BannerController {
     description:
       'Equivalent to soft deletion, with source=DISABLE in history. No body or approval request is required.',
   })
-  @ApiOkResponse({ type: BannerDisabledDto })
+  @ApiOkResponse({ standardSchema: BannerDisabledSchema })
   @ApiNotFoundResponse({ description: 'Banner not found' })
   disable(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -211,7 +218,7 @@ export class BannerController {
     description:
       'Read-only history, including who disabled whose banner and the prior/next state. Any staff account may view another staff member actions. Filter by bannerId, actorId, from and to. No history edit/delete endpoints exist.',
   })
-  @ApiOkResponse({ type: BannerHistoryPageDto })
+  @ApiOkResponse({ standardSchema: BannerHistoryPageSchema })
   @ApiBadRequestResponse({ description: 'Invalid filters or reversed date range' })
   @ApiUnauthorizedResponse({ description: 'Authentication required' })
   @ApiForbiddenResponse({ description: 'ADMIN or SUPPORT_STAFF only' })

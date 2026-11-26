@@ -1,95 +1,103 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { NotificationChannel, NotificationType } from '@prisma/client';
+import { z } from 'zod';
 
-/** Account-owned notification content, including an optional auction deep link. */
-export class NotificationResponseDto {
-  @ApiProperty({ format: 'uuid' }) id!: string;
-  @ApiProperty() title!: string;
-  @ApiProperty() content!: string;
-  @ApiProperty({ enum: NotificationType }) type!: NotificationType;
-  @ApiProperty({ enum: NotificationChannel }) channel!: NotificationChannel;
-  @ApiProperty() isRead!: boolean;
-  @ApiProperty({ type: String, nullable: true, format: 'date-time' }) readAt!: Date | null;
-  @ApiProperty({ type: String, format: 'date-time' }) createdAt!: Date;
-  @ApiProperty({ type: String, nullable: true, format: 'uuid' }) auctionId!: string | null;
-  @ApiProperty({
-    type: String,
-    nullable: true,
-    example: '/auction/00000000-0000-4000-8000-000000000001',
-    description:
+export const NotificationResponseSchema = z.object({
+  id: z.uuid(),
+  title: z.string(),
+  content: z.string(),
+  type: z.enum(NotificationType),
+  channel: z.enum(NotificationChannel),
+  isRead: z.boolean(),
+  readAt: z.iso.datetime().nullable(),
+  createdAt: z.iso.datetime(),
+  auctionId: z.uuid().nullable(),
+  targetUrl: z
+    .string()
+    .nullable()
+    .describe(
       'Frontend destination. New auction notifications use the same route as auction banners and manual browsing. Legacy notifications may have no destination.',
-  })
-  targetUrl!: string | null;
-  @ApiProperty({ type: Object, nullable: true, required: false })
-  metadata?: Record<string, unknown> | null;
-}
+    )
+    .meta({ example: '/auction/00000000-0000-4000-8000-000000000001' }),
+  metadata: z.record(z.string(), z.unknown()).nullable().optional(),
+});
 
-/** Paginated notifications belonging exclusively to the authenticated account. */
-export class NotificationPageDto {
-  @ApiProperty({ type: [NotificationResponseDto] }) items!: NotificationResponseDto[];
-  @ApiProperty() total!: number;
-  @ApiProperty() unreadCount!: number;
-  @ApiProperty() page!: number;
-  @ApiProperty() limit!: number;
-  @ApiProperty() totalPages!: number;
-}
+export type NotificationResponseDto = Omit<
+  z.infer<typeof NotificationResponseSchema>,
+  'readAt' | 'createdAt'
+> & {
+  readAt: Date | string | null;
+  createdAt: Date | string;
+};
 
-/** Pending administrative task counts mapped directly to Admin Dashboard modules. */
-export class AdminPendingQueuesDto {
-  @ApiProperty({
-    example: 2,
-    description: 'Pending buyer-to-seller upgrade requests (/admin/sellers)',
-  })
-  sellerUpgradeRequests!: number;
+export const NotificationPageSchema = z.object({
+  items: z.array(NotificationResponseSchema),
+  total: z.number(),
+  unreadCount: z.number(),
+  page: z.number(),
+  limit: z.number(),
+  totalPages: z.number(),
+});
 
-  @ApiProperty({
-    example: 3,
-    description: 'Pending auction consignment items awaiting review (/admin/auctions)',
-  })
-  auctionConsignments!: number;
+export type NotificationPageDto = {
+  items: NotificationResponseDto[];
+  total: number;
+  unreadCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
 
-  @ApiProperty({ example: 1, description: 'Pending seller withdrawal requests (/admin/finance)' })
-  withdrawalRequests!: number;
+export const AdminPendingQueuesSchema = z.object({
+  sellerUpgradeRequests: z
+    .number()
+    .describe('Pending buyer-to-seller upgrade requests (/admin/sellers)')
+    .meta({ example: 2 }),
+  auctionConsignments: z
+    .number()
+    .describe('Pending auction consignment items awaiting review (/admin/auctions)')
+    .meta({ example: 3 }),
+  withdrawalRequests: z
+    .number()
+    .describe('Pending seller withdrawal requests (/admin/finance)')
+    .meta({ example: 1 }),
+  openDisputes: z
+    .number()
+    .describe('Open or under-review order disputes (/admin/reports)')
+    .meta({ example: 1 }),
+  violationReports: z
+    .number()
+    .describe('Pending or investigating shop/product violation reports (/admin/reports)')
+    .meta({ example: 2 }),
+  pendingRefunds: z
+    .number()
+    .describe('Pending after-sales requests and external refunds (/admin/refunds)')
+    .meta({ example: 1 }),
+  pendingPickupPoints: z
+    .number()
+    .describe('Pending GHN seller pickup point verifications (/admin/stores)')
+    .meta({ example: 0 }),
+});
 
-  @ApiProperty({ example: 1, description: 'Open or under-review order disputes (/admin/reports)' })
-  openDisputes!: number;
+export type AdminPendingQueuesDto = z.infer<typeof AdminPendingQueuesSchema>;
 
-  @ApiProperty({
-    example: 2,
-    description: 'Pending or investigating shop/product violation reports (/admin/reports)',
-  })
-  violationReports!: number;
+export const AdminNotificationSummarySchema = z.object({
+  unreadCount: z
+    .number()
+    .describe('Total unread in-app notifications for current Admin user')
+    .meta({ example: 5 }),
+  totalPendingActions: z
+    .number()
+    .describe('Sum of all pending operational tasks across Admin queues')
+    .meta({ example: 10 }),
+  pendingQueues: AdminPendingQueuesSchema,
+  recentNotifications: z
+    .array(NotificationResponseSchema)
+    .describe('Latest 10 Admin notifications'),
+});
 
-  @ApiProperty({
-    example: 1,
-    description: 'Pending after-sales requests and external refunds (/admin/refunds)',
-  })
-  pendingRefunds!: number;
-
-  @ApiProperty({
-    example: 0,
-    description: 'Pending GHN seller pickup point verifications (/admin/stores)',
-  })
-  pendingPickupPoints!: number;
-}
-
-/** Aggregated Admin notification bell + live pending moderation queue counters. */
-export class AdminNotificationSummaryDto {
-  @ApiProperty({
-    example: 5,
-    description: 'Total unread in-app notifications for current Admin user',
-  })
-  unreadCount!: number;
-
-  @ApiProperty({
-    example: 10,
-    description: 'Sum of all pending operational tasks across Admin queues',
-  })
-  totalPendingActions!: number;
-
-  @ApiProperty({ type: AdminPendingQueuesDto })
-  pendingQueues!: AdminPendingQueuesDto;
-
-  @ApiProperty({ type: [NotificationResponseDto], description: 'Latest 10 Admin notifications' })
-  recentNotifications!: NotificationResponseDto[];
-}
+export type AdminNotificationSummaryDto = Omit<
+  z.infer<typeof AdminNotificationSummarySchema>,
+  'recentNotifications'
+> & {
+  recentNotifications: NotificationResponseDto[];
+};

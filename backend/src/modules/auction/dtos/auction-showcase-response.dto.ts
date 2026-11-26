@@ -1,148 +1,89 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AuctionStatus } from '@prisma/client';
+import { z } from 'zod';
 
-/**
- * Seller metadata exposed on approved auction showcase items.
- */
-export class AuctionShowcaseSellerDto {
-  @ApiProperty({ example: '7b52c1b0-4e1a-4f38-8d2e-9a0b12345678' })
-  id!: string;
+export const AuctionShowcaseSellerSchema = z.object({
+  id: z.string().meta({ example: '7b52c1b0-4e1a-4f38-8d2e-9a0b12345678' }),
+  fullName: z.string().meta({ example: 'Huy Luxury Timepieces' }),
+  avatarUrl: z.string().nullable().optional(),
+  shopAvatarUrl: z.string().nullable().optional(),
+});
 
-  @ApiProperty({ example: 'Huy Luxury Timepieces' })
-  fullName!: string;
+export type AuctionShowcaseSellerDto = z.infer<typeof AuctionShowcaseSellerSchema>;
 
-  @ApiPropertyOptional({ nullable: true })
-  avatarUrl?: string | null;
+export const AuctionShowcaseItemSchema = z.object({
+  id: z.string().meta({ example: 'd18d71c0-3b2a-4c6f-a51b-1f2e3d4c5b6a' }),
+  title: z.string().meta({ example: 'Patek Philippe Calatrava Skeleton 18K' }),
+  description: z
+    .string()
+    .meta({ example: 'Handcrafted 18K rose gold mechanical timepiece with box and papers.' }),
+  images: z.array(z.string()),
+  threeModelKey: z.string().nullable().optional().meta({ example: 'preset_watch' }),
+  lotNumber: z.number().nullable().optional().meta({ example: 1 }),
+  startingPrice: z
+    .number()
+    .describe('Official starting price (fallback to seller proposedStartingPrice)')
+    .meta({ example: 350000000 }),
+  proposedStartingPrice: z
+    .number()
+    .describe('Seller originally proposed starting price')
+    .meta({ example: 350000000 }),
+  reservePrice: z.number().nullable().optional().meta({ example: 420000000 }),
+  proposedReservePrice: z.number().nullable().optional().meta({ example: 420000000 }),
+  bidIncrement: z
+    .number()
+    .describe('Official bid increment (fallback to seller proposedBidIncrement)')
+    .meta({ example: 5000000 }),
+  proposedBidIncrement: z
+    .number()
+    .describe('Seller originally proposed bid increment')
+    .meta({ example: 5000000 }),
+  appraisalCertificateNumber: z.string().nullable().optional().meta({ example: 'GIA-2026-88412' }),
+  appraisalAgency: z.string().nullable().optional().meta({ example: 'GIA Gemological Institute' }),
+  certificateImages: z.array(z.string()).describe('Seller-uploaded appraisal certificate images'),
+  certificateIssueDate: z
+    .string()
+    .nullable()
+    .optional()
+    .meta({ example: '2026-04-15T00:00:00.000Z' }),
+  seller: AuctionShowcaseSellerSchema.optional(),
+  lotStatus: z.enum(AuctionStatus).optional(),
+  currentHighestBid: z.number().optional().meta({ example: 355000000 }),
+  currentHighestBidderId: z.string().nullable().optional(),
+  totalBidsCount: z.number().optional().meta({ example: 4 }),
+  startTime: z.string().nullable().optional(),
+  endTime: z.string().nullable().optional(),
+});
 
-  @ApiPropertyOptional({ nullable: true })
-  shopAvatarUrl?: string | null;
-}
+export type AuctionShowcaseItemDto = z.infer<typeof AuctionShowcaseItemSchema>;
 
-/**
- * Approved consignment lot payload including seller-submitted pricing and appraisal records.
- */
-export class AuctionShowcaseItemDto {
-  @ApiProperty({ example: 'd18d71c0-3b2a-4c6f-a51b-1f2e3d4c5b6a' })
-  id!: string;
-
-  @ApiProperty({ example: 'Patek Philippe Calatrava Skeleton 18K' })
-  title!: string;
-
-  @ApiProperty({ example: 'Handcrafted 18K rose gold mechanical timepiece with box and papers.' })
-  description!: string;
-
-  @ApiProperty({ type: [String] })
-  images!: string[];
-
-  @ApiPropertyOptional({ nullable: true, example: 'preset_watch' })
-  threeModelKey?: string | null;
-
-  @ApiPropertyOptional({ nullable: true, example: 1 })
-  lotNumber?: number | null;
-
-  @ApiProperty({
-    example: 350000000,
-    description: 'Official starting price (fallback to seller proposedStartingPrice)',
-  })
-  startingPrice!: number;
-
-  @ApiProperty({ example: 350000000, description: 'Seller originally proposed starting price' })
-  proposedStartingPrice!: number;
-
-  @ApiPropertyOptional({ nullable: true, example: 420000000 })
-  reservePrice?: number | null;
-
-  @ApiPropertyOptional({ nullable: true, example: 420000000 })
-  proposedReservePrice?: number | null;
-
-  @ApiProperty({
-    example: 5000000,
-    description: 'Official bid increment (fallback to seller proposedBidIncrement)',
-  })
-  bidIncrement!: number;
-
-  @ApiProperty({ example: 5000000, description: 'Seller originally proposed bid increment' })
-  proposedBidIncrement!: number;
-
-  @ApiPropertyOptional({ nullable: true, example: 'GIA-2026-88412' })
-  appraisalCertificateNumber?: string | null;
-
-  @ApiPropertyOptional({ nullable: true, example: 'GIA Gemological Institute' })
-  appraisalAgency?: string | null;
-
-  @ApiProperty({ type: [String], description: 'Seller-uploaded appraisal certificate images' })
-  certificateImages!: string[];
-
-  @ApiPropertyOptional({ nullable: true, example: '2026-04-15T00:00:00.000Z' })
-  certificateIssueDate?: string | null;
-
-  @ApiPropertyOptional({ type: AuctionShowcaseSellerDto })
-  seller?: AuctionShowcaseSellerDto;
-
-  @ApiPropertyOptional({ enum: AuctionStatus })
-  lotStatus?: AuctionStatus;
-
-  @ApiPropertyOptional({ example: 355000000 })
-  currentHighestBid?: number;
-
-  @ApiPropertyOptional({ nullable: true })
-  currentHighestBidderId?: string | null;
-
-  @ApiPropertyOptional({ example: 4 })
-  totalBidsCount?: number;
-
-  @ApiPropertyOptional({ nullable: true })
-  startTime?: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  endTime?: string | null;
-}
-
-/**
- * Synchronized live intro showcase telemetry returned for REST late-joiners and Swagger documentation.
- */
-export class AuctionIntroShowcaseResponseDto {
-  @ApiProperty({ example: 'a442d1a0-7f8a-4e21-9b1c-8c1e4d5f6a7b' })
-  auctionId!: string;
-
-  @ApiProperty({ example: 'NEXUS Grand Heritage Auction 2026' })
-  title!: string;
-
-  @ApiPropertyOptional({ nullable: true })
-  description?: string | null;
-
-  @ApiProperty({ enum: AuctionStatus, example: AuctionStatus.ACTIVE })
-  status!: AuctionStatus;
-
-  @ApiProperty({ example: '2026-11-11T08:00:00.000Z' })
-  startedAt!: string;
-
-  @ApiProperty({ example: '2026-11-11T10:00:00.000Z' })
-  endTime!: string;
-
-  @ApiProperty({
-    example: '2026-11-11T08:00:05.240Z',
-    description: 'Current server UTC timestamp for client clock synchronization',
-  })
-  serverTime!: string;
-
-  @ApiProperty({ example: 31300, description: 'Total intro broadcast duration in milliseconds' })
-  introDurationMs!: number;
-
-  @ApiProperty({
-    example: true,
-    description:
+export const AuctionIntroShowcaseResponseSchema = z.object({
+  auctionId: z.string().meta({ example: 'a442d1a0-7f8a-4e21-9b1c-8c1e4d5f6a7b' }),
+  title: z.string().meta({ example: 'NEXUS Grand Heritage Auction 2026' }),
+  description: z.string().nullable().optional(),
+  status: z.enum(AuctionStatus).meta({ example: AuctionStatus.ACTIVE }),
+  startedAt: z.string().meta({ example: '2026-11-11T08:00:00.000Z' }),
+  endTime: z.string().meta({ example: '2026-11-11T10:00:00.000Z' }),
+  serverTime: z
+    .string()
+    .describe('Current server UTC timestamp for client clock synchronization')
+    .meta({ example: '2026-11-11T08:00:05.240Z' }),
+  introDurationMs: z
+    .number()
+    .describe('Total intro broadcast duration in milliseconds')
+    .meta({ example: 31300 }),
+  isIntroActive: z
+    .boolean()
+    .describe(
       'True while the live intro broadcast is actively airing (elapsedMs < introDurationMs)',
-  })
-  isIntroActive!: boolean;
-
-  @ApiProperty({
-    example: 5240,
-    description:
+    )
+    .meta({ example: true }),
+  elapsedMs: z
+    .number()
+    .describe(
       'Elapsed milliseconds since startedAt (0 when not active yet, clamped to [0, introDurationMs])',
-  })
-  elapsedMs!: number;
+    )
+    .meta({ example: 5240 }),
+  items: z.array(AuctionShowcaseItemSchema),
+});
 
-  @ApiProperty({ type: [AuctionShowcaseItemDto] })
-  items!: AuctionShowcaseItemDto[];
-}
+export type AuctionIntroShowcaseResponseDto = z.infer<typeof AuctionIntroShowcaseResponseSchema>;
