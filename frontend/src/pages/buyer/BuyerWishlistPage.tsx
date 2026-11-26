@@ -1,3 +1,4 @@
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -111,27 +112,23 @@ export default function BuyerWishlistPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <Heart size={18} className="text-rose-500" />
-            {t('wishlist.title')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {t('wishlist.savedCount', { count: items.length })}
-          </p>
-        </div>
-        {items.length > 0 && (
-          <button
-            type="button"
-            onClick={() => void handleAddAllToCart()}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition"
-          >
-            <ShoppingCart size={13} />
-            {t('wishlist.addAllToCart')}
-          </button>
-        )}
-      </div>
+      <BuyerPageHeader
+        title={t('wishlist.title')}
+        description={t('wishlist.savedCount', { count: items.length })}
+        icon={<Heart size={21} />}
+        actions={
+          items.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void handleAddAllToCart()}
+              className="flex min-h-11 items-center gap-1.5 px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-xl transition"
+            >
+              <ShoppingCart size={13} />
+              {t('wishlist.addAllToCart')}
+            </button>
+          )
+        }
+      />
 
       {/* Search Input */}
       {items.length > 0 && (

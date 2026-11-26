@@ -98,18 +98,12 @@ export function HomeAuctionCard({ product, auction }: HomeAuctionCardProps) {
         >
           {isUpcoming ? t('home.auctionCard.upcoming') : t('home.auctionCard.live')}
         </span>
-        <button
-          type="button"
+        <span
           aria-label={t('home.auctionCard.viewDetailAria', { title })}
           className="absolute bottom-2 right-2 rounded-md border border-white/70 bg-slate-900/70 px-2.5 py-1.5 text-[10px] font-semibold text-white transition hover:bg-slate-900 cursor-pointer"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            window.location.href = targetUrl;
-          }}
         >
           {t('home.auctionCard.details')}
-        </button>
+        </span>
       </Link>
 
       <div className="p-2">

@@ -1,3 +1,4 @@
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../../i18n/config';
@@ -225,26 +226,24 @@ export const BuyerNotificationsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-lg font-black text-slate-900 flex items-center gap-2">
-            <Bell size={20} className="text-blue-600" />
-            {t('notificationsPage.title')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">{t('notificationsPage.subtitle')}</p>
-        </div>
-
-        {activeTab === 'list' && unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={handleMarkAll}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition cursor-pointer"
-          >
-            <CheckCheck size={14} />
-            <span>{t('notificationsPage.markAllRead', { count: unreadCount })}</span>
-          </button>
-        )}
-      </div>
+      <BuyerPageHeader
+        title={t('notificationsPage.title')}
+        description={t('notificationsPage.subtitle')}
+        icon={<Bell size={21} />}
+        actions={
+          activeTab === 'list' &&
+          unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAll}
+              className="flex min-h-11 items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition cursor-pointer"
+            >
+              <CheckCheck size={14} />
+              <span>{t('notificationsPage.markAllRead', { count: unreadCount })}</span>
+            </button>
+          )
+        }
+      />
 
       {/* Tab switch */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-3">

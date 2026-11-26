@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
+import RouteContent from '../../routes/RouteContent';
 
 /** Animate the content on navigation without remounting forms or page state. */
 export default function PageTransition({ children }: { children: ReactNode }) {
@@ -20,7 +21,7 @@ export default function PageTransition({ children }: { children: ReactNode }) {
 
   return (
     <div ref={ref} className="nexus-page">
-      {children}
+      <RouteContent>{children}</RouteContent>
     </div>
   );
 }

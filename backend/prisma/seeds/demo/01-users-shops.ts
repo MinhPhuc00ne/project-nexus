@@ -7,7 +7,7 @@
  */
 import { randomBytes } from 'node:crypto';
 import * as bcrypt from 'bcrypt';
-import { PrismaClient, ReputationTrustLevel, Role, WalletType, type Prisma } from '@prisma/client';
+import { ReputationTrustLevel, Role, WalletType, type Prisma } from '@prisma/client';
 import { DemoClock, SeededRandom } from './random';
 
 /**
@@ -163,10 +163,17 @@ const CITIES: Array<{ city: string; district: string; ward: string; street: stri
  * @param random - The run's generator.
  * @returns The people other modules build on.
  */
+export function demoEmails(namespace = ''): string[] {
+  return PEOPLE.map((person) =>
+    namespace ? person.email.replace('@', `.${namespace}@`) : person.email,
+  );
+}
+
 export async function seedUsersAndShops(
-  prisma: PrismaClient,
+  prisma: Prisma.TransactionClient,
   clock: DemoClock,
   random: SeededRandom,
+  namespace = '',
 ): Promise<DemoPeople> {
   const password = resolveDemoPassword();
   const passwordHash = await bcrypt.hash(password, 10);
@@ -177,7 +184,7 @@ export async function seedUsersAndShops(
     const isSeller = spec.role === Role.SELLER;
 
     const data: Prisma.UserCreateInput = {
-      email: spec.email,
+      email: namespace ? spec.email.replace('@', `.${namespace}@`) : spec.email,
       passwordHash,
       fullName: spec.fullName,
       phoneNumber: `09${String(10_000_000 + random.int(0, 89_999_999)).slice(0, 8)}`,
@@ -225,7 +232,7 @@ export async function seedUsersAndShops(
 
   const warehouse = await prisma.warehouse.create({
     data: {
-      code: 'WH_DEMO',
+      code: namespace ? `WH_DEMO_${namespace}` : 'WH_DEMO',
       name: 'Kho trung tâm NEXUS (demo)',
       address: '1 Đại lộ Thăng Long, Hà Nội',
     },

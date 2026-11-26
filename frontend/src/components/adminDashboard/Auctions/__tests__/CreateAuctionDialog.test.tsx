@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom';
 import { AuctionStatus } from '@nexus/types';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
@@ -31,9 +32,11 @@ function renderDialog(props: Partial<Parameters<typeof CreateAuctionDialog>[0]> 
   const onCreated = props.onCreated ?? vi.fn();
   const view = render(
     <I18nextProvider i18n={i18n}>
-      <ToastProvider>
-        <CreateAuctionDialog onClose={onClose} onCreated={onCreated} auction={props.auction} />
-      </ToastProvider>
+      <MemoryRouter>
+        <ToastProvider>
+          <CreateAuctionDialog onClose={onClose} onCreated={onCreated} auction={props.auction} />
+        </ToastProvider>
+      </MemoryRouter>
     </I18nextProvider>,
   );
   return { ...view, onClose, onCreated };

@@ -17,7 +17,6 @@ import {
   PaymentProvider,
   PaymentStatus,
   Prisma,
-  PrismaClient,
   ShipmentStatus,
   WalletTransactionType,
   WalletType,
@@ -91,7 +90,7 @@ function addressSnapshot(fullName: string, random: SeededRandom): Prisma.InputJs
  * @returns The orders, for the review and chat module to reference.
  */
 export async function seedOrdersEscrowAndDisputes(
-  prisma: PrismaClient,
+  prisma: Prisma.TransactionClient,
   clock: DemoClock,
   random: SeededRandom,
   people: DemoPeople,

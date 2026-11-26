@@ -1,4 +1,5 @@
 import PageTransition from '../components/common/PageTransition';
+import RouteContent from '../routes/RouteContent';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import Footer from '../components/footer';
@@ -8,13 +9,14 @@ import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 function GuestLayout() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const isBuyerWorkspace = pathname === '/buyer' || pathname.startsWith('/buyer/');
 
   if (pathname === '/' && getStoredToken() && getStoredUser()?.role === Role.SUPPORT_STAFF) {
     return <Navigate to="/staff/inbox" replace />;
   }
 
   return (
-    <div className="nexus-shell min-h-screen">
+    <div className={`nexus-shell ${isBuyerWorkspace ? 'buyer-shell' : 'min-h-screen'}`}>
       <HomeHeader
         onLoginClick={() => navigate('/login')}
         onRegisterClick={() => navigate('/register')}
@@ -24,14 +26,16 @@ function GuestLayout() {
           navigate(`/search${params.size ? `?${params.toString()}` : ''}`);
         }}
       />
-      {pathname.startsWith('/buyer') ? (
-        <Outlet />
+      {isBuyerWorkspace ? (
+        <RouteContent>
+          <Outlet />
+        </RouteContent>
       ) : (
         <PageTransition>
           <Outlet />
         </PageTransition>
       )}
-      <Footer />
+      <Footer className={isBuyerWorkspace ? 'buyer-footer' : undefined} />
     </div>
   );
 }

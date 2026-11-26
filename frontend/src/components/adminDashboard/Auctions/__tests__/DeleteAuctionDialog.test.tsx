@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom';
 import { AuctionStatus } from '@nexus/types';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
@@ -50,9 +51,11 @@ describe('DeleteAuctionDialog', () => {
     const onDeleted = vi.fn();
     render(
       <I18nextProvider i18n={i18n}>
-        <ToastProvider>
-          <DeleteAuctionDialog auction={auction} onClose={vi.fn()} onDeleted={onDeleted} />
-        </ToastProvider>
+        <MemoryRouter>
+          <ToastProvider>
+            <DeleteAuctionDialog auction={auction} onClose={vi.fn()} onDeleted={onDeleted} />
+          </ToastProvider>
+        </MemoryRouter>
       </I18nextProvider>,
     );
 

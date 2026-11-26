@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import ProtectedRoute from './ProtectedRoute';
@@ -88,7 +88,7 @@ const AdminBannersPage = lazy(() => import('../pages/admin/AdminBannersPage'));
 function AppRouter() {
   const { t } = useTranslation('common');
   return (
-    <BrowserRouter>
+    <>
       <ScrollToTop />
       <AuctionLifecycleNotifier />
       <RouteErrorBoundary>
@@ -266,7 +266,7 @@ function AppRouter() {
         </Suspense>
       </RouteErrorBoundary>
       <ChatWidget />
-    </BrowserRouter>
+    </>
   );
 }
 

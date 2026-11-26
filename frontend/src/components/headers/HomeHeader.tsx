@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
@@ -77,6 +78,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   onRegisterClick,
   onLogoutClick,
 }) => {
+  const navigate = useNavigate();
   const {
     user: profile,
     storedUser,
@@ -148,7 +150,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   const handleToggleSeller = async () => {
     if (!effectiveLoggedIn) {
       if (onLoginClick) onLoginClick();
-      else window.location.assign('/login');
+      else navigate('/login');
       return;
     }
     if (profile?.role !== Role.SELLER && profile?.role !== Role.ADMIN) {
@@ -159,7 +161,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     try {
       await switchActiveMode('SELLER');
       showToast(t('header.sellerModeActivated'));
-      if (profile.role === Role.SELLER) window.location.assign('/seller');
+      if (profile.role === Role.SELLER) navigate('/seller');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : t('header.modeSwitchFailed'));
     } finally {
@@ -170,13 +172,13 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   const handleOpenUpgradeModal = () => {
     if (!effectiveLoggedIn) {
       if (onLoginClick) onLoginClick();
-      else window.location.assign('/login');
+      else navigate('/login');
       return;
     }
     if (profile?.role === Role.SELLER) {
       void switchActiveMode('SELLER')
         .then(() => {
-          window.location.assign('/seller/settings');
+          navigate('/seller/settings');
         })
         .catch((err: unknown) => {
           showToast(err instanceof Error ? err.message : t('header.cannotSwitchSellerMode'));
@@ -261,7 +263,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     <header className="home-header nexus-header sticky top-0 z-40 w-full font-sans">
       <div className="min-h-9 border-b border-line bg-canvas text-[12px] sm:text-[13px] text-slate-500 flex items-center">
         <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-2 sm:px-4 py-1 gap-2">
-          <div className="home-utility-start flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
+          <div className="home-utility-start flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0 max-sm:[&>:not(:first-child)]:hidden">
             <button
               type="button"
               onClick={handleToggleSeller}
@@ -532,9 +534,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
       </div>
 
       <div className="bg-white py-3 sm:py-4 pb-3 sm:pb-3">
-        <div className="home-header-main mx-auto flex w-full max-w-[1280px] items-center gap-2.5 sm:gap-4 md:gap-6 px-4">
-          <a
-            href="/"
+        <div className="home-header-main mx-auto grid w-full max-w-[1280px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:flex sm:gap-4 md:gap-6">
+          <Link
+            to="/"
             className="flex shrink-0 cursor-pointer items-center transition-transform hover:scale-[1.02]"
             title="NEXUS Platform"
           >
@@ -548,7 +550,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                 image.src = '/images/NEXUS.png';
               }}
             />
-          </a>
+          </Link>
 
           <div className="home-search flex min-w-0 flex-1 flex-col gap-1.5">
             <form
@@ -629,11 +631,13 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
                 <div className="flex items-center gap-3 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {trendingKeywords.map((kw, idx) => (
-                    <a
+                    <Link
                       key={idx}
-                      href={`#search?q=${kw}`}
+                      to={`/search?q=${encodeURIComponent(kw)}`}
                       className="whitespace-nowrap text-slate-500 no-underline transition-colors hover:text-[var(--color-primary)]"
                       onClick={(e) => {
+                        if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey)
+                          return;
                         e.preventDefault();
 
                         setSearchQuery(kw);
@@ -644,11 +648,13 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
                         if (onSearch) {
                           onSearch(kw, selectedFloor);
+                        } else {
+                          navigate(`/search?q=${encodeURIComponent(kw)}`);
                         }
                       }}
                     >
                       {kw}
-                    </a>
+                    </Link>
                   ))}
                 </div>
               </div>

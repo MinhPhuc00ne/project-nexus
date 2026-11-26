@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Film, CheckCircle2, ShieldCheck, ShieldHalf, Truck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -79,8 +80,8 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
         {/* Brand column */}
         <div className="col-span-full min-w-0 overflow-wrap-anywhere lg:col-span-1 lg:max-w-sm">
           <div className="mb-2 flex items-center gap-2">
-            <a
-              href="/"
+            <Link
+              to="/"
               className="inline-flex items-center text-slate-900 no-underline focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
             >
               <img
@@ -93,7 +94,7 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
                   target.src = '/images/NEXUS.png';
                 }}
               />
-            </a>
+            </Link>
             <div className="ml-1 flex items-center gap-1.5">
               <span className="rounded bg-[var(--color-primary-dark)] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">
                 MALL
@@ -122,12 +123,12 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {customerCareLinks.map(({ key, href }) => (
               <li key={key}>
-                <a
+                <Link
                   className="text-sm leading-6 text-muted no-underline transition-colors hover:text-[var(--color-primary-dark)] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:text-xs"
-                  href={href}
+                  to={href}
                 >
                   {t(key)}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -141,12 +142,12 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {platformLegalLinks.map(({ key, href }) => (
               <li key={key}>
-                <a
+                <Link
                   className="text-sm leading-6 text-muted no-underline transition-colors hover:text-[var(--color-primary-dark)] focus-visible:rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600 sm:text-xs"
-                  href={href}
+                  to={href}
                 >
                   {t(key)}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>

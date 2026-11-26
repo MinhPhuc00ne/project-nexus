@@ -239,17 +239,93 @@ body {
     box-shadow: var(--shadow-float);
   }
 
-  @media (width < 640px) {
-    .home-utility-start > :not(:first-child) {
+  .buyer-workspace {
+    padding-block: 1.25rem;
+  }
+
+  .buyer-workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .buyer-sidebar-nav {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  /* Only pin the cart summary when the viewport can fit the whole panel. */
+  @media (width >= 1024px) and (height >= 900px) {
+    .cart-summary {
+      position: sticky;
+      top: 9rem;
+    }
+  }
+
+  @media (width >= 1024px) {
+    /* The header takes its natural height. No fixed sticky offset, document
+       scroll, or sidebar taller than the available viewport. */
+    .buyer-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .buyer-shell > .home-header {
+      flex-shrink: 0;
+    }
+
+    .buyer-shell > .buyer-footer {
       display: none;
     }
 
-    .home-header-main {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 0.75rem;
+    .buyer-workspace {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
 
+    .buyer-workspace-inner {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .buyer-workspace-grid {
+      flex: 1;
+      min-height: 0;
+      grid-template-columns: 260px minmax(0, 1fr);
+    }
+
+    .buyer-sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .buyer-sidebar-nav {
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+    }
+
+    .buyer-content {
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      scrollbar-gutter: stable;
+      padding-inline-end: 0.25rem;
+    }
+  }
+
+  @media (width < 640px) {
     .home-search {
       grid-column: 1 / -1;
       grid-row: 2;

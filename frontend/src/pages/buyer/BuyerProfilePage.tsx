@@ -1,3 +1,4 @@
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
 import { Link, Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import ProfileEditor from '../../components/profile/ProfileEditor';
@@ -34,30 +35,30 @@ export default function BuyerProfilePage() {
     );
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-slate-200 bg-white px-6 py-4 shadow-xs flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-lg font-bold text-[var(--color-navy)]">{t('profile.title')}</h1>
-          <p className="text-xs text-slate-500 mt-0.5">{t('profile.subtitle')}</p>
-        </div>
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-          {t('profile.modeBadge')}
-        </span>
-      </div>
+      <BuyerPageHeader
+        title={t('profile.title')}
+        description={t('profile.subtitle')}
+        actions={
+          <span className="inline-flex items-center rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-primary">
+            {t('profile.modeBadge')}
+          </span>
+        }
+      />
       <nav
         aria-label={t('profile.tabsAria')}
-        className="flex gap-2 border-b border-slate-200 overflow-x-auto"
+        className="flex gap-2 overflow-x-auto rounded-xl border border-line bg-white p-1"
       >
         <Link
           to="/buyer/profile"
           aria-current={!showAuctionOffers ? 'page' : undefined}
-          className={`whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 ${!showAuctionOffers ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-blue-700'}`}
+          className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${!showAuctionOffers ? 'bg-blue-50 text-primary' : 'text-muted hover:bg-slate-50 hover:text-ink'}`}
         >
           {t('profile.tabPersonalInfo')}
         </Link>
         <Link
           to="/buyer/profile?tab=auction-offers"
           aria-current={showAuctionOffers ? 'page' : undefined}
-          className={`whitespace-nowrap px-4 py-3 text-sm font-semibold border-b-2 ${showAuctionOffers ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-blue-700'}`}
+          className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${showAuctionOffers ? 'bg-blue-50 text-primary' : 'text-muted hover:bg-slate-50 hover:text-ink'}`}
         >
           {t('profile.tabAuctionOffers')}
         </Link>

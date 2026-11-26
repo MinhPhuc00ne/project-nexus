@@ -1,3 +1,4 @@
+import { MemoryRouter } from 'react-router-dom';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../../../i18n';
@@ -58,17 +59,19 @@ function product(id: string): AdminProduct {
 
 function renderProducts() {
   render(
-    <ToastProvider>
-      <ProductManagement
-        data={{} as AdminData}
-        actions={{
-          navigate: vi.fn(),
-          notify: vi.fn(),
-          showDetail: vi.fn(),
-          updateCommerce: vi.fn(),
-        }}
-      />
-    </ToastProvider>,
+    <MemoryRouter>
+      <ToastProvider>
+        <ProductManagement
+          data={{} as AdminData}
+          actions={{
+            navigate: vi.fn(),
+            notify: vi.fn(),
+            showDetail: vi.fn(),
+            updateCommerce: vi.fn(),
+          }}
+        />
+      </ToastProvider>
+    </MemoryRouter>,
   );
 }
 

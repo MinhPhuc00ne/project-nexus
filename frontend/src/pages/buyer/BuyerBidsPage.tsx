@@ -1,3 +1,4 @@
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
@@ -316,26 +317,25 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <Gavel size={18} className="text-violet-600" />
-            {purchasesOnly ? t('bidsPage.purchasesOnlyTitle') : t('bidsPage.myAuctionsTitle')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            {purchasesOnly ? t('bidsPage.purchasesOnlySubtitle') : t('bidsPage.myAuctionsSubtitle')}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void loadData()}
-          disabled={loading}
-          className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition cursor-pointer"
-          title={t('bidsPage.refreshTitle')}
-        >
-          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-        </button>
-      </div>
+      <BuyerPageHeader
+        heading={purchasesOnly ? 'h2' : 'h1'}
+        title={purchasesOnly ? t('bidsPage.purchasesOnlyTitle') : t('bidsPage.myAuctionsTitle')}
+        description={
+          purchasesOnly ? t('bidsPage.purchasesOnlySubtitle') : t('bidsPage.myAuctionsSubtitle')
+        }
+        icon={<Gavel size={21} />}
+        actions={
+          <button
+            type="button"
+            onClick={() => void loadData()}
+            disabled={loading}
+            className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+            title={t('bidsPage.refreshTitle')}
+          >
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+          </button>
+        }
+      />
 
       {!purchasesOnly && (
         <>

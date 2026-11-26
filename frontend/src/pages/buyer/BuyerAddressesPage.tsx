@@ -1,3 +1,4 @@
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapPin, Plus, AlertCircle, Home } from 'lucide-react';
@@ -171,23 +172,22 @@ export default function BuyerAddressesPage() {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm">
       {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5 mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <MapPin className="text-blue-600" size={22} />
-            {t('addresses.title')}
-          </h1>
-          <p className="mt-1 text-xs text-slate-500">{t('addresses.subtitle')}</p>
-        </div>
-        <button
-          type="button"
-          onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm cursor-pointer"
-        >
-          <Plus size={16} />
-          <span>{t('addresses.addNew')}</span>
-        </button>
-      </div>
+      <BuyerPageHeader
+        title={t('addresses.title')}
+        description={t('addresses.subtitle')}
+        icon={<MapPin size={21} />}
+        className="mb-6 border-b border-line pb-5"
+        actions={
+          <button
+            type="button"
+            onClick={handleOpenAdd}
+            className="inline-flex min-h-11 items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-sm cursor-pointer"
+          >
+            <Plus size={16} />
+            <span>{t('addresses.addNew')}</span>
+          </button>
+        }
+      />
 
       {/* Error state */}
       {error && (

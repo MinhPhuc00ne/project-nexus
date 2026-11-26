@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, CircleX, X, ArrowRight } from 'lucide-react';
 import type { ToastItemProps, ToastItem } from '../../types/toast.types';
@@ -15,6 +16,7 @@ export default function ToastFrame({
   actionLabel,
 }: ToastItemProps & Pick<ToastItem, 'variant'>) {
   const { t } = useTranslation('common');
+  const navigate = useNavigate();
   const success = variant === 'success';
 
   useEffect(() => {
@@ -26,7 +28,12 @@ export default function ToastFrame({
     if (onClick) {
       onClick();
     } else if (targetUrl) {
-      window.location.assign(targetUrl);
+      const destination = new URL(targetUrl, window.location.href);
+      if (destination.origin === window.location.origin) {
+        navigate(destination.pathname + destination.search + destination.hash);
+      } else {
+        window.location.assign(targetUrl);
+      }
     }
     onDismiss(id);
   };

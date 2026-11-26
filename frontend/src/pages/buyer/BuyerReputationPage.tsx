@@ -1,3 +1,4 @@
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -105,26 +106,19 @@ export default function BuyerReputationPage() {
   return (
     <div className="space-y-6">
       {/* Header bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
-              <Award size={20} />
-            </div>
-            <div>
-              <h1 className="text-lg font-extrabold text-slate-900">{t('reputationPage.title')}</h1>
-              <p className="text-xs text-slate-500">{t('reputationPage.subtitle')}</p>
-            </div>
-          </div>
-        </div>
-
-        <Link
-          to={ROUTES.BUYER}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 transition"
-        >
-          <ChevronLeft size={14} /> {t('reputationPage.backToOverview')}
-        </Link>
-      </div>
+      <BuyerPageHeader
+        title={t('reputationPage.title')}
+        description={t('reputationPage.subtitle')}
+        icon={<Award size={21} />}
+        actions={
+          <Link
+            to={ROUTES.BUYER}
+            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-50 px-4 text-sm font-semibold text-primary hover:bg-blue-100"
+          >
+            <ChevronLeft size={16} /> {t('reputationPage.backToOverview')}
+          </Link>
+        }
+      />
 
       {loading && !summary ? (
         <div className="py-20 flex flex-col items-center justify-center text-slate-400 text-xs">

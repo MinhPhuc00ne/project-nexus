@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { register, RegistrationError, verifyEmail } from '@/features/auth/services/auth';
@@ -86,6 +87,7 @@ function FieldError({ field, errors }: { field: RegistrationField; errors: Field
 }
 
 export default function RegisterForm() {
+  const navigate = useNavigate();
   const { t } = useTranslation('auth');
   const [contact, setContact] = useState('');
   const [fullName, setFullName] = useState('');
@@ -232,7 +234,7 @@ export default function RegisterForm() {
       } catch {
         /* Storage may be disabled. */
       }
-      window.location.assign('/login?verified=1');
+      navigate('/login?verified=1', { replace: true });
     } catch (error: unknown) {
       showRequestError(error, true);
     } finally {
@@ -516,8 +518,9 @@ export default function RegisterForm() {
             className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-blue-600 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-600"
           />
           <label className="[&_a]:text-blue-600 [&_a:hover]:underline" htmlFor="register-agreement">
-            {t('registerForm.agreementPrefix')} <a href="/terms">{t('registerForm.termsLink')}</a>{' '}
-            {t('registerForm.agreementAnd')} <a href="/privacy">{t('registerForm.privacyLink')}</a>{' '}
+            {t('registerForm.agreementPrefix')}{' '}
+            <Link to="/terms">{t('registerForm.termsLink')}</Link> {t('registerForm.agreementAnd')}{' '}
+            <Link to="/privacy">{t('registerForm.privacyLink')}</Link>{' '}
             {t('registerForm.agreementSuffix')}
           </label>
         </div>
@@ -549,9 +552,9 @@ export default function RegisterForm() {
 
       <p className="mt-[18px] border-t border-slate-100 pt-4 text-center text-xs leading-5 text-slate-500">
         {t('registerForm.alreadyHaveAccount')}{' '}
-        <a className="ml-1 font-medium text-blue-600 hover:underline" href="/login">
+        <Link className="ml-1 font-medium text-blue-600 hover:underline" to="/login">
           {t('registerForm.loginNow')}
-        </a>
+        </Link>
       </p>
     </section>
   );

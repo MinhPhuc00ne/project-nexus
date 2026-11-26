@@ -1,5 +1,5 @@
 import PageTransition from '../components/common/PageTransition';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
@@ -15,7 +15,6 @@ import {
   Store,
   ChevronRight,
   Award,
-  ArrowRight,
   Bell,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -58,6 +57,12 @@ export default function BuyerLayout() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const contentRef = useRef<HTMLElement>(null);
+
+  // Only the page pane scrolls on desktop; sidebar navigation keeps its place.
+  useLayoutEffect(() => {
+    if (contentRef.current) contentRef.current.scrollTop = 0;
+  }, [location.pathname]);
 
   const hasSellerRole = profile?.role === Role.SELLER;
 
@@ -74,10 +79,10 @@ export default function BuyerLayout() {
   };
 
   return (
-    <div className="nexus-shell min-h-[calc(100vh-140px)] py-6 sm:py-8">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="buyer-workspace nexus-shell">
+      <div className="buyer-workspace-inner mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
-        <nav className="mb-5 flex items-center gap-2 text-xs text-slate-500">
+        <nav className="mb-4 flex shrink-0 flex-wrap items-center gap-2 text-xs text-muted">
           <NavLink to="/" className="hover:text-blue-600 transition-colors font-medium">
             {t('common:nav.home')}
           </NavLink>
@@ -99,32 +104,32 @@ export default function BuyerLayout() {
         </nav>
 
         {/* 2-Column Responsive Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="buyer-workspace-grid grid gap-5 lg:gap-6">
           {/* Left Column: Buyer Navigation Sidebar */}
-          <aside className="lg:sticky lg:top-40 lg:col-span-4 xl:col-span-3 space-y-4">
+          <aside className="buyer-sidebar nexus-panel">
             {/* User Profile Card (Blue & White Theme) */}
-            <div className="nexus-panel p-5">
-              <div className="flex items-center gap-3.5 mb-4">
+            <div className="shrink-0 border-b border-line p-4">
+              <div className="flex items-center gap-3 mb-3">
                 {profile?.avatarUrl ? (
                   <img
                     src={profile.avatarUrl}
                     alt={profile.fullName}
-                    className="h-12 w-12 rounded-lg object-cover border border-blue-200"
+                    className="size-11 shrink-0 rounded-xl object-cover border border-blue-100"
                   />
                 ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--color-navy)] text-white font-bold text-lg">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-white font-semibold text-lg">
                     {profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : 'U'}
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-bold text-slate-900">
+                  <h3 className="truncate text-sm font-semibold text-ink">
                     {profile?.fullName || t('buyer:layout.defaultName')}
                   </h3>
                   <p className="truncate text-xs text-slate-500">
                     {profile?.email || t('buyer:layout.noEmail')}
                   </p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md bg-blue-600 text-white">
+                    <span className="inline-block text-xs font-medium px-2 py-0.5 rounded-md bg-blue-50 text-primary">
                       {t('buyer:layout.roleBadge')}
                     </span>
                     {hasSellerRole && (
@@ -137,8 +142,8 @@ export default function BuyerLayout() {
               </div>
 
               {/* Balance & Reputation Boxes */}
-              <div className="grid grid-cols-2 gap-2 pt-3 border-t border-slate-100 text-xs">
-                <div className="rounded-md bg-blue-50/60 p-2.5 border border-blue-100">
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="min-w-0 rounded-xl bg-blue-50/60 p-2.5">
                   <div className="flex items-center gap-1 text-[11px] text-slate-600 mb-0.5">
                     <Wallet size={12} className="text-blue-600" />
                     <span>{t('buyer:layout.walletBalance')}</span>
@@ -147,27 +152,27 @@ export default function BuyerLayout() {
                     {formatCurrency(Number(profile?.wallet?.balance ?? 0))}
                   </span>
                 </div>
-                <div className="rounded-md bg-slate-50 p-2.5 border border-slate-200/80">
+                <div className="min-w-0 rounded-xl bg-slate-50 p-2.5">
                   <div className="flex items-center gap-1 text-[11px] text-slate-600 mb-0.5">
                     <Award size={12} className="text-blue-600" />
                     <span>{t('buyer:layout.reputationScore')}</span>
                   </div>
                   <span className="font-bold text-slate-800 text-xs truncate block">
-                    {profile?.reputationScore ?? 100} ({profile?.trustLevel ?? 'STANDARD'})
+                    {profile?.reputationScore ?? 100}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Navigation Menu */}
-            <nav className="nexus-panel space-y-1 p-2">
+            <nav aria-label={t('common:nav.buyerPortal')} className="buyer-sidebar-nav p-2">
               {navItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   end={item.end}
                   className={({ isActive }) =>
-                    `flex min-h-11 items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    `flex min-h-11 shrink-0 items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
                       isActive
                         ? 'bg-blue-50 text-primary shadow-[inset_3px_0_0_var(--color-primary)]'
                         : 'text-muted hover:bg-slate-50 hover:text-ink'
@@ -182,37 +187,24 @@ export default function BuyerLayout() {
 
             {/* Switch to Seller or Upgrade to Seller Card (Blue & White) */}
             {hasSellerRole ? (
-              <div className="rounded-lg border border-blue-200 bg-white p-4 shadow-xs">
-                <div className="flex items-center gap-2 text-[var(--color-navy)] font-bold text-xs mb-1">
-                  <Store size={15} className="text-blue-600" />
-                  <span>{t('buyer:layout.sellerCenterTitle')}</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
-                  {t('buyer:layout.sellerCenterDesc')}
-                </p>
+              <div className="shrink-0 border-t border-line p-3">
                 <button
                   type="button"
                   onClick={() => void handleGoToSellerCenter()}
-                  className="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-blue-100"
                 >
+                  <Store size={16} />
                   <span>{t('buyer:layout.switchToSeller')}</span>
-                  <ArrowRight size={13} />
                 </button>
               </div>
             ) : (
-              <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 shadow-xs">
-                <div className="flex items-center gap-2 text-[var(--color-navy)] font-bold text-xs mb-1">
-                  <Store size={15} className="text-blue-600" />
-                  <span>{t('buyer:layout.openShopTitle')}</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed mb-3">
-                  {t('buyer:layout.openShopDesc')}
-                </p>
+              <div className="shrink-0 border-t border-line p-3">
                 <button
                   type="button"
                   onClick={() => setShowUpgradeModal(true)}
-                  className="w-full py-2 px-3 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition cursor-pointer"
+                  className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-primary transition hover:bg-blue-100"
                 >
+                  <Store size={16} />
                   {t('buyer:layout.registerSeller')}
                 </button>
               </div>
@@ -220,7 +212,12 @@ export default function BuyerLayout() {
           </aside>
 
           {/* Right Column: Dynamic Content Outlet */}
-          <section className="lg:col-span-8 xl:col-span-9 min-h-[500px]">
+          <section
+            ref={contentRef}
+            className="buyer-content min-w-0"
+            tabIndex={0}
+            aria-label={t('common:nav.buyerPortal')}
+          >
             <PageTransition>
               <Outlet />
             </PageTransition>

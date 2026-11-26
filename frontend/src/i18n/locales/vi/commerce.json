@@ -46,7 +46,17 @@
     "ghnFeeExcluded": "(Chưa gồm cước GHN theo địa chỉ nhận)",
     "proceedCheckoutCount": "Tiến Hành Thanh Toán ({{count}})",
     "ghnInspection": "Đồng kiểm GHN",
-    "escrow100": "Ký quỹ 100%"
+    "escrow100": "Ký quỹ 100%",
+    "pageDescription": "Kiểm tra sản phẩm, chọn số lượng và xem tổng đơn hàng.",
+    "loading": "Đang tải giỏ hàng…",
+    "loadFailed": "Chưa tải được giỏ hàng. Vui lòng thử lại.",
+    "selectedItems": "Đã chọn {{count}} mặt hàng",
+    "selectItem": "Chọn {{name}}",
+    "decreaseQuantity": "Giảm số lượng {{name}}",
+    "increaseQuantity": "Tăng số lượng {{name}}",
+    "quantityFor": "Số lượng {{name}}",
+    "removeItem": "Xóa {{name}} khỏi giỏ hàng",
+    "removeVoucher": "Bỏ mã ưu đãi"
   },
   "checkout": {
     "title": "Thanh toán đơn hàng",

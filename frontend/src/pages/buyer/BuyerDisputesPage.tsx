@@ -1,3 +1,4 @@
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -167,23 +168,21 @@ export default function BuyerDisputesPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <ShieldAlert size={18} className="text-red-500" />
-            {t('disputesPage.title')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">{t('disputesPage.subtitle')}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition shadow-sm cursor-pointer"
-        >
-          <Plus size={14} />
-          {t('disputesPage.createButton')}
-        </button>
-      </div>
+      <BuyerPageHeader
+        title={t('disputesPage.title')}
+        description={t('disputesPage.subtitle')}
+        icon={<ShieldAlert size={21} />}
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowCreateModal(true)}
+            className="inline-flex min-h-11 items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-xl transition shadow-sm cursor-pointer"
+          >
+            <Plus size={14} />
+            {t('disputesPage.createButton')}
+          </button>
+        }
+      />
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-1.5 border-b border-slate-200 pb-3">

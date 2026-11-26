@@ -12,7 +12,7 @@ import ChangePasswordModal from './ChangePasswordModal';
 import { useToast } from '../ToastNotification';
 
 const inputClass =
-  'mt-1.5 w-full rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-50 disabled:text-slate-500';
+  'mt-1.5 min-h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:bg-slate-50 disabled:text-slate-500';
 
 type ProfileForm = Required<ProfileChanges>;
 
@@ -95,9 +95,9 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
   }
 
   return (
-    <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
+    <section className="nexus-panel p-5 sm:p-6 lg:p-7">
       <div className="mb-6 flex items-center gap-4 border-b border-slate-200 pb-5">
-        <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg border border-blue-200 bg-blue-50 text-2xl text-blue-600 shrink-0">
+        <div className="flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-blue-100 bg-blue-50 text-2xl text-primary">
           {profile.avatarUrl ? (
             <img
               src={profile.avatarUrl}
@@ -110,7 +110,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
         </div>
         <div className="min-w-0">
           <h2 className="text-base font-bold text-slate-900 truncate">{profile.fullName}</h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 break-words text-sm text-muted">
             <span className="font-semibold text-blue-700">{roleLabel}</span> · {profile.email}
           </p>
           <p className="mt-0.5 text-[11px] text-slate-400">{t('profileEditor.avatarNote')}</p>
@@ -123,7 +123,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
       )}
       <form onSubmit={(event) => void save(event)} className="space-y-5">
         <fieldset disabled={pending || !canEdit} className="grid gap-4 sm:grid-cols-2">
-          <label className="text-xs font-semibold text-slate-700">
+          <label className="text-sm font-medium text-slate-700">
             {t('profileEditor.fullNameLabel')}
             <input
               required
@@ -134,7 +134,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
               autoComplete="name"
             />
           </label>
-          <label className="text-xs font-semibold text-slate-700">
+          <label className="text-sm font-medium text-slate-700">
             {t('profileEditor.phoneLabel')}
             <input
               type="tel"
@@ -147,7 +147,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
           </label>
           <AvatarPicker savedUrl={form.avatarUrl} file={avatarFile} onChange={setAvatarFile} />
         </fieldset>
-        <label className="block text-xs font-semibold text-slate-700">
+        <label className="block text-sm font-medium text-slate-700">
           {t('profileEditor.emailLabel')}
           <input
             value={profile.email}
@@ -164,7 +164,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
               <LockOutlined className="mr-1.5" />
               {t('profileEditor.verifyPasswordPrompt')}
             </p>
-            <label className="block text-xs font-semibold text-slate-700">
+            <label className="block text-sm font-medium text-slate-700">
               {t('profileEditor.currentPasswordLabel')}
               <input
                 type="password"
@@ -191,7 +191,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
             <button
               type="submit"
               disabled={pending}
-              className="rounded-md bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition cursor-pointer"
+              className="min-h-11 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition cursor-pointer"
             >
               <SaveOutlined className="mr-1.5" />
               {pending
@@ -209,7 +209,7 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
                 setPassword('');
                 setError('');
               }}
-              className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+              className="rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition cursor-pointer"
             >
               {t('profileEditor.cancelChanges')}
             </button>
@@ -219,14 +219,14 @@ export default function ProfileEditor({ profile }: { profile: UserProfile }) {
       {canEdit && (
         <div className="mt-6 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5">
           <div>
-            <h3 className="text-xs font-bold text-slate-900">{t('profileEditor.securityTitle')}</h3>
+            <h3 className="text-sm font-semibold text-ink">{t('profileEditor.securityTitle')}</h3>
             <p className="mt-0.5 text-xs text-slate-500">{t('profileEditor.securityDesc')}</p>
           </div>
           <button
             type="button"
             disabled={pending}
             onClick={() => setShowChangePassword(true)}
-            className="rounded-md border border-blue-200 bg-blue-50 px-3.5 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50 transition cursor-pointer"
+            className="min-h-11 rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50 transition cursor-pointer"
           >
             <LockOutlined className="mr-1.5" /> {t('profileEditor.changePassword')}
           </button>

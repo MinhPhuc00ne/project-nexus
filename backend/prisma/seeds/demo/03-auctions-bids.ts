@@ -13,7 +13,7 @@ import {
   AuctionItemStatus,
   AuctionStatus,
   BidStatus,
-  PrismaClient,
+  type Prisma,
   Role,
 } from '@prisma/client';
 import { DemoClock, SeededRandom } from './random';
@@ -148,7 +148,7 @@ const LOT_TITLES = [
  * @returns The auctions grouped by what a demo would use them for.
  */
 export async function seedAuctionsAndBids(
-  prisma: PrismaClient,
+  prisma: Prisma.TransactionClient,
   clock: DemoClock,
   random: SeededRandom,
   people: DemoPeople,

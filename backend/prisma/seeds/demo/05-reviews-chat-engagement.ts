@@ -14,7 +14,7 @@ import {
   NotificationChannel,
   NotificationType,
   OrderStatus,
-  PrismaClient,
+  type Prisma,
   ReviewMediaType,
   Role,
 } from '@prisma/client';
@@ -64,7 +64,7 @@ const SELLER_REPLIES = [
  * @returns Counts, for the run summary.
  */
 export async function seedReviewsChatAndEngagement(
-  prisma: PrismaClient,
+  prisma: Prisma.TransactionClient,
   clock: DemoClock,
   random: SeededRandom,
   people: DemoPeople,

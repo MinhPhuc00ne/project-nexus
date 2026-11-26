@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Heart, Star, Truck } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
@@ -34,8 +35,8 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
 
   return (
     <div className="overflow-hidden nexus-product-card">
-      <a
-        href={`/product/${prodId}`}
+      <Link
+        to={`/product/${prodId}`}
         className="relative flex aspect-square items-center justify-center bg-slate-100 block"
       >
         {product.image ? (
@@ -66,7 +67,7 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
         >
           <Heart size={16} />
         </button>
-      </a>
+      </Link>
 
       <div className="p-2.5 sm:p-3">
         <p className="truncate text-[10px] text-slate-500">
@@ -74,11 +75,11 @@ export function HomeRecommendationCard({ product }: HomeRecommendationCardProps)
           <span className="text-green-600">● {t('home.recommendationCard.active')}</span>
         </p>
 
-        <a href={`/product/${prodId}`}>
+        <Link to={`/product/${prodId}`}>
           <h3 className="mt-1 line-clamp-2 min-h-[34px] text-xs font-semibold text-slate-700 hover:text-[var(--color-primary)] transition">
             {product.name || t('home.recommendationCard.noData')}
           </h3>
-        </a>
+        </Link>
 
         <div className="mt-2 flex items-center gap-1 text-[10px]">
           <Star size={12} className="fill-yellow-400 text-yellow-400" />

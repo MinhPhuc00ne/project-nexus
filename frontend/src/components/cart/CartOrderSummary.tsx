@@ -1,6 +1,7 @@
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Tag, Check, ArrowRight, Truck, ShieldCheck } from 'lucide-react';
+import { Tag, Check, X, Truck, ShieldCheck } from 'lucide-react';
+import { Button } from '../ui/button';
 import { formatCurrency } from '../../i18n/formatters';
 import type { CartItem } from '@/features/cart/services/cart';
 
@@ -34,6 +35,7 @@ export default function CartOrderSummary({
   const { t } = useTranslation('commerce');
   const [voucherCode, setVoucherCode] = useState('');
   const [voucherError, setVoucherError] = useState('');
+  const voucherInputId = useId();
 
   const selectedQuantity = selectedItems.reduce((sum, i) => sum + i.qty, 0);
 
@@ -88,30 +90,35 @@ export default function CartOrderSummary({
   };
 
   return (
-    <div className="lg:col-span-4 space-y-4">
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-          <Tag size={15} className="text-[var(--color-primary)]" />
+    <aside className="cart-summary min-w-0 space-y-4" aria-label={t('cart.orderSummaryTitle')}>
+      <div className="nexus-panel p-5">
+        <label
+          htmlFor={voucherInputId}
+          className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink"
+        >
+          <Tag size={17} className="text-primary" />
           {t('cart.voucherTitle')}
-        </h3>
+        </label>
 
         <form onSubmit={handleSubmitVoucher} className="flex gap-2 mb-2">
           <input
+            id={voucherInputId}
             type="text"
             value={voucherCode}
             onChange={(e) => setVoucherCode(e.target.value)}
             placeholder={t('cart.voucherPlaceholder')}
-            className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-[var(--color-primary)] uppercase font-semibold"
+            className="min-h-11 min-w-0 flex-1 rounded-xl border border-line bg-slate-50/60 px-3 text-sm font-medium uppercase placeholder:normal-case focus:border-primary focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/10"
           />
-          <button
-            type="submit"
-            className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-xl transition cursor-pointer"
-          >
+          <Button type="submit" variant="secondary" className="min-h-11">
             {t('cart.applyVoucher')}
-          </button>
+          </Button>
         </form>
 
-        {voucherError && <p className="text-[11px] text-red-500">{voucherError}</p>}
+        {voucherError && (
+          <p role="alert" className="mt-2 text-xs text-rose-600">
+            {voucherError}
+          </p>
+        )}
         {appliedVoucher && (
           <div className="flex items-center justify-between text-xs text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200 mt-2">
             <span className="font-bold flex items-center gap-1">
@@ -121,21 +128,22 @@ export default function CartOrderSummary({
             <button
               type="button"
               onClick={onRemoveVoucher}
-              className="text-slate-400 hover:text-red-500 font-bold ml-2 cursor-pointer"
+              aria-label={t('cart.removeVoucher')}
+              className="ml-2 grid size-8 shrink-0 place-items-center rounded-lg text-emerald-700 hover:bg-emerald-100"
             >
-              ×
+              <X size={15} />
             </button>
           </div>
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-        <h3 className="text-sm font-bold text-slate-900 pb-3 border-b border-slate-100">
+      <div className="nexus-panel space-y-5 p-5 sm:p-6">
+        <h2 className="border-b border-line pb-4 text-lg font-semibold text-ink">
           {t('cart.orderSummaryTitle')}
-        </h3>
+        </h2>
 
-        <div className="space-y-2.5 text-xs text-slate-600">
-          <div className="flex justify-between">
+        <div className="space-y-3 text-sm text-muted">
+          <div className="flex justify-between gap-3">
             <span>{t('cart.subtotalSelected', { count: selectedQuantity })}</span>
             <span className="font-semibold text-slate-800">
               {formatCurrency(Number(rawSubtotal))}
@@ -143,52 +151,47 @@ export default function CartOrderSummary({
           </div>
 
           {appliedVoucher && (
-            <div className="flex justify-between text-emerald-600">
+            <div className="flex justify-between gap-3 text-emerald-600">
               <span>{t('cart.voucherDiscount')}</span>
               <span className="font-bold">-{formatCurrency(Number(appliedVoucher.discount))}</span>
             </div>
           )}
 
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-3">
             <span>{t('cart.ghnShippingFee')}</span>
             {shippingFeeDisplay}
           </div>
         </div>
 
-        <div className="pt-3 border-t border-slate-200 flex justify-between items-baseline">
+        <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-line pt-4">
           <span className="text-sm font-bold text-slate-900">{t('checkout.total')}:</span>
           <div className="text-right">
-            <div className="text-2xl font-extrabold text-[var(--color-primary)]">
+            <div className="text-2xl font-semibold tabular-nums text-ink">
               {formatCurrency(Number(grandTotal))}
             </div>
-            <span className="text-[10px] text-slate-400 block">{totalNote}</span>
+            <span className="mt-1 block text-xs text-muted">{totalNote}</span>
           </div>
         </div>
 
-        <button
+        <Button
           type="button"
           disabled={selectedItems.length === 0}
           onClick={onProceedCheckout}
-          className={`w-full py-4 rounded-xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
-            selectedItems.length === 0
-              ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              : 'bg-[var(--color-primary)] hover:bg-[#d63b0e] text-white hover:shadow-lg'
-          }`}
+          size="lg"
+          className="w-full"
         >
           {t('cart.proceedCheckoutCount', { count: selectedQuantity })}
-          <ArrowRight size={16} />
-        </button>
+        </Button>
 
-        <div className="flex items-center justify-center gap-4 text-xs text-slate-500 pt-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-1 text-xs text-muted">
           <span className="flex items-center gap-1">
             <Truck size={14} className="text-blue-600" /> {t('cart.ghnInspection')}
           </span>
-          <span>•</span>
           <span className="flex items-center gap-1">
             <ShieldCheck size={14} className="text-emerald-600" /> {t('cart.escrow100')}
           </span>
         </div>
       </div>
-    </div>
+    </aside>
   );
 }

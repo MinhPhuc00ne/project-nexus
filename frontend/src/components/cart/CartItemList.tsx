@@ -1,7 +1,6 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Minus, Plus, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Trash2, Minus, Plus, ShieldCheck, AlertTriangle, Store } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
 import type { CartItem } from '@/features/cart/types/cart.types';
 
@@ -14,209 +13,200 @@ interface CartItemListProps {
   onRemoveItem: (id: string | number) => void;
 }
 
-export const CartItemList: React.FC<CartItemListProps> = ({
+export function CartItemList({
   items,
   isAllSelected,
   onToggleSelectAll,
   onToggleSelectItem,
   onUpdateQty,
   onRemoveItem,
-}) => {
+}: CartItemListProps) {
   const { t } = useTranslation('commerce');
+  const selectedCount = items.filter((item) => item.selected).length;
   return (
-    <div className="lg:col-span-8 space-y-4">
-      <div className="bg-white rounded-xl border border-slate-200 px-5 py-3.5 flex items-center justify-between text-xs font-bold text-slate-600 shadow-sm">
-        <label className="flex items-center gap-3 cursor-pointer select-none">
+    <div className="min-w-0 space-y-4">
+      <div className="nexus-panel flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-5">
+        <label className="flex min-h-6 cursor-pointer items-center gap-3 text-sm font-semibold text-ink">
           <input
             type="checkbox"
             checked={isAllSelected}
-            onChange={(e) => onToggleSelectAll(e.target.checked)}
-            className="h-4 w-4 cursor-pointer rounded accent-[var(--color-primary)] focus:ring-orange-400"
+            ref={(node) => {
+              if (node) node.indeterminate = selectedCount > 0 && !isAllSelected;
+            }}
+            onChange={(event) => onToggleSelectAll(event.target.checked)}
+            className="size-4 shrink-0 rounded accent-primary"
           />
-          <span>{t('cart.selectAll', { count: items.length })}</span>
+          {t('cart.selectAll', { count: items.length })}
         </label>
-        <div className="hidden sm:flex items-center gap-12 pr-6">
-          <span className="w-24 text-right">{t('cart.unitPrice')}</span>
-          <span className="w-24 text-center">{t('cart.quantity')}</span>
-          <span className="w-28 text-right">{t('cart.amount')}</span>
-          <span className="w-8"></span>
-        </div>
+        <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-primary">
+          {t('cart.selectedItems', { count: selectedCount })}
+        </span>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100 shadow-sm overflow-hidden">
-        {items.map((item) => {
-          const targetUrl = item.productId ? `/product/${item.productId}` : `/product/${item.id}`;
-
-          // Parse parenthesized options if present in item.name
-          const match = item.name.match(/\s*\((.*?)\)$/);
-          const cleanTitle = match ? item.name.replace(/\s*\([^)]*\)$/, '').trim() : item.name;
-
-          const effectiveSelections: Record<string, string> = { ...(item.selections || {}) };
-          if (Object.keys(effectiveSelections).length === 0 && match && match[1]) {
-            const parts = match[1].split(/,\s*/);
-            for (const part of parts) {
-              const [k, v] = part.split(/:\s*/);
-              if (k && v) {
-                effectiveSelections[k.trim()] = v.trim();
-              }
-            }
+      {items.map((item) => {
+        const targetUrl = `/product/${item.productId || item.id}`;
+        const match = item.name.match(/\s*\((.*?)\)$/);
+        const cleanTitle = match ? item.name.replace(/\s*\([^)]*\)$/, '').trim() : item.name;
+        const selections = { ...(item.selections || {}) };
+        if (Object.keys(selections).length === 0 && match?.[1]) {
+          for (const part of match[1].split(/,\s*/)) {
+            const [key, value] = part.split(/:\s*/);
+            if (key && value) selections[key.trim()] = value.trim();
           }
-          const selectionEntries = Object.entries(effectiveSelections);
-          const hasSelections = selectionEntries.length > 0;
-
-          return (
-            <div
-              key={item.id}
-              className={`p-5 flex flex-col gap-3 transition ${
-                item.isOutOfStock ? 'bg-red-50/40 opacity-80' : 'hover:bg-slate-50/50'
-              }`}
-            >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5 flex-1 min-w-0">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(item.selected)}
-                    disabled={item.isOutOfStock}
-                    onChange={() => onToggleSelectItem(item.id)}
-                    className="h-4 w-4 shrink-0 cursor-pointer rounded accent-[var(--color-primary)] focus:ring-orange-400 disabled:opacity-50"
-                  />
-                  <Link
-                    to={targetUrl}
-                    className="shrink-0 w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 p-1 overflow-hidden flex items-center justify-center"
-                  >
-                    <img src={item.img} alt={item.name} className="w-full h-full object-contain" />
-                  </Link>
-                  <div className="min-w-0 flex-1">
-                    {item.shopName && (
-                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-0.5">
-                        {item.shopName}
+        }
+        return (
+          <article
+            key={item.id}
+            aria-label={cleanTitle}
+            className={`nexus-panel min-w-0 p-4 transition-colors sm:p-5 ${item.selected ? 'border-blue-200' : ''} ${item.isOutOfStock ? 'bg-rose-50/30' : ''}`}
+          >
+            <div className="flex items-start gap-3 sm:gap-4">
+              <input
+                type="checkbox"
+                checked={Boolean(item.selected)}
+                disabled={Boolean(item.isOutOfStock && !item.selected)}
+                aria-label={t('cart.selectItem', { name: cleanTitle })}
+                onChange={() => onToggleSelectItem(item.id)}
+                className="mt-2 size-4 shrink-0 rounded accent-primary disabled:opacity-40"
+              />
+              <Link
+                to={targetUrl}
+                className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-line bg-slate-50 p-2 sm:size-24"
+              >
+                <img
+                  src={item.img}
+                  alt={cleanTitle}
+                  loading="lazy"
+                  className="size-full object-contain"
+                />
+              </Link>
+              <div className="min-w-0 flex-1 space-y-2">
+                {item.shopName && (
+                  <p className="flex items-center gap-1.5 text-xs text-muted">
+                    <Store size={13} className="shrink-0" />
+                    <span className="truncate">{item.shopName}</span>
+                  </p>
+                )}
+                <Link
+                  to={targetUrl}
+                  className="block text-sm font-semibold leading-relaxed text-ink hover:text-primary sm:text-base"
+                >
+                  {cleanTitle}
+                </Link>
+                {Object.keys(selections).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(selections).map(([key, value]) => (
+                      <span
+                        key={key}
+                        className="rounded-md bg-slate-100 px-2 py-1 text-xs text-muted"
+                      >
+                        {key}: <span className="font-medium text-slate-700">{value}</span>
                       </span>
-                    )}
-                    <Link
-                      to={targetUrl}
-                      className="text-xs font-bold text-slate-900 hover:text-[var(--color-primary)] transition line-clamp-2"
-                    >
-                      {cleanTitle}
-                    </Link>
-                    <div className="mt-1">
-                      {item.isOutOfStock ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">
-                          {t('cart.outOfStockBadge')}
-                        </span>
-                      ) : item.isStockInsufficient ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-                          {t('cart.lowStockBadge', { count: item.availableQty })}
-                        </span>
-                      ) : hasSelections ? (
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="text-[11px] font-semibold text-slate-500">
-                            {t('cart.variantLabel')}
-                          </span>
-                          {selectionEntries.map(([key, val]) => (
-                            <span
-                              key={key}
-                              className="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[11px] text-slate-700"
-                            >
-                              <span className="text-slate-400 mr-1">{key}:</span>
-                              <span className="font-bold text-slate-900">{val}</span>
-                            </span>
-                          ))}
-                          <span className="text-[11px] text-emerald-600 font-medium ml-1">
-                            {t('cart.escrowBadge')}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[11px] text-slate-400">
-                            {t('cart.standardVariant')}
-                          </span>
-                          <Link
-                            to={targetUrl}
-                            className="text-[11px] text-[var(--color-primary)] hover:underline font-semibold"
-                          >
-                            {t('cart.chooseVariant')}
-                          </Link>
-                        </div>
-                      )}
-                    </div>
+                    ))}
                   </div>
+                )}
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                  <span className="text-xs text-muted">{t('cart.unitPrice')}</span>
+                  <span className="font-semibold text-ink">
+                    {formatCurrency(Number(item.price))}
+                  </span>
+                  {item.hasPriceChanged && item.priceAtAdded !== undefined && (
+                    <span className="text-xs text-slate-400 line-through">
+                      {formatCurrency(Number(item.priceAtAdded))}
+                    </span>
+                  )}
                 </div>
+                {item.isOutOfStock && (
+                  <span className="inline-flex rounded-md bg-rose-100 px-2 py-1 text-xs font-medium text-rose-700">
+                    {t('cart.outOfStockBadge')}
+                  </span>
+                )}
+                {!item.isOutOfStock && item.isStockInsufficient && (
+                  <span className="inline-flex rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
+                    {t('cart.lowStockBadge', { count: item.availableQty })}
+                  </span>
+                )}
+              </div>
+            </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                  <div className="w-24 text-right">
-                    <span className="text-xs font-semibold text-slate-700 block">
-                      {formatCurrency(Number(item.price))}
-                    </span>
-                    {item.hasPriceChanged && item.priceAtAdded && (
-                      <span className="text-[10px] text-slate-400 line-through block">
-                        {formatCurrency(Number(item.priceAtAdded))}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 overflow-hidden">
-                    <button
-                      type="button"
-                      onClick={() => onUpdateQty(item.id, item.qty - 1)}
-                      className="px-2 py-1 hover:bg-slate-200 transition text-slate-600 cursor-pointer"
-                    >
-                      <Minus size={12} />
-                    </button>
-                    <span className="w-8 text-center text-xs font-bold text-slate-900 bg-white py-1">
-                      {item.qty}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={item.availableQty !== undefined && item.qty >= item.availableQty}
-                      onClick={() => onUpdateQty(item.id, item.qty + 1)}
-                      className="px-2 py-1 hover:bg-slate-200 transition text-slate-600 cursor-pointer disabled:opacity-40"
-                    >
-                      <Plus size={12} />
-                    </button>
-                  </div>
-
-                  <div className="w-28 text-right text-sm font-extrabold text-[var(--color-primary)]">
-                    {formatCurrency(Number(item.price * item.qty))}
-                  </div>
-
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-xs font-medium text-muted">{t('cart.quantity')}</span>
+                <div
+                  role="group"
+                  aria-label={t('cart.quantityFor', { name: cleanTitle })}
+                  className="inline-flex items-center overflow-hidden rounded-xl border border-line bg-white"
+                >
                   <button
                     type="button"
-                    onClick={() => onRemoveItem(item.id)}
-                    className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
-                    title={t('cart.removeItemTitle')}
+                    aria-label={t('cart.decreaseQuantity', { name: cleanTitle })}
+                    disabled={item.qty <= 1 || item.isOutOfStock}
+                    onClick={() => onUpdateQty(item.id, item.qty - 1)}
+                    className="grid size-10 place-items-center text-slate-600 transition hover:bg-blue-50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
                   >
-                    <Trash2 size={16} />
+                    <Minus size={15} />
+                  </button>
+                  <span
+                    aria-live="polite"
+                    className="min-w-9 px-1 text-center text-sm font-semibold tabular-nums text-ink"
+                  >
+                    {item.qty}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label={t('cart.increaseQuantity', { name: cleanTitle })}
+                    disabled={
+                      item.isOutOfStock ||
+                      (item.availableQty !== undefined && item.qty >= item.availableQty)
+                    }
+                    onClick={() => onUpdateQty(item.id, item.qty + 1)}
+                    className="grid size-10 place-items-center text-slate-600 transition hover:bg-blue-50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-30"
+                  >
+                    <Plus size={15} />
                   </button>
                 </div>
               </div>
-
-              {item.hasPriceChanged && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px]">
-                  <AlertTriangle size={14} className="shrink-0 text-amber-600" />
-                  <span>
-                    {t('cart.priceChanged', {
-                      from: formatCurrency(Number(item.priceAtAdded)),
-                      to: formatCurrency(Number(item.price)),
-                    })}
-                  </span>
+              <div className="ml-auto flex items-center gap-3 sm:gap-5">
+                <div className="text-right">
+                  <p className="text-xs text-muted">{t('cart.amount')}</p>
+                  <p className="mt-1 text-base font-semibold tabular-nums text-ink sm:text-lg">
+                    {formatCurrency(Number(item.price * item.qty))}
+                  </p>
                 </div>
-              )}
+                <button
+                  type="button"
+                  onClick={() => onRemoveItem(item.id)}
+                  aria-label={t('cart.removeItem', { name: cleanTitle })}
+                  className="grid size-10 shrink-0 place-items-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                >
+                  <Trash2 size={17} />
+                </button>
+              </div>
             </div>
-          );
-        })}
-      </div>
-
-      <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 text-xs text-indigo-900 flex items-start gap-3">
-        <ShieldCheck size={20} className="text-indigo-600 shrink-0 mt-0.5" />
+            {item.hasPriceChanged && (
+              <div
+                role="status"
+                className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800"
+              >
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                {t('cart.priceChanged', {
+                  from: formatCurrency(Number(item.priceAtAdded)),
+                  to: formatCurrency(Number(item.price)),
+                })}
+              </div>
+            )}
+          </article>
+        );
+      })}
+      <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 p-4 sm:p-5">
+        <ShieldCheck size={22} className="mt-0.5 shrink-0 text-primary" />
         <div>
-          <h4 className="font-bold mb-0.5">{t('cart.escrowBannerTitle')}</h4>
-          <p className="text-indigo-700 leading-relaxed text-[11px]">
-            {t('cart.escrowBannerDesc')}
-          </p>
+          <h2 className="text-sm font-semibold text-ink">{t('cart.escrowBannerTitle')}</h2>
+          <p className="mt-1 text-xs leading-relaxed text-muted">{t('cart.escrowBannerDesc')}</p>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default CartItemList;

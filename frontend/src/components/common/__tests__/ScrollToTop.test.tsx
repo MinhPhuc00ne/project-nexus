@@ -1,33 +1,27 @@
-import { render } from '@testing-library/react';
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
-import { useEffect } from 'react';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { Link, MemoryRouter } from 'react-router-dom';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import ScrollToTop from '../ScrollToTop';
 
-function NavigateTrigger() {
-  const navigate = useNavigate();
-  useEffect(() => {
-    navigate('/next');
-  }, [navigate]);
-  return null;
-}
+describe('route scroll reset', () => {
+  afterEach(() => vi.restoreAllMocks());
 
-describe('ScrollToTop', () => {
-  it('scrolls window to (0, 0) on mount and route pathname changes', () => {
-    const scrollSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
-
+  it('keeps scroll position for query tabs and filters, and resets for a different page', () => {
+    const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
     render(
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={['/buyer/profile']}>
         <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<NavigateTrigger />} />
-          <Route path="/next" element={<div>Next</div>} />
-        </Routes>
+        <Link to="/buyer/profile?tab=auction-offers">Profile tab</Link>
+        <Link to="/buyer/profile?tab=auction-offers&status=active">Filter</Link>
+        <Link to="/buyer/orders">Orders</Link>
       </MemoryRouter>,
     );
-
-    expect(scrollSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'instant' });
-    expect(scrollSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
-    scrollSpy.mockRestore();
+    expect(scroll).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('link', { name: 'Profile tab' }));
+    fireEvent.click(screen.getByRole('link', { name: 'Filter' }));
+    expect(scroll).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('link', { name: 'Orders' }));
+    expect(scroll).toHaveBeenCalledTimes(2);
+    expect(scroll).toHaveBeenLastCalledWith({ top: 0, left: 0, behavior: 'instant' });
   });
 });

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Link, Navigate, Outlet } from 'react-router-dom';
+import RouteContent from '../routes/RouteContent';
 import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,7 +29,11 @@ export default function StaffLayout() {
   const isStaffOrAdmin = user?.role === Role.SUPPORT_STAFF || user?.role === Role.ADMIN;
 
   if (isStaffOrAdmin) {
-    return <Outlet />;
+    return (
+      <RouteContent>
+        <Outlet />
+      </RouteContent>
+    );
   }
 
   const retry = async (): Promise<void> => {
@@ -58,18 +63,18 @@ export default function StaffLayout() {
               {t('common:actions.retry')}
             </button>
           )}
-          <a
-            href="/"
+          <Link
+            to="/"
             className="rounded-lg bg-blue-50 px-4 py-2.5 text-xs font-semibold text-primary"
           >
             {t('common:access.backHome')}
-          </a>
-          <a
-            href="/login"
+          </Link>
+          <Link
+            to="/login"
             className="rounded-lg bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-600"
           >
             {t('common:access.switchAccount')}
-          </a>
+          </Link>
         </div>
       </section>
     </main>

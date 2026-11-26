@@ -13,17 +13,20 @@
  *
  * Usage:
  *   npm run seed:demo          # add demo data
+ *   npm run seed:demo -- --namespace=sample # add a separate set of demo accounts
  *   npm run seed:demo:reset    # delete all data first, then add demo data
  */
 import { PrismaClient } from '@prisma/client';
 import { bootstrapSystem } from '../system';
-import { createSeedClient, describeTarget } from '../client';
+import { createSeedClient, describeTarget, loadSeedEnv } from '../client';
 import { DemoClock, SeededRandom } from './random';
-import { seedUsersAndShops } from './01-users-shops';
+import { demoEmails, seedUsersAndShops } from './01-users-shops';
 import { seedCatalogAndInventory } from './02-catalog-inventory';
 import { seedAuctionsAndBids } from './03-auctions-bids';
 import { seedOrdersEscrowAndDisputes } from './04-orders-escrow-disputes';
 import { seedReviewsChatAndEngagement } from './05-reviews-chat-engagement';
+import { effectivePrice } from '../../../src/core/domain/product-price';
+import { validateSelections } from '../../../src/core/domain/product-options';
 
 /**
  * Refuses to run where demo credentials would be a breach.
@@ -116,9 +119,17 @@ async function resetDatabase(prisma: PrismaClient): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  loadSeedEnv();
   assertNotProduction();
 
   const reset = process.argv.includes('--reset');
+  const namespace =
+    process.argv
+      .find((argument) => argument.startsWith('--namespace='))
+      ?.slice('--namespace='.length) ?? '';
+  if (namespace && !/^[a-z0-9-]{1,32}$/.test(namespace)) {
+    throw new Error('Namespace must contain 1-32 lowercase letters, digits or hyphens.');
+  }
   const seedArgument = process.argv.find((argument) => argument.startsWith('--seed='));
   const seedValue = seedArgument ? Number(seedArgument.split('=')[1]) : 20261125;
 
@@ -145,38 +156,93 @@ async function main(): Promise<void> {
         `${system.walletsCreated + system.walletsExisting} platform wallets.`,
     );
 
-    const people = await seedUsersAndShops(prisma, clock, random);
-    console.log(
-      `People: 1 admin, ${people.staff.length} staff, ${people.sellers.length} sellers, ${people.buyers.length} buyers.`,
+    const people = await prisma.$transaction(
+      async (tx) => {
+        const emails = demoEmails(namespace);
+        const existing = await tx.user.count({ where: { email: { in: emails } } });
+        if (existing === emails.length) {
+          console.log(
+            'Demo accounts already exist; skipping this seed set. No demo data or passwords changed.',
+          );
+          console.log(
+            'To add a separate set, run from backend: npm run seed:demo -- --namespace=another-demo',
+          );
+          return null;
+        }
+        if (existing > 0) {
+          throw new Error(
+            `Found ${existing}/${emails.length} existing demo accounts. No demo data changed. ` +
+              'Use a new --namespace to add a separate set without overwriting existing accounts.',
+          );
+        }
+        const people = await seedUsersAndShops(tx, clock, random, namespace);
+        console.log(
+          `People: 1 admin, ${people.staff.length} staff, ${people.sellers.length} sellers, ${people.buyers.length} buyers.`,
+        );
+
+        const catalog = await seedCatalogAndInventory(tx, clock, random, people);
+        console.log(
+          `Catalogue: ${catalog.categories.length} categories, ${catalog.products.length} products in stock.`,
+        );
+
+        const auctions = await seedAuctionsAndBids(tx, clock, random, people);
+        console.log(
+          `Auctions: ${auctions.live.length} live, ${auctions.upcoming.length} upcoming, ` +
+            `${auctions.awaitingPayment.length} awaiting winner payment, ${auctions.settled.length} settled.`,
+        );
+
+        const orders = await seedOrdersEscrowAndDisputes(tx, clock, random, people, catalog);
+        console.log(`Orders: ${orders.length} across every state of the order machine.`);
+
+        const engagement = await seedReviewsChatAndEngagement(
+          tx,
+          clock,
+          random,
+          people,
+          catalog,
+          orders,
+        );
+        console.log(
+          `Engagement: ${engagement.shopReviews} shop reviews, ${engagement.productReviews} product reviews, ` +
+            `${engagement.conversations} conversations, ${engagement.notifications} notifications, ` +
+            `${engagement.wishlistItems} wishlist items, ${engagement.banners} banners.`,
+        );
+
+        const cartItems = [];
+        for (const item of catalog.products.slice(0, 3)) {
+          const product = await tx.product.findUniqueOrThrow({
+            where: { id: item.id },
+            include: { options: true },
+          });
+          const choice = validateSelections(
+            product.options,
+            Object.fromEntries(product.options.map((option) => [option.name, option.values[0]])),
+          );
+          cartItems.push({
+            productId: product.id,
+            quantity: 1,
+            ...choice,
+            priceAtAdded: effectivePrice(product),
+          });
+        }
+        for (const buyer of people.buyers) {
+          await tx.cart.create({
+            data: {
+              userId: buyer.id,
+              expiresAt: clock.hoursFromNow(24 * 30),
+              items: {
+                create: cartItems,
+              },
+            },
+          });
+        }
+        console.log(`Carts: ${people.buyers.length} buyers, 3 items each.`);
+        return people;
+      },
+      { maxWait: 15_000, timeout: 120_000 },
     );
 
-    const catalog = await seedCatalogAndInventory(prisma, clock, random, people);
-    console.log(
-      `Catalogue: ${catalog.categories.length} categories, ${catalog.products.length} products in stock.`,
-    );
-
-    const auctions = await seedAuctionsAndBids(prisma, clock, random, people);
-    console.log(
-      `Auctions: ${auctions.live.length} live, ${auctions.upcoming.length} upcoming, ` +
-        `${auctions.awaitingPayment.length} awaiting winner payment, ${auctions.settled.length} settled.`,
-    );
-
-    const orders = await seedOrdersEscrowAndDisputes(prisma, clock, random, people, catalog);
-    console.log(`Orders: ${orders.length} across every state of the order machine.`);
-
-    const engagement = await seedReviewsChatAndEngagement(
-      prisma,
-      clock,
-      random,
-      people,
-      catalog,
-      orders,
-    );
-    console.log(
-      `Engagement: ${engagement.shopReviews} shop reviews, ${engagement.productReviews} product reviews, ` +
-        `${engagement.conversations} conversations, ${engagement.notifications} notifications, ` +
-        `${engagement.wishlistItems} wishlist items, ${engagement.banners} banners.`,
-    );
+    if (!people) return;
 
     console.log('');
     console.log('Demo accounts (one shared password):');

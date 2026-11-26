@@ -46,7 +46,17 @@
     "ghnFeeExcluded": "(Excludes GHN shipping by address)",
     "proceedCheckoutCount": "Proceed to Checkout ({{count}})",
     "ghnInspection": "GHN Inspection",
-    "escrow100": "100% Escrow"
+    "escrow100": "100% Escrow",
+    "pageDescription": "Review your items, choose quantities, and check your order total.",
+    "loading": "Loading your cart…",
+    "loadFailed": "We couldn't load your cart. Please try again.",
+    "selectedItems": "{{count}} products selected",
+    "selectItem": "Select {{name}}",
+    "decreaseQuantity": "Decrease quantity of {{name}}",
+    "increaseQuantity": "Increase quantity of {{name}}",
+    "quantityFor": "Quantity of {{name}}",
+    "removeItem": "Remove {{name}} from cart",
+    "removeVoucher": "Remove voucher"
   },
   "checkout": {
     "title": "Order Checkout",

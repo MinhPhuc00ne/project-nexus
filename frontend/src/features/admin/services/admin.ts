@@ -1,4 +1,5 @@
 import type { AdminOverviewAnalytics } from '@/features/admin/types/admin-analytics.types';
+import type { PaginatedResponse } from '@nexus/contracts';
 import type {
   AdminOrderAfterSales,
   AdminOrderDetail,
@@ -195,13 +196,17 @@ export function updateAdminSettings(
   });
 }
 
-export function listUsers(params: QueryUsersParams, signal?: AbortSignal) {
-  return adminRequest<PaginatedResult<AdminUser>>({
+export async function listUsers(
+  params: QueryUsersParams,
+  signal?: AbortSignal,
+): Promise<PaginatedResult<AdminUser>> {
+  const result = await adminRequest<PaginatedResponse<AdminUser>>({
     url: '/admin/users',
     method: 'GET',
     params,
     signal,
   });
+  return { items: result.items, ...result.meta };
 }
 
 export function getUserById(id: string, signal?: AbortSignal): Promise<AdminUserDetail> {

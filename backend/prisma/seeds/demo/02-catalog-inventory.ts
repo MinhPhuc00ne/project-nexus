@@ -5,7 +5,7 @@
  * has real discounted products to show instead of the invented percentages it
  * used to display.
  */
-import { PrismaClient, ProductStatus } from '@prisma/client';
+import { type Prisma, ProductStatus } from '@prisma/client';
 import { DemoClock, SeededRandom } from './random';
 import type { DemoPeople } from './01-users-shops';
 
@@ -122,7 +122,7 @@ const CONDITIONS = [
  * @returns The catalogue other modules order from.
  */
 export async function seedCatalogAndInventory(
-  prisma: PrismaClient,
+  prisma: Prisma.TransactionClient,
   clock: DemoClock,
   random: SeededRandom,
   people: DemoPeople,
@@ -132,15 +132,19 @@ export async function seedCatalogAndInventory(
   const leafIds = new Map<string, string>();
 
   for (const spec of CATEGORIES) {
-    const parent = await prisma.category.create({
-      data: { name: spec.name, slug: spec.slug, level: 1 },
+    const parent = await prisma.category.upsert({
+      where: { slug: spec.slug },
+      update: {},
+      create: { name: spec.name, slug: spec.slug, level: 1 },
       select: { id: true, name: true, slug: true },
     });
     categories.push(parent);
 
     for (const child of spec.children) {
-      const leaf = await prisma.category.create({
-        data: { name: child.name, slug: child.slug, level: 2, parentId: parent.id },
+      const leaf = await prisma.category.upsert({
+        where: { slug: child.slug },
+        update: {},
+        create: { name: child.name, slug: child.slug, level: 2, parentId: parent.id },
         select: { id: true, name: true, slug: true },
       });
       categories.push(leaf);

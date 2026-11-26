@@ -1,3 +1,4 @@
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -159,15 +160,11 @@ export default function BuyerOrdersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
-            <Package size={18} className="text-blue-600" />
-            {t('ordersPage.title')}
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">{t('ordersPage.subtitle')}</p>
-        </div>
-      </div>
+      <BuyerPageHeader
+        title={t('ordersPage.title')}
+        description={t('ordersPage.subtitle')}
+        icon={<Package size={21} />}
+      />
 
       <div className="relative">
         <Search

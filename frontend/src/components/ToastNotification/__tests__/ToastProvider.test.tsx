@@ -1,3 +1,4 @@
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import ToastProvider from '../ToastProvider';
@@ -9,6 +10,16 @@ function ToastConsumer({ onAction }: { onAction?: () => void }) {
     <div>
       <button type="button" onClick={() => toast.success('Saved item')}>
         Show Success
+      </button>
+      <button
+        onClick={() =>
+          toast.success('View order', {
+            targetUrl: '/buyer/orders/123?review=1',
+            actionLabel: 'Open order',
+          })
+        }
+      >
+        Show Order
       </button>
       <button
         type="button"
@@ -46,6 +57,11 @@ function ToastConsumer({ onAction }: { onAction?: () => void }) {
   );
 }
 
+function LocationProbe() {
+  const location = useLocation();
+  return <output aria-label="Current route">{location.pathname + location.search}</output>;
+}
+
 describe('ToastProvider & useToast', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -54,6 +70,21 @@ describe('ToastProvider & useToast', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+  });
+
+  it('navigates internal toast targets through the router and dismisses the toast', () => {
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <ToastConsumer />
+          <LocationProbe />
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+    fireEvent.click(screen.getByText('Show Order'));
+    fireEvent.click(screen.getByText('Open order'));
+    expect(screen.getByLabelText('Current route')).toHaveTextContent('/buyer/orders/123?review=1');
+    expect(screen.queryByText('View order')).not.toBeInTheDocument();
   });
 
   it('throws when useToast is used outside ToastProvider', () => {
@@ -65,9 +96,11 @@ describe('ToastProvider & useToast', () => {
   it('renders success and error toasts, supports action click, and auto-dismisses', () => {
     const onAction = vi.fn();
     render(
-      <ToastProvider>
-        <ToastConsumer onAction={onAction} />
-      </ToastProvider>,
+      <MemoryRouter>
+        <ToastProvider>
+          <ToastConsumer onAction={onAction} />
+        </ToastProvider>
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByText('Show Success'));
@@ -88,9 +121,11 @@ describe('ToastProvider & useToast', () => {
 
   it('caps visible toasts to 3 and supports explicit dismiss', () => {
     render(
-      <ToastProvider>
-        <ToastConsumer />
-      </ToastProvider>,
+      <MemoryRouter>
+        <ToastProvider>
+          <ToastConsumer />
+        </ToastProvider>
+      </MemoryRouter>,
     );
 
     fireEvent.click(screen.getByText('Show Four'));

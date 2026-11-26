@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ShoppingBag, ArrowRight, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import BuyerPageHeader from '../../components/buyer/BuyerPageHeader';
+import { Button, buttonVariants } from '../../components/ui/button';
 import { useToast } from '../../components/ToastNotification';
 import {
   getCartItems,
@@ -29,7 +31,9 @@ export default function CartPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [items, setItems] = useState<CartItem[]>(() => getCartItems());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [loadRevision, setLoadRevision] = useState(0);
   const [appliedVoucher, setAppliedVoucher] = useState<{ code: string; discount: number } | null>(
     null,
   );
@@ -47,11 +51,13 @@ export default function CartPage() {
 
     const loadData = async () => {
       setLoading(true);
+      setLoadFailed(false);
       try {
-        const fetched = await fetchCart();
+        const fetched = await fetchCart({ force: loadRevision > 0 });
         if (isMounted) setItems(fetched);
       } catch (err) {
         console.error('Lỗi tải giỏ hàng:', err);
+        if (isMounted) setLoadFailed(true);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -63,7 +69,7 @@ export default function CartPage() {
       window.removeEventListener('nexus:cart-change', handleCartSync);
       window.removeEventListener('storage', handleCartSync);
     };
-  }, []);
+  }, [loadRevision]);
 
   useEffect(() => {
     if (!getStoredToken()) return;
@@ -154,49 +160,83 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="max-w-[1280px] mx-auto px-4">
+    <main className="min-h-[calc(100dvh-10rem)] bg-canvas py-6 sm:py-8">
+      <div className="mx-auto max-w-[1280px] space-y-6 px-4 sm:px-6">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <nav className="flex items-center gap-2 text-xs text-slate-500">
-            <Link to="/" className="hover:text-indigo-600 transition">
+            <Link to="/" className="hover:text-primary transition">
               {t('common:nav.home')}
             </Link>
             <ChevronRight size={13} />
             <span className="font-semibold text-slate-800">{t('commerce:cart.title')}</span>
           </nav>
-          <button
-            type="button"
-            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition shadow-sm cursor-pointer"
-          >
+          <Link to="/search" className={buttonVariants({ variant: 'outline', size: 'sm' })}>
             <ArrowLeft size={14} />
             {t('commerce:cart.continueShopping')}
-          </button>
+          </Link>
         </div>
 
-        <h1 className="text-2xl font-extrabold text-slate-900 mb-6 flex items-center gap-3">
-          <ShoppingBag className="text-[var(--color-primary)]" size={28} />
-          {t('commerce:cart.heading', { count: totalQuantity })}
-          {loading && <Loader2 size={18} className="animate-spin text-slate-400 ml-2" />}
-        </h1>
+        <BuyerPageHeader
+          title={t('commerce:cart.heading', { count: totalQuantity })}
+          description={t('commerce:cart.pageDescription')}
+          icon={<ShoppingBag size={22} />}
+          actions={
+            loading &&
+            items.length > 0 && (
+              <span role="status" className="flex items-center gap-2 text-sm text-muted">
+                <Loader2 size={16} className="animate-spin" />
+                {t('commerce:cart.loading')}
+              </span>
+            )
+          }
+        />
+
+        {loadFailed && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
+          >
+            <span className="flex items-center gap-2">
+              <AlertCircle size={18} className="shrink-0" />
+              {t('commerce:cart.loadFailed')}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLoadRevision((current) => current + 1)}
+            >
+              {t('common:actions.retry')}
+            </Button>
+          </div>
+        )}
 
         {items.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm max-w-xl mx-auto my-8">
-            <div className="w-20 h-20 bg-orange-50 text-[var(--color-primary)] rounded-full flex items-center justify-center mx-auto mb-4">
-              <ShoppingBag size={36} />
-            </div>
-            <h2 className="text-xl font-bold text-slate-800 mb-2">{t('commerce:cart.empty')}</h2>
-            <p className="text-sm text-slate-500 mb-6">{t('commerce:cart.emptyDesc')}</p>
-            <Link
-              to="/search"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[var(--color-primary)] hover:bg-[#d63b0e] text-white font-bold text-sm transition shadow-md"
+          loading ? (
+            <div
+              role="status"
+              className="nexus-panel flex min-h-72 flex-col items-center justify-center gap-4 p-8 text-sm text-muted"
             >
-              {t('commerce:cart.continueShopping')}
-              <ArrowRight size={16} />
-            </Link>
-          </div>
+              <Loader2 size={28} className="animate-spin text-primary" />
+              {t('commerce:cart.loading')}
+            </div>
+          ) : (
+            !loadFailed && (
+              <div className="nexus-panel mx-auto flex max-w-xl flex-col items-center px-6 py-12 text-center sm:py-16">
+                <div className="mb-5 flex size-20 items-center justify-center rounded-2xl bg-blue-50 text-primary">
+                  <ShoppingBag size={36} />
+                </div>
+                <h2 className="mb-2 text-xl font-semibold text-ink">{t('commerce:cart.empty')}</h2>
+                <p className="mb-7 max-w-sm text-sm leading-relaxed text-muted">
+                  {t('commerce:cart.emptyDesc')}
+                </p>
+                <Link to="/search" className={buttonVariants({ size: 'lg' })}>
+                  {t('commerce:cart.continueShopping')}
+                </Link>
+              </div>
+            )
+          )
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          <div className="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-6">
             <CartItemList
               items={items}
               isAllSelected={isAllSelected}
@@ -256,6 +296,6 @@ export default function CartPage() {
         grandTotal={effectiveShippingFee === null ? grandTotal + 30000 : grandTotal}
         showToast={showToast}
       />
-    </div>
+    </main>
   );
 }
