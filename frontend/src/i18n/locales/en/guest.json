@@ -59,7 +59,7 @@
     },
     "flashSale": {
       "noImage": "No image",
-      "soldProgress": "SOLD {{sold}}/50"
+      "soldCount": "{{count}} sold"
     },
     "liveAuction": {
       "defaultTitle": "Live Auction Room",
@@ -193,7 +193,8 @@
     "trendingBadge": "Trending",
     "soldCount": "{{count}} sold",
     "reviewsCount": "{{count}} reviews",
-    "authentic": "Authentic"
+    "authentic": "Authentic",
+    "noReviewsYet": "No reviews yet"
   },
   "filters": {
     "title": "Search Filters",

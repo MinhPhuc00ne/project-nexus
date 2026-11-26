@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -54,25 +53,6 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
       ? featuredAuction.startTime
       : featuredAuction.endTime
     : undefined;
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
-    if (!targetDateStr) return 0;
-    return Math.max(0, Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000));
-  });
-
-  useEffect(() => {
-    if (!targetDateStr) {
-      setTimeLeft(0);
-      return;
-    }
-    const update = () => {
-      const diff = Math.max(0, Math.floor((new Date(targetDateStr).getTime() - Date.now()) / 1000));
-      setTimeLeft(diff);
-    };
-    update();
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
-  }, [targetDateStr]);
-
   if (!featuredAuction) return null;
 
   const featuredTitle =
@@ -93,10 +73,6 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
   const depositVal = Math.round(Number(featuredAuction.startingPrice || 0) * 0.1);
 
   const targetUrl = `/auction/${featuredAuction.id}`;
-
-  const h = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
-  const m = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
-  const s = String(timeLeft % 60).padStart(2, '0');
 
   return (
     <section className="mt-5 rounded-[18px] border border-slate-200 bg-white p-4 sm:p-5">
@@ -211,7 +187,7 @@ function HomeLiveAuctionContent({ auctions }: { auctions: AuctionEntity[] }) {
                 {isUpcoming ? t('home.liveAuction.startsIn') : t('home.liveAuction.endsIn')}
               </p>
               <div className="mt-2 flex justify-end">
-                <HomeCountdown values={[h, m, s]} />
+                <HomeCountdown endsAt={targetDateStr} />
               </div>
               <p className="mt-2 text-[11px] text-red-500">
                 {isUpcoming ? t('home.liveAuction.statusScheduled') : 'Anti-Sniping: Active'}

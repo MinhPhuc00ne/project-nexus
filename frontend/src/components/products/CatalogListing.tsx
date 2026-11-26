@@ -354,7 +354,10 @@ export default function CatalogListing({
 
 function CatalogProductCard({ product }: { product: ProductDetail }) {
   const { t } = useTranslation('guest');
-  const ratingValue = product.rating && product.rating > 0 ? product.rating : 5.0;
+  // A product nobody has reviewed has no rating. This used to read 5.0, so the
+  // catalogue gave every unreviewed product a perfect score next to a label
+  // saying it had no reviews.
+  const hasRating = typeof product.rating === 'number' && product.rating > 0;
 
   return (
     <Link
@@ -412,15 +415,19 @@ function CatalogProductCard({ product }: { product: ProductDetail }) {
 
         {/* Rating and Sales */}
         <div className="flex items-center gap-1.5 text-[11px]">
-          <div className="flex items-center gap-0.5 text-amber-500 font-bold">
-            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-            <span>{ratingValue.toFixed(1)}</span>
-          </div>
-          <span className="text-slate-300">•</span>
+          {hasRating && (
+            <>
+              <div className="flex items-center gap-0.5 text-amber-500 font-bold">
+                <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                <span>{product.rating!.toFixed(1)}</span>
+              </div>
+              <span className="text-slate-300">•</span>
+            </>
+          )}
           <span className="text-slate-500 text-[10px]">
             {product.reviewsCount
               ? t('catalog.reviewsCount', { count: product.reviewsCount })
-              : t('catalog.authentic')}
+              : t('catalog.noReviewsYet')}
           </span>
           {product.soldCount !== undefined && product.soldCount > 0 && (
             <>

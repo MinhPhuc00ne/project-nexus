@@ -9,20 +9,12 @@ export interface HomeFlashSaleCardProps {
 
 export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
   const { t } = useTranslation('guest');
-  const prodId =
-    typeof product.id === 'string' && product.id.length > 5
-      ? product.id
-      : product.id === 1
-        ? 'ap-tourbillon'
-        : product.id === 2
-          ? 'patek-celestial'
-          : product.id === 3
-            ? 'hublot-unico'
-            : 'rolex-daytona';
-
+  // The card used to translate ids 1 to 4 into slugs like `ap-tourbillon`,
+  // because the section was filled with four hardcoded products. It shows real
+  // ones now, so the link is the product's own id.
   return (
     <Link
-      to={`/product/${prodId}`}
+      to={`/product/${encodeURIComponent(String(product.id))}`}
       className="block overflow-hidden rounded-xl border border-slate-200 bg-white p-2 transition-[transform,box-shadow,border-color] duration-[180ms] ease-in-out hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgb(28_57_115_/_10%)] motion-reduce:transition-none motion-reduce:hover:transform-none"
     >
       <div className="relative aspect-square overflow-hidden rounded-lg border border-slate-300 bg-slate-900 p-1">
@@ -58,15 +50,14 @@ export function HomeFlashSaleCard({ product }: HomeFlashSaleCardProps) {
           ) : null}
         </div>
 
-        <div className="relative mt-2 h-2.5 overflow-hidden rounded-full bg-slate-100">
-          <div
-            className="h-full rounded-full bg-[#f36a22]"
-            style={{ width: `${Math.min(((product.saleSold ?? 0) / 50) * 100, 100)}%` }}
-          />
-          <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold leading-none text-white drop-shadow">
-            {t('home.flashSale.soldProgress', { sold: product.saleSold ?? 0 })}
-          </span>
-        </div>
+        {/* How many have sold, when that is known. This was a progress bar
+            against a stock of 50 that nothing reported, filled from a "sold"
+            count derived from the card's position in the list. */}
+        {typeof product.sold === 'number' && product.sold > 0 && (
+          <p className="mt-2 text-[10px] font-semibold text-slate-500">
+            {t('home.flashSale.soldCount', { count: product.sold })}
+          </p>
+        )}
       </div>
     </Link>
   );

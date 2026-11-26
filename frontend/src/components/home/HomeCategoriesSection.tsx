@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { ShoppingCart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { getCategoriesApi, type CategoryNode } from '../../services/products.service';
-import { FALLBACK_CATEGORY_TREE, getCategoryImageUrl } from '../../mocks/categories.mock';
+import { getCategoryImageUrl } from '../../constants/categoryImages';
 import { ROUTES } from '../../routes/paths';
 
 export default function HomeCategoriesSection() {
   const { t } = useTranslation('guest');
-  const [categories, setCategories] = useState<CategoryNode[]>(FALLBACK_CATEGORY_TREE);
+  const [categories, setCategories] = useState<CategoryNode[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -18,8 +18,9 @@ export default function HomeCategoriesSection() {
         if (isMounted && Array.isArray(data) && data.length > 0) {
           setCategories(data);
         }
-      } catch {
-        // Fallback to FALLBACK_CATEGORY_TREE on offline / error
+      } catch (error) {
+        // Nothing to show is the honest answer; the section hides itself.
+        console.warn('Unable to load categories:', error);
       }
     }
 
