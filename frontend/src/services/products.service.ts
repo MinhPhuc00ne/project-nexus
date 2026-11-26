@@ -448,7 +448,7 @@ export async function getRecommendationsApi(limit = 12): Promise<Recommendations
         ? { id: p.category.id, name: p.category.name, slug: p.category.slug }
         : null,
       seller: p.shop?.id ? { id: p.shop.id, fullName: p.shop.name } : null,
-      averageRating: p.rating ?? 5,
+      averageRating: p.rating ?? 0,
       reviewCount: p.reviewsCount ?? 0,
       recommendationReason: 'POPULAR_OR_RECENT' as const,
     })),

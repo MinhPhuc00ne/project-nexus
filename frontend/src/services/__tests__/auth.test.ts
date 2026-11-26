@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AxiosError, type AxiosAdapter } from 'axios';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import api from '../api';
 import {
   clearAuthSession,
@@ -11,6 +12,12 @@ import {
 } from '../auth';
 
 describe('auth service session helpers', () => {
+  const originalAdapter = api.defaults.adapter;
+
+  afterEach(() => {
+    api.defaults.adapter = originalAdapter;
+  });
+
   beforeEach(() => {
     localStorage.clear();
     window.history.replaceState(null, '', '/');
@@ -59,27 +66,75 @@ describe('auth service session helpers', () => {
     expect(getStoredUser()).toBeNull();
   });
 
-  it('consumes valid OAuth callback query params and strips them from URL', () => {
-    const userParam = encodeURIComponent(
-      JSON.stringify({ id: 'u-oauth', email: 'oauth@nexus.test', fullName: 'OAuth User' }),
-    );
-    window.history.replaceState(
-      null,
-      '',
-      `/login?user=${userParam}&token=tok-oauth&refreshToken=ref-oauth&next=/buyer`,
-    );
+  it('exchanges the one-time code for a session and strips it from the URL', async () => {
+    // The callback used to redirect with the session in the query string:
+    // `?user={...}&token=...&refreshToken=...`. A URL is the least private
+    // place for a credential — browser history, proxy logs, the Referer header
+    // handed to the next site clicked — and a refresh token sent that way
+    // outlives the session it belongs to. The backend answers an exchange
+    // endpoint instead, and the redirect carries a code good once.
+    const sent: Array<{ url?: string; data?: unknown }> = [];
+    api.defaults.adapter = (async (config) => {
+      sent.push({ url: config.url, data: config.data });
+      return {
+        data: {
+          data: {
+            accessToken: 'tok-oauth',
+            refreshToken: 'ref-oauth',
+            user: { id: 'u-oauth', email: 'oauth@nexus.test', fullName: 'OAuth User' },
+          },
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      };
+    }) as AxiosAdapter;
 
-    const consumed = consumeOAuthCallbackFromUrl();
+    window.history.replaceState(null, '', '/login?code=one-time-code&next=/buyer');
+
+    const consumed = await consumeOAuthCallbackFromUrl();
+
     expect(consumed?.id).toBe('u-oauth');
     expect(getStoredToken()).toBe('tok-oauth');
     expect(getStoredRefreshToken()).toBe('ref-oauth');
+    expect(sent[0].url).toBe('/auth/oauth/exchange');
+    expect(JSON.parse(String(sent[0].data))).toEqual({ code: 'one-time-code' });
+    // The code is spent, so it must not survive a reload.
     expect(window.location.search).toBe('?next=%2Fbuyer');
   });
 
-  it('cleans up malformed OAuth callback query params and returns null', () => {
-    window.history.replaceState(null, '', '/login?user=not-json&token=tok&refreshToken=ref');
-    expect(consumeOAuthCallbackFromUrl()).toBeNull();
+  it('signs nobody in when the code was already spent, and still strips it', async () => {
+    api.defaults.adapter = (async (config) => {
+      throw new AxiosError('Unauthorized', '401', config, undefined, {
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: {},
+        config,
+        data: { message: 'Mã đăng nhập không hợp lệ hoặc đã hết hạn.' },
+      });
+    }) as AxiosAdapter;
+
+    window.history.replaceState(null, '', '/login?code=already-used');
+
+    expect(await consumeOAuthCallbackFromUrl()).toBeNull();
+    expect(getStoredToken()).toBeNull();
     expect(window.location.search).toBe('');
+  });
+
+  it('asks the server nothing when the address carries no code', async () => {
+    let called = false;
+    api.defaults.adapter = (async (config) => {
+      called = true;
+      return { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+    }) as AxiosAdapter;
+
+    window.history.replaceState(null, '', '/login?next=/buyer');
+
+    expect(await consumeOAuthCallbackFromUrl()).toBeNull();
+    expect(called).toBe(false);
+    // An address with no code is left exactly as it was.
+    expect(window.location.search).toBe('?next=/buyer');
   });
 
   it('preserves messages array on RegistrationError', () => {

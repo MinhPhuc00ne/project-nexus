@@ -57,7 +57,8 @@ export interface DistanceResult {
   distanceFee: number;
   weightFee: number;
   totalFee: number;
-  chargeableWeightKg: number;
+  actualWeightKg?: number;
+  chargeableWeightKg?: number;
 }
 export interface ShippingQuote {
   origin: { name: string; latitude: number; longitude: number; addressText?: string };
@@ -70,14 +71,13 @@ export interface ShippingQuote {
   metrics: {
     distanceKm: number;
     durationMinutes: number;
-    chargeableWeightKg: number;
+    actualWeightKg: number;
     calculationMethod: DistanceResult['method'];
   };
   rates: {
     baseFee: number;
     distanceFee: number;
     weightFee: number;
-    distanceTotalFee: number;
     ghnCarrierFee: number | null;
     finalShippingFee: number;
   };

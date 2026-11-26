@@ -12,9 +12,7 @@
     "auctionSupport": "Auction Support",
     "faq": "Guides & FAQ",
     "banners": "Banner Management",
-    "reviews": "Review Moderation",
-    "history": "History & CSAT",
-    "performance": "Performance"
+    "reviews": "Review Moderation"
   },
   "layout": {
     "forbiddenDesc": "Only Support Staff or Administrators (Admin) can access this area."
@@ -58,16 +56,6 @@
     "reviews": {
       "title": "Review Moderation",
       "description": "View and handle violating reviews with the permissions available to Staff."
-    },
-    "history": {
-      "title": "Support History & CSAT",
-      "description": "Look up resolved tickets and customer satisfaction feedback.",
-      "topics": ["Resolved requests", "Customer satisfaction (CSAT)", "Customer feedback"]
-    },
-    "performance": {
-      "title": "Personal Support Performance",
-      "description": "Track your workload, response time, and ticket resolution quality.",
-      "topics": ["Ticket volume", "Response time", "Resolution quality"]
     }
   },
   "dashboard": {
@@ -80,9 +68,7 @@
     "faqProcessTitle": "Support workflow",
     "trackingScopeTitle": "Tracking scope",
     "noDataTitle": "No data to display yet",
-    "noDataFallback": "{{title}} data will appear once provided by the system.",
-    "unavailableHistory": "Backend does not yet provide a Staff resolution history and CSAT API.",
-    "unavailablePerformance": "Backend does not yet provide a Staff performance analytics API."
+    "noDataFallback": "{{title}} data will appear once provided by the system."
   },
   "sidebarNavAria": "Staff navigation",
   "header": {
@@ -212,7 +198,10 @@
     },
     "conversation": {
       "canned": [
-        { "label": "👋 Greet", "text": "Hello! How can I help you today?" },
+        {
+          "label": "👋 Greet",
+          "text": "Hello! How can I help you today?"
+        },
         {
           "label": "📦 Ask Order ID",
           "text": "Please provide your order ID so I can check it for you."
@@ -221,7 +210,10 @@
           "label": "⏳ Checking",
           "text": "I am checking the shipping details, please hold on a moment."
         },
-        { "label": "✅ Resolved", "text": "Your request has been completely resolved!" }
+        {
+          "label": "✅ Resolved",
+          "text": "Your request has been completely resolved!"
+        }
       ],
       "attachedToast": "Attached {{count}} images.",
       "uploadErr": "Unable to upload images.",
@@ -451,7 +443,10 @@
       "COMPLETED": "Completed",
       "REJECTED": "Rejected"
     },
-    "kinds": { "CANCEL": "Cancellation", "RETURN": "Return" },
+    "kinds": {
+      "CANCEL": "Cancellation",
+      "RETURN": "Return"
+    },
     "orderStatuses": {
       "PENDING_PAYMENT": "Pending payment",
       "PAID": "Paid",

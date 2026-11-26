@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@hookform/resolvers": "^7.0.9",
     "@nexus/contracts": "*",
     "@nexus/types": "*",
     "@tanstack/react-query": "^5.104.1",
@@ -28,6 +29,7 @@
     "qrcode": "^1.5.4",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-hook-form": "^7.92.0",
     "react-i18next": "^18.0.3",
     "react-router-dom": "^7.18.4",
     "socket.io-client": "^4.8.4",

@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import i18n from '../i18n';
 import { API_BASE_URL } from './api';
 import { getStoredToken, getStoredUser } from './auth';
+import { leaseSocket } from './socketPool';
 import type { UserNotification } from '../types/notification.types';
 
 export interface NotificationUnreadCountEvent {
@@ -38,33 +39,39 @@ export interface NotificationSocketConnection {
   disconnect: () => void;
 }
 
-/** Opens the authenticated account-notification Socket.IO connection. */
+/**
+ * Takes a lease on this account's notification connection.
+ *
+ * Five places call this — the header dropdown, the seller notification hook,
+ * the buyer wallet, the seller finance page and the staff header — and each
+ * used to open its own socket. They share one now; it closes when the last of
+ * them lets go.
+ *
+ * @returns A connection to subscribe on, and to release when done with it.
+ */
 export function createNotificationConnection(): NotificationSocketConnection {
   if (!getStoredToken())
     throw new Error(i18n.t('errors:services.notificationsRealtimeAuthRequired'));
 
-  const backendUrl = new URL(API_BASE_URL, window.location.origin);
-  const socket: NotificationSocket = io(`${backendUrl.origin}/ws/notifications`, {
-    autoConnect: false,
-    auth: (callback) => callback({ token: getStoredToken() }),
-  });
   const userId = getStoredUser()?.id;
-  const onAuthChange = (): void => {
-    if (!getStoredToken() || getStoredUser()?.id !== userId) {
-      socket.disconnect();
-    } else {
-      socket.disconnect().connect();
-    }
-  };
-  window.addEventListener('nexus:auth-change', onAuthChange);
+  return leaseSocket<NotificationSocket>(`notifications:${userId ?? 'anonymous'}`, () => {
+    const backendUrl = new URL(API_BASE_URL, window.location.origin);
+    const socket: NotificationSocket = io(`${backendUrl.origin}/ws/notifications`, {
+      autoConnect: false,
+      auth: (callback) => callback({ token: getStoredToken() }),
+    });
+    const onAuthChange = (): void => {
+      if (!getStoredToken() || getStoredUser()?.id !== userId) {
+        socket.disconnect();
+      } else {
+        socket.disconnect().connect();
+      }
+    };
+    window.addEventListener('nexus:auth-change', onAuthChange);
 
-  return {
-    socket,
-    connect: () => socket.connect(),
-    disconnect: () => {
-      window.removeEventListener('nexus:auth-change', onAuthChange);
-      socket.disconnect();
-      socket.removeAllListeners();
-    },
-  };
+    return {
+      socket,
+      teardown: () => window.removeEventListener('nexus:auth-change', onAuthChange),
+    };
+  });
 }

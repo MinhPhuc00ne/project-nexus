@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import i18n from '../i18n';
 import { API_BASE_URL } from './api';
 import { getStoredToken, getStoredUser } from './auth';
+import { leaseSocket } from './socketPool';
 import type { ChatMessage } from '../types/chat.types';
 
 interface ChatServerEvents {
@@ -39,44 +40,64 @@ export interface ChatConnectionClient {
   disconnect: () => void;
 }
 
-// Subscribe to events before calling connect(). Send messages through Axios.
+/**
+ * Takes a lease on this account's chat connection.
+ *
+ * The widget opened two: one for the room it is showing and one for the unread
+ * badge, so every message arrived twice and the server counted the visitor as
+ * two people online. They share one now, and it closes when the last panel
+ * using it goes away.
+ *
+ * Subscribe to events before calling connect(). Send messages through Axios.
+ */
 export function createChatConnection(): ChatConnectionClient {
   if (!getStoredToken()) throw new Error(i18n.t('errors:services.chatAuthRequired'));
-  const backendUrl = new URL(API_BASE_URL, window.location.origin);
-  const socket: ChatSocket = io(`${backendUrl.origin}/chat`, {
-    autoConnect: false,
-    auth: (callback) => callback({ token: getStoredToken() }),
-  });
-  const rooms = new Set<string>();
   const userId = getStoredUser()?.id;
+  const rooms = new Set<string>();
 
+  const lease = leaseSocket<ChatSocket>(`chat:${userId ?? 'anonymous'}`, () => {
+    const backendUrl = new URL(API_BASE_URL, window.location.origin);
+    const shared: ChatSocket = io(`${backendUrl.origin}/chat`, {
+      autoConnect: false,
+      auth: (callback) => callback({ token: getStoredToken() }),
+    });
+
+    const onAuthChange = () => {
+      if (!getStoredToken() || getStoredUser()?.id !== userId) {
+        shared.disconnect();
+      } else {
+        shared.disconnect().connect();
+      }
+    };
+    window.addEventListener('nexus:auth-change', onAuthChange);
+
+    return {
+      socket: shared,
+      teardown: () => window.removeEventListener('nexus:auth-change', onAuthChange),
+    };
+  });
+
+  const socket = lease.socket;
+
+  // Rejoining is per lease: each panel re-enters the conversations it asked
+  // for, which is what a reconnect has to restore.
   socket.on('connect', () => {
     rooms.forEach((conversationId) => socket.emit('join_conversation', { conversationId }));
   });
+
   // BE broadcasts isMe from the sender's perspective; compute it for this client.
   socket.on('new_message', (message) => {
     message.isMe = message.senderId === userId;
   });
 
-  const onAuthChange = () => {
-    if (!getStoredToken() || getStoredUser()?.id !== userId) {
-      disconnect();
-    } else {
-      socket.disconnect().connect();
-    }
-  };
-  window.addEventListener('nexus:auth-change', onAuthChange);
-
   function disconnect() {
-    window.removeEventListener('nexus:auth-change', onAuthChange);
     rooms.clear();
-    socket.disconnect();
-    socket.removeAllListeners();
+    lease.disconnect();
   }
 
   return {
     socket,
-    connect: () => socket.connect(),
+    connect: () => lease.connect(),
     joinConversation(conversationId: string) {
       rooms.add(conversationId);
       if (socket.connected) socket.emit('join_conversation', { conversationId });
