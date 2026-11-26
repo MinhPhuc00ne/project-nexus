@@ -9,7 +9,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { SellerShopProfile } from '../../types/shop.types';
 import { VIETNAM_PROVINCES } from '../../constants/vietnamProvinces';
-import { updateSellerShopProfile, uploadShopAvatarFile } from '../../services/shops';
+import { updateSellerShopProfile, uploadShopAvatarFile } from '@/features/catalog/services/shops';
 import { useToast } from '../ToastNotification';
 import { SellerButton } from './SellerUI';
 import useSellerAction from './useSellerAction';

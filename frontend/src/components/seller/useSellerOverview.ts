@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AuctionStatus } from '@nexus/types';
-import { getSellerAuctionConsignmentsApi } from '../../services/auction.service';
-import { getSellerOrders } from '../../services/sellerOrders';
-import { getSellerRevenue } from '../../services/sellerFinance';
+import { getSellerAuctionConsignmentsApi } from '@/features/auction/services/auction.service';
+import { getSellerOrders } from '@/features/orders/services/sellerOrders';
+import { getSellerRevenue } from '@/features/wallet/services/sellerFinance';
 import type { SellerAuctionConsignment } from '../../types/auction-consignment.types';
 import type { SellerOrder } from '../../types/order.types';
 import type { SellerRevenue } from '../../types/seller-finance.types';

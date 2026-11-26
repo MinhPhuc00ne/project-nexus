@@ -14,15 +14,15 @@ import {
   ShieldCheck,
   Headphones,
 } from 'lucide-react';
-import { clearAuthSession, getStoredToken, type AuthUser } from '../../services/auth';
-import { createNotificationConnection } from '../../services/notificationSocket';
+import { clearAuthSession, getStoredToken, type AuthUser } from '@/features/auth/services/auth';
+import { createNotificationConnection } from '@/features/notifications/services/notificationSocket';
 import { useToast } from '../../components/ToastNotification';
 import {
   getNotifications,
   getNotificationUnreadCount,
   markAllNotificationsRead,
   markNotificationRead,
-} from '../../services/notifications';
+} from '@/features/notifications/services/notifications';
 import type { UserNotification } from '../../types/notification.types';
 import { resolveStaffNotificationTarget } from './staffNotificationNavigation';
 import StaffHeaderDialogs from './StaffHeaderDialogs';
@@ -33,7 +33,7 @@ import {
   updateStaffProfile,
   uploadStaffAvatarFile,
   type StaffProfile,
-} from '../../services/staff';
+} from '@/features/staff/services/staff';
 
 interface StaffHeaderProps {
   account: AuthUser | null;

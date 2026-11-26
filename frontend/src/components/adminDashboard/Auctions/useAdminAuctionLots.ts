@@ -9,7 +9,7 @@ import {
   createAuctionSocket,
   getAdminAuctionLotsApi,
   type AdminAuctionLotsResponse,
-} from '../../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 
 export function useAdminAuctionLots(auctionId: string) {
   const { t } = useTranslation('admin');

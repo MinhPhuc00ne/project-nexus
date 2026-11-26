@@ -4,7 +4,7 @@ import { ShieldCheck as SafetyCertificateOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Popup from '../Popup';
 import { useToast } from '../ToastNotification';
-import { createSellerWithdrawal } from '../../services/sellerFinance';
+import { createSellerWithdrawal } from '@/features/wallet/services/sellerFinance';
 import { SellerButton } from './SellerUI';
 import { useSellerSession } from './SellerSession';
 import { financeMoney } from './financeFormat';

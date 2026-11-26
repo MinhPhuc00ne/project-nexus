@@ -18,10 +18,10 @@ import {
   getNotifications,
   markNotificationRead,
   markAllNotificationsRead,
-} from '../../services/notifications';
-import { getStoredToken, getStoredUser } from '../../services/auth';
-import { createNotificationConnection } from '../../services/notificationSocket';
-import { getBuyerOrdersApi } from '../../services/orders';
+} from '@/features/notifications/services/notifications';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
+import { createNotificationConnection } from '@/features/notifications/services/notificationSocket';
+import { getBuyerOrdersApi } from '@/features/orders/services/orders';
 import type { UserNotification } from '../../types/notification.types';
 import NotificationPreferencesModal from '../notifications/NotificationPreferencesModal';
 import {

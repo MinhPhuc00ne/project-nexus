@@ -3,7 +3,7 @@ import { Check as CheckOutlined } from 'lucide-react';
 import { Printer as PrinterOutlined, Truck as TruckOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SellerOrderStatus } from '../../types/order.types';
-import { confirmSellerOrder } from '../../services/sellerOrders';
+import { confirmSellerOrder } from '@/features/orders/services/sellerOrders';
 import Popup from '../Popup';
 import { useToast } from '../ToastNotification';
 import { useSellerSession } from './SellerSession';

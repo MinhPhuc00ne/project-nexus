@@ -8,9 +8,9 @@ import {
   respondSellerDispute,
   safeEvidenceUrls,
   uploadDisputeEvidence,
-} from '../../services/sellerDisputes';
+} from '@/features/disputes/services/sellerDisputes';
 import type { SellerDispute } from '../../types/seller-dispute.types';
-import { getStoredUser } from '../../services/auth';
+import { getStoredUser } from '@/features/auth/services/auth';
 import { useSellerSession } from './SellerSession';
 import { canRespondDispute, getDisputeLabel } from './orderPresentation';
 import { SellerButton } from './SellerUI';

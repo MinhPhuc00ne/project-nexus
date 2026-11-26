@@ -14,7 +14,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getCategoryTree } from '../../../services/admin';
+import { getCategoryTree } from '@/features/admin/services/admin';
 import type { AdminProduct, AdminProductStatus } from '../../../types/admin-product.types';
 import type { CategoryTreeItem } from '../../../types/category.types';
 import { flattenCategories } from '../../../utils/category-tree';

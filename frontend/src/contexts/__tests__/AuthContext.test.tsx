@@ -20,19 +20,19 @@ const TEXT_BUYER = 'BUYER';
 const TEXT_SELLER = 'SELLER';
 const TEXT_SELLER_ROUTE = 'seller-route';
 
-vi.mock('../../services/users', () => ({
+vi.mock('@/features/account/services/users', () => ({
   getMe: (...args: unknown[]) => mockGetMe(...args),
   toggleSellerMode: (...args: unknown[]) => mockToggleSellerMode(...args),
 }));
 
-vi.mock('../../services/auth', () => ({
+vi.mock('@/features/auth/services/auth', () => ({
   getStoredToken: () => mockGetStoredToken(),
   getStoredUser: () => mockGetStoredUser(),
   saveAuthSession: (...args: unknown[]) => mockSaveAuthSession(...args),
   clearAuthSession: () => mockClearAuthSession(),
 }));
 
-vi.mock('../../services/cart', () => ({
+vi.mock('@/features/cart/services/cart', () => ({
   mergeGuestCartAfterLogin: (...args: unknown[]) => mockMergeGuestCartAfterLogin(...args),
   resetCartSync: () => mockResetCartSync(),
 }));

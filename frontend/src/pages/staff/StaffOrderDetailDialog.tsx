@@ -6,7 +6,7 @@ import type {
   StaffOrderSupportDetail,
   StaffOrderTracking,
   StaffReturnAction,
-} from '../../services/staff';
+} from '@/features/staff/services/staff';
 import { canReceiveStaffReturn } from './afterSales.helpers';
 
 type StaffOrderDetailDialogProps = {

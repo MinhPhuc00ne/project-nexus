@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getAdminSettings, getAdminOverviewAnalytics, listUsers } from '../../../services/admin';
-import { getAdminAuctionsApi } from '../../../services/auction.service';
-import { getAdminNotificationSummary } from '../../../services/notifications';
+import {
+  getAdminSettings,
+  getAdminOverviewAnalytics,
+  listUsers,
+} from '@/features/admin/services/admin';
+import { getAdminAuctionsApi } from '@/features/auction/services/auction.service';
+import { getAdminNotificationSummary } from '@/features/notifications/services/notifications';
 import { apiRequest } from '../../../services/api';
 import type { AdminNotificationSummary } from '../../../types/notification.types';
 import type { AdminOverviewAnalytics } from '../../../types/admin-analytics.types';

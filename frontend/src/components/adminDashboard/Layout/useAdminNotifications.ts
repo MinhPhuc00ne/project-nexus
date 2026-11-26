@@ -9,12 +9,12 @@ import {
 } from '@nexus/types';
 import { API_BASE_URL } from '../../../services/api';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getStoredToken, getStoredUser } from '../../../services/auth';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-} from '../../../services/notifications';
+} from '@/features/notifications/services/notifications';
 import type { NotificationsPage } from '../../../types/notification.types';
 import { useToast } from '../../ToastNotification';
 import {

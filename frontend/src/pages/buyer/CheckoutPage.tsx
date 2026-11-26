@@ -3,16 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ShoppingBag, ArrowLeft, ChevronRight, Package } from 'lucide-react';
 import { useToast } from '../../components/ToastNotification';
-import { fetchCart, clearCart, type CartItem } from '../../services/cart';
-import { getAddresses, createAddress, type UserAddress } from '../../services/address';
+import { fetchCart, clearCart, type CartItem } from '@/features/cart/services/cart';
+import { getAddresses, createAddress, type UserAddress } from '@/features/account/services/address';
 import {
   checkoutApi,
   type PayosPaymentInfo,
   type BuyerOrder,
   type ShippingAddressInput,
   type CheckoutPaymentMethodType,
-} from '../../services/orders';
-import { getStoredToken } from '../../services/auth';
+} from '@/features/orders/services/orders';
+import { getStoredToken } from '@/features/auth/services/auth';
 import CheckoutSuccessCard from '../../components/checkout/CheckoutSuccessCard';
 import CheckoutAddressSection from '../../components/checkout/CheckoutAddressSection';
 import CheckoutPaymentMethod from '../../components/checkout/CheckoutPaymentMethod';

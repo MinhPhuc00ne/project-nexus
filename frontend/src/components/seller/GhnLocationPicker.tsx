@@ -5,7 +5,7 @@ import {
   getShippingDistricts,
   getShippingProvinces,
   getShippingWards,
-} from '../../services/shipping';
+} from '@/features/shipping/services/shipping';
 import type { GhnDistrict, GhnLocation, GhnWard } from '../../types/shipping.types';
 
 export const emptyGhnLocation: GhnLocation = { provinceId: '', districtId: '', wardCode: '' };

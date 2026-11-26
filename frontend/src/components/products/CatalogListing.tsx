@@ -12,7 +12,7 @@ import {
   SlidersHorizontal,
   Flame,
 } from 'lucide-react';
-import { getProductsPage, type CatalogQuery } from '../../services/products.service';
+import { getProductsPage, type CatalogQuery } from '@/features/catalog/services/products.service';
 import useProductResource from '../productDetail/useProductResource';
 import type { ProductDetail } from '../../types/product.types';
 

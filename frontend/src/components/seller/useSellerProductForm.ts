@@ -14,8 +14,11 @@ import {
   updateProductSale,
   type ProductCategory,
   type SellerProduct,
-} from '../../services/sellerProducts';
-import { type ProductOptionGroup, type ProductSaleConfig } from '../../services/productExtras';
+} from '@/features/catalog/services/sellerProducts';
+import {
+  type ProductOptionGroup,
+  type ProductSaleConfig,
+} from '@/features/catalog/services/productExtras';
 
 const defaultSaleConfig: ProductSaleConfig = {
   enabled: false,

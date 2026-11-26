@@ -5,8 +5,11 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from 'react';
-import { getChatConversations, getChatUnreadCount } from '../../services/chat';
-import { createChatConnection, type ChatConnectionClient } from '../../services/chatSocket';
+import { getChatConversations, getChatUnreadCount } from '@/features/chat/services/chat';
+import {
+  createChatConnection,
+  type ChatConnectionClient,
+} from '@/features/chat/services/chatSocket';
 import type { ChatConversation, ChatMessage } from '../../types/chat.types';
 import { orderByLastMessage, rememberChatMessageId } from './chatWidget.helpers';
 

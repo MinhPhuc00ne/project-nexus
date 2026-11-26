@@ -31,8 +31,8 @@ import {
   requestAuctionSupportChatApi,
   formatAuctionImage,
   type AuctionAwardItem,
-} from '../../services/auction.service';
-import { getBuyerWalletApi } from '../../services/wallet.service';
+} from '@/features/auction/services/auction.service';
+import { getBuyerWalletApi } from '@/features/wallet/services/wallet.service';
 import AuctionAwardCheckoutModal from '../../components/auction/AuctionAwardCheckoutModal';
 import AuctionComplaintModal from '../../components/auction/AuctionComplaintModal';
 import { openChatConversation } from '../../components/chat/chatEvents';

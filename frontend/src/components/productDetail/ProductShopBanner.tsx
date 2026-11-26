@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { MessageSquare, Store, Award, Star, Flag } from 'lucide-react';
 import type { ProductDetail } from '../../types/product.types';
 import type { ShopProfile } from '../../types/shop.types';
-import { getShopDetail } from '../../services/shops';
-import { getStoredToken } from '../../services/auth';
+import { getShopDetail } from '@/features/catalog/services/shops';
+import { getStoredToken } from '@/features/auth/services/auth';
 import ReportModal from '../report/ReportModal';
 
 interface ProductShopBannerProps {

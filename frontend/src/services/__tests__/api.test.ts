@@ -2,7 +2,7 @@ import axios, { AxiosError, type AxiosAdapter, type InternalAxiosRequestConfig }
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../i18n';
 import api, { apiRequest, ApiRequestError, request, unwrapEnvelope } from '../api';
-import { getStoredToken, saveAuthSession } from '../auth';
+import { getStoredToken, saveAuthSession } from '@/features/auth/services/auth';
 
 function makeAxiosError(
   status: number,

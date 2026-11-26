@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { Button } from '../shared/AdminUI';
-import { cancelAdminOrder } from '../../../services/admin';
+import { cancelAdminOrder } from '@/features/admin/services/admin';
 import type { AdminOrder } from '../../../types/admin-order.types';
 import { message } from './orderPresentation';
 

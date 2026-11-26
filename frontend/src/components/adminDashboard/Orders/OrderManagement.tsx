@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ShoppingBag } from 'lucide-react';
 import Popup from '../../Popup';
 import { Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
-import { listAdminOrders } from '../../../services/admin';
+import { listAdminOrders } from '@/features/admin/services/admin';
 import type { AdminOrder, AdminOrderPage } from '../../../types/admin-order.types';
 import type { SellerOrderStatus } from '../../../types/order.types';
 import { ORDER_STATUS_KEYS, money, date, message, OrderBadge } from './orderPresentation';

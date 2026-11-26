@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { getIntlLocale } from '../../i18n/config';
-import type { ProductReviewItem } from '../../services/reviews.service';
+import type { ProductReviewItem } from '@/features/reviews/services/reviews.service';
 
 export const ReviewItem: React.FC<{ rev: ProductReviewItem }> = ({ rev }) => {
   const { t, i18n } = useTranslation('guest');

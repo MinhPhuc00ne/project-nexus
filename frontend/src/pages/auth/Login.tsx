@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { login, startGoogleLogin } from '../../services/auth';
+import { login, startGoogleLogin } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';
-import { clearPasswordChangedNotice, hasPasswordChangedNotice } from '../../services/authNotice';
+import {
+  clearPasswordChangedNotice,
+  hasPasswordChangedNotice,
+} from '@/features/auth/services/authNotice';
 import { ROUTES } from '../../routes/paths';
 import { useToast } from '../../components/ToastNotification';
 import ForgotPasswordModal from './ForgotPasswordModal';

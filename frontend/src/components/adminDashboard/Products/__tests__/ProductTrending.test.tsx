@@ -6,7 +6,7 @@ import {
   listAdminTrendingProducts,
   getCategoryTree,
   removeAdminProductFromTrending,
-} from '../../../../services/admin';
+} from '@/features/admin/services/admin';
 import type { AdminProduct } from '../../../../types/admin-product.types';
 import type { AdminData } from '../../shared/adminTypes';
 import { ToastProvider } from '../../../ToastNotification';
@@ -18,12 +18,12 @@ const normalTitle = 'Product normal';
 const trendingFilterLabel = 'Lọc trạng thái sản phẩm';
 
 vi.mock('../../../../contexts/AuthContext', () => ({ useAuth: () => ({ token: 'admin-token' }) }));
-vi.mock('../../../../services/auth', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../../../services/auth')>()),
+vi.mock('@/features/auth/services/auth', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/auth/services/auth')>()),
   getStoredToken: () => 'admin-token',
 }));
-vi.mock('../../../../services/admin', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../../../services/admin')>()),
+vi.mock('@/features/admin/services/admin', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/admin/services/admin')>()),
   listAdminProducts: vi.fn(),
   listAdminTrendingProducts: vi.fn(),
   getCategoryTree: vi.fn(),

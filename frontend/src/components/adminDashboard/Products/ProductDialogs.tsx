@@ -5,7 +5,7 @@ import {
   deleteAdminProduct,
   getAdminProductById,
   updateAdminProductStatus,
-} from '../../../services/admin';
+} from '@/features/admin/services/admin';
 import type { AdminProduct, AdminProductDetail } from '../../../types/admin-product.types';
 import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';

@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next';
 import Popup from '../../Popup';
 import { Badge, Button } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
-import { getAdminOrderById } from '../../../services/admin';
-import { getAdminReturnOrder, processAdminReturn } from '../../../services/admin-returns';
+import { getAdminOrderById } from '@/features/admin/services/admin';
+import { getAdminReturnOrder, processAdminReturn } from '@/features/admin/services/admin-returns';
 import type { AdminOrderDetail } from '../../../types/admin-order.types';
 import {
   returnStatusLabels,

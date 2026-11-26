@@ -5,7 +5,7 @@ import { Save as SaveOutlined, User as UserOutlined } from 'lucide-react';
 import { Role } from '@nexus/types';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { updateMyProfile, type ProfileChanges } from '../../services/profile';
+import { updateMyProfile, type ProfileChanges } from '@/features/account/services/profile';
 import type { UserProfile } from '../../types';
 import AvatarPicker from './AvatarPicker';
 import ChangePasswordModal from './ChangePasswordModal';

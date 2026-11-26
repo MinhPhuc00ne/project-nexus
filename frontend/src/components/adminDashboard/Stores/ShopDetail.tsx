@@ -7,7 +7,7 @@ import {
   getAdminShopById,
   getAdminShopViolations,
   resolveAdminShopAppeal,
-} from '../../../services/admin';
+} from '@/features/admin/services/admin';
 import type { AdminShopDetail } from '../../../types/admin.types';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatCurrency } from '../../../i18n/formatters';

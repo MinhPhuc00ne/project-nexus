@@ -5,7 +5,7 @@ import {
   getShippingProvinces,
   getShippingDistricts,
   getShippingWards,
-} from '../../services/shipping';
+} from '@/features/shipping/services/shipping';
 import type { GhnProvince, GhnDistrict, GhnWard } from '../../types/shipping.types';
 
 // Danh sách 63 Tỉnh/Thành phố dự phòng chuẩn hành chính Việt Nam khi GHN mạng chậm

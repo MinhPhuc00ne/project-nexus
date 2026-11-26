@@ -4,7 +4,7 @@ import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
-import { listAdminReports, reviewAdminReport } from '../../../services/admin';
+import { listAdminReports, reviewAdminReport } from '@/features/admin/services/admin';
 import type {
   AdminReport,
   AdminReportPage,

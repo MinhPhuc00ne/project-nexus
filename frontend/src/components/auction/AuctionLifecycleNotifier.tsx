@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { AuctionStatus, Role } from '@nexus/types';
 import { Gavel, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { createAuctionSocket, getAuctionsApi } from '../../services/auction.service';
+import { createAuctionSocket, getAuctionsApi } from '@/features/auction/services/auction.service';
 import { useToast } from '../ToastNotification';
 
 /**

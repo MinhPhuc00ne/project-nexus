@@ -10,7 +10,7 @@ import {
   getGhnDiagnostic,
   getSellerOrderDetail,
   GhnDispatchUnverifiedError,
-} from '../../services/sellerOrders';
+} from '@/features/orders/services/sellerOrders';
 import type { GhnDiagnostic, SellerOrderDetail } from '../../types/order.types';
 import { useSellerSession } from './SellerSession';
 import { SellerButton } from './SellerUI';

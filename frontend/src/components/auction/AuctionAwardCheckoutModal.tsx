@@ -21,9 +21,12 @@ import {
   formatAuctionImage,
   type AuctionAwardItem,
   type AuctionAwardQuote,
-} from '../../services/auction.service';
-import { getAddresses, type UserAddress } from '../../services/address';
-import { getBuyerWalletApi, type BuyerWalletResponse } from '../../services/wallet.service';
+} from '@/features/auction/services/auction.service';
+import { getAddresses, type UserAddress } from '@/features/account/services/address';
+import {
+  getBuyerWalletApi,
+  type BuyerWalletResponse,
+} from '@/features/wallet/services/wallet.service';
 import { useToast } from '../ToastNotification/useToast';
 
 /**

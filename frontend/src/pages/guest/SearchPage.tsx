@@ -11,7 +11,7 @@ import {
   getCategoriesApi,
   type CatalogQuery,
   type CategoryNode,
-} from '../../services/products.service';
+} from '@/features/catalog/services/products.service';
 
 const VALID_SORT_OPTIONS = new Set<NonNullable<CatalogQuery['sortBy']>>([
   'newest',

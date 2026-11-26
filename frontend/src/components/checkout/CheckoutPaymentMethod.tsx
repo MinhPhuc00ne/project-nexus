@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { QrCode, Truck, ShieldCheck, Banknote } from 'lucide-react';
-import type { CheckoutPaymentMethodType } from '../../services/orders';
+import type { CheckoutPaymentMethodType } from '@/features/orders/services/orders';
 
 interface CheckoutPaymentMethodProps {
   paymentMethod: CheckoutPaymentMethodType;

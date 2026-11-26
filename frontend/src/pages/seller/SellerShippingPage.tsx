@@ -10,14 +10,14 @@ import GhnLocationPicker, { emptyGhnLocation } from '../../components/seller/Ghn
 import SellerShippingResult from '../../components/seller/SellerShippingResult';
 import SellerPickupPointPanel from '../../components/seller/SellerPickupPointPanel';
 import { PageHeading, Panel, SellerButton, SellerLink } from '../../components/seller/SellerUI';
-import { getMyProducts } from '../../services/sellerProducts';
-import { getStoredToken } from '../../services/auth';
+import { getMyProducts } from '@/features/catalog/services/sellerProducts';
+import { getStoredToken } from '@/features/auth/services/auth';
 import {
   getShippingDistance,
   getShippingQuote,
   getShippingServices,
   parseCoordinate,
-} from '../../services/shipping';
+} from '@/features/shipping/services/shipping';
 import type {
   GhnLocation,
   GhnService,

@@ -15,11 +15,14 @@ import {
   getChatConversations,
   getChatSupportQueue,
   updateChatConversationStatus,
-} from '../../services/chat';
+} from '@/features/chat/services/chat';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChatRoom } from '../../components/chat/useChatRoom';
-import { normalizeChatMessage } from '../../services/chat';
-import { createChatConnection, type ChatConnectionClient } from '../../services/chatSocket';
+import { normalizeChatMessage } from '@/features/chat/services/chat';
+import {
+  createChatConnection,
+  type ChatConnectionClient,
+} from '@/features/chat/services/chatSocket';
 import type {
   ChatConversation,
   ChatMessage,

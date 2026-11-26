@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactElement } from 'react';
 import { Landmark as BankOutlined, Pencil as EditOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { updateSellerBankAccount } from '../../services/profile';
+import { updateSellerBankAccount } from '@/features/account/services/profile';
 import Popup from '../Popup';
 import { useToast } from '../ToastNotification';
 import { useSellerSession } from './SellerSession';

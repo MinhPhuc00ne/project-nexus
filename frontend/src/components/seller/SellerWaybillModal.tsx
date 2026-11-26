@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Popup from '../Popup';
 import useProductResource from '../productDetail/useProductResource';
 import { useToast } from '../ToastNotification';
-import { getSellerWaybill } from '../../services/sellerOrders';
+import { getSellerWaybill } from '@/features/orders/services/sellerOrders';
 import type { SellerWaybill } from '../../types/order.types';
 import { useSellerSession } from './SellerSession';
 import SellerResourceState from './SellerResourceState';

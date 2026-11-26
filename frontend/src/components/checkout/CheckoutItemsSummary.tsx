@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
-import type { CartItem } from '../../services/cart';
+import type { CartItem } from '@/features/cart/services/cart';
 
 export interface CheckoutItemsSummaryProps {
   items: CartItem[];

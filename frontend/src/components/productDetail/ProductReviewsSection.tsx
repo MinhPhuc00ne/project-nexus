@@ -19,9 +19,9 @@ import {
   saveBuyerShopReviewApi,
   type ShopReviewItem,
   type ProductReviewItem,
-} from '../../services/reviews.service';
-import { getBuyerOrdersApi } from '../../services/orders';
-import { getStoredToken, getStoredUser } from '../../services/auth';
+} from '@/features/reviews/services/reviews.service';
+import { getBuyerOrdersApi } from '@/features/orders/services/orders';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import { getBuyerReviewEligibility } from '../../utils/buyerReviewEligibility';
 import ReviewItem from './ReviewItem';
 import { useToast } from '../ToastNotification';

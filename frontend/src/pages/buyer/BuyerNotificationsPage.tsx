@@ -27,8 +27,8 @@ import {
   saveNotificationPreferences,
   markNotificationRead,
   markAllNotificationsRead,
-} from '../../services/notifications';
-import { getBuyerOrdersApi } from '../../services/orders';
+} from '@/features/notifications/services/notifications';
+import { getBuyerOrdersApi } from '@/features/orders/services/orders';
 import type {
   UserNotification,
   NotificationPreference,

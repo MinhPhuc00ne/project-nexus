@@ -4,7 +4,7 @@ import { X, Mail, Bell, BellRing, Save, Loader2, Check } from 'lucide-react';
 import {
   getNotificationPreferences,
   saveNotificationPreferences,
-} from '../../services/notifications';
+} from '@/features/notifications/services/notifications';
 import type { NotificationPreference, NotificationChannel } from '../../types/notification.types';
 
 interface NotificationPreferencesModalProps {

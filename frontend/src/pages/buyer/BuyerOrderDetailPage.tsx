@@ -21,7 +21,7 @@ import {
   confirmDeliveryOrderApi,
   isCodOrder,
   type BuyerOrder,
-} from '../../services/orders';
+} from '@/features/orders/services/orders';
 import OrderTimeline from '../../components/orders/OrderTimeline';
 import OrderAddressCard from '../../components/orders/OrderAddressCard';
 import OrderItemsSummary from '../../components/orders/OrderItemsSummary';

@@ -9,15 +9,15 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { getStoredToken } from '../../services/auth';
-import { createNotificationConnection } from '../../services/notificationSocket';
-import type { PayosPaymentInfo } from '../../services/orders';
-import { getSellerRevenue } from '../../services/sellerFinance';
+import { getStoredToken } from '@/features/auth/services/auth';
+import { createNotificationConnection } from '@/features/notifications/services/notificationSocket';
+import type { PayosPaymentInfo } from '@/features/orders/services/orders';
+import { getSellerRevenue } from '@/features/wallet/services/sellerFinance';
 import {
   checkBuyerDepositStatusApi,
   depositBuyerWalletApi,
   type WalletDepositProvider,
-} from '../../services/wallet.service';
+} from '@/features/wallet/services/wallet.service';
 import useProductResource from '../../components/productDetail/useProductResource';
 import { PayosQrModal } from '../../components/checkout/PayosQrModal';
 import Popup from '../../components/Popup';

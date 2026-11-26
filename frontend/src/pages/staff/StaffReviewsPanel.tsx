@@ -8,7 +8,7 @@ import {
   deleteStaffModeratedReview,
   getStaffModeratedReviews,
   type StaffModeratedReview,
-} from '../../services/staff';
+} from '@/features/staff/services/staff';
 import { validateStaffReviewDeletion } from './reviewModeration.helpers';
 
 const PAGE_SIZE = 20;

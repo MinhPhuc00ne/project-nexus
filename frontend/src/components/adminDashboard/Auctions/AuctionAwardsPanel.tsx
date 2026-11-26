@@ -6,7 +6,7 @@ import { formatCurrency } from '../../../i18n/formatters';
 import {
   confirmAdminAuctionAwardApi,
   listAdminAuctionAwardsApi,
-} from '../../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import {
   AUCTION_AWARD_STATES,
   canConfirmAwardAction,

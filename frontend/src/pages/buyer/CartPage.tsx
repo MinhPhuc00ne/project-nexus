@@ -11,16 +11,16 @@ import {
   toggleSelectItem,
   toggleSelectAll,
   type CartItem,
-} from '../../services/cart';
-import { getAddresses } from '../../services/address';
+} from '@/features/cart/services/cart';
+import { getAddresses } from '@/features/account/services/address';
 import CheckoutModal from '../../components/cart/CheckoutModal';
 import CartOrderSummary from '../../components/cart/CartOrderSummary';
 import CartItemList from '../../components/cart/CartItemList';
-import { getStoredToken } from '../../services/auth';
+import { getStoredToken } from '@/features/auth/services/auth';
 import {
   getCheckoutQuoteApi,
   type ShippingAddressInput as DeliveryAddress,
-} from '../../services/orders';
+} from '@/features/orders/services/orders';
 
 export type { DeliveryAddress };
 

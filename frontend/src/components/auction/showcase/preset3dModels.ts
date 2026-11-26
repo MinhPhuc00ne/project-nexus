@@ -1,4 +1,4 @@
-import type { AuctionConsignmentItem } from '../../../services/auction.service';
+import type { AuctionConsignmentItem } from '@/features/auction/services/auction.service';
 
 export type Preset3DModelKey =
   | 'preset_watch'

@@ -25,8 +25,8 @@ import {
   type AuctionConsignmentItem,
   type BuyerEligibilityResponse,
   type AuctionBidItem,
-} from '../../services/auction.service';
-import { getStoredToken } from '../../services/auth';
+} from '@/features/auction/services/auction.service';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 
 /**

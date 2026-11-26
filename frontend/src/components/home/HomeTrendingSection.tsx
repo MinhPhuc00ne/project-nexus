@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Flame, Star, Store } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import type { TrendingProductItem } from '../../services/products.service';
+import type { TrendingProductItem } from '@/features/catalog/services/products.service';
 
 interface HomeTrendingSectionProps {
   products: TrendingProductItem[];

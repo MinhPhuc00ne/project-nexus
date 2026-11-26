@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
-import { listBanners, type Banner } from '../../../services/banners.service';
+import { listBanners, type Banner } from '@/features/catalog/services/banners.service';
 
 export default function useAuctionBanners(token: string | null, revision: number) {
   const { t } = useTranslation('admin');

@@ -3,7 +3,7 @@ import { Landmark, ShieldCheck, X, WalletCards } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
 import type { UserProfile } from '../../types/user.types';
-import type { BuyerWithdrawalInput } from '../../services/wallet.service';
+import type { BuyerWithdrawalInput } from '@/features/wallet/services/wallet.service';
 
 interface BuyerWithdrawalModalProps {
   balance: number;

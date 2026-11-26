@@ -2,7 +2,10 @@ import { useCallback, type ReactElement } from 'react';
 import { RefreshCw as ReloadOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
-import { getSellerOrderDetail, isVerifiedGhnShipment } from '../../services/sellerOrders';
+import {
+  getSellerOrderDetail,
+  isVerifiedGhnShipment,
+} from '@/features/orders/services/sellerOrders';
 import useProductResource from '../productDetail/useProductResource';
 import { useSellerSession } from './SellerSession';
 import { Badge, Panel, SellerButton } from './SellerUI';

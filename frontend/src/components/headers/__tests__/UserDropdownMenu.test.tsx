@@ -3,10 +3,10 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../../i18n';
-import { clearAuthSession } from '../../../services/auth';
+import { clearAuthSession } from '@/features/auth/services/auth';
 import UserDropdownMenu from '../UserDropdownMenu';
 
-vi.mock('../../../services/auth', () => ({ clearAuthSession: vi.fn() }));
+vi.mock('@/features/auth/services/auth', () => ({ clearAuthSession: vi.fn() }));
 vi.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => ({ switchActiveMode: vi.fn() }),
 }));

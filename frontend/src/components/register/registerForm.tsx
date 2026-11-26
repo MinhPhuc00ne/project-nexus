@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { register, RegistrationError, verifyEmail } from '../../services/auth';
+import { register, RegistrationError, verifyEmail } from '@/features/auth/services/auth';
 import {
   ArrowRight,
   Eye,

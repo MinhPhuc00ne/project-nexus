@@ -11,7 +11,7 @@ import {
   Copy,
   Sparkles,
 } from 'lucide-react';
-import { uploadChatAttachments } from '../../services/chat';
+import { uploadChatAttachments } from '@/features/chat/services/chat';
 import ChatAvatar from '../../components/chat/ChatAvatar';
 import ChatMessageContent from '../../components/chat/ChatMessageContent';
 

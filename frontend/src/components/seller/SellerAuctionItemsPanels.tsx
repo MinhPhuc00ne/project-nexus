@@ -6,8 +6,8 @@ import i18n from '../../i18n/index';
 import type {
   AuctionConsignmentItem,
   SellerAuctionConsignment,
-} from '../../services/auction.service';
-import { formatAuctionImage } from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
+import { formatAuctionImage } from '@/features/auction/services/auction.service';
 import { canSubmitConsignment } from './sellerConsignmentHelpers';
 import { Badge, EmptyState, Panel, SellerLink } from './SellerUI';
 

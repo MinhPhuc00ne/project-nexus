@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { MapPin, User, Phone, ShieldCheck } from 'lucide-react';
-import type { BuyerOrder } from '../../services/orders';
+import type { BuyerOrder } from '@/features/orders/services/orders';
 
 interface OrderAddressCardProps {
   address: NonNullable<BuyerOrder['shippingAddress']>;

@@ -7,19 +7,19 @@ import {
   createCategory,
   getCategoryTree,
   updateAdminProductCategory,
-} from '../../../../services/admin';
-import { getStoredToken } from '../../../../services/auth';
+} from '@/features/admin/services/admin';
+import { getStoredToken } from '@/features/auth/services/auth';
 import type { AdminProduct } from '../../../../types/admin-product.types';
 import type { CategoryTreeItem } from '../../../../types/category.types';
 import ProductCategoryDialog from '../ProductCategoryDialog';
 
-vi.mock('../../../../services/admin', () => ({
+vi.mock('@/features/admin/services/admin', () => ({
   getCategoryTree: vi.fn(),
   createCategory: vi.fn(),
   updateAdminProductCategory: vi.fn(),
 }));
 
-vi.mock('../../../../services/auth', () => ({
+vi.mock('@/features/auth/services/auth', () => ({
   getStoredToken: vi.fn(),
 }));
 

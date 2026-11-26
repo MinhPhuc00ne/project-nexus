@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useSellerSession } from '../components/seller/SellerSession';
 import { useAuth } from '../contexts/AuthContext';
-import { clearAuthSession } from '../services/auth';
+import { clearAuthSession } from '@/features/auth/services/auth';
 import { useSellerStore } from '../components/seller/useSellerStore';
 import SellerNotifications from '../components/seller/SellerNotifications';
 import { SellerWorkspaceContext } from '../components/seller/SellerWorkspace';

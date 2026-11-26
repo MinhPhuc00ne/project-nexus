@@ -1,19 +1,19 @@
 import { AuctionStatus } from '@nexus/types';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../../../../i18n';
-import type { AdminAuctionEntity } from '../../../../services/auction.service';
+import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';
 import {
   createBannerFromAuction,
   listBanners,
   type Banner,
-} from '../../../../services/banners.service';
+} from '@/features/catalog/services/banners.service';
 import {
   auctionBannerReason,
   BANNER_LIST_LIMIT,
   promoteAuctionBanner,
 } from '../auctionBannerPromotion';
 
-vi.mock('../../../../services/banners.service', () => ({
+vi.mock('@/features/catalog/services/banners.service', () => ({
   listBanners: vi.fn(),
   createBannerFromAuction: vi.fn(),
 }));

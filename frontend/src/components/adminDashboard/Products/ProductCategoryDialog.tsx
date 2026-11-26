@@ -5,8 +5,8 @@ import {
   createCategory,
   getCategoryTree,
   updateAdminProductCategory,
-} from '../../../services/admin';
-import { getStoredToken } from '../../../services/auth';
+} from '@/features/admin/services/admin';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { AdminProduct } from '../../../types/admin-product.types';
 import type { CategoryTreeItem } from '../../../types/category.types';

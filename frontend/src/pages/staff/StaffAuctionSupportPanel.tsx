@@ -32,7 +32,7 @@ import {
   reviewAuctionItemApi,
   saveAdminAuctionLotNoteApi,
   getStaffAuctionOverviewApi,
-} from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import type {
   AdminAuctionItem,
   AuctionIntroShowcaseResponse,

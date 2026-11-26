@@ -1,4 +1,7 @@
-import type { StaffAfterSalesRequest, StaffAfterSalesStatus } from '../../services/staff';
+import type {
+  StaffAfterSalesRequest,
+  StaffAfterSalesStatus,
+} from '@/features/staff/services/staff';
 
 export type StaffAfterSalesKindFilter = 'ALL' | 'CANCEL' | 'RETURN';
 

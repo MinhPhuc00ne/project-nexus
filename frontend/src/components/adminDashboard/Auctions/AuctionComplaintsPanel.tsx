@@ -4,7 +4,7 @@ import { getIntlLocale } from '../../../i18n/config';
 import {
   listAdminAuctionComplaintsApi,
   resolveAdminAuctionComplaintApi,
-} from '../../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import {
   AUCTION_COMPLAINT_STATES,
   type AuctionComplaintState,

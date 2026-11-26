@@ -31,7 +31,7 @@ import {
   getAuctionsApi,
   resolveAuctionImageUrl,
   type AuctionEntity,
-} from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 
 function toSellerAuction(auction: AuctionEntity, locale: string): SellerAuction {
   const status: SellerAuction['status'] =

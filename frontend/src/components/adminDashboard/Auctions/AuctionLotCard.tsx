@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { ArrowRight, Ellipsis, Gavel, Timer, Trophy } from 'lucide-react';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatCurrency } from '../../../i18n/formatters';
-import { resolveAuctionImageUrl, type AdminAuctionLot } from '../../../services/auction.service';
+import {
+  resolveAuctionImageUrl,
+  type AdminAuctionLot,
+} from '@/features/auction/services/auction.service';
 import { Badge, Button } from '../shared/AdminUI';
 import { isKnownAuctionStatus } from './auctionStatuses';
 import AuctionLotBidders from './AuctionLotBidders';

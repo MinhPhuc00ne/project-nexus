@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { listAdminProducts, listAdminTrendingProducts } from '../../../services/admin';
+import { listAdminProducts, listAdminTrendingProducts } from '@/features/admin/services/admin';
 import type { AdminTrendingProduct } from '../../../types/admin-product.types';
 import type { AdminProduct, QueryAdminProductsParams } from '../../../types/admin-product.types';
 import type { PaginatedResult } from '../../../types/admin.types';

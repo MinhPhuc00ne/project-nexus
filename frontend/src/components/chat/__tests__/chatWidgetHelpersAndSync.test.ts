@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getChatConversations, getChatUnreadCount } from '../../../services/chat';
-import { createChatConnection } from '../../../services/chatSocket';
+import { getChatConversations, getChatUnreadCount } from '@/features/chat/services/chat';
+import { createChatConnection } from '@/features/chat/services/chatSocket';
 import {
   MAX_SEEN_CHAT_MESSAGE_IDS,
   rememberChatMessageId,
@@ -9,12 +9,12 @@ import {
 } from '../chatWidget.helpers';
 import { useChatUnreadSync } from '../useChatUnreadSync';
 
-vi.mock('../../../services/chat', () => ({
+vi.mock('@/features/chat/services/chat', () => ({
   getChatConversations: vi.fn(),
   getChatUnreadCount: vi.fn(),
 }));
 
-vi.mock('../../../services/chatSocket', () => ({
+vi.mock('@/features/chat/services/chatSocket', () => ({
   createChatConnection: vi.fn(),
 }));
 

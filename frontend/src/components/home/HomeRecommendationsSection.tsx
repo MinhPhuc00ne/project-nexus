@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Sparkles, Star } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import type { RecommendedProduct } from '../../services/products.service';
+import type { RecommendedProduct } from '@/features/catalog/services/products.service';
 
 interface HomeRecommendationsSectionProps {
   products: RecommendedProduct[];

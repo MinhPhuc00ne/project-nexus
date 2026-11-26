@@ -4,13 +4,13 @@ import { Role } from '@nexus/types';
 import { getIntlLocale } from '../../i18n/config';
 import { ShoppingBag, Clock, AlertCircle, CheckCircle2, Upload } from 'lucide-react';
 import Popup from '../Popup';
-import { createSellerRequest, getMySellerRequests } from '../../services/users';
+import { createSellerRequest, getMySellerRequests } from '@/features/account/services/users';
 import type { SellerUpgradeRequest, UserProfile } from '../../types';
 import {
   getShippingDistricts,
   getShippingProvinces,
   getShippingWards,
-} from '../../services/shipping';
+} from '@/features/shipping/services/shipping';
 import type { GhnDistrict, GhnProvince, GhnWard } from '../../types/shipping.types';
 
 interface UpgradeSellerModalProps {

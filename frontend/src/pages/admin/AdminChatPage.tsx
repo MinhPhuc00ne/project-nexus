@@ -11,7 +11,7 @@ import {
   getAdminAutoReplyHistory,
   listAdminAutoReplies,
   listAdminChatConversations,
-} from '../../services/adminChat';
+} from '@/features/admin/services/adminChat';
 import type {
   AdminAutoReply,
   AdminAutoReplyHistory,

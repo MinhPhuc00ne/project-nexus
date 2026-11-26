@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Image as PictureOutlined } from 'lucide-react';
-import { getRelatedProducts } from '../../services/products.service';
+import { getRelatedProducts } from '@/features/catalog/services/products.service';
 import useProductResource from './useProductResource';
 
 export default function RelatedProductsSection({ currentProductId }: { currentProductId: string }) {

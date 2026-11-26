@@ -10,7 +10,7 @@ import CategoryDialogs, {
 } from '../../components/adminDashboard/Categories/CategoryDialogs';
 import { Input } from '../../components/ui/input';
 import { useToast } from '../../components/ToastNotification';
-import { getCategoryTree } from '../../services/admin';
+import { getCategoryTree } from '@/features/admin/services/admin';
 import type { CategoryTreeItem } from '../../types/category.types';
 
 export default function AdminCategoriesPage() {

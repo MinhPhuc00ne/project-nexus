@@ -2,7 +2,11 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, Store } from 'lucide-react';
 import { useAuth } from '../../../contexts/AuthContext';
-import { listAdminShops, updateAdminShopStatus, warnAdminShop } from '../../../services/admin';
+import {
+  listAdminShops,
+  updateAdminShopStatus,
+  warnAdminShop,
+} from '@/features/admin/services/admin';
 import type { AdminShop, PaginatedResult, QueryAdminShopsParams } from '../../../types/admin.types';
 import Popup from '../../Popup';
 import { useToast } from '../../ToastNotification';

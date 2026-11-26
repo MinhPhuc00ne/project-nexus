@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getStoredToken, getStoredUser } from '../../services/auth';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import { useSellerSession } from './SellerSession';
 import { useToast } from '../ToastNotification';
 

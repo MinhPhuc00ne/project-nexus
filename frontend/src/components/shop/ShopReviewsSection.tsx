@@ -11,8 +11,11 @@ import {
   Loader2,
   Store,
 } from 'lucide-react';
-import { getShopReviewsApi, type ShopReviewItem } from '../../services/reviews.service';
-import type { ShopListItem } from '../../services/products.service';
+import {
+  getShopReviewsApi,
+  type ShopReviewItem,
+} from '@/features/reviews/services/reviews.service';
+import type { ShopListItem } from '@/features/catalog/services/products.service';
 
 interface ShopReviewsSectionProps {
   shop: ShopListItem;

@@ -7,7 +7,7 @@ import { formatCurrency } from '../../../i18n/formatters';
 import Popup from '../../Popup';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
-import { listAdminDisputes } from '../../../services/admin';
+import { listAdminDisputes } from '@/features/admin/services/admin';
 import DisputeResolution from './DisputeResolution';
 import type {
   AdminDispute,

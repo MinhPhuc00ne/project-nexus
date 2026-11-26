@@ -1,4 +1,7 @@
-import type { ProductOptionGroup, ProductSaleConfig } from '../services/productExtras';
+import type {
+  ProductOptionGroup,
+  ProductSaleConfig,
+} from '@/features/catalog/services/productExtras';
 
 export interface ProductShopInfo {
   id?: string;

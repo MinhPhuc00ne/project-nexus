@@ -1,4 +1,4 @@
-import type { BuyerOrder } from '../services/orders';
+import type { BuyerOrder } from '@/features/orders/services/orders';
 
 export interface BuyerReviewEligibility {
   productOrderId?: string;

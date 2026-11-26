@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createCategory, deleteCategory, updateCategory } from '../../../services/admin';
+import { createCategory, deleteCategory, updateCategory } from '@/features/admin/services/admin';
 import { categoryMoveError, flattenCategories } from '../../../utils/category-tree';
 import type { CategoryTreeItem } from '../../../types/category.types';
 import Popup from '../../Popup';

@@ -1,7 +1,10 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from 'react';
 import { LoaderCircle, Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { registerAuctionItemApi, type AuctionEntity } from '../../services/auction.service';
+import {
+  registerAuctionItemApi,
+  type AuctionEntity,
+} from '@/features/auction/services/auction.service';
 import {
   getConsignmentErrorMessage,
   initialConsignmentForm,

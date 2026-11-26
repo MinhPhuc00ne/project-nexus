@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BadgeCheck, UserPlus, RefreshCw, Users, CheckCircle } from 'lucide-react';
-import { listStaff, inviteStaff } from '../../services/admin';
+import { listStaff, inviteStaff } from '@/features/admin/services/admin';
 import type { StaffUser } from '../../types/admin.types';
 import Popup from '../../components/Popup';
 import { getIntlLocale } from '../../i18n/config';

@@ -2,7 +2,7 @@ import { LoaderCircle, MapPin, RefreshCw, UserRound, Wallet } from 'lucide-react
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getUserById } from '../../../services/admin';
+import { getUserById } from '@/features/admin/services/admin';
 import type { AdminUserDetail, AdminUserRole } from '../../../types/user.types';
 import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';

@@ -8,7 +8,7 @@ import {
   getChatConversation,
   getChatUnreadCount,
   requestChatSupport,
-} from '../../services/chat';
+} from '@/features/chat/services/chat';
 import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
 import ChatConversationList from './ChatConversationList';
 import ChatMessageArea from './ChatMessageArea';

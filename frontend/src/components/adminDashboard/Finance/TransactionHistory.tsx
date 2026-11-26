@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Wallet } from 'lucide-react';
 import { Badge, Button, EmptyState, Panel, SearchInput } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';
-import { getAdminWalletTransactions } from '../../../services/admin';
+import { getAdminWalletTransactions } from '@/features/admin/services/admin';
 import type {
   AdminWalletTransaction,
   AdminWalletTransactionPage,

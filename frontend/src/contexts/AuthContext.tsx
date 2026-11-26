@@ -9,10 +9,15 @@ import {
   type ReactNode,
 } from 'react';
 import { Role } from '@nexus/types';
-import { clearAuthSession, getStoredToken, getStoredUser, saveAuthSession } from '../services/auth';
-import { getMe, toggleSellerMode } from '../services/users';
-import { mergeGuestCartAfterLogin, resetCartSync } from '../services/cart';
-import { syncGuestWishlist } from '../services/wishlist.service';
+import {
+  clearAuthSession,
+  getStoredToken,
+  getStoredUser,
+  saveAuthSession,
+} from '@/features/auth/services/auth';
+import { getMe, toggleSellerMode } from '@/features/account/services/users';
+import { mergeGuestCartAfterLogin, resetCartSync } from '@/features/cart/services/cart';
+import { syncGuestWishlist } from '@/features/wishlist/services/wishlist.service';
 import type { AuthUser, UserProfile } from '../types/user.types';
 import { useToast } from '../components/ToastNotification';
 
