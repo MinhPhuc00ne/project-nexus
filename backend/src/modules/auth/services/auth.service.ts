@@ -49,15 +49,6 @@ export interface GoogleUser {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  public transporter?: {
-    sendMail: (opts: {
-      to?: string;
-      subject?: string;
-      html?: string;
-      text?: string;
-      from?: string;
-    }) => Promise<{ accepted?: string[] }>;
-  };
 
   constructor(
     private readonly prisma: PrismaService,
@@ -528,19 +519,24 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token không hợp lệ.');
     }
 
-    const rotated = await this.prisma.refreshToken.updateMany({
-      where: { id: tokenRecord.id, isRevoked: false },
-      data: { isRevoked: true },
-    });
-    if (rotated.count !== 1) {
-      throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
-    }
+    const { accessToken, refreshToken } = await this.prisma.$transaction(async (tx) => {
+      const rotated = await tx.refreshToken.updateMany({
+        where: { id: tokenRecord.id, isRevoked: false },
+        data: { isRevoked: true },
+      });
+      if (rotated.count === 0) {
+        throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
+      }
 
-    const { accessToken, refreshToken } = await this.generateTokens({
-      id: tokenRecord.user.id,
-      email: tokenRecord.user.email,
-      role: tokenRecord.user.role,
-      isSellerActive: tokenRecord.user.isSellerActive,
+      return this.generateTokens(
+        {
+          id: tokenRecord.user.id,
+          email: tokenRecord.user.email,
+          role: tokenRecord.user.role,
+          isSellerActive: tokenRecord.user.isSellerActive,
+        },
+        tx,
+      );
     });
 
     return {
@@ -578,12 +574,15 @@ export class AuthService {
     return { message: 'Đăng xuất thành công!' };
   }
 
-  private async generateTokens(user: {
-    id: string;
-    email: string;
-    role: string;
-    isSellerActive?: boolean;
-  }): Promise<{ accessToken: string; refreshToken: string }> {
+  private async generateTokens(
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      isSellerActive?: boolean;
+    },
+    db: Pick<PrismaService, 'refreshToken'> = this.prisma,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const accessToken = await this.tokenAuth.signAccessToken({
       id: user.id,
       email: user.email,
@@ -614,7 +613,7 @@ export class AuthService {
     const tokenHash = await bcrypt.hash(this.sha256(refreshToken), 10);
     const expiresAt = new Date(Date.now() + this.parseDurationToMs(refreshExpiresIn));
 
-    await this.prisma.refreshToken.create({
+    await db.refreshToken.create({
       data: {
         id: tokenId,
         userId: user.id,
@@ -674,37 +673,6 @@ export class AuthService {
     resetCode: string,
     requireDelivery = false,
   ): Promise<void> {
-    if (this.transporter) {
-      try {
-        const info = await this.transporter.sendMail({
-          from: `"Project Nexus E-Commerce" <${this.configService.get<string>('SMTP_USER')}>`,
-          to: email,
-          subject: 'Mã đặt lại mật khẩu Project Nexus',
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-              <h2 style="color: #4F46E5;">Yêu cầu đặt lại mật khẩu</h2>
-              <p>Mã OTP để đặt lại mật khẩu tài khoản Project Nexus của bạn là:</p>
-              <h1 style="background: #F3F4F6; padding: 10px; display: inline-block; letter-spacing: 5px; color: #111827;">${resetCode}</h1>
-              <p>Mã này có hiệu lực trong vòng <b>10 phút</b>.</p>
-              <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
-            </div>
-          `,
-        });
-        if (requireDelivery && (!Array.isArray(info.accepted) || !info.accepted.length)) {
-          throw new Error('SMTP did not accept the recipient');
-        }
-        return;
-      } catch {
-        this.logger.warn('Gửi email đặt lại mật khẩu qua SMTP thất bại.');
-        if (process.env.NODE_ENV === 'production' || requireDelivery) {
-          throw new BadRequestException(
-            'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
-          );
-        }
-        return;
-      }
-    }
-
     const success = await this.mailService.sendEmail({
       to: email,
       subject: 'Mã đặt lại mật khẩu Project Nexus',
@@ -719,7 +687,7 @@ export class AuthService {
       `,
       requireDelivery,
     });
-    if (!success && (process.env.NODE_ENV === 'production' || requireDelivery)) {
+    if (!success) {
       throw new BadRequestException(
         'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
       );

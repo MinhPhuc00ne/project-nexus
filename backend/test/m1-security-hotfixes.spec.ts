@@ -13,6 +13,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GlobalHttpExceptionFilter } from '../src/core/filters/global-http-exception.filter';
+import { ProviderConfigService } from '../src/core/providers/provider-config.service';
 import { RBAC_PRIVILEGES_MAP, RolesGuard } from '../src/core/security/roles.guard';
 import type { CloudinaryStorageService } from '../src/core/storage/cloudinary.service';
 import type { MailService } from '../src/core/mail/mail.service';
@@ -219,7 +220,11 @@ describe('M1 Security Hotfixes', () => {
       const cloudinary = {
         uploadFile: vi.fn(),
       } as unknown as CloudinaryStorageService;
-      const service = new MediaService(configService, cloudinary);
+      const service = new MediaService(
+        configService,
+        cloudinary,
+        new ProviderConfigService(configService),
+      );
 
       const svgFile = createMediaFile({
         originalname: 'xss.svg',
@@ -258,6 +263,7 @@ describe('M1 Security Hotfixes', () => {
 
     it('writes zero local disk files when Cloudinary is configured', async () => {
       const configService = new ConfigService({
+        STORAGE_PROVIDER: 'cloudinary',
         CLOUDINARY_CLOUD_NAME: 'demo-cloud',
         CLOUDINARY_API_KEY: 'demo-key',
         CLOUDINARY_API_SECRET: 'demo-secret',
@@ -272,7 +278,11 @@ describe('M1 Security Hotfixes', () => {
       const mediaDir = path.join(process.cwd(), 'uploads', 'media');
       const beforeFiles = fs.existsSync(mediaDir) ? fs.readdirSync(mediaDir) : [];
 
-      const service = new MediaService(configService, cloudinary);
+      const service = new MediaService(
+        configService,
+        cloudinary,
+        new ProviderConfigService(configService),
+      );
       const result = await service.uploadMedia(createMediaFile({}));
 
       const afterFiles = fs.existsSync(mediaDir) ? fs.readdirSync(mediaDir) : [];
@@ -290,7 +300,11 @@ describe('M1 Security Hotfixes', () => {
         uploadFile: vi.fn(),
       } as unknown as CloudinaryStorageService;
 
-      const service = new MediaService(configService, cloudinary);
+      const service = new MediaService(
+        configService,
+        cloudinary,
+        new ProviderConfigService(configService),
+      );
       const spoofedReq = { get: vi.fn().mockReturnValue('evil.attacker.com') } as never;
       const result = await service.uploadMedia(createMediaFile({}), spoofedReq);
       const savedPath = path.join(process.cwd(), 'uploads', 'media', result.fileName);
@@ -346,6 +360,7 @@ describe('M1 Security Hotfixes', () => {
       const mailMock = {
         sendEmail: vi.fn().mockImplementation(async (opts: { html?: string }) => {
           sentEmails.push(opts);
+          return true;
         }),
       } as unknown as MailService;
 
