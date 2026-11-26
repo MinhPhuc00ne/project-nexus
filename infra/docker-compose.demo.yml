@@ -1,0 +1,45 @@
+# A demonstration stack: the whole platform with data in it, from one command.
+#
+#   docker compose -f infra/docker-compose.yml -f infra/docker-compose.demo.yml \
+#     --profile full --profile demo up --build
+#
+# What this adds to the base stack is the `seed-demo` service. The base stack's
+# `migrate` service creates the schema and the system rows only, which is right
+# for a real deployment and leaves a reviewer looking at an empty shop.
+#
+# The demo data is deliberately not part of that: every account it creates
+# shares one password, printed once as the seed runs. That is fine for a
+# walkthrough and unacceptable anywhere reachable, which is why it needs its own
+# profile, its own service, and `ALLOW_DEMO_SEED=true` to run against anything
+# whose NODE_ENV says production.
+#
+# Pin the password with DEMO_SEED_PASSWORD to log in predictably; leave it unset
+# and the seed generates one and prints it.
+
+services:
+  seed-demo:
+    profiles: ['demo']
+    build:
+      context: ..
+      dockerfile: infra/docker/Dockerfile.backend
+      target: migrator
+    container_name: nexus-seed-demo
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
+      # The seed refuses to touch a production database without this, and says
+      # so rather than quietly filling one with shared-password accounts.
+      ALLOW_DEMO_SEED: ${ALLOW_DEMO_SEED:-true}
+      DEMO_SEED_PASSWORD: ${DEMO_SEED_PASSWORD:-}
+      NODE_ENV: development
+    # The demo seed is not in the image — the server's stage ships no seeds at
+    # all, and the migrator carries only the system one — so it is mounted from
+    # the checkout that is running this compose file.
+    volumes:
+      - ../backend/prisma/seeds:/app/backend/prisma/seeds:ro
+    working_dir: /app/backend
+    command: ['npx', 'ts-node', '--project', 'tsconfig.json', 'prisma/seeds/demo/index.ts']
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - nexus-network

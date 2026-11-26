@@ -182,16 +182,63 @@ Useful commands:
 
 ---
 
+## 5b. Running the Whole Platform in Containers
+
+Sections 1 to 4 describe the usual local setup: Postgres and Redis in Docker,
+the applications on the host for hot reload. The compose file can also run
+everything, which is what a reviewer or a deployment needs.
+
+```bash
+# Database, cache, migrations, backend and web client
+docker compose --profile full up --build
+```
+
+The `migrate` service runs first and completes before the backend starts. It
+applies the migrations and creates the system rows — the platform settings and
+the platform's own wallets — and nothing else. A freshly built stack is a
+working but empty shop.
+
+### A stack with data in it
+
+```bash
+docker compose -f infra/docker-compose.yml -f infra/docker-compose.demo.yml \
+  --profile full --profile demo up --build
+```
+
+This adds the `seed-demo` service, which creates shops, products, auctions and
+orders to look at. It is deliberately separate, and deliberately not in the
+server image, because every account it creates shares one password printed as
+it runs. Set `DEMO_SEED_PASSWORD` to pin that password; leave it unset and the
+seed generates one.
+
+### What is in each image
+
+The backend Dockerfile builds three things from one file:
+
+| Target     | Contains                                                    | Used by               |
+| :--------- | :---------------------------------------------------------- | :-------------------- |
+| `runner`   | the compiled server and production dependencies only        | the `backend` service |
+| `migrator` | the Prisma CLI, ts-node, the migrations and the system seed | the `migrate` service |
+| `builder`  | the full toolchain; an intermediate stage                   | the two above         |
+
+The server image carries no build tools, no Prisma CLI and no seeds — not even
+the system one — and runs as a non-root user. Its health check asks
+`/api/v1/health`, which reports PostgreSQL, Redis and the outbox, rather than
+the Swagger page, which answers even when the database is unreachable.
+
+---
+
 ## 6. Command Quick Reference Cheat Sheet
 
-| Task                          | NPM Script (Recommended) | Equivalent Docker Command |
-| :---------------------------- | :----------------------- | :------------------------ |
-| Start Services Detached       | `npm run docker:up`      | `docker compose up -d`    |
-| Stop Services (Keep Data)     | `npm run docker:down`    | `docker compose down`     |
-| Reset Services (Wipe Volumes) | `npm run docker:clean`   | `docker compose down -v`  |
-| View Service Logs             | `npm run docker:logs`    | `docker compose logs -f`  |
-| Inspect Running Containers    | -                        | `docker ps`               |
-| Inspect Resource Usage        | -                        | `docker stats`            |
+| Task                          | NPM Script (Recommended) | Equivalent Docker Command                  |
+| :---------------------------- | :----------------------- | :----------------------------------------- |
+| Start Services Detached       | `npm run docker:up`      | `docker compose up -d`                     |
+| Stop Services (Keep Data)     | `npm run docker:down`    | `docker compose down`                      |
+| Reset Services (Wipe Volumes) | `npm run docker:clean`   | `docker compose down -v`                   |
+| View Service Logs             | `npm run docker:logs`    | `docker compose logs -f`                   |
+| Inspect Running Containers    | -                        | `docker ps`                                |
+| Inspect Resource Usage        | -                        | `docker stats`                             |
+| Run the Whole Platform        | -                        | `docker compose --profile full up --build` |
 
 ---
 
