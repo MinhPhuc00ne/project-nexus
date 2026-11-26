@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import type { Request } from 'express';
@@ -6,6 +11,7 @@ import { fromBuffer } from 'file-type';
 import * as fs from 'fs';
 import * as path from 'path';
 import { resolveAppPublicUrl } from '../../../core/config/env.schema';
+import { ProviderConfigService } from '../../../core/providers/provider-config.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
 import {
   MediaUploadResponseDto,
@@ -48,6 +54,7 @@ export class MediaService {
   constructor(
     private readonly configService: ConfigService,
     private readonly cloudinaryService: CloudinaryStorageService,
+    private readonly providers: ProviderConfigService,
   ) {
     this.mediaUploadDir = path.join(process.cwd(), 'uploads', 'media');
   }
@@ -128,13 +135,6 @@ export class MediaService {
     }
   }
 
-  private isCloudinaryConfigured(): boolean {
-    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
-    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
-    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
-    return Boolean(cloudName && apiKey && apiSecret);
-  }
-
   private saveLocalMediaFile(
     file: Express.Multer.File,
     sanitizedFileName: string,
@@ -186,30 +186,35 @@ export class MediaService {
     const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
     const sanitizedFileName = `media-${uniqueSuffix}${ext}`;
 
-    let finalUrl: string | undefined;
-    let publicId: string | undefined;
+    let finalUrl: string;
+    let publicId: string;
 
-    if (this.isCloudinaryConfigured()) {
+    if (this.providers.isLocalStorage()) {
+      const localResult = this.saveLocalMediaFile(file, sanitizedFileName, uniqueSuffix);
+      finalUrl = localResult.url;
+      publicId = localResult.publicId;
+    } else {
       try {
         const cloudRes = await this.cloudinaryService.uploadFile(
           file.buffer,
           file.originalname,
           'nexus/media',
         );
-        if (cloudRes?.url && !cloudRes.url.startsWith('data:')) {
-          this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${cloudRes.url}`);
-          finalUrl = cloudRes.url;
-          publicId = cloudRes.publicId || `cloud-${uniqueSuffix}`;
+        const resolvedUrl = cloudRes?.url?.trim();
+        if (!resolvedUrl || resolvedUrl.toLowerCase().startsWith('data:')) {
+          throw new Error('Cloudinary returned an invalid media URL');
         }
+        this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${resolvedUrl}`);
+        finalUrl = resolvedUrl;
+        publicId = cloudRes.publicId || `cloud-${uniqueSuffix}`;
       } catch (err) {
-        this.logger.warn(`Không thể upload lên Cloudinary, sử dụng URL cục bộ của server: ${err}`);
+        this.logger.error(
+          `Không thể upload lên Cloudinary (STORAGE_PROVIDER=cloudinary): ${err instanceof Error ? err.message : String(err)}`,
+        );
+        throw new ServiceUnavailableException(
+          'Không thể tải file lên Cloudinary. Vui lòng thử lại sau.',
+        );
       }
-    }
-
-    if (!finalUrl || !publicId) {
-      const localResult = this.saveLocalMediaFile(file, sanitizedFileName, uniqueSuffix);
-      finalUrl = localResult.url;
-      publicId = localResult.publicId;
     }
 
     return {

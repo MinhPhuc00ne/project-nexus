@@ -8,6 +8,7 @@ import {
 import { OnEvent } from '@nestjs/event-emitter';
 import { AfterSalesRequest, NotificationType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
+import { ProviderConfigService } from '../../../core/providers/provider-config.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { ShipmentActor } from '../../fulfillment/services/shipment-tracking.service';
 import { GhnOrderApiService } from '../../fulfillment/services/ghn-order-api.service';
@@ -37,6 +38,7 @@ export class OrderReturnService {
     private readonly actions: GhnOrderActionService,
     private readonly inventory: InventoryService,
     private readonly refunds: RefundService,
+    private readonly providers: ProviderConfigService,
   ) {}
 
   async request(
@@ -229,11 +231,11 @@ export class OrderReturnService {
     const code = request.returnWaybillCode || order.shipment?.waybillCode;
     if (!code) throw new BadRequestException('Thiếu vận đơn hoàn hàng.');
     const context = shipmentGhnContext(order.shipment?.metadata);
-    const isDev = process.env.NODE_ENV !== 'production';
     const metadata = objectValue(order.shipment?.metadata);
     const tracking = objectValue(metadata.tracking);
     const simulatedReturned =
-      isDev && (order.shipment?.status === 'RETURNED' || tracking.status === 'returned');
+      this.providers.isShippingSandbox() &&
+      (order.shipment?.status === 'RETURNED' || tracking.status === 'returned');
 
     let detailStatus: string;
     if (simulatedReturned) {

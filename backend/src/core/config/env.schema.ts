@@ -27,7 +27,7 @@ export const backendEnvSchema = z
       .string()
       .trim()
       .min(16, 'REFRESH_TOKEN_SECRET must be at least 16 characters'),
-    JWT_EXPIRES_IN: z.preprocess(emptyToUndefined, z.string().min(1).default('7d')),
+    JWT_EXPIRES_IN: z.preprocess(emptyToUndefined, z.string().min(1).default('15m')),
     REFRESH_TOKEN_EXPIRES_IN: z.preprocess(emptyToUndefined, z.string().min(1).default('30d')),
     FRONTEND_URL: z.preprocess(emptyToUndefined, z.string().url().default('http://localhost:5173')),
     CORS_ORIGINS: optionalNonEmptyString(),
@@ -65,6 +65,7 @@ export const backendEnvSchema = z
     GHN_API_URL: optionalNonEmptyString(),
     GHN_TOKEN: optionalNonEmptyString(),
     GHN_SHOP_ID: optionalNonEmptyString(),
+    GHN_WEBHOOK_SECRET: optionalNonEmptyString(),
 
     CLOUDINARY_CLOUD_NAME: optionalNonEmptyString(),
     CLOUDINARY_API_KEY: optionalNonEmptyString(),
@@ -120,6 +121,7 @@ export const backendEnvSchema = z
           ['GHN_API_URL', env.GHN_API_URL],
           ['GHN_TOKEN', env.GHN_TOKEN],
           ['GHN_SHOP_ID', env.GHN_SHOP_ID],
+          ['GHN_WEBHOOK_SECRET', env.GHN_WEBHOOK_SECRET],
         ],
       ],
       [

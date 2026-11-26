@@ -26,6 +26,7 @@ describe('M1 Backend environment validation & URL/CORS helpers', () => {
 
     expect(parsed.NODE_ENV).toBe('development');
     expect(parsed.PORT_BACKEND).toBe(4100);
+    expect(parsed.JWT_EXPIRES_IN).toBe('15m');
     expect(parsed.REDIS_HOST).toBe('localhost');
     expect(parsed.REDIS_PORT).toBe(6380);
     expect(parsed.CORS_ORIGINS).toBeUndefined();
@@ -81,6 +82,7 @@ describe('M1 Backend environment validation & URL/CORS helpers', () => {
     GHN_API_URL: 'https://ghn.example.com',
     GHN_TOKEN: 'token',
     GHN_SHOP_ID: '123456',
+    GHN_WEBHOOK_SECRET: 'webhook-secret',
     STORAGE_PROVIDER: 'cloudinary',
     CLOUDINARY_CLOUD_NAME: 'nexus',
     CLOUDINARY_API_KEY: 'key',
@@ -128,6 +130,16 @@ describe('M1 Backend environment validation & URL/CORS helpers', () => {
         PAYMENT_PROVIDER: 'payos',
       }),
     ).toThrow(/PAYOS_CLIENT_ID/);
+
+    expect(() =>
+      validateBackendEnv({
+        ...VALID_BASE_ENV,
+        SHIPPING_PROVIDER: 'ghn',
+        GHN_API_URL: 'https://ghn.example.com',
+        GHN_TOKEN: 'token',
+        GHN_SHOP_ID: '123456',
+      }),
+    ).toThrow(/GHN_WEBHOOK_SECRET/);
   });
 
   it('parses comma-separated CORS_ORIGINS and falls back cleanly', () => {

@@ -101,6 +101,9 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Một hoặc nhiều dịch vụ phụ thuộc (PostgreSQL/Redis) đang ngưng hoạt động."
           }
         },
         "summary": "Kiểm tra sức khỏe hệ thống",

@@ -271,7 +271,9 @@ export function fixture() {
     actions,
     finance,
     cancel: new OrderCancellationService(prisma, store, ghn, actions, inventory, refunds),
-    returns: new OrderReturnService(prisma, store, ghn, actions, inventory, refunds),
+    returns: new OrderReturnService(prisma, store, ghn, actions, inventory, refunds, {
+      isShippingSandbox: () => true,
+    }),
     payments: new OrderService(
       prisma,
       {},

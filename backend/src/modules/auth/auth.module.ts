@@ -24,7 +24,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
           secret,
           signOptions: {
             expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
-              '7d') as `${number}${'s' | 'm' | 'h' | 'd'}`,
+              '15m') as `${number}${'s' | 'm' | 'h' | 'd'}`,
           },
         };
       },
