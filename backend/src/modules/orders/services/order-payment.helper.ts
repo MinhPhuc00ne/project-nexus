@@ -897,14 +897,14 @@ export class OrderPaymentHelper {
           } as Prisma.InputJsonValue,
         },
       });
-      const admin = await this.treasury.getOrCreatePrimaryAdminWallet(tx);
+      const escrowWallet = await this.treasury.getOrCreateEscrowWallet(tx);
       await tx.wallet.update({
-        where: { id: admin.id },
+        where: { id: escrowWallet.id },
         data: { balance: { increment: currentPayment.amount } },
       });
       await tx.walletTransaction.create({
         data: {
-          walletId: admin.id,
+          walletId: escrowWallet.id,
           amount: currentPayment.amount,
           type: 'ESCROW_LOCK',
           status: 'SUCCESS',
@@ -917,7 +917,7 @@ export class OrderPaymentHelper {
         buyerId: payable.buyerId,
         paymentId: payment.id,
         amount: currentPayment.amount,
-        adminWalletId: admin.id,
+        adminWalletId: escrowWallet.id,
         toWallet: false,
       });
       return;

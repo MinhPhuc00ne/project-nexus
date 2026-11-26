@@ -14,6 +14,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -21,7 +22,9 @@ import {
 import type { Request } from 'express';
 import {
   MediaUploadResponseDto,
+  MediaUploadResponseSchema,
   MultipleMediaUploadResponseDto,
+  MultipleMediaUploadResponseSchema,
 } from '../dtos/media-upload-response.dto';
 import { MediaService } from '../services/media.service';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -54,10 +57,9 @@ export class MediaController {
       },
     },
   })
-  @ApiResponse({
-    status: HttpStatus.OK,
+  @ApiOkResponse({
     description: 'Upload file thành công, trả về đường dẫn URL của ảnh',
-    type: MediaUploadResponseDto,
+    standardSchema: MediaUploadResponseSchema,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -114,10 +116,9 @@ export class MediaController {
       },
     },
   })
-  @ApiResponse({
-    status: HttpStatus.OK,
+  @ApiOkResponse({
     description: 'Upload toàn bộ danh sách file thành công, trả về mảng URL và thông tin chi tiết',
-    type: MultipleMediaUploadResponseDto,
+    standardSchema: MultipleMediaUploadResponseSchema,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -161,10 +162,9 @@ export class MediaController {
       },
     },
   })
-  @ApiResponse({
-    status: HttpStatus.OK,
+  @ApiOkResponse({
     description: 'Upload media đánh giá thành công',
-    type: MultipleMediaUploadResponseDto,
+    standardSchema: MultipleMediaUploadResponseSchema,
   })
   @UseInterceptors(AnyFilesInterceptor())
   async uploadReviewMedia(

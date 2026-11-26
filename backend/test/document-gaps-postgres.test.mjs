@@ -102,7 +102,11 @@ test(
         where: { userId: admin.id },
         data: { balance: 0 },
       });
-      const finance = { getOrCreatePrimaryAdminWallet: async () => adminWallet };
+      const finance = {
+        getOrCreatePrimaryAdminWallet: async () => adminWallet,
+        getOrCreateEscrowWallet: async () => adminWallet,
+        getOrCreatePlatformRevenueWallet: async () => adminWallet,
+      };
       const inventory = new InventoryService(prisma);
       const stock = new AuctionStockService(inventory);
       const reputation = new ReputationService(prisma, {});

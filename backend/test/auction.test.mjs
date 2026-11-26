@@ -621,6 +621,8 @@ function createHarness(overrides = {}) {
 
   const adminFinance = {
     getOrCreatePrimaryAdminWallet: async () => wallets.get('admin-1'),
+    getOrCreateEscrowWallet: async () => wallets.get('admin-1'),
+    getOrCreatePlatformRevenueWallet: async () => wallets.get('admin-1'),
   };
 
   const chatService = {

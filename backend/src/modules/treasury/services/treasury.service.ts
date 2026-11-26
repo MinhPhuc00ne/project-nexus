@@ -1,25 +1,70 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma, Role, Wallet } from '@prisma/client';
+import { Prisma, Role, Wallet, WalletType } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 
 /**
- * The platform's own wallet: the account every fee, escrow hold and refund
- * reservation passes through.
+ * The platform's own ledgers: `ESCROW_LIABILITY` holds buyer funds until
+ * settlement/refund, `PLATFORM_REVENUE` records earned platform fees, and
+ * `getOrCreatePrimaryAdminWallet` remains available for admin personal wallet
+ * operations.
  *
- * Checkout, escrow, refunds and auction deposits all need it, and all four used
- * to get it by injecting `AdminFinanceService` — 794 lines of back-office
- * reporting — for this one method. That made the admin module a dependency of
- * every money flow on the platform, so settling an order pulled in the code
- * that renders admin dashboards.
- *
- * This is a leaf: it reads the database and nothing else, and the back office
- * now reads the treasury rather than owning it.
+ * This is a leaf: it reads/writes the database and nothing else, and the back
+ * office reads the treasury rather than owning it.
  */
 @Injectable()
 export class TreasuryService {
   private readonly logger = new Logger(TreasuryService.name);
 
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Retrieves or creates a singleton system wallet (`ESCROW_LIABILITY` or
+   * `PLATFORM_REVENUE`) with `userId = null`.
+   */
+  async getOrCreateSystemWallet(
+    type: Extract<WalletType, 'ESCROW_LIABILITY' | 'PLATFORM_REVENUE'>,
+    txClient?: Prisma.TransactionClient,
+  ): Promise<Wallet> {
+    const client = txClient || this.prisma;
+    const existing = await client.wallet.findFirst({
+      where: { type, userId: null },
+    });
+    if (existing) {
+      return existing;
+    }
+
+    try {
+      const created = await client.wallet.create({
+        data: {
+          type,
+          userId: null,
+          balance: 0,
+          lockedBalance: 0,
+          currency: 'VND',
+        },
+      });
+      this.logger.log(`Đã khởi tạo ví hệ thống ${type}: ${created.id}`);
+      return created;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        const concurrent = await client.wallet.findFirst({
+          where: { type, userId: null },
+        });
+        if (concurrent) {
+          return concurrent;
+        }
+      }
+      throw error;
+    }
+  }
+
+  getOrCreateEscrowWallet(txClient?: Prisma.TransactionClient): Promise<Wallet> {
+    return this.getOrCreateSystemWallet(WalletType.ESCROW_LIABILITY, txClient);
+  }
+
+  getOrCreatePlatformRevenueWallet(txClient?: Prisma.TransactionClient): Promise<Wallet> {
+    return this.getOrCreateSystemWallet(WalletType.PLATFORM_REVENUE, txClient);
+  }
 
   /**
    * Retrieves or automatically initializes the primary platform administrator wallet.

@@ -67,7 +67,11 @@ function fixture() {
   const service = new OrderEscrowService(
     prisma,
     { getAll: async () => ({ platformFeePercentage: 7 }) },
-    { getOrCreatePrimaryAdminWallet: async () => ({ id: 'admin-wallet' }) },
+    {
+      getOrCreatePrimaryAdminWallet: async () => ({ id: 'admin-wallet' }),
+      getOrCreateEscrowWallet: async () => ({ id: 'escrow-wallet' }),
+      getOrCreatePlatformRevenueWallet: async () => ({ id: 'platform-revenue-wallet' }),
+    },
   );
   return { service, tx, order };
 }
@@ -93,9 +97,10 @@ test('verified buyer confirmation releases funds and awards reputation exactly o
   ]);
   assert.equal(f.order.status, 'CONFIRMED');
   assert.equal(f.order.escrowRecord.status, 'DISBURSED');
-  assert.equal(f.tx.wallet.update.mock.callCount(), 2);
+  assert.equal(f.tx.wallet.update.mock.callCount(), 3);
   assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].data.balance.increment, 93000);
-  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].data.balance.decrement, 123000);
+  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].data.balance.decrement, 130000);
+  assert.equal(f.tx.wallet.update.mock.calls[2].arguments[0].data.balance.increment, 7000);
   assert.equal(f.tx.reputationLog.create.mock.callCount(), 2);
   assert.equal(f.tx.notification.create.mock.callCount(), 1);
 });

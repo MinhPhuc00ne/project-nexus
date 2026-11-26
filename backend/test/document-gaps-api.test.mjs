@@ -22,8 +22,10 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
   const { PrismaService } = source('core/prisma/prisma.service');
   const { TokenAuthService } = source('core/security/token-auth.service');
   const { ReportModerationController } = source(
-    'modules/reviews/controllers/report-moderation.controller',
+    'modules/admin/controllers/report-moderation.controller',
   );
+  const { ReportsController } = source('modules/reviews/controllers/reports.controller');
+  const { ReportsService } = source('modules/reviews/services/reports.service');
   const { ReportModerationService } = source('modules/reviews/services/report-moderation.service');
   const { AuctionCheckoutController } = source(
     'modules/auction/controllers/auction-checkout.controller',
@@ -47,7 +49,12 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
   };
   class GapApiModule {}
   Module({
-    controllers: [ReportModerationController, AuctionCheckoutController, AdminReputationController],
+    controllers: [
+      ReportModerationController,
+      ReportsController,
+      AuctionCheckoutController,
+      AdminReputationController,
+    ],
     providers: [
       {
         // The bearer value is the account id, so a fixture states who it is
@@ -83,6 +90,7 @@ test('document gap endpoints enforce JWT roles, validate DTOs and preserve authe
         },
       },
       { provide: ReportModerationService, useValue: reports },
+      { provide: ReportsService, useValue: {} },
       {
         provide: AuctionCheckoutService,
         useValue: {
