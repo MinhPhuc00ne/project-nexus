@@ -165,7 +165,11 @@ async function post<T>(path: string, body: object): Promise<T> {
   try {
     const payload = await request<T>({ url: `/auth/${path}`, method: 'POST', data: body });
     if (payload === undefined || payload === null) {
-      throw new Error(i18n.t('errors:services.invalidAuctionLotData'));
+      throw new Error(
+        i18n.t('errors:services.unexpectedEmptyResponse', {
+          defaultValue: 'Unexpected empty response from server.',
+        }),
+      );
     }
     return payload;
   } catch (error) {

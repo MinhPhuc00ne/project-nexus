@@ -1,6 +1,9 @@
-import React, { useEffect, useRef, useState, type FormEvent } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { LoginSchema, type LoginInput } from '@nexus/contracts';
 import { login, startGoogleLogin } from '../../services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import { clearPasswordChangedNotice, hasPasswordChangedNotice } from '../../services/authNotice';
@@ -19,15 +22,23 @@ const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const toast = useToast();
-  const [email, setEmail] = useState(() => {
+  const initialEmail = (() => {
     try {
-      const verifiedEmail = sessionStorage.getItem('nexus:verified-email') || '';
-      return verifiedEmail;
+      return sessionStorage.getItem('nexus:verified-email') || '';
     } catch {
       return '';
     }
+  })();
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    setValue,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: { email: initialEmail, password: '' },
   });
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState(() =>
@@ -65,15 +76,14 @@ const Login: React.FC = () => {
       );
     }
   }, [searchParams, location.pathname, location.hash, location.state, navigate]);
-  async function handleLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
+  async function handleLogin(values: LoginInput): Promise<void> {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
     setPending(true);
     setFeedback('');
     setFailed(false);
     try {
-      const result = await login(email.trim(), password);
+      const result = await login(values.email.trim(), values.password);
 
       // Lưu session & nạp thông tin user
       const sessionPromise = establishSession(result.user, result.accessToken, result.refreshToken);
@@ -123,7 +133,13 @@ const Login: React.FC = () => {
                 </h2>
               </div>
 
-              <form onSubmit={handleLogin} className="flex flex-col gap-4" aria-busy={pending}>
+              <form
+                onSubmit={(e) => {
+                  void handleSubmit(handleLogin)(e);
+                }}
+                className="flex flex-col gap-4"
+                aria-busy={pending}
+              >
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-700 mb-1.5">
                     {t('login.emailLabel')}
@@ -134,21 +150,22 @@ const Login: React.FC = () => {
                     </div>
                     <input
                       id="email"
-                      name="email"
                       type="email"
-                      required
                       autoComplete="username"
                       disabled={pending}
                       className="block w-full [padding:0.625rem_0.875rem_0.625rem_2.5rem] [background-color:rgba(248,_250,_252,_0.5)] [border:1px_solid_#e2e8f0] rounded-xl text-sm text-slate-800 [outline:none] [transition:all_0.15s_ease] [&::placeholder]:text-slate-400 focus:bg-white focus:border-blue-600 focus:[box-shadow:0_0_0_3px_rgba(37,_99,_235,_0.15)]"
                       placeholder={t('login.emailPlaceholder')}
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setFeedback('');
-                        setFailed(false);
-                      }}
+                      {...register('email', {
+                        onChange: () => {
+                          setFeedback('');
+                          setFailed(false);
+                        },
+                      })}
                     />
                   </div>
+                  {errors.email && (
+                    <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
@@ -173,20 +190,17 @@ const Login: React.FC = () => {
                     </div>
                     <input
                       id="password"
-                      name="password"
                       type={showPassword ? 'text' : 'password'}
                       className="block w-full [padding:0.625rem_0.875rem_0.625rem_2.5rem] [background-color:rgba(248,_250,_252,_0.5)] [border:1px_solid_#e2e8f0] rounded-xl text-sm text-slate-800 [outline:none] [transition:all_0.15s_ease] [&::placeholder]:text-slate-400 focus:bg-white focus:border-blue-600 focus:[box-shadow:0_0_0_3px_rgba(37,_99,_235,_0.15)]"
                       placeholder={t('login.passwordPlaceholder')}
-                      required
-                      minLength={6}
                       autoComplete="current-password"
                       disabled={pending}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setFeedback('');
-                        setFailed(false);
-                      }}
+                      {...register('password', {
+                        onChange: () => {
+                          setFeedback('');
+                          setFailed(false);
+                        },
+                      })}
                     />
                     <button
                       type="button"
@@ -196,6 +210,9 @@ const Login: React.FC = () => {
                       {showPassword ? <EyeOff /> : <Eye />}
                     </button>
                   </div>
+                  {errors.password && (
+                    <p className="mt-1 text-xs text-rose-600">{errors.password.message}</p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
@@ -288,11 +305,11 @@ const Login: React.FC = () => {
       </main>
       <ForgotPasswordModal
         isOpen={showForgotModal}
-        initialEmail={email.trim()}
+        initialEmail={getValues('email').trim()}
         onClose={() => setShowForgotModal(false)}
         onSuccess={(resetEmail, msg) => {
-          setEmail(resetEmail);
-          setPassword('');
+          setValue('email', resetEmail);
+          setValue('password', '');
           setFeedback(msg);
           setFailed(false);
         }}
