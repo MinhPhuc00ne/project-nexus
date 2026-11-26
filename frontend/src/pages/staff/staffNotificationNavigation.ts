@@ -1,4 +1,4 @@
-import type { UserNotification } from '../../types/notification.types';
+import type { UserNotification } from '@/features/notifications/types/notification.types';
 
 export function resolveStaffNotificationTarget(notification: UserNotification): string | null {
   const metadata = notification.metadata ?? {};

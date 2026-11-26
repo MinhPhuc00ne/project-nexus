@@ -1,6 +1,6 @@
 ﻿import { Image as PictureOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { ProductDetail } from '../../types/product.types';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
 
 interface Props {
   product: ProductDetail;

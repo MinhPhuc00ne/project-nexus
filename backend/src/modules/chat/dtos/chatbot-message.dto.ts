@@ -1,88 +1,52 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { OrderStatus } from '@prisma/client';
-import {
-  ArrayMaxSize,
-  IsArray,
-  IsIn,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-  IsEnum,
-  IsInt,
-  Min,
-  Max,
-  MaxLength,
-  ValidateNested,
-} from 'class-validator';
 
-export class ChatbotHistoryMessageDto {
-  @ApiProperty({ enum: ['user', 'assistant'] })
-  @IsIn(['user', 'assistant'])
-  role!: 'user' | 'assistant';
+const chatbotHistoryMessageFields = {
+  role: z.enum(['user', 'assistant']),
+  content: z.string().trim().min(1).max(2000),
+};
 
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(2000)
-  content!: string;
-}
+export const ChatbotHistoryMessageSchema = z.object(chatbotHistoryMessageFields).strict();
 
-export class GuestChatbotMessageDto {
-  @ApiProperty({ example: 'Tôi muốn hủy đơn hàng đã được shop xác nhận' })
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(2000)
-  message!: string;
+export type ChatbotHistoryMessageInput = z.infer<typeof ChatbotHistoryMessageSchema>;
 
-  @ApiPropertyOptional({
-    type: [ChatbotHistoryMessageDto],
-    description:
-      'Tối đa 12 tin gần nhất, không gồm tin hiện tại; không gửi dữ liệu đơn hàng hoặc bí mật.',
-  })
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(12)
-  @ValidateNested({ each: true })
-  @Type(() => ChatbotHistoryMessageDto)
-  history?: ChatbotHistoryMessageDto[];
-}
+const guestChatbotMessageFields = {
+  message: z
+    .string()
+    .trim()
+    .min(1)
+    .max(2000)
+    .meta({ example: 'Tôi muốn hủy đơn hàng đã được shop xác nhận' }),
+  history: nullAsAbsent(
+    z
+      .array(ChatbotHistoryMessageSchema)
+      .max(12)
+      .describe(
+        'Tối đa 12 tin gần nhất, không gồm tin hiện tại; không gửi dữ liệu đơn hàng hoặc bí mật.',
+      ),
+  ),
+};
 
-export class ChatbotMessageDto extends GuestChatbotMessageDto {
-  @ApiPropertyOptional({
-    enum: ['PURCHASES', 'SALES', 'CART'],
-    description:
-      'PURCHASES: lịch sử đặt hàng cá nhân cho mọi role; SALES: đơn bán; CART: giỏ cá nhân. Có thể nhận diện từ message nếu bỏ trống.',
-  })
-  @IsOptional()
-  @IsIn(['PURCHASES', 'SALES', 'CART'])
-  intent?: 'PURCHASES' | 'SALES' | 'CART';
+export const GuestChatbotMessageSchema = z.object(guestChatbotMessageFields).strict();
 
-  @ApiPropertyOptional({ enum: OrderStatus })
-  @IsOptional()
-  @IsEnum(OrderStatus)
-  status?: OrderStatus;
+export type GuestChatbotMessageInput = z.infer<typeof GuestChatbotMessageSchema>;
 
-  @ApiPropertyOptional({ minimum: 1, maximum: 100000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100000)
-  page?: number;
+const chatbotMessageFields = {
+  ...guestChatbotMessageFields,
+  intent: nullAsAbsent(
+    z
+      .enum(['PURCHASES', 'SALES', 'CART'])
+      .describe(
+        'PURCHASES: lịch sử đặt hàng cá nhân cho mọi role; SALES: đơn bán; CART: giỏ cá nhân. Có thể nhận diện từ message nếu bỏ trống.',
+      ),
+  ),
+  status: nullAsAbsent(z.enum(OrderStatus)),
+  page: nullAsAbsent(z.coerce.number().int().min(1).max(100000)),
+  limit: nullAsAbsent(z.coerce.number().int().min(1).max(20)),
+  orderId: nullAsAbsent(z.uuid().describe('Mã đơn NEXUS cần tra cứu; không phải mã vận đơn GHN')),
+};
 
-  @ApiPropertyOptional({ minimum: 1, maximum: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(20)
-  limit?: number;
+export const ChatbotMessageSchema = z.object(chatbotMessageFields).strict();
 
-  @ApiPropertyOptional({ description: 'Mã đơn NEXUS cần tra cứu; không phải mã vận đơn GHN' })
-  @IsOptional()
-  @IsUUID()
-  orderId?: string;
-}
+export type ChatbotMessageInput = z.infer<typeof ChatbotMessageSchema>;

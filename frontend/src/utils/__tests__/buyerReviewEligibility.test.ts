@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BuyerOrder } from '../../services/orders';
+import type { BuyerOrder } from '@/features/orders/services/orders';
 import { canBuyerReviewShop, getBuyerReviewEligibility } from '../buyerReviewEligibility';
 
 const SHOP_ID = 'shop-1';

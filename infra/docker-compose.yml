@@ -41,11 +41,14 @@ services:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.backend
+      # The Prisma CLI and ts-node live in this stage, not in the server's.
+      # Applies migrations and creates only the system rows; demo data is never
+      # seeded here, because it shares one printed password across every account
+      # it creates. Run `npm run seed:demo` deliberately for a demo database.
+      target: migrator
     container_name: nexus-migrate
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-nexus_secret_2026}@postgres:5432/${POSTGRES_DB:-nexus_main}?schema=public
-    command: sh -c "npx prisma migrate deploy --schema=prisma/schema.prisma && npx ts-node --project tsconfig.json prisma/seed.ts"
-    working_dir: /app/backend
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,6 +60,7 @@ services:
     build:
       context: ..
       dockerfile: infra/docker/Dockerfile.backend
+      target: runner
     container_name: nexus-backend
     restart: unless-stopped
     environment:
@@ -68,9 +72,12 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET:-nexus_super_secret_jwt_key_2026}
-      JWT_ACCESS_EXPIRATION: ${JWT_ACCESS_EXPIRATION:-15m}
-      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-7d}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-nexus_super_secret_refresh_key_2026}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-30d}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
     ports:
       - '3000:3000'
     depends_on:

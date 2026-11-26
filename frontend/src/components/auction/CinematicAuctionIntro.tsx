@@ -20,7 +20,7 @@ import {
   formatAuctionImage,
   type AuctionEntity,
   type AuctionConsignmentItem,
-} from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 
 interface CinematicAuctionIntroProps {
   isOpen: boolean;

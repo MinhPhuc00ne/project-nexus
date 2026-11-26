@@ -1,5 +1,5 @@
-import { ShopShippingProfileModule } from '../users/shop-shipping-profile.module';
 import { Module } from '@nestjs/common';
+import { ShopShippingProfileService } from './services/shop-shipping-profile.service';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { RouteDistanceService } from './services/route-distance.service';
 import { GhnShippingService } from './services/ghn-shipping.service';
@@ -19,7 +19,7 @@ import {
 } from './controllers/seller-pickup.controller';
 
 @Module({
-  imports: [PrismaModule, ShopShippingProfileModule],
+  imports: [PrismaModule],
   controllers: [
     FulfillmentController,
     GhnWebhookController,
@@ -27,6 +27,7 @@ import {
     AdminPickupController,
   ],
   providers: [
+    ShopShippingProfileService,
     GhnOrderActionService,
     RouteDistanceService,
     GhnLogisticsService,
@@ -40,6 +41,7 @@ import {
   ],
   exports: [
     SellerPickupService,
+    ShopShippingProfileService,
     GhnOrderActionService,
     GhnOrderApiService,
     GhnLogisticsService,

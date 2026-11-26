@@ -9,16 +9,17 @@ tsNode.register({
 });
 const load = createRequire(import.meta.url);
 const { AfterSalesStoreService } = load(
-  '../src/modules/commerce/services/after-sales-store.service.ts',
+  '../src/modules/after-sales/services/after-sales-store.service.ts',
 );
-const { RefundService } = load('../src/modules/commerce/services/refund.service.ts');
+const { RefundService } = load('../src/modules/after-sales/services/refund.service.ts');
 const { InventoryService } = load('../src/modules/catalog/services/inventory.service.ts');
 const { OrderCancellationService } = load(
-  '../src/modules/commerce/services/order-cancellation.service.ts',
+  '../src/modules/after-sales/services/order-cancellation.service.ts',
 );
-const { OrderReturnService } = load('../src/modules/commerce/services/order-return.service.ts');
-const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
+const { OrderReturnService } = load('../src/modules/after-sales/services/order-return.service.ts');
+const { OrderService } = load('../src/modules/orders/services/order.service.ts');
 const { ReputationService } = load('../src/modules/users/services/reputation.service.ts');
+const { OrderPaymentHelper } = load('../src/modules/orders/services/order-payment.helper.ts');
 export const buyer = { id: 'buyer', role: 'BUYER' };
 export const seller = { id: 'seller', role: 'SELLER' };
 export const admin = { id: 'admin', role: 'ADMIN' };
@@ -252,7 +253,11 @@ export function fixture() {
     },
   };
   const store = new AfterSalesStoreService(prisma, new ReputationService(prisma, {}));
-  const finance = { getOrCreatePrimaryAdminWallet: async () => copy(state.wallets[0]) };
+  const finance = {
+    getOrCreatePrimaryAdminWallet: async () => copy(state.wallets[0]),
+    getOrCreateEscrowWallet: async () => copy(state.wallets[0]),
+    getOrCreatePlatformRevenueWallet: async () => copy(state.wallets[0]),
+  };
   const refunds = new RefundService(prisma, finance, store);
   const inventory = new InventoryService(prisma);
   const ghn = {
@@ -270,16 +275,23 @@ export function fixture() {
     actions,
     finance,
     cancel: new OrderCancellationService(prisma, store, ghn, actions, inventory, refunds),
-    returns: new OrderReturnService(prisma, store, ghn, actions, inventory, refunds),
+    returns: new OrderReturnService(prisma, store, ghn, actions, inventory, refunds, {
+      isShippingSandbox: () => true,
+    }),
     payments: new OrderService(
       prisma,
-      { verifyWebhook: async () => ({ orderCode: 123, code: '00', amount: 130000 }) },
       {},
-      {},
-      {},
+      new OrderPaymentHelper(
+        prisma,
+        { verifyWebhook: async () => ({ orderCode: 123, code: '00', amount: 130000 }) },
+        { next: async () => 1_000_000_000_001 },
+        {},
+        {},
+        inventory,
+        refunds,
+        finance,
+      ),
       inventory,
-      refunds,
-      finance,
     ),
     fullOrder,
   };

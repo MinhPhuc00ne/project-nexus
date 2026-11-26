@@ -10,8 +10,8 @@ tsNode.register({
 });
 
 const load = createRequire(import.meta.url);
-const { CartService } = load('../src/modules/commerce/services/cart.service.ts');
-const { PayosService } = load('../src/modules/commerce/services/payos.service.ts');
+const { CartService } = load('../src/modules/cart/services/cart.service.ts');
+const { PayosService } = load('../src/modules/payments/services/payos.service.ts');
 
 test('CartService prevents seller from adding their own product to cart', async () => {
   const tx = {
@@ -79,7 +79,8 @@ test('PayosService verifies webhook signatures and wraps invalid signature error
   const configService = {
     get: () => 'dummy-key',
   };
-  const payosService = new PayosService(configService);
+  // The sandbox adapter is unused here: this fixture drives the PayOS path.
+  const payosService = new PayosService(configService, { isPaymentSandbox: () => false }, {});
 
   payosService.payOS = {
     webhooks: {

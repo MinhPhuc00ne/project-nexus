@@ -17,7 +17,23 @@ const { NestFactory } = load('@nestjs/core');
 const { ChatGateway } = load('../src/modules/chat/gateways/chat.gateway.ts');
 const { ChatService } = load('../src/modules/chat/services/chat.service.ts');
 const { StaffQueueService } = load('../src/modules/chat/services/staff-queue.service.ts');
-const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
+const { ChatPresenceService } = load('../src/modules/chat/services/chat-presence.service.ts');
+const { EventEmitter2 } = load('@nestjs/event-emitter');
+const { ChatRealtimePublisher } = load('../src/modules/chat/services/chat-realtime.publisher.ts');
+const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
+
+/**
+ * Stands in for TokenAuthService: the handshake token is read as the account id,
+ * so the realtime path is exercised without signing real tokens.
+ */
+const tokenAuthStub = {
+  authenticateOptional: async (token) => {
+    if (!token) return undefined;
+    const [id, role] = token.split('|');
+    return { id, sub: id, role };
+  },
+};
+const { SocketMetricsService } = load('../src/core/realtime/socket-metrics.service.ts');
 const { TransformResponseInterceptor } = load(
   '../src/core/interceptors/transform-response.interceptor.ts',
 );
@@ -26,7 +42,6 @@ test(
   'global HTTP interceptor preserves HTTP envelopes while real Nest websocket rooms receive raw chat messages',
   { timeout: 15000 },
   async () => {
-    let broadcaster;
     class HealthController {
       health() {
         return { ready: true };
@@ -45,14 +60,22 @@ test(
         ChatGateway,
         {
           provide: ChatService,
+          useValue: {},
+        },
+        { provide: TokenAuthService, useValue: tokenAuthStub },
+        { provide: StaffQueueService, useValue: {} },
+        {
+          provide: ChatPresenceService,
           useValue: {
-            setBroadcaster(value) {
-              broadcaster = value;
-            },
+            connect: async () => {},
+            disconnect: async () => {},
+            isOnline: async () => false,
           },
         },
-        { provide: ConfigService, useValue: { get: () => 'chat-realtime-test-secret' } },
-        { provide: StaffQueueService, useValue: {} },
+        { provide: ChatRealtimePublisher, useValue: {} },
+        // The gateway subscribes to chat events through the emitter.
+        { provide: EventEmitter2, useValue: new EventEmitter2() },
+        SocketMetricsService,
       ],
     })(RealtimeModule);
     const app = await NestFactory.create(RealtimeModule, { logger: false });
@@ -70,10 +93,7 @@ test(
       assert.equal(body.traceId, 'http-still-wrapped');
       socket = io(`${base}/chat`, {
         auth: {
-          token: LightweightJwt.sign(
-            { sub: 'buyer', role: 'BUYER' },
-            { secret: 'chat-realtime-test-secret', expiresInSeconds: 60 },
-          ),
+          token: 'buyer|BUYER',
         },
         reconnection: false,
       });
@@ -88,7 +108,9 @@ test(
         senderId: 'seller',
       };
       const received = once(socket, 'new_message');
-      broadcaster.broadcastMessage('realtime-conversation', message);
+      // The gateway subscribes to the published event rather than being handed
+      // to the service as a broadcaster.
+      app.get(ChatGateway).broadcastMessage('realtime-conversation', message);
       assert.deepEqual((await received)[0], message);
       assert.equal((await app.get(ChatGateway).server.in('user:buyer').fetchSockets()).length, 1);
     } finally {

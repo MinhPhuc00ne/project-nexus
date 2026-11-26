@@ -1,27 +1,14 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class QueryStaffDto {
-  @ApiPropertyOptional({
-    description: 'Từ khóa tìm kiếm theo họ tên hoặc email',
-    example: 'staff',
-  })
-  @IsOptional()
-  @IsString()
-  search?: string;
+const queryStaffFields = {
+  search: nullAsAbsent(
+    z.string().describe('Từ khóa tìm kiếm theo họ tên hoặc email').meta({ example: 'staff' }),
+  ),
+  page: z.coerce.number().int().min(1).describe('Trang hiện tại (bắt đầu từ 1)').default(1),
+  limit: z.coerce.number().int().min(1).describe('Số bản ghi trên mỗi trang').default(10),
+};
 
-  @ApiPropertyOptional({ description: 'Trang hiện tại (bắt đầu từ 1)', default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'Page phải là số nguyên' })
-  @Min(1, { message: 'Page tối thiểu là 1' })
-  page?: number = 1;
+export const QueryStaffSchema = z.object(queryStaffFields).strict();
 
-  @ApiPropertyOptional({ description: 'Số bản ghi trên mỗi trang', default: 10 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt({ message: 'Limit phải là số nguyên' })
-  @Min(1, { message: 'Limit tối thiểu là 1' })
-  limit?: number = 10;
-}
+export type QueryStaffInput = z.infer<typeof QueryStaffSchema>;

@@ -6,21 +6,23 @@ import {
   depositToAdminWallet,
   getAdminWallet,
   getAdminWalletTransactions,
-} from '../../../../services/admin';
+} from '@/features/admin/services/admin';
 import {
   checkBuyerDepositStatusApi,
   type WalletDepositStatus,
-} from '../../../../services/wallet.service';
-import { adminRequest } from '../../../../services/adminRequest';
+} from '@/features/wallet/services/wallet.service';
+import { adminRequest } from '@/features/admin/services/adminRequest';
 import AdminWallet from '../AdminWallet';
 
-vi.mock('../../../../services/admin', () => ({
+vi.mock('@/features/admin/services/admin', () => ({
   depositToAdminWallet: vi.fn(),
   getAdminWallet: vi.fn(),
   getAdminWalletTransactions: vi.fn(),
 }));
-vi.mock('../../../../services/wallet.service', () => ({ checkBuyerDepositStatusApi: vi.fn() }));
-vi.mock('../../../../services/adminRequest', () => ({ adminRequest: vi.fn() }));
+vi.mock('@/features/wallet/services/wallet.service', () => ({
+  checkBuyerDepositStatusApi: vi.fn(),
+}));
+vi.mock('@/features/admin/services/adminRequest', () => ({ adminRequest: vi.fn() }));
 vi.mock('qrcode', () => ({ default: { toDataURL: vi.fn() } }));
 
 beforeEach(async () => {
@@ -44,11 +46,13 @@ beforeEach(async () => {
     limit: 10,
     totalPages: 0,
   });
-  vi.mocked(QRCode.toDataURL).mockResolvedValue('data:image/png;base64,qr');
+  vi.mocked(
+    QRCode.toDataURL as unknown as (text: string, options?: unknown) => Promise<string>,
+  ).mockResolvedValue('data:image/png;base64,qr');
 });
 
 it('requests PayOS through the existing authenticated wallet deposit endpoint', async () => {
-  const service = await import('../../../../services/adminCommerce');
+  const service = await import('@/features/admin/services/adminCommerce');
   await service.depositToAdminWallet({ amount: 100000, description: 'Reserve' });
   expect(adminRequest).toHaveBeenCalledWith({
     url: '/commerce/wallet/deposit',

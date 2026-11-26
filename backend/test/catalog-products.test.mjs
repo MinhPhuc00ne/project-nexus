@@ -15,7 +15,7 @@ const { ProductTrendingService } = load(
   '../src/modules/catalog/services/product-trending.service.ts',
 );
 const { AdminProductsService } = load('../src/modules/admin/services/admin-products.service.ts');
-const { effectivePrice, priceView } = load('../src/modules/catalog/utils/product-price.ts');
+const { effectivePrice, priceView } = load('../src/core/domain/product-price.ts');
 
 test('CategoryService builds 3-level tree and enforces max depth of 3 levels', async () => {
   const categories = [

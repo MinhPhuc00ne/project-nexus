@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Badge } from '../shared/AdminUI';
-import type { SellerOrderStatus } from '../../../types/order.types';
+import type { SellerOrderStatus } from '@/features/orders/types/order.types';
 import i18n from '../../../i18n';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatCurrency } from '../../../i18n/formatters';

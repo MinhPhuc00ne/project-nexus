@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useSellerSession } from '../components/seller/SellerSession';
 import { useAuth } from '../contexts/AuthContext';
-import { clearAuthSession } from '../services/auth';
+import { clearAuthSession } from '@/features/auth/services/auth';
 import { useSellerStore } from '../components/seller/useSellerStore';
 import SellerNotifications from '../components/seller/SellerNotifications';
 import { SellerWorkspaceContext } from '../components/seller/SellerWorkspace';
@@ -75,7 +75,6 @@ function SellerWorkspace() {
   const [account, setAccount] = useState(false);
   const [notifications, setNotifications] = useState(false);
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
-  const [preview, setPreview] = useState(false);
   const [search, setSearch] = useState('');
   const store = useSellerStore(user.id);
   const draftKey = `nexus:seller-drafts:${user.id}`;
@@ -154,8 +153,6 @@ function SellerWorkspace() {
   return (
     <SellerWorkspaceContext.Provider
       value={{
-        preview,
-        setPreview,
         storeName: store.name,
         storeLoading: store.loading,
         storeError: store.error,
@@ -371,7 +368,7 @@ function SellerWorkspace() {
             <Outlet />
           </main>
           <footer
-            className="py-6 px-8 flex justify-between text-[#99a6bc] text-[10px] gap-3 [&>span:not(.anticon):last-child]:flex [&>span:not(.anticon):last-child]:items-center [&>span:not(.anticon):last-child]:gap-1.5 max-[760px]:py-5 max-[760px]:px-4.5 max-[760px]:[&>span:not(.anticon):last-child]:hidden"
+            className="py-6 px-8 flex justify-between text-[#99a6bc] text-[10px] gap-3 [&>span:last-child]:flex [&>span:last-child]:items-center [&>span:last-child]:gap-1.5 max-[760px]:py-5 max-[760px]:px-4.5 max-[760px]:[&>span:last-child]:hidden"
             data-seller="footer"
           >
             <span>© {new Date().getFullYear()} NEXUS · Seller Center</span>

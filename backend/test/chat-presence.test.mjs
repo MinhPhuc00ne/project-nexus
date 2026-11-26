@@ -14,7 +14,17 @@ tsNode.register({
 });
 const load = createRequire(import.meta.url);
 const { ChatGateway } = load('../src/modules/chat/gateways/chat.gateway.ts');
-const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
+/**
+ * Stands in for TokenAuthService: the handshake token is read as the account
+ * id, so presence can be exercised without signing real tokens.
+ */
+const tokenAuthStub = {
+  authenticateOptional: async (token) => {
+    if (!token) return undefined;
+    const [id, role] = token.split('|');
+    return { id, sub: id, role };
+  },
+};
 
 test(
   'real socket presence keeps a seller online until the last tab closes and detects support availability',
@@ -23,17 +33,26 @@ test(
     const http = createServer();
     const io = new Server(http);
     const namespace = io.of('/chat');
+    const online = new Set();
     const gateway = new ChatGateway(
       { processQueueForStaff: async () => {} },
-      { get: () => 'presence-test-secret' },
+      tokenAuthStub,
       {
-        registerOnlineStaff() {},
-        unregisterStaff() {},
+        registerOnlineStaff: async () => {},
+        unregisterStaff: async () => {},
       },
+      // Presence is shared state now; this records it in the test process.
+      {
+        connect: async (userId, socketId) => online.add(userId + '|' + socketId),
+        disconnect: async (userId, socketId) => online.delete(userId + '|' + socketId),
+        isOnline: async (userId) => [...online].some((k) => k.startsWith(userId + '|')),
+      },
+      { registerServer() {} },
+      { on() {} },
     );
     gateway.server = namespace;
-    namespace.on('connection', (socket) => {
-      gateway.handleConnection(socket);
+    namespace.on('connection', async (socket) => {
+      await gateway.handleConnection(socket);
       socket.on('disconnect', () => gateway.handleDisconnect(socket));
     });
     const clients = [];
@@ -43,10 +62,7 @@ test(
         forceNew: true,
         reconnection: false,
         auth: {
-          token: LightweightJwt.sign(
-            { sub: id, role },
-            { secret: 'presence-test-secret', expiresInSeconds: 60 },
-          ),
+          token: `${id}|${role}`,
         },
       });
       clients.push(client);

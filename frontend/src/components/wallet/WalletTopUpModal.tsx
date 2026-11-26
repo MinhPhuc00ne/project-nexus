@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Loader2, Building2, X, WalletCards } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
-import type { WalletDepositProvider } from '../../services/wallet.service';
+import type { WalletDepositProvider } from '@/features/wallet/services/wallet.service';
 
 interface WalletTopUpModalProps {
   isOpen: boolean;

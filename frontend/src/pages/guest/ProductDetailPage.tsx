@@ -5,16 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';
 import { ShoppingCart as ShoppingCartOutlined } from 'lucide-react';
 import { Star, Tag, Heart, Flag, Zap, Check, Flame } from 'lucide-react';
-import { getProductByIdAsync } from '../../services/products.service';
-import type { ProductDetail } from '../../types/product.types';
-import { addToCart, fetchCart, type CartItem } from '../../services/cart';
-import { getStoredToken } from '../../services/auth';
+import { getProductByIdAsync } from '@/features/catalog/services/products.service';
+import type { ProductDetail } from '@/features/catalog/types/product.types';
+import { addToCart, fetchCart, type CartItem } from '@/features/cart/services/cart';
+import { getStoredToken } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';
 import {
-  getBuyerWishlist,
   addBuyerWishlistItem,
+  getBuyerWishlistIds,
   removeBuyerWishlistItem,
-} from '../../services/wishlist.service';
+} from '@/features/wishlist/services/wishlist.service';
 import ProductImageGallery from '../../components/productDetail/ProductImageGallery';
 import ProductShopBanner from '../../components/productDetail/ProductShopBanner';
 import ProductInfoTabs from '../../components/productDetail/ProductInfoTabs';
@@ -98,9 +98,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [isInWishlist, setIsInWishlist] = useState(() =>
-    getBuyerWishlist(user?.id).some((i) => i.id === product.id),
-  );
+  const [isInWishlist, setIsInWishlist] = useState(false);
 
   const optionGroups = Array.isArray(product.options)
     ? product.options.filter((g) => g.name && g.values.length > 0)
@@ -117,6 +115,22 @@ function ProductContent({ product }: { product: ProductDetail }) {
   const canBuy = product.stock > 0;
 
   useEffect(() => {
+    let cancelled = false;
+    getBuyerWishlistIds()
+      .then((ids) => {
+        if (!cancelled) setIsInWishlist(ids.includes(product.id));
+      })
+      .catch((error: unknown) => {
+        // A wishlist that cannot be read is not worth interrupting the page for;
+        // the heart stays empty and saving still works.
+        console.error('Unable to read the wishlist:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id, user?.id]);
+
+  useEffect(() => {
     if (user?.role !== Role.BUYER || !product.category?.id) return;
     try {
       recordBuyerProductView(user.id, { id: product.id, categoryId: product.category.id });
@@ -126,23 +140,33 @@ function ProductContent({ product }: { product: ProductDetail }) {
     }
   }, [globalToast, product.category?.id, product.id, t, user?.id, user?.role]);
 
-  const toggleWishlist = () => {
-    if (isInWishlist) {
-      removeBuyerWishlistItem(user?.id, product.id);
-      setIsInWishlist(false);
-      setToast({ type: 'success', message: t('product.wishlistRemoved') });
-    } else {
-      addBuyerWishlistItem(user?.id, {
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        img: product.images[0] || '',
-        shopName: product.shop.name,
-        category: product.categoryName,
-        inStock: product.stock > 0,
+  const toggleWishlist = async () => {
+    // Saving is a write to the account now, not to this browser, so the heart
+    // follows what the server accepted rather than being set hopefully.
+    try {
+      if (isInWishlist) {
+        await removeBuyerWishlistItem(product.id);
+        setIsInWishlist(false);
+        setToast({ type: 'success', message: t('product.wishlistRemoved') });
+      } else {
+        await addBuyerWishlistItem({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          img: product.images[0] || '',
+          shopName: product.shop.name,
+          category: product.categoryName,
+          inStock: product.stock > 0,
+        });
+        setIsInWishlist(true);
+        setToast({ type: 'success', message: t('product.wishlistAdded') });
+      }
+    } catch (error) {
+      console.error('Unable to update the wishlist:', error);
+      setToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : t('product.wishlistFailed'),
       });
-      setIsInWishlist(true);
-      setToast({ type: 'success', message: t('product.wishlistAdded') });
     }
   };
 

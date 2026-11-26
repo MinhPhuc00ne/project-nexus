@@ -51,10 +51,6 @@
     "nextPage": "Trang sau",
     "breadcrumbAria": "Đường dẫn",
     "sellerCenter": "Kênh người bán",
-    "previewActive": "{{label}}: dữ liệu minh họa, không phải giao dịch thật.",
-    "previewEmpty": "{{label}} chưa có dữ liệu từ hệ thống.",
-    "hideSampleData": "Tắt dữ liệu mẫu",
-    "viewSampleData": "Xem dữ liệu mẫu",
     "emptyTitle": "Chưa có dữ liệu",
     "emptyDesc": "Dữ liệu sẽ xuất hiện tại đây khi có hoạt động mới.",
     "policies": {
@@ -64,7 +60,8 @@
       "packagingBody": "Kiểm tra sản phẩm, lưu bằng chứng đóng gói và niêm phong trước khi bàn giao.",
       "reputationTitle": "Uy tín người bán",
       "reputationBody": "Thông tin chính xác, giao hàng đúng hẹn và phản hồi khách hàng giúp bảo vệ uy tín gian hàng."
-    }
+    },
+    "liveData": "{{label}} hiển thị số liệu thật của gian hàng."
   },
   "session": {
     "switchModeFailed": "Không thể chuyển sang chế độ Người bán.",
@@ -275,13 +272,6 @@
       "CONFIRMED": "Hoàn tất",
       "CANCELLED": "Đã hủy",
       "REFUNDED": "Hoàn tiền"
-    },
-    "previewStatuses": {
-      "pending": "Chờ xác nhận",
-      "packing": "Chờ giao GHN",
-      "shipping": "Đang giao hàng",
-      "delivered": "Đã giao thành công",
-      "cancelled": "Đã hủy / Hoàn trả"
     },
     "pageTitle": "Đơn hàng & vận chuyển GHN",
     "pageDesc": "Xác nhận đơn, chuẩn bị kiện hàng và theo dõi vận đơn của gian hàng.",
@@ -703,10 +693,6 @@
     },
     "completeShop": "Hoàn thiện gian hàng",
     "bottomNoteApi": "Thông tin tài khoản và số dư ví được lấy từ API.",
-    "bottomNotePreviewOn": "Các giao dịch đang hiển thị là dữ liệu mẫu.",
-    "bottomNotePreviewOff": "Bạn có thể xem trước bố cục với dữ liệu mẫu.",
-    "hideSample": "Tắt dữ liệu mẫu",
-    "viewSample": "Xem dữ liệu mẫu",
     "identity": {
       "loading": "Đang tải gian hàng…",
       "fallbackName": "Gian hàng của {{name}}",
@@ -720,9 +706,7 @@
     },
     "stats": {
       "netRevenue": "Doanh thu thuần",
-      "netRevenueTrend": "+16,8% so với kỳ trước",
       "noRevenueData": "Chưa có dữ liệu doanh thu",
-      "sampleRevenueNote": "Dữ liệu doanh thu minh họa",
       "trackSalesNote": "Theo dõi hiệu quả bán hàng",
       "availableBalance": "Số dư ví khả dụng",
       "balanceDetail": "Số dư từ tài khoản của bạn",
@@ -734,55 +718,63 @@
       "liveAuctions": "Phiên đấu giá đang diễn ra",
       "liveAuctionsDetail": "27 lượt trả giá minh họa",
       "noAuctionsData": "Chưa có dữ liệu phiên đấu giá",
-      "exploreAuctions": "Khám phá phòng đấu giá"
+      "exploreAuctions": "Khám phá phòng đấu giá",
+      "inEscrowDetail": "Đang ký quỹ {{amount}}",
+      "afterFeeNote": "Sau phí sàn {{rate}}%"
     },
     "revenue": {
       "title": "Tăng trưởng dòng tiền & doanh số",
       "subtitle": "So sánh doanh thu đấu giá và bán lẻ trực tiếp",
       "unit": "VND triệu",
-      "periods": {
-        "7d": "7 ngày",
-        "30d": "30 ngày",
-        "month": "Tháng này"
-      },
-      "weekdays": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
       "emptyTitle": "Doanh thu sẽ được hiển thị tại đây",
       "emptyDesc": "Chưa có số liệu trong kỳ đã chọn",
-      "auctionLabel": "Đấu giá",
-      "auctionSample": "218,2 triệu",
-      "retailLabel": "Bán lẻ trực tiếp",
-      "retailSample": "130,4 triệu",
       "exportErr": "Chưa có dữ liệu để xuất báo cáo.",
       "exportBtn": "Xuất báo cáo doanh thu",
       "csvFilename": "doanh-thu-minh-hoa.csv",
-      "csvHeader": "Dữ liệu minh họa",
       "shareTitle": "Tỷ trọng nguồn thu",
       "shareSubtitle": "Phân bổ doanh thu theo kênh",
       "totalRevenueLabel": "TỔNG DOANH THU",
-      "shareFootnotePreview": "Số liệu minh họa cho giao diện báo cáo.",
-      "shareFootnoteEmpty": "Tự động tổng hợp khi có dữ liệu bán hàng."
+      "shareFootnoteEmpty": "Tự động tổng hợp khi có dữ liệu bán hàng.",
+      "ranges": {
+        "6m": "6 tháng",
+        "12m": "12 tháng"
+      },
+      "loading": "Đang tải doanh thu…",
+      "grossLabel": "Tổng thu",
+      "netLabel": "Sau phí",
+      "releasedLabel": "Đã giải ngân",
+      "inEscrowLabel": "Đang ký quỹ",
+      "ordersCount": "{{count}} đơn",
+      "csvMonthHeader": "Tháng",
+      "csvGrossHeader": "Doanh thu (VND)",
+      "csvOrdersHeader": "Số đơn",
+      "shareFootnote": "Phí sàn đến nay: {{fee}} ở mức {{rate}}%."
     },
     "ordersPreview": {
       "title": "Đơn hàng chờ bàn giao GHN",
       "subtitle": "Chuẩn bị, đóng gói và theo dõi vận chuyển",
       "viewAll": "Xem tất cả",
-      "packing": "Chờ giao GHN",
-      "pending": "Chờ xác nhận",
       "emptyTitle": "Chưa có đơn hàng cần xử lý",
-      "emptyDesc": "Đơn hàng của gian hàng sẽ được tập trung tại đây."
+      "emptyDesc": "Đơn hàng của gian hàng sẽ được tập trung tại đây.",
+      "loading": "Đang tải đơn mới nhất…",
+      "untitled": "Sản phẩm chưa có tên"
     },
     "auctionsPreview": {
       "title": "Không gian đấu giá",
       "subtitle": "Quản lý phiên và vật phẩm sưu tầm của gian hàng",
       "allSessions": "Tất cả phiên",
       "liveBadge": "● ĐANG DIỄN RA",
-      "endedBadge": "Đã kết thúc",
-      "bidsSample": "{{count}} lượt trả giá · Dữ liệu mẫu",
-      "currentPrice": "Giá hiện tại",
       "exploreSession": "Khám phá phiên",
       "emptyTitle": "Sẵn sàng cho phiên đấu giá đầu tiên?",
       "emptyDesc": "Chuẩn bị thông tin và hình ảnh vật phẩm của bạn.",
-      "createDraft": "Tạo bản nháp phiên"
+      "createDraft": "Tạo bản nháp phiên",
+      "loading": "Đang tải lô hàng của bạn…",
+      "startingPrice": "Giá khởi điểm",
+      "lotStatus": {
+        "PENDING_REVIEW": "Chờ thẩm định",
+        "APPROVED": "Đã duyệt",
+        "REJECTED": "Bị từ chối"
+      }
     },
     "walletPanel": {
       "title": "Ví tài chính & ký quỹ Escrow",

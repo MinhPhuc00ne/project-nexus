@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { ProviderConfigService } from '../providers/provider-config.service';
 
 export interface SendEmailOptions {
   to: string;
@@ -14,20 +15,35 @@ export interface SendEmailOptions {
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly providers: ProviderConfigService,
+  ) {}
 
   async sendEmail(options: SendEmailOptions): Promise<boolean> {
+    // MAIL_PROVIDER=console is how a local or demo run reads its own OTP
+    // codes. It is chosen deliberately, and production refuses to boot with
+    // it, so this is no longer a silent fallback for missing credentials.
+    if (this.providers.isMailConsole()) {
+      this.logger.log(`[mail:console] to=${options.to} subject=${options.subject}`);
+      if (!options.sensitive) {
+        this.logger.debug(options.text || options.html || '');
+      }
+      return true;
+    }
+
     const host = this.configService.get<string>('SMTP_HOST');
     const port = Number(this.configService.get<string>('SMTP_PORT') || 587);
     const user = this.configService.get<string>('SMTP_USER');
     const pass = this.configService.get<string>('SMTP_PASS');
     const from = this.configService.get<string>('SMTP_FROM') || user;
     if (!host || !user || !pass || !from) {
-      this.logger.warn('SMTP chưa được cấu hình; email chưa được gửi.');
-      if (!options.sensitive && this.configService.get<string>('NODE_ENV') === 'development') {
-        this.logger.debug(options.text || options.html || '');
-      }
-      return !options.requireDelivery;
+      // MAIL_PROVIDER=smtp is validated at boot, so reaching here means the
+      // configuration changed underneath a running process.
+      this.logger.error(
+        'MAIL_PROVIDER=smtp but SMTP credentials are incomplete; refusing to send.',
+      );
+      return false;
     }
     try {
       const transport = nodemailer.createTransport({

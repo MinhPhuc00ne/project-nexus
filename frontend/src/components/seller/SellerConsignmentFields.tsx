@@ -1,6 +1,6 @@
 import { type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AuctionEntity } from '../../services/auction.service';
+import type { AuctionEntity } from '@/features/auction/services/auction.service';
 import { formatConsignmentDate, type ConsignmentFormState } from './sellerConsignmentHelpers';
 import { Panel } from './SellerUI';
 

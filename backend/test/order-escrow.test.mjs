@@ -9,11 +9,13 @@ tsNode.register({
   transpileOnly: true,
 });
 const load = createRequire(import.meta.url);
-const { OrderEscrowService } = load('../src/modules/commerce/services/order-escrow.service.ts');
-const { OrderService } = load('../src/modules/commerce/services/order.service.ts');
+const { OrderEscrowService } = load('../src/modules/orders/services/order-escrow.service.ts');
+const { OrderService } = load('../src/modules/orders/services/order.service.ts');
 const { SellerEngagementService } = load(
-  '../src/modules/commerce/services/seller-engagement.service.ts',
+  '../src/modules/reviews/services/seller-engagement.service.ts',
 );
+const { OrderPaymentHelper } = load('../src/modules/orders/services/order-payment.helper.ts');
+const { PayosWebhookService } = load('../src/modules/wallet/services/payos-webhook.service.ts');
 
 function fixture() {
   const order = {
@@ -64,8 +66,12 @@ function fixture() {
   };
   const service = new OrderEscrowService(
     prisma,
-    { getSettings: async () => ({ platformFeePercentage: 7 }) },
-    { getOrCreatePrimaryAdminWallet: async () => ({ id: 'admin-wallet' }) },
+    { getAll: async () => ({ platformFeePercentage: 7 }) },
+    {
+      getOrCreatePrimaryAdminWallet: async () => ({ id: 'admin-wallet' }),
+      getOrCreateEscrowWallet: async () => ({ id: 'escrow-wallet' }),
+      getOrCreatePlatformRevenueWallet: async () => ({ id: 'platform-revenue-wallet' }),
+    },
   );
   return { service, tx, order };
 }
@@ -91,9 +97,10 @@ test('verified buyer confirmation releases funds and awards reputation exactly o
   ]);
   assert.equal(f.order.status, 'CONFIRMED');
   assert.equal(f.order.escrowRecord.status, 'DISBURSED');
-  assert.equal(f.tx.wallet.update.mock.callCount(), 2);
+  assert.equal(f.tx.wallet.update.mock.callCount(), 3);
   assert.equal(f.tx.wallet.update.mock.calls[0].arguments[0].data.balance.increment, 93000);
-  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].data.balance.decrement, 123000);
+  assert.equal(f.tx.wallet.update.mock.calls[1].arguments[0].data.balance.decrement, 130000);
+  assert.equal(f.tx.wallet.update.mock.calls[2].arguments[0].data.balance.increment, 7000);
   assert.equal(f.tx.reputationLog.create.mock.callCount(), 2);
   assert.equal(f.tx.notification.create.mock.callCount(), 1);
 });
@@ -193,17 +200,24 @@ function paymentFixture() {
   const verified = { orderCode: 123, code: '00', amount: 130000 };
   const service = new OrderService(
     prisma,
-    { verifyWebhook: async () => verified },
     {},
-    {},
-    { hold },
+    new OrderPaymentHelper(
+      prisma,
+      { verifyWebhook: async () => verified },
+      { next: async () => 1_000_000_000_001 },
+      {},
+      { hold },
+    ),
   );
   return { service, hold, verified, prisma, order };
 }
 
 test('concurrent PayOS callbacks hold payment once instead of paying out twice', async () => {
   const f = paymentFixture();
-  await Promise.all([f.service.handlePayosWebhook({}), f.service.handlePayosWebhook({})]);
+  await Promise.all([
+    f.service.settleOrderPayment(f.verified),
+    f.service.settleOrderPayment(f.verified),
+  ]);
   assert.equal(f.hold.mock.callCount(), 1);
   assert.equal(f.order.status, 'PAID');
 });
@@ -211,7 +225,10 @@ test('concurrent PayOS callbacks hold payment once instead of paying out twice',
 test('PayOS payment amount must match the server order', async () => {
   const f = paymentFixture();
   f.verified.amount = 1;
-  await assert.rejects(f.service.handlePayosWebhook({}), (error) => error.getStatus() === 400);
+  await assert.rejects(
+    f.service.settleOrderPayment(f.verified),
+    (error) => error.getStatus() === 400,
+  );
   assert.equal(f.hold.mock.callCount(), 0);
   assert.equal(f.prisma.$transaction.mock.callCount(), 0);
 });
@@ -235,4 +252,58 @@ test('a seller response cannot overwrite a concurrently resolved dispute', async
     (error) => error.getStatus() === 400,
   );
   assert.deepEqual(updateMany.mock.calls[0].arguments[0].where.status.in, ['OPEN', 'UNDER_REVIEW']);
+});
+
+test('a PayOS callback goes to the order it paid for, or to the wallet it topped up', async () => {
+  const verified = { orderCode: 7, code: '00', amount: 1000 };
+  const payos = { verifyWebhook: mock.fn(async () => verified) };
+  const seen = [];
+
+  // Nothing holds a record for this orderCode: both owners decline it.
+  const orphan = new PayosWebhookService(
+    payos,
+    { settleOrderPayment: async () => null },
+    { settleTopup: async () => null },
+  );
+  assert.deepEqual(await orphan.handle({}), {
+    success: false,
+    message: 'Payment record not found',
+  });
+
+  // An order payment is settled by the order side and the wallet is never asked.
+  const paid = new PayosWebhookService(
+    payos,
+    {
+      settleOrderPayment: async (data) => {
+        seen.push(data);
+        return { success: true, orderCode: data.orderCode };
+      },
+    },
+    {
+      settleTopup: async () => {
+        throw new Error('the wallet must not be offered a settled order payment');
+      },
+    },
+  );
+  assert.deepEqual(await paid.handle({}), { success: true, orderCode: 7 });
+  assert.deepEqual(seen, [verified]);
+
+  // A top-up carries the same callback shape and is claimed by the wallet.
+  const topped = new PayosWebhookService(
+    payos,
+    { settleOrderPayment: async () => null },
+    {
+      settleTopup: async () => ({
+        success: true,
+        message: 'Wallet deposit processed successfully',
+      }),
+    },
+  );
+  assert.deepEqual(await topped.handle({}), {
+    success: true,
+    message: 'Wallet deposit processed successfully',
+  });
+
+  // The signature is verified once per callback, before either owner is asked.
+  assert.equal(payos.verifyWebhook.mock.callCount(), 3);
 });

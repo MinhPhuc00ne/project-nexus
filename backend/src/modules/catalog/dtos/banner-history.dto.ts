@@ -1,66 +1,59 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 import { BannerCreatorRole, Role } from '@prisma/client';
-import { Type } from 'class-transformer';
-import { IsDateString, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
 
 /** Bounded audit filters shared by all authorized administrators and support staff. */
-export class QueryBannerHistoryDto {
-  @ApiPropertyOptional({ format: 'uuid' })
-  @IsOptional()
-  @IsUUID()
-  bannerId?: string;
+const queryBannerHistoryFields = {
+  bannerId: nullAsAbsent(z.uuid()),
+  actorId: nullAsAbsent(z.uuid().describe('Account that disabled the banner')),
+  from: nullAsAbsent(z.iso.datetime().describe('Inclusive lower timestamp')),
+  to: nullAsAbsent(z.iso.datetime().describe('Inclusive upper timestamp')),
+  page: z.coerce.number().int().min(1).max(21474836).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+};
 
-  @ApiPropertyOptional({ format: 'uuid', description: 'Account that disabled the banner' })
-  @IsOptional()
-  @IsUUID()
-  actorId?: string;
+export const QueryBannerHistorySchema = z.object(queryBannerHistoryFields).strict();
 
-  @ApiPropertyOptional({ format: 'date-time', description: 'Inclusive lower timestamp' })
-  @IsOptional()
-  @IsDateString()
-  from?: string;
+export type QueryBannerHistoryInput = z.infer<typeof QueryBannerHistorySchema>;
 
-  @ApiPropertyOptional({ format: 'date-time', description: 'Inclusive upper timestamp' })
-  @IsOptional()
-  @IsDateString()
-  to?: string;
+export const BannerDisableHistorySchema = z
+  .object({
+    id: z.uuid(),
+    bannerId: z.uuid(),
+    bannerTitle: z.string(),
+    creatorId: z.uuid(),
+    creatorName: z.string(),
+    creatorRole: z.enum(BannerCreatorRole),
+    actorId: z.uuid(),
+    actorName: z.string(),
+    actorRole: z.enum(Role),
+    source: z.enum(['UPDATE', 'DELETE', 'DISABLE']),
+    wasActive: z.boolean().meta({ example: true }),
+    isActive: z.boolean().meta({ example: false }),
+    createdAt: z.iso.datetime(),
+  })
+  .meta({ id: 'BannerDisableHistoryDto' });
 
-  @ApiPropertyOptional({ default: 1 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(21474836)
-  page: number = 1;
+export type BannerDisableHistoryDto = Omit<
+  z.infer<typeof BannerDisableHistorySchema>,
+  'createdAt' | 'source'
+> & {
+  source: string;
+  createdAt: Date | string;
+};
 
-  @ApiPropertyOptional({ default: 20, maximum: 100 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit: number = 20;
-}
+export const BannerHistoryPageSchema = z
+  .object({
+    items: z.array(BannerDisableHistorySchema),
+    total: z.number(),
+    page: z.number(),
+    limit: z.number(),
+  })
+  .meta({ id: 'BannerHistoryPageDto' });
 
-/** Immutable snapshots preserve who disabled whose banner even after names or content change. */
-export class BannerDisableHistoryDto {
-  @ApiProperty({ format: 'uuid' }) id!: string;
-  @ApiProperty({ format: 'uuid' }) bannerId!: string;
-  @ApiProperty() bannerTitle!: string;
-  @ApiProperty({ format: 'uuid' }) creatorId!: string;
-  @ApiProperty() creatorName!: string;
-  @ApiProperty({ enum: BannerCreatorRole }) creatorRole!: BannerCreatorRole;
-  @ApiProperty({ format: 'uuid' }) actorId!: string;
-  @ApiProperty() actorName!: string;
-  @ApiProperty({ enum: Role }) actorRole!: Role;
-  @ApiProperty({ enum: ['UPDATE', 'DELETE', 'DISABLE'] }) source!: string;
-  @ApiProperty({ example: true }) wasActive!: boolean;
-  @ApiProperty({ example: false }) isActive!: boolean;
-  @ApiProperty({ type: String, format: 'date-time' }) createdAt!: Date;
-}
-
-/** Paginated history response with stable descending timestamp and identifier ordering. */
-export class BannerHistoryPageDto {
-  @ApiProperty({ type: [BannerDisableHistoryDto] }) items!: BannerDisableHistoryDto[];
-  @ApiProperty() total!: number;
-  @ApiProperty() page!: number;
-  @ApiProperty() limit!: number;
-}
+export type BannerHistoryPageDto = {
+  items: BannerDisableHistoryDto[];
+  total: number;
+  page: number;
+  limit: number;
+};

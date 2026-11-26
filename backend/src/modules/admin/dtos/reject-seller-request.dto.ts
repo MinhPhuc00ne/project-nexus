@@ -1,12 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { z } from 'zod';
 
-export class RejectSellerRequestDto {
-  @ApiProperty({
-    description: 'Lý do từ chối yêu cầu nâng cấp',
-    example: 'Thông tin giấy tờ CCCD/CMND không khớp với tên đăng ký tài khoản.',
-  })
-  @IsNotEmpty({ message: 'Lý do từ chối không được để trống' })
-  @IsString({ message: 'Lý do từ chối phải là chuỗi ký tự' })
-  rejectionReason!: string;
-}
+const rejectSellerRequestFields = {
+  rejectionReason: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Lý do từ chối yêu cầu nâng cấp')
+    .meta({ example: 'Thông tin giấy tờ CCCD/CMND không khớp với tên đăng ký tài khoản.' }),
+};
+
+export const RejectSellerRequestSchema = z.object(rejectSellerRequestFields).strict();
+
+export type RejectSellerRequestInput = z.infer<typeof RejectSellerRequestSchema>;

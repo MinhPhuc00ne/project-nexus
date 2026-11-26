@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { QrCode, Copy } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import type { PayosPaymentInfo } from '../../services/orders';
+import type { PayosPaymentInfo } from '@/features/orders/services/orders';
 
 interface PayosQrModalProps {
   payment: PayosPaymentInfo;

@@ -1,5 +1,14 @@
+import { ChatPresenceService } from '../services/chat-presence.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+  CHAT_EVENTS,
+  type ChatMessageEvent,
+  type ChatReadEvent,
+  type ChatStatusChangeEvent,
+  type ChatToStaffEvent,
+  type ChatToUserEvent,
+} from '../services/chat-realtime.publisher';
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   ConnectedSocket,
   MessageBody,
@@ -11,8 +20,8 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { LightweightJwt } from '../../../core/security/jwt.util';
-import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { ChatService, ChatSocketBroadcaster } from '../services/chat.service';
 import { StaffQueueService } from '../services/staff-queue.service';
 
@@ -27,18 +36,41 @@ export class ChatGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit, ChatSocketBroadcaster
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger = new Logger(ChatGateway.name);
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly configService: ConfigService,
+    private readonly tokenAuth: TokenAuthService,
     private readonly staffQueueService: StaffQueueService,
+    private readonly presence: ChatPresenceService,
+    private readonly socketMetrics: SocketMetricsService,
+    private readonly emitter: EventEmitter2,
   ) {}
 
   afterInit() {
-    this.chatService.setBroadcaster(this);
+    // The gateway subscribes to what the service publishes, rather than the
+    // service holding a reference back to the gateway.
+    this.emitter.on(CHAT_EVENTS.MESSAGE, ({ conversationId, message }: ChatMessageEvent) =>
+      this.broadcastMessage(conversationId, message),
+    );
+    this.emitter.on(CHAT_EVENTS.READ, ({ conversationId, userId }: ChatReadEvent) =>
+      this.broadcastRead(conversationId, userId),
+    );
+    this.emitter.on(CHAT_EVENTS.TO_USER, ({ userId, event, payload }: ChatToUserEvent) =>
+      this.broadcastToUser(userId, event, payload),
+    );
+    this.emitter.on(CHAT_EVENTS.TO_STAFF, ({ event, payload }: ChatToStaffEvent) =>
+      this.broadcastToStaff(event, payload),
+    );
+    this.emitter.on(
+      CHAT_EVENTS.STATUS_CHANGE,
+      ({ conversationId, status, assignedStaffId }: ChatStatusChangeEvent) =>
+        this.broadcastStatusChange(conversationId, status, assignedStaffId),
+    );
+
+    this.socketMetrics.registerServer('/chat', this.server);
     this.logger.log('Chat WebSocket Gateway initialized successfully.');
   }
 
@@ -116,7 +148,7 @@ export class ChatGateway
     }
   }
 
-  handleConnection(client: Socket) {
+  async handleConnection(client: Socket): Promise<void> {
     try {
       const rawToken =
         client.handshake.auth?.token ||
@@ -128,27 +160,24 @@ export class ChatGateway
         return;
       }
 
-      const secret =
-        this.configService.get<string>('JWT_SECRET') ||
-        'super-secret-jwt-key-nexus-change-in-production-2026';
-
-      const verifyResult = LightweightJwt.verify<AuthenticatedUserPayload>(rawToken, secret);
-
-      if (!verifyResult.valid || !verifyResult.payload) {
+      // Chat is never anonymous: a token that fails verification, or belongs to a
+      // suspended or signed-out account, closes the socket.
+      const user = await this.tokenAuth.authenticateOptional(rawToken);
+      if (!user) {
         this.logger.warn(`Socket client ${client.id} invalid token, disconnecting.`);
         client.disconnect();
         return;
       }
 
-      const user = verifyResult.payload;
-      const userId = user.id || user.sub;
-      client.data.user = { ...user, id: userId };
+      const userId = user.id;
+      client.data.user = user;
 
       client.join(`user:${userId}`);
+      await this.presence.connect(userId, client.id);
 
       if (user.role === 'SUPPORT_STAFF') {
         client.join('role:SUPPORT_STAFF');
-        this.staffQueueService.registerOnlineStaff(userId, client.id);
+        await this.staffQueueService.registerOnlineStaff(userId, client.id);
         void this.chatService.processQueueForStaff(userId);
       }
 
@@ -162,10 +191,13 @@ export class ChatGateway
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     const user = client.data?.user;
+    if (user?.id) {
+      await this.presence.disconnect(user.id, client.id);
+    }
     if (user?.role === 'SUPPORT_STAFF' && user.id) {
-      this.staffQueueService.unregisterStaff(user.id, client.id);
+      await this.staffQueueService.unregisterStaff(user.id, client.id);
     }
     this.logger.log(`Socket client disconnected: ${client.id}`);
   }

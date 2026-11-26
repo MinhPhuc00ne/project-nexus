@@ -4,14 +4,24 @@ import { load } from './staff-fixture.mjs';
 const nodemailer = load('nodemailer');
 const { MailService } = load('../src/core/mail/mail.service.ts');
 
-function fixture(values = {}) {
-  const service = new MailService({ get: (key) => values[key] });
+/**
+ * Builds a MailService for the named provider. MAIL_PROVIDER decides whether
+ * mail is sent or written to the log; it is no longer inferred from whether
+ * SMTP credentials happen to be present.
+ */
+function fixture(values = {}, provider = 'smtp') {
+  const service = new MailService(
+    { get: (key) => values[key] },
+    { isMailConsole: () => provider === 'console' },
+  );
   const log = mock.fn();
   service.logger = { log, debug: log, warn: log, error: log };
   return { service, log };
 }
 
 test('staff credentials are not printed or treated as delivered when SMTP is missing', async () => {
+  // MAIL_PROVIDER=smtp with no credentials is a misconfiguration, not a cue to
+  // fall back to printing the message.
   const { service, log } = fixture({ NODE_ENV: 'development' });
   const sent = await service.sendEmail({
     to: 'staff@example.test',

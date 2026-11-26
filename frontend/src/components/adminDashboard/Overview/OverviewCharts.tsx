@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartNoAxesCombined, CircleDollarSign, TrendingUp } from 'lucide-react';
-import type { AdminOverviewAnalytics } from '../../../types/admin-analytics.types';
+import type { AdminOverviewAnalytics } from '@/features/admin/types/admin-analytics.types';
 import { getIntlLocale } from '../../../i18n/config';
 import { Panel } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';

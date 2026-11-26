@@ -16,8 +16,8 @@ import {
   getShopProductsApi,
   type ShopListItem,
   type CatalogProduct,
-} from '../../services/products.service';
-import { addToCart } from '../../services/cart';
+} from '@/features/catalog/services/products.service';
+import { addToCart } from '@/features/cart/services/cart';
 import ShopHeader from '../../components/shop/ShopHeader';
 import ShopProductGrid from '../../components/shop/ShopProductGrid';
 import ShopReviewsSection from '../../components/shop/ShopReviewsSection';

@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Role } from '@nexus/types';
 import Footer from '../components/footer';
 import HomeHeader from '../components/headers/HomeHeader';
-import { getStoredToken, getStoredUser } from '../services/auth';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 
 function GuestLayout() {
   const navigate = useNavigate();

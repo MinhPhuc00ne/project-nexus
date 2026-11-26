@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import type { CartItem } from '../../services/cart';
+import type { CartItem } from '@/features/cart/services/cart';
 
 interface CheckoutOrderSummaryProps {
   items: CartItem[];

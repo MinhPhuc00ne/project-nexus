@@ -5,10 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { effectivePrice } from '../../catalog/utils/product-price';
-import { ShippingQuoteDto } from '../dtos/shipping-quote.dto';
-import { GhnShippingService, GhnAddress, GhnShippingQuote } from './ghn-shipping.service';
-import { RouteDistanceService, RouteDistance } from './route-distance.service';
+import { effectivePrice } from '../../../core/domain/product-price';
+import { ShippingQuoteInput } from '../dtos/shipping-quote.dto';
+import { GhnAddress, GhnShippingQuote, GhnShippingService } from './ghn-shipping.service';
+import { RouteDistance, RouteDistanceService } from './route-distance.service';
 
 export interface ShippingQuoteResult {
   carrier: string;
@@ -24,8 +24,6 @@ export interface ShippingQuoteResult {
     distanceKm: number | null;
     durationMinutes: number | null;
     actualWeightKg: number;
-    /** @deprecated Physical weight only; GHN determines billable weight. */
-    chargeableWeightKg: number;
     calculationMethod: RouteDistance['method'] | null;
   };
   rates: {
@@ -35,8 +33,6 @@ export interface ShippingQuoteResult {
     r2sFee: number;
     ghnCarrierFee: number;
     finalShippingFee: number;
-    /** @deprecated Alias of the GHN total, not a distance-based quote. */
-    distanceTotalFee: number;
     distanceFee: number;
     weightFee: number;
   };
@@ -54,7 +50,7 @@ export class FulfillmentService {
 
   async calculateShippingQuote(
     userId: string,
-    dto: ShippingQuoteDto,
+    dto: ShippingQuoteInput,
   ): Promise<ShippingQuoteResult> {
     const address = dto.addressId
       ? await this.prisma.userAddress.findUnique({ where: { id: dto.addressId } })
@@ -125,7 +121,6 @@ export class FulfillmentService {
         distanceKm: route?.distanceKm ?? null,
         durationMinutes: route?.durationMinutes ?? null,
         actualWeightKg: quote.parcel.weightGrams / 1000,
-        chargeableWeightKg: quote.parcel.weightGrams / 1000,
         calculationMethod: route?.method ?? null,
       },
       rates: {
@@ -135,7 +130,6 @@ export class FulfillmentService {
         r2sFee: quote.fee.r2sFee,
         ghnCarrierFee: quote.fee.total,
         finalShippingFee: quote.fee.total,
-        distanceTotalFee: quote.fee.total,
         distanceFee: 0,
         weightFee: 0,
       },

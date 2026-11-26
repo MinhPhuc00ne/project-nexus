@@ -11,7 +11,7 @@ import {
   MessageCircle,
   Flag,
 } from 'lucide-react';
-import type { ShopListItem } from '../../services/products.service';
+import type { ShopListItem } from '@/features/catalog/services/products.service';
 import ReportModal from '../report/ReportModal';
 
 interface ShopHeaderProps {

@@ -1,12 +1,20 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { SellerPickupService } from '../services/seller-pickup.service';
 import { GhnShopApiService } from '../services/ghn-shop-api.service';
-import { GhnShopPageDto, SellerPickupDto, VerifySellerPickupDto } from '../dtos/seller-pickup.dto';
+import {
+  GhnShopPageInput,
+  GhnShopPageSchema,
+  SellerPickupInput,
+  SellerPickupSchema,
+  VerifySellerPickupInput,
+  VerifySellerPickupSchema,
+} from '../dtos/seller-pickup.dto';
 
 @ApiTags('10. FULFILLMENT & SHIPPING')
 @ApiBearerAuth()
@@ -29,7 +37,7 @@ export class SellerPickupController {
   })
   propose(
     @CurrentUser('id') sellerId: string,
-    @Body() dto: SellerPickupDto,
+    @ZodBody(SellerPickupSchema) dto: SellerPickupInput,
   ): ReturnType<SellerPickupService['propose']> {
     return this.points.propose(sellerId, dto);
   }
@@ -56,7 +64,7 @@ export class AdminPickupController {
   @ApiOperation({
     summary: '[ADMIN] Danh sách điểm GHN thuộc tài khoản sàn, dùng last_offset để phân trang',
   })
-  list(@Query() page: GhnShopPageDto): ReturnType<GhnShopApiService['list']> {
+  list(@ZodQuery(GhnShopPageSchema) page: GhnShopPageInput): ReturnType<GhnShopApiService['list']> {
     return this.shops.list(page.offset, page.limit);
   }
 
@@ -64,7 +72,7 @@ export class AdminPickupController {
   @ApiOperation({ summary: '[ADMIN] Xác minh và gắn điểm lấy hàng với shop GHN thực tế' })
   verify(
     @Param('id') id: string,
-    @Body() dto: VerifySellerPickupDto,
+    @ZodBody(VerifySellerPickupSchema) dto: VerifySellerPickupInput,
     @CurrentUser('id') adminId: string,
   ): ReturnType<SellerPickupService['verify']> {
     return this.points.verify(id, dto.ghnShopId, adminId);

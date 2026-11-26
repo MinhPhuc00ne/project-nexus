@@ -1,14 +1,14 @@
-import axios, { type AxiosError } from 'axios';
+import axios, { type AxiosError, type AxiosRequestConfig } from 'axios';
 import i18n from '../i18n';
 import { normalizeLanguage } from '../i18n/config';
-import { getApiErrorMessage } from '../lib/apiErrors';
+import { getApiErrorMessage, getApiErrorMessages } from '../lib/apiErrors';
 import {
   clearAuthSession,
   getStoredRefreshToken,
   getStoredToken,
   getStoredUser,
   saveAuthSession,
-} from './auth';
+} from '@/features/auth/services/auth';
 
 export const API_BASE_URL = (
   import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
@@ -28,15 +28,115 @@ export interface RequestOptions {
   requireAuth?: boolean;
 }
 
-// Giữ mã HTTP để nơi gọi phân biệt hết phiên (401), cấm truy cập (403) và lỗi máy chủ.
+/**
+ * A failed call to the API.
+ *
+ * The status is kept so callers can tell a lost session (401) from a refusal
+ * (403) from a server fault, and `0` means the request never reached the
+ * server — there is no HTTP status for "the network is down", and callers that
+ * retry need to know the difference.
+ *
+ * `messages` is the backend's list as it sent it. Most callers want one line
+ * and read `message`; the few that render a field-by-field list (registration)
+ * need them apart.
+ */
 export class ApiRequestError extends Error {
+  readonly messages: string[];
+
   constructor(
     message: string,
     public readonly status: number,
+    messages?: string[],
   ) {
     super(message);
     this.name = 'ApiRequestError';
+    this.messages = messages?.length ? messages : [message];
   }
+}
+
+/** Options for how a response is unwrapped. */
+export interface UnwrapOptions {
+  /**
+   * The response is `{ data: { data: T } }` rather than `{ data: T }`.
+   *
+   * Some endpoints answer with a page object that itself carries `data`.
+   */
+  nested?: boolean;
+  /** Shown when the backend sends no message of its own. */
+  fallbackMessage?: string;
+}
+
+/**
+ * Calls the API, returns the payload, and throws `ApiRequestError` on failure.
+ *
+ * Six services each had their own version of this — unwrap the envelope, then
+ * pick a message out of the error body — and the six disagreed: two threw a
+ * plain `Error` for a network failure where the others threw `ApiRequestError`
+ * with a status of 0, one reported `errors` joined and another preferred
+ * `message`, and only some of them left a cancelled request alone. A component
+ * therefore could not tell from a caught error what it was holding.
+ *
+ * A cancelled request is rethrown untouched: it is not a failure, and turning
+ * it into one makes every aborted navigation look like an error to the user.
+ *
+ * @param config - The request, as Axios describes it.
+ * @param options - How to unwrap the response and what to say on failure.
+ * @returns The payload inside the response envelope.
+ */
+export async function request<T>(
+  config: AxiosRequestConfig,
+  options: UnwrapOptions = {},
+): Promise<T> {
+  try {
+    const response = await api.request<unknown>(config);
+    return unwrapEnvelope<T>(response.data, options.nested);
+  } catch (error) {
+    throw toApiRequestError(error, options.fallbackMessage);
+  }
+}
+
+/**
+ * Takes the payload out of the backend's response envelope.
+ *
+ * Every endpoint answers `{ statusCode, message, data, ... }`, but a few
+ * handlers return the payload bare, so a response without `data` is passed
+ * through rather than turned into undefined.
+ *
+ * @param body - The parsed response body.
+ * @param nested - Whether the payload is one level deeper.
+ * @returns The payload.
+ */
+export function unwrapEnvelope<T>(body: unknown, nested = false): T {
+  if (!body || typeof body !== 'object' || !('data' in body)) return body as T;
+  const inner = (body as { data: unknown }).data;
+  if (!nested) return inner as T;
+  if (inner && typeof inner === 'object' && 'data' in inner) {
+    return (inner as { data: unknown }).data as T;
+  }
+  return inner as T;
+}
+
+/**
+ * Turns whatever Axios threw into one error type.
+ *
+ * @param error - The caught value.
+ * @param fallbackMessage - Shown when the backend sends no message.
+ * @returns An `ApiRequestError`, or the original value when it is not from Axios.
+ */
+export function toApiRequestError(error: unknown, fallbackMessage?: string): unknown {
+  if (!axios.isAxiosError(error)) return error;
+  // An aborted request is not a failure; it is a navigation the user made.
+  if (error.code === 'ERR_CANCELED') return error;
+  if (!error.response) {
+    return new ApiRequestError(i18n.t('errors:network'), 0);
+  }
+  const payload = error.response.data;
+  const list = getApiErrorMessages(payload);
+  return new ApiRequestError(
+    getApiErrorMessage(payload, fallbackMessage),
+    error.response.status,
+    list,
+  );
 }
 
 let isRefreshing = false;
@@ -147,6 +247,13 @@ api.interceptors.response.use(
   },
 );
 
+/**
+ * Calls the API by path, for callers that want the common case.
+ *
+ * @param path - The endpoint, with or without a leading slash.
+ * @param options - Method, body, and whether a token is required up front.
+ * @returns The payload inside the response envelope.
+ */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, isFormData = false, requireAuth = false } = options;
   const headers: Record<string, string> = {};
@@ -155,48 +262,18 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers['Content-Type'] = 'application/json';
   }
 
-  const token = getStoredToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  } else if (requireAuth) {
+  // The interceptor attaches the token; this only decides whether to try at all.
+  if (requireAuth && !getStoredToken()) {
     throw new Error(i18n.t('errors:authRequired'));
   }
 
-  const endpoint = path.startsWith('/') ? path : `/${path}`;
-
-  interface ApiResponsePayload {
-    data?: unknown;
-    errors?: unknown[];
-    message?: unknown;
-    [key: string]: unknown;
-  }
-
-  try {
-    const response = await api.request<ApiResponsePayload>({
-      url: endpoint,
-      method,
-      headers,
-      data: body,
-      timeout: 30000,
-    });
-
-    const payload = response.data;
-    if (payload && typeof payload === 'object' && 'data' in payload) {
-      return payload.data as T;
-    }
-
-    return payload as unknown as T;
-  } catch (error) {
-    if (axios.isAxiosError<ApiResponsePayload>(error)) {
-      if (!error.response) {
-        throw new Error(i18n.t('errors:network'));
-      }
-      const payload = error.response.data;
-      const errorMsg = getApiErrorMessage(payload);
-      throw new ApiRequestError(errorMsg, error.response.status);
-    }
-    throw error;
-  }
+  return request<T>({
+    url: path.startsWith('/') ? path : `/${path}`,
+    method,
+    headers,
+    data: body,
+    timeout: 30000,
+  });
 }
 
 // Export để các service dùng chung cấu hình Axios.

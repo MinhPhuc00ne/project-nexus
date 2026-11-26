@@ -72,8 +72,8 @@ function createAuthHarness(userRecord = null) {
 
   const configService = {
     get: (key) => {
-      if (key === 'JWT_SECRET') return 'test-jwt-secret';
-      if (key === 'JWT_REFRESH_SECRET') return 'test-refresh-secret';
+      if (key === 'JWT_SECRET') return 'test-jwt-secret-key-16';
+      if (key === 'REFRESH_TOKEN_SECRET') return 'test-refresh-secret-key-16';
       return undefined;
     },
   };
@@ -95,7 +95,14 @@ function createAuthHarness(userRecord = null) {
     sendEmail: mock.fn(async () => ({ accepted: ['buyer@nexus.local'] })),
   };
 
-  const service = new AuthService(prisma, configService, jwtService, redisService, mailService);
+  const service = new AuthService(
+    prisma,
+    configService,
+    jwtService,
+    { signAccessToken: async () => 'mock-access-token', revokeAllSessions: async () => {} },
+    redisService,
+    mailService,
+  );
   return { service, prisma, tx, mailService, users };
 }
 

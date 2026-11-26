@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../../../i18n/config';
 import { formatCurrency } from '../../../i18n/formatters';
-import type { AdminAuctionItem } from '../../../services/auction.service';
-import { getShopDetailApi, type ShopDetailResult } from '../../../services/products.service';
+import type { AdminAuctionItem } from '@/features/auction/services/auction.service';
+import {
+  getShopDetailApi,
+  type ShopDetailResult,
+} from '@/features/catalog/services/products.service';
 import { Badge, Button } from '../shared/AdminUI';
 
 function Gallery({ urls, title }: { urls: string[]; title: string }) {

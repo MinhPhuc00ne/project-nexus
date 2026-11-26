@@ -39,14 +39,12 @@ export class GhnLogisticsService {
 
   private readonly token: string;
   private readonly shopId: string;
-  private readonly clientId: string;
   private readonly masterDataBaseUrl: string;
   private readonly orderApiBaseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
     this.token = this.configService.get<string>('GHN_TOKEN') || '';
     this.shopId = this.configService.get<string>('GHN_SHOP_ID') || '';
-    this.clientId = this.configService.get<string>('GHN_CLIENT_ID') || '';
 
     const rawApiUrl =
       this.configService.get<string>('GHN_API_URL') ||

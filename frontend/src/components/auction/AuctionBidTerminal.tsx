@@ -15,7 +15,10 @@ import {
   Bell,
   AlertCircle,
 } from 'lucide-react';
-import type { AuctionEntity, AuctionConsignmentItem } from '../../services/auction.service';
+import type {
+  AuctionEntity,
+  AuctionConsignmentItem,
+} from '@/features/auction/services/auction.service';
 
 interface AuctionBidTerminalProps {
   auction?: AuctionEntity | null;

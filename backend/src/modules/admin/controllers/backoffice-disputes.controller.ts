@@ -1,10 +1,14 @@
-import { Controller, Get, HttpCode, HttpStatus, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import { Roles } from '../../../core/security/roles.decorator';
-import { QueryAdminDisputesDto } from '../dtos/query-admin-disputes.dto';
+import {
+  QueryAdminDisputesInput,
+  QueryAdminDisputesSchema,
+} from '../dtos/query-admin-disputes.dto';
 import { AdminDisputesService } from '../services/admin-disputes.service';
 
 @ApiTags('5. ADMIN')
@@ -23,7 +27,7 @@ export class BackofficeDisputesController {
       'API theo quy chuẩn SRS Backoffice để Staff/Admin truy xuất toàn bộ khiếu nại đang chờ xử lý và lịch sử xử lý tranh chấp trên nền tảng.',
   })
   @ApiResponse({ status: 200, description: 'Lấy danh sách khiếu nại thành công' })
-  async getDisputes(@Query() query: QueryAdminDisputesDto) {
+  async getDisputes(@ZodQuery(QueryAdminDisputesSchema) query: QueryAdminDisputesInput) {
     return this.adminDisputesService.getDisputes(query);
   }
 }

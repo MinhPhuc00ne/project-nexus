@@ -3,25 +3,27 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test, mock } from 'node:test';
 import tsNode from 'ts-node';
+import { requestBodySchema } from './helpers/openapi.mjs';
 
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
   transpileOnly: true,
 });
 const load = createRequire(import.meta.url);
-const { Module, ValidationPipe } = load('@nestjs/common');
+const { Module } = load('@nestjs/common');
 const { ConfigService } = load('@nestjs/config');
 const { NestFactory } = load('@nestjs/core');
 const { SwaggerModule, DocumentBuilder } = load('@nestjs/swagger');
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
 const { RedisService } = load('../src/core/redis/redis.service.ts');
-const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
+const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { ChatbotController } = load('../src/modules/chat/controllers/chatbot.controller.ts');
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
 const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
-const { CommerceChatQueryService } = load(
-  '../src/modules/commerce/services/commerce-chat-query.service.ts',
-);
+const { OrdersChatFacade } = load('../src/modules/orders/services/orders-chat.facade.ts');
+const { CartChatFacade } = load('../src/modules/cart/services/cart-chat.facade.ts');
+const { CatalogChatFacade } = load('../src/modules/catalog/services/catalog-chat.facade.ts');
+const { UsersChatFacade } = load('../src/modules/users/services/users-chat.facade.ts');
 const { ChatbotAiService } = load('../src/modules/chat/services/chatbot-ai.service.ts');
 const { ChatbotRateLimitService } = load(
   '../src/modules/chat/services/chatbot-rate-limit.service.ts',
@@ -93,9 +95,29 @@ test(
       providers: [
         ChatbotService,
         ChatbotCommerceService,
-        CommerceChatQueryService,
+        OrdersChatFacade,
+        CartChatFacade,
+        CatalogChatFacade,
+        UsersChatFacade,
         ChatbotAiService,
         ChatbotRateLimitService,
+        {
+          // The bearer value names the calling account, so the test states who it
+          // is calling as without signing a token.
+          provide: TokenAuthService,
+          useValue: {
+            authenticate: async (token) => ({
+              id: token,
+              sub: token,
+              email: `${token}@example.test`,
+              role: 'BUYER',
+              accountRole: 'BUYER',
+              activeRole: 'BUYER',
+              currentMode: 'BUYER',
+              isSellerActive: false,
+            }),
+          },
+        },
         {
           provide: ConfigService,
           useValue: {
@@ -148,8 +170,11 @@ test(
       ],
     })(ApiModule);
     const app = await NestFactory.create(ApiModule, { logger: false, abortOnError: false });
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
+    // The same filter `main.ts` registers. Without it these routes fall to
+    // Nest's default handling, which is not what the app does and answered a
+    // rejected query with 500 instead of 400 whenever the machine was busy.
+    app.useGlobalFilters(
+      new (load('../src/core/filters/global-http-exception.filter.ts').GlobalHttpExceptionFilter)(),
     );
     app.setGlobalPrefix('api/v1');
     try {
@@ -157,7 +182,7 @@ test(
       const base = `${await app.getUrl()}/api/v1/chat/bot`;
       const headers = (id) => ({
         'Content-Type': 'application/json',
-        authorization: `Bearer ${LightweightJwt.sign({ sub: id }, { secret: 'chatbot-test-secret', expiresInSeconds: 120 })}`,
+        authorization: `Bearer ${id}`,
       });
       const post = (body, id = 'owner') =>
         fetch(`${base}/messages`, {
@@ -292,7 +317,9 @@ test(
       );
       assert.ok(doc.paths['/api/v1/chat/bot/messages'].post);
       assert.deepEqual(doc.paths['/api/v1/chat/bot/guest/messages'].post.security, []);
-      assert.ok(doc.components.schemas.ChatbotMessageDto.required.includes('message'));
+      assert.ok(
+        requestBodySchema(doc, '/api/v1/chat/bot/messages', 'post').required.includes('message'),
+      );
     } finally {
       fetchMock.mock.restore();
       await app.close();

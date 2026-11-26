@@ -11,9 +11,10 @@ tsNode.register({
 const load = createRequire(import.meta.url);
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
 const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
-const { CommerceChatQueryService } = load(
-  '../src/modules/commerce/services/commerce-chat-query.service.ts',
-);
+const { OrdersChatFacade } = load('../src/modules/orders/services/orders-chat.facade.ts');
+const { CartChatFacade } = load('../src/modules/cart/services/cart-chat.facade.ts');
+const { CatalogChatFacade } = load('../src/modules/catalog/services/catalog-chat.facade.ts');
+const { UsersChatFacade } = load('../src/modules/users/services/users-chat.facade.ts');
 const { ChatbotAiService } = load('../src/modules/chat/services/chatbot-ai.service.ts');
 const { ChatbotRateLimitService } = load(
   '../src/modules/chat/services/chatbot-rate-limit.service.ts',
@@ -26,7 +27,12 @@ function fixture(order = null) {
   const prisma = { order: { findFirst: mock.fn(async () => order) } };
   const ai = { isConfigured: () => false, answer: mock.fn(async () => null) };
   const limit = { check: mock.fn(async () => {}) };
-  const commerce = new ChatbotCommerceService(new CommerceChatQueryService(prisma));
+  const commerce = new ChatbotCommerceService(
+    new OrdersChatFacade(prisma),
+    new CartChatFacade(prisma),
+    new CatalogChatFacade(prisma),
+    new UsersChatFacade(prisma),
+  );
   return { prisma, ai, limit, bot: new ChatbotService(commerce, ai, limit) };
 }
 
@@ -44,9 +50,20 @@ test('guest fallback never reads orders and offers login for protected actions',
   assert.equal(f.limit.check.mock.calls[0].arguments[0], 'guest:peer-hash');
 });
 
-test('auto replies detect shop/support offline, preserve first-message context and tolerate unknown presence', async () => {
+test('auto replies detect shop and support presence and preserve first-message context', async () => {
   let online = false;
   const calls = [];
+  // Presence comes from the shared staff queue, so the publisher answers it.
+  const presence = {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => online,
+    isStaffOnline: async () => online,
+    isSupportOnline: async () => online,
+  };
   const service = new ChatService(
     {
       user: { findUnique: async () => ({ role: 'SELLER', isShopSuspended: false }) },
@@ -60,25 +77,21 @@ test('auto replies detect shop/support offline, preserve first-message context a
       },
     },
     {},
+    presence,
   );
-  service.setBroadcaster({ isUserOnline: async () => online, isSupportOnline: async () => online });
+
   const conv = { id: 'c', type: 'BUYER_SELLER', participant1Id: 'buyer', participant2Id: 'shop' };
   await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
   assert.deepEqual(calls.at(-1)[3], { firstMessage: true, offline: true });
   online = true;
   await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
   assert.equal(calls.at(-1)[3].offline, false);
-  online = null;
-  await service.triggerAutoReply(conv, 'buyer', 'BUYER', 'hi');
-  assert.equal(calls.at(-1)[3].offline, false);
   online = false;
   await service.triggerAutoReply({ ...conv, type: 'STAFF_BUYER' }, 'buyer', 'BUYER', 'hi');
   assert.equal(calls.at(-1)[1], 'SYSTEM');
   assert.equal(calls.at(-1)[3].offline, true);
-  service.setBroadcaster({
-    isUserOnline: async (id) => id !== 'assigned',
-    isSupportOnline: async () => true,
-  });
+  presence.isUserOnline = async (id) => id !== 'assigned';
+  presence.isSupportOnline = async () => true;
   await service.triggerAutoReply(
     { ...conv, type: 'STAFF_BUYER', assignedStaffId: 'assigned' },
     'buyer',
@@ -441,6 +454,18 @@ test('seller acting as customer receives shop replies; shop replies to buyer nev
       },
     },
     {},
+    {
+      message() {},
+      read() {},
+      toUser() {},
+      toStaff() {},
+      statusChange() {},
+      // The shop is connected in this scenario, which is what makes the
+      // routing question meaningful.
+      isUserOnline: async () => true,
+      isStaffOnline: async () => true,
+      isSupportOnline: async () => true,
+    },
   );
   const conv = {
     id: 'c',

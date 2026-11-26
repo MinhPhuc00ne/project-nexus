@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ProviderConfigService } from '../providers/provider-config.service';
 import * as crypto from 'crypto';
 import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveAppPublicUrl } from '../config/env.schema';
 
 export interface UploadResult {
   url: string;
@@ -15,35 +17,51 @@ export interface UploadResult {
 export class CloudinaryStorageService {
   private readonly logger = new Logger(CloudinaryStorageService.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly providers: ProviderConfigService,
+  ) {}
 
   async uploadFile(
     fileBuffer: Buffer,
     fileName: string,
     folder = 'nexus/seller-proofs',
   ): Promise<UploadResult> {
-    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
-    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
-    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
-
-    if (!cloudName || !apiKey || !apiSecret) {
-      this.logger.warn(
-        'Chưa cấu hình thông tin Cloudinary (CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET) trong .env. Lưu tạm vào thư mục static server.',
-      );
-      const port = this.configService.get<string>('PORT_BACKEND') || '3000';
+    // STORAGE_PROVIDER names where files go. Local disk is a deliberate
+    // choice for a local or demo run, not what happens when a key is absent.
+    if (this.providers.isLocalStorage()) {
+      this.logger.log('STORAGE_PROVIDER=local: lưu file vào thư mục static uploads/seller-proofs.');
+      const appPublicUrl = resolveAppPublicUrl({
+        APP_PUBLIC_URL: this.configService.get<string>('APP_PUBLIC_URL'),
+        NODE_ENV: this.configService.get<string>('NODE_ENV') ?? process.env.NODE_ENV,
+        PORT_BACKEND: this.configService.get<number | string>('PORT_BACKEND'),
+      });
       const ext = fileName.split('.').pop()?.toLowerCase() || 'png';
-      const cleanFileName = `proof-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+      const cleanFileName = `proof-${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
       const uploadDir = path.join(process.cwd(), 'uploads', 'seller-proofs');
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
       }
       fs.writeFileSync(path.join(uploadDir, cleanFileName), fileBuffer);
-      const localUrl = `http://localhost:${port}/uploads/seller-proofs/${cleanFileName}`;
+      const localUrl = `${appPublicUrl}/uploads/seller-proofs/${cleanFileName}`;
       return {
         url: localUrl,
         publicId: `local-${cleanFileName}`,
         format: ext,
       };
+    }
+
+    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME')?.trim();
+    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY')?.trim();
+    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET')?.trim();
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      this.logger.error(
+        'STORAGE_PROVIDER=cloudinary nhưng thiếu cấu hình CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY hoặc CLOUDINARY_API_SECRET.',
+      );
+      throw new ServiceUnavailableException(
+        'Chưa cấu hình đầy đủ thông tin Cloudinary để tải file lên.',
+      );
     }
 
     const timestamp = Math.floor(Date.now() / 1000);

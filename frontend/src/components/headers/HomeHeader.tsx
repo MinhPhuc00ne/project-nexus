@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import {
@@ -17,11 +18,17 @@ import {
   X,
   CheckCircle2,
 } from 'lucide-react';
-import { getCartItems } from '../../services/cart';
+import { getCartItems } from '@/features/cart/services/cart';
 import { useAuth } from '../../contexts/AuthContext';
 import { SUPPORTED_LANGUAGES, normalizeLanguage } from '../../i18n/config';
-import { getNotificationUnreadCount } from '../../services/notifications';
-import type { CartItem as StoredCartItem, NotificationItem } from '../../types';
+import { getNotificationUnreadCount } from '@/features/notifications/services/notifications';
+import {
+  notificationUnreadCountQueryKey,
+  subscribeNotificationsToQueryCache,
+} from '../../lib/socketManager';
+import { queryClient } from '../../lib/queryClient';
+import type { CartItem as StoredCartItem } from '@/features/cart/types/cart.types';
+import type { NotificationItem } from '@/features/notifications/types/notification.types';
 import NotificationDropdown from './NotificationDropdown';
 import CartDropdownPanel from './CartDropdownPanel';
 import UserDropdownMenu from './UserDropdownMenu';
@@ -78,30 +85,16 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     refreshProfile,
   } = useAuth();
   const [storedCart, setStoredCart] = useState<StoredCartItem[]>(() => getCartItems());
-  const [realUnreadCount, setRealUnreadCount] = useState<number>(0);
+  const { data: unreadData } = useQuery({
+    queryKey: notificationUnreadCountQueryKey,
+    queryFn: getNotificationUnreadCount,
+    enabled: authIsLoggedIn,
+  });
+  const realUnreadCount = authIsLoggedIn ? (unreadData?.unreadCount ?? 0) : 0;
 
   useEffect(() => {
-    if (!authIsLoggedIn) {
-      setRealUnreadCount(0);
-      return;
-    }
-    let isMounted = true;
-    const fetchUnread = async () => {
-      try {
-        const res = await getNotificationUnreadCount();
-        if (isMounted && typeof res?.unreadCount === 'number') {
-          setRealUnreadCount(res.unreadCount);
-        }
-      } catch (err) {
-        console.warn('Failed to fetch notification unread count:', err);
-      }
-    };
-    void fetchUnread();
-    const interval = setInterval(fetchUnread, 30000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    if (!authIsLoggedIn) return;
+    return subscribeNotificationsToQueryCache();
   }, [authIsLoggedIn]);
 
   useEffect(() => {
@@ -403,7 +396,9 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
               <NotificationDropdown
                 isOpen={showNotifMenu}
                 onClose={() => setShowNotifMenu(false)}
-                onCountChange={(cnt) => setRealUnreadCount(cnt)}
+                onCountChange={(cnt) =>
+                  queryClient.setQueryData(notificationUnreadCountQueryKey, { unreadCount: cnt })
+                }
               />
             </div>
 

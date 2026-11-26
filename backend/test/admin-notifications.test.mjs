@@ -19,12 +19,21 @@ const { NotificationsService } = load(
 const { NotificationsGateway } = load(
   '../src/modules/notifications/gateways/notifications.gateway.ts',
 );
-const { publishCreatedNotifications, subscribeNotificationRealtime } = load(
-  '../src/core/notifications/notification-realtime.bus.ts',
-);
+const { EventEmitter2 } = load('@nestjs/event-emitter');
+const { DomainEventsService } = load('../src/core/events/domain-events.service.ts');
 const { PrismaService, wrapNotificationDelegate } = load('../src/core/prisma/prisma.service.ts');
-const { LightweightJwt } = load('../src/core/security/jwt.util.ts');
-const { ReportsService } = load('../src/modules/commerce/services/reports.service.ts');
+/**
+ * Stands in for TokenAuthService: the handshake token is read as the account id,
+ * so the gateway is exercised without signing real tokens.
+ */
+const tokenAuthStub = {
+  authenticateOptional: async (token) => {
+    if (!token) return undefined;
+    const [id, role] = token.split('|');
+    return { id, sub: id, role };
+  },
+};
+const { ReportsService } = load('../src/modules/reviews/services/reports.service.ts');
 
 test('notifyAllAdmins fans out in-app notification with targetUrl to all Admin accounts', async () => {
   const createdBatches = [];
@@ -158,18 +167,20 @@ test('NotificationsService.getAdminNotificationSummary aggregates unread count, 
 });
 
 test('NotificationsGateway authenticates JWT handshake, emits connected payload, and pushes realtime notifications', async () => {
-  const secret = 'test-secret-notif-ws';
-  const token = LightweightJwt.sign(
-    { id: 'admin-99', role: 'ADMIN' },
-    { secret, expiresInSeconds: 3600 },
-  );
-  const configMock = { get: () => secret };
+  const token = 'admin-99|ADMIN';
   const notifServiceMock = {
     getUnreadCount: mock.fn(async () => ({ unreadCount: 3 })),
     markAllAsRead: mock.fn(),
   };
 
-  const gateway = new NotificationsGateway(configMock, notifServiceMock);
+  const domainEvents = new DomainEventsService(new EventEmitter2());
+  const socketMetricsStub = { registerServer() {} };
+  const gateway = new NotificationsGateway(
+    tokenAuthStub,
+    domainEvents,
+    notifServiceMock,
+    socketMetricsStub,
+  );
   const roomEmits = [];
   gateway.server = {
     to: (room) => ({
@@ -201,7 +212,7 @@ test('NotificationsGateway authenticates JWT handshake, emits connected payload,
   assert.equal(clientEmits[0].event, 'notification:connected');
   assert.equal(clientEmits[0].payload.unreadCount, 3);
 
-  publishCreatedNotifications([
+  domainEvents.publishNotificationsCreated([
     {
       id: 'n-live-1',
       userId: 'admin-99',
@@ -231,8 +242,10 @@ test('NotificationsGateway authenticates JWT handshake, emits connected payload,
 
 test('NotificationsGateway rejects missing JWT handshake cleanly', async () => {
   const gateway = new NotificationsGateway(
-    { get: () => 'secret' },
+    tokenAuthStub,
+    new DomainEventsService(new EventEmitter2()),
     { getUnreadCount: mock.fn(async () => ({ unreadCount: 0 })) },
+    { registerServer() {} },
   );
   const clientEmits = [];
   const disconnect = mock.fn();
@@ -255,8 +268,8 @@ test('wrapNotificationDelegate intercepts create, createMany and createManyAndRe
     createManyAndReturn: async ({ data }) => (Array.isArray(data) ? data : [data]),
   };
 
-  const wrapped = wrapNotificationDelegate(delegateMock, (records) => {
-    emitted.push(...records);
+  const wrapped = wrapNotificationDelegate(delegateMock, ({ events }) => {
+    emitted.push(...events);
   });
 
   await wrapped.create({

@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Heart, Star, Truck } from 'lucide-react';
 import { formatCurrency } from '../../i18n/formatters';
-import { addToCart } from '../../services/cart';
+import { addToCart } from '@/features/cart/services/cart';
 import type { HomeProduct } from './home.types';
 
 export interface HomeRecommendationCardProps {

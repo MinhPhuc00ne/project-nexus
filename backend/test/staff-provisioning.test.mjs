@@ -196,9 +196,7 @@ test('one OTP cannot be consumed concurrently to set two passwords', async () =>
 test('staff forgot-password fails if Gmail delivery fails, without publishing an OTP', async () => {
   const f = staffFixture();
   const created = await f.provision.invite(staffInput);
-  f.shared.transporter.sendMail = async () => {
-    throw new Error('SMTP not available');
-  };
+  f.mail.sendEmail = async () => false;
   await assert.rejects(
     f.shared.forgotPassword({ email: created.assignedEmail }),
     (error) => error.getStatus() === 400,

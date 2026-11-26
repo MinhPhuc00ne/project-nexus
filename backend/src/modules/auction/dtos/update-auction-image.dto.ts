@@ -1,10 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsUrl } from 'class-validator';
+import { z } from 'zod';
+import { httpUrl } from '../../../core/validation/query-schemas';
 
 /** Updates only the session image using the URL returned by the media upload API. */
-export class UpdateAuctionImageDto {
-  @ApiProperty({ description: 'HTTP(S) image URL returned by POST /media/upload' })
-  @IsNotEmpty()
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
-  imageUrl!: string;
-}
+const updateAuctionImageFields = {
+  imageUrl: httpUrl.describe('HTTP(S) image URL returned by POST /media/upload'),
+};
+
+export const UpdateAuctionImageSchema = z.object(updateAuctionImageFields).strict();
+
+export type UpdateAuctionImageInput = z.infer<typeof UpdateAuctionImageSchema>;

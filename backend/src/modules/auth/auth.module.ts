@@ -6,26 +6,28 @@ import { AuthController } from './controllers/auth.controller';
 import { AuthService } from './services/auth.service';
 import { AuthProfileService } from './services/auth-profile.service';
 import { StaffProvisioningService } from './services/staff-provisioning.service';
+import { OAuthCodeService } from './services/oauth-code.service';
 import { StaffController } from './controllers/staff.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { ProfileReauthService } from '../../core/security/profile-reauth.service';
 
 @Module({
   imports: [
     PassportModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_SECRET') ||
-          process.env.JWT_SECRET ||
-          'super-secret-jwt-key-nexus-change-in-production-2026',
-        signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
-            '7d') as `${number}${'s' | 'm' | 'h' | 'd'}`,
-        },
-      }),
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET') || process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error('JWT_SECRET is not configured');
+        }
+        return {
+          secret,
+          signOptions: {
+            expiresIn: (configService.get<string>('JWT_EXPIRES_IN') ||
+              '15m') as `${number}${'s' | 'm' | 'h' | 'd'}`,
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController, StaffController],
@@ -33,17 +35,9 @@ import { ProfileReauthService } from '../../core/security/profile-reauth.service
     AuthService,
     AuthProfileService,
     StaffProvisioningService,
-    ProfileReauthService,
-    JwtStrategy,
+    OAuthCodeService,
     GoogleStrategy,
   ],
-  exports: [
-    ProfileReauthService,
-    AuthService,
-    AuthProfileService,
-    StaffProvisioningService,
-    JwtModule,
-    PassportModule,
-  ],
+  exports: [AuthService, AuthProfileService, StaffProvisioningService, JwtModule, PassportModule],
 })
 export class AuthModule {}

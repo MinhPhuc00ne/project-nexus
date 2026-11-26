@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle2, ShoppingBag, ArrowRight } from 'lucide-react';
-import { checkPaymentStatusApi } from '../../services/orders';
+import { checkPaymentStatusApi } from '@/features/orders/services/orders';
 
 export default function PaymentSuccessPage(): ReactNode {
   const { t } = useTranslation('commerce');

@@ -21,7 +21,7 @@ import {
   type AuctionEntity,
   type AuctionIntroShowcaseResponse,
   type SellerAuctionConsignment,
-} from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import {
   PageHeading,
   Panel,

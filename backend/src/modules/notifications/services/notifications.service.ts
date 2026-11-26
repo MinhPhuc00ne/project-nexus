@@ -10,10 +10,10 @@ import {
   WithdrawalStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { publishUnreadCountSync } from '../../../core/notifications/notification-realtime.bus';
+import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
-import { QueryNotificationDto } from '../dtos/query-notification.dto';
-import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
+import { QueryNotificationInput } from '../dtos/query-notification.dto';
+import { UpdateNotificationPreferencesInput } from '../dtos/update-notification-preferences.dto';
 import {
   AdminNotificationSummaryDto,
   NotificationPageDto,
@@ -21,7 +21,10 @@ import {
 
 @Injectable()
 export class NotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly domainEvents: DomainEventsService,
+  ) {}
 
   /**
    * Retrieves paginated notifications for a user with read status filtering.
@@ -32,7 +35,7 @@ export class NotificationsService {
    */
   async getUserNotifications(
     userId: string,
-    query: QueryNotificationDto,
+    query: QueryNotificationInput,
   ): Promise<NotificationPageDto> {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, Math.min(50, query.limit || 10));
@@ -212,7 +215,7 @@ export class NotificationsService {
     });
 
     const { unreadCount } = await this.getUnreadCount(userId);
-    publishUnreadCountSync(userId, unreadCount);
+    this.domainEvents.publishUnreadSync(userId, unreadCount);
 
     return {
       success: true,
@@ -236,7 +239,7 @@ export class NotificationsService {
       data: { isRead: true, readAt: new Date() },
     });
 
-    publishUnreadCountSync(userId, 0);
+    this.domainEvents.publishUnreadSync(userId, 0);
 
     return {
       success: true,
@@ -313,7 +316,7 @@ export class NotificationsService {
    * @param dto - Updated channel preference settings
    * @returns Confirmation and refreshed preferences
    */
-  async updatePreferences(userId: string, dto: UpdateNotificationPreferencesDto) {
+  async updatePreferences(userId: string, dto: UpdateNotificationPreferencesInput) {
     const operations = dto.preferences.map((item) =>
       this.prisma.notificationPreference.upsert({
         where: {

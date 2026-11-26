@@ -11,10 +11,11 @@ tsNode.register({
 
 const load = createRequire(import.meta.url);
 const { BadRequestException, ForbiddenException } = load('@nestjs/common');
-const { WithdrawalService } = load('../src/modules/commerce/services/withdrawal.service.ts');
-const { SellerFinanceService } = load('../src/modules/commerce/services/seller-finance.service.ts');
+const { WithdrawalService } = load('../src/modules/wallet/services/withdrawal.service.ts');
+const { SellerFinanceService } = load('../src/modules/wallet/services/seller-finance.service.ts');
 const { AdminService } = load('../src/modules/admin/services/admin.service.ts');
 const { AdminFinanceService } = load('../src/modules/admin/services/admin-finance.service.ts');
+const { ReviewWithdrawalSchema } = load('../src/modules/admin/dtos/review-withdrawal.dto.ts');
 
 function createWithdrawalPrismaMock(overrides = {}) {
   const notifications = [];
@@ -44,6 +45,8 @@ function createWithdrawalPrismaMock(overrides = {}) {
   };
 
   const txClient = {
+    // The service locks the wallet row before counting pending requests.
+    $queryRaw: async () => [],
     user: {
       update: async (args) => {
         userUpdates.push(args);
@@ -67,6 +70,7 @@ function createWithdrawalPrismaMock(overrides = {}) {
       }),
     },
     withdrawalRequest: {
+      count: async () => overrides.pendingCount ?? 0,
       create: async ({ data }) => {
         const req = {
           id: 'req-1',
@@ -106,6 +110,7 @@ function createWithdrawalPrismaMock(overrides = {}) {
     withdrawalRequest: {
       count: async () => overrides.pendingCount ?? 0,
     },
+    // The service locks the wallet row before counting pending requests.
     $transaction: async (run) => run(txClient),
   };
 
@@ -265,10 +270,10 @@ test('AdminService.reviewWithdrawalRequest handles COMPLETED approval and REJECT
 
   const adminService = new AdminService(createAdminPrisma());
 
-  await assert.rejects(
-    () => adminService.reviewWithdrawalRequest('req-1', 'admin-1', { status: 'PENDING' }),
-    (err) => err instanceof BadRequestException,
-  );
+  // PENDING is not a review outcome, and the schema is what says so now: the
+  // service used to re-check it, which TypeScript can prove unreachable once
+  // the body's type comes from the schema.
+  assert.equal(ReviewWithdrawalSchema.safeParse({ status: 'PENDING' }).success, false);
 
   await assert.rejects(
     () =>

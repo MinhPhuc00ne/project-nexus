@@ -1,19 +1,20 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { I18nextProvider } from 'react-i18next';
+import { Role } from '@nexus/types';
 import i18n from '../../../i18n';
 import BuyerWithdrawalModal from '../BuyerWithdrawalModal';
-import type { UserProfile } from '../../../types/user.types';
+import type { UserProfile } from '@/features/account/types/user.types';
 
-const mockProfile: UserProfile = {
+const mockProfile = {
   id: 'buyer-1',
   email: 'buyer@nexus.test',
   fullName: 'Nguyen Van A',
-  role: 'BUYER',
+  role: Role.BUYER,
   bankName: 'Vietcombank',
   accountNumber: '1234567890',
   accountHolderName: 'NGUYEN VAN A',
-};
+} as UserProfile;
 
 describe('BuyerWithdrawalModal', () => {
   it('allows switching between saved bank account and a custom bank account', () => {

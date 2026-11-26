@@ -16,14 +16,15 @@ const source = (path) => load(`../src/${path}.ts`);
 
 test('shipping dependencies and routes initialize without live infrastructure', async () => {
   const { PrismaService } = source('core/prisma/prisma.service');
-  const { PayosService } = source('modules/commerce/services/payos.service');
+  const { PayosService } = source('modules/payments/services/payos.service');
   const { AdminSettingsService } = source('modules/admin/services/admin-settings.service');
   const { AdminFinanceService } = source('modules/admin/services/admin-finance.service');
+  const { TreasuryService } = source('modules/treasury/services/treasury.service');
   const { AuthService } = source('modules/auth/services/auth.service');
   const { AuthProfileService } = source('modules/auth/services/auth-profile.service');
-  const { OrderService } = source('modules/commerce/services/order.service');
-  const { OrderEscrowService } = source('modules/commerce/services/order-escrow.service');
-  const { SellerOrdersService } = source('modules/commerce/services/seller-orders.service');
+  const { OrderService } = source('modules/orders/services/order.service');
+  const { OrderEscrowService } = source('modules/orders/services/order-escrow.service');
+  const { SellerOrdersService } = source('modules/orders/services/seller-orders.service');
   const { GhnShippingService } = source('modules/fulfillment/services/ghn-shipping.service');
   const { GhnDispatchService } = source('modules/fulfillment/services/ghn-dispatch.service');
   const { GhnLogisticsService } = source('modules/fulfillment/services/ghn-logistics.service');
@@ -39,14 +40,14 @@ test('shipping dependencies and routes initialize without live infrastructure', 
     'modules/fulfillment/controllers/seller-pickup.controller',
   );
   const controllers = [
-    source('modules/commerce/controllers/after-sales.controller').AfterSalesController,
+    source('modules/after-sales/controllers/after-sales.controller').AfterSalesController,
     SellerPickupController,
     AdminPickupController,
     source('modules/fulfillment/controllers/fulfillment.controller').FulfillmentController,
     source('modules/fulfillment/controllers/ghn-webhook.controller').GhnWebhookController,
-    source('modules/commerce/controllers/order.controller').OrderController,
-    source('modules/commerce/controllers/order-lifecycle.controller').OrderLifecycleController,
-    source('modules/commerce/controllers/seller-orders.controller').SellerOrdersController,
+    source('modules/orders/controllers/order.controller').OrderController,
+    source('modules/orders/controllers/order-lifecycle.controller').OrderLifecycleController,
+    source('modules/orders/controllers/seller-orders.controller').SellerOrdersController,
     source('modules/auth/controllers/auth.controller').AuthController,
   ];
   class SmokeModule {}
@@ -58,18 +59,67 @@ test('shipping dependencies and routes initialize without live infrastructure', 
         useValue: {},
       },
       source('modules/catalog/services/inventory.service').InventoryService,
-      source('modules/commerce/services/after-sales-store.service').AfterSalesStoreService,
-      source('modules/commerce/services/refund.service').RefundService,
-      source('modules/commerce/services/order-cancellation.service').OrderCancellationService,
-      source('modules/commerce/services/order-return.service').OrderReturnService,
+      source('modules/after-sales/services/after-sales-store.service').AfterSalesStoreService,
+      source('modules/after-sales/services/refund.service').RefundService,
+      source('modules/after-sales/services/order-cancellation.service').OrderCancellationService,
+      source('modules/after-sales/services/order-return.service').OrderReturnService,
       source('modules/fulfillment/services/ghn-order-action.service').GhnOrderActionService,
-      source('modules/users/services/shop-shipping-profile.service').ShopShippingProfileService,
+      source('modules/fulfillment/services/shop-shipping-profile.service')
+        .ShopShippingProfileService,
       { provide: PrismaService, useValue: {} },
+      // The guard resolves identities through TokenAuthService; this smoke test
+      // only asserts the dependency graph resolves.
+      {
+        provide: source('core/providers/provider-config.service').ProviderConfigService,
+        useValue: { isShippingSandbox: () => true, isLocalStorage: () => true },
+      },
+      {
+        // Settings are read from the database through core; this smoke test only
+        // asserts the dependency graph resolves.
+        provide: source('core/settings/platform-settings.service').PlatformSettingsService,
+        useValue: { getAll: async () => ({ platformFeePercentage: 7 }) },
+      },
+      {
+        provide: source('modules/orders/services/order-payment.helper').OrderPaymentHelper,
+        useValue: {},
+      },
+      {
+        provide: source('modules/wallet/services/wallet-deposit.service').WalletDepositService,
+        useValue: {},
+      },
+      {
+        provide: source('modules/reviews/services/reviews-moderation.helper')
+          .ReviewsModerationHelper,
+        useValue: {},
+      },
+      {
+        provide: source('modules/reviews/services/reviews-replies.helper').ReviewsRepliesHelper,
+        useValue: {},
+      },
+      {
+        provide: source('modules/admin/services/admin-shops-moderation.helper')
+          .AdminShopsModerationHelper,
+        useValue: {},
+      },
+      {
+        provide: source('modules/auction/services/auction-second-chance.helper')
+          .AuctionSecondChanceHelper,
+        useValue: {},
+      },
+      {
+        provide: source('core/security/token-auth.service').TokenAuthService,
+        useValue: {},
+      },
+      {
+        provide: source('modules/auth/services/oauth-code.service').OAuthCodeService,
+        useValue: {},
+      },
       { provide: ConfigService, useValue: { get: (_key, fallback) => fallback } },
       ...[
         PayosService,
         AdminSettingsService,
         AdminFinanceService,
+        TreasuryService,
         AuthService,
         AuthProfileService,
       ].map((provide) => ({

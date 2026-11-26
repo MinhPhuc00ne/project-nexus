@@ -1,127 +1,82 @@
-import {
-  IsOptional,
-  IsString,
-  IsNumber,
-  IsInt,
-  Min,
-  Max,
-  IsEnum,
-  IsIn,
-  MaxLength,
-} from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform, Type } from 'class-transformer';
+import { z } from 'zod';
+import { booleanFromQuery, nullAsAbsent } from '../../../core/validation/query-schemas';
 import { ProductStatus } from '@prisma/client';
 
-export class QueryProductDto {
-  @ApiPropertyOptional({ example: 'Ho Chi Minh', description: 'Filter by seller city/province' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  city?: string;
+const queryProductFields = {
+  city: nullAsAbsent(
+    z.string().max(100).describe('Filter by seller city/province').meta({ example: 'Ho Chi Minh' }),
+  ),
+  minRating: nullAsAbsent(
+    z.coerce
+      .number()
+      .min(0)
+      .max(5)
+      .describe('Filter by minimum average product rating (0-5)')
+      .meta({ example: 4 }),
+  ),
+  inStock: nullAsAbsent(
+    z
+      .enum(['true', 'false'])
+      .describe('Filter by stock availability (true = in stock only, false = out of stock only)')
+      .meta({ example: 'true' }),
+  ),
+  trendingOnly: nullAsAbsent(
+    booleanFromQuery
+      .describe(
+        'Filter only trending products (have qualifying purchases and are not excluded from trending)',
+      )
+      .meta({ example: true }),
+  ),
+  minPurchaseCount: nullAsAbsent(
+    z.coerce
+      .number()
+      .int()
+      .min(0)
+      .describe('Filter products with at least this minimum qualifying purchase count')
+      .meta({ example: 1 }),
+  ),
+  search: nullAsAbsent(
+    z
+      .string()
+      .describe('Search keyword matching product title, description, or shop name')
+      .meta({ example: 'Audemars' }),
+  ),
+  categoryId: nullAsAbsent(
+    z.string().describe('Filter by category ID').meta({ example: 'uuid-category-id' }),
+  ),
+  sellerId: nullAsAbsent(
+    z.string().describe('Filter by seller ID').meta({ example: 'uuid-seller-id' }),
+  ),
+  status: nullAsAbsent(z.enum(ProductStatus).meta({ example: ProductStatus.ACTIVE })),
+  minPrice: nullAsAbsent(
+    z.coerce.number().min(0).describe('Minimum effective price').meta({ example: 1000000 }),
+  ),
+  maxPrice: nullAsAbsent(
+    z.coerce.number().min(0).describe('Maximum effective price').meta({ example: 500000000 }),
+  ),
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .describe('Page number (1-indexed)')
+    .meta({ example: 1 })
+    .default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .describe('Items per page (1-100)')
+    .meta({ example: 12 })
+    .default(12),
+  sortBy: nullAsAbsent(
+    z
+      .enum(['newest', 'price_asc', 'price_desc', 'best_selling', 'trending', 'top_rated'])
+      .describe('Sort order for product results')
+      .meta({ example: 'newest' }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    example: 4,
-    description: 'Filter by minimum average product rating (0-5)',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  @Max(5)
-  minRating?: number;
+export const QueryProductSchema = z.object(queryProductFields).strict();
 
-  @ApiPropertyOptional({
-    enum: ['true', 'false'],
-    example: 'true',
-    description: 'Filter by stock availability (true = in stock only, false = out of stock only)',
-  })
-  @IsOptional()
-  @IsIn(['true', 'false'])
-  inStock?: string;
-
-  @ApiPropertyOptional({
-    example: true,
-    description:
-      'Filter only trending products (have qualifying purchases and are not excluded from trending)',
-  })
-  @IsOptional()
-  @Transform(({ value }: { value: unknown }) => {
-    if (value === 'true' || value === true) return true;
-    if (value === 'false' || value === false) return false;
-    return value;
-  })
-  trendingOnly?: boolean;
-
-  @ApiPropertyOptional({
-    example: 1,
-    description: 'Filter products with at least this minimum qualifying purchase count',
-  })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  minPurchaseCount?: number;
-
-  @ApiPropertyOptional({
-    example: 'Audemars',
-    description: 'Search keyword matching product title, description, or shop name',
-  })
-  @IsOptional()
-  @IsString()
-  search?: string;
-
-  @ApiPropertyOptional({ example: 'uuid-category-id', description: 'Filter by category ID' })
-  @IsOptional()
-  @IsString()
-  categoryId?: string;
-
-  @ApiPropertyOptional({ example: 'uuid-seller-id', description: 'Filter by seller ID' })
-  @IsOptional()
-  @IsString()
-  sellerId?: string;
-
-  @ApiPropertyOptional({ enum: ProductStatus, example: ProductStatus.ACTIVE })
-  @IsOptional()
-  @IsEnum(ProductStatus)
-  status?: ProductStatus;
-
-  @ApiPropertyOptional({ example: 1000000, description: 'Minimum effective price' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  minPrice?: number;
-
-  @ApiPropertyOptional({ example: 500000000, description: 'Maximum effective price' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  maxPrice?: number;
-
-  @ApiPropertyOptional({ example: 1, default: 1, description: 'Page number (1-indexed)' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ example: 12, default: 12, description: 'Items per page (1-100)' })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 12;
-
-  @ApiPropertyOptional({
-    example: 'newest',
-    enum: ['newest', 'price_asc', 'price_desc', 'best_selling', 'trending', 'top_rated'],
-    description: 'Sort order for product results',
-  })
-  @IsOptional()
-  @IsString()
-  @IsIn(['newest', 'price_asc', 'price_desc', 'best_selling', 'trending', 'top_rated'])
-  sortBy?: 'newest' | 'price_asc' | 'price_desc' | 'best_selling' | 'trending' | 'top_rated';
-}
+export type QueryProductInput = z.infer<typeof QueryProductSchema>;

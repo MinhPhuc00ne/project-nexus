@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../contexts/AuthContext';
-import { listAdminProducts, listAdminTrendingProducts } from '../../../services/admin';
-import type { AdminTrendingProduct } from '../../../types/admin-product.types';
-import type { AdminProduct, QueryAdminProductsParams } from '../../../types/admin-product.types';
-import type { PaginatedResult } from '../../../types/admin.types';
+import { listAdminProducts, listAdminTrendingProducts } from '@/features/admin/services/admin';
+import type { AdminTrendingProduct } from '@/features/admin/types/admin-product.types';
+import type {
+  AdminProduct,
+  QueryAdminProductsParams,
+} from '@/features/admin/types/admin-product.types';
+import type { PaginatedResult } from '@/features/admin/types/admin.types';
 
 export type TrendingFilter = 'all' | 'trending';
 

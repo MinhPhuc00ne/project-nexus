@@ -1,12 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { z } from 'zod';
 
-export class RefreshTokenDto {
-  @ApiProperty({
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-    description: 'Refresh Token nhận được khi đăng nhập',
-  })
-  @IsString()
-  @IsNotEmpty({ message: 'Refresh token không được để trống' })
-  refreshToken!: string;
-}
+const refreshTokenFields = {
+  refreshToken: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Refresh Token nhận được khi đăng nhập')
+    .meta({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }),
+};
+
+export const RefreshTokenSchema = z.object(refreshTokenFields).strict();
+
+export type RefreshTokenInput = z.infer<typeof RefreshTokenSchema>;

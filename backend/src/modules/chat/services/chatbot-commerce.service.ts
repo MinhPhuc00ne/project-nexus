@@ -5,10 +5,13 @@ import {
   CommerceChatOrderItem,
   CommerceChatOrders,
   CommerceChatQuery,
-  CommerceChatQueryService,
-} from '../../commerce/services/commerce-chat-query.service';
-import { ChatbotMessageDto } from '../dtos/chatbot-message.dto';
-import type { ChatbotReply } from './chatbot.service';
+} from '../../../core/domain/commerce-chat.types';
+import { OrdersChatFacade } from '../../orders/services/orders-chat.facade';
+import { CartChatFacade } from '../../cart/services/cart-chat.facade';
+import { CatalogChatFacade } from '../../catalog/services/catalog-chat.facade';
+import { UsersChatFacade } from '../../users/services/users-chat.facade';
+import { ChatbotMessageInput } from '../dtos/chatbot-message.dto';
+import type { ChatbotReply } from './chatbot-reply';
 import {
   accountStatusIntent,
   commerceIntent,
@@ -39,15 +42,20 @@ const support: ChatbotReply['actions'] = [
 ];
 
 interface CommerceContext {
-  intent: ChatbotMessageDto['intent'] | null;
-  status: ChatbotMessageDto['status'];
+  intent: ChatbotMessageInput['intent'] | null;
+  status: ChatbotMessageInput['status'];
   needsScopeClarification: boolean;
 }
 
 /** Formats verified Commerce data locally so personal data never reaches Gemini. */
 @Injectable()
 export class ChatbotCommerceService {
-  constructor(private readonly queries: CommerceChatQueryService) {}
+  constructor(
+    private readonly ordersFacade: OrdersChatFacade,
+    private readonly cartFacade: CartChatFacade,
+    private readonly catalogFacade: CatalogChatFacade,
+    private readonly usersFacade: UsersChatFacade,
+  ) {}
 
   /**
    * Resolves a read-only cart or order-list response when the message requests personal commerce data.
@@ -56,7 +64,7 @@ export class ChatbotCommerceService {
    * @returns A deterministic data reply, or null for ordinary conversation.
    * @throws BadRequestException for incompatible filters.
    */
-  async answer(userId: string, dto: ChatbotMessageDto): Promise<ChatbotReply | null> {
+  async answer(userId: string, dto: ChatbotMessageInput): Promise<ChatbotReply | null> {
     const context = this.queryContext(dto);
     if (context.needsScopeClarification) {
       const prompt = context.status
@@ -79,13 +87,13 @@ export class ChatbotCommerceService {
       const budget = extractCartBudget(dto.message);
       const checkEligibility = budget !== null || isCartEligibilityQuery(dto.message);
       const cartQuery = checkEligibility && !dto.limit ? { ...query, limit: 20 } : query;
-      const cart = await this.queries.cart(userId, cartQuery);
+      const cart = await this.cartFacade.cart(userId, cartQuery);
       if (checkEligibility) {
         return this.formatCartEligibilityReply(cart, budget);
       }
       return this.formatCartReply(cart);
     }
-    const orders = await this.queries.orders(userId, intent, query);
+    const orders = await this.ordersFacade.orders(userId, intent, query);
     return this.formatOrdersReply(intent, query.status, orders);
   }
 
@@ -96,8 +104,8 @@ export class ChatbotCommerceService {
    * @returns Bounded commerce query parameters.
    */
   private buildQuery(
-    dto: ChatbotMessageDto,
-    inheritedStatus?: ChatbotMessageDto['status'],
+    dto: ChatbotMessageInput,
+    inheritedStatus?: ChatbotMessageInput['status'],
   ): CommerceChatQuery {
     const text = normalizeChatText(dto.message);
     const pageMatch = text.match(/\b(?:trang|page)\s+(\d+)\b/);
@@ -252,7 +260,7 @@ export class ChatbotCommerceService {
    */
   private formatOrdersReply(
     intent: 'PURCHASES' | 'SALES',
-    status: ChatbotMessageDto['status'],
+    status: ChatbotMessageInput['status'],
     orders: CommerceChatOrders,
   ): ChatbotReply {
     const label = intent === 'SALES' ? 'đơn bán' : 'đơn mua';
@@ -292,9 +300,9 @@ export class ChatbotCommerceService {
    * @param dto Current request and optional untrusted conversation history.
    * @returns Read intent and status; data ownership remains enforced by Commerce queries.
    */
-  private queryContext(dto: ChatbotMessageDto): CommerceContext {
-    let intent: ChatbotMessageDto['intent'] | null = null;
-    let status: ChatbotMessageDto['status'];
+  private queryContext(dto: ChatbotMessageInput): CommerceContext {
+    let intent: ChatbotMessageInput['intent'] | null = null;
+    let status: ChatbotMessageInput['status'];
     for (const turn of (dto.history ?? []).slice(-12)) {
       if (turn.role !== 'user') continue;
       const explicit = commerceIntent(turn.content);
@@ -341,7 +349,7 @@ export class ChatbotCommerceService {
    * @throws NotFoundException when no owned order matches.
    */
   async order(userId: string, orderId: string, message = ''): Promise<ChatbotReply> {
-    const order = await this.queries.order(userId, orderId);
+    const order = await this.ordersFacade.order(userId, orderId);
     const topic = matchChatbotTopic(message);
     const policy = chatbotKnowledge.find(
       (entry) =>
@@ -389,7 +397,7 @@ export class ChatbotCommerceService {
   async searchCatalog(message: string): Promise<ChatbotReply | null> {
     const query = extractShoppingQuery(message);
     if (query === null) return null;
-    const result = await this.queries.searchCatalog(query);
+    const result = await this.catalogFacade.searchCatalog(query);
 
     if (!result.products.length && !result.auctions.length) {
       return {
@@ -474,7 +482,7 @@ export class ChatbotCommerceService {
     }
 
     if (target.searchQuery && target.searchKind) {
-      const catalog = await this.queries.searchCatalog(target.searchQuery);
+      const catalog = await this.catalogFacade.searchCatalog(target.searchQuery);
       if (target.searchKind === 'AUCTION' && catalog.auctions.length > 0) {
         const first = catalog.auctions[0];
         return {
@@ -550,7 +558,7 @@ export class ChatbotCommerceService {
     if (!intent) return null;
     const auctionFilter =
       intent === 'ELIGIBILITY' ? extractAuctionEligibilityFilter(message) : undefined;
-    const status = await this.queries.accountEligibility?.(userId, auctionFilter);
+    const status = await this.usersFacade.accountEligibility(userId, auctionFilter);
     if (!status) return null;
 
     const walletLine = status.hasWallet

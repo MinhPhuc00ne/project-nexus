@@ -1,13 +1,17 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class ToggleSellerDto {
-  @ApiPropertyOptional({
-    description:
-      'Chế độ người bán (true: bật chế độ Seller, false: chuyển về chế độ Buyer). Nếu không truyền trường này, hệ thống sẽ tự động đảo trạng thái hiện tại.',
-    example: true,
-  })
-  @IsOptional()
-  @IsBoolean({ message: 'isSellerActive phải là kiểu boolean' })
-  isSellerActive?: boolean;
-}
+const toggleSellerFields = {
+  isSellerActive: nullAsAbsent(
+    z
+      .boolean()
+      .describe(
+        'Chế độ người bán (true: bật chế độ Seller, false: chuyển về chế độ Buyer). Nếu không truyền trường này, hệ thống sẽ tự động đảo trạng thái hiện tại.',
+      )
+      .meta({ example: true }),
+  ),
+};
+
+export const ToggleSellerSchema = z.object(toggleSellerFields).strict();
+
+export type ToggleSellerInput = z.infer<typeof ToggleSellerSchema>;

@@ -21,9 +21,9 @@ import {
   saveStaffBanner,
   type StaffBannerDisableHistoryItem,
   type StaffBanner,
-} from '../../services/staff';
-import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
-import { uploadBannerImage } from '../../services/banners.service';
+} from '@/features/staff/services/staff';
+import { getAuctionsApi, type AuctionEntity } from '@/features/auction/services/auction.service';
+import { uploadBannerImage } from '@/features/catalog/services/banners.service';
 import StaffBannerEditorDialog from './StaffBannerEditorDialog';
 import { getIntlLocale } from '../../i18n/config';
 

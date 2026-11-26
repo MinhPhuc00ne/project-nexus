@@ -12,9 +12,7 @@
     "auctionSupport": "Hỗ Trợ Đấu Giá",
     "faq": "Hướng Dẫn & FAQ Sàn",
     "banners": "Quản Lý Banner",
-    "reviews": "Kiểm Duyệt Đánh Giá",
-    "history": "Lịch Sử & CSAT",
-    "performance": "Hiệu Suất Cá Nhân"
+    "reviews": "Kiểm Duyệt Đánh Giá"
   },
   "layout": {
     "forbiddenDesc": "Chỉ nhân sự hỗ trợ (Staff) hoặc Quản trị viên (Admin) mới được truy cập khu vực này."
@@ -58,16 +56,6 @@
     "reviews": {
       "title": "Kiểm duyệt đánh giá",
       "description": "Xem và xử lý đánh giá vi phạm theo quyền Staff được cấp."
-    },
-    "history": {
-      "title": "Lịch sử hỗ trợ và đánh giá khách hàng",
-      "description": "Tra cứu yêu cầu đã xử lý và phản hồi về chất lượng hỗ trợ.",
-      "topics": ["Yêu cầu đã xử lý", "Đánh giá hài lòng (CSAT)", "Phản hồi của khách hàng"]
-    },
-    "performance": {
-      "title": "Hiệu suất hỗ trợ cá nhân",
-      "description": "Theo dõi khối lượng công việc, thời gian phản hồi và chất lượng xử lý yêu cầu của bạn.",
-      "topics": ["Khối lượng yêu cầu", "Thời gian phản hồi", "Chất lượng xử lý"]
     }
   },
   "dashboard": {
@@ -80,9 +68,7 @@
     "faqProcessTitle": "Quy trình hỗ trợ",
     "trackingScopeTitle": "Phạm vi theo dõi",
     "noDataTitle": "Chưa có dữ liệu để hiển thị",
-    "noDataFallback": "Dữ liệu {{title}} sẽ hiển thị khi được hệ thống cung cấp.",
-    "unavailableHistory": "Backend hiện chưa có API lịch sử xử lý và đánh giá CSAT của Staff.",
-    "unavailablePerformance": "Backend hiện chưa có API thống kê hiệu suất theo nhân viên."
+    "noDataFallback": "Dữ liệu {{title}} sẽ hiển thị khi được hệ thống cung cấp."
   },
   "sidebarNavAria": "Điều hướng nhân viên",
   "header": {
@@ -212,7 +198,10 @@
     },
     "conversation": {
       "canned": [
-        { "label": "👋 Chào khách", "text": "Chào bạn! Tôi có thể hỗ trợ gì cho bạn ạ?" },
+        {
+          "label": "👋 Chào khách",
+          "text": "Chào bạn! Tôi có thể hỗ trợ gì cho bạn ạ?"
+        },
         {
           "label": "📦 Hỏi mã đơn",
           "text": "Vui lòng cung cấp mã đơn hàng để tôi kiểm tra giúp bạn nhé."
@@ -221,7 +210,10 @@
           "label": "⏳ Đang kiểm tra",
           "text": "Tôi đang kiểm tra thông tin vận chuyển, bạn chờ trong giây lát nhé."
         },
-        { "label": "✅ Đã giải quyết", "text": "Yêu cầu của bạn đã được xử lý hoàn tất rồi nhé!" }
+        {
+          "label": "✅ Đã giải quyết",
+          "text": "Yêu cầu của bạn đã được xử lý hoàn tất rồi nhé!"
+        }
       ],
       "attachedToast": "Đã đính kèm {{count}} ảnh.",
       "uploadErr": "Không thể tải ảnh.",
@@ -451,7 +443,10 @@
       "COMPLETED": "Hoàn tất",
       "REJECTED": "Đã từ chối"
     },
-    "kinds": { "CANCEL": "Hủy đơn", "RETURN": "Trả hàng" },
+    "kinds": {
+      "CANCEL": "Hủy đơn",
+      "RETURN": "Trả hàng"
+    },
     "orderStatuses": {
       "PENDING_PAYMENT": "Chờ thanh toán",
       "PAID": "Đã thanh toán",

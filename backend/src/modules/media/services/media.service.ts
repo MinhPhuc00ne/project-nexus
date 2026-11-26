@@ -1,25 +1,37 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import type { Request } from 'express';
+import { fromBuffer } from 'file-type';
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveAppPublicUrl } from '../../../core/config/env.schema';
+import { ProviderConfigService } from '../../../core/providers/provider-config.service';
 import { CloudinaryStorageService } from '../../../core/storage/cloudinary.service';
 import {
   MediaUploadResponseDto,
   MultipleMediaUploadResponseDto,
 } from '../dtos/media-upload-response.dto';
 
-const ALLOWED_EXTENSIONS = new Set([
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.webp',
-  '.gif',
-  '.svg',
-  '.bmp',
-  '.tiff',
-]);
+const ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff']);
+
+const ALLOWED_EXTENSION_MIMES: Record<string, readonly string[]> = {
+  '.jpg': ['image/jpeg'],
+  '.jpeg': ['image/jpeg'],
+  '.png': ['image/png'],
+  '.webp': ['image/webp'],
+  '.gif': ['image/gif'],
+  '.bmp': ['image/bmp'],
+  '.tiff': ['image/tiff'],
+  '.mp4': ['video/mp4', 'video/quicktime'],
+  '.webm': ['video/webm'],
+  '.mov': ['video/quicktime', 'video/mp4'],
+};
 
 const ALLOWED_REVIEW_EXTENSIONS = new Set([...ALLOWED_EXTENSIONS, '.mp4', '.webm', '.mov']);
 const REVIEW_IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp']);
@@ -42,11 +54,9 @@ export class MediaService {
   constructor(
     private readonly configService: ConfigService,
     private readonly cloudinaryService: CloudinaryStorageService,
+    private readonly providers: ProviderConfigService,
   ) {
     this.mediaUploadDir = path.join(process.cwd(), 'uploads', 'media');
-    if (!fs.existsSync(this.mediaUploadDir)) {
-      fs.mkdirSync(this.mediaUploadDir, { recursive: true });
-    }
   }
 
   private validateStrictReviewFile(file: Express.Multer.File, ext: string): void {
@@ -66,6 +76,17 @@ export class MediaService {
     }
   }
 
+  private resolveUploadExtension(originalname?: string): string {
+    const baseName = path.basename((originalname ?? '').trim());
+    const rawExt = path.extname(baseName).toLowerCase();
+    if (baseName.startsWith('.') && !rawExt) {
+      throw new BadRequestException(
+        `Định dạng file không được hỗ trợ (${baseName}). Vui lòng tải lên file hợp lệ.`,
+      );
+    }
+    return rawExt || '.png';
+  }
+
   private validateUploadFile(
     file: Express.Multer.File | undefined,
     options: MediaUploadOptions,
@@ -74,7 +95,7 @@ export class MediaService {
       throw new BadRequestException('Vui lòng chọn file hình ảnh hợp lệ để tải lên.');
     }
 
-    const ext = path.extname(file.originalname).toLowerCase() || '.png';
+    const ext = this.resolveUploadExtension(file.originalname);
     if (options.strictReviewPolicy) {
       this.validateStrictReviewFile(file, ext);
       return;
@@ -91,65 +112,43 @@ export class MediaService {
     const allowedExtensions = options.allowVideo ? ALLOWED_REVIEW_EXTENSIONS : ALLOWED_EXTENSIONS;
     if (!allowedExtensions.has(ext)) {
       const supported = options.allowVideo
-        ? 'hình ảnh hoặc video (JPG, PNG, WEBP, GIF, SVG, MP4, WEBM, MOV)'
-        : 'hình ảnh (JPG, PNG, WEBP, GIF, SVG)';
+        ? 'hình ảnh hoặc video (JPG, PNG, WEBP, GIF, BMP, TIFF, MP4, WEBM, MOV)'
+        : 'hình ảnh (JPG, PNG, WEBP, GIF, BMP, TIFF)';
       throw new BadRequestException(
         `Định dạng file không được hỗ trợ (${ext}). Vui lòng tải lên file ${supported}.`,
       );
     }
   }
 
-  private async uploadToCloudinaryIfConfigured(
-    file: Express.Multer.File,
-    fallbackUrl: string,
-    fallbackPublicId: string,
-  ): Promise<{ url: string; publicId: string }> {
-    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME');
-    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY');
-    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET');
-
-    if (!cloudName || !apiKey || !apiSecret) {
-      return { url: fallbackUrl, publicId: fallbackPublicId };
-    }
-
+  private async validateMagicBytes(file: Express.Multer.File, ext: string): Promise<void> {
+    const expectedMimes = ALLOWED_EXTENSION_MIMES[ext];
+    let detected: Awaited<ReturnType<typeof fromBuffer>>;
     try {
-      const cloudRes = await this.cloudinaryService.uploadFile(
-        file.buffer,
-        file.originalname,
-        'nexus/media',
-      );
-      if (cloudRes?.url && !cloudRes.url.startsWith('data:')) {
-        this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${cloudRes.url}`);
-        return {
-          url: cloudRes.url,
-          publicId: cloudRes.publicId || fallbackPublicId,
-        };
-      }
-    } catch (err) {
-      this.logger.warn(`Không thể upload lên Cloudinary, sử dụng URL cục bộ của server: ${err}`);
+      detected = await fromBuffer(file.buffer);
+    } catch {
+      detected = undefined;
     }
-
-    return { url: fallbackUrl, publicId: fallbackPublicId };
+    if (!expectedMimes || !detected || !expectedMimes.includes(detected.mime)) {
+      throw new BadRequestException(
+        `Nội dung file không khớp với định dạng ${ext}. Vui lòng tải lên file hợp lệ.`,
+      );
+    }
   }
 
-  /**
-   * Uploads a single media file to local disk storage and optionally synchronizes to Cloudinary.
-   *
-   * @param file - Multer uploaded file object
-   * @param req - Express request object for local URL derivation
-   * @returns Metadata and URL of the uploaded media file
-   * @throws BadRequestException when file is missing, exceeds size limit, has unsupported format, or fails disk writing
-   */
-  async uploadMedia(
-    file?: Express.Multer.File,
-    req?: Request,
-    options: MediaUploadOptions = {},
-  ): Promise<MediaUploadResponseDto> {
-    this.validateUploadFile(file, options);
+  private saveLocalMediaFile(
+    file: Express.Multer.File,
+    sanitizedFileName: string,
+    uniqueSuffix: string,
+  ): { url: string; publicId: string } {
+    const appPublicUrl = resolveAppPublicUrl({
+      APP_PUBLIC_URL: this.configService.get<string>('APP_PUBLIC_URL'),
+      NODE_ENV: this.configService.get<string>('NODE_ENV') ?? process.env.NODE_ENV,
+      PORT_BACKEND: this.configService.get<number | string>('PORT_BACKEND'),
+    });
 
-    const ext = path.extname(file.originalname).toLowerCase() || '.png';
-    const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
-    const sanitizedFileName = `media-${uniqueSuffix}${ext}`;
+    if (!fs.existsSync(this.mediaUploadDir)) {
+      fs.mkdirSync(this.mediaUploadDir, { recursive: true });
+    }
     const localFilePath = path.join(this.mediaUploadDir, sanitizedFileName);
 
     try {
@@ -160,16 +159,63 @@ export class MediaService {
       throw new BadRequestException('Không thể lưu file lên máy chủ backend.');
     }
 
-    const port = this.configService.get<string>('PORT_BACKEND') || '3000';
-    const hostHeader = req?.get('host') || `localhost:${port}`;
-    const protocol = req?.protocol || 'http';
-    const localUrl = `${protocol}://${hostHeader}/uploads/media/${sanitizedFileName}`;
+    return {
+      url: `${appPublicUrl}/uploads/media/${sanitizedFileName}`,
+      publicId: `local-${uniqueSuffix}`,
+    };
+  }
 
-    const { url: finalUrl, publicId } = await this.uploadToCloudinaryIfConfigured(
-      file,
-      localUrl,
-      `local-${uniqueSuffix}`,
-    );
+  /**
+   * Uploads a single media file to Cloudinary when configured, or local disk storage otherwise.
+   *
+   * @param file - Multer uploaded file object
+   * @param _req - Express request object (unused; public URL resolved via APP_PUBLIC_URL)
+   * @returns Metadata and URL of the uploaded media file
+   * @throws BadRequestException when file is missing, exceeds size limit, has unsupported format/magic bytes, or fails disk writing
+   */
+  async uploadMedia(
+    file?: Express.Multer.File,
+    _req?: Request,
+    options: MediaUploadOptions = {},
+  ): Promise<MediaUploadResponseDto> {
+    this.validateUploadFile(file, options);
+
+    const ext = this.resolveUploadExtension(file.originalname);
+    await this.validateMagicBytes(file, ext);
+
+    const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+    const sanitizedFileName = `media-${uniqueSuffix}${ext}`;
+
+    let finalUrl: string;
+    let publicId: string;
+
+    if (this.providers.isLocalStorage()) {
+      const localResult = this.saveLocalMediaFile(file, sanitizedFileName, uniqueSuffix);
+      finalUrl = localResult.url;
+      publicId = localResult.publicId;
+    } else {
+      try {
+        const cloudRes = await this.cloudinaryService.uploadFile(
+          file.buffer,
+          file.originalname,
+          'nexus/media',
+        );
+        const resolvedUrl = cloudRes?.url?.trim();
+        if (!resolvedUrl || resolvedUrl.toLowerCase().startsWith('data:')) {
+          throw new Error('Cloudinary returned an invalid media URL');
+        }
+        this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${resolvedUrl}`);
+        finalUrl = resolvedUrl;
+        publicId = cloudRes.publicId || `cloud-${uniqueSuffix}`;
+      } catch (err) {
+        this.logger.error(
+          `Không thể upload lên Cloudinary (STORAGE_PROVIDER=cloudinary): ${err instanceof Error ? err.message : String(err)}`,
+        );
+        throw new ServiceUnavailableException(
+          'Không thể tải file lên Cloudinary. Vui lòng thử lại sau.',
+        );
+      }
+    }
 
     return {
       url: finalUrl,

@@ -1,20 +1,20 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-  ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { notifyAllAdmins } from '../../../core/notifications/admin-notification.util';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
-import { CreateProductDto } from '../dtos/create-product.dto';
-import { UpdateProductDto } from '../dtos/update-product.dto';
-import { QueryProductDto } from '../dtos/query-product.dto';
+import { CreateProductInput } from '../dtos/create-product.dto';
+import { UpdateProductInput } from '../dtos/update-product.dto';
+import { QueryProductInput } from '../dtos/query-product.dto';
 import { InventoryService } from './inventory.service';
-import { NotificationType, ProductStatus, Prisma, Role } from '@prisma/client';
+import { NotificationType, Prisma, ProductStatus, Role } from '@prisma/client';
 import { PaginatedResult, formatProductDetail } from '../utils/product.util';
-import { normalizeOptions } from '../utils/product-options';
-import { priceView } from '../utils/product-price';
+import { normalizeOptions } from '../../../core/domain/product-options';
+import { priceView } from '../../../core/domain/product-price';
 import { ProductSearchService } from './product-search.service';
 
 @Injectable()
@@ -47,7 +47,7 @@ export class ProductService {
       );
   }
 
-  async createProduct(sellerId: string, dto: CreateProductDto) {
+  async createProduct(sellerId: string, dto: CreateProductInput) {
     await this.validateSellerActiveShop(sellerId);
     assertCleanContent(dto.title, 'Tên sản phẩm');
     assertCleanContent(dto.description, 'Mô tả sản phẩm');
@@ -126,7 +126,7 @@ export class ProductService {
     }));
   }
 
-  async updateProduct(sellerId: string, productId: string, dto: UpdateProductDto) {
+  async updateProduct(sellerId: string, productId: string, dto: UpdateProductInput) {
     await this.validateSellerActiveShop(sellerId);
     if (dto.title) assertCleanContent(dto.title, 'Tên sản phẩm');
     if (dto.description) assertCleanContent(dto.description, 'Mô tả sản phẩm');
@@ -227,7 +227,7 @@ export class ProductService {
     return { success: true, message: 'Đã ẩn sản phẩm thành công.' };
   }
 
-  getProducts(query: QueryProductDto): Promise<PaginatedResult<unknown>> {
+  getProducts(query: QueryProductInput): Promise<PaginatedResult<unknown>> {
     return this.search.getProducts(query);
   }
 

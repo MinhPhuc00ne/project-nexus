@@ -1,5 +1,5 @@
 import i18n from '../../i18n/index';
-import type { SellerShopProfile, UpdateSellerShop } from '../../types/shop.types';
+import type { SellerShopProfile, UpdateSellerShop } from '@/features/catalog/types/shop.types';
 
 export interface ShopForm {
   storeName: string;

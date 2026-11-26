@@ -10,7 +10,7 @@ import {
   type AdminAuctionListResponse,
   type AdminAuctionEntity,
   type AuctionConsignmentItem,
-} from '../../../services/auction.service';
+} from '@/features/auction/services/auction.service';
 import { useToast } from '../../ToastNotification';
 import { consignmentLockReason } from './consignmentAvailability';
 

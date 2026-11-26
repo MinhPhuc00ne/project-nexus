@@ -2,8 +2,8 @@ import { ChevronDown, Menu, ShieldCheck, Radio, LogOut, Settings2, UserRound } f
 import { useEffect, useId, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { clearAuthSession } from '../../../services/auth';
-import type { UserProfile } from '../../../services/users';
+import { clearAuthSession } from '@/features/auth/services/auth';
+import type { UserProfile } from '@/features/account/services/users';
 import LanguageSwitcher from '../../common/LanguageSwitcher';
 import AdminNotifications from './AdminNotifications';
 import { useToast } from '../../ToastNotification';

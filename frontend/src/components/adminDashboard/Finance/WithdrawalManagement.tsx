@@ -6,7 +6,7 @@ import {
   reviewAdminWithdrawal,
   type AdminWithdrawalRequest,
   type AdminWithdrawalStatus,
-} from '../../../services/admin';
+} from '@/features/admin/services/admin';
 import { getIntlLocale } from '../../../i18n/config';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { formatMoney } from '../shared/adminData';

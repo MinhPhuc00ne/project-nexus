@@ -13,7 +13,7 @@ const load = createRequire(import.meta.url);
 const source = (path) => load(`../src/${path}.ts`);
 
 test('ReportModerationService.list enriches reports with shop, product and reporter display names', async () => {
-  const { ReportModerationService } = source('modules/commerce/services/report-moderation.service');
+  const { ReportModerationService } = source('modules/reviews/services/report-moderation.service');
 
   const shopId = randomUUID();
   const productId = randomUUID();

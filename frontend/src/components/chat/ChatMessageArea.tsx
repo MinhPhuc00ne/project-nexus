@@ -2,7 +2,7 @@ import ChatMessageContent from './ChatMessageContent';
 import { type FormEvent, type JSX, type KeyboardEvent, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft, MessageCircle, Send } from 'lucide-react';
-import type { ChatConversation, ChatMessage } from '../../types/chat.types';
+import type { ChatConversation, ChatMessage } from '@/features/chat/types/chat.types';
 import { formatChatTime } from './chatUtils';
 import ChatAvatar from './ChatAvatar';
 

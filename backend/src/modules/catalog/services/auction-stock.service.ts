@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, Product } from '@prisma/client';
 import { InventoryService } from './inventory.service';
-import { trustLevelFor } from '../../users/services/reputation-policy';
+import { trustLevelFor } from '../../../core/domain/reputation-policy';
 
 /** Keeps auction stock reservations inside the catalog ownership boundary. */
 @Injectable()

@@ -16,6 +16,7 @@ import { BannerService } from './services/banner.service';
 import { BannerHistoryService } from './services/banner-history.service';
 import { RecommendationsService } from './services/recommendations.service';
 import { AuctionStockService } from './services/auction-stock.service';
+import { CatalogChatFacade } from './services/catalog-chat.facade';
 
 @Module({
   imports: [PrismaModule],
@@ -38,6 +39,7 @@ import { AuctionStockService } from './services/auction-stock.service';
     BannerService,
     BannerHistoryService,
     RecommendationsService,
+    CatalogChatFacade,
   ],
   exports: [
     CategoryService,
@@ -46,6 +48,7 @@ import { AuctionStockService } from './services/auction-stock.service';
     InventoryService,
     ShopService,
     AuctionStockService,
+    CatalogChatFacade,
   ],
 })
 export class CatalogModule {}

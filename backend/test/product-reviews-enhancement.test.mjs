@@ -10,8 +10,12 @@ tsNode.register({
 });
 
 const load = createRequire(import.meta.url);
-const { ReviewsService } = load('../src/modules/commerce/services/reviews.service.ts');
+const { ReviewsService } = load('../src/modules/reviews/services/reviews.service.ts');
 const { MediaService } = load('../src/modules/media/services/media.service.ts');
+const { ReviewsModerationHelper } = load(
+  '../src/modules/reviews/services/reviews-moderation.helper.ts',
+);
+const { ReviewsRepliesHelper } = load('../src/modules/reviews/services/reviews-replies.helper.ts');
 
 test('ReviewsService.create stores mediaUrls on product review and updates rating', async () => {
   let createdData = null;
@@ -44,9 +48,12 @@ test('ReviewsService.create stores mediaUrls on product review and updates ratin
     notification: { create: mock.fn(async () => ({})) },
   };
 
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: mock.fn(async () => ({})) },
+    new ReviewsModerationHelper(prismaDouble, { adjustScore: mock.fn(async () => ({})) }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
 
   await service.create(
@@ -87,9 +94,12 @@ test('ReviewsService.replyToProductReview enforces seller ownership and saves re
     },
   };
 
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: async () => ({}) },
+    new ReviewsModerationHelper(prismaDouble, { adjustScore: async () => ({}) }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
 
   await assert.rejects(
@@ -136,9 +146,12 @@ test('ReviewsService.toggleHelpfulProductReview blocks self-vote, toggles vote a
     },
   };
 
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: async () => ({}) },
+    new ReviewsModerationHelper(prismaDouble, { adjustScore: async () => ({}) }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
 
   await assert.rejects(
@@ -180,9 +193,14 @@ test('ReviewsService.adminRemoveSellerReply clears sellerReply, deducts seller r
     },
   };
 
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: async (payload) => penalties.push(payload) },
+    new ReviewsModerationHelper(prismaDouble, {
+      adjustScore: async (payload) => penalties.push(payload),
+    }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
 
   const res = await service.adminRemoveSellerReply(
@@ -236,16 +254,19 @@ test('ReviewsService supports 2-way ReviewReply with media and paginated listing
     },
   };
 
-  const service = new ReviewsService(
-    {
-      $transaction: (fn) => fn(tx),
-      productReview: { findUnique: async () => ({ id: 'rev-1' }) },
-      reviewReply: {
-        findMany: async () => createdReplies,
-        count: async () => createdReplies.length,
-      },
+  const prismaInline = {
+    $transaction: (fn) => fn(tx),
+    productReview: { findUnique: async () => ({ id: 'rev-1' }) },
+    reviewReply: {
+      findMany: async () => createdReplies,
+      count: async () => createdReplies.length,
     },
+  };
+  const service = new ReviewsService(
+    prismaInline,
     { adjustScore: async () => ({}) },
+    new ReviewsModerationHelper(prismaInline, { adjustScore: async () => ({}) }),
+    new ReviewsRepliesHelper(prismaInline, undefined),
   );
 
   await assert.rejects(
@@ -306,9 +327,14 @@ test('ReviewsService.adminModerateReviewVisibility hides negative review/reply w
     },
   };
 
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: async (payload) => penalties.push(payload) },
+    new ReviewsModerationHelper(prismaDouble, {
+      adjustScore: async (payload) => penalties.push(payload),
+    }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
   const res = await service.adminModerateReviewVisibility(
     'admin-1',
@@ -367,7 +393,12 @@ test('ReviewsService.list and adminListReviews support rating filter and newest/
     },
   };
 
-  const service = new ReviewsService(prisma, { adjustScore: async () => ({}) });
+  const service = new ReviewsService(
+    prisma,
+    { adjustScore: async () => ({}) },
+    new ReviewsModerationHelper(prisma, { adjustScore: async () => ({}) }),
+    new ReviewsRepliesHelper(prisma, undefined),
+  );
   await service.list('prod-1', 'product', { page: 1, limit: 10, rating: 2, sortBy: 'oldest' });
 
   assert.equal(capturedWhere.rating, 2);
@@ -417,10 +448,14 @@ test('ReviewsService.createReviewReply blocks replies on hidden reviews without 
       }),
     },
   };
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
+  const mediaDouble = { uploadMultipleMedia: uploadMock };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: async () => ({}) },
-    { uploadMultipleMedia: uploadMock },
+    new ReviewsModerationHelper(prismaDouble, { adjustScore: async () => ({}) }),
+    new ReviewsRepliesHelper(prismaDouble, mediaDouble),
+    mediaDouble,
   );
 
   await assert.rejects(
@@ -463,9 +498,12 @@ test('ReviewsService.adminModerateReviewVisibility updates product rating on hid
     notification: { create: async () => ({}) },
   };
 
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: async () => ({}) },
+    new ReviewsModerationHelper(prismaDouble, { adjustScore: async () => ({}) }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
 
   await service.adminModerateReviewVisibility('admin-1', 'product', 'rev-1', {
@@ -481,7 +519,11 @@ test('ReviewsService.adminModerateReviewVisibility updates product rating on hid
 });
 
 test('MediaService strictReviewPolicy enforces 5MB images (PNG/JPG/WEBP) and 50MB videos (MP4/MOV)', async () => {
-  const mediaService = new MediaService({ get: () => undefined }, { uploadFile: async () => null });
+  const mediaService = new MediaService(
+    { get: () => undefined },
+    { uploadFile: async () => null },
+    { isLocalStorage: () => true },
+  );
 
   await assert.rejects(
     () =>

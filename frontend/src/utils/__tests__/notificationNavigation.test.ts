@@ -109,4 +109,19 @@ describe('resolveNotificationTargetUrl', () => {
       resolveNotificationTargetUrl(notification, [...orders, { id: 'a1b2c3d4-9999-9999' }]),
     ).toBe('/buyer/orders?status=paid&search=a1b2c3d4');
   });
+
+  it('keeps original destination for non-invitation auction notifications', () => {
+    for (const actionType of [
+      'AUCTION_OUTBID',
+      'SECOND_CHANCE_SENT',
+      'SECOND_CHANCE_WITHDRAWN_SELLER',
+    ]) {
+      expect(
+        resolveNotificationTargetUrl({
+          targetUrl: '/auction/auction',
+          metadata: { actionType },
+        }),
+      ).toBe('/auction/auction');
+    }
+  });
 });

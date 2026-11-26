@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { parseCorsOrigins } from './core/config/env.schema';
 import { GlobalHttpExceptionFilter } from './core/filters/global-http-exception.filter';
 import { TransformResponseInterceptor } from './core/interceptors/transform-response.interceptor';
 import { SwaggerModule } from '@nestjs/swagger';
@@ -16,21 +18,28 @@ async function bootstrap(): Promise<void> {
   // Set global API prefix matching Frontend expectations (/api/v1)
   app.setGlobalPrefix('api/v1');
 
-  // Enable CORS for frontend applications
+  const configService = app.get(ConfigService);
+  const allowedOrigins = parseCorsOrigins(
+    configService.get<string>('CORS_ORIGINS'),
+    configService.get<string>('FRONTEND_URL') || 'http://localhost:5173',
+  );
+
+  // Enable CORS for allowlisted frontend applications
   app.enableCors({
-    origin: (origin, callback) => callback(null, true),
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error(`Origin '${origin}' not allowed by CORS`), false);
+    },
     credentials: true,
   });
 
   // Global validation pipe adhering to Clean Code standards
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
   // Global Exception Filter
   app.useGlobalFilters(new GlobalHttpExceptionFilter());
 
@@ -52,7 +61,8 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, buildSwaggerConfig());
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = process.env.PORT_BACKEND || 3000;
+  const port =
+    configService.get<number>('PORT_BACKEND') || Number(process.env.PORT_BACKEND) || 3000;
   await app.listen(port, '0.0.0.0');
   logger.log(`Nexus Backend Monolith running on: http://localhost:${port}/api/v1`);
   logger.log(`Interactive Swagger Docs available at: http://localhost:${port}/api/docs`);

@@ -1,6 +1,6 @@
 import { MapPin, Edit2, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { UserAddress } from '../../services/address';
+import type { UserAddress } from '@/features/account/services/address';
 
 interface AddressCardProps {
   addr: UserAddress;

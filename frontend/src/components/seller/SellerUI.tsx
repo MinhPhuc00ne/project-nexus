@@ -2,14 +2,12 @@ import { cn } from '../../lib/utils';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ExternalLink as ExportOutlined } from 'lucide-react';
 import {
   ChevronRight as RightOutlined,
   Database as DatabaseOutlined,
   Inbox as InboxOutlined,
   ShieldCheck as SafetyCertificateOutlined,
 } from 'lucide-react';
-import { useSellerWorkspace } from './SellerWorkspace';
 export function SellerButton({
   children,
   secondary = false,
@@ -96,7 +94,7 @@ export function Panel({
       data-seller="panel"
     >
       <div
-        className="flex items-start justify-between gap-[15px] mb-5 [&_h2]:text-[13px] [&_h2]:font-[650] [&_h2]:tracking-[-0.15px] [&_h2]:m-0 [&_p]:text-[10px] [&_p]:text-[#8c9bb4] [&_p]:leading-[1.65] [&_p]:[margin:3px_0_0] [&>.anticon]:text-[#8fa0bc]! [&>.anticon]:shrink-0 max-[760px]:gap-2.5 max-[540px]:[&_h2]:text-[12px] max-[540px]:[&_p]:text-[9px] max-[540px]:[&>[data-seller~=text-button]]:text-[9px] max-[540px]:[&>[data-seller~=text-button]]:shrink-0"
+        className="flex items-start justify-between gap-[15px] mb-5 [&_h2]:text-[13px] [&_h2]:font-[650] [&_h2]:tracking-[-0.15px] [&_h2]:m-0 [&_p]:text-[10px] [&_p]:text-[#8c9bb4] [&_p]:leading-[1.65] [&_p]:[margin:3px_0_0] [&>svg]:text-[#8fa0bc]! [&>svg]:shrink-0 max-[760px]:gap-2.5 max-[540px]:[&_h2]:text-[12px] max-[540px]:[&_p]:text-[9px] max-[540px]:[&>[data-seller~=text-button]]:text-[9px] max-[540px]:[&>[data-seller~=text-button]]:shrink-0"
         data-seller="panel-heading"
       >
         <div>
@@ -122,7 +120,7 @@ export function PageHeading({
   return (
     <header className="space-y-3">
       <nav
-        className="flex flex-wrap items-center gap-2 text-[#8a9ebf] text-[10px] [&>a]:text-[#8a9ebf] [&>span:not(.anticon)]:text-[#627495]"
+        className="flex flex-wrap items-center gap-2 text-[#8a9ebf] text-[10px] [&>a]:text-[#8a9ebf] [&>span]:text-[#627495]"
         data-seller="breadcrumb"
         aria-label={t('ui.breadcrumbAria')}
       >
@@ -145,22 +143,24 @@ export function PageHeading({
     </header>
   );
 }
+/**
+ * Says where a panel's figures come from.
+ *
+ * This used to offer a "view sample data" button that swapped the panels for
+ * invented figures — a revenue of 348,6M, three pending orders, two live lots.
+ * The panels read the shop's own figures now, so there is nothing to swap to,
+ * and a button that fills a dashboard with numbers nobody earned is worse than
+ * an empty one.
+ */
 export function ModuleNotice({ label }: { label: string }) {
   const { t } = useTranslation('seller');
-  const { preview, setPreview } = useSellerWorkspace();
   return (
     <div
-      className={cn(
-        `flex items-center gap-2 text-[#8b98ad] text-[10px] py-0 px-0.5 my-[-6px] mx-0 [&>.anticon]:text-[#93a4be]! [&>.anticon]:shrink-0 [&_button]:flex [&_button]:items-center [&_button]:gap-1 [&_button]:text-[#315eea] [&_button]:bg-transparent [&_button]:[border:0] [&_button]:p-1 [&_button]:ml-auto [&_button]:whitespace-nowrap [&_button]:font-[550] [&.is-preview]:text-[#b38b42] max-[540px]:items-start max-[540px]:text-[9px] max-[540px]:gap-1.5 max-[540px]:flex-wrap max-[540px]:[&>span:not(.anticon)]:flex-1 max-[540px]:[&_button]:text-[9px] max-[540px]:[&_button]:p-0 max-[540px]:[&_button]:ml-5.5 ${preview ? 'is-preview' : ''}`,
-      )}
+      className="flex items-center gap-2 text-[#8b98ad] text-[10px] py-0 px-0.5 my-[-6px] mx-0 [&>svg]:text-[#93a4be]! [&>svg]:shrink-0 max-[540px]:items-start max-[540px]:text-[9px] max-[540px]:gap-1.5 max-[540px]:flex-wrap max-[540px]:[&>span]:flex-1"
       data-seller="module-notice"
     >
       <DatabaseOutlined className="text-[16px]" aria-hidden="true" />
-      <span>{preview ? t('ui.previewActive', { label }) : t('ui.previewEmpty', { label })}</span>
-      <button type="button" onClick={() => setPreview(!preview)}>
-        {preview ? t('ui.hideSampleData') : t('ui.viewSampleData')}
-        <ExportOutlined className="text-[14px]" aria-hidden="true" />
-      </button>
+      <span>{t('ui.liveData', { label })}</span>
     </div>
   );
 }
@@ -210,7 +210,7 @@ export function StatCard({
       data-seller="stat"
     >
       <div
-        className="flex items-center justify-between gap-1.5 text-[#7d8ba4] text-[11px] min-h-8.5 [&_i]:grid [&_i]:[place-items:center] [&_i]:bg-[#eef4ff] [&_i]:rounded-[8px] [&_i]:w-8 [&_i]:h-8 [&_i]:shrink-0 [&_i]:text-[#315eea] max-[540px]:text-[10px] max-[540px]:[&_i]:w-[27px] max-[540px]:[&_i]:h-[27px] max-[540px]:[&_i]:rounded-[7px] max-[540px]:[&_i>.anticon]:w-[17px]"
+        className="flex items-center justify-between gap-1.5 text-[#7d8ba4] text-[11px] min-h-8.5 [&_i]:grid [&_i]:[place-items:center] [&_i]:bg-[#eef4ff] [&_i]:rounded-[8px] [&_i]:w-8 [&_i]:h-8 [&_i]:shrink-0 [&_i]:text-[#315eea] max-[540px]:text-[10px] max-[540px]:[&_i]:w-[27px] max-[540px]:[&_i]:h-[27px] max-[540px]:[&_i]:rounded-[7px] max-[540px]:[&_i>svg]:w-[17px]"
         data-seller="stat-top"
       >
         <span>{label}</span>
@@ -218,7 +218,7 @@ export function StatCard({
       </div>
       <strong>{value}</strong>
       <div
-        className="text-[10px] text-[#8c99b0] [margin:7px_0_17px] min-h-4 [&>span:not(.anticon)]:flex [&>span:not(.anticon)]:items-center [&>span:not(.anticon)]:gap-[5px] max-[540px]:text-[9px] max-[540px]:mb-3"
+        className="text-[10px] text-[#8c99b0] [margin:7px_0_17px] min-h-4 [&>span]:flex [&>span]:items-center [&>span]:gap-[5px] max-[540px]:text-[9px] max-[540px]:mb-3"
         data-seller="stat-detail"
       >
         {detail}
@@ -247,7 +247,7 @@ export function PolicyCards() {
         [t('ui.policies.reputationTitle'), t('ui.policies.reputationBody')],
       ].map(([title, body]) => (
         <div
-          className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>.anticon]:text-[#7291d7]! [&>.anticon]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>.anticon]:[grid-row:1/3] max-[540px]:[&>.anticon]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
+          className="bg-white [border:1px_solid_#e5ebf4] rounded-[11px] p-[21px] [&>svg]:text-[#7291d7]! [&>svg]:mb-3 [&_h3]:text-[12px] [&_h3]:font-semibold [&_h3]:mb-[9px] [&_p]:text-[11px] [&_p]:text-[#8c9bb1] [&_p]:m-0 [&_p]:leading-[1.9] max-[1050px]:p-[17px] max-[760px]:[&_h3]:text-[11px] max-[760px]:[&_p]:text-[10px] max-[540px]:p-4.5 max-[540px]:grid max-[540px]:[grid-template-columns:24px_1fr] max-[540px]:gap-x-3 max-[540px]:[&>svg]:[grid-row:1/3] max-[540px]:[&>svg]:m-0 max-[540px]:[&_h3]:[margin:0_0_7px] max-[540px]:[&_h3]:text-[12px] max-[540px]:[&_p]:text-[10px]"
           data-seller="policy"
           key={title}
         >

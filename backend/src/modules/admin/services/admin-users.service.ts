@@ -1,11 +1,12 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma, ProductStatus, ReputationTrustLevel, Role, User } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { generateStaffBaseEmail } from '../../auth/utils/staff-email.util';
-import { trustLevelFor } from '../../users/services/reputation-policy';
-import { LockUserDto, UpdateUserStatusDto } from '../dtos/lock-user.dto';
-import { QueryUsersDto, UserStatusFilter } from '../dtos/query-users.dto';
-import { UpdateUserRoleDto } from '../dtos/update-user-role.dto';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { generateStaffBaseEmail } from '../../../core/domain/staff-email';
+import { trustLevelFor } from '../../../core/domain/reputation-policy';
+import { LockUserInput, UpdateUserStatusInput } from '../dtos/lock-user.dto';
+import { QueryUsersInput, UserStatusFilter } from '../dtos/query-users.dto';
+import { UpdateUserRoleInput } from '../dtos/update-user-role.dto';
 import {
   AdminUserDetailResponse,
   AdminUserItemResponse,
@@ -20,7 +21,10 @@ type UserWithWallet = User & {
 export class AdminUsersService {
   private readonly logger = new Logger(AdminUsersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly tokenAuth: TokenAuthService,
+  ) {}
 
   /**
    * Retrieves paginated platform user accounts with role and status filtering.
@@ -28,7 +32,7 @@ export class AdminUsersService {
    * @param query - User query parameters including search, role, and pagination
    * @returns Paginated list of user items with wallet balances
    */
-  async listUsers(query: QueryUsersDto): Promise<AdminUsersListResponse> {
+  async listUsers(query: QueryUsersInput): Promise<AdminUsersListResponse> {
     const page = Math.max(1, query.page || 1);
     const limit = Math.max(1, query.limit || 10);
     const skip = (page - 1) * limit;
@@ -138,7 +142,7 @@ export class AdminUsersService {
   async lockUser(
     targetUserId: string,
     adminId: string,
-    dto?: LockUserDto,
+    dto?: LockUserInput,
   ): Promise<{ success: boolean; message: string; user: AdminUserItemResponse }> {
     const user = await this.prisma.user.findUnique({
       where: { id: targetUserId },
@@ -186,6 +190,9 @@ export class AdminUsersService {
       where: { userId: targetUserId, isRevoked: false },
       data: { isRevoked: true },
     });
+    // A locked account must stop being served immediately, including on the
+    // access token it is holding and on its open WebSocket connections.
+    await this.tokenAuth.revokeAllSessions(targetUserId);
 
     this.logger.log(
       `Admin (${adminId}) đã khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
@@ -211,7 +218,7 @@ export class AdminUsersService {
   async unlockUser(
     targetUserId: string,
     adminId: string,
-    dto?: LockUserDto,
+    dto?: LockUserInput,
   ): Promise<{ success: boolean; message: string; user: AdminUserItemResponse }> {
     const user = await this.prisma.user.findUnique({
       where: { id: targetUserId },
@@ -272,7 +279,7 @@ export class AdminUsersService {
    * @param dto - Status payload containing lock flag and reason
    * @returns Updated user status response
    */
-  async updateUserStatus(targetUserId: string, adminId: string, dto: UpdateUserStatusDto) {
+  async updateUserStatus(targetUserId: string, adminId: string, dto: UpdateUserStatusInput) {
     return dto.isLocked === false
       ? this.unlockUser(targetUserId, adminId, { reason: dto.reason })
       : this.lockUser(targetUserId, adminId, { reason: dto.reason });
@@ -291,7 +298,7 @@ export class AdminUsersService {
   async updateUserRole(
     targetUserId: string,
     adminId: string,
-    dto: UpdateUserRoleDto,
+    dto: UpdateUserRoleInput,
   ): Promise<{ success: boolean; message: string; user: AdminUserItemResponse }> {
     const user = await this.prisma.user.findUnique({
       where: { id: targetUserId },
@@ -335,6 +342,8 @@ export class AdminUsersService {
       where: { userId: targetUserId, isRevoked: false },
       data: { isRevoked: true },
     });
+    // The new role is in the token claims, so the old token must not survive.
+    await this.tokenAuth.revokeAllSessions(targetUserId);
 
     this.logger.log(`Admin (${adminId}) đã chuyển vai trò của user ${user.email} sang ${dto.role}`);
 

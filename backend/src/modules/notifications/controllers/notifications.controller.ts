@@ -1,5 +1,4 @@
 import {
-  Body,
   Controller,
   Get,
   HttpCode,
@@ -7,20 +6,25 @@ import {
   Param,
   Patch,
   Put,
-  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { QueryNotificationDto } from '../dtos/query-notification.dto';
-import { UpdateNotificationPreferencesDto } from '../dtos/update-notification-preferences.dto';
+import { QueryNotificationInput, QueryNotificationSchema } from '../dtos/query-notification.dto';
+import {
+  UpdateNotificationPreferencesInput,
+  UpdateNotificationPreferencesSchema,
+} from '../dtos/update-notification-preferences.dto';
 import { NotificationsService } from '../services/notifications.service';
 import {
   AdminNotificationSummaryDto,
+  AdminNotificationSummarySchema,
   NotificationPageDto,
+  NotificationPageSchema,
 } from '../dtos/notification-response.dto';
 
 @ApiTags('9. NOTIFICATIONS')
@@ -37,15 +41,14 @@ export class NotificationsController {
     description:
       'Retrieves paginated in-app notifications sorted newest first, supporting filters by read status (isRead) and category (type). For instant 0-second delivery across Admin, Staff, Seller, and Buyer, connect Socket.IO to namespace /ws/notifications with handshake auth { token: "<JWT>" } and listen to "notification:new" and "notification:unread_count".',
   })
-  @ApiResponse({
-    status: 200,
-    type: NotificationPageDto,
+  @ApiOkResponse({
+    standardSchema: NotificationPageSchema,
     description:
       'Notifications retrieved successfully. Actionable Admin notifications include targetUrl routes such as /admin/sellers, /admin/auctions, /admin/finance, /admin/reports, /admin/refunds, /admin/products, /admin/stores, and /admin/banners. Actionable Staff notifications include /staff/disputes, /staff/auction-support, /staff/inbox, and /staff/banners alongside metadata.',
   })
   async getMyNotifications(
     @CurrentUser('id') userId: string,
-    @Query() query: QueryNotificationDto,
+    @ZodQuery(QueryNotificationSchema) query: QueryNotificationInput,
   ): Promise<NotificationPageDto> {
     return this.notificationsService.getUserNotifications(userId, query);
   }
@@ -59,9 +62,8 @@ export class NotificationsController {
     description:
       'Aggregates unread notification count, latest 10 Admin notifications, and live pending item counts across seller upgrades, auction consignments, withdrawals, order disputes, violation reports, pending refunds, and GHN pickup verifications.',
   })
-  @ApiResponse({
-    status: 200,
-    type: AdminNotificationSummaryDto,
+  @ApiOkResponse({
+    standardSchema: AdminNotificationSummarySchema,
     description: 'Admin notification summary and pending queue counts retrieved successfully.',
   })
   @ApiResponse({ status: 403, description: 'Administrative role required.' })
@@ -89,7 +91,7 @@ export class NotificationsController {
   @ApiResponse({ status: 200, description: 'Notification preferences updated successfully.' })
   async updatePreferences(
     @CurrentUser('id') userId: string,
-    @Body() dto: UpdateNotificationPreferencesDto,
+    @ZodBody(UpdateNotificationPreferencesSchema) dto: UpdateNotificationPreferencesInput,
   ) {
     return this.notificationsService.updatePreferences(userId, dto);
   }

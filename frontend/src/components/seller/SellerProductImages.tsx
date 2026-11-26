@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { X as CloseOutlined } from 'lucide-react';
 import { Image as PictureOutlined, Upload as UploadOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { PRODUCT_IMAGE_LIMIT, validateProductImages } from '../../services/sellerProducts';
+import {
+  PRODUCT_IMAGE_LIMIT,
+  validateProductImages,
+} from '@/features/catalog/services/sellerProducts';
 
 export default function SellerProductImages({
   files,

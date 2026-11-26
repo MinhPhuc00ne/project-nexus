@@ -1,10 +1,11 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ZodQuery } from '@nexus/contracts/nest';
 import { Role } from '@nexus/types';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { QueryAdminOrdersDto } from '../dtos/query-admin-orders.dto';
+import { QueryAdminOrdersInput, QueryAdminOrdersSchema } from '../dtos/query-admin-orders.dto';
 import { AdminOrdersService } from '../services/admin-orders.service';
 
 @ApiTags('5. ADMIN - ORDERS')
@@ -17,7 +18,9 @@ export class AdminOrdersController {
 
   @Get()
   @ApiOperation({ summary: 'Admin & Nhân viên hỗ trợ tra cứu đơn toàn sàn, lọc và phân trang' })
-  list(@Query() query: QueryAdminOrdersDto): ReturnType<AdminOrdersService['list']> {
+  list(
+    @ZodQuery(QueryAdminOrdersSchema) query: QueryAdminOrdersInput,
+  ): ReturnType<AdminOrdersService['list']> {
     return this.orders.list(query);
   }
 

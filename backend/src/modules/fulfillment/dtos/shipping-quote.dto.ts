@@ -1,260 +1,133 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
-  IsNumber,
-  IsOptional,
-  IsArray,
-  ValidateNested,
-  Min,
-  IsInt,
-  IsIn,
-  IsNotEmpty,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class ShippingItemDto {
-  @ApiProperty({ description: 'Mã ID sản phẩm' })
-  @IsString()
-  productId!: string;
+const shippingItemFields = {
+  productId: z.string().describe('Mã ID sản phẩm'),
+  quantity: z.number().int().min(1).describe('Số lượng món hàng').default(1),
+  weightGrams: z.number().min(1).describe('Khối lượng tính theo gram').default(500),
+  lengthCm: z.number().describe('Chiều dài (cm)').default(10),
+  widthCm: z.number().describe('Chiều rộng (cm)').default(10),
+  heightCm: z.number().describe('Chiều cao (cm)').default(10),
+};
 
-  @ApiPropertyOptional({ description: 'Số lượng món hàng', default: 1 })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  quantity: number = 1;
+export const ShippingItemSchema = z.object(shippingItemFields).strict();
 
-  @ApiPropertyOptional({ description: 'Khối lượng tính theo gram', default: 500 })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  weightGrams?: number;
+export type ShippingItemInput = z.infer<typeof ShippingItemSchema>;
 
-  @ApiPropertyOptional({ description: 'Chiều dài (cm)', default: 10 })
-  @IsOptional()
-  @IsNumber()
-  lengthCm?: number;
+const shippingQuoteFields = {
+  addressId: nullAsAbsent(
+    z.string().describe('Mã địa chỉ người nhận trong sổ địa chỉ (UserAddress)'),
+  ),
+  warehouseId: nullAsAbsent(z.string().describe('Mã kho gửi hàng (mặc định WH_001)')),
+  sellerId: nullAsAbsent(z.string().describe('Mã người bán (để tính khoảng cách từ gian hàng)')),
+  originLatitude: nullAsAbsent(z.number().describe('Vĩ độ điểm gửi (GPS Latitude)')),
+  originLongitude: nullAsAbsent(z.number().describe('Kinh độ điểm gửi (GPS Longitude)')),
+  destLatitude: nullAsAbsent(z.number().describe('Vĩ độ điểm nhận (GPS Latitude)')),
+  destLongitude: nullAsAbsent(z.number().describe('Kinh độ điểm nhận (GPS Longitude)')),
+  fromDistrictId: nullAsAbsent(z.number().describe('Mã quận/huyện người gửi GHN')),
+  fromWardCode: nullAsAbsent(z.string().describe('Mã phường/xã người gửi GHN')),
+  toDistrictId: nullAsAbsent(z.number().describe('Mã quận/huyện người nhận GHN')),
+  toWardCode: nullAsAbsent(z.string().describe('Mã phường/xã người nhận GHN')),
+  items: z.array(ShippingItemSchema).describe('Danh sách sản phẩm cần tính cước vận chuyển'),
+};
 
-  @ApiPropertyOptional({ description: 'Chiều rộng (cm)', default: 10 })
-  @IsOptional()
-  @IsNumber()
-  widthCm?: number;
+export const ShippingQuoteSchema = z.object(shippingQuoteFields).strict();
 
-  @ApiPropertyOptional({ description: 'Chiều cao (cm)', default: 10 })
-  @IsOptional()
-  @IsNumber()
-  heightCm?: number;
-}
+export type ShippingQuoteInput = z.infer<typeof ShippingQuoteSchema>;
 
-export class ShippingQuoteDto {
-  @ApiPropertyOptional({
-    description: 'Mã địa chỉ người nhận trong sổ địa chỉ (UserAddress)',
-  })
-  @IsOptional()
-  @IsString()
-  addressId?: string;
+const directDistanceFields = {
+  originLat: z.number().describe('Vĩ độ điểm xuất phát (Latitude)').meta({ example: 10.7769 }),
+  originLon: z.number().describe('Kinh độ điểm xuất phát (Longitude)').meta({ example: 106.7009 }),
+  destLat: z.number().describe('Vĩ độ điểm đến (Latitude)').meta({ example: 10.7327 }),
+  destLon: z.number().describe('Kinh độ điểm đến (Longitude)').meta({ example: 106.717 }),
+  weightGrams: z
+    .number()
+    .describe('Tổng trọng lượng hàng hóa (gram) để tính cước kèm theo')
+    .default(500),
+};
 
-  @ApiPropertyOptional({ description: 'Mã kho gửi hàng (mặc định WH_001)' })
-  @IsOptional()
-  @IsString()
-  warehouseId?: string;
+export const DirectDistanceSchema = z.object(directDistanceFields).strict();
 
-  @ApiPropertyOptional({ description: 'Mã người bán (để tính khoảng cách từ gian hàng)' })
-  @IsOptional()
-  @IsString()
-  sellerId?: string;
+export type DirectDistanceInput = z.infer<typeof DirectDistanceSchema>;
 
-  @ApiPropertyOptional({ description: 'Vĩ độ điểm gửi (GPS Latitude)' })
-  @IsOptional()
-  @IsNumber()
-  originLatitude?: number;
+const ghnFeeItemFields = {
+  name: z.string().trim().min(1),
+  quantity: z.number().int().min(1),
+  weight: z.number().int().min(1).describe('Khối lượng một sản phẩm/kiện, gram'),
+  length: z.number().int().min(1).describe('Chiều dài, cm'),
+  width: z.number().int().min(1).describe('Chiều rộng, cm'),
+  height: z.number().int().min(1).describe('Chiều cao, cm'),
+  price: z.number().int().min(0),
+};
 
-  @ApiPropertyOptional({ description: 'Kinh độ điểm gửi (GPS Longitude)' })
-  @IsOptional()
-  @IsNumber()
-  originLongitude?: number;
+export const GhnFeeItemSchema = z.object(ghnFeeItemFields).strict();
 
-  @ApiPropertyOptional({ description: 'Vĩ độ điểm nhận (GPS Latitude)' })
-  @IsOptional()
-  @IsNumber()
-  destLatitude?: number;
+export type GhnFeeItemInput = z.infer<typeof GhnFeeItemSchema>;
 
-  @ApiPropertyOptional({ description: 'Kinh độ điểm nhận (GPS Longitude)' })
-  @IsOptional()
-  @IsNumber()
-  destLongitude?: number;
+const calculateGhnFeeFields = {
+  toDistrictId: z
+    .number()
+    .int()
+    .min(1)
+    .describe('Mã Quận/Huyện nhận hàng (GHN District ID)')
+    .meta({ example: 1444 }),
+  toWardCode: z
+    .string()
+    .trim()
+    .min(1)
+    .describe('Mã Phường/Xã nhận hàng (GHN Ward Code)')
+    .meta({ example: '20308' }),
+  fromDistrictId: nullAsAbsent(
+    z
+      .number()
+      .describe('Mã Quận/Huyện gửi hàng (nếu bỏ trống hệ thống tự lấy theo kho/shop người bán)')
+      .meta({ example: 1442 }),
+  ),
+  fromWardCode: nullAsAbsent(
+    z.string().describe('Mã Phường/Xã gửi hàng').meta({ example: '20101' }),
+  ),
+  weightGrams: z
+    .number()
+    .int()
+    .min(1)
+    .describe('Trọng lượng gói hàng tính theo gram')
+    .meta({ example: 1000 })
+    .default(500),
+  lengthCm: z
+    .number()
+    .min(1)
+    .describe('Chiều dài kiện hàng (cm)')
+    .meta({ example: 20 })
+    .default(10),
+  widthCm: z
+    .number()
+    .min(1)
+    .describe('Chiều rộng kiện hàng (cm)')
+    .meta({ example: 15 })
+    .default(10),
+  heightCm: z
+    .number()
+    .min(1)
+    .describe('Chiều cao kiện hàng (cm)')
+    .meta({ example: 10 })
+    .default(10),
+  insuranceValue: z
+    .number()
+    .min(0)
+    .describe('Giá trị khai giá / bảo hiểm hàng hóa (VNĐ)')
+    .meta({ example: 500000 })
+    .default(0),
+  serviceTypeId: nullAsAbsent(
+    z
+      .union([z.literal(2), z.literal(5)])
+      .describe(
+        'Dịch vụ GHN: 2 (hàng nhẹ), 5 (hàng nặng/nhiều kiện). Bỏ trống để chọn theo khối lượng.',
+      )
+      .meta({ example: 2 }),
+  ),
+  items: nullAsAbsent(z.array(GhnFeeItemSchema).describe('Bắt buộc với dịch vụ hàng nặng GHN')),
+};
 
-  @ApiPropertyOptional({ description: 'Mã quận/huyện người gửi GHN' })
-  @IsOptional()
-  @IsNumber()
-  fromDistrictId?: number;
+export const CalculateGhnFeeSchema = z.object(calculateGhnFeeFields).strict();
 
-  @ApiPropertyOptional({ description: 'Mã phường/xã người gửi GHN' })
-  @IsOptional()
-  @IsString()
-  fromWardCode?: string;
-
-  @ApiPropertyOptional({ description: 'Mã quận/huyện người nhận GHN' })
-  @IsOptional()
-  @IsNumber()
-  toDistrictId?: number;
-
-  @ApiPropertyOptional({ description: 'Mã phường/xã người nhận GHN' })
-  @IsOptional()
-  @IsString()
-  toWardCode?: string;
-
-  @ApiProperty({
-    type: [ShippingItemDto],
-    description: 'Danh sách sản phẩm cần tính cước vận chuyển',
-  })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ShippingItemDto)
-  items: ShippingItemDto[] = [];
-}
-
-export class DirectDistanceDto {
-  @ApiProperty({ description: 'Vĩ độ điểm xuất phát (Latitude)', example: 10.7769 })
-  @IsNumber()
-  originLat!: number;
-
-  @ApiProperty({ description: 'Kinh độ điểm xuất phát (Longitude)', example: 106.7009 })
-  @IsNumber()
-  originLon!: number;
-
-  @ApiProperty({ description: 'Vĩ độ điểm đến (Latitude)', example: 10.7327 })
-  @IsNumber()
-  destLat!: number;
-
-  @ApiProperty({ description: 'Kinh độ điểm đến (Longitude)', example: 106.717 })
-  @IsNumber()
-  destLon!: number;
-
-  @ApiPropertyOptional({
-    description: 'Tổng trọng lượng hàng hóa (gram) để tính cước kèm theo',
-    default: 500,
-  })
-  @IsOptional()
-  @IsNumber()
-  weightGrams?: number = 500;
-}
-
-export class CalculateGhnFeeDto {
-  @ApiProperty({ description: 'Mã Quận/Huyện nhận hàng (GHN District ID)', example: 1444 })
-  @IsInt()
-  @Min(1)
-  toDistrictId!: number;
-
-  @ApiProperty({ description: 'Mã Phường/Xã nhận hàng (GHN Ward Code)', example: '20308' })
-  @IsString()
-  @IsNotEmpty()
-  toWardCode!: string;
-
-  @ApiPropertyOptional({
-    description: 'Mã Quận/Huyện gửi hàng (nếu bỏ trống hệ thống tự lấy theo kho/shop người bán)',
-    example: 1442,
-  })
-  @IsOptional()
-  @IsNumber()
-  fromDistrictId?: number;
-
-  @ApiPropertyOptional({ description: 'Mã Phường/Xã gửi hàng', example: '20101' })
-  @IsOptional()
-  @IsString()
-  fromWardCode?: string;
-
-  @ApiPropertyOptional({
-    description: 'Trọng lượng gói hàng tính theo gram',
-    example: 1000,
-    default: 500,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  weightGrams?: number = 500;
-
-  @ApiPropertyOptional({ description: 'Chiều dài kiện hàng (cm)', example: 20, default: 10 })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  lengthCm?: number = 10;
-
-  @ApiPropertyOptional({ description: 'Chiều rộng kiện hàng (cm)', example: 15, default: 10 })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  widthCm?: number = 10;
-
-  @ApiPropertyOptional({ description: 'Chiều cao kiện hàng (cm)', example: 10, default: 10 })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  heightCm?: number = 10;
-
-  @ApiPropertyOptional({
-    description: 'Giá trị khai giá / bảo hiểm hàng hóa (VNĐ)',
-    example: 500000,
-    default: 0,
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  insuranceValue?: number = 0;
-
-  @ApiPropertyOptional({
-    description:
-      'Dịch vụ GHN: 2 (hàng nhẹ), 5 (hàng nặng/nhiều kiện). Bỏ trống để chọn theo khối lượng.',
-    example: 2,
-  })
-  @IsOptional()
-  @IsNumber()
-  @IsIn([2, 5])
-  serviceTypeId?: number;
-
-  @ApiPropertyOptional({
-    type: () => [GhnFeeItemDto],
-    description: 'Bắt buộc với dịch vụ hàng nặng GHN',
-  })
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => GhnFeeItemDto)
-  items?: GhnFeeItemDto[];
-}
-
-export class GhnFeeItemDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  name!: string;
-
-  @ApiProperty()
-  @IsInt()
-  @Min(1)
-  quantity!: number;
-
-  @ApiProperty({ description: 'Khối lượng một sản phẩm/kiện, gram' })
-  @IsInt()
-  @Min(1)
-  weight!: number;
-
-  @ApiProperty({ description: 'Chiều dài, cm' })
-  @IsInt()
-  @Min(1)
-  length!: number;
-
-  @ApiProperty({ description: 'Chiều rộng, cm' })
-  @IsInt()
-  @Min(1)
-  width!: number;
-
-  @ApiProperty({ description: 'Chiều cao, cm' })
-  @IsInt()
-  @Min(1)
-  height!: number;
-
-  @ApiProperty()
-  @IsInt()
-  @Min(0)
-  price!: number;
-}
+export type CalculateGhnFeeInput = z.infer<typeof CalculateGhnFeeSchema>;

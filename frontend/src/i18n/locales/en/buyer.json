@@ -59,7 +59,10 @@
     "exploreNow": "Explore products now",
     "removeTitle": "Remove from wishlist",
     "addToCart": "Add to cart",
-    "outOfStock": "Out of stock"
+    "outOfStock": "Out of stock",
+    "loading": "Loading your saved products…",
+    "loadFailed": "Could not load your wishlist.",
+    "removeFailed": "Could not remove that item."
   },
   "addresses": {
     "loadError": "Unable to load address book.",
@@ -453,6 +456,7 @@
     "viewAuction": "View auction",
     "loadingRights": "Loading purchase rights…",
     "noOffersTitle": "No purchase offers pending confirmation",
-    "noOffersDesc": "When purchase rights are transferred to you after a previous winner, the offer will appear here."
+    "noOffersDesc": "When purchase rights are transferred to you after a previous winner, the offer will appear here.",
+    "supportChatFailed": "Could not reach support just now. Please try again."
   }
 }

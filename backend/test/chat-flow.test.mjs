@@ -1,3 +1,4 @@
+import { createFakeRedis } from './helpers/fake-redis.mjs';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
@@ -14,9 +15,9 @@ const load = createRequire(import.meta.url);
 const { ChatService } = load('../src/modules/chat/services/chat.service.ts');
 const { ChatAutoReplyService } = load('../src/modules/chat/services/chat-auto-reply.service.ts');
 const { StaffQueueService } = load('../src/modules/chat/services/staff-queue.service.ts');
-const { CreateConversationDto } = load('../src/modules/chat/dtos/create-conversation.dto.ts');
-const { SendMessageDto } = load('../src/modules/chat/dtos/send-message.dto.ts');
-const { RequestSupportDto, UpdateConversationStatusDto, TicketLifecycleStatus } = load(
+const { CreateConversationSchema } = load('../src/modules/chat/dtos/create-conversation.dto.ts');
+const { SendMessageSchema } = load('../src/modules/chat/dtos/send-message.dto.ts');
+const { RequestSupportSchema, UpdateConversationStatusSchema, TicketLifecycleStatus } = load(
   '../src/modules/chat/dtos/support-queue.dto.ts',
 );
 
@@ -273,11 +274,19 @@ const mockCloudinary = {
 test('Chat Module: Chặn hoàn toàn việc người dùng nhắn tin trực tiếp cho Admin', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const queueService = new StaffQueueService();
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+  const queueService = new StaffQueueService(createFakeRedis());
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService, {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => false,
+    isStaffOnline: async () => false,
+    isSupportOnline: async () => false,
+  });
 
-  const dto = new CreateConversationDto();
-  dto.participantId = 'admin-1';
+  const dto = CreateConversationSchema.parse({ participantId: 'admin-1' });
 
   await assert.rejects(
     async () => chatService.createOrGetConversation('buyer-1', 'BUYER', dto),
@@ -288,11 +297,19 @@ test('Chat Module: Chặn hoàn toàn việc người dùng nhắn tin trực ti
 test('Chat Module: Chặn Staff tự ý tạo hội thoại trực tiếp với khách hàng', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const queueService = new StaffQueueService();
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+  const queueService = new StaffQueueService(createFakeRedis());
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService, {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => false,
+    isStaffOnline: async () => false,
+    isSupportOnline: async () => false,
+  });
 
-  const dto = new CreateConversationDto();
-  dto.participantId = 'buyer-1';
+  const dto = CreateConversationSchema.parse({ participantId: 'buyer-1' });
 
   await assert.rejects(
     async () => chatService.createOrGetConversation('staff-1', 'SUPPORT_STAFF', dto),
@@ -303,16 +320,26 @@ test('Chat Module: Chặn Staff tự ý tạo hội thoại trực tiếp với 
 test('Chat Module: Chặn gửi tin nhắn chứa từ ngữ cấm hoặc nhạy cảm', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const queueService = new StaffQueueService();
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+  const queueService = new StaffQueueService(createFakeRedis());
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService, {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => false,
+    isStaffOnline: async () => false,
+    isSupportOnline: async () => false,
+  });
 
   const conv = await prisma.chatConversation.create({
     data: { participant1Id: 'buyer-1', participant2Id: 'seller-1' },
   });
 
-  const sendDto = new SendMessageDto();
-  sendDto.conversationId = conv.id;
-  sendDto.content = 'Tôi muốn mua súng đạn và vũ khí cấm';
+  const sendDto = SendMessageSchema.parse({
+    conversationId: conv.id,
+    content: 'Tôi muốn mua súng đạn và vũ khí cấm',
+  });
 
   await assert.rejects(
     async () => chatService.sendMessage('buyer-1', 'BUYER', sendDto),
@@ -323,28 +350,38 @@ test('Chat Module: Chặn gửi tin nhắn chứa từ ngữ cấm hoặc nhạy
 test('Chat Module: Phân phối ticket cho Staff online sớm nhất khi có 3 Staff cùng online', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const queueService = new StaffQueueService();
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+  const queueService = new StaffQueueService(createFakeRedis());
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService, {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => false,
+    isStaffOnline: async () => false,
+    isSupportOnline: async () => false,
+  });
 
   // Giả lập 3 staff online vào các thời điểm khác nhau:
   // Staff 1 online lúc T0
-  queueService.registerOnlineStaff('staff-1', 'socket-1');
+  await queueService.registerOnlineStaff('staff-1', 'socket-1');
   // Staff 2 online lúc T0 + 10s
-  queueService.registerOnlineStaff('staff-2', 'socket-2');
+  await queueService.registerOnlineStaff('staff-2', 'socket-2');
   // Staff 3 online lúc T0 + 20s
-  queueService.registerOnlineStaff('staff-3', 'socket-3');
+  await queueService.registerOnlineStaff('staff-3', 'socket-3');
 
   // Đảm bảo danh sách online được sắp xếp theo thời điểm vào sớm nhất
-  const onlineList = queueService.getOnlineStaffList();
+  const onlineList = await queueService.getOnlineStaffList();
   assert.equal(onlineList.length, 3);
   assert.equal(onlineList[0].staffId, 'staff-1');
   assert.equal(onlineList[1].staffId, 'staff-2');
   assert.equal(onlineList[2].staffId, 'staff-3');
 
   // Buyer gửi yêu cầu hỗ trợ mới
-  const reqDto = new RequestSupportDto();
-  reqDto.subject = 'Cần hỗ trợ về thanh toán PayOS';
-  reqDto.message = 'Tôi quét mã QR nhưng đơn hàng chưa cập nhật thành công.';
+  const reqDto = RequestSupportSchema.parse({
+    subject: 'Cần hỗ trợ về thanh toán PayOS',
+    message: 'Tôi quét mã QR nhưng đơn hàng chưa cập nhật thành công.',
+  });
 
   const conv = await chatService.requestSupport('buyer-1', 'BUYER', reqDto);
 
@@ -357,8 +394,17 @@ test('Chat Module: Phân phối ticket cho Staff online sớm nhất khi có 3 S
 test('Chat Module: Đảm bảo mỗi khiếu nại (Dispute) chỉ tạo DUY NHẤT một hội thoại', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const queueService = new StaffQueueService();
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+  const queueService = new StaffQueueService(createFakeRedis());
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService, {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => false,
+    isStaffOnline: async () => false,
+    isSupportOnline: async () => false,
+  });
 
   // 1. Tạo hội thoại lần đầu cho dispute-101
   const conv1 = await chatService.getOrCreateDisputeConversation('dispute-101', 'buyer-1', 'BUYER');
@@ -376,8 +422,17 @@ test('Chat Module: Đảm bảo mỗi khiếu nại (Dispute) chỉ tạo DUY NH
 test('Chat Module: Bỏ chat chung - Staff B không thấy hội thoại được gán cho Staff A', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const queueService = new StaffQueueService();
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+  const queueService = new StaffQueueService(createFakeRedis());
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService, {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => false,
+    isStaffOnline: async () => false,
+    isSupportOnline: async () => false,
+  });
 
   // Tạo hội thoại gán riêng cho Staff A
   await prisma.chatConversation.create({
@@ -402,8 +457,17 @@ test('Chat Module: Bỏ chat chung - Staff B không thấy hội thoại đượ
 test('Chat Module: Ẩn danh nhân viên với User thành "Nhân viên Hỗ trợ", Admin thấy đầy đủ tên thật', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const queueService = new StaffQueueService();
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+  const queueService = new StaffQueueService(createFakeRedis());
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService, {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => false,
+    isStaffOnline: async () => false,
+    isSupportOnline: async () => false,
+  });
 
   const conv = await prisma.chatConversation.create({
     data: {
@@ -435,8 +499,17 @@ test('Chat Module: Ẩn danh nhân viên với User thành "Nhân viên Hỗ tr�
 test('Chat Module: Cập nhật vòng đời trạng thái ticket (OPEN -> IN_PROGRESS -> RESOLVED)', async () => {
   const prisma = createMockPrisma();
   const autoReplyService = new ChatAutoReplyService(prisma);
-  const queueService = new StaffQueueService();
-  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService);
+  const queueService = new StaffQueueService(createFakeRedis());
+  const chatService = new ChatService(prisma, mockCloudinary, autoReplyService, queueService, {
+    message() {},
+    read() {},
+    toUser() {},
+    toStaff() {},
+    statusChange() {},
+    isUserOnline: async () => false,
+    isStaffOnline: async () => false,
+    isSupportOnline: async () => false,
+  });
 
   // Tạo ticket ở trạng thái OPEN trong hàng đợi
   const conv = await prisma.chatConversation.create({
@@ -456,9 +529,10 @@ test('Chat Module: Cập nhật vòng đời trạng thái ticket (OPEN -> IN_PR
   assert.equal(claimed.assignedStaffId, 'staff-1');
 
   // Staff 1 giải quyết xong và đóng ticket (RESOLVED)
-  const updateDto = new UpdateConversationStatusDto();
-  updateDto.status = TicketLifecycleStatus.RESOLVED;
-  updateDto.resolutionNotes = 'Đã hoàn tất hỗ trợ khách hàng.';
+  const updateDto = UpdateConversationStatusSchema.parse({
+    status: TicketLifecycleStatus.RESOLVED,
+    resolutionNotes: 'Đã hoàn tất hỗ trợ khách hàng.',
+  });
 
   const resolved = await chatService.updateConversationStatus(
     conv.id,

@@ -9,9 +9,10 @@ tsNode.register({
   transpileOnly: true,
 });
 const load = createRequire(import.meta.url);
-const { CommerceChatQueryService } = load(
-  '../src/modules/commerce/services/commerce-chat-query.service.ts',
-);
+const { OrdersChatFacade } = load('../src/modules/orders/services/orders-chat.facade.ts');
+const { CartChatFacade } = load('../src/modules/cart/services/cart-chat.facade.ts');
+const { CatalogChatFacade } = load('../src/modules/catalog/services/catalog-chat.facade.ts');
+const { UsersChatFacade } = load('../src/modules/users/services/users-chat.facade.ts');
 const { ChatbotCommerceService } = load('../src/modules/chat/services/chatbot-commerce.service.ts');
 const { ChatbotService } = load('../src/modules/chat/services/chatbot.service.ts');
 
@@ -54,9 +55,16 @@ function fixture(role = 'BUYER', cart = null) {
   prisma.$transaction = mock.fn(async (run) => run(prisma));
   const ai = { isConfigured: () => false, answer: mock.fn(async () => null) };
   const rate = { check: mock.fn(async () => {}) };
-  const queries = new CommerceChatQueryService(prisma);
-  const bot = new ChatbotService(new ChatbotCommerceService(queries), ai, rate);
-  return { prisma, ai, rate, queries, bot };
+  const ordersFacade = new OrdersChatFacade(prisma);
+  const cartFacade = new CartChatFacade(prisma);
+  const catalogFacade = new CatalogChatFacade(prisma);
+  const usersFacade = new UsersChatFacade(prisma);
+  const bot = new ChatbotService(
+    new ChatbotCommerceService(ordersFacade, cartFacade, catalogFacade, usersFacade),
+    ai,
+    rate,
+  );
+  return { prisma, ai, rate, queries: ordersFacade, bot };
 }
 
 for (const role of ['BUYER', 'SELLER', 'SUPPORT_STAFF', 'ADMIN']) {

@@ -1,15 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsEnum,
-  IsInt,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-  ValidateIf,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
 export enum ReviewAction {
   APPROVE = 'APPROVE',
@@ -19,64 +9,73 @@ export enum ReviewAction {
 /**
  * Data transfer object used by Admin to approve or reject a consigned auction item.
  */
-export class ReviewAuctionItemDto {
-  @ApiProperty({
-    description: 'Review decision action: APPROVE or REJECT',
-    enum: ReviewAction,
-    example: ReviewAction.APPROVE,
-  })
-  @IsEnum(ReviewAction)
-  @IsNotEmpty()
-  action: ReviewAction;
+const reviewAuctionItemFields = {
+  action: z
+    .enum(ReviewAction)
+    .describe('Review decision action: APPROVE or REJECT')
+    .meta({ example: ReviewAction.APPROVE }),
+  rejectionReason: nullAsAbsent(
+    z
+      .string()
+      .trim()
+      .min(1)
+      .describe('Mandatory rejection rationale (required when action is REJECT)')
+      .meta({
+        example:
+          'Appraisal certificate number cannot be verified in the national registry, and serial numbers do not match physical engravings.',
+      }),
+  ),
+  lotNumber: nullAsAbsent(
+    z.coerce
+      .number()
+      .int()
+      .min(1)
+      .describe('Assigned sequential lot number within the auction session (when approved)')
+      .meta({ example: 1 }),
+  ),
+  startingPrice: nullAsAbsent(
+    z.coerce
+      .number()
+      .min(1000)
+      .describe(
+        'Official starting bid price confirmed by admin (optional; defaults to proposed starting price)',
+      )
+      .meta({ example: 150000000 }),
+  ),
+  reservePrice: nullAsAbsent(
+    z.coerce
+      .number()
+      .min(1000)
+      .describe('Official minimum reserve price confirmed by admin')
+      .meta({ example: 180000000 }),
+  ),
+  bidIncrement: nullAsAbsent(
+    z.coerce
+      .number()
+      .min(1000)
+      .describe('Official price increment per bid step confirmed by admin')
+      .meta({ example: 2000000 }),
+  ),
+};
 
-  @ApiPropertyOptional({
-    description: 'Mandatory rejection rationale (required when action is REJECT)',
-    example:
-      'Appraisal certificate number cannot be verified in the national registry, and serial numbers do not match physical engravings.',
-  })
-  @ValidateIf((o: ReviewAuctionItemDto) => o.action === ReviewAction.REJECT)
-  @IsString()
-  @IsNotEmpty({ message: 'rejectionReason must not be empty when rejecting an item' })
-  rejectionReason?: string;
+/**
+ * A moderator's verdict on a consigned lot.
+ *
+ * The rejection reason is required only when the verdict is REJECT. The class
+ * said so with `@ValidateIf((o) => o.action === REJECT)` on the field, so a rule
+ * about two fields sat on one of them. It is one check over the object here.
+ */
+export const ReviewAuctionItemSchema = z
+  .object(reviewAuctionItemFields)
+  .strict()
+  .superRefine((value, ctx) => {
+    if (value.action !== ReviewAction.REJECT) return;
+    if (value.rejectionReason && value.rejectionReason.trim().length > 0) return;
+    ctx.addIssue({
+      code: 'custom',
+      path: ['rejectionReason'],
+      message: 'rejectionReason must not be empty when rejecting an item',
+    });
+  });
 
-  @ApiPropertyOptional({
-    description: 'Assigned sequential lot number within the auction session (when approved)',
-    example: 1,
-  })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @IsOptional()
-  lotNumber?: number;
-
-  @ApiPropertyOptional({
-    description:
-      'Official starting bid price confirmed by admin (optional; defaults to proposed starting price)',
-    example: 150000000,
-  })
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1000)
-  @IsOptional()
-  startingPrice?: number;
-
-  @ApiPropertyOptional({
-    description: 'Official minimum reserve price confirmed by admin',
-    example: 180000000,
-  })
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1000)
-  @IsOptional()
-  reservePrice?: number;
-
-  @ApiPropertyOptional({
-    description: 'Official price increment per bid step confirmed by admin',
-    example: 2000000,
-  })
-  @Type(() => Number)
-  @IsNumber()
-  @Min(1000)
-  @IsOptional()
-  bidIncrement?: number;
-}
+export type ReviewAuctionItemInput = z.infer<typeof ReviewAuctionItemSchema>;

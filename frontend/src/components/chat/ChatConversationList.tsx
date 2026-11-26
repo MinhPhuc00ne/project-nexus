@@ -2,7 +2,7 @@ import type { FormEvent, JSX } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
 import ChatAvatar from './ChatAvatar';
-import type { ChatConversation, ChatConversationType } from '../../types/chat.types';
+import type { ChatConversation, ChatConversationType } from '@/features/chat/types/chat.types';
 
 interface ChatConversationListProps {
   conversations: ChatConversation[];

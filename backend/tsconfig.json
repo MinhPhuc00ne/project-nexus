@@ -11,14 +11,7 @@
     "sourceMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "paths": {
-      "*": ["./*"]
-    },
     "incremental": true,
-    "strictPropertyInitialization": false,
-    "noImplicitAny": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
     "noImplicitReturns": true
   },
   "include": ["src/**/*"]

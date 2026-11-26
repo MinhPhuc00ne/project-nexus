@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Role } from '@nexus/types';
 import { useAuth } from '../../contexts/AuthContext';
-import type { UserProfile } from '../../services/users';
+import type { UserProfile } from '@/features/account/services/users';
 
 const SellerContext = createContext<UserProfile | null>(null);
 

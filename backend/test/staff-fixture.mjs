@@ -91,7 +91,13 @@ export function staffFixture({ mailAccepted = true } = {}) {
     return result;
   };
   const config = {
-    get: (key) => ({ FRONTEND_URL: 'https://nexus.test', SMTP_USER: 'sender@example.test' })[key],
+    get: (key) =>
+      ({
+        FRONTEND_URL: 'https://nexus.test',
+        SMTP_USER: 'sender@example.test',
+        JWT_SECRET: 'test-jwt-secret-key-16',
+        REFRESH_TOKEN_SECRET: 'test-refresh-secret-key-16',
+      })[key],
   };
   const mail = {
     sendEmail: async (message) => {
@@ -104,15 +110,10 @@ export function staffFixture({ mailAccepted = true } = {}) {
     prisma,
     config,
     { sign: () => 'test-token' },
+    { signAccessToken: async () => 'test-access-token', revokeAllSessions: async () => {} },
     { set: async () => {} },
     mail,
   );
-  shared.transporter = {
-    sendMail: async (message) => {
-      emails.push(message);
-      return { accepted: [message.to] };
-    },
-  };
   return { state, prisma, emails, provision, shared, mail, config };
 }
 

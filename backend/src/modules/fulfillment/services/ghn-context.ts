@@ -1,8 +1,13 @@
 import { BadRequestException } from '@nestjs/common';
+import type { GhnEnvironment } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { objectValue } from './shipment-state';
 
-export type GhnEnvironment = 'SANDBOX' | 'PRODUCTION';
+/**
+ * The carrier environment is a database enum; re-exported here so the
+ * fulfillment module keeps importing it from one place.
+ */
+export type { GhnEnvironment } from '@prisma/client';
 
 export function ghnEnvironment(config: ConfigService): GhnEnvironment {
   return (config.get<string>('GHN_API_URL') || '').includes('dev-online-gateway')

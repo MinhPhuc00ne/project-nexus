@@ -3,14 +3,17 @@ import { ChevronLeft as LeftOutlined } from 'lucide-react';
 import { ChevronRight as RightOutlined, Eye as EyeOutlined } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useProductResource from '../productDetail/useProductResource';
-import { getSellerTransactions, getSellerWithdrawals } from '../../services/sellerFinance';
+import {
+  getSellerTransactions,
+  getSellerWithdrawals,
+} from '@/features/wallet/services/sellerFinance';
 import type {
   FinancePage,
   FinanceTransaction,
   SellerWithdrawal,
   TransactionStatus,
   TransactionType,
-} from '../../types/seller-finance.types';
+} from '@/features/wallet/types/seller-finance.types';
 import { Badge, EmptyState, Panel, SellerButton } from './SellerUI';
 import SellerResourceState from './SellerResourceState';
 import SellerWithdrawalDetail from './SellerWithdrawalDetail';

@@ -31,10 +31,11 @@ import {
   requestAuctionSupportChatApi,
   formatAuctionImage,
   type AuctionAwardItem,
-} from '../../services/auction.service';
-import { getBuyerWalletApi } from '../../services/wallet.service';
+} from '@/features/auction/services/auction.service';
+import { getBuyerWalletApi } from '@/features/wallet/services/wallet.service';
 import AuctionAwardCheckoutModal from '../../components/auction/AuctionAwardCheckoutModal';
 import AuctionComplaintModal from '../../components/auction/AuctionComplaintModal';
+import { openChatConversation } from '../../components/chat/chatEvents';
 import { useToast } from '../../components/ToastNotification/useToast';
 import { getApiErrorMessage } from '../../lib/apiErrors';
 
@@ -269,22 +270,30 @@ export default function BuyerBidsPage({ purchasesOnly = false }: { purchasesOnly
     }
   };
 
-  // Handle Chat with Shop / Support
+  /**
+   * Asks support about a lot and opens the conversation that creates.
+   *
+   * This used to navigate to `/buyer/chat`, both on success and in the catch —
+   * a route that does not exist. A buyer's chat is the widget rendered on every
+   * page, not a page of its own, so pressing "chat with support" left them on a
+   * dead route with their message sent and nowhere to read the reply. The
+   * widget opens on the conversation instead, which is what the auction detail
+   * page already did.
+   */
   const handleOpenSupportChat = async (auctionId: string, shopTitle?: string) => {
     try {
-      await requestAuctionSupportChatApi(
+      const conversation = await requestAuctionSupportChatApi(
         auctionId,
         t('bidsPage.supportChatMessage', {
           title: shopTitle || t('bidsPage.auctionItemFallback'),
         }),
       );
-      toast.success(t('bidsPage.supportChatToast'), {
-        targetUrl: '/buyer/chat',
-      });
-      navigate('/buyer/chat');
-    } catch {
-      // Fallback direct navigate to chat
-      navigate('/buyer/chat');
+      toast.success(t('bidsPage.supportChatToast'));
+      openChatConversation(conversation.id);
+    } catch (error) {
+      // Without a conversation there is nothing to open, so say so rather than
+      // sending them somewhere.
+      toast.error(error instanceof Error ? error.message : t('bidsPage.supportChatFailed'));
     }
   };
 

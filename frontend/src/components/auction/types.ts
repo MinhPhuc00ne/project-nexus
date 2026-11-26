@@ -1,1 +1,1 @@
-export * from '../../types/auction.types';
+export * from '@/features/auction/types/auction.types';

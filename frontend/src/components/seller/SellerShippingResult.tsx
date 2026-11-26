@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
-import type { DistanceResult, ShippingQuote } from '../../types/shipping.types';
+import type { DistanceResult, ShippingQuote } from '@/features/shipping/types/shipping.types';
 import { Panel } from './SellerUI';
 
 export default function SellerShippingResult({
@@ -24,7 +24,8 @@ export default function SellerShippingResult({
           [t('shipping.result.duration')]: t('shipping.result.durationValue', {
             minutes: metrics.durationMinutes,
           }),
-          [t('shipping.result.weight')]: `${metrics.chargeableWeightKg} kg`,
+          [t('shipping.result.weight')]:
+            `${'actualWeightKg' in metrics ? metrics.actualWeightKg : (metrics.chargeableWeightKg ?? 0)} kg`,
           [t('shipping.result.estimatedFee')]: formatCurrency(total),
         }).map(([label, value]) => (
           <div key={label} className="rounded-lg bg-blue-50 p-4">
@@ -49,7 +50,7 @@ export default function SellerShippingResult({
           </p>
           <p>
             {t('shipping.result.distanceFee', {
-              fee: formatCurrency(quote.rates.distanceTotalFee),
+              fee: formatCurrency(quote.rates.finalShippingFee),
             })}
           </p>
           <p>

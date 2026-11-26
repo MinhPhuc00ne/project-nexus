@@ -19,8 +19,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastNotification';
-import { getStoredToken } from '../../services/auth';
-import { createNotificationConnection } from '../../services/notificationSocket';
+import { getStoredToken } from '@/features/auth/services/auth';
+import { createNotificationConnection } from '@/features/notifications/services/notificationSocket';
 import {
   getBuyerWalletApi,
   getBuyerTransactionsApi,
@@ -31,10 +31,10 @@ import {
   type WalletDepositProvider,
   type BuyerWithdrawalInput,
   type BuyerFinanceTransaction,
-} from '../../services/wallet.service';
+} from '@/features/wallet/services/wallet.service';
 import WalletTopUpModal from '../../components/wallet/WalletTopUpModal';
 import BuyerWithdrawalModal from '../../components/wallet/BuyerWithdrawalModal';
-import type { SellerWithdrawal } from '../../types/seller-finance.types';
+import type { SellerWithdrawal } from '@/features/wallet/types/seller-finance.types';
 
 type FilterType = 'ALL' | 'TOP_UP' | 'PAYMENT' | 'REFUND' | 'WITHDRAWAL';
 

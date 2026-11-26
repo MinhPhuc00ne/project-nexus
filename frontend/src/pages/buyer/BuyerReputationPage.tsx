@@ -21,7 +21,7 @@ import {
   type ReputationSummary,
   type ReputationLogItem,
   type ReputationTrustLevel,
-} from '../../services/reputation.service';
+} from '@/features/account/services/reputation.service';
 import { ROUTES } from '../../routes/paths';
 
 const TRUST_LEVEL_CONFIG = {

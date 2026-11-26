@@ -1,5 +1,5 @@
 import i18n from '../../../i18n';
-import type { AdminAuctionEntity } from '../../../services/auction.service';
+import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';
 
 export function auctionEditReason(item: AdminAuctionEntity): string {
   return ['DRAFT', 'SCHEDULED'].includes(item.status)

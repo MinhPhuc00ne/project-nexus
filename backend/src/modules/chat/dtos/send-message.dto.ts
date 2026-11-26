@@ -1,32 +1,17 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
+import { z } from 'zod';
+import { nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class SendMessageDto {
-  @ApiPropertyOptional({
-    description: 'ID của cuộc trò chuyện (tùy chọn khi gửi qua endpoint có param :id)',
-  })
-  @IsOptional()
-  @IsString()
-  conversationId?: string;
+const sendMessageFields = {
+  conversationId: nullAsAbsent(
+    z.string().describe('ID của cuộc trò chuyện (tùy chọn khi gửi qua endpoint có param :id)'),
+  ),
+  content: nullAsAbsent(z.string().max(4000).describe('Nội dung tin nhắn văn bản')),
+  body: nullAsAbsent(z.string().max(4000).describe('Nội dung văn bản (alias tương đương content)')),
+  attachments: nullAsAbsent(
+    z.array(z.string()).describe('Danh sách URL hình ảnh / tài liệu đính kèm (URL từ Cloudinary)'),
+  ),
+};
 
-  @ApiPropertyOptional({ description: 'Nội dung tin nhắn văn bản' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(4000, { message: 'Nội dung tin nhắn không được vượt quá 4000 ký tự' })
-  content?: string;
+export const SendMessageSchema = z.object(sendMessageFields).strict();
 
-  @ApiPropertyOptional({ description: 'Nội dung văn bản (alias tương đương content)' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(4000, { message: 'Nội dung tin nhắn không được vượt quá 4000 ký tự' })
-  body?: string;
-
-  @ApiPropertyOptional({
-    description: 'Danh sách URL hình ảnh / tài liệu đính kèm (URL từ Cloudinary)',
-    type: [String],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  attachments?: string[];
-}
+export type SendMessageInput = z.infer<typeof SendMessageSchema>;

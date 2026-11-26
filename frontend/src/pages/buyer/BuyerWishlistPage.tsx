@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Heart, ShoppingCart, Trash2, Search, Tag, ShoppingBag } from 'lucide-react';
-import { addToCart } from '../../services/cart';
+import { addToCart } from '@/features/cart/services/cart';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../components/ToastNotification';
 import {
   getBuyerWishlist,
   removeBuyerWishlistItem,
   type WishlistItem,
-} from '../../services/wishlist.service';
+} from '@/features/wishlist/services/wishlist.service';
 import { formatCurrency } from '../../i18n/formatters';
 
 export default function BuyerWishlistPage() {
@@ -17,16 +17,38 @@ export default function BuyerWishlistPage() {
   const { user } = useAuth();
   const toast = useToast();
   const [items, setItems] = useState<WishlistItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    setItems(getBuyerWishlist(user?.id));
-  }, [user?.id]);
+    let cancelled = false;
+    setIsLoading(true);
+    getBuyerWishlist()
+      .then((list) => {
+        if (!cancelled) setItems(list);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.error('Unable to load the wishlist:', error);
+        toast.error(error instanceof Error ? error.message : t('wishlist.loadFailed'));
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // The list belongs to whoever is signed in, so it is reloaded when that changes.
+  }, [user?.id, t, toast]);
 
-  const removeItem = (id: string) => {
-    const updated = removeBuyerWishlistItem(user?.id, id);
-    setItems(updated);
-    toast.success(t('wishlist.removedToast'));
+  const removeItem = async (id: string) => {
+    try {
+      setItems(await removeBuyerWishlistItem(id));
+      toast.success(t('wishlist.removedToast'));
+    } catch (error) {
+      console.error('Unable to remove the wishlist item:', error);
+      toast.error(error instanceof Error ? error.message : t('wishlist.removeFailed'));
+    }
   };
 
   const addWishlistItemToCart = (item: WishlistItem) =>
@@ -129,7 +151,17 @@ export default function BuyerWishlistPage() {
       )}
 
       {/* Grid */}
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        // The list comes from the server now, so there is a moment with nothing
+        // to show; without this the page claimed the wishlist was empty first.
+        <div
+          className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8"
+          aria-busy="true"
+        >
+          <div className="h-16 w-16 rounded-2xl bg-slate-100 animate-pulse mb-4" />
+          <p className="text-xs text-slate-500">{t('wishlist.loading')}</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
           <div className="h-16 w-16 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-400 mb-4">
             <Heart size={28} />

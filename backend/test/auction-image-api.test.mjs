@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
@@ -15,7 +15,7 @@ tsNode.register({
 });
 const load = createRequire(import.meta.url);
 const { PrismaService } = load('../src/core/prisma/prisma.service.ts');
-const { JwtStrategy } = load('../src/modules/auth/strategies/jwt.strategy.ts');
+const { TokenAuthService } = load('../src/core/security/token-auth.service.ts');
 const { AuctionImageController } = load(
   '../src/modules/auction/controllers/auction-image.controller.ts',
 );
@@ -55,7 +55,27 @@ test('auction images accept uploaded URLs for staff without exposing auction man
   Module({
     controllers: [AuctionImageController, AuctionController],
     providers: [
-      JwtStrategy,
+      {
+        // The bearer value is the account id, so the fixture states who it is
+        // calling as without minting a verifiable token.
+        provide: TokenAuthService,
+        useValue: {
+          authenticate: async (token) => {
+            const role = [...identities].find(([, id]) => id === token)?.[0];
+            if (!role) throw new Error('unknown fixture identity');
+            return {
+              id: token,
+              sub: token,
+              email: 'fixture@example.invalid',
+              role,
+              accountRole: role,
+              activeRole: role,
+              currentMode: 'BUYER',
+              isSellerActive: false,
+            };
+          },
+        },
+      },
       AuctionImageService,
       { provide: PrismaService, useValue: db },
       { provide: ConfigService, useValue: { get: () => 'image-test-secret' } },
@@ -63,11 +83,14 @@ test('auction images accept uploaded URLs for staff without exposing auction man
     ],
   })(FixtureModule);
   const app = await NestFactory.create(FixtureModule, { logger: false, abortOnError: false });
+  // The same filter `main.ts` registers. Without it these routes fall to
+  // Nest's default handling, which is not what the app does and answered a
+  // rejected query with 500 instead of 400 whenever the machine was busy.
+  app.useGlobalFilters(
+    new (load('../src/core/filters/global-http-exception.filter.ts').GlobalHttpExceptionFilter)(),
+  );
   const jwt = new JwtService({ secret: 'image-test-secret' });
   try {
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
-    );
     await app.listen(0, '127.0.0.1');
     const base = await app.getUrl();
     const request = (role, body, path = `/auctions/${auction.id}/image`) =>
@@ -75,7 +98,7 @@ test('auction images accept uploaded URLs for staff without exposing auction man
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          ...(role ? { Authorization: 'Bearer ' + jwt.sign({ sub: identities.get(role) }) } : {}),
+          ...(role ? { Authorization: 'Bearer ' + identities.get(role) } : {}),
         },
         body: JSON.stringify(body),
       });

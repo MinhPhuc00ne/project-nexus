@@ -1,23 +1,16 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsOptional, IsString, IsUrl, Length, Matches } from 'class-validator';
+import { z } from 'zod';
+import { httpUrl, nullAsAbsent } from '../../../core/validation/query-schemas';
 
-export class UpdateStaffProfileDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @Length(2, 100)
-  fullName?: string;
+const updateStaffProfileFields = {
+  fullName: nullAsAbsent(z.string().trim().min(2).max(100)),
+  phoneNumber: z
+    .string()
+    .regex(/^\+?[0-9]{9,15}$/)
+    .nullable()
+    .optional(),
+  avatarUrl: httpUrl.nullable().optional(),
+};
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @Matches(/^\+?[0-9]{9,15}$/)
-  phoneNumber?: string | null;
+export const UpdateStaffProfileSchema = z.object(updateStaffProfileFields).strict();
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
-  avatarUrl?: string | null;
-}
+export type UpdateStaffProfileInput = z.infer<typeof UpdateStaffProfileSchema>;

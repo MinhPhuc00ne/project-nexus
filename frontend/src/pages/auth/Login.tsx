@@ -1,10 +1,15 @@
-import React, { useEffect, useRef, useState, type FormEvent } from 'react';
-import { GoogleOutlined } from '@ant-design/icons';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { login, startGoogleLogin } from '../../services/auth';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { LoginSchema, type LoginInput } from '@nexus/contracts';
+import { login, startGoogleLogin } from '@/features/auth/services/auth';
 import { useAuth } from '../../contexts/AuthContext';
-import { clearPasswordChangedNotice, hasPasswordChangedNotice } from '../../services/authNotice';
+import {
+  clearPasswordChangedNotice,
+  hasPasswordChangedNotice,
+} from '@/features/auth/services/authNotice';
 import { ROUTES } from '../../routes/paths';
 import { useToast } from '../../components/ToastNotification';
 import ForgotPasswordModal from './ForgotPasswordModal';
@@ -20,15 +25,23 @@ const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const toast = useToast();
-  const [email, setEmail] = useState(() => {
+  const initialEmail = (() => {
     try {
-      const verifiedEmail = sessionStorage.getItem('nexus:verified-email') || '';
-      return verifiedEmail;
+      return sessionStorage.getItem('nexus:verified-email') || '';
     } catch {
       return '';
     }
+  })();
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    setValue,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(LoginSchema),
+    defaultValues: { email: initialEmail, password: '' },
   });
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [pending, setPending] = useState(false);
   const [feedback, setFeedback] = useState(() =>
@@ -66,15 +79,14 @@ const Login: React.FC = () => {
       );
     }
   }, [searchParams, location.pathname, location.hash, location.state, navigate]);
-  async function handleLogin(event: FormEvent<HTMLFormElement>): Promise<void> {
-    event.preventDefault();
+  async function handleLogin(values: LoginInput): Promise<void> {
     if (requestInFlight.current) return;
     requestInFlight.current = true;
     setPending(true);
     setFeedback('');
     setFailed(false);
     try {
-      const result = await login(email.trim(), password);
+      const result = await login(values.email.trim(), values.password);
 
       // Lưu session & nạp thông tin user
       const sessionPromise = establishSession(result.user, result.accessToken, result.refreshToken);
@@ -124,7 +136,13 @@ const Login: React.FC = () => {
                 </h2>
               </div>
 
-              <form onSubmit={handleLogin} className="flex flex-col gap-4" aria-busy={pending}>
+              <form
+                onSubmit={(e) => {
+                  void handleSubmit(handleLogin)(e);
+                }}
+                className="flex flex-col gap-4"
+                aria-busy={pending}
+              >
                 <div className="flex flex-col">
                   <label className="text-xs font-semibold text-slate-700 mb-1.5">
                     {t('login.emailLabel')}
@@ -135,21 +153,22 @@ const Login: React.FC = () => {
                     </div>
                     <input
                       id="email"
-                      name="email"
                       type="email"
-                      required
                       autoComplete="username"
                       disabled={pending}
                       className="block w-full [padding:0.625rem_0.875rem_0.625rem_2.5rem] [background-color:rgba(248,_250,_252,_0.5)] [border:1px_solid_#e2e8f0] rounded-xl text-sm text-slate-800 [outline:none] [transition:all_0.15s_ease] [&::placeholder]:text-slate-400 focus:bg-white focus:border-blue-600 focus:[box-shadow:0_0_0_3px_rgba(37,_99,_235,_0.15)]"
                       placeholder={t('login.emailPlaceholder')}
-                      value={email}
-                      onChange={(e) => {
-                        setEmail(e.target.value);
-                        setFeedback('');
-                        setFailed(false);
-                      }}
+                      {...register('email', {
+                        onChange: () => {
+                          setFeedback('');
+                          setFailed(false);
+                        },
+                      })}
                     />
                   </div>
+                  {errors.email && (
+                    <p className="mt-1 text-xs text-rose-600">{errors.email.message}</p>
+                  )}
                 </div>
 
                 <div className="flex flex-col">
@@ -174,20 +193,17 @@ const Login: React.FC = () => {
                     </div>
                     <input
                       id="password"
-                      name="password"
                       type={showPassword ? 'text' : 'password'}
                       className="block w-full [padding:0.625rem_0.875rem_0.625rem_2.5rem] [background-color:rgba(248,_250,_252,_0.5)] [border:1px_solid_#e2e8f0] rounded-xl text-sm text-slate-800 [outline:none] [transition:all_0.15s_ease] [&::placeholder]:text-slate-400 focus:bg-white focus:border-blue-600 focus:[box-shadow:0_0_0_3px_rgba(37,_99,_235,_0.15)]"
                       placeholder={t('login.passwordPlaceholder')}
-                      required
-                      minLength={6}
                       autoComplete="current-password"
                       disabled={pending}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        setFeedback('');
-                        setFailed(false);
-                      }}
+                      {...register('password', {
+                        onChange: () => {
+                          setFeedback('');
+                          setFailed(false);
+                        },
+                      })}
                     />
                     <button
                       type="button"
@@ -197,6 +213,9 @@ const Login: React.FC = () => {
                       {showPassword ? <EyeOff /> : <Eye />}
                     </button>
                   </div>
+                  {errors.password && (
+                    <p className="mt-1 text-xs text-rose-600">{errors.password.message}</p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between pt-1">
@@ -245,7 +264,24 @@ const Login: React.FC = () => {
                   onClick={startGoogleLogin}
                   disabled={pending}
                 >
-                  <GoogleOutlined className="text-base" />
+                  <svg className="size-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="#4285F4"
+                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z"
+                    />
+                  </svg>
                   {t('login.googleButton')}
                 </Button>
               </div>
@@ -272,11 +308,11 @@ const Login: React.FC = () => {
       </main>
       <ForgotPasswordModal
         isOpen={showForgotModal}
-        initialEmail={email.trim()}
+        initialEmail={getValues('email').trim()}
         onClose={() => setShowForgotModal(false)}
         onSuccess={(resetEmail, msg) => {
-          setEmail(resetEmail);
-          setPassword('');
+          setValue('email', resetEmail);
+          setValue('password', '');
           setFeedback(msg);
           setFailed(false);
         }}

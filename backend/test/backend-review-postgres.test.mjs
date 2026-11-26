@@ -20,7 +20,7 @@ const { SellerPickupService } = load(
   '../src/modules/fulfillment/services/seller-pickup.service.ts',
 );
 const { ShopShippingProfileService } = load(
-  '../src/modules/users/services/shop-shipping-profile.service.ts',
+  '../src/modules/fulfillment/services/shop-shipping-profile.service.ts',
 );
 const { AuctionImageService } = load('../src/modules/auction/services/auction-image.service.ts');
 
@@ -54,27 +54,29 @@ test(
         for (const entry of (await readdir(folder, { withFileTypes: true }))
           .filter((item) => item.isDirectory())
           .sort((a, b) => a.name.localeCompare(b.name))) {
-          if (entry.name === '20261111090000_align_reputation_defaults') {
-            await client.query(
-              'INSERT INTO users (id,email,password_hash,full_name,role,updated_at) VALUES ($1,$2,$3,$4,$5,NOW())',
-              [sellerId, `${sellerId}@example.invalid`, 'fixture', 'Shop', 'SELLER'],
-            );
-            for (const [id, environment] of [
-              [legacyId, 'PRODUCTION'],
-              [sandboxId, 'SANDBOX'],
-            ]) {
-              await client.query(
-                `INSERT INTO seller_pickup_points (id,seller_id,environment,name,phone,city,district,ward,street,district_id,ward_code,status,ghn_shop_id,ghn_client_id,carrier_name,carrier_phone,carrier_address,verified_at,updated_at)
-              VALUES ($1,$2,$3,'Shop','0901234567','City','District','Ward','12 Main',1,'01','VERIFIED',101,7,'Carrier shop','0901234567','12 Main, Ward, District, City',NOW(),NOW())`,
-                [id, sellerId, environment],
-              );
-            }
-          }
           const sql = (
             await readFile(new URL(`${entry.name}/migration.sql`, folder), 'utf8')
           ).replace(/^\s*(?:BEGIN|COMMIT);[ \t]*$/gm, '');
           await client.query(sql);
         }
+
+        // Seeded after the chain, because the squashed history has no
+        // intermediate state to seed between.
+        await client.query(
+          'INSERT INTO users (id,email,password_hash,full_name,role,reputation_score,trust_level,updated_at) VALUES ($1,$2,$3,$4,$5,100,$6,NOW())',
+          [sellerId, `${sellerId}@example.invalid`, 'fixture', 'Shop', 'SELLER', 'GOOD'],
+        );
+        for (const [id, environment] of [
+          [legacyId, 'PRODUCTION'],
+          [sandboxId, 'SANDBOX'],
+        ]) {
+          await client.query(
+            `INSERT INTO seller_ghn_accounts (id,seller_id,environment,district_id,ward_code,status,ghn_shop_id,ghn_client_id,carrier_name,carrier_phone,carrier_address,verified_by,verified_at,updated_at)
+            VALUES ($1,$2,$3,1,'01','VERIFIED',101,7,'Carrier shop','0901234567','12 Main, Ward, District, City',$2,NOW(),NOW())`,
+            [id, sellerId, environment],
+          );
+        }
+
         await client.query('COMMIT');
       } catch (error) {
         await client.query('ROLLBACK');
@@ -104,7 +106,7 @@ test(
       ]);
 
       await t.test(
-        'new defaults are 50 PROBATION while existing scores and carrier registrations survive',
+        'new accounts default to 50 PROBATION and carrier registrations keep their verified fields',
         async () => {
           assert.equal(buyer.reputationScore, 50);
           assert.equal(buyer.trustLevel, 'PROBATION');
@@ -125,6 +127,7 @@ test(
             assert.equal(row.carrierAddress, '12 Main, Ward, District, City');
             assert.equal(row.profileFingerprint, null);
           }
+          // The mid-history table name must not reappear in the schema.
           const table = await pool.query("SELECT to_regclass('seller_pickup_points') AS old_table");
           assert.equal(table.rows[0].old_table, null);
           await assert.rejects(
@@ -143,7 +146,7 @@ test(
       );
 
       await t.test(
-        'migrated carrier registration is verified against the current profile and reused',
+        'a verified carrier registration is checked against the current profile and reused',
         async () => {
           await prisma.sellerUpgradeRequest.create({
             data: {

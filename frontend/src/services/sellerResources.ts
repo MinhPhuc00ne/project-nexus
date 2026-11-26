@@ -1,6 +1,6 @@
-import i18n from '../i18n';
-import { apiRequest } from './api';
-import { getStoredToken } from './auth';
+import i18n from '@/i18n';
+import { apiRequest } from '@/services/api';
+import { getStoredToken } from '@/features/auth/services/auth';
 
 const pending = new Map<string, Promise<unknown>>();
 

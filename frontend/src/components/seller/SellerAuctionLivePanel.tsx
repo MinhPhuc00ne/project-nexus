@@ -7,8 +7,8 @@ import type {
   AuctionConsignmentItem,
   AuctionEntity,
   AuctionIntroShowcaseResponse,
-} from '../../services/auction.service';
-import { formatAuctionImage } from '../../services/auction.service';
+} from '@/features/auction/services/auction.service';
+import { formatAuctionImage } from '@/features/auction/services/auction.service';
 import { AuctionShowcaseHUD } from '../auction/showcase/AuctionShowcaseHUD';
 import { Badge, Panel, SellerButton } from './SellerUI';
 

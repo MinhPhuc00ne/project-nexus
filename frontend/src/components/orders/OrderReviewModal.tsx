@@ -8,9 +8,9 @@ import {
   getShopReviewsApi,
   saveBuyerProductReviewApi,
   saveBuyerShopReviewApi,
-} from '../../services/reviews.service';
-import { getBuyerOrdersApi, type BuyerOrder } from '../../services/orders';
-import { getStoredUser } from '../../services/auth';
+} from '@/features/reviews/services/reviews.service';
+import { getBuyerOrdersApi, type BuyerOrder } from '@/features/orders/services/orders';
+import { getStoredUser } from '@/features/auth/services/auth';
 import { canBuyerReviewShop, getBuyerReviewEligibility } from '../../utils/buyerReviewEligibility';
 import { useToast } from '../ToastNotification';
 

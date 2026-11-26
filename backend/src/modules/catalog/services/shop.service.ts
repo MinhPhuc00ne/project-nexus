@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { priceView } from '../utils/product-price';
+import { priceView } from '../../../core/domain/product-price';
 import { assertCleanContent } from '../../../core/moderation/content-moderation.util';
-import { QueryShopDto } from '../dtos/query-shop.dto';
+import { QueryShopInput } from '../dtos/query-shop.dto';
 import { InventoryService } from './inventory.service';
-import { Role, SellerRequestStatus, ProductStatus, Prisma } from '@prisma/client';
+import { Prisma, ProductStatus, Role, SellerRequestStatus } from '@prisma/client';
 
 export interface ShopSummaryItem {
   id: string;
@@ -55,7 +55,7 @@ export class ShopService {
    * @param query - Query filtering and pagination parameters
    * @returns Paginated merchant shop profiles and product highlights
    */
-  async getShops(query: QueryShopDto): Promise<PaginatedShopsResult> {
+  async getShops(query: QueryShopInput): Promise<PaginatedShopsResult> {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.max(1, Math.min(100, Number(query.limit) || 12));
     const skip = (page - 1) * limit;

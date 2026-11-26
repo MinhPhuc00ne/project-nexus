@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Truck, Zap, Gavel, ShieldCheck, Tag, WalletCards } from 'lucide-react';
@@ -11,18 +12,17 @@ import {
   HomeRecommendationsSection,
   HomeTrendingSection,
 } from '../../components/home';
-import { flashSaleProducts } from '../../mocks/home.mock';
 import { HOME_TRENDING_LIMIT } from '../../constants/trending';
-import { getEventBannersApi } from '../../services/banners.service';
+import { getEventBannersApi } from '@/features/catalog/services/banners.service';
 import {
   getRecommendationsApi,
   getProductsCatalog,
   getTrendingProducts,
   type RecommendedProduct,
   type TrendingProductItem,
-} from '../../services/products.service';
+} from '@/features/catalog/services/products.service';
 import { AuctionStatus } from '@nexus/types';
-import { getAuctionsApi, type AuctionEntity } from '../../services/auction.service';
+import { getAuctionsApi, type AuctionEntity } from '@/features/auction/services/auction.service';
 import type { HomeHeroSlide, HomeProduct } from '../../components/home/home.types';
 
 function HomePage() {
@@ -36,6 +36,7 @@ function HomePage() {
 
   const [liveAuctions, setLiveAuctions] = useState<AuctionEntity[]>([]);
   const [flashProducts, setFlashProducts] = useState<HomeProduct[]>([]);
+  const [flashSaleEndsAt, setFlashSaleEndsAt] = useState<string | null>(null);
   const [trendingProducts, setTrendingProducts] = useState<TrendingProductItem[]>([]);
   const [isLoadingTrending, setIsLoadingTrending] = useState(true);
 
@@ -116,28 +117,45 @@ function HomePage() {
         if (isMounted) setIsLoadingTrending(false);
       });
 
-    // Lấy sản phẩm thật từ database cho mục Flash Sale thay vì dữ liệu mẫu
-    void getProductsCatalog({ limit: 4, sortBy: 'newest' })
+    // Flash Sale shows products that are actually discounted.
+    //
+    // It used to take the four newest products and invent the rest: an
+    // `oldPrice` 15% above the real price, a 12% discount badge, a rating of 5
+    // for anything unreviewed, and a "sold" count derived from the position in
+    // the list. When the request returned nothing it showed four hardcoded
+    // products that do not exist in the catalogue, with links to slugs that go
+    // nowhere. A shopper could not tell any of it from a real offer.
+    void getProductsCatalog({ limit: 12, sortBy: 'newest' })
       .then((items) => {
-        if (isMounted && items && items.length > 0) {
-          const mapped: HomeProduct[] = items.map((p, idx) => ({
-            id: p.id,
-            name: p.name,
-            price: p.price,
-            oldPrice: p.originalPrice || Math.round(p.price * 1.15),
-            image: p.images?.[0] || '',
-            discount: p.discount || 12,
-            rating: p.rating || 5,
-            sold: p.soldCount || (idx + 1) * 7,
-            saleSold: (p.soldCount || 10) + idx * 5,
-          }));
-          setFlashProducts(mapped);
-        } else if (isMounted) {
-          setFlashProducts(flashSaleProducts);
-        }
+        if (!isMounted) return;
+        const onSale = (items ?? [])
+          .filter((product) => typeof product.discount === 'number' && product.discount > 0)
+          .slice(0, 4);
+        setFlashProducts(
+          onSale.map<HomeProduct>((product) => ({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            oldPrice: product.originalPrice,
+            image: product.images?.[0] || '',
+            discount: product.discount,
+            rating: product.rating,
+            sold: product.soldCount,
+          })),
+        );
+        // The countdown runs to the first of these discounts to end.
+        const ends = onSale
+          .map((product) => product.saleInfo?.endAt)
+          .filter((value): value is string => Boolean(value))
+          .sort();
+        setFlashSaleEndsAt(ends[0] ?? null);
       })
-      .catch(() => {
-        if (isMounted) setFlashProducts(flashSaleProducts);
+      .catch((error: unknown) => {
+        console.warn('Unable to load discounted products:', error);
+        if (isMounted) {
+          setFlashProducts([]);
+          setFlashSaleEndsAt(null);
+        }
       });
 
     return () => {
@@ -168,7 +186,12 @@ function HomePage() {
 
           <p className="mt-3 text-sm text-slate-500">{t('home.freeShippingDesc')}</p>
 
-          <button className="mt-4 text-sm font-semibold text-sky-500">{t('home.claimCode')}</button>
+          <Link
+            to="/search"
+            className="mt-4 inline-block text-sm font-semibold text-sky-500 hover:underline"
+          >
+            {t('home.claimCode')}
+          </Link>
         </div>
 
         <div className="rounded-[20px] border border-slate-200 bg-white p-4 shadow-sm">
@@ -189,7 +212,12 @@ function HomePage() {
 
           <p className="mt-3 text-sm text-slate-500">{t('home.payosGiftDesc')}</p>
 
-          <button className="mt-4 text-sm font-semibold text-sky-500">{t('home.explore')}</button>
+          <Link
+            to="/buyer/wallet"
+            className="mt-4 inline-block text-sm font-semibold text-sky-500 hover:underline"
+          >
+            {t('home.explore')}
+          </Link>
         </div>
       </section>
 
@@ -206,27 +234,30 @@ function HomePage() {
 
       <HomeCategoriesSection />
 
-      <section className="mt-5 rounded-[18px] border border-slate-200 bg-white p-4 sm:p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <h2 className="flex items-center gap-1.5 text-[16px] font-extrabold uppercase tracking-[0.08em] text-[#f24e1e]">
-              <Zap size={18} /> Flash Sale
-            </h2>
+      {/* No discounts, no section: an empty Flash Sale is better than a made-up one. */}
+      {flashProducts.length > 0 && (
+        <section className="mt-5 rounded-[18px] border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <h2 className="flex items-center gap-1.5 text-[16px] font-extrabold uppercase tracking-[0.08em] text-[#f24e1e]">
+                <Zap size={18} /> Flash Sale
+              </h2>
 
-            <HomeCountdown />
+              <HomeCountdown endsAt={flashSaleEndsAt} />
+            </div>
+
+            <Link to="/search?onSale=true" className="text-xs font-semibold text-[#f36a22]">
+              {t('home.viewAllPromos')}
+            </Link>
           </div>
 
-          <button className="text-xs font-semibold text-[#f36a22]">
-            {t('home.viewAllPromos')}
-          </button>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {(flashProducts.length > 0 ? flashProducts : flashSaleProducts).map((product) => (
-            <HomeFlashSaleCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {flashProducts.map((product) => (
+              <HomeFlashSaleCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <HomeLiveAuction auctions={liveAuctions} />
 

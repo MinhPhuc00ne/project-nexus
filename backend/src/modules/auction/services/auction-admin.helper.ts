@@ -1,4 +1,4 @@
-import { BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   AuctionItemStatus,
   AuctionStatus,
@@ -11,11 +11,12 @@ import {
 import type { AuctionStatus as NexusAuctionStatus, WsAuctionIntroItemPayload } from '@nexus/types';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { AdminCreateAuctionDto } from '../dtos/admin-create-auction.dto';
-import { AdminUpdateAuctionDto } from '../dtos/admin-update-auction.dto';
+import { AdminCreateAuctionInput } from '../dtos/admin-create-auction.dto';
+import { AdminUpdateAuctionInput } from '../dtos/admin-update-auction.dto';
 import { AuctionGateway } from '../gateways/auction.gateway';
 import { MIN_AUCTION_DURATION_MS, getIntroDurationMs } from './auction-domain.utils';
 
+@Injectable()
 export class AuctionAdminHelper {
   private readonly logger = new Logger(AuctionAdminHelper.name);
 
@@ -28,7 +29,7 @@ export class AuctionAdminHelper {
    * Admin creates a multi-lot auction room and notifies eligible Sellers using the room creation time
    * so they can consign items before the consignment deadline.
    */
-  async adminCreateAuction(adminId: string, dto: AdminCreateAuctionDto) {
+  async adminCreateAuction(adminId: string, dto: AdminCreateAuctionInput) {
     const startTime = new Date(dto.startTime);
     const endTime = new Date(dto.endTime);
     if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
@@ -136,7 +137,7 @@ export class AuctionAdminHelper {
   /**
    * Admin updates a SCHEDULED auction room configuration.
    */
-  async adminUpdateAuction(auctionId: string, dto: AdminUpdateAuctionDto) {
+  async adminUpdateAuction(auctionId: string, dto: AdminUpdateAuctionInput) {
     const existing = await this.prisma.auction.findUnique({ where: { id: auctionId } });
     if (!existing) {
       throw new NotFoundException('Không tìm thấy phòng đấu giá.');

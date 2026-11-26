@@ -7,17 +7,18 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { ShopShippingProfileService } from '../../users/services/shop-shipping-profile.service';
-import { SellerPickupDto } from '../dtos/seller-pickup.dto';
+import { ShopShippingProfileService } from './shop-shipping-profile.service';
+import { SellerPickupInput } from '../dtos/seller-pickup.dto';
 import { GhnLogisticsService } from './ghn-logistics.service';
 import { GhnShopApiService } from './ghn-shop-api.service';
-import { ghnEnvironment, GhnEnvironment } from './ghn-context';
+import { GhnAccountStatus } from '@prisma/client';
+import { GhnEnvironment, ghnEnvironment } from './ghn-context';
 
 import {
+  SellerPickupView,
   phoneKey,
   pickupFingerprint,
   pickupView,
-  SellerPickupView,
 } from './seller-ghn-account.util';
 
 /** Synchronizes carrier accounts using shop profiles as the only pickup address source. */
@@ -44,7 +45,7 @@ export class SellerPickupService {
   /** Lists carrier accounts awaiting verification. @returns Current profiles and carrier metadata. */
   async pending(): Promise<SellerPickupView[]> {
     const accounts = await this.prisma.sellerGhnAccount.findMany({
-      where: { environment: ghnEnvironment(this.config), status: 'PENDING' },
+      where: { environment: ghnEnvironment(this.config), status: GhnAccountStatus.PENDING },
       orderBy: { updatedAt: 'asc' },
       take: 100,
     });
@@ -56,7 +57,7 @@ export class SellerPickupService {
   }
 
   /** Reconnects a matching profile. @param sellerId Shop owner. @param dto Expected profile. @returns Verified view. */
-  async propose(sellerId: string, dto: SellerPickupDto): Promise<SellerPickupView> {
+  async propose(sellerId: string, dto: SellerPickupInput): Promise<SellerPickupView> {
     return this.synchronize(sellerId, dto);
   }
 
@@ -80,7 +81,7 @@ export class SellerPickupService {
    * @returns Verified carrier account and current shop address.
    * @throws BadRequestException for invalid profiles or carrier responses.
    */
-  async synchronize(sellerId: string, expected?: SellerPickupDto): Promise<SellerPickupView> {
+  async synchronize(sellerId: string, expected?: SellerPickupInput): Promise<SellerPickupView> {
     return this.prisma.$transaction(
       async (tx) => {
         // Profile saves and GHN setup share the same lock and always read fresh data.
@@ -91,7 +92,7 @@ export class SellerPickupService {
           (phoneKey(expected.phone) !== phoneKey(dto.phone) ||
             ['name', 'city', 'district', 'ward', 'street'].some(
               (key) =>
-                expected[key as keyof SellerPickupDto]?.toString().trim() !==
+                expected[key as keyof SellerPickupInput]?.toString().trim() !==
                 dto[key as keyof typeof dto]?.toString().trim(),
             ))
         ) {
@@ -122,7 +123,7 @@ export class SellerPickupService {
           profileFingerprint: pickupFingerprint(dto),
           districtId: location.districtId,
           wardCode: location.wardCode,
-          status: 'PENDING',
+          status: GhnAccountStatus.PENDING,
           ghnShopId: null,
           ghnClientId: null,
           carrierName: null,
@@ -144,7 +145,7 @@ export class SellerPickupService {
           point.wardCode === data.wardCode;
         if (
           sameAddress &&
-          point.status === 'VERIFIED' &&
+          point.status === GhnAccountStatus.VERIFIED &&
           point.ghnShopId &&
           point.verifiedAt &&
           point.carrierAddress &&

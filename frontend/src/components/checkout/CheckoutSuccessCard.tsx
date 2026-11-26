@@ -6,7 +6,7 @@ import {
   checkPaymentStatusApi,
   type BuyerOrder,
   type PayosPaymentInfo,
-} from '../../services/orders';
+} from '@/features/orders/services/orders';
 import PayosQrModal from './PayosQrModal';
 
 export interface CheckoutSuccessCardProps {

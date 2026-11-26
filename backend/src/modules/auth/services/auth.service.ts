@@ -8,7 +8,8 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { ReputationTrustLevel } from '@prisma/client';
+import { TokenAuthService } from '../../../core/security/token-auth.service';
+import { ReputationTrustLevel, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { MailService } from '../../../core/mail/mail.service';
@@ -16,16 +17,16 @@ import { PrismaService } from '../../../core/prisma/prisma.service';
 import { RedisService } from '../../../core/redis/redis.service';
 import { recentReauthentication } from '../../../core/security/profile-reauth.service';
 import { userMode } from '../../../core/security/user-mode';
-import { ForgotPasswordDto } from '../dtos/forgot-password.dto';
-import { LoginDto } from '../dtos/login.dto';
-import { RefreshTokenDto } from '../dtos/refresh-token.dto';
-import { RegisterDto } from '../dtos/register.dto';
-import { ResetPasswordDto } from '../dtos/reset-password.dto';
-import { VerifyEmailDto } from '../dtos/verify-email.dto';
+import { ForgotPasswordInput } from '../dtos/forgot-password.dto';
+import { LoginInput } from '../dtos/login.dto';
+import { RefreshTokenInput } from '../dtos/refresh-token.dto';
+import { RegisterInput } from '../dtos/register.dto';
+import { ResetPasswordInput } from '../dtos/reset-password.dto';
+import { VerifyEmailInput } from '../dtos/verify-email.dto';
 import {
   INITIAL_REPUTATION_SCORE,
   INITIAL_REPUTATION_TRUST_LEVEL,
-} from '../../users/services/reputation-policy';
+} from '../../../core/domain/reputation-policy';
 export type { UserProfileResponse } from './auth-profile.service';
 
 interface RefreshJwtPayload {
@@ -48,20 +49,12 @@ export interface GoogleUser {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  public transporter?: {
-    sendMail: (opts: {
-      to?: string;
-      subject?: string;
-      html?: string;
-      text?: string;
-      from?: string;
-    }) => Promise<{ accepted?: string[] }>;
-  };
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly tokenAuth: TokenAuthService,
     private readonly redisService: RedisService,
     private readonly mailService: MailService,
   ) {}
@@ -73,7 +66,7 @@ export class AuthService {
    * @returns Registration confirmation
    * @throws BadRequestException when email is already registered or cooldown is active
    */
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterInput) {
     const { email, password, fullName } = dto;
 
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
@@ -97,7 +90,7 @@ export class AuthService {
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = crypto.randomInt(100000, 1000000).toString();
     const codeExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.user.upsert({
@@ -136,12 +129,9 @@ export class AuthService {
 
     this.logger.log(`🔑 [OTP REGISTER] Mã xác thực đăng ký cho ${email} đã được xử lý`);
 
-    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
-
     return {
       message: 'Đăng ký thành công! Vui lòng kiểm tra hộp thư Gmail để lấy mã OTP xác thực.',
       email,
-      ...(isDev ? { devOtpCode: verificationCode } : {}),
     };
   }
 
@@ -152,7 +142,7 @@ export class AuthService {
    * @returns Verification confirmation message
    * @throws BadRequestException when code is invalid or expired
    */
-  async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
+  async verifyEmail(dto: VerifyEmailInput): Promise<{ message: string }> {
     return this.prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE email = ${dto.email} FOR UPDATE`;
       const user = await tx.user.findUnique({ where: { email: dto.email } });
@@ -207,7 +197,7 @@ export class AuthService {
    * @throws UnauthorizedException on invalid credentials or unverified email
    * @throws ForbiddenException when account is suspended
    */
-  async login(dto: LoginDto) {
+  async login(dto: LoginInput) {
     const { email, password } = dto;
     const normalizedEmail = email.trim();
     const user = await this.prisma.user.findFirst({
@@ -368,7 +358,7 @@ export class AuthService {
    * @returns Reset code dispatch confirmation
    * @throws BadRequestException on non-existent account, unverified email, or active cooldown
    */
-  async forgotPassword(dto: ForgotPasswordDto): Promise<{ message: string; email: string }> {
+  async forgotPassword(dto: ForgotPasswordInput): Promise<{ message: string; email: string }> {
     const { email } = dto;
 
     const user = await this.prisma.user.findFirst({
@@ -416,12 +406,9 @@ export class AuthService {
       data: { verificationCode: resetCode, codeExpiresAt },
     });
 
-    const isDev = (process.env.NODE_ENV || 'development') !== 'production';
-
     return {
       message: 'Mã OTP đặt lại mật khẩu đã được gửi đến hộp thư Gmail của bạn!',
       email: user.email,
-      ...(isDev && user.role !== 'SUPPORT_STAFF' ? { devOtpCode: resetCode } : {}),
     };
   }
 
@@ -432,7 +419,7 @@ export class AuthService {
    * @returns Password reset confirmation
    * @throws BadRequestException on invalid OTP, expired OTP, or identical previous password
    */
-  async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(dto: ResetPasswordInput): Promise<{ message: string }> {
     const { email, code, newPassword } = dto;
 
     const user = await this.prisma.user.findFirst({
@@ -476,6 +463,8 @@ export class AuthService {
       });
     });
 
+    await this.tokenAuth.revokeAllSessions(user.id);
+
     return {
       message: 'Đặt lại mật khẩu thành công! Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.',
     };
@@ -489,11 +478,8 @@ export class AuthService {
    * @throws UnauthorizedException when token is expired, revoked, or invalid
    * @throws ForbiddenException when account is suspended
    */
-  async refreshToken(dto: RefreshTokenDto) {
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+  async refreshToken(dto: RefreshTokenInput) {
+    const refreshSecret = this.getRefreshSecret();
 
     let payload: RefreshJwtPayload;
     try {
@@ -533,16 +519,24 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token không hợp lệ.');
     }
 
-    await this.prisma.refreshToken.update({
-      where: { id: tokenRecord.id },
-      data: { isRevoked: true },
-    });
+    const { accessToken, refreshToken } = await this.prisma.$transaction(async (tx) => {
+      const rotated = await tx.refreshToken.updateMany({
+        where: { id: tokenRecord.id, isRevoked: false },
+        data: { isRevoked: true },
+      });
+      if (rotated.count === 0) {
+        throw new UnauthorizedException('Refresh token đã bị thu hồi hoặc hết hạn.');
+      }
 
-    const { accessToken, refreshToken } = await this.generateTokens({
-      id: tokenRecord.user.id,
-      email: tokenRecord.user.email,
-      role: tokenRecord.user.role,
-      isSellerActive: tokenRecord.user.isSellerActive,
+      return this.generateTokens(
+        {
+          id: tokenRecord.user.id,
+          email: tokenRecord.user.email,
+          role: tokenRecord.user.role,
+          isSellerActive: tokenRecord.user.isSellerActive,
+        },
+        tx,
+      );
     });
 
     return {
@@ -558,11 +552,8 @@ export class AuthService {
    * @param dto - Refresh token payload
    * @returns Logout confirmation message
    */
-  async logout(dto: RefreshTokenDto): Promise<{ message: string }> {
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+  async logout(dto: RefreshTokenInput): Promise<{ message: string }> {
+    const refreshSecret = this.getRefreshSecret();
 
     try {
       const payload = await this.jwtService.verifyAsync<RefreshJwtPayload>(dto.refreshToken, {
@@ -583,25 +574,24 @@ export class AuthService {
     return { message: 'Đăng xuất thành công!' };
   }
 
-  private async generateTokens(user: {
-    id: string;
-    email: string;
-    role: string;
-    isSellerActive?: boolean;
-  }): Promise<{ accessToken: string; refreshToken: string }> {
-    const accessToken = this.jwtService.sign({
-      sub: user.id,
+  private async generateTokens(
+    user: {
+      id: string;
+      email: string;
+      role: string;
+      isSellerActive?: boolean;
+    },
+    db: Pick<PrismaService, 'refreshToken'> = this.prisma,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const accessToken = await this.tokenAuth.signAccessToken({
       id: user.id,
       email: user.email,
-      role: user.role,
+      role: user.role as Role,
       isSellerActive: user.isSellerActive ?? false,
     });
 
     const tokenId = crypto.randomUUID();
-    const refreshSecret =
-      this.configService.get<string>('REFRESH_TOKEN_SECRET') ||
-      process.env.REFRESH_TOKEN_SECRET ||
-      'nexus-refresh-secret-key';
+    const refreshSecret = this.getRefreshSecret();
     const refreshExpiresIn =
       this.configService.get<string>('REFRESH_TOKEN_EXPIRES_IN') ||
       process.env.REFRESH_TOKEN_EXPIRES_IN ||
@@ -623,7 +613,7 @@ export class AuthService {
     const tokenHash = await bcrypt.hash(this.sha256(refreshToken), 10);
     const expiresAt = new Date(Date.now() + this.parseDurationToMs(refreshExpiresIn));
 
-    await this.prisma.refreshToken.create({
+    await db.refreshToken.create({
       data: {
         id: tokenId,
         userId: user.id,
@@ -683,37 +673,6 @@ export class AuthService {
     resetCode: string,
     requireDelivery = false,
   ): Promise<void> {
-    if (this.transporter) {
-      try {
-        const info = await this.transporter.sendMail({
-          from: `"Project Nexus E-Commerce" <${this.configService.get<string>('SMTP_USER')}>`,
-          to: email,
-          subject: 'Mã đặt lại mật khẩu Project Nexus',
-          html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-              <h2 style="color: #4F46E5;">Yêu cầu đặt lại mật khẩu</h2>
-              <p>Mã OTP để đặt lại mật khẩu tài khoản Project Nexus của bạn là:</p>
-              <h1 style="background: #F3F4F6; padding: 10px; display: inline-block; letter-spacing: 5px; color: #111827;">${resetCode}</h1>
-              <p>Mã này có hiệu lực trong vòng <b>10 phút</b>.</p>
-              <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
-            </div>
-          `,
-        });
-        if (requireDelivery && (!Array.isArray(info.accepted) || !info.accepted.length)) {
-          throw new Error('SMTP did not accept the recipient');
-        }
-        return;
-      } catch {
-        this.logger.warn('Gửi email đặt lại mật khẩu qua SMTP thất bại.');
-        if (process.env.NODE_ENV === 'production' || requireDelivery) {
-          throw new BadRequestException(
-            'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
-          );
-        }
-        return;
-      }
-    }
-
     const success = await this.mailService.sendEmail({
       to: email,
       subject: 'Mã đặt lại mật khẩu Project Nexus',
@@ -728,10 +687,19 @@ export class AuthService {
       `,
       requireDelivery,
     });
-    if (!success && (process.env.NODE_ENV === 'production' || requireDelivery)) {
+    if (!success) {
       throw new BadRequestException(
         'Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại cấu hình SMTP.',
       );
     }
+  }
+
+  private getRefreshSecret(): string {
+    const refreshSecret =
+      this.configService.get<string>('REFRESH_TOKEN_SECRET') || process.env.REFRESH_TOKEN_SECRET;
+    if (!refreshSecret) {
+      throw new Error('REFRESH_TOKEN_SECRET is not configured');
+    }
+    return refreshSecret;
   }
 }

@@ -5,7 +5,7 @@ import {
   activateStaff,
   getStaffInvitationInfo,
   type StaffInvitationInfo,
-} from '../../services/staff';
+} from '@/features/staff/services/staff';
 
 // Link trong thư mời mở trang này; không đặt trong layout yêu cầu đăng nhập.
 export default function StaffActivationPage() {

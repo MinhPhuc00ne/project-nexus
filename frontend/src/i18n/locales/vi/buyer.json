@@ -59,7 +59,10 @@
     "exploreNow": "Khám phá sản phẩm ngay",
     "removeTitle": "Xoá khỏi yêu thích",
     "addToCart": "Thêm vào giỏ hàng",
-    "outOfStock": "Hết hàng"
+    "outOfStock": "Hết hàng",
+    "loading": "Đang tải sản phẩm đã lưu…",
+    "loadFailed": "Không tải được danh sách yêu thích.",
+    "removeFailed": "Không xóa được sản phẩm khỏi danh sách."
   },
   "addresses": {
     "loadError": "Không thể tải sổ địa chỉ.",
@@ -453,6 +456,7 @@
     "viewAuction": "Xem phiên đấu giá",
     "loadingRights": "Đang tải quyền mua…",
     "noOffersTitle": "Chưa có lời mời mua cần xác nhận",
-    "noOffersDesc": "Khi bạn được chuyển quyền mua sau người thắng trước, lời mời sẽ xuất hiện tại đây."
+    "noOffersDesc": "Khi bạn được chuyển quyền mua sau người thắng trước, lời mời sẽ xuất hiện tại đây.",
+    "supportChatFailed": "Chưa kết nối được bộ phận hỗ trợ. Vui lòng thử lại."
   }
 }

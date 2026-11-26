@@ -32,7 +32,7 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
       key={auction.id}
     >
       <div
-        className="flex items-center justify-between py-4 px-5 [border-bottom:1px_solid_#eef2f8] gap-2 [&>span:not(.anticon):last-child]:flex [&>span:not(.anticon):last-child]:items-center [&>span:not(.anticon):last-child]:gap-[5px] [&>span:not(.anticon):last-child]:text-[9px] [&>span:not(.anticon):last-child]:text-[#8da0bc] max-[540px]:py-[13px] max-[540px]:px-[15px]"
+        className="flex items-center justify-between py-4 px-5 [border-bottom:1px_solid_#eef2f8] gap-2 [&>span:last-child]:flex [&>span:last-child]:items-center [&>span:last-child]:gap-[5px] [&>span:last-child]:text-[9px] [&>span:last-child]:text-[#8da0bc] max-[540px]:py-[13px] max-[540px]:px-[15px]"
         data-seller="auction-card-top"
       >
         <Badge
@@ -55,7 +55,7 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
         data-seller="auction-card-body"
       >
         <div
-          className="w-[140px] h-[170px] shrink-0 [background:linear-gradient(135deg,_#eef3fb,_#e6edf9)] rounded-[9px] overflow-hidden relative grid [place-items:center] [&_img]:w-[95%] [&_img]:h-[90%] [&_img]:object-contain [&_img]:mix-blend-multiply [&_img]:[transition:transform_0.3s] [&>span:not(.anticon)]:absolute [&>span:not(.anticon)]:bottom-2.5 [&>span:not(.anticon)]:text-[7px] [&>span:not(.anticon)]:tracking-[2px] [&>span:not(.anticon)]:text-[#8fa4ca] min-[1600px]:w-[175px] min-[1600px]:h-[190px] max-[1250px]:w-[110px] max-[1250px]:h-[145px] max-[1050px]:w-[160px] max-[1050px]:h-[175px] max-[540px]:w-[100px] max-[540px]:h-[145px]"
+          className="w-[140px] h-[170px] shrink-0 [background:linear-gradient(135deg,_#eef3fb,_#e6edf9)] rounded-[9px] overflow-hidden relative grid [place-items:center] [&_img]:w-[95%] [&_img]:h-[90%] [&_img]:object-contain [&_img]:mix-blend-multiply [&_img]:[transition:transform_0.3s] [&>span]:absolute [&>span]:bottom-2.5 [&>span]:text-[7px] [&>span]:tracking-[2px] [&>span]:text-[#8fa4ca] min-[1600px]:w-[175px] min-[1600px]:h-[190px] max-[1250px]:w-[110px] max-[1250px]:h-[145px] max-[1050px]:w-[160px] max-[1050px]:h-[175px] max-[540px]:w-[100px] max-[540px]:h-[145px]"
           data-seller="auction-image"
         >
           {auction.image ? (
@@ -89,7 +89,7 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
         </div>
       </div>
       <div
-        className="flex items-center gap-2 [padding:0_20px_15px] text-[#8ca0bf] text-[9px] [&>.anticon]:shrink-0 [&>.anticon]:text-[#849fce]!"
+        className="flex items-center gap-2 [padding:0_20px_15px] text-[#8ca0bf] text-[9px] [&>svg]:shrink-0 [&>svg]:text-[#849fce]!"
         data-seller="auction-event"
       >
         <SafetyCertificateOutlined className="text-[16px]" aria-hidden="true" />
@@ -100,7 +100,7 @@ export default function SellerAuctionCard({ auction }: SellerAuctionCardProps) {
         </span>
       </div>
       <div
-        className="[border-top:1px_solid_#eff3f9] py-[13px] px-5 flex justify-between items-center gap-2.5 bg-[#fcfdff] [&>span:not(.anticon)]:flex [&>span:not(.anticon)]:items-center [&>span:not(.anticon)]:gap-[5px] [&>span:not(.anticon)]:text-[9px] [&>span:not(.anticon)]:text-[#91a3be] max-[540px]:py-3 max-[540px]:px-[15px] max-[540px]:flex-wrap max-[540px]:[&>span:not(.anticon)]:text-[8px] max-[540px]:[&_[data-seller~=button]]:text-[9px]! max-[540px]:[&_[data-seller~=button]]:py-[7px] max-[540px]:[&_[data-seller~=button]]:px-2.5"
+        className="[border-top:1px_solid_#eff3f9] py-[13px] px-5 flex justify-between items-center gap-2.5 bg-[#fcfdff] [&>span]:flex [&>span]:items-center [&>span]:gap-[5px] [&>span]:text-[9px] [&>span]:text-[#91a3be] max-[540px]:py-3 max-[540px]:px-[15px] max-[540px]:flex-wrap max-[540px]:[&>span]:text-[8px] max-[540px]:[&_[data-seller~=button]]:text-[9px]! max-[540px]:[&_[data-seller~=button]]:py-[7px] max-[540px]:[&_[data-seller~=button]]:px-2.5"
         data-seller="auction-card-footer"
       >
         <span>

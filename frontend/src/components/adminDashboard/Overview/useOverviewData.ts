@@ -2,15 +2,19 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuctionStatus } from '@nexus/types';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getAdminSettings, getAdminOverviewAnalytics, listUsers } from '../../../services/admin';
-import { getAdminAuctionsApi } from '../../../services/auction.service';
-import { getAdminNotificationSummary } from '../../../services/notifications';
+import {
+  getAdminSettings,
+  getAdminOverviewAnalytics,
+  listUsers,
+} from '@/features/admin/services/admin';
+import { getAdminAuctionsApi } from '@/features/auction/services/auction.service';
+import { getAdminNotificationSummary } from '@/features/notifications/services/notifications';
 import { apiRequest } from '../../../services/api';
-import type { AdminNotificationSummary } from '../../../types/notification.types';
-import type { AdminOverviewAnalytics } from '../../../types/admin-analytics.types';
-import type { SystemSettings } from '../../../types/admin-settings.types';
-import type { GhnDiagnostic } from '../../../types/order.types';
-import type { AdminUserRole } from '../../../types/user.types';
+import type { AdminNotificationSummary } from '@/features/notifications/types/notification.types';
+import type { AdminOverviewAnalytics } from '@/features/admin/types/admin-analytics.types';
+import type { SystemSettings } from '@/features/admin/types/admin-settings.types';
+import type { GhnDiagnostic } from '@/features/orders/types/order.types';
+import type { AdminUserRole } from '@/features/account/types/user.types';
 
 const roles: AdminUserRole[] = ['BUYER', 'SELLER', 'SUPPORT_STAFF', 'ADMIN'];
 interface OverviewData {

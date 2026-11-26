@@ -32,6 +32,7 @@
     "i18n:check": "node frontend/scripts/check-i18n-parity.mjs",
     "test:coverage": "npm run test:coverage --workspace=backend --if-present && npm run test:coverage --workspace=frontend --if-present",
     "build:types": "npm run build --workspace=@nexus/types --if-present",
+    "build:contracts": "npm run build --workspace=@nexus/contracts",
     "dev:backend": "npm run start:dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:web": "npm run dev:frontend",
@@ -53,27 +54,26 @@
     "docker:full": "docker compose --profile full up --build -d",
     "docker:down": "docker compose --profile full down",
     "docker:clean": "docker compose --profile full down -v",
-    "docker:logs": "docker compose logs -f"
+    "docker:logs": "docker compose logs -f",
+    "db:verify": "npm run db:verify --workspace=backend",
+    "db:bootstrap": "npm run db:bootstrap --workspace=backend",
+    "admin:create": "npm run admin:create --workspace=backend",
+    "seed:demo": "npm run seed:demo --workspace=backend",
+    "seed:demo:reset": "npm run seed:demo:reset --workspace=backend",
+    "check:cycles": "npm run check:cycles --workspace=backend"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@playwright/test": "^1.65.1",
     "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.8",
     "eslint-plugin-sonarjs": "^4.2.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "turbo": "^2.11.10",
     "typescript-eslint": "^8.71.1"
-  },
-  "lint-staged": {
-    "*.{js,mjs,cjs,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,yml,yaml,css}": [
-      "prettier --write"
-    ]
   }
 }

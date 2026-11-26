@@ -16,8 +16,8 @@ import {
   ShipmentStatus,
 } from '@prisma/client';
 import { PrismaService } from '../../../core/prisma/prisma.service';
-import { productChoiceLabel } from '../../catalog/utils/product-options';
-import { DispatchGhnOrderDto } from '../../commerce/dtos/seller-order.dto';
+import { productChoiceLabel } from '../../../core/domain/product-options';
+import { DispatchGhnOrderInput } from '../dtos/dispatch-ghn-order.dto';
 import { GhnAddress, GhnShippingQuote, GhnShippingService } from './ghn-shipping.service';
 import { GhnParcel, normalizeGhnWardCode } from './ghn-parcel';
 import { shipmentGhnContext } from './ghn-context';
@@ -101,7 +101,10 @@ export class GhnDispatchService {
     return order;
   }
 
-  private async quote(order: DispatchOrder, dto?: DispatchGhnOrderDto): Promise<GhnShippingQuote> {
+  private async quote(
+    order: DispatchOrder,
+    dto?: DispatchGhnOrderInput,
+  ): Promise<GhnShippingQuote> {
     const address = objectValue(order.shippingAddressSnapshot);
     const frozen = objectValue(address.ghn);
     const frozenParcel = objectValue(frozen.parcel);
@@ -135,7 +138,7 @@ export class GhnDispatchService {
   async preview(
     sellerId: string,
     orderId: string,
-    dto?: DispatchGhnOrderDto,
+    dto?: DispatchGhnOrderInput,
   ): Promise<GhnDispatchPreview> {
     const order = await this.load(sellerId, orderId);
     if (![OrderStatus.PAID, OrderStatus.PREPARING].includes(order.status as 'PAID' | 'PREPARING')) {
@@ -157,7 +160,7 @@ export class GhnDispatchService {
   async dispatch(
     sellerId: string,
     orderId: string,
-    dto?: DispatchGhnOrderDto,
+    dto?: DispatchGhnOrderInput,
   ): Promise<GhnDispatchResult> {
     const order = await this.load(sellerId, orderId);
     if (order.shipment?.waybillCode) {

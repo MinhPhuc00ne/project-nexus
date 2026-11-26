@@ -3,12 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
-import { Module, ValidationPipe } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import tsNode from 'ts-node';
+import { requestBodySchema } from './helpers/openapi.mjs';
 
 tsNode.register({
   project: fileURLToPath(new URL('../tsconfig.json', import.meta.url)),
@@ -19,7 +20,7 @@ const source = (path) => load(`../src/${path}.ts`);
 
 test('banner endpoints validate JWT roles, operator identity, filters and Swagger contracts', async () => {
   const { PrismaService } = source('core/prisma/prisma.service');
-  const { JwtStrategy } = source('modules/auth/strategies/jwt.strategy');
+  const { TokenAuthService } = source('core/security/token-auth.service');
   const { BannerController } = source('modules/catalog/controllers/banner.controller');
   const { BannerService } = source('modules/catalog/services/banner.service');
   const { BannerHistoryService } = source('modules/catalog/services/banner-history.service');
@@ -61,7 +62,27 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
   Module({
     controllers: [BannerController, NotificationsController],
     providers: [
-      JwtStrategy,
+      {
+        // The bearer value is the account id, so a fixture states who it is
+        // calling as without minting a verifiable token.
+        provide: TokenAuthService,
+        useValue: {
+          authenticate: async (token) => {
+            const role = [...accounts].find(([, id]) => id === token)?.[0];
+            if (!role) throw new Error('unknown fixture identity');
+            return {
+              id: token,
+              sub: token,
+              email: `${token}@example.invalid`,
+              role,
+              accountRole: role,
+              activeRole: role,
+              currentMode: 'BUYER',
+              isSellerActive: false,
+            };
+          },
+        },
+      },
       { provide: ConfigService, useValue: { get: () => 'banner-api-fixture-secret' } },
       {
         provide: PrismaService,
@@ -88,11 +109,14 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
     ],
   })(BannerApiModule);
   const app = await NestFactory.create(BannerApiModule, { logger: false, abortOnError: false });
+  // The same filter `main.ts` registers. Without it these routes fall to
+  // Nest's default handling, which is not what the app does and answered a
+  // rejected query with 500 instead of 400 whenever the machine was busy.
+  app.useGlobalFilters(
+    new (source('core/filters/global-http-exception.filter').GlobalHttpExceptionFilter)(),
+  );
   try {
     app.setGlobalPrefix('api/v1');
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }),
-    );
     await app.listen(0, '127.0.0.1');
     const base = (await app.getUrl()) + '/api/v1';
     const request = (path, role, options = {}) =>
@@ -100,7 +124,7 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
         ...options,
         headers: {
           'Content-Type': 'application/json',
-          ...(role ? { Authorization: 'Bearer ' + jwt.sign({ sub: accounts.get(role) }) } : {}),
+          ...(role ? { Authorization: 'Bearer ' + accounts.get(role) } : {}),
         },
       });
     const body = {
@@ -263,7 +287,10 @@ test('banner endpoints validate JWT roles, operator identity, filters and Swagge
       assert.ok(document.components.schemas[schema], schema);
     assert.ok(document.components.schemas.NotificationResponseDto.properties.targetUrl);
     assert.ok(document.components.schemas.BannerDisableHistoryDto.properties.creatorRole);
-    assert.equal(document.components.schemas.BannerDto.properties.priority.deprecated, undefined);
+    assert.equal(
+      requestBodySchema(document, '/api/v1/staff/banners', 'post').properties.priority.deprecated,
+      undefined,
+    );
   } finally {
     await app.close();
   }

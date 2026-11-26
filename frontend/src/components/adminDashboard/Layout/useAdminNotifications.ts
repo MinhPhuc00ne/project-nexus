@@ -1,21 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { io } from 'socket.io-client';
 import {
   WS_NOTIFICATION_EVENTS,
   type WsNotificationConnectedPayload,
   type WsNotificationNewPayload,
   type WsNotificationUnreadCountPayload,
 } from '@nexus/types';
-import { API_BASE_URL } from '../../../services/api';
+import { queryClient } from '../../../lib/queryClient';
+import { notificationsQueryKey, notificationUnreadCountQueryKey } from '../../../lib/socketManager';
+import {
+  createNotificationConnection,
+  type RealtimeNotification,
+} from '@/features/notifications/services/notificationSocket';
 import { useAuth } from '../../../contexts/AuthContext';
-import { getStoredToken, getStoredUser } from '../../../services/auth';
+import { getStoredToken, getStoredUser } from '@/features/auth/services/auth';
 import {
   getNotifications,
   markAllNotificationsRead,
   markNotificationRead,
-} from '../../../services/notifications';
-import type { NotificationsPage } from '../../../types/notification.types';
+} from '@/features/notifications/services/notifications';
+import type { NotificationsPage } from '@/features/notifications/types/notification.types';
 import { useToast } from '../../ToastNotification';
 import {
   publishAdminAuctionNotification,
@@ -104,58 +108,62 @@ export default function useAdminNotifications(userId: string, isOpen: boolean) {
   useEffect(() => {
     if (!token) return;
     let active = true;
-    const backend = new URL(API_BASE_URL, window.location.origin);
-    const socket = io(`${backend.origin}/ws/notifications`, {
-      autoConnect: false,
-      transports: ['websocket'],
-      auth: (callback) => callback({ token: getStoredToken() }),
-    });
+    const connection = createNotificationConnection();
+    const { socket } = connection;
     const seen = new Set<string>();
     const currentSession = () =>
       active && getStoredToken() === token && getStoredUser()?.id === userId;
     const applyCount = (payload: { userId: string; unreadCount?: number }) => {
       if (!currentSession() || payload.userId !== userId) return;
       mutationVersion.current += 1;
-      if (typeof payload.unreadCount === 'number') setUnreadCount(payload.unreadCount);
+      if (typeof payload.unreadCount === 'number') {
+        setUnreadCount(payload.unreadCount);
+        queryClient.setQueryData(notificationUnreadCountQueryKey, {
+          unreadCount: payload.unreadCount,
+        });
+      }
+      void queryClient.invalidateQueries({ queryKey: notificationsQueryKey });
       syncRef.current?.();
     };
-    socket.on(
-      WS_NOTIFICATION_EVENTS.SERVER.CONNECTED,
-      (payload: WsNotificationConnectedPayload) => {
-        if (!currentSession() || payload.userId !== userId) return;
-        setConnected(true);
-        setAdminNotificationConnection(true);
-        applyCount(payload);
-      },
-    );
-    socket.on(WS_NOTIFICATION_EVENTS.SERVER.NEW, (payload: WsNotificationNewPayload) => {
+    const handleConnected = (payload: WsNotificationConnectedPayload) => {
+      if (!currentSession() || payload.userId !== userId) return;
+      setConnected(true);
+      setAdminNotificationConnection(true);
+      applyCount(payload);
+    };
+    const handleNew = (payload: RealtimeNotification) => {
       if (!currentSession() || payload.userId !== userId || seen.has(payload.id)) return;
       seen.add(payload.id);
-      publishAdminAuctionNotification(payload);
+      publishAdminAuctionNotification(payload as WsNotificationNewPayload);
       if (seen.size > 1000) seen.delete(seen.values().next().value!);
       // Prefer the server total to avoid adding twice when UNREAD_COUNT also arrives.
       if (typeof payload.unreadCount !== 'number' && !payload.isRead)
         setUnreadCount((current) => (current ?? 0) + 1);
       applyCount(payload);
-    });
-    socket.on(
-      WS_NOTIFICATION_EVENTS.SERVER.UNREAD_COUNT,
-      (payload: WsNotificationUnreadCountPayload) => applyCount(payload),
-    );
+    };
+    const handleUnread = (payload: WsNotificationUnreadCountPayload) => applyCount(payload);
     const disconnected = () => {
       if (active) {
         setConnected(false);
         setAdminNotificationConnection(false);
       }
     };
+    socket.on(WS_NOTIFICATION_EVENTS.SERVER.CONNECTED, handleConnected);
+    socket.on(WS_NOTIFICATION_EVENTS.SERVER.NEW, handleNew);
+    socket.on(WS_NOTIFICATION_EVENTS.SERVER.UNREAD_COUNT, handleUnread);
     socket.on('disconnect', disconnected);
     socket.on('connect_error', disconnected);
     socket.on(WS_NOTIFICATION_EVENTS.SERVER.ERROR, disconnected);
-    socket.connect();
+    connection.connect();
     return () => {
       active = false;
-      socket.disconnect();
-      socket.removeAllListeners();
+      socket.off(WS_NOTIFICATION_EVENTS.SERVER.CONNECTED, handleConnected);
+      socket.off(WS_NOTIFICATION_EVENTS.SERVER.NEW, handleNew);
+      socket.off(WS_NOTIFICATION_EVENTS.SERVER.UNREAD_COUNT, handleUnread);
+      socket.off('disconnect', disconnected);
+      socket.off('connect_error', disconnected);
+      socket.off(WS_NOTIFICATION_EVENTS.SERVER.ERROR, disconnected);
+      connection.disconnect();
       setConnected(false);
       setAdminNotificationConnection(false);
     };

@@ -23,9 +23,13 @@ import {
   Award,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getBuyerOrdersApi, type BuyerOrder } from '../../services/orders';
-import { getBuyerWalletApi, type BuyerWalletResponse } from '../../services/wallet.service';
+import { getBuyerOrdersApi, type BuyerOrder } from '@/features/orders/services/orders';
+import {
+  getBuyerWalletApi,
+  type BuyerWalletResponse,
+} from '@/features/wallet/services/wallet.service';
 import BuyerInterestRecommendations from '../../components/buyer/BuyerInterestRecommendations';
+import { isOrderActive } from '../../components/orders/orderStatus';
 
 const statusMap = {
   PENDING_PAYMENT: {
@@ -134,9 +138,10 @@ export default function BuyerDashboardPage() {
 
   const walletBalance = Number(wallet?.balance ?? user?.wallet?.balance ?? 0);
   const safeOrders = Array.isArray(orders) ? orders : [];
-  const activeOrdersCount = safeOrders.filter(
-    (o) => o?.status !== 'COMPLETED' && o?.status !== 'CANCELLED',
-  ).length;
+  // `COMPLETED` is the orders page's word for a tab, not a status the API
+  // sends, so this filter never excluded anything: a buyer was told every order
+  // they had ever placed was still in progress.
+  const activeOrdersCount = safeOrders.filter((o) => isOrderActive(o?.status)).length;
 
   const dashboardStats = [
     {

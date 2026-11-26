@@ -4,12 +4,12 @@ import { getIntlLocale } from '../../../i18n/config';
 import Popup from '../../Popup';
 import { Badge, Button, EmptyState, Panel } from '../shared/AdminUI';
 import { DetailFields } from '../shared/CommerceUI';
-import { listAdminReports, reviewAdminReport } from '../../../services/admin';
+import { listAdminReports, reviewAdminReport } from '@/features/admin/services/admin';
 import type {
   AdminReport,
   AdminReportPage,
   AdminReportStatus,
-} from '../../../types/admin-report.types';
+} from '@/features/admin/types/admin-report.types';
 
 const REPORT_STATUSES: AdminReportStatus[] = ['PENDING', 'INVESTIGATING', 'CONFIRMED', 'DISMISSED'];
 

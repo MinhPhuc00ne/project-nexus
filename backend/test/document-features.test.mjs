@@ -8,18 +8,22 @@ tsNode.register({
   transpileOnly: true,
 });
 const load = createRequire(import.meta.url);
-const { effectivePrice } = load('../src/modules/catalog/utils/product-price.ts');
-const { normalizeOptions, validateSelections } = load(
-  '../src/modules/catalog/utils/product-options.ts',
-);
+const { effectivePrice } = load('../src/core/domain/product-price.ts');
+const { normalizeOptions, validateSelections } = load('../src/core/domain/product-options.ts');
 const { GhnLogisticsService } = load(
   '../src/modules/fulfillment/services/ghn-logistics.service.ts',
 );
-const { ReviewsService } = load('../src/modules/commerce/services/reviews.service.ts');
-const { ReportsService } = load('../src/modules/commerce/services/reports.service.ts');
-const { FeedbackController } = load('../src/modules/commerce/controllers/feedback.controller.ts');
+const { ReviewsService } = load('../src/modules/reviews/services/reviews.service.ts');
+const { ReportsService } = load('../src/modules/reviews/services/reports.service.ts');
+const { AdminReviewsController } = load(
+  '../src/modules/admin/controllers/admin-reviews.controller.ts',
+);
 const { ROLES_KEY } = load('../src/core/security/roles.decorator.ts');
 const { BannerService } = load('../src/modules/catalog/services/banner.service.ts');
+const { ReviewsModerationHelper } = load(
+  '../src/modules/reviews/services/reviews-moderation.helper.ts',
+);
+const { ReviewsRepliesHelper } = load('../src/modules/reviews/services/reviews-replies.helper.ts');
 
 test('sale boundaries use one effective price and never replace base price', () => {
   const product = {
@@ -90,9 +94,12 @@ test('review creation requires ownership, completion and purchased product, and 
     reputationLog: { findFirst: async () => null },
     product: { update: mock.fn(async () => ({ ratingSum: 9, reviewCount: 2 })) },
   };
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: mock.fn(async () => ({})) },
+    new ReviewsModerationHelper(prismaDouble, { adjustScore: mock.fn(async () => ({})) }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
   await assert.rejects(
     service.create('buyer', 'order', { rating: 5 }, 'product', 'p1'),
@@ -179,7 +186,7 @@ test('public banners filter active time windows and invalid intervals never writ
 
 test('support staff and admin can moderate reviews with valid reputation penalty and notification', async () => {
   for (const method of ['adminListReviews', 'adminDeleteProductReview', 'adminDeleteShopReview']) {
-    const roles = Reflect.getMetadata(ROLES_KEY, FeedbackController.prototype[method]);
+    const roles = Reflect.getMetadata(ROLES_KEY, AdminReviewsController.prototype[method]);
     assert.ok(roles.includes('ADMIN'));
     assert.ok(roles.includes('SUPPORT_STAFF'));
   }
@@ -204,9 +211,14 @@ test('support staff and admin can moderate reviews with valid reputation penalty
     product: { update: async (args) => productUpdates.push(args) },
     notification: { create: async ({ data }) => notifications.push(data) },
   };
+  const prismaDouble = { $transaction: (fn) => fn(tx) };
   const service = new ReviewsService(
-    { $transaction: (fn) => fn(tx) },
+    prismaDouble,
     { adjustScore: async (payload) => reputationCalls.push(payload) },
+    new ReviewsModerationHelper(prismaDouble, {
+      adjustScore: async (payload) => reputationCalls.push(payload),
+    }),
+    new ReviewsRepliesHelper(prismaDouble, undefined),
   );
 
   await assert.rejects(
