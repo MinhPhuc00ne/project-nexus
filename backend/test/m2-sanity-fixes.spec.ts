@@ -251,6 +251,35 @@ describe('M2 Sanity Defect Fixes', () => {
       expect(afterFiles).toEqual(beforeFiles);
     });
 
+    it('rejects whitespace-only URLs from Cloudinary with ServiceUnavailableException and zero local disk writes', async () => {
+      const configService = new ConfigService({
+        STORAGE_PROVIDER: 'cloudinary',
+        CLOUDINARY_CLOUD_NAME: 'demo-cloud',
+        CLOUDINARY_API_KEY: 'demo-key',
+        CLOUDINARY_API_SECRET: 'demo-secret',
+      });
+      const cloudinary = {
+        uploadFile: vi.fn().mockResolvedValue({
+          url: '   ',
+        }),
+      } as unknown as CloudinaryStorageService;
+      const service = new MediaService(
+        configService,
+        cloudinary,
+        new ProviderConfigService(configService),
+      );
+
+      const mediaDir = path.join(process.cwd(), 'uploads', 'media');
+      const beforeFiles = fs.existsSync(mediaDir) ? fs.readdirSync(mediaDir) : [];
+
+      await expect(service.uploadMedia(makeImageFile())).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+
+      const afterFiles = fs.existsSync(mediaDir) ? fs.readdirSync(mediaDir) : [];
+      expect(afterFiles).toEqual(beforeFiles);
+    });
+
     it('CloudinaryStorageService throws ServiceUnavailableException when STORAGE_PROVIDER=cloudinary and credentials are missing', async () => {
       const configService = new ConfigService({
         STORAGE_PROVIDER: 'cloudinary',

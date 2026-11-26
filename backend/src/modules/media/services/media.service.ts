@@ -200,11 +200,12 @@ export class MediaService {
           file.originalname,
           'nexus/media',
         );
-        if (!cloudRes?.url || cloudRes.url.trim().toLowerCase().startsWith('data:')) {
+        const resolvedUrl = cloudRes?.url?.trim();
+        if (!resolvedUrl || resolvedUrl.toLowerCase().startsWith('data:')) {
           throw new Error('Cloudinary returned an invalid media URL');
         }
-        this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${cloudRes.url}`);
-        finalUrl = cloudRes.url;
+        this.logger.log(`Đã tải ảnh lên Cloudinary thành công: ${resolvedUrl}`);
+        finalUrl = resolvedUrl;
         publicId = cloudRes.publicId || `cloud-${uniqueSuffix}`;
       } catch (err) {
         this.logger.error(
