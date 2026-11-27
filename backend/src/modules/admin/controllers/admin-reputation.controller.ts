@@ -1,6 +1,7 @@
-import { Controller, Param, ParseUUIDPipe, Patch, UseGuards } from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
 import { z } from 'zod';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -39,7 +40,7 @@ export class AdminReputationController {
   @Patch()
   @ApiOperation({ summary: 'Admin điều chỉnh điểm uy tín, có nhật ký người thực hiện' })
   adjust(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') adminId: string,
     @ZodBody(AdminAdjustReputationSchema) dto: AdminAdjustReputationInput,
   ): ReturnType<ReputationService['adjustByAdmin']> {

@@ -4,14 +4,16 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import {
+  TrendingLimitQuery,
+  TrendingLimitQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { ProductService } from '../services/product.service';
 import { ProductSaleService } from '../services/product-sale.service';
 import {
@@ -30,7 +32,7 @@ import {
 } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { Role } from '@nexus/types';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 
 @ApiTags('7. CATALOG - PRODUCTS')
 @Controller('catalog/products')
@@ -48,7 +50,7 @@ export class ProductController {
   @ApiOperation({ summary: 'Seller thiết lập/dừng giá sale có thời gian cho sản phẩm của mình' })
   updateSale(
     @CurrentUser('id') sellerId: string,
-    @Param('id') productId: string,
+    @ZodParam('id', UuidParamSchema) productId: string,
     @ZodBody(UpdateProductSaleSchema) dto: UpdateProductSaleInput,
   ): ReturnType<ProductSaleService['update']> {
     return this.sale.update(sellerId, productId, dto);
@@ -91,8 +93,10 @@ export class ProductController {
       'Ranks active products by total qualifying purchase count descending (excluding admin-excluded products), including shop metadata.',
   })
   @ApiResponse({ status: 200, description: 'Trending products retrieved successfully' })
-  async getTrendingProducts(@Query('limit') limit?: string): Promise<TrendingProductsResult> {
-    return this.trendingService.getTrendingProducts(limit ? Number(limit) : 10);
+  async getTrendingProducts(
+    @ZodQuery(TrendingLimitQuerySchema) query: TrendingLimitQuery,
+  ): Promise<TrendingProductsResult> {
+    return this.trendingService.getTrendingProducts(query.limit ?? 10);
   }
 
   @Public()
@@ -104,7 +108,7 @@ export class ProductController {
   })
   @ApiResponse({ status: 200, description: 'Product detail retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Product not found' })
-  async getProductDetail(@Param('id') productId: string) {
+  async getProductDetail(@ZodParam('id', UuidParamSchema) productId: string) {
     return this.productService.getProductDetail(productId);
   }
 
@@ -144,7 +148,7 @@ export class ProductController {
   @ApiResponse({ status: 404, description: 'Sản phẩm không tồn tại' })
   async updateProduct(
     @CurrentUser('id') sellerId: string,
-    @Param('id') productId: string,
+    @ZodParam('id', UuidParamSchema) productId: string,
     @ZodBody(UpdateProductSchema) dto: UpdateProductInput,
   ) {
     return this.productService.updateProduct(sellerId, productId, dto);
@@ -162,7 +166,10 @@ export class ProductController {
   })
   @ApiResponse({ status: 200, description: 'Ẩn sản phẩm thành công' })
   @ApiResponse({ status: 403, description: 'Không có quyền thao tác' })
-  async deleteProduct(@CurrentUser('id') sellerId: string, @Param('id') productId: string) {
+  async deleteProduct(
+    @CurrentUser('id') sellerId: string,
+    @ZodParam('id', UuidParamSchema) productId: string,
+  ) {
     return this.productService.deleteProduct(sellerId, productId);
   }
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeft as ArrowLeftOutlined } from 'lucide-react';

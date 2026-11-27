@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@nexus/contracts';
 import { getSellerAuctionConsignmentsApi } from '@/features/auction/services/auction.service';
 import { getSellerOrders } from '@/features/orders/services/sellerOrders';
 import { getSellerRevenue } from '@/features/wallet/services/sellerFinance';

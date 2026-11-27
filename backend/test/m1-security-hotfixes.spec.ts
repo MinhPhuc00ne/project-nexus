@@ -8,7 +8,7 @@ import {
 import { TokenAuthService } from '../src/core/security/token-auth.service';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';

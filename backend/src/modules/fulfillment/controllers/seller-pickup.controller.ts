@@ -1,7 +1,7 @@
-import { Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -71,7 +71,7 @@ export class AdminPickupController {
   @Post('pickup-points/:id/verify')
   @ApiOperation({ summary: '[ADMIN] Xác minh và gắn điểm lấy hàng với shop GHN thực tế' })
   verify(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(VerifySellerPickupSchema) dto: VerifySellerPickupInput,
     @CurrentUser('id') adminId: string,
   ): ReturnType<SellerPickupService['verify']> {

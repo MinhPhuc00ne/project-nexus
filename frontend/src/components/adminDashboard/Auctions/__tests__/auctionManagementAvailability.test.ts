@@ -1,4 +1,4 @@
-import { AuctionStatus } from '@nexus/types';
+import { AuctionStatus } from '@nexus/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 import i18n from '../../../../i18n';
 import type { AdminAuctionEntity } from '@/features/auction/services/auction.service';
@@ -36,10 +36,10 @@ describe('auctionManagementAvailability', () => {
     ]) {
       const row = baseRow({ status, totalBidsCount: 0 });
       expect(!auctionEditReason(row)).toBe(
-        [AuctionStatus.DRAFT, AuctionStatus.SCHEDULED].includes(status),
+        ([AuctionStatus.DRAFT, AuctionStatus.SCHEDULED] as AuctionStatus[]).includes(status),
       );
       expect(!auctionDeleteReason(row)).toBe(
-        ![AuctionStatus.ACTIVE, AuctionStatus.EXTENDED].includes(status),
+        !([AuctionStatus.ACTIVE, AuctionStatus.EXTENDED] as AuctionStatus[]).includes(status),
       );
     }
 

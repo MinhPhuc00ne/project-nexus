@@ -5,7 +5,7 @@ import type {
   WsTimeExtendedPayload,
   WsTimerSyncPayload,
   WsLotEndedPayload,
-} from '@nexus/types';
+} from '@nexus/contracts';
 
 /**
  * Client-side socket operations available for real-time auction sessions.

@@ -4,22 +4,26 @@ import {
   Delete,
   Get,
   Headers,
-  Param,
   Patch,
   Post,
-  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import {
+  AddressSearchQuery,
+  AddressSearchQuerySchema,
+  ReverseGeocodeQuery,
+  ReverseGeocodeQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UserProfileResponse, UsersService } from '../services/users.service';
 import { AddressService } from '../services/address.service';
 import { WishlistService } from '../services/wishlist.service';
 import { SyncWishlistInput, SyncWishlistSchema } from '../dtos/wishlist.dto';
-import type { WishlistItemDto } from '@nexus/types';
+import type { WishlistItemDto } from '@nexus/contracts';
 import {
   CreateAddressInput,
   CreateAddressSchema,
@@ -31,7 +35,7 @@ import {
 import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { Role } from '@nexus/types';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 
 @ApiTags('2. BUYER')
 @Controller('buyer')
@@ -99,8 +103,8 @@ export class BuyerController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('addresses/search')
-  async searchAddress(@Query('q') query: string) {
-    return this.addressService.searchAddress(query);
+  async searchAddress(@ZodQuery(AddressSearchQuerySchema) query: AddressSearchQuery) {
+    return this.addressService.searchAddress(query.q);
   }
 
   @ApiOperation({
@@ -111,8 +115,8 @@ export class BuyerController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Get('addresses/reverse')
-  async reverseGeocode(@Query('lat') lat: string, @Query('lng') lng: string) {
-    return this.addressService.reverseGeocode(parseFloat(lat), parseFloat(lng));
+  async reverseGeocode(@ZodQuery(ReverseGeocodeQuerySchema) query: ReverseGeocodeQuery) {
+    return this.addressService.reverseGeocode(query.lat, query.lng);
   }
 
   @ApiOperation({
@@ -146,7 +150,7 @@ export class BuyerController {
   @Patch('addresses/:id')
   async updateAddress(
     @CurrentUser('id') userId: string,
-    @Param('id') addressId: string,
+    @ZodParam('id', UuidParamSchema) addressId: string,
     @ZodBody(UpdateAddressSchema) dto: UpdateAddressInput,
   ) {
     return this.addressService.updateAddress(userId, addressId, dto);
@@ -158,7 +162,10 @@ export class BuyerController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('addresses/:id/default')
-  async setDefaultAddress(@CurrentUser('id') userId: string, @Param('id') addressId: string) {
+  async setDefaultAddress(
+    @CurrentUser('id') userId: string,
+    @ZodParam('id', UuidParamSchema) addressId: string,
+  ) {
     return this.addressService.setDefaultAddress(userId, addressId);
   }
 
@@ -168,7 +175,10 @@ export class BuyerController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Delete('addresses/:id')
-  async deleteAddress(@CurrentUser('id') userId: string, @Param('id') addressId: string) {
+  async deleteAddress(
+    @CurrentUser('id') userId: string,
+    @ZodParam('id', UuidParamSchema) addressId: string,
+  ) {
     return this.addressService.deleteAddress(userId, addressId);
   }
 
@@ -213,7 +223,7 @@ export class BuyerController {
   @Post('wishlist/:productId')
   async addToWishlist(
     @CurrentUser('id') userId: string,
-    @Param('productId') productId: string,
+    @ZodParam('productId', UuidParamSchema) productId: string,
   ): Promise<WishlistItemDto> {
     return this.wishlistService.addToWishlist(userId, productId);
   }
@@ -226,7 +236,7 @@ export class BuyerController {
   @Delete('wishlist/:productId')
   async removeFromWishlist(
     @CurrentUser('id') userId: string,
-    @Param('productId') productId: string,
+    @ZodParam('productId', UuidParamSchema) productId: string,
   ): Promise<{ success: boolean; message: string }> {
     return this.wishlistService.removeFromWishlist(userId, productId);
   }

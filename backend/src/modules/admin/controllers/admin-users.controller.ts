@@ -1,6 +1,7 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Patch, UseGuards } from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Get, HttpCode, HttpStatus, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -64,7 +65,7 @@ export class AdminUsersController {
   })
   @ApiResponse({ status: 200, description: 'Seller request details retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Seller request not found' })
-  async getSellerRequestById(@Param('id') id: string) {
+  async getSellerRequestById(@ZodParam('id', UuidParamSchema) id: string) {
     return this.adminService.getSellerRequestById(id);
   }
 
@@ -79,7 +80,7 @@ export class AdminUsersController {
   @ApiResponse({ status: 400, description: 'Request is not in PENDING status' })
   @ApiResponse({ status: 404, description: 'Seller request not found' })
   async approveSellerRequest(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
   ) {
     return this.adminService.approveSellerRequest(id, admin.id);
@@ -96,7 +97,7 @@ export class AdminUsersController {
   @ApiResponse({ status: 400, description: 'Request is not in PENDING status' })
   @ApiResponse({ status: 404, description: 'Seller request not found' })
   async rejectSellerRequest(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(RejectSellerRequestSchema) dto: RejectSellerRequestInput,
   ) {
@@ -122,7 +123,7 @@ export class AdminUsersController {
   })
   @ApiResponse({ status: 200, description: 'User details retrieved successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async getUserById(@Param('id') id: string) {
+  async getUserById(@ZodParam('id', UuidParamSchema) id: string) {
     return this.adminUsersService.getUserById(id);
   }
 
@@ -140,7 +141,7 @@ export class AdminUsersController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   async lockUser(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(LockUserSchema) dto: LockUserInput,
   ) {
@@ -157,7 +158,7 @@ export class AdminUsersController {
   @ApiResponse({ status: 400, description: 'User account is not currently locked' })
   @ApiResponse({ status: 404, description: 'User not found' })
   async unlockUser(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(LockUserSchema) dto: LockUserInput,
   ) {
@@ -172,7 +173,7 @@ export class AdminUsersController {
   })
   @ApiResponse({ status: 200, description: 'User account status updated successfully' })
   async updateUserStatus(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(UpdateUserStatusSchema) dto: UpdateUserStatusInput,
   ) {
@@ -193,7 +194,7 @@ export class AdminUsersController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   async updateUserRole(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(UpdateUserRoleSchema) dto: UpdateUserRoleInput,
   ) {

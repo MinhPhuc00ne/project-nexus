@@ -1,17 +1,12 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { OrderStatus, Role } from '@prisma/client';
+import { ZodBody, ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Role } from '@prisma/client';
+import {
+  AdminShopOrdersQuery,
+  AdminShopOrdersQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
@@ -61,7 +56,7 @@ export class AdminShopsController {
   @ApiResponse({ status: 200, description: 'Shop status updated successfully' })
   @ApiResponse({ status: 404, description: 'Shop not found' })
   async updateShopStatus(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(UpdateShopStatusSchema) dto: UpdateShopStatusInput,
   ) {
@@ -76,7 +71,7 @@ export class AdminShopsController {
   })
   @ApiResponse({ status: 200, description: 'Shop audit profile retrieved successfully' })
   @ApiResponse({ status: 404, description: 'Shop not found' })
-  async getShopDetail(@Param('id') id: string) {
+  async getShopDetail(@ZodParam('id', UuidParamSchema) id: string) {
     return this.adminShopsService.getShopDetail(id);
   }
 
@@ -87,12 +82,10 @@ export class AdminShopsController {
   })
   @ApiResponse({ status: 200, description: 'Shop orders retrieved successfully' })
   async getShopOrders(
-    @Param('id') id: string,
-    @Query('status') status?: OrderStatus,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @ZodParam('id', UuidParamSchema) id: string,
+    @ZodQuery(AdminShopOrdersQuerySchema) query: AdminShopOrdersQuery,
   ) {
-    return this.adminShopsService.getShopOrders(id, { status, page, limit });
+    return this.adminShopsService.getShopOrders(id, query);
   }
 
   @Post('shops/:id/warn')
@@ -105,7 +98,7 @@ export class AdminShopsController {
   @ApiResponse({ status: 200, description: 'Warning issued successfully' })
   @ApiResponse({ status: 404, description: 'Shop not found' })
   async warnShop(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(WarnShopSchema) dto: WarnShopInput,
   ) {
@@ -125,7 +118,7 @@ export class AdminShopsController {
   })
   @ApiResponse({ status: 404, description: 'Shop not found' })
   async resolveShopAppeal(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(ResolveShopAppealSchema) dto: ResolveShopAppealInput,
   ) {
@@ -142,7 +135,7 @@ export class AdminShopsController {
   @ApiResponse({ status: 201, description: 'Violation record created successfully' })
   @ApiResponse({ status: 404, description: 'Shop not found' })
   async createShopViolation(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(CreateShopViolationSchema) dto: CreateShopViolationInput,
   ) {
@@ -154,7 +147,7 @@ export class AdminShopsController {
     summary: 'List recorded violations for a specific shop',
   })
   @ApiResponse({ status: 200, description: 'Violations retrieved successfully' })
-  async getShopViolations(@Param('id') id: string) {
+  async getShopViolations(@ZodParam('id', UuidParamSchema) id: string) {
     return this.adminShopsService.getShopViolations(id);
   }
 
@@ -163,7 +156,7 @@ export class AdminShopsController {
     summary: 'List administrative audit logs for a shop',
   })
   @ApiResponse({ status: 200, description: 'Action logs retrieved successfully' })
-  async getShopActionLogs(@Param('id') id: string) {
+  async getShopActionLogs(@ZodParam('id', UuidParamSchema) id: string) {
     return this.adminShopsService.getShopActionLogs(id);
   }
 }

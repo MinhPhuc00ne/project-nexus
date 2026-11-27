@@ -1,17 +1,12 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role, WithdrawalStatus } from '@prisma/client';
+import { ZodBody, ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Role } from '@prisma/client';
+import {
+  AdminWithdrawalsQuery,
+  AdminWithdrawalsQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
 import {
@@ -55,12 +50,8 @@ export class AdminFinanceController {
       'Filters withdrawal applications by status (PENDING, APPROVED, REJECTED, COMPLETED) with pagination.',
   })
   @ApiResponse({ status: 200, description: 'Withdrawal requests retrieved successfully' })
-  async listWithdrawals(
-    @Query('status') status?: WithdrawalStatus,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
-  ) {
-    return this.adminService.listWithdrawalRequests(status, page, limit);
+  async listWithdrawals(@ZodQuery(AdminWithdrawalsQuerySchema) query: AdminWithdrawalsQuery) {
+    return this.adminService.listWithdrawalRequests(query.status, query.page, query.limit);
   }
 
   @Patch('withdrawals/:id/review')
@@ -74,7 +65,7 @@ export class AdminFinanceController {
   @ApiResponse({ status: 400, description: 'Invalid request data or request already settled' })
   @ApiResponse({ status: 404, description: 'Withdrawal request not found' })
   async reviewWithdrawal(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() admin: AuthenticatedUserPayload,
     @ZodBody(ReviewWithdrawalSchema) dto: ReviewWithdrawalInput,
   ) {

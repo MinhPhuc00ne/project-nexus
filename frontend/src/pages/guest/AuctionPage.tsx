@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Trans, useTranslation } from 'react-i18next';
 import { formatCurrency } from '../../i18n/formatters';
 import { Heart, Share2, CheckCircle2, AlertCircle, Layers } from 'lucide-react';
-import { BidStatus, AuctionStatus } from '@nexus/types';
+import { BidStatus, AuctionStatus } from '@nexus/contracts';
 import type {
   AuctionViewerMode,
   AuctionTabKey,

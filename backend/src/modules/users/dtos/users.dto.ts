@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { nullAsAbsent } from '../../../core/validation/query-schemas';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 
 export interface UserProfileResponse {
   id: string;

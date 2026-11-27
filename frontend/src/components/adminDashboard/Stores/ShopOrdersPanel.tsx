@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { OrderStatus } from '@nexus/types';
+import { OrderStatus } from '@nexus/contracts';
 import { getAdminShopOrders } from '@/features/admin/services/adminCommerce';
 import type { AdminShopOrderPage } from '@/features/admin/types/admin.types';
 import { getIntlLocale } from '../../../i18n/config';

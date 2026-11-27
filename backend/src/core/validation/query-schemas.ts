@@ -78,3 +78,85 @@ export function pageFields(defaultLimit: number, maxLimit = 100) {
 export function nullAsAbsent<T extends z.ZodType>(schema: T) {
   return z.preprocess((value) => (value === null ? undefined : value), schema.optional());
 }
+
+/** Standard paginated list query (`page` & `limit`). */
+export const StandardPaginationQuerySchema = z.object({
+  ...pageFields(10, 100),
+});
+export type StandardPaginationQuery = z.infer<typeof StandardPaginationQuerySchema>;
+
+/** Shop detail paginated query (`limit` defaults to 20). */
+export const ShopDetailPaginationQuerySchema = z.object({
+  ...pageFields(20, 100),
+});
+export type ShopDetailPaginationQuery = z.infer<typeof ShopDetailPaginationQuerySchema>;
+
+/** Optional positive integer `limit` query for trending endpoints. */
+export const TrendingLimitQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+export type TrendingLimitQuery = z.infer<typeof TrendingLimitQuerySchema>;
+
+/** Admin withdrawal list filter & pagination query. */
+export const AdminWithdrawalsQuerySchema = z.object({
+  status: z.enum(['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED']).optional(),
+  ...pageFields(10, 100),
+});
+export type AdminWithdrawalsQuery = z.infer<typeof AdminWithdrawalsQuerySchema>;
+
+/** Admin shop orders filter & pagination query. */
+export const AdminShopOrdersQuerySchema = z.object({
+  status: z
+    .enum([
+      'PENDING_PAYMENT',
+      'PAID',
+      'PREPARING',
+      'SHIPPING',
+      'DELIVERED',
+      'CONFIRMED',
+      'CANCELLED',
+      'REFUNDED',
+    ])
+    .optional(),
+  ...pageFields(10, 100),
+});
+export type AdminShopOrdersQuery = z.infer<typeof AdminShopOrdersQuerySchema>;
+
+/** Auction complaint list filter query. */
+export const AuctionComplaintsQuerySchema = z.object({
+  auctionId: z.uuid().optional(),
+  status: z.enum(['OPEN', 'ACCEPTED', 'REJECTED']).optional(),
+});
+export type AuctionComplaintsQuery = z.infer<typeof AuctionComplaintsQuerySchema>;
+
+/** Optional auctionId filter query. */
+export const OptionalAuctionIdQuerySchema = z.object({
+  auctionId: z.uuid().optional(),
+});
+export type OptionalAuctionIdQuery = z.infer<typeof OptionalAuctionIdQuerySchema>;
+
+/** Staff invitation info query. */
+export const StaffInvitationQuerySchema = z.object({
+  token: z.string().trim().optional(),
+});
+export type StaffInvitationQuery = z.infer<typeof StaffInvitationQuerySchema>;
+
+/** GHN available services district pair query. */
+export const AvailableServicesQuerySchema = z.object({
+  fromDistrictId: z.coerce.number().int().positive(),
+  toDistrictId: z.coerce.number().int().positive(),
+});
+export type AvailableServicesQuery = z.infer<typeof AvailableServicesQuerySchema>;
+
+/** Address search query (`q`). */
+export const AddressSearchQuerySchema = z.object({
+  q: z.string().trim().min(1),
+});
+export type AddressSearchQuery = z.infer<typeof AddressSearchQuerySchema>;
+
+/** Reverse geocoding coordinate query (`lat`, `lng`). */
+export const ReverseGeocodeQuerySchema = z.object({
+  lat: z.coerce.number().finite().min(-90).max(90),
+  lng: z.coerce.number().finite().min(-180).max(180),
+});
+export type ReverseGeocodeQuery = z.infer<typeof ReverseGeocodeQuerySchema>;

@@ -1,16 +1,7 @@
-import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Patch, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -114,7 +105,10 @@ export class NotificationsController {
   })
   @ApiResponse({ status: 200, description: 'Notification marked as read successfully.' })
   @ApiResponse({ status: 404, description: 'Notification not found for current user.' })
-  async markAsRead(@CurrentUser('id') userId: string, @Param('id') notificationId: string) {
+  async markAsRead(
+    @CurrentUser('id') userId: string,
+    @ZodParam('id', UuidParamSchema) notificationId: string,
+  ) {
     return this.notificationsService.markAsRead(userId, notificationId);
   }
 

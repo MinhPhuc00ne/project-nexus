@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { effectivePrice } from '../../../core/domain/product-price';
 import { Prisma, ProductStatus, SellerRequestStatus } from '@prisma/client';
-import type { WishlistItemDto } from '@nexus/types';
+import type { WishlistItemDto } from '@nexus/contracts';
 
 const wishlistProductInclude = {
   product: {

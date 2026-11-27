@@ -1,15 +1,7 @@
-import {
-  Controller,
-  Delete,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Delete, HttpCode, HttpStatus, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -55,7 +47,7 @@ export class AdminCategoriesController {
   })
   @ApiResponse({ status: 404, description: 'Category not found' })
   async updateCategory(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(UpdateCategorySchema) dto: UpdateCategoryInput,
   ) {
     return this.categoryService.updateCategory(id, dto);
@@ -74,7 +66,7 @@ export class AdminCategoriesController {
     description: 'Category contains active child categories or linked products',
   })
   @ApiResponse({ status: 404, description: 'Category not found' })
-  async deleteCategory(@Param('id') id: string) {
+  async deleteCategory(@ZodParam('id', UuidParamSchema) id: string) {
     return this.categoryService.deleteCategory(id);
   }
 }

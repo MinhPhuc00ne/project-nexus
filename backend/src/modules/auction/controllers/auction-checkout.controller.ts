@@ -1,6 +1,7 @@
-import { Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser } from '../../../core/security/roles.decorator';
 
@@ -36,7 +37,7 @@ export class AuctionCheckoutController {
     summary: 'Báo giá phí vận chuyển GHN và số tiền 70% còn lại cần thanh toán',
   })
   quote(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @ZodBody(CheckoutAuctionAwardSchema) dto: CheckoutAuctionAwardInput,
   ): ReturnType<AuctionCheckoutService['quote']> {
@@ -50,7 +51,7 @@ export class AuctionCheckoutController {
     summary: 'Xác nhận địa chỉ, tính phí GHN và thanh toán 70% còn lại trong 24 giờ',
   })
   checkout(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @ZodBody(CheckoutAuctionAwardSchema) dto: CheckoutAuctionAwardInput,
   ): ReturnType<AuctionCheckoutService['checkout']> {
@@ -64,7 +65,7 @@ export class AuctionCheckoutController {
     summary: 'Người mua thứ hai xác nhận đồng ý hoặc từ chối quyền mua món hàng đấu giá',
   })
   respond(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @ZodBody(RespondSecondChanceSchema) dto: RespondSecondChanceInput,
   ): ReturnType<AuctionCheckoutService['respondSecondChance']> {
@@ -78,7 +79,7 @@ export class AuctionCheckoutController {
     summary: 'Người mua thứ hai từ chối lời mời mua món hàng đấu giá (không bị trừ uy tín)',
   })
   decline(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
   ): ReturnType<AuctionCheckoutService['respondSecondChance']> {
     return this.checkoutService.respondSecondChance(id, userId, false);

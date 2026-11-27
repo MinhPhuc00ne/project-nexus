@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Post, UseGuards, HttpCode } from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Get, Post, UseGuards, HttpCode } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
 import { z } from 'zod';
 import { CurrentUser, AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -36,7 +37,7 @@ export class OrderLifecycleController {
 
   @Get(':id/tracking')
   trackingView(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() user: AuthenticatedUserPayload,
   ): Promise<TrackingResult> {
     return this.tracking.view(id, user);
@@ -45,7 +46,7 @@ export class OrderLifecycleController {
   @Post(':id/tracking/sync')
   @HttpCode(200)
   sync(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() user: AuthenticatedUserPayload,
   ): Promise<TrackingResult> {
     return this.tracking.refresh(id, user);
@@ -54,7 +55,7 @@ export class OrderLifecycleController {
   @Post(':id/confirm-delivery')
   @HttpCode(200)
   async confirm(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() user: AuthenticatedUserPayload,
   ): Promise<EscrowResult> {
     const current = await this.tracking.view(id, user);
@@ -64,7 +65,7 @@ export class OrderLifecycleController {
 
   @Post(':id/dispute')
   dispute(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') userId: string,
     @ZodBody(DisputeOrderSchema) dto: DisputeOrderInput,
   ): ReturnType<OrderEscrowService['dispute']> {
@@ -74,7 +75,7 @@ export class OrderLifecycleController {
   @Post(':id/resolve-dispute')
   @HttpCode(200)
   resolve(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() user: AuthenticatedUserPayload,
     @ZodBody(ResolveOrderSchema) dto: ResolveOrderInput,
   ): Promise<EscrowResult> {

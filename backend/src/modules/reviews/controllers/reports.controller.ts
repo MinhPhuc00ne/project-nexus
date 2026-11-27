@@ -1,8 +1,8 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards } from '@nestjs/common';
 
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
@@ -38,7 +38,7 @@ export class ReportsController {
   @Roles(Role.BUYER, Role.SELLER)
   reportShop(
     @CurrentUser('id') id: string,
-    @Param('id') shopId: string,
+    @ZodParam('id', UuidParamSchema) shopId: string,
     @ZodBody(ReportSchema) dto: ReportInput,
   ): Promise<unknown> {
     return this.reports.create(id, shopId, 'shop', dto);
@@ -50,7 +50,7 @@ export class ReportsController {
   @Roles(Role.BUYER, Role.SELLER)
   reportProduct(
     @CurrentUser('id') id: string,
-    @Param('id') productId: string,
+    @ZodParam('id', UuidParamSchema) productId: string,
     @ZodBody(ReportSchema) dto: ReportInput,
   ): Promise<unknown> {
     return this.reports.create(id, productId, 'product', dto);

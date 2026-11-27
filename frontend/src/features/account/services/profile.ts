@@ -1,4 +1,4 @@
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import i18n from '@/i18n';
 import { apiRequest } from '@/services/api';
 import { getStoredToken } from '@/features/auth/services/auth';

@@ -1,4 +1,4 @@
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 
 /**
  * Builds the existing frontend auction route for every backend entry point.

@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import ProtectedRoute from './ProtectedRoute';
 import ScrollToTop from '../components/common/ScrollToTop';
 import ChatWidget from '../components/chat/ChatWidget';

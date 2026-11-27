@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AuctionStatus, Role } from '@nexus/types';
+import { AuctionStatus, Role } from '@nexus/contracts';
 import { Gavel, X, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { createAuctionSocket, getAuctionsApi } from '@/features/auction/services/auction.service';

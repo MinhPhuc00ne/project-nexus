@@ -16,7 +16,7 @@ import {
   WalletTransactionStatus,
   WalletTransactionType,
 } from '@prisma/client';
-import type { AuctionStatus as NexusAuctionStatus, WsLotEndedPayload } from '@nexus/types';
+import type { AuctionStatus as NexusAuctionStatus, WsLotEndedPayload } from '@nexus/contracts';
 import { DomainEventsService } from '../../../core/events/domain-events.service';
 import { auctionTargetUrl } from '../../../core/navigation/auction-navigation';
 import { PrismaService } from '../../../core/prisma/prisma.service';

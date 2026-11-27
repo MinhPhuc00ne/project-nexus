@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { NotificationType, SellerRequestStatus, User, Wallet } from '@prisma/client';
 import * as fs from 'fs';
 import { PrismaService } from '../../../core/prisma/prisma.service';

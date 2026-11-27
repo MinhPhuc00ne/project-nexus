@@ -25,7 +25,6 @@
     "dev:backend": "npm run start:dev --workspace=nexus-backend",
     "dev:frontend": "npm run dev --workspace=nexus-frontend",
     "build": "turbo build",
-    "build:types": "npm run build --workspace=@nexus/types --if-present",
     "build:contracts": "npm run build --workspace=@nexus/contracts",
     "build:backend": "npm run build --workspace=nexus-backend",
     "build:frontend": "npm run build --workspace=nexus-frontend",

@@ -1,7 +1,7 @@
-import { Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -62,7 +62,7 @@ export class AdminChatController {
   })
   async cancelSellerAutoReply(
     @CurrentUser('id') adminId: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(CancelAutoReplySchema) dto: CancelAutoReplyInput,
   ) {
     const data = await this.autoReplyService.cancelSellerAutoReply(adminId, id, dto);
@@ -71,7 +71,7 @@ export class AdminChatController {
 
   @Get('auto-replies/:id/history')
   @ApiOperation({ summary: 'Xem lịch sử hủy và lý do vi phạm của tin nhắn tự động' })
-  async getAutoReplyHistory(@Param('id') id: string) {
+  async getAutoReplyHistory(@ZodParam('id', UuidParamSchema) id: string) {
     const data = await this.autoReplyService.getAutoReplyHistory(id);
     return { data };
   }
@@ -83,7 +83,7 @@ export class AdminChatController {
       'Admin có thể xem chính xác tài khoản nhân viên (ID, tên thật, email) nào đã gửi từng tin nhắn trong ca trực.',
   })
   async auditConversation(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser('id') adminId: string,
     @ZodQuery(QueryMessagesSchema) query: QueryMessagesInput,
   ) {

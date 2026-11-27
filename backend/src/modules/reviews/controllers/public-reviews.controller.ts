@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Req } from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Get, Req } from '@nestjs/common';
 
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodQuery } from '@nexus/contracts/nest';
+import { ZodQuery, ZodParam } from '@nexus/contracts/nest';
 
 import type { Request } from 'express';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
@@ -45,7 +46,7 @@ export class PublicReviewsController {
       'Danh sách đánh giá gian hàng kèm averageRating và phân bố sao 1-5 (ẩn review tiêu cực đã bị admin ẩn)',
   })
   async shopReviews(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
     @Req() req?: Request,
   ): Promise<unknown> {
@@ -55,7 +56,7 @@ export class PublicReviewsController {
   @Get('catalog/products/:id/reviews')
   @Public()
   async productReviews(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
     @Req() req?: Request,
   ): Promise<unknown> {
@@ -66,7 +67,7 @@ export class PublicReviewsController {
   @Public()
   @ApiOperation({ summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá sản phẩm' })
   async listProductReviewReplies(
-    @Param('reviewId') reviewId: string,
+    @ZodParam('reviewId', UuidParamSchema) reviewId: string,
     @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
     @Req() req?: Request,
   ): Promise<unknown> {
@@ -84,7 +85,7 @@ export class PublicReviewsController {
     summary: 'Lấy danh sách phản hồi 2 chiều (có phân trang) cho đánh giá gian hàng',
   })
   async listShopReviewReplies(
-    @Param('reviewId') reviewId: string,
+    @ZodParam('reviewId', UuidParamSchema) reviewId: string,
     @ZodQuery(FeedbackPageSchema) query: FeedbackPageInput,
     @Req() req?: Request,
   ): Promise<unknown> {

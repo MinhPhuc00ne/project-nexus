@@ -1,6 +1,11 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodQuery } from '@nexus/contracts/nest';
+import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { UuidParamSchema } from '@nexus/contracts';
+import { ZodParam, ZodQuery } from '@nexus/contracts/nest';
+import {
+  ShopDetailPaginationQuery,
+  ShopDetailPaginationQuerySchema,
+} from '../../../core/validation/query-schemas';
 import { ShopService } from '../services/shop.service';
 import { QueryShopInput, QueryShopSchema } from '../dtos/query-shop.dto';
 import { Public } from '../../../core/security/roles.decorator';
@@ -31,20 +36,12 @@ export class ShopController {
     description:
       'Trả về thông tin hồ sơ gian hàng (tên, avatar, địa chỉ, uy tín) cùng danh sách sản phẩm phân trang.',
   })
-  @ApiQuery({ name: 'page', required: false, example: 1, description: 'Số trang sản phẩm' })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    example: 12,
-    description: 'Số lượng sản phẩm mỗi trang',
-  })
   @ApiResponse({ status: 200, description: 'Lấy thông tin gian hàng thành công' })
   @ApiResponse({ status: 404, description: 'Không tìm thấy gian hàng' })
   async getShopDetail(
-    @Param('id') shopId: string,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @ZodParam('id', UuidParamSchema) shopId: string,
+    @ZodQuery(ShopDetailPaginationQuerySchema) query: ShopDetailPaginationQuery,
   ) {
-    return this.shopService.getShopDetail(shopId, page, limit);
+    return this.shopService.getShopDetail(shopId, query.page, query.limit);
   }
 }

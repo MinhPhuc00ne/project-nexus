@@ -1,7 +1,7 @@
-import { Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Controller, Delete, Get, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ZodBody } from '@nexus/contracts/nest';
-import { Role } from '@nexus/types';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
+import { Role, UuidParamSchema } from '@nexus/contracts';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { CurrentUser, Roles } from '../../../core/security/roles.decorator';
 import { RolesGuard } from '../../../core/security/roles.guard';
@@ -51,7 +51,7 @@ export class SellerAutoReplyController {
   })
   async updateAutoReply(
     @CurrentUser('id') sellerId: string,
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @ZodBody(UpdateAutoReplySchema) dto: UpdateAutoReplyInput,
   ) {
     const data = await this.autoReplyService.updateSellerAutoReply(sellerId, id, dto);
@@ -60,13 +60,19 @@ export class SellerAutoReplyController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Xóa cấu hình tin nhắn tự động của gian hàng' })
-  async deleteAutoReply(@CurrentUser('id') sellerId: string, @Param('id') id: string) {
+  async deleteAutoReply(
+    @CurrentUser('id') sellerId: string,
+    @ZodParam('id', UuidParamSchema) id: string,
+  ) {
     return this.autoReplyService.deleteSellerAutoReply(sellerId, id);
   }
 
   @Patch(':id/toggle')
   @ApiOperation({ summary: 'Bật / Tắt trạng thái kích hoạt tin nhắn tự động' })
-  async toggleAutoReply(@CurrentUser('id') sellerId: string, @Param('id') id: string) {
+  async toggleAutoReply(
+    @CurrentUser('id') sellerId: string,
+    @ZodParam('id', UuidParamSchema) id: string,
+  ) {
     const data = await this.autoReplyService.toggleSellerAutoReply(sellerId, id);
     return {
       message: `Đã ${data.isActive ? 'bật' : 'tắt'} tin nhắn tự động thành công.`,

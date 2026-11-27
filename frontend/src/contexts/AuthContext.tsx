@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import {
   clearAuthSession,
   getStoredToken,

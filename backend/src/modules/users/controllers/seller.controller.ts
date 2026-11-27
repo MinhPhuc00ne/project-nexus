@@ -6,7 +6,7 @@ import { UserProfileResponse, UsersService } from '../services/users.service';
 import { CurrentUser, RequirePrivilege, Roles } from '../../../core/security/roles.decorator';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { RolesGuard } from '../../../core/security/roles.guard';
-import { Role } from '@nexus/types';
+import { Role } from '@nexus/contracts';
 import { UpdateShopProfileInput, UpdateShopProfileSchema } from '../dtos/update-shop-profile.dto';
 
 @ApiTags('3. SELLER')

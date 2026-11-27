@@ -22,7 +22,8 @@ import {
   WsPlaceBidDto,
   WsTimeExtendedPayload,
   WsTimerSyncPayload,
-} from '@nexus/types';
+} from '@nexus/contracts';
+import { createCorsOriginCallback } from '../../../core/config/env.schema';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { SocketMetricsService } from '../../../core/realtime/socket-metrics.service';
 import { AuthenticatedUserPayload } from '../../../core/security/roles.decorator';
@@ -55,7 +56,7 @@ export interface AuctionSocketBroadcaster {
  */
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: createCorsOriginCallback(),
     credentials: true,
   },
   namespace: '/ws/auctions',

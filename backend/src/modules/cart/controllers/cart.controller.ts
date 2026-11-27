@@ -1,17 +1,17 @@
+import { UuidParamSchema } from '@nexus/contracts';
 import {
   Controller,
   Get,
   Post,
   Patch,
   Delete,
-  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { CartService } from '../services/cart.service';
-import { ZodBody } from '@nexus/contracts/nest';
+import { ZodBody, ZodParam } from '@nexus/contracts/nest';
 import { AddToCartInput, AddToCartSchema } from '../dtos/add-to-cart.dto';
 import { UpdateCartItemInput, UpdateCartItemSchema } from '../dtos/update-cart-item.dto';
 import { MergeCartInput, MergeCartSchema } from '../dtos/merge-cart.dto';
@@ -69,7 +69,7 @@ export class CartController {
   @ApiResponse({ status: 400, description: 'Số lượng vượt quá tồn kho' })
   async updateCartItem(
     @CurrentUser('id') userId: string,
-    @Param('id') cartItemId: string,
+    @ZodParam('id', UuidParamSchema) cartItemId: string,
     @ZodBody(UpdateCartItemSchema) dto: UpdateCartItemInput,
   ) {
     return this.cartService.updateCartItem(userId, cartItemId, dto);
@@ -81,7 +81,10 @@ export class CartController {
     summary: '[BUYER / SELLER] Xóa một món hàng khỏi giỏ',
   })
   @ApiResponse({ status: 200, description: 'Xóa món hàng thành công' })
-  async removeCartItem(@CurrentUser('id') userId: string, @Param('id') cartItemId: string) {
+  async removeCartItem(
+    @CurrentUser('id') userId: string,
+    @ZodParam('id', UuidParamSchema) cartItemId: string,
+  ) {
     return this.cartService.removeCartItem(userId, cartItemId);
   }
 

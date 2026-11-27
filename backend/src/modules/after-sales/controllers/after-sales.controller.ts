@@ -1,6 +1,7 @@
-import { Controller, Get, HttpCode, Param, Post, UseGuards } from '@nestjs/common';
+import { UuidParamSchema } from '@nexus/contracts';
+import { Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ZodBody, ZodQuery } from '@nexus/contracts/nest';
+import { ZodBody, ZodQuery, ZodParam } from '@nexus/contracts/nest';
 import { AfterSalesRequest, OrderRefund, Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../../../core/security/jwt-auth.guard';
 import { AuthenticatedUserPayload, CurrentUser } from '../../../core/security/roles.decorator';
@@ -65,7 +66,7 @@ export class AfterSalesController {
 
   @Get('orders/:id/after-sales')
   view(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
   ): Promise<AfterSalesOrder> {
     return this.store.view(id, actor);
@@ -77,7 +78,7 @@ export class AfterSalesController {
     summary: 'Hủy trước khi GHN lấy hàng; buyer cần Admin duyệt nếu seller đã xác nhận',
   })
   cancel(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
     @ZodBody(CancelOrderSchema) dto: CancelOrderInput,
   ): Promise<AfterSalesRequest> {
@@ -88,7 +89,7 @@ export class AfterSalesController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Admin duyệt hoặc từ chối yêu cầu hủy của người mua' })
   reviewCancellation(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
     @ZodBody(ReviewReturnSchema) dto: ReviewReturnInput,
   ): Promise<AfterSalesRequest> {
@@ -100,7 +101,7 @@ export class AfterSalesController {
     summary: 'Yêu cầu trả toàn bộ đơn, trong 3 ngày sau giao hàng theo chính sách sàn',
   })
   request(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
     @ZodBody(AfterSalesRequestSchema) dto: AfterSalesRequestInput,
   ): Promise<AfterSalesRequest> {
@@ -110,7 +111,7 @@ export class AfterSalesController {
   @Post('orders/:id/returns/review')
   @HttpCode(200)
   review(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
     @ZodBody(ReviewReturnSchema) dto: ReviewReturnInput,
   ): Promise<AfterSalesRequest> {
@@ -120,7 +121,7 @@ export class AfterSalesController {
   @Post('orders/:id/returns/waybill')
   @HttpCode(200)
   waybill(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
     @ZodBody(ReturnWaybillSchema) dto: ReturnWaybillInput,
   ): Promise<AfterSalesRequest> {
@@ -130,7 +131,7 @@ export class AfterSalesController {
   @Post('orders/:id/returns/receive')
   @HttpCode(200)
   receive(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
     @ZodBody(ReceiveReturnSchema) dto: ReceiveReturnInput,
   ): Promise<AfterSalesRequest> {
@@ -143,7 +144,7 @@ export class AfterSalesController {
     summary: 'Admin xác nhận đã chuyển khoản hoàn tiền về nguồn, kèm mã đối soát duy nhất',
   })
   complete(
-    @Param('id') id: string,
+    @ZodParam('id', UuidParamSchema) id: string,
     @CurrentUser() actor: AuthenticatedUserPayload,
     @ZodBody(CompleteRefundSchema) dto: CompleteRefundInput,
   ): Promise<OrderRefund> {
