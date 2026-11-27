@@ -1,4 +1,8 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   Injectable,
   Logger,
@@ -20,6 +24,7 @@ export class AdminProductsService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly trendingService?: ProductTrendingService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -247,8 +252,9 @@ export class AdminProductsService {
         where: { id },
         data: { status: dto.status, hiddenByShopSuspension: false },
       });
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: product.sellerId,
           title: isHidden
             ? 'Sản phẩm của bạn đã bị ẩn bởi Quản trị viên ⚠️'
@@ -256,7 +262,8 @@ export class AdminProductsService {
           content: `Sản phẩm "${product.title}" của bạn ${actionText}.${dto.reason ? ` Lý do: ${dto.reason}` : ''}`,
           type: NotificationType.SYSTEM,
         },
-      });
+        this.notifications,
+      );
       return result;
     });
 
@@ -331,9 +338,10 @@ export class AdminProductsService {
         },
       });
 
-      if (tx.notification?.create) {
-        await tx.notification.create({
-          data: {
+      if (typeof tx?.notification?.create === 'function') {
+        await publishNotification(
+          tx,
+          {
             userId: product.sellerId,
             title: 'Sản phẩm đã được cập nhật danh mục 🏷️',
             content: `Sản phẩm "${product.title}" của bạn đã được Quản trị viên phân loại lại từ danh mục "${oldCategoryName}" sang "${targetCategory.name}".${note}`,
@@ -341,7 +349,8 @@ export class AdminProductsService {
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return result;
@@ -482,9 +491,10 @@ export class AdminProductsService {
         select: { id: true, title: true, trendingExcluded: true, trendingExcludedAt: true },
       });
 
-      if (tx.notification?.create) {
-        await tx.notification.create({
-          data: {
+      if (typeof tx?.notification?.create === 'function') {
+        await publishNotification(
+          tx,
+          {
             userId: product.sellerId,
             title: 'Sản phẩm đã bị gỡ khỏi Xu hướng',
             content: `Sản phẩm "${product.title}" của bạn đã bị Quản trị viên gỡ khỏi danh sách Xu hướng trên trang chủ.${note}`,
@@ -492,7 +502,8 @@ export class AdminProductsService {
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return result;

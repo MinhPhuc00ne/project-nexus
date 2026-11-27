@@ -12,6 +12,7 @@ import { OrderController } from './controllers/order.controller';
 import { SellerOrdersController } from './controllers/seller-orders.controller';
 import { OrderLifecycleController } from './controllers/order-lifecycle.controller';
 import { OrderEscrowService } from './services/order-escrow.service';
+import { OrderExpirationService } from './services/order-expiration.service';
 import { OrderPaymentHelper } from './services/order-payment.helper';
 import { OrdersChatFacade } from './services/orders-chat.facade';
 
@@ -45,6 +46,7 @@ import { OrdersChatFacade } from './services/orders-chat.facade';
     OrderService,
     SellerOrdersService,
     OrderEscrowService,
+    OrderExpirationService,
     OrdersChatFacade,
   ],
   exports: [OrderService, OrderEscrowService, SellerOrdersService, OrdersChatFacade],

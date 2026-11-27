@@ -1,4 +1,8 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
@@ -39,6 +43,7 @@ export class ReviewsService {
     private readonly moderationHelper: ReviewsModerationHelper,
     private readonly repliesHelper: ReviewsRepliesHelper,
     @Optional() private readonly mediaService?: MediaService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   private async notifyBuyerReviewReceived(
@@ -49,19 +54,21 @@ export class ReviewsService {
     contentPrefix: string,
     comment?: string,
   ): Promise<void> {
-    if (!tx.notification?.create) return;
+    if (typeof tx?.notification?.create !== 'function') return;
     const buyer = tx.user?.findUnique
       ? await tx.user.findUnique({ where: { id: buyerId }, select: { fullName: true } })
       : null;
-    await tx.notification.create({
-      data: {
+    await publishNotification(
+      tx,
+      {
         userId: sellerId,
         title,
         content: `Khách hàng ${buyer?.fullName || 'Người mua'} ${contentPrefix} Nhận xét: "${comment || EMPTY_COMMENT_FALLBACK}".`,
         type: NotificationType.SYSTEM,
         channel: NotificationChannel.IN_APP,
       },
-    });
+      this.notifications,
+    );
   }
 
   private async upsertShopReview(
@@ -236,15 +243,17 @@ export class ReviewsService {
     if (dto.rating === 1) {
       const admins = await tx.user.findMany({ where: { role: 'ADMIN' }, select: { id: true } });
       for (const admin of admins) {
-        await tx.notification.create({
-          data: {
+        await publishNotification(
+          tx,
+          {
             userId: admin.id,
             title: `[CẢNH BÁO SHOP] Đơn hàng #${orderId.slice(0, 8)} nhận đánh giá 1 sao`,
             content: `Người mua đã đánh giá 1 sao cho Shop ${sellerId} tại đơn hàng #${orderId.slice(0, 8)}. Nhận xét: "${dto.comment || EMPTY_COMMENT_FALLBACK}". Vui lòng kiểm tra bằng chứng và xử lý qua luồng báo cáo vi phạm.`,
             type: 'DISPUTE',
             channel: 'IN_APP',
           },
-        });
+          this.notifications,
+        );
       }
     }
   }
@@ -555,16 +564,18 @@ export class ReviewsService {
         }
       }
 
-      if (tx.notification?.create) {
-        await tx.notification.create({
-          data: {
+      if (typeof tx?.notification?.create === 'function') {
+        await publishNotification(
+          tx,
+          {
             userId: order.sellerId,
             title: 'Cập nhật đánh giá sản phẩm 📝',
             content: `Khách hàng vừa cập nhật đánh giá sản phẩm "${existing.product.title}" sang ${dto.rating} sao. Nhận xét mới: "${dto.comment || EMPTY_COMMENT_FALLBACK}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return updatedReview;
@@ -635,16 +646,18 @@ export class ReviewsService {
         data: { rating: dto.rating, comment: dto.comment?.trim() || null },
       });
 
-      if (tx.notification?.create) {
-        await tx.notification.create({
-          data: {
+      if (typeof tx?.notification?.create === 'function') {
+        await publishNotification(
+          tx,
+          {
             userId: existing.targetUserId,
             title: 'Cập nhật đánh giá gian hàng 📝',
             content: `Khách hàng vừa cập nhật đánh giá gian hàng của bạn sang ${dto.rating} sao. Nhận xét: "${dto.comment || EMPTY_COMMENT_FALLBACK}".`,
             type: NotificationType.SYSTEM,
             channel: NotificationChannel.IN_APP,
           },
-        });
+          this.notifications,
+        );
       }
 
       return updated;

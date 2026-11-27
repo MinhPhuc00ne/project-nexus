@@ -1,5 +1,12 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { Prisma, ProductStatus, ReputationTrustLevel, Role, User } from '@prisma/client';
+import { AuditLogService } from '../../../core/audit/audit-log.service';
 import { PrismaService } from '../../../core/prisma/prisma.service';
 import { TokenAuthService } from '../../../core/security/token-auth.service';
 import { generateStaffBaseEmail } from '../../../core/domain/staff-email';
@@ -24,6 +31,7 @@ export class AdminUsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tokenAuth: TokenAuthService,
+    @Optional() private readonly auditLog?: AuditLogService,
   ) {}
 
   /**
@@ -197,6 +205,11 @@ export class AdminUsersService {
     this.logger.log(
       `Admin (${adminId}) đã khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
     );
+    await this.auditLog?.record({
+      eventName: 'admin.user.locked',
+      operatorId: adminId,
+      payload: { targetUserId, email: user.email, reason: dto?.reason ?? null },
+    });
 
     return {
       success: true,
@@ -263,6 +276,11 @@ export class AdminUsersService {
     this.logger.log(
       `Admin (${adminId}) đã mở khóa tài khoản ${user.email} (${user.id}). Lý do: ${dto?.reason || 'Không có'}`,
     );
+    await this.auditLog?.record({
+      eventName: 'admin.user.unlocked',
+      operatorId: adminId,
+      payload: { targetUserId, email: user.email, reason: dto?.reason ?? null },
+    });
 
     return {
       success: true,
@@ -346,6 +364,16 @@ export class AdminUsersService {
     await this.tokenAuth.revokeAllSessions(targetUserId);
 
     this.logger.log(`Admin (${adminId}) đã chuyển vai trò của user ${user.email} sang ${dto.role}`);
+    await this.auditLog?.record({
+      eventName: 'admin.user.role_updated',
+      operatorId: adminId,
+      payload: {
+        targetUserId,
+        email: user.email,
+        previousRole: user.role,
+        nextRole: dto.role,
+      },
+    });
 
     return {
       success: true,

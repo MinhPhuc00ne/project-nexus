@@ -1,10 +1,15 @@
 import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   BadGatewayException,
   BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
   CarrierName,
@@ -65,6 +70,7 @@ export class GhnDispatchService {
     private readonly shipping: GhnShippingService,
     private readonly ghn: GhnLogisticsService,
     private readonly orders: GhnOrderApiService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   async label(
@@ -354,15 +360,17 @@ export class GhnDispatchService {
           status: current.status === OrderStatus.PAID ? OrderStatus.PREPARING : current.status,
         },
       });
-      await tx.notification.create({
-        data: {
+      await publishNotification(
+        tx,
+        {
           userId: order.buyerId,
           type: NotificationType.ORDER,
           channel: NotificationChannel.IN_APP,
           title: 'Đã tạo vận đơn GHN',
           content: `Đơn #${order.id.slice(0, 8)} có vận đơn ${shipment.waybillCode}, đang chờ GHN lấy hàng.`,
         },
-      });
+        this.notifications,
+      );
       return { order: updated, shipment };
     });
     return this.result(result.order, result.shipment);

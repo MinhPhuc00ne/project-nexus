@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  NotificationPublisher,
+  publishNotification,
+} from '../../../core/notifications/notification-publisher.service';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import {
   AuctionItemStatus,
   DisputeStatus,
@@ -24,6 +28,7 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly domainEvents: DomainEventsService,
+    @Optional() private readonly notifications?: NotificationPublisher,
   ) {}
 
   /**
@@ -264,8 +269,9 @@ export class NotificationsService {
     targetUrl?: string;
     metadata?: Record<string, unknown>;
   }) {
-    return this.prisma.notification.create({
-      data: {
+    return publishNotification(
+      this.prisma,
+      {
         userId: params.userId,
         auctionId: params.auctionId,
         targetUrl: params.auctionId ? auctionTargetUrl(params.auctionId) : params.targetUrl,
@@ -275,7 +281,8 @@ export class NotificationsService {
         type: params.type || NotificationType.SYSTEM,
         channel: params.channel || NotificationChannel.IN_APP,
       },
-    });
+      this.notifications,
+    );
   }
 
   /**

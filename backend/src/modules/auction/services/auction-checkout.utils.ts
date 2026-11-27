@@ -1,4 +1,8 @@
 import {
+  publishNotification,
+  publishNotifications,
+} from '../../../core/notifications/notification-publisher.service';
+import {
   AuctionAwardStatus,
   AuctionAwardTier,
   AuctionItemStatus,
@@ -130,20 +134,18 @@ export async function notifyDeclinedOfferTx(
     itemLabel: string;
   },
 ): Promise<void> {
-  await tx.notification.create({
-    data: {
-      userId: params.buyerId,
+  await publishNotification(tx, {
+    userId: params.buyerId,
+    auctionId: params.auctionId,
+    targetUrl: `/auction/${params.auctionId}`,
+    title: `Cảm ơn bạn đã phản hồi cho ${params.itemLabel}`,
+    content: `Hệ thống đã ghi nhận quyết định từ chối mua ${params.itemLabel}. Không có điểm uy tín nào bị trừ.`,
+    type: NotificationType.AUCTION,
+    channel: NotificationChannel.IN_APP,
+    metadata: {
+      actionType: 'SECOND_CHANCE_DECLINED_BUYER',
       auctionId: params.auctionId,
-      targetUrl: `/auction/${params.auctionId}`,
-      title: `Cảm ơn bạn đã phản hồi cho ${params.itemLabel}`,
-      content: `Hệ thống đã ghi nhận quyết định từ chối mua ${params.itemLabel}. Không có điểm uy tín nào bị trừ.`,
-      type: NotificationType.AUCTION,
-      channel: NotificationChannel.IN_APP,
-      metadata: {
-        actionType: 'SECOND_CHANCE_DECLINED_BUYER',
-        auctionId: params.auctionId,
-        auctionItemId: params.auctionItemId,
-      },
+      auctionItemId: params.auctionItemId,
     },
   });
 
@@ -173,8 +175,9 @@ export async function notifyUsersTx(
 ): Promise<void> {
   const uniqueIds = [...new Set(userIds.filter((id): id is string => Boolean(id)))];
   if (!uniqueIds.length) return;
-  await tx.notification.createMany({
-    data: uniqueIds.map((userId) => ({
+  await publishNotifications(
+    tx,
+    uniqueIds.map((userId) => ({
       userId,
       auctionId: payload.auctionId,
       targetUrl: payload.targetUrl,
@@ -184,7 +187,7 @@ export async function notifyUsersTx(
       channel: NotificationChannel.IN_APP,
       metadata: payload.metadata as Prisma.InputJsonValue | undefined,
     })),
-  });
+  );
 }
 
 export async function createPendingAuctionOrder(
