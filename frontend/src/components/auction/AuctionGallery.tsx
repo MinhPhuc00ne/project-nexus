@@ -212,7 +212,7 @@ export const AuctionGallery: React.FC<AuctionGalleryProps> = ({
   return (
     <div className="flex flex-col gap-4">
       {/* Studio / HD Viewer / Video Main Stage */}
-      <div className="relative aspect-square w-full rounded-3xl overflow-hidden flex items-center justify-center bg-radial from-slate-850 via-slate-900 to-slate-950 border border-slate-800 shadow-2xl select-none group">
+      <div className="relative aspect-square max-h-[700px] w-full rounded-3xl overflow-hidden flex items-center justify-center bg-radial from-slate-850 via-slate-900 to-slate-950 border border-slate-800 shadow-2xl select-none group">
         {/* Ambient Studio Spotlight Glow */}
         <div className="absolute inset-0 bg-radial from-blue-500/10 via-transparent to-transparent pointer-events-none" />
 

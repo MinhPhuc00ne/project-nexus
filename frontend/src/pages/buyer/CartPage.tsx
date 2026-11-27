@@ -161,7 +161,7 @@ export default function CartPage() {
 
   return (
     <main className="min-h-[calc(100dvh-10rem)] bg-canvas py-6 sm:py-8">
-      <div className="mx-auto max-w-[1280px] space-y-6 px-4 sm:px-6">
+      <div className="storefront-container space-y-6">
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <nav className="flex items-center gap-2 text-xs text-muted">
             <Link to="/" className="hover:text-primary transition">

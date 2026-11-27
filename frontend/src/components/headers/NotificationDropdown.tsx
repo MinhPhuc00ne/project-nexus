@@ -207,7 +207,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
   return (
     <>
-      <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-[-100px] sm:right-[-40px] md:right-0 top-[calc(100%+8px)] z-[1100] w-[360px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-[-100px] sm:right-[-40px] md:right-0 top-[calc(100%+8px)] z-[1100] w-[360px] max-w-[calc(100vw-24px)] max-sm:fixed max-sm:left-4 max-sm:right-4 max-sm:top-10 max-sm:w-auto max-sm:max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-4 py-3">
           <div className="flex items-center gap-2">

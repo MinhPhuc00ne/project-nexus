@@ -112,7 +112,7 @@ export default function BuyerInterestRecommendations({
           {t('dashboard.viewAll')}
         </Link>
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="storefront-product-grid">
         {products.map((product) => (
           <Link
             key={product.id}

@@ -75,7 +75,7 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
       </div>
 
       {isLoading ? (
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="mt-4 storefront-product-grid">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
@@ -89,7 +89,7 @@ export function HomeTrendingSection({ products, isLoading }: HomeTrendingSection
           ))}
         </div>
       ) : (
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="mt-4 storefront-product-grid">
           {products.map((item, index) => {
             const rank = index + 1;
             const img =

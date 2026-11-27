@@ -26,7 +26,7 @@ export default function AuctionSessionCard({ auction }: { auction: AuctionEntity
       <Link
         to={target}
         aria-label={title}
-        className="relative block aspect-[4/3] overflow-hidden bg-navy focus-visible:outline-4 focus-visible:outline-primary"
+        className="relative block aspect-[4/3] max-h-[360px] overflow-hidden bg-navy focus-visible:outline-4 focus-visible:outline-primary"
       >
         {image ? (
           <img

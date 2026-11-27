@@ -55,7 +55,7 @@ export const ShopHeader: React.FC<ShopHeaderProps> = ({ shop, onShare, onContact
 
   return (
     <section className="bg-[var(--color-navy)] text-white relative overflow-hidden border-b border-blue-900">
-      <div className="max-w-screen-2xl mx-auto px-6 py-9 relative z-10">
+      <div className="storefront-container py-9 relative z-10">
         <div className="flex items-center gap-2 text-xs text-blue-200 mb-5">
           <Link to="/" className="hover:text-white transition">
             {t('shop.breadcrumbHome')}

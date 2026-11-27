@@ -16,7 +16,9 @@ function GuestLayout() {
   }
 
   return (
-    <div className={`nexus-shell ${isBuyerWorkspace ? 'buyer-shell' : 'min-h-screen'}`}>
+    <div
+      className={`nexus-shell storefront-shell ${isBuyerWorkspace ? 'buyer-shell' : 'min-h-screen'}`}
+    >
       <HomeHeader
         onLoginClick={() => navigate('/login')}
         onRegisterClick={() => navigate('/register')}

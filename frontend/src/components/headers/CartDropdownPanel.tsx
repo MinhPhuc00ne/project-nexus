@@ -21,7 +21,7 @@ export const CartDropdownPanel: React.FC<CartDropdownPanelProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+6px)] z-[1100] w-[380px] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
+    <div className="animate-home-popover-enter motion-reduce:animate-none absolute right-0 top-[calc(100%+6px)] z-[1100] w-[380px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-[10px] border border-slate-200 bg-white shadow-[0_16px_40px_rgb(20_34_62_/_14%)]">
       <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
         <h4 className="m-0 text-sm font-bold text-slate-800">{t('header.cartTitle')}</h4>
         <span className="text-xs text-slate-500">

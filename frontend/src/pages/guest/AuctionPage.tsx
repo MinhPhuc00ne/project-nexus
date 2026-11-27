@@ -626,8 +626,8 @@ export const AuctionPage: React.FC = () => {
         onTimeSync={(t) => setVideoPlaybackTime(t)}
       />
 
-      <main className="max-w-7xl mx-auto px-4 py-5 pb-14">
-        <div className="flex items-center justify-between mb-5 text-[13px] text-muted">
+      <main className="storefront-container py-5 pb-14">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 mb-5 text-[13px] text-muted">
           <nav className="flex items-center gap-2 flex-wrap" aria-label="Breadcrumb">
             <Link to="/" className="text-muted hover:text-blue-500 transition">
               {t('page.breadcrumbHome')}
@@ -637,7 +637,7 @@ export const AuctionPage: React.FC = () => {
               {t('page.breadcrumbAuctions')}
             </Link>
             <span className="text-slate-300">/</span>
-            <span className="text-ink font-semibold truncate max-w-xs sm:max-w-md">
+            <span className="min-w-0 text-ink font-semibold truncate max-w-[min(100%,20rem)] sm:max-w-md">
               {currentLot?.title || activeAuction.title}
             </span>
           </nav>
@@ -759,7 +759,7 @@ export const AuctionPage: React.FC = () => {
         )}
 
         {/* TOP SECTION: 2 COLUMNS (GALLERY & TERMINAL) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] gap-8 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] gap-8 mb-10">
           {/* LEFT: GALLERY & INTEGRATED VIDEO STAGE (PHƯƠNG ÁN B KẾT HỢP) */}
           <AuctionGallery
             auction={activeAuction}

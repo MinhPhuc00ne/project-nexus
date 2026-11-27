@@ -325,7 +325,7 @@ export default function BuyerDashboardPage() {
       </div>
 
       {/* Quick Links */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {quickLinks.map((ql) => (
           <Link
             key={ql.to}

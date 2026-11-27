@@ -169,7 +169,7 @@ function HomePage() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-[1280px] px-4 py-5 sm:py-7">
+    <main className="storefront-container py-5 sm:py-7">
       <HomeHeroBanner slides={banners} loading={isLoadingBanners} />
       <section className="mt-4 grid gap-4 md:grid-cols-2">
         <div className="nexus-panel p-5">
@@ -240,7 +240,7 @@ function HomePage() {
       {flashProducts.length > 0 && (
         <section className="nexus-panel mt-6 p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="flex items-center gap-1.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-[var(--color-primary)]">
                 <Zap size={18} /> Flash Sale
               </h2>
@@ -256,7 +256,7 @@ function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="storefront-product-grid mt-5">
             {flashProducts.map((product) => (
               <HomeFlashSaleCard key={product.id} product={product} />
             ))}

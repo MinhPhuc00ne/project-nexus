@@ -248,9 +248,9 @@ export default function SearchPage() {
   };
 
   return (
-    <main className="mx-auto max-w-[1280px] space-y-5 px-3 sm:px-4 py-5 sm:py-7">
+    <main className="storefront-container space-y-5 py-5 sm:py-7">
       {/* Breadcrumb Navigation */}
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-muted">
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs text-muted">
         <Link
           to="/"
           className="inline-flex items-center gap-1 text-slate-600 hover:text-blue-600 transition"
@@ -282,7 +282,7 @@ export default function SearchPage() {
 
           {/* Search Input Box */}
           <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 max-w-md w-full">
-            <div className="relative flex-1">
+            <div className="relative min-w-0 flex-1">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"

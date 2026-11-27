@@ -33,7 +33,7 @@ export default function RelatedProductsSection({ currentProductId }: { currentPr
               to={`/product/${product.id}`}
               className="overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-blue-400"
             >
-              <div className="flex aspect-square items-center justify-center bg-slate-50 p-4">
+              <div className="flex aspect-square max-h-[320px] items-center justify-center bg-slate-50 p-4">
                 {product.images[0] ? (
                   <img
                     src={product.images[0]}

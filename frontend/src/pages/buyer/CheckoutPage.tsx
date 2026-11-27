@@ -175,7 +175,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-ink py-8">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="storefront-container">
         <div className="flex items-center gap-2 text-xs text-muted mb-6">
           <Link to="/" className="hover:text-blue-600 transition">
             {t('common:nav.home')}
@@ -233,8 +233,8 @@ export default function CheckoutPage() {
           </div>
         )}
         {!checkoutDone && items.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            <div className="lg:col-span-7 space-y-6">
+          <div className="grid min-w-0 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(320px,440px)] gap-6 items-start">
+            <div className="min-w-0 space-y-6">
               <CheckoutAddressSection
                 addresses={addresses}
                 selectedAddressId={selectedAddressId}
@@ -249,7 +249,7 @@ export default function CheckoutPage() {
                 onShowNotice={showToast}
               />
             </div>
-            <div className="lg:col-span-5 space-y-5">
+            <div className="min-w-0 space-y-5">
               <CheckoutOrderSummary
                 items={items}
                 rawSubtotal={rawSubtotal}

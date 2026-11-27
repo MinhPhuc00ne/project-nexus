@@ -55,7 +55,7 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
     >
       {showAssurances && (
         <div className="border-b border-slate-200 bg-slate-50">
-          <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-x-3 gap-y-3 px-4 py-4 sm:gap-x-6 sm:gap-y-5 sm:px-8 sm:py-5 lg:grid-cols-4">
+          <div className="storefront-container grid grid-cols-2 gap-x-3 gap-y-3 py-4 sm:gap-x-6 sm:gap-y-5 sm:py-5 lg:grid-cols-4">
             {commitmentDefs.map(({ icon: Icon, titleKey, descKey }) => (
               <div
                 className="flex min-w-0 items-start gap-2 sm:items-center sm:gap-3"
@@ -76,7 +76,7 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
         </div>
       )}
 
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-2 gap-x-4 gap-y-5 px-4 py-5 sm:gap-8 sm:px-8 sm:py-8 lg:grid-cols-[1.8fr_1fr_1fr_1.2fr]">
+      <div className="storefront-container grid grid-cols-2 gap-x-4 gap-y-5 py-5 sm:gap-8 sm:py-8 lg:grid-cols-[1.8fr_1fr_1fr_1.2fr]">
         {/* Brand column */}
         <div className="col-span-full min-w-0 overflow-wrap-anywhere lg:col-span-1 lg:max-w-sm">
           <div className="mb-2 flex items-center gap-2">
@@ -191,7 +191,7 @@ export function Footer({ className = '', showAssurances = true, year = 2026 }: F
 
       {/* Bottom Bar */}
       <div className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 px-4 py-3 text-xs text-slate-500 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="storefront-container flex flex-col gap-2 py-3 text-xs text-slate-500 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
             <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
             <span>{t('footer.bctCertified')}</span>

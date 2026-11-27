@@ -46,7 +46,7 @@ export default function CategoryPage() {
   });
 
   return (
-    <main className="mx-auto max-w-[1280px] space-y-8 px-4 py-8">
+    <main className="storefront-container space-y-8 py-8">
       {/* Header Banner */}
       <section className="relative overflow-hidden rounded-[24px] bg-gradient-to-r from-blue-600 via-blue-600 to-blue-700 p-8 sm:p-10 text-white shadow-md">
         <div className="relative z-10 max-w-2xl">
@@ -114,7 +114,7 @@ export default function CategoryPage() {
             </button>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="storefront-auction-grid">
             {filteredCategories.map((cat) => {
               const imageUrl = getCategoryImageUrl(cat);
               const parentUrl = `${ROUTES.SEARCH}?categoryId=${encodeURIComponent(cat.id)}&categoryName=${encodeURIComponent(cat.name)}`;

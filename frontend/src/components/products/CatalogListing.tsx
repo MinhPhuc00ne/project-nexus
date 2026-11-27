@@ -280,7 +280,7 @@ export default function CatalogListing({
       {/* Product Grid */}
       {!loading && !error && data && data.items.length > 0 && (
         <>
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4">
+          <div className="storefront-product-grid">
             {data.items.map((product) => (
               <CatalogProductCard key={product.id} product={product} />
             ))}

@@ -56,7 +56,7 @@ export function HomeRecommendationsSection({
       </div>
 
       {isLoading ? (
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4">
+        <div className="mt-5 storefront-product-grid">
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
@@ -73,7 +73,7 @@ export function HomeRecommendationsSection({
           {t('home.recommendationsSection.empty')}
         </div>
       ) : (
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4">
+        <div className="mt-5 storefront-product-grid">
           {products.map((p) => {
             const isInterest = p.recommendationReason === 'CATEGORY_INTEREST';
             const price = p.salePrice ?? p.basePrice ?? 0;

@@ -262,7 +262,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   return (
     <header className="home-header nexus-header sticky top-0 z-40 w-full font-sans">
       <div className="min-h-9 border-b border-line bg-canvas text-[12px] sm:text-[13px] text-slate-500 flex items-center">
-        <div className="mx-auto flex w-full max-w-[1280px] items-center justify-between px-2 sm:px-4 py-1 gap-2">
+        <div className="storefront-container flex items-center justify-between py-1 gap-2">
           <div className="home-utility-start flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0 max-sm:[&>:not(:first-child)]:hidden">
             <button
               type="button"
@@ -277,7 +277,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             >
               <Store size={14} className="shrink-0" />
               <span className="hidden lg:inline">{t('header.sellerChannel')}</span>
-              <span className="lg:hidden">{t('header.sellerShort')}</span>
+              <span className="hidden min-[400px]:inline lg:hidden">{t('header.sellerShort')}</span>
               {(profile?.role === 'SELLER' || profile?.role === 'ADMIN') && (
                 <span
                   className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-bold ${
@@ -374,7 +374,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
             </div>
           </div>
 
-          <div className="home-utility-end flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0">
+          <div className="home-utility-end flex items-center gap-1 sm:gap-1.5 md:gap-2 shrink-0 max-[399px]:[&>span]:hidden">
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
@@ -534,7 +534,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
       </div>
 
       <div className="bg-white py-3 sm:py-4 pb-3 sm:pb-3">
-        <div className="home-header-main mx-auto grid w-full max-w-[1280px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:flex sm:gap-4 md:gap-6">
+        <div className="home-header-main storefront-container grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:gap-4 md:gap-6">
           <Link
             to="/"
             className="flex shrink-0 cursor-pointer items-center transition-transform hover:scale-[1.02]"

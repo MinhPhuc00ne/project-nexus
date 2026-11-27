@@ -123,15 +123,16 @@ const Login: React.FC = () => {
   return (
     <div className="nexus-shell flex flex-col [font-family:var(--font-sans,_system-ui,_-apple-system,_sans-serif)]">
       <main className="[flex:1] [max-width:80rem] w-full [margin:0_auto] [padding:2.5rem_1.5rem] max-[480px]:[padding:1.5rem_1rem]">
-        <div className="grid [grid-template-columns:repeat(12,_minmax(0,_1fr))] gap-12 items-center max-[1024px]:[grid-template-columns:minmax(0,_1fr)] max-[1024px]:gap-10">
+        <div className="grid [grid-template-columns:repeat(12,_minmax(0,_1fr))] gap-8 items-stretch max-[1024px]:[grid-template-columns:minmax(0,_1fr)] max-[1024px]:gap-10">
           <AuthHeroSection />
 
-          <div className="[grid-column:span_5_/_span_5] flex items-center max-[1024px]:[grid-column:1_/_-1] max-[1024px]:min-w-0 max-[1024px]:mx-auto max-[1024px]:w-full max-[1024px]:max-w-lg">
+          <div className="order-1 min-[1025px]:order-2 [grid-column:span_5_/_span_5] flex items-center max-[1024px]:[grid-column:1_/_-1] max-[1024px]:min-w-0 max-[1024px]:mx-auto max-[1024px]:w-full max-[1024px]:max-w-lg">
             <div className="nexus-auth-card w-full [padding:2.25rem_2rem] relative overflow-hidden max-[480px]:[padding:1.75rem_1.25rem]">
               <div className="mb-6">
-                <h2 className="text-2xl font-semibold text-ink [letter-spacing:-0.025em]">
+                <h2 className="text-3xl font-semibold text-ink [letter-spacing:-0.025em]">
                   {t('login.title')}
                 </h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted">{t('login.subtitle')}</p>
               </div>
 
               <form
@@ -142,7 +143,7 @@ const Login: React.FC = () => {
                 aria-busy={pending}
               >
                 <div className="flex flex-col">
-                  <label className="text-xs font-semibold text-slate-700 mb-1.5">
+                  <label htmlFor="email" className="text-xs font-semibold text-slate-700 mb-1.5">
                     {t('login.emailLabel')}
                   </label>
                   <div className="relative">

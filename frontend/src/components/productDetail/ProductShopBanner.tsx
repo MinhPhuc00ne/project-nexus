@@ -82,7 +82,7 @@ export const ProductShopBanner: React.FC<ProductShopBannerProps> = ({ product, o
     <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-xs">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         {/* Left: Shop Logo + Name + Action buttons */}
-        <div className="flex items-center gap-4 lg:pr-8 lg:border-r border-slate-200 min-w-[300px]">
+        <div className="flex min-w-0 items-center gap-4 lg:pr-8 lg:border-r border-slate-200 lg:min-w-[300px]">
           <div className="relative shrink-0">
             <div className="w-16 h-16 rounded-lg border border-blue-200 bg-blue-50 overflow-hidden flex items-center justify-center">
               {shopAvatarUrl ? (

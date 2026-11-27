@@ -66,7 +66,7 @@ export const ShopReviewsSection: React.FC<ShopReviewsSectionProps> = ({ shop }) 
   const totalPages = Math.max(1, Math.ceil(total / 10));
 
   return (
-    <section className="max-w-screen-2xl mx-auto px-6 py-8">
+    <section className="storefront-container py-6 sm:py-8">
       {/* Overview Card */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">

@@ -1,144 +1,348 @@
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Rotate3d, CheckCircle, ShieldAlert, SquareCheckBig, Shield } from 'lucide-react';
-import { formatCurrency } from '../../i18n/formatters';
+import { AuctionStatus } from '@nexus/types';
+import {
+  ArrowUpRight,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Gavel,
+  Layers,
+  Pause,
+  Play,
+  Radio,
+} from 'lucide-react';
+import {
+  formatAuctionImage,
+  getAuctionsApi,
+  type AuctionEntity,
+} from '@/features/auction/services/auction.service';
+import { getIntlLocale } from '@/i18n/config';
 
-export default function AuthHeroSection() {
+const BANNER_INTERVAL_MS = 5000;
+const bannerStatuses = [AuctionStatus.ACTIVE, AuctionStatus.EXTENDED, AuctionStatus.SCHEDULED];
+
+function AuctionSlide({ auction }: { auction: AuctionEntity }) {
   const { t, i18n } = useTranslation('auth');
+  const live = auction.status !== AuctionStatus.SCHEDULED;
+  const image =
+    auction.imageUrl?.trim() ||
+    auction.items?.flatMap((item) => item.images ?? []).find((url) => url?.trim()) ||
+    auction.product?.images?.find((item) => item.imageUrl?.trim())?.imageUrl;
+  const startTime = new Date(auction.startTime);
+  const startsAt = Number.isFinite(startTime.getTime())
+    ? new Intl.DateTimeFormat(getIntlLocale(i18n.language), {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(startTime)
+    : t('auctionBanner.schedulePending');
+
   return (
-    <div className="[grid-column:span_7_/_span_7] flex flex-col justify-center max-[1024px]:hidden">
-      <div className="mb-8">
-        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 [padding:0.375rem_0.875rem] rounded-full mb-6">
-          <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-          <span className="text-xs font-bold text-blue-600 [letter-spacing:0.025em] uppercase">
-            {t('hero.badge')}
+    <div className="relative flex h-full flex-col justify-between overflow-hidden bg-navy p-6 text-white sm:p-8">
+      <div className="pointer-events-none absolute -right-16 -top-16 size-80 rounded-full bg-blue-500/20 blur-3xl" />
+      <Gavel
+        className="pointer-events-none absolute right-10 top-20 size-44 -rotate-12 text-white/10 sm:size-56"
+        aria-hidden="true"
+      />
+      {image && (
+        <img
+          src={formatAuctionImage(image)}
+          alt=""
+          className="absolute inset-0 size-full object-cover"
+          onError={(event) => {
+            event.currentTarget.style.display = 'none';
+          }}
+        />
+      )}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-navy via-navy/65 to-navy/20" />
+      <div className="relative flex items-center justify-between gap-3">
+        <span
+          className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${live ? 'bg-emerald-300 text-emerald-950' : 'bg-white text-navy'}`}
+        >
+          {live ? (
+            <Radio size={14} aria-hidden="true" />
+          ) : (
+            <CalendarDays size={14} aria-hidden="true" />
+          )}
+          {t(live ? 'auctionBanner.live' : 'auctionBanner.upcoming')}
+        </span>
+        <span className="text-[10px] font-bold tracking-[0.18em] text-white/80">NEXUS AUCTION</span>
+      </div>
+      <div className="relative mt-8 min-[1025px]:mt-4">
+        <h3 className="line-clamp-2 text-xl font-bold leading-tight tracking-tight sm:text-2xl">
+          {auction.title || auction.product?.title || t('auctionBanner.defaultTitle')}
+        </h3>
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/15 pt-3 text-xs font-medium text-slate-200">
+          <span className="inline-flex items-center gap-2">
+            <CalendarDays size={15} aria-hidden="true" />
+            {startsAt}
           </span>
-        </div>
-        <h2 className="[font-size:2.75rem] font-semibold text-ink [line-height:1.15] mb-4 max-[768px]:[font-size:2rem]">
-          {t('hero.titleLine1')}
-          <br />
-          <span className="text-primary">{t('hero.titleLine2')}</span>
-        </h2>
-        <p className="text-slate-500 text-base [max-width:36rem] leading-relaxed">
-          {t('hero.subtitle')}
-        </p>
-      </div>
-
-      <div className="nexus-panel overflow-hidden flex mb-10 max-[768px]:flex-col">
-        <div className="[background-color:#0b1329] relative [width:40%] p-5 flex flex-col justify-between items-center text-center overflow-hidden [min-height:250px] max-[768px]:w-full">
-          <div className="absolute [inset:0] [background:radial-gradient(_ellipse_at_center,_rgba(8,_145,_178,_0.25)_0%,_rgba(15,_23,_42,_0.8)_60%,_#0b1329_100%_)]"></div>
-
-          <div className="relative z-10 w-full flex justify-between items-center">
-            <span className="[background-color:rgba(0,_0,_0,_0.45)] [backdrop-filter:blur(8px)] [border:1px_solid_rgba(255,_255,_255,_0.15)] text-white text-[10px] font-semibold [padding:0.25rem_0.625rem] rounded-full flex items-center gap-1">
-              {t('hero.live')}
+          {!!auction.items?.length && (
+            <span className="inline-flex items-center gap-2">
+              <Layers size={15} aria-hidden="true" />
+              {t('auctionBanner.lots', { count: auction.items.length })}
             </span>
-            <span className="[background-color:rgba(16,_185,_129,_0.15)] [color:#34d399] [border:1px_solid_rgba(16,_185,_129,_0.3)] text-[10px] font-bold [padding:0.125rem_0.5rem] rounded-full flex items-center gap-1.5">
-              <div className="w-1.5 h-1.5 rounded-full [background-color:#34d399] [animation:pulse-glow_2s_cubic-bezier(0.4,_0,_0.6,_1)_infinite]"></div>{' '}
-              {t('hero.liveBid')}
-            </span>
-          </div>
-
-          <div className="relative z-10 [margin:auto_0] [padding:0.5rem_0]">
-            <div className="relative [width:6rem] [height:6rem] [margin:0_auto] flex items-center justify-center">
-              <div className="absolute [inset:0] rounded-full [border:2px_dashed_rgba(6,_182,_212,_0.35)] [animation:rotate-360_20s_linear_infinite]"></div>
-              <div className="absolute [inset:0.5rem] rounded-full [border:1px_solid_rgba(34,_211,_238,_0.5)]"></div>
-              <div className="absolute [inset:1rem] rounded-full [border:2px_solid_rgba(99,_102,_241,_0.4)]"></div>
-              <div className="w-8 h-8 rounded-full [background-color:rgba(6,_182,_212,_0.2)] flex items-center justify-center [box-shadow:0_0_15px_rgba(6,_182,_212,_0.6)]">
-                <div className="w-3 h-3 rounded-full [background-color:#22d3ee]"></div>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative z-10 w-full">
-            <p className="text-slate-400 text-xs font-medium mb-1">Skeleton Tourbillon 3D</p>
-            <p className="text-white text-xs font-medium">
-              {t('hero.currentPriceLabel')}{' '}
-              <span className="[color:#22d3ee] font-bold text-sm">
-                {formatCurrency(128500000, i18n.language)}
-              </span>
-            </p>
-          </div>
+          )}
         </div>
-
-        <div className="p-6 [width:60%] flex flex-col justify-between max-[768px]:w-full">
-          <div>
-            <div className="flex justify-between items-start mb-2">
-              <span className="[background-color:#eef2ff] text-primary text-[11px] font-bold [padding:0.125rem_0.625rem] rounded uppercase [letter-spacing:0.05em]">
-                {t('hero.vipSession')}
-              </span>
-              <span className="text-xs font-medium text-slate-400 [&_strong]:text-slate-600">
-                {t('hero.codeLabel')} <strong>#NX-9982</strong>
-              </span>
-            </div>
-
-            <h3 className="font-bold text-lg text-slate-900 [line-height:1.35] mb-2">
-              {t('hero.sampleTitle')}
-            </h3>
-
-            <p className="text-xs text-slate-500 mb-4 leading-relaxed">{t('hero.sampleDesc')}</p>
-          </div>
-
-          <div className="grid [grid-template-columns:repeat(3,_minmax(0,_1fr))] gap-2.5 mb-4 [padding:0.5rem_0.75rem] bg-slate-50 rounded-xl [border:1px_solid_#f1f5f9]">
-            <div className="text-center [&.bordered]:[border-left:1px_solid_#e2e8f0] [&.bordered]:[border-right:1px_solid_#e2e8f0]">
-              <p className="text-[10px] text-slate-400 font-semibold mb-0.5">
-                {t('hero.bidsLabel')}
-              </p>
-              <p className="font-bold text-sm text-slate-900 [&.danger]:text-blue-600 [&.success]:text-xs [&.success]:text-emerald-600">
-                {t('hero.bidsValue')}
-              </p>
-            </div>
-            <div className="text-center [&.bordered]:[border-left:1px_solid_#e2e8f0] [&.bordered]:[border-right:1px_solid_#e2e8f0] bordered">
-              <p className="text-[10px] text-slate-400 font-semibold mb-0.5">
-                {t('hero.remainingLabel')}
-              </p>
-              <p className="font-bold text-sm text-slate-900 [&.danger]:text-blue-600 [&.success]:text-xs [&.success]:text-emerald-600 danger">
-                04:18m
-              </p>
-            </div>
-            <div className="text-center [&.bordered]:[border-left:1px_solid_#e2e8f0] [&.bordered]:[border-right:1px_solid_#e2e8f0]">
-              <p className="text-[10px] text-slate-400 font-semibold mb-0.5">
-                {t('hero.depositLabel')}
-              </p>
-              <p className="font-bold text-sm text-slate-900 [&.danger]:text-blue-600 [&.success]:text-xs [&.success]:text-emerald-600 success">
-                {t('hero.depositValue')}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-xs text-blue-600 font-medium">
-            <CheckCircle className="w-3.5 h-3.5 text-blue-600 [flex-shrink:0]" />
-            <span>{t('hero.loginPrompt')}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid [grid-template-columns:repeat(3,_minmax(0,_1fr))] gap-4 max-[768px]:[grid-template-columns:minmax(0,_1fr)]">
-        <div className="bg-white p-4 rounded-xl [border:1px_solid_#e2e8f0] shadow-sm">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3 [&.blue]:bg-blue-50 [&.blue]:text-blue-600 [&.red]:bg-red-50 [&.red]:text-red-500 [&.green]:bg-green-50 [&.green]:text-green-600 [&_svg]:w-4 [&_svg]:h-4 blue">
-            <Rotate3d />
-          </div>
-          <h4 className="font-bold text-sm text-slate-900 mb-1">{t('hero.feature1Title')}</h4>
-          <p className="text-xs text-slate-500 leading-normal">{t('hero.feature1Desc')}</p>
-        </div>
-        <div className="bg-white p-4 rounded-xl [border:1px_solid_#e2e8f0] shadow-sm">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3 [&.blue]:bg-blue-50 [&.blue]:text-blue-600 [&.red]:bg-red-50 [&.red]:text-red-500 [&.green]:bg-green-50 [&.green]:text-green-600 [&_svg]:w-4 [&_svg]:h-4 red">
-            <ShieldAlert />
-          </div>
-          <h4 className="font-bold text-sm text-slate-900 mb-1">{t('hero.feature2Title')}</h4>
-          <p className="text-xs text-slate-500 leading-normal">{t('hero.feature2Desc')}</p>
-        </div>
-        <div className="bg-white p-4 rounded-xl [border:1px_solid_#e2e8f0] shadow-sm">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3 [&.blue]:bg-blue-50 [&.blue]:text-blue-600 [&.red]:bg-red-50 [&.red]:text-red-500 [&.green]:bg-green-50 [&.green]:text-green-600 [&_svg]:w-4 [&_svg]:h-4 green">
-            <SquareCheckBig />
-          </div>
-          <h4 className="font-bold text-sm text-slate-900 mb-1">{t('hero.feature3Title')}</h4>
-          <p className="text-xs text-slate-500 leading-normal">{t('hero.feature3Desc')}</p>
-        </div>
-      </div>
-
-      <div className="mt-8 flex items-center gap-2 text-xs text-slate-400">
-        <Shield className="w-4 h-4 text-slate-400 [flex-shrink:0]" />
-        <span>{t('hero.sslFooter')}</span>
+        <Link
+          to={`/auction/${encodeURIComponent(auction.id)}`}
+          className="mt-4 inline-flex min-h-11 items-center gap-3 rounded-xl bg-white px-5 py-3 text-sm font-bold text-navy transition-colors hover:bg-blue-100"
+        >
+          {t(live ? 'auctionBanner.viewLive' : 'auctionBanner.viewSession')}
+          <ArrowUpRight size={17} aria-hidden="true" />
+        </Link>
       </div>
     </div>
+  );
+}
+
+function AuctionBannerFallback({
+  loading,
+  error,
+  onRetry,
+}: {
+  loading: boolean;
+  error: boolean;
+  onRetry: () => void;
+}) {
+  const { t } = useTranslation('auth');
+  let state: 'empty' | 'loading' | 'error' = 'empty';
+  if (loading) state = 'loading';
+  else if (error) state = 'error';
+  return (
+    <div
+      className="relative flex min-h-[380px] flex-col items-start justify-center overflow-hidden bg-navy p-7 text-white sm:min-h-[420px] sm:p-8 min-[1025px]:h-full min-[1025px]:min-h-0 min-[1025px]:p-6"
+      aria-busy={loading}
+    >
+      <div className="pointer-events-none absolute -right-20 -top-20 size-80 rounded-full bg-blue-500/25 blur-3xl" />
+      <Gavel size={44} className="relative mb-5 text-blue-300" aria-hidden="true" />
+      <p className="relative mb-3 text-[10px] font-bold tracking-[0.2em] text-blue-200">
+        NEXUS AUCTION
+      </p>
+      <h3 className="relative max-w-sm text-2xl font-bold leading-tight sm:text-3xl">
+        {t(`auctionBanner.${state}Title`)}
+      </h3>
+      <p
+        className="relative mt-4 max-w-sm text-sm leading-relaxed text-slate-300"
+        role={loading ? 'status' : undefined}
+      >
+        {t(`auctionBanner.${state}Description`)}
+      </p>
+      {!loading && (
+        <Link
+          to="/auction"
+          className="relative mt-7 inline-flex min-h-11 items-center gap-3 rounded-xl bg-white px-5 py-3 text-sm font-bold text-navy hover:bg-blue-100"
+        >
+          {t('auctionBanner.explore')}
+          <ArrowUpRight size={17} />
+        </Link>
+      )}
+      {error && (
+        <button
+          type="button"
+          onClick={() => onRetry()}
+          className="relative mt-4 text-sm font-semibold text-blue-200 underline underline-offset-4"
+        >
+          {t('auctionBanner.retry')}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function AuthHeroSection() {
+  const { t } = useTranslation('auth');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [hidden, setHidden] = useState(document.hidden);
+  const query = useQuery({
+    queryKey: ['auth', 'auction-banner'],
+    queryFn: async () => {
+      const pages = await Promise.all(
+        bannerStatuses.map((status) => getAuctionsApi({ status, limit: 4 })),
+      );
+      return [
+        ...new Map(
+          pages
+            .flatMap((page) => page.items)
+            .filter((auction) => bannerStatuses.includes(auction.status))
+            .map((auction) => [auction.id, auction]),
+        ).values(),
+      ];
+    },
+    staleTime: 60_000,
+    refetchInterval: 60_000,
+  });
+  const auctions = query.data ?? [];
+  const currentIndex = activeIndex % (auctions.length || 1);
+  const autoPlaying = !paused && !hovered && !focused && !reducedMotion && !hidden;
+
+  useEffect(() => {
+    const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotion = () => setReducedMotion(preference.matches);
+    const updateVisibility = () => setHidden(document.hidden);
+    updateMotion();
+    preference.addEventListener('change', updateMotion);
+    document.addEventListener('visibilitychange', updateVisibility);
+    return () => {
+      preference.removeEventListener('change', updateMotion);
+      document.removeEventListener('visibilitychange', updateVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!autoPlaying || auctions.length < 2) return;
+    const timer = window.setInterval(
+      () => setActiveIndex((index) => (index + 1) % auctions.length),
+      BANNER_INTERVAL_MS,
+    );
+    return () => window.clearInterval(timer);
+  }, [autoPlaying, auctions.length]);
+
+  function move(direction: number) {
+    setPaused(true);
+    setActiveIndex((currentIndex + direction + auctions.length) % auctions.length);
+  }
+
+  return (
+    <section
+      className="order-2 min-w-0 max-[1024px]:mx-auto max-[1024px]:w-full max-[1024px]:max-w-lg min-[1025px]:order-1 min-[1025px]:col-span-7 min-[1025px]:flex min-[1025px]:min-h-0 min-[1025px]:flex-col min-[1025px]:[contain:size]"
+      aria-labelledby="login-auctions-heading"
+    >
+      <div className="mb-4 shrink-0">
+        <span className="mb-2 inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-primary">
+          <span className="size-1.5 rounded-full bg-primary" />
+          NEXUS AUCTIONS
+        </span>
+        <h2
+          id="login-auctions-heading"
+          className="text-2xl font-bold leading-tight tracking-tight text-ink sm:text-3xl"
+        >
+          {t('auctionBanner.title')}
+          <br />
+          <span className="text-primary">{t('auctionBanner.titleAccent')}</span>
+        </h2>
+        <p className="mt-2 max-w-lg text-sm leading-relaxed text-muted">
+          {t('auctionBanner.subtitle')}
+        </p>
+      </div>
+      <div
+        className="flex min-h-0 flex-col overflow-hidden rounded-3xl border border-line bg-white shadow-panel min-[1025px]:flex-1"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocusCapture={() => setFocused(true)}
+        onBlurCapture={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+        }}
+        role="region"
+        aria-roledescription={t('auctionBanner.carousel')}
+        aria-label={t('auctionBanner.label')}
+      >
+        {auctions.length > 0 ? (
+          <>
+            <div className="min-h-0 overflow-hidden min-[1025px]:flex-1" aria-live="off">
+              <div
+                className="flex transition-transform duration-500 ease-in-out motion-reduce:transition-none min-[1025px]:h-full"
+                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+              >
+                {auctions.map((auction, index) => (
+                  <article
+                    key={auction.id}
+                    className="w-full shrink-0 min-[1025px]:h-full"
+                    inert={index !== currentIndex}
+                    aria-hidden={index !== currentIndex}
+                    aria-roledescription={t('auctionBanner.slide')}
+                    aria-label={t('auctionBanner.slidePosition', {
+                      current: index + 1,
+                      total: auctions.length,
+                    })}
+                  >
+                    <AuctionSlide auction={auction} />
+                  </article>
+                ))}
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-5 py-3">
+              <div className="flex items-center gap-1" aria-label={t('auctionBanner.pagination')}>
+                {auctions.map((auction, index) => (
+                  <button
+                    key={auction.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveIndex(index);
+                      setPaused(true);
+                    }}
+                    aria-label={t('auctionBanner.goToSlide', { number: index + 1 })}
+                    aria-current={index === currentIndex ? 'true' : undefined}
+                    className="group flex min-h-8 min-w-4 items-center justify-center"
+                  >
+                    <span
+                      className={`h-1.5 rounded-full transition-all motion-reduce:transition-none ${index === currentIndex ? 'w-4 bg-primary' : 'w-1.5 bg-slate-300 group-hover:bg-primary'}`}
+                    />
+                  </button>
+                ))}
+              </div>
+              <div className="ml-auto flex shrink-0 items-center gap-1">
+                <span className="mr-2 text-xs font-semibold tabular-nums text-muted">
+                  {currentIndex + 1} / {auctions.length}
+                </span>
+                {auctions.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => move(-1)}
+                      aria-label={t('auctionBanner.previous')}
+                      className="grid size-9 place-items-center rounded-full text-ink hover:bg-blue-50"
+                    >
+                      <ChevronLeft size={17} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPaused(!paused);
+                        setFocused(false);
+                      }}
+                      disabled={reducedMotion}
+                      aria-label={t(
+                        paused || reducedMotion ? 'auctionBanner.play' : 'auctionBanner.pause',
+                      )}
+                      aria-pressed={paused || reducedMotion}
+                      className="grid size-9 place-items-center rounded-full text-ink hover:bg-blue-50 disabled:opacity-40"
+                    >
+                      {paused || reducedMotion ? <Play size={15} /> : <Pause size={15} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => move(1)}
+                      aria-label={t('auctionBanner.next')}
+                      className="grid size-9 place-items-center rounded-full text-ink hover:bg-blue-50"
+                    >
+                      <ChevronRight size={17} />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <AuctionBannerFallback
+            loading={query.isPending}
+            error={query.isError}
+            onRetry={() => void query.refetch()}
+          />
+        )}
+      </div>
+      <p className="mt-3 flex shrink-0 items-center gap-2 text-xs leading-relaxed text-muted">
+        <Gavel size={14} className="shrink-0 text-primary" aria-hidden="true" />
+        {t('auctionBanner.footer')}
+      </p>
+    </section>
   );
 }

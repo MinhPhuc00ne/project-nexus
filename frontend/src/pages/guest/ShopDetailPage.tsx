@@ -195,7 +195,7 @@ export const ShopDetailPage: React.FC = () => {
 
       {/* STATS STRIP & TABS */}
       <section className="bg-white border-b border-slate-200">
-        <div className="max-w-screen-2xl mx-auto px-6 py-3.5 flex items-center justify-between flex-wrap gap-4">
+        <div className="storefront-container py-3.5 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -224,7 +224,7 @@ export const ShopDetailPage: React.FC = () => {
             </button>
           </div>
 
-          <div className="flex items-center gap-6 text-xs">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6 text-xs">
             <div className="flex items-center gap-1.5 text-muted">
               <Store className="w-3.5 h-3.5 text-emerald-600" />
               <span>{t('shop.verifiedLabel')}</span>

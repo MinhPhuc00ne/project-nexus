@@ -28,7 +28,7 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
 }) => {
   const { t } = useTranslation('guest');
   return (
-    <main className="max-w-screen-2xl mx-auto px-6 py-10">
+    <main className="storefront-container py-6 sm:py-10">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-ink">{t('shop.gridTitle')}</h2>
@@ -82,7 +82,7 @@ export const ShopProductGrid: React.FC<ShopProductGridProps> = ({
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="storefront-product-grid">
           {products.map((product) => (
             <div
               key={product.id}

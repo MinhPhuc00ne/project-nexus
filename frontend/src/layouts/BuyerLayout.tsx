@@ -80,7 +80,7 @@ export default function BuyerLayout() {
 
   return (
     <div className="buyer-workspace nexus-shell">
-      <div className="buyer-workspace-inner mx-auto w-full max-w-[1440px] px-4 sm:px-6 lg:px-8">
+      <div className="buyer-workspace-inner storefront-container">
         {/* Breadcrumb Navigation */}
         <nav className="mb-4 flex shrink-0 flex-wrap items-center gap-2 text-xs text-muted">
           <NavLink to="/" className="hover:text-blue-600 transition-colors font-medium">

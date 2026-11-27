@@ -11,8 +11,8 @@ export default function ProductImageGallery({ product, selectedImgIdx, onSelectI
   const { t } = useTranslation('guest');
   const image = product.images[selectedImgIdx] || product.images[0];
   return (
-    <div className="flex flex-col gap-4 lg:col-span-5">
-      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+    <div className="min-w-0 flex flex-col gap-4 lg:col-span-5">
+      <div className="flex aspect-square max-h-[640px] items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
         {image ? (
           <img src={image} alt={product.name} className="h-full w-full object-contain p-6" />
         ) : (

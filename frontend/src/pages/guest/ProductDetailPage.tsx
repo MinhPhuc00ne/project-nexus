@@ -236,7 +236,7 @@ function ProductContent({ product }: { product: ProductDetail }) {
 
   return (
     <main className="min-h-screen bg-[var(--color-canvas)] py-6">
-      <div className="mx-auto max-w-[1280px] space-y-6 px-4">
+      <div className="storefront-container space-y-6">
         <nav className="flex flex-wrap items-center gap-3 text-sm text-muted">
           <Link to="/" className="inline-flex items-center gap-1.5 text-blue-600 font-medium">
             <ArrowLeftOutlined /> {t('product.breadcrumbHome')}
@@ -267,16 +267,18 @@ function ProductContent({ product }: { product: ProductDetail }) {
           </div>
         )}
 
-        <section className="grid gap-8 rounded-lg border border-slate-200 bg-white p-6 lg:grid-cols-12 shadow-xs">
+        <section className="grid min-w-0 gap-5 rounded-lg border border-slate-200 bg-white p-4 sm:gap-8 sm:p-6 lg:grid-cols-12 shadow-xs">
           <ProductImageGallery
             product={product}
             selectedImgIdx={selectedImgIdx}
             onSelectImage={setSelectedImgIdx}
           />
-          <div className="space-y-5 lg:col-span-7">
+          <div className="min-w-0 space-y-5 lg:col-span-7">
             <div>
               <div className="flex items-start justify-between gap-3">
-                <h1 className="text-2xl font-semibold text-ink">{product.name}</h1>
+                <h1 className="min-w-0 break-words text-xl sm:text-2xl font-semibold text-ink">
+                  {product.name}
+                </h1>
                 <button
                   type="button"
                   onClick={() => setShowReportProductModal(true)}

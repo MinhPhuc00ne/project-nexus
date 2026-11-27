@@ -58,7 +58,7 @@ export default function AuctionListPage() {
     change({ q: draft.trim(), page: '' });
   }
   return (
-    <main className="mx-auto max-w-[1280px] px-4 py-6 sm:py-9">
+    <main className="storefront-container py-6 sm:py-9">
       <Link
         to="/"
         className="mb-5 inline-flex items-center gap-2 text-xs font-medium text-muted hover:text-primary"
@@ -120,11 +120,7 @@ export default function AuctionListPage() {
         </form>
       </div>
       {query.isPending ? (
-        <div
-          role="status"
-          aria-label={t('sessions.loading')}
-          className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
-        >
+        <div role="status" aria-label={t('sessions.loading')} className="storefront-auction-grid">
           {Array.from({ length: 3 }, (_, index) => (
             <div
               key={index}
@@ -153,7 +149,7 @@ export default function AuctionListPage() {
           <p className="mb-4 text-xs text-muted">
             {t('sessions.results', { count: query.data.pagination.total })}
           </p>
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="storefront-auction-grid">
             {query.data.items.map((auction) => (
               <AuctionSessionCard key={auction.id} auction={auction} />
             ))}
