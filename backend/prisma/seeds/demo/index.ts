@@ -74,6 +74,7 @@ async function resetDatabase(prisma: PrismaClient): Promise<void> {
       await tx.auctionComplaint.deleteMany();
       await tx.auctionAward.deleteMany();
       await tx.bid.deleteMany();
+      await tx.orderItem.deleteMany();
       await tx.auctionItem.deleteMany();
       await tx.auction.deleteMany();
       await tx.orderRefund.deleteMany();
@@ -82,8 +83,8 @@ async function resetDatabase(prisma: PrismaClient): Promise<void> {
       await tx.shipment.deleteMany();
       await tx.escrowRecord.deleteMany();
       await tx.payment.deleteMany();
-      await tx.orderItem.deleteMany();
       await tx.order.deleteMany();
+      await tx.paymentGroup.deleteMany();
       await tx.cartItem.deleteMany();
       await tx.cart.deleteMany();
       await tx.wishlistItem.deleteMany();
@@ -94,6 +95,10 @@ async function resetDatabase(prisma: PrismaClient): Promise<void> {
       await tx.productImage.deleteMany();
       await tx.shopViolation.deleteMany();
       await tx.product.deleteMany();
+      await tx.category.updateMany({
+        where: { parentId: { not: null } },
+        data: { parentId: null },
+      });
       await tx.category.deleteMany();
       await tx.warehouse.deleteMany();
       await tx.sellerGhnAccount.deleteMany();
